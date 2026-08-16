@@ -109,7 +109,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   vectors, the book sited one past them, book-owned sites withholding) is RETIRED: it was safe and
   agreed with the binary only by the coincidence that nothing in the corpus resolved a locus to a
   book-sited definition. Its widening carried the obligation
-  `withdrawal-is-applied-once-never-consulted` names, and discharges it there.
+  `withdrawal-is-applied-once-never-consulted` names, and discharges it there. NAMED RESIDUE
+  (`308b` F7, pre-existing): `WhyWorld` models no wrapped sites (`world.rs` `peeled` stays empty,
+  disclosed at the module header), so a why report over a wrapped book explains a NARROWER world
+  than the run — a scope cut, not a divergence; widening it rides whatever lane next touches the
+  why-driver.
 - **withdrawal-is-applied-once-never-consulted** (`28K` §1; carve CLOSED at `28Q` §1's
   conversion) — a contested family is removed from EVERY lifted set at THIS edge, before
   `classify` sees them, so the family is indistinguishable from one nobody described and no
@@ -125,7 +129,21 @@ discipline: one rule per bullet, slugged; append to the matching section.
   over-execute direction. Oracle-only-ness is a question about WHICH FILES a lane lifts (the
   kind-owner trio loads from the ambient prefix by design — `vocabulary-acts-stay-ambient`; the
   survival lane's own widening is still its own dispatch), never about whether the contested
-  fact applies to them.
+  fact applies to them. The wrapper lane's edge act is `survival::WrapperSets::lift`
+  (`308` §1): it lifts AND withdraws the `__lend_map`/`__enter` vectors in one constructor, so
+  an un-withdrawn value cannot be spelled — a contested wrapper family peels nothing and enters
+  nothing.
+- **rul-wrapper-members-resolve-independently** (`308` §1, the crosscheck burndown) — each
+  wrapper member (`__predict`, `__lend_map`, `__enter`) is its own funcdef and binds
+  independently in sh, so each resolves its OWN frame answer at the wrapped site; `detect_peel`
+  runs on the RESOLVED predict, and a frame-live declining or absent body means the word is not
+  a wrapper HERE (the site walls). A cross-FILE resolved pair is coherence-checked at the site
+  (dual-peel tail positions AND the enter×lend shift pair — either mismatch understates crossed
+  dimensions, the under-consented direction) and WALLS with a narrative record
+  (`WrapperPairIncoherent`), never fail-fast: composition is nobody's self-contradiction, so
+  `declarations-genuinely-contradict` does not apply; the per-FILE whole-unit check stays the
+  authoring-time fail-fast. Consent, entry bytes, the peel model, and the carry proof all hang
+  off `definition_before` now — funcenv precision is license-review-tier in this lane too.
 - **one-helper-index-two-lanes** (`28K` §4) — `dorc_oracle::closure::HelperIndex` is built ONCE at
   this edge, from the same source vector the bodies are sliced out of, and threaded into BOTH the
   guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /

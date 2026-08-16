@@ -47,16 +47,25 @@ discipline: one rule per bullet, slugged; append to the matching section.
   live-source-is-the-only-resolution-seat; `28M:fnd-verdict-resolution-duplicates-live-source`) —
   which definition answers at a site is ONE question asked ONE way:
   `funcenv::LiveDefinitions::definition_before` names the definition the frame holds, and
-  `dorc_core::answering_file` selects the row that definition produced. All six role-lane seats
-  route through it — the effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict
+  `dorc_core::answering_file` selects the row that definition produced. Every role-lane seat
+  routes through it — the effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict
   and verdict lanes, the three cli ship closures, `plan::build_vouches` and
-  `build_wrapped_vouches`. Derived rows are keyed by their producing file, so identity and cells
+  `build_wrapped_vouches`, and (since the crosscheck burndown, `308` §1) the wrapper lane: each of
+  `__predict`/`__lend_map`/`__enter` resolves its OWN frame answer at the consuming site (sh binds
+  each member independently), and the ONE resolved inner verdict feeds the shipped body, the entry
+  tolerance, and the carry closure-proof together — `try_carry` takes the resolved body by
+  parameter and cannot reach a second definition by construction. Derived rows are keyed by their
+  producing file, so identity and cells
   are read from ONE definition and the chimera is UNREPRESENTABLE rather than gated: the whole-unit
   `live_source` scan and the positional agreement veto that narrowed it are BOTH retired, because
   they were two readings of one environment and could disagree (`28P:fnd-build-vouches-relifted-the-verdict-sets`
-  is what that cost the last time). The one surviving non-resolution fold is `dialect_minting_source`,
-  vocabulary-AGGREGATION only: it preserves the sparing dialect's minting SET and answers nothing
-  about which definition speaks (`28Q` §9 `pin-two-position-sparing`).
+  is what that cost the last time). TWO named non-resolution folds survive, both consuming
+  withdrawn inputs: `dialect_minting_source`,
+  vocabulary-AGGREGATION only — it preserves the sparing dialect's minting SET and answers nothing
+  about which definition speaks (`28Q` §9 `pin-two-position-sparing`) — and
+  `escalation_policy_diagnostics`, a frameless whole-unit POLICY disclosure over the
+  loaded-and-withdrawn set (aid-plane; licenses nothing; a frame would invent a site the question
+  does not have).
   A seat's predicate asks only "does this file DEFINE the role", never "does its body answer this
   argv" — the second question is the retired decline-fallthrough cascade (`28K` §6). A decline by
   the resolved definition is a decline. Seats read the driver's WITHDRAWN per-file sets, never raw

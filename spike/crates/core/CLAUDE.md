@@ -89,6 +89,11 @@ new entries to the matching section.
   separation) reads it and must keep doing so; which-body-ships does NOT — an authored
   verdict cell is an ordinary kind, indistinguishable from a predict-minted one, so that
   discriminator is site-keyed in `analysis`. Never re-derive a lane from a kind test.
+  Under frame-plural worlds (`28Q` §1) two AUTHORS' bodies can legitimately mint ONE auto
+  cell — the fact-keyed merge meets cross-site disagreement to Unknown, and same-cell never
+  spares, so the shared coordinate stays contained (`308:cr-auto-cell-shared-coordinate`) —
+  but "the chimera is unrepresentable" claims stop at this row: the auto-cell is the one
+  derived coordinate with no definition in its identity.
 
 ## Seams — reserve representation room, build NOTHING (`277` §5)
 

@@ -93,9 +93,12 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   re-derives a binding at runtime. A misalignment there could swap WHOSE judgment executes, which is
   pope-sin tier (`271:rul-sin-ordering`), so it is structural rather than three mechanisms agreeing.
   Three rules in order: CONTENT-DEDUP (byte-identical bodies are one definition); ALREADY-IN-PLACE
-  (a body the book's own text defines at top level with the same bytes is not copied — the artifact
-  never carries two same-named funcdefs by ANY route, which is what dissolves the `reserved.rs`
-  tension; the positional regime guarantees a book-sited definition PRECEDES its guards, so nothing
+  (a body the book's own text defines at top level with the same bytes is not copied — the
+  EMITTED preamble never carries two same-named funcdefs, which is what dissolves the
+  `reserved.rs` tension; a regional BOOK definition may share a preamble body's name, because
+  book bytes are untouchable and sh scoping binds the region to its own body —
+  `frame30-subshell-body-answers-inside-only` is the pinned case (`308:cr-artifact-two-funcdefs-letter`);
+  the positional regime guarantees a book-sited definition PRECEDES its guards, so nothing
   is re-derived); HASH-MUNGE (two distinct bodies under one name each emit once as
   `<name>_h<digest>`, digest over the definition BYTES). The retired dedup-by-funcname emitted the
   first body and let both sites invoke it. A munged name cannot parse as a `__role`, so a

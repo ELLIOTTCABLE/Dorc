@@ -85,8 +85,14 @@ merged indices risks the chimera (identity through one author's argparse, cells 
 another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-frame copies:
 
 1. Every derived row — a check, a cell declaration, an argparse arm-model, an enrolled
-   dialect token, a footprint claim — is keyed by the **DefinitionId** that produced it:
-   (SourceFileId, span, custody). Computed once, whole-unit, exactly as today. No index
+   dialect token, a footprint claim — reads from exactly ONE authored definition. As
+   BUILT (the lane checkpoint re-cut this item's PROPOSED stored-triple — `305a` §1/§2,
+   ratified at the `308` adjudication): **DefinitionId** is (SourceFileId, span) with
+   custody DERIVED at one seat; rows stay keyed by source-file index; the frame's
+   definition selects its rows through the `(file, name)` provenance join — total by
+   census, with within-file plurality landing `Ambiguous` and answering nowhere (riding
+   the pre-existing same-file refusal), so same-file addressing gives same-definition by
+   construction. Computed once, whole-unit, exactly as before. No index
    multiplication. HELPER CLOSURES are the ruled exception
    (`28R:§snapshot-emission-adjudication`, TYPED/ACKED): sh binds a body's calls at
    INVOCATION, so a closure is a property of the consuming FRAME, never of the
@@ -121,19 +127,35 @@ Consequences:
   precision work is never ordinary value-add. `oracle/CLAUDE.md
   live-source-is-the-only-resolution-seat` becomes "the frame-lookup is the only
   resolution seat".
-- bitem1's built-but-unreachable hash-munge becomes reachable exactly as its ledger
-  predicted (two frames, two live bodies, two munged names); the pinned-definitions
-  machinery needs no redesign — `plan/CLAUDE.md pinned-definitions-are-the-artifact's-
-  binding` already handles per-guard-site binding, and the positional regime already
-  guarantees definition-precedes-guard.
+- bitem1's hash-munge remains UNWITNESSED at stage-i: the shapes that would put two
+  guard bodies under one name are blocked by
+  `307c:fnd-written-establishes-in-a-region-ship-no-check` (a region-sited written
+  establish ships NO check at all — a real, undiagnosed value gap, owned by that
+  seat, not this plan), so no cell exercises an emitted munged name; the
+  pinned-definitions machinery stands as belt-and-braces — `plan/CLAUDE.md
+  pinned-definitions-are-the-artifact's-binding` already handles per-guard-site
+  binding, and the positional regime already guarantees definition-precedes-guard.
 - The seventh seat (`build_wrapped_vouches`, `28P:tc-wrapped-vouch-seat-has-no-positional-
   gate`) unifies with the other six. The whyworld/survival seats are NOT free riders:
   `28P` priced their unification as a dispatch ("re-lifting that seat's whole world" —
-  `res-the-why-world-cut-is-now-visible`), and stage-i carries that price tag. And
-  `tc-wrapped-lane-drops-a-case-bodied-in-book-verdict` was measured, never diagnosed —
-  the oracle-only-vector reading is a HYPOTHESIS, so the case-bodied in-book wrapped
-  fixture rides stage-i as an EXPECTED-TO-FLIP cell (the asserted cause gets tested,
-  not trusted).
+  `res-the-why-world-cut-is-now-visible`), and stage-i carried that price tag. And
+  `tc-wrapped-lane-drops-a-case-bodied-in-book-verdict` rode stage-i as an
+  EXPECTED-TO-FLIP cell and DID NOT FLIP: the oracle-only-vector hypothesis is REFUTED
+  by measurement at both candidate seats (`307c:fnd-pin30-did-not-flip`), and the
+  non-flip survived the wrapper-lane conversion too. The live lead — both crosscheck
+  lineages, independently — is the verdict body's SHAPE (pin28's straight-line
+  delegation body ships and elides at a wrapped site; the case-with-decline-arm
+  drops); the chase is banked, revisited at stage-0 (whose ship-seam re-cut touches
+  the candidate seats).
+- The wrapper/entry/carry lane JOINED the conversion at the crosscheck burndown
+  (`308` §1 — the crosscheck found it as an unenumerated seat-family):
+  `survival::WrapperSets` lifts-and-withdraws at the driver edge;
+  `__predict`/`__lend_map`/`__enter` resolve per-member at the consuming site; ONE
+  resolved inner verdict feeds the shipped body, the entry tolerance, and the carry
+  closure-proof (`try_carry` takes the resolved body and cannot reach a second
+  definition); cross-file resolved pairs coherence-check and wall. Four red-first
+  cells pin the retired failure classes (wrong-author consent · contested-family
+  entry · regional-decline bypass · split carry proof).
 
 Constraints honored, verbatim commitments:
 
@@ -499,7 +521,9 @@ own byte-identity gate.
   hold while a named predict cell silently becomes an unmeasured auto-cell, and
   backings, survival, and why-chains consume those records; a lost measurement is a
   finding.
-- **stage-i-definition-factoring** (P1): FIRST, commission the plural-idiom fixtures as
+- **stage-i-definition-factoring** (P1) — **LANDED 2026-08-16** (the conversion
+  `307c` · the adversarial crosscheck `308b`–`308f` · the burndown `308`, which
+  folded the wrapper/entry/carry lane in; gates green both legs at the stamp): FIRST, commission the plural-idiom fixtures as
   DIFFERENTIAL cells (sentinel bodies under the two-binary floor — the bitem8 pattern:
   blessed-override above/below its `unset -f` · subshell re-source in/out · the
   helper-collision cell · munge reachability · the deep-stack caller-cone per the
@@ -511,13 +535,14 @@ own byte-identity gate.
   churned; the engine-agreement half of each cell activates when stage-i lands.
   Ordinary golden corpus cells for the plural idioms arrive AFTER the behavior lands
   (the human's lean, 2026-08-13: pin the future, never pin the hole) — the one
-  deliberate exception is the case-bodied wrapped EXPECTED-TO-FLIP cell, kept as the
-  diagnostic on §1's asserted cause. Then: DefinitionId keying of derived rows; the frame
+  deliberate exception was the case-bodied wrapped EXPECTED-TO-FLIP cell, kept as the
+  diagnostic on §1's asserted cause (measured: no flip; §1 carries the verdict). Then: DefinitionId keying of derived rows; the frame
   indirection at every resolution seat; retire the agreement veto, `live_source`, and
   `never_live` as separate mechanisms; unify the wrapped-vouch and whyworld/survival
   seats (priced per `28P` — a re-lift dispatch, not a rename); helper closures take
-  the WITHHOLD floor (§1); the case-bodied in-book wrapped fixture rides as
-  EXPECTED-TO-FLIP; `task-verify-definition-vector-walls` (`28R:§snapshot` residue).
+  the WITHHOLD floor (§1); the case-bodied in-book wrapped fixture rode as
+  EXPECTED-TO-FLIP and did not flip (§1); `task-verify-definition-vector-walls`
+  (`28R:§snapshot` residue).
   Gate: `syn-single-frame-byte-identical` (full corpus, both legs) AND the
   differential cells agreeing with the frame answer.
 - **stage-emission-snapshot-transplant** (between i and ii;

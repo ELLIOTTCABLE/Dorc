@@ -16,16 +16,22 @@ removed, never annotated as history. Entries carry: the RULE (what conservatism,
 where) · FORFEITS (who loses what, when) · CAPTURE (the known path to the value) ·
 BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
 
-- **forfeit-two-position-sparing-collide** — RULE (`28Q` §9
-  `pin-two-position-sparing`; ACKED extremely-soft, human 2026-08-13): the
-  frame-relative sparing meet COLLIDES whenever claim-position and backing-position
-  disagree about the backing family's closure or dialect. FORFEITS: drifted-day
-  survivals in plural-definition worlds (regional re-source, blessed overrides) under
-  the risk flag — exactly the attention-value the survival tier exists for. CAPTURE:
-  position-aware dialect resolution with a per-token agreement proof; the `28T` sparing
-  mini-model is the proof home. BACK-OUT: low mechanically (loosening is additive);
-  med socially (published claims calibrate against the collide floor). REVISIT: the
-  mini-model's formalization; first field evidence of plural-idiom books.
+- **forfeit-two-position-sparing-collide** — RULE (as-built through stage-i;
+  `307c:dec-dialect-keeps-a-whole-unit-fold`): the sparing dialect stays ONE
+  whole-unit minting fold per family (`dialect_minting_source`) — NO
+  position-aware collide exists in code, and a frame-dead regional mint can
+  therefore still sit in the global dialect a flag-gated meet consults
+  (`308c` find-2's construction; census-invisible today). The ACKED floor
+  (extremely-soft, human 2026-08-13: collide unless both positions agree on the
+  backing family's closure and dialect) is CAPTURE-tier, not yet rule. FORFEITS:
+  drifted-day survivals in plural-definition worlds under the risk flag once the
+  floor lands — and until it lands, the exposure runs the OTHER way (a too-large
+  dialect spares more), bounded by the census's enumerated blessed idioms.
+  CAPTURE: position-aware dialect resolution with a per-token agreement proof;
+  the `28T` sparing mini-model is the proof home, and it GATES promoting
+  plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
+  socially (published claims calibrate against whichever floor ships). REVISIT:
+  the mini-model's formalization; first field evidence of plural-idiom books.
 - **forfeit-helper-plurality-withhold** — RULE (`28Q` §1, the stage-i floor): a frame
   whose live definition closes over a plural-with-differing-bytes helper name
   WITHHOLDS. FORFEITS: all licenses at the sanctioned plural idioms until the emission
@@ -74,11 +80,18 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   CAPTURE: a blessed target-state-pure builtin table in book position — a licensure
   widening, routed to the human. REVISIT: the stdlib revival (polyfills become
   common).
-- **forfeit-wrapped-case-bodied-book-verdict** — RULE (as-built, measured; `28P`): the
+- **forfeit-wrapped-case-bodied-book-verdict** — RULE (as-built, measured through
+  stage-i AND the crosscheck burndown; `28P` · `307c:fnd-pin30-did-not-flip`): the
   canonical case-bodied verdict shape, sited in a BOOK, answers nothing at wrapped
-  sites (the same bytes in an oracle file ship fine). FORFEITS: wrapped-site coverage
-  for the most-taught authored shape. CAPTURE: diagnose (the stage-i expected-to-flip
-  cell) then widen the lane. REVISIT: the stage-i fold.
+  sites (the same bytes in an oracle file ship fine). The stage-i EXPECTED-TO-FLIP
+  cell did NOT flip — the oracle-only-vector hypothesis is REFUTED by measurement
+  at both candidate seats, and it survived the wrapper-lane conversion too. The
+  surviving lead (both crosscheck lineages, independently): the discriminator is
+  the verdict body's SHAPE — pin28's straight-line delegation body ships and
+  elides at a wrapped site; pin30's case-with-decline-arm drops — recorded in the
+  cell's own header. FORFEITS: wrapped-site coverage for the most-taught authored
+  shape. CAPTURE: chase the declining seat from the body-shape lead, then widen
+  the lane. REVISIT: stage-0 (the ship-seam re-cut touches the candidate seats).
 - **forfeit-survival-lanes-closure-less** — RULE (as-built; `28P`):
   `disturbs`/`resolve`/`reaches` bodies ship without their helper closures; a body
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner
