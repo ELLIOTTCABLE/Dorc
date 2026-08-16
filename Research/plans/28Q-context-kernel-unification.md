@@ -95,7 +95,12 @@ another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-fram
    and lands with the closure-custody stage's custody re-key (or sooner, per the
    human's post-rewind direction). **TRIPWIRE (the ship-seam-re-cut record-drift
    class): no record may mark this item DONE while the keying is file-grade; any
-   lane touching these indexes restates this paragraph in its report.** HELPER CLOSURES are the ruled exception
+   lane touching these indexes restates this paragraph in its report.** The repair
+   additionally answers to `rul-rc-reaches-genkill-only-through-decisions`
+   (HUMAN-TYPED 2026-08-16, `spike/CLAUDE.md` observables-&-rc): the
+   verdict-record/establish shared slot (`verdict_cell_or_auto`) separates
+   representationally — rc-species and gen/kill-species records stay distinct,
+   rc reaching topology only through minted decisions. HELPER CLOSURES are the ruled exception
    (`28R:§snapshot-emission-adjudication`, TYPED/ACKED): sh binds a body's calls at
    INVOCATION, so a closure is a property of the consuming FRAME, never of the
    definition — "computed once, whole-unit" is DEAD for closures

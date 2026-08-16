@@ -329,6 +329,28 @@ prompt you write:
   nondeterminism class. Why-lane note on 141-landings ("likely benign early-exit
   race; consider full-read form"); `dorc plan --exit-code` computes from
   divergence-of-world facts, never raw sink-landings; hostsim injects the race.
+- **rul-rc-reaches-genkill-only-through-decisions** (HUMAN-TYPED 2026-08-16) — a
+  measured verdict-rc and the gen/kill topology are DIFFERENT SPECIES, kept
+  representationally distinct. Gen/kill derives from description-plane bodies
+  (predict / disturbs / kind-owner members; ProgramText-grade; influence-free);
+  a verdict-rc is a measurement whose very existence carries probe-invocation
+  influence. The ONE sanctioned rc→gen/kill route is INDIRECT, through analyzer
+  control-flow: a per-site decision is minted (pure analysis = no influence;
+  probing = influence), recorded (the Spine/whylog decision record), and only
+  BECAUSE of that decision — plus prior mutators falling to Run — does the
+  predict-walk fire or withhold the site's gens/kills. That is the EFFECTIVE
+  flow every implementation must match; it is never an algorithmic dictation.
+  Rationale, typed: influence-threading cannot survive a merger — "the rc is X"
+  is influence-bearing per se; "this site gens C" propagates influence only
+  through the gating decision. As-built NAMED INTERIM under this law:
+  `verdict_cell_or_auto` is one shared slot feeding both the verdict-record's
+  subject and the site's establish classification — its NAME is pinned by
+  `307:rul-primacy-moves-the-body-never-the-cell`; the slot-SHARING itself is
+  expected to be unwound (candidate homes: the closure-custody definition-keying
+  repair, `28Q` §1; the Spine influence work, `plans/309` pre-ack). Ack-scope,
+  recorded precisely: the distinction and effective flow are typed; engine
+  mechanics and their direction are NOT — conductor latitude, with the human's
+  suspicion-of-punting on the representational core on record.
 
 ## Invariants — host evidence & controller attribution
 

@@ -997,3 +997,27 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   (b) claim-verification legwork batches to ONE Opus unit held until every
   model's concrete claims are in; the conductor hand-verifies only scope-driving
   claims. Both encoded as prax rows in `308` §5.
+
+## §ack-veto-review — the human-items sitting's typed reactions (2026-08-16; sibling-conductor session)
+
+- **`rul-primacy-moves-the-body-never-the-cell` — INTENT TYPED-ACKED; mechanics
+  explicitly NOT.** The human's ack covers their OWN account (the rc-vs-gen/kill
+  derivation; citable form: "gen/kill has no integral value; rc is not gen/kill;
+  rc reaches a gen site only through analytic control-flow — the command must be
+  allowed to run before it gens") — never the engine mechanics nor direction on
+  them; conductor latitude in realizing the intent. The ruling stands as
+  conductor law under that typed intent.
+- **`rul-rc-reaches-genkill-only-through-decisions` [TYPED 2026-08-16]**, minted
+  at the same sitting; durable law text in `spike/CLAUDE.md` (Invariants —
+  observables & rc). Load-bearing rationale is influence-threading — the human
+  frames this as a sub-component of the influence work: an rc carries
+  probe-invocation influence per se; gen/kill propagates influence only via the
+  gating decision; merging the two breaks influence-tracking for reasons
+  independent of the primacy question. The `verdict_cell_or_auto` shared slot is
+  a NAMED INTERIM; its representational separation is EXPECTED WORK, not
+  optional polish (the human is explicitly suspicious of punting the
+  representational core); candidate homes: the closure-custody definition-keying
+  repair (`28Q` §1, beside the file-grade tripwire) and the Spine influence work
+  (`plans/309`, pre-ack).
+- Remaining veto-eligible items (`rul-emission-custody-composite` · the
+  crosscheck-era four) are UNREACTED as of this entry; silence is not ack.

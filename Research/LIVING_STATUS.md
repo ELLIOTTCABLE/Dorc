@@ -46,6 +46,17 @@ containment proofs — design acked-in-substance, dispatch pending) · the
 slow-test diagnosis (native suite's ~145s tail, mostly certify/solve;
 human-noted 2026-08-16).
 
+**[TYPED 2026-08-16, the human-items sitting]
+`rul-rc-reaches-genkill-only-through-decisions` minted (durable law:
+`spike/CLAUDE.md` observables-&-rc; ack record: `307:§ack-veto-review`):
+verdict-rc and gen/kill topology stay representationally distinct; rc reaches
+gen/kill only through minted, Spine-recorded decisions. `verdict_cell_or_auto`'s
+shared slot is a NAMED INTERIM whose separation is expected work (rides the
+definition-keying repair / Spine influence work).
+`rul-primacy-moves-the-body-never-the-cell`: INTENT typed-acked, mechanics
+conductor-latitude — that veto item is CLOSED; `rul-emission-custody-composite`
+and the crosscheck-era set stay unreacted.**
+
 ## STATE 2026-08-16 (snapshot-emission landed; wave-two's pre-ruled work exhausted; superseded above)
 
 **[TYPED 2026-08-16, the three-rulings sitting — minted]:
