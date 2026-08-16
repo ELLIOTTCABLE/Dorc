@@ -1,4 +1,4 @@
-# 30B — minispec + dorc-verify: neutral review
+# 30Ba — minispec + dorc-verify: neutral review
 
 > Tier: LLM-authored review note (Fable-class, neutral posture, no stake in the artifact).
 > Subordinate to root docs, `spike/CLAUDE.md`, `minispec/CLAUDE.md` and `notes/301` (THE spec).

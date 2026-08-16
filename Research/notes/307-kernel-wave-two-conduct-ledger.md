@@ -113,20 +113,20 @@
   either Lake glob semantics) · the two overclaiming `Result`-error docstrings
   corrected to hypotheses-make-failure-unreachable · each unit gained its
   `<Law>_specializes_at_u32` coupling theorem (the law's own `Prop` applied at
-  the battery ground, pure application terms — `30B:fnd-battery-never-
+  the battery ground, pure application terms — `30Ba:fnd-battery-never-
   instantiates-its-own-law`'s repair). Greening runs via the tooling lane's T4
   (cleared-root `verify:lean`, WSL; builder hard-forbidden from `.lean` files);
   a red comes back to the conductor for the second pass. Everything larger from
   the review pair stays DEFERRED post-rewind per the human.
 - **review-minispec-focused — COLLECTED + ADJUDICATED 2026-08-16**
-  (`notes/30D` is the verdict record; raw reports `30B` neutral · `30C` Sol
+  (`notes/30B` is the verdict record; raw reports `30Ba` neutral · `30Bb` Sol
   adversarial, cherry-picked to conduct). HEADLINE, conductor-verified by own
   eyes: **the corpus is broken at its root today** (`Minispec.lean:13` imports
   the deleted `LeqIsReflexive`, never imports `JoinIsAssociative`; every
   green gate all arc was the cheap tier not looking) — and the CAUSE of its
-  surviving a green lane is `30B:fnd-lean-staging-never-removes-stale-files`
+  surviving a green lane is `30Ba:fnd-lean-staging-never-removes-stale-files`
   (a shared, accrete-only cross-worktree Lean build root), which also marks
-  the `300` §2b lake-green claims SUSPECT-UNTIL-RESTAGED. Disposition (`30D`
+  the `300` §2b lake-green claims SUSPECT-UNTIL-RESTAGED. Disposition (`30B`
   §3): the `spike/verify/` repairs are builder-space and PLANNED-NOT-DISPATCHED
   (the human capped new arcs); the three SPEC-CONTENT touches (the root
   import-list deletion · the `Result`-prose softening · per-unit
@@ -137,9 +137,9 @@
 - **PARALLEL GRABS 2026-08-16** [human-authorized: parallel alongside the pin
   battery; NOTHING scheduled after — conductor context ~half spent]:
   **review-minispec-focused DISPATCHED** (the ruled end-of-r30 obligation;
-  staffing = Opus neutral (`review-minispec-neutral`, report `notes/30B`) +
+  staffing = Opus neutral (`review-minispec-neutral`, report `notes/30Ba`) +
   Sol adversarial via codex (`review-minispec-adversarial`, report
-  `notes/30C`); Fable omitted — ack-gated, human present to grant if wanted;
+  `notes/30Bb`); Fable omitted — ack-gated, human present to grant if wanted;
   both read-only from `d31378e8`; adjudication under maximum skepticism at
   collection) · **lane-tooling-debt-triple DISPATCHED** (Opus, branch
   `ai/r30-lane-tooling-debt`, base `d31378e8`: T1 task-output-visibility done

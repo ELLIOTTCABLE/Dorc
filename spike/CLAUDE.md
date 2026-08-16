@@ -914,7 +914,7 @@ no task covers, and consider adding the task instead.
   root is a MIRROR (sources cleared before copy; `.lake` and `lake-manifest.json`
   survive — deleting the manifest sends lake back to the network) and is keyed
   PER WORKTREE: a shared, accreting root is how a root module naming a deleted
-  unit survived a green `lake build` (the r30 review pair; `30D`).
+  unit survived a green `lake build` (the r30 review pair; `30B`).
 - **kani-coverage-has-measured-walls** (r30) — harnesses declare EXACT concrete
   sizes (a symbolic length under reallocation is unaffordable, and the shape also
   arises INSIDE `union`/`intersection`, which insert element-by-element), so
