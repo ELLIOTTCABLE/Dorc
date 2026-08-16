@@ -442,8 +442,14 @@ fn plural_role_names(world: &CaseWorld) -> BTreeSet<String> {
 /// contested withdrawal leaves them alone and the frame lookup has to answer them: a define-if-absent
 /// polyfill whose guard the decidable-condition fold proves dead (`28M` §9), an `unset -f` above a
 /// redefinition (the blessing that makes an override an override instead of a contest), and the
-/// three `frame30-*` regional idioms this lane minted, where a subshell-local body dies at its own
-/// `)`. Together they are where the corpus exercises the plural arm with licenses intact.
+/// `frame30-*`/`wrap30-*` regional idioms, where a subshell-local body dies at its own `)`. Together
+/// they are where the corpus exercises the plural arm with licenses intact.
+///
+/// The `wrap30-*` entries are the WRAPPER lane's arm of the same property
+/// (`308:rul-wrapper-lane-joins-the-conversion`): a regional peel model, a regional verdict feeding
+/// the carry proof, and a blessed-override verdict feeding entry consent. Their contested sibling
+/// `wrap30-contested-wrapper-peels-nothing` is deliberately ABSENT — the withdrawal withholds its
+/// `sudo` family, so nothing there reaches a resolution seat and the census is right to leave it out.
 ///
 /// This measurement REFINES `307:fnd-corpus-carries-twelve-plural-families`, which counted the
 /// twelve textual cases and the five the withdrawal holds byte-stable but did not separate the
@@ -458,6 +464,10 @@ const PLURAL_IDIOM_CASES: &[&str] = &[
     "frame30-a-regional-decline-is-a-decline.loom",
     "frame30-nested-region-inherits-the-outer-body.loom",
     "frame30-subshell-body-answers-inside-only.loom",
+    "frame30-two-live-predicts-key-two-cells.loom",
+    "wrap30-carry-proof-is-the-shipped-body.loom",
+    "wrap30-consent-comes-from-the-live-verdict.loom",
+    "wrap30-regional-wrapper-decline-walls.loom",
 ];
 
 /// THE PLURALITY CENSUS (`305a` §1): every REACHABLE plural family in the committed corpus sits in
