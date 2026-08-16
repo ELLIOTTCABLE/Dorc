@@ -39,6 +39,14 @@ theorem JoinIsIdempotent_nonvacuous :
       (lattice.Flat.Elem 7#u32) (lattice.Flat.Elem 7#u32)
     = ok (lattice.Flat.Elem 7#u32) := by rfl
 
+/-- Coupling: the law's own `Prop`, applied at the battery ground. An edit that
+    decouples the statement from the seat it names breaks this theorem, so the
+    battery is mechanically about the law, never merely beside it. -/
+theorem JoinIsIdempotent_specializes_at_u32 (h : JoinIsIdempotent) :
+    ∀ a : lattice.Flat Aeneas.Std.U32,
+      lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq a a = ok a :=
+  h Aeneas.Std.U32 u32Clone u32Eq u32Clone_lawful u32Eq_lawful
+
 /- Boundary battery: the two remaining shapes' self-joins. -/
 example :
     lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq

@@ -1,13 +1,12 @@
 /-!
 # minispec
 
-The law corpus's root module. Importing every unit is what makes `lake build` a whole-corpus
-check rather than a per-file one, so a unit that stops elaborating cannot hide behind a
-neighbour that still does.
+The law corpus's root module — deliberately EMPTY of imports. The lakefile's
+`Minispec.+` glob builds every unit as its own target, so a unit that stops
+elaborating fails the build on its own; a hand-maintained import list here adds
+nothing to that and can only drift (one did, silently, within days of the
+corpus's minting — caught by the r30 review pair, `30B`/`30C`/`30D`).
 
-A new unit is added here in the same commit that mints it.
+A new unit needs no edit here, or anywhere: file it under `Minispec/` and the
+glob owns it.
 -/
-
-import Minispec.JoinIsCommutative
-import Minispec.JoinIsIdempotent
-import Minispec.LeqIsReflexive

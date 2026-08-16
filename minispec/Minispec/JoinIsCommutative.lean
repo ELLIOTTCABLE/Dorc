@@ -6,8 +6,10 @@ import Minispec.Vocabulary.TrustedBase
 
 **The law, in English (authoritative):** joining two flat-lattice values gives the same
 answer in either order. For every type `T` with lawful clone and equality dictionaries,
-and any two values `a b : Flat T`, `a ⊔ b = b ⊔ a` — including the error behaviour:
-neither order can fail where the other succeeds.
+and any two values `a b : Flat T`, `a ⊔ b = b ⊔ a`. The statement keeps the
+translation's monadic shape (nothing projects out of `Result`), but under the
+lawfulness hypotheses the dictionaries cannot fail, so the error channel is
+unreachable here — this law asserts nothing about failure behaviour.
 
 `Flat T` (⊥ · a single element · ⊤) is the translation of the engine's simplest lattice
 combinator, and `join` is the solver's merge for it. Commutativity is stated over the
@@ -44,6 +46,15 @@ theorem JoinIsCommutative_nonvacuous :
         (lattice.Flat.Elem 2#u32) (lattice.Flat.Elem 1#u32)
       = ok lattice.Flat.Top := by
   constructor <;> rfl
+
+/-- Coupling: the law's own `Prop`, applied at the battery ground. An edit that
+    decouples the statement from the seat it names breaks this theorem, so the
+    battery is mechanically about the law, never merely beside it. -/
+theorem JoinIsCommutative_specializes_at_u32 (h : JoinIsCommutative) :
+    ∀ a b : lattice.Flat Aeneas.Std.U32,
+      lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq a b
+        = lattice.Flat.Insts.GeneratedLatticeLattice.join u32Clone u32Eq b a :=
+  h Aeneas.Std.U32 u32Clone u32Eq u32Clone_lawful u32Eq_lawful
 
 /- Boundary battery: every shape pair, both orders, exact answers. -/
 example :
