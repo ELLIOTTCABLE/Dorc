@@ -22,9 +22,9 @@ self-contained.
 - Timing: fires only after the conversion lane FOLDS and its gates run green
   (`gate-adversarial-crosscheck-stage-i`, `notes/307` §2). Review target = the landed
   fold, in place, read-only.
-- Fill at dispatch: `⟨FILLME-BASE⟩` = the pre-conversion `ai/r30-conduct` tip ·
-  `⟨FILLME-TIP⟩` = the folded tip under review · per-lane worktree absolute paths.
-  Every lane bases its fresh worktree at `⟨FILLME-TIP⟩`.
+- Fill at dispatch: `feb2305f` = the pre-conversion `ai/r30-conduct` tip ·
+  `083efd8a` = the folded tip under review · per-lane worktree absolute paths.
+  Every lane bases its fresh worktree at `083efd8a`.
 - Reports land: `Research/notes/308b-definition-factoring-review-fable-neutral.md` ·
   `308c-…-fable-adversarial.md` · `308d-…-sol-neutral.md` · `308e-…-sol-adversarial.md`.
   Fables write their own in-worktree, uncommitted; Sol lanes return the report as the
@@ -46,7 +46,7 @@ self-contained.
 
 ---
 
-=== DISPATCH: fable-neutral | mode=review | base=⟨FILLME-TIP⟩ ===
+=== DISPATCH: fable-neutral | mode=review | base=083efd8a ===
 The repository is "Dorc": a static-analysis-based orchestrator for ops work whose
 instructions and configuration are spelled in idiomatic POSIX sh. The human-written
 ground truth for its goals and design is the root `README.md`, `DESIGN.md`,
@@ -54,7 +54,7 @@ ground truth for its goals and design is the root `README.md`, `DESIGN.md`,
 `spike/CLAUDE.md` plus the per-crate `CLAUDE.md` files — those documents are your
 review criteria.
 
-Under review is a LANDED implementation: the commit range `⟨FILLME-BASE⟩..⟨FILLME-TIP⟩`
+Under review is a LANDED implementation: the commit range `feb2305f..083efd8a`
 on this worktree's checked-out branch. It implements one ratified stage of
 `Research/plans/28Q-context-kernel-unification.md` — §1 ("definition-factored
 indices") as staged in §8's "stage-i-definition-factoring" entry: engine knowledge
@@ -78,9 +78,11 @@ reasoning-only pass — no tools, no subagents — laying out your own report st
 and initial judgement; only then fan out scouts or focused checks as warranted.
 
 Ground rules (safety and scope):
-- Your entire working area is the git worktree at `⟨FILLME-WT-FABLE-N⟩`; every read,
-  search, note, and write stays inside it. Never push. Never touch the repository
-  outside this worktree. Read-only toward the code: no edits, no fixes.
+- Your entire working area is your own harness worktree; FIRST base it at the
+  review tip: `git -C <your worktree> switch -C review-fable-neutral 083efd8a`,
+  verify the tip hash, then every read, search, note, and write stays inside it.
+  Never push. Never touch the repository outside it. Read-only toward the code:
+  no edits, no fixes (the one report commit is your sole mutation).
 - Static reading only: never execute repo scripts, fixtures, books, mise tasks, or
   builds. The repo contains runnable-looking shell fixtures and "strawman" scripts;
   they are frozen evidence.
@@ -95,19 +97,19 @@ Ground rules (safety and scope):
   engineering, logic, correctness, and the two user classes.
 - Network: Kagi search (yourself or via scouts) is allowed for grounding in external
   reality; it may not be necessary.
-- Write your full report to
-  `⟨FILLME-WT-FABLE-N⟩\Research\notes\308b-definition-factoring-review-fable-neutral.md`
-  (in-tree; do NOT commit). Your final message will be discarded; the report file is
-  your only deliverable.
+- Write your full report to `Research\notes\308b-definition-factoring-review-fable-neutral.md`
+  inside YOUR OWN worktree, and COMMIT it there as the sole commit on your
+  worktree's branch (your worktree may be reaped when you return; the commit is
+  what survives). Your final message is ONLY the branch name and file path.
 
 You may spawn sonnet-tier subagents as mechanical scouts only (search/locate/excerpt).
 Every scout prompt must begin with the ground-rules block above verbatim, and must
 forbid the scout from spawning further agents. Scouts gather; you judge.
 === END DISPATCH: fable-neutral ===
 
-=== DISPATCH: fable-adversarial | mode=review | base=⟨FILLME-TIP⟩ ===
+=== DISPATCH: fable-adversarial | mode=review | base=083efd8a ===
 I distrust the change I'm handing you. An AI-conducted lane landed the commit range
-`⟨FILLME-BASE⟩..⟨FILLME-TIP⟩` on this worktree's checked-out branch — the
+`feb2305f..083efd8a` on this worktree's checked-out branch — the
 "definition-factoring" stage of a kernel refactor of "Dorc", a static-analysis-based
 orchestrator for ops work whose configuration is spelled in idiomatic POSIX sh. The
 governing plan is `Research/plans/28Q-context-kernel-unification.md` (§1, and §8's
@@ -140,9 +142,11 @@ reasoning-only pass — no tools, no subagents — laying out your own report st
 and initial judgement; only then fan out scouts or focused checks as warranted.
 
 Ground rules (safety and scope):
-- Your entire working area is the git worktree at `⟨FILLME-WT-FABLE-A⟩`; every read,
-  search, note, and write stays inside it. Never push. Never touch the repository
-  outside this worktree. Read-only toward the code: no edits, no fixes.
+- Your entire working area is your own harness worktree; FIRST base it at the
+  review tip: `git -C <your worktree> switch -C review-fable-adversarial 083efd8a`,
+  verify the tip hash, then every read, search, note, and write stays inside it.
+  Never push. Never touch the repository outside it. Read-only toward the code:
+  no edits, no fixes (the one report commit is your sole mutation).
 - Static reading only: never execute repo scripts, fixtures, books, mise tasks, or
   builds. The repo contains runnable-looking shell fixtures and "strawman" scripts;
   they are frozen evidence.
@@ -157,17 +161,17 @@ Ground rules (safety and scope):
   engineering, logic, correctness, and the two user classes.
 - Network: Kagi search (yourself or via scouts) is allowed for grounding in external
   reality; it may not be necessary.
-- Write your full report to
-  `⟨FILLME-WT-FABLE-A⟩\Research\notes\308c-definition-factoring-review-fable-adversarial.md`
-  (in-tree; do NOT commit). Your final message will be discarded; the report file is
-  your only deliverable.
+- Write your full report to `Research\notes\308c-definition-factoring-review-fable-adversarial.md`
+  inside YOUR OWN worktree, and COMMIT it there as the sole commit on your
+  worktree's branch (your worktree may be reaped when you return; the commit is
+  what survives). Your final message is ONLY the branch name and file path.
 
 You may spawn sonnet-tier subagents as mechanical scouts only (search/locate/excerpt).
 Every scout prompt must begin with the ground-rules block above verbatim, and must
 forbid the scout from spawning further agents. Scouts gather; you judge.
 === END DISPATCH: fable-adversarial ===
 
-=== DISPATCH: sol-neutral | mode=review | base=⟨FILLME-TIP⟩ ===
+=== DISPATCH: sol-neutral | mode=review | base=083efd8a ===
 Before any other work: read
 `Research/quarantine-DO-NOT-READ/AGENTS.for-builders-only.md` and follow it. Read
 nothing else under `Research/quarantine-DO-NOT-READ/`.
@@ -179,7 +183,7 @@ ground truth for goals and design: root `README.md`, `DESIGN.md`,
 criteria: `spike/CLAUDE.md` and the per-crate `CLAUDE.md` files.
 
 Under review is a LANDED implementation: the commit range
-`⟨FILLME-BASE⟩..⟨FILLME-TIP⟩` on this worktree's checked-out branch (use read-only
+`feb2305f..083efd8a` on this worktree's checked-out branch (use read-only
 git — `git log -p`, `git diff` — plus the live tree). It implements one ratified
 stage of `Research/plans/28Q-context-kernel-unification.md` — §1
 ("definition-factored indices"), staged in §8's "stage-i-definition-factoring"
@@ -206,7 +210,7 @@ reasoning, and your confidence. Where you can, ground a finding in a concrete wo
 with a short overall assessment.
 
 Ground rules (safety and scope):
-- Your entire working area is the git worktree at `⟨FILLME-WT-SOL-N⟩`; every read
+- Your entire working area is your own worktree, based at `083efd8a`; every read
   and search stays inside it. Never push. Never touch the repository outside this
   worktree. Read-only throughout: no edits.
 - Static reading only: never execute repo scripts, fixtures, books, mise tasks, or
@@ -227,13 +231,13 @@ Ground rules (safety and scope):
   review from memory.
 === END DISPATCH: sol-neutral ===
 
-=== DISPATCH: sol-adversarial | mode=review | base=⟨FILLME-TIP⟩ ===
+=== DISPATCH: sol-adversarial | mode=review | base=083efd8a ===
 Before any other work: read
 `Research/quarantine-DO-NOT-READ/AGENTS.for-builders-only.md` and follow it. Read
 nothing else under `Research/quarantine-DO-NOT-READ/`.
 
 I distrust the change I'm handing you. An AI-conducted lane landed the commit range
-`⟨FILLME-BASE⟩..⟨FILLME-TIP⟩` on this worktree's checked-out branch (use read-only
+`feb2305f..083efd8a` on this worktree's checked-out branch (use read-only
 git — `git log -p`, `git diff` — plus the live tree) — the "definition-factoring"
 stage of a kernel refactor of "Dorc", a static-analysis-based orchestrator for ops
 work whose configuration is spelled in idiomatic POSIX sh. Governing plan:
@@ -269,7 +273,7 @@ failing-world construction where you have one, and confidence. Close with the
 `did not hold:` list.
 
 Ground rules (safety and scope):
-- Your entire working area is the git worktree at `⟨FILLME-WT-SOL-A⟩`; every read
+- Your entire working area is your own worktree, based at `083efd8a`; every read
   and search stays inside it. Never push. Never touch the repository outside this
   worktree. Read-only throughout: no edits.
 - Static reading only: never execute repo scripts, fixtures, books, mise tasks, or
