@@ -37,7 +37,7 @@ use std::path::{Path, PathBuf};
 use dorc_aid::diag::SolvePass;
 use dorc_aid::narrative::{
     ChannelCoverage, CollapseKind, DeclineGate, DefinitionSite, DemoteTag, EntryDegradeTag,
-    EntryFailureTag, FailedCheck, MintSpan, Operands, SolverRounds, ValueOperand,
+    EntryFailureTag, FailedCheck, MintSpan, Operands, SolverRounds, ValueOperand, WrapperPairTag,
 };
 use dorc_core::{BytePos, Channel, LeafId, SiteId, SourceFileId, Span};
 
@@ -54,6 +54,7 @@ fn census_marker(kind: &CollapseKind) -> &'static str {
         CollapseKind::WallFormation { .. } => "CollapseKind::WallFormation",
         CollapseKind::SubstitutionRefusal { .. } => "CollapseKind::SubstitutionRefusal",
         CollapseKind::EntryDenial { .. } => "CollapseKind::EntryDenial",
+        CollapseKind::WrapperPairIncoherent { .. } => "CollapseKind::WrapperPairIncoherent",
         CollapseKind::EntryFailure { .. } => "CollapseKind::EntryFailure",
         CollapseKind::Demotion { .. } => "CollapseKind::Demotion",
         CollapseKind::RenderRefusal { .. } => "CollapseKind::RenderRefusal",
@@ -102,6 +103,9 @@ fn constructible_classes() -> Vec<CollapseKind> {
         },
         CollapseKind::EntryDenial {
             rung: EntryDegradeTag::NoCapability,
+        },
+        CollapseKind::WrapperPairIncoherent {
+            class: WrapperPairTag::PeelDepth,
         },
         CollapseKind::EntryFailure {
             site: site(0),

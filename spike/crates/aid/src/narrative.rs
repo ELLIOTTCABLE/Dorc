@@ -377,6 +377,21 @@ pub enum EntryDegradeTag {
     NoEntryForm,
 }
 
+/// Which wrapper-member pair contradicted at a wrapped site (`308:rul-resolved-pair-coherence-walls`).
+///
+/// A wrapper's `__predict`, `__lend_map`, and `__enter` each resolve their own frame answer, because
+/// sh binds names independently. That is right, and it means the three CAN resolve to different
+/// files — a composition no single author wrote and no per-file check ever saw. Where the resolved
+/// pair disagrees, the head is not treated as a wrapper at that site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WrapperPairTag {
+    /// The resolved `__predict` and `__lend_map` reach their guest at different tail positions
+    /// (`273` §5's dual-peel check, applied to the resolved cross-file pair).
+    PeelDepth,
+    /// The resolved `__enter` and `__lend_map` disagree about which dimensions shift.
+    EntryShifts,
+}
+
 /// A RUNTIME entry-failure class (`27C` §3): all land `Unknown`/run through the rc-partition;
 /// named for the disclosure only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -469,6 +484,11 @@ pub enum CollapseKind {
     SubstitutionRefusal { site: SiteId, top_channel: Channel },
     /// A STATIC context-entry consent denial (`27C` §3 `EntryDegrade`) ⇒ guard/run.
     EntryDenial { rung: EntryDegradeTag },
+    /// A wrapped site's RESOLVED wrapper members contradict across files
+    /// (`308:rul-resolved-pair-coherence-walls`) ⇒ the head is not a wrapper here and the site
+    /// runs. Site-less on `EntryDenial`'s precedent: the wrapped lane holds a CFG node rather than
+    /// a `SiteId` where it decides, and inventing one would misattribute the operand.
+    WrapperPairIncoherent { class: WrapperPairTag },
     /// A RUNTIME context-entry failure (`27C` §3) ⇒ guard/run.
     EntryFailure {
         site: SiteId,
@@ -569,6 +589,7 @@ impl CollapseKind {
             CollapseKind::WallFormation { .. } => "WallFormation",
             CollapseKind::SubstitutionRefusal { .. } => "SubstitutionRefusal",
             CollapseKind::EntryDenial { .. } => "EntryDenial",
+            CollapseKind::WrapperPairIncoherent { .. } => "WrapperPairIncoherent",
             CollapseKind::EntryFailure { .. } => "EntryFailure",
             CollapseKind::Demotion { .. } => "Demotion",
             CollapseKind::RenderRefusal { .. } => "RenderRefusal",
