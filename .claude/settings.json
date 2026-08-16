@@ -4,6 +4,10 @@
   },
   "env": {
     "HK_FIX": "0",
-    "HK_STASH": "none"
+    "HK_STASH": "none",
+    "HK_TERMINAL_PROGRESS": "0",
+    "CARGO_TERM_PROGRESS_WHEN": "never",
+    "CARGO_TERM_PROGRESS_TERM_INTEGRATION": "false",
+    "MISE_TASK_OUTPUT": "timed"
   }
 }
