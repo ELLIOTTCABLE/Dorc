@@ -656,15 +656,99 @@ pub enum AdmissionRefusal {
     CollectionLimit,
     Duplicate,
     ArithmeticOverflow,
+    /// A framing fault the records lane can NAME (`306b` §6e). Refuses exactly as [`Self::Framing`]
+    /// does; only the diagnostic differs.
+    Records(RecordsFault),
+}
+
+/// Which physical records-stream condition a strict-path refusal observed (`306b` §6e — the seat
+/// that finally gives the nine `records-*` codes a production emitter).
+///
+/// **Discrimination only** (`rul-all-nine-refuse-on-the-strict-path`): every variant refuses the
+/// whole attempt exactly as the undiscriminated [`AdmissionRefusal::Framing`] did, so no
+/// disposition moves and no per-code behavioural branch exists. Each name states WHAT WAS OBSERVED
+/// rather than an inferred cause (`306b` §6a), and nothing reads a count of one to decide anything
+/// (`306b` §6b).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordsFault {
+    /// No [`TERMINAL_TOKEN`] anywhere: the stream carried no framing at all.
+    Headerless,
+    /// Framed material arrived before any header line.
+    HeaderMissing,
+    /// The header declared an identity key this controller did not mint.
+    IntegrityMismatch(RecordsHeaderMismatch),
+    /// The end-sentinel declared a nonce that is not this attempt's.
+    SentinelNonce,
+    /// Bytes followed a line's terminal token — two atomic writes landed glued.
+    Glued,
+    /// A line that looks like ours carried no terminal token.
+    Torn,
+    /// A line that is not ours at all appeared in the stream.
+    Alien,
+    /// A record line arrived after the end-sentinel.
+    Late,
+    /// Fewer `site` records arrived than the header declared.
+    FactTruncated {
+        /// How many `site` records the walk actually read.
+        received: usize,
+        /// How many the header declared.
+        declared: usize,
+    },
+}
+
+impl RecordsFault {
+    /// The records-lane diagnostic this fault names.
+    ///
+    /// Every arm spells its payload literally, because the spanless-mint gate greps for exactly
+    /// that shape (`aid/CLAUDE.md` spanless-gate-is-lexical). The line counts are `1` because the
+    /// strict walk stops at the first offending line rather than surveying the stream — an honest
+    /// report of what was seen before the refusal, and no consumer may read it as a total.
+    #[must_use]
+    pub fn spanless_diagnostic(self) -> Diag {
+        match self {
+            Self::Headerless => Diag::new_spanless_site(DiagCode::RecordsHeaderlessRefused(
+                RecordsHeaderlessRefused,
+            )),
+            Self::HeaderMissing => {
+                Diag::new_spanless_site(DiagCode::RecordsHeaderMissing(RecordsHeaderMissing))
+            }
+            Self::IntegrityMismatch(which) => Diag::new_spanless_site(
+                DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused { which }),
+            ),
+            Self::SentinelNonce => {
+                Diag::new_spanless_site(DiagCode::RecordsSentinelNonce(RecordsSentinelNonce))
+            }
+            Self::Glued => Diag::new_spanless_site(DiagCode::RecordsGluedLine(RecordsGluedLine)),
+            Self::Torn => {
+                Diag::new_spanless_site(DiagCode::RecordsTornLine(RecordsTornLine { count: 1 }))
+            }
+            Self::Alien => {
+                Diag::new_spanless_site(DiagCode::RecordsAlienLine(RecordsAlienLine { count: 1 }))
+            }
+            Self::Late => {
+                Diag::new_spanless_site(DiagCode::RecordsLateLine(RecordsLateLine { count: 1 }))
+            }
+            Self::FactTruncated { received, declared } => {
+                Diag::new_spanless_site(DiagCode::RecordsFactTruncated(RecordsFactTruncated {
+                    received,
+                    declared,
+                    unseen: declared.saturating_sub(received),
+                }))
+            }
+        }
+    }
 }
 
 impl AdmissionRefusal {
     /// Keeps malformed ingress outside source spans.
     #[must_use]
     pub fn spanless_diagnostic(self) -> Diag {
-        Diag::new_spanless_site(DiagCode::HostEvidenceAdmissionRefused(
-            HostEvidenceAdmissionRefused { kind: self.kind() },
-        ))
+        match self {
+            Self::Records(fault) => fault.spanless_diagnostic(),
+            other => Diag::new_spanless_site(DiagCode::HostEvidenceAdmissionRefused(
+                HostEvidenceAdmissionRefused { kind: other.kind() },
+            )),
+        }
     }
 
     fn kind(self) -> HostEvidenceRefusalKind {
@@ -674,7 +758,9 @@ impl AdmissionRefusal {
             Self::LineLimit => HostEvidenceRefusalKind::LineLimit,
             Self::InvalidUtf8 => HostEvidenceRefusalKind::InvalidUtf8,
             Self::ControlByte => HostEvidenceRefusalKind::ControlByte,
-            Self::Framing => HostEvidenceRefusalKind::Framing,
+            // A records fault refuses on the framing footing it refines; it renders its own
+            // diagnostic and never reaches this map through `spanless_diagnostic`.
+            Self::Framing | Self::Records(_) => HostEvidenceRefusalKind::Framing,
             Self::Grammar => HostEvidenceRefusalKind::Grammar,
             Self::Numeric => HostEvidenceRefusalKind::Numeric,
             Self::RecordLimit => HostEvidenceRefusalKind::RecordLimit,
@@ -888,6 +974,14 @@ fn admit_records(
     if !bytes.ends_with(b"\n") {
         return Admission::Refused(AdmissionRefusal::Framing);
     }
+    // Whole-stream, before the walk: with no token ANYWHERE the stream carried no framing at all,
+    // and naming that beats reporting whatever shape the first line happened to have.
+    if !bytes
+        .windows(TERMINAL_TOKEN.len())
+        .any(|window| window == TERMINAL_TOKEN.as_bytes())
+    {
+        return Admission::Refused(AdmissionRefusal::Records(RecordsFault::Headerless));
+    }
     let lines = bytes.split_inclusive(|byte| *byte == b'\n');
     let mut header = false;
     let mut sentinel = false;
@@ -917,7 +1011,10 @@ fn admit_records(
             continue;
         }
         if !line.ends_with(TERMINAL_TOKEN) {
-            return Admission::Refused(AdmissionRefusal::Framing);
+            return Admission::Refused(AdmissionRefusal::Records(torn_or_alien(
+                line,
+                &expected.nonce.0,
+            )));
         }
         let Some(body) = line
             .strip_suffix(TERMINAL_TOKEN)
@@ -926,7 +1023,7 @@ fn admit_records(
             return Admission::Refused(AdmissionRefusal::Framing);
         };
         if body.contains(TERMINAL_TOKEN) {
-            return Admission::Refused(AdmissionRefusal::Framing);
+            return Admission::Refused(AdmissionRefusal::Records(RecordsFault::Glued));
         }
         if let Some(rest) = body.strip_prefix(&format!("{HEADER_TAG} ")) {
             if header || sentinel || !records.is_empty() {
@@ -940,20 +1037,26 @@ fn admit_records(
             continue;
         }
         if let Some(rest) = body.strip_prefix(&format!("{SENTINEL_TAG} ")) {
-            if !header || sentinel || rest != format!("nonce={}", expected.nonce.0) {
+            if !header || sentinel {
                 return Admission::Refused(AdmissionRefusal::Framing);
+            }
+            if rest != format!("nonce={}", expected.nonce.0) {
+                return Admission::Refused(AdmissionRefusal::Records(RecordsFault::SentinelNonce));
             }
             sentinel = true;
             continue;
         }
-        if !header || sentinel {
-            return Admission::Refused(AdmissionRefusal::Framing);
+        if !header {
+            return Admission::Refused(AdmissionRefusal::Records(RecordsFault::HeaderMissing));
+        }
+        if sentinel {
+            return Admission::Refused(AdmissionRefusal::Records(RecordsFault::Late));
         }
         let Some(record) = body
             .strip_prefix(&expected.nonce.0)
             .and_then(|rest| rest.strip_prefix(' '))
         else {
-            return Admission::Refused(AdmissionRefusal::Framing);
+            return Admission::Refused(AdmissionRefusal::Records(RecordsFault::Alien));
         };
         physical_records = match physical_records.checked_add(1) {
             Some(total) => total,
@@ -991,11 +1094,21 @@ fn admit_records(
         identities.insert(identity, parsed);
         records.push(owned);
     }
-    if !header || !sentinel {
+    if !header {
+        return Admission::Refused(AdmissionRefusal::Records(RecordsFault::HeaderMissing));
+    }
+    if !sentinel {
         return Admission::Refused(AdmissionRefusal::Framing);
     }
-    if declared_sites != Some(received_sites) {
-        return Admission::Refused(AdmissionRefusal::Framing);
+    match declared_sites {
+        Some(declared) if declared == received_sites => {}
+        Some(declared) if received_sites < declared => {
+            return Admission::Refused(AdmissionRefusal::Records(RecordsFault::FactTruncated {
+                received: received_sites,
+                declared,
+            }));
+        }
+        _ => return Admission::Refused(AdmissionRefusal::Framing),
     }
     if records.is_empty() {
         return Admission::NoObservation;
@@ -1029,14 +1142,38 @@ fn parse_header(
             _ => return Err(AdmissionRefusal::Grammar),
         }
     }
-    if nonce != Some(expected.nonce.0.as_str())
-        || attempt != Some(expected.attempt)
-        || host != Some(expected.host.as_str())
-        || book != Some(expected.book_digest.as_str())
-    {
-        return Err(AdmissionRefusal::Framing);
+    let mismatch = if nonce != Some(expected.nonce.0.as_str()) {
+        Some(RecordsHeaderMismatch::Nonce)
+    } else if attempt != Some(expected.attempt) {
+        Some(RecordsHeaderMismatch::Attempt)
+    } else if host != Some(expected.host.as_str()) {
+        Some(RecordsHeaderMismatch::Host)
+    } else if book != Some(expected.book_digest.as_str()) {
+        Some(RecordsHeaderMismatch::Book)
+    } else {
+        None
+    };
+    if let Some(which) = mismatch {
+        return Err(AdmissionRefusal::Records(RecordsFault::IntegrityMismatch(
+            which,
+        )));
     }
     sites.map(Some).ok_or(AdmissionRefusal::Grammar)
+}
+
+/// Which side of the token-absence cut a line falls on, mirroring [`deframe_framed`]'s split so the
+/// two parsers cannot disagree about what "looks like ours" means: a line wearing this attempt's
+/// nonce prefix or either framing tag lost its terminating write; anything else is not ours at all.
+fn torn_or_alien(line: &str, nonce: &str) -> RecordsFault {
+    let trimmed = line.trim();
+    if trimmed.starts_with(&format!("{nonce} "))
+        || trimmed.starts_with(HEADER_TAG)
+        || trimmed.starts_with(SENTINEL_TAG)
+    {
+        RecordsFault::Torn
+    } else {
+        RecordsFault::Alien
+    }
 }
 
 fn number(token: &str, limits: HostEvidenceLimits) -> Result<usize, AdmissionRefusal> {
@@ -1858,6 +1995,126 @@ mod tests {
             );
             assert_eq!(refusal.spanless_diagnostic().primary.span(), None);
         }
+        // The records lane's own half (`306b` §6e): each fault names its own code, spanless like
+        // the rest, and none of them lands on the undiscriminated admission code.
+        for (fault, slug) in [
+            (RecordsFault::Headerless, "records-headerless-refused"),
+            (RecordsFault::HeaderMissing, "records-header-missing"),
+            (
+                RecordsFault::IntegrityMismatch(RecordsHeaderMismatch::Nonce),
+                "records-integrity-refused",
+            ),
+            (RecordsFault::SentinelNonce, "records-sentinel-nonce"),
+            (RecordsFault::Glued, "records-glued-line"),
+            (RecordsFault::Torn, "records-torn-line"),
+            (RecordsFault::Alien, "records-alien-line"),
+            (RecordsFault::Late, "records-late-line"),
+            (
+                RecordsFault::FactTruncated {
+                    received: 3,
+                    declared: 5,
+                },
+                "records-fact-truncated",
+            ),
+        ] {
+            let diag = AdmissionRefusal::Records(fault).spanless_diagnostic();
+            assert_eq!(diag.code.slug(), slug);
+            assert_eq!(diag.primary.span(), None);
+            assert_eq!(diag.code, fault.spanless_diagnostic().code);
+        }
+        // The unseen count is DERIVED from the two observed counts, never carried separately.
+        assert_eq!(
+            RecordsFault::FactTruncated {
+                received: 3,
+                declared: 5,
+            }
+            .spanless_diagnostic()
+            .code,
+            DiagCode::RecordsFactTruncated(RecordsFactTruncated {
+                received: 3,
+                declared: 5,
+                unseen: 2,
+            })
+        );
+    }
+
+    /// `306b` §6e — the STRICT admission path names each records condition it observed.
+    ///
+    /// The load-bearing half is the pairing: every case here refuses, exactly as the
+    /// undiscriminated `Framing` refusal did (`rul-all-nine-refuse-on-the-strict-path`), and only
+    /// the NAME differs. A row that admitted would be a permissive-direction change to the
+    /// production admission contract, which is why the assertion is on the whole outcome rather
+    /// than on the reason alone.
+    #[test]
+    fn strict_admission_names_each_records_condition() {
+        let clean = strict_stream(&["site 0 effect=holds rc=0"]);
+
+        // A single record line that lost its terminating write, in an otherwise-framed stream.
+        let torn = clean.replace(
+            &format!(" {TERMINAL_TOKEN}\ndorc-records-end"),
+            "\ndorc-records-end",
+        );
+        // A line that is not ours at all, wearing a token so it reaches the nonce-prefix check.
+        let alien = clean.replace(&format!("{DEFAULT_NONCE} site 0"), "stranger site 0");
+        // Two atomic writes landing on one line.
+        let glued = clean.replace(
+            &format!("rc=0 {TERMINAL_TOKEN}"),
+            &format!("rc=0 {TERMINAL_TOKEN} extra {TERMINAL_TOKEN}"),
+        );
+        // A record after the close marker.
+        let late = format!("{clean}{}\n", rec("report late"));
+        // Framed material with no header line.
+        let header_missing = format!("{}\n{}", rec("site 0 effect=holds rc=0"), sentinel());
+        // The close marker wearing somebody else's nonce.
+        let sentinel_nonce = clean.replace(
+            &format!("{SENTINEL_TAG} nonce={DEFAULT_NONCE}"),
+            &format!("{SENTINEL_TAG} nonce=stranger"),
+        );
+        // The header declares more site records than arrive.
+        let truncated = clean.replace("sites=1", "sites=2");
+
+        for (raw, want) in [
+            (torn, RecordsFault::Torn),
+            (alien, RecordsFault::Alien),
+            (glued, RecordsFault::Glued),
+            (late, RecordsFault::Late),
+            (header_missing, RecordsFault::HeaderMissing),
+            (sentinel_nonce, RecordsFault::SentinelNonce),
+            (
+                truncated,
+                RecordsFault::FactTruncated {
+                    received: 1,
+                    declared: 2,
+                },
+            ),
+        ] {
+            match admitted(&raw, strict_limits()) {
+                Admission::Refused(AdmissionRefusal::Records(got)) => assert_eq!(
+                    got, want,
+                    "the strict path mis-named this condition: {raw:?}"
+                ),
+                other => panic!("expected a named records refusal for {raw:?}, got {other:?}"),
+            }
+        }
+
+        // Every header-identity key is discriminated, and every one still refuses.
+        for (edit, replacement, want) in [
+            ("nonce=dorc", "nonce=stranger", RecordsHeaderMismatch::Nonce),
+            ("attempt=1", "attempt=7", RecordsHeaderMismatch::Attempt),
+            ("host=localhost", "host=peer", RecordsHeaderMismatch::Host),
+            ("book=bk", "book=other", RecordsHeaderMismatch::Book),
+        ] {
+            let raw = clean.replacen(edit, replacement, 1);
+            assert!(
+                matches!(
+                    admitted(&raw, strict_limits()),
+                    Admission::Refused(AdmissionRefusal::Records(
+                        RecordsFault::IntegrityMismatch(got)
+                    )) if got == want
+                ),
+                "header key `{edit}` must refuse, named: {raw:?}"
+            );
+        }
     }
 
     #[test]
@@ -1888,7 +2145,7 @@ mod tests {
         };
         assert!(matches!(
             admit_unscoped_host_records(&bytes, &framing, strict_limits()),
-            Admission::Refused(AdmissionRefusal::Framing)
+            Admission::Refused(AdmissionRefusal::Records(RecordsFault::Headerless))
         ));
     }
 
@@ -1928,7 +2185,9 @@ mod tests {
             strict_stream(&["site 0 effect=holds rc=0"]).replace("host=localhost", "host=forged");
         assert!(matches!(
             admitted(&forged, strict_limits()),
-            Admission::Refused(AdmissionRefusal::Framing)
+            Admission::Refused(AdmissionRefusal::Records(RecordsFault::IntegrityMismatch(
+                RecordsHeaderMismatch::Host
+            )))
         ));
     }
 
@@ -1991,10 +2250,13 @@ mod tests {
             admitted(&repeated, strict_limits()),
             Admission::Refused(AdmissionRefusal::Framing)
         ));
-        let torn = strict_stream(&[]).replace(TERMINAL_TOKEN, "");
+        // Every token stripped ⇒ no framing at all, which is the whole-stream observation rather
+        // than whatever the first line's shape happens to be (the single-line tear is pinned by
+        // `strict_admission_names_each_records_condition`).
+        let tokenless = strict_stream(&[]).replace(TERMINAL_TOKEN, "");
         assert!(matches!(
-            admitted(&torn, strict_limits()),
-            Admission::Refused(AdmissionRefusal::Framing)
+            admitted(&tokenless, strict_limits()),
+            Admission::Refused(AdmissionRefusal::Records(RecordsFault::Headerless))
         ));
         assert!(matches!(
             admitted(&strict_stream(&["unknown field"]), strict_limits()),
