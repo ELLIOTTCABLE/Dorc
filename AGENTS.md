@@ -105,7 +105,6 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - `mise run` is *almost always* preferrable to hand-rolling one-off commands. collaborate and pay back: if tooling chafes, *fix the tooling* for future agents, don't work around it. if not authorized, report upwards, don't swallow. tooling matters.
   - `mise run both <other-run-slug>` doubly invokes the named task under *both* Windows/gitbash/powershell *and* WSL/UNIX. It doubles the runtime, but is a must for important checks, when actively working on Windows.
   - trailing args after `--` reach the underlying tool (the *last* one, for a multi-step task)
-  - `--output=timed` (your harness hopefully injected this automatically via `MISE_TASK_OUTPUT=timed`) collapses a fast succeeding task to two lines.
   - `mise run gate:quick-quiet` is the hot-loop test-runner while you work; it skips slow and loud tests, and leans towards terseness. it's *not* an acceptance suite, you must eventually run the full gate before claiming your work is complete.
   - `mise run both gate:full-quiet` is the specified run-all-tests, check-everything, be-minimally-noisy law for running tests and excercising contracts before you can call your work complete. all other safety/correctness behaviour is behind that, it's the *only* one you need to run if you don't have another specific goal.
   - `mise run bless` is the conductor-tier 'final stage'; it re-runs the full suite (maximally quiet), prints only a single line in the success case, and promotes the e2e output
