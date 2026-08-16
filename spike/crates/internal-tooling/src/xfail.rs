@@ -163,9 +163,57 @@ pub const PINS: &[Pin] = &[
         state: PinState::Reserved,
     },
     Pin {
+        name: "p-x-blessed-toplevel-source",
+        trigger: "`28Q:pin-oracle-side-sourcing-amendment` — the ruling that makes a top-level \
+                  `.` legal oracle text and its own declarations contribute again",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the amendment is a named-but-unscheduled policy ruling; this boundary is where \
+                  the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-definition-grade-keying",
+        trigger: "the closure-custody stage's definition-grade re-key — derived rows keyed per \
+                  DEFINITION rather than per `(file, role)`, so a within-file plural stops \
+                  answering `Ambiguous`",
+        horizon: Horizon::Scheduled("r31:closure-custody"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-helper-unset-f-across-files",
         trigger: "the closure-custody stage's helper-binding model — the funcenv table widening past \
                   role names, so the helper lane can see a removal at all",
+        horizon: Horizon::Scheduled("r31:closure-custody"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-intra-compound-plurality",
+        trigger: "`28Q:pin-emission-planner-universal` — per-segment environments for a composed \
+                  compound (explicit per-segment subshells or alpha-rename, whichever it lands)",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the emission planner is direction-ruled but unscheduled; this boundary is where \
+                  the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-placement-tuning-pair",
+        trigger: "`28Q:pin-emission-planner-universal` — placement chosen per body (top-lift for \
+                  the many-use helper, in-paren colocation for the once-used collider)",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the emission planner is direction-ruled but unscheduled; this boundary is where \
+                  the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-regional-helper",
+        trigger: "the closure-custody stage's funcenv table-widening plus book-region indexing — a \
+                  site-keyed closure question, so a regional body serves its region and no more",
         horizon: Horizon::Scheduled("r31:closure-custody"),
         state: PinState::Live,
     },

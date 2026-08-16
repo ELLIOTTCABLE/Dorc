@@ -474,6 +474,169 @@ fn the_composed_stage_seat_consults_the_closure() {
     );
 }
 
+/// `p-x-intra-compound-plurality` — THE TARGET: a composed compound whose two participants need
+/// same-named, differing-bytes helpers gets PER-SEGMENT environments, so both stages ship.
+///
+/// The sh fact this rests on, and why per-segment is the shape: sh binds a name once per
+/// environment, so two bodies under one name cannot both be live at one program point — but a
+/// SUBSHELL is its own environment, and a pipeline stage already runs in one. That is what makes the
+/// capture available at all rather than a wish; `floor28-subshell-scoped-re-source` measured the
+/// scoping under `posh ∩ dash`, and `floor28-load-order-last-definition-wins` measured the binding
+/// rule the plurality collides with. Whether the planner spells it as explicit per-segment subshells
+/// or as alpha-rename is `28Q:pin-emission-planner-universal`'s call; either satisfies this pin,
+/// which is why the assertion is on the OUTCOME (both stages ship) and not on the emitted shape.
+///
+/// FAILS TODAY on stage A, measured by [`a_cross_custody_plural_helper_ships_no_composed_stage`]
+/// above: A's helper resolves by last-wins into B's custody with differing bytes, so its license
+/// suspends and the whole compound refuses. Safe, and a real forfeit
+/// (`FORFEITS:forfeit-helper-plurality-withhold` shape (a)) — two well-written packages that merely
+/// picked the same private helper name cost the compound its probe.
+#[test]
+fn both_participants_of_a_plural_compound_ship() {
+    // Setup outside the closure: a panic in there would read as the target still failing.
+    let both = [COMPOUND_STAGE_A, COMPOUND_STAGE_B];
+    let a = stage_ships(&both, "otelcol");
+    let b = stage_ships(&both, "grep");
+    internal_tooling::xfail::xfail_until("p-x-intra-compound-plurality", || {
+        assert!(
+            a && b,
+            "each participant needs its OWN helper live where its own body runs; per-segment \
+             environments are what make that spellable — otelcol ships: {a}, grep ships: {b}"
+        );
+    });
+}
+
+// ---------------------------------------------------------------------------
+// `p-x-definition-grade-keying` (`30A` §2) — one file, one role, two frames.
+
+/// The role the two cells below redefine across frames, in one file.
+const REKEY_ROLE: &str = "wombat__is_converged";
+
+/// A book that is its own oracle (`cli/CLAUDE.md the-book-is-a-definition-source`) and defines one
+/// role TWICE across frames — the `unset -f`-then-redefine shape `contest28-unset-f-blesses-elision`
+/// establishes as blessed rather than contested.
+const REKEY_BOOK: &str = "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}\n\
+                          wombat sync a\n\
+                          unset -f wombat__is_converged\n\
+                          wombat__is_converged() {\n   wombat cmp --strict -- \"$1\"\n}\n\
+                          wombat sync b\n";
+
+/// The `wombat` command sites of [`REKEY_BOOK`], in the order a shell reaches them, plus the solved
+/// environment they are asked about.
+fn rekey_world() -> (
+    Vec<dorc_analysis::cfg::CfgNodeId>,
+    dorc_analysis::funcenv::FuncEnv,
+    dorc_analysis::funcenv::DefinitionTable,
+) {
+    let mut interner = dorc_core::Interner::default();
+    let parsed = dorc_syntax::parse(REKEY_BOOK).value;
+    let cfg = dorc_analysis::cfg::build(&parsed).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+    let defs = dorc_cli::world::definition_table(
+        &[],
+        &[REKEY_BOOK],
+        dorc_analysis::funcenv::source_file_of_index(0),
+        &parsed,
+    );
+    let env = {
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
+    };
+    // `sync`, not merely `wombat`: the two funcdef BODIES also hold `wombat` command nodes, and the
+    // sites this asks about are the book's own top-level calls.
+    let wombat = interner.intern("wombat");
+    let sync = interner.intern("sync");
+    let sites: Vec<_> = cfg
+        .iter()
+        .filter(|(_, node)| node.kind == dorc_analysis::cfg::CfgNodeKind::Command)
+        .filter(|(id, _)| {
+            let argv = value.argv_values(*id);
+            let literal = |slot: usize| match argv.get(slot) {
+                Some(dorc_analysis::value::ValueOf::Literal(word)) => Some(*word),
+                _ => None,
+            };
+            literal(0) == Some(wombat) && literal(1) == Some(sync)
+        })
+        .map(|(id, _)| id)
+        .collect();
+    assert_eq!(
+        sites.len(),
+        2,
+        "the book calls the tool twice, once per frame"
+    );
+    (sites, env, defs)
+}
+
+/// `p-x-definition-grade-keying`'s PRECONDITION, and green: the function environment names a
+/// DIFFERENT definition at each of the two frames, within one file.
+///
+/// The sh fact: a redefinition rebinds the name from that point on, and `unset -f` between them
+/// makes the second an override rather than a contest. So a shell running this book calls two
+/// different bodies at the two sites, and `visibility-is-full-positional` says the engine must
+/// answer from the definition live AT each site. That much works — the identity is
+/// `DefinitionId::at(file, span)`, so two definitions in one file are distinct by construction.
+/// Pinning it separately matters because the xfail below would otherwise be ambiguous about WHICH
+/// half is missing.
+#[test]
+fn the_environment_names_a_definition_per_frame_within_one_file() {
+    use dorc_core::LiveDefinition;
+
+    let (sites, env, defs) = rekey_world();
+    let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+    let named: Vec<LiveDefinition> = sites
+        .iter()
+        .map(|site| live.definition_before(*site, REKEY_ROLE))
+        .collect();
+    let [first, second] = named.as_slice() else {
+        return;
+    };
+    assert!(
+        matches!(first, LiveDefinition::Live(_)) && matches!(second, LiveDefinition::Live(_)),
+        "both frames bind something — {named:?}"
+    );
+    assert_ne!(
+        first, second,
+        "and they are DIFFERENT definitions: a shell would run two different bodies here"
+    );
+}
+
+/// `p-x-definition-grade-keying` — THE TARGET: at each of those two frames, the derived row that
+/// ANSWERS is the one the named definition produced.
+///
+/// Why an engine choice depends on it: the environment already names the right definition (pinned
+/// above), so everything downstream turns on how derived rows are KEYED. Today the lift keeps one row
+/// per `(file, role)`, so a file holding two definitions of one role answers
+/// `DefinitionProvenance::Ambiguous` and `answering_file` withholds — at BOTH sites, including the one
+/// whose definition the environment named exactly. The withhold is the safe direction and the
+/// forfeit is the whole authored-in-book override idiom: an admin who overrides a verdict mid-book,
+/// in the blessed spelling, gets nothing from either body.
+///
+/// FAILS TODAY on both sites. It greens when a row carries its own definition's identity, which is the
+/// re-key `28Q` §1 spells and `308:cr-plan-keying-letter-vs-ruled` records as ruled-but-derived; the
+/// within-file span-granularity residue that ruling banked is exactly this cell.
+#[test]
+fn a_within_file_plural_role_answers_per_definition() {
+    // Setup outside the closure: a panic in there would read as the target still failing.
+    let (sites, env, defs) = rekey_world();
+    let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+    let answers: Vec<Option<usize>> = sites
+        .iter()
+        .map(|site| {
+            dorc_core::answering_file(live.definition_before(*site, REKEY_ROLE), 1, |file| {
+                Some(live.provenance_of(file, REKEY_ROLE))
+            })
+        })
+        .collect();
+    internal_tooling::xfail::xfail_until("p-x-definition-grade-keying", || {
+        assert_eq!(
+            answers,
+            vec![Some(0), Some(0)],
+            "each frame's row must be findable — the environment named its definition, so a row \
+             keyed per DEFINITION would answer at both"
+        );
+    });
+}
+
 // ---------------------------------------------------------------------------
 // `p-zero-munge-happy-corpus` — the output-quality RATCHET (`30A` §1 `d5-quality-is-a-ratchet`).
 

@@ -175,3 +175,107 @@ fn a_book_subshell_helper_suspends_like_an_ambient_one() {
          a real loss — {unshadowed:?}"
     );
 }
+
+/// `p-x-regional-helper` — THE TARGET: a book helper confined to a region it shares with NO site
+/// reaching this vouch leaves the vouch alone; the ambient body still travels.
+///
+/// The sh fact: a definition made inside `( … )` dies at the `)`. Measured under `posh ∩ dash` by
+/// `floor28-subshell-scoped-re-source` (ambient, then regional, then ambient again) and by
+/// `floor30-subshell-nesting-and-removal-scope`. It is also the mechanism Dorc SELLS as its answer to
+/// "I want a different oracle for this region" (`28K` §1's re-source idiom), so the engine reading it
+/// as an ambient rebinding contradicts a documented feature.
+///
+/// WHAT THIS PIN CAN AND CANNOT SAY. The full target is per-site: in-region sites get the regional
+/// body, post-region sites the ambient one. `closure_for` takes no site, so today's API cannot even
+/// SPELL that half — the site-keyed closure question is the table-widening's own deliverable. What is
+/// expressible, and what this asserts, is the unambiguous world: a region containing no site at all,
+/// where every site is post-region and sh binds the ambient body everywhere. Getting that world right
+/// is necessary for the per-site answer and is where the value being forfeited actually sits.
+///
+/// FAILS TODAY, measured 2026-08-16: the book census is depth-blind (see the pin above), so the
+/// regional definition suspends the vouch exactly as an ambient one would, and the whole book loses
+/// its guard tier for a definition no site can reach.
+#[test]
+fn a_regional_book_helper_leaves_an_unreachable_vouch_alone() {
+    // Setup outside the closure: a panic in there would read as the target still failing.
+    let declaration = dest_declaring("plain");
+    let entry = voucher_file();
+    // The region holds the definition and NOTHING else — so no site is in-region, and sh binds the
+    // ambient `_dest` at every site in the book.
+    let region_only = "( _dest() { printf 'regional\\n' ;} )\nwombat sync b\n";
+    let regional = HelperIndex::build(&[&declaration, &entry, region_only], Some(2))
+        .closure_for(1, VOUCHER_BODY)
+        .map(|closure| closure.sh());
+
+    internal_tooling::xfail::xfail_until("p-x-regional-helper", || {
+        assert!(
+            regional
+                .as_deref()
+                .is_ok_and(|closure| closure.contains("_dest() {")),
+            "a definition sh confines to a region containing no reaching site rebinds nothing, so \
+             the ambient body must still travel — {regional:?}"
+        );
+    });
+}
+
+/// `p-x-blessed-toplevel-source` — THE TARGET: an oracle whose top level `.`-sources is legal text,
+/// and its OWN declarations contribute again.
+///
+/// The sh fact: `.` applies a file's definitions into the CURRENT environment, so after the line the
+/// sourced names are bound exactly as if they had been written there. That is why the construct is
+/// worth blessing at all rather than merely tolerating — it is how sh spells composition, and
+/// `28M` §7 `tune-explicit-composition-is-sanctioned` already sanctions explicitly-spelled
+/// composition as the community-critical package shape.
+///
+/// Two conjuncts, and the second is the one that surprises. (1) The load-inertness gate must stop
+/// refusing the file: a top-level `.` is a COMMAND today, so `lint_load_inert` fires and the file
+/// makes no dialect claim. (2) The file's OWN helper must contribute — because the refusal is
+/// WHOLE-FILE, a single blessed-in-future line currently costs the file every declaration it makes,
+/// so a role body declared beside its helper ships with an EMPTY closure and 127s at the host. Both
+/// fail today.
+///
+/// Why an engine choice depends on it: `FORFEITS:forfeit-book-sourcing-walls` names the book side of
+/// this; the oracle side is `28Q:pin-oracle-side-sourcing-amendment`, and it is also the named CAPTURE
+/// for `FORFEITS:forfeit-helper-plurality-withhold` shape (a) — one `.` line converts a foreign
+/// helper into the author's own closure and the cross-custody suspension stops applying.
+#[test]
+fn an_oracle_that_sources_at_top_level_keeps_its_own_declarations() {
+    // Setup outside the closure: a panic in there would read as the target still failing.
+    let sourcing = format!(
+        "{MARKER}. ./helpers.sh\n_dest() {{\n   wombat cmp -- \"$1\"\n}}\n{VOUCHER_BODY}\n"
+    );
+    let refused: Vec<&str> = dorc_oracle::load_inert::lint_load_inert(&sourcing)
+        .iter()
+        .map(|diag| diag.code.slug())
+        .collect();
+    let closure = HelperIndex::build(&[&sourcing], None)
+        .closure_for(0, VOUCHER_BODY)
+        .map(|closure| closure.sh());
+
+    let without_the_source =
+        format!("{MARKER}_dest() {{\n   wombat cmp -- \"$1\"\n}}\n{VOUCHER_BODY}\n");
+    let control = HelperIndex::build(&[&without_the_source], None)
+        .closure_for(0, VOUCHER_BODY)
+        .map(|closure| closure.sh());
+    assert!(
+        control
+            .as_deref()
+            .is_ok_and(|closure| closure.contains("_dest() {")),
+        "control: the same file WITHOUT the `.` line keeps its helper, so the loss below is the \
+         `.`'s doing — {control:?}"
+    );
+
+    internal_tooling::xfail::xfail_until("p-x-blessed-toplevel-source", || {
+        assert!(
+            refused.is_empty(),
+            "a top-level `.` must be legal oracle text — got {refused:?}"
+        );
+        assert!(
+            closure
+                .as_deref()
+                .is_ok_and(|closure| closure.contains("_dest() {")),
+            "and the file's own declarations must still contribute: the whole-file refusal costs \
+             this author every helper they wrote — {closure:?}"
+        );
+    });
+}

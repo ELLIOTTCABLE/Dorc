@@ -36,6 +36,7 @@ dorc-sparing-reference = { path = "../sparing-reference", version = "0.1.0" }
 # product code) is the one place that answers where one is — shared with the e2e runner so
 # the two cannot drift into disagreeing about it, as they silently had.
 [dev-dependencies]
+# Also the workspace's one `xfail_until` seat and its census (`30A` §1 d3) — test-only, NOT product.
 internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
 # TEST-ONLY: `hostsim::Lcg` is the spike's single home of seeded entropy (`inv-determinism`), and
 # the sparing differential draws its permuted inputs from it rather than minting a third LCG. The

@@ -5981,6 +5981,66 @@ apt_get__is_converged() { return 0; }
         );
     }
 
+    /// A ONE-guard plan carrying `body` — the single-use half of the placement pair below.
+    #[cfg(test)]
+    fn one_guard_plan(body: &str) -> Plan {
+        let mut plan = two_guard_plan([body, body]);
+        plan.steps.truncate(1);
+        plan
+    }
+
+    /// `p-x-placement-tuning-pair` — THE TARGET: a colliding body used ONCE is colocated at its site
+    /// rather than munged and lifted above the whole book.
+    ///
+    /// The sh fact that makes colocation the idiomatic answer: a guard's check already runs inside
+    /// `( … )` (`rul-ternary-verdict`'s shape), and a subshell is its own environment — so a definition
+    /// placed there binds for that check and nothing else, and the collision with the book's name
+    /// simply does not exist. Measured under `posh ∩ dash` by `floor28-subshell-scoped-re-source`. The
+    /// munge is what you need when a body must be reachable from SEVERAL sites above the book; for one
+    /// site it buys nothing and costs the reader a `_h<digest>` name.
+    ///
+    /// The pair, and why both halves are here. MANY-USE stays top-lifted and munged — that IS its
+    /// idiomatic form, it is today's behaviour, and it is asserted below as the control so the target
+    /// cannot be satisfied by simply ceasing to emit. ONCE-USED is the xfail.
+    ///
+    /// The assertion is deliberately about PLACEMENT and not about the emission API: whichever channel
+    /// a colocated definition eventually travels on, the preamble must not name it, and the site must
+    /// still guard. Asserting anything about `invoked()` would pin an API the planner has not designed.
+    ///
+    /// FAILS TODAY: the once-used collider munges and hoists exactly as the many-use one does, because
+    /// `pinned_definitions` has one placement and no notion of use-count.
+    #[test]
+    fn a_once_used_colliding_body_is_colocated_rather_than_lifted() {
+        let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let book_body = "apt_get__is_converged() { printf 'always converged\\n' ; }";
+        let src = format!("{book_body}\napt-get install curl\n");
+        let ast = dorc_syntax::parse(&src).value;
+
+        // Control (the many-use half): two sites reaching one body, colliding with the book's name.
+        // Top-lift plus munge is the idiomatic answer here and must stay.
+        let many = two_guard_plan([body, body]).pinned_definitions(&src, &ast);
+        assert_eq!(
+            many.hoisted().matches("apt_get__is_converged_h").count(),
+            1,
+            "the many-use half lifts ONE munged definition above the book:\n{}",
+            many.hoisted()
+        );
+
+        // Setup outside the closure: a panic in there would read as the target still failing.
+        let plan = one_guard_plan(body);
+        let guards = plan.disposition_counts().guard;
+        let once = plan.pinned_definitions(&src, &ast);
+        let hoisted = once.hoisted().to_owned();
+        internal_tooling::xfail::xfail_until("p-x-placement-tuning-pair", || {
+            assert_eq!(guards, 1, "the single site still guards");
+            assert!(
+                !hoisted.contains("apt_get__is_converged"),
+                "one site needs no name above the book at all — the check's own `( … )` is a scope, \
+                 so the definition belongs there and the collision evaporates:\n{hoisted}"
+            );
+        });
+    }
+
     /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
     /// `src`; `probeable` gates whether the corpus apt check ships (R3: the whole stripped
     /// funcdef via [`ship_corpus`]). Returns the site-keyed [`ProbePlan`] + the interner (for
