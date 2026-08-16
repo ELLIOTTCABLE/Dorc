@@ -38,8 +38,8 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
-- **lane-influence-refusal-seams** — PLANNED, pre-proceed; dispatches FIRST
-  (serial order below). Opus, isolated worktree, branched from the
+- **lane-influence-refusal-seams** — DISPATCHED 2026-08-15 (branch
+  `ai/r30-lane-influence-seams`); at its checkpoint-1 pause until conductor ack. Opus, isolated worktree, branched from the
   `ai/r30-conduct` tip. Scope, three items: `306c` §3 BOTH halves
   (`item-report-only-output` + `item-record-lane-codes`, incl. the header-mismatch
   reason-enum typing [human, hard ack]) PLUS `item-influence-grade` (`306c` §2 —
@@ -126,4 +126,10 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   CRITICAL-tier, never dropped; in-arc deadline + successor-first-priority
   escalation (§2) · serial lean, human-is-the-bottleneck, logiclock over wallclock
   once they sleep · the skill content filter (§4).
-- (pending) the proceed word for the serial dispatch plan.
+- 2026-08-15, the greenlight [TYPED]: "proceed as planned", WITH the standing tune —
+  **this work leans further toward stop-and-ask than the corpus/skill/instructions
+  encode**: the human's reduced availability is NOT license for
+  ask-forgiveness momentum; "I'm fine with waking up to very little progress as
+  long as it comes alongside a surprisingly important question." Propagated
+  verbatim-in-substance into every wave-two brief; binds the conductor's own
+  checkpoint adjudications equally.
