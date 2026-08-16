@@ -22,6 +22,10 @@ use std::process::Command;
 
 const GIB: u64 = 1024 * 1024 * 1024;
 
+/// The product binary — `dorc-cli`'s, which only a workspace-scope build produces. Named here
+/// because the workspace cache's warm/cold witness turns on exactly that (see [`Cache::witness`]).
+const PRODUCT_BIN: &str = "dorc";
+
 /// Which build cache a profile fills, and therefore which volume to measure.
 #[derive(Debug, Clone, Copy)]
 enum Cache {
@@ -197,12 +201,18 @@ impl Cache {
 
     /// The path whose existence means this cache is already populated.
     ///
-    /// Not the root itself for the workspace: cargo creates `target/` with a `CACHEDIR.TAG`
-    /// and nothing else, so the root's existence would read a from-scratch tree as warm and
-    /// wave through the one case that needs the full footprint.
+    /// For the workspace it is a PRODUCT binary, not the `debug/` directory holding it:
+    /// reaching preflight at all runs `cargo run -q -p internal-tooling`, which creates
+    /// `debug/` before this code executes, so a directory witness read every tree as warm and
+    /// the cold bound was unreachable (`300:finding-workspace-preflight-never-reads-cold`).
+    /// That build produces this crate's own binary and no other package's, so [`PRODUCT_BIN`]
+    /// is the cheapest witness the probe cannot forge for itself. A tree carrying warm deps
+    /// but no product binary reads COLD, which is honest: it still has the product to build.
     fn witness(self, root: &Path) -> PathBuf {
         match self {
-            Self::Workspace => root.join("debug"),
+            Self::Workspace => root
+                .join("debug")
+                .join(format!("{PRODUCT_BIN}{}", std::env::consts::EXE_SUFFIX)),
             Self::Kani | Self::Lean => root.to_path_buf(),
         }
     }
@@ -402,7 +412,30 @@ fn say(measured: &Result<u64, String>) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::env::consts::EXE_SUFFIX;
+    use std::path::Path;
+
     use super::{Cache, PROFILES, free_disk, gib};
+
+    #[test]
+    fn the_workspace_witness_is_an_artifact_the_probe_cannot_create_for_itself() {
+        let root = Path::new("target");
+        let witness = Cache::Workspace.witness(root);
+        let name = witness
+            .file_name()
+            .and_then(|n| n.to_str())
+            .expect("the witness names a file");
+
+        // `debug/` itself, and this crate's own binary in it, are both created by the
+        // `cargo run -p internal-tooling` that every preflight invocation goes through —
+        // either one as the witness reads warm always, and the cold bound is dead code.
+        assert_eq!(witness.parent(), Some(root.join("debug").as_path()));
+        assert_ne!(name, format!("{}{EXE_SUFFIX}", env!("CARGO_PKG_NAME")));
+        // Spelled independently of PRODUCT_BIN, suffix included: a witness without the
+        // platform's executable extension can never exist on Windows, which is the same
+        // never-reads-the-truth bug pointing the other way.
+        assert_eq!(name, format!("dorc{EXE_SUFFIX}"));
+    }
 
     #[test]
     fn every_profile_demands_less_when_warm_than_when_cold() {
