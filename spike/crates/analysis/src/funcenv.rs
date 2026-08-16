@@ -187,14 +187,16 @@ impl DefinitionTable {
         self.defs.iter().map(|d| d.name.clone()).collect()
     }
 
-    /// Whether the unit holds ANY definition of `name` — the positional gate's APPLICABILITY test
-    /// (see [`LiveDefinitions::answers_at`]).
+    /// Whether the unit holds ANY definition of `name` — the frame lookup's APPLICABILITY test
+    /// (see [`LiveDefinitions::definition_before`], whose `NoOpinion` arm this decides).
     ///
     /// The environment's universe is exactly these names, so a name outside it has no positional
-    /// answer to give and the gate must not manufacture one. In production the table records every
+    /// answer to give and the lookup must not manufacture one. In production the table records every
     /// role funcdef `dorc_syntax` sees in every input, so the only names outside the universe are
-    /// the ones the two parsers disagree about — a class `reserved.rs` refuses at Error severity
-    /// before it can ship (`28O:fnd-two-parsers-disagree-on-funcdefs`).
+    /// the ones the two parsers disagree about (`28O:fnd-two-parsers-disagree-on-funcdefs`) — a class
+    /// `reserved.rs` MARKS at Error severity without refusing the run, so such a row still ships and
+    /// still answers on its own provenance (`307c:fnd-reserved-name-error-does-not-refuse`; the
+    /// permissive arm is `DefinitionProvenance::Unkeyed`).
     #[must_use]
     pub fn knows(&self, name: &str) -> bool {
         self.defs.iter().any(|d| d.name == name)
