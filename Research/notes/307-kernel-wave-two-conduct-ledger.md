@@ -38,8 +38,17 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
-- **lane-influence-refusal-seams** — CHECKPOINT-1 DELIVERED 2026-08-15 (branch
-  `ai/r30-lane-influence-seams`, zero build commits; builder paused). Headline:
+- **lane-influence-refusal-seams — CLOSED + FOLDED 2026-08-15** (15 commits
+  rebased onto the merged conduct tip, ff'd; the `ai/main` blast-radius merge in
+  the same batch; combined-tip `both gate:full-quiet` GREEN by conductor hand;
+  builder-leg evidence: W 2059/2059 · WSL 2055/2055 · looms 249/249 · bless:dry
+  clean; zero unsanctioned drift; final plain-comment ratio 4.8%). Lane report:
+  `notes/307a` (§9 = the sandwich round + both loom findings). Fold-review
+  endorsements: the catalog-twin gate-text restraint (the arrangement remedy
+  would teach a wrong door on code registers — left with a note) · the
+  compile-guard remedy-#1 uses · the disclosed never-filter self-catch (re-run
+  unfiltered; no result rested on the filtered read). History below preserved
+  for the arc record. CHECKPOINT-1 headline was:
   **RESEMBLANCE verdict** on `306c` §3a — the certifier's floors are ladder-demotion
   (a plan that runs everything = mutation authority; `306b:rul-refusal-is-not-a-
   ladder-position` says that is not refusal); the consistency verdict rides as a

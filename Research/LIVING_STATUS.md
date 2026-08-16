@@ -14,7 +14,30 @@
 
 ---
 
-## CURRENT STATE (measured 2026-08-15, wave-one-close stamped)
+## CURRENT STATE (2026-08-15 late — wave-two open; the seams lane folded)
+
+**WAVE-TWO IS IN MOTION on `ai/r30-conduct`** (conduct ledger **`notes/307`**, whose
+§1b is the successor handoff; conductor session `r30-conductor-4`). FOLDED: the
+influence/refusal seams lane (`notes/307a`) — the strict admission path names all
+nine `records-*` conditions (all refuse, `rul-all-nine-refuse-on-the-strict-path`);
+the header-mismatch reason enum + conductor-authored components; eight defining
+cases CLOSING the catalog census's records exception + one whole-product e2e pin +
+seeded identity-fault coverage; `core::influence` (v0 grade, one fenced mint,
+in-memory only per the durable tripwire). The sibling's blast-radius ruling is
+MERGED (`302:rul-certifier-trip-guard-only` + two FORFEITS rows). Combined-tip
+`mise run both gate:full-quiet` GREEN. Two loom-tooling failures banked
+[TYPED]: `work-loom-interior-hole-authoring` · `work-edit-loop-line-eviction`
+(`307` §3). NEXT: `lane-certifier-trip-policy` (small, dispatched) + the
+definition-factoring CONVERSION (`notes/305` VERBATIM; checkpoint-paused,
+dispatched) → the stage-i fold gated behind a 2×Fable+2×Sol adversarial
+crosscheck (kit: quarantine `308a`; reports 308b–e; synthesis notes/308) + its
+burndown → snapshot-emission. **`plans/309` (Spine reification ×
+influence-unification) is MINTED, draft pre-ack** — the §3a report-only re-plan
+lives there; build post-crosscheck, before world-scopes design. `ai/main` is the
+human's active workspace (sibling conductor); every fold lands on conduct;
+promotion/reconciliation is the human's.
+
+## STATE 2026-08-15 (wave-one-close stamp; superseded above)
 
 **WAVE-ONE-CLOSE IS STAMPED on `ai/r30-conduct`** (gates at the close batch: both-legs
 `gate:full-quiet` + both-legs `test:floor` + `bless:dry`, all green); **`ai/main` stays
