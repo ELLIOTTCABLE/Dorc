@@ -494,6 +494,22 @@ Three lanes, conduct-branch-based:
   `hk-install` re-run silently drops the customization; the safe durable fold wants
   a small `internal-tooling` subcommand (the value string's `||`/`;`/`${}` content
   defeats `task-bodies-are-shell-free` inline).
+  **CORRECTION (2026-08-15, sibling session): the two validated commands were WRONG, and
+  applying them killed BOTH hooks repo-wide for ~40 minutes.** Git renders a config hook as
+  `<command> "$@"`, so the command must (a) parse with a trailing word and (b) FORWARD those
+  args — `hk run commit-msg` takes the message file as a required positional, and the appended
+  `"$@"` is how it arrives. Wrapping the body in `if … fi` broke both: a word after `fi` is a
+  parse error (exit 2, every commit blocked), and even parsed it would have dropped the
+  argument. The lane's verification checked hk's OUTPUT under a forced human-env, never git's
+  INVOCATION, so a passing test proved nothing about the deployed shape. Repaired in
+  `.git/config` (human-authorized, local, still not durable) by wrapping the body in an inner
+  shell that forwards: `sh -c '<body with "$@" on both arms>' hk-<event>`. Two fixes REJECTED by
+  measurement rather than by argument: appending `; :` parses but returns 0 unconditionally,
+  silently masking every hook failure; swallowing `"$@"` in the wrapper parses but starves hk of
+  its required argument. Falsified both directions after repair — an unlabelled subject and a
+  `Co-Authored-By` trailer are refused, a valid subject passes. `work-hook-config-durability`
+  now has a second requirement: whatever subcommand lands it must round-trip a REAL hook
+  invocation (arg-count included), not just the string.
 - **THE DEBT PASS IS CLOSED (2026-08-15)** — all chartered lanes folded; the
   steering-file EDITORIAL PASS executed per the expensive-files rule (spike/CLAUDE.md
   compressed ~45 lines: the kani shaping bullet deduped against the skill reference
