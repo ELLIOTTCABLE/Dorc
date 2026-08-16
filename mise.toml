@@ -273,8 +273,11 @@ run = [
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
 dir = "spike"
 # `timed` output swallows this task's FAILURE diagnostics entirely (a red run reports only
-# `error: test failed` — no case, no gate, no diff); force plain output the way `fmt`
-# force-overrides HK_FIX. Measured 2026-08-16 (the crosscheck-burndown lane's tooling finding).
+# `error: test failed` — no case, no gate, no diff). This task-env override is PARTIAL:
+# MISE_TASK_OUTPUT configures mise ITSELF, so a value the harness EXPORTS into the process
+# env beats it (measured both ways, 2026-08-16 — the stage-0 lane got 6 swallowed lines with
+# it exported; `env -u MISE_TASK_OUTPUT` restored 1583). Until the flag-based fix lands
+# (`work-task-output-visibility`), agents whose env carries it use `env -u MISE_TASK_OUTPUT`.
 env = { MISE_TASK_OUTPUT = "prefix" }
 # The trailing `--` is load-bearing: without it mise's passthrough lands on `cargo test`, whose
 # own `[TESTNAME]` takes exactly one positional and refuses a second before the runner ever sees

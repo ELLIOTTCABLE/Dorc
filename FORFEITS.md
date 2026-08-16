@@ -90,8 +90,28 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   the verdict body's SHAPE — pin28's straight-line delegation body ships and
   elides at a wrapped site; pin30's case-with-decline-arm drops — recorded in the
   cell's own header. FORFEITS: wrapped-site coverage for the most-taught authored
-  shape. CAPTURE: chase the declining seat from the body-shape lead, then widen
-  the lane. REVISIT: stage-0 (the ship-seam re-cut touches the candidate seats).
+  shape. Stage-0 CHECKED (2026-08-16): still no flip, measured three times across
+  the re-cut; SIX candidate causes now eliminated by measurement (ship-seat
+  ordering · vector membership · book-lift of case bodies · arm-scoped consent ·
+  the wrapped verdict-first preference · top-level-mark equivalence with pin28).
+  The two surviving candidates, verbatim: `evaluate_verdict`'s tracer over a case
+  body at the PEELED argv; and `peel_book_chain`. CAPTURE: chase those two seats
+  from the body-shape lead, then widen the lane. REVISIT: the next wrapped-lane
+  touch; the chase is now two-seats-narrow and cheap.
+- **forfeit-member-lanes-predict-measured** — RULE (as-built through stage-0;
+  `307` §2 res-member-and-inline-lanes-still-predict-measured): the member-loop
+  and inline-call lanes still ship PREDICT bodies and elide on their
+  measurements — `push_member_predicts`/`push_inline_predicts` take only
+  `ship_body`, and `member_family` deliberately passes an empty `VerdictIndex`
+  (`no_verdict_lane_in_members`), so verdict-primacy's letter ("ship-predict-
+  alone only where elision is statically unavailable") does not yet hold there.
+  The LICENSES stay vouched (`rul-every-erased-establish-is-vouched` is
+  untouched); what predict-wins retains is the MEASUREMENT. FORFEITS: primacy's
+  one-author monologue at aggregate sites. CAPTURE: per-member verdict ship +
+  reversing `no_verdict_lane_in_members` — a design act with its own ruled
+  context, never a mechanical extension. BACK-OUT: low (additive). REVISIT: the
+  snapshot-emission stage's fold (nearest lane in the territory), else its own
+  small sitting.
 - **forfeit-survival-lanes-closure-less** — RULE (as-built; `28P`):
   `disturbs`/`resolve`/`reaches` bodies ship without their helper closures; a body
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner

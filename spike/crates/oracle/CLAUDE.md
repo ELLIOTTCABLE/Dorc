@@ -53,8 +53,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `build_wrapped_vouches`, and (since the crosscheck burndown, `308` §1) the wrapper lane: each of
   `__predict`/`__lend_map`/`__enter` resolves its OWN frame answer at the consuming site (sh binds
   each member independently), and the ONE resolved inner verdict feeds the shipped body, the entry
-  tolerance, and the carry closure-proof together — `try_carry` takes the resolved body by
-  parameter and cannot reach a second definition by construction. Derived rows are keyed by their
+  consent, and the carry closure-proof together — `try_carry` takes the resolved body by
+  parameter and cannot reach a second definition by construction. Stage-0 added the
+  ordinary-seat twin: `analysis::effect`'s primacy test and cell mint read ONE resolved
+  verdict (`live_verdict`); resolve once and pass the body — a third lookup is the
+  `28M:fnd-verdict-resolution-duplicates-live-source` failure class returning. Derived rows are keyed by their
   producing file, so identity and cells
   are read from ONE definition and the chimera is UNREPRESENTABLE rather than gated: the whole-unit
   `live_source` scan and the positional agreement veto that narrowed it are BOTH retired, because

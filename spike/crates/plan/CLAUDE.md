@@ -44,8 +44,7 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   never blocks, still recorded, mark-union — any other blocking mark wins;
   `StatusIterated` blocks unconditionally).
 - **ship-seam-reads-the-lane-not-the-kind** (`26H` §3.5; `28Q` §4
-  rul-verdict-primacy-at-the-ship-seat, RULED at stage-0 and NOT YET BUILT —
-  `307:fnd-stage-zero-is-not-built`; stage-0 is its own queued lane) — `compile_probe` takes TWO ship
+  rul-verdict-primacy-at-the-ship-seat, BUILT at stage-0, 2026-08-16) — `compile_probe` takes TWO ship
   closures, and the verdict-body one is gated on the caller's per-SITE verdict-lane set:
   never on the fact's kind, never on try-order. Every vouched, mutation-capable site is
   verdict-lane: the verdict body IS the probe check, its own reached answer is the

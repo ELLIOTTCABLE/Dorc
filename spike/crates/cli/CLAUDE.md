@@ -133,6 +133,19 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (`308` §1): it lifts AND withdraws the `__lend_map`/`__enter` vectors in one constructor, so
   an un-withdrawn value cannot be spelled — a contested wrapper family peels nothing and enters
   nothing.
+- **wrapped-ship-seat-verdict-primacy** (stage-0, 2026-08-16) — at a wrapped site the
+  vouching inner VERDICT ships ahead of the predict, and `build_wrapped_vouches` mints
+  its guard from `composed.inner_fn`/`inner_sh` — which is why, pre-stage-0, a predict
+  body could reach apply-time GUARD position while the vouch traced the verdict
+  (`fnd-wrapped-guard-carried-the-predict-model`; declared output in guard position, a
+  standing refusal — closed). Two ratified asymmetries: when the verdict VOUCHES but its
+  body cannot ship (contested closure), `resolve_inner_check` returns `None` and the
+  site RUNS — never a predict fallback, because the vouch would still mint and a guard
+  carrying a model is worse than a site that runs; and `entry_tolerance` lifts consent
+  from the inner verdict ONLY when the shipped body IS that verdict (`safe-across` is
+  per-FUNCTION consent — a declining verdict's top-level mark licenses nothing for an
+  unmarked predict body; pinned both halves by
+  `consent_rides_the_body_that_ships_and_no_other`).
 - **rul-wrapper-members-resolve-independently** (`308` §1, the crosscheck burndown) — each
   wrapper member (`__predict`, `__lend_map`, `__enter`) is its own funcdef and binds
   independently in sh, so each resolves its OWN frame answer at the wrapped site; `detect_peel`

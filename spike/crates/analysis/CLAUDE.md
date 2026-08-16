@@ -172,9 +172,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `licence_mint_has_exactly_one_caller` in `dorc-plan` fails if a second caller appears anywhere
   in the workspace. A new caller is not a refactor; it is a second, unproven route to shrinking
   the analyzer model.
-- **verdict-lane-is-site-keyed** (`26H` §3; `28Q` §4 rul-verdict-primacy-at-the-ship-seat, RULED at
-  stage-0 and NOT YET BUILT — `307:fnd-stage-zero-is-not-built`; stage-0 is its own queued lane, and
-  the commit once read as its landing restated law only) — the lane is a per-SITE out-param, never derived from the fact's kind
+- **verdict-lane-is-site-keyed** (`26H` §3; `28Q` §4 rul-verdict-primacy-at-the-ship-seat,
+  BUILT at stage-0, 2026-08-16; the ratified reading is `307:rul-primacy-moves-the-body-never-the-cell`:
+  primacy moves the measuring BODY and never the CELL — the predict author's declared
+  coordinate remains the site's establish, so no invalidation, backing, or why-coordinate
+  moves; "the cell the shipped body measures" means the cell whose CONVERGENCE the rc
+  asserts, which is the site's cell. RESIDUE: the member and inline-call lanes still ship
+  predicts and elide on them — `FORFEITS:forfeit-member-lanes-predict-measured`) — the
+  lane is a per-SITE out-param, never derived from the fact's kind
   and never by try-order over the ship closures (the shipped body's measurement must be
   the cell the record keys). A vouched, mutation-capable site is verdict-lane: the verdict
   body measures, keyed by the author's coordinate when the reached path carries exactly

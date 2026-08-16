@@ -38,8 +38,33 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
-- **lane-stage-zero-ship-seam — CHECKPOINT ADJUDICATED, BLESS AUTHORIZED
-  2026-08-16** (Opus, branch `ai/r30-lane-stage-zero-ship-seam`, base
+- **lane-stage-zero-ship-seam — CLOSED + FOLDED 2026-08-16; STAGE-0 LANDED**
+  (6 commits rebased, ff'd; builder gates W 2113/2113 · WSL 2109/2109 ·
+  `bless:dry` clean · `verify:check` green both legs; the post-bless audit
+  closed every window — zero cases outside the two drift shapes, zero
+  fact-label/census/outcome movement, mechanically against the full diff).
+  Landed beyond the re-cut: the rider-1 consent gate
+  (`consent_rides_the_body_that_ships_and_no_other`, red-first both halves) and
+  the en-route `fnd-wrapped-guard-carried-the-predict-model` closure. FOLD
+  ADJUDICATIONS (deviation-litmus): the PATHS-form bless ENDORSED — unfiltered
+  `bless` runs gates FIRST and cannot bless sanctioned drift (conductor
+  authorized the wrong spelling; the explicit 46-list is strictly tighter;
+  BANKED `work-bless-sanctioned-drift-spelling`) · the dump-path for the three
+  render-drifted looms ENDORSED (`loom:promote` correctly refuses engine-render
+  drift; conductor prescribed the wrong tool) · pin30 joining the bless set
+  trivially correct · conflict-file restraint correct. FINDING against the
+  conductor's own fix: `work-task-output-visibility` — the `ebd75203` task-env
+  override does NOT take where the harness EXPORTS `MISE_TASK_OUTPUT` (mise
+  reads its own env before task env; measured both ways); mise.toml comment
+  corrected; the flag-based respell is the owed fix. Records: `28Q` §4/§8
+  rewritten (the G-ratification recorded); FORFEITS pin30 row updated
+  (six causes eliminated, two candidate seats verbatim) + NEW
+  `forfeit-member-lanes-predict-measured`; four crate CLAUDE.mds updated
+  (verdict-lane BUILT de-annotation ×2 · the wrapped-ship-seat bullet · the
+  frame-lookup twin-consumer clause). Fixture-authoring gotcha banked for any
+  oracle-fixture brief: a predict without an entity BIND evaluates
+  `Top(MissingAnnotation)` — inline `"$1"` in a coordinate is not enough.
+- **lane-stage-zero-ship-seam checkpoint record (historical)** (Opus, branch `ai/r30-lane-stage-zero-ship-seam`, base
   `d960d489`; three commits at checkpoint; drift fully classified: 45 e2e +
   3 aid looms, ALL probe-artifact-bytes-only — the shipped body flips
   `__predict`→`__is_converged` — plus four why-chain locus moves to the verdict

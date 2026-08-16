@@ -398,13 +398,21 @@ be assessable as continuous; the subtleties belong to a later sitting.
 - **The vocabulary family** [ACKED] — incarnation · lifecycle begins/ends with
   re-creation as their composition · availability window; with the softened incarnation
   definition (§3) and its correlation door held open.
-- **`rul-verdict-primacy-at-the-ship-seat`** [TYPED substance, 2026-08-01 sitting] — at a
+- **`rul-verdict-primacy-at-the-ship-seat`** [TYPED substance, 2026-08-01 sitting; BUILT
+  at stage-0, 2026-08-16] — at a
   vouched, mutation-capable site the VERDICT body ships as the probe check and its own
   reached answer is the convergence measurement; prediction never licenses elision. The
-  as-built predict-wins preference (`verdict-lane-is-site-keyed`'s fallback ordering) is
+  as-built predict-wins preference (`verdict-lane-is-site-keyed`'s fallback ordering) was
   an unratified expedient inherited from the round-23 single-function era — re-cut at
   stage-0. The W-B keying-coherence half (the record keys the cell the shipped body
-  measures) survives the inversion. Retires `28P:tc-split-family-elides-on-two-authors`
+  measures) survives the inversion, under the ratified reading
+  `307:rul-primacy-moves-the-body-never-the-cell` [CONDUCTOR, veto-eligible]: "the cell
+  the shipped body measures" is the cell whose CONVERGENCE the rc asserts — the SITE's
+  cell, the predict author's declaration where one resolves — so primacy moves the
+  measuring body and never the fact-address; §8's "(via its own marks or the auto-cell)"
+  describes only the no-predict-cell fallback. The re-key reading was REJECTED: dropping
+  a declared Establish leaves a downstream Query pristine and reproduces a pre-write
+  value (cardinal-sin direction, corpus-invisible). Retires `28P:tc-split-family-elides-on-two-authors`
   at the license tier: the elide is a monologue again (one author's body, rc, and vouch);
   the cross-author residue is the sparing tier's, where the fence already stands.
 - **`rul-erasure-license-splits-by-effect-class`** [ACKED] — every erasure rests on an
@@ -500,13 +508,18 @@ Every stage additionally inherits the checker gates (`notes/300` §2) — certif
 sparing re-derivation green over the full corpus, both planes' votes — alongside its
 own byte-identity gate.
 
-- **stage-0-ship-seam** — **NOT YET BUILT** (record drift discovered 2026-08-15:
-  the commit read as stage-0's landing, `356e3948 (AI dsn re) Restate the
-  ship-seam lane law under verdict-primacy`, restated LAW ONLY — zero behavior;
-  the two crate-CLAUDE.md "built" bullets and LIVING_STATUS propagated the drift;
-  evidence `307:fnd-stage-zero-is-not-built`, incl. the pin28 transcript still
-  shipping the predict at a vouched split-family site. QUEUED as its own lane
-  after stage-i; scheduling ack pending) — (the verdict-primacy re-cut; a
+- **stage-0-ship-seam** — **LANDED 2026-08-16** (its own lane after stage-i, per
+  the drift discovery `307:fnd-stage-zero-is-not-built`; measured drift: 49
+  goldens — shipped-body flips `__predict`→`__is_converged` + 8 why-chain locus
+  lines + two authored fixture headers; outcomes exec-proven byte-stable across
+  every blessed case; the lost-measurement audit clean three ways. The ratified
+  reading is `307:rul-primacy-moves-the-body-never-the-cell` — primacy moves the
+  measuring BODY, never the CELL; §4's W-B sentence reads "the cell whose
+  CONVERGENCE the shipped body's rc asserts", which is the site's cell, the
+  predict author's declaration where one resolves; the re-key alternative was
+  REJECTED on the staleness route it opens. Residues:
+  `FORFEITS:forfeit-member-lanes-predict-measured`; pin30 still does not flip,
+  two candidate seats remain) — (the verdict-primacy re-cut; a
   deliberate behavior change, deliberately OUTSIDE stage-i's byte-identity
   gate): invert the ship-seat preference —
   at a vouched site the verdict body ships and measures (via its own marks or the

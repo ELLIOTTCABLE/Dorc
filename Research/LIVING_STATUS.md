@@ -14,7 +14,26 @@
 
 ---
 
-## CURRENT STATE (2026-08-16 — STAGE-I STAMPED; stage-0 dispatched)
+## CURRENT STATE (2026-08-16 — STAGE-0 LANDED; wave-two's next edge is snapshot-emission)
+
+**STAGE-0 (the verdict-primacy re-cut) IS LANDED and FOLDED** on `ai/r30-conduct`
+(builder gates W 2113/2113 · WSL 2109/2109 · `bless:dry` clean; drift fully
+classified and post-bless-audited: 49 goldens, shipped-body-flip + why-locus
+only, outcomes exec-proven stable). THE ONE VETO-ELIGIBLE CALL:
+**`307:rul-primacy-moves-the-body-never-the-cell`** [CONDUCTOR] — primacy moves
+the measuring BODY, never the site's CELL (the predict author's declared
+coordinate stays the establish; the re-key reading was rejected on the
+staleness route it opens — a dropped Establish leaves a downstream Query
+pristine). Also landed: the entry-consent gate (a mark licenses only the body
+that ships) and the wrapped-guard-carried-the-predict closure. pin30 STILL does
+not flip — six causes eliminated, two candidate seats remain (FORFEITS row).
+NEW forfeit: member/inline lanes still predict-measured
+(`forfeit-member-lanes-predict-measured`). NEXT: the conductor's own-hand gate
+over the folded tip, then lane-snapshot-emission (rulings banked, `28R:§snapshot`),
+then the Spine census (`plans/309`, pre-ack). Details below stand where not
+superseded.
+
+## STATE 2026-08-16 (stage-i stamp; superseded above)
 
 **STAGE-I IS STAMPED on `ai/r30-conduct`** (the conversion `307c` + the
 adversarial crosscheck `308b`–`308f` + the burndown; conductor own-hand
