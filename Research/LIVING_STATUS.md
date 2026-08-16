@@ -14,18 +14,30 @@
 
 ---
 
-## CURRENT STATE (2026-08-16 — stage-i LANDED; crosscheck collected, UNADJUDICATED)
+## CURRENT STATE (2026-08-16 — crosscheck ADJUDICATED; burndown in flight; stamp pending)
+
+**The crosscheck is ADJUDICATED** (`notes/308`, conductor-5). The Sol-adversarial
+lane was RE-RUN clean (human-authorized; `notes/308f`) after the original
+returned a completion-marker-less null — and the re-run surfaced the arc's only
+CRITICAL: **the wrapper/entry/carry lane is an unconverted seat-family**
+(first-file-wins, frame-blind, partly raw-re-lifted: the consent chimera · a
+contested family still licensing probe-time context entry · the
+pure-predicate-carry closure proof decoupled from the frame-live shipped body, a
+constructible wrong-elision route). Cross-lineage convergence with
+Fable-neutral's F1/F2. **The BURNDOWN lane is DISPATCHED**
+(`ai/r30-lane-crosscheck-burndown`; scope `308` §1; checkpoint-1 = the batched
+claim-verification, hard pause). THE STAGE-I STAMP waits on the burndown fold +
+both-legs gates + the conductor's one steering-prose/plan editorial pass
+(`308` §6). **Stage-0's dispatch is HUMAN-AUTHORIZED** (arc-resume 2026-08-16)
+and queues after the stamp. pin30 did NOT flip — `28Q` §1's hypothesis REFUTED;
+the reviews' body-shape discriminator lead is banked (`308` §2). Details below
+stand where not superseded by this block.
+
+## STATE 2026-08-16 earlier (crosscheck collected, unadjudicated; superseded above)
 
 **The definition-factoring CONVERSION is FOLDED and gate-green** (all three
 wave-two lanes closed: seams · trip-policy · conversion; reports
 `notes/307a`/`307b`/`307c`; conduct tip verified both legs by conductor hand).
-The 2×Fable+2×Sol adversarial crosscheck RAN; all four reports are collected
-VERBATIM at `notes/308b`–`308e`, **completely unadjudicated** (308e possibly
-truncated — no completion marker). **THE NEXT CONDUCTOR'S FIRST ACT: the batched
-adjudication → burndown → the stage-i stamp** (`notes/307` §1b REWIND ANCHOR #2
-is the full handoff). pin30 did NOT flip — `28Q` §1's hypothesis is REFUTED at
-both candidate seats by measurement (`307c`). Details below stand where not
-superseded by this block.
 
 ## STATE 2026-08-15 late (wave-two open; superseded above)
 

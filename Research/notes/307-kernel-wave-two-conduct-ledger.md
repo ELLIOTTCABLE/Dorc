@@ -38,6 +38,24 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **gate-adversarial-crosscheck-stage-i — ADJUDICATED 2026-08-16** (conductor-5;
+  the record is **`notes/308`**, which also carries the burndown scope §1, the
+  record-repair list §2/§6, and the process rows §5). The Sol-adversarial lane
+  was RE-RUN clean (human-authorized mid-turn; report `notes/308f`, filed
+  `336325b1`): where the possibly-truncated `308e` returned a null, the re-run
+  returned the arc's only CRITICAL (`try_carry`'s closure proof selected
+  first-match over load order, decoupled from the frame-live shipped body) plus
+  an independent re-derivation of Fable-neutral's wrapper-fold findings —
+  cross-lineage convergence. Conductor hand-verified the wrapper-fold code shape
+  before crediting; all remaining concrete claims batch to the burndown
+  checkpoint per the human's verify-batching steer.
+- **lane-crosscheck-burndown — DISPATCHED 2026-08-16** (Opus, harness worktree,
+  branch `ai/r30-lane-crosscheck-burndown`): checkpoint-1 = the batched
+  claim-verification (read-only, hard pause) → the ruled builds
+  (`308:rul-wrapper-lane-joins-the-conversion` ·
+  `308:rul-carry-proof-is-same-definition` · pin cells · the license-chain cell ·
+  textual code fixes · the pin30 header refresh). Byte-identity binds except the
+  named new cells; the withdrawal-held case set is a STOP tripwire.
 - **lane-influence-refusal-seams — CLOSED + FOLDED 2026-08-15** (15 commits
   rebased onto the merged conduct tip, ff'd; the `ai/main` blast-radius merge in
   the same batch; combined-tip `both gate:full-quiet` GREEN by conductor hand;
@@ -226,8 +244,9 @@
   `cli/CLAUDE.md` withdrawal-edge wording ruled BEFORE its edit lands).
   §3's live-bug target: `fnd-survival-footprint-lane-scans-forward` + the new
   `fnd-sweep-duplicates-the-footprint-resolution`.
-- **HUMAN-MORNING QUEUE (accrued overnight)**: stage-0 scheduling (before/after
-  the crosscheck) · `fnd-reserved-name-error-does-not-refuse` (should
+- **HUMAN-MORNING QUEUE (accrued overnight)**: ~~stage-0 scheduling~~ (ANSWERED
+  at arc-resume — dispatches this arc, post-stamp; §5) ·
+  `fnd-reserved-name-error-does-not-refuse` (should
   reserved-name Errors join pre-network fast-fail?) ·
   `finding-git-deny-hook-blind-to-midrebase` (the hook patch + the builder's
   `rebaseBranch()` diff, in `307c`) · the 308a kit glance · the four Migrated
@@ -268,6 +287,19 @@ ledger + `plans/309` + `notes/305`/`305a` + the 308a kit + the lane reports
 (`307a`/`307b`/`307c`) + `git log ai/r30-conduct`. Boot order: LIVING_STATUS →
 this file (whole) → `307c` → the four 308 reviews → `plans/28Q` §§0–1/§7/§8 →
 `spike/CLAUDE.md`.
+
+**REWIND ANCHOR #3 (2026-08-16, conductor-5 — supersedes #2's first-act
+instruction):** the batched adjudication is DONE — `notes/308` is the record
+(inputs `308b`–`308f`; `308f` = the human-authorized Sol-adversarial CLEAN RE-RUN,
+which surfaced the arc's only CRITICAL: the wrapper/entry/carry lane is an
+unconverted seat-family — `308` §1). The BURNDOWN lane is DISPATCHED (branch
+`ai/r30-lane-crosscheck-burndown`; scope = `308` §1 verbatim; checkpoint-1 = the
+batched claim-verification, hard pause for conductor ack). THE STAGE-I STAMP
+waits on: burndown folded → both-legs gates green → conductor fold-review, which
+includes the ONE steering-prose/plan editorial pass (`308` §6). Stage-0's
+dispatch is HUMAN-AUTHORIZED (typed, arc-resume 2026-08-16) and queues AFTER the
+stamp. A post-crash successor reads `308`, checks the burndown lane's state, and
+resumes at whichever edge is open.
 
 **REWIND ANCHOR #2 (2026-08-16, the ACTUAL handoff point — supersedes the list
 below where they differ):** the seams, trip-policy, AND definition-factoring
@@ -542,3 +574,16 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   (2×Fable + 2×Sol; no DeepSeek while the human is away; burndown expected and
   scheduled) · `review-minispec-focused` ruled in at end-of-r30 (§2 rows carry
   both).
+- 2026-08-16, arc resume [TYPED]: conductor-5 assumed; initial work = the
+  crosscheck adjudication AND the stage-0 dispatch — the queued scheduling ask is
+  thereby ANSWERED (stage-0 dispatches this arc; ordering the conductor's, ruled
+  post-stamp under the serial lean) · the process stays a co-equal deliverable
+  (chafe register live) · the sensitive-work posture re-typed: fully authorized
+  to wait on the human; little-progress + one important question is a good
+  outcome.
+- 2026-08-16, mid-turn steers [TYPED]: (a) the Sol-adversarial re-dispatch
+  offered and TAKEN — the pre-written quarantine kit means the conductor's
+  just-read context cannot poison it; wallclock non-critical; spend reasonable ·
+  (b) claim-verification legwork batches to ONE Opus unit held until every
+  model's concrete claims are in; the conductor hand-verifies only scope-driving
+  claims. Both encoded as prax rows in `308` §5.
