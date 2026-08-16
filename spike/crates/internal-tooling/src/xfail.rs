@@ -163,6 +163,13 @@ pub const PINS: &[Pin] = &[
         state: PinState::Reserved,
     },
     Pin {
+        name: "p-x-helper-unset-f-across-files",
+        trigger: "the closure-custody stage's helper-binding model — the funcenv table widening past \
+                  role names, so the helper lane can see a removal at all",
+        horizon: Horizon::Scheduled("r31:closure-custody"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-blessed-toplevel-conditional",
         trigger: "the oracle-side blessing of read-only top-level commands \
                   (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \

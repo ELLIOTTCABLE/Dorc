@@ -12,5 +12,10 @@ dorc-core = { path = "../core", version = "0.0.0" }
 dorc-aid = { path = "../aid", version = "0.0.0" }
 dorc-syntax = { path = "../syntax", version = "0.0.0" }
 
+# TEST-ONLY, and NOT product code: the workspace's one `xfail_until` seat and its census live there
+# (`30A` §1 d3), so a pin in this crate wears the same registry every other crate's does.
+[dev-dependencies]
+internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
+
 [lints]
 workspace = true
