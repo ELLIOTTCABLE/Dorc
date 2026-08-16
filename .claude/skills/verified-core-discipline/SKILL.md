@@ -157,39 +157,22 @@ type — constructed via arbitrary backing + `kani::assume(canonical)`, NEVER vi
 repeated `insert` (that makes the insert harnesses circular). New dependencies in
 core crates require conductor ack, always.
 
-**Kani — authorship discipline** (measured, r30; the 107/107-green battery is
-its evidence): `kani::any()` inputs, assert the law; harness home
-`spike/verify/`; the lane is opt-in (`verify:kani`, Linux/WSL). When you add a
+**Kani**: bounded model checking over the algebra tier — a real ∀ at small
+declared bounds, via `kani::any()` + assert-the-law. Harnesses live in
+`spike/verify/kani` (a detached unit that `#[path]`-includes the shipping
+source, so it judges the real bytes); the lane is opt-in (`mise run
+verify:kani`, Linux/WSL only; the driver gates each harness on wall-clock and
+address space and reaps CBMC between runs). Reading verdicts: green-at-bounds
+is exhaustive for the declared universe ONLY; OVER-BUDGET is a third verdict —
+unjudged, a finding about the formula's shape, never "failed" and never a
+reason to raise a cap; a FAILED under memory pressure is not a counterexample
+(the flaky-vs-broken discipline above). When you add a
 lattice/domain/compare/facade operation, you add its law harnesses in the same
-change. Shape the FORMULA, never the budget — over-budget is a finding about
-the question's shape, and raising a cap is the banned weaken-the-question move.
-The measured shaping rules:
-
-- CONCRETE lengths, one harness per length or length-pair, the size in the
-  harness NAME (`…_at_length_2`) and as a const generic — never a number in
-  prose (measured drift: doc-comments understating their own bounds). Each
-  harness declares exactly the universe it verified; a gestured-at bound never
-  covered is worse than a small one that was.
-- The two unaffordable input shapes: a growing mutation at symbolic length, and
-  two symbolic-length collections in one harness (measured: 2 s concrete vs
-  21 min/3.6 GB symbolic on the same law).
-- Concrete inputs are necessary, NOT sufficient — count the inserts INSIDE the
-  operators. An operator that grows a collection element-by-element goes
-  symbolic after its first insert, so a merge is affordable only when it
-  performs ≤1 insert, and a law that composes one merge into another has NO
-  affordable shape at any size. Such laws live at the property-test/seat-test
-  tier instead; say so where the harness would have been, and do not chase.
-- Generators: never build values by the mutation under test (circular). Draw
-  arbitrary backing + `kani::assume(<invariant>)` — and every assumed invariant
-  is PAIRED with a closing harness proving the real producer maintains it (an
-  unpaired assume is a hole). Guard generator vacuity with an in-generator
-  `assert!` (Kani proves it; an unsatisfiable assume greens everything).
-- Escalate for reach, never prestige: large or two-collection universes →
-  property tests; ordering/multiset stability → DST; raw-BTree-backed types →
-  exhaustive-small beside the type until it sits on the facade.
-
-A counterexample is a real bug in code or law — but apply the over-budget/OOM
-verdict discipline above before believing a FAILED.
+change — and BEFORE authoring or modifying ANY harness, read
+`references/kani-authorship.md` in this skill's directory: the measured shaping
+discipline (concrete named sizes, the operator-interior insert wall,
+paired-assume generators, when to route a law to another tier). Harnesses
+written without it reliably OOM the solver or green vacuously.
 
 **Runtime certification**: the solver's every production answer passes the
 post-fixpoint check (`solve_certified`; raw `solve`/`run` are `pub(crate)` and
