@@ -16,6 +16,15 @@
 
 ## CURRENT STATE (2026-08-16 — SNAPSHOT-EMISSION LANDED; wave-two's pre-ruled work EXHAUSTED)
 
+**[TYPED 2026-08-16, post-quiescence] TWO STANDING CORRECTIONS bind every
+successor**: the definition-keying as built is an INCORRECT INTERIM (file-grade
++ join; definition-grade is the intent; repair LOAD-BEARING at closure-custody
+— `28Q` §1 item 1 carries the tripwire); and the funcenv table-widening to
+non-role funcdefs is the human's INTENT (one resolution mechanism,
+policy-only differences between oracle and book) — the emission stage's
+last-wins-over-the-index is likewise interim. The human is REWINDING before
+further implementation; conductor opinion on homing is in the chat record.
+
 **THE SNAPSHOT-EMISSION STAGE IS LANDED and FOLDED** (E1–E8; builder gates
 W 2135/2135 · WSL 2131/2131; conductor gate pending at this write, banked on
 green below). Headlines: the hash-munge is WITNESSED (top-level `unset -f`

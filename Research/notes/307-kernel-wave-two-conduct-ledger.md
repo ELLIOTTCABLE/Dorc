@@ -747,6 +747,29 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   (chafe register live) · the sensitive-work posture re-typed: fully authorized
   to wait on the human; little-progress + one important question is a good
   outcome.
+- 2026-08-16, the morning catch-up sitting [TYPED, itemized]: (1) **the
+  definition-keying as built is INCORRECT** — file-grade rows + the
+  `(file,name)` join are an accepted interim only; the definition-grade
+  representation stands as intent; the repair is LOAD-BEARING at
+  closure-custody (gentle ack on the punt, HARD tripwire against a
+  ship-seam-style silent drop — `28Q` §1 item 1 carries it) · (2) the funcenv
+  TABLE WIDENING (option (a)) was the human's INTENT and is load-bearing:
+  oracle/book model-differences must be exclusively POLICY, never MECHANISM;
+  lean = fix now, punt only into a genuinely good home (conductor opinion
+  rendered in-chat; no implementation — the human rewinds before further
+  build work) · (3) the book-bytes law binds COMMANDS and CFG, not inert
+  definitions — engine-inserted funcdefs may be rearranged/colocated;
+  colocation is the PRIMARY surety mechanic, munging SECOND, firing only for
+  collisions that code motion itself introduces · (4) probe/apply asymmetry
+  CHALLENGED — per-site environment copies, not definition location, are the
+  real mechanism; the conductor's intra-compound counterexample (two
+  same-named helpers needed in ONE composed-stage environment) joins the
+  post-rewind review list · (5) stale-queue corrections: blast-radius CLOSED
+  (`302:rul-certifier-trip-guard-only`, built) and records-8 CLOSED (the
+  seams lane's defining cases, ratchet→0) — the conductor's morning queue
+  repeated an older ledger layer · (6) bare "stage-N" handles disliked; the
+  `300` §5 semantic-naming law binds harder (the ship-seam re-cut ·
+  definition-factoring · the emission stage · closure-custody · world-scopes).
 - 2026-08-16, mid-turn steers [TYPED]: (a) the Sol-adversarial re-dispatch
   offered and TAKEN — the pre-written quarantine kit means the conductor's
   just-read context cannot poison it; wallclock non-critical; spend reasonable ·

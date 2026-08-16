@@ -85,15 +85,17 @@ merged indices risks the chimera (identity through one author's argparse, cells 
 another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-frame copies:
 
 1. Every derived row — a check, a cell declaration, an argparse arm-model, an enrolled
-   dialect token, a footprint claim — reads from exactly ONE authored definition. As
-   BUILT (the lane checkpoint re-cut this item's PROPOSED stored-triple — `305a` §1/§2,
-   ratified at the `308` adjudication): **DefinitionId** is (SourceFileId, span) with
-   custody DERIVED at one seat; rows stay keyed by source-file index; the frame's
-   definition selects its rows through the `(file, name)` provenance join — total by
-   census, with within-file plurality landing `Ambiguous` and answering nowhere (riding
-   the pre-existing same-file refusal), so same-file addressing gives same-definition by
-   construction. Computed once, whole-unit, exactly as before. No index
-   multiplication. HELPER CLOSURES are the ruled exception
+   dialect token, a footprint claim — reads from exactly ONE authored definition, keyed
+   at DEFINITION grade. **[TYPED 2026-08-16] The as-built keying is an INCORRECT
+   INTERIM**, acknowledged and accepted only as a way-station: rows keyed by
+   source-file index with a `(file, name)` provenance join (total by census;
+   within-file plurality → `Ambiguous` → answers nowhere, riding the pre-existing
+   same-file refusal), custody DERIVED at one seat. The ruled representation —
+   definition-grade row identity — STANDS as the intent; its repair is LOAD-BEARING
+   and lands with the closure-custody stage's custody re-key (or sooner, per the
+   human's post-rewind direction). **TRIPWIRE (the ship-seam-re-cut record-drift
+   class): no record may mark this item DONE while the keying is file-grade; any
+   lane touching these indexes restates this paragraph in its report.** HELPER CLOSURES are the ruled exception
    (`28R:§snapshot-emission-adjudication`, TYPED/ACKED): sh binds a body's calls at
    INVOCATION, so a closure is a property of the consuming FRAME, never of the
    definition — "computed once, whole-unit" is DEAD for closures
