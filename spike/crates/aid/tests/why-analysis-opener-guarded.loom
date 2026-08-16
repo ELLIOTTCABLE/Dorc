@@ -121,7 +121,7 @@ $ dorc why book.sh:11 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh 
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@enabled" (rc 0)
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@enabled" (rc 0)
    * service.oracle.sh:18  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@enabled holds"
    ! 7|hork                ran       undescribed: no author has said what it touches, so it
@@ -203,7 +203,7 @@ $ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh -
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@active" (rc 0)
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (rc 0)
    * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@active holds"
    ! 7|hork                ran       undescribed: no author has said what it touches, so it

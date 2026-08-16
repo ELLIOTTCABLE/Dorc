@@ -119,7 +119,7 @@ $ dorc why book.sh:7 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
 
    7|ufw being skipped stood on all of the following, together:
 
-   * firewall.oracle.sh:3   reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:11  reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
    * firewall.oracle.sh:14  vouches   "re-running this line adds nothing worth running
                                       while sm.dorc.Firewall:443/tcp holds"
    ! package.oracle.sh:20   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
