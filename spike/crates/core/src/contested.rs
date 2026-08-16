@@ -84,13 +84,30 @@ mod tests {
     /// member (the caller munges once and asks once), and a neighbouring family is untouched.
     ///
     /// **This mechanism is load-bearing for the definition-factoring lane's byte-identity gate, and
-    /// is not dead code** (`307:fnd-corpus-carries-twelve-plural-families`). Twelve committed cases
-    /// declare one role name in two of their own files; seven never load the second file, and the
-    /// remaining FIVE (`contest28-*`, `guard23-reingest-collision-verbatim`) really do load both and
-    /// are held byte-stable by exactly this withdrawal. Retiring it would not merely lose a
-    /// diagnostic — it would let five plural families reach the resolution seats, where the
-    /// single-definition coincidence that `syn-single-frame-byte-identical` rests on no longer
-    /// holds.
+    /// is not dead code.** Measured over the committed corpus, these are every world that loads a
+    /// plural role family whose licenses this set withholds — files, not a glob:
+    ///
+    /// - `crates/aid/tests/reaches-conflict.loom` (`sm_dorc_Package`)
+    /// - `crates/aid/tests/resolver-conflict.loom` (`sm_dorc_Package`)
+    /// - `crates/cli/tests/contest28-cross-unit-shadow-runs.loom` (`foobar`)
+    /// - `crates/cli/tests/contest28-top-licenses-nothing.loom` (`foobar`)
+    /// - `crates/cli/tests/guard23-reingest-collision-verbatim` (`apt_get`)
+    /// - `crates/cli/tests/wrap30-contested-wrapper-peels-nothing.loom` (`sudo`) — the WRAPPER-lane
+    ///   arm, and the only one of the six that post-dates `307c`
+    ///
+    /// A `contest28-*` GLOB over-counts and under-counts at once, which is why the list is spelled
+    /// out: two `contest28-*` cases (`-polyfill-guard-defers-to-the-oracle`, `-unset-f-blesses-elision`)
+    /// are `28K` §1 BLESSED shapes this set deliberately leaves alone, a third
+    /// (`-late-definition-licenses-nothing-above`) holds only ONE definition and is not plural at
+    /// all, and the two `aid` kind-owner conflicts the glob never mentioned are half the real
+    /// population. `crates/cli/tests/definition_frames.rs`'s plurality census is what measures this,
+    /// two-way and per-case.
+    ///
+    /// The two `aid` cases carry a SECOND mechanism — `24F` §3 / `24G` §4's at-most-one-resolver and
+    /// at-most-one-reaches-per-kind refusals — so this set is not the sole reason THEY are stable.
+    /// The claim made here is the one that was measured: retiring the withdrawal would let every
+    /// family above reach the resolution seats, where the single-definition coincidence
+    /// `syn-single-frame-byte-identical` rests on no longer holds.
     #[test]
     fn withholding_is_keyed_by_the_munged_family_base() {
         let set = ContestedFamilies::new(["apt_get".to_owned()]);
