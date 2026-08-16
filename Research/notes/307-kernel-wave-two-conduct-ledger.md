@@ -329,6 +329,17 @@ only with the specific work-product it wrongly blocked in hand.
   (needs-addressing-later, human-adjudication pending — the `28N` §3
   per-fragment-owners priced-and-declined disposition is implicitly up for
   re-adjudication at that sitting; nothing builds toward it now).
+- **the per-case `edit-loop:` frontmatter line** (28L loom-final vintage; stamped
+  into essentially every loom case) · noticed by the human 2026-08-15 · **RULED
+  HELL-NO [TYPED]**: "that's a hell-no from me… I clearly wasn't watching closely
+  enough and underspecified what I wanted the `vars` invocation to look like."
+  Workflow-teaching belongs in the TOOL (the `loom:vars` output and the
+  compile/promote failure surfaces), never duplicated per data-file — the same
+  ladder as the skill content filter; a flow reshape currently costs a
+  corpus-wide edit · NOT fixed this arc · action: BANKED
+  `work-edit-loop-line-eviction` — respec the vars/teaching surface (the
+  underspecified half, human-input wanted), then a mechanical corpus strip;
+  rides the later loom sitting with `work-loom-interior-hole-authoring`.
 - flat-test-tree ownership scoping (`is_case_owned` = `crates/aid/tests` only) +
   the loom `code:`-hygiene/stdout-contract gates · BLOCKED the checkpoint-ruled
   e2e route for the eight records defining cases (a jointly-unsatisfiable pincer,
