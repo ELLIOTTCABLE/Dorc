@@ -43,26 +43,29 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `detected`. Dropping only `checks` would leave the header behind, so the marks-lost
   backstop (`crate::validate`) would report a WITHDRAWN funcdef as a lift failure and
   point the author at the wrong repair (`271:rul-sin-ordering`).
-- **live-source-is-the-only-resolution-seat** (`28K` §1;
-  `28M:fnd-verdict-resolution-duplicates-live-source`) — `crate::live_source` answers "which
-  definition would a shell have live" for the WHOLE unit, and every site that asks calls it: the
-  effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict lane, the three cli ship
-  closures, `plan::build_vouches`. A local backwards scan is the SAME rule spelled twice and is how
-  the verdict's winner silently split from the predict's. Its predicate asks only "does this file
-  DEFINE the role", never "does its body answer this argv" — the second question is the retired
-  decline-fallthrough cascade (`28K` §6), which outlived its stage-D fix inside the ship lane. A
-  decline by the winner is a decline. The site-keyed acts then NARROW that answer positionally
-  (`analysis/CLAUDE.md visibility-is-full-positional`); the two compose, they never compete.
-  Its predicate reads the driver's WITHDRAWN per-file sets, never raw source: `lift_from_sets`
-  and `dorc_plan::build_vouches_from_sets` exist because both seats re-lifted from text and so
-  resolved over a population every other seat had already narrowed — a definition the function
-  environment proves binds nowhere still won this answer and every site then withheld
-  (`analysis/CLAUDE.md never-live-subtracts-from-the-whole-unit-answer`). A seat that re-lifts is
-  a seat that will disagree. The seat list is SIX, not five: `plan::build_wrapped_vouches` scanned
-  FORWARD (`iter().find_map`) — first-definition-wins, the INVERSE of sh's answer — until `28P`
-  bitem3 (`fnd-the-wrapped-vouch-seat-resolved-forwards`), and resolved over its own re-lift of the
-  raw sources until `28P:dec-the-wrapped-seat-takes-the-drivers-sets`. All six now take the
-  driver's WITHDRAWN sets and all six narrow positionally.
+- **the-frame-lookup-is-the-only-resolution-seat** (`28Q` §1.3, né
+  live-source-is-the-only-resolution-seat; `28M:fnd-verdict-resolution-duplicates-live-source`) —
+  which definition answers at a site is ONE question asked ONE way:
+  `funcenv::LiveDefinitions::definition_before` names the definition the frame holds, and
+  `dorc_core::answering_file` selects the row that definition produced. All six role-lane seats
+  route through it — the effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict
+  and verdict lanes, the three cli ship closures, `plan::build_vouches` and
+  `build_wrapped_vouches`. Derived rows are keyed by their producing file, so identity and cells
+  are read from ONE definition and the chimera is UNREPRESENTABLE rather than gated: the whole-unit
+  `live_source` scan and the positional agreement veto that narrowed it are BOTH retired, because
+  they were two readings of one environment and could disagree (`28P:fnd-build-vouches-relifted-the-verdict-sets`
+  is what that cost the last time). The one surviving non-resolution fold is `dialect_minting_source`,
+  vocabulary-AGGREGATION only: it preserves the sparing dialect's minting SET and answers nothing
+  about which definition speaks (`28Q` §9 `pin-two-position-sparing`).
+  A seat's predicate asks only "does this file DEFINE the role", never "does its body answer this
+  argv" — the second question is the retired decline-fallthrough cascade (`28K` §6). A decline by
+  the resolved definition is a decline. Seats read the driver's WITHDRAWN per-file sets, never raw
+  source: `lift_from_sets` and `dorc_plan::build_vouches_from_sets` exist because both re-lifted
+  from text and so resolved over a population every other seat had already narrowed. A seat that
+  re-lifts is a seat that will disagree.
+  **Winner-shifting, permanently** (`28Q` §1): with no agreement veto behind it, every
+  function-environment precision bug now SELECTS WHOSE JUDGMENT governs a site. The frame solver is
+  license-review-tier forever; precision work on it is never ordinary value-add.
 - **closure-travels-with-the-definition** (`28K` §4 `rul-pin-by-definition-bytes`) — a role funcdef's
   span does not carry the helpers it calls or the file-level constants it reads, so `crate::closure`
   is what every emitting seat asks before shipping a body: `HelperIndex::build` over the ordered

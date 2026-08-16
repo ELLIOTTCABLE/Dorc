@@ -625,34 +625,6 @@ impl<'a> LiveDefinitions<'a> {
         self.source_before(node, name)
             .map(dorc_core::DefinitionCustody::of_defining_file)
     }
-
-    /// Whether source index `file`'s definition of `name` is the one live at `node` — the gate an
-    /// act consults before answering from that file's lifted set.
-    ///
-    /// `file` is an index into the source-ordered vectors, which IS the [`dorc_core::SourceFileId`]
-    /// value (`28O:dec-load-order-is-the-id-order`); `source_index_is_the_file_id` pins that.
-    ///
-    /// The comparison itself runs over [`dorc_core::DefinitionCustody`] rather than the raw ids
-    /// (`28P:dec-the-agreement-gate-is-a-custody-comparison`): this gate and the license mint were
-    /// two separate untyped spellings of ONE question — whose definition is speaking here — and
-    /// `28M` §8's re-key risk lands on both. One type, one comparison, one place to re-key.
-    ///
-    /// **The one permissive answer, stated loudly:** a name the unit has NO definition of answers
-    /// `true`, because the environment holds no opinion about it and inventing one would wall every
-    /// hand-built index in the workspace. In production that reaches only names the sh parser and
-    /// the dialect parser disagree about, which `reserved.rs` refuses before they can ship
-    /// (`28O:fnd-two-parsers-disagree-on-funcdefs`); `an_unknown_name_is_not_gated_and_a_known_one_is`
-    /// pins both halves.
-    #[must_use]
-    pub fn answers_at(&self, node: CfgNodeId, name: &str, file: usize) -> bool {
-        let Some((_, defs)) = self.bound else {
-            return true;
-        };
-        if !defs.knows(name) {
-            return true;
-        }
-        self.custody_before(node, name) == Some(custody_of_source_index(file))
-    }
 }
 
 /// The custody a source-ordered vector index denotes (`28O:dec-load-order-is-the-id-order`: the
@@ -2119,9 +2091,9 @@ mod tests {
         );
     }
 
-    /// The gate's applicability rule, both halves. A name the unit has no definition of is NOT
-    /// gated (the environment holds no opinion, and walling it would take out every hand-built
-    /// index); a name it DOES know is gated by position.
+    /// The universe rule, both halves. A name the unit has no definition of gets NO OPINION (the
+    /// environment holds none, and walling it would take out every hand-built index); a name it
+    /// DOES know is answered by POSITION, and a definition below the site withholds.
     #[test]
     fn an_unknown_name_is_not_gated_and_a_known_one_is() {
         let book = "yum install -y nginx\nyum__is_converged() { :; }\n";
@@ -2131,12 +2103,15 @@ mod tests {
         let (env, cfg, ast) = solve_positional(book, &table);
         let live = LiveDefinitions::new(&env, &table);
         let site = command_at(&cfg, &ast, book, "yum install -y nginx");
-        assert!(
-            live.answers_at(site, "apt_get__predict", 0),
-            "an unrecorded name defers to the lifted sets' own load order"
+        assert_eq!(
+            live.definition_before(site, "apt_get__predict"),
+            dorc_core::LiveDefinition::NoOpinion,
+            "an unrecorded name gets no manufactured opinion — the row answers on its own \
+             provenance alone"
         );
-        assert!(
-            !live.answers_at(site, ROLE, 1),
+        assert_eq!(
+            live.definition_before(site, ROLE),
+            dorc_core::LiveDefinition::Withheld,
             "a recorded name is answered by POSITION — file 1 defines it below this site"
         );
     }
@@ -2147,7 +2122,6 @@ mod tests {
     #[test]
     fn an_unsolved_oracle_gates_nothing() {
         let live = LiveDefinitions::unsolved();
-        assert!(live.answers_at(CfgNodeId(0), ROLE, 0));
         assert_eq!(live.source_before(CfgNodeId(0), ROLE), None);
         assert_eq!(
             live.definition_before(CfgNodeId(0), ROLE),
@@ -2580,7 +2554,20 @@ mod tests {
         let live = LiveDefinitions::new(&env, &table);
         let site = command_at(&cfg, &ast, book, "yum install -y nginx");
         assert_eq!(live.source_before(site, ROLE), Some(SourceFileId(1)));
-        assert!(live.answers_at(site, ROLE, 1));
-        assert!(!live.answers_at(site, ROLE, 0));
+        // The same identity read through the definition join the seats consume: a row lifted from
+        // index 1 keys to the definition the frame names, and index 0's does not.
+        assert_eq!(
+            live.definition_before(site, ROLE),
+            dorc_core::LiveDefinition::Live(table.identity_of(second).expect("second id"))
+        );
+        assert_eq!(
+            live.provenance_of(1, ROLE),
+            dorc_core::DefinitionProvenance::Keyed(table.identity_of(second).expect("second id"))
+        );
+        assert_eq!(
+            live.provenance_of(0, ROLE),
+            dorc_core::DefinitionProvenance::Unkeyed,
+            "index 0 records no definition of this role, so it can key no row"
+        );
     }
 }
