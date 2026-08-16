@@ -924,6 +924,26 @@ no task covers, and consider adding the task instead.
   rewrites. Still run `mise run check` yourself before every commit (`mise run gate` for
   that plus a fresh build and the whole suite) — the hook is the backstop, not the habit.
   Never `--no-verify`.
+- **agent-surfaces-forced-plain** (r30) — the same settings-env channel additionally carries
+  `HK_TERMINAL_PROGRESS=0`, `CARGO_TERM_PROGRESS_WHEN=never`,
+  `CARGO_TERM_PROGRESS_TERM_INTEGRATION=false`, `MISE_TASK_OUTPUT=timed`: all four are
+  documented, env-bindable knobs (`hk config explain <key>`; Cargo's `[term]` config;
+  `mise run --help`) that gate OSC/taskbar progress-reporting and mise's own live task-output
+  renderer, which only engage under a genuine TTY. Measured 2026-08-15 from this harness's own
+  Bash/PowerShell tool backends (`process.stdout.isTTY` is `undefined` for both — never a real
+  console): hk/cargo/typos/mise already choose their plain append-only fallback with ZERO ESC
+  (0x1b) or bare-CR bytes regardless of these knobs, so the four are a defensive forcing for
+  harness variants that DO attach a real console, never a fix for something reproduced here.
+  `MISE_TASK_OUTPUT=timed`'s "hide a line visible under 1s" filter is provably a no-op when
+  piped (byte-identical to `prefix`, verified back-to-back) — nothing is dropped in the
+  deployment case that matters; `prefix` is the fallback repair if that filter is ever
+  suspected of eating a line, and it is still fully plain, never a reach for ANSI. `-n
+  /--no-progress` and `-q/--quiet` are hk CLI-flags ONLY — `hk config explain` shows no ENV
+  row for either — so hk's own TTY step-list redraw has no forceable-off env knob; left alone
+  rather than hacked around (`hk.pkl`/task bodies are shared with the human, so baking the
+  flag in there would mute the human's pretty view too). The law: AI-facing invocations
+  (anything Claude Code drives, human-typed or autonomous) stay append-only plain; the
+  human's OWN terminal outside Claude Code keeps every repaint untouched.
 - **hk-drives-the-hooks** — `hk.pkl` is the one home for every hook step; `mise run
   check`/`fmt` are thin wrappers over `hk check`/`hk fix --all`, so no step is spelled
   twice. `mise run hk-install` is human-gated (it writes the shared `.git/config`).
