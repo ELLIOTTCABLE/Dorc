@@ -584,6 +584,19 @@ ledger + `plans/309` + `notes/305`/`305a` + the 308a kit + the lane reports
 this file (whole) → `307c` → the four 308 reviews → `plans/28Q` §§0–1/§7/§8 →
 `spike/CLAUDE.md`.
 
+**REWIND ANCHOR #6 (2026-08-16, conductor-5 — ARC QUIESCENT, one open leg):**
+all lanes folded @ `041a05c3` (wave-two's three stages + the crosscheck +
+burndown + the pin battery + the minispec review pair + the spec fix + the
+tooling triple). THE ONE OPEN ITEM: the combined own-hand gate's Windows leg
+refuses at preflight — a GENUINE refusal (vmmemWSL holds the Lean build's
+~14.7 GiB; the conductor twice declined `DORC_PREFLIGHT=skip`) — and closes
+with the human's `wsl --shutdown` followed by `mise run both gate:full-quiet`
++ `bless:dry`. Standing evidence meanwhile: every lane's own both-leg gates
+green at its tip; the deltas since are doc/law/one-line-task edits. Everything
+else on the board is human-gated (the queues ride §2's fold rows and the chat
+record). A successor: read LIVING_STATUS + this ledger; run the deferred gate
+once RAM frees; there is nothing to dispatch until the human rules.
+
 **REWIND ANCHOR #5 (2026-08-16, conductor-5 — WAVE-TWO QUIESCENT):** stage-i
 stamped · stage-0 landed · the snapshot-emission stage landed; conductor
 own-hand gate green over the final tip (W 2135/2135 · WSL 2131/2131 ·
