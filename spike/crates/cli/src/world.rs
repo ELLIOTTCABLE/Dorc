@@ -462,6 +462,12 @@ impl WhyWorld {
             },
             &mut arena,
         );
+        // The same whole-artifact emission decision the binary makes, by the same rule: a why report
+        // that explained an artifact with different bindings than the run's would be a decoration
+        // (`one-definition-table-two-drivers`).
+        plan.defensive_emission = !dorc_oracle::closure::definition_vectors(&source_refs)
+            .is_empty()
+            || !env.unresolvable_loads().is_empty();
         let (_trip_banner, trip_narrative) =
             demote_on_certifier_trip(&mut plan, trip, &definitions);
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);

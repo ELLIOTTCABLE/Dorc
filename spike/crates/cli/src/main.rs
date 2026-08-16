@@ -1596,6 +1596,14 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         },
         &mut arena,
     );
+    // DEFENSIVE emission (`28R:rul-defensive-mode-definition-vectors`): if the unit carries an
+    // unresolved in-process definition vector, a BARE emitted name is no longer a proof that the
+    // artifact's own body is what answers it, so every emitted name munges. Two halves, and the
+    // asymmetry is the point — a lexical scan for the vectors that bind a name in THIS shell
+    // (`eval` · `alias` · a computed command word), plus the environment's own unresolvable loads.
+    // Never any-⊤: an unmodeled command is an external binary and cannot define a function here.
+    plan.defensive_emission = !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
+        || !env.unresolvable_loads().is_empty();
     // `302:rul-certifier-trip-guard-only` — THE TERMINAL CLEANUP. Sited here, at the one moment
     // the whole plan exists and before anything reads it, so the digest, the why report, the
     // summary and the artifact all describe the SAME plan. Nothing between here and `render_apply`

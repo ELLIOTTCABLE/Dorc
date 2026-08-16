@@ -430,21 +430,21 @@ impl HelperIndex {
     /// Every literal command-position word in `body`, or a denial when the body carries a definition
     /// vector the walk cannot follow through.
     ///
-    /// A dynamic command NAME needs no arm here: the parser ⊤-rejects one upstream
-    /// (`syntax/CLAUDE.md syntactic-top-triggers`), so a lifted oracle body cannot hold one. What
-    /// remains is a literal vector — `eval` or `alias` — which can bind or invoke a name this walk
-    /// will never see, so the snapshot cannot be closed and the tier is WITHHELD (permanent, per
-    /// `28R:rul-instantiation-hash-dedup`).
+    /// A body carrying one cannot have its snapshot closed — the vector can bind or invoke a name this
+    /// walk will never see — so the tier is WITHHELD, and permanently
+    /// (`28R:rul-instantiation-hash-dedup`'s bottom rung). Reachability is another matter: see
+    /// [`is_definition_vector`] for why a shipped body can hold `alias` and cannot hold the other two,
+    /// and for the ⊤-reject reading that must NOT be substituted here.
     fn enumerable_calls(body: &str) -> Result<Vec<String>, ClosureDenial> {
-        let calls = scan_calls(body);
-        if let Some(vector) = calls.definition_vector() {
+        let names = called_names(body);
+        if let Some(vector) = names.iter().find(|name| is_definition_vector(name)) {
             return Err(ClosureDenial {
-                name: vector,
+                name: vector.clone(),
                 reason: DenialReason::UnenumerableCall,
                 sites: Vec::new(),
             });
         }
-        Ok(calls.names)
+        Ok(names)
     }
 
     /// Which constant names one emitted declaration binds — the `A=1 B=2` item binds two.
@@ -457,38 +457,30 @@ impl HelperIndex {
     }
 }
 
-/// What one walk over a body found: the literal command words, and whether any construct can bind or
-/// invoke a name the walk cannot see.
-struct Calls {
-    names: Vec<String>,
-    /// A `NodeKind::Unsupported { reason: DynamicExecution }` — `eval`, a `.`/`source` of a computed
-    /// target, or a dynamic command name. The parser has already classified all three, so this reads
-    /// its classification rather than re-deriving one from byte shapes.
-    dynamic_execution: bool,
+/// Is `name` an in-process DEFINITION VECTOR — a command that can bind a name in the shell that runs
+/// it (`28R:rul-defensive-mode-definition-vectors`)?
+///
+/// Deliberately NOT any-⊤: an unmodeled command is an external binary and cannot define a function in
+/// the executing shell, so `hork` must never qualify.
+///
+/// **And deliberately not any ⊤-REJECT either**, which is the sharper trap. The rule's three named
+/// vectors are `eval`, a computed `.` target, and an `alias`; the parser folds the first two into ONE
+/// AST reason (`UnsupportedReason::DynamicExecution`) TOGETHER WITH a dynamic command name — and a
+/// command-position `"$@"` is a dynamic command name, which is the defining tautology of every
+/// peeling wrapper (`wrapper-law`). Keying on that reason therefore puts every wrapper oracle in the
+/// world into defensive emission, which is `hork must not flip the mode` wearing a different costume
+/// (measured on this tree: `context-entry-wrapped-guard` munged for no reason). The finer
+/// `SyntaxUnsupportedReason` that tells the three apart is DIAGNOSTIC-only and does not ride the node.
+///
+/// What that leaves is honest rather than lossy: `eval` cannot reach an emission decision at all — it
+/// is ERROR-tier in a book (the run refuses before a plan exists) and banned outright in an oracle
+/// (`dialect-quality-law` · `declarations-only-files`) — and a computed `.` is the same. So the
+/// reachable vector is `alias`, which parses as an ordinary command word, plus `funcenv`'s own
+/// `unresolvable_loads` at the caller. `eval` stays listed for the day a body can carry one.
+#[must_use]
+pub fn is_definition_vector(name: &str) -> bool {
+    matches!(name, "eval" | "alias")
 }
-
-impl Calls {
-    /// The in-process DEFINITION VECTOR this body carries, if any
-    /// (`28R:rul-defensive-mode-definition-vectors`).
-    ///
-    /// Deliberately NOT any-⊤: an unmodeled command is an external binary and cannot define a
-    /// function in the executing shell, so `hork` must never qualify — only a construct that binds a
-    /// NAME here does. Two shapes qualify, and the parser supplies the harder one: `DynamicExecution`
-    /// (which is exactly `eval` · a computed `.` · a dynamic command name) and a literal `alias`,
-    /// which parses as an ordinary command word.
-    fn definition_vector(&self) -> Option<String> {
-        if self.dynamic_execution {
-            return Some(DYNAMIC_EXECUTION.to_owned());
-        }
-        self.names.iter().find(|name| *name == "alias").cloned()
-    }
-}
-
-/// The name a `DynamicExecution` ⊤-reject travels under. Not a command word: the parser folds
-/// `eval`, a computed `.`, and a dynamic command name into ONE reason, and re-deriving which of the
-/// three it was from byte shapes is the re-detection layer `28L:rul-editability-is-stamped-never-re-derived`
-/// retired. The reason IS the answer.
-const DYNAMIC_EXECUTION: &str = "dynamic-execution";
 
 /// Every definition vector the given sources carry, in name order — the whole-artifact question
 /// behind DEFENSIVE emission. Empty is the overwhelming case, and empty means the artifact may ship
@@ -496,7 +488,8 @@ const DYNAMIC_EXECUTION: &str = "dynamic-execution";
 #[must_use]
 pub fn definition_vectors(srcs: &[&str]) -> BTreeSet<String> {
     srcs.iter()
-        .filter_map(|src| scan_calls(src).definition_vector())
+        .flat_map(|src| called_names(src))
+        .filter(|name| is_definition_vector(name))
         .collect()
 }
 
@@ -534,32 +527,20 @@ fn slice(src: &str, span: Span) -> String {
         .to_owned()
 }
 
-/// One walk, both answers: every literal command-position word, and whether the body carries a
-/// definition vector.
+/// Every literal command-position word in a body — the helper CANDIDATES, and the seat
+/// [`is_definition_vector`] reads.
 ///
-/// The names OVER-collect on purpose: a candidate the index does not know is an external tool and is
-/// dropped. Under-collecting is the dangerous direction (a missed helper ships a body that cannot
-/// run), so the walk descends through every construct that can hold a command, command substitutions
-/// included. What a literal-word walk structurally cannot see — `eval`, a computed `.`, a dynamic
-/// command name — the PARSER has already classified as one `DynamicExecution` ⊤-reject, so the flag
-/// reads that classification instead of re-deriving one.
-fn scan_calls(body: &str) -> Calls {
+/// Over-collects on purpose: a candidate the index does not know is an external tool and is dropped.
+/// Under-collecting is the dangerous direction (a missed helper ships a body that cannot run), so the
+/// walk descends through every construct that can hold a command, command substitutions included. A
+/// dynamic command word contributes nothing here because the parser ⊤-rejects it upstream
+/// (`syntax/CLAUDE.md syntactic-top-triggers`) — and reading that ⊤-reject as a definition vector is
+/// the trap [`is_definition_vector`] documents.
+fn called_names(body: &str) -> Vec<String> {
     let ast = dorc_syntax::parse(body).value;
     let mut out = Vec::new();
     walk(&ast, ast.root(), &mut out);
-    let dynamic_execution = ast.iter().any(|(_, node)| {
-        matches!(
-            node.kind,
-            NodeKind::Unsupported {
-                reason: dorc_syntax::ast::UnsupportedReason::DynamicExecution,
-                ..
-            }
-        )
-    });
-    Calls {
-        names: out,
-        dynamic_execution,
-    }
+    out
 }
 
 fn walk(ast: &Ast, id: dorc_core::AstId, out: &mut Vec<String>) {
@@ -896,33 +877,43 @@ mod tests {
         );
     }
 
-    /// The permanent WITHHELD tier: a body reaching `eval` can bind or invoke a name no walk sees,
-    /// so its snapshot cannot be closed. Not scaffolding — the bottom rung.
+    /// The permanent WITHHELD tier: a body reaching a definition vector can bind or invoke a name no
+    /// walk sees, so its snapshot cannot be closed. Not scaffolding — the bottom rung.
     #[test]
     fn an_unenumerable_call_withholds_permanently() {
         let src = format!(
             "{MARKER}_helper() {{\n   wombat cmp\n}}\n\
-             wombat__is_converged() {{\n   eval \"$1\"\n}}\n"
+             wombat__is_converged() {{\n   alias wombat=hork\n   _helper\n}}\n"
         );
         let denied = index(&[&src])
-            .closure_for(0, "wombat__is_converged() {\n   eval \"$1\"\n}")
-            .expect_err("an eval'd body has no enumerable call graph");
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   alias wombat=hork\n   _helper\n}",
+            )
+            .expect_err("a body that can rebind a name at parse time has no closable snapshot");
         assert_eq!(denied.reason, super::DenialReason::UnenumerableCall);
-        assert_eq!(denied.name, super::DYNAMIC_EXECUTION);
+        assert_eq!(denied.name, "alias");
     }
 
-    /// Defensive emission keys on real in-process definition vectors ONLY: an unmodeled command is
-    /// an external binary and cannot bind a function in the executing shell, so `hork` must never
-    /// flip the mode (`28R:rul-defensive-mode-definition-vectors`).
+    /// Defensive emission keys on real in-process definition vectors ONLY. TWO ways to get this
+    /// wrong, and the second is the one that bit: an unmodeled command is an external binary and
+    /// cannot bind a function in the executing shell (`hork`), and a ⊤-REJECT is not a vector either
+    /// — a peeling wrapper's command-position `"$@"` is a dynamic command name, which the parser
+    /// folds into the same AST reason as `eval`, so reading that reason would put every wrapper
+    /// oracle into defensive emission (`28R:rul-defensive-mode-definition-vectors`).
     #[test]
-    fn definition_vectors_ignore_unmodeled_commands() {
+    fn definition_vectors_ignore_unmodeled_commands_and_top_rejects() {
         assert!(super::definition_vectors(&["hork tune web\nwombat sync a\n"]).is_empty());
+        assert!(
+            super::definition_vectors(&["sudo__predict() {\n   env -i HOME=/root \"$@\"\n}\n"])
+                .is_empty(),
+            "a wrapper's own delegation is not a definition vector"
+        );
         assert_eq!(
-            super::definition_vectors(&["hork tune\n", "alias ls='ls -l'\n", "eval \"$x\"\n"])
+            super::definition_vectors(&["hork tune\n", "alias ls='ls -l'\n"])
                 .into_iter()
                 .collect::<Vec<_>>(),
-            vec!["alias".to_owned(), super::DYNAMIC_EXECUTION.to_owned()],
-            "both vectors are found, and the ⊤-reject travels under the parser's own reason"
+            vec!["alias".to_owned()]
         );
     }
 

@@ -1,0 +1,112 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# emit30-definition-vector-munges-everything (`28R:rul-defensive-mode-definition-vectors`) — the one
+# world where a BARE emitted name stops being a proof.
+#
+# The bare tier rests on a census: a name emitted unmunged is unique across everything the artifact
+# ships and everything the book visibly defines, so a call to it either binds our definition or lands
+# command-not-found. An `alias` dissolves the census — sh expands aliases while PARSING, so it can
+# rebind a name no walk of ours sees — and the whole artifact goes defensive: every emitted name
+# munges. The book's own bytes are untouched either way; only OUR emission moves.
+#
+# `alias` is the vector this cell can spell. The other two the rule names are both HARD parse
+# refusals in a book — `eval` and a computed `.` target are ERROR-tier ⊤-rejects that end the run
+# before a plan exists (measured: rc 10) — so they can never reach an emission decision from here.
+# The mode is reachable, and it is reachable through exactly one of the three.
+#
+# It is keyed to real in-process definition VECTORS and nothing else. `hork` below is unmodeled and
+# walls, and it must NOT flip the mode: an unmodeled command is an external binary and cannot bind a
+# function in the shell that runs it. That distinction is the rule's whole content — an any-⊤ trigger
+# would put the overwhelming majority of real books into defensive emission for no reason.
+#
+# What to read in the apply: the guard invokes `apt_get__is_converged_h<digest>` and the preamble
+# defines that name, with a single body under it. Without the vector, both would read bare.
+hork provision
+apt-get install -y nginx
+alias dorc_local_ls='ls -l'
+
+-- package.oracle.sh --
+# dorc-lang/v0.2
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted.
+site 1 effect=holds rc=0
+
+-- replay --
+$ dorc --book=book.sh -o package.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=0f7c78dc5a8b75946d4fd27d57b9e8427eaeb0dd1c62246014c44265ecfaa595 sites=1 @@dorc@@\n'
+# site 1: dorc-auto:apt_get@converged
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged_hc12ec1b7() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# emit30-definition-vector-munges-everything (`28R:rul-defensive-mode-definition-vectors`) — the one
+# world where a BARE emitted name stops being a proof.
+#
+# The bare tier rests on a census: a name emitted unmunged is unique across everything the artifact
+# ships and everything the book visibly defines, so a call to it either binds our definition or lands
+# command-not-found. An `alias` dissolves the census — sh expands aliases while PARSING, so it can
+# rebind a name no walk of ours sees — and the whole artifact goes defensive: every emitted name
+# munges. The book's own bytes are untouched either way; only OUR emission moves.
+#
+# `alias` is the vector this cell can spell. The other two the rule names are both HARD parse
+# refusals in a book — `eval` and a computed `.` target are ERROR-tier ⊤-rejects that end the run
+# before a plan exists (measured: rc 10) — so they can never reach an emission decision from here.
+# The mode is reachable, and it is reachable through exactly one of the three.
+#
+# It is keyed to real in-process definition VECTORS and nothing else. `hork` below is unmodeled and
+# walls, and it must NOT flip the mode: an unmodeled command is an external binary and cannot bind a
+# function in the shell that runs it. That distinction is the rule's whole content — an any-⊤ trigger
+# would put the overwhelming majority of real books into defensive emission for no reason.
+#
+# What to read in the apply: the guard invokes `apt_get__is_converged_h<digest>` and the preamble
+# defines that name, with a single body under it. Without the vector, both would read bare.
+hork provision
+( apt_get__is_converged_hc12ec1b7 install -y nginx ) || apt-get install -y nginx   # dorc: guard [dorc-auto:apt_get converged-vouch; probe: holds]
+alias dorc_local_ls='ls -l'
