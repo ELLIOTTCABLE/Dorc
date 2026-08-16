@@ -1714,6 +1714,87 @@ mod tests {
     /// This pins the SEAT. Whether a two-file world of this shape survives the cli's contested
     /// withdrawal is that edge's separate question (`cli/CLAUDE.md
     /// withdrawal-is-applied-once-never-consulted`).
+    /// A CROSS-FILE resolved pair whose `"$@"` reach different tail positions walls the word, and a
+    /// SAME-FILE one does not (`308:rul-resolved-pair-coherence-walls`).
+    ///
+    /// Independent per-member frame resolution is right — sh binds names independently — but it can
+    /// pair one file's peel model with another file's lend map, a composition no author wrote. The
+    /// lend map then argparses the wrong argv and can report FULL where the truth is MAPPED, which
+    /// UNDERSTATES `crossed()` and so under-consents entry: the dangerous direction.
+    ///
+    /// The same-file half is the load-bearing other end. That pair is `oracle::validate`'s
+    /// whole-unit fail-fast, which has already refused the entire run
+    /// (`RunOutcome::WrapperIncoherent`), so walling here too would double-narrate a refusal that
+    /// already happened — and, worse, would make this seat look like the thing enforcing a law it
+    /// only backstops.
+    #[test]
+    fn a_cross_file_resolved_pair_that_disagrees_walls_and_a_same_file_one_does_not() {
+        use dorc_aid::narrative::WrapperPairTag;
+
+        let mut interner = Interner::default();
+        // Two peel depths over the same argv: the predict consumes its leading flags before the
+        // guest, the lend map hands its argument slot straight through.
+        let deep = "# dorc-lang/v0.2\n\
+             w__predict() {\n\
+             \x20  while [ \"${1#-}\" != \"$1\" ]; do shift; done\n\
+             \x20  \"$@\"\n\
+             }\n";
+        let shallow = "# dorc-lang/v0.2\n\
+             w__lend_map() {\n\
+             \x20  : lends user\n\
+             \x20  : lends fs-view\n\
+             \x20  : lends netns\n\
+             \x20  \"$@\"\n\
+             }\n";
+        let provider = interner.intern("w");
+        let predicts = dorc_oracle::predict::lift_predicts(&mut interner, deep).value;
+        let lends = dorc_oracle::wrapper::lift_lend_map_set(&mut interner, shallow).value;
+        let predict = predicts
+            .get(provider)
+            .expect("the fixture declares a peeling predict")
+            .clone();
+        let lend = lends
+            .get(provider)
+            .expect("the fixture declares a lend map")
+            .clone();
+
+        assert_eq!(
+            super::resolved_pair_incoherence(0, &predict, Some(&(1, lend.clone())), None),
+            Some(WrapperPairTag::PeelDepth),
+            "resolved from two different files and disagreeing on the guest's start, the word must \
+             not be treated as a wrapper here"
+        );
+        assert_eq!(
+            super::resolved_pair_incoherence(0, &predict, Some(&(0, lend)), None),
+            None,
+            "the SAME file's own contradiction is `oracle::validate`'s pre-network fail-fast; this \
+             seat must not re-report it"
+        );
+    }
+
+    /// With no lend map resolved at all there is no PAIR to contradict — the enumerate-every-dimension
+    /// wall (`271:rul-lend-map`) is what handles that case, at `decide_entry`, and it is a different
+    /// answer from "these two authors disagree".
+    #[test]
+    fn a_resolved_predict_with_no_lend_map_is_not_a_pair_disagreement() {
+        let mut interner = Interner::default();
+        let src = "# dorc-lang/v0.2\n\
+             w__predict() {\n\
+             \x20  shift\n\
+             \x20  \"$@\"\n\
+             }\n";
+        let provider = interner.intern("w");
+        let predicts = dorc_oracle::predict::lift_predicts(&mut interner, src).value;
+        let predict = predicts
+            .get(provider)
+            .expect("the fixture declares a peeling predict")
+            .clone();
+        assert_eq!(
+            super::resolved_pair_incoherence(0, &predict, None, None),
+            None
+        );
+    }
+
     #[test]
     fn the_footprint_answers_from_the_definition_the_frame_names() {
         let first = oracle("first.dorc.Package");
