@@ -15,9 +15,11 @@ expect-diagnostic:
 #
 # The wall's footprint is DERIVED: apt_get__disturbs is payload-bound, so it escalates and ships
 # strip-only into the probe. It emits its file coordinates from a pipe, and then calls
-# _apt_displaced_packages for the packages the install replaces — a helper the survival lanes do NOT
-# carry with the shipped body. At probe time that call is unbound, so the survey stops one
-# coordinate in, having never emitted sm.dorc.Package:nginx.
+# _apt_displaced_packages for the packages the install replaces — a helper NOTHING IN THE LOADED SET
+# DECLARES. The survival lanes DO carry a declared helper now (the capture is witnessed at
+# emit30-disturbs-helper-ships-and-spares); this is the residue no capture can reach, because there is
+# no declaration to travel. At probe time that call is unbound, so the survey stops one coordinate in,
+# having never emitted sm.dorc.Package:nginx.
 #
 # What makes this the dangerous shape rather than a merely lossy one is that NOTHING in the record
 # stream disagrees with itself: the scaffold counts the lines it received and closes at n=1, so the
@@ -56,13 +58,9 @@ apt_get__disturbs() {
    case $verb in
    install|purge)
       dpkg -L "$1" | sed 's|^|sm.dorc.File:|'   # emits, then escalates the whole body (TC-4)
-      _apt_displaced_packages "$1"              # NOT carried by the survival ship lane ⇒ unbound
+      _apt_displaced_packages "$1"              # nothing declares it anywhere ⇒ unbound at the host
       ;;
    esac
-}
-
-_apt_displaced_packages() {
-   printf 'sm.dorc.Package:%s\n' nginx
 }
 
 apt_get__is_converged() {
@@ -157,7 +155,7 @@ $ dorc --book=book.sh -o package.oracle.sh --risk-faultless-skips < probe-result
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=487acdeeeba54c16ac3ab4cf40c6801ac5dda40c30d4856d265c17be28d60d54 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=3acc5f63bdef6a34d11047260bc2097a3cd07ec934bbd0c69794c2e1150e2e9e sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:oldpkg@installed
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -185,7 +183,7 @@ apt_get__disturbs() {
    case $verb in
    install|purge)
       dpkg -L "$1" | sed 's|^|sm.dorc.File:|'   # emits, then escalates the whole body (TC-4)
-      _apt_displaced_packages "$1"              # NOT carried by the survival ship lane ⇒ unbound
+      _apt_displaced_packages "$1"              # nothing declares it anywhere ⇒ unbound at the host
       ;;
    esac
 }
@@ -207,9 +205,11 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #
 # The wall's footprint is DERIVED: apt_get__disturbs is payload-bound, so it escalates and ships
 # strip-only into the probe. It emits its file coordinates from a pipe, and then calls
-# _apt_displaced_packages for the packages the install replaces — a helper the survival lanes do NOT
-# carry with the shipped body. At probe time that call is unbound, so the survey stops one
-# coordinate in, having never emitted sm.dorc.Package:nginx.
+# _apt_displaced_packages for the packages the install replaces — a helper NOTHING IN THE LOADED SET
+# DECLARES. The survival lanes DO carry a declared helper now (the capture is witnessed at
+# emit30-disturbs-helper-ships-and-spares); this is the residue no capture can reach, because there is
+# no declaration to travel. At probe time that call is unbound, so the survey stops one coordinate in,
+# having never emitted sm.dorc.Package:nginx.
 #
 # What makes this the dangerous shape rather than a merely lossy one is that NOTHING in the record
 # stream disagrees with itself: the scaffold counts the lines it received and closes at n=1, so the

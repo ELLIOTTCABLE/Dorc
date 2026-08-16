@@ -349,6 +349,7 @@ fn touches_defining_span(
 /// world through an author the shell would never have called.
 pub fn ship_touches_body(
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
+    helpers: &dorc_oracle::closure::HelperIndex,
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
@@ -377,13 +378,22 @@ pub fn ship_touches_body(
     let touches = set.get(p)?;
     match evaluate_touches(touches, &arg_refs) {
         // The EXPECTED escalation (24E §4): the body reached a host query ⇒ ship it.
-        TouchesResolution::Top(TouchesTop::NonPrintfCommand) => Some(dorc_plan::DerivationShip {
-            // Display the BOOK command word (`apt-get`), not the munged funcdef segment
-            // (`apt_get`, the forward-munge key) — the why-lens reads better with the word
-            // the admin wrote (`24C:rul24-totalistic-munge` keeps the segment internal).
-            call: format!("{}.touches()", interner.resolve(provider)),
-            sh: strip_touches(src, touches, interner),
-        }),
+        TouchesResolution::Top(TouchesTop::NonPrintfCommand) => {
+            let body = strip_touches(src, touches, interner);
+            // The at-most survey ships its snapshot too (`FORFEITS:forfeit-survival-lanes-closure-less`,
+            // captured). It matters more here than anywhere: an unbound helper kills the emitting body
+            // mid-survey, and a NARROW at-most claim SPARES MORE — the measured wrong-elision
+            // `an-at-most-claim-has-two-atomicities` exists for. A denial ships no derivation, so the
+            // site walls total.
+            let closure = helpers.closure_for(idx, &body).ok()?;
+            Some(dorc_plan::DerivationShip {
+                // Display the BOOK command word (`apt-get`), not the munged funcdef segment
+                // (`apt_get`, the forward-munge key) — the why-lens reads better with the word
+                // the admin wrote (`24C:rul24-totalistic-munge` keeps the segment internal).
+                call: format!("{}.touches()", interner.resolve(provider)),
+                sh: format!("{}{body}", closure.sh()),
+            })
+        }
         // Static-resolvable, an OTHER ⊤ (degrade-to-wall), or empty ⇒ NOT a derivation.
         TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
     }
@@ -690,6 +700,7 @@ pub fn build_wrapped_analysis(
             node,
             live,
             oracle_srcs,
+            helpers,
             checks,
             wrapper_sets,
             &candidates,
@@ -1037,10 +1048,16 @@ fn wrapper_candidates(
 /// saw, and one that can understate the crossed dimensions and so under-consent entry. Where a
 /// CROSS-FILE resolved pair disagrees, the word walls rather than peels. Same-file pairs are left to
 /// `oracle::validate`'s whole-unit fail-fast, which has already refused the whole run.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one site's three wrapper members resolve independently (`308` §1), so the frame, the \
+              source set, its snapshot index, and the three lifted vectors all reach one seat"
+)]
 fn site_wrapper_index(
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
     srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     sets: &WrapperSets,
     candidates: &BTreeMap<String, Symbol>,
@@ -1114,7 +1131,14 @@ fn site_wrapper_index(
                 "{}{ENTER_SUFFIX}",
                 dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(word))
             );
-            enter_defs.insert(*provider, (fname, stripped));
+            // The entry FORM ships its snapshot as well — the seat
+            // `FORFEITS:forfeit-survival-lanes-closure-less` does not name, found while capturing the
+            // three it does. An entry form whose helper never shipped 127s, which refuses entry and
+            // lands can't-say ⇒ guard/run (`27C`: every entry failure lands there), so the loss is
+            // value rather than safety. A denial supplies no entry form and the wrapper enters nothing.
+            if let Ok(closure) = helpers.closure_for(*file, &stripped) {
+                enter_defs.insert(*provider, (fname, format!("{}{stripped}", closure.sh())));
+            }
         }
         wrappers.insert(
             word.clone(),
@@ -1282,6 +1306,11 @@ fn resolve_inner_check(
 /// completeness gate can only fire against a FRAMED stream that really carried `deriv` records —
 /// which is what the fixture intake exists to supply (`crate::results::admit_fixture_records`).
 #[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the diagnostic route runs the survival pipeline in the binary's own order; splitting it \
+              is how the two orders drift, which is the failure this seat exists to prevent"
+)]
 pub fn survival_diagnostics(
     book_src: &str,
     oracle_paths: &[String],
@@ -1369,8 +1398,18 @@ pub fn survival_diagnostics(
     let uncontested = dorc_core::ContestedFamilies::none();
     let touches_paired = pair_touches_sets(&oracle_refs, &mut interner, &uncontested);
     let derivations = {
-        let derive =
-            |n, p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a, n, hint_live);
+        let hint_helpers = dorc_oracle::closure::HelperIndex::build(&oracle_refs, None);
+        let derive = |n, p, a: &[Symbol]| {
+            ship_touches_body(
+                &touches_paired,
+                &hint_helpers,
+                &interner,
+                p,
+                a,
+                n,
+                hint_live,
+            )
+        };
         dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
     };
 

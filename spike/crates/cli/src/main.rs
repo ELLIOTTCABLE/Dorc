@@ -1132,8 +1132,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         Vec::new()
     };
     let derivations = if args.risk_faultless_skips {
-        let derive =
-            |n, p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a, n, live_defs);
+        let derive = |n, p, a: &[Symbol]| {
+            ship_touches_body(&touches_paired, &helpers, &interner, p, a, n, live_defs)
+        };
         dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
     } else {
         dorc_plan::DerivationPlan::default()
@@ -1189,7 +1190,13 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     } else {
         BTreeSet::new()
     };
-    let resolvers = compile_resolvers(&resolver_coords, &kind_resolvers, &oracle_srcs, &interner);
+    let resolvers = compile_resolvers(
+        &resolver_coords,
+        &kind_resolvers,
+        &oracle_srcs,
+        &helpers,
+        &interner,
+    );
 
     // The REACH-probe (24G §4 — the reaches() EXPANSION lane, a FOURTH phase-1 shipping path). Lift
     // the per-kind reach-functions + enforce confusability ALWAYS (kind-keyed like the resolver). The
@@ -1223,6 +1230,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             &kind_reaches,
             &reach_kinds,
             &oracle_srcs,
+            &helpers,
             &mut interner,
             live_defs,
         )
@@ -2582,6 +2590,7 @@ fn compile_resolvers(
     coords: &BTreeSet<dorc_plan::EntityCoord>,
     kind_resolvers: &KindResolvers,
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     interner: &Interner,
 ) -> dorc_plan::ResolverPlan {
     use dorc_oracle::predict::strip_resolve;
@@ -2598,6 +2607,13 @@ fn compile_resolvers(
             dorc_core::EntityRef::Operand(tok) => interner.resolve(tok.0).to_owned(),
             dorc_core::EntityRef::Singleton => String::new(),
         };
+        let body = strip_resolve(src, resolver, interner);
+        // The kind-owner lanes ship their snapshot too (`FORFEITS:forfeit-survival-lanes-closure-less`,
+        // captured): a resolver calling a helper shipped alone 127s and canonicalizes nothing, which
+        // degrades to may-alias — safe, and a silent loss of every aliasing closure the author wrote.
+        let Ok(closure) = helpers.closure_for(idx, &body) else {
+            continue;
+        };
         probes.push(dorc_plan::ResolverProbe {
             coord_label: render_coord(*coord, interner),
             kind_label: interner.resolve(kind_sym).to_owned(),
@@ -2606,7 +2622,7 @@ fn compile_resolvers(
                 dorc_oracle::to_funcname_segment(interner.resolve(kind_sym))
             ),
             entity_text,
-            sh: strip_resolve(src, resolver, interner),
+            sh: format!("{}{body}", closure.sh()),
         });
     }
     dorc_plan::ResolverPlan { probes }
@@ -2646,6 +2662,7 @@ fn collect_reach_probes(
     reaches: &KindReaches,
     reach_kinds: &BTreeSet<Symbol>,
     oracle_srcs: &[String],
+    helpers: &dorc_oracle::closure::HelperIndex,
     interner: &mut Interner,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> dorc_plan::ReachPlan {
@@ -2689,7 +2706,13 @@ fn collect_reach_probes(
                     .unwrap_or_default()
                     .trim();
                 let arm_fn = reach_arm_fn_name(&kind_name, arm.index);
-                let arm_sh = format!("{arm_fn}() {{ {bytes} ; }}");
+                // The arm's own snapshot precedes the engine-synthesized wrapper (the same capture as
+                // the resolver lane). A denial drops the arm, which walls the footprint total — the
+                // at-most claim's conservative direction (`an-at-most-claim-has-two-atomicities`).
+                let Ok(closure) = helpers.closure_for(idx, bytes) else {
+                    continue;
+                };
+                let arm_sh = format!("{}{arm_fn}() {{ {bytes} ; }}", closure.sh());
                 probes
                     .entry((coord_label.clone(), arm.index))
                     .or_insert(dorc_plan::ReachProbe {

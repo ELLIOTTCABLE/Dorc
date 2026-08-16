@@ -345,7 +345,15 @@ impl WhyWorld {
         let survival = consented.then(|| {
             let derivations = {
                 let derive = |n, p, a: &[Symbol]| {
-                    crate::survival::ship_touches_body(&touches_paired, &interner, p, a, n, live)
+                    crate::survival::ship_touches_body(
+                        &touches_paired,
+                        &helpers,
+                        &interner,
+                        p,
+                        a,
+                        n,
+                        live,
+                    )
                 };
                 dorc_plan::compile_derivations(
                     &parsed.value,

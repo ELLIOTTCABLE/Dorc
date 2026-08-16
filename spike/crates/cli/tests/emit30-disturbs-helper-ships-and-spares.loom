@@ -1,0 +1,210 @@
+---
+run: round-trip
+fixpoint: executed
+flags: --risk-faultless-skips
+---
+-- book.sh --
+# emit30-disturbs-helper-ships-and-spares — the CAPTURE of
+# `FORFEITS:forfeit-survival-lanes-closure-less`, from the positive side.
+#
+# Same shape as pin28-survival-body-death-walls-total, one difference: the helper the disturbs() body
+# calls is DECLARED beside it. The survival lanes now carry a role body's snapshot exactly as the
+# probe and guard lanes do, so the survey runs to the end, exits 0, and the at-most claim it wrote is
+# the whole claim its author meant.
+#
+# The payoff is the survival tier, which is what the forfeit row said was being lost: the wall's
+# completed footprint names the packages the oldpkg install displaces, none of them nginx, so the
+# converged nginx install stays elided PAST a running wall. Before the capture the same book walled
+# total on a body that died mid-survey — value lost, honestly, but lost.
+#
+# Read the run-log: `dpkg -L` and the helper's own `dpkg --search` both appear (the helper really
+# travelled), and `apt-get install -y nginx` does NOT (the elision survived).
+apt-get install -y oldpkg
+apt-get install -y nginx
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# A payload-bound package oracle whose disturbs() body factors half its survey into a helper — the
+# `28M` §7 composition shape, in the lane that could not carry it until now.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+   install|purge)
+      dpkg -L "$1" | sed 's|^|sm.dorc.File:|'   # emits, then escalates the whole body (TC-4)
+      _apt_displaced_packages "$1"              # DECLARED below ⇒ travels with the shipped body
+      ;;
+   esac
+}
+
+_apt_displaced_packages() {
+   dpkg --search "$1" | sed 's|^|sm.dorc.Package:|'
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The records the shipped body really produces: the file coordinate from the pipe, then the helper's
+# own package coordinate, then a clean close. `body-rc=0` is the half the count cannot see, and here
+# it is honest — the survey finished.
+site 0 effect=absent
+site 1 effect=holds
+deriv 0 coord=sm.dorc.File:/etc/oldpkg.conf
+deriv 0 coord=sm.dorc.Package:oldpkg-legacy
+deriv-end 0 n=2 body-rc=0
+deriv 1 coord=sm.dorc.File:/etc/nginx.conf
+deriv 1 coord=sm.dorc.Package:nginx-legacy
+deriv-end 1 n=2 body-rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT strawman mock. `dpkg -L <pkg>` lists the package's installed FILES; `dpkg --search <pkg>`
+# answers the helper's question — which package this one displaces. HOST model: <pkg> lays down
+# /etc/<pkg>.conf and displaces <pkg>-legacy. Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${1:-} in
+   -L) printf '/etc/%s.conf\n' "$2" ;;
+   --search) printf '%s-legacy\n' "$2" ;;
+esac
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W <pkg>`. HOST: oldpkg NOT installed (rc 1 ⇒ the wall); nginx
+# installed (rc 0 ⇒ the survival candidate). Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac
+
+-- mocks/sed --
+#!/bin/sh
+# INERT strawman mock — the `sed 's|^|<kind>:|'` stages of the derivation pipes. The expression arg
+# is not interpreted; the prefix comes from the arg itself so ONE mock serves both stages (a spike
+# mock, ru-26). Read-only. Pure-sh.
+. "${0%/*}/.log"; _dorc_logged "$@"
+_p=${1#s|^|}
+_p=${_p%|}
+while IFS= read -r _l; do printf '%s%s\n' "$_p" "$_l"; done
+
+-- expected.ran --
+ran: apt-get install -y oldpkg
+
+-- replay --
+$ dorc --book=book.sh -o package.oracle.sh --risk-faultless-skips < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=39813f3584b5e121940bc79680aa011cdbd81531adc1381bb5f94ec870d0061a sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:oldpkg@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:nginx@installed
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# dorc derivation-probe (read-only, 24E section 2): payload-bound footprints the static
+# tracer could not resolve. Each escalated wall-candidate ships its touches() body
+# strip-only; when run it prints its footprint coordinates, re-keyed per site:
+#   deriv <leafid> coord=<kind:entity>
+# (the SAME leaf-id the apply plan assigns -- inv-site-keyed-results).
+
+# deriv 0: apt-get (host-derivation via apt-get.touches())
+_apt_displaced_packages() {
+   dpkg --search "$1" | sed 's|^|sm.dorc.Package:|'
+}
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+   install|purge)
+      dpkg -L "$1" | sed 's|^|sm.dorc.File:|'   # emits, then escalates the whole body (TC-4)
+      _apt_displaced_packages "$1"              # DECLARED below ⇒ travels with the shipped body
+      ;;
+   esac
+}
+_d=$(apt_get__disturbs 'install' '-y' 'oldpkg'); _dr=$?
+if [ -z "$_d" ]; then printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
+# deriv 1: apt-get (host-derivation via apt-get.touches())
+_d=$(apt_get__disturbs 'install' '-y' 'nginx'); _dr=$?
+if [ -z "$_d" ]; then printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# emit30-disturbs-helper-ships-and-spares — the CAPTURE of
+# `FORFEITS:forfeit-survival-lanes-closure-less`, from the positive side.
+#
+# Same shape as pin28-survival-body-death-walls-total, one difference: the helper the disturbs() body
+# calls is DECLARED beside it. The survival lanes now carry a role body's snapshot exactly as the
+# probe and guard lanes do, so the survey runs to the end, exits 0, and the at-most claim it wrote is
+# the whole claim its author meant.
+#
+# The payoff is the survival tier, which is what the forfeit row said was being lost: the wall's
+# completed footprint names the packages the oldpkg install displaces, none of them nginx, so the
+# converged nginx install stays elided PAST a running wall. Before the capture the same book walled
+# total on a body that died mid-survey — value lost, honestly, but lost.
+#
+# Read the run-log: `dpkg -L` and the helper's own `dpkg --search` both appear (the helper really
+# travelled), and `apt-get install -y nginx` does NOT (the elision survived).
+apt-get install -y oldpkg
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
