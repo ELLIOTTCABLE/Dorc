@@ -34,41 +34,11 @@ use dorc_core::{BytePos, Interner, Span};
 /// (conductor rider). A code may leave this list ONLY by gaining a defining case; adding a NEW code
 /// without one must add it here with its surface note (the completeness gate enforces the
 /// partition, `ratchet_only_shrinks` guards the direction against the committed baseline).
-const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
-    // ── records deframer: inject a mangled `probe-results.txt` frame ──
-    (
-        "records-headerless-refused",
-        "probe-results: a stream with NO `dorc-records/1` framing at all",
-    ),
-    (
-        "records-glued-line",
-        "probe-results: a record line with bytes after its terminal token",
-    ),
-    (
-        "records-header-missing",
-        "probe-results: a framed stream whose header line is torn/absent",
-    ),
-    (
-        "records-sentinel-nonce",
-        "probe-results: an end-sentinel carrying a foreign nonce",
-    ),
-    (
-        "records-integrity-refused",
-        "probe-results: a header failing an integrity key (host/book/attempt)",
-    ),
-    (
-        "records-torn-line",
-        "probe-results: a record fragment that lost its terminating write",
-    ),
-    (
-        "records-alien-line",
-        "probe-results: a non-nonce record line mixed into the stream",
-    ),
-    (
-        "records-late-line",
-        "probe-results: a record line after the end-sentinel",
-    ),
-];
+/// EMPTY since the records lane gained its production emitter (`306b` §6e): every catalog slug is
+/// now case-owned, and this list has nowhere left to shrink to. Keep it — a new code with no case
+/// must declare itself here with its trigger surface, and the shrink-only guard then pins the
+/// direction from a baseline of zero.
+const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[];
 
 #[test]
 fn defining_case_parts_match_product_renders() {

@@ -1,0 +1,10 @@
+---
+code: records-torn-line
+when-fires: a line that looks like ours carried no terminal token, so it lost its terminating write. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. `{count}` is what was seen before the walk stopped.
+why: 262 §1 pin-late-and-alien-records: the tear is DETECTED rather than parsed, which is what keeps a truncated coordinate from reading as a valid shorter one.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- records-torn-line && mise run loom:promote -- records-torn-line`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all records-torn-line` lists this case's values; type {{name}} to insert or move one.
+---
+-- replay --
+$ dorc plan --book=book.sh < probe-results.txt
+warning[records-torn-line]: sm 2 torn (no terminal token) record line(s)
+discarded (counted, never folded)

@@ -1,0 +1,11 @@
+---
+code: records-integrity-refused
+when-fires: the records header declared an identity key this controller did not mint. plan/records.rs parse_header (the strict admission path); the forgiving deframer emits it too. `{which}` is the typed RecordsHeaderMismatch component.
+why: 262 §2: any known-key mismatch refuses the whole read unit (kFAIL-perform). The four keys route identically, so they are reason-enum components rather than sibling codes (28L rul-reason-enums-not-sibling-codes).
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- records-integrity-refused && mise run loom:promote -- records-integrity-refused`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all records-integrity-refused` lists this case's values; type {{name}} to insert or move one.
+---
+-- replay --
+$ dorc plan --book=book.sh < probe-results.txt
+warning[records-integrity-refused]: sm the records header failed integrity on
+[unwritten: records-integrity-refused-host] -- the whole read unit is refused,
+the host runs (kFAIL-perform)

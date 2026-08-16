@@ -29,12 +29,15 @@ use crate::diag::{
     LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
     MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
     MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
-    RecordsFactTruncated, RenderHeredocRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
-    SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass, SolverConsistencyFailure,
-    SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
-    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
-    TransportSessionLost, TransportSpawnRefused, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
-    WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
+    RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch,
+    RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine,
+    RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused, RoleDefinedBelowItsSites,
+    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass,
+    SolverConsistencyFailure, SurvivalRederivationDisagreement, SyntaxUnsupported,
+    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
+    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
+    WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
+    WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -98,6 +101,45 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 declared: 5,
                 unseen: 2,
             }),
+        ),
+        // The records lane's other eight. Their honest world is a whole probe round-trip whose
+        // product is a REFUSAL — no artifact, and the diagnostic on stderr — which no in-process
+        // route can render: the loom consumer's own seat turns a refused stream into an error
+        // rather than a world, deliberately. The real path is pinned by the two whole-product e2e
+        // cases instead (`crates/cli/tests/records28-*`).
+        (
+            "records-headerless-refused",
+            DiagCode::RecordsHeaderlessRefused(RecordsHeaderlessRefused),
+        ),
+        (
+            "records-glued-line",
+            DiagCode::RecordsGluedLine(RecordsGluedLine),
+        ),
+        (
+            "records-header-missing",
+            DiagCode::RecordsHeaderMissing(RecordsHeaderMissing),
+        ),
+        (
+            "records-sentinel-nonce",
+            DiagCode::RecordsSentinelNonce(RecordsSentinelNonce),
+        ),
+        (
+            "records-integrity-refused",
+            DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused {
+                which: RecordsHeaderMismatch::Host,
+            }),
+        ),
+        (
+            "records-torn-line",
+            DiagCode::RecordsTornLine(RecordsTornLine { count: 2 }),
+        ),
+        (
+            "records-alien-line",
+            DiagCode::RecordsAlienLine(RecordsAlienLine { count: 1 }),
+        ),
+        (
+            "records-late-line",
+            DiagCode::RecordsLateLine(RecordsLateLine { count: 1 }),
         ),
         (
             "host-evidence-admission-refused",

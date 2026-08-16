@@ -1,0 +1,10 @@
+---
+code: records-alien-line
+when-fires: a line that is not ours at all appeared in the stream. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. `{count}` is what was seen before the walk stopped.
+why: 262 §1 pin-late-and-alien-records: a foreign or stale-attempt writer on the channel; rejected rather than consumed.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- records-alien-line && mise run loom:promote -- records-alien-line`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all records-alien-line` lists this case's values; type {{name}} to insert or move one.
+---
+-- replay --
+$ dorc plan --book=book.sh < probe-results.txt
+warning[records-alien-line]: sm 1 alien (non-nonce) record line(s) discarded
+(counted, never folded)

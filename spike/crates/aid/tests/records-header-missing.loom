@@ -1,0 +1,11 @@
+---
+code: records-header-missing
+when-fires: framed records material arrived before any header line, or the stream ended without one. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. Static.
+why: 262 §1/§2: a missing header refuses the read unit (kFAIL-perform).
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- records-header-missing && mise run loom:promote -- records-header-missing`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all records-header-missing` lists this case's values; type {{name}} to insert or move one.
+---
+-- replay --
+$ dorc plan --book=book.sh < probe-results.txt
+warning[records-header-missing]: sm a framed records stream carried no
+`dorc-records/1` header (torn/absent) -- the read unit is refused, the host runs
+(kFAIL-perform)
