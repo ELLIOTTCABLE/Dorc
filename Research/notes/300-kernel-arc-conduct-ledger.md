@@ -451,6 +451,62 @@ Three lanes, conduct-branch-based:
   back into the broken shape); `doctor` v2 nit — ~45 unregistered zero-byte husk
   dirs under `.claude/worktrees/` are invisible to it.
 
+- **lane-kani-battery-reshape — FOLDED 2026-08-15 @ `ddf60300`** (3 commits rebased).
+  **107/107 harnesses green · ZERO counterexamples · ZERO over-budget** (battery
+  406s; slowest 15.76s vs the 120s budget). Coverage vs `300a` §1's unverified list:
+  canonical-form seats CLOSED (both facades, every length 0–3, at-capacity included) ·
+  structural-eq CLOSED at declared bounds · set operators PARTIAL (lopsided pairs —
+  the measured refinement: concrete INPUT lengths are necessary NOT sufficient;
+  `union`/`intersection` insert element-by-element, so a merge affords ≤1 insert and
+  merge-COMPOSING laws (absorption, ⊔/⊓-bounds, associativity over collection
+  combinators) are unjudged at this tier at ANY size, permanently and honestly —
+  seat tests carry them). The mint invariant characterized EXACT
+  (`every_key_has_a_token`) and closed inductively
+  (`mint_maintains_the_dialect_invariant`). ADJUDICATIONS: the shared-helper
+  strengthening ACCEPTED (four whole-domain harnesses now check strictly STRONGER
+  statements, all green; anti-drift beats duplication; conductor gap — "no touching
+  the 19" was over-broad phrasing for never-weaken; and it should have been a
+  question first, logged). BANKED: `work-capacity-reservation-for-merge-laws`
+  (reserving up-front capacity in the two merge operators would make the whole
+  collection tier verifiable — sanctioned in shape by
+  `301:post-checkable-states-are-a-feature`, deferred pending the aeneas-fence
+  ride-along) · the subsumed `…backing_moves` harness (delete at next tidy) · the
+  detached crate sits outside the fmt gate (one-line paydown). The Kani authorship
+  discipline is ENCODED per human direction: compact recognize/read/invoke layer in
+  the `verified-core-discipline` skill + the full measured shaping rules in its
+  `references/kani-authorship.md`, loaded only at authoring time (progressive
+  disclosure).
+- **lane-hk-output-tuning — FOLDED 2026-08-15 @ `f54b5068`** (Sonnet, two passes).
+  Diagnosis CORRECTED across the passes: the token-billed spam is hk's APPEND-ONLY
+  fallback (a fresh line per progress state-change, every commit's hooks), never
+  ANSI (zero ESC/CR in every capture). `-q` proven the fix (0 bytes on success;
+  failure output byte-identical, verified both hooks); `-n` a measured no-op (the
+  conductor's directed flag — corrected by measurement, endorsed). Landed:
+  `check-quiet` task (hyphen naming per real convention over the conductor's colon
+  typo, disclosed) + four defensive TTY-progress-off env knobs on the settings
+  channel. CORRECTLY HALTED at the shared-`.git/config` boundary — the hook rewiring
+  touches every worktree AND the human's own terminal, so it is HUMAN-APPLIED; the
+  validated commands, verbatim:
+  `git config --local hook.hk-pre-commit.command 'test "${HK:-1}" = "0" || if [ "${HK_FIX:-}" = "0" ]; then mise x -- hk run -q pre-commit --from-hook; else mise x -- hk run pre-commit --from-hook; fi'`
+  `git config --local hook.hk-commit-msg.command 'test "${HK:-1}" = "0" || if [ "${HK_FIX:-}" = "0" ]; then mise x -- hk run -q commit-msg --from-hook; else mise x -- hk run commit-msg --from-hook; fi'`
+  (The `else` arms are byte-identical to today's behavior, verified on failing
+  inputs under a forced human-env.) BANKED `work-hook-config-durability`: an
+  `hk-install` re-run silently drops the customization; the safe durable fold wants
+  a small `internal-tooling` subcommand (the value string's `||`/`;`/`${}` content
+  defeats `task-bodies-are-shell-free` inline).
+- **THE DEBT PASS IS CLOSED (2026-08-15)** — all chartered lanes folded; the
+  steering-file EDITORIAL PASS executed per the expensive-files rule (spike/CLAUDE.md
+  compressed ~45 lines: the kani shaping bullet deduped against the skill reference
+  and renamed `kani-coverage-has-measured-walls`; the forced-plain bullet rewritten
+  to the corrected diagnosis; the measure-once history-parenthetical stripped; the
+  tangled minispec sentence restored to its own bullet; cheat-sheet entries
+  tightened; `check-quiet` row added. Crate CLAUDE.md additions accepted as-landed —
+  all were conductor-directed applications, not builder accretion). QUIESCENT;
+  rewind-ready per §1's anchor. NOTE for promotion: conduct and `ai/main` have
+  genuinely DIVERGED (the human's QA/quarantine landings on main); reconciliation at
+  promotion is a real rebase-or-merge, the human's act, proposed at the rewind
+  boundary.
+
 ### §2a — Facade-fold bank (consumed by lane-kani, the derived-defs lane, and Flux)
 
 Invariant seats (seat · invariant · pinning test; all tests in the default suite):

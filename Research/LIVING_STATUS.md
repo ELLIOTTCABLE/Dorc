@@ -46,7 +46,13 @@ fixtures lane). REMAINING to `300:wave-one-close`: the WSL-leg gate batch +
 instruments is REASSIGNED to the sibling conductor + human (candidate bank: `300`
 §4). THE KERNEL REWRITE IS IN MOTION: the definition-fixtures commissioning lane
 (ground-truth differential cells for the plural-definition idioms,
-fixtures-before-conversion per `28Q` §8) is DISPATCHED; the `.claude/reports/` →
+fixtures-before-conversion per `28Q` §8) is DISPATCHED; **the post-close DEBT PASS
+is CLOSED** (preflight/doctor guard the heavy tasks · the both-task WSL target fixed ·
+bless refuses-or-mints floor manifests sanctionedly · the kani battery fully judged
+107/107 with the authorship discipline encoded in the `verified-core-discipline`
+skill's kani reference · agent surfaces forced plain, the hook rewiring
+HUMAN-APPLIED per `300` §2's ledgered commands · ~80+ GiB reclaimed; all lane rows +
+adjudications in `300` §2); the `.claude/reports/` →
 subscripted-docID cleanup is FOLDED ([TYPED]: no parallel durable dirs — `300` §5
 carries the ruling, mapping `300a`–`300e`/`303a`, and the extras adjudication; the
 dir is gone); a SIBLING conductor concurrently runs the

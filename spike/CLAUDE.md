@@ -821,10 +821,9 @@ mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
 mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (one harness at a
-                          #   time, memory-gated, CBMC reaped between each; trailing arg = one
-                          #   harness). Opens with a toolchain-less `cargo check` of the detached
-                          #   harness crate, which nothing else compiles.
+                          #   time, memory-gated, CBMC reaped; trailing arg = one harness)
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
+mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
 ```
 
 `mise tasks` lists them with the full caveat text; trailing args after `--` append
@@ -863,34 +862,26 @@ no task covers, and consider adding the task instead.
   (cheap tier: catalogue coherence, unit/slug contracts, the hole censuses — no
   external toolchain). `verify:translate` / `verify:lean` / `verify:report --
   --with-lean` are opt-in Linux/WSL lanes (the derived-definitions pipeline, the lake
-  build, the badge recompute). `verify:kani` — the bounded-verification lane over the
-  algebra tier, plus its one-time `verify:kani-setup` — is that same opt-in tier, and
-  on Windows both refuse in one polite line. It drives ONE harness at a time under a
-  per-harness wall-clock budget and address-space cap, reaping CBMC between each;
-  never a bare `cargo kani` battery, which has taken a whole WSL VM down. An
-  over-budget harness is a FINDING (the formula needs a shape the checker can afford),
-  never something to wait out. The lane opens with a toolchain-less `cargo check` of the
-  DETACHED harness crate — nothing in `mise run check` or `cargo build --workspace`
-  compiles it, so that check is the only thing standing between a `core`/`analysis`
-  signature change and a silently-rotted battery.
-- **kani-harnesses-state-concrete-sizes** (r30, measured) — every harness over a
-  `core::sorted` facade or a collection-shaped lattice combinator declares EXACT sizes,
-  one harness per length or length-pair, because a `Vec` whose length is symbolic and
-  whose backing is full reallocates at a symbolic size and CBMC cannot afford that. The
-  measurement's sting is that the shape also arises INSIDE an operation: `SortedSet::union`
-  clones the left side and `insert`s the right element by element, so its SECOND insert
-  reallocates at an already-symbolic length whatever the input sizes were. Measured green
-  with one element on the right, over-budget with two. Consequences that must not be
-  quietly "fixed" by widening a bound: `union` is judged only with ≤1 element on the right,
-  `intersection` only with ≤1 on the left, `Powerset`/`MapL`/`Product<Powerset,_>` lattice
-  laws only at 0 or 1 member, and absorption, the ⊔/⊓-are-bounds clauses, and associativity
-  over a collection-shaped combinator are UNJUDGED at this tier at any size (each composes
-  one merge's result into another). Their seat tests are what they have. `minispec/` is SPEC SURFACE under its own CLAUDE.md's
-  access laws — content is touched ONLY by a frontier-class model AND only with
-  explicit human authorization (`minispec/CLAUDE.md`
-  `law-spec-touch-frontier-human-only`, a two-part lock; conductors are not exempt,
-  and builders never edit content there at all); the catalogue lock's promote is a
-  spec-side act whose review is the git diff.
+  build, the badge recompute). `verify:kani` (+ one-time `verify:kani-setup`) is the
+  same opt-in tier; Windows refuses in one polite line. It drives ONE harness at a
+  time, memory-gated, CBMC reaped between each — never a bare `cargo kani` battery
+  (`background-wsl-children-outlive-taskstop`) — and opens with a toolchain-less
+  `cargo check` of the DETACHED harness crate, the only compile standing between a
+  `core`/`analysis` signature change and a silently-rotted battery. `minispec/` is
+  SPEC SURFACE under its own CLAUDE.md's access laws — content is touched ONLY by a
+  frontier-class model AND only with explicit human authorization
+  (`law-spec-touch-frontier-human-only`, a two-part lock; conductors are not
+  exempt, and builders never edit content there at all); the catalogue lock's
+  promote is a spec-side act whose review is the git diff.
+- **kani-coverage-has-measured-walls** (r30) — harnesses declare EXACT concrete
+  sizes (a symbolic length under reallocation is unaffordable, and the shape also
+  arises INSIDE `union`/`intersection`, which insert element-by-element), so
+  coverage is per-declared-size and deliberately lopsided; absorption, the
+  ⊔/⊓-bounds clauses, and associativity over collection-shaped combinators are
+  UNJUDGED at this tier at ANY size (each composes merges) — their seat tests are
+  what they have. Never "fix" an unjudged law by widening a bound. Before authoring
+  or modifying ANY harness, the `verified-core-discipline` skill's
+  `references/kani-authorship.md` is the mandatory read.
 - **fmt-is-a-task-in-every-session** — `mise run fmt` formats, agent session included:
   the task re-enables hk's fix mode for itself, because the session-wide `HK_FIX=0`
   that keeps the pre-commit hook check-only otherwise turns every fixer into its
@@ -924,26 +915,21 @@ no task covers, and consider adding the task instead.
   rewrites. Still run `mise run check` yourself before every commit (`mise run gate` for
   that plus a fresh build and the whole suite) — the hook is the backstop, not the habit.
   Never `--no-verify`.
-- **agent-surfaces-forced-plain** (r30) — the same settings-env channel additionally carries
-  `HK_TERMINAL_PROGRESS=0`, `CARGO_TERM_PROGRESS_WHEN=never`,
-  `CARGO_TERM_PROGRESS_TERM_INTEGRATION=false`, `MISE_TASK_OUTPUT=timed`: all four are
-  documented, env-bindable knobs (`hk config explain <key>`; Cargo's `[term]` config;
-  `mise run --help`) that gate OSC/taskbar progress-reporting and mise's own live task-output
-  renderer, which only engage under a genuine TTY. Measured 2026-08-15 from this harness's own
-  Bash/PowerShell tool backends (`process.stdout.isTTY` is `undefined` for both — never a real
-  console): hk/cargo/typos/mise already choose their plain append-only fallback with ZERO ESC
-  (0x1b) or bare-CR bytes regardless of these knobs, so the four are a defensive forcing for
-  harness variants that DO attach a real console, never a fix for something reproduced here.
-  `MISE_TASK_OUTPUT=timed`'s "hide a line visible under 1s" filter is provably a no-op when
-  piped (byte-identical to `prefix`, verified back-to-back) — nothing is dropped in the
-  deployment case that matters; `prefix` is the fallback repair if that filter is ever
-  suspected of eating a line, and it is still fully plain, never a reach for ANSI. `-n
-  /--no-progress` and `-q/--quiet` are hk CLI-flags ONLY — `hk config explain` shows no ENV
-  row for either — so hk's own TTY step-list redraw has no forceable-off env knob; left alone
-  rather than hacked around (`hk.pkl`/task bodies are shared with the human, so baking the
-  flag in there would mute the human's pretty view too). The law: AI-facing invocations
-  (anything Claude Code drives, human-typed or autonomous) stay append-only plain; the
-  human's OWN terminal outside Claude Code keeps every repaint untouched.
+- **agent-surfaces-forced-plain** (r30, measured twice) — the token-billed spam in
+  agent transcripts is hk's append-only fallback minting a fresh line per progress
+  state-change, on EVERY commit's hooks; it was never ANSI (zero ESC/CR bytes in
+  every capture — these tool backends present no TTY). `-q`/`--quiet` is the fix
+  (0 bytes on success; failure diagnostics byte-identical — verified against a
+  planted drift and a bad commit-msg); `-n`/`--no-progress` is a measured no-op
+  here. Both are CLI-flags only, so the agent lint spelling is `mise run
+  check-quiet`, and the hook-side fix is a conditional `hook.hk-*.command`
+  branching on `HK_FIX=0` — HUMAN-APPLIED (it lives in the shared `.git/config`;
+  the exact commands are ledgered in `300` §2). The settings-env channel also
+  carries four defensive TTY-progress-off knobs (`HK_TERMINAL_PROGRESS=0` ·
+  `CARGO_TERM_PROGRESS_WHEN=never` · `CARGO_TERM_PROGRESS_TERM_INTEGRATION=false` ·
+  `MISE_TASK_OUTPUT=timed`, whose <1s filter is piped-no-op; `prefix` is the plain
+  fallback). The law: AI-driven invocations stay append-only plain; the human's own
+  terminal keeps every repaint.
 - **hk-drives-the-hooks** — `hk.pkl` is the one home for every hook step; `mise run
   check`/`fmt` are thin wrappers over `hk check`/`hk fix --all`, so no step is spelled
   twice. `mise run hk-install` is human-gated (it writes the shared `.git/config`).
@@ -1080,10 +1066,7 @@ no task covers, and consider adding the task instead.
 - **emitted-is-measure-once-ground-truth** (r30, closing a gap that bit three lanes) — an
   `expected.emitted` section is what the floor BINARIES said, not what the engine renders, so the
   ordinary bless has no authority over it and now says so: `BLESS=1` REFUSES any case carrying the
-  section, in one line naming the mint below, before materializing anything. (It used to write the
-  fresh measurement into the throwaway materialization dir while `bless_loom` folded back only
-  `expected.out`/`expected.ran` — a green-looking run that discarded exactly what it had measured,
-  after which two lanes hand-edited committed transcripts and hand-computed their `book=<sha256>`.)
+  section, in one line naming the mint below, before materializing anything.
   The ONE write path is `mise run bless:floor -- <case>`: an explicit double opt-in (`BLESS_FLOOR=1`
   AND `DORC_E2E_FLOOR_SHELLS`, half-spelled ⇒ refuse before any case runs) under which the lane
   re-measures the manifest and commits it together with the transcript and the digest inside it, from
