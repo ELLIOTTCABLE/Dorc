@@ -195,8 +195,12 @@ four-Migrated-registers prose question remain the two open soft items.
 [TYPED 2026-08-15, evening — **the conductor-sandwich flow**, tentative-general]:
 for conductor-decision work with mechanical surroundings (prose-minting the
 exemplar): the BUILDER sets up a tested playing-field (mints structure,
-prose-empty, context-rich, pre-evaluated) and hands exact paths; the CONDUCTOR
-does nothing but the decision itself (a handful of Write calls); the builder
+prose-empty, pre-evaluated) and hands ONLY the loom file paths + a
+compiled-and-edit-loop-green confirmation — NEVER a chat context-report: the
+loom itself holds the whole authoring context BY DESIGN, and a loom one cannot
+author from alone is a bug in that loom, which this flow deliberately smokes
+out [TYPED refinement]; the CONDUCTOR Reads the looms whole (the authoring law)
+and does nothing but the decision itself (a handful of Write calls); the builder
 resumes on an extended-downwards single-use license to handle promote/bless/
 errors/churn. Purpose: conductors stay context-light; builders own all
 tool-fallout. Proposed as the general flow, not law; first application = the
