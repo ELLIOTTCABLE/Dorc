@@ -1,0 +1,136 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# dorc-lang/v0.2
+# wrap30-consent-comes-from-the-live-verdict (`308:rul-wrapper-lane-joins-the-conversion`) — the
+# CONSENT CHIMERA, closed.
+#
+# `27C`'s entry consent is double-ended: the author's per-function `: safe-across <dim>` mark times
+# the admin's dial. The mark is a claim about ONE BODY — "this body's effects are read-only by
+# design" — so it can only speak for the body that actually executes in the shifted context.
+#
+# Here the oracle's marked body is blessed away (`unset -f`, `28K` §1's whole blessing vocabulary)
+# and this book's own unmarked body is what the frame names at the site. The lane used to take the
+# tolerance vouch first-file-wins, so the FIRST author's mark licensed entering the root context to
+# run the SECOND author's body — a consent nobody gave. The book author typed no mark, so the site
+# degrades and runs.
+#
+# ANTI-MASKING: the two bodies invoke DIFFERENT check commands, so if a check ever ships the probe
+# artifact says whose. `hork query` is the oracle's; `hork inspect` is this book's.
+unset -f hork__is_converged
+hork__is_converged() {
+   hork inspect -- "$2"
+}
+sudo hork install wombat
+
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+# The FIRST author, who did vouch context-tolerance. Blessed away above, so this mark speaks for
+# nothing at the site below it.
+hork__is_converged() {
+   : safe-across user
+   hork query -- "$2"
+}
+
+-- sudo.oracle.sh --
+# dorc-lang/v0.2
+# The coherent sudo wrapper of pin28-wrapped-vouch-answers-at-a-live-site, byte-for-byte.
+sudo__predict() {
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) shift 2 ;; *) shift ;; esac; done
+   env -i HOME=/root "$@"
+}
+sudo__lend_map() {
+   target=root
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) target="$2"; shift 2 ;; *) shift ;; esac; done
+   printf '%s\n' "$target" : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+sudo__enter() {
+   sudo -n "$@"
+}
+
+-- probe-results.txt --
+# EMPTY, and the emptiness is the assertion: an unvouched crossing degrades, so no check ships and
+# the probe produces no record. The day this site ships one, gate-1 goes red against this file.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/sudo --
+#!/bin/sh
+# INERT mock: logs its argv and exits 0; nothing is exec'd.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sudo hork install wombat
+
+-- replay --
+$ dorc --book=book.sh -o hork.oracle.sh -o sudo.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=6493a204c380046eb59f323176ac64712ef3031cc68efb80d933631237ca939c sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# dorc-lang/v0.2
+# wrap30-consent-comes-from-the-live-verdict (`308:rul-wrapper-lane-joins-the-conversion`) — the
+# CONSENT CHIMERA, closed.
+#
+# `27C`'s entry consent is double-ended: the author's per-function `: safe-across <dim>` mark times
+# the admin's dial. The mark is a claim about ONE BODY — "this body's effects are read-only by
+# design" — so it can only speak for the body that actually executes in the shifted context.
+#
+# Here the oracle's marked body is blessed away (`unset -f`, `28K` §1's whole blessing vocabulary)
+# and this book's own unmarked body is what the frame names at the site. The lane used to take the
+# tolerance vouch first-file-wins, so the FIRST author's mark licensed entering the root context to
+# run the SECOND author's body — a consent nobody gave. The book author typed no mark, so the site
+# degrades and runs.
+#
+# ANTI-MASKING: the two bodies invoke DIFFERENT check commands, so if a check ever ships the probe
+# artifact says whose. `hork query` is the oracle's; `hork inspect` is this book's.
+unset -f hork__is_converged
+hork__is_converged() {
+   hork inspect -- "$2"
+}
+sudo hork install wombat

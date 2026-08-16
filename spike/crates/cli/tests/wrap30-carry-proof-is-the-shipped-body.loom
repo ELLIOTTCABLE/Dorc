@@ -1,0 +1,144 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# dorc-lang/v0.2
+# wrap30-carry-proof-is-the-shipped-body (`308:rul-carry-proof-is-same-definition`) — the
+# closure proof and the measured body are ONE definition.
+#
+# Pure-predicate carry is the only UNFLAGGED way a substrate-axis fact crosses a boundary, and it
+# rests on two things: the backing kind's owner marking it `undivided-by-transit-across`, and the
+# engine PROVING the verdict body read-set-closed. The proof is about a body, so it can only license
+# measuring THAT body ambiently.
+#
+# Inside this region the live verdict is the straddler below: it compares against `$(cat …)`, an
+# unmarked read whose answer differs under `/mnt`, so nothing here is read-set-closed and the site
+# must run. The lane used to select the closure proof's body by first match in load order, so
+# kp.oracle.sh's genuinely-closed body could license an AMBIENT measurement of this one — a positive
+# ambient answer then eliding a wrapped mutation. Under-execute, the cardinal sin, on the unflagged
+# path.
+#
+# ANTI-MASKING: the two bodies differ visibly. If any check ships, the probe artifact carries
+# `cat /etc/kp-policy`; `sites=0` is the assertion. The positive control is the untouched
+# carry-fsview-elides case, where the closed body IS the one the frame names and the site elides.
+(
+kp__is_converged() {
+   want="$(cat /etc/kp-policy)"
+   kp check "$1" "$want"   : sm.dorc.KernelParam:"$1"
+}
+chroot /mnt kp ip_forward 1
+)
+
+-- chroot.oracle.sh --
+# dorc-lang/v0.2
+# chroot: fs-view wrapper, NO __enter form ⇒ entry degrades to the carry fallback (27C §4(a)).
+chroot__predict() {
+   shift
+   "$@"
+}
+chroot__lend_map() {
+   printf '%s\n' "$1"   : lends fs-view
+   : lends user
+   : lends netns
+   shift
+   "$@"
+}
+
+-- kp.oracle.sh --
+# dorc-lang/v0.2
+# The read-set-closed body, and the kind-owner's fs-view invariance mark. Both are real; neither
+# speaks for the regional body the book defines above its own site.
+kp__is_converged() {
+   kp check "$1" "$2"   : sm.dorc.KernelParam:"$1"
+}
+sm_dorc_KernelParam__state_stored_only_in() {
+   printf 'kernel-sysctls\n'   : stored-in kernel
+   : undivided-by-transit-across fs-view
+}
+
+-- probe-results.txt --
+# EMPTY, and the emptiness is the assertion: the live body is not read-set-closed, so the carry
+# fallback refuses and no check ships. The day this site ships one, gate-1 goes red against this file.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/kp --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/chroot --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: chroot /mnt kp ip_forward 1
+
+-- replay --
+$ dorc --book=book.sh -o chroot.oracle.sh -o kp.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=149516e32ef05de6e9710a06881d0e031f220d5041a98cdb53929b8e1323b067 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# dorc-lang/v0.2
+# wrap30-carry-proof-is-the-shipped-body (`308:rul-carry-proof-is-same-definition`) — the
+# closure proof and the measured body are ONE definition.
+#
+# Pure-predicate carry is the only UNFLAGGED way a substrate-axis fact crosses a boundary, and it
+# rests on two things: the backing kind's owner marking it `undivided-by-transit-across`, and the
+# engine PROVING the verdict body read-set-closed. The proof is about a body, so it can only license
+# measuring THAT body ambiently.
+#
+# Inside this region the live verdict is the straddler below: it compares against `$(cat …)`, an
+# unmarked read whose answer differs under `/mnt`, so nothing here is read-set-closed and the site
+# must run. The lane used to select the closure proof's body by first match in load order, so
+# kp.oracle.sh's genuinely-closed body could license an AMBIENT measurement of this one — a positive
+# ambient answer then eliding a wrapped mutation. Under-execute, the cardinal sin, on the unflagged
+# path.
+#
+# ANTI-MASKING: the two bodies differ visibly. If any check ships, the probe artifact carries
+# `cat /etc/kp-policy`; `sites=0` is the assertion. The positive control is the untouched
+# carry-fsview-elides case, where the closed body IS the one the frame names and the site elides.
+(
+kp__is_converged() {
+   want="$(cat /etc/kp-policy)"
+   kp check "$1" "$want"   : sm.dorc.KernelParam:"$1"
+}
+chroot /mnt kp ip_forward 1
+)

@@ -1,0 +1,130 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - role-family-contested
+---
+-- book.sh --
+#!/bin/sh
+# dorc-lang/v0.2
+# wrap30-contested-wrapper-peels-nothing (`308:rul-wrapper-lane-joins-the-conversion`) — a CONTESTED
+# wrapper family peels nothing and enters nothing.
+#
+# Two units describe `sudo`, with no `unset -f` between them, so the shadow refusal withholds the
+# whole `sudo` family: its sites must be indistinguishable from ones nobody described. Every ordinary
+# seat honoured that already. The wrapper lane did not — it re-lifted raw source, so the first file's
+# peel model, its `__enter` bytes, and its lend map all survived the withdrawal, and the site could
+# still be peeled, entered as root, and elided on `hork`'s own consent mark.
+#
+# ANTI-MASKING: the probe artifact is where this is visible. `sites=0` / `unresolvable-no-probe` is
+# the whole assertion; a shipped `sudo__enter hork__is_converged` composition means the withdrawal
+# stopped reaching this lane again.
+sudo__predict() {
+   env -i HOME=/root "$@"
+}
+sudo hork install wombat
+
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+# The inner tool's verdict, vouched context-tolerant for the user dimension. Uncontested — the
+# withdrawal is about `sudo`, and this file is what would supply the consent if the site peeled.
+hork__is_converged() {
+   : safe-across user
+   hork query -- "$2"
+}
+
+-- sudo.oracle.sh --
+# dorc-lang/v0.2
+# The coherent sudo wrapper of pin28-wrapped-vouch-answers-at-a-live-site, byte-for-byte: the
+# book's second `sudo__predict` above is the only difference between the two cases.
+sudo__predict() {
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) shift 2 ;; *) shift ;; esac; done
+   env -i HOME=/root "$@"
+}
+sudo__lend_map() {
+   target=root
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) target="$2"; shift 2 ;; *) shift ;; esac; done
+   printf '%s\n' "$target" : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+sudo__enter() {
+   sudo -n "$@"
+}
+
+-- probe-results.txt --
+# EMPTY, and the emptiness is the assertion: a withheld family ships no check, so the probe produces
+# no record. The day this site ships one, gate-1 goes red against this file.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/sudo --
+#!/bin/sh
+# INERT mock: logs its argv and exits 0; nothing is exec'd.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sudo hork install wombat
+
+-- replay --
+$ dorc --book=book.sh -o hork.oracle.sh -o sudo.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=58d54a082d2c7cf8a7879d161f3fce293cbd6dbc37da581775d6de49e2239d5f sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# dorc-lang/v0.2
+# wrap30-contested-wrapper-peels-nothing (`308:rul-wrapper-lane-joins-the-conversion`) — a CONTESTED
+# wrapper family peels nothing and enters nothing.
+#
+# Two units describe `sudo`, with no `unset -f` between them, so the shadow refusal withholds the
+# whole `sudo` family: its sites must be indistinguishable from ones nobody described. Every ordinary
+# seat honoured that already. The wrapper lane did not — it re-lifted raw source, so the first file's
+# peel model, its `__enter` bytes, and its lend map all survived the withdrawal, and the site could
+# still be peeled, entered as root, and elided on `hork`'s own consent mark.
+#
+# ANTI-MASKING: the probe artifact is where this is visible. `sites=0` / `unresolvable-no-probe` is
+# the whole assertion; a shipped `sudo__enter hork__is_converged` composition means the withdrawal
+# stopped reaching this lane again.
+sudo__predict() {
+   env -i HOME=/root "$@"
+}
+sudo hork install wombat
