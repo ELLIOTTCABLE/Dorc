@@ -142,6 +142,20 @@ CARGO_TARGET_DIR = "{% if env.WSL_DISTRO_NAME %}{{ xdg_cache_home }}/dorc-wsl-ta
 # (Trap that bit during this work: on Windows the variable is `Path`, not `PATH`,
 # so mise's `{{env.PATH}}` — the only spelling in anyone's muscle memory — fails
 # outright. One more reason nothing here templates PATH.)
+#
+# FAILURE-VISIBILITY CONTRACT: a task whose diagnostics ride STDOUT carries
+# `raw = true`. `MISE_TASK_OUTPUT` configures mise ITSELF, so an exported value —
+# agent sessions carry `timed` — beats a `[tasks.*.env]` override and the root
+# `[env]` alike, and `timed` is a per-LINE DWELL filter: it discards every stdout
+# line another supersedes inside a second, the last one before exit included.
+# Measured across every lever, 2026-08-16: task env NO · root `[env]` NO ·
+# `[settings] raw` NO (a project config does not carry that one; it resolves
+# false) · `[task_config] raw` an unknown field · task-level `raw = true` YES ·
+# `MISE_RAW=1` in mise's own env YES · `--raw`/`--output` bind only the level they
+# are typed at, and a nested `mise run` is re-captured by its parent, so a
+# composed fix has to be spelled on the task that OWNS the stream. stderr is never
+# filtered — which is why nextest survives and libtest, the doctests, and every
+# `println!` tool (`preflight`, `bless`, `doctor`) do not.
 # ────────────────────────────────────────────────────────────────────────────
 
 [tasks.hello]
@@ -272,13 +286,10 @@ run = [
 [tasks."test:e2e"]
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
 dir = "spike"
-# `timed` output swallows this task's FAILURE diagnostics entirely (a red run reports only
-# `error: test failed` — no case, no gate, no diff). This task-env override is PARTIAL:
-# MISE_TASK_OUTPUT configures mise ITSELF, so a value the harness EXPORTS into the process
-# env beats it (measured both ways, 2026-08-16 — the stage-0 lane got 6 swallowed lines with
-# it exported; `env -u MISE_TASK_OUTPUT` restored 1583). Until the flag-based fix lands
-# (`work-task-output-visibility`), agents whose env carries it use `env -u MISE_TASK_OUTPUT`.
-env = { MISE_TASK_OUTPUT = "prefix" }
+# libtest writes its per-case diagnostics to STDOUT, which an exported `timed` discards
+# wholesale — a red run reported `error: test failed` and nothing else. See the
+# FAILURE-VISIBILITY CONTRACT above for why this is the only lever that works here.
+raw = true
 # The trailing `--` is load-bearing: without it mise's passthrough lands on `cargo test`, whose
 # own `[TESTNAME]` takes exactly one positional and refuses a second before the runner ever sees
 # it. The runner itself resolves any number of case paths (`split_path_selectors`), which is how
@@ -288,10 +299,33 @@ run = "cargo test -p dorc-cli --test e2e --"
 [tasks."test:looms"]
 description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint. Trailing args: ONE bare substring, or any number of case PATHS — the same selection test:e2e takes."
 dir = "spike"
-# Same failure-visibility override as test:e2e (same cargo-test shape, same swallowed reds).
-env = { MISE_TASK_OUTPUT = "prefix" }
+# Same stdout diagnostics as test:e2e, same swallowed reds, same one lever.
+raw = true
 # The trailing `--` is load-bearing for the same reason it is on test:e2e: cargo's own `[TESTNAME]`
 # takes exactly one positional and refuses a second before the runner sees it.
+run = "cargo test -p dorc-cli --test looms --"
+
+# The agent halves of the two corpus tasks. Measured green, both raw: 166 lines for `test:e2e`
+# and 276 for `test:looms` unabridged, 9 apiece under `DORC_E2E_QUIET=1` — which selects
+# libtest's terse per-case format and leaves every FAILURE printed in full, so the saving is
+# passing-case names and nothing else. The bare halves above stay unabridged for a human reading
+# a terminal, exactly as the gate matrix's two remits require.
+
+[tasks."test:e2e-quiet"]
+description = "The e2e corpus alone, agent-facing: terse per-case format on success, failures unabridged. Takes the same selection test:e2e does."
+dir = "spike"
+env = { DORC_E2E_QUIET = "1" }
+raw = true
+# Spelled out rather than composed over `test:e2e`: a nested `mise run` would have to forward the
+# path selectors, and mise appends trailing args only to a `run` array's LAST command — which is
+# how `loom:promote` once ran unscoped over the whole corpus while its git diff was scoped.
+run = "cargo test -p dorc-cli --test e2e --"
+
+[tasks."test:looms-quiet"]
+description = "The loom corpus alone, agent-facing: terse per-case format on success, failures unabridged. Takes the same selection test:looms does."
+dir = "spike"
+env = { DORC_E2E_QUIET = "1" }
+raw = true
 run = "cargo test -p dorc-cli --test looms --"
 
 [tasks."test:real-tools"]
