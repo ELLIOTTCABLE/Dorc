@@ -112,9 +112,9 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         CfgInlineRefused, CfgInlineRefusedReason, CfgTopNode, CfgTopNodeReason, Diag, DiagCode,
         EscalationPolicy, FootprintIncoherent, FootprintIncoherentReason, PredictLexError,
         PredictOutOfDialect, PredictOutOfDialectReason, PredictUnterminated,
-        PredictUnterminatedReason, SyntaxMalformed, SyntaxMalformedReason, SyntaxUnsupported,
-        SyntaxUnsupportedReason, UnmodeledWriteRedirect, WhylogCorrupt, WhylogCorruptReason,
-        render_body,
+        PredictUnterminatedReason, RecordsHeaderMismatch, RecordsIntegrityRefused, SyntaxMalformed,
+        SyntaxMalformedReason, SyntaxUnsupported, SyntaxUnsupportedReason, UnmodeledWriteRedirect,
+        WhylogCorrupt, WhylogCorruptReason, render_body,
     };
     use dorc_core::{BytePos, Capability, EscalationDial, Interner, Span};
 
@@ -168,6 +168,16 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
     ] {
         codes.push(DiagCode::FootprintIncoherent(FootprintIncoherent {
             reason,
+        }));
+    }
+    for which in [
+        RecordsHeaderMismatch::Nonce,
+        RecordsHeaderMismatch::Attempt,
+        RecordsHeaderMismatch::Host,
+        RecordsHeaderMismatch::Book,
+    ] {
+        codes.push(DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused {
+            which,
         }));
     }
     for reason in [
@@ -305,6 +315,60 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         assert!(
             body.trim() != "sm",
             "`{slug}`: a reason rendered no words at all: {body:?}"
+        );
+    }
+}
+
+/// Each `RecordsHeaderMismatch` variant renders ITS OWN registry row.
+///
+/// The census above proves only that no variant rendered the placeholder; four variants all
+/// reaching ONE row would satisfy it, and that is exactly the failure a reason-enum invites (one
+/// arm's slug pasted into the next). This asks the registry for each row's own sentence and asserts
+/// the seat rendered THAT one — a relationship, never a byte pin, so authoring the prose moves
+/// nothing here (`prose-pins-live-where-the-prose-does`).
+///
+/// Only the Host variant has a committed transcript — one payload world per case — so for the
+/// other three this is the whole net.
+#[test]
+fn every_header_mismatch_renders_its_own_component() {
+    use dorc_aid::diag::{
+        Diag, DiagCode, RecordsHeaderMismatch, RecordsIntegrityRefused, render_body,
+    };
+    use dorc_core::Interner;
+
+    let interner = Interner::default();
+    for (which, slug) in [
+        (
+            RecordsHeaderMismatch::Nonce,
+            "records-integrity-refused-nonce",
+        ),
+        (
+            RecordsHeaderMismatch::Attempt,
+            "records-integrity-refused-attempt",
+        ),
+        (
+            RecordsHeaderMismatch::Host,
+            "records-integrity-refused-host",
+        ),
+        (
+            RecordsHeaderMismatch::Book,
+            "records-integrity-refused-book",
+        ),
+    ] {
+        let own = rendered(slug, &[]);
+        assert!(
+            !own.is_empty() && !own.contains("[unwritten:"),
+            "`{slug}` has no words to render — seed or author the row first: {own:?}"
+        );
+        let body = render_body(
+            &Diag::new_spanless_site(DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused {
+                which,
+            })),
+            &interner,
+        );
+        assert!(
+            body.contains(&own),
+            "`{which:?}` did not render `{slug}`'s own sentence: {body:?}"
         );
     }
 }

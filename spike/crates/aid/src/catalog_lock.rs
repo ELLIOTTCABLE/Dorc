@@ -325,7 +325,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         when_fires: "the records header declared an identity key this controller did not mint. plan/records.rs parse_header (the strict admission path); the forgiving deframer emits it too. `{which}` is the typed RecordsHeaderMismatch component.",
         why: "262 §2: any known-key mismatch refuses the whole read unit (kFAIL-perform). The four keys route identically, so they are reason-enum components rather than sibling codes (28L rul-reason-enums-not-sibling-codes).",
         params: &["which"],
-        example: "sm the records header failed integrity on [unwritten: records-integrity-refused-host] -- the whole read unit is refused, the host runs (kFAIL-perform)",
+        example: "sm the records header failed integrity on the host field (it names a different host than this invocation addressed) -- the whole read unit is refused, the host runs (kFAIL-perform)",
         message: Some(ProseTier::Migrated("sm the records header failed integrity on {{which}} -- the whole read unit is refused, the host runs (kFAIL-perform)")),
         help: HelpRegister::Absent,
     },
