@@ -263,26 +263,25 @@ fn finalize_cmdsub_tops(
 /// is an ordinary authored kind, indistinguishable from a predict-minted one, so a kind test would
 /// silently route it to the predict lane and the site would run (`26H` §3.5's likeliest breakage).
 ///
+/// The definition arrives RESOLVED ([`live_verdict`]), because verdict primacy asks two questions of
+/// one body — does it vouch this argv, and which cell does it key — and asking the frame twice is how
+/// two readings of one environment come to disagree (`oracle/CLAUDE.md
+/// the-frame-lookup-is-the-only-resolution-seat`).
+///
 /// The backing's minting family is threaded EXACTLY (`Some(provider)`), never left for
 /// `sole_family` to recover: an authored verdict coordinate is not in the sparing dialect
 /// (`build_dialect` mints from predict-derived cells only), so a recovered family could hand this
 /// fact some OTHER family's dialect and spare a cell the verdict never minted a token for. Threading
 /// keeps it colliding, which is `sparing-algebra`'s answer for an unminted token.
 fn verdict_cell_or_auto(
-    verdicts: &VerdictIndex,
+    verdict: Option<&predict::Predict>,
     provider: ProviderId,
     arg_refs: &[&str],
     interner: &mut Interner,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     verdict_keyed: &mut bool,
-    visible: &VisibleRole<'_>,
 ) -> Vec<CommandEffect> {
-    let Some(file) = visible.answering(VERDICT_SUFFIX, verdicts.source_count(), |i| {
-        verdicts.contains(i, provider)
-    }) else {
-        return vec![CommandEffect::Opaque];
-    };
-    let Some(verdict) = verdicts.get(file, provider) else {
+    let Some(verdict) = verdict else {
         return vec![CommandEffect::Opaque];
     };
     *verdict_keyed = true;
@@ -343,6 +342,59 @@ impl<'a> VisibleRole<'a> {
             has(i).then(|| self.live.provenance_of(i, &name))
         })
     }
+}
+
+/// The verdict funcdef live at THIS site, or `None` — resolved ONCE and handed to every act that
+/// reads a verdict body here (`28Q` §4 `rul-verdict-primacy-at-the-ship-seat` gave this seat a second
+/// consumer: the primacy test asks whether the body vouches this argv, and the cell mint asks which
+/// cell it keys). Two lookups would be two readings of one environment, which is the failure class
+/// `28M:fnd-verdict-resolution-duplicates-live-source` records; the wrapped lane already resolves its
+/// inner verdict once for exactly this reason (`308:rul-carry-proof-is-same-definition`).
+fn live_verdict<'i>(
+    verdicts: &'i VerdictIndex,
+    provider: ProviderId,
+    visible: &VisibleRole<'_>,
+) -> Option<&'i predict::Predict> {
+    let file = visible.answering(VERDICT_SUFFIX, verdicts.source_count(), |i| {
+        verdicts.contains(i, provider)
+    })?;
+    verdicts.get(file, provider)
+}
+
+/// `28Q` §4 `rul-verdict-primacy-at-the-ship-seat` — does the VERDICT body own this site's
+/// convergence measurement, displacing a predict that also answers here?
+///
+/// Two conditions, and both are load-bearing. The site must be **mutation-capable with elision
+/// statically available**: exactly one `Establishes` cell, which is the only shape
+/// [`classify_one_site`] turns into an `Establish*` class. Anything else (a `Kills`, a `Queries`, a
+/// multi-cell verb) is `MustRun` — elision is already unavailable there, so ship-predict-alone stays
+/// licensed and the predict's declared cells stay exactly where they were. And the body must reach a
+/// **vouching** answer for this argv: a declining verdict has nothing to measure
+/// (`guard23-refusepath-rc0-never-passes`), and preferring it would key a record to a body the ship
+/// seat then refuses to ship.
+///
+/// What this deliberately does NOT do is re-key the site's cell. The predict's argparse and cells
+/// keep feeding the static concern topology unchanged (`28Q` §8 stage-0, verbatim): the site still
+/// establishes what its author declared, so nothing downstream loses an invalidation it had — and the
+/// elision that follows is a MONOLOGUE again, since the shipped body, its rc, and the vouch are now
+/// one author's (`28P:tc-split-family-elides-on-two-authors`, retired at the license tier; the
+/// cross-author residue that remains is the sparing tier's).
+fn verdict_owns_the_measurement(
+    verdict: Option<&predict::Predict>,
+    cells: &[CommandEffect],
+    arg_refs: &[&str],
+) -> bool {
+    use dorc_oracle::verdict::{VerdictResolution, evaluate_verdict};
+    let Some(verdict) = verdict else {
+        return false;
+    };
+    if !matches!(cells, [CommandEffect::Establishes(_)]) {
+        return false;
+    }
+    matches!(
+        evaluate_verdict(verdict, arg_refs),
+        VerdictResolution::Vouched
+    )
 }
 
 /// The predict check that answers at THIS site, or `None`.
@@ -457,6 +509,7 @@ pub fn command_effect(
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
     let visible = VisibleRole::at(live_defs, node, provider, interner);
+    let verdict_here = live_verdict(verdicts, provider, &visible);
     let live = live_predict_source(checks, provider, &visible);
     let resolved = live
         .and_then(|i| checks.get(i))
@@ -488,21 +541,60 @@ pub fn command_effect(
     // fact about the SITE, not re-derived by try-order: it leaves a shippable predict behind.
     let Some((resolved, verb_key, live_file)) = keyed else {
         return verdict_cell_or_auto(
-            verdicts,
+            verdict_here,
             provider,
             &arg_refs,
             interner,
             backings,
             verdict_keyed,
-            &visible,
         );
     };
-    let cells = idx.effect_of(live_file, provider, verb_key);
+    let effects = declared_cell_effects(
+        idx, provider, verb_key, live_file, &resolved, interner, diags, backings,
+    );
+    // `28Q` §4 `rul-verdict-primacy-at-the-ship-seat` — this site has a resolvable predict AND a
+    // vouching verdict. The VERDICT body owns the measurement: setting the lane out-param is what
+    // makes the ship seat send that body, so the rc licensing the elision is the vouching author's
+    // own. Prediction never licenses elision. `effects` is NOT re-keyed — the topology stays the
+    // predict author's, which is why no downstream invalidation moves.
+    if verdict_owns_the_measurement(verdict_here, &effects, &arg_refs) {
+        *verdict_keyed = true;
+    }
+    effects
+}
 
-    // The cell's kind comes from the annotation (the declared identity, 204 §6); the
-    // effect-map supplies selector + polarity per (provider, verb). Kind-agreement
-    // (204 open seam): if a cell's effect-map kind disagrees with the annotation kind,
-    // diagnose and let the ANNOTATION win (the effect-map row is re-keyed under it).
+/// The cells the PREDICT author declared for this site's (provider, verb), as `CommandEffect`s, with
+/// each establish's survival-backing threaded.
+///
+/// The cell's kind comes from the annotation (the declared identity, 204 §6); the effect-map supplies
+/// selector + polarity per (provider, verb). Kind-agreement (204 open seam): if a cell's effect-map
+/// kind disagrees with the annotation kind, diagnose and let the ANNOTATION win (the effect-map row is
+/// re-keyed under it).
+///
+/// `277` §5 backing-SETS: each ESTABLISH fact's provenance is its minting FAMILY (this site's
+/// `provider`, exact — not the `sole_family` reverse-lookup; `27D`
+/// disposition-backing-family-recovery) plus the observe-backing-widening SELECTORS
+/// (`idx.widening_of` — the `:?` observes that co-occurred with the verdict in this verb's predict
+/// body; empty for the whole corpus). Only real oracle establishes are threaded; an auto-cell /
+/// file-write / Members fact is absent here ⇒ `plan` falls back to the singleton `Backing::of_fact`
+/// (the safe floor).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "extracted from command_effect to stay under the line cap; the args are the caller's \
+              already-resolved keying quadruple (index, provider, verb, answering file) plus the \
+              three out-params it shares with every other cell path"
+)]
+fn declared_cell_effects(
+    idx: &KindIndex,
+    provider: ProviderId,
+    verb_key: dorc_core::Symbol,
+    live_file: usize,
+    resolved: &predict::Resolved,
+    interner: &mut Interner,
+    diags: &mut Vec<Diag>,
+    backings: &mut BTreeMap<FactKey, FactBacking>,
+) -> Vec<CommandEffect> {
+    let cells = idx.effect_of(live_file, provider, verb_key);
     let annotation_kind = KindId(interner.intern(&resolved.kind));
     let entity = match &resolved.entity {
         ResolvedEntity::Operand(text) => EntityRef::Operand(OpaqueToken(interner.intern(text))),
@@ -525,13 +617,6 @@ pub fn command_effect(
             )
         })
         .collect();
-    // `277` §5 backing-SETS: thread each ESTABLISH fact's survival-backing provenance — its
-    // minting FAMILY (this site's `provider`, exact — not the `sole_family` reverse-lookup;
-    // `27D` disposition-backing-family-recovery) plus the observe-backing-widening SELECTORS
-    // (`idx.widening_of` — the `:?` observes that co-occurred with the verdict in this verb's
-    // predict body; empty for the whole corpus). Only real oracle establishes are threaded; an
-    // auto-cell / file-write / Members fact is absent here ⇒ `plan` falls back to the singleton
-    // `Backing::of_fact` (today's reverse-lookup behavior — the safe floor).
     let observed = idx.widening_of(live_file, provider, verb_key);
     for e in &effects {
         if let CommandEffect::Establishes(fact) = e {
@@ -3057,6 +3142,172 @@ foobar__is_converged() {
         assert_eq!(
             a.cells, a_again.cells,
             "one destination is one cell, whatever the source"
+        );
+    }
+
+    /// Both lanes live at one site: an oracle authoring a `__predict` that declares the cell AND an
+    /// `__is_converged` that may or may not vouch the site's argv. The verdict-primacy tests below
+    /// need a REAL effect map and a REAL argparse (the shared `verdict_lane_effects` helper deliberately
+    /// has neither), because primacy's whole question is what happens when both answer.
+    fn both_lanes_effects(book: &str, oracle: &str) -> LaneRun {
+        let mut interner = Interner::default();
+        let idx = dorc_oracle::lift(&mut interner, &[oracle]).value;
+        let checks = vec![lift_predicts(&mut interner, oracle).value];
+        let verdicts = VerdictIndex::of(&mut interner, &[oracle]);
+        let parsed = dorc_syntax::parse(book);
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut interner);
+        let nodes: Vec<CfgNodeId> = built
+            .value
+            .iter()
+            .filter(|(_, n)| n.kind == CfgNodeKind::Command)
+            .map(|(id, _)| id)
+            .collect();
+        let mut backings = BTreeMap::new();
+        let mut sites = Vec::new();
+        for node in nodes {
+            let argv = value.argv_values(node);
+            let mut keyed = false;
+            let cells = command_effect(
+                &idx,
+                &checks,
+                &verdicts,
+                &argv,
+                &mut interner,
+                &mut Vec::new(),
+                &mut Vec::new(),
+                None,
+                &mut backings,
+                &mut None,
+                &mut keyed,
+                node,
+                crate::funcenv::LiveDefinitions::unsolved(),
+            );
+            sites.push(LaneSite { cells, keyed });
+        }
+        LaneRun {
+            sites,
+            backings,
+            interner,
+        }
+    }
+
+    /// One oracle authoring both members over four verbs, so each primacy conjunct gets a book line
+    /// rather than a contrived index: `install` establishes and is vouched; `purge` refutes (a Kill);
+    /// `refresh` establishes but the verdict's `*` arm declines it; `status` observes (a Query).
+    const BOTH_LANES_ORACLE: &str = "\
+# dorc-lang/v0.2
+apt_get__predict() {
+   verb=$1; shift
+   pkg : sm.dorc.Package = \"$1\"
+   case $verb in
+      install) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"@installed ;;
+      purge) dpkg-query -W \"$pkg\" >/dev/null 2>&1 :! sm.dorc.Package:\"$pkg\"@installed ;;
+      refresh) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"@fresh ;;
+      status) dpkg-query -W \"$pkg\" >/dev/null 2>&1 :? sm.dorc.Package:\"$pkg\"@installed ;;
+   esac
+}
+apt_get__is_converged() {
+   verb=$1; shift
+   case $verb in
+      install) aptcheck -q -- \"$1\" ;;
+      purge) aptcheck -q -- \"$1\" ;;
+      status) aptcheck -q -- \"$1\" ;;
+      *) return 2 ;;
+   esac
+}
+";
+
+    /// `28Q` §4 `rul-verdict-primacy-at-the-ship-seat` — a site with a resolvable predict AND a
+    /// vouching verdict is VERDICT-lane, which is what sends the verdict body to the ship seat. The
+    /// as-built ordering preferred the predict here, so the rc licensing the elision was a
+    /// measurement from one author under a permission from another (`28P:fnd-a-split-family-elides-
+    /// on-two-authors`); prediction now licenses nothing.
+    ///
+    /// The second assertion is the half that keeps the corpus still: the cell is NOT re-keyed. The
+    /// predict's declared coordinate remains the site's establish, so every downstream invalidation,
+    /// backing, and why-coordinate is exactly what it was — only the measuring BODY moved.
+    #[test]
+    fn a_vouching_verdict_takes_the_measurement_from_a_resolvable_predict() {
+        let mut run = both_lanes_effects("apt-get install nginx\n", BOTH_LANES_ORACLE);
+        let declared = FactKey::cell(
+            KindId(run.interner.intern("sm.dorc.Package")),
+            EntityRef::Operand(OpaqueToken(run.interner.intern("nginx"))),
+            SelectorId(run.interner.intern("installed")),
+        );
+        let [site] = run.sites.as_slice() else {
+            panic!("one command site, got {:?}", run.sites);
+        };
+        assert!(
+            site.keyed,
+            "a vouched, mutation-capable site ships the verdict body: {site:?}"
+        );
+        assert_eq!(
+            site.cells,
+            vec![CommandEffect::Establishes(declared)],
+            "primacy moves the BODY, never the cell: the predict author's declared coordinate is \
+             still the site's establish, and an auto-cell here would be a silently lost measurement"
+        );
+    }
+
+    /// The verdict's argparse is narrower than the predict's: `refresh` reaches the `*) return 2` arm.
+    /// A declined verdict has nothing to measure (`guard23-refusepath-rc0-never-passes`), so primacy
+    /// must not claim the lane — the record would key a body the ship seat then refuses to ship, and
+    /// the site would lose its check for nothing.
+    #[test]
+    fn a_declining_verdict_leaves_the_predict_measuring() {
+        let mut run = both_lanes_effects("apt-get refresh nginx\n", BOTH_LANES_ORACLE);
+        let declared = FactKey::cell(
+            KindId(run.interner.intern("sm.dorc.Package")),
+            EntityRef::Operand(OpaqueToken(run.interner.intern("nginx"))),
+            SelectorId(run.interner.intern("fresh")),
+        );
+        let [site] = run.sites.as_slice() else {
+            panic!("one command site, got {:?}", run.sites);
+        };
+        assert_eq!(
+            site.cells,
+            vec![CommandEffect::Establishes(declared)],
+            "the predict resolved this argv and declared its cell — the fallback never ran"
+        );
+        assert!(
+            !site.keyed,
+            "a declining verdict never takes the measurement: {site:?}"
+        );
+    }
+
+    /// The other primacy conjunct: elision must be statically AVAILABLE. `classify_one_site` turns
+    /// only a lone `Establishes` into an `Establish*` class, so a `Kills` — like the multi-cell and
+    /// `Queries` shapes that share this arm — is `MustRun` whatever the probe says. There is no
+    /// elision for a verdict to license, so ship-predict-alone stays licensed (`28Q` §8 stage-0) and
+    /// the predict's model keeps feeding the concern topology.
+    #[test]
+    fn an_unelidable_shape_keeps_its_predict_whatever_the_verdict_vouches() {
+        let kill = both_lanes_effects("apt-get purge nginx\n", BOTH_LANES_ORACLE);
+        let [killed] = kill.sites.as_slice() else {
+            panic!("one command site, got {:?}", kill.sites);
+        };
+        assert!(
+            matches!(killed.cells.as_slice(), [CommandEffect::Kills(_)]),
+            "the refuting claim is a Kill: {killed:?}"
+        );
+        assert!(
+            !killed.keyed,
+            "a Kill classifies MustRun, so the verdict has no elision to license: {killed:?}"
+        );
+
+        let query = both_lanes_effects("apt-get status nginx\n", BOTH_LANES_ORACLE);
+        let [queried] = query.sites.as_slice() else {
+            panic!("one command site, got {:?}", query.sites);
+        };
+        assert!(
+            matches!(queried.cells.as_slice(), [CommandEffect::Queries(_)]),
+            "the observe claim is a Query: {queried:?}"
+        );
+        assert!(
+            !queried.keyed,
+            "a Query's replacement is read-reproduction, licensed by the fact tier and never by a \
+             vouch, so primacy leaves its own model measuring: {queried:?}"
         );
     }
 
