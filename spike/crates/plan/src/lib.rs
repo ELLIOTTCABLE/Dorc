@@ -6708,8 +6708,8 @@ apt_get__is_converged() {
         let install = i.intern("install");
         let update = i.intern("update");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
-        idx.add_effect(apt, update, package_index, fresh, ValueClaim::Establish);
+        idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(0, apt, update, package_index, fresh, ValueClaim::Establish);
         idx
     }
 
@@ -7172,6 +7172,7 @@ apt_get__is_converged() {
         let apt = ProviderId(i.intern("apt_get"));
         let purge = i.intern("purge");
         idx.add_effect(
+            0,
             apt,
             purge,
             package,

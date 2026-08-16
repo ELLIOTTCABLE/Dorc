@@ -87,12 +87,11 @@ use crate::predict::{
 /// bodies are small and the analysis side of this tool is never the constraint (`perf-doctrine`).
 #[derive(Debug, Clone, Default)]
 pub struct VerdictIndex {
-    by_provider: BTreeMap<ProviderId, Predict>,
-    /// Per provider, the SOURCE INDEX its verdict body came from — the twin of
-    /// [`KindIndex::source_of`](crate::KindIndex::source_of), and for the same reason: a
-    /// site-keyed act must be able to ask whether the file that spoke is the one live at its line
-    /// (`28K` §2 rul-visibility-is-full-positional). Empty on a hand-built index ⇒ no opinion.
-    sources: BTreeMap<ProviderId, usize>,
+    /// Keyed by the SOURCE INDEX as well as the provider (`28Q` §1.1): every file's verdict body
+    /// survives, and the consumer picks one with [`dorc_core::answering_file`]. The retired
+    /// whole-unit `live_source` filter kept a single winner here, which is exactly what made two
+    /// frames unable to answer from two bodies.
+    by_provider: BTreeMap<(usize, ProviderId), Predict>,
 }
 
 impl VerdictIndex {
@@ -111,21 +110,13 @@ impl VerdictIndex {
     /// Key already-lifted [`VerdictSet`]s, for a driver that holds them for other reasons (the cli
     /// pre-lifts them for the probe ship-closure) — one lift, not two.
     ///
-    /// A provider authored by TWO files keeps the LAST — sh's last-definition-wins
-    /// (`28K` §1 rul-sh-loads-dorc-reads), the same rule `command_effect` applies to competing
-    /// predict checks. That answer is taken from the ONE seat, [`crate::live_source`], rather than
-    /// re-derived from iteration order: the two spellings agree today, and an
-    /// iteration-order-derived one would split the verdict's winner from the predict's SILENTLY —
-    /// the site would then measure one author's cell and key the record to another's
-    /// (`28M:fnd-verdict-resolution-duplicates-live-source`).
-    ///
-    /// The chosen source INDEX rides along, because a site-keyed consumer must be able to ask
-    /// whether the file that spoke here is the one live at its line (`28K` §2
-    /// rul-visibility-is-full-positional).
+    /// A provider authored by TWO files keeps BOTH, each under its own source index (`28Q` §1.1).
+    /// Which body answers is a question about the asking FRAME, and the consumer asks it through
+    /// [`dorc_core::answering_file`]; a whole-unit winner chosen here would be the same rule spelled
+    /// a second time, which is the drift `28M:fnd-verdict-resolution-duplicates-live-source` names.
     #[must_use]
     pub fn from_sets(interner: &mut Interner, sets: &[VerdictSet]) -> Self {
         let mut by_provider = BTreeMap::new();
-        let mut sources = BTreeMap::new();
         // Keyed by the MAPPED name — the same key `command_effect` looks a command word up under,
         // so two files spelling one provider differently still contest for one slot.
         let mapped_of = |interner: &mut Interner, set: &VerdictSet| -> Vec<(ProviderId, Symbol)> {
@@ -142,48 +133,42 @@ impl VerdictIndex {
             sets.iter().map(|set| mapped_of(interner, set)).collect();
         for (index, per_file) in keyed.iter().enumerate() {
             for &(key, raw) in per_file {
-                let live = crate::live_source(keyed.len(), |i| {
-                    keyed
-                        .get(i)
-                        .is_some_and(|f| f.iter().any(|(k, _)| *k == key))
-                });
-                if live != Some(index) {
-                    continue;
-                }
                 if let Some(verdict) = sets.get(index).and_then(|set| set.get(raw)) {
-                    by_provider.insert(key, verdict.clone());
-                    sources.insert(key, index);
+                    by_provider.insert((index, key), verdict.clone());
                 }
             }
         }
-        Self {
-            by_provider,
-            sources,
-        }
+        Self { by_provider }
     }
 
-    /// Does this provider bear a verdict funcdef? The `24L` §2 auto-cell mint's own gate.
+    /// Does source index `file` bear a verdict funcdef for this provider? The `24L` §2 auto-cell
+    /// mint's own gate, asked of the file the frame resolved to.
     #[must_use]
-    pub fn contains(&self, provider: ProviderId) -> bool {
-        self.by_provider.contains_key(&provider)
+    pub fn contains(&self, file: usize, provider: ProviderId) -> bool {
+        self.by_provider.contains_key(&(file, provider))
     }
 
-    /// This provider's verdict funcdef, for tracing over a site argv.
+    /// This provider's verdict funcdef as source index `file` spells it, for tracing over a site
+    /// argv.
     #[must_use]
-    pub fn get(&self, provider: ProviderId) -> Option<&Predict> {
-        self.by_provider.get(&provider)
+    pub fn get(&self, file: usize, provider: ProviderId) -> Option<&Predict> {
+        self.by_provider.get(&(file, provider))
     }
 
-    /// Which source index this provider's verdict body came from, or `None` on a provenance-less
-    /// (hand-built) index — no opinion, never "any file will do".
-    #[must_use]
-    pub fn source_of(&self, provider: ProviderId) -> Option<usize> {
-        self.sources.get(&provider).copied()
-    }
-
-    /// The keyed providers, in deterministic order (`inv-determinism`).
-    pub fn providers(&self) -> impl Iterator<Item = ProviderId> + '_ {
+    /// The keyed `(source index, provider)` pairs, in deterministic order (`inv-determinism`).
+    pub fn providers(&self) -> impl Iterator<Item = (usize, ProviderId)> + '_ {
         self.by_provider.keys().copied()
+    }
+
+    /// One past the highest source index holding a body — the candidate bound a resolution seat
+    /// scans. Files beyond it hold nothing, so they can never be candidates; zero on an empty index.
+    #[must_use]
+    pub fn source_count(&self) -> usize {
+        self.by_provider
+            .keys()
+            .map(|(file, _)| file.saturating_add(1))
+            .max()
+            .unwrap_or(0)
     }
 
     #[must_use]

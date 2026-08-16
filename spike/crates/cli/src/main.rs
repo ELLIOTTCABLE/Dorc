@@ -1537,10 +1537,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // walk already threads. Re-interning `dorc-auto:<provider>` returns the KindId classify minted.
     //
     // Still per-PROVIDER now that a verdict body can also key an authored cell: the fence guards
-    // the synthetic singleton, so every provider that could mint one keeps it.
+    // the synthetic singleton, so every provider that could mint one keeps it. Whole-unit and
+    // file-blind — registering only widens may-touch, so covering every file errs toward safety.
     let verdict_names: Vec<String> = verdicts
         .providers()
-        .map(|p| interner.resolve(p.0).to_owned())
+        .map(|(_, p)| interner.resolve(p.0).to_owned())
         .collect();
     for name in verdict_names {
         let kind = dorc_core::auto_fact(&mut interner, &name).kind;

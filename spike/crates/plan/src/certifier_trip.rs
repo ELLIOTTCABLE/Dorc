@@ -208,7 +208,7 @@ apt_get__predict() {
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
 
         let src = "apt-get install -y nginx\n";
         let parsed = dorc_syntax::parse(src);

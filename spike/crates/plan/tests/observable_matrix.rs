@@ -161,8 +161,9 @@ fn package_index(i: &mut Interner) -> KindIndex {
     let install = i.intern("install");
     let purge = i.intern("purge");
     let mut idx = KindIndex::default();
-    idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+    idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
     idx.add_effect(
+        0,
         apt,
         purge,
         package,
@@ -791,7 +792,7 @@ fn query_index(i: &mut Interner) -> KindIndex {
     let present = SelectorId(i.intern("present"));
     let command = ProviderId(i.intern("command"));
     let eps = dorc_oracle::empty_verb(i);
-    idx.add_effect(command, eps, tool, present, ValueClaim::Observe);
+    idx.add_effect(0, command, eps, tool, present, ValueClaim::Observe);
     idx
 }
 

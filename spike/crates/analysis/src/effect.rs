@@ -277,10 +277,12 @@ fn verdict_cell_or_auto(
     verdict_keyed: &mut bool,
     visible: &VisibleRole<'_>,
 ) -> Vec<CommandEffect> {
-    if !visible.role_answers(verdicts.source_of(provider), VERDICT_SUFFIX) {
+    let Some(file) = visible.answering(VERDICT_SUFFIX, verdicts.source_count(), |i| {
+        verdicts.contains(i, provider)
+    }) else {
         return vec![CommandEffect::Opaque];
-    }
-    let Some(verdict) = verdicts.get(provider) else {
+    };
+    let Some(verdict) = verdicts.get(file, provider) else {
         return vec![CommandEffect::Opaque];
     };
     *verdict_keyed = true;
@@ -306,16 +308,15 @@ fn verdict_cell_or_auto(
     vec![CommandEffect::Establishes(fact)]
 }
 
-/// The positional gate at ONE site, for ONE command family (`28K` §2
-/// `rul-visibility-is-full-positional`): the definition a role act would answer FROM must be the
-/// one a shell would have live AT THIS LINE.
+/// The site's frame, plus the munged family segment (`apt_get` for a book word `apt-get`), derived
+/// once per site rather than once per role.
 ///
-/// Bundled because both lanes of [`command_effect`] ask the same question of different roles, and
-/// because the family segment is derived once per site rather than per role.
+/// It carried a positional AGREEMENT gate until `28Q` §1.3 replaced agreement with resolution: the
+/// gate asked whether a whole-unit winner happened to be live here, which is a second reading of
+/// the same environment the frame lookup reads directly. Two readings can disagree; one cannot.
 struct VisibleRole<'a> {
     live: crate::funcenv::LiveDefinitions<'a>,
     node: CfgNodeId,
-    /// The munged family segment — `apt_get` for a book word `apt-get`.
     family: String,
 }
 
@@ -330,43 +331,38 @@ impl<'a> VisibleRole<'a> {
         Self { live, node, family }
     }
 
-    /// Whether the source that spoke for `suffix` is the one live here.
+    /// Which source index's rows answer for `suffix` at this site, among `count` candidates that
+    /// `has` says declared the role (`28Q` §1.3 — the frame lookup is the only resolution seat).
     ///
-    /// `spoke` is the source index the lifted index took the body from. `None` means the index
-    /// carries NO provenance — a hand-built one, with no source text for the environment to have
-    /// an opinion about — so nothing is withheld; it is never "any file will do".
-    fn role_answers(&self, spoke: Option<usize>, suffix: &str) -> bool {
-        let Some(file) = spoke else { return true };
+    /// **Winner-shifting** (`28Q` §1, permanent): with no agreement veto standing behind it, a
+    /// function-environment precision bug here SELECTS WHOSE JUDGMENT governs the site. This is a
+    /// licensure seat wearing a lookup's clothes, and it is license-review-tier forever.
+    fn answering(&self, suffix: &str, count: usize, has: impl Fn(usize) -> bool) -> Option<usize> {
         let name = format!("{}{suffix}", self.family);
-        self.live.answers_at(self.node, &name, file)
+        dorc_core::answering_file(self.live.definition_before(self.node, &name), count, |i| {
+            has(i).then(|| self.live.provenance_of(i, &name))
+        })
     }
 }
 
 /// The predict check that answers at THIS site, or `None`.
 ///
-/// Three conditions, and each retired or guards a distinct wrong answer. (1) sh's LIVE definition
-/// and only its (`28K` §1) — retiring a first-that-RESOLVES scan that reached past a live
-/// definition into a shadowed one's arms whenever the live body declined the argv (`28K` §6
-/// rej-decline-fallthrough-cascade, live in-tree). (2) it is live AT THIS LINE (`28K` §2
-/// rul-visibility-is-full-positional) — a definition sitting below the site licenses nothing at
-/// it, no elision, no guard, no vouch. (3) the effect map's row for this provider came from the
-/// SAME file: one seat picks both over one ordered set so they agree by construction, but
-/// unchecked that would resolve the identity through one author's arms while reading the cells
-/// another author declared — one cell measured, a different one keyed (`271:rul-sin-ordering`,
-/// the worst class).
+/// ONE question, where there were three conditions. The whole-unit `live_source` scan and the
+/// positional gate that narrowed its answer are gone together — they were two readings of one
+/// environment (`28P:fnd-build-vouches-relifted-the-verdict-sets` is what a disagreement between
+/// two such readings cost the last time). And the third condition, which checked that the effect
+/// map's row came from the same file the identity resolved through, is now STRUCTURALLY
+/// unnecessary: both the argparse and the cells are addressed by the SAME file index, so the
+/// chimera — identity through one author's arms, cells another author declared
+/// (`271:rul-sin-ordering`, the worst class) — cannot be spelled rather than being caught.
 fn live_predict_source(
     checks: &[PredictSet],
-    idx: &KindIndex,
     provider: ProviderId,
     visible: &VisibleRole<'_>,
 ) -> Option<usize> {
-    let live = dorc_oracle::live_source(checks.len(), |i| {
+    visible.answering(predict::PREDICT_SUFFIX, checks.len(), |i| {
         checks.get(i).is_some_and(|cs| cs.get(provider.0).is_some())
     })
-    .filter(|&i| visible.role_answers(Some(i), predict::PREDICT_SUFFIX))?;
-    idx.source_of(provider)
-        .is_none_or(|spoke| spoke == live)
-        .then_some(live)
 }
 
 #[expect(
@@ -461,7 +457,7 @@ pub fn command_effect(
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
 
     let visible = VisibleRole::at(live_defs, node, provider, interner);
-    let live = live_predict_source(checks, idx, provider, &visible);
+    let live = live_predict_source(checks, provider, &visible);
     let resolved = live
         .and_then(|i| checks.get(i))
         .and_then(|cs| cs.get(provider.0))
@@ -477,18 +473,20 @@ pub fn command_effect(
     // The verb key: the check's derived verb, or the ε-verb when the check binds none
     // (`useradd`, `command -v` — 202 §2 / task-W §4). `evaluate`'s verb is compared
     // against the effect-map's verb through the SAME `Interner` (204 seam #2).
-    let keyed = resolved.and_then(|r| {
+    // The cells are read from the SAME file the argparse resolved through, which is what makes the
+    // chimera unrepresentable rather than merely checked (`28Q` §1.3).
+    let keyed = resolved.zip(live).and_then(|(r, file)| {
         let verb_key = match &r.verb {
             Some(v) => interner.intern(v),
             None => empty_verb(interner),
         };
-        (!idx.effect_of(provider, verb_key).is_empty()).then_some((r, verb_key))
+        (!idx.effect_of(file, provider, verb_key).is_empty()).then_some((r, verb_key, file))
     });
     // TWO ways to arrive with no declared cell — (a) nothing resolved this argv, (b) something
     // RESOLVED but declared no cells for its verb — both handed to the VERDICT LANE (never a
     // verb-by-position fallback: the deleted engine-side argparse sin). (b) is why the lane is a
     // fact about the SITE, not re-derived by try-order: it leaves a shippable predict behind.
-    let Some((resolved, verb_key)) = keyed else {
+    let Some((resolved, verb_key, live_file)) = keyed else {
         return verdict_cell_or_auto(
             verdicts,
             provider,
@@ -499,7 +497,7 @@ pub fn command_effect(
             &visible,
         );
     };
-    let cells = idx.effect_of(provider, verb_key);
+    let cells = idx.effect_of(live_file, provider, verb_key);
 
     // The cell's kind comes from the annotation (the declared identity, 204 §6); the
     // effect-map supplies selector + polarity per (provider, verb). Kind-agreement
@@ -534,7 +532,7 @@ pub fn command_effect(
     // predict body; empty for the whole corpus). Only real oracle establishes are threaded; an
     // auto-cell / file-write / Members fact is absent here ⇒ `plan` falls back to the singleton
     // `Backing::of_fact` (today's reverse-lookup behavior — the safe floor).
-    let observed = idx.widening_of(provider, verb_key);
+    let observed = idx.widening_of(live_file, provider, verb_key);
     for e in &effects {
         if let CommandEffect::Establishes(fact) = e {
             record_backing(backings, *fact, provider, observed);
@@ -2277,15 +2275,16 @@ command__predict() {
         let purge = interner.intern("purge");
         let update = interner.intern("update");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
         idx.add_effect(
+            0,
             apt,
             purge,
             package,
             installed,
             ValueClaim::EstablishInverted,
         );
-        idx.add_effect(apt, update, package_index, fresh, ValueClaim::Establish);
+        idx.add_effect(0, apt, update, package_index, fresh, ValueClaim::Establish);
         (
             interner,
             idx,
@@ -2623,8 +2622,15 @@ command__predict() {
         let enable = i.intern("enable");
         let start = i.intern("start");
         let mut idx = KindIndex::default();
-        idx.add_effect(systemctl, enable, service, enabled, ValueClaim::Establish);
-        idx.add_effect(systemctl, start, service, active, ValueClaim::Establish);
+        idx.add_effect(
+            0,
+            systemctl,
+            enable,
+            service,
+            enabled,
+            ValueClaim::Establish,
+        );
+        idx.add_effect(0, systemctl, start, service, active, ValueClaim::Establish);
 
         let classes = classify_src(
             "systemctl enable nginx\nsystemctl start nginx",
@@ -3088,35 +3094,60 @@ foobar__is_converged() {
         );
     }
 
-    /// Two definitions of one provider, each degrading for a DIFFERENT reason: the reason reported
-    /// is the LIVE definition's — the LAST loaded — because under `28K` §1 rul-sh-loads-dorc-reads
-    /// the earlier one does not exist at this site at all. Its reason must never surface, or the
-    /// note would attribute a give-up to a body no shell would have called
-    /// (`271:rul-sin-ordering`: a mis-attributed cause outranks every other sin, and a why-note
-    /// pointing at sh-dead source is exactly that).
+    /// With NO function environment, two competing definitions of one provider answer NOTHING —
+    /// identically whichever order they load in (`28Q` §1's withhold floor; the ruling set banked
+    /// in `305a` §1).
     ///
-    /// The order-swap is the whole test: the same two definitions, loaded either way round, report
-    /// whichever is last. It previously pinned the opposite — first-in-file-order — which was the
-    /// resolution expedient this round retired.
+    /// This pin has now retired TWO resolution expedients. It first pinned first-in-file-order;
+    /// then last-wins, on the reasoning that a shell's live definition is the last one loaded. Both
+    /// were load order standing in for an environment nobody had solved, and under true resolution
+    /// neither is available: `dorc_core::answering_file`'s `NoOpinion` arm answers from a SOLE
+    /// candidate and withholds on plural ones, because picking between two authors by load order is
+    /// load-order-as-trust-adjudicator — the fence `28K` §6 permanently refuses.
+    ///
+    /// The ORDER SYMMETRY is what makes this a stronger pin than either predecessor: an
+    /// order-dependent expectation can only ever assert which expedient is in force, while this one
+    /// asserts that no expedient is. Withholding also fails in the safe direction — the site falls
+    /// to Opaque ⇒ `MustRun` ⇒ run, and what is lost is an aid-plane note, never a license.
     #[test]
-    fn the_live_definitions_reason_is_the_one_reported() {
+    fn competing_definitions_without_an_environment_withhold_in_either_order() {
         let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat query \"$1\" || wombat sync \"$1\"\n}\n";
         let pipeline = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat list | wombat count\n}\n";
         let mut i = Interner::default();
         let a = lift_predicts(&mut i, or_list).value;
         let b = lift_predicts(&mut i, pipeline).value;
-        let (_, pipeline_last) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
-        let (_, or_list_last) = degrade_of("wombat sync\n", &[b, a], &mut i);
+        let (or_list_first, _) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
+        let (pipeline_first, _) = degrade_of("wombat sync\n", &[b.clone(), a.clone()], &mut i);
         assert_eq!(
-            pipeline_last,
-            Some(TopReason::Pipeline),
-            "the LAST definition is the live one"
+            or_list_first,
+            vec![CommandEffect::Opaque],
+            "no definition answers, so the site runs"
         );
         assert_eq!(
-            or_list_last,
-            Some(TopReason::OrList),
-            "and swapping the load order swaps which body answers"
+            pipeline_first, or_list_first,
+            "and the load order cannot change that — neither body is reachable as an answer"
         );
+        let (_, or_list_reason) = degrade_of("wombat sync\n", &[a.clone(), b.clone()], &mut i);
+        let (_, pipeline_reason) = degrade_of("wombat sync\n", &[b, a], &mut i);
+        assert_eq!(
+            or_list_reason, None,
+            "and neither body's give-up reason surfaces: attributing one would name a body that \
+             was never selected (`271:rul-sin-ordering`)"
+        );
+        assert_eq!(pipeline_reason, None, "symmetrically, in the other order");
+    }
+
+    /// The single-definition case still answers, which is what keeps the withhold above a statement
+    /// about PLURALITY rather than about the no-environment posture as such. Without this, the pin
+    /// above would pass just as well if unsolved environments withheld unconditionally — walling
+    /// every hand-built index in the workspace.
+    #[test]
+    fn a_sole_definition_without_an_environment_still_answers() {
+        let or_list = "# dorc-lang/v0.2\nwombat__predict() {\n   wombat query \"$1\" || wombat sync \"$1\"\n}\n";
+        let mut i = Interner::default();
+        let sole = lift_predicts(&mut i, or_list).value;
+        let (_, reason) = degrade_of("wombat sync\n", &[sole], &mut i);
+        assert_eq!(reason, Some(TopReason::OrList));
     }
 
     /// Run `command_effect` over a one-command book; return its effects plus the degrade reason.
@@ -3223,16 +3254,17 @@ foobar__is_converged() {
         let command = ProviderId(i.intern("command"));
         let eps = empty_verb(i);
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
         idx.add_effect(
+            0,
             apt,
             purge,
             package,
             installed,
             ValueClaim::EstablishInverted,
         );
-        idx.add_effect(apt, update, package_index, fresh, ValueClaim::Establish);
-        idx.add_effect(command, eps, tool, present, ValueClaim::Observe);
+        idx.add_effect(0, apt, update, package_index, fresh, ValueClaim::Establish);
+        idx.add_effect(0, command, eps, tool, present, ValueClaim::Observe);
         idx
     }
 
@@ -4145,7 +4177,7 @@ apt_get__predict() {
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, widget, installed, ValueClaim::Establish);
+        idx.add_effect(0, apt, install, widget, installed, ValueClaim::Establish);
         let checks = vec![lift_predicts(&mut i, predict_src).value];
 
         let parsed = dorc_syntax::parse("apt-get install nginx");

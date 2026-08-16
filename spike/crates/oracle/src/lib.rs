@@ -209,7 +209,12 @@ pub struct KindIndex {
     /// other. A **verbless** provider (`useradd`, `command -v`) keys on the ε-verb
     /// ([`empty_verb`]) — the check binds no verb, so the wiring looks up `(provider, ε)`
     /// (202 §2 / task-W §4).
-    effects: BTreeMap<(ProviderId, Symbol), Vec<EffectCell>>,
+    /// Rows are keyed by the SOURCE INDEX that produced them as well (`28Q` §1.1): every file's
+    /// rows survive, because which of them answers is a question about the asking FRAME, not about
+    /// the unit. A consumer picks the file with [`dorc_core::answering_file`] and reads only that
+    /// one's cells — the retired whole-unit filter kept a single winner here and so could not have
+    /// answered two frames differently.
+    effects: BTreeMap<(usize, ProviderId, Symbol), Vec<EffectCell>>,
     /// observe-backing-widening (`277` §5 `seam-backing-sets` / `271` observe-backing-widening):
     /// per `(provider, verb)`, the OBSERVE (`:?`) selectors that co-occur with a VERDICT
     /// (`:`/`:!`) mark in that verb's predict-body arm. Such an observe is INSIDE a verdict body,
@@ -220,15 +225,18 @@ pub struct KindIndex {
     /// `EstablishAmbient`/`Written` (a mixed `[Establishes, Queries]` slice would fall to
     /// `MustRun`). An observe with NO co-occurring verdict stays a `Queries` cell (its own row,
     /// "widens nothing"). Safe direction: widening only GROWS a fact's kill-surface.
-    widenings: BTreeMap<(ProviderId, Symbol), BTreeSet<SelectorId>>,
-    /// Per provider, the SOURCE INDEX whose `__predict` body these cells were derived from
-    /// (`28K` §2 rul-visibility-is-full-positional). Exactly one file contributes per provider —
-    /// [`live_source`] picks it — and a site-keyed consumer must be able to ask WHICH, because it
-    /// resolves the argv through a positionally-chosen file's argparse and would otherwise read
-    /// cells some OTHER file declared: one cell measured, a different one keyed
-    /// (`271:rul-sin-ordering`, mis-attribution). Empty on a hand-built index (no source text
-    /// exists to name), which reads as "no opinion" at the consumer.
-    sources: BTreeMap<ProviderId, usize>,
+    widenings: BTreeMap<(usize, ProviderId, Symbol), BTreeSet<SelectorId>>,
+    /// Per provider, the ONE source index whose cells enter the sparing dialect — and NOTHING
+    /// else (`28Q` §9 `pin-two-position-sparing`; ruled `opt-dialect-keeps-a-whole-unit-winner`).
+    ///
+    /// This is deliberately NOT a resolution seat and must never become one: the frame lookup is
+    /// the only resolution seat, and this map is vocabulary AGGREGATION. It exists because
+    /// [`build_dialect`] answers a whole-unit question — which selector tokens the unit's authors
+    /// minted at all — and minting from EVERY file's rows would enlarge that set. A larger dialect
+    /// means more both-in-dialect-distinct pairs, which means more SPARING: a silent liberalization
+    /// of the design's one naked-trust tier, in the dangerous direction. Keeping the pre-conversion
+    /// winner preserves the minting SET exactly.
+    dialect_minting_source: BTreeMap<ProviderId, usize>,
 }
 
 impl KindIndex {
@@ -239,13 +247,14 @@ impl KindIndex {
     /// is appended (the legitimate multi-cell case).
     pub fn add_effect(
         &mut self,
+        file: usize,
         provider: ProviderId,
         verb: Symbol,
         kind: KindId,
         selector: SelectorId,
         claim: ValueClaim,
     ) -> Option<EffectConflict> {
-        let cells = self.effects.entry((provider, verb)).or_default();
+        let cells = self.effects.entry((file, provider, verb)).or_default();
         if cells.iter().any(|c| c.selector == selector) {
             return Some(EffectConflict {
                 provider,
@@ -267,9 +276,9 @@ impl KindIndex {
     /// command keys on `(provider, ε)` ([`empty_verb`]). An empty result means "no
     /// oracle knows this" → the consumer treats the command as ⊤ (run).
     #[must_use]
-    pub fn effect_of(&self, provider: ProviderId, verb: Symbol) -> &[EffectCell] {
+    pub fn effect_of(&self, file: usize, provider: ProviderId, verb: Symbol) -> &[EffectCell] {
         self.effects
-            .get(&(provider, verb))
+            .get(&(file, provider, verb))
             .map_or(&[], Vec::as_slice)
     }
 
@@ -278,26 +287,25 @@ impl KindIndex {
         self.effects.is_empty()
     }
 
-    /// Record that `provider`'s cells came from source index `file`.
-    pub fn set_source(&mut self, provider: ProviderId, file: usize) {
-        self.sources.insert(provider, file);
-    }
-
-    /// Which source index `provider`'s cells were derived from, or `None` when the index carries
-    /// no provenance (a hand-built one). `None` is NO OPINION, never "any file will do": the
-    /// positional consumer treats it as un-checkable and falls back to its other gate
-    /// ([`crate::live_source`] agreement), which is what keeps a source-less test index usable.
-    #[must_use]
-    pub fn source_of(&self, provider: ProviderId) -> Option<usize> {
-        self.sources.get(&provider).copied()
+    /// Record that `provider`'s dialect tokens are minted from source index `file`
+    /// (see [`dialect_minting_source`](Self::dialect_minting_source) — aggregation, never
+    /// resolution).
+    pub fn set_dialect_minting_source(&mut self, provider: ProviderId, file: usize) {
+        self.dialect_minting_source.insert(provider, file);
     }
 
     /// Record that `(provider, verb)`'s predict body carries a co-occurring OBSERVE mark for
     /// `selector` — i.e. an observe INSIDE a verdict body (`277` §5 observe-backing-widening).
     /// It widens the verb's establish fact backing (a sibling cell), never becoming a Query cell.
-    pub fn add_widening(&mut self, provider: ProviderId, verb: Symbol, selector: SelectorId) {
+    pub fn add_widening(
+        &mut self,
+        file: usize,
+        provider: ProviderId,
+        verb: Symbol,
+        selector: SelectorId,
+    ) {
         self.widenings
-            .entry((provider, verb))
+            .entry((file, provider, verb))
             .or_default()
             .insert(selector);
     }
@@ -308,9 +316,16 @@ impl KindIndex {
     /// backing unions these (same kind+entity as the fact, these selectors) — kill-surface only
     /// grows (`inv-kfail`, apply).
     #[must_use]
-    pub fn widening_of(&self, provider: ProviderId, verb: Symbol) -> &BTreeSet<SelectorId> {
+    pub fn widening_of(
+        &self,
+        file: usize,
+        provider: ProviderId,
+        verb: Symbol,
+    ) -> &BTreeSet<SelectorId> {
         static EMPTY: BTreeSet<SelectorId> = BTreeSet::new();
-        self.widenings.get(&(provider, verb)).unwrap_or(&EMPTY)
+        self.widenings
+            .get(&(file, provider, verb))
+            .unwrap_or(&EMPTY)
     }
 
     /// Drop every contested family's cells and widenings (`28K` §1 `rul-silent-shadowing-refuses`).
@@ -328,9 +343,9 @@ impl KindIndex {
         }
         let withheld =
             |p: ProviderId| contested.withholds(&to_funcname_segment(interner.resolve(p.0)));
-        self.effects.retain(|(p, _), _| !withheld(*p));
-        self.widenings.retain(|(p, _), _| !withheld(*p));
-        self.sources.retain(|p, _| !withheld(*p));
+        self.effects.retain(|(_, p, _), _| !withheld(*p));
+        self.widenings.retain(|(_, p, _), _| !withheld(*p));
+        self.dialect_minting_source.retain(|p, _| !withheld(*p));
         self
     }
 }
@@ -427,9 +442,12 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
 /// [`lift`] over already-lifted per-file [`PredictSet`](predict::PredictSet)s, for a driver that
 /// holds them for other reasons — the [`verdict::VerdictIndex::from_sets`] shape, and the same
 /// two reasons. One lift instead of two; and, load-bearing since `28M` §9, the driver's sets are
-/// the WITHDRAWN ones, so the effect map resolves over the same population every other seat does
-/// (`analysis::effect`'s third condition compares this index's `source_of` against the checks'
-/// live answer — built from different populations they would disagree and withhold).
+/// the WITHDRAWN ones, so the effect map is populated over the same population every other seat
+/// resolves against.
+///
+/// EVERY file's rows are kept (`28Q` §1.1): which of them answers is a question about the asking
+/// frame, and a lift that pre-selected a whole-unit winner could not answer two frames differently.
+/// The selection moved to the consumers, where [`dorc_core::answering_file`] holds the rule.
 pub fn lift_from_sets(
     interner: &mut Interner,
     per_source: &[predict::PredictSet],
@@ -437,10 +455,6 @@ pub fn lift_from_sets(
     let mut out = Carrier::pure(KindIndex::default());
     for (index, checks) in per_source.iter().enumerate() {
         for provider in checks.providers() {
-            // Only the LIVE definition contributes cells (`28K` §1); every one used to merge in.
-            if dorc_oracle_live_source(per_source, provider) != Some(index) {
-                continue;
-            }
             let Some(c) = checks.get(provider) else {
                 continue;
             };
@@ -465,10 +479,12 @@ pub fn lift_from_sets(
                     .or_default()
                     .push((kind, selector, e.claim));
             }
+            let raw_provider = provider;
             let provider = ProviderId(provider);
-            // Which file spoke — so a site-keyed consumer can check its argparse and its cells
-            // came from the SAME author.
-            out.value.set_source(provider, index);
+            // The dialect's whole-unit winner, and nothing else reads it (`28Q` §9).
+            if dorc_oracle_live_source(per_source, raw_provider) == Some(index) {
+                out.value.set_dialect_minting_source(provider, index);
+            }
             for (verb, cells) in by_verb {
                 // observe-backing-widening (`277` §5): an OBSERVE (`:?`) that co-occurs with a
                 // VERDICT (`:`/`:!`) in one verb's arm is INSIDE a verdict body ⇒ it WIDENS the
@@ -480,11 +496,12 @@ pub fn lift_from_sets(
                 });
                 for (kind, selector, claim) in cells {
                     if has_verdict && claim == ValueClaim::Observe {
-                        out.value.add_widening(provider, verb, selector);
+                        out.value.add_widening(index, provider, verb, selector);
                     } else {
                         // A duplicate cell cannot arise from a well-formed check (each verb-arm
                         // names a distinct selector); drop a derived duplicate silently.
-                        out.value.add_effect(provider, verb, kind, selector, claim);
+                        out.value
+                            .add_effect(index, provider, verb, kind, selector, claim);
                     }
                 }
             }
@@ -499,10 +516,20 @@ pub fn lift_from_sets(
 /// — disturbs/claim emissions never enter it, so this is the exact minting set (`sparing-algebra`:
 /// only verdict/observe marks mint). Family = the command provider (`271:rul-family`, name-derived).
 /// The survival comparison consults `dialect(backing's family, kind)` to spare a sibling cell.
+///
+/// The one surviving whole-unit fold, and vocabulary-AGGREGATION only: per provider, only the
+/// [`dialect_minting_source`](KindIndex::dialect_minting_source) file's rows mint. Every file's rows
+/// now live in the index, so minting from all of them would ENLARGE the dialect — and a larger
+/// dialect spares MORE, which is the naked-trust tier's dangerous direction. This preserves the
+/// pre-conversion minting set exactly, and holds no opinion about which definition ANSWERS anywhere
+/// (`28Q` §9 `pin-two-position-sparing`).
 #[must_use]
 pub fn build_dialect(index: &KindIndex) -> dorc_core::Dialect {
     let mut dialect = dorc_core::Dialect::empty();
-    for ((provider, _verb), cells) in &index.effects {
+    for ((file, provider, _verb), cells) in &index.effects {
+        if index.dialect_minting_source.get(provider) != Some(file) {
+            continue;
+        }
         for cell in cells {
             dialect.mint(*provider, cell.kind, cell.selector);
         }
@@ -519,11 +546,12 @@ mod tests {
     /// interner's determinism (equal text ⇒ equal symbol).
     fn effect(
         idx: &KindIndex,
+        file: usize,
         i: &mut Interner,
         provider: &str,
         verb: &str,
     ) -> Option<(KindId, SelectorId, ValueClaim)> {
-        match idx.effect_of(ProviderId(i.intern(provider)), i.intern(verb)) {
+        match idx.effect_of(file, ProviderId(i.intern(provider)), i.intern(verb)) {
             [] => None,
             [cell, ..] => Some((cell.kind, cell.selector, cell.claim)),
         }
@@ -539,10 +567,10 @@ mod tests {
         let installed = SelectorId(interner.intern("installed"));
 
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
 
         assert_eq!(
-            idx.effect_of(apt, install),
+            idx.effect_of(0, apt, install),
             &[EffectCell {
                 kind: package,
                 selector: installed,
@@ -551,7 +579,7 @@ mod tests {
         );
         // An unknown (provider, verb) is the empty slice ⇒ consumer must run it (⊤).
         let purge = interner.intern("purge");
-        assert!(idx.effect_of(apt, purge).is_empty());
+        assert!(idx.effect_of(0, apt, purge).is_empty());
     }
 
     #[test]
@@ -566,12 +594,13 @@ mod tests {
 
         let mut idx = KindIndex::default();
         assert!(
-            idx.add_effect(apt, install, package, installed, ValueClaim::Establish)
+            idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish)
                 .is_none()
         );
         // Second cell, same selector ⇒ conflict, dropped.
         assert!(
             idx.add_effect(
+                0,
                 apt,
                 install,
                 package,
@@ -581,17 +610,17 @@ mod tests {
             .is_some()
         );
         assert_eq!(
-            effect(&idx, &mut i, "apt_get", "install"),
+            effect(&idx, 0, &mut i, "apt_get", "install"),
             Some((package, installed, ValueClaim::Establish)),
             "first-writer-wins"
         );
         // A different selector on the same verb is the legitimate multi-cell case.
         let configured = SelectorId(i.intern("configured"));
         assert!(
-            idx.add_effect(apt, install, package, configured, ValueClaim::Establish)
+            idx.add_effect(0, apt, install, package, configured, ValueClaim::Establish)
                 .is_none()
         );
-        assert_eq!(idx.effect_of(apt, install).len(), 2);
+        assert_eq!(idx.effect_of(0, apt, install).len(), 2);
     }
 
     #[test]
@@ -618,11 +647,11 @@ mod tests {
         let installed = SelectorId(i.intern("installed"));
 
         assert_eq!(
-            effect(&out.value, &mut i, "apt_get", "install"),
+            effect(&out.value, 0, &mut i, "apt_get", "install"),
             Some((package, installed, ValueClaim::Establish))
         );
         assert_eq!(
-            effect(&out.value, &mut i, "apt_get", "purge"),
+            effect(&out.value, 0, &mut i, "apt_get", "purge"),
             Some((package, installed, ValueClaim::EstablishInverted))
         );
         // `dpkg` is verbless (its check strips the `-i` flag), so its effect keys on the
@@ -630,7 +659,7 @@ mod tests {
         let eps = empty_verb(&mut i);
         assert_eq!(
             out.value
-                .effect_of(ProviderId(i.intern("dpkg")), eps)
+                .effect_of(0, ProviderId(i.intern("dpkg")), eps)
                 .first()
                 .map(|c| (c.kind, c.selector, c.claim)),
             Some((package, installed, ValueClaim::Establish)),
@@ -650,12 +679,14 @@ mod tests {
         let out = lift(&mut i, &[a, b]);
         let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
+        // Each file's rows are addressed under ITS OWN index (`28Q` §1.1) — the accumulation is
+        // still per-file, which is what lets two frames read two files' cells.
         assert_eq!(
-            effect(&out.value, &mut i, "apt_get", "install"),
+            effect(&out.value, 0, &mut i, "apt_get", "install"),
             Some((package, installed, ValueClaim::Establish))
         );
         assert_eq!(
-            effect(&out.value, &mut i, "yum", "install"),
+            effect(&out.value, 1, &mut i, "yum", "install"),
             Some((package, installed, ValueClaim::Establish))
         );
     }
@@ -672,7 +703,7 @@ mod tests {
         let tool = KindId(i.intern("sm.dorc.Tool"));
         let present = SelectorId(i.intern("present"));
         let eps = empty_verb(&mut i);
-        let cells = out.value.effect_of(ProviderId(i.intern("command")), eps);
+        let cells = out.value.effect_of(0, ProviderId(i.intern("command")), eps);
         assert_eq!(
             cells,
             &[EffectCell {
@@ -704,7 +735,7 @@ mod tests {
         let indexed = SelectorId(i.intern("indexed"));
         // The effect map keeps only the establish cell (NOT a Query cell for @indexed).
         assert_eq!(
-            out.value.effect_of(apt, install),
+            out.value.effect_of(0, apt, install),
             &[EffectCell {
                 kind: package,
                 selector: installed,
@@ -714,7 +745,7 @@ mod tests {
         );
         // @indexed is recorded as a backing-widening for (apt_get, install).
         assert!(
-            out.value.widening_of(apt, install).contains(&indexed),
+            out.value.widening_of(0, apt, install).contains(&indexed),
             "the co-occurring observe widens the verdict fact's backing"
         );
     }
@@ -733,7 +764,7 @@ mod tests {
         let package = KindId(i.intern("sm.dorc.Package"));
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
-            out.value.effect_of(dpkg, eps),
+            out.value.effect_of(0, dpkg, eps),
             &[EffectCell {
                 kind: package,
                 selector: installed,
@@ -742,7 +773,7 @@ mod tests {
             "a standalone observe stays a Query cell"
         );
         assert!(
-            out.value.widening_of(dpkg, eps).is_empty(),
+            out.value.widening_of(0, dpkg, eps).is_empty(),
             "a standalone observe widens nothing"
         );
     }

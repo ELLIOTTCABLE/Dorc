@@ -1100,7 +1100,7 @@ apt_get__predict() {
             let apt = ProviderId(i.intern("apt_get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
-            idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+            idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
 
             let cell = |i: &mut Interner, e: &str| {
                 let ent = EntityRef::Operand(OpaqueToken(i.intern(e)));
@@ -1173,7 +1173,7 @@ apt_get__predict() {
             let apt = ProviderId(i.intern("apt_get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
-            idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+            idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
 
             let cell = |i: &mut Interner, e: &str| {
                 let ent = EntityRef::Operand(OpaqueToken(i.intern(e)));
@@ -1298,7 +1298,7 @@ apt_get__predict() {
         let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish); // one effect cell
+        idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish); // one effect cell
 
         let nginx = FactKey {
             kind: package,

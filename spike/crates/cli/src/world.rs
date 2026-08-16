@@ -373,9 +373,11 @@ impl WhyWorld {
         // `fence-no-disjoint` (`24L` §7): every verdict provider's auto-cell kind is registered so
         // the survival tier reads an auto coordinate as MAY-touch. Dropping this would let a
         // synthetic singleton read as provably-disjoint — a wrong survival.
+        // Whole-unit and deliberately file-blind: registering a kind only makes coordinates read as
+        // MAY-touch, so covering every file's verdict providers errs toward less sparing.
         let verdict_names: Vec<String> = verdicts
             .providers()
-            .map(|p| interner.resolve(p.0).to_owned())
+            .map(|(_, p)| interner.resolve(p.0).to_owned())
             .collect();
         for name in verdict_names {
             let kind = dorc_core::auto_fact(&mut interner, &name).kind;

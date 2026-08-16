@@ -54,8 +54,9 @@ fn package_index(i: &mut Interner) -> KindIndex {
     let install = i.intern("install");
     let purge = i.intern("purge");
     let mut idx = KindIndex::default();
-    idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+    idx.add_effect(0, apt, install, package, installed, ValueClaim::Establish);
     idx.add_effect(
+        0,
         apt,
         purge,
         package,
@@ -257,8 +258,15 @@ fn service_index(i: &mut Interner) -> KindIndex {
     let systemctl = ProviderId(i.intern("systemctl"));
     let enable = i.intern("enable");
     let start = i.intern("start");
-    idx.add_effect(systemctl, enable, service, enabled, ValueClaim::Establish);
-    idx.add_effect(systemctl, start, service, active, ValueClaim::Establish);
+    idx.add_effect(
+        0,
+        systemctl,
+        enable,
+        service,
+        enabled,
+        ValueClaim::Establish,
+    );
+    idx.add_effect(0, systemctl, start, service, active, ValueClaim::Establish);
     idx
 }
 
@@ -310,7 +318,7 @@ fn seam_index(i: &mut Interner) -> KindIndex {
     let installed = SelectorId(i.intern("installed"));
     let yum = ProviderId(i.intern("yum"));
     let install = i.intern("install");
-    idx.add_effect(yum, install, package, installed, ValueClaim::Establish);
+    idx.add_effect(0, yum, install, package, installed, ValueClaim::Establish);
     idx
 }
 
@@ -359,7 +367,7 @@ fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
     let apt = ProviderId(i.intern("apt_get"));
     let update = i.intern("update");
     let mut idx = KindIndex::default();
-    idx.add_effect(apt, update, pkgindex, fresh, ValueClaim::Establish);
+    idx.add_effect(0, apt, update, pkgindex, fresh, ValueClaim::Establish);
     let held: Vec<FactKey> = if holds_fresh {
         vec![FactKey {
             kind: pkgindex,
@@ -400,7 +408,7 @@ fn query_index(i: &mut Interner) -> KindIndex {
     let installed = SelectorId(i.intern("installed"));
     let dpkg = ProviderId(i.intern("dpkg"));
     let eps = dorc_oracle::empty_verb(i);
-    idx.add_effect(dpkg, eps, pkgstate, installed, ValueClaim::Observe);
+    idx.add_effect(0, dpkg, eps, pkgstate, installed, ValueClaim::Observe);
     idx
 }
 
