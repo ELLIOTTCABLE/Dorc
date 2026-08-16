@@ -1,0 +1,78 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - vouched-composition-not-present
+---
+-- book.sh --
+#!/bin/sh
+# emit30-book-shadowed-tool-declines (`28R:rul-contested-name-never-resolved`) — the engine refusing
+# to pick a referent between two humans.
+#
+# The book defines a function named `wombat`. The hork oracle's verdict body calls `wombat cmp` and
+# means the documented external utility — that assumption is what the structural self-vouch has always
+# rested on, now stated as law. At the host, inside the shipped check, `wombat` is whichever of the two
+# the shell binds, and the engine has no standing to choose: honoring the admin's function runs
+# unvouched, possibly-mutating book code inside a read-only check, and bypassing it under-executes in
+# exactly the context-wrapper books where the admin's function is the point. Both are unsound in a real
+# cell, so the engine declines and `hork sync` runs.
+#
+# Note the site under test is HORK's, not the shadowed name's. A book definition under a TOOL name
+# already walls its own call site (`307c` task-verify-definition-vector-walls), so `wombat …` lines
+# were never the exposure; the exposure is somebody ELSE's vouched body reaching that name, one site
+# over, where nothing local looks wrong at all.
+#
+# The promotion path is unchanged and is the author's: spell the wrapper as a wrapper-oracle with an
+# entry form, and `27C` restores probe-entry properly.
+wombat() {
+   hork tune --profile web
+}
+
+hork sync a.conf
+
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+# The engineer's verdict body calls `wombat` meaning the utility, and says so by calling it.
+hork__is_converged() {
+   wombat cmp -- "$2"
+}
+
+-- replay --
+$ dorc --book=book.sh -o hork.oracle.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=095597528541e5324d51514f2b4ae2811869ee649699b4c396cefe40b96bf6ea sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# emit30-book-shadowed-tool-declines (`28R:rul-contested-name-never-resolved`) — the engine refusing
+# to pick a referent between two humans.
+#
+# The book defines a function named `wombat`. The hork oracle's verdict body calls `wombat cmp` and
+# means the documented external utility — that assumption is what the structural self-vouch has always
+# rested on, now stated as law. At the host, inside the shipped check, `wombat` is whichever of the two
+# the shell binds, and the engine has no standing to choose: honoring the admin's function runs
+# unvouched, possibly-mutating book code inside a read-only check, and bypassing it under-executes in
+# exactly the context-wrapper books where the admin's function is the point. Both are unsound in a real
+# cell, so the engine declines and `hork sync` runs.
+#
+# Note the site under test is HORK's, not the shadowed name's. A book definition under a TOOL name
+# already walls its own call site (`307c` task-verify-definition-vector-walls), so `wombat …` lines
+# were never the exposure; the exposure is somebody ELSE's vouched body reaching that name, one site
+# over, where nothing local looks wrong at all.
+#
+# The promotion path is unchanged and is the author's: spell the wrapper as a wrapper-oracle with an
+# entry form, and `27C` restores probe-entry properly.
+wombat() {
+   hork tune --profile web
+}
+
+hork sync a.conf
