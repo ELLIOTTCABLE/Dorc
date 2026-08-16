@@ -264,12 +264,31 @@
 ## §1b — SUCCESSOR HANDOFF (written 2026-08-15 at the human's rewind lean)
 
 A post-rewind conductor MUST distrust conversation memory; ground truth = this
-ledger + `plans/309` + `notes/305` + the 308a kit + `git log ai/r30-conduct` +
-the lane branch. Boot order: LIVING_STATUS → this file (whole) → `plans/28Q`
-§§0–1/§7/§8 → `notes/305` → `spike/CLAUDE.md`. THE REWIND ANCHOR: the seams
-lane CLOSED (branch `ai/r30-lane-influence-seams`, tree clean, report
-`notes/307a` §§1–9 committed in-branch), nothing else in flight. Next actions,
-in order:
+ledger + `plans/309` + `notes/305`/`305a` + the 308a kit + the lane reports
+(`307a`/`307b`/`307c`) + `git log ai/r30-conduct`. Boot order: LIVING_STATUS →
+this file (whole) → `307c` → the four 308 reviews → `plans/28Q` §§0–1/§7/§8 →
+`spike/CLAUDE.md`.
+
+**REWIND ANCHOR #2 (2026-08-16, the ACTUAL handoff point — supersedes the list
+below where they differ):** the seams, trip-policy, AND definition-factoring
+conversion lanes are ALL CLOSED AND FOLDED to `ai/r30-conduct`; the combined tip
+is gate-green both legs by conductor hand; the FOUR crosscheck reviews are
+COLLECTED VERBATIM and COMPLETELY UNADJUDICATED at `notes/308b`–`308e`
+(provenance: b/c = Fable neutral/adversarial, in-lineage; d/e = GPT-5.6-Sol
+neutral/adversarial via read-only codex, foreign — d's codex exited 0; **e
+carries NO completion marker — treat as possibly-truncated; re-run its lane
+clean if in doubt, kit section `sol-adversarial`**). THE SUCCESSOR'S FIRST ACT:
+the ONE batched adjudication of all four under maximum skepticism (every
+credited finding verified in code before crediting; Sol over-flags severity;
+convergence is the signal; `303a` is the model) → the burndown lane for what
+survives → gates → THE STAGE-I STAMP. Then: stage-0 (queued, human
+scheduling-ack pending) · snapshot-emission · the Spine census (`plans/309`,
+pre-ack) · closure-custody policy (sibling rulings) · world-scopes. The
+HUMAN-MORNING QUEUE rides §2. Cleanup owed: the review branches
+(`review-fable-{neutral,adversarial}`, `review-sol-*` if any, the retired lane
+worktrees incl. `r30-definition-factoring-exec` and the detached design-half
+husk) once reports are verified filed. Prior anchor's list, still valid where
+not superseded:
 1. **Fold batch**: merge `ai/main` into `ai/r30-conduct` (the §2 fold-batch
    rider — MERGE, never rebase); rebase the seams lane onto the merged tip,
    `git merge --ff-only`; fold-review `307a` under the deviation-litmus (§9

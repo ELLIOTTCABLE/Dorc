@@ -14,7 +14,20 @@
 
 ---
 
-## CURRENT STATE (2026-08-15 late — wave-two open; the seams lane folded)
+## CURRENT STATE (2026-08-16 — stage-i LANDED; crosscheck collected, UNADJUDICATED)
+
+**The definition-factoring CONVERSION is FOLDED and gate-green** (all three
+wave-two lanes closed: seams · trip-policy · conversion; reports
+`notes/307a`/`307b`/`307c`; conduct tip verified both legs by conductor hand).
+The 2×Fable+2×Sol adversarial crosscheck RAN; all four reports are collected
+VERBATIM at `notes/308b`–`308e`, **completely unadjudicated** (308e possibly
+truncated — no completion marker). **THE NEXT CONDUCTOR'S FIRST ACT: the batched
+adjudication → burndown → the stage-i stamp** (`notes/307` §1b REWIND ANCHOR #2
+is the full handoff). pin30 did NOT flip — `28Q` §1's hypothesis is REFUTED at
+both candidate seats by measurement (`307c`). Details below stand where not
+superseded by this block.
+
+## STATE 2026-08-15 late (wave-two open; superseded above)
 
 **WAVE-TWO IS IN MOTION on `ai/r30-conduct`** (conduct ledger **`notes/307`**, whose
 §1b is the successor handoff; conductor session `r30-conductor-4`). FOLDED: the
