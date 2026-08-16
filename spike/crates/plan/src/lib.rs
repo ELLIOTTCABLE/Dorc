@@ -5866,6 +5866,121 @@ apt_get__is_converged() { return 0; }
         );
     }
 
+    /// `p-book-collision-forces-non-idiomatic` (`30A` §2 P-green) — a book funcdef sharing an emitted
+    /// name under DIFFERENT bytes forces the ENGINE's definition to munge, and leaves the book's own
+    /// binding alone. Two cells: the book only defines the name, and the book defines AND calls it.
+    ///
+    /// The sh fact: a top-level funcdef binds its name for every call below it, and the emitted
+    /// preamble sits ABOVE the whole book, so whichever body the preamble bound would be rebound by
+    /// the book's own definition for the book's own calls — and, if the preamble used the bare name,
+    /// the book's definition would be a SECOND top-level funcdef under it. Both halves land on
+    /// `rul-happy-path-is-a-closed-set`: idiomatic bare-name emission is licensed only where the
+    /// engine has ENUMERATED the names in play, and a book that claims one is exactly the case that
+    /// cannot be enumerated away.
+    ///
+    /// Why an engine choice depends on it: emitting the bare name here would put the guard's call and
+    /// the book's call on the same name with two different bodies underneath, and which one ran would
+    /// depend on where in the artifact the reader looked — pope-sin tier
+    /// (`271:rul-sin-ordering`), and invisible to a text golden.
+    ///
+    /// NOTE the aid-plane gap this measurement surfaced, recorded not fixed: the provenance comment
+    /// (`# dorc: pinned definition of …`) rides the PLURAL branch only, so a munge forced by a book
+    /// collision emits a bare `<name>_h<digest>()` with nothing saying whose judgment it is.
+    #[test]
+    fn a_book_funcdef_under_an_emitted_name_forces_the_engine_to_munge() {
+        let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let book_body = "apt_get__is_converged() { printf 'always converged\\n' ; }";
+        let plan = two_guard_plan([body, body]); // content-dedup ⇒ ONE engine definition
+
+        let bare = dorc_syntax::parse("apt-get install curl\n").value;
+        let unclaimed = plan.pinned_definitions("apt-get install curl\n", &bare);
+        assert_eq!(
+            unclaimed.invoked(AstId(0)),
+            Some("apt_get__is_converged"),
+            "control: with the name unclaimed the emission is idiomatic — the authored name, bare"
+        );
+
+        for (cell, src) in [
+            (
+                "defines only",
+                format!("{book_body}\napt-get install curl\n"),
+            ),
+            (
+                "defines and calls",
+                format!("{book_body}\napt_get__is_converged install curl\napt-get install curl\n"),
+            ),
+        ] {
+            let ast = dorc_syntax::parse(&src).value;
+            let pinned = plan.pinned_definitions(&src, &ast);
+            let invoked = pinned
+                .invoked(AstId(0))
+                .expect("the site still guards, under a disambiguated name");
+            assert!(
+                invoked.starts_with("apt_get__is_converged_h"),
+                "{cell}: the ENGINE's definition munges — {invoked}"
+            );
+            assert!(
+                !pinned.hoisted().contains("apt_get__is_converged()"),
+                "{cell}: and the preamble binds the bare name NOWHERE, so the book's own definition \
+                 is the artifact's only binding for it and its own calls are untouched:\n{}",
+                pinned.hoisted()
+            );
+            assert!(
+                pinned.hoisted().contains(&format!("{invoked}()")),
+                "{cell}: the engine's body is still emitted, under its own name:\n{}",
+                pinned.hoisted()
+            );
+        }
+    }
+
+    /// `p-defensive-forced-fallback` (`30A` §2 P-green) — under DEFENSIVE emission every emitted name
+    /// munges, including a lone body no collision touches.
+    ///
+    /// The sh fact this is conservative about: a real definition vector (`alias`, an unresolvable
+    /// load) can bind a name in the executing shell that no static walk saw, so the set of names in
+    /// play is not enumerable — and `rul-happy-path-is-a-closed-set` says the idiomatic tier is
+    /// licensed ONLY by enumeration. Not by absence of evidence: by proof. So the fallback is
+    /// munge-everything, in all cases.
+    ///
+    /// Why an engine choice depends on it: the fallback is what makes idiomatic emission SAFE to build
+    /// gradually. A defensive world that still emitted one bare name would be a name an `alias` could
+    /// have rebound, and the guard would call the alias instead of the vouched body.
+    ///
+    /// The other half of the rule — that a WRAPPER's command-position `"$@"` must not trigger this,
+    /// because the parser folds that ⊤-reject in with `eval` and keying on it would put every wrapper
+    /// oracle in the world into defensive emission — is pinned where the detection lives
+    /// (`dorc_oracle::closure`'s `definition_vectors_ignore_unmodeled_commands_and_top_rejects`).
+    #[test]
+    fn defensive_emission_munges_even_an_uncontested_singleton() {
+        let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
+        let ast = dorc_syntax::parse("").value;
+        let mut plan = two_guard_plan([body, body]);
+        assert_eq!(
+            plan.pinned_definitions("", &ast).invoked(AstId(0)),
+            Some("apt_get__is_converged"),
+            "control: one body, no collision, no vector ⇒ the authored name, bare"
+        );
+
+        plan.defensive_emission = true;
+        let pinned = plan.pinned_definitions("", &ast);
+        let invoked = pinned.invoked(AstId(0)).expect("the site still guards");
+        assert!(
+            invoked.starts_with("apt_get__is_converged_h"),
+            "a definition vector anywhere in the unit munges every emitted name, collision or not — \
+             {invoked}"
+        );
+        assert!(
+            !pinned.hoisted().contains("apt_get__is_converged()"),
+            "no bare name survives for an `alias` to rebind:\n{}",
+            pinned.hoisted()
+        );
+        assert_eq!(
+            pinned.invoked(AstId(1)),
+            Some(invoked),
+            "both sites still reach ONE definition — defensive emission renames, it does not split"
+        );
+    }
+
     /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
     /// `src`; `probeable` gates whether the corpus apt check ships (R3: the whole stripped
     /// funcdef via [`ship_corpus`]). Returns the site-keyed [`ProbePlan`] + the interner (for

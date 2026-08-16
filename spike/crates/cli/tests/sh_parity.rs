@@ -473,3 +473,150 @@ fn the_composed_stage_seat_consults_the_closure() {
         "and a denial must become `None` — which is what refuses the compound"
     );
 }
+
+// ---------------------------------------------------------------------------
+// `p-zero-munge-happy-corpus` — the output-quality RATCHET (`30A` §1 `d5-quality-is-a-ratchet`).
+
+/// The cases whose committed artifacts are SUPPOSED to carry munged names, because each exists to
+/// witness a defensive or collision world.
+///
+/// Growing this list is a REVIEWED ACT, and the test says so in its own failure message: a new entry
+/// means one more book whose output went defensive-ugly, and
+/// `rul-happy-path-is-a-closed-set` makes idiomatic emission a gradual-enhancement path ON TOP of the
+/// defensive floor — so a case sliding into the floor is a regression until somebody says otherwise.
+/// Two-way, like every allow-list in this tree: a listed case that stopped munging has stopped
+/// witnessing what it was listed for.
+const MUNGE_WITNESS_CASES: &[&str] = &[
+    "emit30-definition-vector-munges-everything.loom",
+    "emit30-two-live-verdicts-under-one-name.loom",
+];
+
+/// Every munged emitted name in `text`, using the engine's OWN role vocabulary to decide.
+///
+/// A munge is `<authored role name>_h<8 hex>` (`plan`'s `short_digest`), so the test is: strip the
+/// suffix and ask `dorc_oracle::reserved::role_family` whether what is left is a role name. Reading it
+/// that way rather than from a hand-written suffix list means the detector tracks the vocabulary
+/// instead of drifting from it.
+fn munged_names(text: &str) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    for (at, _) in text.char_indices() {
+        let Some(rest) = text.get(at..) else { continue };
+        if !rest.starts_with("_h") {
+            continue;
+        }
+        let Some(digest) = rest.get(2..10) else {
+            continue;
+        };
+        if digest.len() != 8 || !digest.chars().all(|c| c.is_ascii_hexdigit()) {
+            continue;
+        }
+        let head = text.get(..at).unwrap_or_default();
+        let start = head
+            .rfind(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+            .map_or(0, |boundary| boundary.saturating_add(1));
+        let Some(authored) = head.get(start..) else {
+            continue;
+        };
+        if dorc_oracle::reserved::role_family(authored).is_some() {
+            out.insert(format!("{authored}_h{digest}"));
+        }
+    }
+    out
+}
+
+/// Every committed artifact text in the corpus: the dir cases' `expected.out` and the loom cases'
+/// whole text (their transcripts live inside them).
+fn committed_artifacts() -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for root in support::case_roots() {
+        let Ok(entries) = std::fs::read_dir(&root) else {
+            continue;
+        };
+        let mut paths: Vec<_> = entries.flatten().map(|entry| entry.path()).collect();
+        paths.sort();
+        for path in paths {
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            if name.contains(".sync-conflict-") {
+                continue; // sync residue is never a case
+            }
+            if path.is_dir() {
+                let golden = path.join("expected.out");
+                if let Ok(text) = std::fs::read_to_string(&golden) {
+                    out.push((name.clone(), text));
+                }
+                let inner = path.join(format!("{name}.loom"));
+                if let Ok(text) = std::fs::read_to_string(&inner) {
+                    out.push((format!("{name}.loom"), text));
+                }
+            } else if std::path::Path::new(&name)
+                .extension()
+                .is_some_and(|ext| ext == "loom")
+                && let Ok(text) = std::fs::read_to_string(&path)
+            {
+                out.push((name, text));
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// `p-zero-munge-happy-corpus` — the happy-path corpus emits ZERO munged names.
+///
+/// This is `d5-quality-is-a-ratchet`: output-idiomatic-quality pinned MECHANICALLY rather than by
+/// taste. `rul-happy-path-is-a-closed-set` [human-typed 2026-08-16] makes defensive munge-everything
+/// the floor and idiomatic emission a gradual path above it — which means the floor is exactly what a
+/// regression looks like, and a regression into it is invisible to a golden diff (the golden simply
+/// records the new, uglier bytes). So the assertion is over the whole committed corpus at once, with
+/// the deliberate witnesses enumerated.
+///
+/// Non-vacuity is load-bearing here: if the detector matched nothing, this test would pass over an
+/// entirely munged corpus, so it also demands that every enumerated witness IS detected.
+#[test]
+fn the_happy_path_corpus_emits_no_munged_names() {
+    let artifacts = committed_artifacts();
+    assert!(
+        !artifacts.is_empty(),
+        "discovery floor: no committed artifact was found, so this ratchet proves nothing"
+    );
+
+    let mut unlisted: Vec<String> = Vec::new();
+    let mut covered: BTreeSet<&str> = BTreeSet::new();
+    for (case, text) in &artifacts {
+        let munged = munged_names(text);
+        if munged.is_empty() {
+            continue;
+        }
+        if let Some(listed) = MUNGE_WITNESS_CASES.iter().find(|listed| *listed == case) {
+            covered.insert(listed);
+            continue;
+        }
+        for name in munged {
+            unlisted.push(format!("{case}: {name}"));
+        }
+    }
+
+    assert!(
+        unlisted.is_empty(),
+        "{} munged name(s) in {} case(s) that are not enumerated munge witnesses. A book whose \
+         output went defensive is a QUALITY REGRESSION under `rul-happy-path-is-a-closed-set`, not a \
+         golden to re-bless: find what stopped being enumerable. Adding to \
+         `MUNGE_WITNESS_CASES` is a reviewed act, never a fix.\n  {}",
+        unlisted.len(),
+        artifacts.len(),
+        unlisted.join("\n  ")
+    );
+    let stale: Vec<&&str> = MUNGE_WITNESS_CASES
+        .iter()
+        .filter(|listed| !covered.contains(**listed))
+        .collect();
+    assert!(
+        stale.is_empty(),
+        "enumerated munge witness(es) carry no munged name, so either they stopped witnessing or the \
+         detector stopped detecting — and a detector that matches nothing would pass this test over a \
+         wholly munged corpus: {stale:?}"
+    );
+}
