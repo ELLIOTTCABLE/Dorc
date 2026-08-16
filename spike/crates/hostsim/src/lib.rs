@@ -107,14 +107,28 @@ pub mod fault {
         Glued,
         /// A `>PIPE_BUF` line: content inflated but still terminated (WIDENS, the safe direction).
         Oversize,
+        /// One framing IDENTITY key rewritten to a value this controller did not mint — the
+        /// "am I even talking to the world I think I am" family (`306b` §6e). Carries the key's
+        /// own name, so a DST can assert each one is genuinely reached rather than counting a
+        /// family that collapsed into one arm.
+        Identity(&'static str),
         /// The seed left the stream clean (the negative control).
         Clean,
     }
 
     /// Apply one seeded fault to a framed record `stream`. `token` is the terminal token to
-    /// tear/inflate around. Deterministic in `seed`.
+    /// tear/inflate around; `identity_keys` pairs each forgeable `key=` with the FOREIGN value to
+    /// substitute. The caller supplies the value because only it knows what its own grammar
+    /// accepts: a forged key that lands as a grammar fault tests the parser, not identity.
+    /// Deterministic in `seed`, and PLAN-FREE — every piece of the wire vocabulary arrives as a
+    /// parameter, so this module never learns the records grammar.
     #[must_use]
-    pub fn mutate(seed: u64, stream: &str, token: &str) -> (String, RecordFault) {
+    pub fn mutate(
+        seed: u64,
+        stream: &str,
+        token: &str,
+        identity_keys: &[(&'static str, &'static str)],
+    ) -> (String, RecordFault) {
         let mut rng = Lcg::new(seed);
         let mut lines: Vec<String> = stream.lines().map(str::to_owned).collect();
         let framed: Vec<usize> = lines
@@ -126,10 +140,14 @@ pub mod fault {
         if framed.is_empty() {
             return (stream.to_owned(), RecordFault::Clean);
         }
-        let class = match rng.below(4) {
+        let class = match rng.below(5) {
             0 => RecordFault::Torn,
             1 => RecordFault::Glued,
             2 => RecordFault::Oversize,
+            3 => match pick_key(&mut rng, identity_keys) {
+                Some((key, _)) => RecordFault::Identity(key),
+                None => RecordFault::Clean,
+            },
             _ => RecordFault::Clean,
         };
         // Pick one framed line index (safe: `framed` is non-empty; `below` stays in-range).
@@ -172,9 +190,47 @@ pub mod fault {
                     *l = format!("{} {pad} {token}", strip_token(l, token));
                 }
             }
+            RecordFault::Identity(key) => {
+                // Rewrite the key WHEREVER it sits: the identity family's whole point is that a
+                // controller-minted value came back different, and which line carries it is the
+                // records grammar's business, not this module's.
+                let forged = identity_keys
+                    .iter()
+                    .find_map(|(name, value)| (*name == key).then_some(*value))
+                    .unwrap_or("forged");
+                let needle = format!("{key}=");
+                for line in &mut lines {
+                    if let Some(rewritten) = forge_key(line, &needle, forged) {
+                        *line = rewritten;
+                    }
+                }
+            }
             RecordFault::Clean => {}
         }
         (lines.join("\n") + "\n", class)
+    }
+
+    /// One identity key and its forged value, or `None` when the caller named none.
+    fn pick_key(
+        rng: &mut Lcg,
+        keys: &[(&'static str, &'static str)],
+    ) -> Option<(&'static str, &'static str)> {
+        keys.get(usize::try_from(rng.below(keys.len() as u64)).unwrap_or(0))
+            .copied()
+    }
+
+    /// Replace the value of `needle` (a `key=` prefix) with `forged`, or `None` when the line does
+    /// not carry that key. The forged value is caller-supplied and constant rather than seeded:
+    /// what a DST needs is that it DIFFERS from what the controller minted, and a constant keeps
+    /// the mutation reproducible from the seed alone.
+    fn forge_key(line: &str, needle: &str, forged: &str) -> Option<String> {
+        let at = line.find(needle)?;
+        let after = at.checked_add(needle.len())?;
+        let rest = line.get(after..)?;
+        let end = rest.find(' ').map_or(rest.len(), |offset| offset);
+        let head = line.get(..after)?;
+        let tail = rest.get(end..)?;
+        Some(format!("{head}{forged}{tail}"))
     }
 
     /// Remove the trailing ` {token}` (and any trailing whitespace) from a framed line.
@@ -1529,6 +1585,38 @@ grep__predict() {
         );
     }
 
+    /// The framing keys the byte-tier DST may forge — the identity family (`306b` §6e), whose
+    /// defining trait is that the answer came back attributed to a run this controller did not
+    /// mint. Each forged value is grammar-VALID and controller-WRONG: `attempt` takes a number, so
+    /// a non-numeric forgery would land as a parse fault and test the wrong thing.
+    const IDENTITY_KEYS: &[(&str, &str)] = &[
+        ("nonce", "forged"),
+        ("attempt", "7"),
+        ("host", "forged"),
+        ("book", "forged"),
+    ];
+
+    /// The records-lane refusal reason an admission outcome names, if it named one.
+    fn named_records_refusal<T>(outcome: &dorc_plan::records::Admission<T>) -> Option<String> {
+        match outcome {
+            dorc_plan::records::Admission::Refused(
+                dorc_plan::records::AdmissionRefusal::Records(fault),
+            ) => Some(format!("{fault:?}")),
+            _ => None,
+        }
+    }
+
+    /// The reason a forged `key=` must produce. Spelled per key so a family that collapsed into
+    /// one arm cannot satisfy the assertion.
+    fn identity_reason(key: &str) -> &'static str {
+        match key {
+            "nonce" => "IntegrityMismatch(Nonce)",
+            "attempt" => "IntegrityMismatch(Attempt)",
+            "host" => "IntegrityMismatch(Host)",
+            _ => "IntegrityMismatch(Book)",
+        }
+    }
+
     /// `262` §2/§5 byte-tier fault DST (THE tear-detector proof): seeded torn/glued/oversize
     /// mutations of a framed record stream, fed through bounded production admission, must fold in the
     /// SAFE direction — a torn/truncated record is DROPPED or the read unit REFUSED, never a
@@ -1582,14 +1670,18 @@ grep__predict() {
         );
 
         let (mut torn, mut glued, mut oversize, mut clean_through) = (0u32, 0u32, 0u32, 0u32);
+        let mut identity = 0u32;
         let mut named: BTreeSet<String> = BTreeSet::new();
         for seed in 0..512u64 {
-            let (mutated, class) = fault::mutate(seed, &clean, TERMINAL_TOKEN);
+            let (mutated, class) = fault::mutate(seed, &clean, TERMINAL_TOKEN, IDENTITY_KEYS);
             let d = admit(&mutated);
-            if let Admission::Refused(dorc_plan::records::AdmissionRefusal::Records(fault)) = &d {
-                named.insert(format!("{fault:?}"));
-            }
+            named.extend(named_records_refusal(&d));
             match class {
+                RecordFault::Identity(key) => assert_eq!(
+                    named_records_refusal(&d).as_deref(),
+                    Some(identity_reason(key)),
+                    "seed {seed}: a forged `{key}=` must refuse, named for that key: {d:?}"
+                ),
                 RecordFault::Torn | RecordFault::Glued | RecordFault::Clean => {
                     // The safe direction: refused OR every emitted record is a CLEAN one (loss
                     // only). A prefix-truncated coordinate loses the token ⇒ dropped, never a
@@ -1618,20 +1710,32 @@ grep__predict() {
                 RecordFault::Torn => torn += 1,
                 RecordFault::Glued => glued += 1,
                 RecordFault::Oversize => oversize += 1,
+                RecordFault::Identity(_) => identity += 1,
                 RecordFault::Clean => clean_through += 1,
             }
         }
         assert!(
-            torn > 0 && glued > 0 && oversize > 0 && clean_through > 0,
-            "sometimes-assert: every fault class fires over 512 seeds \
-             (torn={torn} glued={glued} oversize={oversize} clean={clean_through})"
+            torn > 0 && glued > 0 && oversize > 0 && identity > 0 && clean_through > 0,
+            "sometimes-assert: every fault class fires over 512 seeds (torn={torn} glued={glued} \
+             oversize={oversize} identity={identity} clean={clean_through})"
         );
         // `306b` §6e: the refusal REASONS are reached from real byte-level faults, not only from
-        // hand-built fixtures. A discrimination no mutation reaches is one nothing keeps honest.
-        assert!(
-            named.contains("Torn") && named.contains("Glued"),
-            "sometimes-assert: the seeded tear/glue faults must reach their NAMED refusals \
-             (reached: {named:?})"
-        );
+        // hand-built fixtures. A discrimination no mutation reaches is one nothing keeps honest —
+        // and the identity family is asserted PER KEY, because four conditions that collapsed into
+        // one arm would still satisfy a family-level count.
+        for reason in [
+            "Torn",
+            "Glued",
+            "IntegrityMismatch(Nonce)",
+            "IntegrityMismatch(Attempt)",
+            "IntegrityMismatch(Host)",
+            "IntegrityMismatch(Book)",
+        ] {
+            assert!(
+                named.contains(reason),
+                "sometimes-assert: the seeded faults must reach `{reason}` \
+                 (reached: {named:?})"
+            );
+        }
     }
 }
