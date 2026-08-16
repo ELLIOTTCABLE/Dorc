@@ -272,6 +272,10 @@ run = [
 [tasks."test:e2e"]
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
 dir = "spike"
+# `timed` output swallows this task's FAILURE diagnostics entirely (a red run reports only
+# `error: test failed` — no case, no gate, no diff); force plain output the way `fmt`
+# force-overrides HK_FIX. Measured 2026-08-16 (the crosscheck-burndown lane's tooling finding).
+env = { MISE_TASK_OUTPUT = "prefix" }
 # The trailing `--` is load-bearing: without it mise's passthrough lands on `cargo test`, whose
 # own `[TESTNAME]` takes exactly one positional and refuses a second before the runner ever sees
 # it. The runner itself resolves any number of case paths (`split_path_selectors`), which is how
@@ -281,6 +285,8 @@ run = "cargo test -p dorc-cli --test e2e --"
 [tasks."test:looms"]
 description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint. Trailing args: ONE bare substring, or any number of case PATHS — the same selection test:e2e takes."
 dir = "spike"
+# Same failure-visibility override as test:e2e (same cargo-test shape, same swallowed reds).
+env = { MISE_TASK_OUTPUT = "prefix" }
 # The trailing `--` is load-bearing for the same reason it is on test:e2e: cargo's own `[TESTNAME]`
 # takes exactly one positional and refuses a second before the runner sees it.
 run = "cargo test -p dorc-cli --test looms --"
