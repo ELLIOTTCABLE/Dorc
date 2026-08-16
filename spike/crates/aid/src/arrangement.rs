@@ -474,8 +474,11 @@ mod tests {
             if entry.words.is_some_and(|tier| tier.is_loom_minted()) {
                 assert!(
                     is_case_owned(entry.slug),
-                    "arrangement `{}`: loom-minted words need a defining case; builder-migrated \
-                     text is `ProseTier::Migrated`",
+                    "arrangement `{}`: loom-minted words need a defining case — own them from a \
+                     case's `owns:` frontmatter (the declaration-union; a component filling \
+                     another code's hole is owned by THAT code's case), or name the case for the \
+                     slug. Re-tiering to `ProseTier::Migrated` is for PRE-PIPELINE builder text \
+                     only, never for words minted now",
                     entry.slug
                 );
             }
