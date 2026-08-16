@@ -67,6 +67,31 @@
   preflight cold-witness → product binary, the decided direction · T3
   bless's sanctioned-drift failure made self-teaching; hook-config-durability
   deliberately NOT included, still banked — shared `.git/config` care).
+- **lane-sh-parity-pin-battery — PHASE-A ADJUDICATED, PHASE-B ACKED 2026-08-16**
+  (checkpoint: the xfail seat landed at `internal_tooling::xfail` — static
+  `PINS` registry + two-way lexical drift check; round-marker horizons with
+  dates UNREPRESENTABLE, malformed-counts-as-expired, and `Deferred.why`
+  required — the type-level slip-receipt; census renders grouped-by-marker;
+  `CURRENT_ROUND=30` hand-bumped const. P-green tier landed, 15 trials,
+  ~4s suite growth. TWO FINDINGS credited:
+  `fnd-conditional-oracle-definition-is-invisible-to-the-lift` — the
+  `command -v || def` funcdef never reaches ANY lane (the lift skips non-top-
+  level items; the frame solver holds no opinion on oracle conditionals) —
+  which FALSIFIES the conductor's same-day `oracle/CLAUDE.md` sentence
+  (correction owed at fold), and surfaces a parsed-definition→no-lifted-row
+  direction the join census does not cover ·
+  `fnd-a-later-unset-f-does-not-remove-a-helper` — the helper lane has no
+  removal model; a later-file `unset -f` leaves the earlier declaration
+  travelling into shipped checks (inert today via ill-formed-oracle-only;
+  INVERTS when `unset -f` joins the blessed top-level set; FORFEITS row owed).
+  Verify-first #2: the cross-custody compound-plurality cell licenses
+  NOTHING (whole-compound refusal; the ships-anyway asymmetry recorded as the
+  per-segment capture's rationale). RULED at checkpoint: P-diff MINTS ZERO
+  MANIFESTS — all three buildable cells already covered by the existing
+  ELEVEN floor manifests (enumerated in the report; the `30A` ≤8 budget is
+  superseded-by-inventory, rewrite owed at fold); the lexical fence replaces
+  the e2e composed-stage cell; helper signature/siting deviations ENDORSED
+  with the conductor's process-boundary mistake named.)
 - **lane-sh-parity-pin-battery — DISPATCHED 2026-08-16** (Opus, branch
   `ai/r30-lane-sh-parity-pins`; work order = `notes/30A` VERBATIM — the
   doctrine §1, the inventory §2, the budget rules §3; the xfail-with-named-
