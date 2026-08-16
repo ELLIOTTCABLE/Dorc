@@ -38,6 +38,18 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **the minispec spec fix — LANDED 2026-08-16 @ `d541c5fa`** [HUMAN-AUTHORIZED
+  spec-content touch, typed this sitting; conductor-authored in-window under
+  `law-spec-touch-frontier-human-only`]: the root module's drift-prone import
+  list DELETED (docstring states the lakefile-glob mechanism; correct under
+  either Lake glob semantics) · the two overclaiming `Result`-error docstrings
+  corrected to hypotheses-make-failure-unreachable · each unit gained its
+  `<Law>_specializes_at_u32` coupling theorem (the law's own `Prop` applied at
+  the battery ground, pure application terms — `30B:fnd-battery-never-
+  instantiates-its-own-law`'s repair). Greening runs via the tooling lane's T4
+  (cleared-root `verify:lean`, WSL; builder hard-forbidden from `.lean` files);
+  a red comes back to the conductor for the second pass. Everything larger from
+  the review pair stays DEFERRED post-rewind per the human.
 - **review-minispec-focused — COLLECTED + ADJUDICATED 2026-08-16**
   (`notes/30D` is the verdict record; raw reports `30B` neutral · `30C` Sol
   adversarial, cherry-picked to conduct). HEADLINE, conductor-verified by own
