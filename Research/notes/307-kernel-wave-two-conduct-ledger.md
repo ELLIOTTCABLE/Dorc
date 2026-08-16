@@ -38,6 +38,37 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **lane-stage-zero-ship-seam — CHECKPOINT ADJUDICATED, BLESS AUTHORIZED
+  2026-08-16** (Opus, branch `ai/r30-lane-stage-zero-ship-seam`, base
+  `d960d489`; three commits at checkpoint; drift fully classified: 45 e2e +
+  3 aid looms, ALL probe-artifact-bytes-only — the shipped body flips
+  `__predict`→`__is_converged` — plus four why-chain locus moves to the verdict
+  definition, the honest render; NO outcome moves, exec-proven via the
+  `expected.ran` gate across all 45; records-diff audit clean three ways —
+  the lost-measurement class is structurally unrepresentable under the landed
+  cut). CHECKPOINT RULINGS [CONDUCTOR, human-veto-eligible]:
+  **`rul-primacy-moves-the-body-never-the-cell`** — the builder's G reading
+  RATIFIED over A' (W-B's "cell the shipped body measures" = the cell whose
+  CONVERGENCE the rc asserts = the site's cell = the predict author's
+  declaration where one resolves; A' REJECTED on the staleness route — a
+  dropped declared Establish leaves a downstream Query pristine,
+  cardinal-sin direction; the split-family keying residue is §4's
+  acknowledged sparing-tier cross-author residue) ·
+  `fnd-wrapped-guard-carried-the-predict-model` closure ENDORSED (a wrapped
+  guard was invoking the PREDICT — declared output in guard position, standing
+  refusal; the no-fallback-when-vouched-but-unshippable asymmetry ratified) ·
+  `res-entry-tolerance-rides-a-declining-verdict` — rider RESOLVED as BUILD-IT
+  (consent is per-FUNCTION: the mark licenses only the shipped body; the
+  declining-verdict/predict-ships cell was over-consented entry; one-line
+  gate + pin) · `res-member-and-inline-lanes-still-predict-measured` DEFERRED
+  (a design act — reversing `no_verdict_lane_in_members`; FORFEITS row at
+  fold) · UNFILTERED bless AUTHORIZED (three-loom promote first, census +
+  lock-byte-identity confirmed; post-bless case-by-case classification against
+  the two-shape enumeration required) · pin28's false fixture header
+  rewrite authorized (terse) · whylog locus movement is NOT a durable-review
+  trigger (value, not schema). pin30: STILL no flip; FOUR causes eliminated;
+  remaining candidates = `evaluate_verdict`'s tracer over a case body at the
+  peeled argv, or `peel_book_chain` — FORFEITS row cites them at fold.
 - **gate-adversarial-crosscheck-stage-i — ADJUDICATED 2026-08-16** (conductor-5;
   the record is **`notes/308`**, which also carries the burndown scope §1, the
   record-repair list §2/§6, and the process rows §5). The Sol-adversarial lane
