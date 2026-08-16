@@ -1,0 +1,144 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# emit30-two-live-verdicts-under-one-name — the MEASUREMENT cell for whether the hash-munge
+# emission tier (`plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding`, rule 3) is
+# reachable at all. `28Q` §1 records it as UNWITNESSED and points at subshell regions
+# (`307c:fnd-written-establishes-in-a-region-ship-no-check`) as the obstacle; this cell takes the
+# other route — the `unset -f` blessing at TOP level, where a written establish does ship and does
+# guard.
+#
+# `hork` is unmodeled and walls, so both `foobar` sites GUARD rather than elide, which is what puts
+# two pinned definitions on the apply surface. The site above the blessing resolves to the ORACLE's
+# case body; the site below resolves to the BOOK's straight-line body. One name, two distinct live
+# bodies, one artifact.
+hork provision
+foobar sync-certs /etc/nginx/certs
+unset -f foobar__is_converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+foobar sync-certs /etc/other/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# Both guarded sites answer converged, so both mint their guard.
+site 1 effect=holds rc=0
+site 3 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the unmodeled wall command.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock. Both guards' checks answer rc 0, so neither `sync-certs` mutation runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: foobar status --certs-current -- /etc/nginx/certs
+ran: foobar status --certs-current -- /etc/other/certs
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8e5148a53af08034003b3ba08628f6f86e7db01d697498b92bdd161bb2c8a6e2 sites=2 @@dorc@@\n'
+# site 1: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 3: dorc-auto:foobar@converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+foobar__is_converged 'sync-certs' '/etc/other/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+# dorc: pinned definition of `foobar__is_converged` (disambiguated: two live bodies)
+foobar__is_converged_h7a664f5a() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+# dorc: pinned definition of `foobar__is_converged` (disambiguated: two live bodies)
+foobar__is_converged_hed8e223c() {
+   foobar status --certs-current -- "$2"
+}
+
+#!/bin/sh
+# emit30-two-live-verdicts-under-one-name — the MEASUREMENT cell for whether the hash-munge
+# emission tier (`plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding`, rule 3) is
+# reachable at all. `28Q` §1 records it as UNWITNESSED and points at subshell regions
+# (`307c:fnd-written-establishes-in-a-region-ship-no-check`) as the obstacle; this cell takes the
+# other route — the `unset -f` blessing at TOP level, where a written establish does ship and does
+# guard.
+#
+# `hork` is unmodeled and walls, so both `foobar` sites GUARD rather than elide, which is what puts
+# two pinned definitions on the apply surface. The site above the blessing resolves to the ORACLE's
+# case body; the site below resolves to the BOOK's straight-line body. One name, two distinct live
+# bodies, one artifact.
+hork provision
+( foobar__is_converged_h7a664f5a sync-certs /etc/nginx/certs ) || foobar sync-certs /etc/nginx/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
+unset -f foobar__is_converged
+foobar__is_converged() {
+   foobar status --certs-current -- "$2"
+}
+( foobar__is_converged_hed8e223c sync-certs /etc/other/certs ) || foobar sync-certs /etc/other/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]

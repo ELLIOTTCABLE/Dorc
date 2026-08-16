@@ -35,6 +35,9 @@ extend-ignore-re = [
    # crate cites as the shape its measure/emit split is converging on. A surname,
    # not a misspelt "open".
    "\\bOppen\\b",
+   # `<fn>_h<hex>` (`28K` §4 hash-munge disambiguation, apply-artifact goldens): the same
+   # machine-generated-hex problem as `book=` above — a digest run spells `hed`, `ba`, `fo`.
+   "_h[0-9a-f]{8}\\b",
    # The aeneas release tag pinned by the verify lane: a dated nightly plus the upstream
    # commit's short SHA, whose hex runs accidentally spell typo-triggers (`daa`->`data`).
    # A machine identifier that must match upstream byte-for-byte, not prose.
