@@ -38,8 +38,43 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
-- **lane-influence-refusal-seams** — DISPATCHED 2026-08-15 (branch
-  `ai/r30-lane-influence-seams`); at its checkpoint-1 pause until conductor ack. Opus, isolated worktree, branched from the
+- **lane-influence-refusal-seams** — CHECKPOINT-1 DELIVERED 2026-08-15 (branch
+  `ai/r30-lane-influence-seams`, zero build commits; builder paused). Headline:
+  **RESEMBLANCE verdict** on `306c` §3a — the certifier's floors are ladder-demotion
+  (a plan that runs everything = mutation authority; `306b:rul-refusal-is-not-a-
+  ladder-position` says that is not refusal); the consistency verdict rides as a
+  FIELD (the boolean-goes-unchecked shape §4b forbids); `FailedChecks` is
+  solver-shaped; and DECISIVELY, intake lives in `plan` while `analysis` is its
+  dependency — no as-built "analysis output" can carry an intake verdict
+  (`fnd-intake-is-downstream-of-analysis`). The genuine extension seat is
+  `plan::records::Admission` + the cli `IngressRefused` consumer. BUT
+  `tc-report-substrate-is-the-plan`: every report surface is a function of `Plan`,
+  so §4b's "full report, no plan authority" needs either containment-at-emission
+  (forbidden by `306c` §3a) or a second substrate (forbidden by §7). Also found:
+  `fnd-strict-path-already-refuses-all-nine` (the routing table's premise measured
+  the wrong parser — the strict path refuses all nine today; the four "conservative"
+  rows would be PERMISSIVE-direction pin edits) · the forgiving parser has ZERO
+  production callers · the eight codes already carry `ProseTier::Migrated` prose ·
+  `dorc-loom`'s refusal-is-an-error seat blocks loom-form defining cases.
+  CONDUCTOR RULINGS (veto welcome, presented in-chat before resume):
+  `rul-all-nine-refuse-on-the-strict-path` (ratifies as-built; no permissive pin
+  edits on a SOFT table; the refuse/conservative split re-scopes to the report-only
+  plane when it exists; the sorting line survives as extrapolation law) · §3a STOPS
+  per `306c` §7's own pre-ruling — steps 2/3 go with it; the lane builds §3b
+  steps 1/4/5 + influence-grade; **the §3a re-plan routes to the HUMAN as a design
+  item** (FIRM law, unbuilt seat; candidate frame: `rul-whylog-is-the-spine` — a
+  report-only output as a whylog projection with no plan half) ·
+  Migrated registers stay FROZEN, `message: None` binds only the four new reason
+  components (conductor brief-bug logged: legislated mechanism without checking
+  as-built prose state; prevention: brief by law-cite or scout the legislated
+  artifacts) · influence-grade carriage = (b-ii)-minimal (the terminal seat yields
+  the phase marker by value, held as decision-inert inspectable data; NO render
+  consumption this lane; `306b` §6c's marking discriminator stays open) ·
+  defining cases go the whole-product e2e route; the loom seat stays untouched.
+  Zero-golden-flip expectation ACCEPTED (sentinel-nonce already refuses on the
+  strict path; the brief's flip-bless pre-authorization goes unused — nothing
+  manufactured). Chafe register: no instrument-chafe rows minted — the walls
+  behaved; findings were proposal-vs-code deltas the SOFT grading anticipated. Opus, isolated worktree, branched from the
   `ai/r30-conduct` tip. Scope, three items: `306c` §3 BOTH halves
   (`item-report-only-output` + `item-record-lane-codes`, incl. the header-mismatch
   reason-enum typing [human, hard ack]) PLUS `item-influence-grade` (`306c` §2 —
