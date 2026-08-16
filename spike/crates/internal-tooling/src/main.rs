@@ -30,6 +30,12 @@ fn main() -> ExitCode {
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
         Some("preflight") => preflight::run(args.get(1..).unwrap_or_default()),
         Some("doctor") => doctor::run(),
+        // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this
+        // shares its one renderer rather than re-deriving the screen.
+        Some("xfail-census") => {
+            print!("{}", internal_tooling::xfail::census_report());
+            ExitCode::SUCCESS
+        }
         other => {
             eprintln!(
                 "internal-tooling: unknown task {:?}",
@@ -37,7 +43,7 @@ fn main() -> ExitCode {
             );
             eprintln!(
                 "tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines, \
-                 preflight, doctor"
+                 preflight, doctor, xfail-census"
             );
             ExitCode::from(2)
         }

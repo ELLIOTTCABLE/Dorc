@@ -491,6 +491,11 @@ description = "INSTRUMENT, never a gate: per-tier register counts across both ge
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- prose-census"
 
+[tasks."xfail:census"]
+description = "INSTRUMENT: every live xfail pin grouped by round horizon, with its greening trigger — 'what is owed, and by when' in one screen. The GATE is the `xfail_census` unit test, which shares this renderer; expiry is measured against xfail.rs's CURRENT_ROUND, which a conductor bumps at round-open."
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- xfail-census"
+
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table, or a book plus its oracles for a one-off."
 dir = "spike"

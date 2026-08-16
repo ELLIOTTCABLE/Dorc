@@ -1,10 +1,14 @@
 //! Internal repo tooling — NOT part of Dorc. See `Cargo.toml` for why this crate exists.
 //!
-//! Its one export is [`Posix`]: the answer to "where is a POSIX shell on this machine",
-//! computed once, explicitly, from a source we already depend on.
+//! Two exports. [`Posix`] is the answer to "where is a POSIX shell on this machine", computed once,
+//! explicitly, from a source we already depend on. [`xfail`] is the workspace's ONE xfail-pin seat
+//! and its census — test scaffolding rather than shell plumbing, but sited here for the same reason:
+//! every crate can dev-depend this one, and a second copy is how the first silently rots.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+pub mod xfail;
 
 /// The POSIX shell this repo's tooling and test corpus drive.
 ///
