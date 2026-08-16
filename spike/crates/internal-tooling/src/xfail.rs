@@ -269,7 +269,14 @@ fn quiet_hook_installed() {
 #[must_use]
 pub fn census_report() -> String {
     let mut rows: Vec<&Pin> = PINS.iter().collect();
-    rows.sort_by_key(|pin| (pin.horizon.round().unwrap_or(u32::MAX), pin.name));
+    // Marker before name, so two markers sharing a round cannot interleave and re-open a group.
+    rows.sort_by_key(|pin| {
+        (
+            pin.horizon.round().unwrap_or(u32::MAX),
+            pin.horizon.marker(),
+            pin.name,
+        )
+    });
     let live = rows
         .iter()
         .filter(|pin| pin.state == PinState::Live)
