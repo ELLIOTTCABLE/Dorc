@@ -393,6 +393,23 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   workspace-wide rename must be module-driven, never grep-driven, and the intake
   family is out of its scope. Sanitizing or encoding intake bytes for display never
   makes them trusted.
+- **rul-durable-contents-reviewed-before-design** — Surface: what the whylog durable
+  persists, and what re-ingestion consumes. Changing either — new fields, new record
+  species, timings, decision detail, anything read back — STOPS for `/opaque-review`
+  BEFORE the design settles, not after the build. The durable is one lossy projection of
+  the engine's in-memory decision structure, and *which* projection it is turns out to be
+  load-bearing in ways a local, obviously-correct-looking change will not surface
+  (`Research/notes/306b` §2–§3 states the shape; its full derivation is not in-tree).
+  This is not a request to build anything: the invariant is that the review has cleared
+  first. Ask the human by preference; the review is the fallback when they are away.
+- **rul-repeated-probing-reviewed-before-design** — Surface: any probing that is not
+  single-shot — concurrent, sequential, out-of-order, posthoc, or multi-target. Same
+  posture, same order: `/opaque-review` before the design settles. One-shot probing
+  commits almost nothing; the moment one exchange's results drive a second, the engine
+  acquires ordering, correspondence, and reproducibility properties that are cheap to
+  design in and expensive to retrofit, and it acquires them across the intake boundary
+  this section governs (`Research/notes/306b` §1b/§8). Again: nothing here asks for the
+  work to start.
 
 ## Invariants — analysis boundaries
 
