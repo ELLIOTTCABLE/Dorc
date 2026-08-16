@@ -187,7 +187,12 @@ pub struct BytePos(pub u32);
 ///
 /// Kept as a compact pair (research chord `ch-handle`): the hot analysis path
 /// carries spans, never source text; text is resolved lazily for reporting.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// Ordered lexicographically on `(lo, hi)` — earlier start first, then shorter first — so a span
+/// can ride inside a map key (`inv-determinism-here`). [`DefinitionId`] is why: a definition's
+/// identity is its file plus its span, and two definitions of one name in one file are told apart
+/// by nothing else.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Span {
     pub lo: BytePos,
     pub hi: BytePos,
@@ -246,6 +251,9 @@ pub use escalation::{Capability, EscalationDial};
 
 pub mod contested;
 pub use contested::ContestedFamilies;
+
+pub mod definition;
+pub use definition::{DefinitionId, DefinitionProvenance, LiveDefinition, answering_file};
 
 // ===========================================================================
 // String interning + the referent-agnostic opaque token (dn-4, W4)
