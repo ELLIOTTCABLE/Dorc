@@ -1577,9 +1577,13 @@ grep__predict() {
         );
 
         let (mut torn, mut glued, mut oversize, mut clean_through) = (0u32, 0u32, 0u32, 0u32);
+        let mut named: BTreeSet<String> = BTreeSet::new();
         for seed in 0..512u64 {
             let (mutated, class) = fault::mutate(seed, &clean, TERMINAL_TOKEN);
             let d = admit(&mutated);
+            if let Admission::Refused(dorc_plan::records::AdmissionRefusal::Records(fault)) = &d {
+                named.insert(format!("{fault:?}"));
+            }
             match class {
                 RecordFault::Torn | RecordFault::Glued | RecordFault::Clean => {
                     // The safe direction: refused OR every emitted record is a CLEAN one (loss
@@ -1616,6 +1620,13 @@ grep__predict() {
             torn > 0 && glued > 0 && oversize > 0 && clean_through > 0,
             "sometimes-assert: every fault class fires over 512 seeds \
              (torn={torn} glued={glued} oversize={oversize} clean={clean_through})"
+        );
+        // `306b` §6e: the refusal REASONS are reached from real byte-level faults, not only from
+        // hand-built fixtures. A discrimination no mutation reaches is one nothing keeps honest.
+        assert!(
+            named.contains("Torn") && named.contains("Glued"),
+            "sometimes-assert: the seeded tear/glue faults must reach their NAMED refusals \
+             (reached: {named:?})"
         );
     }
 }
