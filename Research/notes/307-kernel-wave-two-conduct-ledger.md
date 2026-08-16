@@ -192,6 +192,17 @@ judgement; proceed as planned") · everything else acked. Evening handoff: desig
 work on hold; nothing human-blocking outstanding; the kit-glance and the
 four-Migrated-registers prose question remain the two open soft items.
 
+[TYPED 2026-08-15, evening — **the conductor-sandwich flow**, tentative-general]:
+for conductor-decision work with mechanical surroundings (prose-minting the
+exemplar): the BUILDER sets up a tested playing-field (mints structure,
+prose-empty, context-rich, pre-evaluated) and hands exact paths; the CONDUCTOR
+does nothing but the decision itself (a handful of Write calls); the builder
+resumes on an extended-downwards single-use license to handle promote/bless/
+errors/churn. Purpose: conductors stay context-light; builders own all
+tool-fallout. Proposed as the general flow, not law; first application = the
+four reason components (this lane). Tier note: agent-env promote mints Slop
+whoever authored — no tier laundering possible.
+
 [TYPED 2026-08-15, docID law] Round-30 IDs ascend `300`–`309` then LETTERS:
 `30A`, `30B`, … (the r28 `28A…28V` pattern). NEVER mint `310` — it reads as
 round-31 (the `289`→`290` trap's cousin; this mistake has happened twice).
