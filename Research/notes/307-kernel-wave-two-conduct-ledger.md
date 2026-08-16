@@ -139,6 +139,22 @@
   small, correspondingly critical, never yet independently checked. Scheduled at
   END-OF-R30; if this conductorship ends first, it passes to the successor
   explicitly. Staffing proposed at scheduling time.
+- **lane-certifier-trip-policy** — PLANNED 2026-08-15 (minted on reading the
+  sibling's blast-radius landing: `302:rul-certifier-trip-guard-only` [TYPED] +
+  the two FORFEITS rows, on `ai/main` @ the two-commit tail). Small Opus lane:
+  the one trip-boolean per (host, plan) · the terminal cleanup pass demoting
+  elision-family outcomes with narrative reason-arm mints · guards-stand only on
+  the trivially-constructable body-occupancy census (else wholesale, per the
+  conditional forfeit — the implementing lane's fold is that row's REVISIT) · the
+  our-defect banner · the boolean as a spine row. Slot: post-seams-fold; its
+  BUILD runs concurrent with the conversion lane's read-only checkpoint-1 (one
+  build at a time — within the serial lean); folds before the conversion's build
+  phase. Sequencing note for 309: the cleanup pass is a natural FIRST Spine
+  consumer (the ruling itself cites `rul-whylog-is-the-spine`).
+- **Fold-batch rider**: at the seams fold, MERGE `ai/main` (the sibling's two
+  doc commits) into `ai/r30-conduct` — merge, never rebase (the seams lane's
+  base is an ancestor of later conduct commits; a rebase would strand it); the
+  trip-policy lane needs the ruling text in-lineage.
 - **lane-snapshot-emission** — QUEUED behind the stage-i fold (which now includes
   the crosscheck gate + burndown above). Rulings already banked (`28Q` §8
   stage-emission-snapshot-transplant; the fixtures lane's sibling-frames munge
@@ -207,6 +223,15 @@ tool-fallout. Proposed as the general flow, not law; first application = the
 four reason components (this lane). Tier note: agent-env promote mints Slop
 whoever authored — no tier laundering possible.
 
+- 2026-08-15, the sign-off sitting [TYPED, itemized]: the loom interior-hole path
+  is a TOOLING FAILURE (§3 row; `work-loom-interior-hole-authoring` banked;
+  smoke-test working as intended; not a conductor failure) · the sibling's
+  blast-radius ruling landed on `ai/main` (`302:rul-certifier-trip-guard-only` +
+  two FORFEITS rows) — read, scheduling adjusted (§2 lane-certifier-trip-policy +
+  the fold-batch merge rider) · sibling design-work paused for the night; the
+  human is OFF ("o7") — fully autonomous until morning; notification tool
+  available for genuine needs.
+
 [TYPED 2026-08-15, docID law] Round-30 IDs ascend `300`–`309` then LETTERS:
 `30A`, `30B`, … (the r28 `28A…28V` pattern). NEVER mint `310` — it reads as
 round-31 (the `289`→`290` trap's cousin; this mistake has happened twice).
@@ -259,6 +284,18 @@ unproductive-sharp-edge | mixed | unresolved} · action taken/proposed`.
 The null hypothesis is productive-correctness — an edge is adjudged unproductive
 only with the specific work-product it wrongly blocked in hand.
 
+- **the loom interior-hole authoring path** · the conductor could NOT issue a
+  natural, in-flow Edit() on a loom file for the four reason components — the
+  interior-hole pincer (`fnd-interior-hole-has-no-editable-face`) forced the
+  direct-registry carve, then the ownership gate demanded an `owns:` declaration
+  (`fnd-direct-minted-words-demand-declared-ownership`) · **RULED A FAILURE OF THE
+  LOOM TOOLING [TYPED 2026-08-15]** — "you didn't issue an Edit() to a loom-file
+  that inserted text in-flow, in a natural way that follows your training-data,
+  which defeats the point of the looms"; the smoke-test worked as intended; NOT a
+  conductor failure · action: BANKED `work-loom-interior-hole-authoring`
+  (needs-addressing-later, human-adjudication pending — the `28N` §3
+  per-fragment-owners priced-and-declined disposition is implicitly up for
+  re-adjudication at that sitting; nothing builds toward it now).
 - flat-test-tree ownership scoping (`is_case_owned` = `crates/aid/tests` only) +
   the loom `code:`-hygiene/stdout-contract gates · BLOCKED the checkpoint-ruled
   e2e route for the eight records defining cases (a jointly-unsatisfiable pincer,
