@@ -82,6 +82,15 @@ mod tests {
 
     /// Withholding is exact-match on the MUNGED base: a family withheld is withheld for every role
     /// member (the caller munges once and asks once), and a neighbouring family is untouched.
+    ///
+    /// **This mechanism is load-bearing for the definition-factoring lane's byte-identity gate, and
+    /// is not dead code** (`307:fnd-corpus-carries-twelve-plural-families`). Twelve committed cases
+    /// declare one role name in two of their own files; seven never load the second file, and the
+    /// remaining FIVE (`contest28-*`, `guard23-reingest-collision-verbatim`) really do load both and
+    /// are held byte-stable by exactly this withdrawal. Retiring it would not merely lose a
+    /// diagnostic — it would let five plural families reach the resolution seats, where the
+    /// single-definition coincidence that `syn-single-frame-byte-identical` rests on no longer
+    /// holds.
     #[test]
     fn withholding_is_keyed_by_the_munged_family_base() {
         let set = ContestedFamilies::new(["apt_get".to_owned()]);
