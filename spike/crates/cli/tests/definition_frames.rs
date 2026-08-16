@@ -19,13 +19,20 @@
 //! the withhold direction the byte-identity gate would catch only where the corpus happens to
 //! license something. Measuring it first is cheaper than debugging it later.
 //!
-//! The census does NOT demand a bare zero, because the disagreeing class genuinely exists and is
-//! already fenced: a source name that is not a legal sh NAME (`hork.tool`, `中pkg`) lifts a row
-//! under its MUNGED funcname while `dorc_syntax` records the authored one, so the two never meet.
-//! That is exactly the population `oracle::reserved::lint_oracle_reserved_names` refuses at ERROR
-//! severity before it can ship, and `28P:dec-the-gate-applies-only-to-names-the-unit-knows` is the
-//! standing containment argument for it. So the census demands the sharper thing: every unjoined
-//! row is refused. An unjoined row in an ACCEPTED source is the lane-halting finding.
+//! The census does NOT demand a bare zero, because the disagreeing class genuinely exists: a source
+//! name that is not a legal sh NAME (`hork.tool`, `中pkg`) lifts a row under its MUNGED funcname
+//! while `dorc_syntax` records the authored one, so the two never meet.
+//!
+//! What contains that class is `28P:dec-the-gate-applies-only-to-names-the-unit-knows` — the RULED
+//! permissive arm: a name the definition table does not know has no positional opinion, so the gate
+//! answers rather than manufacturing one. `oracle::reserved::lint_oracle_reserved_names` marks the
+//! same population at Error severity, but that is a REPORT, not a refusal: `validate`'s stages reach
+//! `report_at` and nothing else, and the run's fast-fail reads parse/cfg Errors plus
+//! `wrapper_incoherent` only. So the fence here is the ruled arm, and the lint is the marker that
+//! makes the arm's population nameable and this census's exception branch checkable.
+//!
+//! The census therefore demands the sharper thing: every unjoined row sits in a source the lint
+//! marks. An unjoined row in an UNMARKED source is the lane-halting finding.
 
 #![expect(
     clippy::print_stderr,
@@ -185,12 +192,12 @@ fn lifted_role_rows(text: &str) -> BTreeSet<String> {
     out
 }
 
-/// Whether `oracle::reserved` refuses this source outright — the fence that contains the one
-/// class where the two parsers name a funcdef differently (`28O:fnd-two-parsers-disagree-on-funcdefs`).
+/// Whether `oracle::reserved` MARKS this source at Error severity — the marker for the one class
+/// where the two parsers name a funcdef differently (`28O:fnd-two-parsers-disagree-on-funcdefs`).
 ///
-/// Error severity specifically: a warning would leave the source shippable, and a shippable source
-/// carrying an unkeyable row is precisely what this census exists to forbid.
-fn reserved_names_refuse(text: &str) -> bool {
+/// Deliberately not called a refusal: the mark reaches stderr and the run proceeds
+/// (`307:fnd-reserved-name-error-does-not-refuse`). It is a nameable population, not a gate.
+fn reserved_names_mark_an_error(text: &str) -> bool {
     let mut interner = dorc_core::Interner::default();
     dorc_oracle::reserved::lint_oracle_reserved_names(&mut interner, &[text])
         .iter()
@@ -199,9 +206,9 @@ fn reserved_names_refuse(text: &str) -> bool {
 
 /// THE STEP-ZERO CENSUS (`28Q` §1): every derived row the conversion will key by a
 /// `DefinitionId` either has a parsed definition to take that id's span from, or lives in a source
-/// the reserved-name lint refuses outright.
+/// the reserved-name lint marks at Error severity.
 ///
-/// An unjoined row in an ACCEPTED source is a LANE-HALTING finding, not a site to work around: it
+/// An unjoined row in an UNMARKED source is a LANE-HALTING finding, not a site to work around: it
 /// can never match a frame's answer, so its site would withhold silently under the conversion, and
 /// the `(file, role name)` join would need re-cutting rather than patching. The message names every
 /// offender so the disagreement is diagnosable from one run.
@@ -213,8 +220,8 @@ fn every_lifted_role_row_joins_to_a_parsed_definition() {
         "discovery floor: the corpus walk found no sources, so this census proves nothing"
     );
 
-    let mut unfenced: Vec<String> = Vec::new();
-    let mut fenced = 0usize;
+    let mut unmarked: Vec<String> = Vec::new();
+    let mut marked = 0usize;
     let mut rows = 0usize;
     for source in &sources {
         let parsed = parsed_role_definitions(&source.text);
@@ -224,12 +231,12 @@ fn every_lifted_role_row_joins_to_a_parsed_definition() {
         if unjoined.is_empty() {
             continue;
         }
-        if reserved_names_refuse(&source.text) {
-            fenced += unjoined.len();
+        if reserved_names_mark_an_error(&source.text) {
+            marked += unjoined.len();
             continue;
         }
         for row in unjoined {
-            unfenced.push(format!("{}: {row}", source.label));
+            unmarked.push(format!("{}: {row}", source.label));
         }
     }
 
@@ -239,17 +246,17 @@ fn every_lifted_role_row_joins_to_a_parsed_definition() {
         sources.len()
     );
     assert!(
-        fenced > 0,
-        "vacuity floor: no corpus source exercises the reserved-name fence, so this census's \
-         exception branch proves nothing — the containment argument needs a live specimen"
+        marked > 0,
+        "vacuity floor: no corpus source carries a reserved-name Error, so this census's exception \
+         branch proves nothing — the disagreeing class needs a live specimen"
     );
     assert!(
-        unfenced.is_empty(),
-        "{} lifted role row(s) in ACCEPTED sources have no parsed definition to key against, over \
-         {rows} row(s) in {} source(s) ({fenced} row(s) correctly fenced by the reserved-name \
-         refusal):\n  {}",
-        unfenced.len(),
+        unmarked.is_empty(),
+        "{} lifted role row(s) in UNMARKED sources have no parsed definition to key against, over \
+         {rows} row(s) in {} source(s) ({marked} row(s) sitting in reserved-name-marked \
+         sources):\n  {}",
+        unmarked.len(),
         sources.len(),
-        unfenced.join("\n  ")
+        unmarked.join("\n  ")
     );
 }
