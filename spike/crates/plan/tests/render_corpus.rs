@@ -258,15 +258,18 @@ fn service_index(i: &mut Interner) -> KindIndex {
     let systemctl = ProviderId(i.intern("systemctl"));
     let enable = i.intern("enable");
     let start = i.intern("start");
+    // File 1: `SERVICE_PREDICT_SRC` is the SECOND source `render_service_for` hands the classifier,
+    // and since `28Q` §1.1 a cell answers only at the file whose definition the frame names. A row
+    // keyed to file 0 here would be a row the systemctl site can never read.
     idx.add_effect(
-        0,
+        1,
         systemctl,
         enable,
         service,
         enabled,
         ValueClaim::Establish,
     );
-    idx.add_effect(0, systemctl, start, service, active, ValueClaim::Establish);
+    idx.add_effect(1, systemctl, start, service, active, ValueClaim::Establish);
     idx
 }
 
@@ -318,7 +321,8 @@ fn seam_index(i: &mut Interner) -> KindIndex {
     let installed = SelectorId(i.intern("installed"));
     let yum = ProviderId(i.intern("yum"));
     let install = i.intern("install");
-    idx.add_effect(0, yum, install, package, installed, ValueClaim::Establish);
+    // File 1, for the reason `service_index` states: `YUM_PREDICT_SRC` is the second source.
+    idx.add_effect(1, yum, install, package, installed, ValueClaim::Establish);
     idx
 }
 
@@ -408,7 +412,8 @@ fn query_index(i: &mut Interner) -> KindIndex {
     let installed = SelectorId(i.intern("installed"));
     let dpkg = ProviderId(i.intern("dpkg"));
     let eps = dorc_oracle::empty_verb(i);
-    idx.add_effect(0, dpkg, eps, pkgstate, installed, ValueClaim::Observe);
+    // File 1, for the reason `service_index` states: `DPKG_QUERY_PREDICT_SRC` is the second source.
+    idx.add_effect(1, dpkg, eps, pkgstate, installed, ValueClaim::Observe);
     idx
 }
 
