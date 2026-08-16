@@ -162,9 +162,13 @@ discipline: one rule per bullet, slugged; append to the matching section.
   guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /
   `ship_verdict_body` / `ship_predict_stage`). Building it per site would re-parse every source per
   site and, worse, leave two copies of the resolution rule to drift — the failure
-  `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` records for the role lane. The
-  SURVIVAL/kind lanes (`touches`, resolvers, reaches) still ship closure-less bodies; widening them
-  is its own dispatch, exactly as widening them to the source-wide vectors is.
+  `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` records for the role lane. Since
+  the emission stage the SURVIVAL/kind/entry-form lanes (`ship_touches_body`,
+  `compile_resolvers`, `collect_reach_probes`, `strip_enter`) carry snapshots too, and the
+  wrapper lane consumes the SHARED index rather than building a second one. The remaining
+  closure-less residue is the wrapped guard's inline blob (`composed.inner_sh`): a wrapped and
+  an ordinary guard sharing a helper would emit it twice — unreachable in the corpus; closing
+  it means threading `Closure` through `ShippedCheck`.
 - **helper-conflicts-report-at-the-load-edge** — `helper_conflict_diagnostics` mints one
   `helper-declaration-contested` per NAME, spanned at the second declaration, whether or not any
   pinned definition reaches it: loading both sources already rebound the name for every caller. A

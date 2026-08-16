@@ -32,14 +32,19 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
   socially (published claims calibrate against whichever floor ships). REVISIT:
   the mini-model's formalization; first field evidence of plural-idiom books.
-- **forfeit-helper-plurality-withhold** — RULE (`28Q` §1, the stage-i floor): a frame
-  whose live definition closes over a plural-with-differing-bytes helper name
-  WITHHOLDS. FORFEITS: all licenses at the sanctioned plural idioms until the emission
-  stage lands; permanently, the WITHHELD tier (statically-unenumerable closures never
-  ship — ruled the permanent bottom rung, `28R:§snapshot`). CAPTURE:
-  stage-emission-snapshot-transplant (staged — capture in flight); the withheld tier's
-  residue is the ruled-permanent remainder. REVISIT: the emission stage's fold —
-  re-measure what stays withheld.
+- **forfeit-helper-plurality-withhold** — RULE (re-measured at the emission stage's
+  fold, 2026-08-16; the blanket plural withhold is GONE — resolution is sh's
+  last-wins, the license is `307:rul-emission-custody-composite`): what stays
+  withheld is three shapes — (a) plural-with-differing-bytes resolving OUTSIDE the
+  voucher's custody (`emit30-cross-custody-plural-helper-suspends`); (b) the book
+  reaching into a vouched composition, both arms — NEWLY withheld, a hazard closed
+  rather than value lost (these silently shipped before); (c) the unenumerable
+  tier, ruled-permanent, reachable only through a literal `alias` in a shipped
+  body. FORFEITS: cross-custody plural helpers, until closures exist. CAPTURE:
+  `28Q` §9 `pin-oracle-side-sourcing-amendment` + `pin-closure-membership-and-diamond`
+  — one `.` line converting the helper into the author's own closure lifts (a).
+  BACK-OUT: low (the suspension is additive against the composite). REVISIT: the
+  closure-custody stage's policy rulings.
 - **forfeit-divergence-collapse-to-unknown** — RULE (`28Q` §3, the human-carved v0
   floor): conditional/looped lifecycle events land unknown ⇒ guard/run. FORFEITS:
   every availability-derived license below an `if`-guarded creator — and defensive
@@ -109,9 +114,13 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   untouched); what predict-wins retains is the MEASUREMENT. FORFEITS: primacy's
   one-author monologue at aggregate sites. CAPTURE: per-member verdict ship +
   reversing `no_verdict_lane_in_members` — a design act with its own ruled
-  context, never a mechanical extension. BACK-OUT: low (additive). REVISIT: the
-  snapshot-emission stage's fold (nearest lane in the territory), else its own
-  small sitting.
+  context, never a mechanical extension; the emission stage's re-measure
+  (2026-08-16) found it MARGINALLY CHEAPER now (the hoist dedups declarations
+  across guards; `build_vouches_from_sets` already expands per-member
+  candidates, so suspension behavior inherits with no extra plumbing) but the
+  substance untouched — which cell a member record keys, and how
+  `AllEstablishesVouched`'s cardinality match survives, still need their own
+  ruling. BACK-OUT: low (additive). REVISIT: its own small sitting.
 - **forfeit-survival-lanes-closure-less** — RULE (as-built; `28P`):
   `disturbs`/`resolve`/`reaches` bodies ship without their helper closures; a body
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner

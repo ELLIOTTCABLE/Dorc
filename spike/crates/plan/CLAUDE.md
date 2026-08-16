@@ -91,6 +91,13 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   artifact, which body each guard invokes and under what name; the render consults it and nothing
   re-derives a binding at runtime. A misalignment there could swap WHOSE judgment executes, which is
   pope-sin tier (`271:rul-sin-ordering`), so it is structural rather than three mechanisms agreeing.
+  Since the emission stage: the SNAPSHOT (helper declarations) hoists ONCE, deduped by
+  declaration site, ahead of the role bodies; a vouch carries `closure` and `body` separately
+  and a body owns only its own bytes — which makes the munge a header-only edit by
+  construction, and made ALREADY-IN-PLACE answerable (pre-split, the blob comparison never
+  matched and a copy of the BOOK's own body hoisted above the book — corpus-reached, pinned
+  twice). Whole-artifact DEFENSIVE emission (every emitted name munges) triggers on real
+  definition vectors only (`oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`).
   Three rules in order: CONTENT-DEDUP (byte-identical bodies are one definition); ALREADY-IN-PLACE
   (a body the book's own text defines at top level with the same bytes is not copied — the
   EMITTED preamble never carries two same-named funcdefs, which is what dissolves the
@@ -98,7 +105,8 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   book bytes are untouchable and sh scoping binds the region to its own body —
   `frame30-subshell-body-answers-inside-only` is the pinned case (`308:cr-artifact-two-funcdefs-letter`);
   the positional regime guarantees a book-sited definition PRECEDES its guards, so nothing
-  is re-derived); HASH-MUNGE (two distinct bodies under one name each emit once as
+  is re-derived); BARE-IF-SINGLETON (over emitted material ∪ the book's top-level funcdef
+  names); HASH-MUNGE (two distinct bodies under one name each emit once as
   `<name>_h<digest>`, digest over the definition BYTES). The retired dedup-by-funcname emitted the
   first body and let both sites invoke it. A munged name cannot parse as a `__role`, so a
   re-ingested artifact reads the guard as an opaque call ⇒ conservative run (`23A:P-reingest`).

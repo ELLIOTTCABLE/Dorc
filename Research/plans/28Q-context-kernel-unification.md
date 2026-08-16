@@ -127,14 +127,16 @@ Consequences:
   precision work is never ordinary value-add. `oracle/CLAUDE.md
   live-source-is-the-only-resolution-seat` becomes "the frame-lookup is the only
   resolution seat".
-- bitem1's hash-munge remains UNWITNESSED at stage-i: the shapes that would put two
-  guard bodies under one name are blocked by
-  `307c:fnd-written-establishes-in-a-region-ship-no-check` (a region-sited written
-  establish ships NO check at all — a real, undiagnosed value gap, owned by that
-  seat, not this plan), so no cell exercises an emitted munged name; the
-  pinned-definitions machinery stands as belt-and-braces — `plan/CLAUDE.md
-  pinned-definitions-are-the-artifact's-binding` already handles per-guard-site
-  binding, and the positional regime already guarantees definition-precedes-guard.
+- bitem1's hash-munge is WITNESSED (the emission stage's
+  `emit30-two-live-verdicts-under-one-name`, via the top-level `unset -f` blessing —
+  a route `307c:fnd-written-establishes-in-a-region-ship-no-check` does not block;
+  the REGION route stays blocked by that finding, a real, undiagnosed value gap
+  owned by its seat, not this plan). The witness immediately caught and fixed the
+  preamble copying BOOK bytes under a munged name. Alpha-rename is NAMED RESIDUE,
+  NOT BUILT: its population is unreachable until (i) the `DefinitionTable` widens to
+  non-role funcdefs (a funcenv licensure widening owing its own review) and
+  (ii) `HelperIndex` reaches book regions; the sibling-frames cell's premise stays
+  unexercised until then.
 - The seventh seat (`build_wrapped_vouches`, `28P:tc-wrapped-vouch-seat-has-no-positional-
   gate`) unifies with the other six. The whyworld/survival seats are NOT free riders:
   `28P` priced their unification as a dispatch ("re-lifting that seat's whole world" —
@@ -558,16 +560,18 @@ own byte-identity gate.
   (`28R:§snapshot` residue).
   Gate: `syn-single-frame-byte-identical` (full corpus, both legs) AND the
   differential cells agreeing with the frame answer.
-- **stage-emission-snapshot-transplant** (between i and ii;
-  `28R:dec-stage-sequencing-withhold-floor` — named here so it cannot read as
-  piecemeal): the `28R:§snapshot-emission-adjudication` rulings, TYPED/ACKED —
-  snapshot-transplant emission + instantiation-hash dedup (bare/munged/withheld tiers;
-  oracle-custody names only, book bytes never rewritten); defensive mode keyed to real
-  in-process definition vectors only; mixed-custody vouch suspension (BUILD, with its
-  day-one decline class and end-to-end why-chain); contested-name decline. Rider:
-  `res-survival-lanes-still-ship-closure-less` (the cheap `HelperIndex` extension).
-  Gate: a single-frame, collision-free world ships byte-identical (the sitting's own
-  migration gate).
+- **stage-emission-snapshot-transplant** — **LANDED 2026-08-16** (E1–E8; the
+  `28R:§snapshot-emission-adjudication` rulings built under
+  `307:rul-emission-custody-composite`; the gate HELD — single-frame
+  collision-free byte-identical, the two movers exactly the collision cases;
+  the probe lane needed no munge at all — per-site inline re-emission is
+  already the transplant shape, so munging is an apply-preamble concern only;
+  the rider's four closure-less seats carry snapshots, wrapper lane on the
+  shared index; ONE decline code `vouched-composition-not-present` + 4-variant
+  reason enum, prose `[unwritten:]`; defensive mode literal-word-only per
+  `oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`; hash-consing
+  skipped, capture-noted, empty population; the wrapped guard's inline
+  snapshot blob is the disclosed residue).
 - **stage-ii-closure-custody** (P2): the `DefinitionCustody` internal re-key; the
   frame-relative, closure-keyed fence (build-as-spiked, UNRATIFIED marker stands until
   the fence sitting); kind-owner occupancy per closure; blessing-reachability for

@@ -86,11 +86,25 @@ discipline: one rule per bullet, slugged; append to the matching section.
   reliably one (a body that ignores the helper's status and answers 0 from a later test reports
   converged off a helper that never ran — priority-1 under-execute). Three sub-rules: helpers resolve
   across the WHOLE loaded set (`28M` §7 `tune-explicit-composition-is-sanctioned` — the helpers-file +
-  thin-entrypoints package shape is the community-critical one); byte-identical declarations
-  content-dedup while DIFFERING ones REFUSE (`28M` §8's diamond rider — sh's own last-wins would
-  silently rebind an author's helper, and no admin spelling picks between two helpers of one name);
+  thin-entrypoints package shape is the community-critical one); RESOLUTION is sh's own
+  last-declaration-wins (`28R:rul-resolution-matches-shell-loading`, built at the emission stage —
+  sound because the index admits only whole-top-level-load-inert sources, so over the indexable
+  population the last indexed declaration IS what a shell binds), while the LICENSE is what custody
+  gates: `307:rul-emission-custody-composite` — the vouch SUSPENDS iff the resolved custody differs
+  from the voucher's AND (the book defines the name, or the declarations differ in bytes); the
+  singular cross-file reach stays licensed (the package shape), byte-identical plurality counts as
+  singular, and load order never silently adjudicates whose body serves whose vouch;
   and constants ride per CONTRIBUTING FILE rather than per reference, because `ParamComplex` discards
   the name so a reference-driven capture could not prove itself complete.
+- **a-top-reject-is-not-a-definition-vector** (the emission stage, measured) —
+  `UnsupportedReason::DynamicExecution` covers `eval`, a computed `.`, AND a command-position
+  `"$@"` — the defining tautology of every peeling wrapper; the finer `SyntaxUnsupportedReason`
+  is diagnostic-only and does not ride the node. Keying ANY rule on that AST reason puts every
+  wrapper oracle in the world into its trigger (measured: it forced `context-entry-wrapped-guard`
+  into defensive emission). Definition-vector detection is literal-word-only
+  (`is_definition_vector`'s doc comment is the full finding); of the rule's named vectors only
+  `alias` and `funcenv::unresolvable_loads()` are reachable — `eval` in a book is already an
+  ERROR-tier whole-run refusal and is banned in oracles.
 - **only-load-inert-sources-contribute** (`28K` §2a) — `HelperIndex` indexes a source only when its
   WHOLE top level is provably inert to load. That inertness IS the license to hoist a declaration
   above somebody's book, and it is also what keeps the BOOK out of the index without threading its

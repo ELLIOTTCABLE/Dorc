@@ -38,7 +38,31 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
-- **lane-snapshot-emission — CHECKPOINT ADJUDICATED, BUILD ACKED 2026-08-16**
+- **lane-snapshot-emission — CLOSED + FOLDED 2026-08-16; THE STAGE LANDED**
+  (7 commits rebased, ff'd @ `d80f9677`; builder gates W 2135/2135 ·
+  WSL 2131/2131 · `bless:dry` clean; golden movement exactly as
+  checkpoint-predicted plus ONE under-predicted latent-bug fix:
+  `fnd-already-in-place-was-blind-to-closures` — the pre-split blob comparison
+  hoisted a COPY of the book's own body above the book, corpus-reached, pinned
+  twice). E1–E8 all landed; the contested-helper case renamed
+  `…-resolves-by-last-wins` and re-narrated per the handed framing; six
+  `emit30-*` witness cells + one aid case. FOLD ADJUDICATIONS: the
+  top-reject-vector red self-caught and prevented
+  (`a-top-reject-is-not-a-definition-vector` now law) · the eval/computed-`.`
+  vector census honest (only `alias` + unresolvable-loads reachable) · the
+  wrapped-guard inline-blob scope cut properly disclosed (in cli law now) ·
+  the provenance-line restraint CORRECT — the two new munge causes' receipt
+  words are HUMAN prose, queued, lines stay bare · the dead diags channel
+  routed to the load-edge report seat, fine. FORFEITS re-measured and
+  rewritten (helper-plurality-withhold: blanket withhold GONE, three shapes
+  remain, capture re-pointed at the closure pins; member-lanes: unchanged in
+  substance, marginally cheaper, its own sitting). Record pass landed: oracle
+  (last-wins + composite + the vector bullet) · plan (snapshot-hoist/tiers) ·
+  cli (four lanes carry snapshots; the shared index; the blob residue) ·
+  `28Q` §8 stage LANDED + §1 munge WITNESSED with alpha-rename residue.
+  UNOWNED PROSE for the human's queue: the three
+  `vouched-composition-*` reason components + the code's own message + the two
+  new munge causes' receipt lines.
   (checkpoint headline: **the hash-munge is REACHABLE TODAY** — witnessed at the
   builder's `emit30-two-live-verdicts-under-one-name` cell via the top-level
   `unset -f` blessing, discharging the carried rider without new machinery; the

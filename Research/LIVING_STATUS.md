@@ -14,7 +14,27 @@
 
 ---
 
-## CURRENT STATE (2026-08-16 — STAGE-0 LANDED; wave-two's next edge is snapshot-emission)
+## CURRENT STATE (2026-08-16 — SNAPSHOT-EMISSION LANDED; wave-two's pre-ruled work EXHAUSTED)
+
+**THE SNAPSHOT-EMISSION STAGE IS LANDED and FOLDED** (E1–E8; builder gates
+W 2135/2135 · WSL 2131/2131; conductor gate pending at this write, banked on
+green below). Headlines: the hash-munge is WITNESSED (top-level `unset -f`
+route; alpha-rename = named residue with two prerequisites, not built) · the
+blanket helper-plurality withhold is GONE — resolution is sh's last-wins and
+the license is **`307:rul-emission-custody-composite`** [CONDUCTOR,
+veto-eligible]: suspend iff cross-custody AND (book-defined OR
+plural-differing-bytes); the singular package shape stays licensed · TWO
+latent bugs fixed en route (the preamble copying book bytes under a munged
+name; already-in-place blind to closures hoisting a book-body copy) · one
+decline code + reason enum, prose `[unwritten:]`. **Wave-two's pre-ruled work
+is EXHAUSTED**: everything remaining is human-gated — the `plans/309` Spine
+ack · closure-custody policy (sibling rulings + `28Q` §9 pins) · the stage-0
+G-ratification review · the prose queue (three reason components, the munge
+receipt lines, the four Migrated registers) · world-scopes (gated on §10 +
+309). Conduct ledger `notes/307` §2 carries every fold's adjudications.
+Details below stand where not superseded.
+
+## STATE 2026-08-16 (stage-0 landed; superseded above)
 
 **STAGE-0 (the verdict-primacy re-cut) IS LANDED and FOLDED** on `ai/r30-conduct`
 (builder gates W 2113/2113 · WSL 2109/2109 · `bless:dry` clean; drift fully
