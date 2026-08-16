@@ -662,6 +662,19 @@ the loom Windows stack-overflow (separate small fix).
     one closure); one typed line owed (re-affirm knowingly · fold into the spike-end
     instrument · key elevation to marks-reached-from-predict). Bites at stage-ii
     vocab-minting, not before.
+14. `pin-emission-planner-universal` [human-ruled DIRECTION, 2026-08-16; build
+    unscheduled] — ONE abstract emission planner representing the sh truths
+    (definition visibility · death-at-paren · errexit-exemption of the `||`-left),
+    supporting placement {top-lift · adjacent · in-paren-colocated} × naming
+    {authored · munged}, with probe and apply SHARING it behind a mode-toggle that
+    carries only policy (probe: verbosity-tolerant, no book namespace; apply:
+    idiomatic-first, book-aware, attention-priced). Neither pole promised; gentle
+    leans on record: top-lift for multi-use, munge-helpers over subshell-wrap,
+    subshell-wrap for the once-used-collider-vs-many-use-alternative case.
+    Alpha-rename joins the moment helper-munging first fires in the apply (its
+    call sites live in authored bodies). Licensing law above it:
+    `spike/CLAUDE.md rul-happy-path-is-a-closed-set`. The `30A` battery pins the
+    target semantics first (failing pins with named greening triggers).
 
 ## §10 — The authored surface (RESERVED)
 

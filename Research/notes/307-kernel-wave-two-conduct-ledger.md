@@ -38,6 +38,13 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **lane-sh-parity-pin-battery — DISPATCHED 2026-08-16** (Opus, branch
+  `ai/r30-lane-sh-parity-pins`; work order = `notes/30A` VERBATIM — the
+  doctrine §1, the inventory §2, the budget rules §3; the xfail-with-named-
+  greening helper + census is the lane's one piece of new shared machinery;
+  the cross-custody-plural-under-composed-predict measurement is a
+  REPORT-BEFORE-PIN item). Checkpoint: after the P-green tier + the helper
+  land, before the P-x and P-diff tiers, with the suite-timing delta.
 - **lane-snapshot-emission — CLOSED + FOLDED 2026-08-16; THE STAGE LANDED**
   (7 commits rebased, ff'd @ `d80f9677`; builder gates W 2135/2135 ·
   WSL 2131/2131 · `bless:dry` clean; golden movement exactly as
@@ -747,6 +754,24 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   (chafe register live) · the sensitive-work posture re-typed: fully authorized
   to wait on the human; little-progress + one important question is a good
   outcome.
+- 2026-08-16, the three-rulings sitting [TYPED, verbatim-in-substance;
+  GREENLIGHT to mint durables]: (1) **`rul-happy-path-is-a-closed-set`** —
+  idiomatic emission only on engine-SHOWN full enumeration; munge-everything
+  fallback in ALL un-enumerable cases; never risked; gradual-enhancement path ·
+  (2) many more pins/tests against sh behaviour · (3) **the load-bearing one,
+  `rul-unsure-falls-toward-sh-parity`** — unsure conductors fall toward
+  matching sh; fail-towards-deny only for specific members of enumerable sets
+  and only when expensive; core semantic/linguistic (PLT) behaviours go
+  generic-parity, never shaped to temporary needs (the design churns; the one
+  constant is spelled-as-sh; changes move TOWARD sh, so less-like-sh machinery
+  is rework-in-waiting — move-quickly's less-code pull does NOT apply to this
+  class). Both rules minted into `spike/CLAUDE.md`; the inertness rider into
+  `oracle/CLAUDE.md`; `28Q` §9 gained `pin-emission-planner-universal` (the
+  placement×naming direction + leans from the prior sitting). ARC REMAINDER
+  ASSIGNED: burn the rulings into testing methodology — shape conductor's;
+  failing tests with named greening dates expected; DST/unit over e2e except a
+  small posh/dash differential set (suite wall-clock is a live concern).
+  Product: `notes/30A` (the doctrine + pin battery spec).
 - 2026-08-16, the morning catch-up sitting [TYPED, itemized]: (1) **the
   definition-keying as built is INCORRECT** — file-grade rows + the
   `(file,name)` join are an accepted interim only; the definition-grade

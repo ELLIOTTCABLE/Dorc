@@ -16,6 +16,16 @@
 
 ## CURRENT STATE (2026-08-16 — SNAPSHOT-EMISSION LANDED; wave-two's pre-ruled work EXHAUSTED)
 
+**[TYPED 2026-08-16, the three-rulings sitting — minted]:
+`rul-unsure-falls-toward-sh-parity` (LOAD-BEARING: unsure ⇒ match sh; PLT-class
+behaviours go generic-parity, never temporary-need-shaped) and
+`rul-happy-path-is-a-closed-set` (idiomatic emission only on proven enumeration;
+munge-everything fallback everywhere else) — both in `spike/CLAUDE.md`;
+`pin-emission-planner-universal` in `28Q` §9. THE ARC'S REMAINDER: the sh-parity
+test doctrine + pin battery (`notes/30A`; `lane-sh-parity-pin-battery` in
+flight — failing pins with named greening triggers, an xfail census, a small
+posh/dash differential family, the zero-munge quality ratchet).**
+
 **[TYPED 2026-08-16, post-quiescence] TWO STANDING CORRECTIONS bind every
 successor**: the definition-keying as built is an INCORRECT INTERIM (file-grade
 + join; definition-grade is the intent; repair LOAD-BEARING at closure-custody

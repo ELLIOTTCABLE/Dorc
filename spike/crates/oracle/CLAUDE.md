@@ -109,6 +109,13 @@ discipline: one rule per bullet, slugged; append to the matching section.
   WHOLE top level is provably inert to load. That inertness IS the license to hoist a declaration
   above somebody's book, and it is also what keeps the BOOK out of the index without threading its
   id: a runbook has commands at top level, so its helpers stay where its author put them.
+  **INERTNESS IS DYING IN LITERAL** [human-typed 2026-08-16]: blessed read-only top-level
+  commands (`.`/`source`, `command`, more to come) are becoming legal oracle top level, so
+  whole-file inertness is a constrained HYGIENE posture, never a premise the engine computes
+  from. No resolution shortcut may assume a flat inert prefix — a host-conditional definition
+  (`command -v jq || jq() { … }`) lands can't-say through the frame solver's ordinary
+  conditional machinery, and last-wins-over-the-index is an interim that dies with the
+  funcenv table-widening (`rul-unsure-falls-toward-sh-parity`).
 - **a-definitions-file-is-not-a-mark-fragment** — `validate` runs `lint_mark_subset` only for a
   source with no `__` AND no top-level funcdef. `__`-freedom alone read every helpers-only file — and
   every ordinary BOOK carrying a function — as a bare marked-statement fragment and errored

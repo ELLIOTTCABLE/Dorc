@@ -442,6 +442,25 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   UNATTRIBUTED-drift machinery is out (no freshness windows, no systematic
   re-probe, no third-party/wallclock drift accounting). Do not build toward the
   latter.
+- **rul-unsure-falls-toward-sh-parity** (human-typed 2026-08-16; LOAD-BEARING) —
+  where a design or implementation choice is unsure, fall toward MATCHING sh
+  behaviour. Fail-towards-deny stays legal for specific members of enumerable
+  sets ("of all commands, we support these") and only where support is
+  expensive; but core semantic, LINGUISTIC behaviours — the PLT components that
+  force engine-implementation choices (load-order, name resolution, scoping and
+  binding) — fall toward GENERIC PARITY, never shaped to current, temporary
+  needs. Ground: the design churns constantly; the one thing that has never
+  changed since day one is spelled-as-sh, and when the design moves it moves
+  toward MORE sh — so a less-like-sh machine is wasted work that gets redone.
+  Move-quickly's less-code pull does NOT apply to this class.
+- **rul-happy-path-is-a-closed-set** (human-typed 2026-08-16) — idiomatic
+  (unmunged, colocated, human-friendly) emission is licensed ONLY by
+  engine-SHOWN full enumeration of the names and constructs in play: happy-path
+  is a CLOSED SET the engine proves, never assumes. Every case that cannot be
+  fully enumerated falls back to munge-everything (defensive emission), in ALL
+  cases — we do not risk this breaking. Idiomatic output is a built-slowly,
+  gradual-enhancement path on top of very-sure knowledge, never the default the
+  fallback protects.
 
 ## Invariants — engineering substrate
 

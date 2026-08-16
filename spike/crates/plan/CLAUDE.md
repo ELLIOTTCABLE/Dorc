@@ -97,7 +97,9 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   construction, and made ALREADY-IN-PLACE answerable (pre-split, the blob comparison never
   matched and a copy of the BOOK's own body hoisted above the book — corpus-reached, pinned
   twice). Whole-artifact DEFENSIVE emission (every emitted name munges) triggers on real
-  definition vectors only (`oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`).
+  definition vectors only (`oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`) —
+  and per `spike/CLAUDE.md rul-happy-path-is-a-closed-set`, every idiomatic tier above the
+  defensive floor is licensed only by PROVEN enumeration, never assumption.
   Three rules in order: CONTENT-DEDUP (byte-identical bodies are one definition); ALREADY-IN-PLACE
   (a body the book's own text defines at top level with the same bytes is not copied — the
   EMITTED preamble never carries two same-named funcdefs, which is what dissolves the
