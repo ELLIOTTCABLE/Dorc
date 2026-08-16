@@ -627,9 +627,7 @@ pub fn build_wrapped_analysis(
     use dorc_aid::narrative::EntryDegradeTag;
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
     use dorc_analysis::value::ValueOf;
-    use dorc_oracle::entry::{
-        EntryDecision, EntryDegrade, decide_entry, lift_tolerance, peel_book_chain,
-    };
+    use dorc_oracle::entry::{EntryDecision, EntryDegrade, decide_entry, peel_book_chain};
     use dorc_oracle::predict::map_provider_name;
     use dorc_oracle::verdict::VERDICT_SUFFIX;
 
@@ -764,14 +762,11 @@ pub fn build_wrapped_analysis(
             EntryDecision::Enter
         } else {
             let has_entry_form = chain.links.iter().all(|l| l.entry.is_some());
-            let tolerated = inner_verdict
-                .as_ref()
-                .map(|v| {
-                    lift_tolerance(v)
-                        .0
-                        .tolerated_on_path(inner_rest.first().map(String::as_str))
-                })
-                .unwrap_or_default();
+            let tolerated = entry_tolerance(
+                &composed.inner_fn,
+                inner_verdict.as_ref(),
+                inner_rest.first().map(String::as_str),
+            );
             decide_entry(
                 has_entry_form,
                 capability,
@@ -1172,6 +1167,33 @@ fn resolved_pair_incoherence(
         return Some(WrapperPairTag::EntryShifts);
     }
     None
+}
+
+/// The entry-consent set a wrapped site's SHIPPED body brings to `decide_entry` (`27C` §2, the
+/// author's half of both-sides consent).
+///
+/// `safe-across` is per-FUNCTION: the author asserts THAT BODY's effects are read-only by design, so
+/// the mark licenses a context shift only when that body is the one that EXECUTES. Under `28Q` §4
+/// verdict primacy the verdict body ships wherever it vouches, which is where the mark and the
+/// executing body coincide. Where the verdict DECLINED and the predict ships instead, an
+/// unconditional (top-level) mark would otherwise still be lifted — licensing a shift for a body
+/// carrying no consent at all, the OVER-consented direction, which `27C`'s reuse-never-acquire
+/// posture refuses. So consent is gated on the shipped body BEING the marked one, the same question
+/// the carry path asks of the same pair (the closed body must be the measured body).
+fn entry_tolerance(
+    inner_fn: &str,
+    inner_verdict: Option<&dorc_oracle::predict::Predict>,
+    verb: Option<&str>,
+) -> BTreeSet<dorc_oracle::wrapper::Dimension> {
+    use dorc_oracle::verdict::VERDICT_SUFFIX;
+    inner_verdict
+        .filter(|_| inner_fn.ends_with(VERDICT_SUFFIX))
+        .map(|v| {
+            dorc_oracle::entry::lift_tolerance(v)
+                .0
+                .tolerated_on_path(verb)
+        })
+        .unwrap_or_default()
 }
 
 /// Resolve the inner oracle's check for a wrapped site's entry-composed probe (`27N`). `None` ⇒ no
@@ -1893,6 +1915,42 @@ mod tests {
         )
         .expect("both members answer this fixture");
         fn_name
+    }
+
+    /// `27C` §2 both-sides consent is per-FUNCTION, so a `safe-across` mark licenses a context shift
+    /// only for the body that EXECUTES.
+    ///
+    /// The mark here is UNCONDITIONAL (top level, not inside a `case` arm), which is exactly the
+    /// dangerous shape: `tolerated_on_path` returns it for every verb, declining ones included. So
+    /// before `28Q` §4's re-cut a verdict that declined this argv still handed its consent to a
+    /// PREDICT body that ships and runs unmarked — an over-consented entry. Both halves are asserted
+    /// together because the gate is only correct if it still lifts consent where the marked body IS
+    /// the shipped one; a gate that simply never lifted would pass the second assertion alone.
+    #[test]
+    fn consent_rides_the_body_that_ships_and_no_other() {
+        use dorc_oracle::wrapper::Dimension;
+        use std::collections::BTreeSet;
+        let mut interner = Interner::default();
+        let src = "# dorc-lang/v0.2\n\
+             hork__is_converged() {\n\
+             \x20  : safe-across user\n\
+             \x20  case ${1-} in tune) hork query -- \"$2\" ;; *) return 2 ;; esac\n\
+             }\n";
+        let set = dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value;
+        let provider = interner.intern("hork");
+        let verdict = set.get(provider).expect("the fixture lifts a verdict");
+        let marked: BTreeSet<Dimension> = [Dimension::User].into_iter().collect();
+
+        assert_eq!(
+            super::entry_tolerance("hork__is_converged", Some(verdict), Some("tune")),
+            marked,
+            "the marked body ships here, so its author's consent is exactly what the dial weighs"
+        );
+        assert!(
+            super::entry_tolerance("hork__predict", Some(verdict), Some("poke")).is_empty(),
+            "the verdict declined and the predict ships: an unmarked body executes, so this site \
+             brings NO author consent and the shift must not be licensed"
+        );
     }
 
     /// `28Q` §4 `rul-verdict-primacy-at-the-ship-seat` at the WRAPPED seat: a vouching inner verdict
