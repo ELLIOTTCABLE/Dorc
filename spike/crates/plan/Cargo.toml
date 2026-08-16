@@ -4,6 +4,13 @@ version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 publish = false
+# Target discovery is declared, never inferred — the `crates/cli` precedent
+# (`288:rul-flat-test-tree`), here for the other half of the same rule: SyncThing drops
+# `*.sync-conflict-*.rs` copies into this tree, and cargo's autodiscovery is a corpus walk that
+# does not skip them (`sync-residue-is-never-a-case`). Autodiscovered, such a copy becomes a test
+# target whose name is not a legal crate identifier, which fails the workspace lint gate and so
+# blocks every commit in the tree until a human clears the residue.
+autotests = false
 
 # The elision path: turn (analysis `SkipClass` + a host probe verdict) into a
 # plan, gated by the note-165 orientation locks. Consumes the analysis result and
@@ -35,6 +42,22 @@ internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
 # edge is dev-only in both directions (hostsim's own tests dev-dep this crate), so no lib-graph
 # cycle exists.
 dorc-hostsim = { path = "../hostsim", version = "0.0.0" }
+
+[[test]]
+name = "erasability"
+path = "tests/erasability.rs"
+
+[[test]]
+name = "observable_matrix"
+path = "tests/observable_matrix.rs"
+
+[[test]]
+name = "render_corpus"
+path = "tests/render_corpus.rs"
+
+[[test]]
+name = "sparing_differential"
+path = "tests/sparing_differential.rs"
 
 [lints]
 workspace = true
