@@ -38,6 +38,24 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **lane-garden-cleanup — PARTIALLY FOLDED 2026-08-16 @ `3770f169`; remainder
+  pending** (Opus janitor; killed mid-lane by the human at the cache-relocation
+  retraction; its completed products folded after conductor verification): the
+  `guard26-*` XFAIL case pair landed (human-authored, commit-authorized;
+  verified at fold three ways — byte-identity against the root originals ·
+  filtered e2e 4/4 green with the XFAIL markers honored, full-corpus discovery
+  intact · zero dangling refs) and the minispec-review renumber landed
+  (adjudication → `30B`, raw reports → `30Ba`/`30Bb`; grep-verified total).
+  The harness BLOCKED the lane's fleet-surgery half (§3 row) — conductor
+  hand-ran it: 21 dead lane/review worktrees + 13 stale husks removed, ~40
+  merged branches swept; the `-D`-only set plus the mainline restore went to
+  the human in-chat (the sweep's one conductor mistake: a literal
+  everything-except-`ai/main` keep-list `-d`'d the merged `main` ref itself;
+  its recreation is classifier-blocked, so `git branch main b1bdc9c5` rides
+  the handoff). REMAINDER, pending the human's dispatch ack: the reap
+  automation (caches auto-reaped on the worktree-absence orphan proof;
+  worktree reaping explicit-only, tool-owned containment proofs, never auto)
+  and the slow-test diagnosis ask (native-suite ~145s tail, certify/solve).
 - **lane-tooling-debt-triple — CLOSED + FOLDED 2026-08-16** (7 commits rebased,
   ff'd; T1–T4 all landed). T4c THE HEADLINE: **the minispec spec fix is GREEN
   from a genuinely cold per-worktree root**, elaboration VERIFIED (fresh oleans
@@ -828,6 +846,24 @@ only with the specific work-product it wrongly blocked in hand.
   placement law · action: rerouted per `alt-pair-payload-case-with-e2e-pin`
   (below); prevention: any ruling that sites test artifacts re-checks
   `flat-test-tree-and-loom-placement` first.
+- **the Bash isolation guard, subagent tier** · blocked the janitor builder's
+  `git -C <sibling worktree>` fleet surgery outright (the garden-cleanup lane) ·
+  **productive-correctness** — it is `worktree-file-access-law` enforced
+  deterministically; the conductor's lane design had sited the surgery in the
+  wrong seat (the primary checkout is the only legitimate seat — i.e. the
+  conductor's own hand) · action: surgery re-seated to conductor; spawning-law
+  rider for future briefs: never assign sibling-worktree git to an isolated
+  builder.
+- **the auto-mode classifier vs `git branch main <hash>`** · blocked recreating
+  the mistakenly-swept mainline ref, twice · **mixed** — a protective posture
+  around mainline ref names is defensible, but it blocked a zero-risk repair of
+  the conductor's own mistake; the designed fallback (exact command to the
+  human) worked as intended · action: rides the human handoff list.
+- **cache/worktree lifecycle gap** · orphaned WSL lane caches and dead
+  worktrees accrete with no owner; `doctor` inventories-never-reaps by law ·
+  **unproductive-mess, tooling-shaped** · action: the reap-automation design
+  (garden-cleanup row); sibling gap banked as `docid-dangling-reference-lint`
+  (docID renames are hand-grep affairs with no dangling-ref check).
 - comment budget vs doc-comment mandate (THIRD instance of the known collision) ·
   747 added lines / 234 comment-matched, but 196 are MANDATED `///` doc-comments
   (the `compile_fail` battery is module-doc by design, the `claim.rs` shape);
@@ -942,6 +978,19 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   repeated an older ledger layer · (6) bare "stage-N" handles disliked; the
   `300` §5 semantic-naming law binds harder (the ship-seam re-cut ·
   definition-factoring · the emission stage · closure-custody · world-scopes).
+- 2026-08-16, the conductor-6 resume/housekeeping sitting [TYPED, itemized]:
+  garden hygiene STANDING — everything except `ai/main` (plus the live conduct
+  seat) dead/merged/cleaned whenever work lands, and kept that way · the root
+  `guard26-*` xfail cases commit-authorized ("as you see fit") · AGENTS.md's
+  `--output=timed` advice: fix granted at a 20-word TOTAL cap, ideally pure
+  removal (executed as pure removal, `b71d2939`) · the in-tree cache relocation
+  RETRACTED in-sitting (XDG placement stands; automatic cleanup is the real
+  requirement; worktree auto-reaping flagged dangerous, "figure it out" —
+  conductor's design in the garden-cleanup row) · harness-denied acts hand to
+  the human as final directions, `-D` of dead branches included · the human's
+  own gate-run closed anchor #6's open leg (WSL rebooted; full gate green under
+  PowerShell) · "let builders do the churn" re-affirmed for conductor-window
+  balance · the minispec-review docID renumber directed (executed, `3770f169`).
 - 2026-08-16, mid-turn steers [TYPED]: (a) the Sol-adversarial re-dispatch
   offered and TAKEN — the pre-written quarantine kit means the conductor's
   just-read context cannot poison it; wallclock non-critical; spend reasonable ·

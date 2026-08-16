@@ -14,7 +14,39 @@
 
 ---
 
-## CURRENT STATE (2026-08-16 — SNAPSHOT-EMISSION LANDED; wave-two's pre-ruled work EXHAUSTED)
+## CURRENT STATE (2026-08-16 late — WAVE-TWO CLOSED AND QUIESCENT; the open board is human-gated)
+
+**ROUND-30 WAVE-TWO IS FULLY FOLDED AND GATE-CLOSED.** All lanes are folded
+(the sh-parity pin battery and the tooling-debt triple included — the "in
+flight" below is superseded), `ai/main` == `ai/r30-conduct`, and the one open
+leg from the quiescence anchor (the Windows gate refusing at preflight on
+vmmemWSL RAM) was discharged by the HUMAN's own hand: WSL rebooted, full gate
+run green under PowerShell [TYPED 2026-08-16]. Conductor-6 resumed 2026-08-16;
+hygiene executed at resume: 21 dead lane/review worktrees + 13 husks removed,
+merged branches swept, the `guard26-*` XFAIL case pair landed at the human's
+typed direction (expected-fail pins on
+`FORFEITS:forfeit-guard-tier-classed-decline`), the minispec review trio
+renumbered (adjudication → `30B`; raw reports → `30Ba`/`30Bb`), AGENTS.md's
+`--output=timed` advice retracted (human-granted, pure removal). **STANDING
+[TYPED 2026-08-16]: every branch/worktree except `ai/main` (plus the live
+conduct seat) stays dead/merged/cleaned whenever work lands.** A handoff list
+(the `main`-branch restore + the `-D`-only branch set — both classifier/hook
+territory) went to the human in-chat.
+
+**EVERYTHING ELSE OPEN IS HUMAN-GATED** (the human is rewinding; nothing
+dispatchable meanwhile): the `plans/309` Spine ack · closure-custody policy
+(`28Q` §9 pins; the definition-keying repair rides its §1 tripwire) · the
+veto-eligible conductor rulings (`307:rul-primacy-moves-the-body-never-the-cell`
+· `307:rul-emission-custody-composite` · the crosscheck-era set) · the unowned
+prose queue (three `vouched-composition-*` reason components · the munge
+receipt lines · the four Migrated registers) · world-scopes (gated on `28Q`
+§10 + 309). Banked, non-blocking: reap AUTOMATION (caches auto-reaped on the
+worktree-absence orphan proof; worktree reaping explicit-only with tool-owned
+containment proofs — design acked-in-substance, dispatch pending) · the
+slow-test diagnosis (native suite's ~145s tail, mostly certify/solve;
+human-noted 2026-08-16).
+
+## STATE 2026-08-16 (snapshot-emission landed; wave-two's pre-ruled work exhausted; superseded above)
 
 **[TYPED 2026-08-16, the three-rulings sitting — minted]:
 `rul-unsure-falls-toward-sh-parity` (LOAD-BEARING: unsure ⇒ match sh; PLT-class
