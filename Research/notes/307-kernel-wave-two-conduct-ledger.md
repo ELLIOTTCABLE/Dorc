@@ -60,9 +60,25 @@
   names. MAP-THEN-EXECUTE: checkpoint-1 (seat enumeration + touch-count sizing +
   DefinitionId type-shape + contradictions report) is a hard pause for conductor
   ack before any conversion commit.
-- **lane-snapshot-emission** — QUEUED behind the stage-i fold. Rulings already
-  banked (`28Q` §8 stage-emission-snapshot-transplant; the fixtures lane's
-  sibling-frames munge reading rides this brief per `300` §2).
+- **gate-adversarial-crosscheck-stage-i** [TYPED 2026-08-15] — a BLOCKER inside
+  the stage-i stopping point: after the conversion folds and its gates run green,
+  an adversarial crosscheck of the landed conversion runs BEFORE the stopping
+  point is stamped — staffing 2×Fable + 2×Sol (neutral+adversarial pair per
+  lineage, under the `adversarial-crosscheck` + `foreign-models` skills; NO
+  DeepSeek while the human is away). Framing: exclusions-not-inclusions (never
+  prime with conductor-suspected weak points); adjudication under maximum
+  skepticism, every finding verified in code before crediting (`303a` is the
+  model, incl. refuting reviewer claims). The human is +SURE it surfaces bugs:
+  a BURNDOWN lane follows adjudication; only then does the stopping point stamp.
+- **review-minispec-focused** [TYPED 2026-08-15] — a separate, focused review of
+  JUST minispec (the law units + TrustedBase hypotheses + catalogue expectations):
+  small, correspondingly critical, never yet independently checked. Scheduled at
+  END-OF-R30; if this conductorship ends first, it passes to the successor
+  explicitly. Staffing proposed at scheduling time.
+- **lane-snapshot-emission** — QUEUED behind the stage-i fold (which now includes
+  the crosscheck gate + burndown above). Rulings already banked (`28Q` §8
+  stage-emission-snapshot-transplant; the fixtures lane's sibling-frames munge
+  reading rides this brief per `300` §2).
 - Sequencing [CONDUCTOR, under the human's typed serial lean 2026-08-15]: SERIAL,
   seams-first. Grounds: the human is the likely bottleneck (slow design work,
   then asleep — logiclock over wallclock); one adjudication at a time; each brief
@@ -133,3 +149,10 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   long as it comes alongside a surprisingly important question." Propagated
   verbatim-in-substance into every wave-two brief; binds the conductor's own
   checkpoint adjudications equally.
+- 2026-08-15, the adversarial-analysis sitting [TYPED, itemized]: the
+  check-ladder red-team ("construct a gate-passing wrong change") is ORTHOGONAL —
+  good/needed/known, completely parallel, NOT this conductor's to run or spend on ·
+  `gate-adversarial-crosscheck-stage-i` ruled a blocker with its staffing
+  (2×Fable + 2×Sol; no DeepSeek while the human is away; burndown expected and
+  scheduled) · `review-minispec-focused` ruled in at end-of-r30 (§2 rows carry
+  both).
