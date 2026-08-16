@@ -382,7 +382,7 @@ impl WhyWorld {
             resolutions.add_auto_kind(kind);
         }
 
-        let plan = dorc_plan::build_plan_walled(
+        let mut plan = dorc_plan::build_plan_walled(
             book_src,
             &parsed.value,
             &cfg.value,
@@ -403,12 +403,15 @@ impl WhyWorld {
             },
             &mut arena,
         );
+        let (_trip_banner, trip_narrative) =
+            demote_on_certifier_trip(&mut plan, trip, &definitions);
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
             .into_iter()
             .chain(decline_narrative)
             .chain(merge_narrative)
             .chain(plan.survival_report.collapse_narrative().iter().cloned())
+            .chain(trip_narrative)
             .chain(plan.render_refusal_narratives(&parsed.value))
             .collect();
         let wall_steps = collect_wall_steps(
@@ -531,6 +534,38 @@ pub fn record_pre_network_trip(
     if let Some(EnvFloor::SolverInconsistent(consistency)) = env.floor() {
         trip.record(consistency.as_ref());
     }
+}
+
+/// Run the terminal certifier-trip cleanup and mint its plan-prominent banner
+/// (`302:rul-certifier-trip-guard-only`). A no-op — no walk, no banner — when nothing tripped.
+///
+/// THE CENSUS FORK, answered: a guard stands iff its verdict funcname has exactly one definition
+/// in the loaded unit, which [`dorc_analysis::funcenv::DefinitionTable::occupancy`] answers by
+/// counting. The table is the same one the environment was solved OVER, built by a syntactic walk
+/// with no solve in it, so a trip — which disqualifies the solver and the certifier together —
+/// cannot have corrupted the answer. That is what makes it admissible here, and it is the whole
+/// argument: a lookup that itself depended on a solve would be no census at all.
+///
+/// The narrative is per-demoted-site and stays pull-tier; the banner is one line for the run.
+pub fn demote_on_certifier_trip(
+    plan: &mut dorc_plan::Plan,
+    trip: dorc_analysis::certify::CertifierTrip,
+    definitions: &dorc_analysis::funcenv::DefinitionTable,
+) -> (Vec<Diag>, Vec<CollapseNarrative>) {
+    use dorc_aid::diag::{DiagCode, SolverConsistencyPlanDemoted};
+
+    if !trip.tripped() {
+        return (Vec::new(), Vec::new());
+    }
+    let cleanup = dorc_plan::certifier_trip::demote_on_trip(plan, |fn_name| {
+        definitions.occupancy(fn_name) == 1
+    });
+    let banner = Diag::new_spanless_site(DiagCode::SolverConsistencyPlanDemoted(
+        SolverConsistencyPlanDemoted {
+            demoted: cleanup.demoted().to_string(),
+        },
+    ));
+    (vec![banner], cleanup.narrative().to_vec())
 }
 
 /// The unit's role definitions, as DATA for the function-environment domain (`28K` §2).

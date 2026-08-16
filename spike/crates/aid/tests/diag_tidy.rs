@@ -181,6 +181,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cfg-builtin-shadowed",
     "effect-kind-disagreement",
     "solver-consistency-failure",
+    "solver-consistency-plan-demoted",
     "survival-rederivation-disagreement",
     "predict-out-of-dialect",
     "predict-unterminated",
@@ -299,6 +300,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "CfgErexitUnknown",         // cfg-errexit-unknown      (analysis/cfg.rs)
     "EffectKindDisagreement",   // effect-kind-disagreement (analysis/effect.rs)
     "SolverConsistencyFailure", // solver-consistency-failure (analysis + cli; `plans/302`)
+    // solver-consistency-plan-demoted (cli; `302:rul-certifier-trip-guard-only`) — whole-run scope.
+    "SolverConsistencyPlanDemoted",
     // plan/records.rs — every framed-deframer fault/integrity code is spanless.
     "RecordsHeaderlessRefused",
     "RecordsGluedLine",

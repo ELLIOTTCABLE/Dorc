@@ -83,7 +83,8 @@ use dorc_cli::survival::{
     lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
 use dorc_cli::world::{
-    definition_table, record_pre_network_trip, ship_predict_body, ship_verdict_body, source_file_id,
+    definition_table, demote_on_certifier_trip, record_pre_network_trip, ship_predict_body,
+    ship_verdict_body, source_file_id,
 };
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
@@ -1551,7 +1552,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         None, // dangling-reference notes are spanless (no book/oracle location)
         &dangling_diagnostics(&resolutions, &interner),
     );
-    let plan = dorc_plan::build_plan_walled(
+    let mut plan = dorc_plan::build_plan_walled(
         &book_src,
         &parsed.value,
         &cfg.value,
@@ -1572,6 +1573,13 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         },
         &mut arena,
     );
+    // `302:rul-certifier-trip-guard-only` — THE TERMINAL CLEANUP. Sited here, at the one moment
+    // the whole plan exists and before anything reads it, so the digest, the why report, the
+    // summary and the artifact all describe the SAME plan. Nothing between here and `render_apply`
+    // touches a disposition, so "immediately before plan-emission" and "immediately after
+    // plan-construction" are the same seat, and only this one keeps every consumer honest.
+    let (trip_diags, trip_narrative) = demote_on_certifier_trip(&mut plan, trip, &definitions);
+    report("solve", book_source, &trip_diags);
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `unresolvable-no-probe` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each
@@ -1626,6 +1634,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .chain(origin_consistency_narrative.iter().cloned())
         .chain(merge_narrative.iter().cloned())
         .chain(plan.survival_report.collapse_narrative().iter().cloned())
+        .chain(trip_narrative)
         .chain(plan.render_refusal_narratives(&parsed.value))
         .collect();
     if advisory && mode != Mode::Why {
@@ -1699,10 +1708,15 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         &plan.rederivation_diagnostics(&parsed.value),
     );
 
+    // The trip banner joins the IDENTITY plane (`302:rul-certifier-trip-guard-only` — the boolean
+    // is a spine row). It needs no new durable field: `canon_diag` keys an Error by slug, span and
+    // severity, so a tripped run's digest differs from the same book's clean one even when the
+    // cleanup had nothing to evict and the dispositions are byte-identical.
     let identity_diags: Vec<Diag> = round_diags
         .iter()
         .cloned()
         .chain(refusals.iter().cloned())
+        .chain(trip_diags)
         .collect();
     let decision_digest = dorc_plan::erasability::decision_digest(
         &plan,

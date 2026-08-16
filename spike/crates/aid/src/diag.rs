@@ -131,6 +131,10 @@ pub enum DiagCode {
     /// A dataflow answer failed its own post-fixpoint check, so the whole analysis window was
     /// demoted to its floor (`302:rul-whole-window-demotion`). OUR defect, never the book's.
     SolverConsistencyFailure(SolverConsistencyFailure),
+    /// A certifier tripped this run, so the terminal cleanup evicted every elision-family outcome
+    /// and the plan is guard-only (`302:rul-certifier-trip-guard-only`). OUR defect, never the
+    /// book's.
+    SolverConsistencyPlanDemoted(SolverConsistencyPlanDemoted),
 
     // ── the sparing re-derivation (`300:lane-sparing-rederivation`): plan/rederive.rs ──────
     /// A survival the wall walk had already minted was not confirmed by the independent reference
@@ -412,6 +416,7 @@ impl DiagCode {
             DiagCode::CfgBuiltinShadowed(_) => "cfg-builtin-shadowed",
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
             DiagCode::SolverConsistencyFailure(_) => "solver-consistency-failure",
+            DiagCode::SolverConsistencyPlanDemoted(_) => "solver-consistency-plan-demoted",
             DiagCode::SurvivalRederivationDisagreement(_) => "survival-rederivation-disagreement",
             DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
             DiagCode::PredictUnterminated(_) => "predict-unterminated",
@@ -932,6 +937,29 @@ pub struct SolverConsistencyFailure {
     pub pass: SolvePass,
     /// How many post-fixpoint checks failed, in total (`{failing}`).
     pub failing: String,
+}
+
+/// Payload of [`DiagCode::SolverConsistencyPlanDemoted`]: a certifier tripped somewhere in this
+/// run's analysis spine, so the terminal cleanup evicted every elision-family outcome and the plan
+/// this run emits is guard-only (`302:rul-certifier-trip-guard-only`).
+///
+/// A SIBLING code rather than a reason arm of [`SolverConsistencyFailure`], and the split is the
+/// one `28L:rul-reason-enums-not-sibling-codes` sanctions — a LICENSE variant, not a grammar fit.
+/// Its cousin says a named solve failed its own check (an event inside the engine, one per pass);
+/// this says every license in the window has lapsed and the artifact about to be printed removes
+/// nothing (a property of the product, once per run). A reader who saw only the first would not
+/// know what happened to their plan, and a reader who saw only the second would not know which
+/// pass to report.
+///
+/// SPANLESS for the same reason its cousin is: whole-run scope, and a caret on any book line would
+/// blame the admin's text for OUR defect (`271:rul-sin-ordering`).
+///
+/// One hole, and it may legitimately read zero: a run with nothing to evict loses nothing, and the
+/// banner still fires — it is driven by the TRIP, never by the count.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SolverConsistencyPlanDemoted {
+    /// How many sites the cleanup demoted to run (`{demoted}`).
+    pub demoted: String,
 }
 
 /// Payload of [`DiagCode::SurvivalRederivationDisagreement`]: a survival the wall walk minted was
@@ -2310,6 +2338,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
+        DiagCode::SolverConsistencyPlanDemoted(_) => CodeSpec {
+            severity: Severity::Error,
+            // The consequence line, held to the same floor as its cause: an off-ramp `apply` must
+            // never ship a defect-affected artifact without saying so.
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         DiagCode::SurvivalRederivationDisagreement(_) => CodeSpec {
             severity: Severity::Error,
             // Our two implementations of one algebra disagreed. The outcome is SAFE (the site runs),
@@ -2959,6 +2994,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             component("pass", solve_pass_text(ctx, *pass)),
             ours("failing", failing.clone()),
         ],
+        DiagCode::SolverConsistencyPlanDemoted(SolverConsistencyPlanDemoted { demoted }) => {
+            vec![ours("demoted", demoted.clone())]
+        }
         DiagCode::SurvivalRederivationDisagreement(SurvivalRederivationDisagreement {
             site: _,
             wall,

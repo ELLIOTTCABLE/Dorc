@@ -33,11 +33,11 @@ use crate::diag::{
     RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine,
     RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused, RoleDefinedBelowItsSites,
     RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass,
-    SolverConsistencyFailure, SurvivalRederivationDisagreement, SyntaxUnsupported,
-    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
-    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused, WhylogAbsent,
-    WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
-    WrapperPeelIncoherent,
+    SolverConsistencyFailure, SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement,
+    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
+    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
+    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten,
+    WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -230,6 +230,14 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::SolverConsistencyFailure(SolverConsistencyFailure {
                 pass: SolvePass::ReachingDefs,
                 failing: "3".to_owned(),
+            }),
+        ),
+        // Its consequence line, defect-shaped for the same reason: no book can arrange for the
+        // trip that evicts the plan's elisions.
+        (
+            "solver-consistency-plan-demoted",
+            DiagCode::SolverConsistencyPlanDemoted(SolverConsistencyPlanDemoted {
+                demoted: "4".to_owned(),
             }),
         ),
         // Likewise defect-shaped: the re-derivation fires only when our own two implementations of
