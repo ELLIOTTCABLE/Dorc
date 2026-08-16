@@ -184,3 +184,46 @@ taken:
 My lean is (3): it reaches the same production seat, keeps the harness untouched, and puts the
 identity family under seeded coverage rather than a single example. (1) is the honest minimum. Not
 built either way — the ruling said two e2e cases, and this is the question rather than an act.
+
+## §8 — Completion round (§7 ruled, §6 residue closed)
+
+**`ask-identity-shaped-pin-is-unreachable` → option (3), ruled and built.** Option (2) was
+explicitly rejected: a case-declared raw-stdin escape would be a second intake route into the
+corpus, an intake-law hazard rather than a test convenience. The single e2e pin stands as the only
+reachable end-to-end example.
+
+The `hostsim` byte-tier fault mutator now carries an IDENTITY family beside torn/glued/oversize:
+a seed may forge one framing `key=` to a foreign value, and the mutated stream goes through the
+same real strict-admission seat the other faults do. Three properties hold it honest:
+
+- the mutator stays PLAIN-FREE — the terminal token was already a parameter, and the forgeable keys
+  arrive as `(key, forged-value)` pairs, so the module still knows no records grammar. The value is
+  caller-supplied for a measured reason: `attempt=forged` refuses as `Numeric` before identity is
+  ever compared, so a forgery that is not grammar-valid tests the parser instead of the identity
+  (found on the first run; the DST now passes `attempt=7`);
+- an identity seed's ONLY admissible outcome is a refusal NAMED for that key — never an admission,
+  because a forged frame is not a bounded loss a planner may work around;
+- the sometimes-assert is PER KEY, not per family: `IntegrityMismatch(Nonce)`, `(Attempt)`,
+  `(Host)` and `(Book)` must each be reached over the seed range, so four conditions collapsing
+  into one arm cannot satisfy a family-level count. `Torn` and `Glued` keep their own rows.
+
+**`flg-fact-truncated-metadata-left-stale` → fixed.** `records-fact-truncated`'s `when_fires`/`why`
+are re-sourced onto the strict admission path through the same
+`dorc-loom promote --accept-metadata` republish its eight siblings took; `message` and `example` are
+byte-identical. All nine records rows now name their real emitter.
+
+`flg-count-of-one-on-the-strict-path` was ACCEPTED as landed and is unchanged.
+`flg-four-migrated-registers-now-misdescribe` remains held for the human.
+`flg-allow-list-entry-not-added` is closed — nothing was owed.
+
+Sanctioned lock republish, named: `crates/aid/src/catalog_lock.rs`, one row
+(`records-fact-truncated`), metadata only.
+
+Fold gates, re-run foreground after this round:
+
+- `mise run check` — green.
+- `mise run both gate:full-quiet` — Windows leg 2058/2058 (1 skipped); WSL leg 2054/2054 (1 skipped).
+- `mise run bless:dry` — green, working tree clean afterwards (zero golden writes).
+
+Comment budget, final: **922 added `.rs` lines, 269 matching `^\+\s*//`** — **221 doc-comments**,
+**48 plain `//` why-comments (5.2%)**.
