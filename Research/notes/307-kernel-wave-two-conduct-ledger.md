@@ -38,6 +38,17 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **lane-snapshot-emission — DISPATCHED 2026-08-16** (Opus, branch
+  `ai/r30-lane-snapshot-emission`, base `f1f5274e` — the conductor's own-hand
+  gate ran green over that tip: W 2113/2113 · WSL 2109/2109 · `bless:dry`
+  clean; NB one earlier gate run was externally KILLED mid-compile, cause
+  unknown, re-run clean). Spec = `28R:§snapshot-emission-adjudication`
+  verbatim + the `28Q` §8 stage entry; riders: the `HelperIndex`
+  survival-closure capture · the sibling-frames munge activation reading · the
+  two FORFEITS re-measurements at fold (helper-plurality-withhold ·
+  member-lanes-predict-measured) · day-one decline class with `[unwritten:]`
+  prose. Checkpoint-paused: 28R-vs-as-built mapping required first (the code
+  is two conversions newer than the rulings' text).
 - **lane-stage-zero-ship-seam — CLOSED + FOLDED 2026-08-16; STAGE-0 LANDED**
   (6 commits rebased, ff'd; builder gates W 2113/2113 · WSL 2109/2109 ·
   `bless:dry` clean · `verify:check` green both legs; the post-bless audit
