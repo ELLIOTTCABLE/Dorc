@@ -38,6 +38,46 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **lane-tooling-debt-triple — CLOSED + FOLDED 2026-08-16** (7 commits rebased,
+  ff'd; T1–T4 all landed). T4c THE HEADLINE: **the minispec spec fix is GREEN
+  from a genuinely cold per-worktree root**, elaboration VERIFIED (fresh oleans
+  for all three units + TrustedBase + Generated; no stale file; the 4 known
+  dependency-closure holes unchanged) — the corpus is REPAIRED and the
+  `300` §2b lake-green suspicion is resolved-by-restage. T1: the banked
+  mechanism was wrong DEEPER than measured — `timed` is a per-line DWELL filter
+  (stderr passes; stdout's last-line-before-exit eaten); NO env-tier lever
+  works; per-task `raw = true` is the only in-repo answer. DEVIATION ENDORSED
+  with the conductor's mistake named (a mechanism directed beyond verified
+  knowledge, AGAIN — the brief's suggested lever measurably fails): the
+  builder's UNIFORM raw-sweep across all 54 tasks, separately-revertible
+  commit, justified by the measured invisible-REFUSAL case (preflight's own
+  refusal line was being eaten) and rot-proofness; the conductor added the one
+  task the sweep couldn't see (the battery's later `xfail:census`). DISCLOSED
+  COST for the human: `gate:full-quiet`'s green output grew ~90 lines (doctest
+  summaries now visible — previously swallowed WITH their failures); the
+  quiet-doctest-runner option is BANKED, not built (swallows-on-success needs
+  its own falsification). T2 falsified both directions (the witness a probe
+  cannot forge for itself). T3 self-teaching bless failure landed, with the
+  builder's own end-to-end falsification catching a prefix-anchoring bug its
+  unit test missed. T4a mirror-staging + per-worktree root (keeping
+  `lake-manifest.json` — beyond the finding, correct). Windows final leg
+  BLOCKED by a GENUINE preflight refusal (vmmemWSL holding ~14.7 GiB of Lean
+  build cache; the builder's refusal to `DORC_PREFLIGHT=skip` STRONGLY
+  endorsed — the bound's reason held and the human is live on the box);
+  Windows evidence at the T1–T3 tip: both-legs 2139/2139; final-tip WSL
+  `bless:dry` clean. FINDING banked: `mise run both <heavy>` is
+  order-dependent (encoded in `preflight-bounds-before-spend`);
+  `work-preflight-names-vmmem` candidate. Law edits landed (the
+  agent-surfaces-forced-plain FALSE parenthetical corrected ·
+  `failure-visibility-is-a-task-flag` · the two quiet-task rows · the witness
+  + order-dependency riders · the verify-lane mirror sentence). HUMAN-RELAY
+  QUEUE from this fold: `wsl --shutdown` to free ~14 GiB (builder measured
+  nothing of yours running in the VM — but your call, terminals) ·
+  `.claude/settings.json`'s `MISE_TASK_OUTPUT` → `prefix` or drop (inert here
+  now, still eats sub-second stdout in every OTHER repo) · the AGENTS.md
+  `--output=timed` wording suggestion (yours to edit) · the orphaned shared
+  lean root `~/.cache/dorc-minispec-lean` (7.7 GiB, the contaminated one) is a
+  clean reap · the ~90-line green-noise tradeoff.
 - **lane-sh-parity-pin-battery — CLOSED + FOLDED 2026-08-16 @ `231a9e33`**
   (7 commits rebased, ff'd; builder gates GREEN both legs — WSL 2152/2152 ·
   `bless:dry` clean, zero golden writes; timing delta below run-to-run noise,

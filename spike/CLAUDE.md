@@ -860,6 +860,8 @@ mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (on
                           #   time, memory-gated, CBMC reaped; trailing arg = one harness)
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
+mise run test:e2e-quiet   # the e2e corpus, agent spelling: terse per-case on success,
+mise run test:looms-quiet #   failures unabridged; same selection the bare halves take
 ```
 
 `mise tasks` lists them with the full caveat text; trailing args after `--` append
@@ -908,7 +910,11 @@ no task covers, and consider adding the task instead.
   frontier-class model AND only with explicit human authorization
   (`law-spec-touch-frontier-human-only`, a two-part lock; conductors are not
   exempt, and builders never edit content there at all); the catalogue lock's
-  promote is a spec-side act whose review is the git diff.
+  promote is a spec-side act whose review is the git diff. The staged Lean build
+  root is a MIRROR (sources cleared before copy; `.lake` and `lake-manifest.json`
+  survive — deleting the manifest sends lake back to the network) and is keyed
+  PER WORKTREE: a shared, accreting root is how a root module naming a deleted
+  unit survived a green `lake build` (the r30 review pair; `30D`).
 - **kani-coverage-has-measured-walls** (r30) — harnesses declare EXACT concrete
   sizes (a symbolic length under reallocation is unaffordable, and the shape also
   arises INSIDE `union`/`intersection`, which insert element-by-element), so
@@ -963,9 +969,23 @@ no task covers, and consider adding the task instead.
   the exact commands are ledgered in `300` §2). The settings-env channel also
   carries four defensive TTY-progress-off knobs (`HK_TERMINAL_PROGRESS=0` ·
   `CARGO_TERM_PROGRESS_WHEN=never` · `CARGO_TERM_PROGRESS_TERM_INTEGRATION=false` ·
-  `MISE_TASK_OUTPUT=timed`, whose <1s filter is piped-no-op; `prefix` is the plain
-  fallback). The law: AI-driven invocations stay append-only plain; the human's own
-  terminal keeps every repaint.
+  `MISE_TASK_OUTPUT` — but NB: `timed` is NOT a piped-no-op; it is a per-LINE
+  DWELL filter that discards any stdout line another supersedes inside a second,
+  the last one before exit included (measured 2026-08-16), while stderr passes —
+  which is why nextest survived it and libtest, the doctests, and every
+  `println!` tool did not; it is now inert for this repo's tasks, see the next
+  bullet, and `prefix` is the honest setting). The law: AI-driven invocations
+  stay append-only plain; the human's own terminal keeps every repaint.
+- **failure-visibility-is-a-task-flag** (r30, measured lever table in
+  `mise.toml`'s header) — EVERY task in the root `mise.toml` carries
+  `raw = true`, and a new task joins them. `MISE_TASK_OUTPUT` configures mise
+  ITSELF, so an exported value beats both `[tasks.*.env]` and the root `[env]`;
+  `[settings] raw` is not carried by a project config; `--raw`/`--output` bind
+  only the level typed — a nested `mise run` is RE-CAPTURED by its parent.
+  Uniform rather than curated, because a curated set requires knowing which
+  stream somebody else's tool writes diagnostics to, and guessing wrong loses
+  failures in silence. Agent-facing terseness comes from the `-quiet` task
+  variants, never from output filtering.
 - **hk-drives-the-hooks** — `hk.pkl` is the one home for every hook step; `mise run
   check`/`fmt` are thin wrappers over `hk check`/`hk fix --all`, so no step is spelled
   twice. `mise run hk-install` is human-gated (it writes the shared `.git/config`).
@@ -1032,7 +1052,14 @@ no task covers, and consider adding the task instead.
   `kani` RAM bound is pinned ABOVE `verify/src/kani.rs`'s own per-harness
   `ADDRESS_SPACE_CAP_KB`, by a test, because a bound under the cap passes a machine the
   first harness cannot fit on. `DORC_PREFLIGHT=skip` is the escape hatch and says so in
-  its own output: emergencies only.
+  its own output: emergencies only. The workspace cache's warm/cold WITNESS is the
+  PRODUCT binary `debug/dorc`, never `debug/` itself — the probe's own
+  `cargo run -p internal-tooling` creates the directory before preflight executes,
+  which made the cold branch unreachable; a witness the probe can create for itself is
+  not a witness. And `mise run both <heavy>` is ORDER-DEPENDENT on this box: the WSL
+  leg's build cache inflates `vmmemWSL` (no `.wslconfig`, no auto-reclaim), and the
+  Windows leg's RAM probe then reads that unreturned cache as pressure — run the
+  Windows leg first, or expect a genuine refusal naming the wrong culprit.
 - **doctor-inventories-never-reaps** — `mise run doctor` is the read-only answer to
   "what is eating the disk": every registered worktree with size and clean/dirty/locked
   state, this leg's target dir broken down, and the `dorc-*` lane caches. It DELETES

@@ -560,6 +560,7 @@ run = "cargo run -q -p internal-tooling -- prose-census"
 [tasks."xfail:census"]
 description = "INSTRUMENT: every live xfail pin grouped by round horizon, with its greening trigger — 'what is owed, and by when' in one screen. The GATE is the `xfail_census` unit test, which shares this renderer; expiry is measured against xfail.rs's CURRENT_ROUND, which a conductor bumps at round-open."
 dir = "spike"
+raw = true
 run = "cargo run -q -p internal-tooling -- xfail-census"
 
 [tasks.coverage]
