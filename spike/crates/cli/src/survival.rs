@@ -1020,6 +1020,8 @@ pub fn survival_diagnostics(
             &mut arena,
             &mut degrades,
             &mut verdict_lane,
+            // The HINT lane licenses nothing, so its trip latch is its own and goes nowhere.
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             // The HINT lane reads ambiently: narrating a shape whose license the positional
             // regime withholds is the aid plane failing safe (`two-plane-aid-law`).
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),

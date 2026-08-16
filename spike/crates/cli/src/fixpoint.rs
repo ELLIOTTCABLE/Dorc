@@ -182,6 +182,12 @@ fn reaches(
 }
 
 /// Classify the residual model named by `erased` (round 1 passes the empty overlay).
+///
+/// `trip` is the RUN-WIDE latch (`302:rul-certifier-trip-guard-only`), threaded rather than
+/// returned per round on purpose: intermediate rounds are never observed
+/// (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`), so a round-2 reach failure would be
+/// invisible to any consumer reading only the settled round — and a trip anywhere in the spine
+/// disqualifies the whole spine.
 #[must_use]
 pub fn classify_round(
     frozen: &FrozenModel<'_>,
@@ -190,6 +196,7 @@ pub fn classify_round(
     arena: &mut ProvArena,
     degrades: &mut BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_oracle::predict::TopReason>,
     verdict_lane: &mut BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    trip: &mut dorc_analysis::certify::CertifierTrip,
 ) -> ClassifiedRound {
     let (
         classified,
@@ -212,6 +219,7 @@ pub fn classify_round(
         arena,
         degrades,
         verdict_lane,
+        trip,
         frozen.live,
     );
     ClassifiedRound {
@@ -267,6 +275,14 @@ fn validity_view(
 /// rcs are already measured, merely withheld. This consumes measurements in hand; it never
 /// asks a host anything, and `probe` is the frozen origin artifact throughout.
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the frozen model, the probe, the records, the origin round and the cap are the \
+              fixpoint's inputs; the interner, the arena and the certifier-trip latch are the \
+              three run-scoped accumulators it borrows. Bundling the accumulators into a context \
+              struct would hide exactly which of them the loop may write, which is the property \
+              the-fixpoint-owns-the-rounds-and-builds-nothing-else keeps visible"
+)]
 pub fn settle_validity_fixpoint(
     frozen: &FrozenModel<'_>,
     probe: &dorc_plan::ProbePlan,
@@ -275,6 +291,7 @@ pub fn settle_validity_fixpoint(
     cap: u32,
     interner: &mut Interner,
     arena: &mut ProvArena,
+    trip: &mut dorc_analysis::certify::CertifierTrip,
 ) -> SettledFixpoint {
     let mut ledger = dorc_plan::erase::ErasureLedger::new();
     let origin_validity = validity_view(&origin.classes);
@@ -322,6 +339,7 @@ pub fn settle_validity_fixpoint(
                 arena,
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                trip,
             );
             let validity = validity_view(&round.classes);
             let (by_fact, mut merge_narrative, collapsed) =
@@ -352,6 +370,7 @@ pub fn settle_validity_fixpoint(
             arena,
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
+            trip,
         );
     }
 }

@@ -22,7 +22,7 @@
 //! apply-slice. Here the only conservative direction is "when unsure ⇒ `Opaque`
 //! ⇒ not ambient ⇒ run", which is safe for the skip decision.
 
-use crate::certify::{SolveConsistency, solve_certified};
+use crate::certify::{CertifierTrip, SolveConsistency, solve_certified};
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph};
@@ -1323,12 +1323,14 @@ fn self_reach_pass(
     top_causes: &[Option<dorc_core::ProvId>],
     fallback_cause: dorc_core::ProvId,
     eligible: &[usize],
+    trip: &mut CertifierTrip,
 ) -> (BTreeMap<usize, bool>, SelfReachAccount) {
     let mut answers = BTreeMap::new();
     let mut account = SelfReachAccount::default();
     for &site in eligible {
         let (holds, consistency) = self_reach_holds(cfg, effects, top_causes, fallback_cause, site);
         answers.insert(site, holds);
+        trip.record(&consistency);
         if let SolveConsistency::Inconsistent(report) = &consistency {
             account.record(report);
         }
@@ -1633,6 +1635,7 @@ pub fn classify(
         arena,
         &mut BTreeMap::new(),
         &mut BTreeSet::new(),
+        &mut CertifierTrip::default(),
         crate::funcenv::LiveDefinitions::unsolved(),
     )
     .0
@@ -1697,6 +1700,7 @@ pub fn classify_with_why_diags(
     arena: &mut dorc_core::ProvArena,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
     verdict_lane: &mut BTreeSet<CfgNodeId>,
+    trip: &mut CertifierTrip,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
     Carrier<Vec<(CfgNodeId, SkipClass)>>,
@@ -1788,14 +1792,21 @@ pub fn classify_with_why_diags(
     // THE REACH FLOOR (`302` §3.4): an un-certified reaching-defs answer sends every site to
     // `SkipClass::MustRun` — the stage-0/⊤ posture, safe under both phases.
     let trust_reach = reach_consistency.is_consistent();
+    trip.record(&reach_consistency);
     let reachable = reachable_from_entry(cfg);
 
     // The self-reach population, answered ahead of the classifier so a refusal can be narrated.
     let members_sites: Vec<usize> = (0..effects.len())
         .filter(|&i| member_families[i].is_some() && trust_reach && reachable[i])
         .collect();
-    let (self_reached, self_reach) =
-        self_reach_pass(cfg, &effects, &top_causes, fallback_cause, &members_sites);
+    let (self_reached, self_reach) = self_reach_pass(
+        cfg,
+        &effects,
+        &top_causes,
+        fallback_cause,
+        &members_sites,
+        trip,
+    );
 
     if let SolveConsistency::Inconsistent(report) = &reach_consistency {
         diags.push(Diag::new_spanless_site(Code::SolverConsistencyFailure(
@@ -2406,6 +2417,7 @@ command__predict() {
                 &mut arena,
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                &mut CertifierTrip::default(),
                 crate::funcenv::LiveDefinitions::unsolved(),
             );
         assert_eq!(kills.len(), 1, "the purge is the sole kill node");
@@ -2443,6 +2455,7 @@ command__predict() {
                 &mut arena,
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                &mut CertifierTrip::default(),
                 crate::funcenv::LiveDefinitions::unsolved(),
             )
             .5

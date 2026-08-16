@@ -200,6 +200,27 @@ impl DefinitionTable {
         self.defs.iter().any(|d| d.name == name)
     }
 
+    /// How many definitions of `name` the loaded unit holds — the BODY-OCCUPANCY CENSUS
+    /// (`302:rul-certifier-trip-guard-only`).
+    ///
+    /// Occupancy 1 is the whole question the certifier-trip cleanup asks of a guard, and the
+    /// reason it can be asked at all is that this table is built by a plain syntactic walk over
+    /// the parsed inputs (`dorc_cli::world::definition_table`) with no solve anywhere in it — so a
+    /// trip, which disqualifies the solver and the certifier together, leaves it standing. At
+    /// occupancy 1 a guard's body identity was never analysis-CHOSEN: the positional gate can
+    /// still withhold (⇒ no vouch ⇒ no guard) or, at worst, name a body the shell has not defined
+    /// yet, and a guard that cannot run its check exits non-zero and falls through to the
+    /// author's own bytes. At occupancy ≥2 a wrong choice runs somebody ELSE's judgment and can
+    /// answer 0 over a mutator that needed to run, which is the under-execute direction.
+    ///
+    /// Declarations, not distinct bodies: content-dedup would be sharper and is deliberately not
+    /// done here, because the conservative miscount costs a guard (over-execute, priority 2) while
+    /// the sharp one costs a lookup its triviality.
+    #[must_use]
+    pub fn occupancy(&self, name: &str) -> usize {
+        self.defs.iter().filter(|d| d.name == name).count()
+    }
+
     fn definitions_of_path(&self, path: &str) -> Option<&[DefId]> {
         self.by_path.get(path).map(Vec::as_slice)
     }

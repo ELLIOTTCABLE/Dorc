@@ -107,6 +107,8 @@ pub mod shim;
 
 pub mod rederive;
 
+pub mod certifier_trip;
+
 pub mod survival;
 pub use survival::{
     Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
@@ -5930,6 +5932,7 @@ apt_get__is_converged() { return 0; }
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                &mut dorc_analysis::certify::CertifierTrip::default(),
                 dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             );
         let classes = classes.value;
@@ -7190,6 +7193,7 @@ apt_get__is_converged() {
             &mut arena,
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
         let classes = classified.value;

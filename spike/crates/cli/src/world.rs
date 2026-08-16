@@ -146,6 +146,12 @@ impl WhyWorld {
             dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
         };
         let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+        // The run's own latch (`302:rul-certifier-trip-guard-only`), threaded through the same
+        // rounds the binary threads it through: a why report built over an un-demoted plan would
+        // explain elisions the run would never have emitted — a decoration, which is exactly what
+        // `one-definition-table-two-drivers` exists to prevent.
+        let mut trip = dorc_analysis::certify::CertifierTrip::default();
+        record_pre_network_trip(&mut trip, &value, &env);
         let frozen = crate::fixpoint::FrozenModel {
             cfg: &cfg.value,
             value: &value,
@@ -163,6 +169,7 @@ impl WhyWorld {
             &mut arena,
             &mut degrades,
             &mut verdict_lane,
+            &mut trip,
         );
         let classes = origin.classes.clone();
 
@@ -232,6 +239,7 @@ impl WhyWorld {
             cap,
             &mut interner,
             &mut arena,
+            &mut trip,
         );
         let cascades = crate::fixpoint::attribute_cascades(
             &cfg.value,
@@ -498,6 +506,31 @@ impl WhyWorld {
 #[must_use]
 pub fn source_file_id(idx: usize) -> dorc_core::SourceFileId {
     dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX))
+}
+
+/// Latch the run-wide trip on the two PRE-NETWORK solve seats
+/// (`302:rul-certifier-trip-guard-only`).
+///
+/// The license-plane twin of the cli's `solve_consistency_reports`, and deliberately not derived
+/// from it: a policy that read the DIAGNOSTICS would be the narrative plane feeding a decision,
+/// which `two-plane-aid-law` forbids in that direction. It also differs where it must — the report
+/// seat suppresses the funcenv line when the failure is a value-plane CASCADE, because only
+/// root-cause is reported (`271:rul-sin-ordering`), while the latch takes any real `Inconsistent`
+/// it is handed and a cascade (`EnvFloor::ValuePlaneUntrusted`) is not one.
+///
+/// On the lib seam for the same reason [`definition_table`] is: both drivers must latch by ONE
+/// rule, or the why report answers over a plan the run would not have emitted.
+pub fn record_pre_network_trip(
+    trip: &mut dorc_analysis::certify::CertifierTrip,
+    value: &dorc_analysis::value::ValueFlow,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) {
+    use dorc_analysis::funcenv::EnvFloor;
+
+    trip.record(value.consistency());
+    if let Some(EnvFloor::SolverInconsistent(consistency)) = env.floor() {
+        trip.record(consistency.as_ref());
+    }
 }
 
 /// The unit's role definitions, as DATA for the function-environment domain (`28K` §2).

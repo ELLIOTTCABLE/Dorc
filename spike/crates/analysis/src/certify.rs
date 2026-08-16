@@ -319,6 +319,36 @@ impl<L> SolveConsistency<L> {
     }
 }
 
+/// The run-wide trip latch (`302:rul-certifier-trip-guard-only`) — "a solve-certifier tripped
+/// somewhere in this analysis spine".
+///
+/// ONE boolean, scoped per (host, plan) pair — width-one today, so the run. A trip means the
+/// solver and the certifier DISAGREE, and the pair shares substrate (`Eq`, canonical forms, the
+/// transfer model), so the disagreement disqualifies BOTH and neither may testify afterward: the
+/// terminal cleanup pass demotes every elision-family outcome in the scope to run. That policy is
+/// layered ABOVE the `302` §3 consumer floors, which are unchanged and still fire in place — a
+/// terminal pass cannot un-ship a wrong pinned body, so mid-pipeline safety stays where it was.
+///
+/// MONOTONE by construction: [`record`](Self::record) only ever sets, nothing clears, and the only
+/// way to set it is to hand it a real [`SolveConsistency`] — whose two mints are lexically fenced
+/// to the checker (`the_outcome_has_exactly_one_mint`), so a trip cannot be forged into existence
+/// any more than it can be argued away.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CertifierTrip(bool);
+
+impl CertifierTrip {
+    /// Latch this spine on one solve's outcome. Consistent answers leave it alone.
+    pub fn record<L>(&mut self, consistency: &SolveConsistency<L>) {
+        self.0 = self.0 || !consistency.is_consistent();
+    }
+
+    /// Did any solve in this spine fail its own post-fixpoint check?
+    #[must_use]
+    pub fn tripped(self) -> bool {
+        self.0
+    }
+}
+
 /// Certify one solved system against `302` §1's two inequality families.
 ///
 /// 1. **boundary, all nodes**: `∀ n: init[n] ⊑ state[n]`. Checking EVERY node — not only entries —

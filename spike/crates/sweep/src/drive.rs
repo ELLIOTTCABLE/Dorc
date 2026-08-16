@@ -45,6 +45,14 @@ use crate::scenario::{DeclaredScenario, GroundTruth};
 /// can't-probe ⇒ can't-elide gate), lift the footprints under the flag, then build the walled
 /// plan with `observe` sourced from `s0` through the probe's `checks_fact` gate.
 #[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the kernel's value IS its linearity — it mirrors the cli edge stage for stage, and \
+              each stage's comment says which cli seat it stands in for. Extracting a stage would \
+              hide the mirror, which is the only thing making a differential net over this crate \
+              mean anything. It sat exactly at the cap until the certifier-trip latch (`302`) \
+              added one argument line"
+)]
 pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut Interner) -> Plan {
     let parsed = dorc_syntax::parse(&declared.book_sh);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -77,6 +85,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &mut arena,
             &mut std::collections::BTreeMap::new(),
             &mut BTreeSet::new(),
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             ambient,
         );
     let classes = classified.value;

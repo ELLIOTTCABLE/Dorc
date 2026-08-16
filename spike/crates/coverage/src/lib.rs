@@ -508,6 +508,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &mut arena,
         &mut BTreeMap::new(),
         &mut std::collections::BTreeSet::new(),
+        &mut dorc_analysis::certify::CertifierTrip::default(),
         // An INSTRUMENT, never a gate: reach is measured ambiently (`28K` §2).
         dorc_analysis::funcenv::LiveDefinitions::unsolved(),
     );

@@ -82,7 +82,9 @@ use dorc_cli::survival::{
     collect_resolver_coords, dangling_diagnostics, entity_text_of, expand_footprints_via_reaches,
     lift_touches_sets, merge_derived_footprints, resolve_touches_footprint, ship_touches_body,
 };
-use dorc_cli::world::{definition_table, ship_predict_body, ship_verdict_body, source_file_id};
+use dorc_cli::world::{
+    definition_table, record_pre_network_trip, ship_predict_body, ship_verdict_body, source_file_id,
+};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
@@ -866,6 +868,11 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // timescales), and the plan that follows is the honest floor rather than nothing.
     let (consistency_diags, consistency_narrative) = solve_consistency_reports(&value, &env);
     report_at(advisory, "solve", book_source, &consistency_diags);
+    // `302:rul-certifier-trip-guard-only` — ONE latch per analysis spine, opened at the first
+    // seat that can set it and carried to the terminal cleanup below. The two pre-network solves
+    // record here; every classify round (origin and fixpoint alike) records its own.
+    let mut trip = dorc_analysis::certify::CertifierTrip::default();
+    record_pre_network_trip(&mut trip, &value, &env);
     let shadow_narrative = shadow_narratives(&shadows, &definitions);
     for (file, diags) in shadow_diagnostics(&shadows, &definitions, &source_paths, &source_refs) {
         let source = source_paths
@@ -986,6 +993,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         &mut arena,
         &mut degrades,
         &mut verdict_lane,
+        &mut trip,
     );
     let classes = origin.classes.clone();
     let kills = origin.kills.clone();
@@ -1406,6 +1414,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         fixpoint_cap,
         &mut interner,
         &mut arena,
+        &mut trip,
     );
     debug_assert!(
         !settled.capped,
@@ -5485,6 +5494,7 @@ apt_get__predict() {
             &mut arena,
             &mut BTreeMap::new(),
             &mut BTreeSet::new(),
+            &mut dorc_analysis::certify::CertifierTrip::default(),
         );
         let probe = {
             let ship = |n, p, a: &[Symbol]| {
@@ -5520,6 +5530,7 @@ apt_get__predict() {
             cap,
             &mut interner,
             &mut arena,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
         )
     }
 

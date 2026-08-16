@@ -407,6 +407,13 @@ pub enum DemoteTag {
     /// (`300:lane-sparing-rederivation`). Our own two implementations of one algebra disagreed, so
     /// the site takes the guard/run floor — never the book's fault, and never a widening.
     RederivationDisagreement,
+    /// A solve-certifier tripped somewhere in this run's analysis spine, so the terminal cleanup
+    /// evicted every elision-family outcome in the scope (`302:rul-certifier-trip-guard-only`).
+    /// A REASON ARM rather than a sibling code (`28L:rul-reason-enums-not-sibling-codes`): it is
+    /// the same event as its neighbours — a site that would have skipped now runs — reached for a
+    /// different world-reason. Also the arm a demoted GUARD wears, since a guard whose family is
+    /// not census-unique loses its body identity to the same disqualification.
+    CertifierTripped,
 }
 
 /// Why the leaf-exact render refused to elide/guard a licensed leaf (c8). `render-heredoc-refused`

@@ -393,6 +393,7 @@ apt_get__predict() {
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
                 &mut BTreeSet::new(),
+                &mut dorc_analysis::certify::CertifierTrip::default(),
                 dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             );
         Model {
