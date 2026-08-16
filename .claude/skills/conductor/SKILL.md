@@ -78,6 +78,22 @@ forbid deviation — builders do sometimes make good calls, and the correction
 belongs in your aftermath review, which is the core of conducting. Mild
 skepticism of their reasoning; full trust in their reports.
 
+## Steering-prose authorship (the expensive files)
+
+High-blast-radius markdown — `spike/CLAUDE.md`, the crate `CLAUDE.md`s,
+AGENTS-tier steering prose, the skills — is CONDUCTOR-authored, always. The
+reason is cost: these files sit in every future subagent's context-window,
+forever — every line is re-billed, in money and attention and wallclock, on
+every dispatch — so they must carry only what is critical, and must never
+accrete at the whim of whichever builder happened to be passing. Builders
+surface the need and PROPOSE text in their reports (a proposed bullet is a
+welcome deliverable); the conductor holds both the JUDGMENT seat (is this worth
+a permanent seat in every context? which file does it belong in?) and the
+EDITORIAL-CRITIC seat (make it tiny, focused, effective), and issues the final
+edit once, in conductor voice, when the fold has all the information in hand.
+The no-churn laws stand: the edit is worth getting right, once — and it is
+worth a Fable-token Edit to do so.
+
 ## Reading-guide
 
 You should basically *always* have these documents fully in-context - do not
