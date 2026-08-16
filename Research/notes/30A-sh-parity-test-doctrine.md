@@ -29,12 +29,19 @@
 - **d3-xfail-with-named-greening** — target behavior the engine does not yet
   implement is pinned as a FAILING test wearing its greening trigger, via a small
   unit-tier helper (build it in this lane, once, shared):
-  `xfail_until(trigger, date_estimate, || { …assert TARGET… })` — the suite
+  `xfail_until(trigger, horizon, || { …assert TARGET… })` — the suite
   PASSES while the inner assertion fails, and goes LOUDLY RED (XPASS-to-promote,
   the e2e lens's semantics) the moment the target behavior arrives, so a pin can
   never green silently. `trigger` is a named lane/stage slug (semantic names, never
-  bare stage-N); `date_estimate` is the human-facing greening date. A census test
-  enumerates every live xfail pin with its trigger and date so
+  bare stage-N); `horizon` is a ROUND marker, never a calendar date [human-nacked
+  2026-08-16 — LLM date-estimates are worthless; the round cadence is the
+  project's real clock]: `end-of-r30`, `r31`, or a stage-within-round
+  (`r31:closure-custody`). ENFORCEMENT: the census seat carries a one-line
+  `CURRENT_ROUND` const, bumped by conductors at round-open; a pin whose horizon
+  round has PASSED goes red in the census until explicitly re-horizoned with a
+  reason string (a reviewed edit) or greened — the "wait, why isn't this done"
+  question, forced mechanically at every round boundary. A census test
+  enumerates every live xfail pin with its trigger and horizon so
   `mise run test -- xfail_census` answers "what is owed, and by when" in one
   screen. Never express an xfail by asserting the WRONG behavior as if desired —
   the interim behavior may additionally be pinned, but only in a test whose name
