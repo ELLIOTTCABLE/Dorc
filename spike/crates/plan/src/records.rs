@@ -33,6 +33,7 @@ use dorc_aid::diag::{
     RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
     RecordsTornLine,
 };
+use dorc_core::influence::{HostReported, Influenced};
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::ops::Range;
@@ -947,12 +948,15 @@ enum TypedHostRecord {
 }
 
 /// Compare bounded bytes with expected framing; a match grants no attribution.
+///
+/// The admitted value is INFLUENCE-GRADED (`306b` §1): this is the edge where host-produced bytes
+/// become anything else, so it is where the grade is minted and the only place it may be.
 #[must_use]
 pub fn admit_unscoped_host_records(
     bytes: &BoundedHostBytes,
     expected: &Framing,
     limits: HostEvidenceLimits,
-) -> Admission<AdmittedUnscopedHostRecords> {
+) -> Admission<Influenced<HostReported, AdmittedUnscopedHostRecords>> {
     let Some(bytes) = bytes.admitted_bytes() else {
         return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
     };
@@ -967,7 +971,7 @@ fn admit_records(
     bytes: &[u8],
     expected: &Framing,
     limits: HostEvidenceLimits,
-) -> Admission<AdmittedUnscopedHostRecords> {
+) -> Admission<Influenced<HostReported, AdmittedUnscopedHostRecords>> {
     if bytes.is_empty() || std::str::from_utf8(bytes).is_err() {
         return Admission::Refused(AdmissionRefusal::InvalidUtf8);
     }
@@ -1113,10 +1117,13 @@ fn admit_records(
     if records.is_empty() {
         return Admission::NoObservation;
     }
-    Admission::Admitted(AdmittedUnscopedHostRecords {
+    // THE ONE INFLUENCE MINT (`306c` §2). Host bytes become typed records exactly here, so this is
+    // the seat; a second `host_reported(` anywhere in the workspace is the regression, and
+    // `the_influence_grade_has_exactly_one_mint` fails if one appears.
+    Admission::Admitted(Influenced::host_reported(AdmittedUnscopedHostRecords {
         records,
         wire: bytes.to_vec(),
-    })
+    }))
 }
 
 fn parse_header(
@@ -1915,13 +1922,19 @@ mod tests {
         );
     }
 
+    /// Admit, and drop the influence grade: these assertions are about the GRAMMAR, and the grade
+    /// has its own pins (`the_influence_grade_has_exactly_one_mint`, `core::influence`'s doctests).
     fn admitted(raw: &str, limits: HostEvidenceLimits) -> Admission<AdmittedUnscopedHostRecords> {
         let framing = Framing::spike("bk".to_owned());
         let bytes = match read_host_evidence(raw.as_bytes(), limits) {
             Admission::Admitted(bytes) => bytes,
             other => panic!("test input must pass the byte reader: {other:?}"),
         };
-        admit_unscoped_host_records(&bytes, &framing, limits)
+        match admit_unscoped_host_records(&bytes, &framing, limits) {
+            Admission::Admitted(graded) => Admission::Admitted(graded.into_read().0),
+            Admission::NoObservation => Admission::NoObservation,
+            Admission::Refused(reason) => Admission::Refused(reason),
+        }
     }
 
     fn strict_limits() -> HostEvidenceLimits {
@@ -2035,6 +2048,60 @@ mod tests {
                 declared: 5,
                 unseen: 2,
             })
+        );
+    }
+
+    /// THE ONE-MINT FENCE (`306c` §2). `Influenced::host_reported` is the seat where host-produced
+    /// bytes acquire their grade; a second minting site is the named regression, and no type can
+    /// privilege one crate over another here, so the fence is lexical.
+    ///
+    /// Non-vacuous in both directions: the walk must find files, the needle must be found where it
+    /// IS allowed (so a rename reddens rather than passing silently), and nowhere else. The
+    /// defining module in `core` is excluded because that is where the constructor lives.
+    #[test]
+    fn the_influence_grade_has_exactly_one_mint() {
+        let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("crates dir");
+        let mut minters: Vec<String> = Vec::new();
+        let mut scanned = 0usize;
+        let mut stack = vec![crates.to_path_buf()];
+        while let Some(dir) = stack.pop() {
+            for entry in std::fs::read_dir(&dir)
+                .expect("readable crates dir")
+                .flatten()
+            {
+                let path = entry.path();
+                if path.is_dir() {
+                    if path.file_name().is_some_and(|name| name == "target") {
+                        continue;
+                    }
+                    stack.push(path);
+                } else if path.extension().is_some_and(|extension| extension == "rs") {
+                    scanned = scanned.saturating_add(1);
+                    let source = std::fs::read_to_string(&path).unwrap_or_default();
+                    if source.contains("Influenced::host_reported(")
+                        || source.contains("::<HostReported, ()>::host_reported(")
+                    {
+                        minters.push(path.display().to_string().replace('\\', "/"));
+                    }
+                }
+            }
+        }
+        assert!(
+            scanned > 0,
+            "the mint fence scanned no files — fix the walk"
+        );
+        minters.sort();
+        minters.retain(|path| !path.ends_with("core/src/influence.rs"));
+        assert_eq!(
+            minters.len(),
+            1,
+            "exactly one influence mint outside its defining module; found {minters:?}"
+        );
+        assert!(
+            minters[0].ends_with("plan/src/records.rs"),
+            "the sole mint is the records admission edge; found {minters:?}"
         );
     }
 

@@ -13,6 +13,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
+use dorc_core::influence::{InfluencePhase, Influenced};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Verdict};
 use dorc_plan::invocation::book_digest;
 use dorc_plan::records::{
@@ -157,16 +158,22 @@ impl WidthOneAttemptScope {
     }
 }
 
-/// Keeps controller attribution attached while live evidence participates in planning.
+/// Keeps controller attribution attached while live evidence participates in planning, and — since
+/// `306b` §1 — the influence phase beside it.
 #[derive(Debug)]
 pub struct ScopedHostEvidence<T> {
     scope: WidthOneAttemptScope,
     value: T,
+    influence: InfluencePhase,
 }
 
 impl<T> ScopedHostEvidence<T> {
-    fn new(scope: WidthOneAttemptScope, value: T) -> Self {
-        Self { scope, value }
+    fn new(scope: WidthOneAttemptScope, value: T, influence: InfluencePhase) -> Self {
+        Self {
+            scope,
+            value,
+            influence,
+        }
     }
 
     /// The typed value this attribution is attached to.
@@ -180,6 +187,24 @@ impl<T> ScopedHostEvidence<T> {
         self.scope.retain();
         &self.scope
     }
+
+    /// Where this run stands relative to host contact (`306b` §1b). In-memory only, decision-inert,
+    /// and carried no further than the decision plane — nothing persists it.
+    #[must_use]
+    pub fn influence(&self) -> InfluencePhase {
+        self.influence
+    }
+}
+
+/// The phase every attempt that reached for host bytes stands at, for the paths that hold no
+/// graded carrier of their own: a well-owned attempt that produced nothing, and a replay.
+///
+/// Built by WIDENING (free, one-way — `306b` §1a), never by a second intake mint. Over-claiming
+/// influence is the conservative direction on this axis, and both paths earn it honestly: whether
+/// bytes arrived at all is host-determined (`306b` §1b names arrival a channel), and a durable's
+/// contents are host-shaped by construction.
+fn influence_after_reaching_for_host_bytes() -> InfluencePhase {
+    Influenced::authored_before_contact(()).widen()
 }
 
 /// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —
@@ -713,11 +738,17 @@ pub fn admit_controller_records(
 ) -> Admission<ScopedRecords> {
     let scope = WidthOneAttemptScope::new(framing, sources);
     match admit_unscoped_host_records(bytes, framing, HostEvidenceLimits::spike_default()) {
-        Admission::Admitted(records) => {
-            let results = parse_admitted_results(&records, clock, interner);
+        Admission::Admitted(admitted) => {
+            // The grade rides the CONVERSION rather than being re-asserted on the far side, which
+            // is what lets the one intake mint serve the whole bytes → records → results chain.
+            let results = admitted.map(|records| parse_admitted_results(records, clock, interner));
+            let (results, influence) = results.into_read();
+            // The durable takes the RECORDS, never the grade: persisting a grade is durable
+            // enrichment, deliberately out of v0 (`306c` §2's scope fence).
+            let (records, _) = admitted.into_read();
             Admission::Admitted(ScopedRecords {
                 records,
-                scoped: ScopedHostEvidence::new(scope, results),
+                scoped: ScopedHostEvidence::new(scope, results, influence),
             })
         }
         Admission::NoObservation => Admission::NoObservation,
@@ -776,6 +807,7 @@ pub fn no_observation(scope: WidthOneAttemptScope) -> ScopedHostEvidence<SiteRes
             framed: true,
             ..SiteResults::default()
         },
+        influence_after_reaching_for_host_bytes(),
     )
 }
 
@@ -796,7 +828,7 @@ pub fn replayed_records(
         },
         |records| parse_admitted_results(records, clock, interner),
     );
-    ScopedHostEvidence::new(scope, results)
+    ScopedHostEvidence::new(scope, results, influence_after_reaching_for_host_bytes())
 }
 
 // ---- moved verbatim from `main.rs` (the records fold + its probe-origin mint) ----

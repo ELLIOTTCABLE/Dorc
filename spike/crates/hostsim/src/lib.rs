@@ -1566,9 +1566,14 @@ grep__predict() {
             Admission::Refused(refusal) => Admission::Refused(refusal),
         };
         let clean_records: BTreeSet<String> = match admit(&clean) {
-            Admission::Admitted(records) => {
-                records.iter().map(|record| format!("{record:?}")).collect()
-            }
+            // The grade is dropped here on purpose: this DST is about the byte-tier safe direction,
+            // and the grade carries its own pins.
+            Admission::Admitted(records) => records
+                .read()
+                .0
+                .iter()
+                .map(|record| format!("{record:?}"))
+                .collect(),
             other => panic!("clean stream must admit: {other:?}"),
         };
         assert!(
@@ -1594,7 +1599,7 @@ grep__predict() {
                             || matches!(
                                 &d,
                                 Admission::Admitted(records)
-                                    if records.iter().all(|record| clean_records.contains(&format!("{record:?}")))
+                                    if records.read().0.iter().all(|record| clean_records.contains(&format!("{record:?}")))
                             ),
                         "seed {seed} ({class:?}): fabricated a record outside the clean set: {d:?}",
                     );

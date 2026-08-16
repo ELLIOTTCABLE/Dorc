@@ -789,6 +789,9 @@ pub fn admit_unscoped_whylog_replay(
         return Admission::Refused(AdmissionRefusal::ArithmeticOverflow);
     };
     match admit_unscoped_host_records(&inner, expected, inner_limits) {
+        // The replay's influence phase is re-derived at the cli edge rather than threaded through
+        // this type: a durable carries no grade (persisting one is `306b` §3a/§3b, deliberately
+        // unbuilt), and re-deriving it there lands on the same conservative answer.
         Admission::Admitted(records) => Admission::Admitted(AdmittedUnscopedWhylogReplay {
             claims: envelope.claims,
             mode: envelope.mode,
@@ -796,7 +799,7 @@ pub fn admit_unscoped_whylog_replay(
             oracle_sources: envelope.oracle_sources,
             argv: envelope.argv,
             apply: envelope.apply,
-            records,
+            records: records.into_read().0,
         }),
         Admission::NoObservation => Admission::NoObservation,
         Admission::Refused(reason) => Admission::Refused(reason),
@@ -1601,7 +1604,7 @@ mod tests {
         else {
             return Err(WhylogWriteRefusal::Grammar);
         };
-        let write = WhylogV2Write::new(&metadata, &records);
+        let write = WhylogV2Write::new(&metadata, records.read().0);
         try_serialize_v2(&write, limits)
     }
 
@@ -1685,7 +1688,7 @@ mod tests {
         ) else {
             panic!("direct nested records")
         };
-        assert_eq!(replay.records, direct);
+        assert_eq!(replay.records, direct.into_read().0);
     }
 
     #[test]
@@ -1954,7 +1957,7 @@ mod tests {
         ) else {
             panic!("the valid replay site record admits")
         };
-        assert_eq!(replay.records, direct);
+        assert_eq!(replay.records, direct.into_read().0);
 
         assert!(matches!(
             crate::records::read_host_evidence(doc.raw_results.as_bytes(), smaller_inner),
