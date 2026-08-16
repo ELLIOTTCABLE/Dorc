@@ -159,20 +159,18 @@ $ dorc --book=book.sh -o package.oracle.sh --risk-faultless-skips < probe-result
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=487acdeeeba54c16ac3ab4cf40c6801ac5dda40c30d4856d265c17be28d60d54 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Package:oldpkg@installed
-apt_get__predict() {
+apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
-   pkg="$1"
-   if [ "${2-}" = "" ]; then
-      case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-      esac
-   fi
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
 }
-apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+apt_get__is_converged 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Package:nginx@installed
-apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # dorc derivation-probe (read-only, 24E section 2): payload-bound footprints the static
 # tracer could not resolve. Each escalated wall-candidate ships its touches() body
 # strip-only; when run it prints its footprint coordinates, re-keyed per site:

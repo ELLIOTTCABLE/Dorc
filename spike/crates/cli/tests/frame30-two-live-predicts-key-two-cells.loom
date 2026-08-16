@@ -105,23 +105,15 @@ $ dorc --book=book.sh -o widget.oracle.sh < probe-results.txt
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=aa7202f633ea0a4e7d6ad1ce1f41bae94fb57c2e61d9f523206c7bf6ed039cf4 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Service:alpha@active
-widget__predict() {
+widget__is_converged() {
    verb=$1; shift
-   svc="$1"
    case $verb in
-      sync) widget probe --svc "$svc" ;;
+      sync) widget query --pkg "$1" ;;
    esac
 }
-widget__predict 'sync' 'alpha'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+widget__is_converged 'sync' 'alpha'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Package:alpha@installed
-widget__predict() {
-   verb=$1; shift
-   pkg="$1"
-   case $verb in
-      sync) widget query --pkg "$pkg" ;;
-   esac
-}
-widget__predict 'sync' 'alpha'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+widget__is_converged 'sync' 'alpha'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

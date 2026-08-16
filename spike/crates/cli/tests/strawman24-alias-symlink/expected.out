@@ -7,13 +7,12 @@
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=4c5bda41e3f58c69fa78eb73066ce9417462e6ede6ac337b24ea2ef871507184 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Fs:/etc/app.conf@written
-writeconf__predict() {
-   path="$1"
-   conf-exists "$path"
+writeconf__is_converged() {
+   conf-exists "$1"
 }
-writeconf__predict '/etc/app.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+writeconf__is_converged '/etc/app.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Fs:/etc/app.conf.lnk@written
-writeconf__predict '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+writeconf__is_converged '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # dorc resolver-probe (read-only, 24F section 3): owner-declared identity canonicalization. Each
 # resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it
 # prints the canonical form (or a dangling marker), re-keyed by the coordinate:

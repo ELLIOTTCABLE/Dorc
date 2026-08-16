@@ -137,25 +137,24 @@ $ dorc --book=book.sh -o firewall.oracle.sh -o service.oracle.sh < probe-results
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=914975be337997f0ad39ed1dd9d0fcc309f936269de6e2551a73a5ee95ee7927 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Firewall:80/tcp@allowed
-ufw__predict() {
+ufw__is_converged() {
    verb=$1; shift
-   rule="$1"
    case $verb in
-      allow) ufw status "$rule" >/dev/null 2>&1 ;;
-      deny) ufw status "$rule" >/dev/null 2>&1 ;;
+      allow) ufw status "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
    esac
 }
-ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+ufw__is_converged 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 2: sm.dorc.Service:nginx@active
-systemctl__predict() {
+systemctl__is_converged() {
    verb=$1; shift
-   svc="$1"
    case $verb in
-      start)   systemctl is-active  -- "$svc" ;;
-      enable)  systemctl is-enabled -- "$svc" ;;
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
    esac
 }
-systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+systemctl__is_converged 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
@@ -200,7 +199,7 @@ $ dorc why 9 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh --results
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:5   reported  "sm.dorc.Service:nginx@active" (received 02:00:37, rc
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (received 02:00:37, rc
                                      0)
    * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@active holds"

@@ -154,24 +154,24 @@ $ dorc --book=book.sh -o certsync.oracle.sh -o service.oracle.sh --risk-faultles
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8827a3b2bcdce2a1a8c0cf8d228972d76f97a72e8ad7e844215d987e619bce14 sites=2 @@dorc@@\n'
 # site 0: sm.dorc.CertBundle:web1@synced
-certsync__predict() {
+certsync__is_converged() {
    verb=$1; shift
-   bundle="$1"
    case $verb in
-      push) certsync status -- "$bundle" ;;
+      push) certsync status -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
    esac
 }
-certsync__predict 'push' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+certsync__is_converged 'push' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Service:nginx@active
-systemctl__predict() {
+systemctl__is_converged() {
    verb=$1; shift
-   svc="$1"
    case $verb in
-      start)   systemctl is-active  -- "$svc" ;;
-      enable)  systemctl is-enabled -- "$svc" ;;
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
    esac
 }
-systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+systemctl__is_converged 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

@@ -7,6 +7,7 @@ fixpoint: executed
 # dorc-lang/v0.2
 # pin30-wrapped-case-bodied-in-book-verdict — the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there. MEASURED, not expected: this rode stage-i as an expected-to-flip diagnostic and did NOT flip, so `28Q` §1's asserted cause (oracle-only vectors at the wrapped seat) is REFUTED — `build_wrapped_analysis` already took the source-wide vectors before that lane began, and the wrapper-lane conversion did not move it either.
 # THE LEAD, from the corpus rather than from a hypothesis: pin28-wrapped-vouch-answers-at-a-live-site is the SAME world with the SAME sudo oracle and an in-book verdict at the same wrapped site, and it ships its check and elides. The only difference is the verdict body's SHAPE — straight-line there, case-with-decline-arm here — so the discriminator is body shape, not vector membership. The chase is banked; the behaviour is conservative (the site runs), so this is value-loss, never a license bug.
+# `28Q` §8 STAGE-0 also did not flip it, and the re-cut refutes two more candidates: the wrapped ship seat now prefers a vouching verdict over any predict and nothing moved, and this consent mark is top-level, so `tolerated_on_path` lifts it identically to pin28's for every verb. Two candidate seats remain: `evaluate_verdict`'s tracer over a case body at the PEELED argv, and `peel_book_chain`.
 hork__is_converged() {
    : safe-across user
    case "$1" in
@@ -92,7 +93,7 @@ $ dorc --book=book.sh -o sudo.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=82fc34aa65157f038b32c78f1fed291764452633a7171a83e2f861e7af8aea7b sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ba7d69414c68d9eaaa6def96dfe28ded23db86ee4f52053e6215c87cc65fc463 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
@@ -102,6 +103,7 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc-lang/v0.2
 # pin30-wrapped-case-bodied-in-book-verdict — the canonical case-bodied verdict, sited in a BOOK above its wrapped site, answers nothing there. MEASURED, not expected: this rode stage-i as an expected-to-flip diagnostic and did NOT flip, so `28Q` §1's asserted cause (oracle-only vectors at the wrapped seat) is REFUTED — `build_wrapped_analysis` already took the source-wide vectors before that lane began, and the wrapper-lane conversion did not move it either.
 # THE LEAD, from the corpus rather than from a hypothesis: pin28-wrapped-vouch-answers-at-a-live-site is the SAME world with the SAME sudo oracle and an in-book verdict at the same wrapped site, and it ships its check and elides. The only difference is the verdict body's SHAPE — straight-line there, case-with-decline-arm here — so the discriminator is body shape, not vector membership. The chase is banked; the behaviour is conservative (the site runs), so this is value-loss, never a license bug.
+# `28Q` §8 STAGE-0 also did not flip it, and the re-cut refutes two more candidates: the wrapped ship seat now prefers a vouching verdict over any predict and nothing moved, and this consent mark is top-level, so `tolerated_on_path` lifts it identically to pin28's for every verb. Two candidate seats remain: `evaluate_verdict`'s tracer over a case body at the PEELED argv, and `peel_book_chain`.
 hork__is_converged() {
    : safe-across user
    case "$1" in

@@ -7,19 +7,16 @@
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=62ec9f75dc515c6bf942e4b78294434b2311025eab03d89d43bd4b303efd2600 sites=1 @@dorc@@\n'
 # site 1: sm.dorc.Package:curl@installed
-apt_get__predict() {
+apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
-   pkg="$1"
-   if [ "${2-}" = "" ]; then
-      case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
-      esac
-   fi
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
 }
-apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
