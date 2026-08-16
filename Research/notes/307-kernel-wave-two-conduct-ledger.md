@@ -49,13 +49,30 @@
   cross-lineage convergence. Conductor hand-verified the wrapper-fold code shape
   before crediting; all remaining concrete claims batch to the burndown
   checkpoint per the human's verify-batching steer.
-- **lane-crosscheck-burndown — DISPATCHED 2026-08-16** (Opus, harness worktree,
-  branch `ai/r30-lane-crosscheck-burndown`): checkpoint-1 = the batched
-  claim-verification (read-only, hard pause) → the ruled builds
-  (`308:rul-wrapper-lane-joins-the-conversion` ·
-  `308:rul-carry-proof-is-same-definition` · pin cells · the license-chain cell ·
-  textual code fixes · the pin30 header refresh). Byte-identity binds except the
-  named new cells; the withdrawal-held case set is a STOP tripwire.
+- **lane-crosscheck-burndown — CHECKPOINT-1 ADJUDICATED, BUILD ACKED 2026-08-16**
+  (Opus, harness worktree, branch `ai/r30-lane-crosscheck-burndown`; checkpoint =
+  all thirteen claims verified, most VERIFIED as reviewed, with corrections:
+  `308f`'s constructions respelled onto the book-inline regional idiom — the
+  corpus cannot spell oracle-side sourcing; v5's withdrawal-held five are TWO
+  `contest28-*` + the two `aid/tests/*-conflict.loom` kind-owner cases +
+  `guard23-*`, and `307c`'s "contest28-* ×4" over-counted via a single-definition
+  case, `fnd-late-definition-case-is-not-plural`; the carry divergence is
+  reachable END-TO-END so the e2e cell rides). NEW at checkpoint:
+  `fnd-escalation-policy-line-is-a-second-raw-relift` (aid-plane, pre-withdrawal
+  first-wins). CHECKPOINT RULINGS [CONDUCTOR, veto-eligible]:
+  `rul-escalation-policy-consumes-withdrawn-stays-whole-unit` (frameless policy
+  disclosure keeps its whole-unit shape, its inputs become the withdrawn vectors,
+  the raw re-lift dies, carve line in code) ·
+  `rul-resolved-pair-coherence-walls` (frame-paired cross-file member mismatch on
+  dual-peel tail positions ⇒ not-a-wrapper-here ⇒ walls + narrative — composition
+  is nobody's self-contradiction, so no fail-fast; the per-file authoring-time
+  check stays) · `tc-tolerance-rides-the-verdict-not-the-shipped-body` FLAGGED
+  and DEFERRED to the stage-0 brief (the mark sits on the verdict member; the
+  as-built ship preference is what stage-0 inverts; burndown leaves
+  member-selection as built). Mechanism endorsed: WrapperSets lift+withdraw in
+  one edge constructor · two extracted resolution seats · per-site per-member
+  resolution · `try_carry` structurally loses its second definition. Expected
+  golden movement NONE outside new cells; pin30-flip = STOP.
 - **lane-influence-refusal-seams — CLOSED + FOLDED 2026-08-15** (15 commits
   rebased onto the merged conduct tip, ff'd; the `ai/main` blast-radius merge in
   the same batch; combined-tip `both gate:full-quiet` GREEN by conductor hand;
