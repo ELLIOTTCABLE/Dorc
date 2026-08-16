@@ -164,6 +164,36 @@
   doc commits) into `ai/r30-conduct` — merge, never rebase (the seams lane's
   base is an ancestor of later conduct commits; a rebase would strand it); the
   trip-policy lane needs the ruling text in-lineage.
+- **lane-definition-factoring-conversion — CHECKPOINT-1 DELIVERED + ACKED
+  2026-08-15** (read-only; branch `ai/r30-lane-definition-factoring`). Headline
+  findings, all conductor-adjudicated: **`fnd-stage-zero-is-not-built`
+  (CONFIRMED by own-hand diffstat — `356e3948` restated law only; the record
+  drifted through 28Q §8 / LIVING_STATUS / two crate CLAUDE.mds, all repaired;
+  305 §2 item 8 STRUCK from the lane; stage-0 queues as its own lane post-stage-i,
+  HUMAN SCHEDULING-ACK PENDING)** · `fnd-survival-footprint-lane-scans-forward`
+  (a live wrong-elision route: first-file-wins + no withdrawals in the disturbs
+  lane; zero corpus coverage today; fixed BY the lane's seat-9 conversion, with
+  pinning cells in the new-cell authorization) · `fnd-ship-predict-stage-is-not-
+  in-world` (open-coded composition; routes through the shared seat, in-lane) ·
+  `fnd-floor30-books-drive-the-environment-to-top` + `fnd-blessed-override-
+  carries-no-blessing` (the committed floor30 invocations exercise no frames;
+  item 9 lands as an in-memory differential + SIX new ordinary golden cells,
+  both CONFIRMED). RULED at the checkpoint [CONDUCTOR]: DefinitionId with
+  custody DERIVED not stored (one derivation seat; stage-ii re-keys one method
+  body; 28Q §1's stored-triple was PROPOSED-tier) · the
+  Unkeyed/Keyed/Ambiguous provenance + Live/Withheld/NoOpinion frame answer
+  tri-states · step-0 measure-first span-join census (join is (file,name); STOP
+  if not total) · dialect stays whole-unit byte-identical, OUT of lane
+  (`28Q` §9 pin-two-position-sparing owns the floor, sparing-mini-model-first) ·
+  the lane owns verifying the funcenv certifier floor survives `never_live`'s
+  deletion · whyworld unification included-or-explain (28Q §8's scope). BUILD
+  phase authorized.
+- **lane-stage-zero-ship-seam** — QUEUED (new; the drift discovery above): the
+  actual verdict-primacy re-cut per `28Q` §8 stage-0 as written, incl. its
+  retroactive records-diff audit and the four 19A comment rips. Slot: after the
+  stage-i fold, sequencing subject to the human's ack (it is a deliberate
+  behavior change outside every byte gate; the crosscheck ordering question —
+  before or after `gate-adversarial-crosscheck-stage-i` — is part of the ask).
 - **lane-snapshot-emission** — QUEUED behind the stage-i fold (which now includes
   the crosscheck gate + burndown above). Rulings already banked (`28Q` §8
   stage-emission-snapshot-transplant; the fixtures lane's sibling-frames munge

@@ -478,8 +478,15 @@ Every stage additionally inherits the checker gates (`notes/300` §2) — certif
 sparing re-derivation green over the full corpus, both planes' votes — alongside its
 own byte-identity gate.
 
-- **stage-0-ship-seam** (the verdict-primacy re-cut; a deliberate behavior change,
-  deliberately OUTSIDE stage-i's byte-identity gate): invert the ship-seat preference —
+- **stage-0-ship-seam** — **NOT YET BUILT** (record drift discovered 2026-08-15:
+  the commit read as stage-0's landing, `356e3948 (AI dsn re) Restate the
+  ship-seam lane law under verdict-primacy`, restated LAW ONLY — zero behavior;
+  the two crate-CLAUDE.md "built" bullets and LIVING_STATUS propagated the drift;
+  evidence `307:fnd-stage-zero-is-not-built`, incl. the pin28 transcript still
+  shipping the predict at a vouched split-family site. QUEUED as its own lane
+  after stage-i; scheduling ack pending) — (the verdict-primacy re-cut; a
+  deliberate behavior change, deliberately OUTSIDE stage-i's byte-identity
+  gate): invert the ship-seat preference —
   at a vouched site the verdict body ships and measures (via its own marks or the
   auto-cell); the predict's argparse/cells keep feeding the static concern topology
   unchanged; ship-predict-alone stays licensed only where elision is already statically
@@ -487,8 +494,8 @@ own byte-identity gate.
   `pin28-split-family-lane-separation` (the verdict body now runs — the monologue
   restored). Gate: churn confined to probe-artifact bytes/records plus the flipped
   fixture; site OUTCOMES byte-stable across the corpus (an outcome move is a finding,
-  never churn). RETROACTIVE fold audit (stage-0 is built; `28R` found the outcome gate
-  blind to this class): a records/fact-set diff over the corpus — site outcomes can
+  never churn). RETROACTIVE fold audit (runs at stage-0's OWN fold, whenever it
+  lands; `28R` found the outcome gate blind to this class): a records/fact-set diff over the corpus — site outcomes can
   hold while a named predict cell silently becomes an unmeasured auto-cell, and
   backings, survival, and why-chains consume those records; a lost measurement is a
   finding.

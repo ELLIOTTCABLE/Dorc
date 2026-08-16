@@ -31,7 +31,12 @@ MERGED (`302:rul-certifier-trip-guard-only` + two FORFEITS rows). Combined-tip
 definition-factoring CONVERSION (`notes/305` VERBATIM; checkpoint-paused,
 dispatched) → the stage-i fold gated behind a 2×Fable+2×Sol adversarial
 crosscheck (kit: quarantine `308a`; reports 308b–e; synthesis notes/308) + its
-burndown → snapshot-emission. **`plans/309` (Spine reification ×
+burndown → snapshot-emission. **DISCOVERED at the conversion checkpoint
+(`307:fnd-stage-zero-is-not-built`, conductor-verified): 28Q's stage-0
+(verdict-primacy re-cut) was NEVER BUILT — its "landing" commit restated law
+only; the drift propagated through 28Q §8, this file, and two crate CLAUDE.mds
+(all now corrected); stage-0 QUEUES as its own lane after stage-i, human
+scheduling-ack pending.** **`plans/309` (Spine reification ×
 influence-unification) is MINTED, draft pre-ack** — the §3a report-only re-plan
 lives there; build post-crosscheck, before world-scopes design. `ai/main` is the
 human's active workspace (sibling conductor); every fold lands on conduct;
