@@ -132,7 +132,20 @@
   still registered (human-attention; the resource-safety one holds SyncThing
   conflict files, human-owned).
 
-## §2b — The spine×influence unification (design-bank; human-led, in-flow)
+## §2b — The Spine×influence unification (design-bank; human-led, in-flow)
+
+[TYPED 2026-08-15, naming] **`Spine`** is the type-name for the global in-memory
+everything-hangs-off-it structure ("the whylog" was ambiguous — some content is
+in-memory-only and deliberately never durable; the literal `.whylog` is ONE view
+over Spine, very closely tracked but lossy). Vocabulary from here: `Spine` = the
+structure; `.whylog` = its durable projection; `rul-whylog-is-the-spine` keeps its
+minted name as a ruling-slug only. Round-recast [TYPED, human]: "reify Spine;
+abstract Plan out of it and render Plan from Spine as a lossy transformation;
+install the 306 accounting into Spine" — conductor complexity-audit presented
+in-chat (the six enumerated costs: hidden-decision hoisting audit ·
+migration-era double-path drift gates · authority-exit enumeration for §4b ·
+Spine cap/purity laws · the durable-touching half stays behind the human's
+explicit review (tripwire) · byte-floor faithfulness of the projection).
 
 [TYPED 2026-08-15] The human NACKED routing the §3a re-plan away ("in-flow and
 important; address it here") and posed the intuition: whylog-spine and influence
