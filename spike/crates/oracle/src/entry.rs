@@ -136,6 +136,11 @@ fn first_entry_command(body: &[Stmt]) -> Option<&crate::predict::Command> {
     None
 }
 
+/// The wrapper's entry-form member suffix. `pub` for [`crate::predict::PREDICT_SUFFIX`]'s reason:
+/// the frame lookup asks the function environment for the exact NAME a lifted member was authored
+/// under, and re-spelling a suffix at the consumer is how one drifts.
+pub const ENTER_SUFFIX: &str = "__enter";
+
 /// Lift every `<provider>__enter` in `src` into a [`PredictSet`] (COMMAND-keyed like the wrapper's
 /// `predict`/`lend_map`). The consumer calls [`detect_entry_form`] per body. Same fail-soft contract as
 /// `lift_predicts`.

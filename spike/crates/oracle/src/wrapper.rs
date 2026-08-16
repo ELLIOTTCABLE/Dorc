@@ -403,6 +403,11 @@ fn is_colon_line(cmd: &Command) -> bool {
     matches!(cmd.words.as_slice(), [Word::Literal(w)] if w == ":")
 }
 
+/// The wrapper's dimension-member suffix. `pub` for [`crate::predict::PREDICT_SUFFIX`]'s reason:
+/// the frame lookup asks the function environment for the exact NAME a lifted member was authored
+/// under, and re-spelling a suffix at the consumer is how one drifts.
+pub const LEND_MAP_SUFFIX: &str = "__lend_map";
+
 /// Lift every `<provider>__lend_map` in `src` into a [`PredictSet`] (COMMAND-keyed like the
 /// wrapper's predict). The consumer calls [`derive_lend_map`] per body. Same fail-soft contract
 /// as `lift_predicts`.

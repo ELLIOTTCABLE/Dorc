@@ -55,8 +55,8 @@ pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__resolve",
     crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
     "__state_stored_only_in",
-    "__lend_map",
-    "__enter",
+    crate::wrapper::LEND_MAP_SUFFIX,
+    crate::entry::ENTER_SUFFIX,
 ];
 
 /// Split a function name into `(family base, role suffix)` iff it names a role member.

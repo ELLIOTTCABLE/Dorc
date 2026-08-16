@@ -87,8 +87,8 @@ impl FnRole {
             FnRole::Resolve => "__resolve",
             FnRole::DisturbanceReachesOnly => crate::reaches::DISTURBANCE_REACHES_ONLY_SUFFIX,
             FnRole::StateStoredOnlyIn => "__state_stored_only_in",
-            FnRole::LendMap => "__lend_map",
-            FnRole::Enter => "__enter",
+            FnRole::LendMap => crate::wrapper::LEND_MAP_SUFFIX,
+            FnRole::Enter => crate::entry::ENTER_SUFFIX,
         }
     }
 }
