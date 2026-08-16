@@ -96,32 +96,42 @@ discipline: one rule per bullet, slugged; append to the matching section.
   SILENTLY rather than failing, which is how the first cut of this shipped the wrong body.
   Oracle-only is still right for the whylog/attempt-scope record of what was LOADED; the
   survival lanes (`touches`, kind resolvers/reaches) stay oracle-only coherently among
-  themselves, and widening them is its own dispatch.
-- **one-definition-table-two-drivers** (`28K` §2) — `world::definition_table` is the ONE reader of
-  role funcdefs, and the binary and `WhyWorld` both call it: a why report answering from a different
-  function environment than the run would be a decoration, which is the failure
-  `lib-target-is-a-loom-seam` exists to prevent. `WhyWorld` sites the book's `SourceFileId` one PAST
-  the oracle vector it lifts, because that seat genuinely does not feed the book to the lifts
-  (bitem7's rename rider owns the gap) — so a site a book definition owns WITHHOLDS there rather
-  than answering from an oracle a shell would no longer call. Widening that seat to the source-wide
-  vectors is its own dispatch; siting the book id honestly is not.
-- **withdrawal-is-applied-once-never-consulted** (`28K` §1) — a contested family is removed from
-  the lifted sets (`idx`/`checks`/`verdict_sets`) at THIS edge, before `classify` sees them, so
-  the family is indistinguishable from one nobody described and no downstream seat has to
-  remember to ask. Its sites fall to `Opaque` ⇒ `MustRun` ⇒ no vouch candidate, no probe ship,
-  no license — the `erasure-is-applied-once-never-consulted` shape. Never re-plumb this as a
-  per-seat predicate: a flag every present and future consumer must remember is the surface
-  that rule exists to refuse. Known seats OUTSIDE the edge
-  (`28P:res-whyworld-and-survival-do-not-withdraw`): `WhyWorld` and `survival` lift their own
-  ORACLE-only vectors and apply NEITHER withdrawal — benign only while those vectors stay
-  oracle-only; widening either seat to the source-wide list must route it through this edge
-  first.
+  themselves in BOTH drivers, and widening them is its own dispatch — a separate question from
+  whether the contested withdrawal reaches them, which it does
+  (`withdrawal-is-applied-once-never-consulted`).
+- **one-definition-table-two-drivers** (`28K` §2; the seat UNIFIED at `28Q` §1's conversion) —
+  `world::definition_table` is the ONE reader of role funcdefs, and the binary and `WhyWorld` both
+  call it: a why report answering from a different function environment than the run would be a
+  decoration, which is the failure `lib-target-is-a-loom-seam` exists to prevent. `WhyWorld` now
+  lifts the SOURCE-wide vectors — oracles in load order, then the book — so the book's
+  `SourceFileId` is the LAST of them rather than one past a shorter vector, and a site a book
+  definition owns answers there exactly as it does in the run. The interim shape (oracle-only
+  vectors, the book sited one past them, book-owned sites withholding) is RETIRED: it was safe and
+  agreed with the binary only by the coincidence that nothing in the corpus resolved a locus to a
+  book-sited definition. Its widening carried the obligation
+  `withdrawal-is-applied-once-never-consulted` names, and discharges it there.
+- **withdrawal-is-applied-once-never-consulted** (`28K` §1; carve CLOSED at `28Q` §1's
+  conversion) — a contested family is removed from EVERY lifted set at THIS edge, before
+  `classify` sees them, so the family is indistinguishable from one nobody described and no
+  downstream seat has to remember to ask. Its sites fall to `Opaque` ⇒ `MustRun` ⇒ no vouch
+  candidate, no probe ship, no license — the `erasure-is-applied-once-never-consulted` shape.
+  Never re-plumb this as a per-seat predicate: a flag every present and future consumer must
+  remember is the surface that rule exists to refuse. NO SEAT SITS OUTSIDE THE EDGE. Every
+  lifted vector routes through it: `idx`/`checks`/`verdict_sets` in the binary, the same three
+  in `WhyWorld` (which lifts the SOURCE-wide vectors and mints the contested fact from the same
+  two `funcenv` calls, so a why report explains the run's own world), and the survival lane's
+  `disturbs` sets through `survival::{lift_touches_sets, pair_touches_sets}` — withdrawal
+  REMOVES at-most claims, which is fewer disjointness derivations, which is less sparing, the
+  over-execute direction. Oracle-only-ness is a question about WHICH FILES a lane lifts (the
+  kind-owner trio loads from the ambient prefix by design — `vocabulary-acts-stay-ambient`; the
+  survival lane's own widening is still its own dispatch), never about whether the contested
+  fact applies to them.
 - **one-helper-index-two-lanes** (`28K` §4) — `dorc_oracle::closure::HelperIndex` is built ONCE at
   this edge, from the same source vector the bodies are sliced out of, and threaded into BOTH the
   guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /
   `ship_verdict_body` / `ship_predict_stage`). Building it per site would re-parse every source per
   site and, worse, leave two copies of the resolution rule to drift — the failure
-  `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` records for the role lane. The
+  `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` records for the role lane. The
   SURVIVAL/kind lanes (`touches`, resolvers, reaches) still ship closure-less bodies; widening them
   is its own dispatch, exactly as widening them to the source-wide vectors is.
 - **helper-conflicts-report-at-the-load-edge** — `helper_conflict_diagnostics` mints one
