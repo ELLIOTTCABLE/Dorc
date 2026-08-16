@@ -19,7 +19,7 @@
 
 #![allow(
     dead_code,
-    reason = "one shared module, two harness binaries: the looms runner uses only its own half, so `expect` would go unfulfilled in the e2e binary that uses all of it"
+    reason = "one shared module, three test binaries: each uses only its own half, so `expect` would go unfulfilled in the e2e binary that uses all of it"
 )]
 
 use std::collections::BTreeSet;

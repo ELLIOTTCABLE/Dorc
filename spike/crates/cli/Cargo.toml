@@ -85,5 +85,12 @@ name = "looms"
 path = "tests/looms.rs"
 harness = false
 
+# The definition-factoring battery (`28Q` §1). An ordinary-harness `.rs` test, not a case
+# collection — it READS the committed corpus (dir cases and loom sections alike) and asserts
+# properties of the analysis over it, so it mints no trial per case and needs no runner.
+[[test]]
+name = "definition_frames"
+path = "tests/definition_frames.rs"
+
 [lints]
 workspace = true
