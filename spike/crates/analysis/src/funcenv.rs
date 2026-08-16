@@ -224,6 +224,50 @@ impl DefinitionTable {
     fn definitions_of_path(&self, path: &str) -> Option<&[DefId]> {
         self.by_path.get(path).map(Vec::as_slice)
     }
+
+    /// The unit-wide identity of `id` — the key every derived row this definition produced is
+    /// filed under (`28Q` §1.1; [`dorc_core::DefinitionId`]).
+    #[must_use]
+    pub fn identity_of(&self, id: DefId) -> Option<dorc_core::DefinitionId> {
+        self.get(id)
+            .map(|d| dorc_core::DefinitionId::at(d.file, d.span))
+    }
+
+    /// What a derived row lifted from `file`'s definition of `name` may be keyed by — the JOIN
+    /// between the two parsers that read every source (`28Q` §1.1).
+    ///
+    /// The dialect parser produces the ROW; `dorc_syntax` produces the DEFINITION this table holds;
+    /// and they are joined on `(file, name)`, the only thing both spell identically
+    /// (`28O:fnd-two-parsers-disagree-on-funcdefs`). The span therefore rides in from HERE and is
+    /// never reconstructed on the row side, which is what keeps the disagreement from becoming a
+    /// silent corpus-wide withhold.
+    ///
+    /// Three answers, each ruled: no definition ⇒ [`Unkeyed`](dorc_core::DefinitionProvenance::Unkeyed)
+    /// (the ruled permissive arm — `28P:dec-the-gate-applies-only-to-names-the-unit-knows`); one ⇒
+    /// [`Keyed`](dorc_core::DefinitionProvenance::Keyed); more than one ⇒
+    /// [`Ambiguous`](dorc_core::DefinitionProvenance::Ambiguous), because the lift keeps ONE row per
+    /// `(file, role)` and which of the file's definitions spoke is then unrecoverable.
+    #[must_use]
+    pub fn provenance_of(
+        &self,
+        file: dorc_core::SourceFileId,
+        name: &str,
+    ) -> dorc_core::DefinitionProvenance {
+        let mut found = None;
+        for def in &self.defs {
+            if def.file != file || def.name != name {
+                continue;
+            }
+            if found.is_some() {
+                return dorc_core::DefinitionProvenance::Ambiguous;
+            }
+            found = Some(dorc_core::DefinitionId::at(def.file, def.span));
+        }
+        found.map_or(
+            dorc_core::DefinitionProvenance::Unkeyed,
+            dorc_core::DefinitionProvenance::Keyed,
+        )
+    }
 }
 
 // ── The domain ──
@@ -502,6 +546,60 @@ impl<'a> LiveDefinitions<'a> {
     #[must_use]
     pub fn unsolved() -> Self {
         Self { bound: None }
+    }
+
+    /// **The frame lookup** (`28Q` §1.2/§1.3): which DEFINITION a shell would have live for `name`
+    /// immediately before `node`.
+    ///
+    /// This is the only per-frame structure the conversion needs — the environment already computes
+    /// it, positionally and scope-stacked — and it is what every resolution seat asks before reading
+    /// any derived row. Feed the answer to [`dorc_core::answering_file`] together with the seat's own
+    /// candidate rows; that function, not this one, holds the rule.
+    ///
+    /// Its three answers are the three the seats must tell apart. A definition is
+    /// [`Live`](dorc_core::LiveDefinition::Live). `Undefined`, ⊤, and unreached all collapse to
+    /// [`Withheld`](dorc_core::LiveDefinition::Withheld) — they differ in cause and agree completely
+    /// in consequence. And a name the table does not know, or an unsolved environment, is
+    /// [`NoOpinion`](dorc_core::LiveDefinition::NoOpinion): the environment's universe IS the table's
+    /// names, so manufacturing an opinion outside it would wall every hand-built index in the
+    /// workspace (`28P:dec-the-gate-applies-only-to-names-the-unit-knows`, preserved verbatim).
+    #[must_use]
+    pub fn definition_before(&self, node: CfgNodeId, name: &str) -> dorc_core::LiveDefinition {
+        let Some((env, defs)) = self.bound else {
+            return dorc_core::LiveDefinition::NoOpinion;
+        };
+        if !defs.knows(name) {
+            return dorc_core::LiveDefinition::NoOpinion;
+        }
+        match env.binding_before(node, name) {
+            Flat::Elem(Binding::Defined(def)) => defs
+                .identity_of(def)
+                .map_or(dorc_core::LiveDefinition::Withheld, |id| {
+                    dorc_core::LiveDefinition::Live(id)
+                }),
+            Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => {
+                dorc_core::LiveDefinition::Withheld
+            }
+        }
+    }
+
+    /// What a row lifted from `file`'s definition of `name` may be keyed by — the table's own
+    /// answer ([`DefinitionTable::provenance_of`]), reached through the oracle a seat already holds
+    /// so no seat grows a second parameter.
+    ///
+    /// An unsolved unit answers [`Unkeyed`](dorc_core::DefinitionProvenance::Unkeyed): there is no
+    /// table to join against, which is the same "no opinion" posture
+    /// [`definition_before`](Self::definition_before) takes from the other side.
+    #[must_use]
+    pub fn provenance_of(
+        &self,
+        file: dorc_core::SourceFileId,
+        name: &str,
+    ) -> dorc_core::DefinitionProvenance {
+        self.bound
+            .map_or(dorc_core::DefinitionProvenance::Unkeyed, |(_, defs)| {
+                defs.provenance_of(file, name)
+            })
     }
 
     /// The input file whose definition of `name` a shell would have live immediately before
@@ -2045,6 +2143,103 @@ mod tests {
         let live = LiveDefinitions::unsolved();
         assert!(live.answers_at(CfgNodeId(0), ROLE, 0));
         assert_eq!(live.source_before(CfgNodeId(0), ROLE), None);
+        assert_eq!(
+            live.definition_before(CfgNodeId(0), ROLE),
+            dorc_core::LiveDefinition::NoOpinion,
+            "no environment ⇒ no opinion, never a withhold — a withhold would wall every \
+             hand-built index in the workspace"
+        );
+    }
+
+    // ── TABLE 4b: the frame lookup and the two-parser join (`28Q` §1) ──
+
+    /// A definition at a caller-chosen span, so two definitions of one name in one file are
+    /// DISTINCT — which `add_def`'s fixed span cannot express and the `Ambiguous` join needs.
+    fn add_def_spanned(table: &mut DefinitionTable, file: u32, name: &str, lo: u32) -> DefId {
+        table.add(Definition {
+            file: SourceFileId(file),
+            name: name.to_owned(),
+            span: Span::new(BytePos(lo), BytePos(lo)),
+            name_span: Span::new(BytePos(lo), BytePos(lo)),
+        })
+    }
+
+    /// The frame lookup answers with the DEFINITION, and a subshell re-source moves that answer —
+    /// the same world `a_subshell_re_source_answers_only_within_its_scope` reads through the
+    /// file-shaped accessor, now read through the identity the derived rows are keyed by. Two
+    /// spellings of one question, and this is the one the conversion consumes.
+    #[test]
+    fn the_frame_lookup_names_the_definition_live_at_each_site() {
+        let book = "( . lib.sh; yum install -y nginx )\nyum install -y curl\n";
+        let mut table = DefinitionTable::default();
+        let outer = add_def_spanned(&mut table, 0, ROLE, 10);
+        table.extend_ambient([outer]);
+        let inner = add_def_spanned(&mut table, 1, ROLE, 20);
+        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let inside = command_at(&cfg, &ast, book, "yum install -y nginx");
+        let after = command_at(&cfg, &ast, book, "yum install -y curl");
+        assert_eq!(
+            live.definition_before(inside, ROLE),
+            dorc_core::LiveDefinition::Live(table.identity_of(inner).expect("inner id"))
+        );
+        assert_eq!(
+            live.definition_before(after, ROLE),
+            dorc_core::LiveDefinition::Live(table.identity_of(outer).expect("outer id")),
+            "the pop restores the outer DEFINITION exactly, not merely its file"
+        );
+    }
+
+    /// A site above the only definition WITHHOLDS, and a name the table never heard of holds NO
+    /// OPINION. Both halves matter and they are opposite answers: withhold licenses nothing, while
+    /// no-opinion defers to whatever provenance the row itself carries. Collapsing them would
+    /// either wall every hand-built index or license a site the shell would not answer at.
+    #[test]
+    fn withheld_and_no_opinion_are_told_apart() {
+        let book = "yum install -y nginx\nyum__is_converged() { :; }\n";
+        let mut table = DefinitionTable::default();
+        let def = add_def_spanned(&mut table, 1, ROLE, 21);
+        table.set_book_site(first_funcdef(book), def);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        let live = LiveDefinitions::new(&env, &table);
+        let site = command_at(&cfg, &ast, book, "yum install -y nginx");
+        assert_eq!(
+            live.definition_before(site, ROLE),
+            dorc_core::LiveDefinition::Withheld,
+            "the definition sits BELOW this site, so nothing is live here"
+        );
+        assert_eq!(
+            live.definition_before(site, "apt_get__predict"),
+            dorc_core::LiveDefinition::NoOpinion,
+            "a name outside the environment's universe gets no manufactured opinion"
+        );
+    }
+
+    /// The join's three answers, over one table. `Keyed` is the ordinary case; `Unkeyed` is the
+    /// two-parser disagreement (a row whose munged funcname the sh parser never recorded) and the
+    /// hand-built posture; `Ambiguous` is a file holding TWO definitions of one role, where the
+    /// lift keeps one row and which definition spoke is unrecoverable.
+    #[test]
+    fn the_join_tells_keyed_unkeyed_and_ambiguous_apart() {
+        let mut table = DefinitionTable::default();
+        let sole = add_def_spanned(&mut table, 0, ROLE, 10);
+        add_def_spanned(&mut table, 1, ROLE, 20);
+        add_def_spanned(&mut table, 1, ROLE, 40);
+        assert_eq!(
+            table.provenance_of(SourceFileId(0), ROLE),
+            dorc_core::DefinitionProvenance::Keyed(table.identity_of(sole).expect("sole id"))
+        );
+        assert_eq!(
+            table.provenance_of(SourceFileId(1), ROLE),
+            dorc_core::DefinitionProvenance::Ambiguous,
+            "two definitions of one role in one file: the surviving row cannot name its author"
+        );
+        assert_eq!(
+            table.provenance_of(SourceFileId(2), ROLE),
+            dorc_core::DefinitionProvenance::Unkeyed,
+            "a file the table records nothing for holds no opinion about the row"
+        );
     }
 
     // ── TABLE 5: the decidable-condition fold (`28M` §9) ──
