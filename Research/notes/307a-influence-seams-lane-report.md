@@ -227,3 +227,102 @@ Fold gates, re-run foreground after this round:
 
 Comment budget, final: **922 added `.rs` lines, 269 matching `^\+\s*//`** — **221 doc-comments**,
 **48 plain `//` why-comments (5.2%)**.
+
+## §9 — The prose sandwich, and two findings about the authoring surface
+
+The four `RecordsHeaderMismatch` components (§1 step 5) were minted `words: None` by the builder
+per `error-authorship-tier`. This round authored them. It was the FIRST use of the sandwich flow —
+builder stages an authoring surface, conductor writes the prose, builder runs the mechanics — and
+the flow's own smoke-test fired immediately, twice, which is the durable content of this section.
+
+**The staging contract.** The handoff was loom-paths-only by human-typed rule: name the file and
+the sites, carry NO context in chat, because the loom is designed to carry the whole authoring
+context itself. The escape clause is the interesting half — *if the surface cannot carry it, that
+is a bug in the loom, report it instead of compensating in chat.* It fired.
+
+### `fnd-interior-hole-has-no-editable-face` [verified]
+
+The four components are **not authorable from any loom**. Measured with `dorc-loom sections`
+against the working precedent, not reasoned:
+
+- `footprint-incoherent`'s catalog message is a PURE HOLE, so `substitution-face-for-pure-holes`
+  fires and the render stamps `section footprint-incoherent-omits-own-coordinate/…` — the component
+  IS the editable section. That is why that precedent works.
+- `records-integrity-refused`'s message is an INTERIOR hole (our words on both sides of `{which}`),
+  so the rule deliberately does not fire. The render stamps `var {{which}} = …` INSIDE the code's
+  own `records-integrity-refused/message#0` section: an immutable `ParamValue`, not a face.
+
+The trap this sets is why it is a bug and not a preference: the `[unwritten:]` text is VISIBLE but
+not EDITABLE, and overtyping it edits the code's own `Migrated` message register and bakes the
+placeholder in as literal text — destroying the hole while still never authoring the component.
+`dorc-loom sections` warns about that in its own header ("omitting one bakes it to literal text"),
+but nothing tells a reader that the visible face is the trap rather than the target.
+
+Three escapes, all closed: making the hole pure requires rewriting a `Migrated` register; one case
+per variant is impossible (payloads are slug-keyed and duplicate defining cases refuse, so one case
+renders exactly ONE variant); and the arrangement-page route recognises exactly one command shape
+(`dorc --help`/`-h`), so no invocation renders a bare component row. `aid/CLAUDE.md` already names
+this remedy — per-fragment owners — as **priced and declined** (`28N` §3), so the finding is a
+documented-and-declined gap surfacing in practice, not a novel defect. The declining stands.
+
+**Disposition:** the prose routed through the sanctioned fallback instead — the direct-registry
+carve `error-prose-conductor-flow` names ("still sanctioned, by direct catalog edit from the
+structured metadata… orchestrator-only"), which is exactly the tier these four rows already
+occupied. Four `words:` fields in `arrangement_lock.rs`, conductor-authored under the human's
+single-case authorization, `Slop`-tier by construction.
+
+### `fnd-direct-minted-words-demand-declared-ownership` [verified]
+
+The direct-registry carve and the ownership gate are in tension for precisely this class of
+component — lock-tier, non-`Migrated`, and (per the finding above) unownable through any render.
+The gate refused the hand-edit:
+
+> arrangement `records-integrity-refused-nonce`: loom-minted words need a defining case;
+> builder-migrated text is `ProseTier::Migrated`
+
+`loom_minted_words_are_case_owned` binds every non-`Migrated` register to `is_case_owned(slug)`.
+`None` is exempt (`arrangement-lock-is-generated-too` says so); `Slop` is not.
+
+**Resolution: the declaration-union.** `records-integrity-refused.loom` declares `owns:` over the
+four component slugs, so the case that renders the sentence they fill is their authoring home
+(`ownership-is-declaration-union`; multi-component homes are what `owns:` is for). Tier stays
+`Slop`. Explicitly rejected: re-tiering to `Migrated` (a provenance lie — these are fresh words,
+and it breaks the census/burn-down semantics) and any gate carve (fence-widening on convenience).
+
+**Fix-the-tool rung.** The gate's refusal named only the tier route — usually the wrong one — and
+not the `owns:` route, which is usually right; it taught half a remedy. Sharpened to name the
+declaration-union and to say what `Migrated` is actually for. Observed but NOT touched: the catalog
+twin `loom_minted_registers_are_case_owned` carries the same half-remedy text, but a CODE register's
+remedy is minting the case named for the slug rather than an `owns:` entry, so writing the
+arrangement answer there would teach a wrong door. Left for whoever hits it.
+
+**Verification that the four land on their intended rows.** Host is proven end-to-end by the
+committed transcript, which now renders its authored component through the real
+`records_header_mismatch_text` fn. The other three have no render at all — one payload world per
+case — so `every_header_mismatch_renders_its_own_component` is their whole net: it asks the registry
+for each row's own sentence and asserts the seat rendered THAT one. A relationship, never a byte
+pin, so authoring the prose moves nothing in it (`prose-pins-live-where-the-prose-does`). The
+distinction is load-bearing: the pre-existing placeholder census would be satisfied by four variants
+all reaching ONE row, which is exactly the failure a reason-enum invites.
+
+Sanctioned republishes, named: `crates/aid/src/catalog_lock.rs` (one row —
+`records-integrity-refused`'s derived `example`, re-derived through the authored Host component;
+`message` byte-identical, still `Migrated`) · `crates/aid/tests/records-integrity-refused.loom`
+(transcript re-derived through the `DORC_LOOM_DUMP` loop, plus the `owns:` declaration).
+`arrangement_lock.rs` was already a generator fixpoint of the hand-edit. `promote` ends at
+"corpus already at the generated fixpoint".
+
+Disclosed process note: `compile` refused twice on its uncommitted-lock guard — *"the generated lock
+differs from HEAD… commit the pending promotion; or `git restore` both; or promote them TOGETHER."*
+Both times remedy #1 was taken (committing was pre-instructed, and taking a tool's own named
+way-forward is not weakening a check). The four `Migrated` registers that outdate the strict path
+(§6 `flg-four-migrated-registers-now-misdescribe`) stay byte-identical and remain held for the human.
+
+Fold gates, re-run foreground after this round:
+
+- `mise run check` — green · `mise run test:looms` — 249/249.
+- `mise run both gate:full-quiet` — Windows leg 2059/2059 (1 skipped); WSL leg 2055/2055 (1 skipped).
+- `mise run bless:dry` — green, working tree clean afterwards (zero golden writes).
+
+Comment budget, closing: **992 added `.rs` lines, 279 matching `^\+\s*//`** — **231 doc-comments**,
+**48 plain `//` why-comments (4.8%)**.
