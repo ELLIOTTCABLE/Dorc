@@ -134,6 +134,28 @@
 
 ## §2b — The Spine×influence unification (design-bank; human-led, in-flow)
 
+**THE SITTING IS CLOSED 2026-08-15 ("Okay, all done"); its product is
+`plans/309-spine-reification-and-projections.md`** (DRAFT pre-ack as a document;
+interior rulings graded, many [TYPED]). Final-round rulings banked there and only
+summarized here: Spine-outside-the-kernel one-way firewall [TYPED tentative] +
+`watch-firewall-is-default-not-dogma` (the human's recorded worry: exclusion
+pressure vs genuinely-right re-reads) · k-cap acked "for now" · durable-by-
+EXCLUSION census, three arms — durable (entering = the tripwire, always human/
+opaque-review) · excluded (ruled) · **`new`** (transitory, non-durable-but-not-
+ruled, debug-mode-only dump that must be structurally unable to ship) [TYPED] ·
+drop-accounting = `collapse-mints-narrative` completed (projection-tier collapse
+classes; owed-and-critical, in-scope) [TYPED] · big-bang migration lean [TYPED,
+"gut feel, not dictating"]: census → red → burn-down → byte-exact green, no
+transitional states; the `300` §5 never-big-bang line was conductor-stated, now
+overridden · `rul-whylog-is-the-spine` re-read: "the whylog IS the authoritative
+rendering of the Spine; we build FOR the whylog" — an aid-first/explain-first/
+plan-later builder-pressure mechanism; exceptions vanishingly few, opaque-review-
+priced, not ours.
+
+[TYPED 2026-08-15, docID law] Round-30 IDs ascend `300`–`309` then LETTERS:
+`30A`, `30B`, … (the r28 `28A…28V` pattern). NEVER mint `310` — it reads as
+round-31 (the `289`→`290` trap's cousin; this mistake has happened twice).
+
 [TYPED 2026-08-15, naming] **`Spine`** is the type-name for the global in-memory
 everything-hangs-off-it structure ("the whylog" was ambiguous — some content is
 in-memory-only and deliberately never durable; the literal `.whylog` is ONE view
