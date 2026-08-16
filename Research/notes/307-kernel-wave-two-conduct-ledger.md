@@ -50,11 +50,16 @@
   `30A` budget superseded-by-inventory, rewritten). Fold adjudications: all
   eight disclosures ENDORSED (the two API-restraint calls especially — pinning
   an undesigned emission API would make pins ungreenable); THREE new findings
-  credited and their FORFEITS rows authored
-  (`forfeit-helper-removal-unmodeled` · `forfeit-within-file-plural-withholds`
-  — the BLESSED in-book override idiom currently yields nothing from either
-  body — · `forfeit-whole-file-inertness-refusal`, plus the
-  composed-compound amendment to helper-plurality-withhold); the
+  credited — REGISTER CORRECTION [human-typed 2026-08-16]: the three rows the
+  conductor authored for them were REMOVED same-day (FORFEITS is a
+  design-discussion opt-out register, large and deliberate, never an
+  implementation-gap tracker — its header now says so; each finding's
+  substance stays in the law files, the `28Q` §1 tripwire, the xfail pins,
+  and this row: the helper lane has no `unset -f` removal model; the
+  `(file,role)` keying withholds the BLESSED in-book override idiom at every
+  frame; whole-file inertness-refusal is the bluntness the top-level blessing
+  must replace per-item, with three pins failing for that one shared
+  reason); the
   `oracle/CLAUDE.md` conditional-machinery sentence CORRECTED to the measured
   lift-blindness truth; the xfail-seat bullet added to `spike/CLAUDE.md`.
   `fnd-munge-provenance-rides-the-plural-branch-only` routed to the HUMAN

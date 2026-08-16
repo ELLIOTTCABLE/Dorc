@@ -12,7 +12,12 @@ must know) and `AID-NEEDS.md` (how it talks to people) — this file is what the
 *declines to capture, for now*. Discipline: ahistorical and current-state only; add a
 row WHENEVER a conservative collapse is chosen for tractability (a brief that takes the
 easy route without a row here is incomplete); a captured forfeit's row is rewritten or
-removed, never annotated as history. Entries carry: the RULE (what conservatism, ruled
+removed, never annotated as history. SCOPE, sharpened [human-typed 2026-08-16]: a row
+is a DESIGN-DISCUSSION opt-out — an option talked through and explicitly declined
+("no, not now; too expensive or out-of-scope"), forfeiting a whole CATEGORY of value —
+design-level, generally large. NOT a tracker of designed-and-planned work that simply
+is not built yet, and never implementation-level nits: those live in the ledgers, the
+law files, and the xfail census. Entries carry: the RULE (what conservatism, ruled
 where) · FORFEITS (who loses what, when) · CAPTURE (the known path to the value) ·
 BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
 
@@ -40,57 +45,11 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   reaching into a vouched composition, both arms — NEWLY withheld, a hazard closed
   rather than value lost (these silently shipped before); (c) the unenumerable
   tier, ruled-permanent, reachable only through a literal `alias` in a shipped
-  body. FORFEITS: cross-custody plural helpers, until closures exist. Measured
-  composed-compound cell (the pin battery, 2026-08-16): a cross-custody plural
-  helper refuses the WHOLE compound — and the asymmetric half (the later
-  author's own resolution still ships standalone) is why the capture is
-  per-segment environments rather than another refusal
-  (pinned: `a_cross_custody_plural_helper_ships_no_composed_stage`; xfail
-  target: `p-x-intra-compound-plurality`). CAPTURE:
+  body. FORFEITS: cross-custody plural helpers, until closures exist. CAPTURE:
   `28Q` §9 `pin-oracle-side-sourcing-amendment` + `pin-closure-membership-and-diamond`
   — one `.` line converting the helper into the author's own closure lifts (a).
   BACK-OUT: low (the suspension is additive against the composite). REVISIT: the
   closure-custody stage's policy rulings.
-- **forfeit-helper-removal-unmodeled** — RULE (as-built, measured 2026-08-16):
-  the helper lane has no model of `unset -f`; a top-level removal "works" only
-  by making its whole file non-load-inert, so a removal in a LATER loaded
-  source leaves the earlier declaration resolving and travelling into a
-  shipped check — sh would have the name unbound. FORFEITS: nothing today (the
-  shape needs an ill-formed oracle; the lint Errors); the exposure INVERTS the
-  moment `unset -f` joins the blessed top-level set, when a shipped check can
-  carry a body its author explicitly removed. CAPTURE: the closure-custody
-  stage's helper-binding model (the funcenv table widening past role names).
-  BACK-OUT: low (withholding is additive). REVISIT: with the blessed-top-level
-  ruling. Machine-pinned: `p-x-helper-unset-f-across-files`.
-- **forfeit-within-file-plural-withholds** — RULE (as-built, measured
-  2026-08-16): derived rows key `(file, role)`, so a file defining one role at
-  two frames answers `Ambiguous` and EVERY site withholds — including sites
-  whose definition the environment named exactly (`definition_before` yields
-  two distinct `DefinitionId`s; the row keying is what withholds). FORFEITS:
-  the authored-in-book override idiom entirely — the BLESSED
-  `unset -f`-then-redefine spelling yields nothing from either body — and
-  every future multi-frame oracle file. CAPTURE: the definition-grade re-key
-  `28Q` §1 item 1 spells (its own tripwire paragraph); this row is
-  `308:cr-plan-keying-letter-vs-ruled`'s banked residue made concrete.
-  BACK-OUT: low (withhold is the safe direction; the capture is additive).
-  REVISIT: the closure-custody stage. Machine-pinned:
-  `p-x-definition-grade-keying` (+ its green environment-half precondition).
-- **forfeit-whole-file-inertness-refusal** — RULE (as-built, measured
-  2026-08-16): the load-inertness gate refuses per FILE, so one top-level
-  command costs the file EVERY declaration it makes — a role body declared
-  beside its own helper ships with an empty closure and 127s at the host.
-  FORFEITS: nothing today (such a file is an Error-tier lint); this bluntness
-  is the mechanism the blessing of read-only top-level commands must REPLACE
-  with a per-item model, never merely widen around
-  (`oracle/CLAUDE.md only-load-inert-sources-contribute`'s dying-in-literal
-  rider). CAPTURE: per-item inertness with the blessed set carved out; the
-  conditional-definition case must lift as MAY-bound
-  (`rul-unsure-falls-toward-sh-parity` — sh's truth is host-conditional
-  binding, never blindness). BACK-OUT: low. REVISIT: the blessing ruling.
-  Machine-pinned: `p-x-blessed-toplevel-source` ·
-  `p-x-blessed-toplevel-conditional` (the coupled pins fail for this ONE
-  shared reason — greening any by allow-list-widening alone XPASSes one while
-  opening a wrong-elision route in another).
 - **forfeit-divergence-collapse-to-unknown** — RULE (`28Q` §3, the human-carved v0
   floor): conditional/looped lifecycle events land unknown ⇒ guard/run. FORFEITS:
   every availability-derived license below an `if`-guarded creator — and defensive
