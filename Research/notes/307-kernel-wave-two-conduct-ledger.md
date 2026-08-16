@@ -443,6 +443,19 @@ ledger + `plans/309` + `notes/305`/`305a` + the 308a kit + the lane reports
 this file (whole) → `307c` → the four 308 reviews → `plans/28Q` §§0–1/§7/§8 →
 `spike/CLAUDE.md`.
 
+**REWIND ANCHOR #5 (2026-08-16, conductor-5 — WAVE-TWO QUIESCENT):** stage-i
+stamped · stage-0 landed · the snapshot-emission stage landed; conductor
+own-hand gate green over the final tip (W 2135/2135 · WSL 2131/2131 ·
+`bless:dry` clean). Every remaining item is HUMAN-GATED: the `plans/309` ack ·
+closure-custody policy (`28Q` §9 pins + the sibling rulings) · the veto-eligible
+conductor rulings (`rul-primacy-moves-the-body-never-the-cell` ·
+`rul-emission-custody-composite` · the crosscheck-era four) · the prose queue ·
+world-scopes. Opaque-review disposition: per the standing builder-initiated
+flow, every builder read the quarantine prerequisite and none instructed the
+review — not loaded; noted for the human to countermand. A successor conductor:
+read LIVING_STATUS + this ledger's §2 rows; there is nothing to dispatch until
+the human rules.
+
 **REWIND ANCHOR #4 (2026-08-16, conductor-5 — STAGE-I IS STAMPED):** the
 crosscheck is adjudicated (`notes/308`), the burndown is folded, the editorial
 pass landed, and the conductor's own-hand gate is green both legs over the
