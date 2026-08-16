@@ -61,10 +61,14 @@ marking frontier, durable grades — is an operation over reified Spine records.
   re-reading a finalized decision is genuinely right, that is a deliberate,
   dearly-bought design act (opaque-review-tier), not a workaround; the watch-item
   exists so the pressure toward exclusion stays visible.
-- **`law-spine-write-only-during-run`** [ACKED]: the purity half — Spine records
-  (and references to them) never enter anything the solver compares; two
-  semantically-equal analysis states must compare equal whatever their narration
-  (the `CollapseNarrative` Eq-exclusion precedent, `22W` §2, generalized).
+- **`law-spine-write-only-during-run`** [ACKED; reworded position-derived per
+  `_tmp-309` lesser-2]: Spine is written post-decision, from OUTSIDE anything the
+  solver compares — Spine values never enter compared state at all, so no
+  Eq-exclusion is ever needed anywhere. The `CollapseNarrative` Eq-exclusion
+  (`22W` §2) is cited as the failure-mode this positioning AVOIDS, never a
+  technique to generalize: that precedent is safe only because narratives are
+  decision-inert, and Eq-excluding a license-bearing record from machinery that
+  guards it would be a hole.
 - **`law-spine-operands-capped`** [ACKED, "for now"]: the content half — records
   carry small, by-value, interned/scalar ACCOUNTS of operands, k-capped where
   unbounded (k exemplars + a count); never arena handles, never working lattice
@@ -85,10 +89,21 @@ marking frontier, durable grades — is an operation over reified Spine records.
   make durable; we invert the existing durable list into exclusions over a
   totalistically-tracking Spine. Later enrichment = LIFTING one exclusion
   ("this thing we already track gets written too"), each lift a deliberate act.
-- **`mech-census-three-states`** [TYPED, the human's nit]: a no-wildcard census
-  over Spine record species (the `CollapseKind` completeness-census pattern),
-  three arms: **`durable`** (written to `.whylog`; ENTERING this arm is the
-  tripwire firing — human and/or opaque-review, always) · **`excluded`** (ruled
+- **`mech-census-three-states`** [TYPED, the human's nit; the `durable` arm's
+  View mechanics are [CONDUCTOR — human-deferred 2026-08-15: "I trust your
+  engineering judgement; proceed as planned", explicitly NOT an ack]]: a
+  no-wildcard census over Spine record species (the `CollapseKind`
+  completeness-census pattern), three arms: **`durable-via-View`** (written to
+  `.whylog` exclusively through a per-species `DurableView` projection type
+  whose fields ARE the durable subset; records themselves never implement
+  serialization — so field-level exclusion is STRUCTURAL: the influence grade is
+  excluded by not existing in any View, silent field-growth is unrepresentable,
+  and lifting a field exclusion = adding one field to one View, a diff that IS
+  the tripwire's mechanical form. Resolves `_tmp-309` critical-2: a
+  species-arity census cannot express a durable species carrying an excluded
+  field, which the grade makes the FIRST post-transition state, not an edge
+  case. ENTERING the arm, or growing a View, is the tripwire firing — human
+  and/or opaque-review, always) · **`excluded`** (ruled
   non-durable) · **`new`** (transitory: non-durable in production but not RULED
   non-durable — the legal resting state for in-flight work; dumps durably only in
   a project-internal debug mode that must be STRUCTURALLY unable to ship to user
@@ -124,12 +139,40 @@ byte-exact. No transitional double-path states (the never-big-bang line in `300`
 §5 was conductor-stated, not human law; overridden here [TYPED]). One builder,
 one window; a second builder inherits the red state knowingly. What makes
 big-bang safe HERE specifically: the end-gate needs no judgment — the
-pre-refactor goldens ARE the spec (byte-identity of every render), plus the
-standing checker gates (certifier · sparing re-derivation · both planes' votes)
-over the green tip. Cost held consciously: during the red window the instruments
-are blind, so everything rides the end-gates and the CENSUS's accuracy — which is
-why the census is a checkpoint-tier deliverable (§5) and the window opens only on
-a quiesced kernel (§6).
+pre-refactor goldens ARE the spec (byte-identity of every render AND of the
+`.whylog` durable), plus the standing checker gates (certifier · sparing
+re-derivation · both planes' votes) over the green tip. Cost held consciously:
+during the red window the instruments are blind, so everything rides the
+end-gates and the CENSUS's accuracy — which is why the census is a
+checkpoint-tier deliverable (§5) and the window opens only on a quiesced kernel
+(§6).
+
+**The decision-state smoke-diff** (`_tmp-309` critical-1, folded; the diff's
+STATUS is [TYPED, ruled 2026-08-15]): byte gates are known-vacuous at
+byte-lossy seams on exactly this refactor class (the stage-0 retroactive-audit
+precedent, `28Q` §8: outcomes hold while records silently change; here: the
+leaf-granular digest collapses member sites, and a binding can move between
+byte-identical definition bodies with different custody — attribution changes
+no byte gate sees, with no bisection point under big-bang). Mechanism:
+BEFORE the window, a deliberately hack-tier dump tool walks today's scattered
+decision-state (site-keyed decisions · definition-identity + custody per
+binding · witness sets · digest at SITE granularity, computed from the old code
+precisely so the known keying change needs no whitelist), deterministic and
+sorted, frozen ONCE at the base commit; after green, a Spine projection
+reproduces the schema, and the DIFF goes to the conductor's fold sitting.
+**It is a smoke-testing machine, NOT an acceptance gate** [TYPED]: a review
+tool for the very final round; non-empty output is material for judgment by
+eye, never an auto-fail — "trying to game it will lead to weird backflips; a
+cheap tool but a blunt one." BUILD-TO-KILL [TYPED]: tool, baseline, and
+projection-shim all die after the fold review. Two fences: it is never the
+whylog (no durable-tripwire contact; migration scaffolding only, never
+shipped) and never conflates with the census `new`-arm debug-dump (different
+mechanism, different lifetime); its schema INFORMS the owed SiteId
+decision-dump product feature and must never become it. Honest residual: the
+dump covers only decision-state the old code makes explicit enough to walk —a
+fully-implicit decision is invisible to the baseline too, which is why the
+census's hidden-decision audit stays checkpoint-tier and the diff is never
+sold as total.
 
 ## §5 — Staging
 
@@ -138,8 +181,10 @@ a quiesced kernel (§6).
    plan-build/render time hoist into Spine; `pinned-definitions-are-the-
    artifact's-binding` is the exemplar of a license-relevant "render-time"
    decision); enumerate every projection and its authority class; propose the
-   Spine type + record species + census arms + crate home. Conductor+human ack
-   before any conversion commit.
+   Spine type + record species + census arms + the per-species `DurableView`
+   shapes + the smoke-diff dump schema + crate home. Conductor+human ack before
+   any conversion commit. The dump TOOL lands at the end of this stage, before
+   the window opens (§4).
 2. **stage-spine-transition** (the big-bang window): reify Spine; hoist the
    census's decision-sites; re-derive Plan (and the artifact) as projections;
    land the three-state durable census with today's `.whylog` contents exactly
@@ -162,9 +207,11 @@ After the stage-i definition-factoring fold + its adversarial crosscheck +
 burndown (a quiesced kernel is the precondition for the red window); **before
 world-scopes design settles** (stage-iii's availability computation is
 influenced-by-construction AND mints new decision classes — building it pre-Spine
-mints retrofit debt twice). Relative to closure-custody: plausibly parallel
-(plan/cli/aid-side vs oracle/analysis-side) — ~SUSPECT; merge-risk decided at
-dispatch. The snapshot-emission stage is unaffected and precedes this.
+mints retrofit debt twice). Relative to closure-custody: BUILD phases SERIAL —
+custody builds never overlap the red window (`_tmp-309` lesser-1, folded: a
+parallel lane cannot distinguish its own breakage from the window's, and both
+share `target/`); custody SITTINGS/rulings (design work, no code) free-run
+throughout. The snapshot-emission stage is unaffected and precedes this.
 
 ## §7 — Open pins (complete list)
 
@@ -182,3 +229,16 @@ dispatch. The snapshot-emission stage is unaffected and precedes this.
 6. `pin-census-new-arm-hygiene` — whether the `new` arm needs an accretion
    instrument (a census count surfaced like the prose burn-down) so transitory
    never becomes permanent-by-neglect [PROPOSED, cheap, undecided].
+
+## §8 — Review disposition
+
+Reviewed 2026-08-15 by an opaque Opus-class reviewer working from the 306-series
+sitting (`_tmp-309-review-notes.md`, project root, human-relayed; the file is the
+human's to delete). Two critical + two lesser findings, ALL FOLDED above:
+critical-1 → §4's smoke-diff (with the conductor's correction that stage-2's
+durable-byte gate already stood, narrowing the exposure to byte-lossy seams) ·
+critical-2 → §3's `DurableView` structural resolution · lesser-1 → §6 serial ·
+lesser-2 → §2's position-derived rewording. Conductor-adjudicated under maximum
+skepticism; every credited claim verified against in-context project text
+(`28Q` §8's stage-0 audit language confirms the vacuity precedent independently
+of the reviewer's withheld context).

@@ -181,6 +181,17 @@ rendering of the Spine; we build FOR the whylog" — an aid-first/explain-first/
 plan-later builder-pressure mechanism; exceptions vanishingly few, opaque-review-
 priced, not ours.
 
+**The `_tmp-309` review fold [2026-08-15, evening]**: an opaque Opus-class
+reviewer's two criticals + two lessers ALL CREDITED and folded into `plans/309`
+(§8 there carries the disposition). Human rulings riding the fold [TYPED]: the
+decision-state diff is a SMOKE-TESTING machine, never an acceptance gate — a
+review tool for the conductor's final fold sitting, blunt and cheap, gaming it
+leads to backflips · the before-dump is build-to-kill, nothing costly · the
+`DurableView` mechanics are human-DEFERRED, not acked ("I trust your engineering
+judgement; proceed as planned") · everything else acked. Evening handoff: design
+work on hold; nothing human-blocking outstanding; the kit-glance and the
+four-Migrated-registers prose question remain the two open soft items.
+
 [TYPED 2026-08-15, docID law] Round-30 IDs ascend `300`–`309` then LETTERS:
 `30A`, `30B`, … (the r28 `28A…28V` pattern). NEVER mint `310` — it reads as
 round-31 (the `289`→`290` trap's cousin; this mistake has happened twice).
