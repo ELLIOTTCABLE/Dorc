@@ -1,0 +1,132 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# frame30-subshell-body-answers-inside-only (`28Q` §1 syn-definition-factored-indices) — the
+# plural-idiom golden the conversion earns. Two sites, one role name, TWO live bodies.
+#
+# A subshell definition is `28K` §1's sanctioned regional-preference idiom: it shadows nothing
+# permanently, dies at the `)`, and so draws no contest. Before the frame conversion the engine held
+# ONE whole-unit winner per role and could not answer two frames differently; the withheld family
+# was the honest floor. Now the site inside the region is answered by the book's body and the site
+# after it by the oracle's, which is what a shell running this file does.
+#
+# ANTI-MASKING: the two bodies invoke DIFFERENT check commands, so the probe artifact alone
+# distinguishes which one answered each site. `foobar regional-check` outside the parens, or
+# `foobar status` inside them, means the frame lookup collapsed back to a whole-unit winner.
+(
+foobar__is_converged() {
+   foobar regional-check --certs "$2"
+}
+foobar sync-certs /etc/nginx/certs
+)
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# Both sites converged. Site 1 was measured by the BOOK's regional body (live inside the parens),
+# site 2 by the ORACLE's (live once the region closed) — the probe artifact shows which is which.
+site 0 effect=holds
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: foobar status --certs-current -- /etc/nginx/certs
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ecd87c31cfcbc5fdf7a74f86af37afc8c7f03796d3045b647a08701974bf7f4f sites=2 @@dorc@@\n'
+# site 0: dorc-auto:foobar@converged
+foobar__is_converged() {
+   foobar regional-check --certs "$2"
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# frame30-subshell-body-answers-inside-only (`28Q` §1 syn-definition-factored-indices) — the
+# plural-idiom golden the conversion earns. Two sites, one role name, TWO live bodies.
+#
+# A subshell definition is `28K` §1's sanctioned regional-preference idiom: it shadows nothing
+# permanently, dies at the `)`, and so draws no contest. Before the frame conversion the engine held
+# ONE whole-unit winner per role and could not answer two frames differently; the withheld family
+# was the honest floor. Now the site inside the region is answered by the book's body and the site
+# after it by the oracle's, which is what a shell running this file does.
+#
+# ANTI-MASKING: the two bodies invoke DIFFERENT check commands, so the probe artifact alone
+# distinguishes which one answered each site. `foobar regional-check` outside the parens, or
+# `foobar status` inside them, means the frame lookup collapsed back to a whole-unit winner.
+(
+foobar__is_converged() {
+   foobar regional-check --certs "$2"
+}
+true   # dorc: elided [foobar sync-certs /etc/nginx/certs] (already converged / dead branch)
+)
+( foobar__is_converged sync-certs /etc/nginx/certs ) || foobar sync-certs /etc/nginx/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]

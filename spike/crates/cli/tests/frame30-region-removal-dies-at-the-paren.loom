@@ -1,0 +1,129 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# frame30-region-removal-dies-at-the-paren (`28Q` §1) — the negative half of the frame lookup.
+#
+# `28K` §1 rul-scope-by-subshell-resource sells sh's own scoping as the answer to "I want a
+# different oracle for this region"; the removal direction has to work the same way, and
+# `floor30-subshell-nesting-and-removal-scope` measured that it does: an in-subshell `unset -f` is
+# frame-local, so the name is absent inside the parens and bound again the moment they close.
+#
+# So this book has two sites and exactly one license between them. Inside the region NOTHING is
+# live, the engine can name no definition, and the site runs on its own bytes — silence licenses
+# nothing. After the `)` the oracle's definition is live again and the converged site elides.
+#
+# ANTI-MASKING: a removal the engine treated as global would take the SECOND site's license too, and
+# one it ignored entirely would elide the FIRST — the two directions fail differently, which is why
+# both sites are here.
+(
+unset -f foobar__is_converged
+foobar sync-certs /etc/nginx/certs
+)
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# Only the post-region site has a definition to measure it; the in-region one is unprobeable
+# because nothing is live there. (Site 0 is the `unset -f` itself.)
+site 2 effect=holds
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/foobar --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: foobar sync-certs /etc/nginx/certs
+ran: foobar status --certs-current -- /etc/nginx/certs
+
+-- replay --
+$ dorc --book=book.sh -o foobar.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=0740db6f26099de1c2c65c848a9137dcf24abdfcf411a791f57d16172d11acc8 sites=1 @@dorc@@\n'
+# site 2: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# frame30-region-removal-dies-at-the-paren (`28Q` §1) — the negative half of the frame lookup.
+#
+# `28K` §1 rul-scope-by-subshell-resource sells sh's own scoping as the answer to "I want a
+# different oracle for this region"; the removal direction has to work the same way, and
+# `floor30-subshell-nesting-and-removal-scope` measured that it does: an in-subshell `unset -f` is
+# frame-local, so the name is absent inside the parens and bound again the moment they close.
+#
+# So this book has two sites and exactly one license between them. Inside the region NOTHING is
+# live, the engine can name no definition, and the site runs on its own bytes — silence licenses
+# nothing. After the `)` the oracle's definition is live again and the converged site elides.
+#
+# ANTI-MASKING: a removal the engine treated as global would take the SECOND site's license too, and
+# one it ignored entirely would elide the FIRST — the two directions fail differently, which is why
+# both sites are here.
+(
+unset -f foobar__is_converged
+foobar sync-certs /etc/nginx/certs
+)
+( foobar__is_converged sync-certs /etc/nginx/certs ) || foobar sync-certs /etc/nginx/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
