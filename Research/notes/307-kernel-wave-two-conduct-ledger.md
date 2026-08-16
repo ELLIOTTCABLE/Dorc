@@ -73,8 +73,37 @@
   defining cases go the whole-product e2e route; the loom seat stays untouched.
   Zero-golden-flip expectation ACCEPTED (sentinel-nonce already refuses on the
   strict path; the brief's flip-bless pre-authorization goes unused — nothing
-  manufactured). Chafe register: no instrument-chafe rows minted — the walls
-  behaved; findings were proposal-vs-code deltas the SOFT grading anticipated. Opus, isolated worktree, branched from the
+  manufactured). Chafe register: no instrument-chafe rows minted at checkpoint —
+  the walls behaved; findings were proposal-vs-code deltas the SOFT grading
+  anticipated.
+  **BUILD REPORT 2026-08-15 (4 commits, base unchanged):** steps 1 (the
+  `AdmissionRefusal::Records(RecordsFault)` discrimination, pure refinement,
+  three pins SHARPENED never weakened) · 5 (the `RecordsHeaderMismatch` reason
+  enum + reason→component fn + four `words: None` arrangement rows, both lock
+  gates fixpoint; incidentally deleted builder-prose English from the kernel
+  crate) · influence-grade ((b-ii)-minimal as approved: `core::influence`,
+  five-doctest battery, ONE mint at `admit_records` with a two-way non-empty-walk
+  fence, carriage beside the scope, nothing renders/persists it) all LANDED;
+  check + 1239 unit + 140 e2e + 240 looms green; ZERO golden drift. Step 4
+  BLOCKED by the placement-law pincer (§3 row). FOLD-TIME ADJUDICATIONS:
+  `ask-reroute-the-eight-defining-cases` → **`alt-pair-payload-case-with-e2e-pin`**
+  RULED [CONDUCTOR]: eight world-as-payload looms in `crates/aid/tests` (the
+  `records-fact-truncated.loom` shape; ratchet→0) — justified under the
+  AID-NEEDS invocation-time precedent (I/O-world members stay world-as-payload;
+  no honest in-process route exists since the loom consumer's refusal-is-an-error
+  seat stays) — PLUS two whole-product e2e pins (no `code:` key, `exit: 12`,
+  `expect-diagnostic`), one per fault family (framing · identity), goldens
+  sanctioned as new-case mints · `ask-prose-correction-for-four-migrated-
+  registers` → **HELD FOR THE HUMAN** (four Migrated messages describe the
+  forgiving parser's discard/ignore behavior and mis-describe the strict path's
+  refuse-whole-attempt; pre-existing inaccuracy newly discovered, NOT a lane
+  regression; outside the four-new-components prose authorization — narrow
+  single-case grants don't stretch) · `dis-phase-by-free-widening` → ENDORSED
+  (no second mint; `no_observation`/`replayed_records` widen
+  `authored_before_contact` through one named seat — over-claiming influence is
+  the safe direction, arrival is a channel per `306b` §1b, rehydrate-highest per
+  §3b; conductor mistake logged: ruling 4 under-specified the non-Admitted
+  phase sources). Opus, isolated worktree, branched from the
   `ai/r30-conduct` tip. Scope, three items: `306c` §3 BOTH halves
   (`item-report-only-output` + `item-record-lane-codes`, incl. the header-mismatch
   reason-enum typing [human, hard ack]) PLUS `item-influence-grade` (`306c` §2 —
@@ -204,7 +233,24 @@ unproductive-sharp-edge | mixed | unresolved} · action taken/proposed`.
 The null hypothesis is productive-correctness — an edge is adjudged unproductive
 only with the specific work-product it wrongly blocked in hand.
 
-(empty at mint)
+- flat-test-tree ownership scoping (`is_case_owned` = `crates/aid/tests` only) +
+  the loom `code:`-hygiene/stdout-contract gates · BLOCKED the checkpoint-ruled
+  e2e route for the eight records defining cases (a jointly-unsatisfiable pincer,
+  builder-verified at file:line) · **productive-correctness** — the walls enforced
+  `rul-slug-decides-loom-placement` (canonical looms for registered slugs live in
+  the ONE primary collection), which the conductor's ruling violated; conductor
+  mistake: ruled a case-placement route at checkpoint without re-checking the
+  placement law · action: rerouted per `alt-pair-payload-case-with-e2e-pin`
+  (below); prevention: any ruling that sites test artifacts re-checks
+  `flat-test-tree-and-loom-placement` first.
+- comment budget vs doc-comment mandate (THIRD instance of the known collision) ·
+  747 added lines / 234 comment-matched, but 196 are MANDATED `///` doc-comments
+  (the `compile_fail` battery is module-doc by design, the `claim.rs` shape);
+  plain why-comments = 5.1%, under budget · **mixed** — instrument fine, the
+  conductor's brief-template keeps re-creating the collision · action: the
+  already-minted prevention ("a brief that mandates comment content adjusts the
+  budget in the same breath") now applied to every wave-two brief; builders
+  decomposing the count (mandated vs plain) is endorsed as the standing answer.
 
 ## §4 — Skill evolution: `verified-core-discipline` [TYPED, arc-open]
 
