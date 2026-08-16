@@ -38,7 +38,33 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
-- **lane-snapshot-emission — DISPATCHED 2026-08-16** (Opus, branch
+- **lane-snapshot-emission — CHECKPOINT ADJUDICATED, BUILD ACKED 2026-08-16**
+  (checkpoint headline: **the hash-munge is REACHABLE TODAY** — witnessed at the
+  builder's `emit30-two-live-verdicts-under-one-name` cell via the top-level
+  `unset -f` blessing, discharging the carried rider without new machinery; the
+  region route stays blocked. Also measured: the munged preamble COPIES BOOK
+  BYTES — a live `28R:rul-munge-oracle-names-only` violation, fixed in-scope —
+  and the probe lane needs NO munge at all, per-site inline re-emission already
+  being the transplant shape; munging is an apply-preamble problem only).
+  CHECKPOINT RULINGS [CONDUCTOR, human-veto-eligible]:
+  **`rul-emission-custody-composite`** — the vouch suspends iff a reached
+  name's resolved definition carries custody ≠ the voucher's AND (the resolved
+  definition is the BOOK's, OR the name is plural-with-differing-bytes); the
+  singular cross-custody reach stays licensed (the `28M` §7 package shape —
+  both pin28 package cells hold), load order never silently adjudicates whose
+  body serves whose vouch, and today's cross-custody-plural withhold converts
+  to suspend-with-decline (same conservatism, aid gained); re-keys at
+  closure-custody in one derivation seat · the helper TABLE WIDENING refused
+  for this stage (a funcenv licensure widening owing its own review); E1
+  last-wins over the indexable population is sh's answer — CONSEQUENCE: the
+  ALPHA-RENAME machinery is NAMED RESIDUE, NOT BUILT (prerequisites: the table
+  widening + HelperIndex reaching book regions) · munge spelling stays
+  `_h<digest8>` (the `_d_`-qualifier respell banked with the typo-gate
+  evidence) · ONE decline code + typed reason enum · hash-consing skipped
+  (empty population, capture-noted) · the contested-helper fixture reframing
+  handed to the builder. Scope E1–E7 all in; E7 needs new witness cells;
+  red-first discipline binds.
+- **lane-snapshot-emission — dispatch record (historical)** (Opus, branch
   `ai/r30-lane-snapshot-emission`, base `f1f5274e` — the conductor's own-hand
   gate ran green over that tip: W 2113/2113 · WSL 2109/2109 · `bless:dry`
   clean; NB one earlier gate run was externally KILLED mid-compile, cause
