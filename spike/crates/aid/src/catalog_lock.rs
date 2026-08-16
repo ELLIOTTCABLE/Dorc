@@ -313,8 +313,8 @@ pub const CATALOG: &[CatalogEntry] = &[
     },
     CatalogEntry {
         slug: "records-fact-truncated",
-        when_fires: "fewer site records arrived than the header declared. plan/records.rs finalize. `{received}`/`{declared}`/`{unseen}` are the site counts.",
-        why: "plans/128 fc-2: a computable range, not a refusal — the unseen sites fold Unknown ⇒ run on their own. NOTE plain-language pass owed: Unknown/⊤-join wording (law-plain-language-surfaces, 24H ack-4).",
+        when_fires: "fewer site records arrived than the header declared. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. `{received}`/`{declared}`/`{unseen}` are the site counts.",
+        why: "plans/128 fc-2 states the loss is bounded and computable against the declared count; the strict path refuses the attempt all the same (306b §6e), and the forgiving deframer keeps the count-only reading. NOTE plain-language pass owed: Unknown/⊤-join wording (law-plain-language-surfaces, 24H ack-4).",
         params: &["received", "declared", "unseen"],
         example: "the probe's records ended early: 3 of 5 declared site records arrived, so Dorc treats the 2 unseen site(s) as unanswered and leaves their commands to run.",
         message: Some(ProseTier::Slop("the probe's records ended early: {{received}} of {{declared}} declared site records arrived, so Dorc treats the {{unseen}} unseen site(s) as unanswered and leaves their commands to run.")),
