@@ -197,13 +197,32 @@ Each floor is a NAMED function, so §6's consumer tests can exercise it without
 violating anti-masking. Guards everywhere stay fail-safe under any floor by
 construction: `( check ) || original` falls through to the authored bytes.
 
-- **pin-blast-radius-escalation** [HUMAN?] — per-inconsistent-solve flooring is what
-  this spec builds (consistency failures are engine defects, expected vanishingly
-  rare; uniform per-solve demotion is predictable, honest, and the value floor already
-  cascades funcenv along the real dependency). Whether any single consistency failure
-  should further escalate to a whole-plan stage-0 posture (one detected inconsistency
-  taints the shared machinery) is an open human call; if ruled, it lands as a thin
-  policy above the per-solve floors, not a reshape.
+- **rul-certifier-trip-guard-only** (resolves pin-blast-radius-escalation; [TYPED
+  substance, 2026-08-15 blast-radius sitting]) — a trip means solver and certifier
+  DISAGREE, and the pair shares substrate (`Eq`, canonical forms, the transfer
+  model), so a trip cannot distinguish a solver-class defect from a substrate-class
+  one: the disagreement disqualifies BOTH, and neither may testify afterward.
+  Policy, deliberately stupid (~10 lines; no backflips — there is very little value
+  to buy here): ONE boolean per analysis spine — "a certifier tripped this run" —
+  set by any `Inconsistent`, scoped per (host, plan) pair (width-one today: the
+  run). A final cleanup pass immediately before plan-emission walks the spine and
+  demotes every elision-family outcome — elide, omit, survive — to run, minting a
+  narrative record per demotion (a reason-enum arm of the existing code, never a
+  sibling code); runs run; guards STAND — the runtime net re-verifies live, and
+  body identity is the one analysis-chosen conjunct — but only on a
+  trivially-constructable body-occupancy census at the cleanup seat (a guard whose
+  family is not census-unique demotes too; if the census is not a lookup there,
+  guards demote wholesale — `FORFEITS:forfeit-certifier-trip-demotes-guards`). The
+  plan becomes guard-only within the scope: nothing removed, everything
+  guarded-or-verbatim — the no-Dorc floor plus safety. The SAME boolean drives the
+  aid surface (one plan-prominent our-defect banner; per-line demotion reasons stay
+  pull-tier) and is itself a spine row (`300` §5 rul-whylog-is-the-spine). The §3
+  consumer floors above are UNCHANGED and still fire in place — mid-pipeline
+  safety: a terminal pass cannot un-ship a wrong pinned body, so the funcenv
+  fold-BREAK must still happen at the failing round — this rule is the thin
+  cross-window policy layered above them. No recovery, no carves, no re-planning
+  (re-planning re-consults disqualified machinery). Forfeited value and its capture
+  doors: `FORFEITS:forfeit-certifier-trip-evicts-elisions`.
 
 ## §4 — Posture by seat (the fail-fast ↔ best-effort calibration)
 
