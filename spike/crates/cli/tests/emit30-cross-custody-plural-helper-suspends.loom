@@ -1,0 +1,81 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - helper-declaration-contested
+  - vouched-composition-not-present
+---
+-- book.sh --
+#!/bin/sh
+# emit30-cross-custody-plural-helper-suspends (`28R:rul-mixed-custody-suspends-vouch`, the
+# composite predicate `rul-emission-custody-composite`) — the SUSPEND half of
+# pin28-contested-helper-resolves-by-last-wins.
+#
+# Same plurality, one difference that decides everything: the declaration a shell would bind sits in
+# a THIRD author's file, not in the file whose `wombat__is_converged` vouches. So sh's last-wins would
+# be choosing whose body serves this engineer's vouch, which load order has no standing to do. The
+# vouch does not attach: no elide, no guard, the site runs verbatim.
+#
+# Note what is NOT the reason. Crossing custody alone is fine — a singular cross-file reach is the
+# sanctioned helpers-file package shape and keeps its license
+# (pin28-helper-package-entrypoints-lift). It takes BOTH conjuncts: another custody AND a real
+# disagreement for load order to have silently settled.
+#
+# What to read in the transcript: `sites=0` (a check that cannot carry its composition ships nothing)
+# and an apply that is the book byte for byte.
+wombat sync a.conf
+
+-- a-entry.oracle.sh --
+# dorc-lang/v0.2
+# THE VOUCHER. Its verdict body reaches `_wombat_dest` and says nothing about which one.
+wombat__is_converged() {
+   _wombat_dest "$2"
+}
+
+-- b-helper.oracle.sh --
+# dorc-lang/v0.2
+# One answer, loaded second.
+_wombat_dest() {
+   wombat cmp -- "$1" "/etc/wombat/$1"
+}
+
+-- c-helper.oracle.sh --
+# dorc-lang/v0.2
+# A DIFFERENT answer, loaded third — so this is the one a shell binds, and it is not the voucher's.
+_wombat_dest() {
+   wombat cmp --strict -- "$1" "/etc/wombat/$1"
+}
+
+-- replay --
+$ dorc --book=book.sh -o a-entry.oracle.sh -o b-helper.oracle.sh -o c-helper.oracle.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=6af2757d716eba03a7fe3808bc471f786718b1a8f0bb20f37df38d74b8cadbca sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# emit30-cross-custody-plural-helper-suspends (`28R:rul-mixed-custody-suspends-vouch`, the
+# composite predicate `rul-emission-custody-composite`) — the SUSPEND half of
+# pin28-contested-helper-resolves-by-last-wins.
+#
+# Same plurality, one difference that decides everything: the declaration a shell would bind sits in
+# a THIRD author's file, not in the file whose `wombat__is_converged` vouches. So sh's last-wins would
+# be choosing whose body serves this engineer's vouch, which load order has no standing to do. The
+# vouch does not attach: no elide, no guard, the site runs verbatim.
+#
+# Note what is NOT the reason. Crossing custody alone is fine — a singular cross-file reach is the
+# sanctioned helpers-file package shape and keeps its license
+# (pin28-helper-package-entrypoints-lift). It takes BOTH conjuncts: another custody AND a real
+# disagreement for load order to have silently settled.
+#
+# What to read in the transcript: `sites=0` (a check that cannot carry its composition ships nothing)
+# and an apply that is the book byte for byte.
+wombat sync a.conf
