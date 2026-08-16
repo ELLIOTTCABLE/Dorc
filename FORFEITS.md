@@ -113,14 +113,3 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   converges toward guard-shaped machinery). BACK-OUT: trivial — every capture is
   additive against one boolean. REVISIT: trips observed non-vanishingly in the
   field, or either capture's machinery arriving for its own reasons.
-- **forfeit-certifier-trip-demotes-guards** — RULE (conditional; same ruling):
-  guards survive a trip only on a trivially-constructable body-occupancy census at
-  the cleanup seat; if the builder finds the plural-family census is not a lookup
-  there, guards demote with everything else and the tripped plan is
-  verbatim-plus-banner. FORFEITS: the guard tier's runtime-net value on defect days
-  (converged mutators re-run — priced reluctantly: guard-to-run risks
-  over-execution, but a wrong-body guard's yes risks under-execution). CAPTURE:
-  thread the existing plural-family census (the shadow-refusal machinery) to the
-  cleanup seat. BACK-OUT: trivial (an additive clause against the same boolean).
-  REVISIT: the implementing lane's fold — remove this row if the census proves a
-  lookup.

@@ -109,6 +109,15 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 - **check-tax-awareness** — a guarded site pays its check on every apply,
   forever (`KNOBS:kPROBING`): an expensive check must earn its vouch or
   just-run. Planner economics, never a license question.
+- **certifier-trip-cleanup-runs-in-every-driver** (`302:rul-certifier-trip-guard-only`)
+  — `certifier_trip::demote_on_trip` runs immediately after `build_plan_walled` in
+  EVERY plan-producing driver; a NEW driver MUST call it. On a tripped run,
+  Replace and Omit demote to run (`DemoteTag::CertifierTripped`, a reason-enum arm,
+  never a sibling code); guards STAND only on the syntactic occupancy-1 census over
+  `DefinitionTable` — the census consults NO solve, and that independence IS its
+  admissibility (a trip disqualifies solver and certifier together; nothing either
+  touched may testify). Runs run; the mid-pipeline §3 floors are untouched and
+  still fire in place; no recovery, no carves, no re-planning.
 
 ## Law — the survival tier (the design's ONE naked-trust cell)
 

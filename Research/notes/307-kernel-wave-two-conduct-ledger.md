@@ -188,6 +188,24 @@
   the lane owns verifying the funcenv certifier floor survives `never_live`'s
   deletion · whyworld unification included-or-explain (28Q §8's scope). BUILD
   phase authorized.
+- **lane-certifier-trip-policy — CLOSED + FOLDED 2026-08-15** (5 commits rebased,
+  ff'd; builder gates green both legs — W 2068/2068 · WSL 2064/2064 ·
+  bless:dry clean; one new golden, the banner loom; plain-comment ratio 6.3%).
+  `302:rul-certifier-trip-guard-only` built as ruled: the monotone
+  `CertifierTrip` latch (out-param through the fixpoint — intermediate rounds
+  latch), the terminal `demote_on_trip` cleanup in both drivers, the reason-enum
+  demotion arm, the banner code via the decision digest (NO new durable field —
+  tripwire not fired). **THE RULED FORK DISCHARGED: the census IS a syntactic
+  lookup — guards stand** (`DefinitionTable` occupancy; consults no solve, which
+  is the admissibility); `forfeit-certifier-trip-demotes-guards` REMOVED per its
+  own REVISIT (the two residual over-execute-direction conservatisms live in the
+  code's doc-comments, de-minimis). Fold adjudications: banner-as-sibling-code
+  ENDORSED (a genuine license-consequence world-state; one-catalog required a
+  code) · probe-mode banner-less resting state ENDORSED · out-param + two
+  reasoned `#[expect]`s ACCEPTED (the assembly wart converges into the Spine) ·
+  DST honesty ENDORSED (no solver fault-injection seam — a second forgeable
+  route to "broken solver" refused). Registry bullets landed
+  (analysis + plan CLAUDE.md). Report: `notes/307b`.
 - **lane-stage-zero-ship-seam** — QUEUED (new; the drift discovery above): the
   actual verdict-primacy re-cut per `28Q` §8 stage-0 as written, incl. its
   retroactive records-diff audit and the four 19A comment rips. Slot: after the

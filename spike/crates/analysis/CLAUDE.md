@@ -209,6 +209,13 @@ discipline: one rule per bullet, slugged; append to the matching section.
   with a non-empty-walk assertion. `trusted()` means CERTIFIED — never re-read the
   advisory `converged` flag as a trust gate (consistent-at-cap is the lfp and is
   used).
+- **certifier-trip-is-a-monotone-latch** (`302:rul-certifier-trip-guard-only`) —
+  `certify::CertifierTrip` is a private-field monotone boolean; its ONLY mutator
+  takes a real `SolveConsistency` (inheriting the checker's lexical fence), and
+  nothing clears it. It threads as an OUT-PARAM through the fixpoint drivers so
+  unobserved intermediate rounds still latch — a round-2 failure must not be
+  invisible to readers of the settled round. All four consumer floors latch it;
+  the cross-window CLEANUP consumer is plan-crate law (`plan/CLAUDE.md`).
 - **floors-are-whole-window-and-demote-only** — an `Inconsistent` demotes the ENTIRE
   analysis window; summaries (first-break, unstable components) explain, never scope.
   The funcenv floor BREAKS the fold at the failing round with `folded_edges = ∅` —
