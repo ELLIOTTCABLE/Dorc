@@ -751,6 +751,72 @@ pub fn shipping_source(
     })
 }
 
+/// The `<munged provider><suffix>` definition live at `node`, and the file that spells it.
+///
+/// One seat for every per-MEMBER resolution over a `PredictSet`-shaped vector — the probe ship's
+/// `__predict`, and the wrapper lane's `__predict` / `__lend_map` / `__enter`. Each role member is
+/// its own funcdef with its own frame answer, which is also what a shell does: names bind
+/// independently, so the peel model, the lend map, and the entry form are three separate questions
+/// asked at one site rather than one file's package deal.
+///
+/// The predicate is presence-only, deliberately: asking "does this file's body ANSWER this argv"
+/// would resolve by first-that-succeeds, which is the retired decline-fallthrough cascade
+/// (`28K` §6). A decline by the resolved definition is a decline.
+#[must_use]
+pub fn member_answering_at(
+    sets: &[dorc_oracle::predict::PredictSet],
+    interner: &Interner,
+    provider: Symbol,
+    suffix: &str,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> Option<(usize, dorc_oracle::predict::Predict)> {
+    use dorc_oracle::predict::map_provider_name;
+    let want = map_provider_name(interner.resolve(provider));
+    let named = |set: &dorc_oracle::predict::PredictSet| {
+        set.providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)
+            .and_then(|p| set.get(p).cloned())
+    };
+    let idx = shipping_source(sets.len(), node, live, &format!("{want}{suffix}"), |i| {
+        sets.get(i).and_then(named).is_some()
+    })?;
+    Some((idx, sets.get(idx).and_then(named)?))
+}
+
+/// The `<provider>__is_converged` definition live at `node`, and the file that spells it — the
+/// [`member_answering_at`] twin for the verdict vector's own wrapper type.
+///
+/// Three acts consume ONE call of this per wrapped site (`308:rul-carry-proof-is-same-definition`):
+/// the shipped inner check, the `safe-across` consent vouch, and pure-predicate carry's
+/// read-set-closure proof. Resolving it once is what makes the proof and the measured body the same
+/// definition by construction rather than by a checked coincidence.
+#[must_use]
+pub fn verdict_answering_at(
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    interner: &Interner,
+    provider: Symbol,
+    node: dorc_analysis::cfg::CfgNodeId,
+    live: dorc_analysis::funcenv::LiveDefinitions<'_>,
+) -> Option<(usize, dorc_oracle::predict::Predict)> {
+    use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::verdict::{VERDICT_SUFFIX, VerdictSet};
+    let want = map_provider_name(interner.resolve(provider));
+    let named = |set: &VerdictSet| {
+        set.providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)
+            .and_then(|p| set.get(p).cloned())
+    };
+    let idx = shipping_source(
+        verdict_sets.len(),
+        node,
+        live,
+        &format!("{want}{VERDICT_SUFFIX}"),
+        |i| verdict_sets.get(i).and_then(named).is_some(),
+    )?;
+    Some((idx, verdict_sets.get(idx).and_then(named)?))
+}
+
 /// R3 (23D §1 — the check IS the oracle): the stripped `<provider>__predict` a probe site ships,
 /// preceded by its CLOSURE (`28K` §4 `rul-pin-by-definition-bytes`) — the helpers and file-level
 /// constants the body needs, which do not travel with the funcdef span. A body whose closure the
@@ -772,23 +838,8 @@ pub fn ship_predict_body(
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
-    use dorc_oracle::predict::{
-        PREDICT_SUFFIX, Resolution, evaluate, map_provider_name, strip_predict,
-    };
-    let want = map_provider_name(interner.resolve(provider));
-    let named = |cs: &dorc_oracle::predict::PredictSet| {
-        cs.providers()
-            .find(|cp| map_provider_name(interner.resolve(*cp)) == want)
-            .and_then(|cp| cs.get(cp).cloned())
-    };
-    let idx = shipping_source(
-        checks.len(),
-        node,
-        live,
-        &format!("{want}{PREDICT_SUFFIX}"),
-        |i| checks.get(i).and_then(named).is_some(),
-    )?;
-    let check = checks.get(idx).and_then(named)?;
+    use dorc_oracle::predict::{PREDICT_SUFFIX, Resolution, evaluate, strip_predict};
+    let (idx, check) = member_answering_at(checks, interner, provider, PREDICT_SUFFIX, node, live)?;
     let arg_texts: Vec<String> = argv
         .iter()
         .map(|s| interner.resolve(*s).to_owned())
@@ -819,22 +870,8 @@ pub fn ship_verdict_body(
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
-    use dorc_oracle::predict::{map_provider_name, strip_verdict};
-    use dorc_oracle::verdict::{VERDICT_SUFFIX, VerdictSet};
-    let want = map_provider_name(interner.resolve(provider));
-    let named = |set: &VerdictSet| {
-        set.providers()
-            .find(|vp| map_provider_name(interner.resolve(*vp)) == want)
-            .and_then(|vp| set.get(vp).cloned())
-    };
-    let idx = shipping_source(
-        verdict_sets.len(),
-        node,
-        live,
-        &format!("{want}{VERDICT_SUFFIX}"),
-        |i| verdict_sets.get(i).and_then(named).is_some(),
-    )?;
-    let verdict = verdict_sets.get(idx).and_then(named)?;
+    use dorc_oracle::predict::strip_verdict;
+    let (idx, verdict) = verdict_answering_at(verdict_sets, interner, provider, node, live)?;
     let src = oracle_srcs.get(idx)?;
     let emits_report = dorc_oracle::report::emits_report(&verdict);
     let body = strip_verdict(src, &verdict, interner);
