@@ -403,12 +403,15 @@ went* — a path that could reach a plan step — not of its vocabulary. So:
 - **They remain diagnostics attached to an outcome, never outcomes themselves.** The closed
   admission outcome set does not grow, and no per-code behavioural branch may appear.
 
-**Still open, and the human's:** which of the nine route to refusal (§4) and which to ordinary
-conservative planning. That is a posture question rather than a correctness one. My reading, for
-what it is worth: the identity-mismatch condition belongs on the refusal side most clearly, since
-proceeding means emitting authority against a target we cannot confirm; the truncated-fact-count
-condition is defensibly ordinary, since the unseen sites already fold to unknown on their own;
-the remainder are genuine judgement calls.
+**Routing — dispositioned, softly.** Which of the nine refuse (§4) and which proceed under
+ordinary conservative planning is settled well enough to build against, and the per-condition
+table lives with the work at `plans/306c` §3b rather than here. The line they were sorted along
+is worth carrying in law, because it extrapolates: **refuse where the loss is unbounded or the
+frame's identity is in question; proceed conservatively where the loss is bounded, detected, and
+self-accounting.** Only one condition's behaviour changes from what the code does today.
+
+Graded [human, SOFT — spike-tier]: a disposition to ship against, not welded law, and a builder
+who finds a case wrong on contact should report it rather than contort.
 
 ## §7 — What the DX evidence supports
 

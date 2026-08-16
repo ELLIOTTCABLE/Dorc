@@ -122,10 +122,37 @@ The work, in dependency order:
    and none of their counts may gate engine control flow. Prose is authored at the conductor or
    human tier as usual — builders mint the structure with the prose explicitly empty.
 
-**Blocked on one human ruling, and only for part 4's disposition:** which of the nine route to
-refusal and which to ordinary conservative planning (`306b` §6e's closing paragraph). Parts 1–3
-do not wait on it; part 4's cases will need re-blessing if the routing lands differently, which
-is cheap.
+5. **Type the header-mismatch condition.** `read_header` currently folds four different
+   conditions into one code with a `which: String` — wrong host, wrong book, wrong attempt,
+   wrong nonce. That is a reason enum wearing a string, and the house rule is newtypes over
+   bare strings with illegal states unrepresentable. Type it. (This does not change routing;
+   all four refuse either way.) [human, hard ack]
+
+**Routing disposition.** Which condition refuses and which proceeds conservatively, below.
+*Refuse* = no plan carrying mutation authority for that target; analysis continues into §3a's
+output and the operator gets a full report. *Conservative* = ordinary planning; the affected
+sites simply have no record, fold to unknown, and run.
+
+| condition | disposition | because |
+|---|---|---|
+| `records-integrity-refused` | refuse | identity fields do not match this invocation; nothing in the stream is attributable to it |
+| `records-header-missing` | refuse | framed material with no identity frame — unattributable by absence |
+| `records-headerless-refused` | refuse | not our stream shape at all |
+| `records-glued-line` | refuse | a merge landing on a record boundary is undetectable, so the loss cannot be enumerated |
+| `records-sentinel-nonce` | refuse | the close marker is controller-owned framing like the header; a wrong one means we do not know the stream ended |
+| `records-torn-line` | conservative | detected and counted; affected sites simply have no record |
+| `records-alien-line` | conservative | rejected rather than consumed — signals channel hygiene, corrupts nothing |
+| `records-late-line` | conservative | dropped and counted; bounded |
+| `records-fact-truncated` | conservative | bounded and computable against the declared count |
+
+The line they were sorted along, so a builder can extrapolate to a condition not listed:
+**refuse where the loss is unbounded or the frame's identity is in question; proceed
+conservatively where the loss is bounded, detected, and self-accounting.**
+
+> **[human, SOFT — spike-tier]** This table is our *disposition*, not welded law. It had
+> limited attention and is meant to ship, not to bind. Only `records-sentinel-nonce` changes
+> current behaviour; the other eight ratify what the code already does. A builder who finds a
+> row wrong on contact with the code should say so rather than contort around it.
 
 Sizing guess: small-to-medium, and mostly mechanical once §3a exists.
 
