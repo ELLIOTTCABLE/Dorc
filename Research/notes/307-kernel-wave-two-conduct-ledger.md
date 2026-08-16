@@ -38,6 +38,22 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **review-minispec-focused — COLLECTED + ADJUDICATED 2026-08-16**
+  (`notes/30D` is the verdict record; raw reports `30B` neutral · `30C` Sol
+  adversarial, cherry-picked to conduct). HEADLINE, conductor-verified by own
+  eyes: **the corpus is broken at its root today** (`Minispec.lean:13` imports
+  the deleted `LeqIsReflexive`, never imports `JoinIsAssociative`; every
+  green gate all arc was the cheap tier not looking) — and the CAUSE of its
+  surviving a green lane is `30B:fnd-lean-staging-never-removes-stale-files`
+  (a shared, accrete-only cross-worktree Lean build root), which also marks
+  the `300` §2b lake-green claims SUSPECT-UNTIL-RESTAGED. Disposition (`30D`
+  §3): the `spike/verify/` repairs are builder-space and PLANNED-NOT-DISPATCHED
+  (the human capped new arcs); the three SPEC-CONTENT touches (the root
+  import-list deletion · the `Result`-prose softening · per-unit
+  law-instantiation battery lines) are `law-spec-touch-frontier-human-only`
+  and AWAIT EXPLICIT HUMAN AUTHORIZATION; the three free-sitting kani promotes
+  are a human call. TrustedBase and the derived-definitions linkage were
+  independently affirmed honest/real by both lineages.
 - **PARALLEL GRABS 2026-08-16** [human-authorized: parallel alongside the pin
   battery; NOTHING scheduled after — conductor context ~half spent]:
   **review-minispec-focused DISPATCHED** (the ruled end-of-r30 obligation;
