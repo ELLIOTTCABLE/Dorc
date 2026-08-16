@@ -327,6 +327,10 @@ CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — the same steps the pre-commit hook runs, from the same hk.pkl."
 run = "hk check --all"
 
+[tasks."check-quiet"]
+description = "check, agent-facing: `-q` (never `-n` — measured 2026-08-15, --no-progress does not touch hk's per-step-transition text at all when piped, only `--quiet` does). Silent on success (0 bytes); on failure, every diagnostic hk would otherwise show survives — same ERROR block, same diff, same fix command, same exit code — with the step-transition churn (`files - Fetching...`, per-step `❯` pending lines) gone. Never used to swallow a failure, only to drop lines that carried no information a human or an agent transcript needed."
+run = "hk check --all --quiet"
+
 [tasks.fmt]
 description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes). Works in an agent session too: the task re-enables hk's fix mode for itself, since a session-wide HK_FIX=0 would otherwise degrade this to a check that only PRINTS the diff."
 run = "hk fix --all"
