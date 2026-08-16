@@ -479,24 +479,22 @@ impl ReplaceLicense {
     ///      single predicted rc reproduces, and a constant-substituted loop condition is an
     ///      infinite/zero-iteration disaster (arch-1, note 214 — the honest successor to the
     ///      retired render-floor, keyed on iteration not render capability).
-    // <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
     ///    * `StatusRelaxable` (a `&&`/`||` left operand, an errexit-region command, a
     ///      `$?`-reader's predecessor, or — since arch-1 — an `if`/`elif` guard) — blocks
     ///      **only when the rc is ⊤** (`status == Predicted::Top`): then the stand-in would
     ///      default to
     ///      `true` (rc 0), a fabricated success that suppresses a `|| fallback` (the
     ///      `kFAIL-perform` under-execute — the round-19 adversarial trace). A
-    ///      *declared/probe-sourced* rc relaxes it (`status == Predicted::Value(N)` ⇒ the
-    ///      stand-in is `StandIn::from_rc(N)`, reproducing the exact status, so the branch
-    ///      decides identically — the fold's declared-rc opt-in, `19A §5`). The render CAN
-    ///      express this (operand+operator on one line; the fold + omit-safety gate
-    ///      handle it). (`tc-mint`/`tc-reliability`: the rc is a *declared observable*,
-    ///      not inferred; an un-declared rc on a non-conforming establish is an
-    ///      oracle-quality defect — build-2's contract, `19C` strain-B.)
-    ///    * Errexit (`set -e`)-consumed status is NOT special-cased (19A C-3, honored
+    ///      PROBE-SOURCED rc relaxes it (`status == Predicted::Value(N)` ⇒ the stand-in is
+    ///      `StandIn::from_rc(N)`, reproducing the exact status, so the branch decides
+    ///      identically — `inv-probe-sourced-values`; an Establish site's status is
+    ///      withheld to ⊤ at intake, so only a Query's own measured rc ever arrives here).
+    ///      The render CAN express this (operand+operator on one line; the fold +
+    ///      omit-safety gate handle it).
+    ///    * Errexit (`set -e`)-consumed status is NOT special-cased (honored
     ///      round-20 / 205 §2): the cfg pass marks errexit-region commands (and `$?`
     ///      readers' predecessors) `StatusRelaxable`-consumed, so they ride the same
-    ///      declared-rc-or-block rule above. Under fork-mutator-rc a mutator's rc is
+    ///      measured-rc-or-block rule above. Under fork-mutator-rc a mutator's rc is
     ///      always ⊤ ⇒ converged mutators under `set -e` run (the 206 §2 headline cost).
     ///
     /// Generic over the phase `P` (`inv-superposition`): the engine never bakes a
@@ -930,13 +928,13 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
 /// parallel one (`inv-site-keyed-results`).
 pub use dorc_core::LeafId;
 
-// <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
-/// The cheapest sh stand-in that reproduces a leaf's **exact** observed exit status
-/// (`19A §5` observable-value-MAINTAINING substitution / DESIGN `16F`/`16P-T10`).
+/// The cheapest sh stand-in that reproduces a leaf's **exact** PROBE-MEASURED exit status
+/// (DESIGN `16F`/`16P-T10`; `inv-probe-sourced-values`).
 /// NOT always `:`: the value the downstream fold/guard reads must be preserved, so a
-/// converged non-conforming establish (`useradd`, rc 9) becomes `(exit 9)`, never
-/// `true` — else its rc-0 stub would suppress a `|| fallback` (the `kFAIL-perform`
-/// under-execute the round-19 adversarial pass proved).
+/// known-rc Query substitutes `(exit n)` rather than `true` — else its rc-0 stub would
+/// suppress a `|| fallback` (the `kFAIL-perform` under-execute the round-19 adversarial
+/// pass proved). An Establish site's status is withheld to ⊤ at intake, so it stands in
+/// as `true` and reproduces nothing measured.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StandIn {
     /// rc 0 — `true` (the human's choice over `:` for the common conforming case).
@@ -3404,13 +3402,12 @@ fn push_inline_predicts(
     checks.extend(staged);
 }
 
-// <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
 /// Build a plan from the analysis result + an injected host **observation** oracle.
 ///
 /// `observe` is the host probe (the real host / `hostsim` is a later seam): it
 /// answers, per fact, the [`Observable`] state — the convergence [`Verdict`] (the
-/// elision gate) *and* the concrete observed exit status (the fold + value-preserving
-/// substitution input, `19A §5` / `19B` build-1). `build_plan` is a pure function of
+/// elision gate) *and* the concrete probe-measured exit status (the fold +
+/// value-preserving substitution input). `build_plan` is a pure function of
 /// its inputs (deterministic given a deterministic `observe`).
 ///
 /// Two collapses, both apply-phase (`inv-superposition` — the caller argues the
@@ -4352,7 +4349,6 @@ impl Plan {
             .collect()
     }
 
-    // <!-- superseded: the 19A §5 declared-rc model is dead (rul-declared-observable-substitution-is-dead); establishes are firewalled to ⊤ — do not build toward this comment; see Research/plans/28Q §4 -->
     /// Render the apply as the ORIGINAL book with each elided leaf's **exact byte-span**
     /// substituted in-situ (arch-1, note 214 — the leaf-exact / span-based render). A
     /// `Replace`d leaf's command span becomes its value-preserving [`StandIn`]; a
@@ -4369,8 +4365,8 @@ impl Plan {
     /// `ap-2` / `an-render-runnable`: each substitution is value-preserving — `true`
     /// (rc 0), `false` (rc 1), `(exit n)` (other), or `:` for a wholly-dead `Omit`. The
     /// stand-in is the substitution *itself*, not filler: a `Replace` reproduces the leaf's
-    /// observed status (`19A §5`), so `useradd[rc9] || mkdir` would substitute `(exit 9)`,
-    /// keeping `|| mkdir` live. Because the edit replaces ONLY the command span and leaves
+    /// probe-measured status, so a known-rc-1 Query substitutes `false` and keeps its
+    /// `|| fallback` live. Because the edit replaces ONLY the command span and leaves
     /// the surrounding keywords intact, no empty-clause `dash -n` error can arise (the
     /// trap the whole-line-comment form fell into). The leaf-exact render makes the door-3
     /// `cmd || true` payoff expressible (`true || true`) and lets an if/elif guard
