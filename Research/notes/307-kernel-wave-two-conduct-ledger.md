@@ -177,6 +177,39 @@
   still registered (human-attention; the resource-safety one holds SyncThing
   conflict files, human-owned).
 
+## §1b — SUCCESSOR HANDOFF (written 2026-08-15 at the human's rewind lean)
+
+A post-rewind conductor MUST distrust conversation memory; ground truth = this
+ledger + `plans/309` + `notes/305` + the 308a kit + `git log ai/r30-conduct` +
+the lane branch. Boot order: LIVING_STATUS → this file (whole) → `plans/28Q`
+§§0–1/§7/§8 → `notes/305` → `spike/CLAUDE.md`. THE REWIND ANCHOR: the seams
+lane CLOSED (branch `ai/r30-lane-influence-seams`, tree clean, report
+`notes/307a` §§1–9 committed in-branch), nothing else in flight. Next actions,
+in order:
+1. **Fold batch**: merge `ai/main` into `ai/r30-conduct` (the §2 fold-batch
+   rider — MERGE, never rebase); rebase the seams lane onto the merged tip,
+   `git merge --ff-only`; fold-review `307a` under the deviation-litmus (§9
+   especially: the sandwich round, the two loom findings, the conductor-prose
+   commit); run `mise run both gate:full-quiet` + `bless:dry` over the combined
+   tip by own hand (never-vouch); refresh LIVING_STATUS's top block (stale re:
+   the b4ab65d5 freeze).
+2. **Dispatch `lane-certifier-trip-policy`** (§2 row; the `302` ruling text is
+   in-lineage after the merge) and, concurrently, the conversion lane's
+   READ-ONLY checkpoint-1 (`notes/305` VERBATIM — no re-derivation; correct its
+   one staleness: `mise run both gate:full-quiet` now works directly). One
+   BUILD at a time (the human's serial lean); trip-policy folds before the
+   conversion's build phase begins.
+3. **The stage-i stopping point** = conversion folded → gates green → the
+   `gate-adversarial-crosscheck-stage-i` blocker (kit:
+   `quarantine/308a-…-crosscheck-prompt.md`, fill the FILLMEs; reports
+   308b–e; synthesis notes/308) → burndown → stamp. Then lane-snapshot-emission;
+   then the Spine census stage per `plans/309` (post-crosscheck, pre-world-scopes).
+Open soft items (human-owed, never block): the 308a kit glance · the four
+Migrated registers' prose · `work-loom-interior-hole-authoring` adjudication.
+Standing tunes that bind every brief: stop-and-ask over momentum · the
+deviation-litmus · property-not-mechanism in rulings · the sandwich flow (§5)
+with loom-paths-only handoffs · briefs quote rulings verbatim.
+
 ## §2b — The Spine×influence unification (design-bank; human-led, in-flow)
 
 **THE SITTING IS CLOSED 2026-08-15 ("Okay, all done"); its product is
