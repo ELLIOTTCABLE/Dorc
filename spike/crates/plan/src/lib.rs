@@ -1535,10 +1535,17 @@ pub fn build_vouches_from_sets(
                 .find(|p| map_provider_name(interner.resolve(*p)) == want)
                 .and_then(|p| set.get(p).cloned())
         };
-        let found = dorc_oracle::live_source(verdict_sets.len(), |i| {
-            verdict_sets.get(i).and_then(named).is_some()
-        })
-        .filter(|&i| live.answers_at(node, &verdict_name, i))
+        let found = dorc_core::answering_file(
+            live.definition_before(node, &verdict_name),
+            verdict_sets.len(),
+            |i| {
+                verdict_sets
+                    .get(i)
+                    .and_then(named)
+                    .is_some()
+                    .then(|| live.provenance_of(i, &verdict_name))
+            },
+        )
         .and_then(|i| {
             let set = verdict_sets.get(i)?;
             Some((i, *oracle_srcs.get(i)?, named(set)?))
@@ -1683,13 +1690,17 @@ pub fn build_wrapped_vouches(
             "{}{VERDICT_SUFFIX}",
             map_provider_name(interner.resolve(*provider))
         );
-        let Some(file_idx) = dorc_oracle::live_source(verdict_sets.len(), |i| {
-            verdict_sets
-                .get(i)
-                .and_then(|set| set.get(*provider))
-                .is_some()
-        })
-        .filter(|&i| live.answers_at(*node, &verdict_name, i)) else {
+        let Some(file_idx) = dorc_core::answering_file(
+            live.definition_before(*node, &verdict_name),
+            verdict_sets.len(),
+            |i| {
+                verdict_sets
+                    .get(i)
+                    .and_then(|set| set.get(*provider))
+                    .is_some()
+                    .then(|| live.provenance_of(i, &verdict_name))
+            },
+        ) else {
             continue;
         };
         let Some(verdict) = verdict_sets

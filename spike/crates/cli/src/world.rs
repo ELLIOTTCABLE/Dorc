@@ -662,7 +662,7 @@ pub fn shipping_source(
     has: impl Fn(usize) -> bool,
 ) -> Option<usize> {
     dorc_core::answering_file(live.definition_before(node, role_name), count, |i| {
-        has(i).then(|| live.provenance_of(source_file_id(i), role_name))
+        has(i).then(|| live.provenance_of(i, role_name))
     })
 }
 

@@ -583,22 +583,22 @@ impl<'a> LiveDefinitions<'a> {
         }
     }
 
-    /// What a row lifted from `file`'s definition of `name` may be keyed by — the table's own
-    /// answer ([`DefinitionTable::provenance_of`]), reached through the oracle a seat already holds
-    /// so no seat grows a second parameter.
+    /// What a row lifted from source index `file`'s definition of `name` may be keyed by — the
+    /// table's own answer ([`DefinitionTable::provenance_of`]), reached through the oracle a seat
+    /// already holds so no seat grows a second parameter.
+    ///
+    /// Takes the positional INDEX because that is what every seat holds and the index IS the
+    /// [`dorc_core::SourceFileId`] (`28O:dec-load-order-is-the-id-order`); doing the crossing here
+    /// keeps it in ONE place, exactly as [`custody_of_source_index`] does for custody.
     ///
     /// An unsolved unit answers [`Unkeyed`](dorc_core::DefinitionProvenance::Unkeyed): there is no
     /// table to join against, which is the same "no opinion" posture
     /// [`definition_before`](Self::definition_before) takes from the other side.
     #[must_use]
-    pub fn provenance_of(
-        &self,
-        file: dorc_core::SourceFileId,
-        name: &str,
-    ) -> dorc_core::DefinitionProvenance {
+    pub fn provenance_of(&self, file: usize, name: &str) -> dorc_core::DefinitionProvenance {
         self.bound
             .map_or(dorc_core::DefinitionProvenance::Unkeyed, |(_, defs)| {
-                defs.provenance_of(file, name)
+                defs.provenance_of(source_file_of_index(file), name)
             })
     }
 
@@ -661,9 +661,15 @@ impl<'a> LiveDefinitions<'a> {
 /// so `28M` §10's possible re-key has one crossing to inspect rather than five.
 #[must_use]
 pub fn custody_of_source_index(file: usize) -> dorc_core::DefinitionCustody {
-    dorc_core::DefinitionCustody::of_defining_file(dorc_core::SourceFileId(
-        u32::try_from(file).unwrap_or(u32::MAX),
-    ))
+    dorc_core::DefinitionCustody::of_defining_file(source_file_of_index(file))
+}
+
+/// The [`dorc_core::SourceFileId`] a source-ordered vector index denotes
+/// (`28O:dec-load-order-is-the-id-order`). Its twin above crosses into the CUSTODY vocabulary; this
+/// one stops at the file id, which is what the definition join needs.
+#[must_use]
+pub fn source_file_of_index(file: usize) -> dorc_core::SourceFileId {
+    dorc_core::SourceFileId(u32::try_from(file).unwrap_or(u32::MAX))
 }
 
 /// Solve the function environment over `cfg`.
