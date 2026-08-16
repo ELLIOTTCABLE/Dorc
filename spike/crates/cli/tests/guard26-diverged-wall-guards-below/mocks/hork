@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock. `status` answers rc 1 so the verdict reads `diverged` and the book line really runs;
+# everything else (the apply's `provision`) answers rc 0. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+[ "$1" = status ] && exit 1
+exit 0

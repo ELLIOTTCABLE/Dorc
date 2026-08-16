@@ -1,0 +1,52 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=220f32f25248cf1816a6a88291f93ed65ec878933b6b75002aa3b2ca0ccdc447 sites=3 @@dorc@@\n'
+# site 0: dorc-auto:hork@converged
+hork__is_converged() {
+   [ "$1" = provision ] || return 2
+   hork status
+}
+hork__is_converged 'provision'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.File:/etc/a.conf@content
+wombat__is_converged() {
+   dst="$2"
+   wombat cmp -- "$1" "$dst"
+}
+wombat__is_converged 'a.conf' '/etc/a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: sm.dorc.File:/etc/b.conf@content
+wombat__is_converged 'b.conf' '/etc/b.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+wombat__is_converged() {
+   dst="$2"
+   wombat cmp -- "$1" "$dst"
+}
+
+#!/bin/sh
+# guard26-diverged-wall-guards-below — FUTURE-pin (XFAIL): the DIVERGED flavor of the same guard
+# void the `guard26-classed-decline-*` twins pin. Here `hork` bears a verdict function that ANSWERS
+# `provision`, and the probe measures it diverged — so the line really runs: a modeled, attributed,
+# RUNNING wall. This is USER_STORY stage-3/stage-5's drifted-day shape ("verify: converged, but
+# past X"): the drops below carry a reached vouch and a `holds` record on their own authored cells,
+# so the repaired engine should GUARD them. Today they classify `EstablishAmbient` (hork's establish
+# touches only its own auto-cell), the wall walk demotes their elision Replace→Run only, and both
+# mutation-capable drops ship verbatim.
+#
+# Same root as the classed-decline twin (`fnd-classed-decline-unwalls-guard-tier`), pinned
+# separately so the BREADTH has an executable witness: the void fires below ANY modeled running
+# wall — declined or diverged — not just below classed declines; as built, a guard can only ever
+# exist below an UNMODELED wall. When the repair lands, this case goes XPASS (or head-expected.ran
+# screams) — promote it. Evidence: `trial/r26/predictions.md` §7 · `notes/26F`.
+hork provision
+( wombat__is_converged a.conf /etc/a.conf ) || wombat a.conf /etc/a.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
+( wombat__is_converged b.conf /etc/b.conf ) || wombat b.conf /etc/b.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
