@@ -38,6 +38,19 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **PARALLEL GRABS 2026-08-16** [human-authorized: parallel alongside the pin
+  battery; NOTHING scheduled after — conductor context ~half spent]:
+  **review-minispec-focused DISPATCHED** (the ruled end-of-r30 obligation;
+  staffing = Opus neutral (`review-minispec-neutral`, report `notes/30B`) +
+  Sol adversarial via codex (`review-minispec-adversarial`, report
+  `notes/30C`); Fable omitted — ack-gated, human present to grant if wanted;
+  both read-only from `d31378e8`; adjudication under maximum skepticism at
+  collection) · **lane-tooling-debt-triple DISPATCHED** (Opus, branch
+  `ai/r30-lane-tooling-debt`, base `d31378e8`: T1 task-output-visibility done
+  properly at the flag layer with both-direction falsification · T2 the
+  preflight cold-witness → product binary, the decided direction · T3
+  bless's sanctioned-drift failure made self-teaching; hook-config-durability
+  deliberately NOT included, still banked — shared `.git/config` care).
 - **lane-sh-parity-pin-battery — DISPATCHED 2026-08-16** (Opus, branch
   `ai/r30-lane-sh-parity-pins`; work order = `notes/30A` VERBATIM — the
   doctrine §1, the inventory §2, the budget rules §3; the xfail-with-named-
