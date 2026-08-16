@@ -438,11 +438,12 @@ fn plural_role_names(world: &CaseWorld) -> BTreeSet<String> {
 
 /// The cases that deliberately carry a plural-definition idiom the environment BLESSES.
 ///
-/// Both are `28K` §1's sanctioned shapes rather than shadow collisions, which is exactly why the
+/// Every one is `28K` §1's sanctioned shape rather than a shadow collision, which is exactly why the
 /// contested withdrawal leaves them alone and the frame lookup has to answer them: a define-if-absent
-/// polyfill whose guard the decidable-condition fold proves dead (`28M` §9), and an `unset -f` above
-/// a redefinition, the blessing that makes an override an override instead of a contest. They are
-/// where today's corpus exercises the plural arm with licenses intact.
+/// polyfill whose guard the decidable-condition fold proves dead (`28M` §9), an `unset -f` above a
+/// redefinition (the blessing that makes an override an override instead of a contest), and the
+/// three `frame30-*` regional idioms this lane minted, where a subshell-local body dies at its own
+/// `)`. Together they are where the corpus exercises the plural arm with licenses intact.
 ///
 /// This measurement REFINES `307:fnd-corpus-carries-twelve-plural-families`, which counted the
 /// twelve textual cases and the five the withdrawal holds byte-stable but did not separate the
@@ -454,6 +455,9 @@ fn plural_role_names(world: &CaseWorld) -> BTreeSet<String> {
 const PLURAL_IDIOM_CASES: &[&str] = &[
     "contest28-polyfill-guard-defers-to-the-oracle.loom",
     "contest28-unset-f-blesses-elision.loom",
+    "frame30-a-regional-decline-is-a-decline.loom",
+    "frame30-nested-region-inherits-the-outer-body.loom",
+    "frame30-subshell-body-answers-inside-only.loom",
 ];
 
 /// THE PLURALITY CENSUS (`305a` §1): every REACHABLE plural family in the committed corpus sits in
