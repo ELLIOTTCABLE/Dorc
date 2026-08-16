@@ -61,6 +61,7 @@ fn census_marker(kind: &CollapseKind) -> &'static str {
         CollapseKind::FixpointCapDegrade { .. } => "CollapseKind::FixpointCapDegrade",
         CollapseKind::RoleFamilyShadowed { .. } => "CollapseKind::RoleFamilyShadowed",
         CollapseKind::SolverConsistencyFailure { .. } => "CollapseKind::SolverConsistencyFailure",
+        CollapseKind::CompositionSuspended { .. } => "CollapseKind::CompositionSuspended",
         CollapseKind::Cancellation(reserved) => match *reserved {},
     }
 }
@@ -134,6 +135,12 @@ fn constructible_classes() -> Vec<CollapseKind> {
                 converged: true,
                 rounds: 4,
             },
+        },
+        CollapseKind::CompositionSuspended {
+            site: site(0),
+            vouching: MintSpan(Span::new(BytePos(0), BytePos(1))),
+            vouching_file: SourceFileId(0),
+            reason: dorc_aid::diag::VouchedCompositionReason::BookRedefinesHelper,
         },
     ]
 }

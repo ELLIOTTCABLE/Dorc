@@ -1492,7 +1492,7 @@ pub fn build_vouches(
     value: &ValueFlow,
     interner: &mut Interner,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
-) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
+) -> (Carrier<Vouches>, VouchLiftAid) {
     let mut diags = Vec::new();
     let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_srcs
         .iter()
@@ -1502,7 +1502,7 @@ pub fn build_vouches(
             lifted.value
         })
         .collect();
-    let (lifted, narrative) = build_vouches_from_sets(
+    let (lifted, aid) = build_vouches_from_sets(
         oracle_srcs,
         &verdict_sets,
         helpers,
@@ -1512,7 +1512,38 @@ pub fn build_vouches(
         live,
     );
     diags.extend(lifted.diags);
-    (Carrier::new(lifted.value, diags), narrative)
+    (Carrier::new(lifted.value, diags), aid)
+}
+
+/// What the vouch lift has to SAY beside the vouches it minted: the decision-inert narrative every
+/// collapse owes (`law-collapse-mints-narrative`) and the composition suspensions a user must see.
+///
+/// The suspensions carry their oracle-FILE index beside the `Diag`, because a `Diag` holds a span and
+/// spans are only file-qualified by their caller (`AID:law-lineno-identity`) — the same shape the
+/// load-edge helper-collision report uses. Deduped by (name, reason, voucher): one composition, one
+/// sentence, however many sites lost their license to it.
+#[derive(Debug, Default)]
+pub struct VouchLiftAid {
+    /// One record per suspended SITE — the narrative plane counts collapses, not compositions.
+    pub narrative: Vec<CollapseNarrative>,
+    /// The reportable suspensions, in `(name, reason, oracle-file)` order.
+    pub suspensions: Vec<(usize, Diag)>,
+}
+
+/// The [`dorc_aid::diag::VouchedCompositionReason`] one closure denial maps to. Two vocabularies, one
+/// crossing seat: `dorc-oracle` decides WHY a composition carries no license, `dorc-aid` owns how a
+/// reason is said, and neither imports the other's enum.
+fn suspension_reason(
+    reason: dorc_oracle::closure::DenialReason,
+) -> dorc_aid::diag::VouchedCompositionReason {
+    use dorc_aid::diag::VouchedCompositionReason as Said;
+    use dorc_oracle::closure::DenialReason as Found;
+    match reason {
+        Found::BookRedefinesHelper => Said::BookRedefinesHelper,
+        Found::BookShadowsCommand => Said::BookShadowsCommand,
+        Found::PluralAcrossCustody => Said::PluralAcrossCustody,
+        Found::UnenumerableCall => Said::UnenumerableCall,
+    }
 }
 
 /// [`build_vouches`] over already-lifted per-file
@@ -1537,7 +1568,7 @@ pub fn build_vouches_from_sets(
     value: &ValueFlow,
     interner: &mut Interner,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
-) -> (Carrier<Vouches>, Vec<CollapseNarrative>) {
+) -> (Carrier<Vouches>, VouchLiftAid) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
         VERDICT_SUFFIX, VerdictResolution, VerdictSet, check_commands, classify_decline,
@@ -1547,6 +1578,8 @@ pub fn build_vouches_from_sets(
     let diags: Vec<Diag> = Vec::new();
     // C5 (`27V` Lane A): the decision-inert VerdictDecline narrative beside the no-vouch-⇒-run collapse.
     let mut collapse_narrative: Vec<CollapseNarrative> = Vec::new();
+    let mut suspensions: BTreeMap<(String, dorc_aid::diag::VouchedCompositionReason, usize), Diag> =
+        BTreeMap::new();
 
     let mut vouches = Vouches::new();
     // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
@@ -1659,8 +1692,39 @@ pub fn build_vouches_from_sets(
         // `28K` §4: the guard runs the definition's bytes PLUS its closure. A contested closure
         // withholds the VOUCH — no guard, no elide, the site runs (`inv-kfail`).
         let stripped = strip_verdict(src, verdict, interner);
-        let Ok(closure) = helpers.closure_for(file_idx, &stripped) else {
-            continue;
+        let closure = match helpers.closure_for(file_idx, &stripped) {
+            Ok(closure) => closure,
+            // The composition that will RUN is not the one this author vouched
+            // (`28R:rul-mixed-custody-suspends-vouch`): no elide, no guard, the site runs. Narrated at
+            // every step, and reported once per (name, reason, voucher) — a per-SITE report would be a
+            // correlated cascade over one collision (`28O:dec-one-diagnostic-per-file-not-per-item`).
+            Err(denial) => {
+                let reason = suspension_reason(denial.reason);
+                collapse_narrative.push(CollapseNarrative::new(
+                    SpeechAct::Declined,
+                    CollapseKind::CompositionSuspended {
+                        site: dorc_aid::diag::SiteId::leaf(LeafId(
+                            u32::try_from(leaf_idx).unwrap_or(u32::MAX),
+                        )),
+                        vouching: MintSpan(verdict.name_span),
+                        vouching_file: arm_file,
+                        reason,
+                    },
+                ));
+                suspensions.insert(
+                    (denial.name.clone(), reason, file_idx),
+                    Diag::new(
+                        dorc_aid::diag::DiagCode::VouchedCompositionNotPresent(
+                            dorc_aid::diag::VouchedCompositionNotPresent {
+                                name: denial.name,
+                                reason,
+                            },
+                        ),
+                        verdict.name_span,
+                    ),
+                );
+                continue;
+            }
         };
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
@@ -1687,7 +1751,16 @@ pub fn build_vouches_from_sets(
         .with_defining_span(defining, arm_file);
         vouches.insert(node, fact, ByVouch::vouched(vouch, Rung::Both));
     }
-    (Carrier::new(vouches, diags), collapse_narrative)
+    (
+        Carrier::new(vouches, diags),
+        VouchLiftAid {
+            narrative: collapse_narrative,
+            suspensions: suspensions
+                .into_iter()
+                .map(|((_, _, file), diag)| (file, diag))
+                .collect(),
+        },
+    )
 }
 
 /// Mint the elide/guard VOUCHES for wrapped-ENTERING BOOK sites (`27C` §3 / lane-integration
@@ -6060,6 +6133,7 @@ apt_get__is_converged() { return 0; }
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
         let mut decline_leaves: Vec<u32> = narrative
+            .narrative
             .iter()
             .filter_map(|ev| match ev.kind() {
                 CollapseKind::VerdictDecline { site, .. } => Some(site.leaf.0),
@@ -6104,6 +6178,7 @@ apt_get__is_converged() { return 0; }
         );
         assert!(
             !none
+                .narrative
                 .iter()
                 .any(|ev| matches!(ev.kind(), CollapseKind::VerdictDecline { .. })),
             "a reached, vouching verdict body is no collapse and narrates nothing: {none:?}"

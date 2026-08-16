@@ -196,6 +196,7 @@ pub enum DiagCode {
     /// `rul-pin-by-definition-bytes`; `28M` §8's diamond rider: version-skewed vendored copies
     /// refuse rather than dedup). Spanned at the later declaration.
     HelperDeclarationContested(HelperDeclarationContested),
+    VouchedCompositionNotPresent(VouchedCompositionNotPresent),
 
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
@@ -430,6 +431,7 @@ impl DiagCode {
             DiagCode::RoleDefinedBelowItsSites(_) => "role-defined-below-its-sites",
             DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
             DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
+            DiagCode::VouchedCompositionNotPresent(_) => "vouched-composition-not-present",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1203,6 +1205,46 @@ pub struct HelperDeclarationContested {
     pub name: String,
     /// Where the EARLIER declaration was authored, `file:line`-shaped (`{prior}`).
     pub prior: String,
+}
+
+/// Payload of [`DiagCode::VouchedCompositionNotPresent`] (TEMPLATIZED): the reached name whose
+/// resolution left the vouching engineer's composition, and which of the four worlds it is.
+///
+/// The vouch attaches to the code that will actually RUN — the verdict body's reached closure,
+/// resolved at the site's frame (`28R:rul-mixed-custody-suspends-vouch`). Where the composition that
+/// will run is not the region of sh the engineer vouched, the vouch does not attach: no elide, no
+/// guard, the site runs. Spanned at the VOUCHING definition, because the composition is what the
+/// diagnostic is about and its author is the party who can restore it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VouchedCompositionNotPresent {
+    /// The reached name whose resolution carries no license (`{name}`).
+    pub name: String,
+    /// Which of the four worlds this is — one license outcome, four reason-sentences, so a typed
+    /// enum rather than four sibling codes (`28L:rul-reason-enums-not-sibling-codes`).
+    pub reason: VouchedCompositionReason,
+}
+
+/// Why a vouched composition is not the one that will run (see [`CfgTopNodeReason`] for why the
+/// reason enums live in this crate).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum VouchedCompositionReason {
+    /// The BOOK defines a function under a name the vouching body calls, and the loaded sources
+    /// declare it too. At apply the hoisted preamble sits above the book, so the book's rebinding
+    /// wins at every guard below it — the engineer's vouch would cover the admin's replacement.
+    BookRedefinesHelper,
+    /// The BOOK defines a function under a name the vouching body calls as an external UTILITY. The
+    /// engine never chooses the referent (`28R:rul-contested-name-never-resolved`): honoring the
+    /// definition runs unvouched book code inside a read-only check, bypassing it under-executes in
+    /// context-wrapper books, and each is unsound in a real cell. Declining is the only sound act.
+    BookShadowsCommand,
+    /// Two loaded sources declare the name with DIFFERING bytes and the one a shell binds lies
+    /// outside the voucher's custody, so LOAD ORDER would be deciding whose body serves this
+    /// engineer's vouch (`28K` §6 — load order is not an adjudicator of authorship).
+    PluralAcrossCustody,
+    /// The body reaches a call the engine cannot enumerate — an in-process definition vector, which
+    /// can bind or invoke a name no walk sees — so its composition cannot be closed at all. The
+    /// permanent bottom rung (`28R:rul-instantiation-hash-dedup` tier 3), never scaffolding.
+    UnenumerableCall,
 }
 
 /// Payload of [`DiagCode::InBookVocabularyRole`] (TEMPLATIZED): the in-book kind-owner definition
@@ -2430,6 +2472,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // WARNING on the same footing: the license is withheld, the site runs, and the plan is safe.
+        // What the reader loses is value, and what they need is to know which composition to restore.
+        DiagCode::VouchedCompositionNotPresent(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3301,6 +3350,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::HelperDeclarationContested(HelperDeclarationContested { name, prior }) => {
             vec![ours("name", name.clone()), ours("prior", prior.clone())]
         }
+        DiagCode::VouchedCompositionNotPresent(VouchedCompositionNotPresent { name, reason }) => {
+            vec![
+                ours("name", name.clone()),
+                component("reason", vouched_composition_text(ctx, *reason)),
+            ]
+        }
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })
@@ -4057,6 +4112,28 @@ fn syntax_malformed_text(ctx: &RenderCtx<'_>, reason: SyntaxMalformedReason) -> 
         SyntaxMalformedReason::UnterminatedSubshell => "syntax-malformed-unterminated-subshell",
         SyntaxMalformedReason::UnterminatedBraceGroup => {
             "syntax-malformed-unterminated-brace-group"
+        }
+    };
+    component_text(ctx.arrangements(), slug, None, &[])
+}
+
+/// The registry sentence for one [`VouchedCompositionReason`].
+fn vouched_composition_text(
+    ctx: &RenderCtx<'_>,
+    reason: VouchedCompositionReason,
+) -> ComponentText {
+    let slug = match reason {
+        VouchedCompositionReason::BookRedefinesHelper => {
+            "vouched-composition-not-present-book-redefines-helper"
+        }
+        VouchedCompositionReason::BookShadowsCommand => {
+            "vouched-composition-not-present-book-shadows-command"
+        }
+        VouchedCompositionReason::PluralAcrossCustody => {
+            "vouched-composition-not-present-plural-across-custody"
+        }
+        VouchedCompositionReason::UnenumerableCall => {
+            "vouched-composition-not-present-unenumerable-call"
         }
     };
     component_text(ctx.arrangements(), slug, None, &[])

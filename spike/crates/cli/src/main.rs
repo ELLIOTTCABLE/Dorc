@@ -1025,7 +1025,18 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         &mut interner,
         live_defs,
     );
-    let (mut vouches, decline_narrative) = vouch_lift.value;
+    let (mut vouches, vouch_aid) = vouch_lift.value;
+    let decline_narrative = vouch_aid.narrative;
+    // The composition suspensions ride the LOAD-edge report stream, where a diagnostic's span is
+    // file-qualified (`AID:law-lineno-identity`) — the same seat the helper-collision report uses,
+    // for the same reason: both are one sentence about a composition, not one per site.
+    for (file, diag) in vouch_aid.suspensions {
+        let source = source_paths
+            .get(file)
+            .zip(source_refs.get(file))
+            .map(|(path, src)| (path.as_str(), *src));
+        report_at(advisory, "vouching", source, &[diag]);
+    }
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
     vouches.extend(dorc_plan::build_wrapped_vouches(
@@ -2767,13 +2778,13 @@ fn build_vouches(
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
-) -> Carrier<(dorc_plan::Vouches, Vec<CollapseNarrative>)> {
+) -> Carrier<(dorc_plan::Vouches, dorc_plan::VouchLiftAid)> {
     // The composition lives in `dorc_plan::build_vouches_from_sets` (the ONE home — the
     // sweep/coverage DSTs share its re-lifting sibling). This edge only RESHAPES the lift: its
     // diagnostics ride out AS-IS (inv-top-reject — the tc-verdict-return softening is reverted,
     // find-return-vouches 24C), so a genuinely out-of-dialect verdict body fails gate-3's
     // error-floor rather than degrading silently.
-    let (lifted, decline_narrative) = dorc_plan::build_vouches_from_sets(
+    let (lifted, aid) = dorc_plan::build_vouches_from_sets(
         oracle_refs,
         verdict_sets,
         helpers,
@@ -2782,7 +2793,7 @@ fn build_vouches(
         interner,
         live,
     );
-    lifted.map(|vouches| (vouches, decline_narrative))
+    lifted.map(|vouches| (vouches, aid))
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP

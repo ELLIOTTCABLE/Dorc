@@ -195,6 +195,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "role-defined-below-its-sites",
     "in-book-vocabulary-role",
     "helper-declaration-contested",
+    "vouched-composition-not-present",
     "missing-dialect-marker",
     "marker-version-unrecognized",
     "tolerates-unknown-dimension",

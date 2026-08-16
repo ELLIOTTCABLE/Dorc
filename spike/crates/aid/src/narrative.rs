@@ -540,6 +540,18 @@ pub enum CollapseKind {
         /// were; an account that cannot be had honestly is not manufactured.
         advisory: SolverRounds,
     },
+    /// A vouch did not attach because the composition that will RUN is not the region of sh its
+    /// author vouched (`28R:rul-mixed-custody-suspends-vouch` · `rul-contested-name-never-resolved`)
+    /// ⇒ no elide, no guard, the site runs. Carries the reached name and which of the four worlds it
+    /// is, keyed by the site whose license lapsed.
+    CompositionSuspended {
+        site: SiteId,
+        /// The vouching definition's own name-span + file — whose composition this was, which is the
+        /// party who can restore it (`tc-oracle-file-identity`).
+        vouching: MintSpan,
+        vouching_file: SourceFileId,
+        reason: crate::diag::VouchedCompositionReason,
+    },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
 }
@@ -596,6 +608,7 @@ impl CollapseKind {
             CollapseKind::FixpointCapDegrade { .. } => "FixpointCapDegrade",
             CollapseKind::RoleFamilyShadowed { .. } => "RoleFamilyShadowed",
             CollapseKind::SolverConsistencyFailure { .. } => "SolverConsistencyFailure",
+            CollapseKind::CompositionSuspended { .. } => "CompositionSuspended",
             CollapseKind::Cancellation(_) => "Cancellation",
         }
     }

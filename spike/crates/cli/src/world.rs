@@ -221,7 +221,7 @@ impl WhyWorld {
         );
         let classes = origin.classes.clone();
 
-        let (vouch_lift, decline_narrative) = dorc_plan::build_vouches(
+        let (vouch_lift, vouch_aid) = dorc_plan::build_vouches(
             &source_refs,
             &helpers,
             &classes,
@@ -467,7 +467,7 @@ impl WhyWorld {
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
             .into_iter()
-            .chain(decline_narrative)
+            .chain(vouch_aid.narrative)
             .chain(merge_narrative)
             .chain(plan.survival_report.collapse_narrative().iter().cloned())
             .chain(trip_narrative)

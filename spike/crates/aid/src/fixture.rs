@@ -36,8 +36,9 @@ use crate::diag::{
     SolverConsistencyFailure, SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement,
     SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
     TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
-    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten,
-    WhylogVersionRefused, WrapperPeelIncoherent,
+    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
+    WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -213,6 +214,15 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::HelperDeclarationContested(HelperDeclarationContested {
                 name: "_yum_installed".to_owned(),
                 prior: "vendor/yum.oracle.sh:4".to_owned(),
+            }),
+        ),
+        // Same necessity, one seat further in: the suspension is decided inside the vouch lift and
+        // reported at the binary's own load-edge seat, which no in-process consumer reaches.
+        (
+            "vouched-composition-not-present",
+            DiagCode::VouchedCompositionNotPresent(VouchedCompositionNotPresent {
+                name: "_yum_installed".to_owned(),
+                reason: VouchedCompositionReason::BookRedefinesHelper,
             }),
         ),
         // Read back from a RECORDS stream: a replay drives no host and admits no records.
