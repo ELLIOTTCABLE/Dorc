@@ -111,18 +111,19 @@
   participate in resolution as sh would bind them. Trigger:
   `pin-oracle-side-sourcing-amendment` (`28Q` §9.9).
 
-**P-diff — the small differential family (floor-lane, WSL-measured, posh∩dash):**
-
-- d-helper-binding-order (last-wins under multiple files; `unset -f` of a helper)
-- d-subshell-definition-death (in-paren definitions invisible after the paren)
-- d-conditional-definition (the `command -v || def` shape's host-dependence,
-  measured under both binaries with the tool present and absent via PATH)
-- d-alpha-rename-equivalence — RESERVED, first alpha-rename build: a rewritten
-  body behaves byte-identically to the original under both binaries.
-
-Count discipline: P-diff stays under ~8 manifests total; every P-diff cell exists
-because an engine choice depends on it, and its manifest is measured once
-(`bless:floor`), never hand-computed.
+**P-diff — SUPERSEDED BY INVENTORY (measured at the battery's checkpoint): all
+three buildable cells were ALREADY covered by the existing ELEVEN committed floor
+manifests** — `d-helper-binding-order` by `floor28-load-order-last-definition-wins`
++ `floor28-unset-f-and-redefinition`; `d-subshell-definition-death` by
+`floor28-subshell-scoped-re-source` + `floor30-subshell-nesting-and-removal-scope`;
+`d-conditional-definition` by `floor28-funcdef-as-or-operand` +
+`floor28-define-if-absent-polyfill` + `floor28-command-v-reads-fn-definedness`
+(which measures tool-present-vs-absent via PATH). The battery therefore minted
+ZERO manifests, and the original ≤8 budget is retired as written-without-the-
+inventory-in-view. `d-alpha-rename-equivalence` stays RESERVED in the xfail census
+(a Reserved pin with a call site reddens). Standing rule unchanged: a future
+manifest exists only where an engine choice depends on it, measured once through
+`bless:floor`, never hand-computed.
 
 ## §3 — Placement, budget, and gates
 

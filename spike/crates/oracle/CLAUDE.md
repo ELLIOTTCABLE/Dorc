@@ -112,10 +112,22 @@ discipline: one rule per bullet, slugged; append to the matching section.
   **INERTNESS IS DYING IN LITERAL** [human-typed 2026-08-16]: blessed read-only top-level
   commands (`.`/`source`, `command`, more to come) are becoming legal oracle top level, so
   whole-file inertness is a constrained HYGIENE posture, never a premise the engine computes
-  from. No resolution shortcut may assume a flat inert prefix — a host-conditional definition
-  (`command -v jq || jq() { … }`) lands can't-say through the frame solver's ordinary
-  conditional machinery, and last-wins-over-the-index is an interim that dies with the
-  funcenv table-widening (`rul-unsure-falls-toward-sh-parity`).
+  from. No resolution shortcut may assume a flat inert prefix. MEASURED CORRECTION
+  (the pin battery, 2026-08-16): a host-conditional definition
+  (`command -v jq || jq() { … }`) does NOT land can't-say through any conditional
+  machinery — the dialect lift never SEES a role funcdef in a `||` operand
+  (`parse_file` scans top-level items only; zero rows, zero `detected` headers),
+  while `dorc_syntax::parse` and `definition_table` DO register it (a
+  parsed-definition→no-lifted-row disagreement the join census does not cover),
+  and the frame solver holds no opinion about an oracle file's own conditionals.
+  Today's refusal = the load-inertness gate PLUS that silent blindness; the
+  blessing must supply a real MAY-grade binding, never merely widen the
+  allow-list (pinned both ways:
+  `a_host_conditional_oracle_definition_licenses_nothing` /
+  `a_described_host_conditional_definition_is_may_bound`;
+  `FORFEITS:forfeit-whole-file-inertness-refusal`). Last-wins-over-the-index is
+  an interim that dies with the funcenv table-widening
+  (`rul-unsure-falls-toward-sh-parity`).
 - **a-definitions-file-is-not-a-mark-fragment** — `validate` runs `lint_mark_subset` only for a
   source with no `__` AND no top-level funcdef. `__`-freedom alone read every helpers-only file — and
   every ordinary BOOK carrying a function — as a bare marked-statement fragment and errored

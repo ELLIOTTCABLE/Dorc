@@ -1124,6 +1124,15 @@ no task covers, and consider adding the task instead.
 - Tests: brutal, adversarial integration tests + DST systems-tests over exhaustive
   unit coverage; each test carries a reasoned argument for the invariant it pins;
   repetition in tests is fine. Honor anti-masking-tests (above).
+- **xfail-pins-ride-one-seat** (`30A` d3; r30) — target behavior the engine does not
+  yet implement is pinned through `internal_tooling::xfail::xfail_until`, registered
+  in its `PINS` with a semantic trigger and a ROUND-MARKER horizon (never a date —
+  unrepresentable by type); `CURRENT_ROUND` there is bumped by a conductor at
+  round-open, and an expired horizon reddens `xfail_census` until the pin greens or
+  is re-horizoned (the `Deferred.why` field is required — a slip cannot exist
+  without its reason). A pin's setup lives OUTSIDE its closure; interim behavior is
+  a separate test whose name says interim; `mise run xfail:census` renders what is
+  owed and by when.
 
 ## Boundaries
 

@@ -38,6 +38,29 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **lane-sh-parity-pin-battery — CLOSED + FOLDED 2026-08-16 @ `231a9e33`**
+  (7 commits rebased, ff'd; builder gates GREEN both legs — WSL 2152/2152 ·
+  `bless:dry` clean, zero golden writes; timing delta below run-to-run noise,
+  ~3.3s compile cost for two new binaries; plain comments 1.6% of 1781 added
+  lines, 464 mandated doc-comments decomposed separately). Landed: the
+  `internal_tooling::xfail` seat (round-marker horizons, dates unrepresentable,
+  `Deferred.why` required, two-way census) · 8 P-green verdicts · SEVEN live
+  P-x pins (census rendered in the final report; three at
+  `r31:closure-custody`, four at `end-of-r31`) · P-diff zero manifests (the
+  `30A` budget superseded-by-inventory, rewritten). Fold adjudications: all
+  eight disclosures ENDORSED (the two API-restraint calls especially — pinning
+  an undesigned emission API would make pins ungreenable); THREE new findings
+  credited and their FORFEITS rows authored
+  (`forfeit-helper-removal-unmodeled` · `forfeit-within-file-plural-withholds`
+  — the BLESSED in-book override idiom currently yields nothing from either
+  body — · `forfeit-whole-file-inertness-refusal`, plus the
+  composed-compound amendment to helper-plurality-withhold); the
+  `oracle/CLAUDE.md` conditional-machinery sentence CORRECTED to the measured
+  lift-blindness truth; the xfail-seat bullet added to `spike/CLAUDE.md`.
+  `fnd-munge-provenance-rides-the-plural-branch-only` routed to the HUMAN
+  ruling queue (a naming question; AID-NEEDS row declined — no matching
+  registry shape to safely extend). Conductor gate over the combined tip
+  DEFERRED to the tooling-lane fold (one gate over the final union).
 - **the minispec spec fix — LANDED 2026-08-16 @ `d541c5fa`** [HUMAN-AUTHORIZED
   spec-content touch, typed this sitting; conductor-authored in-window under
   `law-spec-touch-frontier-human-only`]: the root module's drift-prone import
