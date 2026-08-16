@@ -75,12 +75,18 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         };
         blessed = Some(out);
     }
-    let Some(gate) = step(
+    let gate = match step(
         &spike,
         "gate:full-quiet",
         Command::new("mise").args(["run", "gate:full-quiet"]),
-    ) else {
-        return ExitCode::FAILURE;
+    ) {
+        Ok(text) => text,
+        Err(text) => {
+            if !scoped {
+                teach_the_scoped_route(&spike, &text);
+            }
+            return ExitCode::FAILURE;
+        }
     };
     if !scoped && !dry {
         let Some(out) = bless_pass(&spike, &cases, floor) else {
@@ -97,7 +103,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
             "test:floor",
             Command::new("mise").args(["run", "test:floor"]),
         )
-        .is_none()
+        .is_err()
     {
         return ExitCode::FAILURE;
     }
@@ -185,22 +191,23 @@ fn bless_pass(spike: &Path, cases: &[String], floor: bool) -> Option<String> {
             .env("BLESS_FLOOR", "1")
             .env("DORC_E2E_FLOOR_SHELLS", FLOOR_SHELLS.join(","));
     }
-    step(spike, "e2e --bless", &mut command)
+    step(spike, "e2e --bless", &mut command).ok()
 }
 
 /// Run a labelled step, capturing combined output. On failure print the label and the
-/// captured tail, then hand the caller a `None` to abort on — fail loud, swallow nothing.
-fn step(dir: &Path, label: &str, command: &mut Command) -> Option<String> {
+/// captured tail — fail loud, swallow nothing. The text comes back either way, because a
+/// caller may have something to say about WHY the step failed.
+fn step(dir: &Path, label: &str, command: &mut Command) -> Result<String, String> {
     let out = command
         .current_dir(dir)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
-        .ok()?;
+        .map_err(|why| format!("bless: could not run [{label}]: {why}"))?;
     let mut text = String::from_utf8_lossy(&out.stdout).into_owned();
     text.push_str(&String::from_utf8_lossy(&out.stderr));
     if out.status.success() {
-        return Some(text);
+        return Ok(text);
     }
     eprintln!(
         "bless: FAILED at [{label}] (exit {})",
@@ -216,7 +223,85 @@ fn step(dir: &Path, label: &str, command: &mut Command) -> Option<String> {
     {
         eprintln!("{line}");
     }
-    None
+    Err(text)
+}
+
+/// The route an UNFILTERED bless cannot take, printed at the moment it is needed.
+///
+/// Unfiltered, the gate runs first — never re-bless from a tree you have not verified — so a
+/// case that is red BECAUSE its drift is sanctioned fails the gate and the bless never happens.
+/// The scoped form inverts that order, and this is where an operator finds that out: the tool
+/// teaches the spelling rather than leaving it in a ledger somebody has to have read
+/// (`307:work-bless-sanctioned-drift-spelling`).
+fn teach_the_scoped_route(spike: &Path, gate_output: &str) {
+    let selectors: Vec<String> = failed_cases(gate_output)
+        .into_iter()
+        .map(|case| selector_for(spike, case))
+        .collect();
+    if selectors.is_empty() {
+        return;
+    }
+    eprintln!("{}", scoped_route_advice(&selectors));
+}
+
+/// Every case name the captured gate output reports a failure for.
+///
+/// Both corpus runners spell a per-case failure `FAIL  <name>  [<what>]`, and that shape — not
+/// the ~45 individual gate labels — is what this reads: a label list would silently stop
+/// matching the day one gate reworded itself, and silence is this advice's failure mode.
+fn failed_cases(gate_output: &str) -> Vec<&str> {
+    let mut cases: Vec<&str> = gate_output
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("FAIL  "))
+        .filter_map(|rest| rest.split_once("  ["))
+        .map(|(name, _)| name)
+        .collect();
+    cases.sort_unstable();
+    cases.dedup();
+    cases
+}
+
+/// The path selector for a case name, or the bare name when no case root claims it.
+///
+/// A case is a directory or a single-file `.loom` under some `crates/*/tests/`, and the runners
+/// resolve either to the exact trial. Printing the resolved path is the whole point: a selector
+/// an operator has to construct is one they can get wrong.
+fn selector_for(spike: &Path, case: &str) -> String {
+    let Ok(crates) = std::fs::read_dir(spike.join("crates")) else {
+        return case.to_owned();
+    };
+    for entry in crates.flatten() {
+        let tests = entry.path().join("tests");
+        for candidate in [tests.join(case), tests.join(format!("{case}.loom"))] {
+            if candidate.exists() {
+                return candidate
+                    .strip_prefix(spike)
+                    .unwrap_or(&candidate)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+            }
+        }
+    }
+    case.to_owned()
+}
+
+/// The advice itself: both spellings, and why the unfiltered one cannot serve.
+fn scoped_route_advice(selectors: &[String]) -> String {
+    let command = format!("      mise run bless -- {}", selectors.join(" "));
+    let substring_note = if selectors.len() == 1 {
+        "The bare-substring form, `mise run bless -- <substring>`, is libtest's own filter and \
+         takes exactly one."
+    } else {
+        "The bare-substring form, `mise run bless -- <substring>`, is libtest's own filter and \
+         takes exactly one, so it cannot express this set."
+    };
+    format!(
+        "bless: an UNFILTERED bless verifies BEFORE it writes, so it can never accept a \
+         SANCTIONED drift — such a case is red until it is blessed, and that redness is what \
+         stopped the gate above. Scoping inverts the order (bless the named cases, then verify \
+         the whole tree):\n{command}\nThose are case PATHS, which the runner resolves to exact \
+         trial names and which is the only form that can name SEVERAL cases. {substring_note}"
+    )
 }
 
 /// The count before `passed`, from nextest's `Summary` line or libtest's `test result:`.
@@ -238,4 +323,56 @@ fn ok(command: &mut Command) -> bool {
         .stderr(Stdio::null())
         .status()
         .is_ok_and(|status| status.success())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{failed_cases, scoped_route_advice};
+
+    #[test]
+    fn the_captured_gate_output_yields_each_failing_case_once() {
+        let captured = "\
+     Summary [ 214.301s] 2113 tests run: 2111 passed, 2 failed
+        FAIL [   0.221s] dorc-cli::e2e top-eval
+FAIL  top-eval  [content diff]
+      15 committed lines, 15 fresh
+        - \"apt-get install -y curl-PLANTED-DRIFT\"
+    FAIL  whygallery-webhost-whole  [replay 1: `dorc why` no longer reproduces its committed transcript]
+FAIL  top-eval  [content diff]
+error: test failed, to rerun pass `-p dorc-cli --test e2e`
+";
+        assert_eq!(
+            failed_cases(captured),
+            vec!["top-eval", "whygallery-webhost-whole"]
+        );
+    }
+
+    #[test]
+    fn a_gate_that_failed_on_something_other_than_a_case_names_no_cases() {
+        // A clippy or fmt refusal must not draw a bless-scoping lecture: the advice is about a
+        // case whose golden moved, and warning-fatigue is what it would cost otherwise.
+        let captured = "error: unused variable: `x`\nerror: could not compile `dorc-plan`\n";
+        assert!(failed_cases(captured).is_empty());
+    }
+
+    #[test]
+    fn the_advice_carries_both_selector_spellings() {
+        let advice = scoped_route_advice(&[
+            "crates/cli/tests/top-eval".to_owned(),
+            "crates/aid/tests/cli-help-page.loom".to_owned(),
+        ]);
+        assert!(
+            advice.contains(
+                "mise run bless -- crates/cli/tests/top-eval crates/aid/tests/cli-help-page.loom"
+            ),
+            "the PATHS form has to arrive ready to paste: {advice}"
+        );
+        assert!(advice.contains("PATHS"), "{advice}");
+        assert!(advice.contains("mise run bless -- <substring>"), "{advice}");
+        // The whole reason the route exists, which is what an operator is missing when they
+        // reach an unfiltered bless with a sanctioned drift in the tree.
+        assert!(advice.contains("verifies BEFORE it writes"), "{advice}");
+        assert!(advice.contains("stopped the gate above"), "{advice}");
+        assert!(advice.contains("inverts the order"), "{advice}");
+    }
 }
