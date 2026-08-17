@@ -196,7 +196,7 @@ impl DefinitionTable {
     /// the ones the two parsers disagree about (`28O:fnd-two-parsers-disagree-on-funcdefs`) — a class
     /// `reserved.rs` MARKS at Error severity without refusing the run, so such a row still ships and
     /// still answers on its own provenance (`307c:fnd-reserved-name-error-does-not-refuse`; the
-    /// permissive arm is `DefinitionProvenance::Unkeyed`).
+    /// row simply carries its own `DefinitionId` like any other).
     #[must_use]
     pub fn knows(&self, name: &str) -> bool {
         self.defs.iter().any(|d| d.name == name)

@@ -952,7 +952,9 @@ no task covers, and consider adding the task instead.
   The detached kani/aeneas units are covered too (`cargo_fmt_detached`, glob-scoped to
   their dirs under `spike/verify/` — the `verify` crate itself is an ordinary member).
 - **wsl-trust-per-worktree** — WSL keeps its own mise trust store; a fresh worktree
-  needs a WSL-side `mise trust` before its first `mise run both`.
+  needs a WSL-side `mise trust` before its first `mise run both` — and a SECOND
+  one for the nested `spike/verify/aeneas/mise.toml`, or `verify:translate` dies
+  on the untrusted nested config.
 - **wsl-cd-not-bash-lc-cd** (found live by the spine executor, 2026-08-17) —
   `wsl -- bash -lc 'cd X && …'` silently runs in the PRIMARY checkout when the `cd`
   fails or resolves somewhere else, so the command greens against the wrong tree: a
