@@ -214,29 +214,27 @@ fn a_regional_book_helper_leaves_an_unreachable_vouch_alone() {
     });
 }
 
-/// `p-x-blessed-toplevel-source` — THE TARGET: an oracle whose top level `.`-sources is legal text,
-/// and its OWN declarations contribute again.
+/// An oracle whose top level `.`-sources is legal text, and its OWN declarations contribute
+/// alongside (`28Q:pin-oracle-side-sourcing-amendment`, built; promoted from the xfail pin
+/// `p-x-blessed-toplevel-source`).
 ///
 /// The sh fact: `.` applies a file's definitions into the CURRENT environment, so after the line the
-/// sourced names are bound exactly as if they had been written there. That is why the construct is
-/// worth blessing at all rather than merely tolerating — it is how sh spells composition, and
+/// sourced names are bound exactly as if they had been written there
+/// (`floor30-sourcing-is-transitive` measures it under dash ∩ posh). That is why the construct is
+/// worth admitting rather than merely tolerating — it is how sh spells composition, and
 /// `28M` §7 `tune-explicit-composition-is-sanctioned` already sanctions explicitly-spelled
 /// composition as the community-critical package shape.
 ///
-/// Two conjuncts, and the second is the one that surprises. (1) The load-inertness gate must stop
-/// refusing the file: a top-level `.` is a COMMAND today, so `lint_load_inert` fires and the file
-/// makes no dialect claim. (2) The file's OWN helper must contribute — because the refusal is
-/// WHOLE-FILE, a single blessed-in-future line currently costs the file every declaration it makes,
-/// so a role body declared beside its helper ships with an EMPTY closure and 127s at the host. Both
-/// fail today.
+/// Two conjuncts, and the second is the one that surprises. (1) The gate admits the file: before the
+/// amendment a top-level `.` was a COMMAND, so `lint_load_inert` fired and the file made no dialect
+/// claim. (2) The file's OWN helper still contributes — because the refusal is WHOLE-FILE, one
+/// unadmitted line would cost the file every declaration it makes, and a role body declared beside
+/// its helper would ship with an EMPTY closure and rc-127 at the host.
 ///
-/// Why an engine choice depends on it: `FORFEITS:forfeit-book-sourcing-walls` names the book side of
-/// this; the oracle side is `28Q:pin-oracle-side-sourcing-amendment`, and it is also the named CAPTURE
-/// for `FORFEITS:forfeit-helper-plurality-withhold` shape (a) — one `.` line converts a foreign
-/// helper into the author's own closure and the cross-custody suspension stops applying.
+/// The admission is a CONTRACT, never an engine proof of inertness
+/// (`30C:rul-inertness-is-contract-never-engine-fact`).
 #[test]
 fn an_oracle_that_sources_at_top_level_keeps_its_own_declarations() {
-    // Setup outside the closure: a panic in there would read as the target still failing.
     let sourcing = format!(
         "{MARKER}. ./helpers.sh\n_dest() {{\n   wombat cmp -- \"$1\"\n}}\n{VOUCHER_BODY}\n"
     );
@@ -257,21 +255,18 @@ fn an_oracle_that_sources_at_top_level_keeps_its_own_declarations() {
         control
             .as_deref()
             .is_ok_and(|closure| closure.contains("_dest() {")),
-        "control: the same file WITHOUT the `.` line keeps its helper, so the loss below is the \
-         `.`'s doing — {control:?}"
+        "control: the same file WITHOUT the `.` line keeps its helper — {control:?}"
     );
 
-    internal_tooling::xfail::xfail_until("p-x-blessed-toplevel-source", || {
-        assert!(
-            refused.is_empty(),
-            "a top-level `.` must be legal oracle text — got {refused:?}"
-        );
-        assert!(
-            closure
-                .as_deref()
-                .is_ok_and(|closure| closure.contains("_dest() {")),
-            "and the file's own declarations must still contribute: the whole-file refusal costs \
-             this author every helper they wrote — {closure:?}"
-        );
-    });
+    assert!(
+        refused.is_empty(),
+        "a top-level `.` is legal oracle text — got {refused:?}"
+    );
+    assert!(
+        closure
+            .as_deref()
+            .is_ok_and(|closure| closure.contains("_dest() {")),
+        "and the file's own declarations still contribute: a whole-file refusal would cost this \
+         author every helper they wrote — {closure:?}"
+    );
 }

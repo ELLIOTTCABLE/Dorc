@@ -2,13 +2,26 @@
 //! `rul-marked-file-is-load-inert`; the implementation of this crate's standing
 //! `declarations-only-files` law).
 //!
-//! A `# dorc-lang/v0.2`-marked file must be provably no-op to LOAD: its top level holds function
-//! definitions and bare assignments, never commands. Two consumers rest on that. `28K` §2's
-//! abstract function-environment domain models a `.`-source as "apply this file's definitions
-//! here", which is only a total model when the file cannot also *run* something the domain would
-//! have to interpret; and `28K` §3's regional-preference idiom (`( . better-yum.sh; … )`)
-//! re-sources a file for real, at apply time, inside a subshell — so a top-level command there is
-//! a mutation nobody licensed.
+//! A `# dorc-lang/v0.2`-marked file's top level holds function definitions, bare assignments, and
+//! `.`-sources — never commands. Two consumers rest on that. `28K` §2's abstract
+//! function-environment domain models a `.`-source as "apply this file's definitions here", which
+//! is only a total model when the file cannot also *run* something the domain would have to
+//! interpret; and `28K` §3's regional-preference idiom (`( . better-yum.sh; … )`) re-sources a file
+//! for real, at apply time, inside a subshell — so a top-level command there is a mutation nobody
+//! licensed.
+//!
+//! # This is a CONTRACT, not an engine proof
+//!
+//! [TYPED 2026-08-17, `307:§ack-implementation-open`] Load-inertness is HYGIENE and CONTRACT, never
+//! an engine fact. What this gate does is hold an author to the dorc-lang promise their marker
+//! makes — a marked file declares and sources, and runs nothing at load. Nothing downstream may
+//! claim the engine PROVED a file inert, and a refusal here attributes to the contract the author
+//! signed by marking the file, not to an analysis that came up short.
+//!
+//! The distinction is load-bearing because the admission below now includes `.`
+//! (`28Q:pin-oracle-side-sourcing-amendment`), which is exactly a construct whose inertness the
+//! engine cannot see: whether the sourced file runs anything is that file's own contract to keep,
+//! checked the same way, one level down.
 //!
 //! Marker-gated, per `marker-gates-syntax-only`: an UNMARKED `.sh` is ordinary shell that happens
 //! to be loadable, makes no dialect claim, and is nobody's oracle.
@@ -49,13 +62,14 @@ pub fn lint_load_inert(src: &str) -> Vec<Diag> {
         .collect()
 }
 
-/// Is one top-level item a no-op to load? Only two shapes are: a function DEFINITION (defining
-/// binds a name and runs nothing) and a BARE ASSIGNMENT whose value expands statically — the AST
-/// spells the latter as a `Simple` with no `words` (`syntax::ast`'s own doc). A redirection makes
-/// even a wordless command a write (`: > /etc/x` is the standing example), so it disqualifies too.
-/// Everything else — a command, a pipeline, a conditional, a loop, a subshell, a ⊤-rejected
-/// construct — is refused: `inv-top-reject` biases the unknown toward refusal, and relaxing this
-/// later is cheap where re-tightening would not be (`271:rul-posix-in-spirit-defaults`).
+/// Is one top-level item admissible in a marked file? Three shapes are: a function DEFINITION
+/// (defining binds a name and runs nothing), a BARE ASSIGNMENT whose value expands statically — the
+/// AST spells the latter as a `Simple` with no `words` (`syntax::ast`'s own doc) — and a statically
+/// spelled `.` ([`item_is_static_load`]). A redirection makes even a wordless command a write
+/// (`: > /etc/x` is the standing example), so it disqualifies too. Everything else — a command, a
+/// pipeline, a conditional, a loop, a subshell, a ⊤-rejected construct — is refused: `inv-top-reject`
+/// biases the unknown toward refusal, and relaxing this later is cheap where re-tightening would not
+/// be (`271:rul-posix-in-spirit-defaults`).
 pub(crate) fn item_is_load_inert(ast: &Ast, item: AstId) -> bool {
     match &ast.node(item).kind {
         NodeKind::FuncDef { .. } => true,
@@ -64,11 +78,66 @@ pub(crate) fn item_is_load_inert(ast: &Ast, item: AstId) -> bool {
             words,
             redirs,
         } => {
-            words.is_empty()
-                && redirs.is_empty()
+            redirs.is_empty()
                 && assigns.iter().all(|&a| assign_value_is_static(ast, a))
+                && (words.is_empty() || (assigns.is_empty() && static_load_target(ast, words)))
         }
         _ => false,
+    }
+}
+
+/// The statically spelled target of a top-level `.`, or `None` for any other item.
+///
+/// The driver reads this to learn what a marked file sources, and the answer is the whole input to
+/// the include-tree (`core::custody`). It is deliberately the SPELLING only: whether the target
+/// exists, and whether it satisfies the dorc-lang contract, are questions for the edge that can
+/// open files.
+#[must_use]
+pub fn item_is_static_load(ast: &Ast, item: AstId) -> Option<AstId> {
+    let NodeKind::Simple {
+        assigns,
+        words,
+        redirs,
+    } = &ast.node(item).kind
+    else {
+        return None;
+    };
+    (redirs.is_empty() && assigns.is_empty() && static_load_target(ast, words)).then(|| words[1])
+}
+
+/// Is this word list a `.` whose operand this pass can read off the text?
+///
+/// **`source` is NOT admitted, and that is a floor fact rather than a taste.** `dash` has no
+/// `source` builtin (measured: `source: not found`), so a marked file using it would fail the
+/// `two-binary-floor` the whole dialect is defined by — the construct is outside the base dialect,
+/// and admitting it here would mint text `dorc strip` leaves behind and the off-ramp cannot run. A
+/// BOOK may still spell it (`funcenv`'s load sites accept both), because book text is not
+/// floor-bound.
+///
+/// The operand must expand without running anything, by the same predicate the assignment arm uses
+/// and for the same reason: `${x:-$(hostname)}` lexes identically to `${x:-literal}`, so accepting
+/// the operator form would accept a hidden command substitution deciding which file loads. Exactly
+/// two words, because `. a b` passes positional parameters in some shells and is outside what this
+/// admission was ruled for.
+fn static_load_target(ast: &Ast, words: &[AstId]) -> bool {
+    let ([_, target], Some(".")) = (words, words.first().and_then(|&w| literal_word(ast, w)))
+    else {
+        return false;
+    };
+    let NodeKind::Word { parts } = &ast.node(*target).kind else {
+        return false;
+    };
+    parts.iter().all(word_part_is_static)
+}
+
+/// A word's text when it is one plain literal — the command-position read `static_load_target` does.
+fn literal_word(ast: &Ast, word: AstId) -> Option<&str> {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return None;
+    };
+    match parts.as_slice() {
+        [WordPart::Literal(text)] => Some(text),
+        _ => None,
     }
 }
 
@@ -201,10 +270,54 @@ _helper() { printf '%s\\n' \"$1\"; }
             "if [ -f /etc/x ]; then f() { :; }; fi\n",
             "( f() { :; } )\n",
             "for x in a b; do echo $x; done\n",
-            ". ./other.sh\n",
         ] {
             assert_eq!(slugs(body).len(), 1, "{body}");
         }
+    }
+
+    /// THE amendment (`28Q:pin-oracle-side-sourcing-amendment`): a top-level `.` is legal oracle
+    /// text. It is how sh spells composition, and `28M` §7 already sanctions explicitly-spelled
+    /// composition as the community-critical package shape — a helpers file plus a thin
+    /// entrypoints file that sources it.
+    #[test]
+    fn a_top_level_dot_is_admitted() {
+        assert!(slugs(". ./helpers.sh\n").is_empty());
+        assert!(slugs(". \"$DORC_HELPERS\"\n").is_empty());
+        assert!(
+            slugs(". ./helpers.sh\nf() { :; }\n").is_empty(),
+            "and the file's own declarations keep contributing beside it — the second conjunct, \
+             without which one blessed line costs the author every helper they wrote"
+        );
+    }
+
+    /// `source` is NOT the same construct. `dash` has no such builtin (measured: `source: not
+    /// found`), so a marked file spelling it fails the two-binary floor the dialect is defined by
+    /// — the construct is outside the base dialect, and `dorc strip` would leave behind text the
+    /// off-ramp cannot run.
+    #[test]
+    fn the_source_spelling_stays_outside_the_dialect() {
+        assert_eq!(
+            slugs("source ./helpers.sh\n"),
+            ["oracle-file-not-load-inert"]
+        );
+    }
+
+    /// A target the pass cannot read off the text is refused, for the assignment arm's reason: the
+    /// lexer collapses operator forms to one opaque part, so `${x:-$(hostname)}` is
+    /// indistinguishable from `${x:-lit}` and accepting it would let a hidden command substitution
+    /// decide which file loads. `. a b` is refused as a shape nothing ruled on.
+    #[test]
+    fn a_dynamic_or_multi_word_load_is_refused() {
+        assert_eq!(slugs(". \"$(pick)\"\n"), ["oracle-file-not-load-inert"]);
+        assert_eq!(
+            slugs(". \"${DORC_ROOT:-/etc}/h.sh\"\n"),
+            ["oracle-file-not-load-inert"]
+        );
+        assert_eq!(slugs(". ./h.sh extra\n"), ["oracle-file-not-load-inert"]);
+        assert_eq!(
+            slugs(". ./h.sh >/dev/null\n"),
+            ["oracle-file-not-load-inert"]
+        );
     }
 
     /// Marker-gated (`marker-gates-syntax-only`): an unmarked file makes no dialect claim, so the

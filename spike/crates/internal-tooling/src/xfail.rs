@@ -163,17 +163,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Reserved,
     },
     Pin {
-        name: "p-x-blessed-toplevel-source",
-        trigger: "`28Q:pin-oracle-side-sourcing-amendment` — the ruling that makes a top-level \
-                  `.` legal oracle text and its own declarations contribute again",
-        horizon: Horizon::Unscheduled {
-            marker: "end-of-r31",
-            why: "the amendment is a named-but-unscheduled policy ruling; this boundary is where \
-                  the census should force the question",
-        },
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-definition-grade-keying",
         trigger: "a per-DEFINITION lift: the KEYING half landed (rows carry their own \
                   `DefinitionId` and the `(file, role)` join is gone), so what remains is that \
