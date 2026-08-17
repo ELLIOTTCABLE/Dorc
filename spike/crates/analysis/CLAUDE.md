@@ -75,12 +75,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `28Q` §1.3) — every SITE-KEYED consuming act (verdict, predict-at-site, probe-ship, vouch, guard
   eligibility) answers only from the definition live AT the site, read through
   `funcenv::LiveDefinitions`. A definition below a site licenses NOTHING at it. The mechanism is now
-  RESOLUTION, not agreement: `definition_before` names the definition and `dorc_core::answering_file`
+  RESOLUTION, not agreement: `definition_before` names the definition and `dorc_core::answering_row`
   selects the row IT produced, so resolving a site's identity through one file's argparse while
   reading another file's cells — one cell measured, a different one keyed, pope-sin tier
   (`271:rul-sin-ordering`), invisible to every golden — cannot be SPELLED. The retired shape computed
   a whole-unit winner and withheld on disagreement; `KindIndex`/`VerdictIndex` carried `source_of`
-  for that check and no longer do (rows are keyed by their producing file instead). Two escapes exist
+  for that check and no longer do. A row CARRIES the `DefinitionId` its own lift minted (`28Q` §1.1),
+  so the seat compares ids and joins nothing; the two parsers agreeing on a funcdef span is what
+  holds that up, and `every_lifted_role_row_carries_its_parsed_definitions_span` is where it is
+  measured. Two escapes exist
   and both are named: a name the `DefinitionTable` does not know yields `NoOpinion`, where a SOLE row
   answers and plural rows withhold (the environment holds no opinion and load order may not adjudicate
   — `28K` §6; containment is `28O:fnd-two-parsers-disagree-on-funcdefs`), and

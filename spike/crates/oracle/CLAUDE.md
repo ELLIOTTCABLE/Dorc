@@ -47,7 +47,8 @@ discipline: one rule per bullet, slugged; append to the matching section.
   live-source-is-the-only-resolution-seat; `28M:fnd-verdict-resolution-duplicates-live-source`) —
   which definition answers at a site is ONE question asked ONE way:
   `funcenv::LiveDefinitions::definition_before` names the definition the frame holds, and
-  `dorc_core::answering_file` selects the row that definition produced. Every role-lane seat
+  `dorc_core::answering_row` selects the row that definition produced — by comparing the
+  `DefinitionId` the ROW carries, never by joining on a name (`28Q` §1.1). Every role-lane seat
   routes through it — the effect-map lift, `VerdictIndex::from_sets`, `analysis::effect`'s predict
   and verdict lanes, the three cli ship closures, `plan::build_vouches` and
   `build_wrapped_vouches`, and (since the crosscheck burndown, `308` §1) the wrapper lane: each of
@@ -58,7 +59,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   ordinary-seat twin: `analysis::effect`'s primacy test and cell mint read ONE resolved
   verdict (`live_verdict`); resolve once and pass the body — a third lookup is the
   `28M:fnd-verdict-resolution-duplicates-live-source` failure class returning. Derived rows are keyed by their
-  producing file, so identity and cells
+  producing DEFINITION, so identity and cells
   are read from ONE definition and the chimera is UNREPRESENTABLE rather than gated: the whole-unit
   `live_source` scan and the positional agreement veto that narrowed it are BOTH retired, because
   they were two readings of one environment and could disagree (`28P:fnd-build-vouches-relifted-the-verdict-sets`

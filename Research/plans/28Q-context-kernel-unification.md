@@ -86,21 +86,25 @@ another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-fram
 
 1. Every derived row — a check, a cell declaration, an argparse arm-model, an enrolled
    dialect token, a footprint claim — reads from exactly ONE authored definition, keyed
-   at DEFINITION grade. **[TYPED 2026-08-16] The as-built keying is an INCORRECT
-   INTERIM**, acknowledged and accepted only as a way-station: rows keyed by
-   source-file index with a `(file, name)` provenance join (total by census;
-   within-file plurality → `Ambiguous` → answers nowhere, riding the pre-existing
-   same-file refusal), custody DERIVED at one seat. The ruled representation —
-   definition-grade row identity — STANDS as the intent; its repair is LOAD-BEARING
-   and lands with the closure-custody stage's custody re-key (or sooner, per the
-   human's post-rewind direction). **TRIPWIRE (the ship-seam-re-cut record-drift
-   class): no record may mark this item DONE while the keying is file-grade; any
-   lane touching these indexes restates this paragraph in its report.** The repair
-   additionally answers to `rul-rc-reaches-genkill-only-through-decisions`
-   (HUMAN-TYPED 2026-08-16, `spike/CLAUDE.md` observables-&-rc): the
-   verdict-record/establish shared slot (`verdict_cell_or_auto`) separates
-   representationally — rc-species and gen/kill-species records stay distinct,
-   rc reaching topology only through minted decisions. HELPER CLOSURES are the ruled exception
+   at DEFINITION grade. A row CARRIES its `DefinitionId`, minted from the file and the
+   funcdef span its own lift read; `dorc_core::answering_row` compares ids and nothing
+   joins at run time. The two parsers agreeing on that span is a MEASURED property, held
+   up by `every_lifted_role_row_carries_its_parsed_definitions_span` — load-bearing rather
+   than tidy, because a drifted span matches no frame answer and every site would then
+   withhold silently and corpus-wide. Custody stays DERIVED at one seat
+   (`DefinitionId::custody`). The retired shape keyed rows by source-file index and asked
+   the definition table for their identity over `(file, name)`; its two extra states went
+   with it — a row the table could not find, and a file holding two definitions of one role
+   where which spoke was unrecoverable — because spans are unique within a file and a name
+   the table never learned simply draws `NoOpinion`. RESIDUE, named: the LIFT keeps one row
+   per `(file, role)`, so where a file holds two definitions of one role the earlier
+   produces no row and its frames withhold (safe; `p-x-definition-grade-keying` pins the
+   target and says so). `rul-rc-reaches-genkill-only-through-decisions` (HUMAN-TYPED
+   2026-08-16, `spike/CLAUDE.md` observables-&-rc) is answered beside it: the
+   verdict-record's subject and the site's establish are separate VALUES —
+   `analysis::effect::Measurement`, minted at one crossing that spells
+   `307:rul-primacy-moves-the-body-never-the-cell` as the RULING making them name one cell,
+   and never read back into topology. HELPER CLOSURES are the ruled exception
    (`28R:§snapshot-emission-adjudication`, TYPED/ACKED): sh binds a body's calls at
    INVOCATION, so a closure is a property of the consuming FRAME, never of the
    definition — "computed once, whole-unit" is DEAD for closures
