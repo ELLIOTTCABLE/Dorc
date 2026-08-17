@@ -125,10 +125,31 @@ const VALUE_SYNTAX_NOTE: &str = "type {{name}} in a sentence to insert or move o
 /// Deep enough for the corpus's deliberately over-nested books to clear a recursive-descent parse.
 const WORKER_STACK_BYTES: usize = 64 * 1024 * 1024;
 
+/// Warnings, notes and progress go to STDERR through `tracing`, so STDOUT carries only what a
+/// reader or a pipe is meant to parse. The subscriber supplies the per-line attribution leader;
+/// nothing here formats.
+///
+/// `--this` silences the stream: that spelling runs INSIDE a loom replay, where the only correct
+/// amount of commentary beside a transcript is none. It never reaches this binary today (a terminal
+/// is not inside a case, and `parse_argv` says so), so this is the guard for the day it does.
+fn install_diagnostics(argv: &[String]) {
+    let level = if argv.iter().any(|word| word == THIS) {
+        tracing_subscriber::filter::LevelFilter::OFF
+    } else {
+        tracing_subscriber::filter::LevelFilter::INFO
+    };
+    let _ = tracing_subscriber::fmt()
+        .with_writer(io::stderr)
+        .with_max_level(level)
+        .without_time()
+        .try_init();
+}
+
 /// A worker thread with an explicit stack, because the main thread's is whatever the platform gave
 /// it: on Windows the nesting-bound case overflowed it, and since the bare invocation is the whole
 /// corpus, ONE case took every `compile` and `promote` down with it — an overflow, not a diagnostic.
 fn main() -> ExitCode {
+    install_diagnostics(&std::env::args().skip(1).collect::<Vec<_>>());
     let outcome = std::thread::Builder::new()
         .stack_size(WORKER_STACK_BYTES)
         .spawn(run)
@@ -219,12 +240,8 @@ fn run() -> Result<ExitCode, String> {
     let command = parse_args()?;
     let stdout = io::stdout();
     let mut out = stdout.lock();
-    let stderr = io::stderr();
-    let mut err = stderr.lock();
     match command {
-        Command::Compile { cases, env, quiet } => {
-            compile_cases(&cases, &env, quiet, &mut out, &mut err)
-        }
+        Command::Compile { cases, env, quiet } => compile_cases(&cases, &env, quiet, &mut out),
         Command::Promote {
             cases,
             env,
@@ -233,8 +250,8 @@ fn run() -> Result<ExitCode, String> {
             provenance,
         } => promote_cases(&cases, &env, quiet, accept_metadata, provenance, &mut out),
         Command::Vars { breadth, cases } => print_variables(breadth, &cases, &mut out),
-        Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
-        Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
+        Command::Scaffold { slug } => scaffold_case(&slug),
+        Command::AddRegister { case, register } => add_register(&case, &register),
         Command::Sections { cases } => print_sections(&cases, &mut out),
         Command::Keys => print_keys(&mut out),
         Command::Help { verb } => writeln!(
@@ -417,7 +434,7 @@ fn resolve_cases(cases: &[String]) -> Result<Vec<PathBuf>, String> {
 /// The register is a CATALOG fact, so this publishes through the same generator promote uses: the
 /// lock gains `HelpRegister::Unwritten` and the case's transcript grows the
 /// `= help: [unwritten: <slug>.help]` line the author then overtypes. Nothing here writes prose.
-fn add_register(path: &Path, register: &str, out: &mut impl Write) -> Result<ExitCode, String> {
+fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
     if register != "help" {
         return Err(format!(
             "`help` is the only register that can be added; `message` exists on every code and \
@@ -458,21 +475,16 @@ fn add_register(path: &Path, register: &str, out: &mut impl Write) -> Result<Exi
     publish(
         &consumer,
         &std::collections::BTreeMap::from([(slug.clone(), case)]),
-        out,
     )?;
-    writeln!(
-        out,
+    tracing::info!(
         "next: rebuild, then overtype `[unwritten: {slug}.help]` in {} with the remediation words",
         path.display()
-    )
-    .map_err(|error| error.to_string())?;
-    writeln!(
-        out,
+    );
+    tracing::info!(
         "then: dorc-loom compile {0} && dorc-loom promote {0}",
         path.display()
-    )
-    .map_err(|error| error.to_string())
-    .map(|()| ExitCode::SUCCESS)
+    );
+    Ok(ExitCode::SUCCESS)
 }
 
 /// Write the empty defining-case skeleton for a freshly-minted code
@@ -484,7 +496,7 @@ fn add_register(path: &Path, register: &str, out: &mut impl Write) -> Result<Exi
 /// (`check_hygiene`) until a genuinely-firing world is authored and blessed — the scaffold-and-forget
 /// guard. `message` is never written, so the code renders `[unwritten: <slug>]` at every seat:
 /// builders author zero user-facing prose (`error-authorship-tier`).
-fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
+fn scaffold_case(slug: &str) -> Result<ExitCode, String> {
     if slug.is_empty()
         || !slug
             .bytes()
@@ -513,18 +525,14 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
     );
     std::fs::write(&path, skeleton)
         .map_err(|error| format!("write {}: {error}", path.display()))?;
-    writeln!(out, "scaffold: wrote {}", path.display()).map_err(|error| error.to_string())?;
-    writeln!(
-        out,
+    tracing::info!("wrote {}", path.display());
+    tracing::info!(
         "next: author `when-fires`/`why`, then replace the replay with a command that really fires `{slug}`"
-    )
-    .map_err(|error| error.to_string())?;
-    writeln!(
-        out,
+    );
+    tracing::info!(
         "then: dorc-loom promote {} (orchestrator-only, on a freshly verified binary)",
         path.display()
-    )
-    .map_err(|error| error.to_string())?;
+    );
     Ok(ExitCode::SUCCESS)
 }
 
@@ -561,7 +569,7 @@ fn process_env(name: &str) -> Option<String> {
 /// Before any write, not after: the suite gate that also holds this property only fires once the
 /// files are already rewritten, which turns an accident into a revert ceremony. Both texts are
 /// shown because the reader is holding the case and cannot see the entry.
-fn refuse_metadata_drift(accepted: bool, out: &mut impl Write) -> Result<(), String> {
+fn refuse_metadata_drift(accepted: bool) -> Result<(), String> {
     let cases_dir = cases_dir();
     let drift = dorc_loom::metadata_drift(
         &load_corpus_by_slug(&cases_dir)?,
@@ -572,12 +580,13 @@ fn refuse_metadata_drift(accepted: bool, out: &mut impl Write) -> Result<(), Str
     }
     if accepted {
         for item in &drift {
-            writeln!(
-                out,
-                "promote: `{}` {}: {:?} replaces {:?}",
-                item.slug, item.key, item.declared, item.committed
-            )
-            .map_err(|error| error.to_string())?;
+            tracing::warn!(
+                "`{}` {}: {:?} replaces {:?}",
+                item.slug,
+                item.key,
+                item.declared,
+                item.committed
+            );
         }
         return Ok(());
     }
@@ -633,7 +642,6 @@ fn compile_cases(
     env: &RunEnv,
     quiet: bool,
     out: &mut impl Write,
-    err: &mut impl Write,
 ) -> Result<ExitCode, String> {
     validate_case_inputs(cases)?;
     let gated = gate_touched_set(cases)?;
@@ -641,38 +649,56 @@ fn compile_cases(
     let (inspection, _consumer) = match inspect_cases(&gated, env, quiet, Mint::Slop, out)? {
         Inspected::Ready(inspection, consumer) => (inspection, consumer),
         Inspected::Refused { cases } => {
-            status(err, &format!("{total} cases, {cases} refused"))?;
+            tracing::info!("{total} cases, {cases} refused");
             return Ok(ExitCode::from(1));
         }
     };
     let store = receipt_store()?;
     let outcome = compile_receipt(&store, &inspection)?;
     if matches!(outcome, dorc_loom::ReceiptWriteOutcome::CleanupPending) {
-        writeln!(
-            out,
-            "compile: receipt published; retained backup requires deliberate resolution; subsequent writes refuse"
-        )
-        .map_err(|error| error.to_string())?;
+        tracing::warn!(
+            "receipt published; retained backup requires deliberate resolution; subsequent writes refuse"
+        );
     }
-    note_staged_cases(&gated.staged, &std::collections::BTreeSet::new(), out)?;
-    status(
-        err,
-        &format!(
-            "{total} cases, {} touched, receipt {}",
-            gated.touched.len(),
-            store.path().display()
-        ),
-    )?;
+    warn_each(&staged_case_notes(
+        &gated.staged,
+        &std::collections::BTreeSet::new(),
+    ));
+    // A compile changes no tracked file, so without this its only trace is a receipt under
+    // `target/` that nothing announces.
+    tracing::info!(
+        "{total} cases, {} touched, receipt {}",
+        gated.touched.len(),
+        store.path().display()
+    );
+    warn_when_nothing_moved(gated.touched.is_empty(), "compile", &gated.paths);
     Ok(ExitCode::SUCCESS)
 }
 
-/// The one line a compile always emits, quiet included, on stderr.
+/// The warning a reader who lost an hour to a silent run needed (`30C` item 6).
 ///
-/// A compile changes no tracked file, so without this its only trace is a receipt under `target/`
-/// that nothing announces — and a reader who cannot see that durable state has no way to learn
-/// that promote depends on it.
-fn status(err: &mut impl Write, summary: &str) -> Result<(), String> {
-    writeln!(err, "compile: {summary}").map_err(|error| error.to_string())
+/// Both verbs can do exactly nothing and exit 0 — the wrong worktree, the wrong file, an edit
+/// already promoted — and the ordinary summary line reads the same either way, because "0 touched"
+/// is a number in a sentence rather than an answer to the question the reader is holding.
+fn warn_each(notes: &[String]) {
+    for note in notes {
+        tracing::warn!("{note}");
+    }
+}
+
+fn warn_when_nothing_moved(nothing_moved: bool, verb: &str, selected: &[SelectedCase]) {
+    if !nothing_moved {
+        return;
+    }
+    let scope = match selected {
+        [(only, _)] => format!("`{only}`"),
+        many => format!("{} selected cases", many.len()),
+    };
+    tracing::warn!(
+        "this {verb} changed nothing: {scope} carry no unpromoted prose edit against HEAD. If you \
+         expected one, check that you edited the transcript in THIS worktree and that the case you \
+         edited is the one you named."
+    );
 }
 
 fn promote_cases(
@@ -686,19 +712,25 @@ fn promote_cases(
     validate_case_inputs(cases)?;
     let agent = looks_like_an_agent(&process_env);
     refuse_human_mint_from_an_agent(provenance, agent)?;
-    refuse_metadata_drift(accept_metadata, out)?;
+    refuse_metadata_drift(accept_metadata)?;
     let gated = gate_touched_set(cases)?;
     let Inspected::Ready(inspection, consumer) =
         inspect_cases(&gated, env, quiet, provenance.mint(), out)?
     else {
         return Ok(ExitCode::from(1));
     };
-    report_demotions(consumer.demoted(), provenance, agent, out)?;
+    if let Some(note) = report_demotions(consumer.demoted(), provenance, agent)? {
+        tracing::info!("{note}");
+    }
     promote_receipt(&receipt_store()?, &inspection)?;
     let affected = touched_cases(&gated)?;
     let before = staged_bytes(&gated)?;
-    publish(&consumer, &affected, out)?;
-    note_staged_cases(&gated.staged, &rewritten_staged(&gated, &before)?, out)?;
+    let wrote = publish(&consumer, &affected)?;
+    warn_each(&staged_case_notes(
+        &gated.staged,
+        &rewritten_staged(&gated, &before)?,
+    ));
+    warn_when_nothing_moved(!wrote, "promote", &gated.paths);
     Ok(ExitCode::SUCCESS)
 }
 
@@ -718,25 +750,23 @@ fn refuse_human_mint_from_an_agent(provenance: Provenance, agent: bool) -> Resul
 /// What to say when this promote re-marks a human-written register as slop. An AGENT is told the
 /// truth about a consequence of its own work and asked for nothing; a PERSON has most likely
 /// forgotten `--human` mid-sprint, and losing their mark to a missing flag is worth a stop.
+/// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
 fn report_demotions(
     demoted: &[String],
     provenance: Provenance,
     agent: bool,
-    out: &mut impl Write,
-) -> Result<(), String> {
+) -> Result<Option<String>, String> {
     if demoted.is_empty() {
-        return Ok(());
+        return Ok(None);
     }
     let listed = demoted.join(", ");
     let count = demoted.len();
     if provenance == Provenance::Slop || agent {
-        return writeln!(
-            out,
-            "note: this promote re-marks {count} register(s) as slop that were marked \
+        return Ok(Some(format!(
+            "this promote re-marks {count} register(s) as slop that were marked \
              human-written: {listed}\n      Reworking prose through the loom is what re-marks it, \
              so this is the expected outcome of the edit.\n      No action is necessary."
-        )
-        .map_err(|error| error.to_string());
+        )));
     }
     Err(format!(
         "this promote would re-mark {count} human-written register(s) as slop: {listed}\nRe-run \
@@ -772,23 +802,26 @@ fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String
 /// Naming a staged case IS the remedy: dorc-loom mutates no index
 /// (`282:rul-promote-is-one-atomic-act`), so a rewrite otherwise strands the author's `git add`
 /// on their own pre-promote bytes.
-fn note_staged_cases(
+///
+/// Returns the notes rather than emitting them, so their wording stays testable without a
+/// subscriber.
+fn staged_case_notes(
     staged: &std::collections::BTreeSet<String>,
     rewritten: &std::collections::BTreeSet<String>,
-    out: &mut impl Write,
-) -> Result<(), String> {
-    for path in staged {
-        let note = if rewritten.contains(path) {
-            format!(
-                "note: {path} was staged and has been rewritten; `git add` it again before \
-                 committing -- dorc-loom never touches your index"
-            )
-        } else {
-            format!("note: {path} is staged; dorc-loom read your worktree and never the index")
-        };
-        writeln!(out, "{note}").map_err(|error| error.to_string())?;
-    }
-    Ok(())
+) -> Vec<String> {
+    staged
+        .iter()
+        .map(|path| {
+            if rewritten.contains(path) {
+                format!(
+                    "{path} was staged and has been rewritten; `git add` it again before \
+                     committing -- dorc-loom never touches your index"
+                )
+            } else {
+                format!("{path} is staged; dorc-loom read your worktree and never the index")
+            }
+        })
+        .collect()
 }
 
 /// Read before publication, so the note can name exactly the cases a rewrite left stale.
@@ -823,11 +856,12 @@ fn rewritten_staged(
 /// (`282:rul-promote-is-one-atomic-act`). All bytes and both fixpoints precede every write, so a
 /// validation failure leaves committed files byte-identical; a mid-publication interruption is loud
 /// in git and repaired by rerun. No journal, staging, rollback, or index mutation.
+/// Returns whether anything was actually written, which is the only honest answer to "did this
+/// promote do something".
 fn publish(
     consumer: &DorcConsumer,
     affected: &std::collections::BTreeMap<String, Case>,
-    out: &mut impl Write,
-) -> Result<(), String> {
+) -> Result<bool, String> {
     let cases_dir = cases_dir();
     let corpus = load_corpus_by_slug(&cases_dir)?;
     let arrangements = load_arrangement_corpus(&cases_dir)?;
@@ -840,7 +874,7 @@ fn publish(
     ] {
         if file_differs(&path, bytes) {
             publish_file(&path, bytes)?;
-            writeln!(out, "promote: wrote {}", path.display()).map_err(|e| e.to_string())?;
+            tracing::info!("wrote {}", path.display());
             wrote = true;
         }
     }
@@ -851,15 +885,14 @@ fn publish(
         }
         if file_differs(&path, bytes) {
             publish_file(&path, bytes)?;
-            writeln!(out, "promote: wrote {}", path.display()).map_err(|e| e.to_string())?;
+            tracing::info!("wrote {}", path.display());
             wrote = true;
         }
     }
-    if !wrote {
-        writeln!(out, "promote: corpus already at the generated fixpoint")
-            .map_err(|e| e.to_string())?;
+    if let Some(note) = stale_siblings_note(consumer, &corpus, &arrangements, affected) {
+        tracing::warn!("{note}");
     }
-    note_stale_siblings(consumer, &corpus, &arrangements, affected, out)
+    Ok(wrote)
 }
 
 /// The cases this publication does not rewrite, but does invalidate.
@@ -869,13 +902,14 @@ fn publish(
 /// it, and one such edit left 37 sibling transcripts stale with nothing to say so until
 /// `test:looms` went red much later, by which time nothing connected the failure to the promote
 /// that caused it. Naming them keeps the write narrow and the cause attached.
-fn note_stale_siblings(
+///
+/// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
+fn stale_siblings_note(
     consumer: &DorcConsumer,
     corpus: &std::collections::BTreeMap<String, Case>,
     arrangements: &std::collections::BTreeMap<String, Case>,
     affected: &std::collections::BTreeMap<String, Case>,
-    out: &mut impl Write,
-) -> Result<(), String> {
+) -> Option<String> {
     let published = DorcConsumer::new();
     let stale: Vec<&str> = corpus
         .iter()
@@ -891,21 +925,15 @@ fn note_stale_siblings(
         .map(|(slug, _)| slug.as_str())
         .collect();
     if stale.is_empty() {
-        return Ok(());
+        return None;
     }
-    writeln!(
-        out,
-        "promote: {} other case(s) now render differently and were NOT republished: {}",
+    Some(format!(
+        "{} other case(s) now render differently and were NOT republished: {}\n  they spend a \
+         component this promote reworded; `mise run test:looms` is where their stale transcripts \
+         surface",
         stale.len(),
         stale.join(", ")
-    )
-    .map_err(|e| e.to_string())?;
-    writeln!(
-        out,
-        "  they spend a component this promote reworded; `mise run test:looms` is where their \
-         stale transcripts surface"
-    )
-    .map_err(|e| e.to_string())
+    ))
 }
 
 fn file_differs(path: &Path, bytes: &str) -> bool {
@@ -1215,24 +1243,30 @@ fn print_variables(
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
-    writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
+    tracing::info!("{VALUE_SYNTAX_NOTE}");
     if breadth == Breadth::All {
         // "The whole typed payload" is not quite whole, and the gap is invisible from here: a
         // foreign-valued hole renders, so an author sees `{{name}}` in the transcript and then
         // fails to find it in the listing that claims to hold everything.
-        writeln!(
-            out,
+        tracing::info!(
             "foreign passthrough values are omitted deliberately — they render but cannot be \
              typed; `dorc-loom sections` shows them as computed spans"
-        )
-        .map_err(|error| error.to_string())?;
+        );
     }
+    let mut variableless = 0usize;
     for path in cases {
         let case = load(path)?;
         let inventory = consumer
-            .vars_inventory(&case, &path.display().to_string(), breadth)
+            .vars_inventory(&case, breadth)
             .map_err(|error| format!("{}: {error}", path.display()))?;
+        if inventory.is_empty() {
+            variableless = variableless.saturating_add(1);
+            continue;
+        }
         write!(out, "{inventory}").map_err(|error| error.to_string())?;
+    }
+    if variableless > 0 {
+        tracing::info!("{variableless} case(s) have no variables at this breadth");
     }
     Ok(ExitCode::SUCCESS)
 }
@@ -1243,17 +1277,15 @@ fn print_variables(
 fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
     // Which bytes these describe is the one thing a reader can get wrong here.
-    writeln!(
-        out,
+    tracing::info!(
         "sections of the published baseline — the render your edit is attributed against; what \
          you have typed on disk is what `dorc-loom compile` reads"
-    )
-    .map_err(|error| error.to_string())?;
-    writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
+    );
+    tracing::info!("{VALUE_SYNTAX_NOTE}");
     for path in cases {
         let case = load(path)?;
         let listing = consumer
-            .sections_inventory(&case, &path.display().to_string())
+            .sections_inventory(&case)
             .map_err(|error| format!("{}: {error}", path.display()))?;
         write!(out, "{listing}").map_err(|error| error.to_string())?;
     }
@@ -1421,9 +1453,9 @@ mod tests {
     #[test]
     fn a_demotion_notifies_an_agent_and_stops_a_person() {
         let demoted = vec!["site-unresolvable".to_owned()];
-        let mut out = Vec::new();
-        report_demotions(&demoted, Provenance::Default, true, &mut out).expect("an agent proceeds");
-        let note = String::from_utf8(out).expect("utf-8");
+        let note = report_demotions(&demoted, Provenance::Default, true)
+            .expect("an agent proceeds")
+            .expect("an agent is told what moved");
         assert!(note.contains("site-unresolvable"), "{note}");
         assert!(note.contains("No action is necessary."), "{note}");
         assert!(note.contains("expected outcome"), "{note}");
@@ -1434,20 +1466,23 @@ mod tests {
             );
         }
 
-        let refusal = report_demotions(&demoted, Provenance::Default, false, &mut Vec::new())
+        let refusal = report_demotions(&demoted, Provenance::Default, false)
             .expect_err("a person is stopped");
         assert!(refusal.contains(HUMAN), "{refusal}");
         assert!(refusal.contains(SLOP), "{refusal}");
 
-        let mut out = Vec::new();
-        report_demotions(&demoted, Provenance::Slop, false, &mut out)
-            .expect("a deliberate demotion proceeds");
         assert!(
-            !out.is_empty(),
+            report_demotions(&demoted, Provenance::Slop, false)
+                .expect("a deliberate demotion proceeds")
+                .is_some(),
             "a deliberate demotion still says what moved"
         );
-        report_demotions(&[], Provenance::Default, false, &mut Vec::new())
-            .expect("no demotion, nothing to say");
+        assert!(
+            report_demotions(&[], Provenance::Default, false)
+                .expect("no demotion")
+                .is_none(),
+            "nothing to say"
+        );
     }
 
     /// A promote-time MARKING decision: compile publishes nothing so it takes neither, and the two
@@ -1499,15 +1534,13 @@ mod tests {
         let staged =
             std::collections::BTreeSet::from(["kept.loom".to_owned(), "rewritten.loom".to_owned()]);
         let rewritten = std::collections::BTreeSet::from(["rewritten.loom".to_owned()]);
-        let mut out = Vec::new();
-        note_staged_cases(&staged, &rewritten, &mut out).expect("note");
-        let out = String::from_utf8(out).expect("notes are utf-8");
+        let notes = staged_case_notes(&staged, &rewritten).join("\n");
         assert!(
-            out.contains("rewritten.loom was staged and has been rewritten"),
-            "{out}"
+            notes.contains("rewritten.loom was staged and has been rewritten"),
+            "{notes}"
         );
-        assert!(out.contains("kept.loom is staged;"), "{out}");
-        assert!(!out.contains("kept.loom was staged"), "{out}");
+        assert!(notes.contains("kept.loom is staged;"), "{notes}");
+        assert!(!notes.contains("kept.loom was staged"), "{notes}");
     }
 
     /// Quiet may drop a header, never a report — the corpus is ~50 cases and all but the edited one
@@ -1566,24 +1599,21 @@ mod tests {
             ("cli-unknown-flag".to_owned(), borrower),
         ]);
         let affected = std::collections::BTreeMap::from([("cli-no-book-given".to_owned(), home)]);
-        let mut out = Vec::new();
-        note_stale_siblings(
+        let note = stale_siblings_note(
             &consumer,
             &corpus,
             &std::collections::BTreeMap::new(),
             &affected,
-            &mut out,
         )
-        .expect("the note writes");
-        let out = String::from_utf8(out).expect("notes are utf-8");
-        assert!(out.contains("cli-unknown-flag"), "{out}");
+        .expect("the reword stales a sibling");
+        assert!(note.contains("cli-unknown-flag"), "{note}");
         assert!(
-            !out.contains("cli-no-book-given"),
-            "the republished case is not stale: {out}"
+            !note.contains("cli-no-book-given"),
+            "the republished case is not stale: {note}"
         );
         assert!(
-            out.contains("test:looms"),
-            "the note names where it surfaces: {out}"
+            note.contains("test:looms"),
+            "the note names where it surfaces: {note}"
         );
     }
 
@@ -1596,16 +1626,13 @@ mod tests {
         .expect("read the case");
         let case = Case::parse(&text).expect("case parses");
         let corpus = std::collections::BTreeMap::from([("cli-unknown-flag".to_owned(), case)]);
-        let mut out = Vec::new();
-        note_stale_siblings(
+        let note = stale_siblings_note(
             &DorcConsumer::new(),
             &corpus,
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
-            &mut out,
-        )
-        .expect("the note writes");
-        assert!(out.is_empty(), "{}", String::from_utf8_lossy(&out));
+        );
+        assert_eq!(note, None);
     }
 
     /// A hand-seeded row's arity mismatch panics deep inside the shared renderer

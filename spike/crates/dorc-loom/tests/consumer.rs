@@ -832,7 +832,7 @@ fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
 
     // The ordinary seat, gate Allowed, answers it — through the very baseline that just declined.
     let answered = consumer
-        .vars_inventory(&case, "render-heredoc-refused", dorc_loom::Breadth::Used)
+        .vars_inventory(&case, dorc_loom::Breadth::Used)
         .expect("the inventory derives");
     assert!(answered.contains("{{verb}} = \"elide\""), "{answered}");
 }

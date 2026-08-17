@@ -615,19 +615,21 @@ impl DorcConsumer {
     ///
     /// The ONE derivation the binary's verb, the driver, and the re-render seat all go through, so
     /// a committed inventory block is a generator fixpoint rather than a second opinion
-    /// (`282:rul-used-inventory-is-committed`). `label` is what the reader is looking at — a path
-    /// from a terminal, the case's own slug from inside one.
+    /// (`282:rul-used-inventory-is-committed`).
+    ///
+    /// The case NAMES ITSELF, from its own declared slug — never from how the caller reached it.
+    /// A terminal holds a path and a replay line holds nothing, and labelling by what each happened
+    /// to have made the same case print two different headers depending on which seat asked
+    /// (`30C` item 1: only `--this` may behave differently inside a loom).
+    ///
+    /// An EMPTY string means the case has no variables at this breadth. The header rides the
+    /// values, so a variable-less case contributes no row at either seat rather than a `case:` line
+    /// with nothing under it (`30C` item 4).
     ///
     /// # Errors
     /// Returns the baseline refusal for a case whose replays render no editable prose.
-    pub fn vars_inventory(
-        &self,
-        target: &Case,
-        label: &str,
-        breadth: Breadth,
-    ) -> Result<String, String> {
+    pub fn vars_inventory(&self, target: &Case, breadth: Breadth) -> Result<String, String> {
         let baseline = self.editable_baseline(target)?;
-        let mut output = format!("case: {label}\n");
         let values = match breadth {
             Breadth::Used => baseline.used_variables(),
             Breadth::All => baseline
@@ -636,6 +638,10 @@ impl DorcConsumer {
                 .map(|(name, value)| (name.clone(), value.clone()))
                 .collect(),
         };
+        if values.is_empty() {
+            return Ok(String::new());
+        }
+        let mut output = format!("case: {}\n", case_label(target));
         for (name, value) in values {
             let _ = writeln!(output, "{{{{{}}}}} = {value:?}", name.0);
         }
@@ -651,7 +657,7 @@ impl DorcConsumer {
     ///
     /// # Errors
     /// Returns the replay refusal.
-    pub fn sections_inventory(&self, case: &Case, label: &str) -> Result<String, String> {
+    pub fn sections_inventory(&self, case: &Case) -> Result<String, String> {
         let driver = DorcReplayDriver::new(self, case).without_self_reference();
         let results = drive_case(case, &RunEnv::new(), |command, context| {
             Ok(driver
@@ -659,7 +665,7 @@ impl DorcConsumer {
                 .unwrap_or_else(|| ReplayResult::bytes(String::new())))
         })
         .map_err(|error: RunError| error.to_string())?;
-        let mut output = format!("case: {label}\n");
+        let mut output = format!("case: {}\n", case_label(case));
         for (index, result) in results.iter().enumerate() {
             let Some(render) = result.editable_render() else {
                 let _ = writeln!(output, "replay {index}: bytes-only");
@@ -697,20 +703,21 @@ impl DorcConsumer {
                 if self_reference == SelfReference::Forbidden {
                     return None;
                 }
-                self.inventory(wanted, case, self_slug(case)?)
+                self_slug(case)?;
+                self.inventory(wanted, case)
             }
             Target::Named([one]) if case_relative_path(one) => {
                 let target = Case::parse(&source_of(one)?).ok()?;
-                self.inventory(wanted, &target, one)
+                self.inventory(wanted, &target)
             }
             Target::Named(_) => None,
         }
     }
 
-    fn inventory(&self, wanted: Inventory, case: &Case, label: &str) -> Option<String> {
+    fn inventory(&self, wanted: Inventory, case: &Case) -> Option<String> {
         match wanted {
-            Inventory::Vars(breadth) => self.vars_inventory(case, label, breadth).ok(),
-            Inventory::Sections => self.sections_inventory(case, label).ok(),
+            Inventory::Vars(breadth) => self.vars_inventory(case, breadth).ok(),
+            Inventory::Sections => self.sections_inventory(case).ok(),
         }
     }
 
@@ -1534,6 +1541,15 @@ fn self_slug(case: &Case) -> Option<&str> {
     case.frontmatter()
         .scalar("code")
         .or_else(|| case.frontmatter().scalar("arrangement"))
+}
+
+/// How an inventory names the case it is about: the slug the case DECLARES, at every seat.
+///
+/// A case that declares neither key is a corpus error every other gate already reports, so this
+/// says exactly that rather than reaching for the filename — a second identity is what makes two
+/// seats disagree.
+fn case_label(case: &Case) -> &str {
+    self_slug(case).unwrap_or("<declares neither code nor arrangement>")
 }
 
 /// One render component, as `dorc-loom sections` prints it.

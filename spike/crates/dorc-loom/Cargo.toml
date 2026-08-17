@@ -36,6 +36,13 @@ dorc-cli = { path = "../cli", version = "0.0.0" }
 # `dorc-loom` is authoring tooling, outside both DST fences (`inv-determinism`, `aid-is-dst-clean`), and
 # `aid`'s edge on this crate is dev-only, so nothing reachable from a production path gains a dependency.
 clap = { version = "4.5.60", features = ["derive"] }
+# Diagnostics go to STDERR and stdout carries only what a reader or a pipe is meant to parse
+# (`30C` item 3). `tracing` over `log` on the human's lean: the project expects tracing elsewhere
+# eventually, and one facade is cheaper than two. Both are trimmed to the smallest feature set that
+# still emits — no `#[instrument]` proc-macro, no ANSI, no `log` bridge — because the whole ask is a
+# stream split and a per-line attribution leader, not an observability stack.
+tracing = { version = "0.1.44", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt"] }
 
 [dev-dependencies]
 # The chrome-LINE round-trip proves the WHOLE chain (`28H` ruling 3): a laid-out render, its span
