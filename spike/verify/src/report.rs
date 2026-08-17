@@ -114,7 +114,7 @@ pub fn render(rows: &[Row<'_>], tier: Tier<'_>, census: Census, repo_root: &Path
         out,
         "- derivation digest: **{}**. `Generated/` is derived from the Rust the translation \
          unit includes; this is the digest of those inputs as of the derivation that produced \
-         it (`spike/verify/derivation.lock`). Whether the sources have MOVED since is a warning \
+         it (`spike/verify/aeneas/derivation.lock`). Whether the sources have MOVED since is a warning \
          `dorc-verify check` and `report` print, never a value in this file.",
         crate::derivation::recorded(repo_root).map_or_else(
             || "NONE RECORDED".to_owned(),

@@ -75,7 +75,7 @@ pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
     // position to make it truthfully.
     let lock = crate::derivation::compute(repo_root)?;
     write(&crate::derivation::path(repo_root), &lock)?;
-    written.push("spike/verify/derivation.lock".to_owned());
+    written.push("spike/verify/aeneas/derivation.lock".to_owned());
 
     let (holes, axioms) = census(&generated)?;
     Ok(Materialized {
