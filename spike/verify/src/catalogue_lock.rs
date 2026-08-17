@@ -15,14 +15,14 @@ use crate::catalogue::LawRow;
 pub const LAWS: [LawRow; 3] = [
     LawRow {
         slug: "JoinIsAssociative",
-        seat: "dorc_analysis::lattice::Lattice::join",
+        seat: "dorc_analysis::lattice::Flat::join",
         proof: None,
-        harness: None,
+        harness: Some("flat_is_associative"),
         bindings: &[],
         expected: [
             Expectation::Earned,
             Expectation::Earned,
-            Expectation::Todo,
+            Expectation::Earned,
             Expectation::Todo,
             Expectation::Todo,
             Expectation::Todo,
@@ -30,14 +30,14 @@ pub const LAWS: [LawRow; 3] = [
     },
     LawRow {
         slug: "JoinIsCommutative",
-        seat: "dorc_analysis::lattice::Lattice::join",
+        seat: "dorc_analysis::lattice::Flat::join",
         proof: None,
-        harness: None,
+        harness: Some("flat_obeys_the_binary_laws"),
         bindings: &[],
         expected: [
             Expectation::Earned,
             Expectation::Earned,
-            Expectation::Todo,
+            Expectation::Earned,
             Expectation::Todo,
             Expectation::Todo,
             Expectation::Todo,
@@ -45,14 +45,14 @@ pub const LAWS: [LawRow; 3] = [
     },
     LawRow {
         slug: "JoinIsIdempotent",
-        seat: "dorc_analysis::lattice::Lattice::join",
+        seat: "dorc_analysis::lattice::Flat::join",
         proof: None,
-        harness: None,
+        harness: Some("flat_obeys_the_binary_laws"),
         bindings: &[],
         expected: [
             Expectation::Earned,
             Expectation::Earned,
-            Expectation::Todo,
+            Expectation::Earned,
             Expectation::Todo,
             Expectation::Todo,
             Expectation::Todo,

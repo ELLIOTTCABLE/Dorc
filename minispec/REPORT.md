@@ -10,7 +10,7 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 
 ### JoinIsAssociative
 
-- seat: `dorc_analysis::lattice::Lattice::join`
+- seat: `dorc_analysis::lattice::Flat::join`
 - statement: `minispec/Minispec/JoinIsAssociative.lean` (4592 bytes)
 - proof: none claimed
 - bindings: 0
@@ -19,14 +19,14 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 |---|---|---|
 | elaborated | earned | not-recomputed-here |
 | interrogated | earned | not-recomputed-here |
-| pinned | todo | not-recomputed-here |
+| pinned | earned | not-recomputed-here |
 | proved | todo | absent(no proof claimed) |
 | demonstrated | todo | absent(no accepted binding) |
 | kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 
 ### JoinIsCommutative
 
-- seat: `dorc_analysis::lattice::Lattice::join`
+- seat: `dorc_analysis::lattice::Flat::join`
 - statement: `minispec/Minispec/JoinIsCommutative.lean` (3915 bytes)
 - proof: none claimed
 - bindings: 0
@@ -35,14 +35,14 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 |---|---|---|
 | elaborated | earned | not-recomputed-here |
 | interrogated | earned | not-recomputed-here |
-| pinned | todo | not-recomputed-here |
+| pinned | earned | not-recomputed-here |
 | proved | todo | absent(no proof claimed) |
 | demonstrated | todo | absent(no accepted binding) |
 | kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 
 ### JoinIsIdempotent
 
-- seat: `dorc_analysis::lattice::Lattice::join`
+- seat: `dorc_analysis::lattice::Flat::join`
 - statement: `minispec/Minispec/JoinIsIdempotent.lean` (2669 bytes)
 - proof: none claimed
 - bindings: 0
@@ -51,7 +51,7 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 |---|---|---|
 | elaborated | earned | not-recomputed-here |
 | interrogated | earned | not-recomputed-here |
-| pinned | todo | not-recomputed-here |
+| pinned | earned | not-recomputed-here |
 | proved | todo | absent(no proof claimed) |
 | demonstrated | todo | absent(no accepted binding) |
 | kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
@@ -60,7 +60,7 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 
 The subsets of the analysis engine opted into Lean verification, as the census of cited seats. Everything not listed is outside the boundary, whatever else guards it.
 
-- `dorc_analysis::lattice::Lattice::join`
+- `dorc_analysis::lattice::Flat::join`
 
 ## The trusted base
 
