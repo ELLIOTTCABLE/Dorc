@@ -68,9 +68,49 @@ struct CaseWorld {
     paths: Vec<String>,
     srcs: Vec<String>,
     book: String,
-    /// The case's committed `probe-results.txt`, when it has one. Absent ⇒ the unmeasured world
-    /// (every fact ⊤ ⇒ every site runs), which decides far less and is worth far less to diff.
+    /// The case's records, RE-FRAMED through `support::frame_records` exactly as the e2e runner
+    /// frames them. Absent ⇒ the unmeasured world (every fact ⊤ ⇒ every site runs), which decides
+    /// far less and is worth far less to diff.
     results: Option<String>,
+}
+
+/// Run the built `dorc probe` over a dir-form case and re-frame its committed records.
+///
+/// The corpus commits records RAW; only a real probe run supplies the header and site list the
+/// intake checks against. `CARGO_BIN_EXE_dorc` is the binary cargo built for this target, so the
+/// baseline measures the same engine the suite does.
+fn framed_for(dir: &Path) -> Option<String> {
+    if !dir.join("probe-results.txt").is_file() {
+        return None;
+    }
+    let probe = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"))
+        .arg("probe")
+        .arg(format!("--book={}", dir.join("book.sh").display()))
+        .args(oracle_args(dir))
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    let framed = support::frame_records(&String::from_utf8_lossy(&probe.stdout), dir);
+    (!framed.is_empty()).then_some(framed)
+}
+
+/// The `-o <path>` arguments a dir-form case's run carries, glob-sorted like the runner's.
+fn oracle_args(dir: &Path) -> Vec<String> {
+    let mut oracles: Vec<_> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .is_some_and(|n| n.to_string_lossy().ends_with(".oracle.sh"))
+        })
+        .collect();
+    oracles.sort();
+    oracles
+        .iter()
+        .flat_map(|path| ["-o".to_owned(), path.display().to_string()])
+        .collect()
 }
 
 #[test]
@@ -295,7 +335,7 @@ fn dir_world(dir: &Path, case: &str) -> Option<CaseWorld> {
         paths,
         srcs,
         book,
-        results: std::fs::read_to_string(dir.join("probe-results.txt")).ok(),
+        results: framed_for(dir),
     })
 }
 
@@ -316,11 +356,29 @@ fn loom_world(path: &Path, case: &str) -> Option<CaseWorld> {
             oracles.insert(name.to_owned(), section.content().to_owned());
         }
     }
+    let label = case.strip_suffix(".loom").unwrap_or(case).to_owned();
+    let book = book?;
+    // MATERIALIZE to re-frame: a loom case's records are sections, and `frame_records` reads the
+    // committed file beside a book. Without this the whole-product looms — which are exactly the
+    // MEASURED cases worth diffing — would all analyse as the unmeasured world.
+    let framed = results.and_then(|records| {
+        let scratch = std::env::temp_dir().join(format!("dorc-spine-baseline-{label}"));
+        std::fs::create_dir_all(&scratch).ok()?;
+        std::fs::write(scratch.join("book.sh"), &book).ok()?;
+        std::fs::write(scratch.join("probe-results.txt"), &records).ok()?;
+        for (name, text) in &oracles {
+            std::fs::write(scratch.join(name), text).ok()?;
+        }
+        let framed = framed_for(&scratch);
+        std::fs::remove_dir_all(&scratch).ok();
+        framed
+    });
+
     Some(CaseWorld {
-        label: case.strip_suffix(".loom").unwrap_or(case).to_owned(),
+        label,
         paths: oracles.keys().cloned().collect(),
         srcs: oracles.into_values().collect(),
-        book: book?,
-        results,
+        book,
+        results: framed,
     })
 }
