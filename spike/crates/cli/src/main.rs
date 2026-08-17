@@ -1650,6 +1650,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         trip,
         &contested,
         &env,
+        &verdict_lane,
+        &plan
+            .steps
+            .iter()
+            .map(|step| (step.ast, step.leaf))
+            .collect::<Vec<_>>(),
         admitted_records.is_some(),
     );
 
@@ -2232,6 +2238,8 @@ fn record_new_arm(
     trip: dorc_analysis::certify::CertifierTrip,
     contested: &dorc_core::ContestedFamilies,
     env: &dorc_analysis::funcenv::FuncEnv,
+    verdict_lane: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    spine_leaves: &[(dorc_core::AstId, dorc_core::LeafId)],
     admitted: bool,
 ) {
     use dorc_analysis::effect::SkipClass;
@@ -2251,8 +2259,11 @@ fn record_new_arm(
         fault: None,
         grade: None,
     });
+    // ONE whole-window row, not four per-pass ones: the trip latch is monotone across every pass
+    // (`certifier-trip-is-a-monotone-latch`), so what this run can honestly state is the window's
+    // verdict. Per-pass consistency lives in the in-memory `SolveConsistency` and is a later record.
     spine.push_certification(SpineSolveCertification {
-        pass: "window",
+        pass: "whole-window",
         consistent: !trip.tripped(),
         tripped: trip.tripped(),
         grade: None,
@@ -2296,6 +2307,13 @@ fn record_new_arm(
             grade: None,
         });
     }
+    // A classification is CFG-node-keyed while the decision plane is SITE-keyed, and the two spaces
+    // are unrelated integers — reading one as the other would key a record to somebody else's site,
+    // which is precisely what `inv-site-keyed-results` exists to forbid. The plan already carries the
+    // one true mapping (leaf ids are assigned by span in `build_plan_walled`), so the bridge is its
+    // `ast → leaf` back-map; a node with no leaf has no site to be keyed by and is skipped.
+    let leaf_of: BTreeMap<dorc_core::AstId, dorc_core::LeafId> =
+        spine_leaves.iter().copied().collect();
     for (node, class) in classes {
         let (label, cells) = match class {
             SkipClass::MustRun => ("MustRun", Vec::new()),
@@ -2305,10 +2323,13 @@ fn record_new_arm(
             SkipClass::EstablishMembers { members, .. } => ("EstablishMembers", members.clone()),
             SkipClass::InlineCall { .. } => ("InlineCall", Vec::new()),
         };
+        let Some(leaf) = leaf_of.get(&cfg.node(*node).ast).copied() else {
+            continue;
+        };
         spine.set_classification(SpineSiteClassification {
-            site: dorc_core::SiteId::leaf(dorc_core::LeafId(cfg.node(*node).ast.0)),
+            site: dorc_core::SiteId::leaf(leaf),
             class: label,
-            verdict_lane: false,
+            verdict_lane: verdict_lane.contains(node),
             invalidator: kills.contains(node),
             cells: dorc_core::spine::Account::capped(cells),
             grade: None,
