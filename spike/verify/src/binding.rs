@@ -13,6 +13,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::catalogue::{BINDING_KEY, LawRow};
+use crate::relative;
 
 /// One loom that declares itself law evidence.
 #[derive(Clone, Debug)]
@@ -87,13 +88,6 @@ fn declared_slug(case: &Path) -> Result<Option<String>, String> {
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(str::to_owned))
-}
-
-fn relative(repo_root: &Path, path: &Path) -> String {
-    path.strip_prefix(repo_root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace('\\', "/")
 }
 
 /// One direction of disagreement between the proposals and the catalogue.

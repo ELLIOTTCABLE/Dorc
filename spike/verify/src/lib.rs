@@ -67,6 +67,22 @@ pub fn lean_build_root() -> PathBuf {
     )
 }
 
+/// `path`, spelled the one way anything the binder PUBLISHES is allowed to spell it:
+/// repo-relative, forward slashes.
+///
+/// The committed report is byte-compared against a fresh render, so an absolute path in it is
+/// not a cosmetic wart — it pins the artifact to the worktree that generated it, and every
+/// other checkout of this repository then reads as stale forever. Every published path goes
+/// through here; a path that cannot be made relative is rendered as it is rather than silently
+/// dropped.
+#[must_use]
+pub fn relative(repo_root: &Path, path: &Path) -> String {
+    path.strip_prefix(repo_root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .replace('\\', "/")
+}
+
 /// This worktree's own name, the suffix that keeps one lane's caches out of another's.
 #[must_use]
 pub fn worktree_key() -> String {

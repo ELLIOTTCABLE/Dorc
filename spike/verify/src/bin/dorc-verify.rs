@@ -120,7 +120,7 @@ fn run_report(args: &[&str]) -> ExitCode {
             }
         })
         .collect();
-    let text = report::render(&rows, tier, report::Census { holes, axioms });
+    let text = report::render(&rows, tier, report::Census { holes, axioms }, root);
 
     if args.contains(&"--write") {
         if let Err(e) = std::fs::write(report::path(root), &text) {
@@ -130,28 +130,49 @@ fn run_report(args: &[&str]) -> ExitCode {
         println!("wrote {}", report::path(root).display());
         return ExitCode::SUCCESS;
     }
-    print!("{text}");
 
+    // THE VERDICT LEADS, and it leads on stderr so stdout stays the artifact's own bytes. It
+    // used to be the last line under seventy lines of report, which is the one position a
+    // reader skimming a generated document reliably does not reach.
+    //
     // At an engine tier there is no committed copy to compare against — those renders are
-    // deliberately never published — so the gate is the badge comparison itself.
-    if built.is_some() || pinned.is_some() {
-        return report_mismatches(&rows);
+    // deliberately never published — so the verdict is the badge comparison itself. Bare, the
+    // committed report IS the drift alarm.
+    let verdict = if built.is_some() || pinned.is_some() {
+        mismatch_verdict(&rows)
+    } else {
+        freshness_verdict(root, &text)
+    };
+    match &verdict {
+        Ok(line) => eprintln!("{line}"),
+        Err(refusal) => eprintln!("FAIL  {refusal}"),
     }
+    print!("{text}");
+    if verdict.is_ok() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::from(1)
+    }
+}
 
-    // Bare, the report is the drift alarm: a committed copy that no longer matches what the
-    // evidence says is exactly the stale-coverage claim this system exists to catch.
-    match std::fs::read_to_string(report::path(root)) {
-        Ok(committed) if committed == text => ExitCode::SUCCESS,
-        Ok(_) => {
-            eprintln!(
-                "FAIL  minispec/REPORT.md is stale — re-run with --write and review the diff"
-            );
-            ExitCode::from(1)
-        }
-        Err(_) => {
-            eprintln!("FAIL  minispec/REPORT.md is missing — re-run with --write");
-            ExitCode::from(1)
-        }
+fn freshness_verdict(root: &std::path::Path, text: &str) -> Result<String, String> {
+    let freshness = report::freshness(root, text);
+    if matches!(freshness, report::Freshness::Current) {
+        Ok("dorc-verify report: minispec/REPORT.md is CURRENT".to_owned())
+    } else {
+        Err(report::describe_staleness(&freshness))
+    }
+}
+
+fn mismatch_verdict(rows: &[report::Row<'_>]) -> Result<String, String> {
+    let mismatches = mismatches(rows);
+    if mismatches.is_empty() {
+        Ok(format!(
+            "dorc-verify report: {} law(s) match what the catalogue promoted",
+            rows.len()
+        ))
+    } else {
+        Err(mismatches.join("\nFAIL  "))
     }
 }
 
@@ -182,12 +203,11 @@ fn run_materialize() -> ExitCode {
     }
 }
 
-/// Compare every computed badge against what the catalogue promoted, and refuse a disagreement
-/// in EITHER direction — rot (promoted earned, evidence gone) and ambition (promoted todo,
-/// evidence present) are both a lie about coverage.
-fn report_mismatches(rows: &[report::Row<'_>]) -> ExitCode {
-    let mismatches: Vec<String> = rows
-        .iter()
+/// Every computed badge that disagrees with what the catalogue promoted, in EITHER direction —
+/// rot (promoted earned, evidence gone) and ambition (promoted todo, evidence present) are both
+/// a lie about coverage.
+fn mismatches(rows: &[report::Row<'_>]) -> Vec<String> {
+    rows.iter()
         .flat_map(|row| {
             row.evidence
                 .iter()
@@ -203,14 +223,7 @@ fn report_mismatches(rows: &[report::Row<'_>]) -> ExitCode {
                 })
                 .collect::<Vec<_>>()
         })
-        .collect();
-    if mismatches.is_empty() {
-        return ExitCode::SUCCESS;
-    }
-    for line in &mismatches {
-        eprintln!("FAIL  {line}");
-    }
-    ExitCode::from(1)
+        .collect()
 }
 
 /// The Kani lane. Exit codes are a trichotomy on purpose: 0 every harness green, 1 a real

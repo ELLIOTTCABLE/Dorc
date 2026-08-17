@@ -10,6 +10,7 @@
 //! maintained-for-free vocabulary boundary among the kernel/engine/algebra layers — free
 //! because it falls out of citations that exist for other reasons.
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
 
@@ -30,8 +31,12 @@ pub struct Row<'a> {
 }
 
 /// Render the whole report.
+///
+/// `repo_root` is taken so every path in the artifact is written repo-RELATIVE. The committed
+/// copy is byte-compared against a fresh render, so an absolute path pins the report to the
+/// worktree that produced it and makes it permanently stale everywhere else.
 #[must_use]
-pub fn render(rows: &[Row<'_>], tier: Tier<'_>, census: Census) -> String {
+pub fn render(rows: &[Row<'_>], tier: Tier<'_>, census: Census, repo_root: &Path) -> String {
     let mut out = String::new();
     out.push_str("# minispec coverage report\n\n");
     out.push_str(
@@ -53,7 +58,11 @@ pub fn render(rows: &[Row<'_>], tier: Tier<'_>, census: Census) -> String {
             match row.unit {
                 Some(u) if u.statement == Statement::Unwritten =>
                     "UNWRITTEN STUB — asserts nothing".to_owned(),
-                Some(u) => format!("`{}` ({} bytes)", u.path.display(), u.bytes),
+                Some(u) => format!(
+                    "`{}` ({} bytes)",
+                    crate::relative(repo_root, &u.path),
+                    u.bytes
+                ),
                 None => "MISSING".to_owned(),
             }
         );
@@ -143,4 +152,239 @@ pub struct Census {
 #[must_use]
 pub fn path(repo_root: &Path) -> std::path::PathBuf {
     repo_root.join("minispec").join("REPORT.md")
+}
+
+/// What the committed report is, relative to what the evidence now says.
+#[derive(Debug)]
+pub enum Freshness {
+    /// Byte-identical to a fresh render.
+    Current,
+    /// No committed copy at all.
+    Missing,
+    /// Present and diverged, with WHERE.
+    Stale(Vec<Divergence>),
+}
+
+/// One section of the report whose cells diverged.
+#[derive(Debug)]
+pub struct Divergence {
+    /// The heading the divergence sits under, or `(preamble)` above the first one.
+    pub section: String,
+    /// The cells that moved, each as what the committed copy says against what the evidence
+    /// says. `None` on a side is a cell only the other side has.
+    pub cells: Vec<(Option<String>, Option<String>)>,
+}
+
+/// Compare the committed report against a fresh render.
+///
+/// # Errors
+/// Never — an unreadable committed copy is [`Freshness::Missing`], which is a finding rather
+/// than an error: the remedy for both is the same republish.
+#[must_use]
+pub fn freshness(repo_root: &Path, computed: &str) -> Freshness {
+    match std::fs::read_to_string(path(repo_root)) {
+        Err(_) => Freshness::Missing,
+        Ok(committed) if committed == computed => Freshness::Current,
+        Ok(committed) => Freshness::Stale(diverge(&committed, computed)),
+    }
+}
+
+/// Group both texts by heading, then pair up each section's CELLS and report only the ones
+/// whose values moved.
+///
+/// Section- and cell-scoped rather than line-scoped, because that is what makes the answer
+/// STRUCTURAL: a reader learns which law's which row moved, a law added or removed shows up as
+/// its own section rather than as an avalanche of shifted lines, and the unchanged lines
+/// between two moved cells never appear at all.
+fn diverge(committed: &str, computed: &str) -> Vec<Divergence> {
+    let (old, new) = (sections(committed), sections(computed));
+    let mut order: Vec<&String> = old.keys().collect();
+    order.extend(new.keys().filter(|k| !old.contains_key(*k)));
+    let empty: BTreeMap<String, String> = BTreeMap::new();
+    let mut out = Vec::new();
+    for section in order {
+        let (was, is) = (
+            old.get(section).unwrap_or(&empty),
+            new.get(section).unwrap_or(&empty),
+        );
+        let mut cells: Vec<(Option<String>, Option<String>)> = Vec::new();
+        for (key, before) in was {
+            match is.get(key) {
+                Some(after) if after == before => {}
+                after => cells.push((Some(before.clone()), after.cloned())),
+            }
+        }
+        for (key, after) in is {
+            if !was.contains_key(key) {
+                cells.push((None, Some(after.clone())));
+            }
+        }
+        if !cells.is_empty() {
+            out.push(Divergence {
+                section: section.clone(),
+                cells,
+            });
+        }
+    }
+    out
+}
+
+/// The report's lines, grouped by heading and keyed by CELL within it.
+fn sections(text: &str) -> BTreeMap<String, BTreeMap<String, String>> {
+    let mut out: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+    let mut current = "(preamble)".to_owned();
+    for line in text.lines() {
+        if line.starts_with('#') {
+            current.clear();
+            current.push_str(line.trim_start_matches('#').trim());
+            continue;
+        }
+        if !line.trim().is_empty() {
+            out.entry(current.clone())
+                .or_default()
+                .insert(cell_key(line), line.trim().to_owned());
+        }
+    }
+    out
+}
+
+/// The label a report line is keyed by: a bullet's name, a badge-table row's badge, or — for
+/// anything else — the line itself.
+///
+/// Keying is what makes the answer per-cell: a moved value pairs with the value it replaced,
+/// instead of the two surfacing as an unrelated removal and addition.
+fn cell_key(line: &str) -> String {
+    let trimmed = line.trim();
+    if let Some(bullet) = trimmed.strip_prefix("- ")
+        && let Some((label, _)) = bullet.split_once(':')
+    {
+        return format!("- {label}");
+    }
+    if let Some(row) = trimmed.strip_prefix('|')
+        && let Some((badge, _)) = row.split_once('|')
+    {
+        return format!("| {}", badge.trim());
+    }
+    trimmed.to_owned()
+}
+
+/// How many moved cells one refusal names per section before it stops. A stale report is read
+/// by somebody deciding whether the change is expected; a dump of the whole artifact is the
+/// thing they were already failing to read.
+const SHOWN_PER_SECTION: usize = 4;
+
+/// The refusal text: what diverged, where, and the one command that fixes it.
+#[must_use]
+pub fn describe_staleness(freshness: &Freshness) -> String {
+    let divergences = match freshness {
+        Freshness::Current => return String::new(),
+        Freshness::Missing => {
+            return "minispec/REPORT.md is MISSING — republish it with \
+                    `mise run verify:report -- --write`"
+                .to_owned();
+        }
+        Freshness::Stale(divergences) => divergences,
+    };
+    let cells: usize = divergences.iter().map(|d| d.cells.len()).sum();
+    let mut out = format!(
+        "minispec/REPORT.md is STALE — {cells} cell(s) moved across {} section(s). Republish \
+         with `mise run verify:report -- --write` and review the diff:",
+        divergences.len()
+    );
+    for divergence in divergences {
+        let _ = write!(out, "\n  {}", divergence.section);
+        for (before, after) in divergence.cells.iter().take(SHOWN_PER_SECTION) {
+            let _ = write!(
+                out,
+                "\n    committed: {}\n    evidence:  {}",
+                before.as_deref().unwrap_or("(absent)"),
+                after.as_deref().unwrap_or("(absent)")
+            );
+        }
+        let hidden = divergence.cells.len().saturating_sub(SHOWN_PER_SECTION);
+        if hidden > 0 {
+            let _ = write!(out, "\n    … and {hidden} more cell(s) in this section");
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const COMMITTED: &str = "\
+# minispec coverage report
+
+Tier: cheap
+
+## Laws
+
+### JoinIsIdempotent
+
+- statement: `minispec/Minispec/JoinIsIdempotent.lean` (2172 bytes)
+- proof: none claimed
+
+## The trusted base
+
+- external axioms: **13**.
+";
+
+    #[test]
+    fn staleness_names_the_section_and_the_cell_that_moved() {
+        // "stale — re-run with --write" is the failure this replaces: it tells a reader that
+        // something moved and makes them regenerate to find out what, which is exactly when a
+        // republish stops being a review and becomes a rubber stamp.
+        let computed = COMMITTED.replace("2172 bytes", "2669 bytes");
+        let found = diverge(COMMITTED, &computed);
+        assert_eq!(found.len(), 1, "one section moved, not the whole file");
+        assert_eq!(found[0].section, "JoinIsIdempotent");
+        assert_eq!(found[0].cells.len(), 1, "the `proof:` cell is unchanged");
+        let described = describe_staleness(&Freshness::Stale(found));
+        assert!(described.contains("JoinIsIdempotent"));
+        assert!(described.contains("2172"), "what is committed");
+        assert!(described.contains("2669"), "what the evidence says");
+        assert!(described.contains("--write"), "and the remedy");
+        assert!(
+            !described.contains("none claimed"),
+            "an unchanged neighbour is not part of the finding"
+        );
+    }
+
+    #[test]
+    fn a_badge_row_pairs_with_the_row_it_replaced() {
+        // Table rows key on their badge, so a moved evidence cell reads as one before/after
+        // pair rather than as an unrelated removal beside an unrelated addition.
+        let old = "### L\n\n| pinned | todo | absent(no paired harness) |\n";
+        let new = "### L\n\n| pinned | todo | earned |\n";
+        let found = diverge(old, new);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].cells.len(), 1, "one row moved, one cell reported");
+        let (before, after) = &found[0].cells[0];
+        assert!(before.as_ref().is_some_and(|line| line.contains("absent")));
+        assert!(after.as_ref().is_some_and(|line| line.contains("earned")));
+    }
+
+    #[test]
+    fn a_whole_law_appearing_is_one_section_and_not_an_avalanche() {
+        // Line-number diffing would report every line after an inserted law. Sections are what
+        // keep a promote's report readable.
+        let computed = COMMITTED.replace(
+            "## The trusted base",
+            "### JoinIsCommutative\n\n- proof: none claimed\n\n## The trusted base",
+        );
+        let found = diverge(COMMITTED, &computed);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].section, "JoinIsCommutative");
+        assert!(
+            found[0].cells.iter().all(|(before, _)| before.is_none()),
+            "every cell in it is new"
+        );
+    }
+
+    #[test]
+    fn a_byte_identical_report_is_current() {
+        assert!(diverge(COMMITTED, COMMITTED).is_empty());
+        assert!(describe_staleness(&Freshness::Current).is_empty());
+    }
 }

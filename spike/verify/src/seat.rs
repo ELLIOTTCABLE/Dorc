@@ -24,6 +24,8 @@
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
+use crate::relative;
+
 /// Where the cited seat was found.
 #[derive(Clone, Debug)]
 pub struct Resolved {
@@ -288,13 +290,6 @@ fn strip_comment_and_literals(line: &str) -> String {
         previous = c;
     }
     out
-}
-
-fn relative(repo_root: &Path, path: &Path) -> String {
-    path.strip_prefix(repo_root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace('\\', "/")
 }
 
 #[cfg(test)]
