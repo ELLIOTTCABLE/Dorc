@@ -163,8 +163,8 @@ that state.
 
 ```console
 nano spike\crates\aid\tests\cli-help-page.loom  # change a word,
-mise run loom:compile                           # check your changes,
-mise run loom:promote                           # and promote them to the catalog
+dorc-loom compile                               # check your changes,
+dorc-loom promote                               # and promote them to the catalog
 git commit spike\crates\aid\tests\cli-help-page.loom \
    spike/crates/aid/src/arrangement_lock.rs \
    -m "(- re doc) Reword the ..."

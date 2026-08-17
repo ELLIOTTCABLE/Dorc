@@ -79,7 +79,8 @@ const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metada
 
 const VARS_USAGE: &str = "usage: dorc-loom [--this] vars [--used|--all] [CASE...]
   Print each case's named template variables and their currently-rendered values, driven from the
-  same render an edit compiles against.
+  same render an edit compiles against. A case with no variables prints no row at all; stderr
+  carries how many there were.
   --used   only the variables some rendered section actually consumes (the default)
   --all    the whole typed payload, including values no sentence spends yet
   --this   the case this invocation is running inside -- a replay line's spelling, so a case never
@@ -660,7 +661,7 @@ fn compile_cases(
             "receipt published; retained backup requires deliberate resolution; subsequent writes refuse"
         );
     }
-    warn_each(&staged_case_notes(
+    warn_each(staged_case_notes(
         &gated.staged,
         &std::collections::BTreeSet::new(),
     ));
@@ -671,7 +672,11 @@ fn compile_cases(
         gated.touched.len(),
         store.path().display()
     );
-    warn_when_nothing_moved(gated.touched.is_empty(), "compile", &gated.paths);
+    warn_each(nothing_moved_note(
+        gated.touched.is_empty(),
+        "compile",
+        &gated.paths,
+    ));
     Ok(ExitCode::SUCCESS)
 }
 
@@ -680,25 +685,32 @@ fn compile_cases(
 /// Both verbs can do exactly nothing and exit 0 — the wrong worktree, the wrong file, an edit
 /// already promoted — and the ordinary summary line reads the same either way, because "0 touched"
 /// is a number in a sentence rather than an answer to the question the reader is holding.
-fn warn_each(notes: &[String]) {
+/// The one seat that turns a note-producing function's answer into stderr lines.
+fn warn_each(notes: impl IntoIterator<Item = String>) {
     for note in notes {
         tracing::warn!("{note}");
     }
 }
 
-fn warn_when_nothing_moved(nothing_moved: bool, verb: &str, selected: &[SelectedCase]) {
+///
+/// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
+fn nothing_moved_note(
+    nothing_moved: bool,
+    verb: &str,
+    selected: &[SelectedCase],
+) -> Option<String> {
     if !nothing_moved {
-        return;
+        return None;
     }
     let scope = match selected {
         [(only, _)] => format!("`{only}`"),
         many => format!("{} selected cases", many.len()),
     };
-    tracing::warn!(
+    Some(format!(
         "this {verb} changed nothing: {scope} carry no unpromoted prose edit against HEAD. If you \
          expected one, check that you edited the transcript in THIS worktree and that the case you \
          edited is the one you named."
-    );
+    ))
 }
 
 fn promote_cases(
@@ -726,11 +738,11 @@ fn promote_cases(
     let affected = touched_cases(&gated)?;
     let before = staged_bytes(&gated)?;
     let wrote = publish(&consumer, &affected)?;
-    warn_each(&staged_case_notes(
+    warn_each(staged_case_notes(
         &gated.staged,
         &rewritten_staged(&gated, &before)?,
     ));
-    warn_when_nothing_moved(!wrote, "promote", &gated.paths);
+    warn_each(nothing_moved_note(!wrote, "promote", &gated.paths));
     Ok(ExitCode::SUCCESS)
 }
 
@@ -1168,7 +1180,7 @@ fn emit_previews(
         consumer
             .apply_preview(&preview)
             .map_err(|error| format!("{}: {}", path.display(), error.explain(path)))?;
-        warn_each(&baked_value_warnings(&preview));
+        warn_each(baked_value_warnings(&preview));
         compiled.insert(index, preview);
         writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
     }
@@ -1563,6 +1575,32 @@ mod tests {
         );
         assert!(notes.contains("kept.loom is staged;"), "{notes}");
         assert!(!notes.contains("kept.loom was staged"), "{notes}");
+    }
+
+    /// A run that did nothing exits 0 either way, so the only thing separating "nothing to do" from
+    /// "wrong worktree, wrong file" is this line. It names the case when there is one to name,
+    /// because a reader who mistyped a path needs to see which path the tool actually read.
+    #[test]
+    fn a_run_that_moved_nothing_says_so_and_names_what_it_looked_at() {
+        let selected = |paths: &[&str]| -> Vec<SelectedCase> {
+            paths
+                .iter()
+                .map(|path| ((*path).to_owned(), PathBuf::from(path)))
+                .collect()
+        };
+
+        let one = selected(&["crates/aid/tests/whylog-absent.loom"]);
+        let note = nothing_moved_note(true, "compile", &one).expect("a no-op run says so");
+        assert!(note.contains("this compile changed nothing"), "{note}");
+        assert!(note.contains("whylog-absent.loom"), "{note}");
+        assert!(note.contains("worktree"), "{note}");
+
+        let many = selected(&["a.loom", "b.loom", "c.loom"]);
+        let note = nothing_moved_note(true, "promote", &many).expect("a no-op run says so");
+        assert!(note.contains("this promote changed nothing"), "{note}");
+        assert!(note.contains("3 selected cases"), "{note}");
+
+        assert_eq!(nothing_moved_note(false, "promote", &many), None);
     }
 
     /// Quiet may drop a header, never a report — the corpus is ~50 cases and all but the edited one

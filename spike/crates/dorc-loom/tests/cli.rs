@@ -121,11 +121,27 @@ fn all_inventory_excludes_foreign_detail() {
     assert!(output.status.success(), "{stdout}");
     assert!(!stdout.contains("{{detail}}"));
     // Omitting it silently is the trap: the listing claims the whole payload, and the hole an
-    // author can see in the transcript is not in it.
+    // author can see in the transcript is not in it. On STDERR, because stdout is the inventory
+    // and nothing else -- which is also what makes the listing identical inside a loom.
+    let stderr =
+        String::from_utf8(output.stderr).unwrap_or_else(|error| panic!("stderr is UTF-8: {error}"));
     assert!(
-        stdout.contains("foreign passthrough values are omitted deliberately"),
-        "the inventory must own its own gap: {stdout}"
+        stderr.contains("foreign passthrough values are omitted deliberately"),
+        "the inventory must own its own gap: {stderr}"
     );
+}
+
+/// Only `--this` may behave differently inside a loom (`30C` item 1), so every other seat's stdout
+/// is the same bytes at a terminal as in a replay block -- no preamble, no absolute path, the
+/// case's own declared slug. The committed block in `whylog-absent.loom` is the other half of this
+/// pin: it is what the driver prints, and the render fixpoint holds it.
+#[test]
+fn a_terminal_inventory_is_byte_identical_to_the_in_loom_block() {
+    let output = run(&["vars", "whylog-absent"]);
+    let stdout =
+        String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
+    assert!(output.status.success(), "{stdout}");
+    assert_eq!(stdout, "case: whylog-absent\n{{dir}} = \".whylog\"\n");
 }
 
 #[test]
