@@ -31,6 +31,26 @@ fn every_cited_seat_resolves_to_a_real_function() {
 }
 
 #[test]
+fn a_citation_reaches_one_of_the_seven_join_declarations_and_refuses_a_wrong_owner() {
+    // `analysis::lattice` declares `fn join` seven times. Against the REAL file, because the
+    // property being pinned is about that file: each citation reaches its own owner's
+    // declaration and no other, and an owner that does not have the function is a refusal
+    // rather than a fallback to somebody else's.
+    let root = repo_root();
+    let trait_seat = seat::resolve("dorc_analysis::lattice::Lattice::join", root)
+        .expect("the trait declares it");
+    let flat_seat =
+        seat::resolve("dorc_analysis::lattice::Flat::join", root).expect("so does the Flat impl");
+    assert_ne!(
+        trait_seat.line, flat_seat.line,
+        "two citations landing on one line means neither is being resolved"
+    );
+    let refused = seat::resolve("dorc_analysis::lattice::Powerset::top", root)
+        .expect_err("a bare powerset is unbounded — it has no `top`, and four other types do");
+    assert!(refused.contains("none of them under"), "{refused}");
+}
+
+#[test]
 fn the_cheap_tier_never_mints_an_external_engine_badge() {
     // The whole tier split rests on this. A cheap run that answered `earned` for a Lean or
     // Kani badge would be laundering a committed expectation into an evidence claim — the
