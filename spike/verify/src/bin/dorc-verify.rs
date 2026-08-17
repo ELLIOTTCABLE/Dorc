@@ -74,9 +74,12 @@ fn run_report(args: &[&str]) -> ExitCode {
     let built = args
         .contains(&"--with-lean")
         .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
+    // Only the harnesses the catalogue pairs: those are the ones a `pinned` cell reads, and the
+    // battery around them costs tens of minutes to answer a question nobody asked here.
+    let paired: Vec<&str> = LAWS.iter().filter_map(|law| law.harness).collect();
     let pinned = match args
         .contains(&"--with-kani")
-        .then(|| kani::run(root, None, &mut |line| println!("{line}")))
+        .then(|| kani::run(root, &paired, &mut |line| println!("{line}")))
     {
         None => None,
         Some(Ok(report)) => Some(report),
@@ -190,13 +193,29 @@ fn run_promote(args: &[&str]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    let units = match unit::load_all(root) {
+        Ok(units) => units,
+        Err(why) => {
+            eprintln!("dorc-verify promote: {why}");
+            return ExitCode::from(2);
+        }
+    };
+    // Claims first, so the Kani lane below is bounded to the harnesses this promote is ABOUT.
+    let claimed = match promote::claims(&units, &LAWS, &inputs) {
+        Ok(claimed) => claimed,
+        Err(why) => {
+            eprintln!("dorc-verify promote: {why}");
+            return ExitCode::from(2);
+        }
+    };
     let built = args
         .contains(&"--with-lean")
         .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
-    let pinned = match args
-        .contains(&"--with-kani")
-        .then(|| kani::run(root, None, &mut |line| println!("{line}")))
-    {
+    let pinned = match args.contains(&"--with-kani").then(|| {
+        kani::run(root, &promote::paired_harnesses(&claimed), &mut |line| {
+            println!("{line}");
+        })
+    }) {
         None => None,
         Some(Ok(report)) => Some(report),
         Some(Err(why)) => {
@@ -212,20 +231,7 @@ fn run_promote(args: &[&str]) -> ExitCode {
             kani: pinned.as_ref(),
         }
     };
-    let units = match unit::load_all(root) {
-        Ok(units) => units,
-        Err(why) => {
-            eprintln!("dorc-verify promote: {why}");
-            return ExitCode::from(2);
-        }
-    };
-    let rows = match promote::plan(root, tier, &units, &LAWS, &inputs) {
-        Ok(rows) => rows,
-        Err(why) => {
-            eprintln!("dorc-verify promote: {why}");
-            return ExitCode::from(2);
-        }
-    };
+    let rows = promote::finish(root, tier, &units, &claimed);
     for row in &rows {
         for movement in &row.movements {
             println!("{}: {movement}", row.slug);
@@ -310,7 +316,8 @@ fn run_kani(arg: Option<&str>) -> ExitCode {
     // Per-harness lines are printed AS THEY LAND, not collected and dumped at the end. A full
     // battery is tens of minutes, and a run killed partway through used to lose every verdict
     // it had already earned — which is how a lane becomes hostage to its slowest harness.
-    match kani::run(repo_root(), arg, &mut |line| println!("{line}")) {
+    let selection: Vec<&str> = arg.into_iter().collect();
+    match kani::run(repo_root(), &selection, &mut |line| println!("{line}")) {
         Err(why) => {
             eprintln!("dorc-verify kani: {why}");
             ExitCode::from(2)

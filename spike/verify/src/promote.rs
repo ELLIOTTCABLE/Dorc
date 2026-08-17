@@ -108,18 +108,20 @@ pub struct Promoted {
     pub movements: Vec<String>,
 }
 
-/// Build the rows a promote would write.
+/// Resolve every law's claim inputs, BEFORE any engine runs.
+///
+/// Split from [`finish`] for one reason: the harnesses this promote is about are named here,
+/// and the Kani lane should verify those and not a whole battery. A run that has to enumerate
+/// its own subject before it can bound its spend cannot do it in one pass.
 ///
 /// # Errors
 /// When a law has no seat to cite — the one claim input that has no default, because a seat is
 /// what makes a badge evidence ABOUT something.
-pub fn plan(
-    repo_root: &Path,
-    tier: Tier<'_>,
+pub fn claims(
     units: &[Unit],
     committed: &[LawRow],
     inputs: &Inputs,
-) -> Result<Vec<Promoted>, String> {
+) -> Result<Vec<LawRow>, String> {
     let mut out = Vec::new();
     for unit in units {
         let was = committed.iter().find(|law| law.slug == unit.slug);
@@ -139,27 +141,53 @@ pub fn plan(
             inputs.harnesses.get(&unit.slug),
             was.and_then(|law| law.harness),
         );
-        let row = LawRow {
+        out.push(LawRow {
             slug: leak(&unit.slug),
             seat: leak(&seat),
             proof: proof.as_deref().map(leak),
             harness: harness.as_deref().map(leak),
             bindings: was.map_or(&[], |law| law.bindings),
             expected: was.map_or([Expectation::Todo; Badge::ALL.len()], |law| law.expected),
-        };
-        let found = evidence::compute(&row, Some(unit), repo_root, tier);
-        let (expected, movements) = expectations(&row, &found);
-        out.push(Promoted {
-            slug: unit.slug.clone(),
-            seat,
-            proof,
-            harness,
-            bindings: bindings_of(&row),
-            expected,
-            movements,
         });
     }
     Ok(out)
+}
+
+/// Every harness some row pairs with — the exact set a promote needs verified, and nothing
+/// else.
+#[must_use]
+pub fn paired_harnesses(rows: &[LawRow]) -> Vec<&'static str> {
+    let mut names: Vec<&'static str> = rows.iter().filter_map(|row| row.harness).collect();
+    names.sort_unstable();
+    names.dedup();
+    names
+}
+
+/// Compute each row's badges and turn the claims into the rows promote will write.
+#[must_use]
+pub fn finish(
+    repo_root: &Path,
+    tier: Tier<'_>,
+    units: &[Unit],
+    claimed: &[LawRow],
+) -> Vec<Promoted> {
+    claimed
+        .iter()
+        .map(|row| {
+            let unit = units.iter().find(|u| u.slug == row.slug);
+            let found = evidence::compute(row, unit, repo_root, tier);
+            let (expected, movements) = expectations(row, &found);
+            Promoted {
+                slug: row.slug.to_owned(),
+                seat: row.seat.to_owned(),
+                proof: row.proof.map(str::to_owned),
+                harness: row.harness.map(str::to_owned),
+                bindings: bindings_of(row),
+                expected,
+                movements,
+            }
+        })
+        .collect()
 }
 
 /// A flag overrides; absent a flag, the committed value stands.

@@ -29,14 +29,9 @@ fn the_committed_lock_is_byte_identical_to_what_promote_generates() {
     // from the evidence that is supposed to write them.
     let root = repo_root();
     let units = unit::load_all(root).expect("the corpus must be readable");
-    let rows = promote::plan(
-        root,
-        Tier::Cheap,
-        &units,
-        &LAWS,
-        &promote::Inputs::default(),
-    )
-    .expect("every catalogued law has its seat");
+    let claimed = promote::claims(&units, &LAWS, &promote::Inputs::default())
+        .expect("every catalogued law has its seat");
+    let rows = promote::finish(root, Tier::Cheap, &units, &claimed);
     let committed =
         std::fs::read_to_string(promote::path(root)).expect("the lock must be readable");
     assert_eq!(

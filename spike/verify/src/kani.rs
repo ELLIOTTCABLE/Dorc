@@ -176,16 +176,23 @@ pub fn setup() -> Result<(), Refusal> {
     }
 }
 
-/// Run the lane: enumerate the harnesses, then verify them one at a time under a budget,
-/// reaping between each. `progress` receives one line per harness AS IT LANDS — a full battery
-/// is tens of minutes, and a run interrupted partway through must not lose the verdicts it has
-/// already earned.
+/// Run the lane: enumerate the harnesses, then verify the SELECTED ones one at a time under a
+/// budget, reaping between each. `progress` receives one line per harness AS IT LANDS — a full
+/// battery is tens of minutes, and a run interrupted partway through must not lose the verdicts
+/// it has already earned.
+///
+/// An empty `selection` verifies everything. A non-empty one verifies exactly those, which is
+/// what a badge recompute wants: the catalogue pairs two harnesses, the battery holds
+/// thirty-seven, and eighteen of those are over-budget by measurement — so recomputing one
+/// badge through a whole battery run spends tens of minutes and a VM's worth of memory on
+/// evidence nothing was asking for. Enumeration is unfiltered either way, so a citation still
+/// resolves against every harness the toolchain knows.
 ///
 /// # Errors
 /// [`Refusal`], for anything that is not a verification verdict.
 pub fn run(
     repo_root: &Path,
-    filter: Option<&str>,
+    selection: &[&str],
     progress: &mut dyn FnMut(&str),
 ) -> Result<Report, Refusal> {
     if cfg!(windows) {
@@ -209,23 +216,28 @@ pub fn run(
         ..Report::default()
     };
 
-    let selected: Vec<String> = match filter {
-        None => qualified.iter().cloned().collect(),
-        Some(name) => {
-            let bare = bare_name(name);
-            let matched: Vec<String> = qualified
-                .iter()
-                .filter(|q| bare_name(q) == bare)
-                .cloned()
-                .collect();
-            if matched.is_empty() {
-                return Err(Refusal::ToolFailed(format!(
-                    "no harness named `{bare}` — the toolchain lists {}",
-                    qualified.len()
-                )));
-            }
-            matched
+    let selected: Vec<String> = if selection.is_empty() {
+        qualified.iter().cloned().collect()
+    } else {
+        let wanted: BTreeSet<String> = selection.iter().map(|name| bare_name(name)).collect();
+        let matched: Vec<String> = qualified
+            .iter()
+            .filter(|q| wanted.contains(&bare_name(q)))
+            .cloned()
+            .collect();
+        // An unresolvable name is a refusal rather than a shorter run: silently verifying the
+        // names that DID resolve would report a green lane over a citation pointing at nothing.
+        let missing: Vec<&String> = wanted
+            .iter()
+            .filter(|name| !matched.iter().any(|q| &bare_name(q) == *name))
+            .collect();
+        if !missing.is_empty() {
+            return Err(Refusal::ToolFailed(format!(
+                "no harness named {missing:?} — the toolchain lists {}",
+                qualified.len()
+            )));
         }
+        matched
     };
 
     let budget = budget();
