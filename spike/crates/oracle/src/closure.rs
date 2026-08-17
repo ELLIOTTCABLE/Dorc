@@ -373,6 +373,19 @@ impl HelperIndex {
     /// the resolution left the voucher's custody, or a call cannot be enumerated. Each withholds the
     /// pin, hence the vouch, hence the ship — the site runs.
     pub fn closure_for(&self, file: usize, body: &str) -> Result<Closure, ClosureDenial> {
+        // The unresolved-load suspension precedes the empty-index shortcut, and that ORDER is the
+        // whole of it: a file that sourced something the driver could not load contributes no
+        // declarations, so the index it produces is empty — and an empty index taking the shortcut
+        // would ship the body BARE, which is precisely the rc-127-or-worse this pass exists to
+        // prevent. Measured on this tree: the shortcut swallowed the suspension and a package whose
+        // helpers never loaded shipped a check that answered 127.
+        if self.unresolved_loads.contains(&file) {
+            return Err(ClosureDenial {
+                name: String::new(),
+                reason: DenialReason::UnresolvedLoad,
+                sites: Vec::new(),
+            });
+        }
         if self.is_empty() && self.book_defines.is_empty() {
             return Ok(Closure::default());
         }
