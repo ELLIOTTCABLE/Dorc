@@ -830,8 +830,7 @@ fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
         "the baseline is the plan replay's render, not the declined block's"
     );
 
-    // And the ordinary seat, whose gate is Allowed, does answer it — driven through the very
-    // baseline that just declined.
+    // The ordinary seat, gate Allowed, answers it — through the very baseline that just declined.
     let answered = consumer
         .vars_inventory(&case, "render-heredoc-refused", dorc_loom::Breadth::Used)
         .expect("the inventory derives");

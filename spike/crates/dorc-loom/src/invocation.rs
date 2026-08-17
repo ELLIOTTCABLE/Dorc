@@ -319,8 +319,6 @@ mod tests {
         let promote = parse_words(&["dorc-loom", "--human", "promote"]).expect_err("refuses");
         assert!(promote.contains("promote"), "{promote}");
 
-        // And the inverse misplacement, since a reader who learns `--this` is global will try it
-        // in verb position exactly once.
         let inverted = parse_words(&["dorc-loom", "vars", "--this"]).expect_err("refuses");
         assert!(inverted.contains("dorc-loom --this vars"), "{inverted}");
     }

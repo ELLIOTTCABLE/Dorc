@@ -1315,8 +1315,8 @@ mod tests {
         for verb in VERBS {
             let page = usage_for(verb);
             assert_ne!(page, USAGE, "`{verb}` falls through to the index");
-            // The synopsis may carry the global selector slot before the verb, so the pin is that
-            // the first line is a `dorc-loom` synopsis naming THIS verb, not its exact prefix.
+            // A synopsis may carry the global selector slot before the verb, so the pin is that it
+            // names THIS verb, not that it opens on an exact prefix.
             let synopsis = page.lines().next().unwrap_or_default();
             assert!(
                 synopsis.starts_with("usage: dorc-loom ") && synopsis.contains(verb),

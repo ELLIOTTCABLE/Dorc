@@ -1511,10 +1511,7 @@ fn self_slug(case: &Case) -> Option<&str> {
 }
 
 /// One render component, as `dorc-loom sections` prints it.
-pub(crate) fn write_component(
-    out: &mut String,
-    component: &RenderComponent<SectionKey, SectionVariableId>,
-) {
+fn write_component(out: &mut String, component: &RenderComponent<SectionKey, SectionVariableId>) {
     match component {
         RenderComponent::Structure(text) => {
             let _ = writeln!(out, "  computed: {text:?}");
