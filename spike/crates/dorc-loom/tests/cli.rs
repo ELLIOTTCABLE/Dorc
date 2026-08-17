@@ -150,7 +150,11 @@ fn clean_cases_do_not_trigger_marker_compilation() {
     assert_eq!(malformed.status.code(), Some(2));
     let stderr = String::from_utf8(malformed.stderr)
         .unwrap_or_else(|error| panic!("stderr is UTF-8: {error}"));
-    assert!(stderr.contains("unknown vars mode"));
+    assert!(stderr.contains("--wat"), "{stderr}");
+    assert!(
+        stderr.contains("usage: dorc-loom [--this] vars"),
+        "{stderr}"
+    );
 
     let unreadable = run(&["compile", "missing-case.txt"]);
     assert_eq!(unreadable.status.code(), Some(2));

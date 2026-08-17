@@ -11,10 +11,10 @@ apt-get install -y "$(cat /etc/webhost/pkgset)"
 systemctl enable nginx
 
 -- replay --
-$ dorc-loom vars --used cmdsub-two-sections.txt
-case: cmdsub-two-sections.txt
+$ dorc-loom --this vars
+case: cmdsub-operand-top
 {{position}} = "operand 3"
-{{cause}} = "a command-substitution `$(…)` / arithmetic / operator-form expansion"
+{{cause}} = "a command-substitution `$(...)` /\narithmetic / operator-form expansion"
 
 $ dorc plan --book=book.sh
 note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` / arithmetic

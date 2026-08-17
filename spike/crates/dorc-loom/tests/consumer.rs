@@ -761,19 +761,19 @@ fn vars_replay_reads_only_the_named_materialized_case() {
     );
 }
 
-/// A case's inventory OF ITSELF, on both chains.
+/// A case's inventory OF ITSELF, on both chains, under the `--this` selector.
 ///
-/// A case cannot contain itself, so the block a case carries about its own values names the case
-/// rather than a section, and both chains resolve it against the case being rendered. What makes it
+/// A case cannot contain itself, so the block a case carries about its own values names no target
+/// at all, and both chains resolve `--this` against the case being rendered. What makes it
 /// terminate is not a depth count: the baseline seat — the one place an inventory comes from —
 /// declines the block, so the question is asked exactly once.
 #[test]
 fn a_case_answers_its_own_inventory_on_both_chains() {
-    for spelling in ["render-heredoc-refused", "render-heredoc-refused.loom"] {
+    for block in ["--this vars", "--this vars --all", "--this sections"] {
         let case = Case::parse(&format!(
             "---\ncode: render-heredoc-refused\n---\n-- replay --\n\
              $ dorc plan --book=book.sh\nold\n\
-             $ dorc-loom vars --used {spelling}\nold\n"
+             $ dorc-loom {block}\nold\n"
         ))
         .expect("case parses");
         let consumer = DorcConsumer::new();
@@ -783,20 +783,59 @@ fn a_case_answers_its_own_inventory_on_both_chains() {
         .expect("replays route");
         let inventory = results[1].output();
         assert!(
-            inventory.starts_with(&format!("case: {spelling}\n")),
-            "`{spelling}`: {inventory}"
+            inventory.starts_with("case: render-heredoc-refused\n"),
+            "`{block}`: the header names the case's own slug, never a spelling in the command: \
+             {inventory}"
         );
         assert!(
-            inventory.contains("{{verb}} = \"elide\""),
-            "`{spelling}`: the inventory is the payload's, not an empty answer: {inventory}"
+            inventory.contains("elide"),
+            "`{block}`: the inventory is the payload's, not an empty answer: {inventory}"
         );
         let rendered = consumer.render_case(&case).expect("the case re-renders");
         assert_eq!(
-            rendered.matches("{{verb}} = \"elide\"").count(),
+            rendered.matches("case: render-heredoc-refused").count(),
             1,
-            "`{spelling}`: the fixpoint chain answers the same block once: {rendered}"
+            "`{block}`: the fixpoint chain answers the same block once: {rendered}"
         );
     }
+}
+
+/// The stratification the self-referring block rests on: the EDITABLE-BASELINE seat declines it,
+/// every other seat answers it.
+///
+/// This is a correctness property, not a nicety. The inventory is derived from the render an edit
+/// compiles against, and that render comes from driving the case — so a baseline drive that
+/// answered the block would ask its own question forever. The `--this` selector changed which
+/// SPELLING reaches the gate; it must not have changed the gate.
+#[test]
+fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
+    let case = Case::parse(
+        "---\ncode: render-heredoc-refused\n---\n-- replay --\n\
+         $ dorc-loom --this vars\nold\n\
+         $ dorc plan --book=book.sh\nold\n",
+    )
+    .expect("case parses");
+    let consumer = DorcConsumer::new();
+
+    // The baseline exists at all only because the block declined: it is the FIRST replay, so a
+    // seat that answered it would have to answer it while computing the answer.
+    let baseline = consumer
+        .editable_baseline(&case)
+        .expect("the baseline comes from the second replay");
+    assert!(
+        baseline
+            .used_variables()
+            .iter()
+            .any(|(name, _)| name.0 == "verb"),
+        "the baseline is the plan replay's render, not the declined block's"
+    );
+
+    // And the ordinary seat, whose gate is Allowed, does answer it — driven through the very
+    // baseline that just declined.
+    let answered = consumer
+        .vars_inventory(&case, "render-heredoc-refused", dorc_loom::Breadth::Used)
+        .expect("the inventory derives");
+    assert!(answered.contains("{{verb}} = \"elide\""), "{answered}");
 }
 
 /// The two chains a case travels — `DorcConsumer::replay` (the EDIT chain, which `compile` and

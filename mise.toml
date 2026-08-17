@@ -525,14 +525,14 @@ usage = 'arg "slug" help="the new code slug (lowercase letters, digits, hyphens)
 run = "cargo run --quiet -p dorc-loom -- scaffold {{ usage.slug }}"
 
 [tasks."loom:vars"]
-description = "Print each case's named template-variable series and current rendered values, driven from the same render an edit compiles against. `--all` lists the full typed-payload inventory; bare is `--used` (only variables a rendered section actually consumes). Bare case list takes the whole corpus."
+description = "Print each case's named template-variable series and current rendered values, driven from the same render an edit compiles against. `--all` lists the full typed-payload inventory; bare is `--used` (only variables a rendered section actually consumes). Bare case list takes the whole corpus. Inside a case, the replay-line spelling is `dorc-loom --this vars`, which names no slug and so survives a rename."
 dir = "spike"
 raw = true
 usage = '''
 flag "--all" help="list every variable in the payload, not only ones a rendered section consumes"
 arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"
 '''
-run = "cargo run --quiet -p dorc-loom -- vars {% if usage.all %}--all{% else %}--used{% endif %} {{ usage.cases | join(sep=' ') }}"
+run = "cargo run --quiet -p dorc-loom -- vars {% if usage.all %}--all{% endif %} {{ usage.cases | join(sep=' ') }}"
 
 [tasks."loom:add-register"]
 description = "Mint a code's `help` register (HelpRegister::Unwritten) so the ordinary compile/promote loop can fill it — see the command's own printed follow-up. Refuses if the case has an unpromoted prose edit or the register already exists."

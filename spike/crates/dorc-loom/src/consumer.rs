@@ -22,6 +22,7 @@ use errorloom::{
     ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
 };
 
+use crate::invocation::{self, Breadth, Target, Verb};
 use crate::{
     DorcSectionEdit, ENVELOPE_INVOCATION, ENVELOPE_KEY, ENVELOPE_STDERR, SectionKey,
     SectionVariableId, TemplateVariableName, to_editable_render,
@@ -607,40 +608,105 @@ impl DorcConsumer {
 
     /// The `dorc-loom vars` inventory for one case, as bytes.
     ///
-    /// The ONE derivation both the driver and the re-render seat go through, so a committed
-    /// inventory block is a generator fixpoint rather than a second opinion
-    /// (`282:rul-used-inventory-is-committed`).
-    fn vars_inventory(&self, target_source: &str, path: &str, used: bool) -> Option<String> {
-        let target = Case::parse(target_source).ok()?;
-        self.vars_inventory_of(&target, path, used)
-    }
-
-    /// The same inventory over a case already in hand — the seat a case's inventory of ITSELF goes
-    /// through.
+    /// The ONE derivation the binary's verb, the driver, and the re-render seat all go through, so
+    /// a committed inventory block is a generator fixpoint rather than a second opinion
+    /// (`282:rul-used-inventory-is-committed`). `label` is what the reader is looking at — a path
+    /// from a terminal, the case's own slug from inside one.
     ///
-    /// A case cannot contain itself, so the block a case carries about its own values has no
-    /// section to read: the answer is the case being rendered. Everything downstream is unchanged,
-    /// which is the whole point — the inventory an author reads is the one an edit compiles
-    /// against, whichever case named it.
-    fn vars_inventory_of(&self, target: &Case, path: &str, used: bool) -> Option<String> {
-        let baseline = self.editable_baseline(target).ok()?;
-        let mut output = String::new();
-        output.push_str("case: ");
-        output.push_str(path);
-        output.push('\n');
-        let values = if used {
-            baseline.used_variables()
-        } else {
-            baseline
+    /// # Errors
+    /// Returns the baseline refusal for a case whose replays render no editable prose.
+    pub fn vars_inventory(
+        &self,
+        target: &Case,
+        label: &str,
+        breadth: Breadth,
+    ) -> Result<String, String> {
+        let baseline = self.editable_baseline(target)?;
+        let mut output = format!("case: {label}\n");
+        let values = match breadth {
+            Breadth::Used => baseline.used_variables(),
+            Breadth::All => baseline
                 .all_variables()
                 .iter()
                 .map(|(name, value)| (name.clone(), value.clone()))
-                .collect()
+                .collect(),
         };
         for (name, value) in values {
             let _ = writeln!(output, "{{{{{}}}}} = {value:?}", name.0);
         }
-        Some(output)
+        Ok(output)
+    }
+
+    /// The `dorc-loom sections` listing for one case, as bytes — the same one-derivation shape as
+    /// [`Self::vars_inventory`], for the other inventory.
+    ///
+    /// It drives with [`SelfReference::Forbidden`] for the reason the baseline does: a listing of
+    /// every replay's sections is itself derived from driving every replay, so a `--this sections`
+    /// block that answered here would ask its own question forever.
+    ///
+    /// # Errors
+    /// Returns the replay refusal.
+    pub fn sections_inventory(&self, case: &Case, label: &str) -> Result<String, String> {
+        let driver = DorcReplayDriver::new(self, case).without_self_reference();
+        let results = drive_case(case, &RunEnv::new(), |command, context| {
+            Ok(driver
+                .drive(command, context)
+                .unwrap_or_else(|| ReplayResult::bytes(String::new())))
+        })
+        .map_err(|error: RunError| error.to_string())?;
+        let mut output = format!("case: {label}\n");
+        for (index, result) in results.iter().enumerate() {
+            let Some(render) = result.editable_render() else {
+                let _ = writeln!(output, "replay {index}: bytes-only");
+                continue;
+            };
+            let _ = writeln!(output, "replay {index}:");
+            for component in render.components() {
+                write_component(&mut output, component);
+            }
+        }
+        Ok(output)
+    }
+
+    /// The `dorc-loom …` arm of both replay chains.
+    ///
+    /// Both chains route here and both parse through [`crate::invocation`] rather than matching
+    /// token slices, so the shapes a transcript may carry are exactly the shapes a terminal accepts
+    /// (`30C:rul-this-is-a-global-flag`). `source_of` is how the chain finds a NAMED case's bytes:
+    /// a materialized input on the driven chain, a section on the re-render chain.
+    fn loom_replay(
+        &self,
+        case: &Case,
+        tokens: &[&str],
+        self_reference: SelfReference,
+        source_of: &dyn Fn(&str) -> Option<String>,
+    ) -> Option<String> {
+        let invocation = invocation::parse(tokens.iter().copied()).ok()?;
+        let wanted = match &invocation.verb {
+            Verb::Vars(args) => Inventory::Vars(args.breadth()),
+            Verb::Sections(_) => Inventory::Sections,
+            _ => return None,
+        };
+        match invocation.target().ok()? {
+            Target::This => {
+                if self_reference == SelfReference::Forbidden {
+                    return None;
+                }
+                self.inventory(wanted, case, self_slug(case)?)
+            }
+            Target::Named([one]) if case_relative_path(one) => {
+                let target = Case::parse(&source_of(one)?).ok()?;
+                self.inventory(wanted, &target, one)
+            }
+            Target::Named(_) => None,
+        }
+    }
+
+    fn inventory(&self, wanted: Inventory, case: &Case, label: &str) -> Option<String> {
+        match wanted {
+            Inventory::Vars(breadth) => self.vars_inventory(case, label, breadth).ok(),
+            Inventory::Sections => self.sections_inventory(case, label).ok(),
+        }
     }
 
     /// Drive only direct invocations whose replay inputs and rendering are exact.
@@ -666,24 +732,12 @@ impl DorcConsumer {
             let parts = self.arrangement_page(slug).ok()?;
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
-        if let ["dorc-loom", "vars", mode, target] = tokens.as_slice()
-            && matches!(*mode, "--used" | "--all")
-        {
-            let used = *mode == "--used";
-            if names_this_case(case, target) {
-                if self_reference == SelfReference::Forbidden {
-                    return None;
-                }
-                return self
-                    .vars_inventory_of(case, target, used)
-                    .map(ReplayResult::bytes);
-            }
-            if case_relative_path(target) {
-                return self
-                    .vars_inventory(context.materialized_input(target)?, target, used)
-                    .map(ReplayResult::bytes);
-            }
-            return None;
+        if tokens.first() == Some(&LOOM_COMMAND) {
+            return self
+                .loom_replay(case, &tokens, self_reference, &|target| {
+                    context.materialized_input(target).map(str::to_owned)
+                })
+                .map(ReplayResult::bytes);
         }
         if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
             let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
@@ -1434,18 +1488,69 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
     })
 }
 
-/// Whether `target` names the case being rendered, rather than a section of it.
+/// The program name whose invocations both replay chains answer in-process.
+const LOOM_COMMAND: &str = "dorc-loom";
+
+/// Which inventory a `dorc-loom` replay asked for.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Inventory {
+    Vars(Breadth),
+    Sections,
+}
+
+/// What `--this` resolves to: the slug this case DEFINES, which is also the filename it must carry
+/// (`288:rul-slug-decides-loom-placement`).
 ///
-/// A case's identity is the slug it DEFINES, which is also the filename it must carry
-/// (`288:rul-slug-decides-loom-placement`), so the two spellings a reader would reach for — the bare
-/// slug and the filename — both resolve here. A case cannot contain itself, so this is the only way
-/// a `vars` block inside a case can be about that case.
-fn names_this_case(case: &Case, target: &str) -> bool {
-    let named = target.strip_suffix(".loom").unwrap_or(target);
-    ["code", "arrangement"]
-        .iter()
-        .filter_map(|key| case.frontmatter().scalar(key))
-        .any(|slug| slug == named)
+/// A case with neither key defines nothing, so there is no identity for a selector to name and the
+/// block declines — which is the same answer the old target-naming form gave, without the rename
+/// hazard of spelling the slug in the command.
+fn self_slug(case: &Case) -> Option<&str> {
+    case.frontmatter()
+        .scalar("code")
+        .or_else(|| case.frontmatter().scalar("arrangement"))
+}
+
+/// One render component, as `dorc-loom sections` prints it.
+pub(crate) fn write_component(
+    out: &mut String,
+    component: &RenderComponent<SectionKey, SectionVariableId>,
+) {
+    match component {
+        RenderComponent::Structure(text) => {
+            let _ = writeln!(out, "  computed: {text:?}");
+        }
+        // Every fixed value in a Dorc render is a `RenderPart::ForeignText` — the ONE thing that
+        // mints this component (`passthrough-is-type-gated`). Saying so is the difference between
+        // an author reading `{{detail}}` here and reaching for it, and knowing not to: the name
+        // looks exactly like an insertable hole, `vars --all` deliberately omits it, and typing it
+        // earns an `UnknownVariable` with nothing to point at.
+        RenderComponent::FixedVariable { id, rendered } => {
+            let _ = writeln!(
+                out,
+                "  computed {{{{{}}}}} = {rendered:?} — foreign passthrough: absent from `vars`, \
+                 and typing the name is refused",
+                id.name.0
+            );
+        }
+        RenderComponent::EditableSection(section) => {
+            let key = section.id();
+            let _ = writeln!(
+                out,
+                "  section {}/{}#{} (segment {}):",
+                key.owner, key.field, key.instance, key.segment,
+            );
+            for fragment in section.fragments() {
+                match fragment {
+                    EditableFragment::Text(text) => {
+                        let _ = writeln!(out, "    text: {text:?}");
+                    }
+                    EditableFragment::Variable { id, rendered } => {
+                        let _ = writeln!(out, "    var {{{{{}}}}} = {rendered:?}", id.name.0);
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn case_relative_path(path: &str) -> bool {
@@ -1641,19 +1746,12 @@ impl DorcConsumer {
         if let Some(slug) = arrangement_page_slug(case, &words) {
             return Ok(self.arrangement_page(slug)?.text());
         }
-        if let ["dorc-loom", "vars", mode, target] = words.as_slice()
-            && matches!(*mode, "--used" | "--all")
-        {
-            let used = *mode == "--used";
-            let inventory = if names_this_case(case, target) {
-                self.vars_inventory_of(case, target, used)
-            } else if case_relative_path(target) {
-                section_source(case, target)
-                    .and_then(|source| self.vars_inventory(source, target, used))
-            } else {
-                None
-            };
-            return inventory.ok_or_else(|| format!("unsupported replay {command:?}"));
+        if words.first() == Some(&LOOM_COMMAND) {
+            return self
+                .loom_replay(case, &words, SelfReference::Allowed, &|target| {
+                    section_source(case, target).map(str::to_owned)
+                })
+                .ok_or_else(|| format!("unsupported replay {command:?}"));
         }
         if words.as_slice() == ["dorc", "lint", "--list-sources"] {
             return Ok(dorc_cli::lint_sources_parts(&self.render_ctx()).text());
@@ -2112,6 +2210,53 @@ mod tests {
             instance: 0,
             segment,
         }
+    }
+
+    /// `sections` names a computed span, an editable section's key, and its fragment series —
+    /// structure, not prose bytes: real catalog wording is free to churn without retouching this.
+    #[test]
+    fn sections_prints_computed_spans_and_editable_fragment_series() {
+        let components = vec![
+            RenderComponent::Structure("error[".to_owned()),
+            RenderComponent::FixedVariable {
+                id: SectionVariableId {
+                    name: TemplateVariableName("code".to_owned()),
+                    occurrence: 0,
+                },
+                rendered: "some-code".to_owned(),
+            },
+            RenderComponent::EditableSection(EditableSection::new(
+                SectionKey {
+                    owner: "some-code".to_owned(),
+                    field: "message",
+                    instance: 0,
+                    segment: 0,
+                },
+                vec![
+                    EditableFragment::Text("do the ".to_owned()),
+                    variable("thing", 0, "widget"),
+                    EditableFragment::Text(" now".to_owned()),
+                ],
+            )),
+        ];
+        let mut out = String::new();
+        for component in &components {
+            write_component(&mut out, component);
+        }
+        assert!(out.contains("computed: \"error[\""), "{out}");
+        // The annotation is the whole point of naming a fixed value at all: it is the only place
+        // an author learns that a `{{name}}` they can see is one they cannot type.
+        assert!(
+            out.contains("computed {{code}} = \"some-code\" — foreign passthrough"),
+            "{out}"
+        );
+        assert!(
+            out.contains("section some-code/message#0 (segment 0):"),
+            "{out}"
+        );
+        assert!(out.contains("text: \"do the \""), "{out}");
+        assert!(out.contains("var {{thing}} = \"widget\""), "{out}");
+        assert!(out.contains("text: \" now\""), "{out}");
     }
 
     fn variable(

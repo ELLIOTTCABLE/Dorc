@@ -5,23 +5,20 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use dorc_aid::prose::Mint;
-#[cfg(test)]
-use dorc_loom::TemplateVariableName;
+use dorc_loom::invocation::{Breadth, PublishArgs, THIS, Verb};
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
     InspectedReplay, Repository, SectionKey, SectionVariableId, build_publication,
     classify_prose_changes, compile_preview, compile_receipt, corpus_ownership,
     load_arrangement_corpus, load_corpus_by_slug, promote_receipt, refuse_foreign_components,
-    render_compile_preview, replay_case, replay_case_with_inputs,
+    render_compile_preview, replay_case_with_inputs,
 };
-#[cfg(test)]
-use errorloom::EditableSection;
 use errorloom::{
-    Case, CaseRenderer, EditableFragment, RenderComponent, ReplayInput, ReplayResult, RunEnv,
-    RunError, execute_generic, read_case, read_case_text,
+    Case, CaseRenderer, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case,
+    read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom <compile|promote [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars <--used|--all> [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
+const USAGE: &str = "usage: dorc-loom [--this] <compile|promote [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
 
 /// Each verb's own page — what it does, what its flags mean, and the command that follows it.
 ///
@@ -80,19 +77,23 @@ const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metada
   next: mise run test -- a promote republishes shared locks, so its blast radius is wider than the
         case in front of you";
 
-const VARS_USAGE: &str = "usage: dorc-loom vars <--used|--all> [CASE...]
+const VARS_USAGE: &str = "usage: dorc-loom [--this] vars [--used|--all] [CASE...]
   Print each case's named template variables and their currently-rendered values, driven from the
   same render an edit compiles against.
-  --used   only the variables some rendered section actually consumes
+  --used   only the variables some rendered section actually consumes (the default)
   --all    the whole typed payload, including values no sentence spends yet
+  --this   the case this invocation is running inside -- a replay line's spelling, so a case never
+           has to name itself. It comes before the verb and resolves nowhere else.
   next: type {{name}} into a sentence in the transcript to insert or move that value, then
         dorc-loom compile";
 
-const SECTIONS_USAGE: &str = "usage: dorc-loom sections [CASE...]
+const SECTIONS_USAGE: &str = "usage: dorc-loom [--this] sections [CASE...]
   Per replay, print each editable section's key and its ordered Text|Variable fragment series,
   alongside the computed (immutable) spans around it. The answer to `which bytes in this transcript
   are mine to edit` -- read-only, and driven from the published baseline rather than from your
   worktree.
+  --this   the case this invocation is running inside -- a replay line's spelling, so a case never
+           has to name itself. It comes before the verb and resolves nowhere else.
   next: edit an editable section in the case, then dorc-loom compile";
 
 const SCAFFOLD_USAGE: &str = "usage: dorc-loom scaffold SLUG
@@ -161,7 +162,7 @@ enum Command {
         provenance: Provenance,
     },
     Vars {
-        used: bool,
+        breadth: Breadth,
         cases: Vec<PathBuf>,
     },
     Scaffold {
@@ -231,7 +232,7 @@ fn run() -> Result<ExitCode, String> {
             accept_metadata,
             provenance,
         } => promote_cases(&cases, &env, quiet, accept_metadata, provenance, &mut out),
-        Command::Vars { used, cases } => print_variables(used, &cases, &mut out),
+        Command::Vars { breadth, cases } => print_variables(breadth, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug, &mut out),
         Command::AddRegister { case, register } => add_register(&case, &register, &mut out),
         Command::Sections { cases } => print_sections(&cases, &mut out),
@@ -277,11 +278,15 @@ fn resolve_case(arg: &str) -> Result<PathBuf, String> {
 
 /// The verb this invocation is ABOUT, for the help and misuse pages: the leading verb, or the one
 /// after a leading `help`. `None` means the reader has not chosen one and wants the index.
+///
+/// Global flags are skipped first, because `--this` legitimately precedes the verb: a reader who
+/// typed `dorc-loom --this vars --help` has chosen `vars`.
 fn chosen_verb(argv: &[String]) -> Option<&str> {
-    let leading = argv.first().map(String::as_str)?;
+    let mut rest = argv.iter().skip_while(|arg| *arg == THIS);
+    let leading = rest.next().map(String::as_str)?;
     if leading == "help" {
-        return argv
-            .get(1)
+        return rest
+            .next()
             .map(String::as_str)
             .filter(|next| VERBS.contains(next));
     }
@@ -289,7 +294,7 @@ fn chosen_verb(argv: &[String]) -> Option<&str> {
 }
 
 fn parse_args() -> Result<Command, String> {
-    parse_argv(std::env::args().skip(1).collect())
+    parse_argv(&std::env::args().skip(1).collect::<Vec<_>>())
 }
 
 /// Split from [`parse_args`] so the grammar is reachable from a test without a process.
@@ -300,99 +305,110 @@ fn parse_args() -> Result<Command, String> {
 /// load-bearing rather than tidy — `add-register CASE help` ends in the literal token `help`, so
 /// while the scan took the bare word anywhere, the verb's only legal invocation was
 /// indistinguishable from a help request: usage page, exit 0, nothing minted.
-fn parse_argv(argv: Vec<String>) -> Result<Command, String> {
-    let asks_for_help = argv
+fn parse_argv(words: &[String]) -> Result<Command, String> {
+    let asks_for_help = words
         .iter()
-        .any(|arg| matches!(arg.as_str(), "--help" | "-h"))
-        || argv.first().is_some_and(|arg| arg == "help");
+        .any(|word| matches!(word.as_str(), "--help" | "-h"))
+        || words.first().is_some_and(|word| word == "help");
     if asks_for_help {
         return Ok(Command::Help {
-            verb: chosen_verb(&argv).map(str::to_owned),
+            verb: chosen_verb(words).map(str::to_owned),
         });
     }
-    let mut argv = argv.into_iter();
-    match argv.next().as_deref() {
-        Some("compile") => {
-            let shared = collect_compile_args("compile", argv)?;
-            if shared.accept_metadata {
+    let page = || usage_for(chosen_verb(words).unwrap_or_default());
+    let invocation = dorc_loom::invocation::parse(
+        std::iter::once("dorc-loom".to_owned()).chain(words.iter().cloned()),
+    )
+    .map_err(|refusal| format!("{refusal}\n{}", page()))?;
+    // A terminal is never inside a case, so this binary is the one seat `--this` can never resolve
+    // at. Falling back to the bare form's every-case meaning would dump the whole corpus at
+    // somebody who asked for exactly one (`30C:rul-this-is-a-global-flag`).
+    if invocation.this {
+        return Err(format!(
+            "{THIS} names the case this invocation is running inside, so it resolves only where \
+             the command is a replay line in a case -- a terminal is not inside one. Name the \
+             case: `dorc-loom {} <slug>`\n{}",
+            invocation.verb_name(),
+            page()
+        ));
+    }
+    match invocation.verb {
+        Verb::Compile(args) => {
+            if args.accept_metadata {
                 return Err(format!(
                     "{ACCEPT_METADATA} is a promote-time acknowledgement; compile writes nothing \
                      to acknowledge\n{COMPILE_USAGE}"
                 ));
             }
-            if shared.provenance != Provenance::Default {
+            if provenance_of(&args)? != Provenance::Default {
                 return Err(format!(
                     "{HUMAN}/{SLOP} decide how a published register is MARKED; compile publishes \
                      nothing, so it marks nothing. Pass it to the promote instead\n{COMPILE_USAGE}"
                 ));
             }
             Ok(Command::Compile {
-                cases: shared.cases,
-                env: shared.env,
-                quiet: shared.quiet,
+                cases: resolve_cases(&args.cases)?,
+                env: run_env(&args)?,
+                quiet: args.quiet,
             })
         }
-        Some("promote") => {
-            let shared = collect_compile_args("promote", argv)?;
-            Ok(Command::Promote {
-                cases: shared.cases,
-                env: shared.env,
-                quiet: shared.quiet,
-                accept_metadata: shared.accept_metadata,
-                provenance: shared.provenance,
-            })
-        }
-        Some("vars") => {
-            let mode = argv
-                .next()
-                .ok_or_else(|| format!("vars needs --used or --all\n{VARS_USAGE}"))?;
-            let used = match mode.as_str() {
-                "--used" => true,
-                "--all" => false,
-                _ => return Err(format!("unknown vars mode {mode:?}\n{VARS_USAGE}")),
-            };
-            Ok(Command::Vars {
-                used,
-                cases: collect_cases("vars", argv)?,
-            })
-        }
-        Some("scaffold") => {
-            let slug = argv
-                .next()
-                .ok_or_else(|| format!("scaffold needs a code slug\n{SCAFFOLD_USAGE}"))?;
-            if argv.next().is_some() {
-                return Err(format!("scaffold takes exactly one slug\n{SCAFFOLD_USAGE}"));
-            }
-            Ok(Command::Scaffold { slug })
-        }
-        Some("add-register") => {
-            let case = argv
-                .next()
-                .ok_or_else(|| format!("add-register needs a CASE\n{ADD_REGISTER_USAGE}"))?;
-            let register = argv.next().ok_or_else(|| {
-                format!("add-register needs a register name\n{ADD_REGISTER_USAGE}")
-            })?;
-            if argv.next().is_some() {
-                return Err(format!(
-                    "add-register takes one case and one register\n{ADD_REGISTER_USAGE}"
-                ));
-            }
-            Ok(Command::AddRegister {
-                case: resolve_case(&case)?,
-                register,
-            })
-        }
-        Some("sections") => Ok(Command::Sections {
-            cases: collect_cases("sections", argv)?,
+        Verb::Promote(args) => Ok(Command::Promote {
+            cases: resolve_cases(&args.cases)?,
+            env: run_env(&args)?,
+            quiet: args.quiet,
+            accept_metadata: args.accept_metadata,
+            provenance: provenance_of(&args)?,
         }),
-        Some("keys") => match argv.next() {
-            None => Ok(Command::Keys),
-            Some(extra) => Err(format!(
-                "keys takes no arguments; got {extra:?}\n{KEYS_USAGE}"
-            )),
-        },
-        _ => Err(USAGE.to_owned()),
+        Verb::Vars(args) => Ok(Command::Vars {
+            breadth: args.breadth(),
+            cases: resolve_cases(&args.cases)?,
+        }),
+        Verb::Scaffold { slug } => Ok(Command::Scaffold { slug }),
+        Verb::AddRegister { case, register } => Ok(Command::AddRegister {
+            case: resolve_case(&case)?,
+            register,
+        }),
+        Verb::Sections(args) => Ok(Command::Sections {
+            cases: resolve_cases(&args.cases)?,
+        }),
+        Verb::Keys => Ok(Command::Keys),
     }
+}
+
+/// The `--human`/`--slop` pair, which say opposite things about the same registers.
+fn provenance_of(args: &PublishArgs) -> Result<Provenance, String> {
+    match (args.human, args.slop) {
+        (true, true) => Err(format!(
+            "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{PROMOTE_USAGE}"
+        )),
+        (true, false) => Ok(Provenance::Human),
+        (false, true) => Ok(Provenance::Slop),
+        (false, false) => Ok(Provenance::Default),
+    }
+}
+
+fn run_env(args: &PublishArgs) -> Result<RunEnv, String> {
+    let mut env = RunEnv::new().path_dir(binary_dir()?);
+    if let Some(shell) = &args.shell {
+        env = env.shell(shell);
+    }
+    for path in &args.path {
+        env = env.path_dir(path);
+    }
+    Ok(env)
+}
+
+/// Resolve a verb's CASE list, defaulting to the whole collection.
+///
+/// The default is the WHOLE corpus rather than an error because `compile` and `promote` must see
+/// the same list for the receipt to match, and the tool already narrows to the prose-changed subset
+/// itself (`gate_touched_set`). So "all of them" reads as "publish what I edited", not as a
+/// blunderbuss, and spares every caller from keeping two lists in sync.
+fn resolve_cases(cases: &[String]) -> Result<Vec<PathBuf>, String> {
+    if cases.is_empty() {
+        return corpus_cases();
+    }
+    cases.iter().map(|case| resolve_case(case)).collect()
 }
 
 /// `dorc-loom add-register CASE help` — mint a code's help register so the ordinary transcript loop
@@ -487,10 +503,11 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
     }
     // The inventory block ships EMPTY like the replay above it; one `DORC_LOOM_DUMP` run fills
     // both. NEW cases only — it re-churns whenever its own values move, so an existing case
-    // carries one at its author's judgment.
+    // carries one at its author's judgment. It names no slug: `--this` is what keeps a rename
+    // from stranding the block on a case that no longer answers to it.
     let skeleton = format!(
         "---\ncode: {slug}\nwhen-fires:\nwhy:\n{key}: {loop_hint}\n---\n-- replay --\n\
-         $ dorc plan --book=book.sh\n\n$ dorc-loom vars --used {slug}\n",
+         $ dorc plan --book=book.sh\n\n$ dorc-loom {THIS} vars\n",
         key = dorc_loom::EDIT_LOOP_KEY,
         loop_hint = dorc_loom::edit_loop_hint(slug),
     );
@@ -509,68 +526,6 @@ fn scaffold_case(slug: &str, out: &mut impl Write) -> Result<ExitCode, String> {
     )
     .map_err(|error| error.to_string())?;
     Ok(ExitCode::SUCCESS)
-}
-
-struct CompileArgs {
-    cases: Vec<PathBuf>,
-    env: RunEnv,
-    quiet: bool,
-    accept_metadata: bool,
-    provenance: Provenance,
-}
-
-fn collect_compile_args(
-    verb: &str,
-    mut argv: impl Iterator<Item = String>,
-) -> Result<CompileArgs, String> {
-    let mut env = RunEnv::new().path_dir(binary_dir()?);
-    let mut cases = Vec::new();
-    let mut quiet = false;
-    let mut accept_metadata = false;
-    let mut provenance = Provenance::Default;
-    while let Some(arg) = argv.next() {
-        if let Some(shell) = arg.strip_prefix("--shell=") {
-            env = env.shell(shell);
-        } else if let Some(path) = arg.strip_prefix("--path=") {
-            env = env.path_dir(path);
-        } else if arg == "--shell" {
-            env = env.shell(next_value(&mut argv, "--shell")?);
-        } else if arg == "--path" {
-            env = env.path_dir(next_value(&mut argv, "--path")?);
-        } else if arg == "--quiet" {
-            quiet = true;
-        } else if arg == ACCEPT_METADATA {
-            accept_metadata = true;
-        } else if arg == HUMAN || arg == SLOP {
-            let asked = if arg == HUMAN {
-                Provenance::Human
-            } else {
-                Provenance::Slop
-            };
-            if provenance != Provenance::Default && provenance != asked {
-                return Err(format!(
-                    "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{}",
-                    usage_for(verb)
-                ));
-            }
-            provenance = asked;
-        } else if arg.starts_with('-') {
-            return Err(format!("unknown option {arg:?}\n{}", usage_for(verb)));
-        } else {
-            cases.push(resolve_case(&arg)?);
-        }
-    }
-    Ok(CompileArgs {
-        cases: if cases.is_empty() {
-            corpus_cases()?
-        } else {
-            cases
-        },
-        env,
-        quiet,
-        accept_metadata,
-        provenance,
-    })
 }
 
 /// The one acknowledgement `promote` takes: yes, replace the committed metadata.
@@ -644,11 +599,6 @@ fn refuse_metadata_drift(accepted: bool, out: &mut impl Write) -> Result<(), Str
     ))
 }
 
-fn next_value(argv: &mut impl Iterator<Item = String>, option: &str) -> Result<String, String> {
-    argv.next()
-        .ok_or_else(|| format!("{option} needs a value\n{USAGE}"))
-}
-
 fn binary_dir() -> Result<PathBuf, String> {
     std::env::current_exe()
         .map_err(|error| format!("locate built tools: {error}"))?
@@ -657,27 +607,8 @@ fn binary_dir() -> Result<PathBuf, String> {
         .ok_or_else(|| "locate built tools: executable has no parent".to_owned())
 }
 
-fn collect_cases(verb: &str, argv: impl Iterator<Item = String>) -> Result<Vec<PathBuf>, String> {
-    let mut cases = Vec::new();
-    for arg in argv {
-        if arg.starts_with('-') {
-            return Err(format!("unknown option {arg:?}\n{}", usage_for(verb)));
-        }
-        cases.push(resolve_case(&arg)?);
-    }
-    if cases.is_empty() {
-        return corpus_cases();
-    }
-    Ok(cases)
-}
-
-/// Every committed defining case, in a stable order — what a verb operates on when given no
-/// explicit CASE list.
+/// Every committed defining case, in a stable order.
 ///
-/// The default is the WHOLE corpus rather than an error because `compile` and `promote` must
-/// see the same list for the receipt to match, and the tool already narrows to the
-/// prose-changed subset itself (`gate_touched_set`). So "all of them" reads as "publish what
-/// I edited", not as a blunderbuss, and spares every caller from keeping two lists in sync.
 /// Sorted because a `read_dir` order is not guaranteed and the receipt is order-sensitive.
 fn corpus_cases() -> Result<Vec<PathBuf>, String> {
     let dir = cases_dir();
@@ -1279,13 +1210,13 @@ fn bounded_evidence(text: &str) -> String {
 }
 
 fn print_variables(
-    used: bool,
+    breadth: Breadth,
     cases: &[PathBuf],
     out: &mut impl Write,
 ) -> Result<ExitCode, String> {
     let consumer = DorcConsumer::new();
     writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
-    if !used {
+    if breadth == Breadth::All {
         // "The whole typed payload" is not quite whole, and the gap is invisible from here: a
         // foreign-valued hole renders, so an author sees `{{name}}` in the transcript and then
         // fails to find it in the listing that claims to hold everything.
@@ -1298,21 +1229,10 @@ fn print_variables(
     }
     for path in cases {
         let case = load(path)?;
-        let baseline = consumer
-            .editable_baseline(&case)
+        let inventory = consumer
+            .vars_inventory(&case, &path.display().to_string(), breadth)
             .map_err(|error| format!("{}: {error}", path.display()))?;
-        writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
-        if used {
-            for (name, value) in baseline.used_variables() {
-                writeln!(out, "{{{{{}}}}} = {value:?}", name.0)
-                    .map_err(|error| error.to_string())?;
-            }
-        } else {
-            for (name, value) in baseline.all_variables() {
-                writeln!(out, "{{{{{}}}}} = {value:?}", name.0)
-                    .map_err(|error| error.to_string())?;
-            }
-        }
+        write!(out, "{inventory}").map_err(|error| error.to_string())?;
     }
     Ok(ExitCode::SUCCESS)
 }
@@ -1332,24 +1252,10 @@ fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, S
     writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;
     for path in cases {
         let case = load(path)?;
-        writeln!(out, "case: {}", path.display()).map_err(|error| error.to_string())?;
-        let results = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
-            Ok(ReplayResult::bytes(String::new()))
-        })
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-        for (index, result) in results.iter().enumerate() {
-            let Some(render) = result.editable_render() else {
-                writeln!(out, "replay {index}: bytes-only").map_err(|error| error.to_string())?;
-                continue;
-            };
-            let baseline = consumer
-                .baseline_from_render(&case, render.clone())
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            writeln!(out, "replay {index}:").map_err(|error| error.to_string())?;
-            for component in baseline.render().components() {
-                print_component(out, component)?;
-            }
-        }
+        let listing = consumer
+            .sections_inventory(&case, &path.display().to_string())
+            .map_err(|error| format!("{}: {error}", path.display()))?;
+        write!(out, "{listing}").map_err(|error| error.to_string())?;
     }
     Ok(ExitCode::SUCCESS)
 }
@@ -1370,50 +1276,6 @@ fn print_keys(out: &mut impl Write) -> Result<ExitCode, String> {
         writeln!(out, "  {:width$}  {}", key.name, key.read_by).map_err(|e| e.to_string())?;
     }
     Ok(ExitCode::SUCCESS)
-}
-
-fn print_component(
-    out: &mut impl Write,
-    component: &RenderComponent<SectionKey, SectionVariableId>,
-) -> Result<(), String> {
-    match component {
-        RenderComponent::Structure(text) => {
-            writeln!(out, "  computed: {text:?}").map_err(|error| error.to_string())
-        }
-        // Every fixed value in a Dorc render is a `RenderPart::ForeignText` — the ONE thing that
-        // mints this component (`passthrough-is-type-gated`). Saying so is the difference between
-        // an author reading `{{detail}}` here and reaching for it, and knowing not to: the name
-        // looks exactly like an insertable hole, `vars --all` deliberately omits it, and typing it
-        // earns an `UnknownVariable` with nothing to point at.
-        RenderComponent::FixedVariable { id, rendered } => writeln!(
-            out,
-            "  computed {{{{{}}}}} = {rendered:?} — foreign passthrough: absent from `vars`, and \
-             typing the name is refused",
-            id.name.0
-        )
-        .map_err(|error| error.to_string()),
-        RenderComponent::EditableSection(section) => {
-            let key = section.id();
-            writeln!(
-                out,
-                "  section {}/{}#{} (segment {}):",
-                key.owner, key.field, key.instance, key.segment,
-            )
-            .map_err(|error| error.to_string())?;
-            for fragment in section.fragments() {
-                match fragment {
-                    EditableFragment::Text(text) => {
-                        writeln!(out, "    text: {text:?}").map_err(|error| error.to_string())?;
-                    }
-                    EditableFragment::Variable { id, rendered } => {
-                        writeln!(out, "    var {{{{{}}}}} = {rendered:?}", id.name.0)
-                            .map_err(|error| error.to_string())?;
-                    }
-                }
-            }
-            Ok(())
-        }
-    }
 }
 
 fn load(path: &Path) -> Result<Case, String> {
@@ -1453,9 +1315,12 @@ mod tests {
         for verb in VERBS {
             let page = usage_for(verb);
             assert_ne!(page, USAGE, "`{verb}` falls through to the index");
+            // The synopsis may carry the global selector slot before the verb, so the pin is that
+            // the first line is a `dorc-loom` synopsis naming THIS verb, not its exact prefix.
+            let synopsis = page.lines().next().unwrap_or_default();
             assert!(
-                page.starts_with(&format!("usage: dorc-loom {verb}")),
-                "`{verb}` page opens on someone else's synopsis: {page}"
+                synopsis.starts_with("usage: dorc-loom ") && synopsis.contains(verb),
+                "`{verb}` page opens on someone else's synopsis: {synopsis}"
             );
             assert!(
                 page.contains("\n  next: "),
@@ -1485,7 +1350,7 @@ mod tests {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cmdsub-command.loom");
         let spelled = path.to_str().expect("the fixture path is UTF-8");
 
-        match parse_argv(argv(&["add-register", spelled, "help"])) {
+        match parse_argv(&argv(&["add-register", spelled, "help"])) {
             Ok(Command::AddRegister { case, register }) => {
                 assert_eq!(case, path);
                 assert_eq!(register, "help");
@@ -1496,13 +1361,13 @@ mod tests {
         // The flag spelling still asks the verb, from that same trailing position.
         assert!(
             matches!(
-                parse_argv(argv(&["add-register", spelled, "--help"])),
+                parse_argv(&argv(&["add-register", spelled, "--help"])),
                 Ok(Command::Help { verb: Some(verb) }) if verb == "add-register"
             ),
             "`--help` after a verb still asks the verb"
         );
         assert!(matches!(
-            parse_argv(argv(&["help"])),
+            parse_argv(&argv(&["help"])),
             Ok(Command::Help { verb: None })
         ));
     }
@@ -1597,32 +1462,32 @@ mod tests {
             .to_owned();
 
         assert!(matches!(
-            parse_argv(argv(&["promote", &fixture, HUMAN])),
+            parse_argv(&argv(&["promote", &fixture, HUMAN])),
             Ok(Command::Promote {
                 provenance: Provenance::Human,
                 ..
             })
         ));
         assert!(matches!(
-            parse_argv(argv(&["promote", &fixture, SLOP])),
+            parse_argv(&argv(&["promote", &fixture, SLOP])),
             Ok(Command::Promote {
                 provenance: Provenance::Slop,
                 ..
             })
         ));
         assert!(matches!(
-            parse_argv(argv(&["promote", &fixture])),
+            parse_argv(&argv(&["promote", &fixture])),
             Ok(Command::Promote {
                 provenance: Provenance::Default,
                 ..
             })
         ));
         assert!(
-            parse_argv(argv(&["promote", &fixture, HUMAN, SLOP]))
+            parse_argv(&argv(&["promote", &fixture, HUMAN, SLOP]))
                 .is_err_and(|error| error.contains("opposite things"))
         );
         assert!(
-            parse_argv(argv(&["compile", &fixture, HUMAN]))
+            parse_argv(&argv(&["compile", &fixture, HUMAN]))
                 .is_err_and(|error| error.contains("marks nothing"))
         );
     }
@@ -1662,60 +1527,6 @@ mod tests {
         let mut verbose = Vec::new();
         emit_case(&mut verbose, Path::new("silent.loom"), b"", false).expect("emit");
         assert!(!verbose.is_empty());
-    }
-
-    /// `sections` names a computed span, an editable section's key, and its fragment series —
-    /// structure, not prose bytes: real catalog wording is free to churn without retouching this.
-    #[test]
-    fn sections_prints_computed_spans_and_editable_fragment_series() {
-        let components = vec![
-            RenderComponent::Structure("error[".to_owned()),
-            RenderComponent::FixedVariable {
-                id: SectionVariableId {
-                    name: TemplateVariableName("code".to_owned()),
-                    occurrence: 0,
-                },
-                rendered: "some-code".to_owned(),
-            },
-            RenderComponent::EditableSection(EditableSection::new(
-                SectionKey {
-                    owner: "some-code".to_owned(),
-                    field: "message",
-                    instance: 0,
-                    segment: 0,
-                },
-                vec![
-                    EditableFragment::Text("do the ".to_owned()),
-                    EditableFragment::Variable {
-                        id: SectionVariableId {
-                            name: TemplateVariableName("thing".to_owned()),
-                            occurrence: 0,
-                        },
-                        rendered: "widget".to_owned(),
-                    },
-                    EditableFragment::Text(" now".to_owned()),
-                ],
-            )),
-        ];
-        let mut out = Vec::new();
-        for component in &components {
-            print_component(&mut out, component).expect("print");
-        }
-        let out = String::from_utf8(out).expect("utf8");
-        assert!(out.contains("computed: \"error[\""), "{out}");
-        // The annotation is the whole point of naming a fixed value at all: it is the only place
-        // an author learns that a `{{name}}` they can see is one they cannot type.
-        assert!(
-            out.contains("computed {{code}} = \"some-code\" — foreign passthrough"),
-            "{out}"
-        );
-        assert!(
-            out.contains("section some-code/message#0 (segment 0):"),
-            "{out}"
-        );
-        assert!(out.contains("text: \"do the \""), "{out}");
-        assert!(out.contains("var {{thing}} = \"widget\""), "{out}");
-        assert!(out.contains("text: \" now\""), "{out}");
     }
 
     /// The incident this exists for, reproduced on the corpus's own shared component: eleven
