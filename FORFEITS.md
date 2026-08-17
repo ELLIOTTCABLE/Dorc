@@ -37,20 +37,27 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
   socially (published claims calibrate against whichever floor ships). REVISIT:
   the mini-model's formalization; first field evidence of plural-idiom books.
-- **forfeit-helper-plurality-withhold** — RULE (re-measured 2026-08-17 under
-  `rul-vouch-reaches-own-custody-only`, which de-licensed the singular cross-custody
-  reach the retired composite allowed): resolution stays sh's last-wins; what stays
-  withheld is three shapes — (a) ANY resolved reach landing outside the voucher's own
-  custody, plurality irrelevant (`emit30-cross-custody-plural-helper-suspends`, and
-  since the de-licensing both `pin28-helper-package-entrypoints-*` cells); (b) the book
+- **forfeit-helper-plurality-withhold** — RULE (as-built under
+  `rul-vouch-reaches-own-custody-only`): resolution stays sh's last-wins, and custody is
+  now the closure — a file plus everything its top-level `.` lines pull in, transitively
+  (`core::CustodyClosures`). What stays withheld is four shapes: (a) a resolved reach
+  landing outside the voucher's closure, plurality irrelevant — CO-LOADING is ingestion
+  and composes nothing (`emit30-cross-custody-plural-helper-suspends`); (b) the book
   reaching into a vouched composition, both arms — a hazard closed rather than value
-  lost (these silently shipped before); (c) the unenumerable tier, ruled-permanent,
-  reachable only through a literal `alias` in a shipped body. FORFEITS: every
-  cross-file helper reach spelled by CO-LOADING alone — the whole two-file package
-  shape, which the corpus previously licensed. CAPTURE: the sourcing amendment
-  (`28Q` §9 `pin-oracle-side-sourcing-amendment`) — one `.` line takes custody of the
-  helpers file and (a) lifts; co-loading is ingestion and is never meant to. BACK-OUT:
-  low (the suspension is additive). REVISIT: with the sourcing build.
+  lost (these silently shipped before); (c) plural declarations of one name INSIDE one
+  closure with differing bytes, because a flat load-order vector cannot express how a
+  file's own declarations interleave with the ones its `.` pulls in, and no licence may
+  rest on an order the engine cannot promise is sh's; (d) the unenumerable tier,
+  ruled-permanent, reachable only through a literal `alias` in a shipped body.
+  FORFEITS: cross-file helper reaches spelled by co-loading alone, and same-name
+  collisions within one package. The two-file package shape itself is NO LONGER
+  forfeited — one `.` line takes custody and it lifts, pinned end-to-end by
+  `pin28-helper-package-entrypoints-lift` (the vendor's package) and
+  `pin30-swapped-entrypoints-source-the-helpers` (an admin's own entrypoints over the
+  vendor's helpers). CAPTURE for what remains: (c) wants a load model that carries the
+  interleaving rather than a flat vector — the emission planner's territory
+  (`28Q:pin-emission-planner-universal`); (a) and (b) are ruled, not owed. BACK-OUT: low
+  (every suspension is additive). REVISIT: (c) with the emission planner.
 - **forfeit-divergence-collapse-to-unknown** — RULE (`28Q` §3, the human-carved v0
   floor): conditional/looped lifecycle events land unknown ⇒ guard/run. FORFEITS:
   every availability-derived license below an `if`-guarded creator — and defensive
@@ -78,13 +85,25 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   population). CAPTURE: lift, or reach-keyed enrollment (`28Q` §9
   `pin-blessing-reach-elevation`, under active sitting). REVISIT: the spike-end
   fires-often × bites-rarely instrument.
-- **forfeit-book-sourcing-walls** — RULE (as-built; `28P`): a book's top-level `.` is
-  an unmodeled command and walls the book's remainder. FORFEITS: P2's entire book-side
-  payoff — every downstream license in any book that sources a library. CAPTURE: the
-  `.`-of-proven-load-inert engine blessing (`28Q:res-dot-blessing-is-engine-side`) +
-  the oracle-side load-inert amendment + runtime closure shipping
-  (`28K:res-book-ships-its-load-closure`). BACK-OUT: n/a — capture is pending rulings,
-  not design debt. REVISIT: with those pins.
+- **forfeit-book-sourcing-walls** — RULE (as-built): a book's top-level `.` is an
+  unmodeled command and walls the book's remainder. A book mints no speaker whatever it
+  sources (`rul-book-sourcing-mints-no-speaker`), so un-walling is the ONLY thing its
+  `.` could ever buy. FORFEITS: P2's entire book-side payoff — every downstream license
+  in any book that sources a library. CAPTURE, and what each piece now costs: the
+  ORACLE-side amendment has LANDED (a marked file's top-level `.` is admitted text and
+  takes custody), so what remains is the book-side blessing
+  (`28Q:res-dot-blessing-is-engine-side`, acked — a `.` of a marked, contract-satisfying
+  file classifies as no-mutation instead of ⊤) plus runtime closure shipping
+  (`28K:res-book-ships-its-load-closure`), and the two must land together or the
+  blessing is analysis-green and runtime-dead. ONE QUESTION BLOCKS THE PAIR, human-owned
+  and unruled: the book's `.` line SURVIVES in the artifact under the byte-floor, so
+  once the artifact also carries the bundled declarations that line re-sources them
+  (harmless — `floor30-diamond-source-binds-once` measures the idempotence) and FAILS
+  outright when the artifact is run away from its tree, fatally so under `set -e`. Either
+  the artifact keeps requiring its sourced tree (bundling buys nothing), or the engine
+  neutralises a book line it did not previously touch — which is an
+  attention-honesty/byte-floor ruling nobody has made. BACK-OUT: n/a — capture is
+  pending that ruling, not design debt. REVISIT: when it is answered.
 - **forfeit-command-v-poison-wall** — RULE (as-built; `28P`): a polyfill guard's own
   `command -v` line is an unmodeled running command ⇒ walls; the delivered polyfill
   cell guards instead of eliding. FORFEITS: elision in every polyfilled book.
