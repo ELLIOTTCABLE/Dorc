@@ -1610,6 +1610,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                 .unwrap_or(Observable::verdict_only(Verdict::Unknown))
         },
         &mut arena,
+        // `309` §2 grade-stamping: this build is downstream of the intake, so every record it
+        // writes is host-influenced. Carried by construction, not by each mint site remembering.
+        Some(scoped_results.influence()),
     );
     // DEFENSIVE emission (`28R:rul-defensive-mode-definition-vectors`): if the unit carries an
     // unresolved in-process definition vector, a BARE emitted name is no longer a proof that the
@@ -1638,6 +1641,17 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The three render-time decisions `30E` §3 audited out of hiding now land in the decision plane,
     // computed from the render's own seats.
     dorc_plan::spine::record_render_decisions(&mut spine, &plan, &book_src, &parsed.value);
+    record_new_arm(
+        &mut spine,
+        &probe,
+        &classes,
+        &cfg.value,
+        &kills,
+        trip,
+        &contested,
+        &env,
+        admitted_records.is_some(),
+    );
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `unresolvable-no-probe` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each
@@ -1885,7 +1899,6 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
             clock.now(),
             results,
             records,
-            scoped_results.influence(),
         );
         // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
         // decided at one seat, per species, and what it drops is countable there too.
@@ -2191,6 +2204,118 @@ const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal
     }
 }
 
+/// Write the run's `new`-arm records onto the Spine (`30E` §2's transitory species).
+///
+/// These are non-durable in production but not RULED non-durable — the census's legal resting state
+/// for in-flight work — so nothing here reaches a projection. What they buy is that the arm is real:
+/// a species classified `New` and populated by nobody is a claim to track something that nothing can
+/// check, and the debug dump is what checks it.
+///
+/// NOT YET MINTED, with their seats named rather than left to be discovered: `SpineVouch` (the
+/// `Vouches` map exposes no iteration yet), `SpineObservation` (the `by_fact` merge, which the fold
+/// consumes by closure rather than by collection), and `SpineValidityRound` (the fixpoint's rounds
+/// are deliberately never-survives — `the-fixpoint-owns-the-rounds-and-builds-nothing-else` — so
+/// recording them means deciding what a round may leave behind, which is its own question).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one recording pass over independent analysis products; a params struct would be this signature re-spelled"
+)]
+fn record_new_arm(
+    spine: &mut dorc_plan::Spine,
+    probe: &dorc_plan::ProbePlan,
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    cfg: &dorc_analysis::cfg::Cfg,
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    trip: dorc_analysis::certify::CertifierTrip,
+    contested: &dorc_core::ContestedFamilies,
+    env: &dorc_analysis::funcenv::FuncEnv,
+    admitted: bool,
+) {
+    use dorc_analysis::effect::SkipClass;
+    use dorc_core::spine::{
+        AdmissionOutcome, ShipLane, SpineAdmission, SpineLoadDecision, SpineProbeShip,
+        SpineSiteClassification, SpineSolveCertification, WithheldCause,
+    };
+
+    spine.set_admission(SpineAdmission {
+        // The refusal arm returned long before here, so the only two states this seat can be in are
+        // the two that carry authority (`Authorised`).
+        outcome: if admitted {
+            AdmissionOutcome::Admitted
+        } else {
+            AdmissionOutcome::NoObservation
+        },
+        fault: None,
+        grade: None,
+    });
+    spine.push_certification(SpineSolveCertification {
+        pass: "window",
+        consistent: !trip.tripped(),
+        tripped: trip.tripped(),
+        grade: None,
+    });
+    for name in contested.families() {
+        spine.push_load_decision(SpineLoadDecision {
+            name: name.to_owned(),
+            custody: None,
+            withheld: Some(WithheldCause::Contested),
+            grade: None,
+        });
+    }
+    for node in env.unresolvable_loads() {
+        spine.push_load_decision(SpineLoadDecision {
+            name: format!("load@{}", cfg.node(*node).ast.0),
+            custody: None,
+            withheld: Some(WithheldCause::Unprovable),
+            grade: None,
+        });
+    }
+    for check in &probe.checks {
+        spine.set_ship(SpineProbeShip {
+            site: dorc_core::SiteId {
+                leaf: check.site,
+                member: check.member,
+            },
+            lane: if check.verdict {
+                ShipLane::Verdict
+            } else {
+                ShipLane::Predict
+            },
+            defining_file: check.defining_span.map(|(_, file)| file),
+            grade: None,
+        });
+    }
+    for leaf in &probe.unresolvable {
+        spine.set_ship(SpineProbeShip {
+            site: dorc_core::SiteId::leaf(*leaf),
+            lane: ShipLane::Unresolvable,
+            defining_file: None,
+            grade: None,
+        });
+    }
+    for (node, class) in classes {
+        let (label, cells) = match class {
+            SkipClass::MustRun => ("MustRun", Vec::new()),
+            SkipClass::EstablishAmbient(fact) => ("EstablishAmbient", vec![*fact]),
+            SkipClass::EstablishWritten(fact) => ("EstablishWritten", vec![*fact]),
+            SkipClass::QueryResolvable { fact, .. } => ("QueryResolvable", vec![*fact]),
+            SkipClass::EstablishMembers { members, .. } => ("EstablishMembers", members.clone()),
+            SkipClass::InlineCall { .. } => ("InlineCall", Vec::new()),
+        };
+        spine.set_classification(SpineSiteClassification {
+            site: dorc_core::SiteId::leaf(dorc_core::LeafId(cfg.node(*node).ast.0)),
+            class: label,
+            verdict_lane: false,
+            invalidator: kills.contains(node),
+            cells: dorc_core::spine::Account::capped(cells),
+            grade: None,
+        });
+    }
+}
+
 /// Write the run's durable-arm records onto the Spine (`30E` §2's four species).
 ///
 /// The durable itself is projected from these through `plan::whylog`'s per-species Views; nothing
@@ -2211,7 +2336,6 @@ fn record_durable_arm(
     started_at: Option<dorc_core::RunInstant>,
     results: &SiteResults,
     records: dorc_plan::records::AdmittedUnscopedHostRecords,
-    influence: dorc_core::influence::InfluencePhase,
 ) {
     spine.set_invocation(dorc_core::spine::SpineInvocation {
         mode: "whylog-replay".to_owned(),
@@ -2232,7 +2356,7 @@ fn record_durable_arm(
         attempt: framing.attempt(),
         host: framing.host().to_owned(),
         started_at,
-        // Authored-before-contact: every field is controller-owned invocation context.
+        // Filled by the Spine, never here (`309` §2 grade-stamping).
         grade: None,
     });
     spine.set_digest(dorc_core::spine::SpineDigest {
@@ -2248,9 +2372,7 @@ fn record_durable_arm(
             .collect::<BTreeMap<_, _>>()
             .into_iter()
             .collect(),
-        // Host-influenced by construction: these ARE the host-reported bytes, and the marker comes
-        // from having read them rather than from anyone asserting it (`306b` §1b).
-        grade: Some(influence),
+        grade: None,
     });
 }
 

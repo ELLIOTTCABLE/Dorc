@@ -586,6 +586,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &BTreeMap::new(),
         observe,
         &mut arena,
+        // No intake: the dashboard analyses the unmeasured world.
+        None,
     );
     let plan = dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake());
 

@@ -351,6 +351,53 @@ mod tests {
     }
 
     #[test]
+    fn the_new_arm_debug_dump_has_no_production_caller() {
+        // `309:pin-debug-dump-gating`'s second half. The signature already cannot name a sink; this
+        // is the part no type can hold — that no shipping path CALLS it. A non-empty walk, so a
+        // wrong root cannot pass by finding nothing (the discovery-floor lesson).
+        let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("crates/");
+        // Assembled rather than written, so this gate cannot match its own source — the lesson
+        // `aid`'s spanless gate records ("keep examples needle-free").
+        let needle = format!(".{}()", "debug_dump");
+        let mut walked = 0usize;
+        let mut offenders = Vec::new();
+        let mut stack: Vec<std::path::PathBuf> = ["core", "plan", "cli", "oracle", "analysis"]
+            .iter()
+            .map(|name| crates.join(name).join("src"))
+            .collect();
+        while let Some(dir) = stack.pop() {
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    stack.push(path);
+                    continue;
+                }
+                if path.extension().is_some_and(|ext| ext == "rs") {
+                    walked += 1;
+                    let text = std::fs::read_to_string(&path).unwrap_or_default();
+                    // The definition itself lives in `core::spine`; a CALL is what would ship it.
+                    if text.contains(&needle) {
+                        offenders.push(path.display().to_string());
+                    }
+                }
+            }
+        }
+        assert!(
+            walked > 0,
+            "the walk found no production sources, so it proves nothing"
+        );
+        assert!(
+            offenders.is_empty(),
+            "the `new`-arm dump must stay project-internal: {offenders:?}"
+        );
+    }
+
+    #[test]
     fn the_driver_takes_its_authority_from_its_admission() {
         // The lexical half of the fence: no type can stop the binary driver reaching for the
         // intakeless mint after its intake refused, so this asserts it does not. A ZERO-caller

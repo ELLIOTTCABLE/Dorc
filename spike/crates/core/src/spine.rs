@@ -130,7 +130,9 @@ impl<T> Account<T> {
 /// assertion a mint site could get wrong.
 ///
 /// v0 is positional and global (`306c` §2): the flip is a phase property carried by construction,
-/// not a per-value dataflow analysis. Gradation (`306b` §1c) is open and nothing here pre-commits it.
+/// not a per-value dataflow analysis. That is why a mint site does not fill this in —
+/// [`Spine::minted_at`] does, on every record, so a new mint site cannot forget and a future
+/// per-record gradation (`306b` §1c, OPEN) has its room without being pre-committed here.
 pub type Grade = Option<InfluencePhase>;
 
 /// Every Spine record species (`30E` §2). A no-wildcard `match` in [`SpineSpecies::census_arm`]
@@ -641,6 +643,7 @@ pub struct Spine<P: DecidePlane> {
     render_decisions: Vec<SpineRenderDecision>,
     outcome: Option<SpineOutcome>,
     narratives: Vec<P::Narrative>,
+    grade: Grade,
 }
 
 impl<P: DecidePlane> Default for Spine<P> {
@@ -662,19 +665,42 @@ impl<P: DecidePlane> Default for Spine<P> {
             render_decisions: Vec::new(),
             outcome: None,
             narratives: Vec::new(),
+            grade: None,
         }
     }
 }
 
 impl<P: DecidePlane> Spine<P> {
-    /// An empty Spine.
+    /// An empty Spine over material that exists before the first host exchange.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// An empty Spine whose records are all minted at `grade` (`309` §2 grade-stamping).
+    ///
+    /// v0's flip is POSITIONAL and GLOBAL (`306c` §2): once host bytes are read, every code path
+    /// invoked after that point is within its scope, so the grade belongs to the Spine a run builds
+    /// rather than to the discipline of each mint site. Handing it in at construction is what makes
+    /// it unforgettable — there is no per-record decision to get wrong, and no widening a later mint
+    /// site could omit.
+    #[must_use]
+    pub fn minted_at(grade: Grade) -> Self {
+        Self {
+            grade,
+            ..Self::default()
+        }
+    }
+
+    /// The grade every record on this Spine carries.
+    #[must_use]
+    pub const fn grade(&self) -> Grade {
+        self.grade
+    }
+
     /// Write the invocation record.
-    pub fn set_invocation(&mut self, record: SpineInvocation) {
+    pub fn set_invocation(&mut self, mut record: SpineInvocation) {
+        record.grade = self.grade;
         self.invocation = Some(record);
     }
 
@@ -685,7 +711,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the admitted record stream.
-    pub fn set_record_stream(&mut self, record: SpineRecordStream<P>) {
+    pub fn set_record_stream(&mut self, mut record: SpineRecordStream<P>) {
+        record.grade = self.grade;
         self.record_stream = Some(record);
     }
 
@@ -696,7 +723,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's licensed decision.
-    pub fn set_disposition(&mut self, record: SpineDisposition<P>) {
+    pub fn set_disposition(&mut self, mut record: SpineDisposition<P>) {
+        record.grade = self.grade;
         self.dispositions.insert(record.site, record);
     }
 
@@ -723,7 +751,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the decision digest.
-    pub fn set_digest(&mut self, record: SpineDigest) {
+    pub fn set_digest(&mut self, mut record: SpineDigest) {
+        record.grade = self.grade;
         self.digest = Some(record);
     }
 
@@ -734,7 +763,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the intake outcome.
-    pub fn set_admission(&mut self, record: SpineAdmission) {
+    pub fn set_admission(&mut self, mut record: SpineAdmission) {
+        record.grade = self.grade;
         self.admission = Some(record);
     }
 
@@ -745,7 +775,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the run outcome.
-    pub fn set_outcome(&mut self, record: SpineOutcome) {
+    pub fn set_outcome(&mut self, mut record: SpineOutcome) {
+        record.grade = self.grade;
         self.outcome = Some(record);
     }
 
@@ -756,7 +787,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a load-plane decision.
-    pub fn push_load_decision(&mut self, record: SpineLoadDecision) {
+    pub fn push_load_decision(&mut self, mut record: SpineLoadDecision) {
+        record.grade = self.grade;
         self.load_decisions.push(record);
     }
 
@@ -767,7 +799,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's classification.
-    pub fn set_classification(&mut self, record: SpineSiteClassification) {
+    pub fn set_classification(&mut self, mut record: SpineSiteClassification) {
+        record.grade = self.grade;
         self.classifications.insert(record.site, record);
     }
 
@@ -777,7 +810,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a solve certification.
-    pub fn push_certification(&mut self, record: SpineSolveCertification) {
+    pub fn push_certification(&mut self, mut record: SpineSolveCertification) {
+        record.grade = self.grade;
         self.certifications.push(record);
     }
 
@@ -788,7 +822,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a vouch record.
-    pub fn push_vouch(&mut self, record: SpineVouch) {
+    pub fn push_vouch(&mut self, mut record: SpineVouch) {
+        record.grade = self.grade;
         self.vouches.push(record);
     }
 
@@ -799,7 +834,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's ship decision.
-    pub fn set_ship(&mut self, record: SpineProbeShip) {
+    pub fn set_ship(&mut self, mut record: SpineProbeShip) {
+        record.grade = self.grade;
         self.ships.insert(record.site, record);
     }
 
@@ -809,7 +845,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's observation.
-    pub fn set_observation(&mut self, record: SpineObservation) {
+    pub fn set_observation(&mut self, mut record: SpineObservation) {
+        record.grade = self.grade;
         self.observations.insert(record.site, record);
     }
 
@@ -819,7 +856,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a validity round.
-    pub fn push_round(&mut self, record: SpineValidityRound) {
+    pub fn push_round(&mut self, mut record: SpineValidityRound) {
+        record.grade = self.grade;
         self.rounds.push(record);
     }
 
@@ -830,7 +868,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a survival outcome.
-    pub fn push_survival(&mut self, record: SpineSurvival) {
+    pub fn push_survival(&mut self, mut record: SpineSurvival) {
+        record.grade = self.grade;
         self.survivals.push(record);
     }
 
@@ -841,7 +880,8 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a render-time decision.
-    pub fn push_render_decision(&mut self, record: SpineRenderDecision) {
+    pub fn push_render_decision(&mut self, mut record: SpineRenderDecision) {
+        record.grade = self.grade;
         self.render_decisions.push(record);
     }
 
@@ -865,6 +905,114 @@ impl<P: DecidePlane> Spine<P> {
     #[must_use]
     pub fn narratives(&self) -> &[P::Narrative] {
         &self.narratives
+    }
+
+    /// The `new`-arm DEBUG DUMP (`309` §3; `pin-debug-dump-gating`) — project-internal, and
+    /// structurally unable to ship.
+    ///
+    /// The `new` arm is transitory by definition: non-durable in production, but not ruled
+    /// non-durable, which is the legal resting state for in-flight work. It still has to be
+    /// INSPECTABLE, or "we track it" is a claim nobody can check. This is that inspection.
+    ///
+    /// # The gating, and why it is a signature rather than a flag
+    ///
+    /// Following `admit_fixture_records`' shape (`rul-fixture-identity-never-production`: comments
+    /// are not a fence — absence of a constructor is), this **cannot name a production sink**: it
+    /// takes no path, no writer, no directory, no destination of any kind, and none is addable by a
+    /// caller. It hands back a `String` and stops. The half no type can fence — that nobody CALLS it
+    /// from a shipping path — is a lexical non-empty-walk gate
+    /// (`the_new_arm_debug_dump_has_no_production_caller`), exactly as the fixture-intake gate does.
+    ///
+    /// Never confuse this with the migration smoke-diff (`309` §4): different mechanism, different
+    /// lifetime. That one is build-to-kill scaffolding frozen at one commit; this one lives as long
+    /// as the `new` arm does.
+    #[must_use]
+    pub fn debug_dump(&self) -> String {
+        use std::fmt::Write as _;
+
+        let mut out = String::new();
+        let _ = writeln!(
+            out,
+            "dorc-spine-new-arm grade={}",
+            if self.grade.is_some() {
+                "host-influenced"
+            } else {
+                "authored-before-contact"
+            }
+        );
+        for species in SpineSpecies::ALL {
+            if species.census_arm() != CensusArm::New {
+                continue;
+            }
+            let _ = writeln!(out, "{} n={}", species.name(), self.population(species));
+        }
+        for record in &self.load_decisions {
+            let _ = writeln!(out, "  load {} withheld={:?}", record.name, record.withheld);
+        }
+        for record in self.classifications.values() {
+            let _ = writeln!(
+                out,
+                "  classify {:?} class={} verdict-lane={} invalidator={} cells={}",
+                record.site,
+                record.class,
+                record.verdict_lane,
+                record.invalidator,
+                record.cells.total()
+            );
+        }
+        for record in &self.certifications {
+            let _ = writeln!(
+                out,
+                "  certify {} consistent={} tripped={}",
+                record.pass, record.consistent, record.tripped
+            );
+        }
+        for record in &self.vouches {
+            let _ = writeln!(
+                out,
+                "  vouch {:?} attached={} custody={:?}",
+                record.site, record.attached, record.custody
+            );
+        }
+        for record in self.ships.values() {
+            let _ = writeln!(out, "  ship {:?} lane={:?}", record.site, record.lane);
+        }
+        if let Some(record) = &self.admission {
+            let _ = writeln!(
+                out,
+                "  admission {:?} fault={:?}",
+                record.outcome, record.fault
+            );
+        }
+        for record in self.observations.values() {
+            let _ = writeln!(
+                out,
+                "  observe {:?} verdict={} collapsed={}",
+                record.site, record.verdict, record.collapsed
+            );
+        }
+        for record in &self.rounds {
+            let _ = writeln!(
+                out,
+                "  round {} erased={}",
+                record.round,
+                record.erased.total()
+            );
+        }
+        for record in &self.survivals {
+            let _ = writeln!(out, "  survival {:?} {:?}", record.leaf, record.outcome);
+        }
+        for record in &self.render_decisions {
+            let _ = writeln!(out, "  render {:?} {:?}", record.site, record.decision);
+        }
+        if let Some(record) = &self.outcome {
+            let _ = writeln!(
+                out,
+                "  outcome {} advisory={} durable-eligible={}",
+                record.outcome, record.advisory, record.durable_eligible
+            );
+        }
+        out
     }
 
     /// How many records of each species this Spine holds — the account a projection reports what it
@@ -975,6 +1123,37 @@ mod tests {
                     member: Some(1)
                 })
                 .is_some()
+        );
+    }
+
+    #[test]
+    fn the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it() {
+        // `309` §2 / `306c` §2: v0's flip is positional and global, so the grade belongs to the
+        // Spine a run builds. A mint site passing `None` — which every one of them does — still
+        // lands host-influenced on an influenced Spine, which is the property that makes a NEW mint
+        // site correct by construction rather than by review.
+        let phase =
+            crate::influence::Influenced::<crate::influence::HostReported, ()>::host_reported(())
+                .widen();
+        let mut spine = Spine::<TestPlane>::minted_at(Some(phase));
+        spine.set_disposition(SpineDisposition {
+            site: SiteId::leaf(LeafId(0)),
+            ast: AstId(0),
+            sh: String::new(),
+            decision: "Run",
+            grade: None,
+        });
+        assert_eq!(
+            spine
+                .disposition(SiteId::leaf(LeafId(0)))
+                .and_then(|record| record.grade),
+            Some(phase),
+            "the record wears the Spine's grade, not the one its mint site typed"
+        );
+        assert_eq!(
+            Spine::<TestPlane>::new().grade(),
+            None,
+            "an intakeless Spine stays authored-before-contact"
         );
     }
 

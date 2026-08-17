@@ -203,7 +203,7 @@ impl<T> ScopedHostEvidence<T> {
 /// influence is the conservative direction on this axis, and both paths earn it honestly: whether
 /// bytes arrived at all is host-determined (`306b` §1b names arrival a channel), and a durable's
 /// contents are host-shaped by construction.
-fn influence_after_reaching_for_host_bytes() -> InfluencePhase {
+pub(crate) fn influence_after_reaching_for_host_bytes() -> InfluencePhase {
     Influenced::authored_before_contact(()).widen()
 }
 

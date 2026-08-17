@@ -461,6 +461,10 @@ impl WhyWorld {
                     .unwrap_or(Observable::verdict_only(Verdict::Unknown))
             },
             &mut arena,
+            // A why world reads results somebody already admitted, and reaching for host bytes at
+            // all is what makes what follows influenced — so it widens through the one named seat
+            // rather than holding a carrier (`307a:dis-phase-by-free-widening`).
+            Some(crate::results::influence_after_reaching_for_host_bytes()),
         );
         // The same whole-artifact emission decision the binary makes, by the same rule: a why report
         // that explained an artifact with different bindings than the run's would be a decoration

@@ -3611,6 +3611,8 @@ pub fn build_plan(
         &BTreeMap::new(),
         observe,
         arena,
+        // The intakeless entry reads no host bytes, so its records are authored-before-contact.
+        None,
     );
     project_plan(&spine, &PlanAuthority::without_intake())
 }
@@ -3659,6 +3661,7 @@ pub fn build_plan_walled(
     probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
+    minted_at: dorc_core::spine::Grade,
 ) -> Spine {
     let leaf_fact = leaf_facts(cfg, classes);
 
@@ -3775,7 +3778,10 @@ pub fn build_plan_walled(
     // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED mutator
     // that will RUN at apply may touch anything it did not declare (the frame problem, `233`),
     // so silence licenses nothing. `survival` selects HOW a running mutator walls (TC-1):
-    let mut spine = Spine::new();
+    // Every record this build writes carries the run's grade (`309` §2; `306c` §2's positional v0
+    // flip). Handed in rather than derived, because the kernel is a pure function of its inputs and
+    // whether host bytes were read is a property of the CALLER's phase, not of this analysis.
+    let mut spine = Spine::minted_at(minted_at);
     match survival {
         // Flag-off (BASELINE, byte-identical to Stage-1): a running mutator is a TOTAL wall.
         None => wall_walk_total(&mut steps),
@@ -7763,6 +7769,7 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
+            None,
         );
         let plan = project_plan(&spine, &PlanAuthority::without_intake());
         (plan, i)
@@ -7909,6 +7916,7 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
+            None,
         );
         project_plan(&spine, &PlanAuthority::without_intake())
     }
@@ -8006,6 +8014,7 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
+            None,
         );
         project_plan(&spine, &PlanAuthority::without_intake())
     }

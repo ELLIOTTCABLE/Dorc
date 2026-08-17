@@ -1493,6 +1493,8 @@ grep__predict() {
             &BTreeMap::new(), // no probe-origin witnesses in DST (C6: Witness is EXEMPT)
             observe,
             &mut dorc_core::ProvArena::new(),
+            // No intake: DST analyses the unmeasured world.
+            None,
         );
         dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake())
     }
