@@ -5,8 +5,8 @@ fixpoint: executed
 -- book.sh --
 #!/bin/sh
 # pin28-helper-package-entrypoints-lift (`28M` §7 tune-explicit-composition-is-sanctioned, the
-# COMMISSIONED package shape) — half ONE of two: does the split package lift with its cross-file
-# helper closure intact?
+# COMMISSIONED package shape) — half ONE of two: the split package lifts with its cross-file helper
+# closure intact.
 #
 # The shape under test is the one the human named as community-critical: a well-engineered oracle
 # package split into a HELPERS file carrying the bulk of the logic under non-role names, plus ONE
@@ -14,27 +14,21 @@ fixpoint: executed
 # that makes custody cheap — an admin who wants different entrypoints over the same logic replaces
 # one small file — so the packaging itself is what has to work.
 #
-# WHAT THIS CELL MEASURES TODAY: the package spelled by CO-LOADING alone, which is de-licensed
-# (`rul-vouch-reaches-own-custody-only`). Naming two files on one command line is ingestion; it
-# composes no custody, so the entrypoint's reach into the helpers file lands in an utterance its
-# author never made, and the vouch suspends. The site runs, attributed, and the mocks record the
-# book's own `wombat sync` rather than a check.
+# THE SPELLING IS THE `.`, AND ONLY THE `.` (`rul-speaker-minting-is-oracle-sourcing-only`). The
+# entrypoints file SOURCES its helpers, which is the utterance that takes custody of them; the
+# admin names ONE file on the command line and the package pulls in its own parts. Co-loading the
+# same two files instead composes nothing and suspends the vouch, which is what
+# `emit30-cross-custody-plural-helper-suspends` measures — the difference between these two cells
+# is one `.` line, and it is the whole of what custody means here.
 #
-# The packaging is not lost — it is spelled with a `.`. An entrypoints file that SOURCES its helpers
-# takes custody of them (`rul-speaker-minting-is-oracle-sourcing-only`), which is the form this cell
-# carries once the sourcing amendment lands.
+# Two things had to hold for the closure to be FOUND at all. A helpers file has no `__` anywhere and
+# defines only functions, which the mark-subset lint used to read as a bare fragment of marked
+# statements and error at the first funcdef (`28P:fnd-a-helpers-only-file-was-refused-out-of-
+# dialect`). And a role body's helper call has to resolve ACROSS files, not just within the defining
+# one. Both hold, and now the LICENSE follows the lookup.
 #
-# Two things had to hold for the closure to be FOUND at all, and both are recent. A helpers file has
-# no `__` anywhere and defines only functions, which the mark-subset lint used to read as a bare
-# fragment of marked statements and error at the first funcdef (`28P:fnd-a-helpers-only-file-was-
-# refused-out-of-dialect`). And a role body's helper call has to resolve ACROSS files, not just
-# within the defining one. Both still hold: what withholds here is the LICENSE, never the lookup.
-#
-# The load order is deliberately adversarial: `wombat-entrypoints` sorts BEFORE `wombat-helpers`, so
-# the entrypoint's helper is declared in a file loaded AFTER it.
-#
-# `hork` is unmodeled, so it walls; the site below it would guard rather than elide, which is what
-# would put the pinned definition and its cross-file closure on the apply surface.
+# `hork` is unmodeled, so it walls; the site below it guards rather than elides, which is what puts
+# the pinned definition and its cross-file closure on the apply surface where they can be read.
 hork provision
 wombat sync a.conf
 
@@ -43,11 +37,17 @@ wombat sync a.conf
 # THE THIN ENTRYPOINTS FILE: the `__role` collision surface and nothing else. Every line an admin
 # might want to replace lives here, and it is deliberately trivial to replace — the logic is next
 # door. This file carries no logic of its own on purpose.
+#
+# The `.` is the package boundary, spelled in sh. It takes custody of the helpers file, so the
+# vouch below may rest on what that file declares; and it is why the command line names this file
+# alone. No registry, no manifest, no package name.
+. ./wombat-helpers.sh
+
 wombat__is_converged() {
    _wombat_same "$2"
 }
 
--- wombat-helpers.oracle.sh --
+-- wombat-helpers.sh --
 # dorc-lang/v0.2
 # THE HELPERS FILE: the bulk of the package, under non-role names, with no `__` anywhere. Nothing
 # here is a family member, so nothing here can collide with another author's family — which is the
@@ -63,7 +63,8 @@ _wombat_same() {
 }
 
 -- probe-results.txt --
-# No records: the suspended vouch ships no check, so the probe has nothing to ask and the site runs.
+# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted.
+site 1 effect=holds rc=0
 
 -- mocks/.log --
 # newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
@@ -104,10 +105,10 @@ exit 0
 
 -- expected.ran --
 ran: hork provision
-ran: wombat sync a.conf
+ran: wombat cmp -- a.conf /etc/wombat/a.conf
 
 -- replay --
-$ dorc --book=book.sh -o wombat-entrypoints.oracle.sh -o wombat-helpers.oracle.sh < probe-results.txt
+$ dorc --book=book.sh -o wombat-entrypoints.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -115,17 +116,42 @@ $ dorc --book=book.sh -o wombat-entrypoints.oracle.sh -o wombat-helpers.oracle.s
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d278d6a5bf951858dc070eda71a151c78134cba1661c61810f3e7ec4baae31f8 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=c46dc6c089c43fd48e9195a88e763f9eba4542dc4e8340d5a56d1ddeab1d4fce sites=1 @@dorc@@\n'
+# site 1: dorc-auto:wombat@converged
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:0 unresolvable-no-probe
-# site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   _wombat_same "$2"
+}
+
 #!/bin/sh
 # pin28-helper-package-entrypoints-lift (`28M` §7 tune-explicit-composition-is-sanctioned, the
-# COMMISSIONED package shape) — half ONE of two: does the split package lift with its cross-file
-# helper closure intact?
+# COMMISSIONED package shape) — half ONE of two: the split package lifts with its cross-file helper
+# closure intact.
 #
 # The shape under test is the one the human named as community-critical: a well-engineered oracle
 # package split into a HELPERS file carrying the bulk of the logic under non-role names, plus ONE
@@ -133,26 +159,20 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # that makes custody cheap — an admin who wants different entrypoints over the same logic replaces
 # one small file — so the packaging itself is what has to work.
 #
-# WHAT THIS CELL MEASURES TODAY: the package spelled by CO-LOADING alone, which is de-licensed
-# (`rul-vouch-reaches-own-custody-only`). Naming two files on one command line is ingestion; it
-# composes no custody, so the entrypoint's reach into the helpers file lands in an utterance its
-# author never made, and the vouch suspends. The site runs, attributed, and the mocks record the
-# book's own `wombat sync` rather than a check.
+# THE SPELLING IS THE `.`, AND ONLY THE `.` (`rul-speaker-minting-is-oracle-sourcing-only`). The
+# entrypoints file SOURCES its helpers, which is the utterance that takes custody of them; the
+# admin names ONE file on the command line and the package pulls in its own parts. Co-loading the
+# same two files instead composes nothing and suspends the vouch, which is what
+# `emit30-cross-custody-plural-helper-suspends` measures — the difference between these two cells
+# is one `.` line, and it is the whole of what custody means here.
 #
-# The packaging is not lost — it is spelled with a `.`. An entrypoints file that SOURCES its helpers
-# takes custody of them (`rul-speaker-minting-is-oracle-sourcing-only`), which is the form this cell
-# carries once the sourcing amendment lands.
+# Two things had to hold for the closure to be FOUND at all. A helpers file has no `__` anywhere and
+# defines only functions, which the mark-subset lint used to read as a bare fragment of marked
+# statements and error at the first funcdef (`28P:fnd-a-helpers-only-file-was-refused-out-of-
+# dialect`). And a role body's helper call has to resolve ACROSS files, not just within the defining
+# one. Both hold, and now the LICENSE follows the lookup.
 #
-# Two things had to hold for the closure to be FOUND at all, and both are recent. A helpers file has
-# no `__` anywhere and defines only functions, which the mark-subset lint used to read as a bare
-# fragment of marked statements and error at the first funcdef (`28P:fnd-a-helpers-only-file-was-
-# refused-out-of-dialect`). And a role body's helper call has to resolve ACROSS files, not just
-# within the defining one. Both still hold: what withholds here is the LICENSE, never the lookup.
-#
-# The load order is deliberately adversarial: `wombat-entrypoints` sorts BEFORE `wombat-helpers`, so
-# the entrypoint's helper is declared in a file loaded AFTER it.
-#
-# `hork` is unmodeled, so it walls; the site below it would guard rather than elide, which is what
-# would put the pinned definition and its cross-file closure on the apply surface.
+# `hork` is unmodeled, so it walls; the site below it guards rather than elides, which is what puts
+# the pinned definition and its cross-file closure on the apply surface where they can be read.
 hork provision
-wombat sync a.conf
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]
