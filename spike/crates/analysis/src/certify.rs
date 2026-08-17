@@ -1223,29 +1223,28 @@ mod tests {
         assert_eq!(once, twice);
     }
 
-    /// §6.9 — the slice is exactly the failing region, and `solve_certified` wires it in without
-    /// the call-site asking.
+    /// §6.9 — both facets of one replay: the slice is exactly the failing region, wired in by
+    /// `solve_certified` without the call-site asking, and retention stops at
+    /// [`REPLAY_UPDATE_CAP`] while the total keeps counting, so a surface can say how much it is
+    /// not showing.
+    ///
+    /// Read from ONE run on purpose. A runaway climb has to reach `solve`'s cap to exist at all
+    /// and `solve_certified` pays for it twice (the plain solve, then the instrumented re-run
+    /// that mints the replay), which makes this the most expensive trial in the workspace; under
+    /// nextest's process-per-test model a sibling `#[test]` cannot share the answer, so a second
+    /// one would re-derive the identical climb rather than assert about it.
     #[test]
-    fn the_replay_slice_is_exactly_the_failing_region() {
+    fn the_replay_is_the_failing_region_up_to_its_disclosed_cap() {
         let g = TestGraph::from_edges(1, &[(0, 0)]);
         let (_, outcome) = solve_certified(&g, Direction::Forward, runaway);
         let report = failed(&outcome);
+        let replay = report.replay();
 
-        assert_eq!(*report.replay().focus(), report.failing().nodes());
+        assert_eq!(*replay.focus(), report.failing().nodes());
         assert!(
-            report.replay().updates().iter().all(|u| u.to == 0),
+            replay.updates().iter().all(|u| u.to == 0),
             "every retained update landed on a focused node"
         );
-    }
-
-    /// §6.9 — the disclosed cap is honoured: retention stops at [`REPLAY_UPDATE_CAP`] while the
-    /// total keeps counting, so a surface can say how much it is not showing.
-    #[test]
-    fn the_replay_honours_its_disclosed_cap() {
-        let g = TestGraph::from_edges(1, &[(0, 0)]);
-        let (_, outcome) = solve_certified(&g, Direction::Forward, runaway);
-        let replay = failed(&outcome).replay();
-
         assert_eq!(replay.shown(), REPLAY_UPDATE_CAP);
         assert!(
             replay.total() > REPLAY_UPDATE_CAP,
