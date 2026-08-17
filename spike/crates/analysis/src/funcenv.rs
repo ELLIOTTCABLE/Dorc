@@ -235,40 +235,21 @@ impl DefinitionTable {
             .map(|d| dorc_core::DefinitionId::at(d.file, d.span))
     }
 
-    /// What a derived row lifted from `file`'s definition of `name` may be keyed by — the JOIN
-    /// between the two parsers that read every source (`28Q` §1.1).
+    /// Whether the table holds a definition at exactly this identity — the SPAN AGREEMENT the
+    /// definition-grade keying rests on (`28Q` §1.1).
     ///
-    /// The dialect parser produces the ROW; `dorc_syntax` produces the DEFINITION this table holds;
-    /// and they are joined on `(file, name)`, the only thing both spell identically
-    /// (`28O:fnd-two-parsers-disagree-on-funcdefs`). The span therefore rides in from HERE and is
-    /// never reconstructed on the row side, which is what keeps the disagreement from becoming a
-    /// silent corpus-wide withhold.
-    ///
-    /// Three answers, each ruled: no definition ⇒ [`Unkeyed`](dorc_core::DefinitionProvenance::Unkeyed)
-    /// (the ruled permissive arm — `28P:dec-the-gate-applies-only-to-names-the-unit-knows`); one ⇒
-    /// [`Keyed`](dorc_core::DefinitionProvenance::Keyed); more than one ⇒
-    /// [`Ambiguous`](dorc_core::DefinitionProvenance::Ambiguous), because the lift keeps ONE row per
-    /// `(file, role)` and which of the file's definitions spoke is then unrecoverable.
+    /// Nothing in production resolution calls this: a derived row carries its own
+    /// [`dorc_core::DefinitionId`], minted from the span its own lift recorded, so there is no join
+    /// to perform. What the census calls it for is the property underneath that — the dialect
+    /// parser and `dorc_syntax` recording one funcdef at one byte range — which is measured rather
+    /// than constructed and would otherwise fail silently
+    /// (`28O:fnd-two-parsers-disagree-on-funcdefs` is the one class where they legitimately differ,
+    /// and it differs by NAME, so the table simply does not know it and the frame holds no opinion).
     #[must_use]
-    pub fn provenance_of(
-        &self,
-        file: dorc_core::SourceFileId,
-        name: &str,
-    ) -> dorc_core::DefinitionProvenance {
-        let mut found = None;
-        for def in &self.defs {
-            if def.file != file || def.name != name {
-                continue;
-            }
-            if found.is_some() {
-                return dorc_core::DefinitionProvenance::Ambiguous;
-            }
-            found = Some(dorc_core::DefinitionId::at(def.file, def.span));
-        }
-        found.map_or(
-            dorc_core::DefinitionProvenance::Unkeyed,
-            dorc_core::DefinitionProvenance::Keyed,
-        )
+    pub fn holds(&self, id: dorc_core::DefinitionId) -> bool {
+        self.defs
+            .iter()
+            .any(|d| d.file == id.file() && d.span == id.span())
     }
 }
 
@@ -585,25 +566,6 @@ impl<'a> LiveDefinitions<'a> {
         }
     }
 
-    /// What a row lifted from source index `file`'s definition of `name` may be keyed by — the
-    /// table's own answer ([`DefinitionTable::provenance_of`]), reached through the oracle a seat
-    /// already holds so no seat grows a second parameter.
-    ///
-    /// Takes the positional INDEX because that is what every seat holds and the index IS the
-    /// [`dorc_core::SourceFileId`] (`28O:dec-load-order-is-the-id-order`); doing the crossing here
-    /// keeps it in ONE place, exactly as [`custody_of_source_index`] does for custody.
-    ///
-    /// An unsolved unit answers [`Unkeyed`](dorc_core::DefinitionProvenance::Unkeyed): there is no
-    /// table to join against, which is the same "no opinion" posture
-    /// [`definition_before`](Self::definition_before) takes from the other side.
-    #[must_use]
-    pub fn provenance_of(&self, file: usize, name: &str) -> dorc_core::DefinitionProvenance {
-        self.bound
-            .map_or(dorc_core::DefinitionProvenance::Unkeyed, |(_, defs)| {
-                defs.provenance_of(source_file_of_index(file), name)
-            })
-    }
-
     /// The input file whose definition of `name` a shell would have live immediately before
     /// `node` — `None` when nothing is live there (`Undefined`), when the environment cannot say
     /// (⊤), or when the point is unreached (⊥).
@@ -644,6 +606,17 @@ pub fn custody_of_source_index(file: usize) -> dorc_core::DefinitionCustody {
 #[must_use]
 pub fn source_file_of_index(file: usize) -> dorc_core::SourceFileId {
     dorc_core::SourceFileId(u32::try_from(file).unwrap_or(u32::MAX))
+}
+
+/// The identity a derived row carries: the source index its lift read, and the funcdef span that
+/// lift recorded (`28Q` §1.1 — definition-grade row identity).
+///
+/// ONE seat for the whole crossing, so no consumer re-spells either half. The seats hold a
+/// positional index and their own row; this turns the pair into the key
+/// [`dorc_core::answering_row`] compares, and it is the only way a row's id is ever minted.
+#[must_use]
+pub fn row_definition(file: usize, span: Span) -> dorc_core::DefinitionId {
+    dorc_core::DefinitionId::at(source_file_of_index(file), span)
 }
 
 /// Solve the function environment over `cfg`.
@@ -2201,29 +2174,36 @@ mod tests {
         );
     }
 
-    /// The join's three answers, over one table. `Keyed` is the ordinary case; `Unkeyed` is the
-    /// two-parser disagreement (a row whose munged funcname the sh parser never recorded) and the
-    /// hand-built posture; `Ambiguous` is a file holding TWO definitions of one role, where the
-    /// lift keeps one row and which definition spoke is unrecoverable.
+    /// Span agreement, both directions — the property definition-grade keying rests on, and the
+    /// only thing a seat ever asks the table ABOUT a row's identity (production seats ask nothing:
+    /// the row carries its own id).
+    ///
+    /// Two definitions of one role in ONE file are told apart here, which is exactly what the
+    /// retired `(file, role name)` join could not do — it had to answer "ambiguous" and withhold at
+    /// every frame, including the one whose definition was unambiguously live.
     #[test]
-    fn the_join_tells_keyed_unkeyed_and_ambiguous_apart() {
+    fn the_table_holds_a_definition_at_each_distinct_span() {
         let mut table = DefinitionTable::default();
         let sole = add_def_spanned(&mut table, 0, ROLE, 10);
-        add_def_spanned(&mut table, 1, ROLE, 20);
-        add_def_spanned(&mut table, 1, ROLE, 40);
-        assert_eq!(
-            table.provenance_of(SourceFileId(0), ROLE),
-            dorc_core::DefinitionProvenance::Keyed(table.identity_of(sole).expect("sole id"))
-        );
-        assert_eq!(
-            table.provenance_of(SourceFileId(1), ROLE),
-            dorc_core::DefinitionProvenance::Ambiguous,
-            "two definitions of one role in one file: the surviving row cannot name its author"
-        );
-        assert_eq!(
-            table.provenance_of(SourceFileId(2), ROLE),
-            dorc_core::DefinitionProvenance::Unkeyed,
-            "a file the table records nothing for holds no opinion about the row"
+        let first = add_def_spanned(&mut table, 1, ROLE, 20);
+        let second = add_def_spanned(&mut table, 1, ROLE, 40);
+        for id in [sole, first, second] {
+            assert!(
+                table.holds(
+                    table
+                        .identity_of(id)
+                        .expect("an added definition has an id")
+                )
+            );
+        }
+        assert_ne!(table.identity_of(first), table.identity_of(second));
+        assert!(
+            !table.holds(dorc_core::DefinitionId::at(
+                SourceFileId(1),
+                Span::new(BytePos(999), BytePos(1009))
+            )),
+            "a span the table never recorded is not held: this is the drift alarm, and it must \
+             fire rather than shrug"
         );
     }
 
@@ -2559,20 +2539,14 @@ mod tests {
         let live = LiveDefinitions::new(&env, &table);
         let site = command_at(&cfg, &ast, book, "yum install -y nginx");
         assert_eq!(live.source_before(site, ROLE), Some(SourceFileId(1)));
-        // The same identity read through the definition join the seats consume: a row lifted from
-        // index 1 keys to the definition the frame names, and index 0's does not.
+        let named = table.identity_of(second).expect("second id");
         assert_eq!(
             live.definition_before(site, ROLE),
-            dorc_core::LiveDefinition::Live(table.identity_of(second).expect("second id"))
+            dorc_core::LiveDefinition::Live(named)
         );
-        assert_eq!(
-            live.provenance_of(1, ROLE),
-            dorc_core::DefinitionProvenance::Keyed(table.identity_of(second).expect("second id"))
-        );
-        assert_eq!(
-            live.provenance_of(0, ROLE),
-            dorc_core::DefinitionProvenance::Unkeyed,
-            "index 0 records no definition of this role, so it can key no row"
-        );
+        // ...and the id a row lifted from index 1 mints for itself is that same identity, which is
+        // what lets a seat compare the two without a join.
+        assert_eq!(super::row_definition(1, named.span()), named);
+        assert_ne!(super::row_definition(0, named.span()), named);
     }
 }

@@ -1636,15 +1636,14 @@ pub fn build_vouches_from_sets(
                 .find(|p| map_provider_name(interner.resolve(*p)) == want)
                 .and_then(|p| set.get(p).cloned())
         };
-        let found = dorc_core::answering_file(
+        let found = dorc_core::answering_row(
             live.definition_before(node, &verdict_name),
             verdict_sets.len(),
             |i| {
                 verdict_sets
                     .get(i)
                     .and_then(named)
-                    .is_some()
-                    .then(|| live.provenance_of(i, &verdict_name))
+                    .map(|v| dorc_analysis::funcenv::row_definition(i, v.span))
             },
         )
         .and_then(|i| {
@@ -1831,15 +1830,14 @@ pub fn build_wrapped_vouches(
             "{}{VERDICT_SUFFIX}",
             map_provider_name(interner.resolve(*provider))
         );
-        let Some(file_idx) = dorc_core::answering_file(
+        let Some(file_idx) = dorc_core::answering_row(
             live.definition_before(*node, &verdict_name),
             verdict_sets.len(),
             |i| {
                 verdict_sets
                     .get(i)
                     .and_then(|set| set.get(*provider))
-                    .is_some()
-                    .then(|| live.provenance_of(i, &verdict_name))
+                    .map(|v| dorc_analysis::funcenv::row_definition(i, v.span))
             },
         ) else {
             continue;

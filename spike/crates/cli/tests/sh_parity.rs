@@ -604,35 +604,46 @@ fn the_environment_names_a_definition_per_frame_within_one_file() {
 /// ANSWERS is the one the named definition produced.
 ///
 /// Why an engine choice depends on it: the environment already names the right definition (pinned
-/// above), so everything downstream turns on how derived rows are KEYED. Today the lift keeps one row
-/// per `(file, role)`, so a file holding two definitions of one role answers
-/// `DefinitionProvenance::Ambiguous` and `answering_file` withholds — at BOTH sites, including the one
-/// whose definition the environment named exactly. The withhold is the safe direction and the
-/// forfeit is the whole authored-in-book override idiom: an admin who overrides a verdict mid-book,
-/// in the blessed spelling, gets nothing from either body.
+/// above), so everything downstream turns on how derived rows are KEYED — and the forfeit is the
+/// whole authored-in-book override idiom, where an admin who overrides a verdict mid-book in the
+/// blessed spelling gets nothing from either body.
 ///
-/// FAILS TODAY on both sites. It greens when a row carries its own definition's identity, which is the
-/// re-key `28Q` §1 spells and `308:cr-plan-keying-letter-vs-ruled` records as ruled-but-derived; the
-/// within-file span-granularity residue that ruling banked is exactly this cell.
+/// HALF LANDED, and the surviving half is a different question from the one this pin was minted
+/// against. The KEYING is definition-grade now: a row carries the id of the definition its own lift
+/// read, `answering_row` compares ids, and the `(file, role name)` join — with the "ambiguous"
+/// state that made a within-file pair withhold at BOTH frames — is gone (`28Q` §1.1's repair).
+/// What still withholds at the FIRST site is lift ARITY: `PredictSet`/`VerdictSet` keep one row per
+/// `(file, role)`, so the earlier definition produces no row for any frame to find. Withholding is
+/// the safe direction, and the second site now answers where it previously did not.
+///
+/// So this greens on a per-DEFINITION lift, not on any further keying work.
 #[test]
 fn a_within_file_plural_role_answers_per_definition() {
     // Setup outside the closure: a panic in there would read as the target still failing.
     let (sites, env, defs) = rekey_world();
     let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+    let mut interner = dorc_core::Interner::default();
+    // The REAL lift, so the arity gap is measured rather than modelled.
+    let verdicts = dorc_oracle::verdict::VerdictSet::lift(&mut interner, REKEY_BOOK).value;
+    let rows: Vec<dorc_core::Span> = verdicts
+        .providers()
+        .filter_map(|p| verdicts.get(p).map(|v| v.span))
+        .collect();
     let answers: Vec<Option<usize>> = sites
         .iter()
         .map(|site| {
-            dorc_core::answering_file(live.definition_before(*site, REKEY_ROLE), 1, |file| {
-                Some(live.provenance_of(file, REKEY_ROLE))
+            dorc_core::answering_row(live.definition_before(*site, REKEY_ROLE), rows.len(), |i| {
+                rows.get(i)
+                    .map(|span| dorc_analysis::funcenv::row_definition(0, *span))
             })
         })
         .collect();
     internal_tooling::xfail::xfail_until("p-x-definition-grade-keying", || {
         assert_eq!(
             answers,
-            vec![Some(0), Some(0)],
-            "each frame's row must be findable — the environment named its definition, so a row \
-             keyed per DEFINITION would answer at both"
+            vec![Some(0), Some(1)],
+            "each frame must find ITS OWN definition's row — the lift owes one row per definition, \
+             and today it keeps one per (file, role), so the earlier body produced none: {answers:?}"
         );
     });
 }

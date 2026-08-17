@@ -175,9 +175,10 @@ pub const PINS: &[Pin] = &[
     },
     Pin {
         name: "p-x-definition-grade-keying",
-        trigger: "the closure-custody stage's definition-grade re-key — derived rows keyed per \
-                  DEFINITION rather than per `(file, role)`, so a within-file plural stops \
-                  answering `Ambiguous`",
+        trigger: "a per-DEFINITION lift: the KEYING half landed (rows carry their own \
+                  `DefinitionId` and the `(file, role)` join is gone), so what remains is that \
+                  `PredictSet`/`VerdictSet` keep one row per `(file, role)` and the earlier of two \
+                  within-file definitions produces no row for its frame to find",
         horizon: Horizon::Scheduled("r31:closure-custody"),
         state: PinState::Live,
     },

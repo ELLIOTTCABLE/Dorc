@@ -253,7 +253,7 @@ pub mod contested;
 pub use contested::ContestedFamilies;
 
 pub mod definition;
-pub use definition::{DefinitionId, DefinitionProvenance, LiveDefinition, answering_file};
+pub use definition::{DefinitionId, LiveDefinition, answering_row};
 
 pub mod spine;
 pub use spine::{CensusArm, DecidePlane, Spine, SpineSpecies};

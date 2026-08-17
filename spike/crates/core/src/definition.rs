@@ -2,11 +2,26 @@
 //! (`28Q` §1 `syn-definition-factored-indices`).
 //!
 //! Every derived row — a check, a cell declaration, an argparse arm-model, an enrolled dialect
-//! token, a footprint claim — is produced by exactly one function definition, and the conversion
-//! keys each row by that definition rather than by the position of the file that happened to win a
-//! whole-unit scan. [`DefinitionId`] is that key; [`DefinitionProvenance`] is what a row carries;
-//! [`LiveDefinition`] is what the function environment answers at a site; and
-//! [`answering_file`] is the ONE place the three meet.
+//! token, a footprint claim — is produced by exactly one function definition, and it is keyed by
+//! that definition: [`DefinitionId`] is the key, a row carries its own, [`LiveDefinition`] is what
+//! the function environment answers at a site, and [`answering_row`] is where the two meet.
+//!
+//! # What a row's id is, and why nothing joins to get it
+//!
+//! A row's id is minted from the definition the DIALECT lift read: its file, and the funcdef span
+//! that lift recorded. The environment's ids come from `dorc_syntax`'s parse of the same file. Two
+//! parsers, one identity — so the two agree by MEASUREMENT, not by construction, and
+//! `every_lifted_role_row_carries_its_parsed_definitions_span` is the gate that keeps it true. That
+//! gate is load-bearing rather than tidy: a drifted span matches no frame answer, so every site
+//! would withhold silently and corpus-wide, in the direction the byte-identity gate is weakest at
+//! catching.
+//!
+//! The retired shape asked the definition table for a row's identity, joined on `(file, role name)`
+//! (`28Q` §1.1's named INCORRECT INTERIM). Two states existed only to describe that join's failures
+//! — a row the table could not find, and a file holding two definitions of one role so that which
+//! one spoke was unrecoverable — and both are gone with it. Spans are unique within a file, so
+//! "which of this file's definitions produced this row" is no longer a question anyone can fail to
+//! answer.
 //!
 //! # Why this lives in `core`
 //!
@@ -20,7 +35,7 @@
 //! Under true resolution every function-environment precision bug is WINNER-SHIFTING: it selects
 //! whose judgment governs a site, with no agreement veto standing behind it. The whole frame solver
 //! is therefore license-review-tier forever, and precision work on it is never ordinary value-add.
-//! That applies to this module too — a change to [`answering_file`]'s rule is a licensure change
+//! That applies to this module too — a change to [`answering_row`]'s rule is a licensure change
 //! wearing a lookup's clothes.
 
 use crate::{DefinitionCustody, SourceFileId, Span};
@@ -73,35 +88,10 @@ impl DefinitionId {
     }
 }
 
-/// What a derived row knows about the definition that produced it.
-///
-/// Three states rather than an `Option`, because "no definition to point at" and "more than one"
-/// are opposite answers and collapsing them would make one of them wrong.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DefinitionProvenance {
-    /// NO SOURCE TEXT exists for this row to have come from — a hand-built index, which the kernel
-    /// unit tests and the instrument lanes construct from no source at all. The environment holds
-    /// no opinion about such a row, and manufacturing one would wall every hand-built index in the
-    /// workspace (`28P:dec-the-gate-applies-only-to-names-the-unit-knows`).
-    ///
-    /// This is also where the one genuine parser disagreement lands: a source name that is not a
-    /// legal sh NAME lifts a row under its MUNGED funcname while `dorc_syntax` records the authored
-    /// one, so the join finds nothing. That population is marked at Error severity by
-    /// `oracle::reserved` and is byte-identically un-gated today, which is why it maps HERE rather
-    /// than to [`Ambiguous`](Self::Ambiguous).
-    Unkeyed,
-    /// This row came from exactly this definition.
-    Keyed(DefinitionId),
-    /// The file holds MORE THAN ONE definition of this role and the lift kept one, so which
-    /// definition spoke is unrecoverable. Answers nowhere: a row that cannot name its own author
-    /// must not be read at any frame (`inv-top-reject`).
-    Ambiguous,
-}
-
 /// What the function environment says is live for one name at one site.
 ///
 /// Produced by `dorc_analysis::funcenv::LiveDefinitions`; named here because
-/// [`answering_file`] must see it and `core` is the only crate both sides can reach.
+/// [`answering_row`] must see it and `core` is the only crate both sides can reach.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LiveDefinition {
     /// The definition a shell executing the unit top-to-bottom would have live at this site.
@@ -116,7 +106,7 @@ pub enum LiveDefinition {
     NoOpinion,
 }
 
-/// **THE resolution seat** (`28Q` §1.3): which source file's row answers at this site.
+/// **THE resolution seat** (`28Q` §1.3): which of a seat's candidate rows answers at this site.
 ///
 /// It replaces the whole-unit last-definition-wins scan plus its positional agreement gate with one
 /// question — *which definition is live here, and which row did that definition produce* — because
@@ -124,44 +114,42 @@ pub enum LiveDefinition {
 /// (`28P:fnd-build-vouches-relifted-the-verdict-sets` is what that disagreement cost the last time
 /// it was spelled twice). Every seat that used to scan calls this instead.
 ///
-/// The call shape deliberately mirrors the scan it replaces: a `count` and a per-file lookup, so a
-/// seat's own row storage stays its own business and only the RULE is shared.
+/// The call shape deliberately mirrors the scan it replaces: a `count` and a per-candidate lookup,
+/// so a seat's own row storage stays its own business and only the RULE is shared. `definition_of`
+/// answers `None` for a slot holding no row for this question, and otherwise the id of the
+/// definition that produced the row — which the row CARRIES; asking a table for it was the retired
+/// join (`28Q` §1.1).
 ///
 /// Three arms, and each one is a licensure decision:
 ///
-/// - [`Live(def)`](LiveDefinition::Live) — the row [`Keyed`](DefinitionProvenance::Keyed) to
-///   exactly that definition, or nothing. This is what makes the chimera unrepresentable rather
-///   than merely gated: identity and cells are read from ONE definition's rows, so the read that
-///   measured one cell while keying the record to another cannot be spelled
-///   (`271:rul-sin-ordering`).
+/// - [`Live(def)`](LiveDefinition::Live) — the row that definition produced, or nothing. This is
+///   what makes the chimera unrepresentable rather than merely gated: identity and cells are read
+///   from ONE definition's rows, so the read that measured one cell while keying the record to
+///   another cannot be spelled (`271:rul-sin-ordering`).
 /// - [`Withheld`](LiveDefinition::Withheld) — nothing answers.
 /// - [`NoOpinion`](LiveDefinition::NoOpinion) — the sole candidate answers; PLURAL candidates
 ///   withhold. Without an environment there is no rule that picks between two authors, and
 ///   inventing one here would be exactly the load-order-as-trust-adjudicator fence `28K` §6 refuses.
 ///   Byte-identical on a single-definition corpus, which is every corpus that exists.
 #[must_use]
-pub fn answering_file(
+pub fn answering_row(
     live: LiveDefinition,
     count: usize,
-    provenance_of: impl Fn(usize) -> Option<DefinitionProvenance>,
+    definition_of: impl Fn(usize) -> Option<DefinitionId>,
 ) -> Option<usize> {
     match live {
         LiveDefinition::Withheld => None,
-        LiveDefinition::Live(wanted) => {
-            (0..count).find(|&i| provenance_of(i) == Some(DefinitionProvenance::Keyed(wanted)))
-        }
+        LiveDefinition::Live(wanted) => (0..count).find(|&i| definition_of(i) == Some(wanted)),
         LiveDefinition::NoOpinion => {
             let mut sole = None;
             for i in 0..count {
-                match provenance_of(i) {
-                    None | Some(DefinitionProvenance::Ambiguous) => {}
-                    Some(DefinitionProvenance::Keyed(_) | DefinitionProvenance::Unkeyed) => {
-                        if sole.is_some() {
-                            return None;
-                        }
-                        sole = Some(i);
-                    }
+                if definition_of(i).is_none() {
+                    continue;
                 }
+                if sole.is_some() {
+                    return None;
+                }
+                sole = Some(i);
             }
             sole
         }
@@ -170,7 +158,7 @@ pub fn answering_file(
 
 #[cfg(test)]
 mod tests {
-    use super::{DefinitionId, DefinitionProvenance, LiveDefinition, answering_file};
+    use super::{DefinitionId, LiveDefinition, answering_row};
     use crate::{BytePos, SourceFileId, Span};
 
     /// A definition at file `file`, spanning `[lo, hi)` — distinct `lo`s are distinct definitions.
@@ -201,12 +189,19 @@ mod tests {
     /// wrong answer is unrepresentable, because the lookup is BY the definition.
     #[test]
     fn a_live_definition_selects_only_its_own_row() {
-        let rows = [
-            Some(DefinitionProvenance::Keyed(def(0, 10))),
-            Some(DefinitionProvenance::Keyed(def(1, 10))),
-        ];
-        let ask = |live| answering_file(live, rows.len(), |i| rows[i]);
+        let rows = [Some(def(0, 10)), Some(def(1, 10))];
+        let ask = |live| answering_row(live, rows.len(), |i| rows[i]);
         assert_eq!(ask(LiveDefinition::Live(def(1, 10))), Some(1));
+        assert_eq!(ask(LiveDefinition::Live(def(0, 10))), Some(0));
+    }
+
+    /// Two rows from ONE file are told apart by their spans — the property the retired `(file,
+    /// role name)` join could not express, and the reason it needed an "ambiguous" state at all.
+    #[test]
+    fn two_rows_from_one_file_resolve_independently() {
+        let rows = [Some(def(0, 10)), Some(def(0, 40))];
+        let ask = |live| answering_row(live, rows.len(), |i| rows[i]);
+        assert_eq!(ask(LiveDefinition::Live(def(0, 40))), Some(1));
         assert_eq!(ask(LiveDefinition::Live(def(0, 10))), Some(0));
     }
 
@@ -214,9 +209,9 @@ mod tests {
     /// a definition that produced no derived row (a body the dialect parser could not lift).
     #[test]
     fn a_live_definition_with_no_row_answers_nowhere() {
-        let rows = [Some(DefinitionProvenance::Keyed(def(0, 10)))];
+        let rows = [Some(def(0, 10))];
         assert_eq!(
-            answering_file(LiveDefinition::Live(def(9, 99)), rows.len(), |i| rows[i]),
+            answering_row(LiveDefinition::Live(def(9, 99)), rows.len(), |i| rows[i]),
             None
         );
     }
@@ -225,12 +220,9 @@ mod tests {
     /// arrive here, and all three must license nothing.
     #[test]
     fn withheld_answers_nowhere_whatever_the_rows() {
-        let rows = [
-            Some(DefinitionProvenance::Keyed(def(0, 10))),
-            Some(DefinitionProvenance::Unkeyed),
-        ];
+        let rows = [Some(def(0, 10)), Some(def(1, 10))];
         assert_eq!(
-            answering_file(LiveDefinition::Withheld, rows.len(), |i| rows[i]),
+            answering_row(LiveDefinition::Withheld, rows.len(), |i| rows[i]),
             None
         );
     }
@@ -240,9 +232,9 @@ mod tests {
     /// scan can retire rather than surviving as a fallback.
     #[test]
     fn no_opinion_answers_from_a_sole_row() {
-        let rows = [None, Some(DefinitionProvenance::Unkeyed), None];
+        let rows = [None, Some(def(1, 10)), None];
         assert_eq!(
-            answering_file(LiveDefinition::NoOpinion, rows.len(), |i| rows[i]),
+            answering_row(LiveDefinition::NoOpinion, rows.len(), |i| rows[i]),
             Some(1)
         );
     }
@@ -252,26 +244,11 @@ mod tests {
     /// a permanently rejected fence.
     #[test]
     fn no_opinion_withholds_when_two_rows_compete() {
-        let rows = [
-            Some(DefinitionProvenance::Keyed(def(0, 10))),
-            Some(DefinitionProvenance::Keyed(def(1, 10))),
-        ];
+        let rows = [Some(def(0, 10)), Some(def(1, 10))];
         assert_eq!(
-            answering_file(LiveDefinition::NoOpinion, rows.len(), |i| rows[i]),
+            answering_row(LiveDefinition::NoOpinion, rows.len(), |i| rows[i]),
             None
         );
-    }
-
-    /// An ambiguous row answers at NO frame, under either arm. A row that cannot name its own
-    /// author must never be read: under `Live` it cannot match, and under `NoOpinion` it does not
-    /// even count as a candidate — so a file with a within-file redefinition never silently lends
-    /// its surviving row to a sole-candidate answer.
-    #[test]
-    fn an_ambiguous_row_answers_at_no_frame() {
-        let rows = [Some(DefinitionProvenance::Ambiguous)];
-        let ask = |live| answering_file(live, rows.len(), |i| rows[i]);
-        assert_eq!(ask(LiveDefinition::Live(def(0, 10))), None);
-        assert_eq!(ask(LiveDefinition::NoOpinion), None);
     }
 
     /// An empty candidate set answers nowhere under every arm — the degenerate case a seat hits
@@ -279,10 +256,10 @@ mod tests {
     #[test]
     fn no_candidates_answer_nowhere() {
         let none = |_: usize| None;
-        assert_eq!(answering_file(LiveDefinition::NoOpinion, 0, none), None);
-        assert_eq!(answering_file(LiveDefinition::Withheld, 0, none), None);
+        assert_eq!(answering_row(LiveDefinition::NoOpinion, 0, none), None);
+        assert_eq!(answering_row(LiveDefinition::Withheld, 0, none), None);
         assert_eq!(
-            answering_file(LiveDefinition::Live(def(0, 10)), 0, none),
+            answering_row(LiveDefinition::Live(def(0, 10)), 0, none),
             None
         );
     }

@@ -2765,7 +2765,7 @@ fn ship_predict_stage(
         node,
         live,
         &format!("{want}{PREDICT_SUFFIX}"),
-        |i| checks.get(i).and_then(named).is_some(),
+        |i| checks.get(i).and_then(named).map(|p| p.span),
     )?;
     let check = checks.get(idx).and_then(named)?;
     let arg_texts: Vec<String> = argv

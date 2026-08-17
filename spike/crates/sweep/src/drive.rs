@@ -528,17 +528,16 @@ fn touches_answering_source(
     use dorc_oracle::predict::map_provider_name;
     let live = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let name = format!("{want}{}", dorc_oracle::touches::DISTURBS_SUFFIX);
-    dorc_core::answering_file(
+    dorc_core::answering_row(
         live.definition_before(node, &name),
         touches_sets.len(),
         |i| {
-            touches_sets
-                .get(i)
-                .is_some_and(|set| {
-                    set.providers()
-                        .any(|p| map_provider_name(interner.resolve(p)) == want)
-                })
-                .then(|| live.provenance_of(i, &name))
+            let set = touches_sets.get(i)?;
+            let provider = set
+                .providers()
+                .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+            set.get(provider)
+                .map(|t| dorc_analysis::funcenv::row_definition(i, t.span))
         },
     )
 }

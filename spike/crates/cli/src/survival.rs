@@ -190,7 +190,7 @@ type ResolvedFootprint = (
 /// as its own dispatch; withholding is the safe half).
 fn touches_answering_source(
     count: usize,
-    declares: impl Fn(usize) -> bool,
+    declares: impl Fn(usize) -> Option<dorc_core::Span>,
     want: &str,
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
@@ -199,18 +199,20 @@ fn touches_answering_source(
     crate::world::shipping_source(count, node, live, &name, declares)
 }
 
-/// Does source index `i` of `sets` declare a `disturbs()` for the munged provider `want`?
+/// Where source index `i` of `sets` declares its `disturbs()` for the munged provider `want` — the
+/// funcdef span that identifies the definition the row came from.
 fn declares_touches(
     sets: &[dorc_oracle::touches::TouchesSet],
     interner: &Interner,
     want: &str,
     i: usize,
-) -> bool {
+) -> Option<dorc_core::Span> {
     use dorc_oracle::predict::map_provider_name;
-    sets.get(i).is_some_and(|set| {
-        set.providers()
-            .any(|p| map_provider_name(interner.resolve(p)) == want)
-    })
+    let set = sets.get(i)?;
+    let provider = set
+        .providers()
+        .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+    set.get(provider).map(|p| p.span)
 }
 
 /// Resolve one wall-candidate site's authored `disturbs()` footprint (see the type doc above).
@@ -365,10 +367,11 @@ pub fn ship_touches_body(
         .collect();
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
     let declares = |i: usize| {
-        touches_paired.get(i).is_some_and(|(_, set)| {
-            set.providers()
-                .any(|p| map_provider_name(interner.resolve(p)) == want)
-        })
+        let (_, set) = touches_paired.get(i)?;
+        let p = set
+            .providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+        set.get(p).map(|t| t.span)
     };
     let idx = touches_answering_source(touches_paired.len(), declares, &want, node, live)?;
     let (src, set) = touches_paired.get(idx)?;

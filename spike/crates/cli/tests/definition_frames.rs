@@ -6,26 +6,26 @@
 //! EXACTLY where the new machinery decides. These assert against the shells' own committed answers
 //! and against an enumerated corpus census instead — neither of which a golden can go vacuous on.
 //!
-//! # The join census
+//! # The span-agreement census
 //!
-//! Derived rows (checks, cell declarations, argparse arm-models, footprint claims) are about to be
-//! keyed by the `DefinitionId` that produced them, and that id carries a SPAN. But the span can
-//! only come from one of the two parsers that read a source: `dorc_syntax::parse`, which feeds
-//! [`dorc_cli::world::definition_table`] and therefore the function environment, or the DIALECT
-//! parser, which produces the lifted rows. The two are known to disagree about which funcdefs
-//! exist (`28O:fnd-two-parsers-disagree-on-funcdefs`), so the conversion joins them on the only
-//! thing both spell identically — `(file, role name)` — and lets the span ride in from the
-//! definition table alone.
+//! Derived rows (checks, cell declarations, argparse arm-models, footprint claims) are keyed by the
+//! `DefinitionId` that produced them, and that id carries a SPAN. Two parsers read every source:
+//! `dorc_syntax::parse`, which feeds [`dorc_cli::world::definition_table`] and therefore the
+//! function environment's answers, and the DIALECT parser, which produces the lifted rows and mints
+//! each row's own id. Nothing joins them at run time — a row simply carries its id and the seat
+//! compares — so the two parsers agreeing on a funcdef's byte range is a MEASURED property holding
+//! the keying up, not a constructed one.
 //!
-//! [`every_lifted_role_row_joins_to_a_parsed_definition`] is what makes that join safe to build
-//! on. A lifted row with no parsed definition behind it would be an UNKEYABLE row: it can never
-//! match a frame's answer, so under the conversion its site withholds — silently, corpus-wide, in
-//! the withhold direction the byte-identity gate would catch only where the corpus happens to
-//! license something. Measuring it first is cheaper than debugging it later.
+//! [`every_lifted_role_row_carries_its_parsed_definitions_span`] is that measurement. A row whose
+//! span drifted would match no frame answer, so its site withholds — silently, corpus-wide, in the
+//! withhold direction the byte-identity gate catches only where the corpus happens to license
+//! something. Measuring it is cheaper than debugging it later.
 //!
-//! The census does NOT demand a bare zero, because the disagreeing class genuinely exists: a source
+//! The census does NOT demand a bare zero, because a disagreeing class genuinely exists: a source
 //! name that is not a legal sh NAME (`hork.tool`, `中pkg`) lifts a row under its MUNGED funcname
-//! while `dorc_syntax` records the authored one, so the two never meet.
+//! while `dorc_syntax` records the authored one, so the two never meet by name at all. That class
+//! is harmless precisely because it is total: the definition table never learns the munged name, so
+//! the frame holds NO OPINION about it and the row answers as the sole candidate.
 //!
 //! What contains that class is `28P:dec-the-gate-applies-only-to-names-the-unit-knows` — the RULED
 //! permissive arm: a name the definition table does not know has no positional opinion, so the gate
@@ -36,7 +36,9 @@
 //! makes the arm's population nameable and this census's exception branch checkable.
 //!
 //! The census therefore demands the sharper thing: every unjoined row sits in a source the lint
-//! marks. An unjoined row in an UNMARKED source is the lane-halting finding.
+//! marks. An unjoined row in an UNMARKED source is the lane-halting finding — and a row that joins
+//! by NAME while its span drifts is the sharpest one of all, since that is the class no permissive
+//! arm contains.
 
 #![expect(
     clippy::print_stderr,
@@ -143,28 +145,39 @@ fn collect_loom_sources(path: &Path, case: &str, out: &mut Vec<CorpusSource>) {
     }
 }
 
-/// The role funcdef names `dorc_syntax::parse` sees in `text` — exactly the filter
-/// [`dorc_cli::world::definition_table`] applies when it records a `Definition`.
-fn parsed_role_definitions(text: &str) -> BTreeSet<String> {
+/// The role funcdefs `dorc_syntax::parse` sees in `text`, each with its span — exactly the filter
+/// and the span [`dorc_cli::world::definition_table`] applies when it records a `Definition`, so
+/// these are the identities the frame answers with.
+fn parsed_role_definitions(text: &str) -> BTreeSet<(String, dorc_core::Span)> {
     use dorc_syntax::ast::NodeKind;
 
     let ast = dorc_syntax::parse(text).value;
     ast.iter()
         .filter_map(|(_, node)| match &node.kind {
-            NodeKind::FuncDef { name, .. } => Some(name.clone()),
+            NodeKind::FuncDef { name, .. } => Some((name.clone(), node.span)),
             _ => None,
         })
-        .filter(|name| dorc_oracle::reserved::role_family(name).is_some())
+        .filter(|(name, _)| dorc_oracle::reserved::role_family(name).is_some())
         .collect()
 }
 
-/// The role funcdef names the DIALECT lift produced a keyable row for, reconstructed exactly as
-/// every resolution seat reconstructs them (`map_provider_name` + the role suffix — the spelling
-/// at `world::ship_predict_body`, `plan::build_vouches_from_sets`, and `main::ship_predict_stage`).
+/// The same role funcdefs, names only — for the callers asking WHICH roles a source declares
+/// rather than where.
+fn parsed_role_names(text: &str) -> BTreeSet<String> {
+    parsed_role_definitions(text)
+        .into_iter()
+        .map(|(name, _)| name)
+        .collect()
+}
+
+/// The role funcdefs the DIALECT lift produced a row for, each with the span that row MINTS ITS
+/// IDENTITY FROM. Names are reconstructed exactly as every resolution seat reconstructs them
+/// (`map_provider_name` + the role suffix — the spelling at `world::ship_predict_body`,
+/// `plan::build_vouches_from_sets`, and `main::ship_predict_stage`).
 ///
 /// The kind-owner trio is deliberately absent: `vocabulary-acts-stay-ambient` keeps those rows off
-/// the frame, so they are never keyed by a `DefinitionId` and cannot fail this join.
-fn lifted_role_rows(text: &str) -> BTreeSet<String> {
+/// the frame, so they are never keyed by a `DefinitionId` and cannot fail this census.
+fn lifted_role_rows(text: &str) -> BTreeSet<(String, dorc_core::Span)> {
     use dorc_oracle::predict::{PREDICT_SUFFIX, lift_predicts, map_provider_name};
     use dorc_oracle::touches::{DISTURBS_SUFFIX, TouchesSet};
     use dorc_oracle::verdict::{VERDICT_SUFFIX, VerdictSet};
@@ -173,24 +186,27 @@ fn lifted_role_rows(text: &str) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
 
     let predicts = lift_predicts(&mut interner, text).value;
-    let named: Vec<_> = predicts.providers().collect();
-    for provider in named {
+    for provider in predicts.providers().collect::<Vec<_>>() {
         let base = map_provider_name(interner.resolve(provider));
-        out.insert(format!("{base}{PREDICT_SUFFIX}"));
+        if let Some(row) = predicts.get(provider) {
+            out.insert((format!("{base}{PREDICT_SUFFIX}"), row.span));
+        }
     }
 
     let verdicts = VerdictSet::lift(&mut interner, text).value;
-    let named: Vec<_> = verdicts.providers().collect();
-    for provider in named {
+    for provider in verdicts.providers().collect::<Vec<_>>() {
         let base = map_provider_name(interner.resolve(provider));
-        out.insert(format!("{base}{VERDICT_SUFFIX}"));
+        if let Some(row) = verdicts.get(provider) {
+            out.insert((format!("{base}{VERDICT_SUFFIX}"), row.span));
+        }
     }
 
     let touches = TouchesSet::lift(&mut interner, text).value;
-    let named: Vec<_> = touches.providers().collect();
-    for provider in named {
+    for provider in touches.providers().collect::<Vec<_>>() {
         let base = map_provider_name(interner.resolve(provider));
-        out.insert(format!("{base}{DISTURBS_SUFFIX}"));
+        if let Some(row) = touches.get(provider) {
+            out.insert((format!("{base}{DISTURBS_SUFFIX}"), row.span));
+        }
     }
 
     out
@@ -208,16 +224,15 @@ fn reserved_names_mark_an_error(text: &str) -> bool {
         .any(|diag| diag.severity() == dorc_aid::Severity::Error)
 }
 
-/// THE STEP-ZERO CENSUS (`28Q` §1): every derived row the conversion will key by a
-/// `DefinitionId` either has a parsed definition to take that id's span from, or lives in a source
-/// the reserved-name lint marks at Error severity.
+/// THE KEYING'S LOAD-BEARING CENSUS (`28Q` §1): every derived row's own `DefinitionId` names a
+/// definition `dorc_syntax` parsed at the same byte range, or the row lives in a source the
+/// reserved-name lint marks at Error severity.
 ///
-/// An unjoined row in an UNMARKED source is a LANE-HALTING finding, not a site to work around: it
-/// can never match a frame's answer, so its site would withhold silently under the conversion, and
-/// the `(file, role name)` join would need re-cutting rather than patching. The message names every
-/// offender so the disagreement is diagnosable from one run.
+/// A drifted span in an UNMARKED source is a LANE-HALTING finding, not a site to work around: the
+/// row can then match no frame answer, so its site withholds silently and corpus-wide. The message
+/// names every offender, and says which of the two shapes it is, so one run diagnoses it.
 #[test]
-fn every_lifted_role_row_joins_to_a_parsed_definition() {
+fn every_lifted_role_row_carries_its_parsed_definitions_span() {
     let sources = corpus_sources();
     assert!(
         !sources.is_empty(),
@@ -231,7 +246,22 @@ fn every_lifted_role_row_joins_to_a_parsed_definition() {
         let parsed = parsed_role_definitions(&source.text);
         let lifted = lifted_role_rows(&source.text);
         rows += lifted.len();
-        let unjoined: Vec<&String> = lifted.iter().filter(|row| !parsed.contains(*row)).collect();
+        let unjoined: Vec<String> = lifted
+            .iter()
+            .filter(|row| !parsed.contains(*row))
+            .map(|(name, span)| {
+                let by_name: Vec<_> = parsed
+                    .iter()
+                    .filter(|(other, _)| other == name)
+                    .map(|(_, span)| *span)
+                    .collect();
+                if by_name.is_empty() {
+                    format!("{name} (no parsed definition of this name)")
+                } else {
+                    format!("{name} lifted at {span:?}, parsed at {by_name:?} — SPAN DRIFT")
+                }
+            })
+            .collect();
         if unjoined.is_empty() {
             continue;
         }
@@ -246,7 +276,7 @@ fn every_lifted_role_row_joins_to_a_parsed_definition() {
 
     assert!(
         rows > 0,
-        "vacuity floor: {} sources yielded zero lifted role rows, so the join was never exercised",
+        "vacuity floor: {} sources yielded zero lifted role rows, so the census was never exercised",
         sources.len()
     );
     assert!(
@@ -256,9 +286,10 @@ fn every_lifted_role_row_joins_to_a_parsed_definition() {
     );
     assert!(
         unmarked.is_empty(),
-        "{} lifted role row(s) in UNMARKED sources have no parsed definition to key against, over \
+        "{} lifted role row(s) in UNMARKED sources carry an identity no parsed definition has, over \
          {rows} row(s) in {} source(s) ({marked} row(s) sitting in reserved-name-marked \
-         sources):\n  {}",
+         sources). A SPAN DRIFT line is the lane-halting one: the row's id can then match no frame \
+         answer, so every site withholds silently:\n  {}",
         unmarked.len(),
         sources.len(),
         unmarked.join("\n  ")
@@ -427,7 +458,7 @@ fn plural_role_names(world: &CaseWorld) -> BTreeSet<String> {
     let mut once: BTreeSet<String> = BTreeSet::new();
     let mut again: BTreeSet<String> = BTreeSet::new();
     for text in world.srcs.iter().chain(std::iter::once(&world.book)) {
-        for name in parsed_role_definitions(text) {
+        for name in parsed_role_names(text) {
             if !once.insert(name.clone()) {
                 again.insert(name);
             }
@@ -700,7 +731,7 @@ fn the_engine_names_the_definition_the_shells_ran() {
         let redefiners = cell
             .inputs
             .iter()
-            .filter(|(_, text)| parsed_role_definitions(text).contains(FLOOR_ROLE))
+            .filter(|(_, text)| parsed_role_names(text).contains(FLOOR_ROLE))
             .count();
         if redefiners < 2 {
             continue;
@@ -786,12 +817,12 @@ fn a_contested_helper_closure_withholds_the_role_body() {
         let role_file = cell
             .inputs
             .iter()
-            .position(|(_, text)| parsed_role_definitions(text).contains(FLOOR_ROLE));
+            .position(|(_, text)| parsed_role_names(text).contains(FLOOR_ROLE));
         let Some(role_file) = role_file else { continue };
         let redefiners = cell
             .inputs
             .iter()
-            .filter(|(_, text)| parsed_role_definitions(text).contains(FLOOR_ROLE))
+            .filter(|(_, text)| parsed_role_names(text).contains(FLOOR_ROLE))
             .count();
         if redefiners != 1 {
             continue; // a role-redefinition cell — the differential above owns it

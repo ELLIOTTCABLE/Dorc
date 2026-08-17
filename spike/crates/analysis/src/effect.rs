@@ -330,16 +330,22 @@ impl<'a> VisibleRole<'a> {
         Self { live, node, family }
     }
 
-    /// Which source index's rows answer for `suffix` at this site, among `count` candidates that
-    /// `has` says declared the role (`28Q` §1.3 — the frame lookup is the only resolution seat).
+    /// Which source index's rows answer for `suffix` at this site, among `count` candidates whose
+    /// declaring funcdef span `declared_at` reports (`28Q` §1.3 — the frame lookup is the only
+    /// resolution seat).
     ///
     /// **Winner-shifting** (`28Q` §1, permanent): with no agreement veto standing behind it, a
     /// function-environment precision bug here SELECTS WHOSE JUDGMENT governs the site. This is a
     /// licensure seat wearing a lookup's clothes, and it is license-review-tier forever.
-    fn answering(&self, suffix: &str, count: usize, has: impl Fn(usize) -> bool) -> Option<usize> {
+    fn answering(
+        &self,
+        suffix: &str,
+        count: usize,
+        declared_at: impl Fn(usize) -> Option<Span>,
+    ) -> Option<usize> {
         let name = format!("{}{suffix}", self.family);
-        dorc_core::answering_file(self.live.definition_before(self.node, &name), count, |i| {
-            has(i).then(|| self.live.provenance_of(i, &name))
+        dorc_core::answering_row(self.live.definition_before(self.node, &name), count, |i| {
+            declared_at(i).map(|span| crate::funcenv::row_definition(i, span))
         })
     }
 }
@@ -356,7 +362,7 @@ fn live_verdict<'i>(
     visible: &VisibleRole<'_>,
 ) -> Option<&'i predict::Predict> {
     let file = visible.answering(VERDICT_SUFFIX, verdicts.source_count(), |i| {
-        verdicts.contains(i, provider)
+        verdicts.get(i, provider).map(|v| v.span)
     })?;
     verdicts.get(file, provider)
 }
@@ -413,7 +419,10 @@ fn live_predict_source(
     visible: &VisibleRole<'_>,
 ) -> Option<usize> {
     visible.answering(predict::PREDICT_SUFFIX, checks.len(), |i| {
-        checks.get(i).is_some_and(|cs| cs.get(provider.0).is_some())
+        checks
+            .get(i)
+            .and_then(|cs| cs.get(provider.0))
+            .map(|c| c.span)
     })
 }
 

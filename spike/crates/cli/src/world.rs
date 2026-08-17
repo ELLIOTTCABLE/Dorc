@@ -794,22 +794,23 @@ pub fn never_live_predict_rows(
 /// The whole-unit scan it replaces and the positional gate that narrowed the scan's answer are gone
 /// together, because they were two readings of one environment and could disagree
 /// (`28P:fnd-build-vouches-relifted-the-verdict-sets`). One question is asked once, and
-/// [`dorc_core::answering_file`] holds the rule.
+/// [`dorc_core::answering_row`] holds the rule.
 ///
-/// `has` asks only "does file `i` define this role for this provider" — never "does its body
-/// answer this argv". That distinction is the point: a scan for the first file that RESOLVES falls
-/// through a declining live body into a shadowed one's arms, which is exactly `28K` §6
-/// rej-decline-fallthrough-cascade. A decline by the winner is a decline, in the ship lane too.
+/// `declaration_at` answers the funcdef SPAN file `i` declares this role at, or `None` — presence
+/// plus identity, never "does its body answer this argv". That distinction is the point: a scan for
+/// the first file that RESOLVES falls through a declining live body into a shadowed one's arms,
+/// which is exactly `28K` §6 rej-decline-fallthrough-cascade. A decline by the winner is a decline,
+/// in the ship lane too.
 #[must_use]
 pub fn shipping_source(
     count: usize,
     node: dorc_analysis::cfg::CfgNodeId,
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
     role_name: &str,
-    has: impl Fn(usize) -> bool,
+    declaration_at: impl Fn(usize) -> Option<dorc_core::Span>,
 ) -> Option<usize> {
-    dorc_core::answering_file(live.definition_before(node, role_name), count, |i| {
-        has(i).then(|| live.provenance_of(i, role_name))
+    dorc_core::answering_row(live.definition_before(node, role_name), count, |i| {
+        declaration_at(i).map(|span| dorc_analysis::funcenv::row_definition(i, span))
     })
 }
 
@@ -841,7 +842,7 @@ pub fn member_answering_at(
             .and_then(|p| set.get(p).cloned())
     };
     let idx = shipping_source(sets.len(), node, live, &format!("{want}{suffix}"), |i| {
-        sets.get(i).and_then(named).is_some()
+        sets.get(i).and_then(named).map(|p| p.span)
     })?;
     Some((idx, sets.get(idx).and_then(named)?))
 }
@@ -874,7 +875,7 @@ pub fn verdict_answering_at(
         node,
         live,
         &format!("{want}{VERDICT_SUFFIX}"),
-        |i| verdict_sets.get(i).and_then(named).is_some(),
+        |i| verdict_sets.get(i).and_then(named).map(|p| p.span),
     )?;
     Some((idx, verdict_sets.get(idx).and_then(named)?))
 }
