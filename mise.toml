@@ -318,8 +318,8 @@ dir = "spike"
 env = { DORC_E2E_QUIET = "1" }
 raw = true
 # Spelled out rather than composed over `test:e2e`: a nested `mise run` would have to forward the
-# path selectors, and mise appends trailing args only to a `run` array's LAST command — which is
-# how `loom:promote` once ran unscoped over the whole corpus while its git diff was scoped.
+# path selectors, and mise appends trailing args only to a `run` array's LAST command — which once
+# left a two-step publish running over the whole corpus while its git diff was scoped.
 run = "cargo test -p dorc-cli --test e2e --"
 
 [tasks."test:looms-quiet"]
@@ -486,79 +486,6 @@ description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floo
 raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless --floor"
-
-[tasks."loom:compile"]
-description = "Inspect the aid .loom corpus and stage the receipt a promote must match — writes no sources. Bare, it takes every case (the tool narrows to the prose-changed ones itself); trailing args scope it. Runs --quiet, so only cases with something to report print."
-dir = "spike"
-# `raw = true` connects stdio directly, bypassing mise's own output buffering — without it,
-# `MISE_TASK_OUTPUT=timed` (the agent default) drops any stdout that displays for under a second,
-# which silently swallowed a fast refusal's full evidence behind the one-line `compile: N cases,
-# M refused` summary (reproduced 2026-07-29). Fix belongs in the task, never at the call site
-# (`never-filter-a-task`).
-raw = true
-usage = 'arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"'
-run = "cargo run --quiet -p dorc-loom -- compile --quiet {{ usage.cases | join(sep=' ') }}"
-
-[tasks."loom:promote"]
-description = "Verify against the loom:compile receipt, then publish the two generated locks (catalog/arrangement) and the affected aid cases, and word-diff what it wrote. In-process renders; no binary, no execution. Give it the SAME case list compile got — the receipt-match refuses otherwise. Nothing is staged or committed: the diff is yours to review and revert. A promote leaves both locks dirty and the NEXT compile refuses until they are committed, so put every in-flight case in ONE compile/promote pair rather than promoting them one at a time."
-dir = "spike"
-# See loom:compile's `raw` comment — the same timed-output swallow applies here.
-raw = true
-# `282` §6, "the review surface is the git diff" — promote requires a tree clean outside the
-# selected cases, so an unscoped diff afterwards IS the publication and nothing else.
-#
-# The case list is TEMPLATED rather than left to mise's trailing-args passthrough, which only
-# reaches the LAST command of a `run` array — so `-- <cases>` scoped the git diff and left promote
-# running over the whole corpus, silently unscoped (the exact opposite of what was typed).
-usage = '''
-flag "--human" help="mark every published register as written by a person; refuses in an agent-marked session (DORC_HUMAN_COMMIT=1 is the escape)"
-flag "--slop" help="yes, re-mark a human-written register as slop; unflagged that refuses for a person and proceeds with a note for an agent"
-arg "[cases]" var=#true help="case paths; MUST match the list loom:compile was given"
-'''
-run = [
-  "cargo run --quiet -p dorc-loom -- promote --quiet {% if usage.human %}--human{% endif %}{% if usage.slop %}--slop{% endif %} {{ usage.cases | join(sep=' ') }}",
-  "git --no-pager diff --word-diff",
-]
-
-[tasks."loom:scaffold"]
-description = "Write the empty defining-case skeleton for a freshly-minted code slug (crates/aid/tests/<slug>.loom) and print the two-step follow-up. Never overwrites an authored case."
-dir = "spike"
-raw = true
-usage = 'arg "slug" help="the new code slug (lowercase letters, digits, hyphens)"'
-run = "cargo run --quiet -p dorc-loom -- scaffold {{ usage.slug }}"
-
-[tasks."loom:vars"]
-description = "Print each case's named template-variable series and current rendered values, driven from the same render an edit compiles against. `--all` lists the full typed-payload inventory; bare is `--used` (only variables a rendered section actually consumes). Bare case list takes the whole corpus. Inside a case, the replay-line spelling is `dorc-loom --this vars`, which names no slug and so survives a rename."
-dir = "spike"
-raw = true
-usage = '''
-flag "--all" help="list every variable in the payload, not only ones a rendered section consumes"
-arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"
-'''
-run = "cargo run --quiet -p dorc-loom -- vars {% if usage.all %}--all{% endif %} {{ usage.cases | join(sep=' ') }}"
-
-[tasks."loom:add-register"]
-description = "Mint a code's `help` register (HelpRegister::Unwritten) so the ordinary compile/promote loop can fill it — see the command's own printed follow-up. Refuses if the case has an unpromoted prose edit or the register already exists."
-dir = "spike"
-raw = true
-usage = '''
-arg "case" help="the defining case: a bare slug, a filename, or a path"
-arg "register" help="the register to add; only `help` exists today"
-'''
-run = "cargo run --quiet -p dorc-loom -- add-register {{ usage.case }} {{ usage.register }}"
-
-[tasks."loom:sections"]
-description = "Census/affordance/debug surface: for every replay of a case, print each editable section's key and its ordered Text|Variable fragment series (names + current rendered values), alongside the computed (immutable) spans around it — `dorc-loom sections`, read-only. Bare case list takes the whole corpus."
-dir = "spike"
-raw = true
-usage = 'arg "[cases]" var=#true help="case paths scoping the run; bare takes the whole corpus"'
-run = "cargo run --quiet -p dorc-loom -- sections {{ usage.cases | join(sep=' ') }}"
-
-[tasks."loom:keys"]
-description = "Print the closed frontmatter-key vocabulary a case may declare, and which gate reads each key — including which of `code:` and `arrangement:` a case wants. Reads no case; the discoverable half of the refusal both runners raise for a key nothing reads."
-raw = true
-dir = "spike"
-run = "cargo run --quiet -p dorc-loom -- keys"
 
 [tasks."lint:docids"]
 description = "READ-ONLY: every docID cross-reference in the corpus, the steering files and the root docs, checked against the document it names. Silent when every target resolves. Matches only the three unambiguous spellings — letter-bearing IDs (28Q, 30Ba), explicit notes//plans/ paths, and colon-slug forms (271:rul-sin-ordering) — because a bare three-digit run is a line number far more often than a docID. Quarantined targets resolve by FILENAME alone; nothing there is opened. Writes nothing, ever."

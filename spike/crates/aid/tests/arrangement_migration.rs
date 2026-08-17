@@ -10,7 +10,7 @@
 //! A committed row's own BYTES are pinned here only while nothing else pins them. A row rendered by
 //! a committed transcript already has the sanctioned pin — which re-blesses freely with the prose
 //! (`27V:rul-output-form-unwelded`) — so a literal here would be a second, invisible owner, and a
-//! prose edit through `mise run loom:compile`/`loom:promote` would redden a crate its author never
+//! prose edit through `dorc-loom compile`/`promote` would redden a crate its author never
 //! opens. What is left is the genuinely FACELESS residue: rows no case owns and no transcript
 //! renders, whose only net is a literal.
 

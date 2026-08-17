@@ -8,7 +8,7 @@ use crate::{CompilePreview, CompiledFragment, SectionPreview};
 /// bytes; only this shows which of the author's words the compiler took as a `{{hole}}`, and under
 /// `282`'s whole-token rule a hole in the wrong place silently changes every OTHER render that
 /// binds the same variable. The concrete re-render is deliberately absent: it was the bulk of the
-/// output and duplicated, worse, what `mise run loom:promote` word-diffs.
+/// output and duplicated, worse, what `dorc-loom promote` word-diffs.
 #[must_use]
 pub fn render_compile_preview(preview: &CompilePreview) -> String {
     preview

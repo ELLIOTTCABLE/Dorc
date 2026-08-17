@@ -24,7 +24,7 @@ impl DorcSectionEditRefusal {
         match self {
             Self::Unchanged => format!(
                 "no transcript bytes changed. Edit the prose inside {case}, then: \
-                 mise run loom:compile {case}"
+                 dorc-loom compile {case}"
             ),
             Self::UnknownVariable(name) => unknown_value(&name.0, &case),
             Self::Template(refusal) => template_refusal(refusal, &case),
@@ -32,21 +32,21 @@ impl DorcSectionEditRefusal {
             Self::Transport(refusal) => format!(
                 "the edit could not be attributed to one editable region ({refusal:?}). Undo it \
                  and change the words of a single sentence, leaving the surrounding structure \
-                 byte-identical; then: mise run loom:compile {case}"
+                 byte-identical; then: dorc-loom compile {case}"
             ),
             Self::AmbiguousCandidate => format!(
                 "the edit matches more than one editable region, so nothing here can know which \
                  one you meant. Make the change in one region at a time, then: \
-                 mise run loom:compile {case}"
+                 dorc-loom compile {case}"
             ),
             Self::MarkerOutsideEditableSection => format!(
                 "the edit touched bytes the renderer computed — a severity word, a caret frame, a \
                  line break — rather than the prose inside an editable region. Restore those bytes \
-                 in {case} and edit only the sentence text, then: mise run loom:compile {case}"
+                 in {case} and edit only the sentence text, then: dorc-loom compile {case}"
             ),
             Self::CandidateMismatch => format!(
                 "the marker and the edited bytes point at different regions. Put the marker in the \
-                 same sentence you edited, then: mise run loom:compile {case}"
+                 same sentence you edited, then: dorc-loom compile {case}"
             ),
             Self::SplitEditableField(key) => format!(
                 "`{}`'s {} register renders in more than one place here, so no single edit owns \
@@ -57,7 +57,7 @@ impl DorcSectionEditRefusal {
             ),
             Self::ForeignComponent { component, owner } => format!(
                 "`{component}` is authored in {owner} — edit it there; this case only renders it. \
-                 Undo the change here, make it in {owner}, then: mise run loom:compile {owner}"
+                 Undo the change here, make it in {owner}, then: dorc-loom compile {owner}"
             ),
             Self::AddedLine {
                 section,
@@ -75,26 +75,26 @@ impl DorcApplyRefusal {
         let case = case.display().to_string();
         match self {
             Self::MissingCode(slug) => format!(
-                "no catalog row for `{slug}` yet. Run: mise run loom:promote {case}, then rebuild \
+                "no catalog row for `{slug}` yet. Run: dorc-loom promote {case}, then rebuild \
                  — the build reads the committed lock, so a freshly promoted row needs one"
             ),
             Self::MissingArrangement(slug) => format!(
-                "no registry row for chrome `{slug}` yet. Run: mise run loom:promote {case}, then \
+                "no registry row for chrome `{slug}` yet. Run: dorc-loom promote {case}, then \
                  rebuild"
             ),
             Self::IllegalField(field) => format!(
                 "`{field}` is not an editable register. Edit the diagnostic's message or help \
-                 prose in {case} instead, then: mise run loom:compile {case}"
+                 prose in {case} instead, then: dorc-loom compile {case}"
             ),
             Self::ArrangementTakesNoVariables(slug) => format!(
                 "chrome `{slug}` is a whole page: its words are laid out by their author and it \
                  interpolates nothing, so a {{{{name}}}} marker has no meaning there. Remove the \
-                 marker from {case}, then: mise run loom:compile {case}"
+                 marker from {case}, then: dorc-loom compile {case}"
             ),
             Self::ArrangementIsSequenceStructured(slug) => format!(
                 "chrome `{slug}` stores a sequence of words that a render interleaves values \
                  between, so it cannot be edited through the whole-page path. Edit it from a \
-                 transcript that renders the line itself, then: mise run loom:compile {case}"
+                 transcript that renders the line itself, then: dorc-loom compile {case}"
             ),
             Self::ArrangementEntryEditedTwice {
                 slug,
@@ -104,7 +104,7 @@ impl DorcApplyRefusal {
                 "chrome `{slug}` is rendered twice in this transcript and the two copies were \
                  edited differently ({} vs {}). They are ONE registry row, so applying both would \
                  silently keep the last. Make both copies say the same thing in {case}, then: \
-                 mise run loom:compile {case}",
+                 dorc-loom compile {case}",
                 quoted(first),
                 quoted(second)
             ),
@@ -149,7 +149,7 @@ fn value_sequence_changed(
         "chrome `{slug}`: some of what this line prints is a value the renderer computed — a \
          count, a name, a severity — not words anyone authored, and the edit moved, dropped or \
          duplicated one (stamped {}, edited to {}). Rephrase around each value, leaving it where \
-         the render put it: {words}. Then: mise run loom:compile {case}",
+         the render put it: {words}. Then: dorc-loom compile {case}",
         quoted(expected),
         quoted(found)
     )
@@ -166,7 +166,7 @@ fn added_line(section: &crate::SectionKey, laid_out: usize, edited: usize, case:
          so the text takes more lines is fine — but a blank line starts something new, and this \
          version stores one paragraph per register. If you meant a help line, mint the register \
          and edit its placeholder: dorc-loom add-register {case} help. If you meant a paragraph, \
-         join it back into one and re-run: mise run loom:compile {case}",
+         join it back into one and re-run: dorc-loom compile {case}",
         section.field
     )
 }
@@ -176,7 +176,7 @@ fn template_refusal(refusal: &TemplateRefusal, case: &str) -> String {
         TemplateRefusal::Malformed => format!(
             "a double-brace marker in the edit is malformed. A marker is exactly {{{{name}}}} — \
              two braces each side, no spaces inside. Fix it in {case}, then: \
-             mise run loom:compile {case}"
+             dorc-loom compile {case}"
         ),
         TemplateRefusal::UnknownParam(name) => unknown_value(name, case),
     }

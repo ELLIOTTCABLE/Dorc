@@ -245,7 +245,7 @@ fn moving_a_value_refuses_by_name() {
                 "the refusal must name the computed values AND the editable words: {explained}"
             );
             assert!(
-                explained.contains("mise run loom:compile crates/aid/tests/x.loom"),
+                explained.contains("dorc-loom compile crates/aid/tests/x.loom"),
                 "every refusal ends in its next command: {explained}"
             );
         }

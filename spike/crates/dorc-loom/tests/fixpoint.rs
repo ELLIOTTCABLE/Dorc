@@ -575,7 +575,7 @@ fn assert_metadata_agrees(slug: &str, key: &str, case: &Case, committed: &str) {
         declared, committed,
         "`{slug}`: the case's `{key}:` and the committed entry disagree.\n  case:      \
          {declared:?}\n  committed: {committed:?}\nOmit `{key}:` from the case to keep the \
-         committed words, or run `mise run loom:compile crates/aid/tests/{slug}.loom && \
-         mise run loom:promote crates/aid/tests/{slug}.loom` to publish the new ones."
+         committed words, or run `dorc-loom compile crates/aid/tests/{slug}.loom && \
+         dorc-loom promote crates/aid/tests/{slug}.loom` to publish the new ones."
     );
 }

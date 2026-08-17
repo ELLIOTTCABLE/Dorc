@@ -1246,7 +1246,7 @@ fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, S
     writeln!(
         out,
         "sections of the published baseline — the render your edit is attributed against; what \
-         you have typed on disk is what `mise run loom:compile` reads"
+         you have typed on disk is what `dorc-loom compile` reads"
     )
     .map_err(|error| error.to_string())?;
     writeln!(out, "{VALUE_SYNTAX_NOTE}").map_err(|error| error.to_string())?;

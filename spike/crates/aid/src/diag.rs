@@ -4582,7 +4582,7 @@ mod tests {
     /// One register's committed words, asked of the registry rather than copied out of it.
     ///
     /// Every catalog register below is case-owned, so its bytes are edited through the loom flow
-    /// (`mise run loom:compile`/`loom:promote`) by someone who will not be reading this file. A
+    /// (`dorc-loom compile`/`promote`) by someone who will not be reading this file. A
     /// literal here turns their prose edit into a `dorc-aid` unit failure with no pointer to the
     /// flow that caused it, which is exactly what `render-form-unwelded` forbids; asking the
     /// registry keeps the structural claim (this seat renders THAT register) and drops the byte
