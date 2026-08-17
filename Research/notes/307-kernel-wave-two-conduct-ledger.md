@@ -38,6 +38,33 @@
 
 ## §2 — Lanes (dispatch state; newest first)
 
+- **the implementation push (2026-08-17, six lanes, all folded)** — the adjudication
+  sitting's dispatch (`§ack-implementation-open`) executed end to end.
+  - **spine-reification** — landed per `plans/309`, in two stages: the census (`30E`),
+    then a fresh-executor red window. Plan and whylog are PROJECTIONS of `core::spine`;
+    the durable census reads 4 durable / 0 excluded / 11 transitory species; the
+    fixture-only v1 grammar is DELETED; baseline and durable bytes came out
+    byte-identical. The harness reaped the census builder's worktree at
+    checkpoint-return — recovered via conductor-created LOCKED seats, now the standing
+    praxis for multi-checkpoint lanes.
+  - **custody-closures** — three phases plus a fold-rebase. The composite repair
+    (a cross-custody reach suspends, ALWAYS) · the definition-grade re-key, with
+    `DefinitionProvenance` deleted · `verdict_cell_or_auto` separated out as
+    `effect::Measurement` · oracle-side `.` sourcing admitted as CONTRACT, with
+    custody-as-containment in `core::custody`. Work order `30G` (né `30C` — a conductor
+    brief-gap). TWO bugs test-caught: a bare verdict on a failed load, and a POSIX-path
+    normalizer the WSL leg caught. The `.`-resolves-against-the-sourcing-file deviation
+    from `rul-unsure-falls-toward-sh-parity` is conductor-ENDORSED on determinism
+    grounds and VETO-ELIGIBLE. Book-side un-walling STOPPED on the unruled artifact
+    question; `forfeit-book-sourcing-walls` rewritten to that truth.
+  - **tooling-pair** — `doctor:unused` built; the 147s wall root-caused to
+    `SortedSet::union`'s O(k·m); the 318× fix measured and PARKED by the human.
+  - **small-debts** — `lint:docids` riding `check`; the detached units under fmt.
+  - **the blind idiot-review** — `30H`. Headline: the reporting layer rotted while the
+    machinery stayed sound.
+  - **binder-hygiene** — all seven repairs; `promote` built; pairing recorded on
+    read-harness-body evidence; the engine tier confirmed green; the derivation digest
+    ships `UNRECORDED` honestly.
 - **lane-garden-cleanup — PARTIALLY FOLDED 2026-08-16 @ `3770f169`; remainder
   pending** (Opus janitor; killed mid-lane by the human at the cache-relocation
   retraction; its completed products folded after conductor verification): the
@@ -872,6 +899,27 @@ only with the specific work-product it wrongly blocked in hand.
   already-minted prevention ("a brief that mandates comment content adjusts the
   budget in the same breath") now applied to every wave-two brief; builders
   decomposing the count (mandated vs plain) is endorsed as the standing answer.
+- **the harness worktree reaper, at CHECKPOINT-RETURN** (the auto-reaper row above,
+  recurring on a longer lane) · the census builder's worktree was gone when the
+  conductor came back to it mid-lane, stranding a checkpointed multi-stage lane ·
+  **mixed** — the same hostile-to-multi-turn-lanes behavior, now met with a working
+  countermeasure rather than a rescue · action: PRAXIS — conductor-created, LOCKED
+  seats for any lane that will return through a checkpoint; the census/window split
+  ran on them.
+- **the auto-mode classifier, twice more** (`git branch main <hash>` again, and
+  `git checkout <commit> -- <path>`) · both blocked · **mixed** — the protective
+  posture is defensible and the designed fallback (exact command to the human)
+  worked both times · action: rides the human handoff; and the binder builder's
+  REFUSAL to route around its block is ENDORSED AS THE MODEL — a blocked act is
+  reported upward, never re-spelled to slip past the check.
+- **directory-scoped `CLAUDE.md` auto-injection vs a blind protocol** · a Read of
+  any file under a governed directory injects that directory's steering law, so the
+  blind reviewer received root `AGENTS.md`, root `CLAUDE.md`, `spike/CLAUDE.md` and
+  `minispec/CLAUDE.md` without opening one of them — an agent cannot honor
+  "don't read the docs" by its own discipline (`30H` #1) · **harness-tier** — not
+  our instrument, and no in-repo fix exists · action: HUMAN QUEUE; until it is
+  disabled at the harness level, a blind run's findings are grounded in code and
+  tool output only, and must say so.
 
 ## §4 — Skill evolution: `verified-core-discipline` [TYPED, arc-open]
 
@@ -997,6 +1045,10 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   (b) claim-verification legwork batches to ONE Opus unit held until every
   model's concrete claims are in; the conductor hand-verifies only scope-driving
   claims. Both encoded as prax rows in `308` §5.
+- 2026-08-17, the implementation push's IN-FLIGHT adjudications: every ruling the
+  push made in-window is recorded in its §2 row, and every one of them is
+  CONDUCTOR-tier and VETO-ELIGIBLE. No typed human reaction exists for any of
+  them; silence is not ack.
 
 ## §ack-veto-review — the human-items sitting's typed reactions (2026-08-16; sibling-conductor session)
 

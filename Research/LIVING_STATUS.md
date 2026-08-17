@@ -14,7 +14,41 @@
 
 ---
 
-## CURRENT STATE (2026-08-17 — IMPLEMENTATION RE-OPENED; three lanes in flight)
+## CURRENT STATE (2026-08-17 late — THE IMPLEMENTATION PUSH IS FOLDED)
+
+**Everything below this block is FOLDED at the arc's final tip.** Six lanes landed and
+folded in one day — spine-reification (`plans/309`; census `30E`, lane report `30F`) ·
+custody-closures (work order `30G`) · tooling-pair · small-debts · the blind
+idiot-review (`30H`) · binder-hygiene — with `307` §2's implementation-push row carrying
+every lane's account and every in-window adjudication. Those adjudications are all
+CONDUCTOR-tier and VETO-ELIGIBLE; none is typed-acked.
+
+**THE HUMAN QUEUE** (nothing here is dispatchable without the human):
+
+1. **The `-D`/tag handoff** — the classifier-blocked git acts, handed over as exact
+   commands: `git tag -d r30-custody-prerebase-safety`, the dead-branch `-D` set, and
+   the still-owed mainline restore `git branch main b1bdc9c5`.
+2. **The book-side un-walling artifact ruling** — the question that STOPPED that half of
+   the custody lane (`30G` §8; `FORFEITS:forfeit-book-sourcing-walls` is rewritten to
+   the as-built truth meanwhile).
+3. **The `.`-resolution sh-parity veto item** — `.` resolves against the SOURCING FILE,
+   a conductor-endorsed deviation from `rul-unsure-falls-toward-sh-parity` taken on
+   determinism grounds. Veto-eligible.
+4. **The parked union perf fix** — `SortedSet::union`'s O(k·m), root cause of the ~147s
+   suite tail; the 318× fix is measured and PARKED by the human's own call.
+5. **The prose queue** — unchanged.
+6. **The blind review's human-tier items** (`30H`) — #1 harness-level blindness
+   (directory-scoped `CLAUDE.md` auto-injection defeats a blind protocol from outside
+   the repo's reach) · #2 the `mise tasks` UX (a flat wall with no entry point) · and
+   the tiering posture question the review raises: which badges belong behind opt-in
+   lanes versus the gates people actually run.
+7. **Three docID cite mismatches** — the bare `23I` cites in `23O` (the file is
+   `23Ia`/`23Ib`; typo or shorthand?) and the `16X`/`177` quarantine-cite mismatches.
+   The lint passes over all three, so each needs an eye, not a fix.
+8. **The stale `Research/notes/quarantine-DO-NOT-READ/` mention in `spike/CLAUDE.md`** —
+   quarantine-adjacent, so the edit is the human's.
+
+## STATE 2026-08-17 (implementation re-opened; three lanes in flight; superseded above)
 
 **The adjudication sitting [TYPED 2026-08-17; full record `307:§ack-implementation-open`]
 closed the human-gated board**: `rul-emission-custody-composite` ruled a MISTAKE
