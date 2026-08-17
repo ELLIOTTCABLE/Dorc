@@ -169,6 +169,60 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
     report
 }
 
+/// Record the render-time decisions the audit found hiding (`30E` §3), onto the decision plane.
+///
+/// Three of the five audited decisions are made INSIDE the render, where only a diagnostic stands
+/// between them and the structured plane — and each is license-relevant. `dec-pinned-definitions`
+/// decides which body a guard invokes and under what name, where a misalignment swaps WHOSE
+/// judgment executes (pope-sin tier, `271:rul-sin-ordering`). `dec-render-refusal` is a leaf the
+/// disposition layer LICENSED that the span render refuses, so the record and the artifact disagree
+/// by design. `dec-omit-neutralisation` is the wrong-yes fence of
+/// `erasure-demands-a-proof-and-a-rendered-death`, evaluated at render time.
+///
+/// They are computed HERE from the render's own seats — `Plan::pinned_definitions` and
+/// `Plan::refused_render_steps` — rather than re-derived, so the record cannot drift from what the
+/// artifact does. RESIDUE, stated where it bites (`churn-avoidance-disclosure`): the render still
+/// computes them for itself rather than reading them back, so this makes the decisions VISIBLE and
+/// diffable without yet making the render a pure consumer. Closing that is the arrangement-home
+/// round's, and `render_decisions_agree_with_the_render` is what holds the two together meanwhile.
+pub fn record_render_decisions(
+    spine: &mut Spine,
+    plan: &Plan,
+    src: &str,
+    ast: &dorc_syntax::ast::Ast,
+) {
+    use dorc_core::spine::{RefusalCause, RenderDecision, SpineRenderDecision};
+
+    let pinned = plan.pinned_definitions(src, ast);
+    for step in &plan.steps {
+        if let Some(invoked) = pinned.invoked(step.ast) {
+            spine.push_render_decision(SpineRenderDecision {
+                site: Some(dorc_core::SiteId::leaf(step.leaf)),
+                decision: RenderDecision::PinnedBinding {
+                    invoked: invoked.to_owned(),
+                },
+                grade: None,
+            });
+        }
+    }
+    for (leaf, _verb) in plan.refused_render_leaves(ast) {
+        spine.push_render_decision(SpineRenderDecision {
+            site: Some(dorc_core::SiteId::leaf(leaf)),
+            decision: RenderDecision::Refused {
+                cause: RefusalCause::Heredoc,
+            },
+            grade: None,
+        });
+    }
+    for (leaf, neutralised) in plan.omit_neutralisations(ast) {
+        spine.push_render_decision(SpineRenderDecision {
+            site: Some(dorc_core::SiteId::leaf(leaf)),
+            decision: RenderDecision::OmitNeutralised { neutralised },
+            grade: None,
+        });
+    }
+}
+
 /// Read the whole-artifact emission regime off the Spine (`dec-defensive-emission`, hoisted out of
 /// the driver's post-construction field poke — `30E` §3).
 fn projected_defensive_emission(spine: &Spine) -> bool {
@@ -211,6 +265,89 @@ mod tests {
             PlanAuthority::authorise(some),
             Authorised::Admitted(7, _)
         ));
+    }
+
+    #[test]
+    fn the_audited_render_decisions_reach_the_decision_plane_site_keyed() {
+        // `30E` §3: before the reification these three were made inside the render with only a
+        // diagnostic between them and the structured plane, which is exactly why the smoke-diff
+        // exists. This pins that a diff over the decision plane now SEES them, keyed by site — a
+        // guard's binding beside the guard, an omit's neutralisation answer beside the omit.
+        use dorc_core::spine::RenderDecision;
+        use dorc_core::{
+            AstId, ByVouch, EntityRef, FactKey, Interner, KindId, LeafId, OpaqueToken,
+        };
+        use dorc_core::{Rung, SelectorId, SourceFileId, Verdict};
+
+        let mut interner = Interner::default();
+        let fact = FactKey::cell(
+            KindId(interner.intern("package")),
+            EntityRef::Operand(OpaqueToken(interner.intern("curl"))),
+            SelectorId(interner.intern("installed")),
+        );
+        let vouch = ByVouch::vouched(
+            crate::VerdictVouch::new(
+                "apt_get__is_converged".to_owned(),
+                "apt_get__is_converged() { return 0; }".to_owned(),
+                "apt_get__is_converged install curl".to_owned(),
+                "package".to_owned(),
+                Vec::new(),
+                dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
+            ),
+            Rung::Both,
+        );
+        let src = "apt-get install curl\nsystemctl reload nginx\n";
+        let ast = dorc_syntax::parse(src).value;
+        let plan = Plan {
+            steps: vec![
+                Step {
+                    leaf: LeafId(0),
+                    ast: AstId(0),
+                    sh: "apt-get install curl".to_owned(),
+                    disposition: Disposition::Guard(
+                        crate::GuardLicense::mint(fact, vouch, Verdict::Converged)
+                            .expect("a converged probe verdict mints a guard"),
+                    ),
+                },
+                Step {
+                    leaf: LeafId(1),
+                    ast: AstId(1),
+                    sh: "systemctl reload nginx".to_owned(),
+                    // A GUARD controller runs its check and MAY run the original, so its decision is
+                    // not reproduced by a `:` body — the omit stays verbatim, the run-it direction.
+                    disposition: Disposition::Omit {
+                        controller: AstId(0),
+                    },
+                },
+            ],
+            survival_report: SurvivalReport::default(),
+            defensive_emission: false,
+        };
+
+        let mut spine = Spine::new();
+        record_render_decisions(&mut spine, &plan, src, &ast);
+
+        let binding = spine.render_decisions().iter().find(|record| {
+            matches!(record.decision, RenderDecision::PinnedBinding { .. })
+                && record.site == Some(dorc_core::SiteId::leaf(LeafId(0)))
+        });
+        assert!(
+            binding.is_some(),
+            "the guard's binding — whose judgment executes — must be readable beside its site"
+        );
+        assert_eq!(
+            spine
+                .render_decisions()
+                .iter()
+                .filter_map(|record| match record.decision {
+                    RenderDecision::OmitNeutralised { neutralised } =>
+                        Some((record.site, neutralised)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>(),
+            vec![(Some(dorc_core::SiteId::leaf(LeafId(1))), false)],
+            "the omit's wrong-yes fence answers `false` behind a guard, and says so on the record"
+        );
     }
 
     #[test]

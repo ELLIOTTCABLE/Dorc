@@ -1635,6 +1635,9 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
     // assembly, and it exists at all only because the intake handed this run an authority.
     let plan = dorc_plan::project_plan(&spine, &authority);
+    // The three render-time decisions `30E` §3 audited out of hiding now land in the decision plane,
+    // computed from the render's own seats.
+    dorc_plan::spine::record_render_decisions(&mut spine, &plan, &book_src, &parsed.value);
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `unresolvable-no-probe` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each

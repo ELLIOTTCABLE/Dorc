@@ -4708,6 +4708,36 @@ impl Plan {
             .collect()
     }
 
+    /// [`refused_render_steps`](Self::refused_render_steps) by leaf, for the decision-plane record
+    /// (`30E` §3 `dec-render-refusal`). Same seat, so a record and an artifact cannot disagree.
+    #[must_use]
+    pub fn refused_render_leaves(&self, ast: &Ast) -> Vec<(LeafId, &'static str)> {
+        self.refused_render_steps(ast)
+            .into_iter()
+            .map(|(step, verb)| (step.leaf, verb))
+            .collect()
+    }
+
+    /// Every `Omit` leaf with the render's neutralisation answer (`30E` §3
+    /// `dec-omit-neutralisation`): `false` ⇒ the controller was not neutralised, so the body renders
+    /// VERBATIM and runs behind a live guard. That is the wrong-yes fence
+    /// (`erasure-demands-a-proof-and-a-rendered-death`) as a readable decision rather than a
+    /// render-time branch nothing records.
+    #[must_use]
+    pub fn omit_neutralisations(&self, ast: &Ast) -> Vec<(LeafId, bool)> {
+        let by_ast: BTreeMap<AstId, &Disposition> =
+            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+        self.steps
+            .iter()
+            .filter_map(|step| match &step.disposition {
+                Disposition::Omit { controller } => {
+                    Some((step.leaf, is_neutralised(&by_ast, ast, *controller, 0)))
+                }
+                Disposition::Run | Disposition::Replace(..) | Disposition::Guard(_) => None,
+            })
+            .collect()
+    }
+
     /// The leaves the disposition layer LICENSED to elide that the leaf-exact render must REFUSE,
     /// each with its disposition-aware verb. A GUARD refusal says "guard" (X-heredoc's
     /// expected-diagnostics pins it), a Replace/Omit refusal says "elide".

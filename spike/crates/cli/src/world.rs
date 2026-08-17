@@ -479,6 +479,7 @@ impl WhyWorld {
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
         let plan = dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake());
+        dorc_plan::spine::record_render_decisions(&mut spine, &plan, book_src, &parsed.value);
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
             .into_iter()
