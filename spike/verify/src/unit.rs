@@ -13,6 +13,10 @@
 //! * `theorem <Slug>_nonvacuous : …` — the anti-vacuity probe: one positive witness whose
 //!   precondition is genuinely satisfied. Without it a green battery proves nothing, because
 //!   a vacuously-true implication is green forever.
+//! * `theorem <Slug>_specializes_at_… (h : <Slug>) : …` — the COUPLING: the law's own `Prop`
+//!   applied at the battery's ground type. Without it the battery is a set of facts that sit
+//!   BESIDE the law rather than instantiating it, and a statement edited out from under its own
+//!   witnesses stays green ([`COUPLING_INFIX`]).
 //! * `example`/`#guard` battery entries — the boundary cases (empty · singleton · ⊤) and the
 //!   worked examples that are the review surface for non-proof-literate readers.
 //!
@@ -27,6 +31,15 @@ use std::path::{Path, PathBuf};
 /// The line a stub unit carries so the binder — and the next model to open the file — can tell
 /// "no law here yet" from "a law that fails its checks".
 pub const UNWRITTEN_MARKER: &str = "UNWRITTEN";
+
+/// What a coupling theorem's name carries after the slug: `<Slug>_specializes_at_u32`.
+///
+/// Matched as a PREFIX rather than as the whole spelling, because the ground type is the unit's
+/// choice — `u32` today, whatever the derived definitions are instantiated at tomorrow — while
+/// the coupling itself is the contract. Name-level detection, the same tier every other unit
+/// check reads at; what the theorem PROVES is Lean's business, and `elaborated` is where that
+/// answer comes from.
+pub const COUPLING_INFIX: &str = "_specializes_at";
 
 /// The advisory byte-length budget for a unit file (`301` §1 byte-budget tripwire).
 ///
@@ -71,6 +84,8 @@ pub struct Unit {
     pub statement: Statement,
     /// Whether the anti-vacuity probe is declared.
     pub has_nonvacuity_probe: bool,
+    /// Whether the coupling theorem tying the battery to the law's own `Prop` is declared.
+    pub has_coupling: bool,
     /// How many battery entries (`example` / `#guard`) the unit carries.
     pub battery_entries: usize,
     /// Whether the file carries a proof hole.
@@ -159,6 +174,7 @@ pub fn read(path: &Path) -> Result<Unit, String> {
             Statement::Missing
         },
         has_nonvacuity_probe: text.contains(&format!("theorem {slug}_nonvacuous")),
+        has_coupling: text.contains(&format!("theorem {slug}{COUPLING_INFIX}")),
         battery_entries: text
             .lines()
             .filter(|line| {

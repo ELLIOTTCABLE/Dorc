@@ -145,9 +145,11 @@ fn proved(row: &LawRow, repo_root: &Path) -> Evidence {
     Evidence::Earned
 }
 
-/// `interrogated` needs BOTH halves and neither substitutes for the other: a green battery
-/// with no positive witness is green vacuously (a false precondition proves any implication),
-/// and a witness that never runs proves nothing at all.
+/// `interrogated` needs all THREE halves and none substitutes for another: a green battery with
+/// no positive witness is green vacuously (a false precondition proves any implication), a
+/// witness that never runs proves nothing at all, and a battery with no coupling proves facts
+/// that merely SIT BESIDE the law — every one of them survives a statement edited out from
+/// under them (`30B:fnd-battery-never-instantiates-its-own-law`).
 fn interrogated(unit: &Unit, lean_built: bool) -> Evidence {
     if unit.battery_entries == 0 {
         return Evidence::Absent("no instance battery".to_owned());
@@ -156,6 +158,14 @@ fn interrogated(unit: &Unit, lean_built: bool) -> Evidence {
         return Evidence::Absent(format!(
             "no anti-vacuity probe (`theorem {}_nonvacuous`)",
             unit.slug
+        ));
+    }
+    if !unit.has_coupling {
+        return Evidence::Absent(format!(
+            "no coupling to the law (`theorem {}{}…`), so the battery is beside the statement \
+             rather than an instance of it",
+            unit.slug,
+            unit::COUPLING_INFIX
         ));
     }
     if lean_built {
