@@ -618,7 +618,7 @@ dir = "spike"
 run = "cargo run -q -p dorc-verify -- check"
 
 [tasks."verify:report"]
-description = "Print the generated coverage report and REFUSE if minispec/REPORT.md is stale. Cheap tier by default; `-- --with-lean` and `-- --with-kani` recompute those engines' badges (Linux/WSL, slow), `-- --write` republishes the committed copy."
+description = "Print the generated coverage report and REFUSE if minispec/REPORT.md is stale — the verdict leads, on stderr, and names which cells moved. Cheap tier by default; `-- --with-lean` and `-- --with-kani` recompute those engines' badges (Linux/WSL, slow) and compare against the catalogue instead, `-- --write` republishes the committed copy. `--with-kani` here drives only the harnesses the catalogue PAIRS, not the whole battery — `verify:kani` is the lane for that. `--write --with-lean` is refused: the committed copy is the cheap render, because the cheap gate is what keeps it honest."
 raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- report"
