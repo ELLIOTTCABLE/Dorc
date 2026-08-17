@@ -37,19 +37,20 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
   socially (published claims calibrate against whichever floor ships). REVISIT:
   the mini-model's formalization; first field evidence of plural-idiom books.
-- **forfeit-helper-plurality-withhold** — RULE (re-measured at the emission stage's
-  fold, 2026-08-16; the blanket plural withhold is GONE — resolution is sh's
-  last-wins, the license is `307:rul-emission-custody-composite`): what stays
-  withheld is three shapes — (a) plural-with-differing-bytes resolving OUTSIDE the
-  voucher's custody (`emit30-cross-custody-plural-helper-suspends`); (b) the book
-  reaching into a vouched composition, both arms — NEWLY withheld, a hazard closed
-  rather than value lost (these silently shipped before); (c) the unenumerable
-  tier, ruled-permanent, reachable only through a literal `alias` in a shipped
-  body. FORFEITS: cross-custody plural helpers, until closures exist. CAPTURE:
-  `28Q` §9 `pin-oracle-side-sourcing-amendment` + `pin-closure-membership-and-diamond`
-  — one `.` line converting the helper into the author's own closure lifts (a).
-  BACK-OUT: low (the suspension is additive against the composite). REVISIT: the
-  closure-custody stage's policy rulings.
+- **forfeit-helper-plurality-withhold** — RULE (re-measured 2026-08-17 under
+  `rul-vouch-reaches-own-custody-only`, which de-licensed the singular cross-custody
+  reach the retired composite allowed): resolution stays sh's last-wins; what stays
+  withheld is three shapes — (a) ANY resolved reach landing outside the voucher's own
+  custody, plurality irrelevant (`emit30-cross-custody-plural-helper-suspends`, and
+  since the de-licensing both `pin28-helper-package-entrypoints-*` cells); (b) the book
+  reaching into a vouched composition, both arms — a hazard closed rather than value
+  lost (these silently shipped before); (c) the unenumerable tier, ruled-permanent,
+  reachable only through a literal `alias` in a shipped body. FORFEITS: every
+  cross-file helper reach spelled by CO-LOADING alone — the whole two-file package
+  shape, which the corpus previously licensed. CAPTURE: the sourcing amendment
+  (`28Q` §9 `pin-oracle-side-sourcing-amendment`) — one `.` line takes custody of the
+  helpers file and (a) lifts; co-loading is ingestion and is never meant to. BACK-OUT:
+  low (the suspension is additive). REVISIT: with the sourcing build.
 - **forfeit-divergence-collapse-to-unknown** — RULE (`28Q` §3, the human-carved v0
   floor): conditional/looped lifecycle events land unknown ⇒ guard/run. FORFEITS:
   every availability-derived license below an `if`-guarded creator — and defensive
