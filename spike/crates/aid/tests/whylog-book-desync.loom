@@ -1,24 +1,28 @@
 ---
 code: whylog-book-desync
 when-fires: `dorc why --last` found a durable whose recorded book/oracle content digest (or its stored decision digest) diverges from the current on-disk inputs, so a deterministic replay would NOT reconstruct the recorded run. cli --last reader (the `22F` book-identity/desync guard, cer-2-shaped).
-why: determinism-is-the-replay-license: the durable stores digests, not book/oracle CONTENT, and re-reads them from disk; a changed input breaks the replay tie, so the recorded run is never silently re-derived against the wrong source. Pull-surface: Warning, Floor::None. `{which}` = the diverged input (`book`, an oracle path, or `decision-digest`). Since 28F rul-drift-replay-d1 the `book` case is the ENTRY to a DEGRADED receipt rather than a dead end — the durable-derived header, oracle inventory and disposition tally still render, with the drift stated in them and every source-keyed section suppressed; the other two still refuse outright. Remediation register (help) wanted: the book/oracle changed since that run — re-run the live analysis for a current answer.
+why: determinism-is-the-replay-license: the durable stores digests, not book/oracle CONTENT, and re-reads them from disk; a changed input breaks the replay tie, so the recorded run is never silently re-derived against the wrong source. Pull-surface: Warning, Floor::None. `{which}` = the diverged input (`book`, an oracle path, or `decision-digest`). Since 28F rul-drift-replay-d1 the `book` case is the ENTRY to a DEGRADED receipt rather than a dead end — the durable-derived header, oracle inventory and disposition tally still render, with the drift stated in them and every source-keyed section suppressed; the other two still refuse outright, which is the arm this case renders.
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-book-desync && mise run loom:promote -- whylog-book-desync`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all whylog-book-desync` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh
 printf '%s\n' current
 
+-- firewall.oracle.sh --
+# dorc-lang/v0.2
+ufw__is_converged() { return 2; }
+
 -- .whylog --
-dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
-invoc mode=plan @@dorc@@
-book digest=0000000000000000 path=book.sh @@dorc@@
-digest decision= @@dorc@@
+dorc-whylog/2 nonce=dorc attempt=0 host=fixture target=width-one generation=width-one mode=plan started=- @@dorc@@
+book digest=e5a207d8443d44a429be5085905d672befa99164df3e1421dcb24067755887af path=book.sh @@dorc@@
+oracle ordinal=0 digest=0000000000000000 path=firewall.oracle.sh @@dorc@@
+digest decision=0000000000000000 @@dorc@@
 results bytes=0 @@dorc@@
-dorc-whylog-end/1 @@dorc@@
+dorc-whylog-end/2 @@dorc@@
 
 -- replay --
 $ dorc why --last --whylog=.whylog
 whylog: warning[whylog-book-desync]: the saved why-log no longer matches what is
-on disk: `book` has changed since it was written
+on disk: `oracle firewall.oracle.sh` has changed since it was written
    = help:  replaying old decisions against changed files would mislead; re-run
             `dorc why` live for a current answer

@@ -7,7 +7,7 @@ owns:
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-corrupt && mise run loom:promote -- whylog-corrupt`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all whylog-corrupt` lists this case's values; type {{name}} to insert or move one.
 ---
 -- .whylog --
-dorc-whylog/1 nonce=dorc attempt=0 host=fixture @@dorc@@
+dorc-whylog/2 nonce=dorc attempt=0 host=fixture target=width-one generation=width-one mode=plan started=- @@dorc@@
 
 -- replay --
 $ dorc why --last --whylog=.whylog

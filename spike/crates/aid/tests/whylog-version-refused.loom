@@ -5,12 +5,11 @@ why: whylog-write-only-replay + versioned-additive format: a durable is version-
 edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- whylog-version-refused && mise run loom:promote -- whylog-version-refused`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all whylog-version-refused` lists this case's values; type {{name}} to insert or move one.
 ---
 -- .whylog --
-dorc-whylog/2 nonce=dorc attempt=0 host=fixture @@dorc@@
-dorc-whylog-end/1 @@dorc@@
+dorc-whylog/3 nonce=dorc attempt=0 host=fixture @@dorc@@
 
 -- replay --
 $ dorc why --last --whylog=.whylog
 whylog: warning[whylog-version-refused]: the saved why-log uses format
-`dorc-whylog/2`, which this version of dorc cannot read back
+`dorc-whylog/3`, which this version of dorc cannot read back
    = help:  ask the question live instead: `dorc why` (without `--last`)
             re-analyzes the current book directly

@@ -709,16 +709,10 @@ impl DorcConsumer {
                 return None;
             }
             let book = materialized_source(case, context, "book.sh");
-            let inspected = dorc_plan::whylog::inspect(
-                raw,
-                why.whylog,
-                book.as_deref()
-                    .map(|book| dorc_plan::whylog::WhylogCurrent {
-                        book: Some(book),
-                        oracles: &[],
-                    }),
-            );
-            let diag = inspected.diagnostics.into_iter().next()?;
+            let inspected = dorc_plan::whylog::inspect(raw, why.whylog, book.as_deref(), |path| {
+                materialized_source(case, context, path)
+            });
+            let diag = inspected.into_iter().next()?;
             let parts = self.staged_cli_parts("whylog", &diag);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
@@ -1001,15 +995,12 @@ impl DorcConsumer {
             .iter()
             .find(|section| section.name() == "book.sh")
             .map(errorloom::Section::content);
-        dorc_plan::whylog::inspect(
-            raw,
-            why.whylog,
-            book.map(|book| dorc_plan::whylog::WhylogCurrent {
-                book: Some(book),
-                oracles: &[],
-            }),
-        )
-        .diagnostics
+        dorc_plan::whylog::inspect(raw, why.whylog, book, |path| {
+            case.sections()
+                .iter()
+                .find(|section| section.name() == path)
+                .map(|section| section.content().to_owned())
+        })
         .into_iter()
         .next()
         .ok_or_else(|| "whylog replay produced no diagnostic".to_owned())
@@ -1768,15 +1759,9 @@ impl DorcConsumer {
             return Err(format!("unsupported replay {command:?}"));
         }
         let book = section_source(case, "book.sh");
-        let diag = dorc_plan::whylog::inspect(
-            raw,
-            why.whylog,
-            book.map(|book| dorc_plan::whylog::WhylogCurrent {
-                book: Some(book),
-                oracles: &[],
-            }),
-        )
-        .diagnostics
+        let diag = dorc_plan::whylog::inspect(raw, why.whylog, book, |path| {
+            section_source(case, path).map(str::to_owned)
+        })
         .into_iter()
         .next()
         .ok_or_else(|| format!("unsupported replay {command:?}"))?;

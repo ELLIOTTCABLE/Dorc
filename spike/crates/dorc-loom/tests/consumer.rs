@@ -152,15 +152,12 @@ fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
             .iter()
             .find(|section| section.name() == "book.sh")
             .map(errorloom::Section::content);
-        let diag = dorc_plan::whylog::inspect(
-            raw,
-            ".whylog",
-            book.map(|book| dorc_plan::whylog::WhylogCurrent {
-                book: Some(book),
-                oracles: &[],
-            }),
-        )
-        .diagnostics
+        let diag = dorc_plan::whylog::inspect(raw, ".whylog", book, |path| {
+            case.sections()
+                .iter()
+                .find(|section| section.name() == path)
+                .map(|section| section.content().to_owned())
+        })
         .into_iter()
         .next()
         .expect("fixture produces one whylog diagnostic");
