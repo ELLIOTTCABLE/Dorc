@@ -908,7 +908,7 @@ fn classes_of(book_src: &str) -> Vec<dorc_analysis::effect::SkipClass> {
         &mut interner,
         &mut arena,
         &mut std::collections::BTreeMap::new(),
-        &mut BTreeSet::new(),
+        &mut std::collections::BTreeMap::new(),
         &mut dorc_analysis::certify::CertifierTrip::default(),
         live,
     );

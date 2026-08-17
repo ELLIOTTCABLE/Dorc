@@ -69,7 +69,7 @@ fn classes_of(oracles: &[&str], book_src: &str) -> Vec<SkipClass> {
         &mut interner,
         &mut arena,
         &mut BTreeMap::new(),
-        &mut BTreeSet::new(),
+        &mut BTreeMap::new(),
         &mut dorc_analysis::certify::CertifierTrip::default(),
         live,
     );

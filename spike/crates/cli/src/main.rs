@@ -976,7 +976,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let mut degrades = BTreeMap::new();
     // `26H` §3.5 — sites whose establish came from the VERDICT lane, so their probe ships the
     // verdict body. Site-keyed: nothing about the FACT distinguishes an authored verdict cell.
-    let mut verdict_lane = BTreeSet::new();
+    let mut verdict_lane = BTreeMap::new();
     let frozen = FrozenModel {
         cfg: &cfg.value,
         value: &value,
@@ -1096,7 +1096,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
                      p: Symbol,
                      _a: &[Symbol]|
      -> Option<dorc_plan::ShippedCheck> {
-        if !verdict_lane.contains(&node) {
+        if !verdict_lane.contains_key(&node) {
             return None;
         }
         ship_verdict_body(
@@ -5729,7 +5729,7 @@ apt_get__predict() {
             &mut interner,
             &mut arena,
             &mut BTreeMap::new(),
-            &mut BTreeSet::new(),
+            &mut BTreeMap::new(),
             &mut dorc_analysis::certify::CertifierTrip::default(),
         );
         let probe = {

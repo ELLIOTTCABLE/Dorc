@@ -337,10 +337,13 @@ prompt you write:
   topology, influence-free); rc reaches gen/kill only through minted,
   Spine-recorded per-site decisions — decide run/elide/guard, then walk the
   predict for gens/kills. That effective flow binds any implementation; the
-  algorithm may vary. As-built interim: `verdict_cell_or_auto` shares one slot
-  between the verdict-record's subject and the site's establish (its name pinned
-  by `307:rul-primacy-moves-the-body-never-the-cell`); the sharing separates at
-  the definition-keying repair / influence work. Ack-scope: `307:§ack-veto-review`.
+  algorithm may vary. As-built: the two species are SEPARATE VALUES at the site
+  seat — `analysis::effect::command_effect` returns the establish vector and
+  mints an `effect::Measurement` beside it, and `verdict_lane` carries one per
+  verdict-lane site. `Measurement::of_the_sites_establishes` is the ONE crossing,
+  and it exists because `307:rul-primacy-moves-the-body-never-the-cell` RULES the
+  two to name one cell — never because they are the same thing. Nothing derives
+  topology back out of a measurement. Ack-scope: `307:§ack-veto-review`.
 
 ## Invariants — host evidence & controller attribution
 

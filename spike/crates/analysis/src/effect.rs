@@ -233,6 +233,55 @@ fn finalize_cmdsub_tops(
 /// `site-unresolvable` note can name a CAUSE and not just a site. Nothing branches on it —
 /// the `Opaque` it accompanies is minted identically whether the slot is read or dropped, and
 /// every caller that does not want it passes a throwaway.
+/// WHAT a verdict-lane site's shipped body MEASURES — the cells whose convergence its rc asserts.
+///
+/// A separate species from the site's ESTABLISH, and separately represented because they are
+/// (`spike/CLAUDE.md rul-rc-reaches-genkill-only-through-decisions`, human-typed): a verdict rc is a
+/// MEASUREMENT and carries probe-invocation influence per se, while gen/kill is description-derived
+/// TOPOLOGY and is influence-free. Merging them breaks influence-threading for reasons independent
+/// of any question about which body ships, which is why the shared slot this replaces was a NAMED
+/// INTERIM (`307:§ack-veto-review`) rather than a tidy-up.
+///
+/// The two coincide by RULING, not by identity: `307:rul-primacy-moves-the-body-never-the-cell` says
+/// primacy moves the measuring BODY and never the CELL, so the cell a shipped verdict body measures
+/// is the site's own establish — the predict author's declared coordinate where one resolves. That
+/// ruling is spelled ONCE, at [`Measurement::of_the_sites_establishes`], and it is the only way a
+/// measurement is ever minted. Nothing derives topology back out of one: the effect vector is
+/// returned separately and this value never enters it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Measurement {
+    subjects: Vec<FactKey>,
+}
+
+impl Measurement {
+    /// THE crossing (`307:rul-primacy-moves-the-body-never-the-cell`): the shipped body's rc asserts
+    /// the convergence of the cells this site establishes. Every subject a measurement can have
+    /// comes from here, so a reader looking for "where does an rc acquire a cell" finds one seat.
+    ///
+    /// Plural because a verb may declare several cells (`us-effectmap`) and the probe record is
+    /// SITE-keyed (`inv-site-keyed-results`), so one rc already answers for all of them. Making
+    /// that explicit changes no behaviour; it discloses an arity the shared slot left implicit.
+    #[must_use]
+    pub fn of_the_sites_establishes(effects: &[CommandEffect]) -> Self {
+        Self {
+            subjects: effects
+                .iter()
+                .filter_map(|effect| match effect {
+                    CommandEffect::Establishes(fact) => Some(*fact),
+                    _ => None,
+                })
+                .collect(),
+        }
+    }
+
+    /// The cells this rc speaks about — for a consumer recording the measurement, never for one
+    /// deriving topology (that is the effect vector's job, and the two must not be swapped).
+    #[must_use]
+    pub fn subjects(&self) -> &[FactKey] {
+        &self.subjects
+    }
+}
+
 /// The VERDICT-LANE decision at a concrete-argv site whose predict declared no marked effect: what
 /// cell does a verdict-bearing provider's site establish? Three answers, in decreasing precision.
 ///
@@ -257,11 +306,13 @@ fn finalize_cmdsub_tops(
 /// the MAPPED provider name so `apt-get`/`apt_get` share one cell (the same normalization
 /// `build_vouches` and the probe funcname use).
 ///
-/// `verdict_keyed` is set on rows 1 and 2 — the site's establish came from the verdict lane, so its
+/// `measured` is set on rows 1 and 2 — the site's establish came from the verdict lane, so its
 /// probe must ship the VERDICT body (there is no predict to answer this cell). That signal is
 /// site-keyed and threaded out rather than re-derived downstream from the fact's KIND: a row-1 cell
 /// is an ordinary authored kind, indistinguishable from a predict-minted one, so a kind test would
 /// silently route it to the predict lane and the site would run (`26H` §3.5's likeliest breakage).
+/// It carries its SUBJECTS rather than being a bare flag, so the rc species and the gen/kill species
+/// stay distinct values ([`Measurement`]).
 ///
 /// The definition arrives RESOLVED ([`live_verdict`]), because verdict primacy asks two questions of
 /// one body — does it vouch this argv, and which cell does it key — and asking the frame twice is how
@@ -279,17 +330,18 @@ fn verdict_cell_or_auto(
     arg_refs: &[&str],
     interner: &mut Interner,
     backings: &mut BTreeMap<FactKey, FactBacking>,
-    verdict_keyed: &mut bool,
+    measured: &mut Option<Measurement>,
 ) -> Vec<CommandEffect> {
     let Some(verdict) = verdict else {
         return vec![CommandEffect::Opaque];
     };
-    *verdict_keyed = true;
     let Some(coord) = dorc_oracle::verdict::evaluate_verdict_coord(verdict, arg_refs) else {
         let pname = interner.resolve(provider.0).to_owned();
-        return vec![CommandEffect::Establishes(dorc_core::auto_fact(
+        let effects = vec![CommandEffect::Establishes(dorc_core::auto_fact(
             interner, &pname,
         ))];
+        *measured = Some(Measurement::of_the_sites_establishes(&effects));
+        return effects;
     };
     let kind = KindId(interner.intern(&coord.kind));
     let entity = match &coord.entity {
@@ -304,7 +356,9 @@ fn verdict_cell_or_auto(
         .map(|s| SelectorId(interner.intern(s)))
         .collect();
     record_backing(backings, fact, provider, &observed);
-    vec![CommandEffect::Establishes(fact)]
+    let effects = vec![CommandEffect::Establishes(fact)];
+    *measured = Some(Measurement::of_the_sites_establishes(&effects));
+    effects
 }
 
 /// The site's frame, plus the munged family segment (`apt_get` for a book word `apt-get`), derived
@@ -446,7 +500,7 @@ pub fn command_effect(
     site: Option<DiagSite>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrade: &mut Option<TopReason>,
-    verdict_keyed: &mut bool,
+    measured: &mut Option<Measurement>,
     node: CfgNodeId,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
@@ -555,7 +609,7 @@ pub fn command_effect(
             &arg_refs,
             interner,
             backings,
-            verdict_keyed,
+            measured,
         );
     };
     let effects = declared_cell_effects(
@@ -567,7 +621,7 @@ pub fn command_effect(
     // own. Prediction never licenses elision. `effects` is NOT re-keyed — the topology stays the
     // predict author's, which is why no downstream invalidation moves.
     if verdict_owns_the_measurement(verdict_here, &effects, &arg_refs) {
-        *verdict_keyed = true;
+        *measured = Some(Measurement::of_the_sites_establishes(&effects));
     }
     effects
 }
@@ -719,7 +773,10 @@ fn member_family(
             // A member's degrade never reaches a surface: the whole family collapses to the
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
-            &mut false,
+            // The member lane ships PREDICT bodies and elides on their measurements
+            // (`FORFEITS:forfeit-member-lanes-predict-measured`), so no verdict measurement is
+            // minted here and there is none to discard.
+            &mut None,
             id,
             live_defs,
         )
@@ -1143,7 +1200,7 @@ fn node_effects(
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
-    verdict_lane: &mut BTreeSet<CfgNodeId>,
+    verdict_lane: &mut BTreeMap<CfgNodeId, Measurement>,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
@@ -1170,7 +1227,7 @@ fn node_effects(
             let argv = value.argv_values(id);
             let before = cmdsub_tops.len();
             let mut degrade = None;
-            let mut keyed_by_verdict = false;
+            let mut keyed_by_verdict: Option<Measurement> = None;
             let effect = command_effect(
                 idx,
                 checks,
@@ -1189,8 +1246,8 @@ fn node_effects(
             if let Some(reason) = degrade {
                 degrades.insert(id, reason);
             }
-            if keyed_by_verdict {
-                verdict_lane.insert(id);
+            if let Some(measurement) = keyed_by_verdict {
+                verdict_lane.insert(id, measurement);
             }
             narrow_cmdsub_spans_to_operand(&mut cmdsub_tops[before..], cfg, ast, id);
             effect
@@ -1527,13 +1584,13 @@ fn peeled_node_effects(
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
-    verdict_lane: &mut BTreeSet<CfgNodeId>,
+    verdict_lane: &mut BTreeMap<CfgNodeId, Measurement>,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
     let diag_site = DiagSite::of(ast.node(cfg.node(id).ast).span, id);
     let mut local: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
     let mut degrade = None;
-    let mut keyed_by_verdict = false;
+    let mut keyed_by_verdict: Option<Measurement> = None;
     let raw = command_effect(
         idx,
         checks,
@@ -1552,8 +1609,8 @@ fn peeled_node_effects(
     if let Some(reason) = degrade {
         degrades.insert(id, reason);
     }
-    if keyed_by_verdict {
-        verdict_lane.insert(id);
+    if let Some(measurement) = keyed_by_verdict {
+        verdict_lane.insert(id, measurement);
     }
     for (fact, backing) in local {
         backings.insert(fact.in_context(site.context), backing);
@@ -1598,7 +1655,7 @@ fn resolve_node_effects(
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
-    verdict_lane: &mut BTreeSet<CfgNodeId>,
+    verdict_lane: &mut BTreeMap<CfgNodeId, Measurement>,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
     Vec<Option<Vec<FactKey>>>,
@@ -1726,7 +1783,7 @@ pub fn classify(
         interner,
         arena,
         &mut BTreeMap::new(),
-        &mut BTreeSet::new(),
+        &mut BTreeMap::new(),
         &mut CertifierTrip::default(),
         crate::funcenv::LiveDefinitions::unsolved(),
     )
@@ -1791,7 +1848,7 @@ pub fn classify_with_why_diags(
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
     degrades: &mut BTreeMap<CfgNodeId, TopReason>,
-    verdict_lane: &mut BTreeSet<CfgNodeId>,
+    verdict_lane: &mut BTreeMap<CfgNodeId, Measurement>,
     trip: &mut CertifierTrip,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
@@ -2509,7 +2566,7 @@ command__predict() {
                 &mut i,
                 &mut arena,
                 &mut BTreeMap::new(),
-                &mut BTreeSet::new(),
+                &mut BTreeMap::new(),
                 &mut CertifierTrip::default(),
                 crate::funcenv::LiveDefinitions::unsolved(),
             );
@@ -2547,7 +2604,7 @@ command__predict() {
                 i,
                 &mut arena,
                 &mut BTreeMap::new(),
-                &mut BTreeSet::new(),
+                &mut BTreeMap::new(),
                 &mut CertifierTrip::default(),
                 crate::funcenv::LiveDefinitions::unsolved(),
             )
@@ -2924,7 +2981,7 @@ command__predict() {
                 None,
                 &mut backings,
                 &mut None,
-                &mut false,
+                &mut None,
                 node,
                 crate::funcenv::LiveDefinitions::unsolved(),
             )
@@ -2995,6 +3052,9 @@ command__predict() {
         cells: Vec<CommandEffect>,
         /// Did this site's establish come from the VERDICT lane (authored cell or auto-cell)?
         keyed: bool,
+        /// ...and WHAT the shipped verdict body measures — the rc species, kept beside the
+        /// topology rather than derived from it ([`Measurement`]).
+        measured: Option<Measurement>,
     }
 
     /// A whole book's worth of [`LaneSite`]s, sharing ONE interner.
@@ -3029,7 +3089,7 @@ command__predict() {
         let mut sites = Vec::new();
         for node in nodes {
             let argv = value.argv_values(node);
-            let mut keyed = false;
+            let mut measured = None;
             let cells = command_effect(
                 &KindIndex::default(),
                 &[],
@@ -3041,11 +3101,15 @@ command__predict() {
                 None,
                 &mut backings,
                 &mut None,
-                &mut keyed,
+                &mut measured,
                 node,
                 crate::funcenv::LiveDefinitions::unsolved(),
             );
-            sites.push(LaneSite { cells, keyed });
+            sites.push(LaneSite {
+                keyed: measured.is_some(),
+                measured,
+                cells,
+            });
         }
         LaneRun {
             sites,
@@ -3087,6 +3151,38 @@ command__predict() {
         assert!(
             run.sites[0].keyed,
             "the auto-cell site ships its verdict body ⇒ the lane"
+        );
+    }
+
+    /// THE SEPARATION (`307:§ack-veto-review`'s named interim, discharged): a verdict-lane site
+    /// carries its MEASUREMENT as a value beside its topology, and that measurement names the cells
+    /// its rc speaks about.
+    ///
+    /// Two properties, and the second is the one worth a test. (1) The subjects are exactly the
+    /// site's establishes — `307:rul-primacy-moves-the-body-never-the-cell`, which is why this is a
+    /// representational split and not a behaviour change. (2) A site with NO measurement is not
+    /// merely a site with a false flag: `Opaque` carries no `Measurement` at all, so a consumer
+    /// asking what an rc measured cannot be handed a topology to mistake for one.
+    #[test]
+    fn a_verdict_lane_measurement_names_the_cells_its_rc_speaks_about() {
+        let markless = "foobar__is_converged() { foobar status -- \"$2\" ;}\n";
+        let mut run = verdict_lane_effect("foobar sync\n", Some(markless));
+        let expect = dorc_core::auto_fact(&mut run.interner, "foobar");
+        let measured = run.sites[0]
+            .measured
+            .as_ref()
+            .expect("a verdict-lane site measures something");
+        assert_eq!(
+            measured.subjects(),
+            [expect],
+            "the rc asserts the convergence of the cell the site establishes, and of nothing else"
+        );
+
+        let bare = verdict_lane_effect("foobar sync\n", None);
+        assert!(
+            bare.sites[0].measured.is_none(),
+            "an Opaque site measures NOTHING — the absence is a value, not a flag a reader could \
+             fill in from the effect vector"
         );
     }
 
@@ -3176,7 +3272,7 @@ foobar__is_converged() {
         let mut sites = Vec::new();
         for node in nodes {
             let argv = value.argv_values(node);
-            let mut keyed = false;
+            let mut measured = None;
             let cells = command_effect(
                 &idx,
                 &checks,
@@ -3188,11 +3284,15 @@ foobar__is_converged() {
                 None,
                 &mut backings,
                 &mut None,
-                &mut keyed,
+                &mut measured,
                 node,
                 crate::funcenv::LiveDefinitions::unsolved(),
             );
-            sites.push(LaneSite { cells, keyed });
+            sites.push(LaneSite {
+                keyed: measured.is_some(),
+                measured,
+                cells,
+            });
         }
         LaneRun {
             sites,
@@ -3437,7 +3537,7 @@ apt_get__is_converged() {
             None,
             &mut BTreeMap::new(),
             &mut reason,
-            &mut false,
+            &mut None,
             node,
             crate::funcenv::LiveDefinitions::unsolved(),
         );
@@ -4299,7 +4399,7 @@ command__predict() {
             &mut i,
             &mut diags,
             &mut BTreeMap::new(),
-            &mut BTreeSet::new(),
+            &mut BTreeMap::new(),
             crate::funcenv::LiveDefinitions::unsolved(),
         );
         let mut arena = dorc_core::ProvArena::new();

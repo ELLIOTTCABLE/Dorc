@@ -6475,7 +6475,7 @@ apt_get__is_converged() { return 0; }
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
                 &mut BTreeMap::new(),
-                &mut BTreeSet::new(),
+                &mut BTreeMap::new(),
                 &mut dorc_analysis::certify::CertifierTrip::default(),
                 dorc_analysis::funcenv::LiveDefinitions::unsolved(),
             );
@@ -7737,7 +7737,7 @@ apt_get__is_converged() {
             &mut i,
             &mut arena,
             &mut BTreeMap::new(),
-            &mut BTreeSet::new(),
+            &mut BTreeMap::new(),
             &mut dorc_analysis::certify::CertifierTrip::default(),
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );

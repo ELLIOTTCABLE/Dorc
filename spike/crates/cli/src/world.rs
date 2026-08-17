@@ -131,7 +131,7 @@ impl WhyWorld {
         let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
 
         let mut degrades = BTreeMap::new();
-        let mut verdict_lane = BTreeSet::new();
+        let mut verdict_lane = BTreeMap::new();
         let peeled = BTreeMap::new();
         let definitions = definition_table(
             oracle_paths,
@@ -246,7 +246,7 @@ impl WhyWorld {
         };
         let ship_auto = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, _: &[Symbol]| {
             verdict_lane
-                .contains(&node)
+                .contains_key(&node)
                 .then(|| {
                     ship_verdict_body(
                         &source_srcs,

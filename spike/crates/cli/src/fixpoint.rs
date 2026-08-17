@@ -195,7 +195,7 @@ pub fn classify_round(
     interner: &mut Interner,
     arena: &mut ProvArena,
     degrades: &mut BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_oracle::predict::TopReason>,
-    verdict_lane: &mut BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    verdict_lane: &mut BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::Measurement>,
     trip: &mut dorc_analysis::certify::CertifierTrip,
 ) -> ClassifiedRound {
     let (
@@ -338,7 +338,7 @@ pub fn settle_validity_fixpoint(
                 interner,
                 arena,
                 &mut BTreeMap::new(),
-                &mut BTreeSet::new(),
+                &mut BTreeMap::new(),
                 trip,
             );
             let validity = validity_view(&round.classes);
@@ -369,7 +369,7 @@ pub fn settle_validity_fixpoint(
             interner,
             arena,
             &mut BTreeMap::new(),
-            &mut BTreeSet::new(),
+            &mut BTreeMap::new(),
             trip,
         );
     }

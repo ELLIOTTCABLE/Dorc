@@ -84,7 +84,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             i,
             &mut arena,
             &mut std::collections::BTreeMap::new(),
-            &mut BTreeSet::new(),
+            &mut std::collections::BTreeMap::new(),
             &mut dorc_analysis::certify::CertifierTrip::default(),
             ambient,
         );

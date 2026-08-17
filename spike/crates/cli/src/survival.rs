@@ -1368,7 +1368,7 @@ pub fn survival_diagnostics(
     let mut out = wrapped.hints;
 
     let mut degrades = BTreeMap::new();
-    let mut verdict_lane = BTreeSet::new();
+    let mut verdict_lane = BTreeMap::new();
     let (classified, _why, kills, kill_coords, _backings, _narrative, _inval) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
