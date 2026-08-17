@@ -2296,7 +2296,7 @@ fn record_new_arm(
     trip: dorc_analysis::certify::CertifierTrip,
     contested: &dorc_core::ContestedFamilies,
     env: &dorc_analysis::funcenv::FuncEnv,
-    verdict_lane: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    verdict_lane: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::Measurement>,
     spine_leaves: &[(dorc_core::AstId, dorc_core::LeafId)],
     admitted: bool,
 ) {
@@ -2387,7 +2387,7 @@ fn record_new_arm(
         spine.set_classification(SpineSiteClassification {
             site: dorc_core::SiteId::leaf(leaf),
             class: label,
-            verdict_lane: verdict_lane.contains(node),
+            verdict_lane: verdict_lane.contains_key(node),
             invalidator: kills.contains(node),
             cells: dorc_core::spine::Account::capped(cells),
             grade: None,
