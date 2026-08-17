@@ -42,6 +42,7 @@ pub struct WhyWorld {
     interner: Interner,
     arena: ProvArena,
     ast: dorc_syntax::ast::Ast,
+    spine: dorc_plan::Spine,
     plan: dorc_plan::Plan,
     probe: dorc_plan::ProbePlan,
     narrative: Vec<CollapseNarrative>,
@@ -512,6 +513,7 @@ impl WhyWorld {
             interner,
             arena,
             ast: parsed.value,
+            spine,
             plan,
             probe,
             narrative,
@@ -569,6 +571,16 @@ impl WhyWorld {
     #[must_use]
     pub fn plan_ast_and_interner(&self) -> (&dorc_plan::Plan, &dorc_syntax::ast::Ast, &Interner) {
         (&self.plan, &self.ast, &self.interner)
+    }
+
+    /// The Spine this world's decisions live on — everything the plan is a projection OF.
+    ///
+    /// Exposed for the migration smoke-diff (`309` §4), which reads the decision plane DIRECTLY so
+    /// that byte-identity against the frozen baseline proves the reification rather than proving one
+    /// projection agrees with itself. Build-to-kill, like its consumer.
+    #[must_use]
+    pub const fn spine(&self) -> &dorc_plan::Spine {
+        &self.spine
     }
 
     /// Borrow this world as the report context.

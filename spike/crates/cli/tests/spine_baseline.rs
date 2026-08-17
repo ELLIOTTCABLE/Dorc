@@ -196,14 +196,21 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     );
 
     let pinned = plan.pinned_definitions(&world.book, ast);
-    let mut steps: Vec<_> = plan.steps.iter().collect();
-    steps.sort_by_key(|step| (step.leaf.0, step.ast.0));
-    for step in steps {
-        // SITE-granular by construction on both sides of the migration: today a `Step` is
-        // leaf-keyed and the member is absent, so the row spells `-`. When Spine keys by `SiteId`
-        // the member appears HERE, and the known keying change needs no whitelist (`309` §4).
-        let _ = write!(out, "  site {}.- ast={} ", step.leaf.0, step.ast.0);
-        match &step.disposition {
+    // Read the DECISION PLANE, not the projection: byte-identity against the frozen baseline then
+    // proves the reification itself, rather than proving one projection agrees with itself
+    // (`309` §4). The Spine is `SiteId`-keyed, so the member index appears here the moment one
+    // exists — the known keying change needs no whitelist.
+    for record in built.spine().dispositions() {
+        let member = record
+            .site
+            .member
+            .map_or_else(|| "-".to_owned(), |m| m.to_string());
+        let _ = write!(
+            out,
+            "  site {}.{member} ast={} ",
+            record.site.leaf.0, record.ast.0
+        );
+        match &record.decision {
             Disposition::Run => out.push_str("run"),
             Disposition::Replace(license, stand_in) => {
                 let _ = write!(
@@ -227,8 +234,9 @@ fn render_case(out: &mut String, world: &CaseWorld) {
         }
         // The BINDING, beside the decision it belongs to: which body this guard invokes, under what
         // name. `pinned-definitions-are-the-artifact's-binding` is a render-time decision no golden
-        // distinguishes when two definition bodies are byte-identical, which is the seam.
-        if let Some(name) = pinned.invoked(step.ast) {
+        // distinguishes when two definition bodies are byte-identical, which is the seam — and it is
+        // now a Spine record of its own (`30E` §3), so the diff reads it there.
+        if let Some(name) = pinned.invoked(record.ast) {
             let _ = write!(out, " invoked={name}");
         }
         out.push('\n');
