@@ -1,0 +1,184 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# pin30-swapped-entrypoints-source-the-helpers (`28M` §8's COMMISSIONED package shape, the second
+# half) — an admin who wants their own entrypoints over somebody else's helpers gets them, and gets
+# them licensed.
+#
+# The commission asked for BOTH directions. Half one is `pin28-helper-package-entrypoints-lift`: the
+# vendor's package lifts with its cross-file helper closure intact. This is the other one — that the
+# thin entrypoints file is genuinely OPT-OUT-ABLE, so that splitting the package was worth doing.
+#
+# The opt-out spelled here is the bluntest: the vendor's entrypoints file is simply NOT LOADED. The
+# admin wrote their own, which SOURCES the same helpers file, and named only that on the command
+# line. The `.` is what takes custody (`rul-speaker-minting-is-oracle-sourcing-only`), so the
+# admin's vouch may rest on helpers they did not write — because sourcing is the promise that they
+# read them and answer for them.
+#
+# THE CONTRAST THAT MAKES THIS A PAIR. `pin28-helper-package-entrypoints-discarded` writes the
+# replacement entrypoint IN THE BOOK instead, and it DECLINES: a book mints no speaker, not by
+# co-loading and not by sourcing either. The difference between these two cells is where the
+# replacement is written, and that is exactly the line the ruling draws — wanting somebody else's
+# helpers under your own vouch is the act of authoring an oracle, so it is spelled by authoring one.
+#
+# The admin's entrypoint is deliberately NOT the vendor's: it answers only `sync` and declines every
+# other verb, which is the kind of narrowing an admin does when they want less surface than the
+# package offers.
+#
+# `hork` is unmodeled, so it walls; the site below guards rather than elides, which is what puts the
+# admin's definition and its borrowed closure on the apply surface where they can be read.
+hork provision
+wombat sync a.conf
+
+-- admin-entrypoints.oracle.sh --
+# dorc-lang/v0.2
+# THE ADMIN'S OWN ENTRYPOINTS, over the vendor's helpers. The vendor's own entrypoints file exists
+# in the package and is simply not loaded; this file replaces it.
+. ./wombat-helpers.sh
+
+wombat__is_converged() {
+   case "${1-}" in
+   sync) _wombat_same "$2" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- wombat-helpers.sh --
+# dorc-lang/v0.2
+# THE VENDOR'S HELPERS, untouched. Nothing here carries a `__` name, so nothing here is a family
+# member and nothing here collides with what the admin wrote — which is the property that made the
+# package worth splitting in the first place.
+WOMBAT_ROOT=/etc/wombat
+
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+
+-- probe-results.txt --
+# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted.
+site 1 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock for the unmodeled wall command.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock. It answers the probe's `wombat cmp -- …`, reached from the ADMIN's entrypoint through
+# two of the VENDOR's helper hops — the borrowed closure. An unshipped helper at either hop makes
+# this rc 127 and the run-log stays empty. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat cmp -- a.conf /etc/wombat/a.conf
+
+-- replay --
+$ dorc --book=book.sh -o admin-entrypoints.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=955d8f5a9f22b8c344dc0542d9a1d295a579c9aaa7a74756d01984562636db2f sites=1 @@dorc@@\n'
+# site 1: dorc-auto:wombat@converged
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   case "${1-}" in
+   sync) _wombat_same "$2" ;;
+   *) return 2 ;;
+   esac
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   printf '%s\n' "$WOMBAT_ROOT/$1"
+}
+_wombat_same() {
+   wombat cmp -- "$1" "$(_wombat_dest "$1")"
+}
+wombat__is_converged() {
+   case "${1-}" in
+   sync) _wombat_same "$2" ;;
+   *) return 2 ;;
+   esac
+}
+
+#!/bin/sh
+# pin30-swapped-entrypoints-source-the-helpers (`28M` §8's COMMISSIONED package shape, the second
+# half) — an admin who wants their own entrypoints over somebody else's helpers gets them, and gets
+# them licensed.
+#
+# The commission asked for BOTH directions. Half one is `pin28-helper-package-entrypoints-lift`: the
+# vendor's package lifts with its cross-file helper closure intact. This is the other one — that the
+# thin entrypoints file is genuinely OPT-OUT-ABLE, so that splitting the package was worth doing.
+#
+# The opt-out spelled here is the bluntest: the vendor's entrypoints file is simply NOT LOADED. The
+# admin wrote their own, which SOURCES the same helpers file, and named only that on the command
+# line. The `.` is what takes custody (`rul-speaker-minting-is-oracle-sourcing-only`), so the
+# admin's vouch may rest on helpers they did not write — because sourcing is the promise that they
+# read them and answer for them.
+#
+# THE CONTRAST THAT MAKES THIS A PAIR. `pin28-helper-package-entrypoints-discarded` writes the
+# replacement entrypoint IN THE BOOK instead, and it DECLINES: a book mints no speaker, not by
+# co-loading and not by sourcing either. The difference between these two cells is where the
+# replacement is written, and that is exactly the line the ruling draws — wanting somebody else's
+# helpers under your own vouch is the act of authoring an oracle, so it is spelled by authoring one.
+#
+# The admin's entrypoint is deliberately NOT the vendor's: it answers only `sync` and declines every
+# other verb, which is the kind of narrowing an admin does when they want less surface than the
+# package offers.
+#
+# `hork` is unmodeled, so it walls; the site below guards rather than elides, which is what puts the
+# admin's definition and its borrowed closure on the apply surface where they can be read.
+hork provision
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]
