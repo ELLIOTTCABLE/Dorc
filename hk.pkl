@@ -40,6 +40,23 @@ local linters = new Mapping<String, Step> {
         check = "cargo fmt --all --manifest-path spike/Cargo.toml --check"
         fix = "cargo fmt --all --manifest-path spike/Cargo.toml"
     }
+    // The two DETACHED verification units under `spike/verify/` are their own cargo workspaces,
+    // so the workspace-scoped command above cannot reach them — while the glob above happily
+    // matches their files. Editing one drew a green fmt gate over unformatted code, in silence
+    // (found 2026-08-17: the kani unit's `extern crate` block had never been sorted).
+    //
+    // `depends` is load-bearing, not tidiness: each unit `#[path]`-includes the real algebra
+    // sources, so this step and `cargo_fmt` walk a dozen `crates/` files in common. Unsequenced,
+    // fix mode would point two rustfmt processes at one path. The manifest list lives in
+    // `fmt_detached.rs` rather than here because a step body cannot loop.
+    ["cargo_fmt_detached"] {
+        // Named, not `spike/verify/**`: the `verify` crate beside them IS a workspace member.
+        glob = List("spike/verify/kani/**/*.rs", "spike/verify/aeneas/**/*.rs")
+        stage = List("spike/verify/kani/**/*.rs", "spike/verify/aeneas/**/*.rs")
+        depends = List("cargo_fmt")
+        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- fmt-detached --check"
+        fix = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- fmt-detached"
+    }
     ["cargo_clippy"] {
         glob = "spike/**/*.rs"
         // The spike's warnings-are-failures gate lives HERE (pre-commit), never in

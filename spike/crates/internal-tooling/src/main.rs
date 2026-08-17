@@ -10,6 +10,7 @@ use std::process::ExitCode;
 mod bless;
 mod coverage;
 mod doctor;
+mod fmt_detached;
 mod hook_selftest;
 mod livetest;
 mod posix_script;
@@ -29,6 +30,7 @@ fn main() -> ExitCode {
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
         Some("preflight") => preflight::run(args.get(1..).unwrap_or_default()),
+        Some("fmt-detached") => fmt_detached::run(args.get(1..).unwrap_or_default()),
         Some("doctor") => doctor::run(args.get(1..).unwrap_or_default()),
         // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this
         // shares its one renderer rather than re-deriving the screen.
@@ -43,7 +45,7 @@ fn main() -> ExitCode {
             );
             eprintln!(
                 "tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines, \
-                 preflight, doctor, xfail-census"
+                 preflight, doctor, xfail-census, fmt-detached"
             );
             ExitCode::from(2)
         }
