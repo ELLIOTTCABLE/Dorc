@@ -48,7 +48,9 @@ fn section_text(preview: &SectionPreview) -> String {
         // lines to say nothing this view is for. The word-diff carries the prose.
         lines.push(String::from("  no variables"));
     }
-    // Legal (omission removes a variable) and silent, so it is disclosed rather than refused.
+    // Legal (omission removes a variable) and silent, so it is disclosed rather than refused. The
+    // narrower "and its value is still sitting there as text" reading is a WARNING on stderr, and
+    // saying it twice in two registers would be worse than saying it once.
     if !preview.dropped().is_empty() {
         let names: Vec<String> = preview
             .dropped()
@@ -56,10 +58,8 @@ fn section_text(preview: &SectionPreview) -> String {
             .map(|name| format!("{{{{{}}}}}", name.0))
             .collect();
         lines.push(format!(
-            "  DROPPED VARIABLES: {} — the value now appears only as literal text, frozen at what \
-             this render happened to say. Re-type it as {} to keep it interpolated; leave it out \
-             only if you meant to remove it.",
-            names.join(", "),
+            "  DROPPED VARIABLES: {} — this edit no longer interpolates them; re-type the marker \
+             if that was not deliberate.",
             names.join(", "),
         ));
     }

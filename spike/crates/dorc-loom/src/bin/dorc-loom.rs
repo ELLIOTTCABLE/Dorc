@@ -1168,10 +1168,32 @@ fn emit_previews(
         consumer
             .apply_preview(&preview)
             .map_err(|error| format!("{}: {}", path.display(), error.explain(path)))?;
+        warn_each(&baked_value_warnings(&preview));
         compiled.insert(index, preview);
         writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
     }
     Ok(compiled)
+}
+
+/// One warning per variable this edit removed while leaving its rendered value behind as text
+/// (`30C` item 2). Never a refusal: an author may genuinely mean to freeze a value, and no evidence
+/// available here can tell the two apart.
+fn baked_value_warnings(preview: &dorc_loom::CompilePreview) -> Vec<String> {
+    preview
+        .sections()
+        .iter()
+        .flat_map(|section| {
+            section.baked().iter().map(|name| {
+                format!(
+                    "`{{{{{0}}}}}` looks baked in: this edit removed the variable and its rendered \
+                     value is still there as literal text, frozen at whatever this render happened \
+                     to say. Type `{{{{{0}}}}}` where the value should go to keep it a variable; \
+                     leave it as text only if you meant to.",
+                    name.0
+                )
+            })
+        })
+        .collect()
 }
 
 fn receipt_store() -> Result<FsReceiptStore, String> {

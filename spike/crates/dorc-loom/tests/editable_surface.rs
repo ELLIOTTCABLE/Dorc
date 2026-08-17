@@ -324,9 +324,40 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
     assert_eq!(dropped, vec![String::from("flag")], "{preview:?}");
     let rendered = dorc_loom::render_compile_preview(&preview);
     assert!(
-        rendered.contains("DROPPED VARIABLES: {{flag}}") && rendered.contains("literal text"),
-        "the compile view must say so in full: {rendered}"
+        rendered.contains("DROPPED VARIABLES: {{flag}}"),
+        "the compile view must say so: {rendered}"
     );
+    // Replacing the value with a DIFFERENT one is not a bake-in: `--wat` is gone from the section,
+    // so there is nothing frozen for a warning to point at.
+    assert!(
+        preview
+            .sections()
+            .iter()
+            .all(|section| section.baked().is_empty()),
+        "{preview:?}"
+    );
+}
+
+/// The bake-in the human asked to be warned about (`30C` item 2), and its exact evidence: the
+/// variable is gone AND its rendered bytes are still sitting in the section as text.
+///
+/// Stripping the backticks around `--wat` destroys the anchors the transport aligns a variable by,
+/// so the only interpretation left removes the occurrence — while the value the author retyped
+/// stays put. That is the shape a plain reword can reach by accident, which is why it is disclosed.
+#[test]
+fn a_value_retyped_where_its_variable_stood_is_flagged_as_baked_in() {
+    let (_, _, baseline, transcript) = driven(include_str!(
+        "../../aid/tests/cli-unknown-flag-did-you-mean.loom"
+    ));
+    let edited = transcript.replace("`--wat`", "--wat");
+    assert_ne!(edited, transcript, "the fixture must carry the anchors");
+    let preview = dorc_loom::compile_preview(&baseline, &edited).expect("the removal interprets");
+    let baked: Vec<String> = preview
+        .sections()
+        .iter()
+        .flat_map(|section| section.baked().iter().map(|name| name.0.clone()))
+        .collect();
+    assert_eq!(baked, vec![String::from("flag")], "{preview:?}");
 }
 
 /// One component, one home, per EDIT — not only per declaration. Eleven invocation-error cases

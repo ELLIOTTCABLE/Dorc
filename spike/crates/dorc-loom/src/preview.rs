@@ -14,6 +14,7 @@ pub struct SectionPreview {
     pub(crate) compiled: CompiledSection,
     pub(crate) used_bindings: Vec<(TemplateVariableName, String)>,
     pub(crate) dropped: Vec<TemplateVariableName>,
+    pub(crate) baked: Vec<TemplateVariableName>,
 }
 
 impl SectionPreview {
@@ -43,6 +44,52 @@ impl SectionPreview {
     #[must_use]
     pub fn dropped(&self) -> &[TemplateVariableName] {
         &self.dropped
+    }
+
+    /// The dropped variables whose rendered value is STILL THERE, as literal text.
+    ///
+    /// The evidenced half of [`Self::dropped`], and the only half that can be warned about honestly
+    /// (`30C` item 2): a variable removed with its value gone is an ordinary removal, but a variable
+    /// removed while its exact rendered bytes sit in the section's new literal text is a world the
+    /// author probably froze by accident. Never a refusal — the author may genuinely mean it, and
+    /// nothing here can tell.
+    ///
+    /// Exact and anchored like the re-holer it guards (`282:rul-rehole-deliberately-stupid`): the
+    /// value matches byte-for-byte or not at all, and clears [`BAKED_VALUE_FLOOR`] first.
+    #[must_use]
+    pub fn baked(&self) -> &[TemplateVariableName] {
+        &self.baked
+    }
+}
+
+/// The shortest rendered value whose reappearance in literal text counts as evidence.
+///
+/// Below it, ordinary prose collides by accident — a dropped `{{count}}` rendering `1` would flag
+/// every sentence carrying a digit — and a warning that fires on nothing is one people learn to
+/// skip. Conservative by choice and pinned by test, as `282:rul-rehole-deliberately-stupid` leaves
+/// the exact threshold to the builder.
+const BAKED_VALUE_FLOOR: usize = 4;
+
+/// Whether a rendered value is distinctive enough for an exact match to mean anything.
+fn clears_the_floor(value: &str) -> bool {
+    value.chars().count() >= BAKED_VALUE_FLOOR && value.chars().any(char::is_alphanumeric)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clears_the_floor;
+
+    /// Both halves of the floor earn their keep, and the wordless case is the one a length test
+    /// alone would let through: `----` and `  · ` are long enough and match ordinary punctuation
+    /// runs everywhere.
+    #[test]
+    fn only_a_long_enough_value_carrying_a_word_is_evidence() {
+        for distinctive in ["--wat", "nginx", "apt-get", "operand 3", "0x2a"] {
+            assert!(clears_the_floor(distinctive), "{distinctive}");
+        }
+        for noise in ["", "1", "-f", "  ", "----", "…", "()"] {
+            assert!(!clears_the_floor(noise), "{noise}");
+        }
     }
 }
 
@@ -87,11 +134,13 @@ pub fn compile_preview(
                 .map(|name| (name.clone(), compiled.bindings()[name].clone()))
                 .collect();
             let dropped = dropped_variables(baseline, edit.section(), &used_bindings);
+            let baked = baked_variables(&dropped, &compiled);
             SectionPreview {
                 section: edit.section().clone(),
                 compiled,
                 used_bindings,
-                dropped,
+                dropped: dropped.into_iter().map(|(name, _)| name).collect(),
+                baked,
             }
         })
         .collect();
@@ -113,8 +162,8 @@ fn dropped_variables(
     baseline: &DorcEditableBaseline,
     section: &SectionKey,
     used: &[(TemplateVariableName, String)],
-) -> Vec<TemplateVariableName> {
-    let mut dropped = Vec::new();
+) -> Vec<(TemplateVariableName, String)> {
+    let mut dropped: Vec<(TemplateVariableName, String)> = Vec::new();
     for component in baseline.render().components() {
         let RenderComponent::EditableSection(stamped) = component else {
             continue;
@@ -123,16 +172,41 @@ fn dropped_variables(
             continue;
         }
         for fragment in stamped.fragments() {
-            let EditableFragment::Variable { id, .. } = fragment else {
+            let EditableFragment::Variable { id, rendered } = fragment else {
                 continue;
             };
             let name = &id.name;
-            if !used.iter().any(|(kept, _)| kept == name) && !dropped.contains(name) {
-                dropped.push(name.clone());
+            if !used.iter().any(|(kept, _)| kept == name)
+                && !dropped.iter().any(|(gone, _)| gone == name)
+            {
+                dropped.push((name.clone(), rendered.clone()));
             }
         }
     }
     dropped
+}
+
+/// The dropped variables whose rendered value survives in the edit's own literal text.
+///
+/// Read off the COMPILED fragments, so a value still carried by a surviving variable is not
+/// mistaken for text somebody typed.
+fn baked_variables(
+    dropped: &[(TemplateVariableName, String)],
+    compiled: &CompiledSection,
+) -> Vec<TemplateVariableName> {
+    let literal: String = compiled
+        .fragments()
+        .iter()
+        .filter_map(|fragment| match fragment {
+            CompiledFragment::Text(text) => Some(text.as_str()),
+            CompiledFragment::Variable(_) => None,
+        })
+        .collect();
+    dropped
+        .iter()
+        .filter(|(_, rendered)| clears_the_floor(rendered) && literal.contains(rendered.as_str()))
+        .map(|(name, _)| name.clone())
+        .collect()
 }
 
 fn component_text(
