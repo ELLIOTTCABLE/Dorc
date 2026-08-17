@@ -1242,6 +1242,15 @@ pub enum VouchedCompositionReason {
     /// engineer never made — however many declarations there were, and whatever load order did with
     /// them (`28K` §6 — load order is not an adjudicator of authorship).
     ResolvedOutsideCustody,
+    /// The voucher's own custody declares the name more than once, with DIFFERING bytes. Which one
+    /// a shell binds turns on how a file's own declarations interleave with the ones its `.` lines
+    /// pull in, which a flat load-order vector cannot express — so the composition suspends rather
+    /// than resting a licence on an order the engine cannot promise is sh's.
+    ContestedWithinCustody,
+    /// The voucher's file `.`-sources something the engine could not load as dorc-lang oracle code.
+    /// The environment its body would run in is not reconstructible, so nothing about that
+    /// environment may be vouched for.
+    UnresolvedLoad,
     /// The body reaches a call the engine cannot enumerate — an in-process definition vector, which
     /// can bind or invoke a name no walk sees — so its composition cannot be closed at all. The
     /// permanent bottom rung (`28R:rul-instantiation-hash-dedup` tier 3), never scaffolding.
@@ -4132,6 +4141,12 @@ fn vouched_composition_text(
         }
         VouchedCompositionReason::ResolvedOutsideCustody => {
             "vouched-composition-not-present-resolved-outside-custody"
+        }
+        VouchedCompositionReason::ContestedWithinCustody => {
+            "vouched-composition-not-present-contested-within-custody"
+        }
+        VouchedCompositionReason::UnresolvedLoad => {
+            "vouched-composition-not-present-unresolved-load"
         }
         VouchedCompositionReason::UnenumerableCall => {
             "vouched-composition-not-present-unenumerable-call"

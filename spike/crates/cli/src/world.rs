@@ -168,10 +168,21 @@ impl WhyWorld {
         // One non-role-declaration index per unit, shared by the ship seams and the vouch lift. The
         // book is the LAST source here too (`one-definition-table-two-drivers`), so the why driver's
         // custody predicate sees the same census the run's does.
-        let helpers = dorc_oracle::closure::HelperIndex::build(
-            &source_refs,
-            source_refs.len().checked_sub(1),
-        );
+        // The include-tree, derived from the same vectors by the same rule the binary uses, so the
+        // why driver's custody predicate answers over the run's own closures rather than a
+        // singleton world that would explain suspensions the run never made.
+        let source_paths: Vec<String> = oracle_paths
+            .iter()
+            .cloned()
+            .chain(std::iter::once(filename.to_owned()))
+            .collect();
+        let book_index = source_refs.len().checked_sub(1);
+        let include_tree = crate::sourcing::include_tree(&source_paths, &source_refs, book_index);
+        let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
+            .with_include_tree(
+                dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
+                include_tree.unresolved,
+            );
         let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
             .iter()
             .map(|src| {

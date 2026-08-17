@@ -25,12 +25,13 @@
 //! would actually run — an engine that answered differently would ship a body no execution binds.
 //! What the engine refuses is not the resolution but the LICENSE over a composition its voucher
 //! never wrote: the vouch suspends whenever the resolved definition sits outside the voucher's own
-//! custody, singular reaches included. Naming several files on one command line is INGESTION and
-//! composes no custody, so there is no load-order arrangement of strangers' files that lets one of
-//! them serve another's vouch. `28M` §7's helpers-file + thin-entrypoints package shape is licensed
-//! by the entrypoints file SOURCING its helpers — the `.` is the utterance that takes custody, and
-//! nothing else does. Suspension withholds the pin, which withholds the vouch and the ship, which
-//! runs the site — the safe direction, and attributed.
+//! CUSTODY — its file plus everything that file's `.` lines pull in, transitively
+//! (`core::CustodyClosures`). Naming several files on one command line is INGESTION and composes no
+//! custody, so there is no load-order arrangement of strangers' files that lets one of them serve
+//! another's vouch. `28M` §7's helpers-file + thin-entrypoints package shape is licensed by the
+//! entrypoints file SOURCING its helpers — the `.` is the utterance that takes custody, and nothing
+//! else does. Suspension withholds the pin, which withholds the vouch and the ship, which runs the
+//! site — the safe direction, and attributed.
 //!
 //! **Constants ride per CONTRIBUTING FILE, not per reference.** The lexer collapses every
 //! parameter-expansion operator form to one opaque `ParamComplex` and discards the name
@@ -144,7 +145,7 @@ pub struct ClosureDenial {
     pub sites: Vec<(usize, Span)>,
 }
 
-/// The four worlds [`ClosureDenial`] distinguishes for AID; the license outcome is identical.
+/// The worlds [`ClosureDenial`] distinguishes for AID; the license outcome is identical.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DenialReason {
     /// The book defines a function under a name the shipped body calls, and the loaded sources
@@ -161,6 +162,18 @@ pub enum DenialReason {
     /// one command line is ingestion, never composition, so the reach lands in an utterance this
     /// voucher did not make — and load order is not an adjudicator of authorship (`28K` §6).
     ResolvedOutsideCustody,
+    /// The voucher's own custody declares the name more than once, with DIFFERING bytes. Which one
+    /// a shell binds depends on the exact interleaving of a file's own declarations with the ones
+    /// its `.` lines pull in, and a flat load-order vector cannot express that interleaving — so
+    /// rather than pick a winner by an order that is not sh's, the composition suspends. Order then
+    /// decides nothing anywhere: agreeing bytes make it irrelevant, and disagreeing bytes stop
+    /// here (`28Q` §1's WITHHOLD floor, closure-keyed).
+    ContestedWithinCustody,
+    /// The voucher's file `.`-sources something the engine could not load as dorc-lang oracle code —
+    /// absent, outside the working directory the operand names, or failing the contract its author
+    /// would sign by marking it. The environment the body would run in cannot be reconstructed, so
+    /// nothing about it may be vouched for.
+    UnresolvedLoad,
     /// The body reaches a call the engine cannot enumerate (a non-literal command word, or `eval`),
     /// so its snapshot cannot be closed. The permanent bottom rung — never scaffolding
     /// (`28R:rul-instantiation-hash-dedup` tier 3).
@@ -200,6 +213,12 @@ pub struct HelperIndex {
     /// not load-inert), but what it defines still decides whether somebody else's vouch survives at
     /// apply, so it is carried separately rather than not at all.
     book_defines: BTreeSet<String>,
+    /// Whose utterance each source may rest on (`core::CustodyClosures`). Defaults to SINGLETONS,
+    /// which is what makes every lane holding no include-tree keep its pre-sourcing answers and the
+    /// no-oracle-sourcing world byte-identical.
+    closures: dorc_core::CustodyClosures,
+    /// Sources whose own `.` named nothing admissible: every vouch they carry suspends.
+    unresolved_loads: BTreeSet<usize>,
 }
 
 impl HelperIndex {
@@ -221,7 +240,10 @@ impl HelperIndex {
     /// loaded package set.
     #[must_use]
     pub fn build(srcs: &[&str], book: Option<usize>) -> Self {
-        let mut index = Self::default();
+        let mut index = Self {
+            closures: dorc_core::CustodyClosures::singletons(srcs.len()),
+            ..Self::default()
+        };
         for (file, src) in srcs.iter().enumerate() {
             let ast = dorc_syntax::parse(src).value;
             if book == Some(file) {
@@ -290,6 +312,24 @@ impl HelperIndex {
             }
             _ => {}
         }
+    }
+
+    /// Attach the driver's include-tree: whose custody reaches whose, and which sources sourced
+    /// something the driver could not load (`28Q` §2; the derivation is `dorc_cli::sourcing`).
+    ///
+    /// Threaded post-construction rather than taken by `build`, because the overwhelming majority of
+    /// this workspace's index builders — the instrument, hint, survival-snapshot, and hand-built
+    /// seats — hold no include-tree and must keep answering exactly as they did. Only the two real
+    /// drivers know one, and only they call this.
+    #[must_use]
+    pub fn with_include_tree(
+        mut self,
+        closures: dorc_core::CustodyClosures,
+        unresolved_loads: BTreeSet<usize>,
+    ) -> Self {
+        self.closures = closures;
+        self.unresolved_loads = unresolved_loads;
+        self
     }
 
     /// Whether the unit declares any non-role top-level material at all. The empty answer is the
@@ -393,13 +433,23 @@ impl HelperIndex {
     ///
     /// THE CUSTODY PREDICATE (`rul-vouch-reaches-own-custody-only`): resolution is always sh's
     /// last-wins, and the license suspends whenever the resolved declaration sits outside the
-    /// voucher's own custody (`asker`) — plural or singular, agreeing bytes or not. CLI co-loading
-    /// composes no custody, so a reach into a co-loaded file is a reach into somebody else's
-    /// utterance whatever load order made of it.
+    /// voucher's own CUSTODY — the file itself plus everything its `.` lines pull in, transitively
+    /// (`core::CustodyClosures`). CLI co-loading composes no custody, so a reach into a merely
+    /// co-loaded file is a reach into somebody else's utterance whatever load order made of it;
+    /// a reach into a SOURCED file is the author's own, because sourcing is the promise that makes
+    /// it so.
     ///
-    /// Custody is proxied by the loaded-source index while every closure is a singleton; the
-    /// sourcing amendment re-keys this ONE comparison to closure membership and nothing else moves
-    /// (`core/CLAUDE.md custody-is-one-newtype-and-one-crossing`).
+    /// Three suspensions, in the order a reader should meet them:
+    ///
+    /// 1. The asker's own file sourced something the driver could not load, so the environment its
+    ///    body would run in is not reconstructible at all.
+    /// 2. The declaration a shell binds lies outside the asker's custody.
+    /// 3. The asker's custody declares the name more than once with DIFFERING bytes. Which one a
+    ///    shell binds turns on how a file's own declarations interleave with the ones its `.` lines
+    ///    pull in, and the flat load-order vector this index is built from cannot express that
+    ///    interleaving. Suspending is what keeps ORDER from deciding anything: agreeing bytes make
+    ///    it irrelevant, disagreeing bytes stop here, and no licence anywhere rests on a
+    ///    load-order the engine cannot promise is sh's.
     fn resolve<'a>(
         &self,
         name: &str,
@@ -423,8 +473,18 @@ impl HelperIndex {
         let Some(chosen) = declarations.last() else {
             return Ok(None);
         };
-        if chosen.file != asker {
+        if self.unresolved_loads.contains(&asker) {
+            return Err(deny(DenialReason::UnresolvedLoad));
+        }
+        if !self.closures.reaches(asker, chosen.file) {
             return Err(deny(DenialReason::ResolvedOutsideCustody));
+        }
+        if declarations
+            .iter()
+            .filter(|other| self.closures.reaches(asker, other.file))
+            .any(|other| other.bytes != chosen.bytes)
+        {
+            return Err(deny(DenialReason::ContestedWithinCustody));
         }
         Ok(Some(chosen))
     }

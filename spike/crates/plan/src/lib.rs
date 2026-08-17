@@ -1545,6 +1545,8 @@ fn suspension_reason(
         Found::BookRedefinesHelper => Said::BookRedefinesHelper,
         Found::BookShadowsCommand => Said::BookShadowsCommand,
         Found::ResolvedOutsideCustody => Said::ResolvedOutsideCustody,
+        Found::ContestedWithinCustody => Said::ContestedWithinCustody,
+        Found::UnresolvedLoad => Said::UnresolvedLoad,
         Found::UnenumerableCall => Said::UnenumerableCall,
     }
 }

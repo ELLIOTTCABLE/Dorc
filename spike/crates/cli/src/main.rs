@@ -349,6 +349,52 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
     Ok(paths)
 }
 
+/// Append every file the loaded oracles `.`-source, transitively, to the loaded set
+/// (`28Q:pin-oracle-side-sourcing-amendment`; the pure half is `dorc_cli::sourcing`).
+///
+/// The filesystem half of the include-tree, and therefore sited at this edge rather than in the lib
+/// (`io-at-edges-only` · `lib-target-is-a-loom-seam`). A target that cannot be read, or that does
+/// not satisfy the dorc-lang contract, is NOT appended and NOT an error here: `sourcing::
+/// include_tree` sees the same absence and suspends the sourcer's own vouches, which is where that
+/// refusal belongs — attributed to the composition, once, rather than as a whole-run failure over a
+/// file the admin may not even have known was involved.
+///
+/// Dedup is by the same lexical normal form the edge derivation matches on, so a file named on the
+/// command line AND sourced by an entrypoint is loaded once, under the spelling that reached it
+/// first. The loop re-scans what it appends, which is what makes it transitive; it terminates
+/// because a path already present is never appended again.
+fn read_sourced_oracles(
+    mut paths: Vec<String>,
+    mut srcs: Vec<String>,
+) -> (Vec<String>, Vec<String>) {
+    let mut cursor = 0;
+    while let Some(src) = srcs.get(cursor).cloned() {
+        cursor = cursor.saturating_add(1);
+        if !dorc_cli::sourcing::satisfies_the_contract(&src) {
+            continue;
+        }
+        for target in dorc_cli::sourcing::top_level_load_targets(&src) {
+            let wanted = dorc_cli::sourcing::normalize(&target);
+            if !target.contains('/')
+                || paths
+                    .iter()
+                    .any(|path| dorc_cli::sourcing::normalize(path) == wanted)
+            {
+                continue;
+            }
+            let Ok(text) = std::fs::read_to_string(&target) else {
+                continue;
+            };
+            if !dorc_cli::sourcing::satisfies_the_contract(&text) {
+                continue;
+            }
+            paths.push(target);
+            srcs.push(text);
+        }
+    }
+    (paths, srcs)
+}
+
 /// The REAL external-tool runner at the cli edge (`27R` §1 dir-runner-is-the-di-seam): the ONLY
 /// non-hermetic part, kept out of the deterministic `dorc-lint` crate. Feeds the stripped bytes on the
 /// tool's stdin (so the tool sees `-`/stdin, never a temp path — `dir-paths-stay-yours`).
@@ -711,6 +757,12 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         .iter()
         .map(|p| std::fs::read_to_string(p).map_err(|e| humane_read_error("oracle", p, &e)))
         .collect::<Result<_, _>>()?;
+    // What the loaded oracles `.`-source joins the loaded set, transitively (`28Q` §2). This is the
+    // ONE seam the whole sourcing build needs: every downstream seat — `source_table`, the lifts,
+    // the definition table, the helper index, the whylog's record of what was loaded, and the why
+    // driver reading that record back — consumes these two vectors, so widening them here widens
+    // all of them at once and cannot leave two drivers looking at different worlds.
+    let (oracle_paths, oracle_srcs) = read_sourced_oracles(oracle_paths, oracle_srcs);
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
     // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
@@ -731,8 +783,13 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
     // The book is the LAST source (`source_table`), and naming it is what lets the custody predicate
     // see what the admin defines (`rul-vouch-reaches-own-custody-only`).
-    let helpers =
-        dorc_oracle::closure::HelperIndex::build(&source_refs, source_refs.len().checked_sub(1));
+    let book_index = source_refs.len().checked_sub(1);
+    let include_tree = dorc_cli::sourcing::include_tree(&source_paths, &source_refs, book_index);
+    let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
+        .with_include_tree(
+            dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
+            include_tree.unresolved.clone(),
+        );
 
     // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
     // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
