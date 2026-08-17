@@ -35,8 +35,8 @@
 
 #![allow(unused)]
 
-extern crate self as dorc_core;
 extern crate self as dorc_analysis;
+extern crate self as dorc_core;
 
 #[path = "../../../crates/core/src/lib.rs"]
 mod core_included;
