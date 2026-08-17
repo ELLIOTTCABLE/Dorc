@@ -255,6 +255,9 @@ pub use contested::ContestedFamilies;
 pub mod definition;
 pub use definition::{DefinitionId, DefinitionProvenance, LiveDefinition, answering_file};
 
+pub mod spine;
+pub use spine::{CensusArm, DecidePlane, Spine, SpineSpecies};
+
 // ===========================================================================
 // String interning + the referent-agnostic opaque token (dn-4, W4)
 // ===========================================================================
