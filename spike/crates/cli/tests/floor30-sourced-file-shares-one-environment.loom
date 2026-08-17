@@ -1,0 +1,67 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-sourced-file-shares-one-environment — the fact that decides WHERE the custody fence can
+# live (`30C:dec-custody-is-containment-not-equivalence`).
+#
+# sh has no module scoping. `.` is in-process mutation of ONE flat environment, so a sourced file
+# both SEES what the sourcer already bound and can REBIND it for everything after. Neither
+# direction is optional and neither is detectable at the call site.
+#
+# The consequence the build rests on: the custody fence is an ENGINE LICENSURE POLICY and can never
+# be an inference from sh behaviour. There is no shell-observable sense in which two sourced
+# siblings are "separated" — they are not. What the fence decides is whose vouch may REST on whose
+# body, which is a question about authorship, not about binding.
+#
+# Two measurements: the sourced file reading the sourcer's binding, then the sourcer reading the
+# sourced file's replacement of it.
+_from_book() { printf 'book\n' ;}
+. ./probe.sh
+_from_book
+
+-- probe.sh --
+_from_book
+_from_book() { printf 'rebound\n' ;}
+
+-- expected.emitted --
+book
+rebound
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1bf2d179d4cee2510d1a3a49b7dfe8e058c2ec73d050ed5e16fa66ad2d6a8775 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-sourced-file-shares-one-environment — the fact that decides WHERE the custody fence can
+# live (`30C:dec-custody-is-containment-not-equivalence`).
+#
+# sh has no module scoping. `.` is in-process mutation of ONE flat environment, so a sourced file
+# both SEES what the sourcer already bound and can REBIND it for everything after. Neither
+# direction is optional and neither is detectable at the call site.
+#
+# The consequence the build rests on: the custody fence is an ENGINE LICENSURE POLICY and can never
+# be an inference from sh behaviour. There is no shell-observable sense in which two sourced
+# siblings are "separated" — they are not. What the fence decides is whose vouch may REST on whose
+# body, which is a question about authorship, not about binding.
+#
+# Two measurements: the sourced file reading the sourcer's binding, then the sourcer reading the
+# sourced file's replacement of it.
+_from_book() { printf 'book\n' ;}
+. ./probe.sh
+_from_book

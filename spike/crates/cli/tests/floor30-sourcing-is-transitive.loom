@@ -1,0 +1,62 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-sourcing-is-transitive — ground truth for the closure computation
+# (`30C:dec-custody-is-containment-not-equivalence`, minted before the engine consumes it).
+#
+# `custody(F) = {F} ∪ transitive descendants of F` is an engine policy, but the sh fact it rests on
+# is that `.` is TRANSITIVE: a sourced file's own `.` runs while the sourcer is loading, so the
+# grandchild's names are bound in the sourcer's environment too. If that were not so, a closure
+# deeper than one edge would ship bodies no execution binds.
+#
+# Two measurements from one entry: the child's own declaration, and the grandchild's.
+. ./mid.sh
+_mid_say
+_leaf_say
+
+-- mid.sh --
+. ./leaf.sh
+_mid_say() { printf 'mid\n' ;}
+
+-- leaf.sh --
+_leaf_say() { printf 'leaf\n' ;}
+
+-- expected.emitted --
+mid
+leaf
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5f06da063a6053aa041d26e775aeb8e9372bd714174446836d6a6aea7209f416 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-sourcing-is-transitive — ground truth for the closure computation
+# (`30C:dec-custody-is-containment-not-equivalence`, minted before the engine consumes it).
+#
+# `custody(F) = {F} ∪ transitive descendants of F` is an engine policy, but the sh fact it rests on
+# is that `.` is TRANSITIVE: a sourced file's own `.` runs while the sourcer is loading, so the
+# grandchild's names are bound in the sourcer's environment too. If that were not so, a closure
+# deeper than one edge would ship bodies no execution binds.
+#
+# Two measurements from one entry: the child's own declaration, and the grandchild's.
+. ./mid.sh
+_mid_say
+_leaf_say
