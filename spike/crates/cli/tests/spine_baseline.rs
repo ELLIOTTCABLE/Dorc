@@ -27,16 +27,19 @@
 //! enough to walk. A fully-implicit decision is invisible to the baseline exactly as it is to the
 //! census, which is why the hidden-decision audit (`30E` §3) is a separate instrument.
 //!
-//! DISCLOSED COVERAGE LIMIT, measured 2026-08-17 — **read this before trusting a clean diff.** Of
-//! 232 committed cases, the intake ADMITS 9: the corpus commits `probe-results.txt` RAW, and
-//! `e2e.rs`'s `framed_results` re-frames it per case by first running the real `dorc probe` to
-//! source the header and the site list. A refused stream analyses as the unmeasured world (every
-//! fact ⊤ ⇒ every site runs), so the rows this file freezes are dominated by classification,
-//! vouches, bindings and the digest rather than by `Replace`/`Guard`/`Omit`. Both seams the diff
-//! exists to watch — the member-collapse and the guard-binding custody move — live in the MEASURED
-//! worlds, so today they are thinly covered. Closing it means re-homing `framed_results` into
-//! `support.rs` and paying a `dorc probe` subprocess per case; that is a conductor call, priced and
-//! flagged, not taken here.
+//! COVERAGE, measured 2026-08-17 — **read this before trusting a clean diff.** Of 232 committed
+//! cases the intake ADMITS 111; 86 commit no records at all, and 35 still refuse. The corpus
+//! commits `probe-results.txt` RAW, so every case is re-framed through `support::frame_records` —
+//! the e2e runner's own seat — after a real `dorc probe` run supplies the header and site list.
+//! Getting there mattered: before the re-homing this file admitted 9 cases and froze 8 `Replace`,
+//! 3 `Guard` and 2 bindings, which is the instrument not existing, since both seams it watches
+//! (the member-collapse, and a guard binding moving between byte-identical bodies with different
+//! custody) live only in MEASURED worlds. It now freezes 80 / 28 / 21 / 26.
+//!
+//! The residual 35 skew toward `-runs` / `-walls` / `-tops` cases, whose sites run regardless, so
+//! what they would contribute is largely the same either way — observed from the case names, not
+//! exhaustively verified. A refused stream analyses as the unmeasured world (every fact ⊤ ⇒ every
+//! site runs) and the row says `records refused`, never a bare absence.
 //!
 //! Case discovery is DUPLICATED from `definition_frames.rs` rather than shared through
 //! `support.rs`: a parallel custody lane is editing that battery, and a build-to-kill file is the
