@@ -139,7 +139,7 @@ impl Closure {
 pub struct ClosureDenial {
     /// The name whose resolution carries no license.
     pub name: String,
-    /// Which of the four worlds this is.
+    /// Which world this is.
     pub reason: DenialReason,
     /// Where the loaded sources declare the name, in load order — empty when only the book does.
     pub sites: Vec<(usize, Span)>,
@@ -708,6 +708,8 @@ fn literal_word(ast: &Ast, id: dorc_core::AstId) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use super::HelperIndex;
 
     const MARKER: &str = "# dorc-lang/v0.2\n";
@@ -769,6 +771,85 @@ mod tests {
             .expect_err("co-loading composes no custody");
         assert_eq!(denied.name, "_wombat_check");
         assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
+    }
+
+    /// ...and the SAME two files compose the moment the entrypoint SOURCES the helpers. This is
+    /// the payoff of the whole sourcing build, stated as the smallest possible difference from the
+    /// test above: the files are unchanged, only the `.` line and the include-tree it mints are
+    /// added, and the vouch that suspended now lifts (`28M` §7's package shape, licensed).
+    #[test]
+    fn a_sourced_helper_is_inside_the_entrypoints_custody() {
+        let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let entry = format!(
+            "{MARKER}. ./helpers.sh\nwombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n"
+        );
+        let closure = HelperIndex::build(&[&helpers, &entry], None)
+            .with_include_tree(
+                dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]),
+                BTreeSet::new(),
+            )
+            .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .expect("the `.` takes custody of the helpers file")
+            .sh();
+        assert!(closure.contains("_wombat_check() {"), "{closure}");
+    }
+
+    /// Custody does NOT flow back up: the helpers file's own vouch may not rest on its entrypoints.
+    /// Sourcing is a promise the SOURCER makes, and the sourced author made none.
+    #[test]
+    fn a_sourced_file_does_not_reach_its_sourcer() {
+        let helpers = format!("{MARKER}wombat__is_converged() {{\n   _entry_only \"$1\"\n}}\n");
+        let entry =
+            format!("{MARKER}. ./helpers.sh\n_entry_only() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let denied = HelperIndex::build(&[&helpers, &entry], None)
+            .with_include_tree(
+                dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]),
+                BTreeSet::new(),
+            )
+            .closure_for(0, "wombat__is_converged() {\n   _entry_only \"$1\"\n}")
+            .expect_err("custody flows down the include-tree, never up");
+        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
+    }
+
+    /// Two declarations inside ONE custody with DIFFERING bytes suspend rather than letting load
+    /// order pick. The flat source vector cannot express how a file's own declarations interleave
+    /// with the ones its `.` pulls in, so nothing may rest on that order — and with this suspension
+    /// in place, nothing does.
+    #[test]
+    fn differing_bytes_within_one_custody_suspend() {
+        let helpers = format!("{MARKER}_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let entry = format!(
+            "{MARKER}. ./helpers.sh\n_check() {{\n   wombat verify -- \"$1\"\n}}\n\
+             wombat__is_converged() {{\n   _check \"$1\"\n}}\n"
+        );
+        let denied = HelperIndex::build(&[&helpers, &entry], None)
+            .with_include_tree(
+                dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]),
+                BTreeSet::new(),
+            )
+            .closure_for(1, "wombat__is_converged() {\n   _check \"$1\"\n}")
+            .expect_err("one custody, two bodies, no order the engine can promise is sh's");
+        assert_eq!(denied.reason, super::DenialReason::ContestedWithinCustody);
+    }
+
+    /// A file that sourced something the driver could not load suspends every vouch it carries,
+    /// including one reaching a helper it declares ITSELF. The body would run in an environment the
+    /// engine never reconstructed, and a body that ignores a missing helper's status and answers 0
+    /// from a later test reports converged off a helper that never ran.
+    #[test]
+    fn an_unresolved_load_suspends_the_whole_file() {
+        let entry = format!(
+            "{MARKER}. ./gone.sh\n_check() {{\n   wombat cmp -- \"$1\"\n}}\n\
+             wombat__is_converged() {{\n   _check \"$1\"\n}}\n"
+        );
+        let denied = HelperIndex::build(&[&entry], None)
+            .with_include_tree(
+                dorc_core::CustodyClosures::singletons(1),
+                BTreeSet::from([0]),
+            )
+            .closure_for(0, "wombat__is_converged() {\n   _check \"$1\"\n}")
+            .expect_err("an unreconstructible environment vouches for nothing");
+        assert_eq!(denied.reason, super::DenialReason::UnresolvedLoad);
     }
 
     /// Transitivity: a helper that calls a helper. A one-level walk would ship a body that still
