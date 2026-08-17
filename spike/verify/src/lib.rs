@@ -27,6 +27,7 @@ pub mod binding;
 pub mod catalogue;
 pub mod catalogue_lock;
 pub mod check;
+pub mod derivation;
 pub mod evidence;
 pub mod kani;
 pub mod pipeline;

@@ -11,7 +11,7 @@ use std::process::ExitCode;
 use dorc_verify::badge::Badge;
 use dorc_verify::catalogue_lock::LAWS;
 use dorc_verify::evidence::Tier;
-use dorc_verify::{check, evidence, kani, pipeline, promote, repo_root, report, unit};
+use dorc_verify::{check, derivation, evidence, kani, pipeline, promote, repo_root, report, unit};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -151,6 +151,9 @@ fn run_report(args: &[&str]) -> ExitCode {
     match &verdict {
         Ok(line) => eprintln!("{line}"),
         Err(refusal) => eprintln!("FAIL  {refusal}"),
+    }
+    if let Ok(Some(warning)) = derivation::drift(root) {
+        eprintln!("note: {warning}");
     }
     print!("{text}");
     if verdict.is_ok() {

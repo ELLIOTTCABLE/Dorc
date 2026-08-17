@@ -70,6 +70,13 @@ pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
         }
     }
 
+    // Recorded HERE because this step is the pipeline's own last act, on the stable toolchain:
+    // the digest is a statement about what this translation read, and nothing else is in a
+    // position to make it truthfully.
+    let lock = crate::derivation::compute(repo_root)?;
+    write(&crate::derivation::path(repo_root), &lock)?;
+    written.push("spike/verify/derivation.lock".to_owned());
+
     let (holes, axioms) = census(&generated)?;
     Ok(Materialized {
         written,

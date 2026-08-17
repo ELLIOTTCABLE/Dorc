@@ -12,7 +12,7 @@ use crate::catalogue::LawRow;
 use crate::catalogue_lock::LAWS;
 use crate::evidence::{self, Tier};
 use crate::unit::{self, BYTE_BUDGET, Statement, Unit};
-use crate::{binding, report, seat};
+use crate::{binding, derivation, report, seat};
 
 /// Everything one cheap-gate pass found. Empty `failures` is the pass condition; `advisories`
 /// never fail anything.
@@ -83,6 +83,12 @@ pub fn run(repo_root: &Path) -> Result<Findings, String> {
         }
     }
     check_report_is_current(repo_root, &units, census, &mut findings);
+
+    // Advisory, deliberately: closing it needs the Linux-only translator and a human reading a
+    // regeneration diff, and a gate only one platform can clear is a gate people route around.
+    if let Some(warning) = derivation::drift(repo_root)? {
+        findings.advisories.push(warning);
+    }
     Ok(findings)
 }
 
