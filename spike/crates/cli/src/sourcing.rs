@@ -100,9 +100,19 @@ pub fn resolve_against(sourcer_path: &str, target: &str) -> Option<String> {
     if !target.contains('/') {
         return None;
     }
-    let dir = normalize(sourcer_path);
-    let dir = dir.rsplit_once('/').map_or("", |(parent, _)| parent);
-    Some(normalize(&format!("{dir}/{target}")))
+    let here = normalize(sourcer_path);
+    let dir = match here.rsplit_once('/') {
+        // A sourcer at the filesystem root: its directory IS the root, and dropping to the
+        // empty string here would silently re-root the target as relative.
+        Some(("", _)) => "/",
+        Some((parent, _)) => parent,
+        None => "",
+    };
+    Some(if dir.is_empty() {
+        normalize(target)
+    } else {
+        normalize(&format!("{dir}/{target}"))
+    })
 }
 
 /// Does this source satisfy the dorc-lang contract a `.` may name — marked, and declaring rather
@@ -148,10 +158,17 @@ fn resolve(sourcer_path: &str, target: &str, paths: &[String], srcs: &[&str]) ->
 }
 
 /// A path's lexical normal form: `\` folded to `/`, `.` segments dropped, `..` popped where a real
-/// segment precedes it. Purely textual — it never touches the filesystem, so it cannot resolve a
-/// symlink and does not pretend to.
+/// segment precedes it, and a LEADING separator preserved. Purely textual — it never touches the
+/// filesystem, so it cannot resolve a symlink and does not pretend to.
+///
+/// The leading separator is load-bearing rather than cosmetic, and dropping it was a real bug this
+/// tree caught only on its Linux leg (`one-platform-green-is-not-cross-platform-green`): an
+/// absolute POSIX oracle path came back RELATIVE, so the sourced file was looked for under the
+/// working directory and never found. Windows paths hid it — a drive letter has no leading
+/// separator to lose.
 #[must_use]
 pub fn normalize(path: &str) -> String {
+    let rooted = path.starts_with('/') || path.starts_with('\\');
     let mut out: Vec<&str> = Vec::new();
     for segment in path.split(['/', '\\']) {
         match segment {
@@ -160,7 +177,8 @@ pub fn normalize(path: &str) -> String {
             other => out.push(other),
         }
     }
-    out.join("/")
+    let joined = out.join("/");
+    if rooted { format!("/{joined}") } else { joined }
 }
 
 fn literal_text(ast: &dorc_syntax::ast::Ast, word: dorc_core::AstId) -> Option<String> {
@@ -352,8 +370,16 @@ mod tests {
     fn a_target_resolves_against_its_sourcers_directory() {
         assert_eq!(
             super::resolve_against("/pkg/entry.oracle.sh", "./helpers.sh").as_deref(),
-            Some("pkg/helpers.sh")
+            Some("/pkg/helpers.sh"),
+            "an ABSOLUTE sourcer keeps its root — dropping the leading separator turned every \
+             POSIX oracle path relative, and only the Linux leg saw it"
         );
+        assert_eq!(
+            super::resolve_against("/entry.sh", "./helpers.sh").as_deref(),
+            Some("/helpers.sh"),
+            "...including a sourcer sitting at the root itself"
+        );
+        assert_eq!(normalize("/mnt/c/pkg/../pkg/h.sh"), "/mnt/c/pkg/h.sh");
         assert_eq!(
             super::resolve_against("pkg/sub/entry.sh", "../shared/h.sh").as_deref(),
             Some("pkg/shared/h.sh")
