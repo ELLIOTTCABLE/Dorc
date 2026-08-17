@@ -118,24 +118,61 @@ so today's `. ./x.oracle.sh` only resolves when `x.oracle.sh` was co-loaded. Pha
 sourcing therefore needs a real CLI-edge LOADER (read, contract-check, append to the source vector,
 record the edge), not merely a predicate change.
 
-## §4 — Build items, in landing order (each independently green + committed)
+## §3a — As-built (what a successor inherits)
+
+BUILT and green on the full corpus:
+
+- `oracle::load_inert` admits a statically spelled top-level `.` in a marked file, as CONTRACT.
+  `source` stays refused — `dash` has no such builtin, so it fails the two-binary floor.
+  `item_is_static_load` is the one reader of what a file sources.
+- `core::custody::CustodyClosures` — the containment relation of §2, with `singletons` as the
+  no-sourcing world every tree-less lane passes (which is what keeps the corpus byte-identical).
+- `dorc_cli::sourcing` — the PURE include-tree derivation both drivers call; `main.rs`'s
+  `read_sourced_oracles` is its filesystem half, and it widens `(oracle_paths, oracle_srcs)` at ONE
+  seam so every downstream seat inherits the sourced files without its own change.
+- `HelperIndex::with_include_tree` + the re-keyed `resolve`: three suspensions — unresolved load,
+  outside custody, contested-within-custody.
+- Cells: three `floor30-*` ground-truth manifests; `pin28-helper-package-entrypoints-lift`
+  respelled as sourcing (loads ONE file, closure reaches the apply guard);
+  `pin30-swapped-entrypoints-source-the-helpers` (an admin's own entrypoints over the vendor's
+  helpers). `28M` §8's commissioned property is now pinned in both directions.
+- `p-x-blessed-toplevel-source` PROMOTED (XPASS) and its registry row dropped.
+
+MEASURED FINDINGS worth a successor's attention:
+
+- `fnd-empty-index-shortcut-shipped-bare` — `closure_for` returned an empty closure before checking
+  anything when the index held no declarations, so a file whose `.` target failed to load shipped
+  its verdict body BARE and the probe answered rc 127. Caught by the package cell, fixed by
+  ordering the suspension ahead of the shortcut. Any future early-return in that function inherits
+  the same trap.
+- `fnd-corpus-runs-from-a-throwaway-cwd` — the e2e runner drives every case from a scratch sandbox
+  with ABSOLUTE oracle paths. Working-directory-relative `.` resolution is therefore unexercisable
+  by any corpus cell, and unusable by any admin who does not `cd` into the package first. This is
+  what forced §8's `dev-sourced-paths-resolve-against-the-sourcer`.
+
+## §4 — Build items (the ordering that was followed; the remainder is item 8)
 
 `ord-fixtures-precede-consumers` — floor-differential cells land BEFORE the engine behaviour that
 consumes them (`28Q` §8 stage-i's measure-first precedent); ordinary golden cells for new behaviour
 land AFTER it (the human's lean: pin the future, never pin the hole).
 
 1. **`b1-floor-fixtures-for-sourcing`** — the ground-truth manifests, `floor30-*` pattern
-   (`spike/crates/cli/tests/floor30-helper-collision-across-frames.loom` is the template: a
-   sentinel-manifest book, `expected.emitted` = the shells' own bytes, minted ONCE via
-   `mise run bless:floor -- <case>` on the WSL leg, never churned). Cells:
-   - `floor30-oracle-sources-its-helpers` — a marked entrypoints file `.`-ing a helpers file;
-     the role body reaches a helper declared there and the base file's own declarations still
-     contribute (the two conjuncts `p-x-blessed-toplevel-source` asserts).
-   - `floor30-sibling-subtrees-stay-separate` — one entry sourcing two files; each sourced file's
-     own names, and the fact that neither sees the other's.
-   - `floor30-diamond-resolves-once` — two entries sourcing one identical helpers file; sh binds
-     one body and re-sourcing is idempotent.
-   Gate: measured once, byte-stable on re-mint (`emitted-is-measure-once-ground-truth`).
+   (`floor30-helper-collision-across-frames.loom` is the template: a sentinel-manifest book,
+   `expected.emitted` = the shells' own bytes, minted ONCE via `mise run bless:floor -- <case>` on
+   the WSL leg, never churned). Gate-9 flattens a case dir and copies only top-level FILES, so a
+   floor cell cannot nest directories — which is why nothing here measures path nesting. The three
+   that landed, with what dash ∩ posh actually said:
+   - `floor30-sourcing-is-transitive` → `mid` / `leaf`. A sourced file's own `.` runs while the
+     sourcer loads, so the grandchild binds too. This is what licenses `custody` being transitive.
+   - `floor30-diamond-source-binds-once` → `shared` / `a` / `b`. A second `.` of the same bytes
+     changes nothing AND each entry keeps its own declarations — both halves, because a dedup that
+     dropped an entry's names would look exactly like a pass.
+   - `floor30-sourced-file-shares-one-environment` → `book` / `rebound`. A sourced file sees the
+     sourcer's bindings and can rebind them. THE reason the custody fence is an engine licensure
+     policy and can never be inferred from sh: there is no shell-observable sense in which two
+     sourced siblings are separated.
+   The sibling-fence cell first sketched here was DROPPED on measurement: sibling separation is not
+   an sh fact at all, so it belongs at the unit tier (`core::custody`'s tests), not the floor.
 
 2. **`b2-load-inert-admits-top-level-dot`** — `item_is_load_inert` admits a top-level `.`/`source`
    whose target word is statically resolvable; refusal for a contract-violating target attributes
@@ -161,21 +198,41 @@ land AFTER it (the human's lean: pin the future, never pin the hole).
    Single-closure world (today's whole corpus) stays byte-identical: with no oracle-side `.`,
    `custody(F) = {F}` and the predicate is the phase-1 one, term for term.
 
-6. **`b6-blessing-keying-family-rooted`** — `pin-blessing-keying`'s acked lean:
-   family-rooted-within-the-closure (reachable from THIS family's predict members), not
-   closure-global. Bites only where one closure hosts families of divergent care.
+6. **`b6-blessing-keying-family-rooted`** — NOT BUILT, and correctly so. The keying is acked, but
+   the thing it would key does not exist: `dorc_oracle::build_dialect` mints from predict-derived
+   cells through a whole-unit `dialect_minting_source` fold and has no reachability or blessing
+   notion at all. The blessing mechanism itself is `28Q` §9 pin 13
+   `pin-blessing-reach-elevation` — UNRULED, "one typed line owed" — and it interacts with the
+   verdict-word enrollment question that is out of this lane's scope. Building a key for an absent
+   lock is the multi-phasic-scaffolding pattern the project's own law warns against; the keying
+   lands with its consumer.
 
 7. **`b7-repin-the-discarded-package`** — `pin28-helper-package-entrypoints-discarded.loom` re-pins
    via a thin entrypoints ORACLE that SOURCES the helpers (the spelling the ruling leaves); the
    in-book entrypoint form stays as an honest DECLINE cell. The in-book spelling is PERMANENTLY
    de-licensed — a book mints no speaker even with `.`.
 
-8. **`b8-book-side-unwalling`** — ONLY as a unit with `28K:res-book-ships-its-load-closure` (closure
-   materialization at apply) AND the executing e2e cell: the original book under its sourced tree ·
-   the artifact run from an isolated cwd · a missing sourced file failing honestly. If the runtime
-   half cannot land, b8 does not land — a book's `.` keeps walling and
-   `FORFEITS:forfeit-book-sourcing-walls` stands unrewritten. Landing it rewrites that row
-   (rewrite-don't-annotate).
+8. **`b8-book-side-unwalling`** — STOPPED on a ruling gap; this is the lane's named remainder.
+   The brief conditions it on landing together with `28K:res-book-ships-its-load-closure` and an
+   executing e2e cell whose middle sub-case is "the artifact run from an isolated cwd". That
+   sub-case is what exposes the gap.
+
+   A book's top-level `.` SURVIVES in the artifact — the byte-floor (`two-surfaces`) keeps the
+   book's own bytes, and nothing today licenses the engine to touch that line. So bundling the
+   sourced declarations into the apply preamble does not make the artifact portable: the surviving
+   `.` re-sources them where the tree is present (harmless — `floor30-diamond-source-binds-once`
+   measures the idempotence) and FAILS where it is not, fatally under `set -e`, which the corpus's
+   own books carry. The two exits are (i) the artifact keeps requiring its sourced tree, in which
+   case bundling buys nothing and `res-book-ships-its-load-closure` means "ship the directory"; or
+   (ii) the engine neutralises a book line it has never neutralised before, which is an
+   attention-honesty and byte-floor ruling — `rul-attention-honesty` territory, and squarely the
+   cross-cutting kind `inv-superposition` says a component may not settle for itself.
+
+   Nothing was built toward either pole. The un-walling half alone would be the largest
+   blast-radius change in this build (it grants downstream licences wholesale), so landing it
+   without its runtime half is exactly what the brief forbids.
+   `FORFEITS:forfeit-book-sourcing-walls` therefore stands, rewritten to current truth: the
+   oracle-side half is captured, the book-side half names the blocking question.
 
 9. **`b9-xfail-sweep`** — after EACH landing, re-check `p-x-blessed-toplevel-source`,
    `p-x-definition-grade-keying`, `p-x-helper-unset-f-across-files`, `p-x-regional-helper`
@@ -228,3 +285,22 @@ certifier, the sparing reference model, or `minispec/`. If a signature change ri
   with the retired shape, which brushes plans-are-ahistorical; trimmed to plain current truth.
 - `dev-custody-compare-is-asymmetric` — §2's containment shape, against `28M` bitem3's "consumers
   still only compare" letter. Zero consumer churn, so the promise holds in substance.
+- `dev-sourced-paths-resolve-against-the-sourcer` — THE ONE TO REVIEW FIRST. A `.` target resolves
+  against the sourcing FILE's directory, not the working directory, which diverges from POSIX and
+  therefore from `rul-unsure-falls-toward-sh-parity` (human-typed, LOAD-BEARING, and it names name
+  resolution explicitly). The case for it, and why it was not treated as a STOP: an oracle's
+  top-level `.` NEVER EXECUTES — bodies reach the artifact by transplant and `dorc strip` erases the
+  marked file's text — so there is no runtime behaviour to be at parity with, and the construct is a
+  loader directive, which every loader resolves against the including file. Under the
+  working-directory rule the ruled deliverable is unreachable: `fnd-corpus-runs-from-a-throwaway-cwd`
+  makes it unexercisable by any corpus cell and unusable by any admin who has not `cd`-ed into the
+  package. It is NOT a correctness fork — declarations only ever ship from a file the engine read
+  and contract-checked, and an unresolved target suspends — so the cost of being wrong is UX, not a
+  wrong elision. `dorc_cli::sourcing::resolve_against` is the single function to change, and
+  `a_target_resolves_against_its_sourcers_directory` is the test that would go red.
+- `dev-two-new-decline-reasons` — `ContestedWithinCustody` and `UnresolvedLoad` joined
+  `VouchedCompositionReason`. Structure only; both render `[unwritten:]` and their prose is a
+  conductor/human act (`error-authorship-tier`).
+- `dev-diag-slug-still-says-not-load-inert` — the code `oracle-file-not-load-inert` now fires for a
+  CONTRACT violation, and its slug still reads like an engine proof. Renaming is a catalog +
+  defining-case + prose act, so it was left alone and is proposed upward instead.
