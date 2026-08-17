@@ -42,4 +42,8 @@ extend-ignore-re = [
    # commit's short SHA, whose hex runs accidentally spell typo-triggers (`daa`->`data`).
    # A machine identifier that must match upstream byte-for-byte, not prose.
    "nightly-[0-9.]+-[0-9a-f]+",
+   # `digest <hex>` / `digest=<hex>` (the `309` §4 smoke-diff baseline): the same
+   # machine-generated-hex problem as `book=` above — a digest run spells `ba`. Dies with the
+   # baseline at the fold review.
+   "digest[= ][0-9a-f]+",
 ]

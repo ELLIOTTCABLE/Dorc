@@ -1,0 +1,1744 @@
+dorc-spine-baseline/1 cases=232
+case carry-fsview-elides
+  digest d6b943abe9c40732
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case carry-fsview-hidden-read-walls
+  digest 26a629112981844b
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-builtin-shadowed
+  digest 382a67a41af37bfc
+  records absent
+  site 0.- ast=9 run
+  site 1.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-errexit-unknown
+  digest b4db4a6a8e2db832
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused
+  digest b4db5b91809c5bc2
+  records absent
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-depth-budget
+  digest a15c932d3d30d5e1
+  records absent
+  site 0.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-per-book-budget
+  digest 35533f8f8f04d36e
+  records absent
+  site 0.- ast=64 run
+  site 1.- ast=66 run
+  site 2.- ast=68 run
+  site 3.- ast=70 run
+  site 4.- ast=72 run
+  site 5.- ast=74 run
+  site 6.- ast=76 run
+  site 7.- ast=78 run
+  site 8.- ast=80 run
+  site 9.- ast=82 run
+  site 10.- ast=84 run
+  site 11.- ast=86 run
+  site 12.- ast=88 run
+  site 13.- ast=90 run
+  site 14.- ast=92 run
+  site 15.- ast=94 run
+  site 16.- ast=96 run
+  site 17.- ast=98 run
+  site 18.- ast=100 run
+  site 19.- ast=102 run
+  site 20.- ast=104 run
+  site 21.- ast=106 run
+  site 22.- ast=108 run
+  site 23.- ast=110 run
+  site 24.- ast=112 run
+  site 25.- ast=114 run
+  site 26.- ast=116 run
+  site 27.- ast=118 run
+  site 28.- ast=120 run
+  site 29.- ast=122 run
+  site 30.- ast=124 run
+  site 31.- ast=126 run
+  site 32.- ast=128 run
+  site 33.- ast=130 run
+  site 34.- ast=132 run
+  site 35.- ast=134 run
+  site 36.- ast=136 run
+  site 37.- ast=138 run
+  site 38.- ast=140 run
+  site 39.- ast=142 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-per-call-budget
+  digest 1a4fdb89dde4f754
+  records absent
+  site 0.- ast=164 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-redefined
+  digest 1a4b17c6b29d2074
+  records absent
+  site 0.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-redirect-dynamic
+  digest 7a65400dfdbf06cb
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-unmodeled-positional
+  digest a0aa3a47a05345bc
+  records absent
+  site 0.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-write-redirect
+  digest c20072969eb924ad
+  records absent
+  site 0.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-top-node
+  digest d023601dac3b4af5
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cmdsub-inner-nonleaf
+  digest dfa1515c0e6329d6
+  records absent
+  site 0.- ast=6 run
+  site 1.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cmdsub-operand-top
+  digest 487ba50dc823d0a0
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=14 run
+  site 3.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-cross-unit-shadow-runs
+  digest 6ea3aaa82c3d0302
+  records refused
+  site 0.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-late-definition-licenses-nothing-above
+  digest eb4ca8aad1b05e63
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-polyfill-guard-defers-to-the-oracle
+  digest 3815178b85339755
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=22 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-top-licenses-nothing
+  digest ac410ec53af277e3
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=20 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-unset-f-blesses-elision
+  digest a71b538596b45ed1
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-babby-diverges
+  digest 71e26a092b5562aa
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-babby-elides
+  digest 71e26a092b5562aa
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-noescalation-runs
+  digest 71e26a092b5562aa
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-unvouched-runs
+  digest f8f43b72c4475ce6
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-wrapped-guard
+  digest 0fe058cdf45f6832
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case decline27-tier3-dynamic
+  digest 625a390233011d69
+  records admitted
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case deny26-state-builtin-mis-keys
+  digest f239689ff278d560
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case depth-2-positional-unthreaded
+  digest 99b674f8695b9501
+  records absent
+  site 0.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case deriv-family-incomplete
+  digest ab35eaa7e9b67c6f
+  records admitted
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case door1-and-form
+  digest 46f0444deff77a44
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=13 run
+  site 3.- ast=17 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case door1-and-form-runs
+  digest 7c4e6d56a87a6cc1
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case effect-kind-disagreement
+  digest ec4e7d4d3f19dcfd
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-book-redefinition-suspends-the-vouch
+  digest 382f0b6ca1d1ca13
+  records absent
+  site 0.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-book-shadowed-tool-declines
+  digest b0ff9f0e661e35e5
+  records absent
+  site 0.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-cross-custody-plural-helper-suspends
+  digest 1d44f2f8fa329be7
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-definition-vector-munges-everything
+  digest 2d9202d376fd16b7
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-disturbs-helper-ships-and-spares
+  digest 37a8b5fc95b9bcb9
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-two-live-verdicts-under-one-name
+  digest 32a25f8683f586cf
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  site 3.- ast=23 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-consumed-stdout
+  digest eb6c17b0cac3aa24
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-enclosing-pipe-subshell
+  digest 81e456b83eed7db9
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-errexit-top-status-runs
+  digest be59ed8c652a29a1
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-kill-wall-runs
+  digest b3d22c8a7858e98a
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-modeled-wall-runs
+  digest cc3bba46d9a11af0
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-multi-entity
+  digest 2e79630c70eade36
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-opaque-var-runs
+  digest 092abb04b52c193b
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-poison-wall-dead
+  digest cc25b2aa113e1d22
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-resolved-var-elides
+  digest 97b9954f3ae39094
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-shimmed-query-fold
+  digest e22a074997224c69
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-subshell-establish
+  digest 2e35dad29a055f32
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-subst-body-nonleaf
+  digest b888b17bb131d6f0
+  records refused
+  site 0.- ast=8 run
+  site 1.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-top-arith-in-arg-ok
+  digest 2102561007d5a069
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case fix-ladder-all-holds-folds-all
+  digest 1b8b43ce59a7057a
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  site 3.- ast=22 run
+  site 4.- ast=27 run
+  site 5.- ast=35 run
+  site 6.- ast=40 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case fix-ladder-middle-absent-stops-cascade
+  digest 1e28e3fa25b00508
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  site 3.- ast=22 run
+  site 4.- ast=27 run
+  site 5.- ast=35 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-command-v-reads-fn-definedness
+  digest d9fa4b646faa04ef
+  records absent
+  site 0.- ast=12 run
+  site 1.- ast=16 run
+  site 2.- ast=20 run
+  site 3.- ast=29 run
+  site 4.- ast=33 run
+  site 5.- ast=37 run
+  site 6.- ast=46 run
+  site 7.- ast=50 run
+  site 8.- ast=54 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-define-if-absent-polyfill
+  digest e06653dc3e7bf9af
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=12 run
+  site 4.- ast=15 run
+  site 5.- ast=17 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-funcdef-as-or-operand
+  digest 56c0369d4c527fdc
+  records absent
+  site 0.- ast=6 run
+  site 1.- ast=15 run
+  site 2.- ast=20 run
+  site 3.- ast=27 run
+  site 4.- ast=36 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-load-order-last-definition-wins
+  digest e7ba20d140832fc4
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=12 run
+  site 4.- ast=16 run
+  site 5.- ast=19 run
+  site 6.- ast=21 run
+  site 7.- ast=26 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-subshell-scoped-re-source
+  digest fc51e7a77387b6c9
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-unset-f-and-redefinition
+  digest 808737ebae6c56a6
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  site 3.- ast=13 run
+  site 4.- ast=19 run
+  site 5.- ast=23 run
+  site 6.- ast=26 run
+  site 7.- ast=28 run
+  site 8.- ast=34 run
+  site 9.- ast=37 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-blessed-override-above-and-below
+  digest 5a8a269701f297e7
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=13 run
+  site 5.- ast=17 run
+  site 6.- ast=20 run
+  site 7.- ast=24 run
+  site 8.- ast=26 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-deep-stack-binds-at-invocation
+  digest f2f087c4f505052b
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=10 run
+  site 4.- ast=12 run
+  site 5.- ast=15 run
+  site 6.- ast=17 run
+  site 7.- ast=21 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-helper-collision-across-frames
+  digest 206a98b4c4f682b7
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=10 run
+  site 4.- ast=12 run
+  site 5.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-sibling-frames-hold-three-bodies
+  digest f9bf5532da46c50e
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=12 run
+  site 4.- ast=14 run
+  site 5.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-subshell-nesting-and-removal-scope
+  digest 2a0a6817d9362faf
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=17 run
+  site 5.- ast=21 run
+  site 6.- ast=24 run
+  site 7.- ast=29 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case footprint-incoherent
+  digest ab35eaa7e9b67c6f
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-a-regional-decline-is-a-decline
+  digest 52b651a860695d5e
+  records refused
+  site 0.- ast=9 run
+  site 1.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-nested-region-inherits-the-outer-body
+  digest 3f567539feb47429
+  records refused
+  site 0.- ast=11 run
+  site 1.- ast=19 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-region-removal-dies-at-the-paren
+  digest 8beca455b9852214
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-subshell-body-answers-inside-only
+  digest a121284e00243812
+  records refused
+  site 0.- ast=11 run
+  site 1.- ast=17 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-two-live-predicts-key-two-cells
+  digest 267f2cefc3f13541
+  records refused
+  site 0.- ast=28 run
+  site 1.- ast=34 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case glob-for-word-runs
+  digest c963acdbe3d3fb47
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-already-hand-guarded-runs
+  digest ebe0266886b0c7f2
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-fallthrough-canttell-runs
+  digest cf6d1c2af7df677e
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-fallthrough-drift-runs
+  digest eca0e14108aba1b6
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-heredoc-refuses-loudly
+  digest db4b9afdc8f0a988
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-multioperand-atomic-runs
+  digest ba6f00a3bf4080dc
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-mutator-fails-book-continues
+  digest 61d9da0e72e2534c
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-nounset-book-survives
+  digest 8179a82d09617bd1
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-refusepath-rc0-never-passes
+  digest 03d29d47ffd69611
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-reingest-collision-verbatim
+  digest 6ac8c118ed5df25e
+  records refused
+  site 0.- ast=53 run
+  site 1.- ast=58 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-ternary-flagship
+  digest 10a8ecd2bfda62d4
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=7 run
+  site 2.- ast=12 run
+  site 3.- ast=17 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-var-namespace-isolated
+  digest 5cff0589e5771a5e
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard26-classed-decline-demotes-guard
+  digest e6d1b078617b5bbf
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard26-classed-decline-guards-below
+  digest 7aa4d6c2e46459fa
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard26-diverged-wall-guards-below
+  digest c2ab3eb4846e3b4e
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard26-unmodeled-wall-guards-below
+  digest d15c39a85a9e7b46
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case headline-guarded-realistic
+  digest 93425fecdbb70f1f
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=16 run
+  site 3.- ast=21 run
+  site 4.- ast=25 run
+  site 5.- ast=30 run
+  site 6.- ast=35 run
+  site 7.- ast=39 run
+  site 8.- ast=43 run
+  site 9.- ast=50 run
+  site 10.- ast=55 run
+  site 11.- ast=60 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case headline-partial
+  digest 6dc8c08ca120e65e
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 run
+  site 3.- ast=14 run
+  site 4.- ast=18 run
+  site 5.- ast=22 run
+  site 6.- ast=26 run
+  site 7.- ast=29 run
+  site 8.- ast=33 run
+  site 9.- ast=37 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case headline-pi-webhost
+  digest 6dc8c08ca120e65e
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 run
+  site 3.- ast=14 run
+  site 4.- ast=18 run
+  site 5.- ast=22 run
+  site 6.- ast=26 run
+  site 7.- ast=29 run
+  site 8.- ast=33 run
+  site 9.- ast=37 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-clean-run
+  digest 07eeaa05058ec5cd
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-eval-wall-findings
+  digest 7d2a87469c4dfb03
+  records absent
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-jsonl-envelope
+  digest 7d2a87469c4dfb03
+  records absent
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-real-checkbashisms
+  digest 35c072afffb5808d
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-real-shellcheck
+  digest c7d9c5fb2197bc5e
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-tools-absent-info
+  digest 07eeaa05058ec5cd
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-member-external-writer-runs
+  digest a1e139e1f7ae6ca2
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-nested-converges
+  digest 9fe4db4cb7bb8e91
+  records refused
+  site 0.- ast=8 run
+  site 1.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-var-body-reassign-tops
+  digest fcc5d66f9be46f6b
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case omitsafe21-heredoc-and-flipped-runs
+  digest 0e686e1a5b31c06d
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=10 run
+  site 2.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case omitsafe21-heredoc-guard-flipped-runs
+  digest 92461651f97123b5
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=10 run
+  site 2.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case omitsafe21-heredoc-guard-keeps-body
+  digest 40e80155a073d7f3
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=10 run
+  site 2.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case partial-top-argv-runs
+  digest a2ba2191e1487de4
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case payload-bare-sh-c-walls
+  digest e2093950f78ebfcc
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case payload-composed-shape-walls
+  digest fba37677473d0154
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-closure-travels-with-the-definition
+  digest c8f7047f1ab7e476
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-contested-helper-resolves-by-last-wins
+  digest cf4ce64cea733bdd
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-helper-package-entrypoints-discarded
+  digest 0d5f35ee1342564b
+  records refused
+  site 0.- ast=8 run
+  site 1.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-helper-package-entrypoints-lift
+  digest b98d2ef561680304
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-reach-arm-death-walls-total
+  digest d0657e9435a90a7d
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-reach-arm-survey-complete-spares
+  digest 2d000baac08a5921
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-split-family-lane-separation
+  digest c4ad6b7bc0394eeb
+  records refused
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-survival-body-death-walls-total
+  digest 65c699e18c1ac396
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-variable-resolved-source-loads
+  digest 253f70843ae04e54
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-wrapped-vouch-answers-at-a-live-site
+  digest f638f02cd9f03600
+  records refused
+  site 0.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-wrapped-vouch-withholds-above-its-definition
+  digest 89733b32dea34307
+  records refused
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin30-wrapped-case-bodied-in-book-verdict
+  digest 3a7298be984eafb3
+  records refused
+  site 0.- ast=25 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case probe-operand-quoting
+  digest c6a19bb674306ebc
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case reaches-conflict
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case reaches-provider-collision
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case records30-glued-line-refuses-the-attempt
+  digest 018c972b82ae9627
+  records refused
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case redir-target-top
+  digest 5e8f10038b5f570b
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case render21-adjacent-multiline-elides
+  digest 0003136645ad326f
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case render21-heredoc-refusal
+  digest f003bbd027a80c8e
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case render21-multiline-leaf-substitutes
+  digest 029aeb656468234c
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case report27-decline-static-classed
+  digest ddb582cea61c5f82
+  records refused
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case reserved-namespace-squat
+  digest 3b9a8993f5056e24
+  records absent
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case resolver-conflict
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case resolver-provider-collision
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case sourcing-degrades-safely
+  digest 0f3d702fff0be3f5
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case split-multi-operand-runs
+  digest bde086452581fd5f
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case split-single-elides
+  digest 95bfd6519853fd90
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-adequacy-seed
+  digest 0160a495cd93bd3a
+  records refused
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-alias-provides
+  digest a44c1fad3ed5b362
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-alias-symlink
+  digest 8f303eef7e5cea97
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-all-converged-clean
+  digest b8f237cd2856a837
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-crosskind-residue
+  digest 08a6cee365f0fe5a
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-derived-survive
+  digest 249acb602d9bbb57
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-errexit-defeats
+  digest b7efd50f9a74a8be
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  site 3.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-floor-no-oracle
+  digest 0efff1d77d71be0f
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-incoherent-refused
+  digest e65249b0ba7d9273
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-mixed-real
+  digest d1bcb0b115f43eeb
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=11 run
+  site 2.- ast=17 run
+  site 3.- ast=22 run
+  site 4.- ast=25 run
+  site 5.- ast=30 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-modeled-wall
+  digest 8eb1a5656c7128d2
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-nonsurvive-bare
+  digest a36847c57c872064
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-nonsurvive-hit
+  digest e23ce79c045bc0b9
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-opaque-wall
+  digest 401c048c3d7a123f
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=7 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-partial-oracle
+  digest 67861f88d34ee726
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-floor
+  digest 286c89a00de00d7a
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=11 run
+  site 3.- ast=14 run
+  site 4.- ast=19 run
+  site 5.- ast=23 run
+  site 6.- ast=28 run
+  site 7.- ast=31 run
+  site 8.- ast=36 run
+  site 9.- ast=40 run
+  site 10.- ast=45 run
+  site 11.- ast=48 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-if-form
+  digest a3def39b2f7b7265
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=12 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-oracle-converged
+  digest f5256c6f2688751c
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=11 run
+  site 3.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-single-lifts
+  digest 045d9d0ec681b089
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=10 run
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-unvouched-mid
+  digest 76e6fedbc4cf8dba
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=8 run
+  site 3.- ast=13 run
+  site 4.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-reach-crossauthor
+  digest 2a223f7dc59ad687
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-reach-static-service
+  digest 8b563a4dfb5f4766
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-survive-killwall
+  digest 349d8a551939dce9
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-survive-multiwall
+  digest 138a5352c03dfd1c
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  site 3.- ast=19 run
+  site 4.- ast=24 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-survive-simple
+  digest 847b5c0ead81423f
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-survive-simple-unflagged
+  digest 11c96f4d91ae24ce
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case survivebite27-naked-trust-chain
+  digest 92c4f5d3b625a076
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed
+  digest 4215a5ed6030f36d
+  records absent
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-do-to-open-loop-body
+  digest 4d98768e53dec29f
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-esac-to-close-case
+  digest 36da0e511f313bfa
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-fi-to-close-if
+  digest 71d72fc4d46b9336
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-in-after-case-word
+  digest 3f2217ef25f4f899
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-rparen-after-case-pattern
+  digest 40f56edac3b559a4
+  records absent
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-then-after-elif
+  digest 59787d0a24772124
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-then-after-if
+  digest c5edfefa7de3e856
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-unterminated-brace-group
+  digest a0ee017de5f50b58
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-unterminated-case-arm
+  digest bc51d55fdeaa9b1b
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-unterminated-subshell
+  digest bb696511e6054e26
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-arithmetic-as-command
+  digest 33e4425c1b0d9219
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-construct-trailing-redirection
+  digest a1104e5182233418
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-double-semicolon-outside-case
+  digest 44863e1344540582
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-dynamic-command-name
+  digest f6b34bdda4aeb114
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-eval-constructed-code
+  digest b8631f3e1827abac
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-expected-a-command
+  digest deb70294194ebc97
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-expected-a-word
+  digest 0fd249ffb738e5fb
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-list-not-terminated
+  digest 869640c1f9cc5b72
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-list-word-has-expansion
+  digest 6eac6f09ecf26d68
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-without-in-list
+  digest f74d76176c823870
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-without-variable-name
+  digest 39a63db5099c9c46
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-loop-jump-in-body
+  digest e00f07963fda1369
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-loop-jump-in-body-or-condition
+  digest 0baba4a71e2b4ee7
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-nesting-bound
+  digest 4feb89e23b9d6afd
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-operator-without-command
+  digest 4d4257edf40981c5
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-printf-writes-lvalue
+  digest fb6b10d53c1943c7
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-reserved-word-in-command-position
+  digest afddbe893e59f678
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-source-of-dynamic-target
+  digest 7280f1f840a5f05d
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-test-references-lvalue
+  digest 25c5115c931874dd
+  records absent
+  site 0.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-unset-dynamic-lvalue
+  digest 8d7d09a91753b2d1
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case tiedown-killwall-statebearing
+  digest 38f523c1d71f5046
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case tiedown-survive-statebearing
+  digest 8afbc43d1d39a165
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case top-eval
+  digest 7d2a87469c4dfb03
+  records refused
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case touches-escalated
+  digest ab35eaa7e9b67c6f
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case typeless-floor-converged-elides
+  digest aaf36bbb639a9b39
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case typeless-floor-oneliner
+  digest 22c397e5179a1c3a
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case verdict-coord-same-entity-shares-one-cell
+  digest 95274a98f58da17d
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case verdict-coord-splits-sibling-cells
+  digest d7c74261cfbf607a
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case while-condition-floor
+  digest 728eebf22f17af90
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=11 run
+  site 3.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-address-unmatched
+  digest 73966537963aa595
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-analysis-opener-guarded
+  digest 1ecc3a62c28d50df
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:80/tcp@allowed
+  site 1.- ast=8 run
+  site 2.- ast=12 guard fact=sm.dorc.Service:nginx@active invoked=systemctl__is_converged
+  site 3.- ast=17 run
+  site 4.- ast=22 run
+  site 5.- ast=26 guard fact=sm.dorc.Service:nginx@enabled invoked=systemctl__is_converged
+  hoisted bytes=186 digest=dd7e8b623f8c
+  may-alias 0
+case why-claims-payload
+  digest 014c34ce68b3be88
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=8 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-declines-payload
+  digest 665a948e6f484132
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-drift-address-unanswerable
+  digest 0e364c14ab95f8ea
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-drift-analysis-suppressed
+  digest 012d9cb195b55949
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-improvement-ran-blind
+  digest 61eaae915c4f6fc4
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-next-step-suspect-several-claims
+  digest 8ed56572d63c1fb6
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  site 2.- ast=13 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-nothing-to-report
+  digest bde3c22dd8557c70
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-cmdsub-opener
+  digest a2379b1a86edc55d
+  records absent
+  site 0.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-elide-cascaded
+  digest 23a2b104496e627a
+  records admitted
+  site 0.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:alpha@installed
+  site 1.- ast=11 omit controller=6
+  site 2.- ast=19 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:beta@installed
+  site 3.- ast=24 omit controller=19
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-render-refused
+  digest 272a4728f665de92
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=9 run
+  site 2.- ast=14 guard fact=sm.dorc.Package:redis@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-run-not-elidable
+  digest ea9ca904401ad92a
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-run-unprobed
+  digest 661a3c86097234f7
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-skipped-converged
+  digest a949b29024fa3a76
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-vouch-payload-establish
+  digest 18fd8339ef5f5ad0
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=17 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-decline-unsound-arm
+  digest c7c5365796479efa
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-drifted-book-degraded-receipt
+  digest 89e208f4dabb85eb
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-elide-and-hand-guard
+  digest 06569b689eb61829
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=11 run
+  site 2.- ast=16 run
+  site 3.- ast=20 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-survive-trusted-footprint
+  digest 419f2a8d3d26be3b
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-wall-guards-downstream
+  digest cb9e2490edfa740d
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-webhost-whole
+  digest e44fbc17033ee14f
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=11 run
+  site 2.- ast=16 run
+  site 3.- ast=20 run
+  site 4.- ast=25 run
+  site 5.- ast=29 run
+  site 6.- ast=34 run
+  site 7.- ast=38 run
+  site 8.- ast=41 run
+  site 9.- ast=44 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whylog-book-desync
+  digest b7a7e495866814e2
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-carry-proof-is-the-shipped-body
+  digest 69a8402f86a46491
+  records refused
+  site 0.- ast=22 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-consent-comes-from-the-live-verdict
+  digest 079a4b06c1ff1e7e
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-contested-wrapper-peels-nothing
+  digest 2199050900484d77
+  records refused
+  site 0.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-regional-wrapper-decline-walls
+  digest f33a675344937510
+  records refused
+  site 0.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapped-site-adoption-hint
+  digest 9f00905d8fe5085d
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-dual-peel-incoherent-fails-fast
+  digest c5f00ad7f6d4414a
+  records refused
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-entry-form-coheres
+  digest ad3663a4d7931c67
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-entry-incoherent-fails-fast
+  digest c2f263dfe0e6bf3f
+  records refused
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-identity-lend-map-coheres
+  digest 3ea5521a4606dde1
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-modeled-peel-coheres-walls
+  digest 79eaa3ceef73de8e
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-unmodeled-peel-walls
+  digest c0a38577ab44457d
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
