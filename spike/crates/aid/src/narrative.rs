@@ -552,6 +552,22 @@ pub enum CollapseKind {
         vouching_file: SourceFileId,
         reason: crate::diag::VouchedCompositionReason,
     },
+    /// A PROJECTION dropped Spine records it could not carry
+    /// (`309:rul-drop-accounting-completes-the-narrative-law`).
+    ///
+    /// A projection is itself a narrowing function, so its drops narrate through the same discipline
+    /// every other safety-narrowing does — which is how "the durable is not permitted to be poor; it
+    /// may be forced to be poor" (`306b` §2a) stops being a hope and becomes countable. The species
+    /// travels as its own greppable name and the count as a scalar; the dropped RECORDS never do
+    /// (`operands-are-pure-and-capped`), which is the whole reason this is admissible at all.
+    ProjectionDrop {
+        /// Which projection narrowed — `whylog` today, one name per authority-exit later.
+        projection: &'static str,
+        /// The Spine species whose records did not survive it.
+        species: &'static str,
+        /// How many records of that species the projection held and did not carry.
+        dropped: u32,
+    },
     /// RESERVED (r26): the cancellation narrative. Unconstructable at v1 (holds the slot only).
     Cancellation(Reserved),
 }
@@ -609,6 +625,7 @@ impl CollapseKind {
             CollapseKind::RoleFamilyShadowed { .. } => "RoleFamilyShadowed",
             CollapseKind::SolverConsistencyFailure { .. } => "SolverConsistencyFailure",
             CollapseKind::CompositionSuspended { .. } => "CompositionSuspended",
+            CollapseKind::ProjectionDrop { .. } => "ProjectionDrop",
             CollapseKind::Cancellation(_) => "Cancellation",
         }
     }

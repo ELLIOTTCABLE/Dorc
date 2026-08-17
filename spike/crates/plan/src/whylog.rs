@@ -651,6 +651,223 @@ pub struct WhylogV2Metadata {
     pub apply: Vec<ApplyLine>,
 }
 
+/// The per-species DURABLE VIEWS, and the projection that builds them from the Spine
+/// (`309:mech-census-three-states`; census `30E` §2).
+///
+/// # Why the fields live here and not on the records
+///
+/// A Spine record is `SiteId`-keyed, license-bearing, and grade-stamped. A View's fields ARE the
+/// durable subset and nothing else. Because records themselves never implement serialization, a
+/// field that no View names **cannot reach disk** — field-level exclusion is structural rather than
+/// remembered, silent field-growth is unrepresentable, and lifting one exclusion is one field added
+/// to one View, which is the durable tripwire's mechanical form
+/// (`rul-durable-contents-reviewed-before-design`).
+///
+/// The exemplar is the disposition: the RECORD carries the site's fine key and its license, and
+/// [`ApplyLine`] — the View — carries a leaf and a tag. `30E:stop-siteid-digest-rekey` keeps it that
+/// way this stage; re-keying the durable to `SiteId` is `lift-durable-siteid-keying`, deferred
+/// behind the tripwire.
+pub mod view {
+    use dorc_core::RunInstant;
+    use dorc_core::spine::{SpineDigest, SpineInvocation};
+
+    use super::ApplyLine;
+    use crate::Disposition;
+
+    /// The `SpineInvocation` View: everything the durable keeps of the run's identity.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Invocation {
+        /// The invocation mode.
+        pub mode: String,
+        /// The full argv, one word per element.
+        pub argv: Vec<String>,
+        /// Book path and content digest.
+        pub book: (String, String),
+        /// Oracle paths and digests, in load order.
+        pub oracles: Vec<(String, String)>,
+        /// The per-attempt nonce.
+        pub nonce: String,
+        /// The attempt serial.
+        pub attempt: u32,
+        /// The session host id.
+        pub host: String,
+        /// When the controller started the run. `None` ⇒ the edge had no clock, and the durable
+        /// says so rather than dating the run from replay.
+        pub started_at: Option<RunInstant>,
+    }
+
+    impl Invocation {
+        /// Project the record. The grade is dropped by NOT BEING NAMED — `306c` §2's scope fence in
+        /// its structural form.
+        #[must_use]
+        pub fn of(record: &SpineInvocation) -> Self {
+            Self {
+                mode: record.mode.clone(),
+                argv: record.argv.clone(),
+                book: (record.book.path.clone(), record.book.digest.clone()),
+                oracles: record
+                    .oracles
+                    .iter()
+                    .map(|claim| (claim.path.clone(), claim.digest.clone()))
+                    .collect(),
+                nonce: record.nonce.clone(),
+                attempt: record.attempt,
+                host: record.host.clone(),
+                started_at: record.started_at,
+            }
+        }
+    }
+
+    /// The `SpineDigest` View: the digest string, and nothing beside it.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Digest {
+        /// The decision digest at write time.
+        pub digest: String,
+    }
+
+    impl Digest {
+        /// Project the record.
+        #[must_use]
+        pub fn of(record: &SpineDigest) -> Self {
+            Self {
+                digest: record.digest.clone(),
+            }
+        }
+    }
+
+    /// The `SpineRecordStream` View: the arrival instants. The admitted BYTES are not a field here
+    /// — they ride to the writer as the borrowed admitted handle, so untrusted result bytes keep
+    /// having no raw serialization route (`rul-host-bytes-bounded-before-admission`).
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct RecordStream {
+        /// When the controller took each record in, by arrival ordinal, ascending.
+        pub instants: Vec<(u64, RunInstant)>,
+    }
+
+    /// Project a `SpineDisposition` to its durable row.
+    ///
+    /// THE lossy step, and the one worth reading twice: the fine `SiteId` narrows to its leaf and
+    /// the whole license becomes a four-letter tag. `predicted` is always `true` — the spike has no
+    /// apply executor, so every row is a PREDICTION and must never wear a measurement's clothes
+    /// (`tc-apply-report-is-prediction`).
+    #[must_use]
+    pub fn disposition(site: dorc_core::SiteId, decision: &Disposition) -> ApplyLine {
+        ApplyLine {
+            leaf: site.leaf.0,
+            disposition: tag(decision).to_owned(),
+            predicted: true,
+        }
+    }
+
+    /// The durable's disposition vocabulary.
+    #[must_use]
+    pub const fn tag(disposition: &Disposition) -> &'static str {
+        match disposition {
+            Disposition::Run => "run",
+            Disposition::Replace(_, _) => "replace",
+            Disposition::Omit { .. } => "omit",
+            Disposition::Guard(_) => "guard",
+        }
+    }
+}
+
+/// The whole `.whylog` projection: exactly the four `CensusArm::Durable` species, each through its
+/// own View, plus the account of everything it chose not to keep.
+///
+/// This is the ONLY route from decisions to disk. It is built from a Spine and nothing else, so a
+/// driver cannot assemble a durable out of scattered locals — which is what made silent divergence
+/// between the digest, the report, and the artifact possible before the reification.
+#[derive(Debug)]
+pub struct DurableProjection<'a> {
+    metadata: WhylogV2Metadata,
+    records: &'a AdmittedUnscopedHostRecords,
+    drops: Vec<dorc_aid::CollapseNarrative>,
+}
+
+impl<'a> DurableProjection<'a> {
+    /// Project the durable from the Spine.
+    ///
+    /// `None` when a durable-arm record the projection needs is absent — an invocation, a digest, or
+    /// an admitted record stream. That is an honest "there is no durable to write", never a partial
+    /// one: a whole-document refusal is the writer's contract, and it starts here.
+    #[must_use]
+    pub fn project(spine: &'a crate::Spine) -> Option<Self> {
+        let invocation = view::Invocation::of(spine.invocation()?);
+        let digest = view::Digest::of(spine.digest()?);
+        let stream = spine.record_stream()?;
+        let apply = spine
+            .dispositions()
+            .map(|record| view::disposition(record.site, &record.decision))
+            .collect();
+        Some(Self {
+            metadata: WhylogV2Metadata {
+                mode: invocation.mode,
+                argv: invocation.argv,
+                book: invocation.book,
+                oracles: invocation.oracles,
+                nonce: invocation.nonce,
+                attempt: invocation.attempt,
+                host: invocation.host,
+                decision_digest: digest.digest,
+                started_at: invocation.started_at,
+                instants: stream.instants.clone(),
+                apply,
+            },
+            records: &stream.records,
+            drops: drop_account(spine),
+        })
+    }
+
+    /// The controller metadata this projection carries.
+    #[must_use]
+    pub const fn metadata(&self) -> &WhylogV2Metadata {
+        &self.metadata
+    }
+
+    /// The admitted record bytes this projection carries, still wearing their admission.
+    #[must_use]
+    pub const fn records(&self) -> &'a AdmittedUnscopedHostRecords {
+        self.records
+    }
+
+    /// What the projection dropped, narrated
+    /// (`309:rul-drop-accounting-completes-the-narrative-law`).
+    ///
+    /// "The durable is not permitted to be poor; it may be forced to be poor" (`306b` §2a) becomes
+    /// mechanical here: every non-durable species the Spine actually held is countable at projection
+    /// time, so the run can say what it chose not to keep instead of the loss being invisible.
+    #[must_use]
+    pub fn drops(&self) -> &[dorc_aid::CollapseNarrative] {
+        &self.drops
+    }
+}
+
+/// One `ProjectionDrop` per non-durable species the Spine actually held.
+///
+/// Walks `SpineSpecies::ALL`, so a new species is accounted for the moment the census classifies it
+/// — there is no second list to keep in step.
+fn drop_account(spine: &crate::Spine) -> Vec<dorc_aid::CollapseNarrative> {
+    use dorc_core::spine::{CensusArm, SpineSpecies};
+
+    SpineSpecies::ALL
+        .iter()
+        .filter(|species| species.census_arm() != CensusArm::Durable)
+        .filter_map(|species| {
+            let dropped = spine.population(*species);
+            (dropped > 0).then(|| {
+                dorc_aid::CollapseNarrative::new(
+                    dorc_aid::narrative::SpeechAct::Derived,
+                    dorc_aid::narrative::CollapseKind::ProjectionDrop {
+                        projection: "whylog",
+                        species: species.name(),
+                        dropped,
+                    },
+                )
+            })
+        })
+        .collect()
+}
+
 /// The only v2 serialization input: controller metadata paired with already-admitted records.
 #[derive(Debug)]
 pub struct WhylogV2Write<'a> {
@@ -663,6 +880,15 @@ impl<'a> WhylogV2Write<'a> {
     #[must_use]
     pub fn new(metadata: &'a WhylogV2Metadata, records: &'a AdmittedUnscopedHostRecords) -> Self {
         Self { metadata, records }
+    }
+
+    /// The write a durable projection describes — the driver's only route to these bytes.
+    #[must_use]
+    pub const fn of_projection(projection: &'a DurableProjection<'a>) -> Self {
+        Self {
+            metadata: &projection.metadata,
+            records: projection.records,
+        }
     }
 }
 

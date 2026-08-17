@@ -1867,20 +1867,27 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     );
 
     // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
-    if let Some(dir) = durable_destination(args) {
-        let metadata = assemble_whylog_metadata(
+    if let Some(dir) = durable_destination(args)
+        && whylog_eligible
+        && let Some(records) = admitted_records
+    {
+        record_durable_arm(
+            &mut spine,
             &framing,
             book_name,
             &book_src,
             &oracle_paths,
             &oracle_srcs,
             &decision_digest,
-            &plan,
             clock.now(),
             results,
+            records,
+            scoped_results.influence(),
         );
-        if whylog_eligible && let Some(records) = admitted_records.as_ref() {
-            write_whylog(&dir, &metadata, records);
+        // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
+        // decided at one seat, per species, and what it drops is countable there too.
+        if let Some(projection) = dorc_plan::whylog::DurableProjection::project(&spine) {
+            write_whylog(&dir, &projection);
         }
     }
     Ok(book_outcome)
@@ -2123,12 +2130,8 @@ fn refuse_replay(reason: dorc_plan::records::AdmissionRefusal) -> Carrier<Replay
 /// of them, which `28D:must-retention-is-one-decision` names as one of the whylog's five
 /// each-looked-local decisions. The artifact on stdout is still untouched by any of this: the
 /// durable is a postmortem aid, so a failure to keep one is loud, not fatal.
-fn write_whylog(
-    dir: &str,
-    metadata: &dorc_plan::whylog::WhylogV2Metadata,
-    records: &dorc_plan::records::AdmittedUnscopedHostRecords,
-) {
-    let write = dorc_plan::whylog::WhylogV2Write::new(metadata, records);
+fn write_whylog(dir: &str, projection: &dorc_plan::whylog::DurableProjection<'_>) {
+    let write = dorc_plan::whylog::WhylogV2Write::of_projection(projection);
     let bytes = match dorc_plan::whylog::try_serialize_v2(
         &write,
         dorc_plan::whylog::WhylogLimits::spike_default(),
@@ -2185,47 +2188,56 @@ const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal
     }
 }
 
-/// Assemble the thin durable from a completed run (`27V` §2). The apply report records the PREDICTED
-/// per-leaf disposition (`predicted=true`) — the spike has no apply executor (`tc-apply-report-is-
-/// prediction`); the field shape is additive so a real executor fills genuine outcomes later.
+/// Write the run's durable-arm records onto the Spine (`30E` §2's four species).
+///
+/// The durable itself is projected from these through `plan::whylog`'s per-species Views; nothing
+/// here decides what reaches disk. That separation is the point: the driver states what the run WAS,
+/// and one seat decides what a durable KEEPS of it.
 #[expect(
     clippy::too_many_arguments,
-    reason = "the invocation record IS a wide tuple of independent invocation facts (framing/book/oracles/digest/plan/instant); bundling them behind a params struct would just re-spell this signature one layer down"
+    reason = "the invocation record IS a wide tuple of independent invocation facts (framing/book/oracles/digest/instant); bundling them behind a params struct would just re-spell this signature one layer down"
 )]
-fn assemble_whylog_metadata(
+fn record_durable_arm(
+    spine: &mut dorc_plan::Spine,
     framing: &dorc_plan::records::Framing,
     book_name: &str,
     book_src: &str,
     oracle_paths: &[String],
     oracle_srcs: &[String],
     decision_digest: &str,
-    plan: &dorc_plan::Plan,
     started_at: Option<dorc_core::RunInstant>,
     results: &SiteResults,
-) -> dorc_plan::whylog::WhylogV2Metadata {
-    let apply = plan
-        .steps
-        .iter()
-        .map(|s| dorc_plan::whylog::ApplyLine {
-            leaf: s.leaf.0,
-            disposition: disposition_tag(&s.disposition).to_owned(),
-            predicted: true,
-        })
-        .collect();
-    dorc_plan::whylog::WhylogV2Metadata {
+    records: dorc_plan::records::AdmittedUnscopedHostRecords,
+    influence: dorc_core::influence::InfluencePhase,
+) {
+    spine.set_invocation(dorc_core::spine::SpineInvocation {
         mode: "whylog-replay".to_owned(),
         argv: std::env::args().collect(),
-        book: (book_name.to_owned(), book_digest(book_src)),
+        book: dorc_core::spine::SourceClaim {
+            path: book_name.to_owned(),
+            digest: book_digest(book_src),
+        },
         oracles: oracle_paths
             .iter()
             .zip(oracle_srcs)
-            .map(|(p, s)| (p.clone(), book_digest(s)))
+            .map(|(path, src)| dorc_core::spine::SourceClaim {
+                path: path.clone(),
+                digest: book_digest(src),
+            })
             .collect(),
         nonce: framing.nonce().0.clone(),
         attempt: framing.attempt(),
         host: framing.host().to_owned(),
-        decision_digest: decision_digest.to_owned(),
         started_at,
+        // Authored-before-contact: every field is controller-owned invocation context.
+        grade: None,
+    });
+    spine.set_digest(dorc_core::spine::SpineDigest {
+        digest: decision_digest.to_owned(),
+        grade: None,
+    });
+    spine.set_record_stream(dorc_core::spine::SpineRecordStream {
+        records,
         instants: results
             .records
             .values()
@@ -2233,8 +2245,10 @@ fn assemble_whylog_metadata(
             .collect::<BTreeMap<_, _>>()
             .into_iter()
             .collect(),
-        apply,
-    }
+        // Host-influenced by construction: these ARE the host-reported bytes, and the marker comes
+        // from having read them rather than from anyone asserting it (`306b` §1b).
+        grade: Some(influence),
+    });
 }
 
 /// The ONE `SourceFileId` space over every input (`28K` §2a Provenance) as parallel path/source

@@ -62,6 +62,7 @@ fn census_marker(kind: &CollapseKind) -> &'static str {
         CollapseKind::RoleFamilyShadowed { .. } => "CollapseKind::RoleFamilyShadowed",
         CollapseKind::SolverConsistencyFailure { .. } => "CollapseKind::SolverConsistencyFailure",
         CollapseKind::CompositionSuspended { .. } => "CollapseKind::CompositionSuspended",
+        CollapseKind::ProjectionDrop { .. } => "CollapseKind::ProjectionDrop",
         CollapseKind::Cancellation(reserved) => match *reserved {},
     }
 }
@@ -141,6 +142,11 @@ fn constructible_classes() -> Vec<CollapseKind> {
             vouching: MintSpan(Span::new(BytePos(0), BytePos(1))),
             vouching_file: SourceFileId(0),
             reason: dorc_aid::diag::VouchedCompositionReason::BookRedefinesHelper,
+        },
+        CollapseKind::ProjectionDrop {
+            projection: "whylog",
+            species: "SpineSurvival",
+            dropped: 2,
         },
     ]
 }
