@@ -92,11 +92,10 @@ another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-fram
    up by `every_lifted_role_row_carries_its_parsed_definitions_span` — load-bearing rather
    than tidy, because a drifted span matches no frame answer and every site would then
    withhold silently and corpus-wide. Custody stays DERIVED at one seat
-   (`DefinitionId::custody`). The retired shape keyed rows by source-file index and asked
-   the definition table for their identity over `(file, name)`; its two extra states went
-   with it — a row the table could not find, and a file holding two definitions of one role
-   where which spoke was unrecoverable — because spans are unique within a file and a name
-   the table never learned simply draws `NoOpinion`. RESIDUE, named: the LIFT keeps one row
+   (`DefinitionId::custody`). Two states a name-join would need do not exist here: spans are
+   unique within a file, so "which of this file's definitions produced this row" is not a
+   question anyone can fail to answer, and a name the definition table never learned simply
+   draws `NoOpinion`. RESIDUE, named: the LIFT keeps one row
    per `(file, role)`, so where a file holds two definitions of one role the earlier
    produces no row and its frames withhold (safe; `p-x-definition-grade-keying` pins the
    target and says so). `rul-rc-reaches-genkill-only-through-decisions` (HUMAN-TYPED
