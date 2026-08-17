@@ -750,14 +750,23 @@ const CONDITION_UNWRAP_CAP: usize = 8;
 /// only. Anything not in this set is ⊤ and folds nothing (`inv-top-reject`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum DecidableTest {
-    /// `command -v <literal name>`, where the name is one the unit DEFINES somewhere.
+    /// `command -v <literal ROLE name>`, where the name is one the unit DEFINES somewhere.
     ///
     /// Contracted to function-definedness within the analysis unit
     /// (`28M:rul-command-v-reads-fn-definedness`, human-restated: "for analysis, `command -v`
     /// will never check for a binary named `cmd__is_converged`"). A PATH executable of the same
     /// name is pathological-by-construction and is `28K:bitem8`'s reserved differential case.
-    /// The universe restriction is what keeps the ordinary `command -v yum` — a genuine,
-    /// host-dependent PATH question — out: a name the unit never defines has no binding to read.
+    ///
+    /// **ROLE-SHAPED, not merely known** — and the difference became load-bearing the moment the
+    /// definition table widened past role names. The ruling's whole warrant is that nobody ships a
+    /// BINARY called `apt_get__is_converged`; it says nothing about `jq`, and a unit carrying a
+    /// `jq()` polyfill is exactly a unit where `command -v jq` is a genuine, host-dependent PATH
+    /// question. Deciding it by function-definedness would model the polyfill as bound on a host
+    /// where the real binary wins the lookup and the guard's right operand never runs — the engine
+    /// then holds a body no execution reached, which is winner-shifting in the worst direction.
+    /// So membership in the table is necessary and NOT sufficient: the name must also be a role
+    /// name, which is what keeps the ordinary `command -v yum` out (`28M:dec-decidable-set-v0`
+    /// grows by NAME only, and this is not a growth).
     FunctionDefined(String),
     /// `[ -f <literal> ]` / `test -f <literal>` naming a path the CONTROLLER resolved as a
     /// loadable source.
@@ -840,7 +849,7 @@ fn decidable_test(
     let test = match command_head(ast, simple)? {
         "command" if literals.argv_len(node) == 3 && literals.literal_text(node, 1)? == "-v" => {
             let name = literals.literal_text(node, 2)?;
-            if !defs.knows(name) {
+            if !defs.knows(name) || dorc_oracle::reserved::role_family(name).is_none() {
                 return None;
             }
             DecidableTest::FunctionDefined(name.to_owned())
@@ -2208,6 +2217,43 @@ mod tests {
     }
 
     // ── TABLE 5: the decidable-condition fold (`28M` §9) ──
+
+    /// THE WIDENING'S FENCE: `command -v` decides function-definedness for ROLE names and for
+    /// nothing else, however much the definition table knows.
+    ///
+    /// The table now records every top-level funcdef, helpers included (`28Q` §1 — one resolution
+    /// mechanism). Membership was the fold's whole universe restriction, so without this fence the
+    /// widening would silently promote every helper polyfill into the decidable set. That is
+    /// unsound in a way the role case is not: `rul-command-v-reads-fn-definedness` rests on nobody
+    /// shipping a binary named `apt_get__is_converged`, and `jq` is precisely a binary. On a host
+    /// that HAS jq, the real `command -v jq` succeeds, the `||` right operand never runs, and the
+    /// polyfill is never bound — so folding the guard would leave the engine holding a body no
+    /// execution reached.
+    ///
+    /// Asserted as ⊤ AND zero folded edges: the binding alone could come out right for the wrong
+    /// reason, and the edge count is what says the fold declined to decide.
+    #[test]
+    fn a_helper_polyfill_guard_stays_undecidable() {
+        let book = "command -v jq >/dev/null 2>&1 || jq() { : ; }\nyum install -y nginx\n";
+        let (table, _) = unit(book, &[ROLE]);
+        assert!(
+            table.knows("jq"),
+            "precondition: the widened table records the helper, so membership cannot be what \
+             holds the line"
+        );
+        let (solved, exit) = solve_book(book, &table);
+        assert!(solved.trusted());
+        assert_eq!(
+            solved.binding_before(exit, "jq"),
+            Flat::Top,
+            "a host-dependent PATH question must leave both branches live"
+        );
+        assert_eq!(
+            solved.folded_edges().len(),
+            0,
+            "and the fold must decline it rather than reach that ⊤ by another route"
+        );
+    }
 
     /// The exit binding of `ROLE`, plus how many edges the fold proved dead. Every cell below
     /// reads both: the binding is the deliverable, and an empty fold set is what distinguishes

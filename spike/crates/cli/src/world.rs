@@ -676,12 +676,25 @@ pub fn demote_on_certifier_trip(
     (vec![banner], cleanup.narrative().to_vec())
 }
 
-/// The unit's role definitions, as DATA for the function-environment domain (`28K` §2).
+/// The unit's function definitions, as DATA for the function-environment domain (`28K` §2).
 ///
-/// Read through `dorc_syntax::parse` for EVERY input, book and oracle alike, so the environment and
-/// the shadow refusal see exactly the funcdefs the sh parser sees. Only ROLE names are recorded:
-/// the refusal is about role FAMILIES (`28K` §1), and an ordinary helper colliding across files
-/// carries no license to withhold.
+/// Read through `dorc_syntax::parse` for EVERY input, book and oracle alike, so the environment
+/// sees exactly the funcdefs the sh parser sees.
+///
+/// EVERY top-level funcdef is recorded, role-named or not (`28Q` §1, human-typed intent: ONE
+/// resolution mechanism, with oracle/book differences as POLICY and never as mechanism). The
+/// retired table held role names alone, which meant the engine had two unrelated answers to "which
+/// body does this name bind here" — a solved environment for roles, and last-declaration-wins over
+/// the loaded set for helpers (`oracle/CLAUDE.md only-load-inert-sources-contribute` names that
+/// second one as an interim that dies here). Sh has one answer, and
+/// `rul-unsure-falls-toward-sh-parity` makes sh's the one to have.
+///
+/// POLICY still differs, and lives entirely at the consumers: role FAMILIES are what the shadow
+/// refusal withholds (`28K` §1 — the cli maps a contest to a family through
+/// `oracle::reserved::role_family`, so a helper collision reaches no withholding), and the
+/// decidable-condition fold's `command -v` arm reads ROLE names only, because its whole warrant is
+/// that a role name is never a binary (`dec-decidable-set-v0`; widening the table is exactly what
+/// made that fence load-bearing rather than incidental).
 ///
 /// Load order is the id order (`28K` §2a): CLI-named sources are the AMBIENT PREFIX, applied
 /// "before line 1" in command-line order, and each is also registered under its own path so a
@@ -715,9 +728,6 @@ pub fn definition_table(
             else {
                 continue;
             };
-            if dorc_oracle::reserved::role_family(name).is_none() {
-                continue;
-            }
             ids.push(table.add(Definition {
                 file: source_file_id(idx),
                 name: name.clone(),
@@ -735,9 +745,6 @@ pub fn definition_table(
         else {
             continue;
         };
-        if dorc_oracle::reserved::role_family(name).is_none() {
-            continue;
-        }
         let def = table.add(Definition {
             file: book_file,
             name: name.clone(),
