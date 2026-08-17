@@ -557,6 +557,12 @@ raw = true
 dir = "spike"
 run = "cargo run --quiet -p dorc-loom -- keys"
 
+[tasks."lint:docids"]
+description = "READ-ONLY: every docID cross-reference in the corpus, the steering files and the root docs, checked against the document it names. Silent when every target resolves. Matches only the three unambiguous spellings — letter-bearing IDs (28Q, 30Ba), explicit notes//plans/ paths, and colon-slug forms (271:rul-sin-ordering) — because a bare three-digit run is a line number far more often than a docID. Quarantined targets resolve by FILENAME alone; nothing there is opened. Writes nothing, ever."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- docids"
+
 [tasks."prose:census"]
 description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom promote --human`."
 raw = true
