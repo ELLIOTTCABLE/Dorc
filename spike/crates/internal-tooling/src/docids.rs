@@ -53,6 +53,12 @@ const RETIRED: &[&str] = &[
     "23Z",
     // Not a citation at all: the endpoint of the prose range "28A…28V" in notes/307.
     "28V",
+    // A drafting slug, like 21I/21J above: the closure/custody work order was authored as 30C and
+    // renumbered to 30G at the fold. Its own §8 deviation records the correction at the citing line.
+    // Two floor30 cells still carry the old slug in a book comment, deliberately: their book bytes
+    // are digest-pinned by their transcripts, so sweeping a comment would re-open a floor
+    // measurement (`emitted-is-measure-once-ground-truth`) to no end. This lint reads markdown only.
+    "30C",
 ];
 
 /// Where the corpus keeps documents whose filename encodes their ID. Walked RECURSIVELY, and
