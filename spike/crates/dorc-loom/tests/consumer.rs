@@ -119,8 +119,12 @@ fn editable_baseline_renders_a_defining_case_with_help() {
             })
             .any(|field| field == "help")
     );
+    // The `{which}` hole carries the case's own diverged input. Since the durable grammars merged,
+    // the case renders the ORACLE arm — a book-drifted durable that ADMITS takes the degraded-receipt
+    // route instead (`28F:rul-drift-replay-d1`), so the book arm is unreachable from `--last`.
     assert!(baseline.variables().values().any(|variables| {
-        variables.get(&TemplateVariableName(String::from("which"))) == Some(&String::from("book"))
+        variables.get(&TemplateVariableName(String::from("which")))
+            == Some(&String::from("oracle firewall.oracle.sh"))
     }));
 }
 
