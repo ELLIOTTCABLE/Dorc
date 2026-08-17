@@ -5,7 +5,8 @@
 //! direction, so a silent demotion (rot) and a silent promotion (ambition) are both loud.
 //!
 //! Promoting is a spec-side act under `301:law-spec-touch-frontier-human-only`. Review is the
-//! git diff of this file.
+//! git diff of this file. Claim inputs a promote cannot derive — a typed `excepted(reason)`
+//! above all — are authored here and carried forward by the generator untouched.
 
 use crate::badge::Expectation;
 use crate::catalogue::LawRow;

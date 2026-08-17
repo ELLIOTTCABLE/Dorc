@@ -30,6 +30,7 @@ pub mod check;
 pub mod evidence;
 pub mod kani;
 pub mod pipeline;
+pub mod promote;
 pub mod report;
 pub mod seat;
 pub mod unit;

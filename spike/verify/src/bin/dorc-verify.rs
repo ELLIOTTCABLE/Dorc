@@ -11,7 +11,7 @@ use std::process::ExitCode;
 use dorc_verify::badge::Badge;
 use dorc_verify::catalogue_lock::LAWS;
 use dorc_verify::evidence::Tier;
-use dorc_verify::{check, evidence, kani, pipeline, repo_root, report, unit};
+use dorc_verify::{check, evidence, kani, pipeline, promote, repo_root, report, unit};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -19,14 +19,16 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("check") => run_check(),
         Some("report") => run_report(&rest),
+        Some("promote") => run_promote(&rest),
         Some("materialize") => run_materialize(),
         Some("lean-build") => run_lean_build(),
         Some("kani") => run_kani(rest.first().copied()),
         other => {
             eprintln!("dorc-verify: unknown task {:?}", other.unwrap_or("<none>"));
             eprintln!(
-                "tasks: check, report [--write] [--with-lean] [--with-kani], materialize, \
-                 lean-build, kani [<harness>]"
+                "tasks: check, report [--write] [--with-lean] [--with-kani], promote \
+                 [--with-lean] [--with-kani] [--seat|--proof|--harness <Slug>=<value>], \
+                 materialize, lean-build, kani [<harness>]"
             );
             ExitCode::from(2)
         }
@@ -174,6 +176,72 @@ fn mismatch_verdict(rows: &[report::Row<'_>]) -> Result<String, String> {
     } else {
         Err(mismatches.join("\nFAIL  "))
     }
+}
+
+/// The promote act. It writes Rust source that this binary has already compiled in, so the
+/// republish it names cannot happen in the same process — the next `report --write` rebuilds
+/// against the new lock. Forgetting that step is what the cheap gate's freshness check catches.
+fn run_promote(args: &[&str]) -> ExitCode {
+    let root = repo_root();
+    let inputs = match promote::Inputs::parse(args) {
+        Ok(inputs) => inputs,
+        Err(why) => {
+            eprintln!("dorc-verify {why}");
+            return ExitCode::from(2);
+        }
+    };
+    let built = args
+        .contains(&"--with-lean")
+        .then(|| pipeline::lean_build(root, &dorc_verify::lean_build_root()));
+    let pinned = match args
+        .contains(&"--with-kani")
+        .then(|| kani::run(root, None, &mut |line| println!("{line}")))
+    {
+        None => None,
+        Some(Ok(report)) => Some(report),
+        Some(Err(why)) => {
+            eprintln!("dorc-verify promote: {why}");
+            return ExitCode::from(2);
+        }
+    };
+    let tier = if built.is_none() && pinned.is_none() {
+        Tier::Cheap
+    } else {
+        Tier::WithEngines {
+            lean_built: built.as_ref().map(Result::is_ok),
+            kani: pinned.as_ref(),
+        }
+    };
+    let units = match unit::load_all(root) {
+        Ok(units) => units,
+        Err(why) => {
+            eprintln!("dorc-verify promote: {why}");
+            return ExitCode::from(2);
+        }
+    };
+    let rows = match promote::plan(root, tier, &units, &LAWS, &inputs) {
+        Ok(rows) => rows,
+        Err(why) => {
+            eprintln!("dorc-verify promote: {why}");
+            return ExitCode::from(2);
+        }
+    };
+    for row in &rows {
+        for movement in &row.movements {
+            println!("{}: {movement}", row.slug);
+        }
+    }
+    if let Err(e) = std::fs::write(promote::path(root), promote::render(&rows)) {
+        eprintln!("dorc-verify promote: {e}");
+        return ExitCode::from(2);
+    }
+    println!(
+        "promoted {} law(s) into {}",
+        rows.len(),
+        promote::path(root).display()
+    );
+    println!("next: `mise run verify:report -- --write`, then review both diffs");
+    ExitCode::SUCCESS
 }
 
 fn run_materialize() -> ExitCode {

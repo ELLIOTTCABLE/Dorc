@@ -623,6 +623,12 @@ raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- report"
 
+[tasks."verify:promote"]
+description = "THE catalogue ceremony: regenerate spike/verify/src/catalogue_lock.rs from the corpus plus the claim inputs you pass, and print every badge movement. Claim inputs are `-- --seat|--proof|--harness <Slug>=<value>` (`=none` withdraws); badge expectations are never declared — a badge is written from evidence THIS run computed, and one whose engine did not run is carried forward untouched, so a cheap promote can neither mint nor withdraw a Lean/Kani claim. Add `-- --with-lean` / `-- --with-kani` (Linux/WSL) to make it recompute those. The lock is compiled in, so republish afterwards with `verify:report -- --write`; review is the git diff of both files."
+raw = true
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- promote"
+
 [tasks."verify:translate"]
 description = "OPT-IN, Linux/WSL only: regenerate minispec/Generated/ from the real algebra sources through charon+aeneas, then materialize the externals and run the sorry census. STRICT — a construct the translator cannot model is a refusal, never a silent `sorry`. The output is committed, so the diff IS the drift alarm."
 raw = true
