@@ -850,6 +850,7 @@ ordering that are easy to get subtly wrong, and they run from anywhere in the tr
 ```
 mise run preflight <p>    # bounds-check disk + RAM before spending them (gate|bless|kani|lean)
 mise run doctor           # READ-ONLY inventory: worktrees, target dirs, lane caches
+mise run doctor:unused    # READ-ONLY hygiene report: what is sitting around unused (sizeless)
 mise run build            # cargo build --workspace
 mise run test             # unit + the e2e corpus + the loom corpus
 mise run test:e2e         # the e2e corpus alone: dash -n gate + exec-under-mocks
@@ -1080,6 +1081,21 @@ no task covers, and consider adding the task instead.
   `mise run both doctor` is what puts the WSL lane caches beside the Windows worktrees.
   Nested worktrees are pruned from their container's total (the fleet lives INSIDE the
   primary checkout, so a naive walk doubles every lane).
+- **unused-report-never-reaps** — `mise run doctor:unused` is the SOFT hygiene gate: every
+  worktree (clean/dirty, tip landed in `ai/main` or not), every local branch (merged, and
+  whether anything has it checked out), and every `dorc-*` lane cache (whether the worktree its
+  name is keyed to still exists — `live`/`ORPHAN`/`shared`, and `unkeyed` where no key can be
+  derived, never guessed). Sub-second, and COMPARABLE by construction: sorted, no sizes, no
+  timestamps, so the intended use is "same output at the start and the end of my work" and the
+  difference IS the residue that work left. Sizes are deliberately absent — they move under
+  ordinary work and would drown the signal; `mise run doctor` remains the separate disk
+  question. Automatic reaping is NACKED permanently (it needs eyes in the loop, and a cache
+  reaped without them defeats the point of a cache), so BOTH modes only ever report;
+  `doctor_never_gains_the_power_to_delete` pins that against a future tidy-up. The cache
+  families are re-derived here by rule from their owners (`mise.toml`'s `CARGO_TARGET_DIR`,
+  `dorc_verify::lean_build_root`, `kani::build_root`) — move one, move this. Each leg sees its
+  own filesystem, so `mise run both doctor:unused` is what puts the WSL caches (the only leg
+  that has any) beside the Windows worktrees.
 - **one-platform-green-is-not-cross-platform-green** (two live bugs, 2026-07-24) —
   `#[cfg(windows)]` / `#[cfg(unix)]` code is COMPILED ONLY on its own platform, so the
   gates never see the other side and it rots silently. Both landed bugs were invisible

@@ -29,7 +29,7 @@ fn main() -> ExitCode {
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
         Some("preflight") => preflight::run(args.get(1..).unwrap_or_default()),
-        Some("doctor") => doctor::run(),
+        Some("doctor") => doctor::run(args.get(1..).unwrap_or_default()),
         // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this
         // shares its one renderer rather than re-deriving the screen.
         Some("xfail-census") => {

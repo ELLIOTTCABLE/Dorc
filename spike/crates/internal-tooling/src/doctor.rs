@@ -1,24 +1,45 @@
-//! A read-only inventory of what is quietly eating the disk.
+//! Two read-only inventories of what the fleet has left lying around.
 //!
-//! The observed pattern is pile-up, not any single hog: nineteen abandoned lane caches held
-//! 51 GiB inside an 87.9 GiB vhdx, and finished agent worktrees carried ~9 GiB of `target/`
-//! apiece. None of it is visible until something runs out, which is why this exists — the
-//! numbers, in one place, before they bite.
+//! `doctor` answers "what is eating the disk". The observed pattern is pile-up, not any single
+//! hog: nineteen abandoned lane caches held 51 GiB inside an 87.9 GiB vhdx, and finished agent
+//! worktrees carried ~9 GiB of `target/` apiece.
 //!
-//! It DELETES NOTHING, on purpose. Reaping a worktree needs a containment proof this tool
-//! has no business making, and reaping a cache is cheap to do by hand once you can see it.
+//! `doctor unused` answers the other half — "what is sitting around unused" — and is built to be
+//! COMPARABLE: sorted, no sizes, no timestamps, so a conductor runs it at the start and the end of
+//! a session and reads the difference as that session's residue. Sizes are excluded on purpose;
+//! they move under ordinary work and would drown the signal.
 //!
-//! Each leg sees only its own filesystem: the Windows leg cannot see WSL's `~/.cache`, and
-//! the WSL leg reaches the worktrees over `/mnt/c`. `mise run both doctor` is the paired
-//! form and the one that shows the whole picture.
+//! Both DELETE NOTHING, permanently. Automatic reaping was ruled out: it needs eyes in the loop,
+//! and a cache reaped without them defeats the point of a cache. Reporting is the whole job.
+//!
+//! Each leg sees only its own filesystem: the Windows leg cannot see WSL's `~/.cache`, and the WSL
+//! leg reaches the worktrees over `/mnt/c`. `mise run both doctor…` is the paired form and the one
+//! that shows the whole picture.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use crate::preflight::gib;
 
+/// The branch lane work is expected to land on. Every merged/unmerged answer is asked against it,
+/// and its absence is reported rather than guessed around.
+const LINEAGE: &str = "ai/main";
+
+/// The size inventory by default; the comparable hygiene report under `unused`.
+pub(crate) fn run(args: &[String]) -> ExitCode {
+    match args.first().map(String::as_str) {
+        None => sizes(),
+        Some("unused") => unused(),
+        Some(other) => {
+            eprintln!("doctor: unknown mode {other:?}; modes: <none> (sizes), unused");
+            ExitCode::from(2)
+        }
+    }
+}
+
 /// Walk every store, print a row each, then the total.
-pub(crate) fn run() -> ExitCode {
+fn sizes() -> ExitCode {
     let mut at_risk = 0_u64;
 
     println!("== worktrees ==");
@@ -61,11 +82,7 @@ pub(crate) fn run() -> ExitCode {
         None => println!("  (no XDG_CACHE_HOME or HOME — Windows keeps none of these)"),
         Some(cache) => {
             let mut rows = children_with_sizes(&cache);
-            rows.retain(|(path, _)| {
-                path.file_name()
-                    .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dorc-"))
-            });
+            rows.retain(|(path, _)| is_lane_cache(&file_name(path)));
             if rows.is_empty() {
                 println!("  (none)");
             }
@@ -83,11 +100,84 @@ pub(crate) fn run() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// The comparable report: what is registered, what has already landed, and what is keyed to a
+/// worktree that no longer exists.
+///
+/// Every column is a fact with a git or filesystem answer behind it. Nothing here recommends a
+/// reap — the join a reader makes (landed AND no worktree, or a cache whose key names nothing) is
+/// theirs to make, which is exactly the "eyes in the loop" the auto-reap ruling asked for.
+fn unused() -> ExitCode {
+    let lineage = rev_parse(LINEAGE);
+    if lineage.is_none() {
+        println!("(no {LINEAGE} in this repository — every landed column reads unknown)");
+    }
+
+    let trees = worktrees();
+    let live_keys: BTreeSet<String> = trees.iter().flatten().map(|t| key_of(&t.path)).collect();
+    let checked_out: BTreeSet<&str> = trees.iter().flatten().map(|t| t.branch.as_str()).collect();
+
+    match &trees {
+        Err(why) => println!("== worktrees ==\n  (unavailable: {why})"),
+        Ok(list) => {
+            println!("== worktrees ({}) ==", list.len());
+            for tree in list {
+                println!(
+                    "  {:<6} {:<8} {:<7} {:<26} {}",
+                    tree.state,
+                    landed(&tree.head, lineage.as_deref()),
+                    if tree.locked { "locked" } else { "" },
+                    key_of(&tree.path),
+                    tree.branch
+                );
+            }
+        }
+    }
+
+    match local_branches() {
+        Err(why) => println!("== branches ==\n  (unavailable: {why})"),
+        Ok(names) => {
+            let merged = lineage.as_deref().map(merged_branches).unwrap_or_default();
+            println!("== branches ({}) ==", names.len());
+            for name in &names {
+                println!(
+                    "  {:<8} {:<12} {}",
+                    match lineage {
+                        None => "unknown",
+                        Some(_) if merged.contains(name) => "merged",
+                        Some(_) => "unmerged",
+                    },
+                    if checked_out.contains(name.as_str()) {
+                        "worktree"
+                    } else {
+                        "no-worktree"
+                    },
+                    name
+                );
+            }
+        }
+    }
+
+    match user_cache_dir().map(|cache| lane_caches(&cache)) {
+        None => println!("== lane caches ==\n  (no XDG_CACHE_HOME or HOME — Windows keeps none)"),
+        Some(names) => {
+            println!("== lane caches ({}) ==", names.len());
+            for name in &names {
+                println!("  {:<7} {}", cache_state(name, &live_keys), name);
+            }
+        }
+    }
+
+    ExitCode::SUCCESS
+}
+
 /// One checkout git knows about.
 #[derive(Debug)]
 struct Tree {
     path: PathBuf,
     branch: String,
+    /// The tip commit, which is what "has this landed" is actually asked about — a detached
+    /// checkout has no branch to ask about at all.
+    head: String,
     /// `clean`, `dirty`, or why we could not tell — never guessed.
     state: String,
     /// A locked worktree belongs to a live lane. Reaping one is how concurrent work dies.
@@ -98,26 +188,19 @@ struct Tree {
 /// finds the ones that are actually registered, and a stale directory is a different
 /// problem with a different fix (`git worktree prune`).
 fn worktrees() -> Result<Vec<Tree>, String> {
-    let out = Command::new("git")
-        .arg("-C")
-        .arg(internal_tooling::repo_root())
-        .args(["worktree", "list", "--porcelain"])
-        .output()
-        .map_err(|e| format!("git: {e}"))?;
-    if !out.status.success() {
-        return Err(String::from_utf8_lossy(&out.stderr).trim().to_owned());
-    }
-    let mut trees = parse_worktree_list(&String::from_utf8_lossy(&out.stdout));
+    let mut trees = parse_worktree_list(&git(&["worktree", "list", "--porcelain"])?);
     for tree in &mut trees {
         tree.state = tree_state(&tree.path);
     }
+    // Sorted so both reports are byte-stable across runs; git's own order is registration order.
+    trees.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(trees)
 }
 
 /// Split from its `git` call so the format can be pinned without one: shelling out per
 /// worktree is both slow and non-hermetic, and neither belongs in the unit tier.
 ///
-/// Porcelain shape: one `worktree <path>` line opens a record, and `branch`/`locked` are
+/// Porcelain shape: one `worktree <path>` line opens a record, and `HEAD`/`branch`/`locked` are
 /// attributes of the record still open.
 fn parse_worktree_list(porcelain: &str) -> Vec<Tree> {
     let mut trees: Vec<Tree> = Vec::new();
@@ -126,6 +209,7 @@ fn parse_worktree_list(porcelain: &str) -> Vec<Tree> {
             trees.push(Tree {
                 path: PathBuf::from(path),
                 branch: "detached".to_owned(),
+                head: String::new(),
                 state: "unknown".to_owned(),
                 locked: false,
             });
@@ -135,6 +219,10 @@ fn parse_worktree_list(porcelain: &str) -> Vec<Tree> {
             branch
                 .trim_start_matches("refs/heads/")
                 .clone_into(&mut tree.branch);
+        } else if let Some(head) = line.strip_prefix("HEAD ")
+            && let Some(tree) = trees.last_mut()
+        {
+            head.clone_into(&mut tree.head);
         } else if (line.trim() == "locked" || line.starts_with("locked "))
             && let Some(tree) = trees.last_mut()
         {
@@ -147,22 +235,151 @@ fn parse_worktree_list(porcelain: &str) -> Vec<Tree> {
 /// Clean or dirty, by git's own answer — untracked files included, because they are exactly
 /// what a reap would destroy.
 fn tree_state(path: &Path) -> String {
+    git_in(path, &["status", "--porcelain"]).map_or_else(
+        |_| "unknown".to_owned(),
+        |out| {
+            if out.is_empty() {
+                "clean".to_owned()
+            } else {
+                "DIRTY".to_owned()
+            }
+        },
+    )
+}
+
+/// Every local branch, sorted by name.
+fn local_branches() -> Result<Vec<String>, String> {
+    let mut names: Vec<String> = git(&["for-each-ref", "--format=%(refname:short)", "refs/heads"])?
+        .lines()
+        .map(str::to_owned)
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
+/// The branches already contained in the lineage — one call rather than a `merge-base` per
+/// branch. Worktrees cannot share it: a detached checkout has no ref for `--merged` to answer
+/// about, which is why [`landed`] asks about a commit instead.
+fn merged_branches(lineage: &str) -> BTreeSet<String> {
+    git(&[
+        "for-each-ref",
+        "--merged",
+        lineage,
+        "--format=%(refname:short)",
+        "refs/heads",
+    ])
+    .map(|out| out.lines().map(str::to_owned).collect())
+    .unwrap_or_default()
+}
+
+/// Whether `sha` is already contained in the lineage — the question behind "is this still work,
+/// or residue".
+///
+/// Read from the exit code's own trichotomy rather than `success()`: 1 means genuinely not an
+/// ancestor, and anything else (a bad revision, a missing object) is a failure to measure, which
+/// must not be reported as an answer.
+fn landed(sha: &str, lineage: Option<&str>) -> &'static str {
+    let Some(target) = lineage else {
+        return "unknown";
+    };
     let Ok(out) = Command::new("git")
         .arg("-C")
-        .arg(path)
-        .args(["status", "--porcelain"])
+        .arg(internal_tooling::repo_root())
+        .args(["merge-base", "--is-ancestor", sha, target])
         .output()
     else {
-        return "unknown".to_owned();
+        return "unknown";
     };
-    if !out.status.success() {
-        return "unknown".to_owned();
+    match out.status.code() {
+        Some(0) => "merged",
+        Some(1) => "unmerged",
+        _ => "unknown",
     }
-    if out.stdout.is_empty() {
-        "clean".to_owned()
+}
+
+/// A commit id for `rev`, or `None` when the repository has no such ref.
+fn rev_parse(rev: &str) -> Option<String> {
+    git(&["rev-parse", "--verify", "--quiet", rev])
+        .ok()
+        .map(|out| out.trim().to_owned())
+}
+
+/// Run a read-only git query at the repository root.
+///
+/// Every git call this module makes goes through here or [`git_in`], and every one of them is a
+/// query — `doctor` reports, and the moment it also writes, the report stops being something a
+/// conductor can run twice without consequence.
+fn git(args: &[&str]) -> Result<String, String> {
+    git_in(internal_tooling::repo_root(), args)
+}
+
+/// As [`git`], but rooted at one worktree — the only way to ask a per-tree question.
+fn git_in(dir: &Path, args: &[&str]) -> Result<String, String> {
+    let out = Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .output()
+        .map_err(|e| format!("git: {e}"))?;
+    if out.status.success() {
+        Ok(String::from_utf8_lossy(&out.stdout).into_owned())
     } else {
-        "DIRTY".to_owned()
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_owned())
     }
+}
+
+/// The `dorc-*` stores this leg can see, sorted.
+fn lane_caches(cache: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(cache) else {
+        return Vec::new();
+    };
+    let mut names: Vec<String> = entries
+        .flatten()
+        .map(|e| file_name(&e.path()))
+        .filter(|name| is_lane_cache(name))
+        .collect();
+    names.sort();
+    names
+}
+
+fn is_lane_cache(name: &str) -> bool {
+    name.starts_with("dorc-")
+}
+
+/// Whether a lane cache still belongs to something.
+///
+/// Three families, each named by an owner elsewhere and re-derived here by rule — if an owner
+/// moves its cache, move this with it: `dorc-wsl-target-<worktree>` (root `mise.toml`'s
+/// `CARGO_TARGET_DIR`), `dorc-minispec-lean-<worktree>` (`dorc_verify::lean_build_root`), and the
+/// shared `dorc-kani-target` (`dorc_verify::kani::build_root`), which is keyed to nothing and so
+/// can never be orphaned.
+fn cache_state(name: &str, live_keys: &BTreeSet<String>) -> &'static str {
+    if name == "dorc-kani-target" {
+        return "shared";
+    }
+    for prefix in ["dorc-wsl-target-", "dorc-minispec-lean-"] {
+        if let Some(key) = name.strip_prefix(prefix) {
+            return if live_keys.contains(key) {
+                "live"
+            } else {
+                "ORPHAN"
+            };
+        }
+    }
+    // An unrecognized `dorc-` store has no derivable worktree key, and inventing one would
+    // manufacture an orphan verdict out of a naming coincidence.
+    "unkeyed"
+}
+
+/// A worktree's directory name — the key the lane caches are named after (`worktree_key` in
+/// `dorc-verify`, `config_root | last` in `mise.toml`).
+fn key_of(path: &Path) -> String {
+    file_name(path)
+}
+
+fn file_name(path: &Path) -> String {
+    path.file_name()
+        .map_or_else(String::new, |n| n.to_string_lossy().into_owned())
 }
 
 /// Immediate children of `dir` with their recursive sizes, largest first.
@@ -240,7 +457,11 @@ fn short(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{children_with_sizes, parse_worktree_list, short, tree_size, tree_size_excluding};
+    use super::{
+        cache_state, children_with_sizes, parse_worktree_list, short, tree_size,
+        tree_size_excluding,
+    };
+    use std::collections::BTreeSet;
     use std::path::Path;
 
     /// Real `git worktree list --porcelain` output, trimmed to the shapes that matter: a
@@ -263,15 +484,63 @@ locked
     #[test]
     fn the_porcelain_attributes_land_on_the_record_they_belong_to() {
         // The parse is positional — attributes follow the `worktree` line that opens their
-        // record — so a lock read onto the wrong tree is exactly how a reap kills live work.
+        // record — so a lock read onto the wrong tree is exactly how a reap kills live work,
+        // and a HEAD read onto the wrong tree answers "has this landed" about someone else.
         let trees = parse_worktree_list(PORCELAIN);
         assert_eq!(trees.len(), 3);
         assert_eq!(trees[0].branch, "ai/main");
+        assert_eq!(trees[0].head, "abc123");
         assert!(!trees[0].locked);
         assert_eq!(trees[1].branch, "detached");
+        assert_eq!(trees[1].head, "def456");
         assert!(!trees[1].locked);
         assert_eq!(trees[2].branch, "ai/lane");
+        assert_eq!(trees[2].head, "789abc");
         assert!(trees[2].locked, "the lock belongs to the tree above it");
+    }
+
+    #[test]
+    fn a_cache_is_orphaned_only_when_its_key_names_no_live_worktree() {
+        // The orphan verdict is the one thing here a reader might act destructively on, so each
+        // family's key must come out of the name exactly, and a name with no derivable key at
+        // all must not round down to "orphan".
+        let live: BTreeSet<String> = ["agent-one".to_owned()].into_iter().collect();
+        assert_eq!(cache_state("dorc-wsl-target-agent-one", &live), "live");
+        assert_eq!(cache_state("dorc-wsl-target-agent-gone", &live), "ORPHAN");
+        assert_eq!(cache_state("dorc-minispec-lean-agent-one", &live), "live");
+        assert_eq!(cache_state("dorc-minispec-lean-old", &live), "ORPHAN");
+        assert_eq!(
+            cache_state("dorc-kani-target", &live),
+            "shared",
+            "the kani root is keyed to no worktree and cannot be orphaned"
+        );
+        assert_eq!(cache_state("dorc-something-new", &live), "unkeyed");
+    }
+
+    #[test]
+    fn doctor_never_gains_the_power_to_delete() {
+        // Automatic reaping was ruled out, permanently: it needs eyes in the loop. That ruling
+        // is only worth as much as its enforcement, and a future edit adding a tidy-up here
+        // would look entirely reasonable in review.
+        let source = include_str!("doctor.rs");
+        let production = source
+            .split_once("#[cfg(test)]")
+            .map_or(source, |(before, _)| before);
+        for banned in [
+            "remove_dir_all",
+            "remove_file",
+            "remove_dir",
+            "File::create",
+            "fs::write",
+            "\"prune\"",
+            "\"-D\"",
+            "\"--force\"",
+        ] {
+            assert!(
+                !production.contains(banned),
+                "{banned} would make this report destructive; it reports and nothing else"
+            );
+        }
     }
 
     #[test]

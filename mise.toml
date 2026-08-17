@@ -441,6 +441,12 @@ raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- doctor"
 
+[tasks."doctor:unused"]
+description = "READ-ONLY inventory of what is sitting around UNUSED: every worktree with its clean/dirty and landed state, every local branch with its merged state and whether anything has it checked out, and every lane cache with whether its worktree still exists. Deletes nothing, ever. Sorted, sizeless and timestampless ON PURPOSE — run it at the start and the end of a session and the difference IS that session's residue. Sub-second; `mise run doctor` is the separate, slower question of what is eating the disk. Each leg sees only its own filesystem, so `mise run both doctor:unused` is what puts the WSL caches beside the Windows worktrees."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- doctor unused"
+
 [tasks.clean]
 description = "cargo clean over the spike workspace — build artifacts only. Deliberately touches NOTHING in the working tree: no `git clean`, no untracked sweep. Dirty and untracked paths here are routinely a human's in-flight work, and a task that eats them is worth more than it saves."
 raw = true
