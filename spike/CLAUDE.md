@@ -871,7 +871,9 @@ mise run loom:compile     # dorc-loom compile CASE...
 mise run loom:promote     # dorc-loom promote CASE... (publishes the two locks)
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
+mise run lint:docids      # docID dangling-reference lint (rides check)
 mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
+mise run verify:promote   # regenerate catalogue_lock.rs from corpus + claims (review = the diff)
 mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (one harness at a
                           #   time, memory-gated, CBMC reaped; trailing arg = one harness)
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
@@ -930,7 +932,9 @@ no task covers, and consider adding the task instead.
   root is a MIRROR (sources cleared before copy; `.lake` and `lake-manifest.json`
   survive — deleting the manifest sends lake back to the network) and is keyed
   PER WORKTREE: a shared, accreting root is how a root module naming a deleted
-  unit survived a green `lake build` (the r30 review pair; `30B`).
+  unit survived a green `lake build` (the r30 review pair; `30B`). The binder's own
+  registry is `spike/verify/CLAUDE.md`; `dorc-verify promote` exists and is the only
+  sanctioned lock-writer.
 - **kani-coverage-has-measured-walls** (r30) — harnesses declare EXACT concrete
   sizes (a symbolic length under reallocation is unaffordable, and the shape also
   arises INSIDE `union`/`intersection`, which insert element-by-element), so
@@ -945,8 +949,15 @@ no task covers, and consider adding the task instead.
   that keeps the pre-commit hook check-only otherwise turns every fixer into its
   CHECK command — a run that prints the diff and rewrites nothing. That override is
   load-bearing; do not tidy it away, and never hand-derive a `cargo fmt` invocation.
+  The detached kani/aeneas units are covered too (`cargo_fmt_detached`, glob-scoped to
+  their dirs under `spike/verify/` — the `verify` crate itself is an ordinary member).
 - **wsl-trust-per-worktree** — WSL keeps its own mise trust store; a fresh worktree
   needs a WSL-side `mise trust` before its first `mise run both`.
+- **wsl-cd-not-bash-lc-cd** (found live by the spine executor, 2026-08-17) —
+  `wsl -- bash -lc 'cd X && …'` silently runs in the PRIMARY checkout when the `cd`
+  fails or resolves somewhere else, so the command greens against the wrong tree: a
+  false green for any hand-rolled WSL invocation. Spell it `wsl --cd <path>`, and
+  assert the branch or the toplevel explicitly before trusting what comes back.
 - **background-wsl-children-outlive-taskstop** (post-mortem 2026-08-15) — stopping a
   backgrounded harness task does NOT kill its WSL-side children: an orphaned CBMC
   once climbed to ~15GB and OOM'd the whole WSL VM (which killed the harness and the
