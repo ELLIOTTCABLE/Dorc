@@ -18,21 +18,35 @@
 //! file; a target that fails it is refused with that attribution and no edge forms
 //! (`30C:rul-inertness-is-contract-never-engine-fact`).
 //!
-//! # Path resolution is sh's, deliberately
+//! # Path resolution is relative to the SOURCING FILE — flagged, and the human's to overturn
 //!
-//! POSIX resolves a `.` operand CONTAINING A SLASH against the working directory, and searches
-//! `PATH` for one that does not. So a slash-bearing target resolves working-directory-relative here
-//! — the same file a shell sourcing that entrypoint would bind — and a slash-LESS target resolves
-//! NOWHERE. Two reasons for the second half, and either alone would decide it: a `PATH` search at
-//! analysis time reads the ambient environment, which the kernel may not do
-//! (`inv-determinism` · `hermeticity-precondition`); and POSIX leaves the not-found-in-`PATH` case
-//! implementation-defined, so the construct is outside the two-binary floor regardless.
+//! A target is resolved against the directory of the file that spells it, and a slash-less target
+//! resolves NOWHERE (a `PATH` search reads the ambient environment, which the kernel may not do —
+//! `inv-determinism` · `hermeticity-precondition` — and POSIX leaves the not-found case
+//! implementation-defined besides, so the construct is outside the two-binary floor).
 //!
-//! The consequence is worth stating plainly, because it is a cost: an oracle package spelling
-//! `. ./helpers.sh` composes exactly when a plain `sh` sourcing that entrypoint would — which is to
-//! say, when the working directory is the package's own. That is sh's bill, not one this engine
-//! adds (`rul-unsure-falls-toward-sh-parity` binds name resolution by name), and an unresolved
-//! target SUSPENDS rather than quietly shipping a body whose helpers are missing.
+//! Sourcing-file-relative is NOT what a running shell does: POSIX resolves a slash-bearing `.`
+//! operand against the WORKING DIRECTORY, and `rul-unsure-falls-toward-sh-parity` binds name
+//! resolution by name. The argument for diverging, stated so it can be judged and reversed:
+//!
+//! **An oracle's top-level `.` never executes.** Oracle bodies reach the artifact by TRANSPLANT —
+//! the emitted preamble carries the declarations inline, and `dorc strip` erases the marked file's
+//! own text — so no shell ever evaluates this line and there is no runtime behaviour to match. The
+//! construct is a LOADER directive, read once at analysis time to answer "whose declarations are
+//! these", and every loader in the world resolves an include against the including file.
+//!
+//! **Working-directory-relative would make the ruled deliverable unreachable.** An admin naming
+//! `-o /some/pkg/entry.oracle.sh` from anywhere else has a working directory with no `helpers.sh`
+//! in it, so `28M` §7's helpers-plus-thin-entrypoints package — the shape the human named
+//! community-critical, and the whole payoff of the sourcing build — would compose only when the
+//! admin happened to `cd` into the package first. Measured on this tree: the e2e runner drives
+//! every case from a throwaway sandbox with absolute oracle paths, so under the working-directory
+//! rule no corpus cell could exercise the feature at all.
+//!
+//! Neither reading is a correctness fork. The engine ships declarations only from a file it
+//! actually read and contract-checked, so the two rules differ in WHICH file answers, never in
+//! whether an unread one might: an unresolved target SUSPENDS. If the human prefers strict sh
+//! parity, [`resolve_against`] is the single function to change.
 
 use std::collections::BTreeSet;
 
@@ -59,17 +73,36 @@ pub struct IncludeTree {
 pub fn include_tree(paths: &[String], srcs: &[&str], book: Option<usize>) -> IncludeTree {
     let mut tree = IncludeTree::default();
     for (file, src) in srcs.iter().enumerate() {
+        let Some(here) = paths.get(file) else {
+            continue;
+        };
         if book == Some(file) || !dorc_oracle::marker::has_marker(src) {
             continue;
         }
         for target in top_level_load_targets(src) {
-            match resolve(&target, paths, srcs) {
+            match resolve(here, &target, paths, srcs) {
                 Some(sourced) => tree.edges.push((file, sourced)),
                 None => drop(tree.unresolved.insert(file)),
             }
         }
     }
     tree
+}
+
+/// Where a `.` target lands, given the file that spells it: the target joined onto that file's
+/// directory, in lexical normal form. `None` for a slash-less target, which names a `PATH` search
+/// this seat may not perform.
+///
+/// THE seat the module doc's resolution ruling lives in — one function to change if strict
+/// working-directory parity is ever preferred.
+#[must_use]
+pub fn resolve_against(sourcer_path: &str, target: &str) -> Option<String> {
+    if !target.contains('/') {
+        return None;
+    }
+    let dir = normalize(sourcer_path);
+    let dir = dir.rsplit_once('/').map_or("", |(parent, _)| parent);
+    Some(normalize(&format!("{dir}/{target}")))
 }
 
 /// Does this source satisfy the dorc-lang contract a `.` may name — marked, and declaring rather
@@ -100,14 +133,11 @@ pub fn top_level_load_targets(src: &str) -> Vec<String> {
 
 /// Which loaded source a `.` target names, or `None` when nothing admissible answers.
 ///
-/// Matching is LEXICAL — `normalize`d target against `normalize`d path — because the answer must be
-/// reproducible from the vectors alone, with no filesystem read (`inv-determinism`). Two spellings
-/// of one file that do not normalize alike simply do not match, which withholds.
-fn resolve(target: &str, paths: &[String], srcs: &[&str]) -> Option<usize> {
-    if !target.contains('/') {
-        return None; // a `PATH` search: non-hermetic here, and unspecified at the floor.
-    }
-    let wanted = normalize(target);
+/// Matching is LEXICAL — the resolved target against `normalize`d paths — because the answer must
+/// be reproducible from the vectors alone, with no filesystem read (`inv-determinism`). Two
+/// spellings of one file that do not normalize alike simply do not match, which withholds.
+fn resolve(sourcer_path: &str, target: &str, paths: &[String], srcs: &[&str]) -> Option<usize> {
+    let wanted = resolve_against(sourcer_path, target)?;
     paths
         .iter()
         .position(|path| normalize(path) == wanted)
@@ -311,6 +341,50 @@ mod tests {
         assert_eq!(
             include_tree(&paths, &[&entry, &helpers], None).edges,
             vec![(0, 1)]
+        );
+    }
+
+    /// A target resolves against the SOURCING FILE's directory, not the working directory — the
+    /// module doc's flagged divergence, pinned so overturning it is a visible edit rather than a
+    /// silent drift. This is what lets an admin name one absolute entrypoint path from anywhere and
+    /// still get the package, which is the shape the whole sourcing build exists to deliver.
+    #[test]
+    fn a_target_resolves_against_its_sourcers_directory() {
+        assert_eq!(
+            super::resolve_against("/pkg/entry.oracle.sh", "./helpers.sh").as_deref(),
+            Some("pkg/helpers.sh")
+        );
+        assert_eq!(
+            super::resolve_against("pkg/sub/entry.sh", "../shared/h.sh").as_deref(),
+            Some("pkg/shared/h.sh")
+        );
+        assert_eq!(
+            super::resolve_against("entry.sh", "./h.sh").as_deref(),
+            Some("h.sh"),
+            "a bare sourcer name has no directory, so the target stands alone"
+        );
+        assert_eq!(
+            super::resolve_against("pkg/entry.sh", "h.sh"),
+            None,
+            "slash-less is a PATH search, which this seat may not perform"
+        );
+
+        let entry = marked(". ./helpers.sh\n");
+        let helpers = marked("_h() { :; }\n");
+        let paths = vec![
+            "pkg/entry.oracle.sh".to_owned(),
+            "pkg/helpers.sh".to_owned(),
+        ];
+        assert_eq!(
+            include_tree(&paths, &[&entry, &helpers], None).edges,
+            vec![(0, 1)]
+        );
+
+        let elsewhere = vec!["pkg/entry.oracle.sh".to_owned(), "helpers.sh".to_owned()];
+        assert_eq!(
+            include_tree(&elsewhere, &[&entry, &helpers], None).unresolved,
+            [0].into(),
+            "a helpers file that is not beside its entrypoint is not the one it named"
         );
     }
 

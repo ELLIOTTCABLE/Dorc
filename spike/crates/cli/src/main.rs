@@ -368,27 +368,28 @@ fn read_sourced_oracles(
     mut srcs: Vec<String>,
 ) -> (Vec<String>, Vec<String>) {
     let mut cursor = 0;
-    while let Some(src) = srcs.get(cursor).cloned() {
+    while let Some((here, src)) = paths.get(cursor).cloned().zip(srcs.get(cursor).cloned()) {
         cursor = cursor.saturating_add(1);
         if !dorc_cli::sourcing::satisfies_the_contract(&src) {
             continue;
         }
         for target in dorc_cli::sourcing::top_level_load_targets(&src) {
-            let wanted = dorc_cli::sourcing::normalize(&target);
-            if !target.contains('/')
-                || paths
-                    .iter()
-                    .any(|path| dorc_cli::sourcing::normalize(path) == wanted)
+            let Some(wanted) = dorc_cli::sourcing::resolve_against(&here, &target) else {
+                continue;
+            };
+            if paths
+                .iter()
+                .any(|path| dorc_cli::sourcing::normalize(path) == wanted)
             {
                 continue;
             }
-            let Ok(text) = std::fs::read_to_string(&target) else {
+            let Ok(text) = std::fs::read_to_string(&wanted) else {
                 continue;
             };
             if !dorc_cli::sourcing::satisfies_the_contract(&text) {
                 continue;
             }
-            paths.push(target);
+            paths.push(wanted);
             srcs.push(text);
         }
     }
