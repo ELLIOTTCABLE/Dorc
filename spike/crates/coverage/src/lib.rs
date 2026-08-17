@@ -566,7 +566,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     )
     .0
     .value;
-    let plan = dorc_plan::build_plan_walled(
+    // The dashboard analyses the unmeasured world, so its authority is the intakeless one: there is
+    // no channel here whose integrity could have been lost.
+    let spine = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,
         &cfg,
@@ -585,6 +587,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         observe,
         &mut arena,
     );
+    let plan = dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake());
 
     // classify yields CfgNodeId→SkipClass; the plan keys by AstId. Bridge via AstId.
     let disposition_of: BTreeMap<dorc_core::AstId, &Disposition> =

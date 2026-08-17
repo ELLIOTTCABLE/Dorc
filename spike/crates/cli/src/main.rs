@@ -1354,66 +1354,81 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         oracle_sources: &oracle_srcs,
     };
     let scope = dorc_cli::results::replay_scope(&framing, &run_sources);
-    let (admitted_records, scoped_results, whylog_eligible) = if let Some(r) = replay.as_ref() {
-        let scoped = dorc_cli::results::replayed_records(
-            scope,
-            r.records.as_ref(),
-            &mut RunClock::Recorded(r.instants.clone()),
-            &mut interner,
-        );
-        (None, scoped, false)
-    } else {
-        // The BOUNDED READ is this edge's (`rul-host-bytes-bounded-before-admission`): the limit
-        // is spent against the real reader, before anything is allocated, and only the bounded
-        // bytes cross the seam.
-        let evidence = if let Some(captured) = shipped_evidence.as_deref() {
-            dorc_plan::records::read_host_evidence(
-                std::io::Cursor::new(captured),
-                dorc_plan::records::HostEvidenceLimits::spike_default(),
-            )
-        } else if let Some(path) = &args.results {
-            let file =
-                std::fs::File::open(path).map_err(|e| humane_read_error("results", path, &e))?;
-            dorc_plan::records::read_host_evidence(
-                file,
-                dorc_plan::records::HostEvidenceLimits::spike_default(),
+    // The authority to produce an authority-bearing projection rides out of the intake beside the
+    // records (`306b:rul-report-only-output-cannot-plan`). It is a value rather than a check: the
+    // refusal arm below returns, and no arm that continues can reach a plan without holding one.
+    let (admitted_records, scoped_results, whylog_eligible, authority) =
+        if let Some(r) = replay.as_ref() {
+            let scoped = dorc_cli::results::replayed_records(
+                scope,
+                r.records.as_ref(),
+                &mut RunClock::Recorded(r.instants.clone()),
+                &mut interner,
+            );
+            (
+                None,
+                scoped,
+                false,
+                dorc_plan::PlanAuthority::of_admitted_replay(),
             )
         } else {
-            dorc_plan::records::read_host_evidence(
-                std::io::stdin(),
-                dorc_plan::records::HostEvidenceLimits::spike_default(),
-            )
-        };
-        let admitted = match evidence {
-            dorc_plan::records::Admission::Admitted(bytes) => {
-                dorc_cli::results::admit_controller_records(
-                    &framing,
-                    &run_sources,
-                    &bytes,
-                    clock,
-                    &mut interner,
+            // The BOUNDED READ is this edge's (`rul-host-bytes-bounded-before-admission`): the limit
+            // is spent against the real reader, before anything is allocated, and only the bounded
+            // bytes cross the seam.
+            let evidence = if let Some(captured) = shipped_evidence.as_deref() {
+                dorc_plan::records::read_host_evidence(
+                    std::io::Cursor::new(captured),
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
                 )
-            }
-            dorc_plan::records::Admission::NoObservation => {
-                dorc_plan::records::Admission::NoObservation
-            }
-            dorc_plan::records::Admission::Refused(reason) => {
-                dorc_plan::records::Admission::Refused(reason)
+            } else if let Some(path) = &args.results {
+                let file = std::fs::File::open(path)
+                    .map_err(|e| humane_read_error("results", path, &e))?;
+                dorc_plan::records::read_host_evidence(
+                    file,
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                )
+            } else {
+                dorc_plan::records::read_host_evidence(
+                    std::io::stdin(),
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                )
+            };
+            let admitted = match evidence {
+                dorc_plan::records::Admission::Admitted(bytes) => {
+                    dorc_cli::results::admit_controller_records(
+                        &framing,
+                        &run_sources,
+                        &bytes,
+                        clock,
+                        &mut interner,
+                    )
+                }
+                dorc_plan::records::Admission::NoObservation => {
+                    dorc_plan::records::Admission::NoObservation
+                }
+                dorc_plan::records::Admission::Refused(reason) => {
+                    dorc_plan::records::Admission::Refused(reason)
+                }
+            };
+            match dorc_plan::PlanAuthority::authorise(admitted) {
+                dorc_plan::Authorised::Admitted(admitted, authority) => {
+                    (Some(admitted.records), admitted.scoped, true, authority)
+                }
+                dorc_plan::Authorised::NoObservation(authority) => (
+                    None,
+                    dorc_cli::results::no_observation(scope),
+                    false,
+                    authority,
+                ),
+                // The report-only state: intake integrity is lost, so this arm holds no authority and
+                // the plan-producing projection is not reachable from it. The return is what the engine
+                // does with that state today; the absent witness is what makes it safe.
+                dorc_plan::Authorised::Refused(reason) => {
+                    report_at(advisory, "records", None, &[reason.spanless_diagnostic()]);
+                    return Ok(RunOutcome::IngressRefused);
+                }
             }
         };
-        match admitted {
-            dorc_plan::records::Admission::Admitted(admitted) => {
-                (Some(admitted.records), admitted.scoped, true)
-            }
-            dorc_plan::records::Admission::NoObservation => {
-                (None, dorc_cli::results::no_observation(scope), false)
-            }
-            dorc_plan::records::Admission::Refused(reason) => {
-                report_at(advisory, "records", None, &[reason.spanless_diagnostic()]);
-                return Ok(RunOutcome::IngressRefused);
-            }
-        }
-    };
     let _scope = scoped_results.scope();
     let results = scoped_results.results();
 
@@ -1575,7 +1590,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
         None, // dangling-reference notes are spanless (no book/oracle location)
         &dangling_diagnostics(&resolutions, &interner),
     );
-    let mut plan = dorc_plan::build_plan_walled(
+    let mut spine = dorc_plan::build_plan_walled(
         &book_src,
         &parsed.value,
         &cfg.value,
@@ -1602,15 +1617,24 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // asymmetry is the point — a lexical scan for the vectors that bind a name in THIS shell
     // (`eval` · `alias` · a computed command word), plus the environment's own unresolvable loads.
     // Never any-⊤: an unmodeled command is an external binary and cannot define a function here.
-    plan.defensive_emission = !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
-        || !env.unresolvable_loads().is_empty();
+    spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
+        site: None,
+        decision: dorc_core::spine::RenderDecision::DefensiveEmission {
+            defensive: !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
+                || !env.unresolvable_loads().is_empty(),
+        },
+        grade: None,
+    });
     // `302:rul-certifier-trip-guard-only` — THE TERMINAL CLEANUP. Sited here, at the one moment
-    // the whole plan exists and before anything reads it, so the digest, the why report, the
-    // summary and the artifact all describe the SAME plan. Nothing between here and `render_apply`
-    // touches a disposition, so "immediately before plan-emission" and "immediately after
-    // plan-construction" are the same seat, and only this one keeps every consumer honest.
-    let (trip_diags, trip_narrative) = demote_on_certifier_trip(&mut plan, trip, &definitions);
+    // the whole Spine exists and before anything projects it, so the digest, the why report, the
+    // summary and the artifact all describe the SAME decisions. Nothing between here and the
+    // projection touches a disposition, so "immediately before plan-emission" and "immediately
+    // after plan-construction" are the same seat, and only this one keeps every consumer honest.
+    let (trip_diags, trip_narrative) = demote_on_certifier_trip(&mut spine, trip, &definitions);
     report("solve", book_source, &trip_diags);
+    // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
+    // assembly, and it exists at all only because the intake handed this run an authority.
+    let plan = dorc_plan::project_plan(&spine, &authority);
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `unresolvable-no-probe` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each

@@ -175,7 +175,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // Consumed only in the survival walk (flag-on); flag-off ignores it (total-wall baseline).
     let resolutions = build_resolutions(s0);
 
-    dorc_plan::build_plan_walled(
+    // The net drives the kernel over a modeled host with no intake at all, so the projection takes
+    // the intakeless authority.
+    let spine = dorc_plan::build_plan_walled(
         &declared.book_sh,
         &parsed.value,
         &cfg,
@@ -196,7 +198,8 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             }
         },
         &mut arena,
-    )
+    );
+    dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake())
 }
 
 /// Evolve two host copies from `s0` and return `(S_bare, S_apply)` (24B §3). **bare** applies

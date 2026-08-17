@@ -1463,6 +1463,40 @@ grep__predict() {
         None
     }
 
+    /// One plan over the raced world. Extracted from the trial below so the seed loop reads as the
+    /// three properties it asserts; DST analyses the unmeasured world, so the projection takes the
+    /// intakeless authority — no intake ran, so none can have lost its integrity.
+    fn raced_plan(
+        book: &str,
+        ast: &dorc_syntax::ast::Ast,
+        cfg: &dorc_analysis::cfg::Cfg,
+        classes: &[(
+            dorc_analysis::cfg::CfgNodeId,
+            dorc_analysis::effect::SkipClass,
+        )],
+        connected: &dorc_plan::ConnectedPipes,
+        observe: impl Fn(FactKey) -> Observable,
+    ) -> dorc_plan::Plan {
+        let spine = dorc_plan::build_plan_walled(
+            book,
+            ast,
+            cfg,
+            classes,
+            &BTreeSet::new(),
+            None,
+            None,
+            &dorc_core::Dialect::empty(),
+            // Survival off (`None`) ⇒ the `277` §5 backing map is never consulted.
+            &BTreeMap::new(),
+            &dorc_plan::Vouches::new(),
+            connected,
+            &BTreeMap::new(), // no probe-origin witnesses in DST (C6: Witness is EXEMPT)
+            observe,
+            &mut dorc_core::ProvArena::new(),
+        );
+        dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake())
+    }
+
     #[test]
     fn dst_composed_probe_under_sigpipe_race_lands_in_sink_without_flapping() {
         // `279f` §5 / sigpipe-flap-class: a COMPOSED connected probe (`otelcol__predict |
@@ -1472,7 +1506,7 @@ grep__predict() {
         // is the ≥2 sink AND the pipe RUNS (never a wrong elision — the safe landing); (3) the race
         // SOMETIMES fires and sometimes not (`sometimes-assert` reachability). The composed-probe
         // SHAPE itself is pinned in plan's unit tests; this pins the race's SAFE interaction with it.
-        use dorc_plan::{Disposition, build_plan_walled, compile_probe, connected_check_pipes};
+        use dorc_plan::{Disposition, compile_probe, connected_check_pipes};
 
         let book = "otelcol --version | grep -q 0.155.0 || curl https://example.com/x.tar.gz\n";
         let mut i = Interner::default();
@@ -1530,25 +1564,7 @@ grep__predict() {
                     Observable::verdict_only(Verdict::Unknown)
                 }
             };
-            let build = || {
-                build_plan_walled(
-                    book,
-                    &parsed.value,
-                    &cfg,
-                    &classes,
-                    &BTreeSet::new(),
-                    None,
-                    None,
-                    &dorc_core::Dialect::empty(),
-                    // Survival off (`None`) ⇒ the `277` §5 backing map is never consulted.
-                    &BTreeMap::new(),
-                    &dorc_plan::Vouches::new(),
-                    &connected,
-                    &BTreeMap::new(), // no probe-origin witnesses in DST (C6: Witness is EXEMPT)
-                    observe,
-                    &mut dorc_core::ProvArena::new(),
-                )
-            };
+            let build = || raced_plan(book, &parsed.value, &cfg, &classes, &connected, observe);
             // (1) no flap: two builds at the SAME seed render byte-identical.
             assert_eq!(
                 build().render_sh(&i),

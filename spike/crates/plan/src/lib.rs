@@ -116,6 +116,9 @@ pub use survival::{
     TrustedFootprints, disjoint,
 };
 
+pub mod spine;
+pub use spine::{Authorised, PlanAuthority, PlanPlane, Spine, project_plan};
+
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
 // ===========================================================================
@@ -3588,7 +3591,9 @@ pub fn build_plan(
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
-    build_plan_walled(
+    // The intakeless entry: this world was never measured, so there is no channel whose integrity
+    // could have been lost (`spine::PlanAuthority::without_intake`).
+    let spine = build_plan_walled(
         src,
         ast,
         cfg,
@@ -3606,7 +3611,8 @@ pub fn build_plan(
         &BTreeMap::new(),
         observe,
         arena,
-    )
+    );
+    project_plan(&spine, &PlanAuthority::without_intake())
 }
 
 /// [`build_plan`] PLUS the **kill-node set** (R3 / 24A §3 — the kill gap). `kills` is the set
@@ -3653,7 +3659,7 @@ pub fn build_plan_walled(
     probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
-) -> Plan {
+) -> Spine {
     let leaf_fact = leaf_facts(cfg, classes);
 
     // Run the apply fold. A leaf's fold-status is its injected observation; a leaf
@@ -3769,25 +3775,36 @@ pub fn build_plan_walled(
     // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED mutator
     // that will RUN at apply may touch anything it did not declare (the frame problem, `233`),
     // so silence licenses nothing. `survival` selects HOW a running mutator walls (TC-1):
-    let mut survival_report = SurvivalReport::default();
+    let mut spine = Spine::new();
     match survival {
         // Flag-off (BASELINE, byte-identical to Stage-1): a running mutator is a TOTAL wall.
         None => wall_walk_total(&mut steps),
         // Flag-on (the golden hill): a running FOOTPRINTED mutator scopes its wall; a downstream
         // converged `Replace` survives iff its backing SET is disjoint from every footprint (TC-3).
-        Some(footprints) => {
-            survival_report =
-                wall_walk_survival(&mut steps, footprints, resolutions, dialect, fact_backings);
-        }
+        Some(footprints) => wall_walk_survival(
+            &mut steps,
+            footprints,
+            resolutions,
+            dialect,
+            fact_backings,
+            &mut spine,
+        ),
     }
 
-    // Drop the wall bookkeeping; the leaf ids are already assigned.
-    let steps: Vec<Step> = steps.into_iter().map(|(step, _, _)| step).collect();
-    Plan {
-        steps,
-        survival_report,
-        defensive_emission: false,
+    // The decisions land on Spine, keyed by the FINE site (`inv-site-keyed-results`); `Plan` is a
+    // projection of them (`spine::project_plan`) rather than a second assembly. `member` is `None`
+    // here because the kernel mints one decision per leaf today — the key carries the slot so that
+    // a per-member decision is a widening rather than a re-key (`30E:stop-siteid-digest-rekey`).
+    for (step, _, _) in steps {
+        spine.set_disposition(dorc_core::spine::SpineDisposition {
+            site: dorc_core::SiteId::leaf(step.leaf),
+            ast: step.ast,
+            sh: step.sh,
+            decision: step.disposition,
+            grade: None,
+        });
     }
+    spine
 }
 
 /// arch-1 witness (`vp-17`/`vp-18`) + C6: the FULL granted witness for a licensed `Replace` — the
@@ -3863,17 +3880,50 @@ fn wall_walk_total(steps: &mut [(Step, bool, CfgNodeId)]) {
 /// wall attaches the attribution witness (TC-3). A running mutator (whether it just demoted, or
 /// was never converged) then contributes: WITH a lifted footprint it scopes the wall (union its
 /// coordinates); WITHOUT one it totalises the wall. Demotion stays Replace→Run only (`inv-kfail`).
+/// Record one demoted survival on both planes: the decision record, and its narration.
+///
+/// 24G Part B rides the record's `poisoned_by`: where a reach-expanded coordinate poisoned the
+/// elision, the reach-function KIND travels with the decision so the why-lens can name it
+/// ("…poisoned via `<kind>.reaches()`") without re-deriving which arm fired.
+fn record_survival_demotion(spine: &mut Spine, leaf: LeafId, reason: survival::DemoteReason) {
+    let (demote, poisoned_by) = match reason {
+        survival::DemoteReason::TotalWall => (dorc_core::spine::SurvivalDemote::TotalWall, None),
+        survival::DemoteReason::Poisoned { via_reach } => {
+            (dorc_core::spine::SurvivalDemote::Poisoned, via_reach)
+        }
+        survival::DemoteReason::MayAlias => (dorc_core::spine::SurvivalDemote::MayAlias, None),
+    };
+    spine.push_survival(dorc_core::spine::SpineSurvival {
+        leaf,
+        outcome: dorc_core::spine::SurvivalOutcome::Demoted(demote),
+        poisoned_by,
+        grade: None,
+    });
+    let tag = match reason {
+        survival::DemoteReason::TotalWall => DemoteTag::TotalWall,
+        survival::DemoteReason::Poisoned { .. } => DemoteTag::Poisoned,
+        survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
+    };
+    spine.push_narrative(CollapseNarrative::new(
+        SpeechAct::Derived,
+        CollapseKind::Demotion {
+            site: dorc_aid::diag::SiteId::leaf(leaf),
+            reason: tag,
+        },
+    ));
+}
+
 fn wall_walk_survival(
     steps: &mut [(Step, bool, CfgNodeId)],
     footprints: &TrustedFootprints,
     resolutions: Option<&Resolutions>,
     dialect: &Dialect,
     fact_backings: &BTreeMap<FactKey, FactBacking>,
-) -> SurvivalReport {
+    spine: &mut Spine,
+) {
     // `None` resolvers ⇒ the token-equality floor (24F §3): the empty map, every kind resolver-less.
     let empty = Resolutions::none();
     let resolutions = resolutions.unwrap_or(&empty);
-    let mut report = SurvivalReport::default();
     let mut total_wall = false;
     let mut accumulated: Vec<survival::AccumulatedWall> = Vec::new();
     for (step, is_mutator, node) in steps {
@@ -3892,7 +3942,14 @@ fn wall_walk_survival(
             match survival::wall_verdict(total_wall, &accumulated, &backing, resolutions, dialect) {
                 // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
                 // flag-off world would (no witness, `Replace` untouched).
-                survival::WallVerdict::SurvivedClean => {}
+                survival::WallVerdict::SurvivedClean => {
+                    spine.push_survival(dorc_core::spine::SpineSurvival {
+                        leaf: step.leaf,
+                        outcome: dorc_core::spine::SurvivalOutcome::Clean,
+                        poisoned_by: None,
+                        grade: None,
+                    });
+                }
                 // Crossed ≥1 running wall, all disjoint — survives WITH attribution, ONCE the
                 // independent reference model re-derives the same answer
                 // (`300:lane-sparing-rederivation`). The re-check consumes the minted witness and
@@ -3914,13 +3971,23 @@ fn wall_walk_survival(
                                 step.disposition =
                                     Disposition::Replace(license.with_survival(witness), stand_in);
                             }
+                            spine.push_survival(dorc_core::spine::SpineSurvival {
+                                leaf: step.leaf,
+                                outcome: dorc_core::spine::SurvivalOutcome::Survived,
+                                poisoned_by: None,
+                                grade: None,
+                            });
                         }
                         rederive::Recheck::Demoted(disagreement) => {
-                            report.rederivation_demotions.push((
-                                step.leaf,
-                                u32::try_from(disagreement.wall).unwrap_or(u32::MAX),
-                            ));
-                            report.collapse_narrative.push(CollapseNarrative::new(
+                            spine.push_survival(dorc_core::spine::SpineSurvival {
+                                leaf: step.leaf,
+                                outcome: dorc_core::spine::SurvivalOutcome::RederivationDisagreed {
+                                    wall: u32::try_from(disagreement.wall).unwrap_or(u32::MAX),
+                                },
+                                poisoned_by: None,
+                                grade: None,
+                            });
+                            spine.push_narrative(CollapseNarrative::new(
                                 SpeechAct::Derived,
                                 CollapseKind::Demotion {
                                     site: dorc_aid::diag::SiteId::leaf(step.leaf),
@@ -3935,30 +4002,7 @@ fn wall_walk_survival(
                 // canonicalized (§3a may-alias) — demote (`inv-kfail`, fail toward run). A may-alias
                 // demote is instrumented (24F §3a — the yardstick shows the fire-rate).
                 survival::WallVerdict::Demoted(reason) => {
-                    match reason {
-                        survival::DemoteReason::MayAlias => {
-                            report.may_alias_fires = report.may_alias_fires.saturating_add(1);
-                        }
-                        // 24G Part B: a reach-expanded coordinate poisoned this elision — attribute
-                        // the reach-function KIND for the why-lens ("…poisoned via <kind>.reaches()").
-                        survival::DemoteReason::Poisoned {
-                            via_reach: Some(kind),
-                        } => report.reach_poisonings.push((step.leaf, kind)),
-                        survival::DemoteReason::TotalWall
-                        | survival::DemoteReason::Poisoned { via_reach: None } => {}
-                    }
-                    let tag = match reason {
-                        survival::DemoteReason::TotalWall => DemoteTag::TotalWall,
-                        survival::DemoteReason::Poisoned { .. } => DemoteTag::Poisoned,
-                        survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
-                    };
-                    report.collapse_narrative.push(CollapseNarrative::new(
-                        SpeechAct::Derived,
-                        CollapseKind::Demotion {
-                            site: dorc_aid::diag::SiteId::leaf(step.leaf),
-                            reason: tag,
-                        },
-                    ));
+                    record_survival_demotion(spine, step.leaf, reason);
                     step.disposition = Disposition::Run;
                 }
             }
@@ -3968,7 +4012,7 @@ fn wall_walk_survival(
         // casts no shadow, so it is skipped here.
         if *is_mutator && matches!(step.disposition, Disposition::Run) {
             // C5 aid: a running mutator forms an Effect-channel wall (`rul-only-oracle-bytes-ship`).
-            report.collapse_narrative.push(CollapseNarrative::new(
+            spine.push_narrative(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::WallFormation {
                     participant: step.leaf,
@@ -3986,7 +4030,6 @@ fn wall_walk_survival(
             }
         }
     }
-    report
 }
 
 /// The per-leaf disposition: the fold first (a provably-dead leaf is `Omit`ted), then
@@ -7675,7 +7718,7 @@ apt_get__is_converged() {
             }
             Observable::verdict_only(Verdict::Unknown)
         };
-        let plan = build_plan_walled(
+        let spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -7691,6 +7734,7 @@ apt_get__is_converged() {
             observe,
             &mut arena,
         );
+        let plan = project_plan(&spine, &PlanAuthority::without_intake());
         (plan, i)
     }
 
@@ -7820,7 +7864,7 @@ apt_get__is_converged() {
             }
             Observable::verdict_only(Verdict::Unknown)
         };
-        build_plan_walled(
+        let spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -7835,7 +7879,8 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
-        )
+        );
+        project_plan(&spine, &PlanAuthority::without_intake())
     }
 
     /// rul24-mode-gate BOTH-SIDES pin (the PRIMARY unflagged-equality guard, per the human's
@@ -7916,7 +7961,7 @@ apt_get__is_converged() {
             }
             Observable::verdict_only(Verdict::Unknown)
         };
-        build_plan_walled(
+        let spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -7931,7 +7976,8 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
-        )
+        );
+        project_plan(&spine, &PlanAuthority::without_intake())
     }
 
     /// The FLAGGED survival path at the plan level: a converged install past a running DIVERGED

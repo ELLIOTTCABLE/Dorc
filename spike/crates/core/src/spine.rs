@@ -61,6 +61,13 @@ pub trait DecidePlane {
     /// reference precisely so untrusted result bytes have no raw serialization route
     /// (`rul-host-bytes-bounded-before-admission`), and copying them into `core` would open one.
     type Records: core::fmt::Debug + Clone;
+    /// The decision-inert narration a collapse mints (`dorc_aid::CollapseNarrative`).
+    ///
+    /// Named through this seam rather than held by `core` because narration is the DESCRIBE plane
+    /// (`aid-is-the-describe-plane`), and a `core → aid` edge would mean a decision reading a
+    /// narration. `narrative-is-sealed-by-type-not-place` is what makes co-location safe: the seal
+    /// is private fields and `ProvId: !Ord`, not which crate the value sits in.
+    type Narrative: core::fmt::Debug + Clone;
 }
 
 /// How many exemplars an unbounded operand account keeps before it reports a count instead
@@ -514,11 +521,27 @@ pub enum SurvivalOutcome {
     Clean,
     /// Crossed ≥1 running wall, all provably disjoint, under the consent flag.
     Survived,
-    /// Demoted to run.
-    Demoted,
+    /// Demoted to run, for one of the three reasons the walk distinguishes.
+    Demoted(SurvivalDemote),
     /// The naive reference model declined to confirm a survival the wall walk had minted
-    /// (`rederivation-is-demote-only`). Non-empty is a finding about OUR engine.
-    RederivationDisagreed,
+    /// (`rederivation-is-demote-only`), naming the crossed wall's ordinal. Non-empty is a finding
+    /// about OUR engine, never about the book's text.
+    RederivationDisagreed {
+        /// The crossed wall's ordinal in the accumulated set.
+        wall: u32,
+    },
+}
+
+/// Why a survival demoted (`survival::DemoteReason`, as decision-plane record content).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SurvivalDemote {
+    /// A footprint-less running mutator totalised the wall — silence walls.
+    TotalWall,
+    /// The backing hit an accumulated footprint.
+    Poisoned,
+    /// A same-kind pair could not be canonicalized (`24F` §3a). A SWAMPED count is a finding to
+    /// report about the resolvers, never a license to weaken the may-alias default.
+    MayAlias,
 }
 
 /// A render-time decision, hoisted out of hiding (`30E` §3's audit).
@@ -617,6 +640,7 @@ pub struct Spine<P: DecidePlane> {
     survivals: Vec<SpineSurvival>,
     render_decisions: Vec<SpineRenderDecision>,
     outcome: Option<SpineOutcome>,
+    narratives: Vec<P::Narrative>,
 }
 
 impl<P: DecidePlane> Default for Spine<P> {
@@ -637,6 +661,7 @@ impl<P: DecidePlane> Default for Spine<P> {
             survivals: Vec::new(),
             render_decisions: Vec::new(),
             outcome: None,
+            narratives: Vec::new(),
         }
     }
 }
@@ -690,6 +715,11 @@ impl<P: DecidePlane> Spine<P> {
     /// the certifier-trip cleanup perform, which are Spine writes like any other.
     pub fn disposition_mut(&mut self, site: SiteId) -> Option<&mut SpineDisposition<P>> {
         self.dispositions.get_mut(&site)
+    }
+
+    /// Every site decision, mutably, in site order — for a whole-plan demotion sweep.
+    pub fn dispositions_mut(&mut self) -> impl Iterator<Item = &mut SpineDisposition<P>> {
+        self.dispositions.values_mut()
     }
 
     /// Write the decision digest.
@@ -821,6 +851,22 @@ impl<P: DecidePlane> Spine<P> {
         &self.render_decisions
     }
 
+    /// Append narration minted while writing this Spine's decisions.
+    ///
+    /// Scope, and it is load-bearing for order: this holds the narration a DECISION WRITE minted,
+    /// not the run's whole narrative stream. A projection that narrates its own drops returns those
+    /// records to its caller instead of pushing them here, so a projection can never retroactively
+    /// appear in an account something already read.
+    pub fn push_narrative(&mut self, narrative: P::Narrative) {
+        self.narratives.push(narrative);
+    }
+
+    /// The narration minted alongside these decisions, in mint order (`inv-determinism`).
+    #[must_use]
+    pub fn narratives(&self) -> &[P::Narrative] {
+        &self.narratives
+    }
+
     /// How many records of each species this Spine holds — the account a projection reports what it
     /// dropped against (`309:rul-drop-accounting-completes-the-narrative-law`).
     #[must_use]
@@ -858,6 +904,7 @@ mod tests {
     impl DecidePlane for TestPlane {
         type Decision = &'static str;
         type Records = ();
+        type Narrative = ();
     }
 
     #[test]

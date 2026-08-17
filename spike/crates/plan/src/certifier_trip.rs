@@ -31,7 +31,7 @@
 use dorc_aid::CollapseNarrative;
 use dorc_aid::narrative::{CollapseKind, DemoteTag, SpeechAct};
 
-use crate::{Disposition, Plan};
+use crate::{Disposition, Spine};
 
 /// What the cleanup did (`302` §5): the count for the plan-prominent banner, and the per-site
 /// narrative records that stay pull-tier.
@@ -70,10 +70,11 @@ impl TripCleanup {
 ///
 /// Deliberately stupid, and that is the design: the whole policy is one boolean and this walk
 /// (`302:rul-certifier-value-is-stupidity` applied to the trip's consequences).
-pub fn demote_on_trip(plan: &mut Plan, census_unique: impl Fn(&str) -> bool) -> TripCleanup {
+pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -> TripCleanup {
     let mut out = TripCleanup::default();
-    for step in &mut plan.steps {
-        let stands = match &step.disposition {
+    let mut demoted_sites = Vec::new();
+    for record in spine.dispositions_mut() {
+        let stands = match &record.decision {
             Disposition::Run => true,
             Disposition::Guard(license) => census_unique(license.insert().fn_name()),
             Disposition::Replace(..) | Disposition::Omit { .. } => false,
@@ -81,15 +82,27 @@ pub fn demote_on_trip(plan: &mut Plan, census_unique: impl Fn(&str) -> bool) -> 
         if stands {
             continue;
         }
-        step.disposition = Disposition::Run;
+        record.decision = Disposition::Run;
         out.demoted = out.demoted.saturating_add(1);
+        demoted_sites.push(record.site);
         out.narrative.push(CollapseNarrative::new(
             SpeechAct::Derived,
             CollapseKind::Demotion {
-                site: dorc_aid::diag::SiteId::leaf(step.leaf),
+                site: dorc_aid::diag::SiteId::leaf(record.site.leaf),
                 reason: DemoteTag::CertifierTripped,
             },
         ));
+    }
+    // `dec-certifier-trip-cleanup` (`30E` §3) lands in the decision plane rather than staying a
+    // post-construction mutation nobody records: the cleanup is a decision about a decision, and a
+    // NEW driver forgetting to call it is exactly the must-remember-to-ask surface the reification
+    // dissolves.
+    for site in demoted_sites {
+        spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
+            site: Some(site),
+            decision: dorc_core::spine::RenderDecision::CertifierTripDemote,
+            grade: None,
+        });
     }
     out
 }
@@ -106,7 +119,7 @@ mod tests {
     use dorc_oracle::{KindIndex, ValueClaim};
 
     use super::{TripCleanup, demote_on_trip};
-    use crate::{Disposition, Plan, Step, SurvivalReport, VerdictVouch, build_plan};
+    use crate::{Disposition, Plan, Spine, Step, VerdictVouch, build_plan};
 
     /// One node with a self-loop — the smallest system that has an edge to fail.
     struct SelfLoop;
@@ -288,6 +301,26 @@ apt_get__predict() {
         }
     }
 
+    /// Write a step list onto a Spine, which is where the cleanup now reaches its decisions.
+    fn spine_of(steps: Vec<Step>) -> Spine {
+        let mut spine = Spine::new();
+        for step in steps {
+            spine.set_disposition(dorc_core::spine::SpineDisposition {
+                site: dorc_core::SiteId::leaf(step.leaf),
+                ast: step.ast,
+                sh: step.sh,
+                decision: step.disposition,
+                grade: None,
+            });
+        }
+        spine
+    }
+
+    /// The projected plan, which is what every consumer of the cleanup actually reads.
+    fn projected(spine: &Spine) -> Plan {
+        crate::project_plan(spine, &crate::PlanAuthority::without_intake())
+    }
+
     fn tags(cleanup: &TripCleanup) -> Vec<dorc_aid::narrative::CollapseKind> {
         cleanup
             .narrative()
@@ -304,11 +337,13 @@ apt_get__predict() {
     /// deadness was proved from the same analysis the trip disqualified.
     #[test]
     fn a_real_trip_evicts_every_elision_family_outcome() {
-        let mut plan = a_real_elide_plan();
-        plan.steps.push(omit_step(9));
-        let before = plan.steps.len();
+        let mut steps = a_real_elide_plan().steps;
+        steps.push(omit_step(9));
+        let before = steps.len();
+        let mut spine = spine_of(steps);
 
-        let cleanup = demote_on_trip(&mut plan, |_| true);
+        let cleanup = demote_on_trip(&mut spine, |_| true);
+        let plan = projected(&spine);
 
         assert_eq!(
             plan.steps.len(),
@@ -344,16 +379,13 @@ apt_get__predict() {
     /// wrong choice runs somebody else's judgment over a mutator that needed to run.
     #[test]
     fn a_census_unique_guard_stands_while_a_plural_one_demotes() {
-        let mut plan = Plan {
-            steps: vec![
-                guard_step(0, "apt_get__is_converged"),
-                guard_step(1, "ufw__is_converged"),
-            ],
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
+        let mut spine = spine_of(vec![
+            guard_step(0, "apt_get__is_converged"),
+            guard_step(1, "ufw__is_converged"),
+        ]);
 
-        let cleanup = demote_on_trip(&mut plan, |fn_name| fn_name == "apt_get__is_converged");
+        let cleanup = demote_on_trip(&mut spine, |fn_name| fn_name == "apt_get__is_converged");
+        let plan = projected(&spine);
 
         assert!(
             matches!(plan.steps[0].disposition, Disposition::Guard(_)),
@@ -371,15 +403,14 @@ apt_get__predict() {
     /// forfeited posture stays reachable and safe rather than merely described.
     #[test]
     fn a_censusless_caller_demotes_guards_wholesale() {
-        let mut plan = Plan {
-            steps: vec![guard_step(0, "apt_get__is_converged")],
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
+        let mut spine = spine_of(vec![guard_step(0, "apt_get__is_converged")]);
 
-        demote_on_trip(&mut plan, |_| false);
+        demote_on_trip(&mut spine, |_| false);
 
-        assert!(matches!(plan.steps[0].disposition, Disposition::Run));
+        assert!(matches!(
+            projected(&spine).steps[0].disposition,
+            Disposition::Run
+        ));
     }
 
     /// THE LATCH'S OWN CONTROL: a certification that really PASSED leaves the latch shut, so the
