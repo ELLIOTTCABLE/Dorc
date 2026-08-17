@@ -612,7 +612,7 @@ run = "sh e2e/yardstick.sh"
 # cross-config idiom (`task-bodies-are-shell-free`).
 
 [tasks."verify:check"]
-description = "The binder's CHEAP gate: unit parse, slug discipline, seat-citation resolution, catalogue coherence, the binding two-way agreement, the Generated/ hole census, and the byte-budget tripwire. No Lean, no Kani, no mutants — rides `gate:full-quiet` on both legs."
+description = "The binder's CHEAP gate: unit parse, slug discipline, seat-citation resolution, catalogue coherence, the binding two-way agreement, the Generated/ hole census, the byte-budget tripwire, and whether minispec/REPORT.md still matches what the cheap tier renders (engine-tier cells are exempt by construction — they render as not-recomputed-here either way). No Lean, no Kani, no mutants — rides `gate:full-quiet` on both legs."
 raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- check"

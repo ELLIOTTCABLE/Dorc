@@ -12,7 +12,7 @@ use crate::catalogue::LawRow;
 use crate::catalogue_lock::LAWS;
 use crate::evidence::{self, Tier};
 use crate::unit::{self, BYTE_BUDGET, Statement, Unit};
-use crate::{binding, seat};
+use crate::{binding, report, seat};
 
 /// Everything one cheap-gate pass found. Empty `failures` is the pass condition; `advisories`
 /// never fail anything.
@@ -67,8 +67,13 @@ pub fn run(repo_root: &Path) -> Result<Findings, String> {
     }
 
     let generated = repo_root.join("minispec").join("Generated");
+    let mut census = report::Census {
+        holes: 0,
+        axioms: 0,
+    };
     if generated.is_dir() {
-        let (holes, _axioms) = crate::pipeline::census(&generated)?;
+        let (holes, axioms) = crate::pipeline::census(&generated)?;
+        census = report::Census { holes, axioms };
         if holes > 0 {
             findings.failures.push(format!(
                 "minispec/Generated/ carries {holes} proof hole(s): a hole typechecks, so every \
@@ -77,7 +82,44 @@ pub fn run(repo_root: &Path) -> Result<Findings, String> {
             ));
         }
     }
+    check_report_is_current(repo_root, &units, census, &mut findings);
     Ok(findings)
+}
+
+/// The committed report must be what the CHEAP tier renders right now.
+///
+/// This is the gap that let the one reader-facing trust summary rot while every gate stayed
+/// green: nothing recomputed it, so it went stale the moment a unit was edited and stayed stale
+/// (`30B` §2). The check is honest at this tier by construction — the committed copy IS the
+/// cheap render, because `report --write` refuses to publish an engine-tier one — so every cell
+/// compared here is one the cheap tier genuinely recomputes, and the engine-tier cells it
+/// carries all read `not-recomputed-here`, a constant. A Lean or Kani result moving therefore
+/// does NOT make the artifact stale, which is exactly right: those move badges in the
+/// catalogue, through a promote, and the report follows the catalogue.
+fn check_report_is_current(
+    repo_root: &Path,
+    units: &[Unit],
+    census: report::Census,
+    findings: &mut Findings,
+) {
+    let rows: Vec<report::Row<'_>> = LAWS
+        .iter()
+        .map(|law| {
+            let unit = units.iter().find(|u| u.slug == law.slug);
+            report::Row {
+                law,
+                unit,
+                evidence: evidence::compute(law, unit, repo_root, Tier::Cheap),
+            }
+        })
+        .collect();
+    let text = report::render(&rows, Tier::Cheap, census, repo_root);
+    let freshness = report::freshness(repo_root, &text);
+    if !matches!(freshness, report::Freshness::Current) {
+        findings
+            .failures
+            .push(report::describe_staleness(&freshness));
+    }
 }
 
 fn check_unit(unit: &Unit, findings: &mut Findings) {
