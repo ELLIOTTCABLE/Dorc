@@ -42,8 +42,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use support::{
-    E2eCase, E2eKind, LoomCase, Selection, case_from_path, case_roots, discover_e2e,
-    discover_looms, report_path_selection, resolve_selection, spike_root, split_path_selectors,
+    E2eCase, E2eKind, LoomCase, RECORDS_NONCE, RECORDS_TOKEN, Selection, case_from_path,
+    case_roots, discover_e2e, discover_looms, report_path_selection, resolve_selection, spike_root,
+    split_path_selectors,
 };
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
@@ -51,12 +52,6 @@ use support::{
 fn own_cases() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests")
 }
-
-/// The fixed spike nonce and terminal token of the `dorc-records/1` framing (`262` §2).
-/// These MIRROR `plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN}` — keep the two in sync.
-const RECORDS_NONCE: &str = "dorc";
-/// The per-record terminal token (see [`RECORDS_NONCE`]).
-const RECORDS_TOKEN: &str = "@@dorc@@";
 
 // ---------------------------------------------------------------------------
 // process + filesystem plumbing
@@ -111,14 +106,6 @@ impl Drop for Scratch {
 /// Read a file, or the empty string when it is absent.
 fn read_or_empty(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
-}
-
-/// The `<coord> arm=<n>` key a `reach`/`reach-end` record line carries, for the authored-fixture
-/// close synthesis. Whitespace-split, so a coord bearing spaces is not a fixture shape here.
-fn reach_arm_key(fields: &[&str]) -> Option<String> {
-    let coord = fields.get(1)?;
-    let arm = fields.get(2).filter(|f| f.starts_with("arm="))?;
-    Some(format!("{coord} {arm}"))
 }
 
 /// A file exists and is non-empty (`[ -f x ] && [ -s x ]`).
@@ -757,141 +744,9 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
     )
     .stdout;
 
-    let header = probe
-        .lines()
-        .find(|line| line.contains("dorc-records/1"))
-        .and_then(|line| line.split('\'').nth(1))
-        .map(|field| field.strip_suffix("\\n").unwrap_or(field).to_owned());
-
-    let mut sites: Vec<String> = Vec::new();
-    for line in probe.lines() {
-        let fields: Vec<&str> = line.split_whitespace().collect();
-        for pair in fields.windows(2) {
-            let (key, value) = (pair[0], pair[1]);
-            if key == "site" && is_site_key(value) && !sites.iter().any(|seen| seen == value) {
-                sites.push(value.to_owned());
-            }
-        }
-    }
-
-    let Some(header) = header else {
-        return String::new();
-    };
-
-    let raw = read_or_empty(&dir.join("probe-results.txt"));
-    let wanted: BTreeSet<&str> = sites.iter().map(String::as_str).collect();
-    let mut body: Vec<String> = Vec::new();
-    let mut deriv_counts: BTreeMap<String, usize> = BTreeMap::new();
-    let mut deriv_order: Vec<String> = Vec::new();
-    let mut deriv_closed: BTreeSet<String> = BTreeSet::new();
-    let mut reach_counts: BTreeMap<String, usize> = BTreeMap::new();
-    let mut reach_order: Vec<String> = Vec::new();
-    let mut reach_closed: BTreeSet<String> = BTreeSet::new();
-    for raw_line in raw.lines() {
-        if raw_line.starts_with("dorc-records/1 ") || raw_line.starts_with("dorc-records-end/1 ") {
-            continue;
-        }
-        let stripped = raw_line.strip_suffix('\r').unwrap_or(raw_line);
-        let stripped = stripped.strip_prefix("dorc ").unwrap_or(stripped);
-        let line = stripped
-            .strip_suffix(&format!(" {RECORDS_TOKEN}"))
-            .unwrap_or(stripped)
-            .to_owned();
-        let trimmed = line.trim_start();
-        if trimmed.is_empty() || trimmed.starts_with('#') {
-            continue;
-        }
-        let fields: Vec<&str> = line.split_whitespace().collect();
-        match fields.first().copied() {
-            Some("site") if !fields.get(1).is_some_and(|id| wanted.contains(id)) => continue,
-            Some("deriv") => {
-                if let Some(site) = fields.get(1) {
-                    let site = (*site).to_owned();
-                    *deriv_counts.entry(site.clone()).or_default() += 1;
-                    if !deriv_order.contains(&site) {
-                        deriv_order.push(site);
-                    }
-                }
-            }
-            Some("deriv-end") => {
-                if let Some(site) = fields.get(1) {
-                    deriv_closed.insert((*site).to_owned());
-                }
-            }
-            Some("reach") => {
-                if let Some(key) = reach_arm_key(&fields) {
-                    *reach_counts.entry(key.clone()).or_default() += 1;
-                    if !reach_order.contains(&key) {
-                        reach_order.push(key);
-                    }
-                }
-            }
-            Some("reach-end") => {
-                if let Some(key) = reach_arm_key(&fields) {
-                    reach_closed.insert(key);
-                }
-            }
-            _ => {}
-        }
-        body.push(line);
-    }
-    for site in &deriv_order {
-        if !deriv_closed.contains(site) {
-            // The close is SYNTHESIZED to agree with the authored coords, so neither gate fires on
-            // authoring alone; a case exercising the body-death refusal spells its own `deriv-end`.
-            body.push(format!(
-                "deriv-end {site} n={} body-rc=0",
-                deriv_counts.get(site).copied().unwrap_or_default()
-            ));
-        }
-    }
-    for key in &reach_order {
-        if !reach_closed.contains(key) {
-            body.push(format!(
-                "reach-end {key} n={} body-rc=0",
-                reach_counts.get(key).copied().unwrap_or_default()
-            ));
-        }
-    }
-
-    let mut out = String::new();
-    out.push_str(&header);
-    out.push('\n');
-    for line in body {
-        let line = if line.trim_start().starts_with("site ") && !line.contains(" rc=") {
-            format!("{line} rc=0")
-        } else {
-            line
-        };
-        let _ = writeln!(out, "{RECORDS_NONCE} {line} {RECORDS_TOKEN}");
-    }
-    for site in &sites {
-        if !out
-            .lines()
-            .any(|line| line.starts_with(&format!("{RECORDS_NONCE} site {site} ")))
-        {
-            let _ = writeln!(
-                out,
-                "{RECORDS_NONCE} site {site} effect=cant-tell rc=0 {RECORDS_TOKEN}"
-            );
-        }
-    }
-    let _ = writeln!(
-        out,
-        "dorc-records-end/1 nonce={RECORDS_NONCE} {RECORDS_TOKEN}"
-    );
-    out
-}
-
-/// A site key is `N` or, for an in-loop Members member, `N.M`.
-fn is_site_key(value: &str) -> bool {
-    let mut parts = value.split('.');
-    let head = parts.next().unwrap_or_default();
-    let tail = parts.next();
-    parts.next().is_none()
-        && !head.is_empty()
-        && head.chars().all(|c| c.is_ascii_digit())
-        && tail.is_none_or(|t| !t.is_empty() && t.chars().all(|c| c.is_ascii_digit()))
+    // The re-framing itself lives in `support` so the `309` §4 baseline re-frames IDENTICALLY;
+    // this seat keeps the probe invocation, which is the half that differs per driver.
+    support::frame_records(&probe, dir)
 }
 
 // ---------------------------------------------------------------------------
