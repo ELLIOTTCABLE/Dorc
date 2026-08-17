@@ -1,5 +1,5 @@
 //! `sourcing` — the include-tree over the loaded sources: which file `.`-sources which
-//! (`28Q` §2 `syn-closure-is-the-speaker`; the contract at `30C:§1`).
+//! (`28Q` §2 `syn-closure-is-the-speaker`; the contract at `30G:§1`).
 //!
 //! Everything here is a PURE function of the loaded `(path, source)` vectors, so both drivers — the
 //! binary and `WhyWorld` — derive one include-tree from one rule and cannot disagree about whose
@@ -16,7 +16,7 @@
 //!
 //! Nothing here proves a file inert. The contract is the AUTHOR's promise, made by marking the
 //! file; a target that fails it is refused with that attribution and no edge forms
-//! (`30C:rul-inertness-is-contract-never-engine-fact`).
+//! (`30G:rul-inertness-is-contract-never-engine-fact`).
 //!
 //! # Path resolution is relative to the SOURCING FILE — flagged, and the human's to overturn
 //!

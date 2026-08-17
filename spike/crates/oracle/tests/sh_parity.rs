@@ -232,7 +232,7 @@ fn a_regional_book_helper_leaves_an_unreachable_vouch_alone() {
 /// its helper would ship with an EMPTY closure and rc-127 at the host.
 ///
 /// The admission is a CONTRACT, never an engine proof of inertness
-/// (`30C:rul-inertness-is-contract-never-engine-fact`).
+/// (`30G:rul-inertness-is-contract-never-engine-fact`).
 #[test]
 fn an_oracle_that_sources_at_top_level_keeps_its_own_declarations() {
     let sourcing = format!(

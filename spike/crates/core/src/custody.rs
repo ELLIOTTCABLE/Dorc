@@ -1,5 +1,5 @@
 //! `core::custody` — whose utterance a licence may rest on, once files can source each other
-//! (`28Q` §2 `syn-closure-is-the-speaker`; `30C:dec-custody-is-containment-not-equivalence`).
+//! (`28Q` §2 `syn-closure-is-the-speaker`; `30G:dec-custody-is-containment-not-equivalence`).
 //!
 //! Sourcing is a PROMISE — "I treated this as if I wrote it" (`28M` §10
 //! `dir-ownership-is-transitive-inclusion`) — so a file's author answers for everything their file
@@ -35,7 +35,7 @@
 //!   un-walling and nothing else.
 //!
 //! The admission itself is a HYGIENE CONTRACT, never an engine proof of inertness
-//! (`30C:rul-inertness-is-contract-never-engine-fact`): the licence grounds on the marker plus the
+//! (`30G:rul-inertness-is-contract-never-engine-fact`): the licence grounds on the marker plus the
 //! author's no-top-level-commands promise, and a refusal attributes to that contract.
 
 use crate::{SortedSet, SourceFileId};

@@ -1,4 +1,4 @@
-# 30C — The closure/custody work order (`28Q` §8 stage-ii, phase 3: closures and sourcing)
+# 30G — The closure/custody work order (`28Q` §8 stage-ii, phase 3: closures and sourcing)
 
 The executable spec for the `lane-custody-closures` phase-3 build, written against the code as it
 stands at `73359e0f` so a cold successor executes from here and re-derives nothing. Phases 1–2
@@ -6,7 +6,7 @@ stands at `73359e0f` so a cold successor executes from here and re-derives nothi
 LANDED and are this document's floor, not its subject.
 
 Grades: `+SURE` measured in this tree · `~SUSPECT` read but unmeasured · `-GUESS` inference ·
-`--WONDER` open question. Slugs are minted here and referenced elsewhere as `30C:<slug>`.
+`--WONDER` open question. Slugs are minted here and referenced elsewhere as `30G:<slug>`.
 
 ## §1 — The ruled contract (the ground; nothing below may contradict it)
 
@@ -278,8 +278,10 @@ certifier, the sparing reference model, or `minispec/`. If a signature change ri
 
 ## §8 — Deviations recorded at authoring time
 
-- `dev-docid-is-30c-not-30f` — the brief expected `30F`; the `Research/**/30*` glob shows `30A`
-  and `30B` are the highest taken, so the lowest free letter is `30C`.
+- `dev-docid-is-30g-not-30f` — the brief expected `30F`, which the concurrent Spine lane took
+  (along with `30E`). This note was authored as `30C` and renumbered at the fold: `30C` is a
+  vacated ghost ID from an earlier renumber and must not be re-minted, so the conductor assigned
+  `30G`.
 - `dev-prelude-a-was-already-landed` — `28Q` §1 item 1's file-grade tripwire retired at
   `c34e996a` (predecessor's last doc commit). Residual: the item still explains itself by contrast
   with the retired shape, which brushes plans-are-ahistorical; trimmed to plain current truth.
