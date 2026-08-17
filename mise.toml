@@ -563,6 +563,12 @@ raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- prose-census"
 
+[tasks."spine:baseline"]
+description = "MIGRATION SCAFFOLDING, BUILD-TO-KILL (309 §4): freeze the decision-state smoke-diff baseline over the committed corpus — site-keyed dispositions, guard bindings, custody, survival witnesses, digest. Frozen ONCE at the base commit and re-taken after the Spine lands; the DIFF is a review tool for the fold sitting, never an acceptance gate. Pass the destination after `--`."
+raw = true
+dir = "spike"
+run = "cargo test -p dorc-cli --test spine_baseline -- --ignored --nocapture"
+
 [tasks."xfail:census"]
 description = "INSTRUMENT: every live xfail pin grouped by round horizon, with its greening trigger — 'what is owed, and by when' in one screen. The GATE is the `xfail_census` unit test, which shares this renderer; expiry is measured against xfail.rs's CURRENT_ROUND, which a conductor bumps at round-open."
 dir = "spike"

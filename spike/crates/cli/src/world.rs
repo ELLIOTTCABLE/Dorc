@@ -540,6 +540,23 @@ impl WhyWorld {
         )
     }
 
+    /// The plan this world built, the AST its spans index into, and the interner that minted its
+    /// symbols.
+    ///
+    /// MIGRATION SCAFFOLDING (`309` §4, build-to-kill): the decision-state baseline walks the plan
+    /// directly rather than through [`report`](Self::report), which would demand a fabricated
+    /// [`Receipt`] — inventing a tally and a risk-profile to read a disposition. Dies with the
+    /// smoke-diff; nothing in the product reads it.
+    ///
+    /// The interner rides along because it MUST: a `Symbol` resolves only against the interner that
+    /// minted it, and this world mints its own. Handing back the plan alone invites a caller to
+    /// resolve its facts against some other interner, which indexes out of bounds if you are lucky
+    /// and silently names the wrong entity if you are not.
+    #[must_use]
+    pub fn plan_ast_and_interner(&self) -> (&dorc_plan::Plan, &dorc_syntax::ast::Ast, &Interner) {
+        (&self.plan, &self.ast, &self.interner)
+    }
+
     /// Borrow this world as the report context.
     #[must_use]
     pub fn report<'a>(&'a self, address: Option<&'a str>, receipt: &'a Receipt) -> WhyReport<'a> {

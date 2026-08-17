@@ -1,0 +1,326 @@
+//! The decision-state SMOKE-DIFF baseline (`309` §4; `30E` §6) — **migration scaffolding,
+//! build-to-kill**.
+//!
+//! Byte gates are known-vacuous at byte-lossy seams on this refactor class (`28Q` §8's stage-0
+//! retroactive audit: outcomes hold while records silently change). Two such seams are known here —
+//! the decision digest collapses in-loop member sites into their leaf, and a guard's binding can
+//! move between byte-identical definition bodies carrying different custody. Both change
+//! ATTRIBUTION that no golden sees, and big-bang leaves no bisection point.
+//!
+//! So: freeze this walk's output at the base commit, land the Spine, then have a Spine projection
+//! reproduce the schema and diff the two by eye at the fold sitting.
+//!
+//! **It is a smoke-testing machine, NOT an acceptance gate** (`309` §4, TYPED). Non-empty output is
+//! material for judgment, never an auto-fail — gaming it leads to backflips.
+//!
+//! Three fences, each load-bearing:
+//!
+//! 1. it is never the whylog — no durable-tripwire contact, and it writes only where told;
+//! 2. it is never the census `new`-arm debug dump (`309` §3) — different mechanism, different
+//!    lifetime, and its schema INFORMS the owed `SiteId` decision-dump product feature without ever
+//!    becoming it;
+//! 3. it runs only when asked (`#[ignore]`, driven by `mise run spine:baseline`), so it costs the
+//!    ordinary suite nothing but still COMPILES with it — a signature change during the burn-down
+//!    reddens here loudly rather than rotting.
+//!
+//! Honest residual (`309` §4): this covers only decision-state the current code makes explicit
+//! enough to walk. A fully-implicit decision is invisible to the baseline exactly as it is to the
+//! census, which is why the hidden-decision audit (`30E` §3) is a separate instrument.
+//!
+//! DISCLOSED COVERAGE LIMIT, measured 2026-08-17 — **read this before trusting a clean diff.** Of
+//! 232 committed cases, the intake ADMITS 9: the corpus commits `probe-results.txt` RAW, and
+//! `e2e.rs`'s `framed_results` re-frames it per case by first running the real `dorc probe` to
+//! source the header and the site list. A refused stream analyses as the unmeasured world (every
+//! fact ⊤ ⇒ every site runs), so the rows this file freezes are dominated by classification,
+//! vouches, bindings and the digest rather than by `Replace`/`Guard`/`Omit`. Both seams the diff
+//! exists to watch — the member-collapse and the guard-binding custody move — live in the MEASURED
+//! worlds, so today they are thinly covered. Closing it means re-homing `framed_results` into
+//! `support.rs` and paying a `dorc probe` subprocess per case; that is a conductor call, priced and
+//! flagged, not taken here.
+//!
+//! Case discovery is DUPLICATED from `definition_frames.rs` rather than shared through
+//! `support.rs`: a parallel custody lane is editing that battery, and a build-to-kill file is the
+//! wrong place to spend a merge conflict.
+
+#![expect(
+    clippy::print_stderr,
+    reason = "`support`'s selection reporter is compiled into every test binary that uses it, and this instrument reports its own destination to a human running it by hand"
+)]
+
+mod support;
+
+use std::collections::BTreeMap;
+use std::fmt::Write as _;
+use std::path::Path;
+
+use dorc_cli::results::{RunClock, RunSources, admit_fixture_records};
+use dorc_core::Interner;
+use dorc_plan::Disposition;
+use dorc_plan::records::Admission;
+
+/// Where the baseline is written. Unset ⇒ the walk still runs and its floor still asserts, so the
+/// instrument cannot rot into a no-op that reports success.
+const DUMP_VAR: &str = "DORC_SPINE_DUMP";
+
+/// One committed case, with the sources and records a run of it would load.
+struct CaseWorld {
+    label: String,
+    paths: Vec<String>,
+    srcs: Vec<String>,
+    book: String,
+    /// The case's committed `probe-results.txt`, when it has one. Absent ⇒ the unmeasured world
+    /// (every fact ⊤ ⇒ every site runs), which decides far less and is worth far less to diff.
+    results: Option<String>,
+}
+
+#[test]
+#[ignore = "migration scaffolding: `mise run spine:baseline` drives it"]
+fn spine_decision_state_baseline() {
+    let worlds = corpus_worlds();
+    assert!(
+        !worlds.is_empty(),
+        "discovery floor: the corpus walk found no worlds, so this baseline would freeze nothing"
+    );
+
+    let mut out = String::new();
+    let _ = writeln!(out, "dorc-spine-baseline/1 cases={}", worlds.len());
+    for world in &worlds {
+        render_case(&mut out, world);
+    }
+
+    match std::env::var(DUMP_VAR) {
+        Ok(path) if !path.is_empty() => {
+            std::fs::write(&path, &out).expect("the baseline destination is writable");
+            eprintln!("spine baseline: {} cases -> {path}", worlds.len());
+        }
+        _ => eprintln!(
+            "spine baseline: {} cases walked; set {DUMP_VAR}=<path> to freeze them",
+            worlds.len()
+        ),
+    }
+}
+
+/// One case's decision-state, in a fixed field order over sorted rows (`inv-determinism`).
+fn render_case(out: &mut String, world: &CaseWorld) {
+    let mut interner = Interner::default();
+    let sources = RunSources {
+        book_name: &world.label,
+        book: &world.book,
+        oracle_paths: &world.paths,
+        oracle_sources: &world.srcs,
+    };
+
+    // The FIXTURE intake — the sanctioned route for a harness to drive the real admission over a
+    // case's own committed bytes. Its signature cannot name a managed host (`28L`
+    // rul-records-seam-approved, rider (b)).
+    let mut clock = RunClock::Absent;
+    let measured = world.results.as_ref().and_then(|text| {
+        match admit_fixture_records(&sources, text.as_bytes(), &mut clock, &mut interner) {
+            Admission::Admitted(admitted) => Some(admitted.scoped),
+            Admission::NoObservation | Admission::Refused(_) => None,
+        }
+    });
+
+    let empty = dorc_cli::results::SiteResults::default();
+    let results = measured.as_ref().map_or(&empty, |scoped| scoped.results());
+    // Consented, so the survival tier EXISTS to be dumped; unflagged it is absent rather than quiet
+    // (`empty-world-byte-identical`), which would hide every wall-crossing from the diff.
+    let built = dorc_cli::world::WhyWorld::analyze_measured(
+        &world.label,
+        &world.book,
+        &world.paths,
+        &world.srcs,
+        results,
+        true,
+    );
+    // The world's OWN interner: a `Symbol` resolves only against the one that minted it, and the
+    // local interner above belongs to the intake, not to the analysis.
+    let (plan, ast, symbols) = built.plan_ast_and_interner();
+
+    let _ = writeln!(out, "case {}", world.label);
+    let _ = writeln!(out, "  digest {}", built.decision_digest());
+    // What ADMISSION answered, never whether a file was present: a case whose committed records the
+    // intake refuses analyses as the unmeasured world, and reporting its mere file as `measured`
+    // would overstate what this baseline froze.
+    let _ = writeln!(
+        out,
+        "  records {}",
+        match (&world.results, &measured) {
+            (None, _) => "absent",
+            (Some(_), Some(_)) => "admitted",
+            (Some(_), None) => "refused",
+        }
+    );
+
+    let pinned = plan.pinned_definitions(&world.book, ast);
+    let mut steps: Vec<_> = plan.steps.iter().collect();
+    steps.sort_by_key(|step| (step.leaf.0, step.ast.0));
+    for step in steps {
+        // SITE-granular by construction on both sides of the migration: today a `Step` is
+        // leaf-keyed and the member is absent, so the row spells `-`. When Spine keys by `SiteId`
+        // the member appears HERE, and the known keying change needs no whitelist (`309` §4).
+        let _ = write!(out, "  site {}.- ast={} ", step.leaf.0, step.ast.0);
+        match &step.disposition {
+            Disposition::Run => out.push_str("run"),
+            Disposition::Replace(license, stand_in) => {
+                let _ = write!(
+                    out,
+                    "replace custody={:?} via={:?} standin={stand_in:?} fact={}",
+                    license.custody(),
+                    license.derivation().via,
+                    dorc_plan::fact_label(symbols, license.fact()),
+                );
+            }
+            Disposition::Omit { controller } => {
+                let _ = write!(out, "omit controller={}", controller.0);
+            }
+            Disposition::Guard(license) => {
+                let _ = write!(
+                    out,
+                    "guard fact={}",
+                    dorc_plan::fact_label(symbols, license.fact())
+                );
+            }
+        }
+        // The BINDING, beside the decision it belongs to: which body this guard invokes, under what
+        // name. `pinned-definitions-are-the-artifact's-binding` is a render-time decision no golden
+        // distinguishes when two definition bodies are byte-identical, which is the seam.
+        if let Some(name) = pinned.invoked(step.ast) {
+            let _ = write!(out, " invoked={name}");
+        }
+        out.push('\n');
+    }
+
+    // The hoisted preamble by DIGEST rather than by bytes: the diff wants to know that the binding
+    // set moved, not to re-litigate the emission's formatting.
+    let _ = writeln!(
+        out,
+        "  hoisted bytes={} digest={}",
+        pinned.hoisted().len(),
+        short_digest(pinned.hoisted())
+    );
+
+    let survival = &plan.survival_report;
+    let _ = writeln!(out, "  may-alias {}", survival.may_alias_fires());
+    let mut poisonings: Vec<String> = survival
+        .reach_poisonings()
+        .map(|(leaf, kind)| format!("  poisoned {} kind={}", leaf.0, symbols.resolve(kind.0)))
+        .collect();
+    poisonings.sort();
+    for row in poisonings {
+        let _ = writeln!(out, "{row}");
+    }
+    let mut demotions: Vec<String> = survival
+        .rederivation_demotions()
+        .map(|(leaf, wall)| format!("  rederive-demoted {} wall={wall}", leaf.0))
+        .collect();
+    demotions.sort();
+    for row in demotions {
+        let _ = writeln!(out, "{row}");
+    }
+}
+
+/// A short content digest, for comparing emitted blobs without pinning their bytes.
+fn short_digest(text: &str) -> String {
+    dorc_plan::invocation::book_digest(text)
+        .get(..12)
+        .unwrap_or_default()
+        .to_owned()
+}
+
+/// Every committed case that has a book, with the sources a run of it would load.
+fn corpus_worlds() -> Vec<CaseWorld> {
+    let mut out = Vec::new();
+    for root in support::case_roots() {
+        let Ok(entries) = std::fs::read_dir(&root) else {
+            continue;
+        };
+        let mut paths: Vec<_> = entries.flatten().map(|entry| entry.path()).collect();
+        paths.sort();
+        for path in paths {
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            if name.contains(".sync-conflict-") {
+                continue; // sync residue is never a case
+            }
+            if path.is_dir() {
+                if let Some(world) = dir_world(&path, &name) {
+                    out.push(world);
+                }
+                let inner = path.join(format!("{name}.loom"));
+                if inner.is_file()
+                    && let Some(world) = loom_world(&inner, &name)
+                {
+                    out.push(world);
+                }
+            } else if Path::new(&name)
+                .extension()
+                .is_some_and(|got| got == "loom")
+                && let Some(world) = loom_world(&path, &name)
+            {
+                out.push(world);
+            }
+        }
+    }
+    out.sort_by(|a, b| a.label.cmp(&b.label));
+    out
+}
+
+/// A dir-form case's world: `book.sh` plus its glob-sorted `*.oracle.sh` siblings.
+fn dir_world(dir: &Path, case: &str) -> Option<CaseWorld> {
+    let book = std::fs::read_to_string(dir.join("book.sh")).ok()?;
+    let mut oracles: Vec<_> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .is_some_and(|n| n.to_string_lossy().ends_with(".oracle.sh"))
+        })
+        .collect();
+    oracles.sort();
+    let mut paths = Vec::new();
+    let mut srcs = Vec::new();
+    for oracle in oracles {
+        let Ok(text) = std::fs::read_to_string(&oracle) else {
+            continue;
+        };
+        paths.push(oracle.display().to_string());
+        srcs.push(text);
+    }
+    Some(CaseWorld {
+        label: case.to_owned(),
+        paths,
+        srcs,
+        book,
+        results: std::fs::read_to_string(dir.join("probe-results.txt")).ok(),
+    })
+}
+
+/// A loom-form case's world, over the sections `run_loom` would materialize.
+fn loom_world(path: &Path, case: &str) -> Option<CaseWorld> {
+    let text = std::fs::read_to_string(path).ok()?;
+    let parsed = errorloom::Case::parse(&text).ok()?;
+    let mut book = None;
+    let mut results = None;
+    let mut oracles: BTreeMap<String, String> = BTreeMap::new();
+    for section in parsed.sections() {
+        let name = section.name();
+        if name == "book.sh" {
+            book = Some(section.content().to_owned());
+        } else if name == "probe-results.txt" {
+            results = Some(section.content().to_owned());
+        } else if name.ends_with(".oracle.sh") {
+            oracles.insert(name.to_owned(), section.content().to_owned());
+        }
+    }
+    Some(CaseWorld {
+        label: case.strip_suffix(".loom").unwrap_or(case).to_owned(),
+        paths: oracles.keys().cloned().collect(),
+        srcs: oracles.into_values().collect(),
+        book: book?,
+        results,
+    })
+}

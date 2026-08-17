@@ -99,5 +99,12 @@ path = "tests/definition_frames.rs"
 name = "sh_parity"
 path = "tests/sh_parity.rs"
 
+# MIGRATION SCAFFOLDING, BUILD-TO-KILL (`309` §4): the decision-state smoke-diff baseline. Its one
+# trial is `#[ignore]`d and driven by `mise run spine:baseline`, so it costs the suite nothing while
+# still compiling with it. DELETE this stanza and its file at the fold review.
+[[test]]
+name = "spine_baseline"
+path = "tests/spine_baseline.rs"
+
 [lints]
 workspace = true
