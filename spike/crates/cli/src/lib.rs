@@ -24,6 +24,7 @@
 pub mod fixpoint;
 pub mod kinds;
 pub mod results;
+pub mod sourcing;
 pub mod survival;
 pub mod why;
 pub mod world;
