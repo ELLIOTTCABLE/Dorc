@@ -65,7 +65,7 @@ const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metada
   (crates/aid/src/catalog_lock.rs and arrangement_lock.rs) plus every affected case. In-process
   renders only -- no binary is run and no fixture is executed. Every byte and both fixpoints are
   computed before the first write, so a validation failure leaves the tree byte-identical. Nothing
-  is staged or committed; the diff is yours.
+  is staged or committed; the diff is yours -- `git diff --word-diff` is how prose reads.
   --accept-metadata  acknowledge that a case's when-fires / when-used / why REPLACES the committed
                      registry entry; without it a metadata change refuses before any write
   --human     mark every register this publishes as written by a person. Refuses in a session that
