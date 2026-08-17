@@ -1544,7 +1544,7 @@ fn suspension_reason(
     match reason {
         Found::BookRedefinesHelper => Said::BookRedefinesHelper,
         Found::BookShadowsCommand => Said::BookShadowsCommand,
-        Found::PluralAcrossCustody => Said::PluralAcrossCustody,
+        Found::ResolvedOutsideCustody => Said::ResolvedOutsideCustody,
         Found::UnenumerableCall => Said::UnenumerableCall,
     }
 }

@@ -7,19 +7,19 @@ expect-diagnostic:
 -- book.sh --
 #!/bin/sh
 # pin28-contested-helper-resolves-by-last-wins (`28R:rul-resolution-matches-shell-loading` ·
-# `rul-emission-custody-composite`) — two loaded sources, one helper name, two different bodies.
+# `rul-vouch-reaches-own-custody-only`) — two loaded sources, one helper name, two different bodies.
 #
 # This cell used to pin a WITHHOLD, and it is now the CAPTURE of
 # `FORFEITS:forfeit-helper-plurality-withhold`. The engine does not refuse to answer what a shell
 # answers plainly: `_wombat_dest` resolves to the LAST declaration in load order, because that is the
 # body the host would run. What the engine gates is the LICENSE, and here there is nothing to gate —
 # the winning declaration sits in `b-wombat`, the same custody as the `wombat__is_converged` that
-# vouches, so load order decided nothing about whose body serves whose vouch. The check ships, and
-# the site past the wall guards on it.
+# vouches, so the vouching body reaches nothing but its author's own bytes. The check ships, and the
+# site past the wall guards on it.
 #
 # The withhold survives in two shapes, neither of them this one: a resolution that lands in ANOTHER
-# custody while the declarations disagree (load order would be adjudicating authorship — see
-# `emit30-cross-custody-plural-helper-suspends`), and a closure the engine cannot enumerate at all.
+# custody at all (see `emit30-cross-custody-plural-helper-suspends`), and a closure the engine cannot
+# enumerate. Plurality is not itself one of them — this cell is the proof.
 #
 # The collision is still reported. `_wombat_dest` really was rebound out from under `a-wombat`'s
 # author the moment both files loaded, and they are the party who cannot see it.
@@ -102,7 +102,7 @@ $ dorc --book=book.sh -o a-wombat.oracle.sh -o b-wombat.oracle.sh < probe-result
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=fdb8b964933ed599061209b468401ffe9b62c8c8fb5f9584f820e6e587b12df5 sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=93b21a89cc6ba474cafd837fa6d05434dfbd57e7f8caad192e151fa00ec6bee5 sites=1 @@dorc@@\n'
 # site 1: dorc-auto:wombat@converged
 _wombat_dest() {
    wombat cmp --strict -- "$1" "/etc/wombat/$1"
@@ -128,19 +128,19 @@ wombat__is_converged() {
 
 #!/bin/sh
 # pin28-contested-helper-resolves-by-last-wins (`28R:rul-resolution-matches-shell-loading` ·
-# `rul-emission-custody-composite`) — two loaded sources, one helper name, two different bodies.
+# `rul-vouch-reaches-own-custody-only`) — two loaded sources, one helper name, two different bodies.
 #
 # This cell used to pin a WITHHOLD, and it is now the CAPTURE of
 # `FORFEITS:forfeit-helper-plurality-withhold`. The engine does not refuse to answer what a shell
 # answers plainly: `_wombat_dest` resolves to the LAST declaration in load order, because that is the
 # body the host would run. What the engine gates is the LICENSE, and here there is nothing to gate —
 # the winning declaration sits in `b-wombat`, the same custody as the `wombat__is_converged` that
-# vouches, so load order decided nothing about whose body serves whose vouch. The check ships, and
-# the site past the wall guards on it.
+# vouches, so the vouching body reaches nothing but its author's own bytes. The check ships, and the
+# site past the wall guards on it.
 #
 # The withhold survives in two shapes, neither of them this one: a resolution that lands in ANOTHER
-# custody while the declarations disagree (load order would be adjudicating authorship — see
-# `emit30-cross-custody-plural-helper-suspends`), and a closure the engine cannot enumerate at all.
+# custody at all (see `emit30-cross-custody-plural-helper-suspends`), and a closure the engine cannot
+# enumerate. Plurality is not itself one of them — this cell is the proof.
 #
 # The collision is still reported. `_wombat_dest` really was rebound out from under `a-wombat`'s
 # author the moment both files loaded, and they are the party who cannot see it.

@@ -1237,10 +1237,11 @@ pub enum VouchedCompositionReason {
     /// definition runs unvouched book code inside a read-only check, bypassing it under-executes in
     /// context-wrapper books, and each is unsound in a real cell. Declining is the only sound act.
     BookShadowsCommand,
-    /// Two loaded sources declare the name with DIFFERING bytes and the one a shell binds lies
-    /// outside the voucher's custody, so LOAD ORDER would be deciding whose body serves this
-    /// engineer's vouch (`28K` §6 — load order is not an adjudicator of authorship).
-    PluralAcrossCustody,
+    /// The declaration a shell binds lies outside the voucher's own custody. Naming files together
+    /// on one command line is INGESTION, never composition, so the reach lands in an utterance this
+    /// engineer never made — however many declarations there were, and whatever load order did with
+    /// them (`28K` §6 — load order is not an adjudicator of authorship).
+    ResolvedOutsideCustody,
     /// The body reaches a call the engine cannot enumerate — an in-process definition vector, which
     /// can bind or invoke a name no walk sees — so its composition cannot be closed at all. The
     /// permanent bottom rung (`28R:rul-instantiation-hash-dedup` tier 3), never scaffolding.
@@ -4129,8 +4130,8 @@ fn vouched_composition_text(
         VouchedCompositionReason::BookShadowsCommand => {
             "vouched-composition-not-present-book-shadows-command"
         }
-        VouchedCompositionReason::PluralAcrossCustody => {
-            "vouched-composition-not-present-plural-across-custody"
+        VouchedCompositionReason::ResolvedOutsideCustody => {
+            "vouched-composition-not-present-resolved-outside-custody"
         }
         VouchedCompositionReason::UnenumerableCall => {
             "vouched-composition-not-present-unenumerable-call"

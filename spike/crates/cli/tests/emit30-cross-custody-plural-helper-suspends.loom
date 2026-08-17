@@ -7,19 +7,20 @@ expect-diagnostic:
 ---
 -- book.sh --
 #!/bin/sh
-# emit30-cross-custody-plural-helper-suspends (`28R:rul-mixed-custody-suspends-vouch`, the
-# composite predicate `rul-emission-custody-composite`) — the SUSPEND half of
+# emit30-cross-custody-plural-helper-suspends (`28R:rul-mixed-custody-suspends-vouch`, the custody
+# predicate `rul-vouch-reaches-own-custody-only`) — the SUSPEND half of
 # pin28-contested-helper-resolves-by-last-wins.
 #
 # Same plurality, one difference that decides everything: the declaration a shell would bind sits in
-# a THIRD author's file, not in the file whose `wombat__is_converged` vouches. So sh's last-wins would
-# be choosing whose body serves this engineer's vouch, which load order has no standing to do. The
-# vouch does not attach: no elide, no guard, the site runs verbatim.
+# a THIRD author's file, not in the file whose `wombat__is_converged` vouches. The vouch does not
+# attach: no elide, no guard, the site runs verbatim.
 #
-# Note what is NOT the reason. Crossing custody alone is fine — a singular cross-file reach is the
-# sanctioned helpers-file package shape and keeps its license
-# (pin28-helper-package-entrypoints-lift). It takes BOTH conjuncts: another custody AND a real
-# disagreement for load order to have silently settled.
+# CROSSING CUSTODY IS THE WHOLE REASON, and by itself. The plurality here is incidental colour — a
+# lone declaration in another author's co-loaded file suspends this vouch exactly as three do,
+# because naming files together on a command line is ingestion and composes no custody. The way to
+# reach another file's helpers under your own vouch is to SOURCE it
+# (`rul-speaker-minting-is-oracle-sourcing-only`), which is an act of authorship rather than an
+# accident of invocation.
 #
 # What to read in the transcript: `sites=0` (a check that cannot carry its composition ships nothing)
 # and an apply that is the book byte for byte.
@@ -55,26 +56,27 @@ $ dorc --book=book.sh -o a-entry.oracle.sh -o b-helper.oracle.sh -o c-helper.ora
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=6af2757d716eba03a7fe3808bc471f786718b1a8f0bb20f37df38d74b8cadbca sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5ce80ad4b0df5191d56eebe0e8d63295c967c58b16bde241735e17b1b0a12b5b sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# emit30-cross-custody-plural-helper-suspends (`28R:rul-mixed-custody-suspends-vouch`, the
-# composite predicate `rul-emission-custody-composite`) — the SUSPEND half of
+# emit30-cross-custody-plural-helper-suspends (`28R:rul-mixed-custody-suspends-vouch`, the custody
+# predicate `rul-vouch-reaches-own-custody-only`) — the SUSPEND half of
 # pin28-contested-helper-resolves-by-last-wins.
 #
 # Same plurality, one difference that decides everything: the declaration a shell would bind sits in
-# a THIRD author's file, not in the file whose `wombat__is_converged` vouches. So sh's last-wins would
-# be choosing whose body serves this engineer's vouch, which load order has no standing to do. The
-# vouch does not attach: no elide, no guard, the site runs verbatim.
+# a THIRD author's file, not in the file whose `wombat__is_converged` vouches. The vouch does not
+# attach: no elide, no guard, the site runs verbatim.
 #
-# Note what is NOT the reason. Crossing custody alone is fine — a singular cross-file reach is the
-# sanctioned helpers-file package shape and keeps its license
-# (pin28-helper-package-entrypoints-lift). It takes BOTH conjuncts: another custody AND a real
-# disagreement for load order to have silently settled.
+# CROSSING CUSTODY IS THE WHOLE REASON, and by itself. The plurality here is incidental colour — a
+# lone declaration in another author's co-loaded file suspends this vouch exactly as three do,
+# because naming files together on a command line is ingestion and composes no custody. The way to
+# reach another file's helpers under your own vouch is to SOURCE it
+# (`rul-speaker-minting-is-oracle-sourcing-only`), which is an act of authorship rather than an
+# accident of invocation.
 #
 # What to read in the transcript: `sites=0` (a check that cannot carry its composition ships nothing)
 # and an apply that is the book byte for byte.

@@ -20,17 +20,17 @@
 //! # Two rules worth defending
 //!
 //! **Resolution is sh's own late binding; the LICENSE is what custody gates**
-//! (`28R:rul-resolution-matches-shell-loading` · `rul-emission-custody-composite`). A name with
+//! (`28R:rul-resolution-matches-shell-loading` · `rul-vouch-reaches-own-custody-only`). A name with
 //! several declarations resolves to the LAST one in load order, because that is the body a shell
 //! would actually run — an engine that answered differently would ship a body no execution binds.
 //! What the engine refuses is not the resolution but the LICENSE over a composition its voucher
-//! never wrote: the vouch suspends when the resolved definition sits in another custody AND either
-//! the book redefines the name or the name is plural-with-differing-bytes, so load order never
-//! silently adjudicates whose body serves whose vouch. A singular cross-file reach — one
-//! declaration, anywhere in the loaded set — stays licensed, which is what keeps `28M` §7's
-//! helpers-file + thin-entrypoints package shape working. Byte-identical plurality counts as
-//! singular (there is nothing to adjudicate). Suspension withholds the pin, which withholds the
-//! vouch and the ship, which runs the site — the safe direction, and attributed.
+//! never wrote: the vouch suspends whenever the resolved definition sits outside the voucher's own
+//! custody, singular reaches included. Naming several files on one command line is INGESTION and
+//! composes no custody, so there is no load-order arrangement of strangers' files that lets one of
+//! them serve another's vouch. `28M` §7's helpers-file + thin-entrypoints package shape is licensed
+//! by the entrypoints file SOURCING its helpers — the `.` is the utterance that takes custody, and
+//! nothing else does. Suspension withholds the pin, which withholds the vouch and the ship, which
+//! runs the site — the safe direction, and attributed.
 //!
 //! **Constants ride per CONTRIBUTING FILE, not per reference.** The lexer collapses every
 //! parameter-expansion operator form to one opaque `ParamComplex` and discards the name
@@ -157,10 +157,10 @@ pub enum DenialReason {
     /// bypassing under-executes in wrapper books, and both are engine referent-choices between two
     /// humans' meanings.
     BookShadowsCommand,
-    /// Two loaded sources declare the name with DIFFERING bytes and the resolved one lies outside
-    /// the voucher's custody: sh's last-wins would decide whose body serves this vouch, and load
-    /// order is not an adjudicator of authorship (`28K` §6).
-    PluralAcrossCustody,
+    /// The declaration a shell binds lies outside the voucher's own custody. Co-loading files on
+    /// one command line is ingestion, never composition, so the reach lands in an utterance this
+    /// voucher did not make — and load order is not an adjudicator of authorship (`28K` §6).
+    ResolvedOutsideCustody,
     /// The body reaches a call the engine cannot enumerate (a non-literal command word, or `eval`),
     /// so its snapshot cannot be closed. The permanent bottom rung — never scaffolding
     /// (`28R:rul-instantiation-hash-dedup` tier 3).
@@ -195,8 +195,8 @@ pub struct HelperIndex {
     /// Per source index, its top-level constant declarations in source order — the emission unit
     /// (see the module doc: constants ride per contributing file).
     constants_by_file: BTreeMap<usize, Vec<Declaration>>,
-    /// Every function name the BOOK defines, at any depth — the census both custody arms read
-    /// (`rul-emission-custody-composite`). The book is never an index CONTRIBUTOR (its top level is
+    /// Every function name the BOOK defines, at any depth — the census the book-side denial arms
+    /// read (`rul-vouch-reaches-own-custody-only`). The book is never an index CONTRIBUTOR (its top level is
     /// not load-inert), but what it defines still decides whether somebody else's vouch survives at
     /// apply, so it is carried separately rather than not at all.
     book_defines: BTreeSet<String>,
@@ -330,8 +330,8 @@ impl HelperIndex {
     /// # Errors
     ///
     /// [`ClosureDenial`] when the composition carries no license: the book redefines a reached name,
-    /// the resolution crossed custody on a plural-with-differing-bytes name, or a call cannot be
-    /// enumerated. Each withholds the pin, hence the vouch, hence the ship — the site runs.
+    /// the resolution left the voucher's custody, or a call cannot be enumerated. Each withholds the
+    /// pin, hence the vouch, hence the ship — the site runs.
     pub fn closure_for(&self, file: usize, body: &str) -> Result<Closure, ClosureDenial> {
         if self.is_empty() && self.book_defines.is_empty() {
             return Ok(Closure::default());
@@ -391,12 +391,15 @@ impl HelperIndex {
     /// The declaration a shell would bind for `name`, or `None` when nothing loaded declares it (an
     /// external utility — the ordinary case).
     ///
-    /// THE COMPOSITE PREDICATE (`rul-emission-custody-composite`): resolution is always sh's
-    /// last-wins, and the license suspends iff the resolved custody differs from the voucher's
-    /// (`asker`) AND either the book redefines the name or the declarations disagree on bytes. A
-    /// singular cross-file reach is licensed — one declaration is not an adjudication — which is
-    /// what keeps the sanctioned helpers-file package shape working. Byte-identical plurality
-    /// counts as singular.
+    /// THE CUSTODY PREDICATE (`rul-vouch-reaches-own-custody-only`): resolution is always sh's
+    /// last-wins, and the license suspends whenever the resolved declaration sits outside the
+    /// voucher's own custody (`asker`) — plural or singular, agreeing bytes or not. CLI co-loading
+    /// composes no custody, so a reach into a co-loaded file is a reach into somebody else's
+    /// utterance whatever load order made of it.
+    ///
+    /// Custody is proxied by the loaded-source index while every closure is a singleton; the
+    /// sourcing amendment re-keys this ONE comparison to closure membership and nothing else moves
+    /// (`core/CLAUDE.md custody-is-one-newtype-and-one-crossing`).
     fn resolve<'a>(
         &self,
         name: &str,
@@ -420,9 +423,8 @@ impl HelperIndex {
         let Some(chosen) = declarations.last() else {
             return Ok(None);
         };
-        let differs = declarations.iter().any(|other| other.bytes != chosen.bytes);
-        if differs && chosen.file != asker {
-            return Err(deny(DenialReason::PluralAcrossCustody));
+        if chosen.file != asker {
+            return Err(deny(DenialReason::ResolvedOutsideCustody));
         }
         Ok(Some(chosen))
     }
@@ -693,22 +695,20 @@ mod tests {
         );
     }
 
-    /// `28M` §8's two-file package shape: the helpers file is a SEPARATE loaded source, and the
-    /// entrypoint's closure must reach across it. This is the property that makes an oracle package
-    /// splittable at all, so it is pinned rather than assumed.
+    /// `28M` §8's two-file package shape, CO-LOADED: two files named on one command line, the
+    /// helper in one and the entrypoint in the other. Co-loading is ingestion, so the entrypoint
+    /// reaches an utterance nobody put in its custody and the vouch suspends
+    /// (`rul-vouch-reaches-own-custody-only`). The package shape is not lost — it is spelled with a
+    /// `.`, which is the act that takes custody; this test pins that co-loading alone never is.
     #[test]
-    fn a_helper_in_another_loaded_source_is_captured() {
+    fn a_co_loaded_helper_leaves_the_entrypoints_custody() {
         let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
         let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
-        let index = index(&[&helpers, &entry]);
-        let closure = index
+        let denied = index(&[&helpers, &entry])
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect("the two sources agree")
-            .sh();
-        assert!(
-            closure.contains("_wombat_check() {"),
-            "a cross-file helper rides with the entrypoint (`28M` §8 overlay riders):\n{closure}"
-        );
+            .expect_err("co-loading composes no custody");
+        assert_eq!(denied.name, "_wombat_check");
+        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
     }
 
     /// Transitivity: a helper that calls a helper. A one-level walk would ship a body that still
@@ -763,10 +763,10 @@ mod tests {
         );
     }
 
-    /// The CAPTURE half of `rul-emission-custody-composite`: version-skewed copies resolve by sh's
-    /// own last-wins, and when the winner sits in the VOUCHER's own file there is nothing for load
-    /// order to adjudicate — the snapshot ships. The load edge still reports the collision, because
-    /// the earlier author's helper really was rebound for every caller.
+    /// The CAPTURE half of `rul-vouch-reaches-own-custody-only`: version-skewed copies resolve by
+    /// sh's own last-wins, and when the winner sits in the VOUCHER's own file the reach never left
+    /// custody — the snapshot ships. The load edge still reports the collision, because the earlier
+    /// author's helper really was rebound for every caller.
     #[test]
     fn a_plural_helper_resolving_into_the_vouchers_file_still_ships() {
         let a = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
@@ -798,9 +798,8 @@ mod tests {
         );
     }
 
-    /// The SUSPEND half: the same plurality, resolved into a file that is NOT the voucher's. Here
-    /// load order would decide whose body serves this engineer's vouch, which is the one thing the
-    /// composite predicate refuses — no pin, no vouch, the site runs.
+    /// The SUSPEND half: the same plurality, resolved into a file that is NOT the voucher's. The
+    /// site reports every declaration it found, so the reader can see which files are in play.
     #[test]
     fn a_plural_helper_resolving_outside_the_vouchers_custody_suspends() {
         let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
@@ -808,27 +807,28 @@ mod tests {
         let b = format!("{MARKER}_wombat_check() {{\n   wombat cmp --strict -- \"$1\"\n}}\n");
         let denied = index(&[&entry, &a, &b])
             .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect_err("cross-custody plurality is load order adjudicating authorship");
+            .expect_err("the resolved body is somebody else's");
         assert_eq!(denied.name, "_wombat_check");
-        assert_eq!(denied.reason, super::DenialReason::PluralAcrossCustody);
+        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
         assert_eq!(
             denied.sites.iter().map(|(f, _)| *f).collect::<Vec<_>>(),
             vec![1, 2]
         );
     }
 
-    /// A SINGULAR cross-file reach stays licensed even though custody differs — the sanctioned
-    /// helpers-file + thin-entrypoints package shape (`28M` §7). One declaration is not an
-    /// adjudication, so the composite's second conjunct never fires.
+    /// A SINGULAR cross-file reach is DE-LICENSED too (`rul-vouch-reaches-own-custody-only`). The
+    /// retired composite let one lone declaration through on the reasoning that there was nothing
+    /// to adjudicate, which mistook the absence of a dispute for the presence of custody: the
+    /// engineer still vouched over bytes a stranger wrote and the CLI happened to hand them.
     #[test]
-    fn a_singular_cross_custody_reach_stays_licensed() {
+    fn a_singular_cross_custody_reach_is_de_licensed() {
         let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
         let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
-        let closure = index(&[&entry, &helpers])
+        let denied = index(&[&entry, &helpers])
             .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
-            .expect("a lone declaration decides nothing")
-            .sh();
-        assert!(closure.contains("_wombat_check() {"), "{closure}");
+            .expect_err("one declaration in another custody is still another custody");
+        assert_eq!(denied.name, "_wombat_check");
+        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
     }
 
     /// The book redefining a helper the engineer's body reaches SUSPENDS: at apply the hoisted

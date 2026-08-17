@@ -343,9 +343,9 @@ fn stage_ships(oracles: &[&str], provider_word: &str) -> bool {
 /// own predict body into a helper of the same name with different bytes. sh binds the LAST one for
 /// every caller (`28R:rul-resolution-matches-shell-loading`, measured under `posh ∩ dash` by
 /// `floor28-load-order-last-definition-wins`), so stage B's body resolves into its OWN custody and
-/// ships, while stage A's resolves into somebody else's with a real disagreement — the second conjunct
-/// of `307:rul-emission-custody-composite` — and ships nothing. An unshippable stage refuses the WHOLE
-/// compound (`connected_check_pipes`, pinned below), so the pipe runs. No license leaks.
+/// ships, while stage A's resolves into somebody else's — which `rul-vouch-reaches-own-custody-only`
+/// suspends — and ships nothing. An unshippable stage refuses the WHOLE compound
+/// (`connected_check_pipes`, pinned below), so the pipe runs. No license leaks.
 ///
 /// Why an engine choice depends on it: this is the world `p-x-intra-compound-plurality` targets. The
 /// forfeit is real and named (`FORFEITS:forfeit-helper-plurality-withhold`, shape (a)) — two
@@ -367,8 +367,8 @@ fn a_cross_custody_plural_helper_ships_no_composed_stage() {
     let both = [COMPOUND_STAGE_A, COMPOUND_STAGE_B];
     assert!(
         !stage_ships(&both, "otelcol"),
-        "stage A's helper now resolves, by sh's last-wins, into stage B's file with differing bytes: \
-         load order would be deciding whose body serves A's description, so A ships nothing"
+        "stage A's helper now resolves, by sh's last-wins, into stage B's file: the body that would \
+         serve A's description is somebody else's utterance, so A ships nothing"
     );
     assert!(
         stage_ships(&both, "grep"),

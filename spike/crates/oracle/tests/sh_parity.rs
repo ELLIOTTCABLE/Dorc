@@ -20,13 +20,12 @@ const MARKER: &str = "# dorc-lang/v0.2\n";
 /// the closure carries is unambiguous.
 const VOUCHER_BODY: &str = "wombat__is_converged() {\n   _dest \"$1\"\n}";
 
-fn voucher_file() -> String {
-    format!("{MARKER}{VOUCHER_BODY}\n")
-}
-
-/// A `_dest` declaration whose body carries `tag`, so a shipped closure's bytes name their author.
-fn dest_declaring(tag: &str) -> String {
-    format!("{MARKER}_dest() {{\n   wombat cmp --{tag} -- \"$1\"\n}}\n")
+/// The voucher beside its OWN `_dest`, whose body carries `tag` so a shipped closure's bytes name
+/// their author. One file, because `rul-vouch-reaches-own-custody-only` de-licenses every reach out
+/// of the voucher's custody: a two-file setup would measure the custody rule rather than the
+/// name-binding fact each pin below is about.
+fn voucher_owning_dest(tag: &str) -> String {
+    format!("{MARKER}_dest() {{\n   wombat cmp --{tag} -- \"$1\"\n}}\n{VOUCHER_BODY}\n")
 }
 
 /// `p-helper-unset-f` (`30A` §2 P-green) — after `unset -f _dest` the name resolves to NOTHING, and a
@@ -96,19 +95,18 @@ fn a_helper_unset_at_oracle_top_level_resolves_to_nothing() {
 #[test]
 fn a_later_unset_f_removes_an_earlier_helper_declaration() {
     // Setup outside the closure: a panic in there would read as the target still failing.
-    let declaration = dest_declaring("plain");
+    let entry = voucher_owning_dest("plain");
     let removal = format!("{MARKER}unset -f _dest\n");
-    let entry = voucher_file();
-    let control = HelperIndex::build(&[&declaration, &entry], None)
-        .closure_for(1, VOUCHER_BODY)
+    let control = HelperIndex::build(&[&entry], None)
+        .closure_for(0, VOUCHER_BODY)
         .map(|closure| closure.sh());
-    let after_removal = HelperIndex::build(&[&declaration, &removal, &entry], None)
-        .closure_for(2, VOUCHER_BODY)
+    let after_removal = HelperIndex::build(&[&entry, &removal], None)
+        .closure_for(0, VOUCHER_BODY)
         .map(|closure| closure.sh());
     assert_eq!(
         control.as_deref().map(str::trim),
         Ok("_dest() {\n   wombat cmp --plain -- \"$1\"\n}"),
-        "control: with no removal the singular cross-file reach ships, as the package shape requires"
+        "control: with no removal the voucher's own declaration ships"
     );
 
     internal_tooling::xfail::xfail_until("p-x-helper-unset-f-across-files", || {
@@ -141,14 +139,13 @@ fn a_later_unset_f_removes_an_earlier_helper_declaration() {
 /// book its guard tier. The target is `p-x-regional-helper`.
 #[test]
 fn a_book_subshell_helper_suspends_like_an_ambient_one() {
-    let declaration = dest_declaring("plain");
-    let entry = voucher_file();
+    let entry = voucher_owning_dest("plain");
     let regional = "( _dest() { printf 'regional\\n' ;}\n  wombat sync a )\nwombat sync b\n";
     let ambient = "_dest() { printf 'ambient\\n' ;}\nwombat sync b\n";
 
     let denied = |book: &str| {
-        HelperIndex::build(&[&declaration, &entry, book], Some(2))
-            .closure_for(1, VOUCHER_BODY)
+        HelperIndex::build(&[&entry, book], Some(1))
+            .closure_for(0, VOUCHER_BODY)
             .err()
             .map(|denial| denial.reason)
     };
@@ -164,8 +161,8 @@ fn a_book_subshell_helper_suspends_like_an_ambient_one() {
          which is what `p-x-regional-helper` targets"
     );
 
-    let unshadowed = HelperIndex::build(&[&declaration, &entry, "wombat sync b\n"], Some(2))
-        .closure_for(1, VOUCHER_BODY)
+    let unshadowed = HelperIndex::build(&[&entry, "wombat sync b\n"], Some(1))
+        .closure_for(0, VOUCHER_BODY)
         .map(|closure| closure.sh());
     assert!(
         unshadowed
@@ -198,13 +195,12 @@ fn a_book_subshell_helper_suspends_like_an_ambient_one() {
 #[test]
 fn a_regional_book_helper_leaves_an_unreachable_vouch_alone() {
     // Setup outside the closure: a panic in there would read as the target still failing.
-    let declaration = dest_declaring("plain");
-    let entry = voucher_file();
+    let entry = voucher_owning_dest("plain");
     // The region holds the definition and NOTHING else — so no site is in-region, and sh binds the
     // ambient `_dest` at every site in the book.
     let region_only = "( _dest() { printf 'regional\\n' ;} )\nwombat sync b\n";
-    let regional = HelperIndex::build(&[&declaration, &entry, region_only], Some(2))
-        .closure_for(1, VOUCHER_BODY)
+    let regional = HelperIndex::build(&[&entry, region_only], Some(1))
+        .closure_for(0, VOUCHER_BODY)
         .map(|closure| closure.sh());
 
     internal_tooling::xfail::xfail_until("p-x-regional-helper", || {

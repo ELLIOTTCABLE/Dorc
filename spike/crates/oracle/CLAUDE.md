@@ -90,12 +90,21 @@ discipline: one rule per bullet, slugged; append to the matching section.
   last-declaration-wins (`28R:rul-resolution-matches-shell-loading`, built at the emission stage —
   sound because the index admits only whole-top-level-load-inert sources, so over the indexable
   population the last indexed declaration IS what a shell binds), while the LICENSE is what custody
-  gates: `307:rul-emission-custody-composite` — the vouch SUSPENDS iff the resolved custody differs
-  from the voucher's AND (the book defines the name, or the declarations differ in bytes); the
-  singular cross-file reach stays licensed (the package shape), byte-identical plurality counts as
-  singular, and load order never silently adjudicates whose body serves whose vouch;
-  and constants ride per CONTRIBUTING FILE rather than per reference, because `ParamComplex` discards
-  the name so a reference-driven capture could not prove itself complete.
+  gates (`rul-vouch-reaches-own-custody-only`, below); and constants ride per CONTRIBUTING FILE
+  rather than per reference, because `ParamComplex` discards the name so a reference-driven capture
+  could not prove itself complete.
+- **rul-vouch-reaches-own-custody-only** (human-ruled 2026-08-17, superseding
+  `307:rul-emission-custody-composite`, ruled a minor mistake): a vouched composition ships only
+  definitions whose custody is the voucher's own; ANY cross-custody resolved reach
+  suspends-with-decline, singular included. CLI co-loading is a temporary ingestion convenience and
+  NEVER composes custody, families, or speakers. Load order still never silently adjudicates whose
+  body serves whose vouch. The seat is `HelperIndex::resolve`, and custody is proxied there by the
+  loaded-source index only while every closure is a singleton.
+- **rul-speaker-minting-is-oracle-sourcing-only** (human-typed 2026-08-17): files merge into one
+  speaker/custody unit ONLY via an explicit top-level `.` in a marked file, of a file that is itself
+  dorc-lang/oracle-code with no top-level commands — a HYGIENE/CONTRACT license (load-inert is
+  contract, never engine fact; refusals attribute to the contract). A book's `.` mints no speaker;
+  its only book-side value is un-walling.
 - **a-top-reject-is-not-a-definition-vector** (the emission stage, measured) —
   `UnsupportedReason::DynamicExecution` covers `eval`, a computed `.`, AND a command-position
   `"$@"` — the defining tautology of every peeling wrapper; the finer `SyntaxUnsupportedReason`

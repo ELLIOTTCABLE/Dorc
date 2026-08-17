@@ -15,14 +15,22 @@ fixpoint: executed
 # The spelling here is the bluntest of the three the design offers (`unset -f` per member, not
 # sourcing it, or supplying your own): the entrypoints file is simply NOT LOADED. Only
 # `wombat-helpers.oracle.sh` is on the command line, and this book supplies its own
-# `wombat__is_converged` over that package's helpers — a stricter check than swapping the file,
-# since the replacement is not even an oracle file, just a function in a runbook.
+# `wombat__is_converged` over that package's helpers — the replacement is not even an oracle file,
+# just a function in a runbook.
 #
-# Two properties ride on it. The book's entrypoint is a first-class definition source (`28K` §2a:
-# an in-book role function is an ordinary oracle, recognized by name alone), and its closure
-# resolves into a DIFFERENT author's helpers file. And there is no contest: the helpers carry no
-# `__` names, so nothing the package ships can collide with what the admin wrote — which is the
-# property that makes co-residence safe, stated as a passing test rather than as prose.
+# THAT IS THE SPELLING THIS CELL PINS AS DE-LICENSED. The book's entrypoint is a first-class
+# definition source (`28K` §2a: an in-book role function is an ordinary oracle, recognized by name
+# alone), but a BOOK mints no speaker — not by co-loading, and not by sourcing either
+# (`rul-speaker-minting-is-oracle-sourcing-only`). So its reach into a DIFFERENT author's helpers
+# file leaves its own custody and the vouch suspends: the site runs, attributed, and the mocks
+# record the book's own `wombat sync`.
+#
+# The commissioned property survives in the spelling the ruling leaves: an admin who wants their own
+# entrypoints writes them in a file that SOURCES the helpers, which takes custody. Wanting somebody
+# else's helpers under your own vouch is exactly the act of authoring an oracle.
+#
+# The no-contest property is unaffected and still worth the cell: the helpers carry no `__` names,
+# so nothing the package ships can collide with what the admin wrote.
 #
 # Note the definition sits ABOVE its site, which the full-positional regime requires
 # (`28K` §2 rul-visibility-is-full-positional): a definition below licenses nothing above it.
@@ -48,8 +56,7 @@ _wombat_same() {
 }
 
 -- probe-results.txt --
-# The walled site's own auto-cell: rc 0 ⇒ converged ⇒ its guard is minted from the BOOK's entrypoint.
-site 1 effect=holds rc=0
+# No records: the suspended vouch ships no check, so the probe has nothing to ask and the site runs.
 
 -- mocks/.log --
 # newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
@@ -89,7 +96,7 @@ exit 0
 
 -- expected.ran --
 ran: hork provision
-ran: wombat cmp -- a.conf /etc/wombat/a.conf
+ran: wombat sync a.conf
 
 -- replay --
 $ dorc --book=book.sh -o wombat-helpers.oracle.sh < probe-results.txt
@@ -100,34 +107,12 @@ $ dorc --book=book.sh -o wombat-helpers.oracle.sh < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f3ba18a7be81ce9b3295ffa8d5ba7d386fab221cb6964f83b7bbc7ae41428f16 sites=1 @@dorc@@\n'
-# site 1: dorc-auto:wombat@converged
-WOMBAT_ROOT=/etc/wombat
-_wombat_dest() {
-   printf '%s\n' "$WOMBAT_ROOT/$1"
-}
-_wombat_same() {
-   wombat cmp -- "$1" "$(_wombat_dest "$1")"
-}
-wombat__is_converged() {
-   _wombat_same "$2"
-}
-wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e45dfc5c5a623427047aff2a42411aeb7f64f8a4712ba1121f79667a0d715187 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
-
-# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
-# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
-# authored bytes verbatim, no engine-synthesized sh).
-WOMBAT_ROOT=/etc/wombat
-_wombat_dest() {
-   printf '%s\n' "$WOMBAT_ROOT/$1"
-}
-_wombat_same() {
-   wombat cmp -- "$1" "$(_wombat_dest "$1")"
-}
 
 #!/bin/sh
 # pin28-helper-package-entrypoints-discarded (`28M` §7/§8, the COMMISSIONED package shape) — half
@@ -141,14 +126,22 @@ _wombat_same() {
 # The spelling here is the bluntest of the three the design offers (`unset -f` per member, not
 # sourcing it, or supplying your own): the entrypoints file is simply NOT LOADED. Only
 # `wombat-helpers.oracle.sh` is on the command line, and this book supplies its own
-# `wombat__is_converged` over that package's helpers — a stricter check than swapping the file,
-# since the replacement is not even an oracle file, just a function in a runbook.
+# `wombat__is_converged` over that package's helpers — the replacement is not even an oracle file,
+# just a function in a runbook.
 #
-# Two properties ride on it. The book's entrypoint is a first-class definition source (`28K` §2a:
-# an in-book role function is an ordinary oracle, recognized by name alone), and its closure
-# resolves into a DIFFERENT author's helpers file. And there is no contest: the helpers carry no
-# `__` names, so nothing the package ships can collide with what the admin wrote — which is the
-# property that makes co-residence safe, stated as a passing test rather than as prose.
+# THAT IS THE SPELLING THIS CELL PINS AS DE-LICENSED. The book's entrypoint is a first-class
+# definition source (`28K` §2a: an in-book role function is an ordinary oracle, recognized by name
+# alone), but a BOOK mints no speaker — not by co-loading, and not by sourcing either
+# (`rul-speaker-minting-is-oracle-sourcing-only`). So its reach into a DIFFERENT author's helpers
+# file leaves its own custody and the vouch suspends: the site runs, attributed, and the mocks
+# record the book's own `wombat sync`.
+#
+# The commissioned property survives in the spelling the ruling leaves: an admin who wants their own
+# entrypoints writes them in a file that SOURCES the helpers, which takes custody. Wanting somebody
+# else's helpers under your own vouch is exactly the act of authoring an oracle.
+#
+# The no-contest property is unaffected and still worth the cell: the helpers carry no `__` names,
+# so nothing the package ships can collide with what the admin wrote.
 #
 # Note the definition sits ABOVE its site, which the full-positional regime requires
 # (`28K` §2 rul-visibility-is-full-positional): a definition below licenses nothing above it.
@@ -157,4 +150,4 @@ wombat__is_converged() {
 }
 
 hork provision
-( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]
+wombat sync a.conf

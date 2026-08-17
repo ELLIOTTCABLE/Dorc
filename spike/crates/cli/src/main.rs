@@ -730,7 +730,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
     // The book is the LAST source (`source_table`), and naming it is what lets the custody predicate
-    // see what the admin defines (`rul-emission-custody-composite`).
+    // see what the admin defines (`rul-vouch-reaches-own-custody-only`).
     let helpers =
         dorc_oracle::closure::HelperIndex::build(&source_refs, source_refs.len().checked_sub(1));
 
