@@ -184,8 +184,9 @@ pub const PINS: &[Pin] = &[
     },
     Pin {
         name: "p-x-helper-unset-f-across-files",
-        trigger: "the closure-custody stage's helper-binding model — the funcenv table widening past \
-                  role names, so the helper lane can see a removal at all",
+        trigger: "the HELPER LANE consuming the frame: the definition table now records non-role \
+                  funcdefs, so the environment can see the removal, but `HelperIndex` still \
+                  resolves by last-declaration-wins over the load-inert sources and asks it nothing",
         horizon: Horizon::Scheduled("r31:closure-custody"),
         state: PinState::Live,
     },
@@ -213,8 +214,9 @@ pub const PINS: &[Pin] = &[
     },
     Pin {
         name: "p-x-regional-helper",
-        trigger: "the closure-custody stage's funcenv table-widening plus book-region indexing — a \
-                  site-keyed closure question, so a regional body serves its region and no more",
+        trigger: "a SITE-KEYED `closure_for` plus book-region indexing — the table widening landed, \
+                  so the environment can tell a regional definition from an ambient one, but the \
+                  closure API takes no site and the book census is still depth-blind",
         horizon: Horizon::Scheduled("r31:closure-custody"),
         state: PinState::Live,
     },
