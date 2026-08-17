@@ -23,6 +23,8 @@ pub use edit::{
 };
 mod inspect;
 pub use inspect::render_compile_preview;
+pub mod invocation;
+pub use invocation::{Breadth, Invocation, Target, Verb};
 mod ownership;
 pub use ownership::{
     CaseOwnership, ComponentRef, EDIT_LOOP_KEY, ENVELOPE_INVOCATION, ENVELOPE_KEY, ENVELOPE_STDERR,

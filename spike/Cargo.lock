@@ -186,6 +186,7 @@ dependencies = [
 name = "dorc-loom"
 version = "0.0.0"
 dependencies = [
+ "clap",
  "dorc-aid",
  "dorc-analysis",
  "dorc-cli",

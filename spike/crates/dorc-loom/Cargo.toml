@@ -30,6 +30,12 @@ dorc-lint = { path = "../lint", version = "0.0.0" }
 # parser so an invocation-error case is honest, not decorative. `cli` does not dep `dorc-loom`, so
 # there is no cycle.
 dorc-cli = { path = "../cli", version = "0.0.0" }
+# The ONE argv grammar, shared by the binary and by the in-loom driver (`30C:rul-this-is-a-global-flag`).
+# Two hand-written parsers over one surface is how a transcript and a terminal come to disagree about
+# where a flag may sit. Already in the workspace lock behind `libtest-mimic`, so this adds no package;
+# `dorc-loom` is authoring tooling, outside both DST fences (`inv-determinism`, `aid-is-dst-clean`), and
+# `aid`'s edge on this crate is dev-only, so nothing reachable from a production path gains a dependency.
+clap = { version = "4.5.60", features = ["derive"] }
 
 [dev-dependencies]
 # The chrome-LINE round-trip proves the WHOLE chain (`28H` ruling 3): a laid-out render, its span
