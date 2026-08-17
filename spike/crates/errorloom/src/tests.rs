@@ -207,3 +207,48 @@ fn caller_supplied_limits_replace_the_defaults() {
         "the same edit is comfortably inside the default ceiling"
     );
 }
+
+/// What an edit does to a variable is decided by the bytes ANCHORING it, not by the variable's
+/// own bytes surviving. Editing an anchor destroys the attribution, and the unique remaining
+/// interpretation demotes the occurrence — so the value silently becomes literal text and the
+/// hole is gone. That is the whole residue the removal search leaves behind, and the four cells
+/// below are the map of it: only the first loses a variable it could have kept.
+#[test]
+fn editing_a_variables_anchors_flattens_it_while_rewording_around_it_does_not() {
+    let baseline = render(vec![
+        EditableFragment::Text("Dorc cannot resolve `".to_owned()),
+        variable(1, "apt-get"),
+        EditableFragment::Text("`, so it runs.".to_owned()),
+    ]);
+    let surviving = |edited: &str| match transport_edit_allow_removal(&baseline, edited) {
+        Ok(EditTransport::Edited(edit)) => edit
+            .fragments()
+            .iter()
+            .filter_map(|fragment| match fragment {
+                EditableFragment::Variable { id, .. } => Some(*id),
+                EditableFragment::Text(_) => None,
+            })
+            .collect::<Vec<_>>(),
+        other => panic!("expected an edit, got {other:?}"),
+    };
+
+    // Deleting the backticks touches the variable on both sides; dropping it is then the only
+    // reading that aligns, and `apt-get` lands in the compiled text as an ordinary literal.
+    assert!(surviving("Dorc cannot resolve apt-get, so it runs.").is_empty());
+
+    // Rewording on both sides, anchors intact, keeps the attribution.
+    assert_eq!(
+        surviving("Dorc cannot resolve the command `apt-get`, so it runs on every apply."),
+        vec![1]
+    );
+
+    // A genuine removal also drops the variable — indistinguishable from the first case by the
+    // fragment list alone, which is why the value's reappearance is what separates them.
+    assert!(surviving("Dorc cannot resolve it, so it runs.").is_empty());
+
+    // Relocation across a substantial rewrite survives while the anchors travel with it.
+    assert_eq!(
+        surviving("Because `apt-get` is dynamic, Dorc cannot resolve it."),
+        vec![1]
+    );
+}
