@@ -258,6 +258,10 @@ pub use definition::{DefinitionId, LiveDefinition, answering_row};
 pub mod spine;
 pub use spine::{CensusArm, DecidePlane, Spine, SpineSpecies};
 
+pub mod custody;
+pub use custody::{CustodyClosures, custody_reaches};
+
+
 // ===========================================================================
 // String interning + the referent-agnostic opaque token (dn-4, W4)
 // ===========================================================================
