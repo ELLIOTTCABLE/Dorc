@@ -252,3 +252,78 @@ fn editing_a_variables_anchors_flattens_it_while_rewording_around_it_does_not() 
         vec![1]
     );
 }
+
+/// Helper for the anchoring cells: which variables survive one edit.
+fn survivors(baseline: &EditableRender<u8, u16>, edited: &str) -> Vec<u16> {
+    match transport_edit_allow_removal(baseline, edited) {
+        Ok(EditTransport::Edited(edit)) => edit
+            .fragments()
+            .iter()
+            .filter_map(|fragment| match fragment {
+                EditableFragment::Variable { id, .. } => Some(*id),
+                EditableFragment::Text(_) => None,
+            })
+            .collect(),
+        Ok(EditTransport::Unchanged) => vec![u16::MAX],
+        Err(refusal) => panic!("expected an edit, got {:?}", refusal.class()),
+    }
+}
+
+/// A variable delimited by ordinary whitespace is robust: both neighbouring words can be
+/// rewritten, lengthened or shortened and the attribution holds, because the space itself is the
+/// anchor and ordinary prose editing leaves it alone. This is the reassuring half of the picture
+/// and the reason the machinery works at all in practice.
+#[test]
+fn whitespace_anchored_variables_survive_rewriting_either_neighbour() {
+    let baseline = render(vec![
+        EditableFragment::Text("The ".to_owned()),
+        variable(1, "nginx"),
+        EditableFragment::Text(" service is enabled.".to_owned()),
+    ]);
+    for edited in [
+        "The nginx service is now enabled.",
+        "Our nginx service is enabled.",
+        "The nginx daemon is enabled.",
+        "Our nginx daemon is enabled.",
+        "A nginx service is enabled.",
+    ] {
+        assert_eq!(survivors(&baseline, edited), vec![1], "{edited}");
+    }
+
+    // Deleting the variable outright drops it, and its value does not come back as text.
+    assert!(survivors(&baseline, "The service is enabled.").is_empty());
+
+    // Gluing a suffix onto it consumes the right-hand anchor, and the attribution goes with it.
+    assert!(survivors(&baseline, "The nginx-based service is enabled.").is_empty());
+}
+
+/// DEFECT, pinned as it stands: a variable at a section boundary has anchoring text on ONE side
+/// only, so ordinary insertion at the open side destroys it silently. Appending a clause after a
+/// trailing variable, or prefixing words before a leading one, are among the most common prose
+/// edits there are — and both return a perfectly ordinary edit with the variable gone and its
+/// value baked in as literal text. Boundary holes are not hypothetical: the shipped catalog has
+/// registers ending in `{{oracles}}` / `{{expected}}` / `{{output}}` and ten beginning with a hole.
+#[test]
+fn a_variable_at_a_section_boundary_is_destroyed_by_insertion_beside_it() {
+    let trailing = render(vec![
+        EditableFragment::Text("wrote: ".to_owned()),
+        variable(1, "/etc/nginx/nginx.conf"),
+    ]);
+    // Rewriting the word before it is safe; the ": " anchor survives.
+    assert_eq!(
+        survivors(&trailing, "saved: /etc/nginx/nginx.conf"),
+        vec![1]
+    );
+    // Even removing the colon is safe -- the space is the immediate anchor, not the punctuation.
+    assert_eq!(survivors(&trailing, "wrote /etc/nginx/nginx.conf"), vec![1]);
+    // But appending anything after it destroys it.
+    assert!(survivors(&trailing, "wrote: /etc/nginx/nginx.conf successfully").is_empty());
+
+    let leading = render(vec![
+        variable(1, "nginx"),
+        EditableFragment::Text(" is not installed.".to_owned()),
+    ]);
+    assert_eq!(survivors(&leading, "nginx is not present."), vec![1]);
+    // And prefixing anything before it destroys it.
+    assert!(survivors(&leading, "The nginx is not installed.").is_empty());
+}
