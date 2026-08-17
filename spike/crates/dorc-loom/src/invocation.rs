@@ -211,49 +211,43 @@ where
     Ok(invocation)
 }
 
-/// Which verb owns a flag, for the reader who put it in the wrong place.
-///
-/// A flag in the global position is the misuse worth naming (`dorc-loom --all vars`): clap can say
-/// only that the argument was unexpected, and "unexpected" is exactly what a reader who believes
-/// they typed a real flag cannot act on.
-const FLAG_OWNERS: [(&str, &str); 8] = [
-    ("--all", "vars"),
-    ("--used", "vars"),
-    ("--quiet", "compile and promote"),
-    ("--shell", "compile and promote"),
-    ("--path", "compile and promote"),
-    ("--accept-metadata", "promote"),
-    ("--human", "promote"),
-    ("--slop", "promote"),
-];
+/// The verbs that declare `flag`, asked of the grammar rather than of a table beside it — a
+/// hand-listed table drifts the moment a verb gains a flag, and the drift is invisible.
+fn verbs_declaring(flag: &str) -> Vec<String> {
+    let name = flag.trim_start_matches('-');
+    <Invocation as clap::CommandFactory>::command()
+        .get_subcommands()
+        .filter(|verb| verb.get_arguments().any(|arg| arg.get_long() == Some(name)))
+        .map(|verb| verb.get_name().to_owned())
+        .collect()
+}
 
 fn explain(error: &clap::Error) -> String {
     // ONLY an unknown argument is a misplacement. A conflict names its OTHER operand in the same
-    // context slot, so reading the table on every error kind turns `--used --all` into advice
+    // context slot, so consulting the grammar on every error kind turns `--used --all` into advice
     // about where `--used` goes.
     let unknown = (error.kind() == clap::error::ErrorKind::UnknownArgument)
         .then(|| error.get(clap::error::ContextKind::InvalidArg))
         .flatten()
         .map(ToString::to_string);
-    let flag = unknown
+    let Some(flag) = unknown
         .as_deref()
-        .map(|arg| arg.split_once('=').map_or(arg, |(name, _)| name));
-    if flag == Some(THIS) {
+        .map(|arg| arg.split_once('=').map_or(arg, |(name, _)| name))
+    else {
+        return error.render().to_string().trim_end().to_owned();
+    };
+    if flag == THIS {
         return format!("{THIS} comes before the verb, git-style: `dorc-loom {THIS} vars`");
     }
-    if let Some((flag, owner)) = flag.and_then(|flag| {
-        FLAG_OWNERS
-            .iter()
-            .find(|(name, _)| *name == flag)
-            .map(|(name, owner)| (*name, *owner))
-    }) {
-        return format!(
-            "{flag} belongs to {owner} and goes after the verb; {THIS} is the only flag that comes \
-             before one: `dorc-loom {} {flag}`",
-            owner.split(' ').next().unwrap_or(owner)
-        );
+    let verbs = verbs_declaring(flag);
+    match verbs.first() {
+        None => error.render().to_string().trim_end().to_owned(),
+        Some(first) => format!(
+            "{flag} belongs to {} and goes after the verb; {THIS} is the only flag that comes \
+             before one: `dorc-loom {first} {flag}`",
+            verbs.join(" and ")
+        ),
     }
-    error.render().to_string().trim_end().to_owned()
 }
 
 #[cfg(test)]
