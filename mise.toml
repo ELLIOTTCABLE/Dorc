@@ -570,7 +570,7 @@ dir = "spike"
 run = "cargo run -q -p internal-tooling -- prose-census"
 
 [tasks."spine:baseline"]
-description = "MIGRATION SCAFFOLDING, BUILD-TO-KILL (309 §4): freeze the decision-state smoke-diff baseline over the committed corpus — site-keyed dispositions, guard bindings, custody, survival witnesses, digest. Frozen ONCE at the base commit and re-taken after the Spine lands; the DIFF is a review tool for the fold sitting, never an acceptance gate. Pass the destination after `--`."
+description = "MIGRATION SCAFFOLDING, BUILD-TO-KILL (309 §4): freeze the decision-state smoke-diff baseline over the committed corpus — site-keyed dispositions, guard bindings, custody, survival witnesses, digest. Frozen ONCE at the base commit and re-taken after the Spine lands; the DIFF is a review tool for the fold sitting, never an acceptance gate. The destination is `DORC_SPINE_DUMP=<path>` in the environment — NOT a trailing arg, which libtest would read as a case filter and silently run nothing. Unset, the walk still runs and asserts its floor."
 raw = true
 dir = "spike"
 run = "cargo test -p dorc-cli --test spine_baseline -- --ignored --nocapture"
