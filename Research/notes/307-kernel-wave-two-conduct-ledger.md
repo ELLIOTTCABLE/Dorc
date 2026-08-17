@@ -902,7 +902,7 @@ only with the specific work-product it wrongly blocked in hand.
 - **the harness worktree reaper, at CHECKPOINT-RETURN** (the auto-reaper row above,
   recurring on a longer lane) · the census builder's worktree was gone when the
   conductor came back to it mid-lane, stranding a checkpointed multi-stage lane ·
-  **mixed** — the same hostile-to-multi-turn-lanes behavior, now met with a working
+  **mixed** — the same hostile-to-multi-turn-lanes behavior, this time met with a
   countermeasure rather than a rescue · action: PRAXIS — conductor-created, LOCKED
   seats for any lane that will return through a checkpoint; the census/window split
   ran on them.
@@ -914,12 +914,12 @@ only with the specific work-product it wrongly blocked in hand.
   reported upward, never re-spelled to slip past the check.
 - **directory-scoped `CLAUDE.md` auto-injection vs a blind protocol** · a Read of
   any file under a governed directory injects that directory's steering law, so the
-  blind reviewer received root `AGENTS.md`, root `CLAUDE.md`, `spike/CLAUDE.md` and
-  `minispec/CLAUDE.md` without opening one of them — an agent cannot honor
-  "don't read the docs" by its own discipline (`30H` #1) · **harness-tier** — not
-  our instrument, and no in-repo fix exists · action: HUMAN QUEUE; until it is
-  disabled at the harness level, a blind run's findings are grounded in code and
-  tool output only, and must say so.
+  blind reviewer reports receiving root `AGENTS.md`, root `CLAUDE.md`,
+  `spike/CLAUDE.md` and `minispec/CLAUDE.md` without opening any of them (`30H` #1),
+  and concludes an agent cannot honor "don't read the docs" by its own discipline ·
+  **harness-tier** — the injection is not our instrument, and no in-repo fix is
+  apparent to this lane · action: HUMAN QUEUE. That reviewer grounded its findings in
+  code and tool output for this reason, and said so at the top of its report.
 
 ## §4 — Skill evolution: `verified-core-discipline` [TYPED, arc-open]
 

@@ -20,7 +20,7 @@
 folded in one day — spine-reification (`plans/309`; census `30E`, lane report `30F`) ·
 custody-closures (work order `30G`) · tooling-pair · small-debts · the blind
 idiot-review (`30H`) · binder-hygiene — with `307` §2's implementation-push row carrying
-every lane's account and every in-window adjudication. Those adjudications are all
+each lane's account and the adjudications made in-window. Those adjudications are
 CONDUCTOR-tier and VETO-ELIGIBLE; none is typed-acked.
 
 **THE HUMAN QUEUE** (nothing here is dispatchable without the human):
@@ -38,13 +38,13 @@ CONDUCTOR-tier and VETO-ELIGIBLE; none is typed-acked.
    suite tail; the 318× fix is measured and PARKED by the human's own call.
 5. **The prose queue** — unchanged.
 6. **The blind review's human-tier items** (`30H`) — #1 harness-level blindness
-   (directory-scoped `CLAUDE.md` auto-injection defeats a blind protocol from outside
-   the repo's reach) · #2 the `mise tasks` UX (a flat wall with no entry point) · and
-   the tiering posture question the review raises: which badges belong behind opt-in
-   lanes versus the gates people actually run.
-7. **Three docID cite mismatches** — the bare `23I` cites in `23O` (the file is
-   `23Ia`/`23Ib`; typo or shorthand?) and the `16X`/`177` quarantine-cite mismatches.
-   The lint passes over all three, so each needs an eye, not a fix.
+   (directory-scoped `CLAUDE.md` auto-injection appears to sit outside the repo's
+   reach) · #2 the `mise tasks` UX · and the badges-vs-routine-gates tiering posture
+   the review raises. All three read as human-tier; none is adjudicated.
+7. **Three docID cite questions** — the bare `23I` cites in `23O` (the files are
+   `23Ia`/`23Ib`, so possibly a typo, possibly shorthand for the pair) and the
+   `16X`/`177` quarantine-cite mismatches. `mise run lint:docids` is silent on all
+   three; flagged for an eye, not diagnosed here.
 8. **The stale `Research/notes/quarantine-DO-NOT-READ/` mention in `spike/CLAUDE.md`** —
    quarantine-adjacent, so the edit is the human's.
 
