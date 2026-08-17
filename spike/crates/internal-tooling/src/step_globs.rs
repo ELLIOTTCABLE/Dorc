@@ -57,6 +57,26 @@ const REACH: &[Reach] = &[
         path: "spike/verify/src/check.rs",
         want_seen: false,
     },
+    // The docID lint is the one gate whose subject lives outside `spike/**`, so its glob is the
+    // easiest in the file to lose to a well-meaning re-scoping — and losing it is, again, silent.
+    Reach {
+        name: "sees-a-corpus-note",
+        step: "docids",
+        path: "Research/notes/307-kernel-wave-two-conduct-ledger.md",
+        want_seen: true,
+    },
+    Reach {
+        name: "sees-a-root-doc",
+        step: "docids",
+        path: "README.md",
+        want_seen: true,
+    },
+    Reach {
+        name: "leaves-ordinary-rust-alone",
+        step: "docids",
+        path: "spike/crates/core/src/lib.rs",
+        want_seen: false,
+    },
 ];
 
 /// Ask hk whether `step` would see `path`.

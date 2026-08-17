@@ -70,6 +70,14 @@ local linters = new Mapping<String, Step> {
         // advisories pass on demand.
         check = "cargo deny --manifest-path spike/Cargo.toml check licenses bans sources"
     }
+    // The prose corpus's own cross-references. Read-only, ~0.7s, and it always checks EVERY
+    // citation whatever is staged — the glob decides only whether a commit is one that could have
+    // moved a target. The one gate here that reaches outside `spike/**`, alongside `minispec`,
+    // because a renumber lands entirely in `Research/`.
+    ["docids"] {
+        glob = List("Research/**/*.md", "spike/**/CLAUDE.md", "*.md")
+        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- docids"
+    }
     ["typos"] {
         glob = "spike/**"
         // `{{files}}`, not `spike`: scanning the whole tree to check three staged files is the
