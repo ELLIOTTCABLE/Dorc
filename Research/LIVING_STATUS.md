@@ -14,7 +14,24 @@
 
 ---
 
-## CURRENT STATE (2026-08-16 late — WAVE-TWO CLOSED AND QUIESCENT; the open board is human-gated)
+## CURRENT STATE (2026-08-17 — IMPLEMENTATION RE-OPENED; three lanes in flight)
+
+**The adjudication sitting [TYPED 2026-08-17; full record `307:§ack-implementation-open`]
+closed the human-gated board**: `rul-emission-custody-composite` ruled a MISTAKE
+(cross-custody reaches suspend, always; CLI co-loading composes no
+custody/speaker, ever) · the crosscheck-era rulings acked (all-nine-refuse +
+(b-ii)-minimal hold until 309's machinery) · `plans/309` reviewed-matches-intent,
+BUILD OPEN · `28Q` §9 pins 1–3 + the sourcing amendment acked modulo the
+LOAD-INERT DEMOTION (hygiene/contract, never engine fact) ·
+`pin-closure-membership-and-diamond` closed (speaker-minting = oracle-file `.`
+sourcing only; books mint nothing) · cache auto-reap NACKED (replacement: a
+read-only unused-inventory report, conductor-targeted, soft). LANES IN FLIGHT:
+spine-reification (`plans/309`) · custody-closures (composite repair →
+definition-grade re-key + `verdict_cell_or_auto` separation → closure/sourcing
+build) · tooling-pair (unused-report + slow-test diagnosis). Conductor-6 is on
+hard Fable-token conservation; checkpoints minimal, correctness un-traded.
+
+## STATE 2026-08-16 late (wave-two closed and quiescent; superseded above)
 
 **ROUND-30 WAVE-TWO IS FULLY FOLDED AND GATE-CLOSED.** All lanes are folded
 (the sh-parity pin battery and the tooling-debt triple included — the "in

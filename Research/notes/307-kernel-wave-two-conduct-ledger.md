@@ -1021,3 +1021,53 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   (`plans/309`, pre-ack).
 - Remaining veto-eligible items (`rul-emission-custody-composite` · the
   crosscheck-era four) are UNREACTED as of this entry; silence is not ack.
+  (Superseded next section — the 2026-08-17 sitting reacted to all of them.)
+
+## §ack-implementation-open — the adjudication sitting (2026-08-17; typed, itemized)
+
+- **`rul-emission-custody-composite` RULED A MISTAKE (minor)** — it licenses a
+  "CLI chimera" never requested: CLI co-loading of multiple files is a
+  vaguely-temporary ingestion holdover (for bringing in disparate
+  oracles/libraries, and multiple books someday) and was NEVER a
+  custody/speaker-composition surface. REPAIR (the custody lane): a cross-custody
+  resolved reach suspends-with-decline in ALL cases — the singular package shape
+  is DE-licensed; pin28's package cells flip to the decline. Floated
+  curiosity-tier, dies free: book↔host mapping under multihost ("or is that just
+  in-book stuff?").
+- ACKED: `rul-escalation-policy-consumes-withdrawn-stays-whole-unit` ·
+  `rul-resolved-pair-coherence-walls` ·
+  `res-entry-tolerance-rides-a-declining-verdict`.
+  `rul-all-nine-refuse-on-the-strict-path` acked UNTIL the 309 narration-only
+  machinery exists; influence-grade (b-ii)-minimal gently acked until 309.
+- **Cache auto-reap NACKED** ("needs eyes (or LLMs) in the loop; defeats the
+  point of a cache"). Replacement, soft-ish: a READ-ONLY unused-inventory
+  report (worktrees/branches/caches sitting around unused) that conductors
+  target "same output at start and end of work" against.
+- **`plans/309` REVIEWED-MATCHES-INTENT — BUILD OPEN.** The human's gloss:
+  hygiene/naming/typing-constructor-dataflow work, not algorithmic — all
+  analysis feeds the plan through one narrow hole, and nothing interesting may
+  cross it without being a decision, a narration, or otherwise Something The
+  Whylog Can Record.
+- **`28Q` §9 acks: pins 1–3 + the sourcing amendment** [conductor reading of the
+  typed "ack 1-3/8": pins 1, 2, 3 plus the eighth listed item =
+  `pin-oracle-side-sourcing-amendment`; flagged in-chat for cheap correction] —
+  all MODULO **the load-inert demotion [TYPED]: load-inert is HYGIENE/CONTRACT,
+  never engine fact**; it got over-encoded into these pins, and the
+  dot-blessing/sourcing licenses rest on the dorc-lang contract (marked file, no
+  top-level commands), attributed as contract, never as an engine proof.
+- **`pin-closure-membership-and-diamond` substantially CLOSED** [TYPED]:
+  membership stays granular to the needed licensure/state/behaviour; diamond
+  effectively allowed (a gloss of prior rulings, not new law); CLI input is NOT
+  family membership (wires were crossed — the multi-sh-on-CLI target is for
+  sourcing multiple oracles/libraries, or multiple books, or both). The ONLY
+  sanctioned speaker-minting merge: an explicit `.` of another file, typed
+  inside a file one enters through an API-entry-point, where the sourced file is
+  dorc-lang/oracle-code/no-top-level-commands. A BOOK's sourcing mints no
+  speaker — only oracles-sourcing-files mint speakers for the granularly-traced
+  load-order traits.
+- Implementation re-opened; parallel Opus lanes directed; Fable-token
+  conservation directed, explicitly never at correctness's expense. Lanes
+  dispatched: spine-reification (`plans/309`) · custody-closures (composite
+  repair → definition-grade re-key + `verdict_cell_or_auto` separation →
+  closure/sourcing build; two checkpoints) · tooling-pair (the unused-inventory
+  report + the slow-test diagnosis).
