@@ -28,6 +28,8 @@ use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 use crate::Receipt;
 use crate::results::{SiteResults, probe_origins};
+use dorc_analysis::load::{LoadStep, LoadTarget, TargetPart};
+
 use crate::snapshot::StaticLoadSnapshot;
 use crate::why::{
     CascadeAttribution, FirstWallHint, WallStep, WhyReport, collect_wall_steps, first_wall_hint,
@@ -701,22 +703,38 @@ pub fn definition_table(
             continue;
         };
         let parsed = dorc_syntax::parse(src).value;
+        let mut by_ast = BTreeMap::new();
         let mut ids = Vec::new();
-        for (_, node) in parsed.iter() {
+        for (id, node) in parsed.iter() {
             let NodeKind::FuncDef {
                 name, name_span, ..
             } = &node.kind
             else {
                 continue;
             };
-            ids.push(table.add(Definition {
+            let def = table.add(Definition {
                 file: source_file_id(idx),
                 name: name.clone(),
                 span: node.span,
                 name_span: *name_span,
-            }));
+            });
+            by_ast.insert(id, def);
+            ids.push(def);
         }
-        table.set_loadable(path, ids.clone());
+        // A file that signed the dorc-lang contract carries a real load PROGRAM — its guards, its
+        // own `.`s, its removals — because that is what its top level means (`30I` §3.1). One that
+        // did not is registered flat, exactly as before: it makes no dialect claim, so reading
+        // control flow into it would be inventing a promise its author never made.
+        table.set_loadable(
+            path,
+            if crate::sourcing::satisfies_the_contract(src) {
+                load_program(&parsed, &by_ast)
+            } else {
+                dorc_analysis::load::LoadProgram::of(
+                    ids.iter().copied().map(LoadStep::Define).collect(),
+                )
+            },
+        );
         // Only the invocation-named prefix and its own sourcing closure load "before line 1". A
         // source reached ONLY from a book `.` binds AT that line, and making it ambient would let
         // it license sites above its own load point (`visibility-is-full-positional`).
@@ -740,6 +758,111 @@ pub fn definition_table(
         table.set_book_site(id, def);
     }
     table
+}
+
+/// A contract-satisfying file's top level as the loader's closed program
+/// (`dorc_analysis::load::LoadProgram`).
+///
+/// The step vocabulary and the admission gate are the SAME reading, taken from the same seat:
+/// `dorc_oracle::load_inert` decides what a marked top level may hold, and this turns exactly
+/// those shapes into steps. An item the gate would refuse cannot appear — the caller only reaches
+/// here for a file that passed it — so an unrecognized shape is skipped rather than guessed at.
+use dorc_syntax::ast::NodeKind;
+
+fn load_program(
+    ast: &dorc_syntax::Ast,
+    by_ast: &BTreeMap<dorc_core::AstId, dorc_analysis::funcenv::DefId>,
+) -> dorc_analysis::load::LoadProgram {
+    let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
+        return dorc_analysis::load::LoadProgram::default();
+    };
+    dorc_analysis::load::LoadProgram::of(load_steps(ast, by_ast, items))
+}
+
+fn load_steps(
+    ast: &dorc_syntax::Ast,
+    by_ast: &BTreeMap<dorc_core::AstId, dorc_analysis::funcenv::DefId>,
+    items: &[dorc_core::AstId],
+) -> Vec<LoadStep> {
+    use dorc_oracle::load_inert::{include_guard, item_is_static_load, unset_functions};
+
+    let mut steps = Vec::new();
+    for &item in items {
+        if let Some(&def) = by_ast.get(&item) {
+            steps.push(LoadStep::Define(def));
+            continue;
+        }
+        if let Some(word) = item_is_static_load(ast, item) {
+            steps.push(LoadStep::Load(load_target(ast, word)));
+            continue;
+        }
+        if let Some(guard) = include_guard(ast, item) {
+            steps.push(LoadStep::Guard {
+                function: guard.function,
+                negated: guard.negated,
+                then_: load_steps(ast, by_ast, &guard.then_),
+                else_: load_steps(ast, by_ast, &guard.else_),
+            });
+            continue;
+        }
+        let NodeKind::Simple { assigns, words, .. } = &ast.node(item).kind else {
+            continue;
+        };
+        if let Some(names) = unset_functions(ast, words) {
+            steps.push(LoadStep::UnsetFunctions(names));
+            continue;
+        }
+        for &assign in assigns {
+            let NodeKind::Assign { name, value, .. } = &ast.node(assign).kind else {
+                continue;
+            };
+            steps.push(LoadStep::Assign {
+                name: name.clone(),
+                value: value.map_or_else(LoadTarget::default, |word| load_target(ast, word)),
+            });
+        }
+    }
+    steps
+}
+
+/// A word as a load operand: literal fragments kept, variable reads left for the loading context
+/// to answer (`30I:force-root-value-flow`).
+///
+/// A fragment this seat cannot read — a command substitution, an operator expansion the lexer
+/// collapsed — yields an EMPTY target, which expands to the empty string and resolves nowhere. The
+/// admission gate already refuses those shapes, so this is the belt to its braces.
+fn load_target(ast: &dorc_syntax::Ast, word: dorc_core::AstId) -> LoadTarget {
+    use dorc_syntax::ast::WordPart;
+
+    fn walk(parts: &[WordPart], out: &mut Vec<TargetPart>) -> bool {
+        for part in parts {
+            match part {
+                WordPart::Literal(text) | WordPart::SingleQuoted(text) => {
+                    out.push(TargetPart::Literal(text.clone()));
+                }
+                WordPart::Param { name, .. } => out.push(TargetPart::Param(name.clone())),
+                WordPart::DoubleQuoted(inner) => {
+                    if !walk(inner, out) {
+                        return false;
+                    }
+                }
+                WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex => {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return LoadTarget::default();
+    };
+    let mut out = Vec::new();
+    if walk(parts, &mut out) {
+        LoadTarget::of(out)
+    } else {
+        LoadTarget::default()
+    }
 }
 
 /// The `(file, provider)` predict rows whose defining funcdef the environment proves binds at NO

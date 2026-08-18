@@ -128,6 +128,15 @@ pub struct ValueFlow {
     /// for richer grades when a capture/register fragment lands. NOTHING consumes it yet
     /// (`270:block-rebuild`: represent + derive, do not consume). `BTreeMap` for `inv-determinism`.
     argv_word_grades: BTreeMap<CfgNodeId, Vec<ValueGrade>>,
+    /// Per node: the variable environment IMMEDIATELY BEFORE it, as the solve left it.
+    ///
+    /// Retained for exactly one consumer — the static loader, which must expand a `.` operand a
+    /// SOURCED file spells against the variables live where that file was loaded
+    /// (`30I:force-root-value-flow`). The argv passes above cannot answer it: the operand lives in
+    /// another file and has no CFG node here at all. Read only through
+    /// `funcenv::SourceLiteralPlane::variable_before`, which is the load plane's one window
+    /// (`funcenv-reads-source-literal-plane-only`).
+    states: Vec<ValueEnv>,
     /// The solve's certification (`302`). The ONE gate every query above is folded through —
     /// there is no second `converged` flag a consumer could read instead and get a different
     /// answer. Kept whole (not reduced to a bool) so the failing evidence stays reachable
@@ -210,6 +219,25 @@ impl ValueFlow {
     #[must_use]
     pub fn consistency(&self) -> &SolveConsistency<ValueEnv> {
         &self.consistency
+    }
+
+    /// The value of shell variable `name` immediately before `node`, or ⊤ when the analysis is
+    /// untrusted, the point is unreached, or the variable is conflicted/unset (`19H` unset-is-⊤).
+    ///
+    /// **CHURN DISCLOSURE** (`churn-avoidance-disclosure`): [`ValueEnv`] carries no per-variable
+    /// [`ValueGrade`], because at this stage every non-⊤ value IS program text — a probe capture
+    /// is ⊤ and the value plane runs before the probe. When `core`'s `seam-re-bind` folds captured
+    /// values back in, this accessor must gate on the grade exactly as `argv_word_grades` does, or
+    /// a host-spoken value could site a load and make oracle loading world-dependent. The wall is
+    /// `funcenv-reads-source-literal-plane-only`, and it must not be reached around here.
+    #[must_use]
+    pub fn variable_before(&self, node: CfgNodeId, name: &str) -> Flat<String> {
+        if !self.trusted() {
+            return Flat::Top;
+        }
+        self.states
+            .get(node.index())
+            .map_or(Flat::Top, |env| env.get(&name.to_owned()))
     }
 }
 
@@ -332,6 +360,7 @@ fn resolve_passes(
         positional_argv,
         redir_target,
         argv_word_grades,
+        states: states.to_vec(),
         consistency,
     }
 }

@@ -80,11 +80,176 @@ pub(crate) fn item_is_load_inert(ast: &Ast, item: AstId) -> bool {
         } => {
             redirs.is_empty()
                 && assigns.iter().all(|&a| assign_value_is_static(ast, a))
-                && (words.is_empty() || (assigns.is_empty() && static_load_target(ast, words)))
+                && (words.is_empty()
+                    || (assigns.is_empty()
+                        && (static_load_target(ast, words)
+                            || unset_functions(ast, words).is_some())))
         }
+        NodeKind::If { .. } => include_guard(ast, item).is_some(),
         _ => false,
     }
 }
+
+/// The ONE conditional shape a marked file's top level may carry: an INCLUDE GUARD
+/// (`30I:rul-include-guards-are-load-semantics`, TYPED — "mandatory language surface, not optional
+/// polish").
+///
+/// Independent oracle authors share dependencies with it, and it says: use the higher-quality live
+/// implementation when it is present, otherwise load this fallback. The function environment,
+/// custody, emission, and the bundle compiler all have to agree on that branch, so the shape is
+/// closed rather than general.
+///
+/// # Why the branches may not DEFINE
+///
+/// A role funcdef inside a conditional branch is a MEASURED wrong-elision route, not a taste
+/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL"): the
+/// dialect lift recognizes a role header only as a TOP-LEVEL ITEM, so a definition nested in a
+/// branch is registered by `dorc_syntax` and by the definition table while producing ZERO lifted
+/// rows and zero detected headers — silently, with the marks-lost backstop quiet about it too. The
+/// pins are `sh_parity.rs`'s `a_host_conditional_oracle_definition_licenses_nothing` and its
+/// expected-fail twin, and widening the allow-list WITHOUT making that binding `May` is exactly
+/// what they forbid. So a guard's branches carry loads and removals; declarations stay at top
+/// level, where they are seen.
+#[must_use]
+pub fn include_guard(ast: &Ast, item: AstId) -> Option<IncludeGuard> {
+    let NodeKind::If {
+        cond,
+        then_body,
+        elifs,
+        else_body,
+    } = &ast.node(item).kind
+    else {
+        return None;
+    };
+    // `elif` is a second condition, and the loader models ONE. An author wanting two guards nests
+    // them, which this gate does admit.
+    if !elifs.is_empty() {
+        return None;
+    }
+    let (name, negated) = guard_condition(ast, *cond)?;
+    let then_ = guard_branch(ast, *then_body)?;
+    let else_ = match else_body {
+        Some(branch) => guard_branch(ast, *branch)?,
+        None => Vec::new(),
+    };
+    Some(IncludeGuard {
+        function: name,
+        negated,
+        then_,
+        else_,
+    })
+}
+
+/// A recognized include guard, decomposed for the loader.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IncludeGuard {
+    /// The function name the guard asks about.
+    pub function: String,
+    /// Whether the condition is `!`-negated, so a consumer reads the branches the right way round.
+    pub negated: bool,
+    /// The branch taken when the guard's condition SUCCEEDS, in source order.
+    pub then_: Vec<AstId>,
+    /// The branch taken when it fails. Empty for a guard with no `else`.
+    pub else_: Vec<AstId>,
+}
+
+/// `command -v <NAME>`, with the `!`-negation the shape carries and whatever redirections the
+/// author silenced it with.
+///
+/// Redirections are permitted HERE and nowhere else in this gate: `>/dev/null 2>&1` on a query is
+/// the idiom every author writes, and a redirect on a QUERY writes nothing the way a redirect on a
+/// no-op command does (`: > /etc/x`, the standing `haz-redir-as-mutation` example). The operand
+/// must be one plain literal — a computed name would ask the loader a question it cannot answer.
+fn guard_condition(ast: &Ast, cond: AstId) -> Option<(String, bool)> {
+    let mut id = cond;
+    let mut negated = false;
+    for _ in 0..GUARD_UNWRAP_CAP {
+        match &ast.node(id).kind {
+            NodeKind::Script { items } | NodeKind::List { items } => {
+                let [only] = items[..] else { return None };
+                id = only;
+            }
+            NodeKind::Pipeline {
+                negated: flip,
+                stages,
+            } => {
+                let [only] = stages[..] else { return None };
+                negated ^= flip;
+                id = only;
+            }
+            NodeKind::Simple { assigns, words, .. } => {
+                if !assigns.is_empty() {
+                    return None;
+                }
+                let [head, flag, name] = words[..] else {
+                    return None;
+                };
+                if literal_word(ast, head)? != "command" || literal_word(ast, flag)? != "-v" {
+                    return None;
+                }
+                return Some((literal_word(ast, name)?.to_owned(), negated));
+            }
+            _ => return None,
+        }
+    }
+    None
+}
+
+/// Every item of a guard branch, when all of them are load control the loader models: a `.`, an
+/// `unset -f`, a no-op, or a nested guard. `None` the moment one is not.
+fn guard_branch(ast: &Ast, branch: AstId) -> Option<Vec<AstId>> {
+    let (NodeKind::Script { items } | NodeKind::List { items }) = &ast.node(branch).kind else {
+        return None;
+    };
+    items
+        .iter()
+        .all(|&item| item_is_load_control(ast, item))
+        .then(|| items.clone())
+}
+
+/// Is this item something a guard branch may hold? Loads, function removals, no-ops, and nested
+/// guards — never a declaration (see [`include_guard`]) and never an assignment, whose conditional
+/// value the load plane would then have to model.
+fn item_is_load_control(ast: &Ast, item: AstId) -> bool {
+    match &ast.node(item).kind {
+        NodeKind::Simple {
+            assigns,
+            words,
+            redirs,
+        } => {
+            redirs.is_empty()
+                && assigns.is_empty()
+                && (static_load_target(ast, words)
+                    || unset_functions(ast, words).is_some()
+                    || matches!(
+                        words.first().and_then(|&w| literal_word(ast, w)),
+                        Some(":" | "true")
+                    ))
+        }
+        NodeKind::If { .. } => include_guard(ast, item).is_some(),
+        _ => false,
+    }
+}
+
+/// The names an `unset -f NAME…` removes, or `None` for any other command. `unset NAME` without
+/// `-f` is a VARIABLE and is not load control.
+#[must_use]
+pub fn unset_functions(ast: &Ast, words: &[AstId]) -> Option<Vec<String>> {
+    let [head, flag, rest @ ..] = words else {
+        return None;
+    };
+    if literal_word(ast, *head)? != "unset" || literal_word(ast, *flag)? != "-f" || rest.is_empty()
+    {
+        return None;
+    }
+    rest.iter()
+        .map(|&word| literal_word(ast, word).map(str::to_owned))
+        .collect()
+}
+
+/// How far a guard condition is unwrapped looking for one simple command. Bounded for the reason
+/// every other walk here is: a malformed shape must lose precision, never spin.
+const GUARD_UNWRAP_CAP: usize = 8;
 
 /// The statically spelled target of a top-level `.`, or `None` for any other item.
 ///
@@ -318,6 +483,76 @@ _helper() { printf '%s\\n' \"$1\"; }
             slugs(". ./h.sh >/dev/null\n"),
             ["oracle-file-not-load-inert"]
         );
+    }
+
+    /// THE INCLUDE GUARD (`30I:rul-include-guards-are-load-semantics`, TYPED): the canonical
+    /// shared-dependency shape, and the whole of the conditional surface a marked file may carry.
+    /// `30I` §2.2 spells it with the `else` arm doing the loading; the negated `!` spelling and a
+    /// bare `then`-arm load are the same guard read the other way round.
+    #[test]
+    fn the_canonical_include_guard_is_admitted() {
+        for body in [
+            "if command -v _q >/dev/null 2>&1; then\n   :\nelse\n   . ./common.sh\nfi\n",
+            "if ! command -v _q >/dev/null 2>&1; then\n   . ./common.sh\nfi\n",
+            "if command -v _q; then unset -f _q; . ./better.sh; fi\n",
+            "if command -v _q; then\n   :\nelse\n   if command -v _r; then :; else . ./c.sh; fi\nfi\n",
+        ] {
+            assert!(slugs(body).is_empty(), "{body} — {:?}", slugs(body));
+        }
+        assert!(
+            slugs("if command -v _q; then :; fi\nq__is_converged() { _q ;}\n").is_empty(),
+            "and the file's own declarations keep contributing beside it"
+        );
+    }
+
+    /// A guard's branch may NOT define. The pins this protects are `sh_parity.rs`'s
+    /// `a_host_conditional_oracle_definition_licenses_nothing` and its expected-fail twin: the
+    /// dialect lift sees a role header only as a top-level ITEM, so a nested definition would be
+    /// registered by the definition table while lifting ZERO rows — described nowhere, detected
+    /// nowhere, and licensing off a body the lift never read. Widening the allow-list without
+    /// making that binding `May` is exactly the wrong-elision route they forbid.
+    #[test]
+    fn a_guard_branch_may_not_define() {
+        assert_eq!(
+            slugs("if command -v _q; then :; else _q() { hork ;}; fi\n"),
+            ["oracle-file-not-load-inert"]
+        );
+        assert_eq!(
+            slugs("if command -v _q; then :; else SM_ROOT=./other; fi\n"),
+            ["oracle-file-not-load-inert"],
+            "nor assign — a conditional value is one the load plane would have to model"
+        );
+        assert_eq!(
+            slugs("if command -v _q; then :; else apt-get update; fi\n"),
+            ["oracle-file-not-load-inert"],
+            "nor run anything at all"
+        );
+    }
+
+    /// Only `command -v <literal name>` opens a guard. Every other condition — a file test, a
+    /// computed name, an `elif` chain — stays refused, because the loader models ONE closed
+    /// question and `inv-top-reject` biases the unknown toward refusal.
+    #[test]
+    fn only_a_command_v_condition_opens_a_guard() {
+        for body in [
+            "if [ -f ./common.sh ]; then . ./common.sh; fi\n",
+            "if command -v \"$WANTED\"; then :; fi\n",
+            "if command -v _q; then :; elif command -v _r; then . ./c.sh; fi\n",
+            "if command -v _q && command -v _r; then :; else . ./c.sh; fi\n",
+        ] {
+            assert_eq!(slugs(body), ["oracle-file-not-load-inert"], "{body}");
+        }
+    }
+
+    /// `unset -f` is v0 load surface (`30I:rul-oracle-loading-stays-load-safe`) — it removes a
+    /// binding and runs nothing. `unset` without `-f` is a VARIABLE and stays refused, because the
+    /// load plane does not model variable removal.
+    #[test]
+    fn unset_f_is_load_surface_and_bare_unset_is_not() {
+        assert!(slugs("unset -f _q\n").is_empty());
+        assert!(slugs("unset -f _q _r\n").is_empty());
+        assert_eq!(slugs("unset SM_ROOT\n"), ["oracle-file-not-load-inert"]);
+        assert_eq!(slugs("unset -f\n"), ["oracle-file-not-load-inert"]);
     }
 
     /// Marker-gated (`marker-gates-syntax-only`): an unmarked file makes no dialect claim, so the

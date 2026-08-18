@@ -415,53 +415,59 @@ fn read_sourced_oracles(
 /// (`30I` §7.2).
 fn read_book_sourced(
     cwd: &dorc_core::loadpath::Cwd,
+    book_path: &str,
     book_src: &str,
     mut paths: Vec<String>,
     mut srcs: Vec<String>,
-) -> (Vec<String>, Vec<String>) {
-    fn admit(
-        cwd: &dorc_core::loadpath::Cwd,
-        paths: &mut Vec<String>,
-        srcs: &mut Vec<String>,
-        target: &str,
-    ) -> Option<usize> {
-        let wanted = cwd.resolve_dot(target)?;
-        if let Some(at) = paths
-            .iter()
-            .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
-        {
-            return Some(at);
-        }
-        let text = std::fs::read_to_string(&wanted).ok()?;
-        if !dorc_cli::sourcing::satisfies_the_contract(&text) {
-            return None;
-        }
-        paths.push(wanted);
-        srcs.push(text);
-        Some(paths.len().saturating_sub(1))
-    }
+) -> (Vec<String>, Vec<String>, BTreeSet<usize>) {
+    let ambient = paths.len();
+    let book_ast = dorc_syntax::parse(book_src).value;
+    let mut refused: BTreeSet<String> = BTreeSet::new();
+    for _ in 0..ACQUISITION_ROUNDS_CAP {
+        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            cwd.clone(),
+            paths.clone(),
+            srcs.clone(),
+            (ambient..paths.len()).collect(),
+            book_path,
+            book_src,
+        );
+        let mut interner = Interner::default();
+        let cfg = dorc_analysis::cfg::build(&book_ast).value;
+        let value = dorc_analysis::value::analyze(&cfg, &book_ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = definition_table(&snapshot, &book_ast);
+        let env = dorc_analysis::funcenv::analyze(&book_ast, &cfg, &definitions, &plane);
 
-    let mut frontier: Vec<usize> = dorc_cli::snapshot::book_load_targets(book_src)
-        .iter()
-        .filter_map(|target| admit(cwd, &mut paths, &mut srcs, target))
-        .collect();
-    // Transitive: what a book-reached package sources joins the loaded set too. Terminates
-    // because `admit` appends only a path not already present.
-    let mut seen: BTreeSet<usize> = frontier.iter().copied().collect();
-    while let Some(file) = frontier.pop() {
-        let Some(src) = srcs.get(file).cloned() else {
-            continue;
-        };
-        for target in dorc_cli::sourcing::top_level_load_targets(&src) {
-            if let Some(next) = admit(cwd, &mut paths, &mut srcs, &target)
-                && seen.insert(next)
-            {
-                frontier.push(next);
+        let mut grew = false;
+        for wanted in env.wanted_loads() {
+            if !refused.insert(wanted.clone()) {
+                continue;
             }
+            let Ok(text) = std::fs::read_to_string(wanted) else {
+                continue;
+            };
+            if !dorc_cli::sourcing::satisfies_the_contract(&text) {
+                continue;
+            }
+            paths.push(wanted.clone());
+            srcs.push(text);
+            grew = true;
+        }
+        if !grew {
+            break;
         }
     }
-    (paths, srcs)
+    let reached = (ambient..paths.len()).collect();
+    (paths, srcs, reached)
 }
+
+/// How many times the acquisition re-solves before settling.
+///
+/// Each round reads at least one file it had never seen or stops, and a chain of nested packages
+/// is a handful deep, so the cap is a backstop rather than the real bound. Running out leaves a
+/// package UNREAD, which is an unresolvable load — the withholding direction.
+const ACQUISITION_ROUNDS_CAP: usize = 32;
 
 /// Where this invocation stands (`30I:rul-dot-resolves-as-sh`) — the ONE environment read the load
 /// model rests on, taken here because this file is the I/O edge (`io-at-edges-only`).
@@ -866,9 +872,8 @@ fn run(
     // THE SNAPSHOT (`30I` §3.1): the acquisition finishes here and nothing below re-reads a path.
     // What a book `.`-sources joins the loaded set exactly as what an oracle sources does, but
     // NOT ambiently — it binds at its own line.
-    let (oracle_paths, oracle_srcs) = read_book_sourced(cwd, &book_src, oracle_paths, oracle_srcs);
-    let book_sourced =
-        dorc_cli::snapshot::book_reached(cwd, &oracle_paths, &oracle_srcs, &book_src);
+    let (oracle_paths, oracle_srcs, book_sourced) =
+        read_book_sourced(cwd, book_name, &book_src, oracle_paths, oracle_srcs);
     let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
         cwd.clone(),
         oracle_paths,
@@ -3591,6 +3596,139 @@ mod fixpoint_freezes_the_environment_tests {
                  definition was live"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod acquisition_tests {
+    use std::collections::BTreeSet;
+    use std::path::PathBuf;
+
+    const MARKER: &str = "# dorc-lang/v0.2\n";
+
+    /// A throwaway package tree, removed on drop. The acquisition's whole subject is which files
+    /// it OPENS, so it cannot be exercised without real ones.
+    struct Package {
+        root: PathBuf,
+    }
+
+    impl Package {
+        fn new(tag: &str, files: &[(&str, String)]) -> Self {
+            let root = std::env::temp_dir().join(format!("dorc-acq-{}-{tag}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&root);
+            std::fs::create_dir_all(&root).expect("create package root");
+            for (name, body) in files {
+                std::fs::write(root.join(name), body).expect("write package file");
+            }
+            Self { root }
+        }
+
+        fn cwd(&self) -> dorc_core::loadpath::Cwd {
+            dorc_core::loadpath::Cwd::at(self.root.to_string_lossy().into_owned())
+        }
+    }
+
+    impl Drop for Package {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.root);
+        }
+    }
+
+    fn names(paths: &[String]) -> BTreeSet<String> {
+        paths
+            .iter()
+            .filter_map(|path| path.rsplit('/').next().map(str::to_owned))
+            .collect()
+    }
+
+    /// THE ACQUISITION, end to end (`30I:force-root-value-flow` · `30I:force-guarded-fallback`):
+    /// a book sets an ordinary root, sources one entrypoint through it, and the entrypoint's
+    /// include guard names a dependency through that same root — which nothing could have resolved
+    /// before the book ran.
+    ///
+    /// What makes this the pin rather than a convenience: the files are found by DRIVING THE REAL
+    /// LOADER and reading what it says it still wants, so the engine that decides a package's
+    /// dependencies is the engine that reads them. A second resolver at this edge would answer
+    /// this case and then drift (`30I:rul-one-loader-many-projections`).
+    #[test]
+    fn a_books_root_reaches_a_guarded_dependency_through_the_loader() {
+        let package = Package::new(
+            "rooted",
+            &[
+                (
+                    "entry.dorc.sh",
+                    format!(
+                        "{MARKER}if command -v sm_q >/dev/null 2>&1; then\n   :\nelse\n   . \"$OPS_LIB/common.dorc.sh\"\nfi\n\nstep() {{ sm_q \"$1\" ;}}\n"
+                    ),
+                ),
+                (
+                    "common.dorc.sh",
+                    format!("{MARKER}sm_q() {{ common \"$@\" ;}}\n"),
+                ),
+                (
+                    "stranger.dorc.sh",
+                    format!("{MARKER}elsewhere() {{ :; }}\n"),
+                ),
+            ],
+        );
+        let book = "OPS_LIB=.\n. \"$OPS_LIB/entry.dorc.sh\"\nstep first\n";
+        let (paths, srcs, reached) =
+            super::read_book_sourced(&package.cwd(), "book.sh", book, Vec::new(), Vec::new());
+
+        assert_eq!(
+            names(&paths),
+            ["common.dorc.sh".to_owned(), "entry.dorc.sh".to_owned()].into(),
+            "the entrypoint AND the dependency its guard names; the co-resident stranger is \
+             nobody's dependency and is never opened"
+        );
+        assert_eq!(
+            reached,
+            (0..paths.len()).collect::<BTreeSet<usize>>(),
+            "everything a book `.` reached loads AT that line, never before line 1"
+        );
+        assert_eq!(srcs.len(), paths.len());
+    }
+
+    /// A book sourcing ordinary shell opens nothing: the target signs no dorc-lang contract, so it
+    /// stays outside the load model and its site walls exactly as it always has (`30I` §7.2). This
+    /// is what keeps a book's non-dorc-lang material where its author put it — including the
+    /// top-level `return` and failing-command shapes a dumb inliner would miscompile.
+    #[test]
+    fn an_unmarked_target_is_never_opened_into_the_model() {
+        let package = Package::new(
+            "unmarked",
+            &[("child.sh", "SM_LOADED=1\nsm_q() { :; }\nfalse\n".to_owned())],
+        );
+        let (paths, _, reached) = super::read_book_sourced(
+            &package.cwd(),
+            "book.sh",
+            ". ./child.sh\n",
+            Vec::new(),
+            Vec::new(),
+        );
+        assert!(paths.is_empty() && reached.is_empty());
+    }
+
+    /// An invocation-named oracle stays AMBIENT even though the acquisition runs over it: only
+    /// what the loop APPENDS is book-reached. Ambience decides whether a definition can license
+    /// sites above its own load point (`visibility-is-full-positional`), so the boundary is the
+    /// safety-relevant half of the answer.
+    #[test]
+    fn an_invocation_named_oracle_stays_ambient() {
+        let package = Package::new(
+            "ambient",
+            &[("pkg.oracle.sh", format!("{MARKER}sm_q() {{ :; }}\n"))],
+        );
+        let named = package.root.join("pkg.oracle.sh").display().to_string();
+        let (paths, _, reached) = super::read_book_sourced(
+            &package.cwd(),
+            "book.sh",
+            "sm_q\n",
+            vec![named],
+            vec![format!("{MARKER}sm_q() {{ :; }}\n")],
+        );
+        assert_eq!(paths.len(), 1);
+        assert!(reached.is_empty(), "named on the command line ⇒ ambient");
     }
 }
 

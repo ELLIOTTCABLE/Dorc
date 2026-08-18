@@ -83,22 +83,43 @@ pub fn satisfies_the_contract(src: &str) -> bool {
     dorc_oracle::marker::has_marker(src) && dorc_oracle::load_inert::lint_load_inert(src).is_empty()
 }
 
-/// Every statically spelled top-level `.` target in `src`, in source order.
+/// Every LITERALLY spelled `.` target in `src`, top level and include-guard branches alike, in
+/// source order.
 ///
 /// The binary calls this to learn what to READ; [`include_tree`] calls it to learn what to LINK.
 /// One reader, so the file the driver opened and the file the tree links are the same file by
 /// construction.
+///
+/// Guard branches are walked because that is where the healthy shared-dependency shape puts its
+/// load (`30I` §2.2) — a dependency the engine refused to READ because it sat behind a guard would
+/// leave every guarded package suspended.
+///
+/// **LITERAL only, and the cut is disclosed** (`churn-avoidance-disclosure`): an operand built from
+/// a variable the CALLER set has no value here — this seat holds no loading context — so it is
+/// skipped, and a sourcer whose dependency is spelled that way SUSPENDS rather than composing.
+/// That is the withholding direction. The binary's acquisition loop reads such a file anyway,
+/// because it drives the real loader; what is owed is CUSTODY for a variable-rooted dependency,
+/// which needs the load site's own environment and is `30Ib` §5's first open question.
 #[must_use]
 pub fn top_level_load_targets(src: &str) -> Vec<String> {
+    fn walk(ast: &dorc_syntax::ast::Ast, items: &[dorc_core::AstId], out: &mut Vec<String>) {
+        for &item in items {
+            if let Some(word) = dorc_oracle::load_inert::item_is_static_load(ast, item) {
+                out.extend(literal_text(ast, word));
+            } else if let Some(guard) = dorc_oracle::load_inert::include_guard(ast, item) {
+                walk(ast, &guard.then_, out);
+                walk(ast, &guard.else_, out);
+            }
+        }
+    }
+
     let ast = dorc_syntax::parse(src).value;
     let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
         return Vec::new();
     };
-    items
-        .iter()
-        .filter_map(|&item| dorc_oracle::load_inert::item_is_static_load(&ast, item))
-        .filter_map(|word| literal_text(&ast, word))
-        .collect()
+    let mut out = Vec::new();
+    walk(&ast, items, &mut out);
+    out
 }
 
 /// Which loaded source a `.` target names, or `None` when nothing admissible answers.

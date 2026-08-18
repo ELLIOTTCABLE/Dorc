@@ -94,6 +94,23 @@ impl<'a> SourceLiteralPlane<'a> {
             .map(|sym| self.interner.resolve(sym))
     }
 
+    /// The source-literal value of shell variable `name` immediately before `node`, or `None` when
+    /// the plane cannot say.
+    ///
+    /// THE seat the static loader expands a sourced file's own `.` operand through
+    /// (`30I:force-root-value-flow`): `SM_ORACLE_ROOT` is assigned in the book and read inside the
+    /// package, so the operand has no CFG node of its own and the argv accessors above cannot
+    /// reach it. Same window, same trust gate, same wall — see
+    /// [`ValueFlow::variable_before`](crate::value::ValueFlow::variable_before) for the grade
+    /// obligation this inherits when captured values land.
+    #[must_use]
+    pub fn variable_text(&self, node: CfgNodeId, name: &str) -> Option<String> {
+        match self.value.variable_before(node, name) {
+            Flat::Elem(text) => Some(text),
+            Flat::Top | Flat::Bottom => None,
+        }
+    }
+
     /// How many argv words `node` carries. Read by the fold's arity checks, which must
     /// distinguish "no fourth word" from "a fourth word this plane cannot resolve" — the latter
     /// is a different command and decides nothing.
@@ -145,9 +162,11 @@ pub struct DefinitionTable {
     /// the load answer and the definitions it binds must be one fact: a caller that could supply a
     /// different cwd to the resolver than to the loader is a caller that can make them disagree.
     cwd: dorc_core::loadpath::Cwd,
-    /// Per loadable path — in CANONICAL form, keyed through [`Self::cwd`] — the definitions that
-    /// file contributes IN FILE ORDER (so applying them left-to-right reproduces sh's last-wins).
-    by_path: BTreeMap<String, Vec<DefId>>,
+    /// Per loadable path — in CANONICAL form, keyed through [`Self::cwd`] — that file's own top
+    /// level, as the closed program the loader interprets at each load site
+    /// (`crate::load::LoadProgram`). A file whose top level is a flat list of declarations is the
+    /// degenerate case, and applying it left-to-right reproduces sh's last-wins exactly as before.
+    by_path: BTreeMap<String, crate::load::LoadProgram>,
     /// The ambient prefix: the CLI-named sources' definitions, in command-line then file order
     /// (`28K` §2 — they load "before line 1").
     ambient: Vec<DefId>,
@@ -180,12 +199,12 @@ impl DefinitionTable {
         id
     }
 
-    /// Declare that `path`, when sourced, contributes `defs` in that order. `path` is the spelling
-    /// the invocation used; it is filed under its canonical form, so the same file named
-    /// relatively here and sourced absolutely from a book is ONE entry.
-    pub fn set_loadable(&mut self, path: &str, defs: Vec<DefId>) {
+    /// Declare that `path`, when sourced, runs `program`. `path` is the spelling the invocation
+    /// used; it is filed under its canonical form, so the same file named relatively here and
+    /// sourced absolutely from a book is ONE entry.
+    pub fn set_loadable(&mut self, path: &str, program: crate::load::LoadProgram) {
         if let Some(key) = self.cwd.resolve_operand(path) {
-            self.by_path.insert(key, defs);
+            self.by_path.insert(key, program);
         }
     }
 
@@ -250,18 +269,19 @@ impl DefinitionTable {
     /// What a `.` operand binds: the operand resolved by sh's own rule, then looked up canonically
     /// (`30I:rul-dot-resolves-as-sh`). `None` for a slash-less operand (a `PATH` search), an
     /// unknown cwd, or a path the controller never loaded.
-    fn definitions_of_dot_target(&self, target: &str) -> Option<&[DefId]> {
-        self.by_path
-            .get(&self.cwd.resolve_dot(target)?)
-            .map(Vec::as_slice)
+    fn program_of_dot_target(&self, target: &str) -> Option<&crate::load::LoadProgram> {
+        self.by_path.get(&self.cwd.resolve_dot(target)?)
+    }
+
+    /// The program a canonical key names, for a nested load already resolved to one.
+    fn program_at_key(&self, key: &str) -> Option<&crate::load::LoadProgram> {
+        self.by_path.get(key)
     }
 
     /// What a path OPERAND names — the `[ -f <path> ]` half of the decidable set, where the word
     /// is a filesystem operand rather than a `.` target and so carries no slash-less refusal.
-    fn definitions_of_path_operand(&self, path: &str) -> Option<&[DefId]> {
-        self.by_path
-            .get(&self.cwd.resolve_operand(path)?)
-            .map(Vec::as_slice)
+    fn program_of_path_operand(&self, path: &str) -> Option<&crate::load::LoadProgram> {
+        self.by_path.get(&self.cwd.resolve_operand(path)?)
     }
 
     /// The canonical key a `.` operand names, whether or not anything is loaded there — what a
@@ -461,6 +481,14 @@ pub struct FuncEnv {
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
     sourced_paths: BTreeMap<CfgNodeId, String>,
+    /// Canonical paths a load NAMED that the loaded set does not hold — the loader's own account
+    /// of what it still wants.
+    ///
+    /// The binary's acquisition loop reads exactly these and re-solves, which is what makes the
+    /// engine that decides a package's dependencies the same engine that reads them: there is no
+    /// second resolver at the edge to drift from this one (`30I:rul-one-loader-many-projections`).
+    /// Empty is the settled state.
+    wanted_loads: BTreeSet<String>,
     /// The edges the decidable-condition fold proved dead (`28M` §9). Kept as data so a pin can
     /// assert WHICH condition folded rather than only its downstream effect on a binding — an
     /// empty set is the honest statement that nothing was decidable, and the corpus cell that
@@ -508,6 +536,12 @@ impl FuncEnv {
     #[must_use]
     pub fn unresolvable_loads(&self) -> &BTreeSet<CfgNodeId> {
         &self.unresolvable_loads
+    }
+
+    /// Canonical paths a load named that the loaded set does not hold, in deterministic order.
+    #[must_use]
+    pub fn wanted_loads(&self) -> &BTreeSet<String> {
+        &self.wanted_loads
     }
 
     /// The control-flow edges the decidable-condition fold proved dead (`28M` §9), in
@@ -685,7 +719,8 @@ pub fn analyze(
     }
     // Its own pass: independent of the environment, so threading it would buy only interior
     // mutability in a kernel.
-    let (unresolvable_loads, sourced_paths) = load_sites(cfg, defs, literals);
+    let sites = load_sites(cfg, defs, literals);
+    let (unresolvable_loads, sourced_paths) = (sites.unresolvable, sites.resolved);
     let solve_pruned = |folded: &BTreeSet<(CfgNodeId, CfgNodeId)>| {
         let graph = PrunedCfg::new(cfg, folded);
         solve_certified(&graph, Direction::Forward, |node, incoming: &EnvStack| {
@@ -696,13 +731,17 @@ pub fn analyze(
     match fold_to_environment(solve_pruned, |states| {
         dead_edges(ast, cfg, defs, literals, states, true)
     }) {
-        Ok((states, folded_edges)) => FuncEnv {
-            states,
-            floor: None,
-            unresolvable_loads,
-            sourced_paths,
-            folded_edges,
-        },
+        Ok((states, folded_edges)) => {
+            let wanted_loads = wanted_after(defs, literals, &states, &sourced_paths, &sites.named);
+            FuncEnv {
+                states,
+                floor: None,
+                unresolvable_loads,
+                sourced_paths,
+                folded_edges,
+                wanted_loads,
+            }
+        }
         Err(consistency) => funcenv_floor(cfg, EnvFloor::SolverInconsistent(consistency)),
     }
 }
@@ -764,6 +803,7 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         unresolvable_loads: BTreeSet::new(),
         sourced_paths: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
+        wanted_loads: BTreeSet::new(),
     }
 }
 
@@ -940,7 +980,7 @@ fn file_test(
         return None;
     }
     let path = literals.literal_text(node, 2)?;
-    defs.definitions_of_path_operand(path)
+    defs.program_of_path_operand(path)
         .map(|_| DecidableTest::LoadableExists)
 }
 
@@ -1166,7 +1206,7 @@ pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> 
             CfgNodeKind::Command => {
                 // Walking the RUNNING environment (not the entry state) is what makes two
                 // same-name definitions in one sourced file read as a within-file redefinition.
-                for &def in sourced_definitions(defs, env, id) {
+                for def in sourced_definitions(defs, env, id) {
                     let Some(d) = defs.get(def) else { continue };
                     if proven(&d.name) {
                         contest_at(&mut out, defs, &incoming, &d.name, def);
@@ -1180,18 +1220,225 @@ pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> 
     out
 }
 
+/// How deep a chain of nested loads the domain follows before answering ⊤.
+///
+/// A real package tree is a handful of levels; the cap is a backstop of [`solve`](crate::solve)'s
+/// own flavour, and running out LOSES PRECISION rather than misbinding — an over-deep chain reads
+/// ⊤, which withholds. A load already on the stack is refused by the same rule, which is what
+/// makes a source CYCLE terminate; a DIAMOND (two entrypoints reaching one dependency) is not a
+/// cycle and is followed both times, as `floor30-diamond-source-binds-once` measures a shell doing.
+const LOAD_DEPTH_CAP: usize = 16;
+
+/// Interpret one loadable file's top level against the environment at the load site
+/// (`30I:rul-static-loading-is-the-whole-model`).
+///
+/// # The guard is decided in ONE direction and joined in the other
+///
+/// `command -v <name>` is not a question about this unit alone: a shell answers it from functions,
+/// then builtins, then `PATH`. So the two directions are not symmetric, and the asymmetry is the
+/// whole safety argument.
+///
+/// A frame that names a LIVE definition decides the guard TRUE unconditionally, because a live
+/// function shadows every builtin and every binary — nothing on the host can make that query fail.
+///
+/// A frame that proves the name UNDEFINED decides FALSE only where `dec-decidable-set-v0`'s
+/// existing warrant reaches: a ROLE-shaped name, which nobody ships a binary called
+/// (`28M:rul-command-v-reads-fn-definedness`). For any other name a host binary could still answer
+/// the query, so deciding FALSE would model a fallback as loaded on a host that took the other
+/// branch — the engine then attributing calls to a body no execution ran, which is the
+/// mis-attributed class (`271:rul-sin-ordering`). Undecided, both branches JOIN, which is
+/// can't-say and withholds.
+///
+/// FLAGGED, not settled (`inv-superposition`): `30I:rul-include-guards-are-load-semantics` is
+/// typed and reads as wanting the FALSE direction for ordinary helper names too. Whether the
+/// existing role-shaped fence may be widened there is a licensure question with an owner above
+/// this component; `30Ib` §4 carries it as an open deviation.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one recursive interpreter over a closed step vocabulary; every parameter is a distinct piece of the loading context, and bundling them would hide the depth and cycle guards this walk's termination rests on"
+)]
+fn run_program(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    program: &crate::load::LoadProgram,
+    incoming: &EnvStack,
+    locals: &mut BTreeMap<String, String>,
+    visiting: &mut BTreeSet<String>,
+    wanted: &mut BTreeSet<String>,
+    depth: usize,
+) -> EnvStack {
+    run_steps(
+        defs,
+        literals,
+        node,
+        program.steps(),
+        incoming,
+        locals,
+        visiting,
+        wanted,
+        depth,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "see run_program: the loading context travels whole so the depth and cycle guards stay visible at every recursion"
+)]
+fn run_steps(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    steps: &[crate::load::LoadStep],
+    incoming: &EnvStack,
+    locals: &mut BTreeMap<String, String>,
+    visiting: &mut BTreeSet<String>,
+    wanted: &mut BTreeSet<String>,
+    depth: usize,
+) -> EnvStack {
+    use crate::load::LoadStep;
+
+    let ambient = |name: &str| literals.variable_text(node, name);
+    let mut env = incoming.clone();
+    for step in steps {
+        match step {
+            LoadStep::Define(def) => {
+                if let Some(d) = defs.get(*def) {
+                    env.bind(&d.name, Flat::Elem(Binding::Defined(*def)));
+                }
+            }
+            LoadStep::Assign { name, value } => match value.expand(locals, &ambient) {
+                Some(text) => drop(locals.insert(name.clone(), text)),
+                // An unreadable constant does not poison the environment — it only makes any
+                // operand built from it unresolvable, which the load step below answers as ⊤.
+                None => drop(locals.remove(name)),
+            },
+            LoadStep::UnsetFunctions(names) => {
+                for name in names {
+                    env.bind(name, Flat::Elem(Binding::Undefined));
+                }
+            }
+            LoadStep::Load(target) => {
+                let Some(next) = target
+                    .expand(locals, &ambient)
+                    .and_then(|text| defs.cwd.resolve_dot(&text))
+                else {
+                    return EnvStack::Top;
+                };
+                let Some(program) = defs.program_at_key(&next) else {
+                    wanted.insert(next);
+                    return EnvStack::Top;
+                };
+                if depth == 0 || !visiting.insert(next.clone()) {
+                    return EnvStack::Top;
+                }
+                env = run_program(
+                    defs,
+                    literals,
+                    node,
+                    program,
+                    &env,
+                    &mut locals.clone(),
+                    visiting,
+                    wanted,
+                    depth.saturating_sub(1),
+                );
+                visiting.remove(&next);
+            }
+            LoadStep::Guard {
+                function,
+                negated,
+                then_,
+                else_,
+            } => {
+                let holds = match env.lookup(function) {
+                    Flat::Elem(Binding::Defined(_)) => Some(true),
+                    Flat::Elem(Binding::Undefined)
+                        if dorc_oracle::reserved::role_family(function).is_some() =>
+                    {
+                        Some(false)
+                    }
+                    Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => None,
+                };
+                let branch = |steps: &[LoadStep],
+                              visiting: &mut BTreeSet<String>,
+                              wanted: &mut BTreeSet<String>| {
+                    run_steps(
+                        defs,
+                        literals,
+                        node,
+                        steps,
+                        &env,
+                        &mut locals.clone(),
+                        visiting,
+                        wanted,
+                        depth,
+                    )
+                };
+                env = match holds.map(|held| held != *negated) {
+                    Some(true) => branch(then_, visiting, wanted),
+                    Some(false) => branch(else_, visiting, wanted),
+                    // Undecided walks BOTH, so the acquisition sees every file the guard could
+                    // reach: reading one the run does not bind is harmless, missing one it does
+                    // bind is not.
+                    None => branch(then_, visiting, wanted).join(&branch(else_, visiting, wanted)),
+                };
+            }
+        }
+    }
+    env
+}
+
+/// Every canonical path the settled environment's loads NAMED that the table does not hold — the
+/// loader's own account of what it still wants (`30I:rul-one-loader-many-projections`).
+///
+/// A post-pass rather than an accumulation inside the transfer, for [`load_sites`]' reason: the
+/// transfer is asked once per worklist iteration and an intermediate round's account would carry
+/// paths the settled answer never names. Run against the SETTLED states, this asks the same
+/// interpreter the same question one final time.
+///
+/// Its consumer is the binary's acquisition loop, which reads what this names and re-solves until
+/// nothing new appears. That is what makes the engine deciding a package's dependencies the same
+/// engine reading them: no second resolver exists at the edge to drift from this one.
+fn wanted_after(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    states: &[EnvStack],
+    sourced_paths: &BTreeMap<CfgNodeId, String>,
+    unresolved_targets: &BTreeMap<CfgNodeId, String>,
+) -> BTreeSet<String> {
+    let mut wanted: BTreeSet<String> = unresolved_targets.values().cloned().collect();
+    for (&node, key) in sourced_paths {
+        let Some(program) = defs.program_at_key(key) else {
+            continue;
+        };
+        let Some(incoming) = states.get(node.index()) else {
+            continue;
+        };
+        let mut visiting = BTreeSet::from([key.clone()]);
+        drop(run_program(
+            defs,
+            literals,
+            node,
+            program,
+            incoming,
+            &mut BTreeMap::new(),
+            &mut visiting,
+            &mut wanted,
+            LOAD_DEPTH_CAP,
+        ));
+    }
+    wanted
+}
+
 /// The definitions a `.`/`source` command at `node` contributes, or empty for any other command.
 /// An unresolvable target contributes nothing HERE (it havocs the environment instead, so every
 /// name reads ⊤ afterwards and nothing downstream is provable).
-fn sourced_definitions<'a>(
-    defs: &'a DefinitionTable,
-    env: &FuncEnv,
-    node: CfgNodeId,
-) -> &'a [DefId] {
+fn sourced_definitions(defs: &DefinitionTable, env: &FuncEnv, node: CfgNodeId) -> Vec<DefId> {
     env.sourced_paths
         .get(&node)
-        .and_then(|key| defs.by_path.get(key).map(Vec::as_slice))
-        .unwrap_or(&[])
+        .and_then(|key| defs.by_path.get(key))
+        .map_or_else(Vec::new, crate::load::LoadProgram::declarations)
 }
 
 /// Record a contest iff the innermost frame provably held a DIFFERENT unit's definition.
@@ -1235,13 +1482,10 @@ fn record(
 /// weaker than source-literal provenance — havocs the environment (`28K` §1
 /// rul-unloadable-is-unlicensed); the caller discloses them, since silence licenses nothing. The
 /// resolvable half is kept so the shadow pass can replay each statement's bindings.
-fn load_sites(
-    cfg: &Cfg,
-    defs: &DefinitionTable,
-    literals: &SourceLiteralPlane<'_>,
-) -> (BTreeSet<CfgNodeId>, BTreeMap<CfgNodeId, String>) {
+fn load_sites(cfg: &Cfg, defs: &DefinitionTable, literals: &SourceLiteralPlane<'_>) -> LoadSites {
     let mut unresolvable = BTreeSet::new();
     let mut resolved = BTreeMap::new();
+    let mut named = BTreeMap::new();
     for node in 0..cfg.node_count() {
         let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
         if cfg.node(id).kind != CfgNodeKind::Command {
@@ -1250,16 +1494,39 @@ fn load_sites(
         if !matches!(literals.literal_text(id, 0), Some("." | "source")) {
             continue;
         }
-        match literals
-            .literal_text(id, 1)
-            .filter(|target| defs.definitions_of_dot_target(target).is_some())
-            .and_then(|target| defs.dot_target_key(target))
-        {
-            Some(key) => drop(resolved.insert(id, key)),
-            None => drop(unresolvable.insert(id)),
+        let Some(target) = literals.literal_text(id, 1) else {
+            unresolvable.insert(id);
+            continue;
+        };
+        // A target the operand NAMES but the controller never read is still a name: the
+        // acquisition reads exactly these and re-solves, which is how a book-sourced package
+        // joins the loaded set at all.
+        let Some(key) = defs.dot_target_key(target) else {
+            unresolvable.insert(id);
+            continue;
+        };
+        if defs.program_at_key(&key).is_some() {
+            resolved.insert(id, key);
+        } else {
+            named.insert(id, key);
+            unresolvable.insert(id);
         }
     }
-    (unresolvable, resolved)
+    LoadSites {
+        unresolvable,
+        resolved,
+        named,
+    }
+}
+
+/// What one pass over the `.`/`source` sites found.
+struct LoadSites {
+    /// Sites whose load the environment could not follow — they havoc.
+    unresolvable: BTreeSet<CfgNodeId>,
+    /// Sites whose target the loaded set holds, by canonical key.
+    resolved: BTreeMap<CfgNodeId, String>,
+    /// Sites whose target the operand NAMED but the loaded set does not hold.
+    named: BTreeMap<CfgNodeId, String>,
 }
 
 /// The per-node transfer.
@@ -1345,16 +1612,26 @@ fn command_transfer(
                 return EnvStack::Top;
             };
             // `28K` §1: we cannot know WHICH names an unloaded file defines, so all of it is ⊤.
-            let Some(contributed) = defs.definitions_of_dot_target(target) else {
+            let Some(program) = defs.program_of_dot_target(target) else {
                 return EnvStack::Top;
             };
-            let mut env = incoming.clone();
-            for &def in contributed {
-                if let Some(d) = defs.get(def) {
-                    env.bind(&d.name, Flat::Elem(Binding::Defined(def)));
-                }
+            let mut visiting = BTreeSet::new();
+            if let Some(key) = defs.cwd.resolve_dot(target) {
+                visiting.insert(key);
             }
-            env
+            run_program(
+                defs,
+                literals,
+                node,
+                program,
+                incoming,
+                &mut BTreeMap::new(),
+                &mut visiting,
+                // The transfer discards the account: it is asked once per worklist iteration, and
+                // the settled answer is what a caller may act on ([`wanted_after`]).
+                &mut BTreeSet::new(),
+                LOAD_DEPTH_CAP,
+            )
         }
         "unset" => {
             // Only `unset -f NAME…` touches functions; `unset NAME` is a variable.
@@ -1384,6 +1661,15 @@ mod tests {
     use dorc_core::{BytePos, Interner, SourceFileId, Span};
     use dorc_syntax::ast::NodeKind;
     use std::collections::{BTreeMap, BTreeSet};
+
+    /// The degenerate load program: a file whose top level is a flat list of declarations.
+    fn flat(defs: Vec<DefId>) -> crate::load::LoadProgram {
+        crate::load::LoadProgram::of(
+            defs.into_iter()
+                .map(crate::load::LoadStep::Define)
+                .collect(),
+        )
+    }
 
     fn add_def(table: &mut DefinitionTable, file: u32, name: &str) -> DefId {
         table.add(Definition {
@@ -1505,6 +1791,7 @@ mod tests {
             unresolvable_loads: BTreeSet::new(),
             sourced_paths: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
+            wanted_loads: BTreeSet::new(),
         };
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);
@@ -1783,7 +2070,7 @@ mod tests {
             .iter()
             .map(|name| add_def(&mut table, 0, name))
             .collect();
-        table.set_loadable("lib.sh", ids.clone());
+        table.set_loadable("lib.sh", flat(ids.clone()));
         table.extend_ambient(ids.iter().copied());
         let loaded = ids[0];
         for (id, node) in dorc_syntax::parse(book).value.iter() {
@@ -1941,7 +2228,7 @@ mod tests {
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("lib.sh", vec![inner]);
+        table.set_loadable("lib.sh", flat(vec![inner]));
         assert!(contests_of(book, &table).is_empty());
     }
 
@@ -1955,7 +2242,7 @@ mod tests {
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("lib.sh", vec![inner]);
+        table.set_loadable("lib.sh", flat(vec![inner]));
         let found = contests_of(book, &table);
         assert_eq!(found.len(), 1, "the same collision, unbounded: {found:?}");
         assert_eq!(found[0].prior, outer);
@@ -2104,7 +2391,7 @@ mod tests {
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("lib.sh", vec![inner]);
+        table.set_loadable("lib.sh", flat(vec![inner]));
         let (env, cfg, ast) = solve_positional(book, &table);
         let live = LiveDefinitions::new(&env, &table);
         let inside = command_at(&cfg, &ast, book, "yum install -y nginx");
@@ -2186,7 +2473,7 @@ mod tests {
         let outer = add_def_spanned(&mut table, 0, ROLE, 10);
         table.extend_ambient([outer]);
         let inner = add_def_spanned(&mut table, 1, ROLE, 20);
-        table.set_loadable("lib.sh", vec![inner]);
+        table.set_loadable("lib.sh", flat(vec![inner]));
         let (env, cfg, ast) = solve_positional(book, &table);
         let live = LiveDefinitions::new(&env, &table);
         let inside = command_at(&cfg, &ast, book, "yum install -y nginx");
@@ -2317,7 +2604,7 @@ mod tests {
     fn sourceable(book: &str) -> (DefinitionTable, DefId) {
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("lib.sh", vec![lib]);
+        table.set_loadable("lib.sh", flat(vec![lib]));
         for (id, node) in dorc_syntax::parse(book).value.iter() {
             if let NodeKind::FuncDef { name, .. } = &node.kind {
                 let def = add_def(&mut table, 1, name);
@@ -2513,7 +2800,7 @@ mod tests {
         for book in spellings {
             let mut table = DefinitionTable::default();
             let lib = add_def(&mut table, 0, ROLE);
-            table.set_loadable("./oracles/lib.sh", vec![lib]);
+            table.set_loadable("./oracles/lib.sh", flat(vec![lib]));
             let (env, cfg, ast) = solve_positional(book, &table);
             assert_eq!(
                 env.binding_before(cfg.exit(), ROLE),
@@ -2542,7 +2829,7 @@ mod tests {
         let book = ". \"$LIB/lib.sh\"\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("./oracles/lib.sh", vec![lib]);
+        table.set_loadable("./oracles/lib.sh", flat(vec![lib]));
         let (env, cfg, ast) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
         assert!(
@@ -2574,7 +2861,7 @@ mod tests {
         ] {
             let mut table = DefinitionTable::rooted_at(dorc_core::loadpath::Cwd::at(cwd));
             let lib = add_def(&mut table, 0, ROLE);
-            table.set_loadable(loaded, vec![lib]);
+            table.set_loadable(loaded, flat(vec![lib]));
             let (env, cfg, _) = solve_positional(book, &table);
             let want = if bound {
                 Flat::Elem(Binding::Defined(lib))
@@ -2599,7 +2886,7 @@ mod tests {
         let book = ". lib.sh\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("lib.sh", vec![lib]);
+        table.set_loadable("lib.sh", flat(vec![lib]));
         let (env, cfg, ast) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
         assert_eq!(
@@ -2618,7 +2905,7 @@ mod tests {
         let book = "LIB=/etc/hork\n. \"$LIB/env\"\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("./oracles/lib.sh", vec![lib]);
+        table.set_loadable("./oracles/lib.sh", flat(vec![lib]));
         let (env, cfg, ast) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
         assert_eq!(
@@ -2638,7 +2925,7 @@ mod tests {
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("./lib.sh", vec![inner]);
+        table.set_loadable("./lib.sh", flat(vec![inner]));
         let found = contests_of(book, &table);
         assert_eq!(found.len(), 1, "{found:?}");
         assert_eq!((found[0].prior, found[0].shadowing), (outer, inner));
@@ -2655,7 +2942,7 @@ mod tests {
         let book = "LIB=.\n[ -f \"$LIB/lib.sh\" ] && yum__is_converged() { :; }\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("./lib.sh", vec![lib]);
+        table.set_loadable("./lib.sh", flat(vec![lib]));
         for (id, node) in dorc_syntax::parse(book).value.iter() {
             if let NodeKind::FuncDef { name, .. } = &node.kind {
                 let def = add_def(&mut table, 1, name);
@@ -2691,5 +2978,261 @@ mod tests {
         // what lets a seat compare the two without a join.
         assert_eq!(super::row_definition(1, named.span()), named);
         assert_ne!(super::row_definition(0, named.span()), named);
+    }
+
+    // ── TABLE 6: the healthy library — a package's own top level as a load PROGRAM (`30I` §3) ──
+
+    fn guard_loading(function: &str, target: &str) -> crate::load::LoadProgram {
+        crate::load::LoadProgram::of(vec![crate::load::LoadStep::Guard {
+            function: function.to_owned(),
+            negated: false,
+            then_: Vec::new(),
+            else_: vec![crate::load::LoadStep::Load(
+                crate::load::LoadTarget::literal(target),
+            )],
+        }])
+    }
+
+    /// The canonical shared-dependency package: an entrypoint whose include guard loads a
+    /// dependency through the ROOT ITS CALLER SET (`30I:force-root-value-flow` ·
+    /// `30I:force-guarded-fallback`).
+    ///
+    /// Two things are pinned together because they only mean something together. The operand
+    /// `"$OPS_LIB/common.sh"` lives inside the PACKAGE and its root lives in the BOOK, so nothing
+    /// could have resolved it when the package was read; and the guard is what decides the
+    /// dependency loads at all. The engine recognizes neither the variable's name nor the
+    /// function's — any ordinary variable and any role-shaped name do this.
+    #[test]
+    fn a_books_root_reaches_a_packages_guarded_dependency() {
+        let book = "OPS_LIB=./oracles\n. ./oracles/entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./oracles/common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./oracles/entry.sh",
+            crate::load::LoadProgram::of(vec![crate::load::LoadStep::Guard {
+                function: ROLE.to_owned(),
+                negated: false,
+                then_: Vec::new(),
+                else_: vec![crate::load::LoadStep::Load(crate::load::LoadTarget::of(
+                    vec![
+                        crate::load::TargetPart::Param("OPS_LIB".to_owned()),
+                        crate::load::TargetPart::Literal("/common.sh".to_owned()),
+                    ],
+                ))],
+            }]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(dependency)),
+            "the guard answers absent, so the dependency loads — through the caller's root"
+        );
+        assert!(
+            env.unresolvable_loads().is_empty(),
+            "and nothing was left unresolvable along the way"
+        );
+    }
+
+    /// A root the book never set leaves the package's operand unreadable, so the load is
+    /// UNRESOLVABLE and everything that file could have bound reads ⊤ — never a guessed file
+    /// (`30I` §3.2). The safe direction, and the one that keeps the richness honest.
+    #[test]
+    fn a_package_whose_root_is_unset_resolves_nowhere() {
+        let book = ". ./oracles/entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./oracles/common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./oracles/entry.sh",
+            crate::load::LoadProgram::of(vec![crate::load::LoadStep::Load(
+                crate::load::LoadTarget::of(vec![
+                    crate::load::TargetPart::Param("OPS_LIB".to_owned()),
+                    crate::load::TargetPart::Literal("/common.sh".to_owned()),
+                ]),
+            )]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
+        assert!(super::unprovable(&table, &env, cfg.exit()).contains(ROLE));
+    }
+
+    /// THE GUARD'S TWO DIRECTIONS, which are not symmetric (see [`super::run_program`]).
+    ///
+    /// A frame that proves the name undefined decides the guard FALSE only where
+    /// `dec-decidable-set-v0`'s role-shaped warrant reaches; the same guard over an ORDINARY
+    /// helper name joins both branches instead, because a host binary could still answer the
+    /// query and deciding would model a fallback as loaded on a host that took the other branch.
+    #[test]
+    fn only_a_role_shaped_name_decides_the_absent_direction() {
+        let book = ". ./entry.sh\nyum install -y nginx\n";
+
+        let mut table = DefinitionTable::default();
+        let fallback = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./fallback.sh", flat(vec![fallback]));
+        table.set_loadable("./entry.sh", guard_loading(ROLE, "./fallback.sh"));
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(fallback)),
+            "nobody ships a binary called `yum__is_converged`, so absent really is absent"
+        );
+
+        let helper = "_common_query";
+        let mut table = DefinitionTable::default();
+        let fallback = add_def(&mut table, 1, helper);
+        table.set_loadable("./fallback.sh", flat(vec![fallback]));
+        table.set_loadable("./entry.sh", guard_loading(helper, "./fallback.sh"));
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), helper),
+            Flat::Top,
+            "an ordinary name could be answered by a host binary, so neither branch is decided"
+        );
+    }
+
+    /// The other direction, and the one that is sound unconditionally: a definition the frame
+    /// names LIVE shadows every builtin and binary, so the query cannot fail and the guarded
+    /// dependency does not load.
+    #[test]
+    fn a_live_definition_decides_the_guard_true() {
+        let book = ". ./base.sh\n. ./entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let live = add_def(&mut table, 1, ROLE);
+        let fallback = add_def(&mut table, 2, ROLE);
+        table.set_loadable("./base.sh", flat(vec![live]));
+        table.set_loadable("./fallback.sh", flat(vec![fallback]));
+        table.set_loadable("./entry.sh", guard_loading(ROLE, "./fallback.sh"));
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(live)),
+            "the live body survives; the fallback was never loaded over it"
+        );
+    }
+
+    /// THE DIAMOND: two entrypoints sharing one guarded dependency. The first load brings it in,
+    /// the second finds it live and does not re-load — one definition, reached through two
+    /// independent entrypoints, which is what `floor30-diamond-source-binds-once` measures a shell
+    /// doing.
+    #[test]
+    fn two_entrypoints_share_one_guarded_dependency() {
+        let book = ". ./alpha.sh\n. ./beta.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let shared = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./common.sh", flat(vec![shared]));
+        table.set_loadable("./alpha.sh", guard_loading(ROLE, "./common.sh"));
+        table.set_loadable("./beta.sh", guard_loading(ROLE, "./common.sh"));
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(shared))
+        );
+    }
+
+    /// ONE ENTRYPOINT AT TWO POSITIONS, under two frames
+    /// (`30I:rul-bundles-key-to-load-occurrences`).
+    ///
+    /// The same package text answers differently at the two load points because the ENVIRONMENT
+    /// differs: ambiently the guarded name is undefined so the fallback loads, while inside a
+    /// region that has already loaded a better body the guard holds and that body survives. The
+    /// region's binding dies at the closing parenthesis, so the ambient answer stands afterwards.
+    #[test]
+    fn one_entrypoint_answers_its_own_frame_at_each_position() {
+        let book = ". ./entry.sh\n( . ./better.sh\n. ./entry.sh )\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let fallback = add_def(&mut table, 1, ROLE);
+        let better = add_def(&mut table, 2, ROLE);
+        table.set_loadable("./fallback.sh", flat(vec![fallback]));
+        table.set_loadable("./better.sh", flat(vec![better]));
+        table.set_loadable("./entry.sh", guard_loading(ROLE, "./fallback.sh"));
+        let (env, cfg, ast) = solve_positional(book, &table);
+
+        let regional = command_at(&cfg, &ast, book, ". ./entry.sh");
+        assert_eq!(
+            env.binding_before(regional, ROLE),
+            Flat::Elem(Binding::Undefined),
+            "the FIRST position sees nothing live, which is what makes its guard load the fallback"
+        );
+        let after = command_at(&cfg, &ast, book, "yum install -y nginx");
+        assert_eq!(
+            env.binding_before(after, ROLE),
+            Flat::Elem(Binding::Defined(fallback)),
+            "and the region's better body died at the parenthesis, so the ambient answer stands"
+        );
+    }
+
+    /// A source CYCLE terminates by answering ⊤ rather than by recursing: a file already on the
+    /// load stack is refused, the same rule and the same withholding direction as the depth cap.
+    #[test]
+    fn a_source_cycle_answers_top() {
+        let book = ". ./a.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let def = add_def(&mut table, 1, ROLE);
+        table.set_loadable(
+            "./a.sh",
+            crate::load::LoadProgram::of(vec![
+                crate::load::LoadStep::Define(def),
+                crate::load::LoadStep::Load(crate::load::LoadTarget::literal("./b.sh")),
+            ]),
+        );
+        table.set_loadable(
+            "./b.sh",
+            crate::load::LoadProgram::of(vec![crate::load::LoadStep::Load(
+                crate::load::LoadTarget::literal("./a.sh"),
+            )]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
+    }
+
+    /// `unset -f` inside a package removes a binding exactly as it does in a book — the removal
+    /// half of `30I:rul-oracle-loading-stays-load-safe`'s positive surface.
+    #[test]
+    fn a_package_may_remove_a_binding() {
+        let book = ". ./base.sh\n. ./strip.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let base = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./base.sh", flat(vec![base]));
+        table.set_loadable(
+            "./strip.sh",
+            crate::load::LoadProgram::of(vec![crate::load::LoadStep::UnsetFunctions(vec![
+                ROLE.to_owned(),
+            ])]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Undefined)
+        );
+    }
+
+    /// A package that sets its own constant reads its OWN value for a dependency it sites with it,
+    /// even when the caller set the same name — the value a shell would have live once the
+    /// assignment has run.
+    #[test]
+    fn a_package_constant_shadows_the_callers() {
+        let book = "OPS_LIB=./oracles\n. ./oracles/entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let vendored = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./vendored/common.sh", flat(vec![vendored]));
+        table.set_loadable(
+            "./oracles/entry.sh",
+            crate::load::LoadProgram::of(vec![
+                crate::load::LoadStep::Assign {
+                    name: "OPS_LIB".to_owned(),
+                    value: crate::load::LoadTarget::literal("./vendored"),
+                },
+                crate::load::LoadStep::Load(crate::load::LoadTarget::of(vec![
+                    crate::load::TargetPart::Param("OPS_LIB".to_owned()),
+                    crate::load::TargetPart::Literal("/common.sh".to_owned()),
+                ])),
+            ]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(vendored))
+        );
     }
 }
