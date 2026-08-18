@@ -286,3 +286,61 @@ beyond a footnote (do not pollute `30I` with them unless one becomes actively wr
 - `owed-e2e-subtree-support` — the e2e sandbox copy is `read_dir(case)`, top-level files
   only, no recursion. Arbitrarily-nested relative-directory cases need it. Low priority
   unless this arc's own new e2es force it.
+
+## §11 — PARKED: `command -v` as authored speech (known issues)
+
+Parked 2026-08-18 pending a deeper human-led dig with the usual rubber-duck model.
+Nothing is blocked; this is a value hole, not a build blocker. Resume from here.
+
+**The state.** `funcenv::run_control`'s `Guard` arm decides three ways: a live
+function in frame decides TRUE (host-independent); undefined AND role-shaped decides
+FALSE (`28M:dec-decidable-set-v0` — nobody ships a binary named
+`apt_get__is_converged`); anything else walks BOTH branches and joins the
+environments. So "model both and spread over the lattice" is already built.
+
+**Why the residue is honest, not a modeling gap.** The then-branch is `:`, so the
+engine carries `Undefined` into a world where the name is live. Path-sensitivity does
+not rescue it: in the then-world the name is live-of-unknown-body and MAY BE A BINARY
+on PATH, which is a different thing from the fallback's function. Joining those is
+genuinely ⊤. No join-machinery change can shrink this; only making the FALSE direction
+decidable can.
+
+**What the residue costs.** Licensing at ordinary-named guarded helpers — `30I` §2.2's
+canonical cross-author shared dependency is exactly this cell (`sm_common_query` is not
+role-shaped). `load30-rooted-shared-dependency` still greens, because both runtime paths
+reach Common and the run SET matches; what is lost is the vouch resting on that helper
+(the `vouched-composition-not-present` shape, `30Ib` §5 row 2). Everything fails toward
+run/withhold; nothing decides wrong.
+
+**A conductor claim that FAILED its bar, recorded so it is not re-derived.** The
+proposal to discriminate functions from binaries via `case $(command -v x) in /*)` does
+NOT hold. POSIX writes a bare name for shell functions AND for special built-ins,
+regular built-ins not associated with a PATH search, and reserved words — so `/*` means
+"PATH binary", never "not a function". Worse, the classification differs inside our own
+floor pair: `printf` is a builtin in dash 0.5.12 and an external in posh 0.14.1
+(measured; the note lives in `cli/tests/e2e.rs`'s real-binary-lane comment). The human
+had already been bitten here once; the bar for blessing an idiom is brutal cross-shell
+certainty, and this cleared nothing.
+
+**The unspent candidate.** Bless the VARIABLE-SENTINEL include guard — the C
+header-guard shape `30I` §6.3 already puts on the page — as the decidable form, leaving
+`command -v` guards exactly as they are today. A sentinel is decidable from the value
+plane in both directions for any name: no PATH, no builtin classification, no
+cross-shell exposure, nothing to be uncertain about. Prefer the `if`-wrapped spelling
+over the early `return`, which keeps it flattenable (§6.3's top-level-`return` problem).
+Cost: new work, not a re-reading — `oracle::load_inert`'s `include_guard` admits only
+`command -v <literal name>`, and `LoadControl::Guard` is keyed on a FUNCTION name, so
+the admitted grammar widens and the decision moves to the literal/value plane
+(`LoadStep::Assign` already exists). Additive; revokes nothing.
+~SUSPECT and unverified: whether the value plane's variable window reaches a CROSS-FILE
+sentinel (set in the loaded file, read by the loader) — `30Ib` §5 row 4 flags a grade
+obligation on that accessor.
+
+**If the dig happens instead.** The bounded empirical question is: across dash, posh,
+bash, ash and busybox, for a name that is neither a builtin nor a reserved word in any
+of them, are `command -v`'s output shape and exit status identical? The floor pair is
+already instrumented (`mise run test:floor`).
+
+**Watch item.** `30I` §2.2's worked example guards an ordinary name and reads as though
+it fully works. That is now known to under-deliver. Not corrected in the plan while this
+is parked; if the park becomes permanent, §2.2 owes a caveat.
