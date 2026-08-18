@@ -59,14 +59,21 @@ handing `30I` across bare; if a successor re-derives them, that is wasted time.
    construction, not by exception. `FORFEITS:forfeit-book-sourcing-walls` stops
    binding on the dorc-lang half; the non-dorc-lang half stays walled and falls
    to `30I` §7.1 mode 3.
-2. `fnd-command-v-forfeit-is-runtime-only` — `FORFEITS:forfeit-command-v-poison-wall`
-   is about a RUNTIME book-position `command -v` walling as an unmodeled running
-   command. Every `load30-*` specimen's `command -v` sits at marked-file top level
-   and is LOAD-TIME control flow the static loader evaluates
-   (`30I:force-guarded-fallback`); their `expected.ran` logs no `command`
-   invocation at all. Conflating the two would either widen the runtime forfeit or
-   wall the loader. `load30-two-point-frames` is the discriminator: one guard must
-   answer FALSE ambiently and TRUE inside the subshell that pre-defines `sm_pick`.
+2. `fnd-command-v-walls-and-loads-on-one-line` — the same construct answers two
+   questions and neither answer may contaminate the other. `command` is an
+   explicitly punted oracle, so `FORFEITS:forfeit-command-v-poison-wall` is
+   half-irrelevant to the LOADER-ANALYSIS machinery — a `command -v` at marked-file
+   top level feeding an include guard is load-time control flow the loader
+   evaluates (`30I:force-guarded-fallback`). But it remains TRUE that a
+   BOOK-position `command -v` walls, preventing elision on all content under that
+   command's branch [human-typed correction, 2026-08-18]; `load30-subshell-errexit-fallback`'s
+   book spells exactly that. The wall is correct and `silence-licenses-nothing`
+   forbids un-walling it; needing to un-wall `command` to green a specimen is a
+   licensure widening routed to the human (that forfeit's CAPTURE row), never lane
+   work. Specimens are safe either way: `expected.ran` asserts run SETS, and a
+   walled line still runs. `load30-two-point-frames` is the loader-side
+   discriminator — one guard must answer FALSE ambiently and TRUE inside the
+   subshell that pre-defines `sm_pick`.
 3. `fnd-e2e-analysis-cwd-is-unresolved` — the specimens spell
    `SM_ORACLE_ROOT=crates/cli/tests/load30-…`, relative to `spike/`; the harness's
    `dorc` invocation (`e2e.rs` `fn dorc`) sets no `current_dir` and so inherits
@@ -84,6 +91,48 @@ handing `30I` across bare; if a successor re-derives them, that is wasted time.
    doc's own measured objection — that `28M` §7's helpers-plus-thin-entrypoints
    package becomes unreachable under cwd parity unless a cwd is pinned — IS
    crossing 3, now owned rather than routed around.
+
+## §4a — The handoff authorization [human-typed, 2026-08-18]
+
+`dec-one-builder-order-softened-to-a-seam` — the human read the brief, judged one
+context-window unlikely to carry the lane, and AUTHORIZED (not dictated) a
+mid-lane handoff: builder 1 targets a completion-of-work and a durable product;
+builder 2 boots from that product and closes.
+
+What is relaxed and what is not. `30I:impl-one-builder-one-lane`'s INTENT still
+binds absolutely — no second resolver, no second source-order model, no
+decorative source map. What is relaxed is only the claim that one window must
+carry it. The seam is placed to serve the intent rather than to fight it: a
+successor consuming a typed, documented load answer is LESS likely to re-resolve
+than one exhausted builder improvising an emitter at the end of its window.
+
+The seam, as issued to builder 1:
+
+- FLOOR — never before work-order items 2–4 are landed, natively tested, and
+  committed (one static snapshot; the healthy-library surface; the locator DAG
+  generalized). Below that the load model is not yet one model and a successor
+  would be guessing at it.
+- PREFERENCE — also item 5 (the bundle projection existing, consumed by at least
+  one entrypoint). The cleaner semantic cut: everything
+  `rul-one-loader-many-projections` governs is then behind the seam, and the
+  successor adds only PLACEMENT.
+- CEILING — a handing-off builder does NOT start item 7. Promotion, e2e lowering,
+  and golden-drift enumeration are atomic and belong to whoever closes the lane;
+  half-done is worse than not-started.
+- TRIGGER — declare at the nearest coherent boundary past roughly 60–70% context,
+  never at exhaustion.
+
+Handoff artifact: `Research/notes/30Ib-static-loading-lane-report.md`, maintained
+LIVE from the first slice and committed with it — as-built seats and their
+consumption API, what is pinned where, deviations left OPEN, open questions, exact
+next steps. Not a re-plan of `30I`, not a chronology.
+
+Conductor's read, for the record: ~70% that one builder cannot close cleanly. The
+volume sits in items 6–7 (a new artifact subsystem in a 23k-LOC crate whose only
+artifact surface is stdout today, then golden churn across a corpus whose quick
+tier alone is 1354 tests, twice, on two platforms). The discipline costs builder 1
+almost nothing if it turns out unnecessary. Its one real cost is a successor
+re-paying onboarding — which is exactly what `30Ib` is for.
 
 ## §5 — Live state
 
