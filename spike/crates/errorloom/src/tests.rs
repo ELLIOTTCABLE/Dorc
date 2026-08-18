@@ -472,6 +472,14 @@ fn deleting_one_of_two_distinct_variables_reports_the_one_that_went() {
         Some(false),
         "a value that left with its words is a deletion, not a flattening"
     );
+    // AS BUILT: the retention class does NOT separate a deletion from a flattening -- both
+    // refuse the same way, and it is the reappearance fact above that tells them apart. The
+    // class carries WHAT the edit contacted, and today a candidate section is the only thing it
+    // can have contacted.
+    assert_eq!(
+        drops.first().map(VariableDrop::retention_refusal),
+        Some(EditRefusalClass::EditableVariableTouched)
+    );
 
     let (kept, drops, _) = accepted(&baseline, "run apache now");
     assert_eq!(kept, vec![2]);
@@ -584,7 +592,6 @@ fn a_value_the_baseline_text_already_carried_is_not_a_reappearance() {
     );
     assert_eq!(
         drops.first().map(VariableDrop::retention_refusal),
-        Some(EditRefusalClass::EditableVariableTouched),
-        "the reword contacted the variable -- an actionable repair, unlike a plain deletion"
+        Some(EditRefusalClass::EditableVariableTouched)
     );
 }

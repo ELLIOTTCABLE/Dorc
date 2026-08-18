@@ -226,10 +226,12 @@ impl<V> VariableDrop<V> {
 
     /// Why the required-retention pass could not keep this section's variables.
     ///
-    /// Recovered from the removal search's own first attempt, the one that demotes nothing. It
-    /// answers "what did the edit do to the anchors", which is the actionable half: a consumer
-    /// can tell an author that their reword contacted a variable, where a plain deletion has
-    /// nothing to repair.
+    /// Recovered from the removal search's own first attempt, the one that demotes nothing —
+    /// which the search previously threw away. It answers WHAT the edit contacted, and that is a
+    /// different question from [`Self::value_reappears_as_text`]: deliberate deletion and
+    /// flattening both refuse retention, so this alone does not separate them. It earns its keep
+    /// where the contact was something other than the section's own prose, and it stops the
+    /// consumer from having to re-run the transport to find out.
     #[must_use]
     pub fn retention_refusal(&self) -> EditRefusalClass {
         self.retention_refusal
