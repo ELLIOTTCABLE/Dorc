@@ -158,12 +158,82 @@ impl<S, V> SectionEdit<S, V> {
 }
 
 /// A generic edit result.
+///
+/// Deliberately NOT `#[non_exhaustive]`: a consumer that matched only [`Self::Edited`] must fail
+/// to COMPILE when a lossy outcome becomes representable, and a wildcard arm — which
+/// `non_exhaustive` would force — is exactly the silence [`Self::EditedWithDrops`] exists to
+/// prevent (`271:rul-sin-ordering`: a mis-attributed loss outranks every other failure here).
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum EditTransport<S, V> {
     /// No bytes changed.
     Unchanged,
-    /// One section changed.
+    /// One section changed, and every variable the render stamped into it survived.
     Edited(SectionEdit<S, V>),
+    /// One section changed at the cost of variables the transport could not keep.
+    ///
+    /// Only [`transport_edit_allow_removal`] and its `_with_limits` twin can answer this; the
+    /// required-retention [`transport_edit`] refuses instead of losing anything. The edit is
+    /// sound to compile — it is what the author typed — but the compiled template interpolates
+    /// FEWER values than the render did, so a consumer that publishes it without disclosing
+    /// `drops` freezes today's world into tomorrow's message.
+    EditedWithDrops {
+        /// The interpreted section, exactly as [`Self::Edited`] would carry it.
+        edit: SectionEdit<S, V>,
+        /// Every variable occurrence the interpretation gave up, in render order.
+        drops: Vec<VariableDrop<V>>,
+    },
+}
+
+/// One variable occurrence an accepted edit could not keep.
+///
+/// Removal is the sanctioned mechanism (`282:rul-variable-edit-section-scope`), so a drop is
+/// never itself an error — but the two ways to reach one want opposite repairs, and only the
+/// facts here separate them. A variable whose value is GONE from the edited text was deleted on
+/// purpose. A variable whose value is still sitting there as literal text was flattened: the
+/// author edited the bytes anchoring it, the alignment had no reading that kept it, and the
+/// register just froze the current world.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct VariableDrop<V> {
+    id: V,
+    rendered: String,
+    value_reappears: bool,
+    retention_refusal: EditRefusalClass,
+}
+
+impl<V> VariableDrop<V> {
+    /// The renderer's identity for the lost occurrence.
+    #[must_use]
+    pub fn id(&self) -> &V {
+        &self.id
+    }
+
+    /// The bytes that occurrence rendered as.
+    #[must_use]
+    pub fn rendered(&self) -> &str {
+        &self.rendered
+    }
+
+    /// Whether those bytes NEWLY appear in the edit's own literal text.
+    ///
+    /// An occurrence-count delta against the baseline section's literal text, never a bare
+    /// `contains`: a value that was already spelled out beside its own variable — `` `nginx`: the
+    /// {{service}} service `` — would make every genuine deletion of that variable read as a
+    /// flattening, which is the one reading a warning must not invent.
+    #[must_use]
+    pub fn value_reappears_as_text(&self) -> bool {
+        self.value_reappears
+    }
+
+    /// Why the required-retention pass could not keep this section's variables.
+    ///
+    /// Recovered from the removal search's own first attempt, the one that demotes nothing. It
+    /// answers "what did the edit do to the anchors", which is the actionable half: a consumer
+    /// can tell an author that their reword contacted a variable, where a plain deletion has
+    /// nothing to repair.
+    #[must_use]
+    pub fn retention_refusal(&self) -> EditRefusalClass {
+        self.retention_refusal
+    }
 }
 
 /// Why attribution refused an edit.
@@ -312,7 +382,12 @@ pub fn transport_edit_with_limits<S: Clone, V: Clone>(
     edited: &str,
     limits: TransportLimits,
 ) -> Result<EditTransport<S, V>, EditRefusal> {
-    transport_edit_with_budget(baseline, edited, None, &mut WorkBudget::new(limits))
+    Ok(
+        match transport_edit_with_budget(baseline, edited, None, &mut WorkBudget::new(limits))? {
+            Some(edit) => EditTransport::Edited(edit),
+            None => EditTransport::Unchanged,
+        },
+    )
 }
 
 /// Attributes an edit while allowing a uniquely inferred omission of variables.
@@ -346,6 +421,92 @@ pub fn transport_edit_allow_removal_with_limits<S: Clone, V: Clone>(
         return Ok(EditTransport::Unchanged);
     }
 
+    let candidates = removal_candidates(baseline, edited, limits)?;
+    let mut work = WorkBudget::new(limits);
+    let mut retention_refusals: Vec<(usize, EditRefusalClass)> = Vec::new();
+    for removals in 0..=limits.removable_occurrences {
+        let mut successes = Vec::new();
+        for &(component_index, occurrences) in &candidates {
+            if removals > occurrences {
+                continue;
+            }
+            let candidate_count = 1usize << occurrences;
+            for mask in 0..candidate_count {
+                if mask.count_ones() as usize != removals {
+                    continue;
+                }
+                let transformed = demote_occurrences(baseline, component_index, mask);
+                match transport_edit_with_budget(
+                    &transformed,
+                    edited,
+                    Some(component_index),
+                    &mut work,
+                ) {
+                    Ok(Some(edit)) => successes.push((component_index, mask, edit)),
+                    Ok(None) => {
+                        if let Some(RenderComponent::EditableSection(transformed_section)) =
+                            transformed.components.get(component_index)
+                        {
+                            successes.push((
+                                component_index,
+                                mask,
+                                SectionEdit {
+                                    section: transformed_section.id.clone(),
+                                    fragments: transformed_section.fragments.clone(),
+                                },
+                            ));
+                        }
+                    }
+                    Err(refusal) if refusal.class() == EditRefusalClass::AlignmentLimitExceeded => {
+                        return Err(refusal);
+                    }
+                    Err(refusal) => {
+                        if removals == 0 {
+                            retention_refusals.push((component_index, refusal.class()));
+                        }
+                    }
+                }
+            }
+        }
+        match successes.len() {
+            0 => {}
+            1 => {
+                let (component_index, mask, edit) = successes.remove(0);
+                let drops = dropped_occurrences(
+                    baseline,
+                    component_index,
+                    mask,
+                    &edit,
+                    retention_class(&retention_refusals, component_index),
+                );
+                return Ok(if drops.is_empty() {
+                    EditTransport::Edited(edit)
+                } else {
+                    EditTransport::EditedWithDrops { edit, drops }
+                });
+            }
+            _ => {
+                return Err(refuse(
+                    EditRefusalClass::AmbiguousAttribution,
+                    &baseline.text(),
+                    edited,
+                ));
+            }
+        }
+    }
+    Err(classify_refusal(baseline, edited))
+}
+
+/// Every section the edited bytes could belong to, with its removable-occurrence count.
+///
+/// A section past the bound refuses as a LIMIT rather than being quietly excluded: the search is
+/// `2^n` masks wide, so the machine's answer is "too expensive to ask", which is a different
+/// thing from "the edit is ambiguous" and must read differently to whoever hits it.
+fn removal_candidates<S, V>(
+    baseline: &EditableRender<S, V>,
+    edited: &str,
+    limits: TransportLimits,
+) -> Result<Vec<(usize, usize)>, EditRefusal> {
     let mut candidates = Vec::new();
     for (component_index, component) in baseline.components.iter().enumerate() {
         let RenderComponent::EditableSection(section) = component else {
@@ -369,61 +530,81 @@ pub fn transport_edit_allow_removal_with_limits<S: Clone, V: Clone>(
         }
         candidates.push((component_index, occurrences));
     }
+    Ok(candidates)
+}
 
-    let mut work = WorkBudget::new(limits);
-    for removals in 0..=limits.removable_occurrences {
-        let mut successes = Vec::new();
-        for &(component_index, occurrences) in &candidates {
-            if removals > occurrences {
-                continue;
-            }
-            let candidate_count = 1usize << occurrences;
-            for mask in 0..candidate_count {
-                if mask.count_ones() as usize != removals {
-                    continue;
-                }
-                let transformed = demote_occurrences(baseline, component_index, mask);
-                match transport_edit_with_budget(
-                    &transformed,
-                    edited,
-                    Some(component_index),
-                    &mut work,
-                ) {
-                    Ok(EditTransport::Edited(edit)) => successes.push(edit),
-                    Ok(EditTransport::Unchanged) => {
-                        if let Some(RenderComponent::EditableSection(transformed_section)) =
-                            transformed.components.get(component_index)
-                        {
-                            successes.push(SectionEdit {
-                                section: transformed_section.id.clone(),
-                                fragments: transformed_section.fragments.clone(),
-                            });
-                        }
-                    }
-                    Err(refusal) if refusal.class() == EditRefusalClass::AlignmentLimitExceeded => {
-                        return Err(refusal);
-                    }
-                    Err(_) => {}
-                }
-            }
+/// The class the required-retention pass produced for one section.
+///
+/// Always recorded by the time a drop exists: reaching a removal count above zero means every
+/// candidate's demote-nothing attempt refused. The fallback is the shape of that refusal anyway,
+/// so an unrecorded section reports the same thing rather than an absence a consumer must model.
+fn retention_class(recorded: &[(usize, EditRefusalClass)], component: usize) -> EditRefusalClass {
+    recorded
+        .iter()
+        .find(|(index, _)| *index == component)
+        .map_or(EditRefusalClass::EditableVariableTouched, |(_, class)| {
+            *class
+        })
+}
+
+/// The variable occurrences `mask` gave up, paired with the evidence separating a deliberate
+/// deletion from a flattening (see [`VariableDrop`]).
+fn dropped_occurrences<S, V: Clone>(
+    baseline: &EditableRender<S, V>,
+    component_index: usize,
+    mask: usize,
+    edit: &SectionEdit<S, V>,
+    retention_refusal: EditRefusalClass,
+) -> Vec<VariableDrop<V>> {
+    let Some(RenderComponent::EditableSection(section)) = baseline.components.get(component_index)
+    else {
+        return Vec::new();
+    };
+    let before = literal_text(&section.fragments);
+    let after = literal_text(&edit.fragments);
+    let mut occurrence = 0usize;
+    let mut drops = Vec::new();
+    for fragment in &section.fragments {
+        let EditableFragment::Variable { id, rendered } = fragment else {
+            continue;
+        };
+        let selected = mask & (1usize << occurrence) != 0;
+        occurrence = occurrence.saturating_add(1);
+        if !selected {
+            continue;
         }
-        match successes.len() {
-            0 => {}
-            1 => return Ok(EditTransport::Edited(successes.remove(0))),
-            _ => {
-                return Err(refuse(
-                    EditRefusalClass::AmbiguousAttribution,
-                    &baseline.text(),
-                    edited,
-                ));
-            }
-        }
+        drops.push(VariableDrop {
+            id: id.clone(),
+            value_reappears: occurrences_of(&after, rendered) > occurrences_of(&before, rendered),
+            rendered: rendered.clone(),
+            retention_refusal,
+        });
     }
-    Err(classify_refusal(baseline, edited))
+    drops
+}
+
+fn literal_text<V>(fragments: &[EditableFragment<V>]) -> String {
+    fragments
+        .iter()
+        .filter_map(|fragment| match fragment {
+            EditableFragment::Text(text) => Some(text.as_str()),
+            EditableFragment::Variable { .. } => None,
+        })
+        .collect()
+}
+
+/// Non-overlapping occurrences of a NON-EMPTY needle; an empty rendered value can never
+/// reappear, and asking `str::matches` about one answers with the haystack's length.
+fn occurrences_of(haystack: &str, needle: &str) -> usize {
+    if needle.is_empty() {
+        return 0;
+    }
+    haystack.matches(needle).count()
 }
 
 /// The required-retention transport core, parameterized so bounded callers can
-/// share one alignment budget across multiple candidate renders.
+/// share one alignment budget across multiple candidate renders. `Ok(None)` means the edited
+/// bytes already equal the render's; it never loses a variable, so it has no drops to report.
 #[expect(
     clippy::indexing_slicing,
     reason = "enumerate-derived component bounds"
@@ -433,13 +614,13 @@ fn transport_edit_with_budget<S: Clone, V: Clone>(
     edited: &str,
     only_component: Option<usize>,
     work: &mut WorkBudget,
-) -> Result<EditTransport<S, V>, EditRefusal> {
+) -> Result<Option<SectionEdit<S, V>>, EditRefusal> {
     if let Some(refusal) = scalar_ceiling_refusal(baseline, edited, work.limits) {
         return Err(refusal);
     }
     let original = baseline.text();
     if original == edited {
-        return Ok(EditTransport::Unchanged);
+        return Ok(None);
     }
 
     let mut successful = Vec::new();
@@ -481,7 +662,7 @@ fn transport_edit_with_budget<S: Clone, V: Clone>(
             edited,
             work.limits,
         )),
-        1 => Ok(EditTransport::Edited(successful.remove(0))),
+        1 => Ok(Some(successful.remove(0))),
         0 => Err(classify_refusal(baseline, edited)),
         _ => Err(refuse(
             EditRefusalClass::AmbiguousAttribution,
@@ -662,8 +843,19 @@ fn reconstruct_section<V: Clone>(
         return Err(EditRefusalClass::EditableVariableTouched);
     }
     let mut fragments = section.fragments.clone();
-    for (slot, replacement) in slots.iter().zip(pieces) {
+    let last_slot = slots.len().saturating_sub(1);
+    let mut leading = String::new();
+    let mut trailing = String::new();
+    for (index, (slot, replacement)) in slots.iter().zip(pieces).enumerate() {
         let Some(fragment) = slot.fragment else {
+            if slot.edge && !replacement.is_empty() {
+                let inserted: String = replacement.into_iter().collect();
+                if index == 0 {
+                    leading = inserted;
+                } else if index == last_slot {
+                    trailing = inserted;
+                }
+            }
             continue;
         };
         if let Some(EditableFragment::Text(text)) = fragments.get_mut(fragment) {
@@ -672,6 +864,12 @@ fn reconstruct_section<V: Clone>(
             rebuilt.extend(&slot.suffix);
             *text = rebuilt.into_iter().collect();
         }
+    }
+    if !leading.is_empty() {
+        fragments.insert(0, EditableFragment::Text(leading));
+    }
+    if !trailing.is_empty() {
+        fragments.push(EditableFragment::Text(trailing));
     }
     Ok(fragments)
 }
@@ -684,12 +882,31 @@ struct Path {
 
 struct Slot {
     fragment: Option<usize>,
+    /// A slot standing at a section EDGE rather than between a variable and its neighbouring
+    /// text. It owns no fragment yet is still writable: text typed there is ordinary interior
+    /// prose, and [`reconstruct_section`] mints the fragment to hold it
+    /// (`282:rul-untouched-variable-preservation` — a section edge is not an anchor, so the
+    /// commonest prose edits there are, appending a clause or prefixing a word, must not
+    /// destroy a variable that happens to sit first or last).
+    edge: bool,
     text: Vec<char>,
     prefix: Vec<char>,
     suffix: Vec<char>,
 }
 struct Anchor {
     text: Vec<char>,
+}
+
+impl Slot {
+    fn unowned() -> Self {
+        Self {
+            fragment: None,
+            edge: false,
+            text: Vec::new(),
+            prefix: Vec::new(),
+            suffix: Vec::new(),
+        }
+    }
 }
 
 #[expect(
@@ -700,24 +917,14 @@ struct Anchor {
 fn section_parts<V>(fragments: &[EditableFragment<V>]) -> (Vec<Slot>, Vec<Anchor>) {
     let mut slots = Vec::new();
     let mut anchors = Vec::new();
-    slots.push(Slot {
-        fragment: None,
-        text: Vec::new(),
-        prefix: Vec::new(),
-        suffix: Vec::new(),
-    });
+    slots.push(Slot::unowned());
     for (index, fragment) in fragments.iter().enumerate() {
         match fragment {
             EditableFragment::Variable { rendered, .. } => {
                 anchors.push(Anchor {
                     text: rendered.chars().collect(),
                 });
-                slots.push(Slot {
-                    fragment: None,
-                    text: Vec::new(),
-                    prefix: Vec::new(),
-                    suffix: Vec::new(),
-                });
+                slots.push(Slot::unowned());
             }
             EditableFragment::Text(text) => {
                 let chars: Vec<char> = text.chars().collect();
@@ -733,12 +940,7 @@ fn section_parts<V>(fragments: &[EditableFragment<V>]) -> (Vec<Slot>, Vec<Anchor
                     anchors.push(Anchor {
                         text: vec![chars[0]],
                     });
-                    slots.push(Slot {
-                        fragment: None,
-                        text: Vec::new(),
-                        prefix: Vec::new(),
-                        suffix: Vec::new(),
-                    });
+                    slots.push(Slot::unowned());
                 }
                 let owns_slot = if chars.is_empty() {
                     !left_variable && !right_variable
@@ -757,17 +959,32 @@ fn section_parts<V>(fragments: &[EditableFragment<V>]) -> (Vec<Slot>, Vec<Anchor
                     anchors.push(Anchor {
                         text: vec![chars[end]],
                     });
-                    slots.push(Slot {
-                        fragment: None,
-                        text: Vec::new(),
-                        prefix: Vec::new(),
-                        suffix: Vec::new(),
-                    });
+                    slots.push(Slot::unowned());
                 }
             }
         }
     }
+    open_the_section_edges(&mut slots, fragments);
     (slots, anchors)
+}
+
+/// Open the slot outside a leading or trailing variable, which the walk above leaves unowned
+/// because there is no neighbouring text fragment to own it.
+///
+/// A variable's anchors are the bytes immediately beside it; an unowned slot demands emptiness and
+/// so makes the section's own EDGE behave like an anchor. It is not one: nothing of the render
+/// lies out there, so text typed past the first or last fragment is ordinary interior insertion,
+/// and treating it as abutment silently destroyed the variable
+/// (`282:rul-rendered-variable-offsets-may-move`).
+fn open_the_section_edges<V>(slots: &mut [Slot], fragments: &[EditableFragment<V>]) {
+    let leads = matches!(fragments.first(), Some(EditableFragment::Variable { .. }));
+    let trails = matches!(fragments.last(), Some(EditableFragment::Variable { .. }));
+    if let Some(slot) = slots.first_mut() {
+        slot.edge = leads;
+    }
+    if let Some(slot) = slots.last_mut() {
+        slot.edge = slot.edge || trails;
+    }
 }
 
 struct WorkBudget {
@@ -801,7 +1018,7 @@ fn text_cost(original: &[char], replacement: &[char]) -> usize {
 }
 
 fn slot_cost(slot: &Slot, replacement: &[char]) -> Option<usize> {
-    if slot.fragment.is_none() && !replacement.is_empty() {
+    if slot.fragment.is_none() && !slot.edge && !replacement.is_empty() {
         None
     } else {
         Some(text_cost(&slot.text, replacement))

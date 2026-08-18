@@ -1,6 +1,6 @@
 //! Pure compilation preview (`282:rul-compile-before-promote`).
 
-use errorloom::{EditableFragment, RenderComponent};
+use errorloom::{EditableFragment, RenderComponent, VariableDrop};
 
 use crate::{
     CompiledFragment, CompiledSection, DorcEditableBaseline, DorcSectionEditRefusal, SectionKey,
@@ -54,42 +54,14 @@ impl SectionPreview {
     /// author probably froze by accident. Never a refusal — the author may genuinely mean it, and
     /// nothing here can tell.
     ///
-    /// Exact and anchored like the re-holer it guards (`282:rul-rehole-deliberately-stupid`): the
-    /// value matches byte-for-byte or not at all, and clears [`BAKED_VALUE_FLOOR`] first.
+    /// The evidence is the transport's own, not a second reading of the compiled bytes: errorloom
+    /// reports a NEW occurrence, counted against what the baseline section's literal text already
+    /// carried. That distinction is load-bearing rather than fussy — prose that spells a value out
+    /// beside its own variable is ordinary, and a `contains` test would call every genuine deletion
+    /// of such a variable a frozen world.
     #[must_use]
     pub fn baked(&self) -> &[TemplateVariableName] {
         &self.baked
-    }
-}
-
-/// The shortest rendered value whose reappearance in literal text counts as evidence.
-///
-/// Below it, ordinary prose collides by accident — a dropped `{{count}}` rendering `1` would flag
-/// every sentence carrying a digit — and a warning that fires on nothing is one people learn to
-/// skip. Conservative by choice and pinned by test, as `282:rul-rehole-deliberately-stupid` leaves
-/// the exact threshold to the builder.
-const BAKED_VALUE_FLOOR: usize = 4;
-
-/// Whether a rendered value is distinctive enough for an exact match to mean anything.
-fn clears_the_floor(value: &str) -> bool {
-    value.chars().count() >= BAKED_VALUE_FLOOR && value.chars().any(char::is_alphanumeric)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::clears_the_floor;
-
-    /// Both halves of the floor earn their keep, and the wordless case is the one a length test
-    /// alone would let through: `----` and `  · ` are long enough and match ordinary punctuation
-    /// runs everywhere.
-    #[test]
-    fn only_a_long_enough_value_carrying_a_word_is_evidence() {
-        for distinctive in ["--wat", "nginx", "apt-get", "operand 3", "0x2a"] {
-            assert!(clears_the_floor(distinctive), "{distinctive}");
-        }
-        for noise in ["", "1", "-f", "  ", "----", "…", "()"] {
-            assert!(!clears_the_floor(noise), "{noise}");
-        }
     }
 }
 
@@ -134,7 +106,7 @@ pub fn compile_preview(
                 .map(|name| (name.clone(), compiled.bindings()[name].clone()))
                 .collect();
             let dropped = dropped_variables(baseline, edit.section(), &used_bindings);
-            let baked = baked_variables(&dropped, &compiled);
+            let baked = baked_variables(&dropped, edit.drops());
             SectionPreview {
                 section: edit.section().clone(),
                 compiled,
@@ -186,25 +158,23 @@ fn dropped_variables(
     dropped
 }
 
-/// The dropped variables whose rendered value survives in the edit's own literal text.
+/// The dropped variables whose rendered value NEWLY appears in the edit's own literal text.
 ///
-/// Read off the COMPILED fragments, so a value still carried by a surviving variable is not
-/// mistaken for text somebody typed.
+/// Both halves are needed and neither implies the other. The transport's reappearance fact is
+/// per-OCCURRENCE, so a section carrying `{{name}}` twice can lose one and keep the other, and
+/// the register still interpolates it — while [`dropped_variables`] is per-NAME and answers the
+/// question the warning is actually about: is this variable gone from the register.
 fn baked_variables(
     dropped: &[(TemplateVariableName, String)],
-    compiled: &CompiledSection,
+    drops: &[VariableDrop<SectionVariableId>],
 ) -> Vec<TemplateVariableName> {
-    let literal: String = compiled
-        .fragments()
-        .iter()
-        .filter_map(|fragment| match fragment {
-            CompiledFragment::Text(text) => Some(text.as_str()),
-            CompiledFragment::Variable(_) => None,
-        })
-        .collect();
     dropped
         .iter()
-        .filter(|(_, rendered)| clears_the_floor(rendered) && literal.contains(rendered.as_str()))
+        .filter(|(name, _)| {
+            drops
+                .iter()
+                .any(|drop| drop.id().name == *name && drop.value_reappears_as_text())
+        })
         .map(|(name, _)| name.clone())
         .collect()
 }

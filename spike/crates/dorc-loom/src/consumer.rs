@@ -2616,14 +2616,18 @@ mod tests {
         let shared_boundary = baseline(vec![
             RenderComponent::EditableSection(EditableSection::new(
                 key(0),
-                vec![variable("command", 0, "")],
+                vec![
+                    EditableFragment::Text(String::from("run ")),
+                    variable("command", 0, "apt-get"),
+                ],
             )),
             RenderComponent::EditableSection(EditableSection::new(
                 key(1),
-                vec![variable("command", 0, "")],
+                vec![EditableFragment::Text(String::from(" always"))],
             )),
         ]);
-        let shared_boundary_result = compile_section_edit(&shared_boundary, "{{command}}");
+        let shared_boundary_result =
+            compile_section_edit(&shared_boundary, "run {{command}} always");
         assert!(
             matches!(
                 shared_boundary_result,

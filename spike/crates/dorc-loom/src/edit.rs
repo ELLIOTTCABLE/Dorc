@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use dorc_aid::catalog::{TemplatePart, TemplateRefusal, parse_template};
 use errorloom::{
     EditRefusal, EditRefusalClass, EditTransport, EditableFragment, EditableRender,
-    EditableSection, RenderComponent, SectionAddressRefusal, address_sections,
+    EditableSection, RenderComponent, SectionAddressRefusal, VariableDrop, address_sections,
     transport_edit_allow_removal,
 };
 
@@ -19,6 +19,7 @@ use crate::{
 pub struct DorcSectionEdit {
     section: SectionKey,
     compiled: CompiledSection,
+    drops: Vec<VariableDrop<SectionVariableId>>,
 }
 
 impl DorcSectionEdit {
@@ -32,6 +33,17 @@ impl DorcSectionEdit {
     #[must_use]
     pub fn compiled(&self) -> &CompiledSection {
         &self.compiled
+    }
+
+    /// The variable occurrences the transport could not keep, with its own evidence about each.
+    ///
+    /// Read rather than re-derived: whether a dropped value is still sitting in the new prose is
+    /// an occurrence-count question against the render's stamped fragments, and asking the edited
+    /// bytes instead is the byte-shape re-derivation the arc outlawed
+    /// (`28L:rul-editability-is-stamped-never-re-derived`).
+    #[must_use]
+    pub fn drops(&self) -> &[VariableDrop<SectionVariableId>] {
+        &self.drops
     }
 }
 
@@ -122,33 +134,43 @@ pub fn compile_section_edit(
                 continue;
             }
         };
-        match transport_edit_allow_removal(&transformed, dirty) {
-            Ok(EditTransport::Edited(edit)) if edit.section() == section.id() => {
-                let values = available_values(baseline, section.id());
-                let fragments = normalize_register_prose(section.id().field, edit.fragments());
-                match compile_fragments(&fragments, &values) {
-                    Ok(compiled) => {
-                        refuse_split_field(baseline.render(), section.id())?;
-                        refuse_added_lines(baseline.render(), section.id(), &compiled)?;
-                        successful.push(DorcSectionEdit {
-                            section: section.id().clone(),
-                            compiled,
-                        });
-                    }
-                    Err(refusal) => refusals.push(DorcSectionEditRefusal::Compile(refusal)),
-                }
+        let (edit, drops) = match transport_edit_allow_removal(&transformed, dirty) {
+            Ok(EditTransport::Edited(edit)) => (edit, Vec::new()),
+            Ok(EditTransport::EditedWithDrops { edit, drops }) => (edit, drops),
+            Ok(EditTransport::Unchanged) => {
+                refusals.push(DorcSectionEditRefusal::Unchanged);
+                continue;
             }
-            Ok(EditTransport::Edited(_)) => {
-                refusals.push(DorcSectionEditRefusal::CandidateMismatch);
-            }
-            Ok(EditTransport::Unchanged) => refusals.push(DorcSectionEditRefusal::Unchanged),
             Err(refusal) if refusal.class() == EditRefusalClass::AlignmentLimitExceeded => {
                 limit = Some(refusal);
+                continue;
             }
             Err(refusal) if refusal.class() == EditRefusalClass::AmbiguousAttribution => {
                 saw_ambiguity = true;
+                continue;
             }
-            Err(refusal) => refusals.push(DorcSectionEditRefusal::Transport(refusal)),
+            Err(refusal) => {
+                refusals.push(DorcSectionEditRefusal::Transport(refusal));
+                continue;
+            }
+        };
+        if edit.section() != section.id() {
+            refusals.push(DorcSectionEditRefusal::CandidateMismatch);
+            continue;
+        }
+        let values = available_values(baseline, section.id());
+        let fragments = normalize_register_prose(section.id().field, edit.fragments());
+        match compile_fragments(&fragments, &values) {
+            Ok(compiled) => {
+                refuse_split_field(baseline.render(), section.id())?;
+                refuse_added_lines(baseline.render(), section.id(), &compiled)?;
+                successful.push(DorcSectionEdit {
+                    section: section.id().clone(),
+                    compiled,
+                    drops,
+                });
+            }
+            Err(refusal) => refusals.push(DorcSectionEditRefusal::Compile(refusal)),
         }
     }
 
@@ -210,8 +232,10 @@ fn compile_transport(
     baseline: &DorcEditableBaseline,
     transport: Result<EditTransport<SectionKey, SectionVariableId>, EditRefusal>,
 ) -> Result<DorcSectionEdit, DorcSectionEditRefusal> {
-    let EditTransport::Edited(edit) = transport.map_err(DorcSectionEditRefusal::Transport)? else {
-        return Err(DorcSectionEditRefusal::Unchanged);
+    let (edit, drops) = match transport.map_err(DorcSectionEditRefusal::Transport)? {
+        EditTransport::Edited(edit) => (edit, Vec::new()),
+        EditTransport::EditedWithDrops { edit, drops } => (edit, drops),
+        EditTransport::Unchanged => return Err(DorcSectionEditRefusal::Unchanged),
     };
     let values = available_values(baseline, edit.section());
     let fragments = normalize_register_prose(edit.section().field, edit.fragments());
@@ -222,6 +246,7 @@ fn compile_transport(
     Ok(DorcSectionEdit {
         section: edit.section().clone(),
         compiled,
+        drops,
     })
 }
 
