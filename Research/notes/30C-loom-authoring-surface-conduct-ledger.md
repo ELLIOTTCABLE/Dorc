@@ -192,3 +192,67 @@ the residue.
 - **No frequency measurement** of the confirm path: this is a side tool.
 - **`rul-no-markers-in-loom-text`** (restated) — the boundary fix is internal only; no tags,
   dividers, or sentinels ever enter the text an author reads.
+
+## §10 — Measured results, and what they overturned (2026-08-17/18)
+
+**`fnd-equal-values-can-uniquely-win`** (MEASURED; pre-existing) — two occurrences in one
+section rendering IDENTICAL bytes do not uniformly refuse. SYMMETRIC surrounding prose ties
+and refuses `AmbiguousAttribution`; ASYMMETRIC surroundings let one reading win uniquely, and
+it can be the WRONG one: `from {{from}} to {{to}}` (both rendering `same`) edited to
+`from same` reports `{{from}}` dropped and keeps `{{to}}` while the author deleted the second
+clause. Template becomes `from {{to}}`; byte-identical until the values diverge. Survives the
+boundary fix — the asymmetry is in the text BETWEEN the variables, not at the edge.
+HUMAN RULING: catch it, route it through `--verbatim` like any other uncertainty; do NOT
+refuse outright and do NOT mint a separate severity. The build marks the attribution as a
+GUESS so the message stops asserting which hole went.
+
+**`fnd-clause-deletion-does-not-cascade`** (REFUTES the conductor's H1 in §8) — deleting a
+clause beside a variable does NOT take that variable with it. Anchors match by CONTENT, not
+identity: an equivalent byte satisfies the anchor, so a surviving space is a surviving space.
+The reasoned prediction was wrong; the pinned test is
+`deleting_a_clause_beside_a_variable_does_not_cascade_into_it`.
+
+**`fnd-retention-class-is-not-the-discriminator`** (corrects a conductor brief) — the recovered
+retention-failure class is `EditableVariableTouched` for BOTH a plain deletion and a
+flattening; it carries WHAT was contacted, not which act occurred. The working discriminator
+is the value-reappearance count-delta. The conductor's "it will distinguish edited-next-to
+from deleted" framing was an overclaim, now pinned by test.
+
+**Boundary mechanism, as found** — variables are anchors with ONE character peeled from each
+adjacent text fragment; slots owning no fragment demand emptiness, and that demand IS the
+abutment rule. A section edge was one of those ownerless slots. Fixed by a `Slot::edge` flag
+admitting non-empty text there (`a-section-edge-is-not-an-anchor`, now in `spike/CLAUDE.md`).
+No markers; rendered bytes untouched.
+
+**Sizing** — `DEFAULT_REMOVABLE_OCCURRENCES = 12`; max holes in any shipped catalog register
+is 4, max interleaved values in any arrangement row is 8. The ceiling is not near.
+
+**`fnd-positional-selection-of-editability`** (exposed by the eviction, not caused by it) —
+dorc-loom's integration tests selected the PHYSICALLY LAST replay and assumed it editable
+(`.pop()`). That is editability inferred from position, the shape
+`28L:rul-editability-is-stamped-never-re-derived` forbids. Repaired to select by the stamp.
+One site legitimately keeps `.pop()`: it builds synthetic single-block cases INCLUDING
+deliberately non-editable ones.
+
+**Residue, recorded not fixed** — raising `removable_occurrences` past ~12 hangs rather than
+hitting a work ceiling (2^n masks enumerated before work is reserved); a real fix enumerates
+combinations. `BAKED_VALUE_FLOOR` was deleted, its whole rationale discharged by the
+count-delta; a short value can still coincidentally colour the MESSAGE, never a gate.
+
+**Scope correction (human)** — `271:rul-sin-ordering` and the sin tiers are DORC's ordering.
+They do not govern this internal tool; do not import them into errorloom reasoning.
+
+## §11 — Board
+
+DONE and folded on `ai/r30-loom-surface`: the `--this` global selector + shared clap grammar ·
+the six ergonomics items (stderr via `tracing`, empty-row suppression, mise-wrapper retirement,
+nothing-to-do warnings) · the `edit-loop:` eviction (193 stripped) + vars back-fill (170 added,
+23 skipped for empty inventory) · the boundary fix + typed drops + the measured test battery.
+
+IN FLIGHT: `lane-publish-verb` — the single `publish` verb, `--verbatim`, and the equal-value
+marking.
+
+NEXT, unstarted: corpus/lock root injectability (spelled `-C`) and the `.loom` cases that
+dogfood the authoring loop — the root-injection is their enabling change. Still owed from
+before this round: `307:work-loom-interior-hole-authoring`, and the conductor's unverified
+bless-exclusivity fossil (§5).
