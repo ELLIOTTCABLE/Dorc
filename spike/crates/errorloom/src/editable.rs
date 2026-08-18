@@ -197,6 +197,7 @@ pub struct VariableDrop<V> {
     id: V,
     rendered: String,
     value_reappears: bool,
+    value_shared: bool,
     retention_refusal: EditRefusalClass,
 }
 
@@ -222,6 +223,25 @@ impl<V> VariableDrop<V> {
     #[must_use]
     pub fn value_reappears_as_text(&self) -> bool {
         self.value_reappears
+    }
+
+    /// Whether another occurrence in the same section rendered these exact bytes.
+    ///
+    /// When it did, WHICH occurrence this drop names is a reading the alignment selected, not a
+    /// measurement: the two are interchangeable in the rendered text, so only the prose around them
+    /// separated them, and asymmetric prose can leave exactly one interpretation standing without
+    /// that interpretation being the author's. Symmetric prose leaves two and refuses as
+    /// [`EditRefusalClass::AmbiguousAttribution`], so reaching a drop at all means the selection
+    /// already happened — which is why the fact is stated HERE rather than left to a consumer, who
+    /// would have to model this search to know that a tie would have refused.
+    ///
+    /// Nothing is wrong today: the rendered bytes are the same whichever reading is taken. It bites
+    /// when the two values later diverge, and the surviving hole turns out to be the other one.
+    /// Orthogonal to [`Self::value_reappears_as_text`], which answers what happened to the dropped
+    /// occurrence's BYTES rather than which occurrence was dropped.
+    #[must_use]
+    pub fn value_shared_with_another_occurrence(&self) -> bool {
+        self.value_shared
     }
 
     /// Why the required-retention pass could not keep this section's variables.
@@ -572,12 +592,21 @@ fn dropped_occurrences<S, V: Clone>(
     };
     let before = literal_text(&section.fragments);
     let after = literal_text(&edit.fragments);
+    let rendered_values: Vec<&str> = section
+        .fragments
+        .iter()
+        .filter_map(|fragment| match fragment {
+            EditableFragment::Variable { rendered, .. } => Some(rendered.as_str()),
+            EditableFragment::Text(_) => None,
+        })
+        .collect();
     let mut occurrence = 0usize;
     let mut drops = Vec::new();
     for fragment in &section.fragments {
         let EditableFragment::Variable { id, rendered } = fragment else {
             continue;
         };
+        let this = occurrence;
         let selected = mask & (1usize << occurrence) != 0;
         occurrence = occurrence.saturating_add(1);
         if !selected {
@@ -586,6 +615,10 @@ fn dropped_occurrences<S, V: Clone>(
         drops.push(VariableDrop {
             id: id.clone(),
             value_reappears: occurrences_of(&after, rendered) > occurrences_of(&before, rendered),
+            value_shared: rendered_values
+                .iter()
+                .enumerate()
+                .any(|(other, value)| other != this && *value == rendered.as_str()),
             rendered: rendered.clone(),
             retention_refusal,
         });

@@ -408,11 +408,20 @@ fn equal_valued_variables_refuse_symmetrically_and_pick_a_winner_at_an_edge() {
     ]);
     // The author deleted the SECOND clause; the only reading that aligns keeps the second
     // variable and reports the first as dropped. Accepted, not refused -- and the value is still
-    // in the text, so the report says flattening rather than deletion.
+    // in the text, so the report says flattening rather than deletion. The drop carries the fact
+    // that makes the report honest: another occurrence rendered the same bytes, so `1` is the
+    // reading the alignment picked and not a measurement of which one the author deleted.
     let (kept, drops, _) = accepted(&trailing, "from same");
     assert_eq!(kept, vec![2]);
     assert_eq!(drops.len(), 1, "{drops:?}");
     assert_eq!(drops.first().map(VariableDrop::id), Some(&1));
+    assert_eq!(
+        drops
+            .first()
+            .map(VariableDrop::value_shared_with_another_occurrence),
+        Some(true),
+        "{drops:?}"
+    );
 
     let leading = render(vec![
         variable(1, "same"),
@@ -421,10 +430,52 @@ fn equal_valued_variables_refuse_symmetrically_and_pick_a_winner_at_an_edge() {
         EditableFragment::Text(" done".to_owned()),
     ]);
     // Mirrored, and mirrored the same way: deleting the leading clause reports the TRAILING
-    // variable gone.
+    // variable gone, and marks that reading as a selection too.
     let (kept, drops, _) = accepted(&leading, "same done");
     assert_eq!(kept, vec![1]);
     assert_eq!(drops.first().map(VariableDrop::id), Some(&2));
+    assert_eq!(
+        drops
+            .first()
+            .map(VariableDrop::value_shared_with_another_occurrence),
+        Some(true),
+        "{drops:?}"
+    );
+}
+
+/// The shared-value fact is a statement about the SECTION, not a verdict about the edit: it says
+/// two occurrences rendered the same bytes, and stops there. So an edit that keeps both is not
+/// marked at all — there is no drop to mark — while a drop whose sibling happened to be separable
+/// by punctuation still reports the condition, because whether the punctuation settled it is an
+/// interpretation, and interpreting is the consumer's job (`282:rul-dorc-loom-owns-template-policy`).
+#[test]
+fn equal_values_in_differing_punctuation_attribute_correctly_and_only_a_drop_is_marked() {
+    let baseline = render(vec![
+        EditableFragment::Text("Use `".to_owned()),
+        variable(1, "same"),
+        EditableFragment::Text("` or ".to_owned()),
+        variable(2, "same"),
+        EditableFragment::Text(" here.".to_owned()),
+    ]);
+
+    // Rewording BETWEEN them keeps both, in order, with nothing given up and nothing marked.
+    let (kept, drops, text) = accepted(&baseline, "Use `same` or maybe same here.");
+    assert_eq!(kept, vec![1, 2]);
+    assert!(drops.is_empty(), "{drops:?}");
+    assert_eq!(text, "Use `same` or maybe same here.");
+
+    // Deleting the unbackticked clause is attributed CORRECTLY -- the backticks are anchors the
+    // other reading cannot satisfy -- and is still reported as shared-valued.
+    let (kept, drops, _) = accepted(&baseline, "Use `same` here.");
+    assert_eq!(kept, vec![1]);
+    assert_eq!(drops.first().map(VariableDrop::id), Some(&2));
+    assert_eq!(
+        drops
+            .first()
+            .map(VariableDrop::value_shared_with_another_occurrence),
+        Some(true),
+        "{drops:?}"
+    );
 }
 
 /// TARGET 2: an edit that abuts one variable is contained to it. The removal search demotes only
@@ -471,6 +522,13 @@ fn deleting_one_of_two_distinct_variables_reports_the_one_that_went() {
         drops.first().map(VariableDrop::value_reappears_as_text),
         Some(false),
         "a value that left with its words is a deletion, not a flattening"
+    );
+    assert_eq!(
+        drops
+            .first()
+            .map(VariableDrop::value_shared_with_another_occurrence),
+        Some(false),
+        "distinct values are never interchangeable, so the reading is forced rather than picked"
     );
     // AS BUILT: the retention class does NOT separate a deletion from a flattening -- both
     // refuse the same way, and it is the reappearance fact above that tells them apart. The
