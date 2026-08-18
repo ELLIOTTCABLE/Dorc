@@ -155,7 +155,15 @@ re-paying onboarding — which is exactly what `30Ib` is for.
   Opus-class builder, working in this worktree on `ai/r30-static-loading`,
   committing granularly. Its brief forbids sub-spawning, `CLAUDE.md` edits, and
   self-endorsed deviations.
-- Conductor hands are OFF this worktree while the lane runs (shared `target/`).
+- Conductor hands are OFF this worktree while the lane runs (shared `target/`);
+  ledger commits go in by explicit pathspec only, which has coexisted cleanly
+  with the builder's own commits so far.
+- **HARD GATE [human-typed, 2026-08-18]: HOLD after builder 1 returns, for the
+  human's ack. Builder 2 is NOT dispatchable on conductor judgement alone.** This
+  binds any successor conductor resuming from a collapse: builder 1's report,
+  its deviations, and `30Ib` go to the human first, and the seam is crossed only
+  on their typed word. Do not read the seam's existence in §4a as standing
+  authorization to cross it.
 
 ## §6 — Owed at the fold
 
