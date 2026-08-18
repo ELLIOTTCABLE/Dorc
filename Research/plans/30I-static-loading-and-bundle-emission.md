@@ -114,11 +114,18 @@ Each step unblocks the next.
    the target resolves exactly from authored-before-contact input, and every
    transitively load-bearing helper on the REACHED vouch path `Must`-resolves
    inside the voucher's own file or that exact target closure. Declining paths
-   prove nothing. Note the live interaction with
-   `30Ia:park-command-v-guard-direction`: while an ordinary-named
-   `command -v` guard joins to ⊤, its helper cannot `Must`-resolve, so the
-   canonical specimen earns custody without yet earning its license. That is
-   two gates, both owed, not a defect in either.
+   prove nothing.
+
+   This is a PRECISION improvement, not a trust widening: recognize that the
+   canonical guard is not an analysis-time branch when both arms provably land on
+   the same exact definition, and stop driving to ⊤ there. It therefore
+   SUBSUMES `30Ia:park-command-v-guard-direction` rather than sitting beside it —
+   the recognition can only fire if the engine can rule out the then-arm being
+   answered by anything other than that exact target (a `PATH` binary, a book's
+   own function, an `unset -f` and redefine). For the FIRST guard on a name, with
+   no prior modeled load, that IS the parked FALSE-direction question, and the
+   diamond cascades off it: decide it and both guards resolve exactly; leave it
+   and both join. Size that before anything else in this step.
 5. **Add one bundle projection**, keyed by static load occurrence, consuming the
    snapshot and the frame answers, never re-reading a path. Copy authored segments
    exactly; add only necessary generated scaffolding and versioned boundary
@@ -592,6 +599,23 @@ The second case changes speaker custody only; normal branch-sensitive loading
 still decides visibility. A same-named function, file, or byte sequence is not
 the proof: the frame-live composition must resolve to the exact target closure.
 
+Read the second case as RECOGNITION, never as a licensing widening. The idiom is
+a method, spelled in sh, by which an author says "I want exactly this function
+from exactly this file." It looks like a fork at runtime; in the cell where
+vouch-minting is allowed it is not one, because both arms land on the same
+binding at every later call site — either a prior oracle already loaded that
+exact target, or this file loads it now. The engine's job is to SEE that there is
+no analysis-time branch here and decline to drive to ⊤; it is not to trust
+anything extra. Everything must align perfectly for the recognition to fire, and
+sh's dynamism supplies many ways the shape can mislead (a same-named binary on
+`PATH`, a book's own hand-written function, an `unset -f` and redefine, any
+dynamic load). Whatever the engine cannot rule out withholds vouch, licensure and
+speaker status, and mints narrative saying why. In the ideal case this needs no
+new machinery: a rich enough engine walks the reality and derives it. Where ours
+is not yet that rich, enrich it — or special-case narrowly and temporarily, and
+say so — until it is. The door stays deliberately narrow; the structurally-sound
+wide version is later work.
+
 The third case intersects ordinary POSIX habits: caller-loaded dependencies,
 callbacks, logging hooks, foundational helpers, and intentional patching. At v0
 it is NYI and invalid contracted oracle input because Dorc cannot distinguish
@@ -1008,6 +1032,20 @@ Required worlds:
    generated bundle to original source, with present/absent/mismatched origin cells.
 5. `specimen-unannounced-dependency-refuses` - bare cross-custody function call is
    a pre-network contracted-input error, while its explicit-guard sibling proceeds.
+6. `specimen-speaker-minting-is-observable` - ONE multipurpose e2e, because
+   speaker-minting bears on licensure and elision and must be observed SOMEWHERE
+   as behaviour. Today's `load30-*` cannot see it: their `probe-results.txt` are
+   empty, so nothing is converged, nothing elides, and every run set is identical
+   under every reading. Give the shared dependency's helper a CONVERGED verdict so
+   the license has a run-set consequence — the vouching site is absent from
+   `expected.ran` when it mints and present when it does not — and carry the
+   counterfactual in the same case: a same-named function defined ahead of the
+   guard must NOT mint, and the site runs. The builder additionally MUTATES the
+   mint (removes it) and confirms the case reddens, so the case is known to
+   observe the machinery rather than to pass for unrelated reasons.
+   Everything finer-grained — which arm resolved, which grade, which narrative
+   fires on each way the recognition declines — is unit/DST-sized and belongs at
+   its ownership seat, where exactly one thing reddens per break.
 
 The current harness may not express every artifact/API claim. An unspellable
 property remains a registered/reserved pin or a document assertion until the

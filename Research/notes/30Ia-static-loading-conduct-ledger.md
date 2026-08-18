@@ -400,3 +400,45 @@ mid-lane should read it as expected, not as a broken ruling.
 against `ec/play` (an older tip than this lane). It was applied here three-way and landed
 clean across all five files; the primary tree still holds the same edits uncommitted and
 they are safe to discard once this commit is verified.
+
+## §13 — correct-the-guarded-source-reading [human-typed, 2026-08-18]
+
+§12's framing was WRONG in a way that would have misled builder 2, and the correction
+is the whole point of the ruling. Superseding §12's "two gates" reading:
+
+**It is RECOGNITION, not a licensure widening.** The idiom is a method, spelled in sh,
+by which an author says "I want exactly this function from exactly this file." It looks
+like a fork at runtime; in the cell where vouch-minting fires it is NOT one, because both
+arms land on the same binding at every later call site — either a prior oracle already
+loaded that exact target, or this file loads it now. The engine's job is to SEE that
+there is no analysis-time branch and decline to drive to ⊤. Nothing extra is trusted.
+
+That dissolves the conductor's earlier safety worry entirely. The worry was "this lets a
+voucher rest on someone else's body." In the fired cell there IS no someone else's body —
+both arms are the same body. Where there might be, the recognition does not fire.
+
+**The reading is (b), conservatively** [human-typed]: precise idiom, precise analytic
+world-state, full match. Anything ambiguous withholds vouch, licensure and speaker
+status AND MINTS NARRATIVE saying why — an explained withhold, not a silent one. sh's
+dynamism supplies the ways the shape can mislead: a same-named `PATH` binary, a book's
+own hand-written function, an `unset -f` and redefine, any dynamic load. The door is
+deliberately narrow and widens slowly; the structurally-sound wide version is later work,
+and book-author override stays the open DI forfeit (an oracle author who needs to be
+explicit already has the unset-then-source pattern).
+
+**The engineering posture** [human-typed]: ideally this needs NO new machinery — a rich
+enough engine walks the reality and derives it. The ruling is that where ours is not that
+rich, we enrich it, and/or special-case narrowly and temporarily while it is too dumb.
+
+**THE CONSEQUENCE THAT MATTERS FOR SEQUENCING** (`+SURE` on the mechanism): this
+SUBSUMES `§11` rather than sitting beside it. Recognition fires only if the engine can
+rule out the then-arm being answered by anything but that exact target. For the FIRST
+guard on a name — no prior modeled load — that is precisely `§11`'s parked FALSE
+direction. And the diamond cascades off it: decide Alpha's guard and Alpha loads Common
+exactly, so Beta's guard sees `Defined(common)` and decides TRUE exactly, and the whole
+specimen resolves; leave it undecided and Alpha joins to ⊤, Beta inherits the ⊤, and
+neither resolves. So `§11` is not a side topic to be parked independently — it is this
+ruling's precondition for the first-loader case, and sizing it is the first thing builder
+2 does in work-order step 4. `§11`'s unspent variable-sentinel candidate is one way to
+discharge it; a dictate that contracted dependency names cannot be shadowed by host
+binaries is another; both are human calls.
