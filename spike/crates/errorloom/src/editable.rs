@@ -502,11 +502,19 @@ pub fn transport_edit_allow_removal_with_limits<S: Clone, V: Clone>(
 /// A section past the bound refuses as a LIMIT rather than being quietly excluded: the search is
 /// `2^n` masks wide, so the machine's answer is "too expensive to ask", which is a different
 /// thing from "the edit is ambiguous" and must read differently to whoever hits it.
+///
+/// The bound is the caller's OR the mask width, whichever is smaller. Selection rides a `usize`
+/// bitmask, so a section wider than that has no representable mask at all, and a caller who
+/// raised the ceiling past it would otherwise reach a shift overflow rather than a refusal
+/// (`inv-no-throw`). Nothing real approaches either number — the whole search is unaffordable
+/// long before it.
 fn removal_candidates<S, V>(
     baseline: &EditableRender<S, V>,
     edited: &str,
     limits: TransportLimits,
 ) -> Result<Vec<(usize, usize)>, EditRefusal> {
+    let representable = usize::BITS.saturating_sub(1) as usize;
+    let affordable = limits.removable_occurrences.min(representable);
     let mut candidates = Vec::new();
     for (component_index, component) in baseline.components.iter().enumerate() {
         let RenderComponent::EditableSection(section) = component else {
@@ -520,7 +528,7 @@ fn removal_candidates<S, V>(
             .iter()
             .filter(|fragment| matches!(fragment, EditableFragment::Variable { .. }))
             .count();
-        if occurrences > limits.removable_occurrences {
+        if occurrences > affordable {
             return Err(limit_refusal(
                 AlignmentLimit::RemovableOccurrences,
                 baseline,
