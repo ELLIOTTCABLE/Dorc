@@ -218,6 +218,27 @@ fn add_register_reaches_its_verb_rather_than_the_help_page() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// `publish` MUTATES two generated locks and every case it touches, so it never takes the whole
+/// corpus by omission. The process-level half of the grammar's rule: a bare invocation reaches the
+/// verb's own page and a nonzero exit rather than the whole collection.
+///
+/// This is as far as a process test may go on this verb. Its write paths land on the REAL corpus
+/// and the REAL locks at paths fixed to the tree, and a test that reached them would write sources
+/// (`288` §4: never a test side-effect). Covering them wants the injectable corpus root, which is
+/// deliberately a separate lane.
+#[test]
+fn a_bare_publish_reaches_its_own_usage_page_and_refuses() {
+    let bare = run(&["publish"]);
+    assert_eq!(bare.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&bare.stderr).into_owned();
+    assert!(stderr.contains("usage: dorc-loom publish"), "{stderr}");
+    assert!(stderr.contains("--all"), "{stderr}");
+    assert!(
+        String::from_utf8_lossy(&bare.stdout).is_empty(),
+        "a refusal writes nothing to stdout"
+    );
+}
+
 #[test]
 fn publish_refuses_bounded_case_input_before_edit_compilation() {
     let dir = std::env::temp_dir().join(format!("dorc-loom-limit-{}", std::process::id()));

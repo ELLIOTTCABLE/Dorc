@@ -663,22 +663,20 @@ fn publish_cases(publication: &Publication, out: &mut impl Write) -> Result<Exit
         tracing::warn!("{detail}");
     }
     let store = staging_store()?;
-    match (interpretation.losses.is_empty(), publication.verbatim) {
-        (false, false) => {
-            stage_refusal(&store, &interpretation.publication, &publication.spelled)?;
-            return Ok(ExitCode::from(1));
-        }
-        (false, true) => {
-            accept_staged(&store, &interpretation.publication, &publication.spelled)?;
-            tracing::info!("{VERBATIM}: publishing this interpretation as it stands");
-        }
-        (true, _) => {}
+    let disposition = disposition(!interpretation.losses.is_empty(), publication.verbatim);
+    if disposition == Disposition::Refuse {
+        stage_refusal(&store, &interpretation.publication, &publication.spelled)?;
+        return Ok(ExitCode::from(1));
+    }
+    if disposition == Disposition::Confirm {
+        accept_staged(&store, &interpretation.publication, &publication.spelled)?;
+        tracing::info!("{VERBATIM}: publishing this interpretation as it stands");
     }
 
     let affected = touched_cases(&gated)?;
     let before = staged_bytes(&gated)?;
     let wrote = publish(&interpretation.consumer, &affected)?;
-    if !interpretation.losses.is_empty() {
+    if disposition == Disposition::Confirm {
         store.discard()?;
     }
     warn_each(staged_case_notes(
@@ -687,6 +685,31 @@ fn publish_cases(publication: &Publication, out: &mut impl Write) -> Result<Exit
     ));
     warn_each(nothing_moved_note(!wrote, &gated.paths));
     Ok(ExitCode::SUCCESS)
+}
+
+/// What a publish may do with the interpretation it just printed.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Disposition {
+    /// Nothing was given up: write, and the staging is not consulted at all.
+    Write,
+    /// Holes were given up and the author confirmed: match the staging, write, spend it.
+    Confirm,
+    /// Holes were given up and nobody has confirmed: stage, write nothing, exit nonzero.
+    Refuse,
+}
+
+/// The whole gate, in one place (`30C:rul-any-hole-loss-confirms`).
+///
+/// The asymmetry is deliberate: a CLEAN `--verbatim` writes without consulting the staging, because
+/// there is no loss to confirm and demanding one would be the prior-interaction ceremony
+/// `30C:rul-flag-names-the-act-not-the-history` refused. And dropping every hole in a section is
+/// this same table, not a louder one (`30C:rul-no-special-case-for-dropping-all`).
+fn disposition(lost_holes: bool, verbatim: bool) -> Disposition {
+    match (lost_holes, verbatim) {
+        (false, _) => Disposition::Write,
+        (true, true) => Disposition::Confirm,
+        (true, false) => Disposition::Refuse,
+    }
 }
 
 /// Hold the computed interpretation for a `--verbatim` and say what the author must do to it.
@@ -1714,6 +1737,17 @@ mod tests {
             "both reasons compose on one hole: {detail}"
         );
         assert_eq!(hole_loss_detail(&[]), None, "a clean publish says nothing");
+    }
+
+    /// The whole gate. A clean run writes whether or not `--verbatim` was typed — there is nothing
+    /// to confirm, and demanding a confirmation anyway would make the flag a statement about a
+    /// prior interaction, which is exactly what it is not.
+    #[test]
+    fn only_a_hole_loss_needs_confirming() {
+        assert_eq!(disposition(false, false), Disposition::Write);
+        assert_eq!(disposition(false, true), Disposition::Write);
+        assert_eq!(disposition(true, false), Disposition::Refuse);
+        assert_eq!(disposition(true, true), Disposition::Confirm);
     }
 
     /// Quiet may drop a header, never a report — the corpus is ~50 cases and all but the edited one

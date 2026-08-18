@@ -127,6 +127,21 @@ impl FsStagingStore {
         Ok(directory)
     }
 
+    /// The staging directory, or `None` where nothing has ever been staged here.
+    ///
+    /// An absent directory is the ordinary first-run state, and the readers below owe their caller
+    /// "nothing is staged" for it rather than a raw `os error 2` — which is what a `--verbatim`
+    /// typed before any publish would otherwise be answered with.
+    fn existing_directory(&self) -> Result<Option<PathBuf>, String> {
+        validate_directory_tree(&self.target_root, "staging target root")?;
+        let directory = self.target_root.join(STAGING_DIRECTORY);
+        if !staging_path_exists(&directory, "staging directory")? {
+            return Ok(None);
+        }
+        validate_directory_tree(&directory, "staging directory")?;
+        Ok(Some(directory))
+    }
+
     fn final_path(directory: &Path) -> PathBuf {
         directory.join(STAGING_FILE)
     }
@@ -247,7 +262,9 @@ impl StagingStore for FsStagingStore {
     }
 
     fn read(&self) -> Result<Option<Vec<u8>>, String> {
-        let directory = self.staging_directory(false)?;
+        let Some(directory) = self.existing_directory()? else {
+            return Ok(None);
+        };
         let final_path = Self::final_path(&directory);
         match read_valid_staging(&final_path, "staged final target")? {
             Some(packet) => Ok(Some(packet)),
@@ -259,7 +276,9 @@ impl StagingStore for FsStagingStore {
     /// store never unlinks a path it has only NAMED (`rul-probe-writes-only-what-it-owns`'s
     /// posture, at a far smaller boundary).
     fn discard(&self) -> Result<(), String> {
-        let directory = self.staging_directory(false)?;
+        let Some(directory) = self.existing_directory()? else {
+            return Ok(());
+        };
         for (path, label) in [
             (Self::final_path(&directory), "staged final target"),
             (Self::backup_path(&directory), "staged backup target"),
@@ -474,7 +493,7 @@ mod tests {
         let root = TestRoot::new("staging-writes-then-reads-one-isolated-packet");
         let store = FsStagingStore::new(&root.0).expect("trusted root");
         let inspection = inspection("first");
-        stage_publication(&store, &inspection).expect("compile persists");
+        stage_publication(&store, &inspection).expect("the refusing run stages");
         accept_staged(&store, &inspection, "a-case").expect("verbatim reads the exact packet");
         assert_eq!(
             store
@@ -483,6 +502,35 @@ mod tests {
                 .expect("a published packet is present"),
             packet("first")
         );
+    }
+
+    /// The `--verbatim` contract end to end at this seat: a staging binds the exact bytes it was
+    /// computed from, so a re-edit invalidates it; and an APPLIED one is spent, or a second
+    /// `--verbatim` would silently re-confirm a loss the author accepted once, against an
+    /// interpretation nobody looked at this time.
+    #[test]
+    fn a_staged_interpretation_binds_its_bytes_and_is_spent_once_applied() {
+        let root = TestRoot::new("a-staged-interpretation-binds-its-bytes");
+        let store = FsStagingStore::new(&root.0).expect("trusted root");
+
+        let refusal = accept_staged(&store, &inspection("first"), "a-case")
+            .expect_err("nothing has been staged yet");
+        assert!(refusal.contains("dorc-loom publish a-case"), "{refusal}");
+
+        stage_publication(&store, &inspection("first")).expect("the refusing run stages");
+        let stale = accept_staged(&store, &inspection("edited-since"), "a-case")
+            .expect_err("a re-edit invalidates the staging");
+        assert!(stale.contains("dorc-loom publish a-case"), "{stale}");
+        assert!(
+            store.read().expect("the store reads").is_some(),
+            "a refusal spends nothing"
+        );
+
+        accept_staged(&store, &inspection("first"), "a-case").expect("the exact bytes apply");
+        store.discard().expect("an applied staging is spent");
+        assert!(store.read().expect("the store reads").is_none());
+        // Idempotent: the goal is that nothing is staged, and it already is not.
+        store.discard().expect("discarding nothing succeeds");
     }
 
     #[test]

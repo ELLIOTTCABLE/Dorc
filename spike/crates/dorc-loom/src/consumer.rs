@@ -2853,6 +2853,11 @@ mod tests {
             interpretation,
             "section: code.message#0:0\n  - run {{path}} using {{command}}\n  + run {{command}} using {{path}}"
         );
+        // The load-bearing negative: NO side of the diff spells a rendered value. Both templates
+        // interpolate the same two, so a diff that flattened them would be two identical lines and
+        // the reorder would be invisible — which is the whole failure this render exists to stop.
+        assert!(!interpretation.contains("$@"), "{interpretation}");
+        assert!(!interpretation.contains("LOCALAPPDATA"), "{interpretation}");
         // An untouched section and a fixed variable are another render's business; showing them
         // here would bury the one thing this view exists to expose.
         assert!(!interpretation.contains("hidden"));
