@@ -15,6 +15,260 @@
 > `28Q:pin-emission-planner-universal` one concrete consumer. It does not build
 > any of them.
 
+## Implementation plan - dispatch now
+
+`impl-one-builder-one-lane` [TYPED direction] - dispatch the whole `30I` build
+to one competent long-running builder. The load snapshot, frame answers, custody,
+bundle projection, locator graph, and artifact emission are one coupled model;
+splitting them across builders is more likely to create a second resolver or a
+decorative source map than to save useful wall-clock. Ordered work below is
+recovery structure and commit order, not a sequence of separately approved
+phases.
+
+### Target outcome
+
+The lane is complete when all of the following hold together:
+
+1. A supported book/oracle `.` resolves with sh cwd/value-flow semantics from
+   one immutable authored source snapshot.
+2. Book loads affect visibility but never mint speaker custody; marked
+   dorc-lang source edges form the existing asymmetric custody closures.
+3. The canonical include-guard/shared-dependency and subshell worlds resolve
+   positionally, and unannounced cross-custody calls refuse before network.
+4. Analysis, existing probe/guard closure emission, explicit `dorc bundle`,
+   multipart plans, and fully flattened plans consume one load answer.
+5. Bundle compilation carries a typed multi-stage locator DAG into at least one
+   real diagnostic; bundle comments re-enter as aid-only `BundleOriginClaim`.
+6. The three `load30-*` XFAILs green and are promoted; the measured
+   dot-vs-function floor remains unchanged; lowerable properties move to fast
+   native tests while only irreducible whole-artifact coverage stays e2e.
+7. Existing empty-world, single-frame, closure-custody, certifier,
+   re-derivation, plan-runnability, and both-platform gates remain green.
+
+CLI names, concrete type names, artifact filenames, and exact command UX remain
+builder latitude where this plan says so. That latitude does not include
+returning a different semantic artifact form than the user explicitly requested.
+
+### Starting state and neighboring work
+
+Build from the folded r30 tip carrying Spine (`plans/309`, `30E`, `30F`),
+definition-grade frame resolution and measurement separation (`28Q` stage-i),
+snapshot emission, and oracle-side custody closures (`30G`). `30I` is the runtime
+and book-side continuation of that work, not a new loader beside it.
+
+The following neighboring kernel work stays held and out of scope:
+
+- stage-iii world scopes and `28Q` section 10 authored lifecycle surface;
+- blessing-reach elevation and verdict-word enrollment;
+- committee-fence permanence and broader sparing composites;
+- modeled-running-wall/guard-tier repair;
+- starter stdlib and its dialect-reach decision;
+- at-most completion speech;
+- callback/bare dependency injection beyond the explicit v0 refusal;
+- the parked `SortedSet::union` optimization;
+- minispec enrichment or verified-core law changes.
+
+Do not opportunistically green their xfails, widen their allow-lists, or fold
+their decisions into a convenient load abstraction. If a direct prerequisite is
+real, report it as a blocking finding rather than absorbing the adjacent arc.
+
+The sibling dorc-loom work is mechanically independent. Avoid editing its
+authoring/CLI surfaces unless a compile break requires a narrow reconciliation;
+do not use this lane to improve loom UX.
+
+### Work order
+
+#### 1. Map the one crossing before editing
+
+Produce a short in-branch implementation map, then proceed without a review stop
+unless it contradicts `30I`:
+
+- every current filesystem read and source-vector append;
+- `funcenv` load-target/value/cwd inputs and every definition-resolution consumer;
+- include-tree and `CustodyClosures` construction in both binary and `WhyWorld`;
+- every probe, guard, survival, and render seat that emits loaded bytes;
+- Spine's existing `SpineLoadDecision`/render-decision population;
+- current provenance/`ProvId` types and the narrowest place an arbitrary locator
+  DAG can replace a pair without entering lattice equality;
+- `Plan` projection, `render_apply`, stdout contract, and filesystem artifact
+  writer seams;
+- every diagnostic/why consumer that can demonstrate one complete bundle-origin
+  chain.
+
+The map's purpose is to prevent a second loader. It is not a design document and
+does not need a new durable ID.
+
+#### 2. Replace ad-hoc loading with one static snapshot
+
+Introduce the minimum representation that makes source bytes, source identity,
+initial cwd, known source-literal values, load decisions, and definition frames
+one input to every consumer. Exact home and naming are builder decisions.
+
+At the CLI I/O edge:
+
+- capture the invocation cwd explicitly;
+- read each admitted source once and retain the exact bytes used by analysis and
+  emission;
+- resolve slash-bearing dot operands against modeled cwd, never the sourcer file;
+- retain slashless PATH search and dynamic operands as explicit unsupported
+  outcomes;
+- remove the landed sourcing-file-relative implementation/test rather than
+  preserving compatibility with an unreleased mistake.
+
+Keep the kernel pure: disk and cwd acquisition stop at the edge; all inner
+answers are functions of the snapshot. Do not add a generic influenced-load
+input. Every v0 load decision is authored-before-contact by construction and is
+recorded as such on Spine.
+
+#### 3. Close the deterministic healthy-library surface
+
+Make source-target value flow handle the `SM_ORACLE_ROOT`-shaped ordinary
+variable idiom without recognizing that name. Implement the one canonical
+guarded-fallback form and the frame behavior required by the committed
+specimens:
+
+- book root assignment -> marked entrypoint -> transitive dependency;
+- two entrypoints sharing one guarded dependency without merging speakers;
+- ambient definition removed and fallback loaded inside a subshell, then ambient
+  definition restored outside;
+- the same entrypoint loaded at two textual positions under different frames.
+
+Book source acts contribute to visibility and never to speaker edges. Marked
+contract-valid source acts feed the existing containment relation. CLI co-loading
+remains ingestion. Do not replace `CustodyClosures` with scalar package identity.
+
+For the v0 unannounced cross-custody cell, mint the pre-network closed outcome and
+structured diagnostic data. The diagnostic must distinguish a deliberate
+external utility (`command`), an explicit guarded/sourced dependency, and an
+unannounced live shell function. Author no user-facing prose: use the existing
+loom/error-authorship flow and leave newly required words explicitly unwritten.
+
+#### 4. Build provenance before bundle emission can outrun it
+
+Generalize locator representation to an arbitrary typed DAG before adding a
+second compilation step. Keep locators and bundle narrative outside solver/lattice
+equality and outside every authority mint.
+
+The generating run knows exact source snapshots and must graft ranges through:
+
+```text
+book source span -> planned replacement -> bundle load -> bundle segment
+   -> transitive original source span
+```
+
+Implement only the simple v0 segment model: exact copied ranges plus generated
+scaffolding ranges. Compose edges across later flattening rather than overwriting
+earlier locations.
+
+Parse `dorc-bundle/v0` comments, if present, only at the I/O/aid edge into
+`BundleOriginClaim`; make conversion into source identity, `DefinitionId`, custody,
+or license inputs unrepresentable. A matching original source may enrich the aid
+locator; absent or changed source falls back to the bundle locus. Do not grow the
+whylog/durable schema in this lane.
+
+Carry one chain through an actual existing diagnostic render before calling the
+mapping complete. A debug dump or structure-only unit test is necessary but not
+sufficient for the force-now aid requirement.
+
+#### 5. Add one bundle projection, then expose it three ways
+
+Bundle from the resolved snapshot and frame answers; never re-read paths or
+recompute load order in an emitter. Copy authored segments exactly and add only
+necessary generated shell scaffolding and versioned boundary comments.
+
+Key root projections by static load occurrence. Preserve nested source boundaries
+as generated files whenever flattening has not been floor-proven. The committed
+floor result refutes generated loader functions as a universal lowering under
+`set -e`; do not revisit that mechanism without a new differential result.
+
+Expose the same projection as:
+
+- explicit authoring-time `dorc bundle` (exact interface is builder latitude);
+- default contracted dependencies under a multipart plan artifact;
+- inline placement for fully flattened/single-stream plans.
+
+Do not add global bundle deduplication, package optimization, a second source-map
+format, or compatibility aliases. One root file per load occurrence remains an
+optimization pin, not a v0 completion condition.
+
+#### 6. Reify artifact forms at the Plan/Spine boundary
+
+Represent the executable product as the Plan projection plus its generated files,
+not as ad-hoc CLI writes beside a still-string-only Plan. The human and executable
+forms must derive from that same final structure.
+
+Implement the three semantic forms from section 7:
+
+- fully flattened single `plan.sh`;
+- book-flat `plan.sh` plus contracted bundle dependencies (the hopeful default);
+- preserved book tree when a supported v0 source boundary cannot safely inline.
+
+Auto mode chooses the most flattened safe form and explains a fallback. Explicit
+single-stream/flatten intent refuses before network if unavailable. No second
+post-consent transform may make a plan transportable.
+
+Use cwd analysis to avoid generated artifact-root scaffolding whenever possible.
+Only emit a collision-safe captured root when a reaching cwd change makes it
+necessary; otherwise use a simple relative dependency path. If safe root carriage
+cannot be represented, flatten or choose a safer form.
+
+Filesystem publication is an edge operation over a complete in-memory artifact
+set: build fresh, finish every file, then publish. A plan cannot point at stale
+dependencies. Keep stdout semantics coherent with whichever invocation form the
+builder chooses; update help/looms only through their existing authored surfaces.
+
+#### 7. Promote the executable specification and close
+
+Use the existing tests as the target, not as fixtures to weaken:
+
+- promote each `load30-*` XFAIL only when its target run set is genuinely green;
+- retain `head-expected.ran` until promotion proves today's behavior did not drift
+  through an unrelated route;
+- keep `floor30-dot-loader-function-errexit` byte-identical;
+- add the smallest number of whole-product bundle/artifact cases that exercise
+  properties unavailable below that boundary;
+- as behavior greens, move source resolution, frame, custody, and segment-map
+  properties into fast Rust-native tests at their ownership seats; remove redundant
+  e2es rather than growing the permanent hot loop;
+- keep one compound e2e per irreducible artifact interaction.
+
+Run hot-loop `mise run gate:quick-quiet`; at completion run the exact project gate
+`mise run both gate:full-quiet`. Any golden movement must be enumerated before
+blessing and reviewed as behavior, never treated as expected churn from a refactor.
+
+### Stop conditions (the only planned pauses)
+
+Commit granularly and continue through ordinary failures. Stop and report only
+when one of these occurs:
+
+- a supported target requires semantics contrary to a typed `30I` ruling;
+- correct loading requires host/probe/runtime-discovered input;
+- correct provenance requires a per-line marker or separate v0 source-map file,
+  crossing the human's current boundary;
+- bundle provenance cannot reach a real error without changing whylog contents;
+- a verified-core check, certifier, reference re-derivation, or minispec statement
+  disagrees with the implementation (never weaken the instrument);
+- a user-facing diagnostic requires human words rather than an unwritten register;
+- builder-only quarantine instructions require the exact escalation they specify.
+
+A builder API preference, larger-than-expected refactor, or an existing test
+turning red is not itself a checkpoint. Fix it or report it in the final deviation
+ledger.
+
+### Completion report
+
+Return:
+
+- commit list and final branch tip;
+- which planned work items landed and every item not landed;
+- all deviations, each left open for conductor/human adjudication rather than
+  self-endorsed;
+- XFAIL promotions and e2es lowered/retained;
+- exact golden drift and why;
+- full gate results per platform;
+- remaining open pins from section 14;
+- proposed steering-prose updates, without editing any `CLAUDE.md` yourself.
+
 ## 0. The design in one screen
 
 `rul-static-loading-is-the-whole-model` [TYPED] - Dorc models one closed,
