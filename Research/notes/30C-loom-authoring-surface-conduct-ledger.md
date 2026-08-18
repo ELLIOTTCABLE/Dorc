@@ -184,9 +184,9 @@ the residue.
   heuristic, and a heuristic on a correctness gate makes its false negatives into silent data
   loss. Passes the anti-ceremony test: the author knows they deleted WORDS, and cannot know
   they deleted a HOLE (the render shows `apt-get`, never `{{command}}`).
-- **`rul-flag-names-the-act-not-the-history`** — `--drop-holes`; a flag names what you want
-  done now, never a prior interaction. Matches the engine's own `dropped`/`demote` vocabulary
-  and dodges the git collision `--commit-holes` would carry.
+- **`rul-flag-names-the-act-not-the-history`** — `--verbatim`; a flag names what you want
+  done now, never a prior interaction (which is why `--confirm`/`--accept` were refused). The
+  refusal has already named which holes go and why, so the flag's only job is "stop preserving structure, take my text" — covering deletions and confused moves without enumerating either.
 - **`rul-no-special-case-for-dropping-all`** — dropping every hole in a section gets no louder
   path, no extra variant, no multiples handling. One shape.
 - **No frequency measurement** of the confirm path: this is a side tool.
