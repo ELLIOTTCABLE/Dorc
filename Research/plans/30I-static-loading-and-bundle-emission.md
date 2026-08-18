@@ -403,9 +403,15 @@ the main book as ordinary sh and future context-entry/SSH analysis; target
 qualification is orchestration-layer sugar over that user-visible capability.
 
 All Dorc options remain before `--`. The strong spike-era direction is that any
-tokens after `--` belong to the singular main book, preserving CLI namespace for
-compiler, analyzer, planner, transport, and orchestration growth. Exact argument
-support for multi-target invocations remains future work.
+tokens after `--` belong to the books rather than to Dorc, preserving CLI
+namespace for compiler, analyzer, planner, transport, and orchestration growth.
+
+There is no book that is THE book across targets - there is exactly one book per
+target - so post-`--` arguments cannot be handed to "the" book. The shape that
+follows from one argument list and N targets is that the same arguments reach
+each target's book, positionally identical, evaluated ON that target. That is a
+consequence, not a ruling: how they are carried, whether a target may vary them,
+and what they do to a bundled or flattened artifact all remain future work.
 
 ### 2.5 The standard streams are collapsed resources
 
@@ -413,6 +419,11 @@ Stdin and stdout are first-class UI surfaces we expect to be used, not fallbacks
 They are also SINGULAR. Every mode wanting one must declare its claim, and two
 claimants on one stream is a pre-network refusal naming both — never a silent
 precedence rule.
+
+Stream ROLES are per-subcommand. What follows rules `dorc plan` and
+`dorc bundle`. `dorc apply` already spends stdin on the round-trip (`--plan`
+defaults to it) and will grow its own claimants; the collapsed-resource principle
+binds there too, but its per-flag consequences are not settled here.
 
 `rul-piped-stdout-implies-one-flat-plan` [TYPED] - when stdout is not an
 interactive terminal at runtime, the invocation is single-stream intent by
@@ -433,18 +444,23 @@ rather than collide.
 The plan render, diagnostics, and the why-lens are stderr and are untouched by
 this rule; it governs the artifact stream alone.
 
-`rul-stdin-is-claimed-only-by-dash` [TYPED] - for this spike, exactly one
-spelling claims stdin: a book operand of exactly `-`, in the ordinary CLI
-convention, read as shell-script book input. No flag acquires stdin implicitly,
-and nothing else is claimed from it. Structured stdin meaning beyond this is
+`rul-dash-is-stdin-in-any-filename-position` [TYPED direction] - `-` is a
+generic tool in the I/O toolkit, never a per-subcommand special case: wherever
+this document takes a filename, `-` in that position names stdin. All of
+`dorc plan -`, `dorc plan web1:-`, and
+`dorc plan web1:book.sh --pre-source -` are therefore ordinary, consistent
+spellings. Where the admin finds stdin useful is the admin's call; the tool's job
+is to accept it in filename position everywhere and nowhere else. No flag
+acquires stdin implicitly, and structured stdin meaning beyond this is
 deliberately unclaimed rather than reserved.
 
-The collision to hold is already live: the round-trip lane spends stdin too
-(`apply`'s `--plan` defaults to it). One stream, one claimant - a `-` book
-operand alongside a stdin-defaulted `--plan` refuses before network and names
-both, rather than ranking them.
+Generality sharpens the collapsed-resource rule rather than relaxing it: stdin is
+still ONE stream, so at most one `-` may appear in an invocation. Two - a `-` book
+beside a `--pre-source -`, or a `-` book beside a stdin-defaulted `--plan` -
+refuses before network and names both claimants, rather than ranking them. A file
+literally named `-` is spelled `./-`, per the same convention.
 
-A `-` book is still THE main book (`rul-one-main-book-per-target`): not
+A `-` book is that target's book (`rul-one-main-book-per-target`): not
 dot-sourced, no special `$0` or `return` treatment. It has no path, which is a
 clean second witness for `rul-dot-resolves-as-sh` - under the rejected
 sourcing-file-relative rule a stdin book's own `.` operands would resolve
@@ -1030,8 +1046,9 @@ Human-typed or explicitly hard-acked in the design dialogue:
   books become separate targeted programs. Reds while the transition rips are
   expected and healthy; the final greening must land the replacement rather than
   preserve either;
-- stdin and stdout are collapsed single resources: piped stdout implies one flat
-  plan for one target, a book operand of `-` is stdin's only claimant, and two
+- stdin and stdout are collapsed single resources (roles are per-subcommand;
+  `plan`/`bundle` here): piped stdout implies one flat
+  plan for one target, `-` names stdin in any filename position, and two
   claimants on one stream refuse before network (2.5).
 
 Gently accepted or builder-latitude rather than hard-ratified:
