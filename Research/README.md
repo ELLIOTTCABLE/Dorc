@@ -76,6 +76,10 @@ and carries the license-contamination map.
   `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`;
   same-role-name collisions fail-fast pre-network (the `28Q` §4 rider; priced background
   `notes/28U` (née 293) §5).
+- **Static loading & bundle emission (cwd parity, transitive dependencies, plan forms,
+  source maps)** — **`plans/30I`** (THE design; one load model feeding analysis,
+  explicit bundles, multipart plans, and full flattening; its §13 is the xfail
+  specimen matrix) over the closure build record `notes/30G`.
 - **Correctness-tooling (checker triad · Lean mini-model · Aeneas)** — **`notes/28T`** (the
   adoption plan); evidence base `.claude/research/refinement-types-industrial-cost/`; the two
   proof spikes live on `ai/research-{lean-sparing,aeneas}-spike` (disposition pending).

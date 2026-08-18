@@ -254,19 +254,13 @@ Boundaries: the closure is identity/attribution keying ONLY — never separation
 trust-widening (keyed-not-partitioned stands); `AID:law-lineno-identity` survives
 untouched (closures overlay files; line-spaces never merge; the multi-book concatenation
 violation is a separate, orthogonal CLI-round fix). **Gate:** a single-closure world is
-byte-identical. **Payoff gate, human-owned:** the `.`-of-a-proven-load-inert-file
-blessing — until a book's top-level source stops walling, book-side closures are
-analysis-real but value-dead (the gate bitem9 hit). This is an ENGINE ruling, not an
-oracle: the property doing the work (load-inertness) is engine-proven, and the
-classification "sourcing a proven-inert file disturbs nothing world-side" is a judgment
-over sh semantics only — referent-agnostic-clean (`res-dot-blessing-is-engine-side`). Two sibling gates the
-review surfaced: the ORACLE-side spelling does not exist either — a marked file's
-load-inertness refuses top-level `.` (verified in code:
-`oracle::load_inert::item_is_load_inert` admits only funcdefs + static assigns), so
-every closure today is a singleton and the load-inert `.`-amendment is a §9 owed
-ruling; and the RUNTIME prerequisite `28K:res-book-ships-its-load-closure` (a sourced
-book needs its closure present at apply; named there, unbuilt) joins stage-ii's scope —
-without it the dot-blessing lands analysis-green and runtime-dead.
+byte-identical. The oracle-side marked-file sourcing amendment is BUILT; its
+load-safety is author CONTRACT, never engine-proved purity. The book-side payoff is
+direction-RULED by `plans/30I`: book source acts affect visibility but mint no speaker;
+supported loads resolve with sh cwd parity from one authored-before-contact snapshot;
+one bundle projection feeds multipart contracted dependencies and fully-flattened
+plans. The runtime half remains unbuilt, and no book-side un-walling may land without
+the matching bundle/emission path — analysis-green/runtime-dead remains forbidden.
 
 ## §3 — P3: availability over all contexts (`syn-availability-is-universal`)
 
@@ -587,10 +581,11 @@ own byte-identity gate.
   the fence sitting); kind-owner occupancy per closure; blessing-reachability for
   vocab-minting (pending `pin-blessing-keying`); bitem5's coherence detection; the
   meet-direction registry. Gate: single-closure byte-identity + the fence's six stage-E
-  cells re-verified closure-keyed, PLUS the runtime half:
-  `28K:res-book-ships-its-load-closure` (closure materialization at apply) with an
-  EXECUTING e2e cell — the original book under its sourced tree, the artifact from an
-  isolated cwd, and a missing sourced file failing honestly. Split discipline: the
+  cells re-verified closure-keyed, PLUS the `plans/30I` runtime half: cwd-faithful
+  static loading, book visibility without speaker minting, and the same bundle
+  projection emitted as multipart contracted dependencies or a fully-flattened plan.
+  Its architecture specimens include direct execution, guarded transitive diamonds,
+  and an isolated-cwd artifact. Split discipline: the
   custody INFRASTRUCTURE (types, provenance, closure computation) is buildable now and
   license-inert; the POLICY consumers (the fence's permanence, `pin-blessing-keying`,
   the §9 membership cells) land only with their rulings — green on infrastructure

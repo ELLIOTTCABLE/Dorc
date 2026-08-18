@@ -85,25 +85,6 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   population). CAPTURE: lift, or reach-keyed enrollment (`28Q` §9
   `pin-blessing-reach-elevation`, under active sitting). REVISIT: the spike-end
   fires-often × bites-rarely instrument.
-- **forfeit-book-sourcing-walls** — RULE (as-built): a book's top-level `.` is an
-  unmodeled command and walls the book's remainder. A book mints no speaker whatever it
-  sources (`rul-book-sourcing-mints-no-speaker`), so un-walling is the ONLY thing its
-  `.` could ever buy. FORFEITS: P2's entire book-side payoff — every downstream license
-  in any book that sources a library. CAPTURE, and what each piece now costs: the
-  ORACLE-side amendment has LANDED (a marked file's top-level `.` is admitted text and
-  takes custody), so what remains is the book-side blessing
-  (`28Q:res-dot-blessing-is-engine-side`, acked — a `.` of a marked, contract-satisfying
-  file classifies as no-mutation instead of ⊤) plus runtime closure shipping
-  (`28K:res-book-ships-its-load-closure`), and the two must land together or the
-  blessing is analysis-green and runtime-dead. ONE QUESTION BLOCKS THE PAIR, human-owned
-  and unruled: the book's `.` line SURVIVES in the artifact under the byte-floor, so
-  once the artifact also carries the bundled declarations that line re-sources them
-  (harmless — `floor30-diamond-source-binds-once` measures the idempotence) and FAILS
-  outright when the artifact is run away from its tree, fatally so under `set -e`. Either
-  the artifact keeps requiring its sourced tree (bundling buys nothing), or the engine
-  neutralises a book line it did not previously touch — which is an
-  attention-honesty/byte-floor ruling nobody has made. BACK-OUT: n/a — capture is
-  pending that ruling, not design debt. REVISIT: when it is answered.
 - **forfeit-command-v-poison-wall** — RULE (as-built; `28P`): a polyfill guard's own
   `command -v` line is an unmodeled running command ⇒ walls; the delivered polyfill
   cell guards instead of eliding. FORFEITS: elision in every polyfilled book.
