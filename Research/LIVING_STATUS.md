@@ -14,6 +14,32 @@
 
 ---
 
+## CURRENT STATE (2026-08-18 - STATIC LOADING AND BUNDLE DIRECTION RULED)
+
+**`plans/30I` is the single authority for the newly-closed static-load/bundle
+arc.** The human ruled cwd-faithful sh loading from one authored-before-contact
+snapshot; ordinary root/source acts flow in books, but only dorc-lang files mint
+speaker-transitive custody; include guards and shared cross-author dependencies
+are required surface; analysis, probe/apply emission, explicit `dorc bundle`,
+multipart contracted plans, and full flattening consume ONE loader model. Bundle
+comments read back as aid-only `BundleOriginClaim`; source-map representation is
+rich/multi-stage immediately even though v0 compilation aims at exact copied
+segments.
+
+**The executable target is committed, unbuilt, and green-as-XFAIL.** Three compound
+e2e worlds pin rooted shared dependencies, subshell+errexit fallback, and two
+frame-distinct loads of one entrypoint. The opt-in dash/posh floor cell
+`floor30-dot-loader-function-errexit` measured a real divergence: a failing dot
+child aborts its sourced boundary under `set -e`, while the same body in a
+generated loader function continues; loader functions are therefore REFUTED as
+the universal one-file bundle lowering. Multiple generated files preserve nested
+source boundaries until a different lowering is floor-proven. No production code
+was built.
+
+The 2026-08-17 HUMAN QUEUE below is superseded for items 2 and 3: the book-side
+artifact and path-resolution questions are direction-closed by `30I`. Every other
+queue item remains. The sibling dorc-loom work on `ai/main` is independent.
+
 ## CURRENT STATE (2026-08-17 late — THE IMPLEMENTATION PUSH IS FOLDED)
 
 **Everything below this block is FOLDED at the arc's final tip.** Six lanes landed and

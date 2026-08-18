@@ -167,6 +167,7 @@ Registry
 | aid-survives-attribution | whose at-most claim licensed each survival; the disjointness derivation; the resolver involved | facts+topo | rev▶ post◀ | m+c+d | SurvivalWitness; an-attribution-lanes | B |
 | aid-guard-license-attribution | whose check guards each verify line, under whose vouch | facts+topo | rev▶ post◀ | c+d | GuardLicense lane | B |
 | aid-carry-attribution | which cross-context carries happened, under which invariant lines + closure proof | facts+topo | rev▶ post◀ | c+d | `27C` §4(a); an-read-set-closure | B |
+| aid-bundle-origin-chain | for generated plan/bundle code: every compilation locus through to the deepest content-matching original source, while retaining generated loci; absent/changed originals fall back honestly. Re-ingested markers mint aid-only `BundleOriginClaim`, never analytic identity | text+orcl+invoc | rev▶ olo▶ post◀ | c+d | an-locator-dag; an-graft-provenance; `30I` §9 | S |
 | aid-run-cause-disclosure | why a line can never elide (unknowable operand etc.), with remediation | text+topo | rev▶ blo▶ | d | why-lens; `(cause,site)` dedup | B |
 | aid-escalation-consent-legibility | the escalation dial × capability × entry-capable wrappers in effect | invoc+orcl | rev▶ | m | `27C`; catalog re-home rides `27V` | B |
 | aid-caret-span-precision | which exact section of a compound a diagnostic means | text | all▶ | d | `24H` ack-8; `27U` caret dispatch (7 sites plumbed, multi-line frames, survey committed; two named deferrals) | B |
