@@ -1758,6 +1758,7 @@ mod tests {
         let value = dorc_analysis::value::analyze(&cfg, &book, &mut interner);
         let paths = vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()];
         let defs = crate::world::definition_table(
+            &dorc_core::loadpath::Cwd::default(),
             &paths,
             &srcs,
             dorc_analysis::funcenv::source_file_of_index(srcs.len()),

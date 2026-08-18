@@ -540,7 +540,17 @@ impl DorcConsumer {
             .collect();
         let paths: Vec<String> = oracles.iter().map(|(path, _)| path.clone()).collect();
         let sources: Vec<String> = oracles.into_iter().map(|(_, source)| source).collect();
-        let world = dorc_cli::world::WhyWorld::analyze(book, source, &paths, &sources);
+        // The case is a FLAT virtual directory: its section names are the paths, so the modeled
+        // cwd is the root of that directory and every `./x.oracle.sh` names a section
+        // (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case into a real
+        // directory and runs the real binary there, so the two routes agree by construction.
+        let world = dorc_cli::world::WhyWorld::analyze(
+            &dorc_core::loadpath::Cwd::default(),
+            book,
+            source,
+            &paths,
+            &sources,
+        );
         Some(dorc_cli::plan_envelope_parts(
             &self.render_ctx(),
             &world,
@@ -1319,6 +1329,7 @@ fn live_why_parts(
         None => dorc_cli::results::SiteResults::default(),
     };
     let world = dorc_cli::world::WhyWorld::analyze_measured(
+        &dorc_core::loadpath::Cwd::default(),
         why.book,
         &book,
         &oracle_paths,

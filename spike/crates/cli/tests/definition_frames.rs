@@ -423,6 +423,7 @@ fn solve_world(
     let mut refs: Vec<&str> = world.srcs.iter().map(String::as_str).collect();
     refs.push(world.book.as_str());
     let defs = dorc_cli::world::definition_table(
+        &dorc_core::loadpath::Cwd::default(),
         &world.paths,
         &refs,
         dorc_analysis::funcenv::source_file_of_index(world.srcs.len()),
@@ -885,6 +886,7 @@ fn classes_of(book_src: &str) -> Vec<dorc_analysis::effect::SkipClass> {
     let paths = vec!["hork.oracle.sh".to_owned()];
     let refs = [HORK_ORACLE, book_src];
     let defs = dorc_cli::world::definition_table(
+        &dorc_core::loadpath::Cwd::default(),
         &paths,
         &refs,
         dorc_analysis::funcenv::source_file_of_index(1),

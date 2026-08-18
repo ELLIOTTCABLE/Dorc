@@ -46,6 +46,7 @@ fn classes_of(oracles: &[&str], book_src: &str) -> Vec<SkipClass> {
     let mut refs: Vec<&str> = oracles.to_vec();
     refs.push(book_src);
     let defs = dorc_cli::world::definition_table(
+        &dorc_core::loadpath::Cwd::default(),
         &paths,
         &refs,
         dorc_analysis::funcenv::source_file_of_index(oracles.len()),
@@ -286,6 +287,7 @@ fn stage_ships(oracles: &[&str], provider_word: &str) -> bool {
     let mut refs: Vec<&str> = oracles.to_vec();
     refs.push(COMPOUND_BOOK);
     let defs = dorc_cli::world::definition_table(
+        &dorc_core::loadpath::Cwd::default(),
         &paths,
         &refs,
         dorc_analysis::funcenv::source_file_of_index(oracles.len()),
@@ -533,6 +535,7 @@ fn rekey_world() -> (
     let cfg = dorc_analysis::cfg::build(&parsed).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
     let defs = dorc_cli::world::definition_table(
+        &dorc_core::loadpath::Cwd::default(),
         &[],
         &[REKEY_BOOK],
         dorc_analysis::funcenv::source_file_of_index(0),

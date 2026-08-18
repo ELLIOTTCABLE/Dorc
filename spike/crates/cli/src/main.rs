@@ -200,19 +200,21 @@ fn main() -> ExitCode {
             }
         },
         Ok(Invocation::Lint(args)) => lint_command(&args),
-        Ok(Invocation::Analyze(args)) => match run(&args, &mut clock_for_invocation()) {
-            Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
-            Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
-            Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
-            Ok(RunOutcome::IngressRefused) => ExitCode::from(EXIT_INGRESS_REFUSED),
-            Ok(RunOutcome::HostNotReached) => ExitCode::from(EXIT_HOST_NOT_REACHED),
-            Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
-            Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
-            Err(diag) => {
-                report_invocation_error(&diag);
-                ExitCode::from(EXIT_USAGE)
+        Ok(Invocation::Analyze(args)) => {
+            match run(&args, &invocation_cwd(), &mut clock_for_invocation()) {
+                Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
+                Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
+                Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
+                Ok(RunOutcome::IngressRefused) => ExitCode::from(EXIT_INGRESS_REFUSED),
+                Ok(RunOutcome::HostNotReached) => ExitCode::from(EXIT_HOST_NOT_REACHED),
+                Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
+                Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
+                Err(diag) => {
+                    report_invocation_error(&diag);
+                    ExitCode::from(EXIT_USAGE)
+                }
             }
-        },
+        }
         Err(diag) => {
             report_invocation_error(&diag);
             ExitCode::from(EXIT_USAGE)
@@ -364,22 +366,23 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
 /// first. The loop re-scans what it appends, which is what makes it transitive; it terminates
 /// because a path already present is never appended again.
 fn read_sourced_oracles(
+    cwd: &dorc_core::loadpath::Cwd,
     mut paths: Vec<String>,
     mut srcs: Vec<String>,
 ) -> (Vec<String>, Vec<String>) {
     let mut cursor = 0;
-    while let Some((here, src)) = paths.get(cursor).cloned().zip(srcs.get(cursor).cloned()) {
+    while let Some(src) = srcs.get(cursor).cloned() {
         cursor = cursor.saturating_add(1);
         if !dorc_cli::sourcing::satisfies_the_contract(&src) {
             continue;
         }
         for target in dorc_cli::sourcing::top_level_load_targets(&src) {
-            let Some(wanted) = dorc_cli::sourcing::resolve_against(&here, &target) else {
+            let Some(wanted) = cwd.resolve_dot(&target) else {
                 continue;
             };
             if paths
                 .iter()
-                .any(|path| dorc_cli::sourcing::normalize(path) == wanted)
+                .any(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
             {
                 continue;
             }
@@ -394,6 +397,21 @@ fn read_sourced_oracles(
         }
     }
     (paths, srcs)
+}
+
+/// Where this invocation stands (`30I:rul-dot-resolves-as-sh`) — the ONE environment read the load
+/// model rests on, taken here because this file is the I/O edge (`io-at-edges-only`).
+///
+/// A platform that cannot answer yields [`Cwd::unknown`], under which every RELATIVE load resolves
+/// nowhere and suspends rather than being guessed at (`30I` §3.2). The v0 profile models one cwd
+/// for a whole run: marked oracle top level cannot change directory, and full book cwd flow is
+/// owed rather than built.
+fn invocation_cwd() -> dorc_core::loadpath::Cwd {
+    std::env::current_dir()
+        .ok()
+        .map_or_else(dorc_core::loadpath::Cwd::unknown, |dir| {
+            dorc_core::loadpath::Cwd::at(dir.to_string_lossy().into_owned())
+        })
 }
 
 /// The REAL external-tool runner at the cli edge (`27R` §1 dir-runner-is-the-di-seam): the ONLY
@@ -709,7 +727,11 @@ fn system_clock() -> RunClock {
     clippy::result_large_err,
     reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here. The Err is a full `Diag` on a once-per-process path"
 )]
-fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
+fn run(
+    args: &Args,
+    cwd: &dorc_core::loadpath::Cwd,
+    clock: &mut RunClock,
+) -> Result<RunOutcome, Diag> {
     if args.mode == Mode::Apply
         && let Some(host) = args.host.as_deref()
     {
@@ -763,7 +785,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // the definition table, the helper index, the whylog's record of what was loaded, and the why
     // driver reading that record back — consumes these two vectors, so widening them here widens
     // all of them at once and cannot leave two drivers looking at different worlds.
-    let (oracle_paths, oracle_srcs) = read_sourced_oracles(oracle_paths, oracle_srcs);
+    let (oracle_paths, oracle_srcs) = read_sourced_oracles(cwd, oracle_paths, oracle_srcs);
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
     // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
@@ -785,7 +807,8 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // The book is the LAST source (`source_table`), and naming it is what lets the custody predicate
     // see what the admin defines (`rul-vouch-reaches-own-custody-only`).
     let book_index = source_refs.len().checked_sub(1);
-    let include_tree = dorc_cli::sourcing::include_tree(&source_paths, &source_refs, book_index);
+    let include_tree =
+        dorc_cli::sourcing::include_tree(cwd, &source_paths, &source_refs, book_index);
     let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
         .with_include_tree(
             dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
@@ -890,6 +913,7 @@ fn run(args: &Args, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
     // Computed ONCE from the ORIGIN model, joining the FROZEN set: the fixpoint's ratchet erases
     // EFFECTS and holds no authority over BINDINGS (`the-frozen-set-includes-the-function-environment`).
     let definitions = definition_table(
+        cwd,
         &oracle_paths,
         &source_refs,
         source_file_id(source_refs.len().saturating_sub(1)),

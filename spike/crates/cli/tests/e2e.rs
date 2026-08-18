@@ -262,8 +262,15 @@ impl Harness {
     /// since `28F:rul-w3-default-on-aim-high` every plan/apply/round-trip writes a receipt, and
     /// inheriting the developer's environment would have the suite depositing them in a real
     /// profile directory — outside the worktree, which no test may touch.
-    fn dorc(&self) -> Command {
+    fn dorc(&self, at: &Path) -> Command {
         let mut command = Command::new(&self.dorc);
+        // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
+        // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
+        // inherited: cargo sets a test process.s cwd to the PACKAGE root, under which no case.s
+        // `. ./helpers.sh` names anything, and a loom case materialized into a scratch directory
+        // would resolve differently again. It is a separate question from the EXECUTION cwd, which
+        // stays the throwaway sandbox `rail` supplies.
+        command.current_dir(at);
         command.env(FIXTURE_CLOCK_ENV, FIXTURE_CLOCK_MS.to_string());
         for key in ["XDG_STATE_HOME", "LOCALAPPDATA"] {
             command.env(key, &self.state_root);
@@ -735,7 +742,7 @@ fn guard_shape_violations(artifact: &str, book: &str) -> Vec<String> {
 fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
     let probe = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg("probe")
             .arg(format!("--book={}", dir.join("book.sh").display()))
             .args(args)
@@ -1077,7 +1084,7 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
     std::fs::create_dir_all(&shim_dir).expect("create shim dir");
     let probe_path = std::env::join_paths([mocks, shim_dir.as_path()]).expect("join probe PATH");
 
-    let mut shipped = harness.dorc();
+    let mut shipped = harness.dorc(dir);
     shipped
         .current_dir(&sandbox)
         .env(
@@ -1123,7 +1130,7 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
     std::fs::write(&framed, framed_results(harness, dir, &args)).expect("write framed");
     let results = std::fs::File::open(&framed).expect("open framed results");
 
-    let mut fixture_fed = harness.dorc();
+    let mut fixture_fed = harness.dorc(dir);
     fixture_fed
         .current_dir(&sandbox)
         .arg("plan")
@@ -1387,7 +1394,7 @@ fn run_replay_block(
         .collect();
     match words.split_first() {
         Some((&"dorc", rest)) if !rest.is_empty() => {
-            let mut child = harness.dorc();
+            let mut child = harness.dorc(dir);
             child
                 .current_dir(dir)
                 .args(rest)
@@ -1543,7 +1550,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     let book = dir.join("book.sh");
     let out = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg(format!("--shim-dir={}", shim_dir.display()))
             .arg(format!("--book={}", book.display()))
             .args(&args)
@@ -2093,7 +2100,7 @@ fn split_debug_argv(line: &str) -> Option<(&str, &str)> {
 fn debug_argv(harness: &Harness, dir: &Path, args: &[String], framed: &Path) -> String {
     capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg("--debug-argv")
             .arg(format!("--book={}", dir.join("book.sh").display()))
             .args(args)
@@ -2163,7 +2170,7 @@ fn floor_differential(
     }
     let stripped = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg("strip")
             .arg(dir.join("book.sh"))
             .stdout(Stdio::piped())
@@ -2250,7 +2257,7 @@ fn dual_rail_check(
     let bare = harness.capture_run(Payload::File(&dir.join("book.sh")), mocks);
     let apply_out = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg(format!("--book={}", dir.join("book.sh").display()))
             .args(args)
             .stdin(Stdio::from(std::fs::File::open(framed).unwrap()))
@@ -2425,7 +2432,7 @@ fn scan_why_chain(
     let book = format!("--book={}", dir.join("book.sh").display());
     let live = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg("why")
             .arg(&addr)
             .arg(&book)
@@ -2442,7 +2449,7 @@ fn scan_why_chain(
     std::fs::create_dir_all(&whylog).expect("create whylog dir");
     let _ = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg(&book)
             .args(args)
             .arg(format!("--whylog-dir={}", whylog.display()))
@@ -2452,7 +2459,7 @@ fn scan_why_chain(
     );
     let replay = capture(
         harness
-            .dorc()
+            .dorc(dir)
             .arg("why")
             .arg(&addr)
             .arg("--last")
@@ -2986,7 +2993,7 @@ fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
         std::fs::write(&framed, framed_results(harness, &dir, args)).expect("write framed");
         let out = capture(
             harness
-                .dorc()
+                .dorc(&dir)
                 .arg(&book)
                 .args(args)
                 .stdin(Stdio::from(std::fs::File::open(&framed).unwrap()))

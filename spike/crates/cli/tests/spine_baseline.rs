@@ -169,6 +169,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     // Consented, so the survival tier EXISTS to be dumped; unflagged it is absent rather than quiet
     // (`empty-world-byte-identical`), which would hide every wall-crossing from the diff.
     let built = dorc_cli::world::WhyWorld::analyze_measured(
+        &dorc_core::loadpath::Cwd::default(),
         &world.label,
         &world.book,
         &world.paths,

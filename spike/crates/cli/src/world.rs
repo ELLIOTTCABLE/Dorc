@@ -66,12 +66,14 @@ impl WhyWorld {
     /// Analyze `book_src` against `oracle_srcs` with no measurements — every fact ⊤, every site runs.
     #[must_use]
     pub fn analyze(
+        cwd: &dorc_core::loadpath::Cwd,
         filename: &str,
         book_src: &str,
         oracle_paths: &[String],
         oracle_srcs: &[String],
     ) -> Self {
         Self::analyze_measured(
+            cwd,
             filename,
             book_src,
             oracle_paths,
@@ -103,6 +105,7 @@ impl WhyWorld {
         reason = "one linear pipeline in the binary's own order; splitting it would let the two orders drift, which is the whole thing this seat exists to prevent"
     )]
     pub fn analyze_measured(
+        cwd: &dorc_core::loadpath::Cwd,
         filename: &str,
         book_src: &str,
         oracle_paths: &[String],
@@ -134,6 +137,7 @@ impl WhyWorld {
         let mut verdict_lane = BTreeMap::new();
         let peeled = BTreeMap::new();
         let definitions = definition_table(
+            cwd,
             oracle_paths,
             &source_refs,
             source_file_id(source_refs.len().saturating_sub(1)),
@@ -177,7 +181,8 @@ impl WhyWorld {
             .chain(std::iter::once(filename.to_owned()))
             .collect();
         let book_index = source_refs.len().checked_sub(1);
-        let include_tree = crate::sourcing::include_tree(&source_paths, &source_refs, book_index);
+        let include_tree =
+            crate::sourcing::include_tree(cwd, &source_paths, &source_refs, book_index);
         let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
             .with_include_tree(
                 dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
@@ -717,6 +722,7 @@ pub fn demote_on_certifier_trip(
 /// (`lib-target-is-a-loom-seam`).
 #[must_use]
 pub fn definition_table(
+    cwd: &dorc_core::loadpath::Cwd,
     oracle_paths: &[String],
     source_srcs: &[&str],
     book_file: dorc_core::SourceFileId,
@@ -725,7 +731,7 @@ pub fn definition_table(
     use dorc_analysis::funcenv::{Definition, DefinitionTable};
     use dorc_syntax::ast::NodeKind;
 
-    let mut table = DefinitionTable::default();
+    let mut table = DefinitionTable::rooted_at(cwd.clone());
     for (idx, path) in oracle_paths.iter().enumerate() {
         let Some(src) = source_srcs.get(idx) else {
             continue;
@@ -746,7 +752,7 @@ pub fn definition_table(
                 name_span: *name_span,
             }));
         }
-        table.set_loadable(path.clone(), ids.clone());
+        table.set_loadable(path, ids.clone());
         table.extend_ambient(ids);
     }
     for (id, node) in book.iter() {
@@ -1099,7 +1105,13 @@ mod tests {
     fn table_over(oracles: &[&str]) -> dorc_analysis::funcenv::DefinitionTable {
         let paths: Vec<String> = (0..oracles.len()).map(|n| format!("o{n}.sh")).collect();
         let book = dorc_syntax::parse("apt-get install -y nginx\n").value;
-        definition_table(&paths, oracles, source_file_id(oracles.len()), &book)
+        definition_table(
+            &dorc_core::loadpath::Cwd::default(),
+            &paths,
+            oracles,
+            source_file_id(oracles.len()),
+            &book,
+        )
     }
 
     const ONE_DECLARATION: &str = "apt_get__is_converged() { return 0; }\n";

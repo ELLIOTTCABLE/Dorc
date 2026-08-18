@@ -140,8 +140,13 @@ pub struct Definition {
 #[derive(Debug, Clone, Default)]
 pub struct DefinitionTable {
     defs: Vec<Definition>,
-    /// Per loadable path, the definitions that file contributes IN FILE ORDER (so applying them
-    /// left-to-right reproduces sh's last-wins).
+    /// The modeled working directory every `.` operand in this unit resolves against
+    /// (`30I:rul-dot-resolves-as-sh`). Carried on the table rather than passed per query because
+    /// the load answer and the definitions it binds must be one fact: a caller that could supply a
+    /// different cwd to the resolver than to the loader is a caller that can make them disagree.
+    cwd: dorc_core::loadpath::Cwd,
+    /// Per loadable path — in CANONICAL form, keyed through [`Self::cwd`] — the definitions that
+    /// file contributes IN FILE ORDER (so applying them left-to-right reproduces sh's last-wins).
     by_path: BTreeMap<String, Vec<DefId>>,
     /// The ambient prefix: the CLI-named sources' definitions, in command-line then file order
     /// (`28K` §2 — they load "before line 1").
@@ -153,6 +158,21 @@ pub struct DefinitionTable {
 }
 
 impl DefinitionTable {
+    /// An empty table whose loads resolve against `cwd`.
+    #[must_use]
+    pub fn rooted_at(cwd: dorc_core::loadpath::Cwd) -> Self {
+        Self {
+            cwd,
+            ..Self::default()
+        }
+    }
+
+    /// The modeled working directory this unit's loads resolve against.
+    #[must_use]
+    pub const fn cwd(&self) -> &dorc_core::loadpath::Cwd {
+        &self.cwd
+    }
+
     /// Record a definition and return its id.
     pub fn add(&mut self, def: Definition) -> DefId {
         let id = DefId(u32::try_from(self.defs.len()).unwrap_or(u32::MAX));
@@ -160,9 +180,13 @@ impl DefinitionTable {
         id
     }
 
-    /// Declare that `path`, when sourced, contributes `defs` in that order.
-    pub fn set_loadable(&mut self, path: String, defs: Vec<DefId>) {
-        self.by_path.insert(path, defs);
+    /// Declare that `path`, when sourced, contributes `defs` in that order. `path` is the spelling
+    /// the invocation used; it is filed under its canonical form, so the same file named
+    /// relatively here and sourced absolutely from a book is ONE entry.
+    pub fn set_loadable(&mut self, path: &str, defs: Vec<DefId>) {
+        if let Some(key) = self.cwd.resolve_operand(path) {
+            self.by_path.insert(key, defs);
+        }
     }
 
     /// Append to the ambient prefix (a CLI-named source's definitions, in order).
@@ -223,8 +247,27 @@ impl DefinitionTable {
         self.defs.iter().filter(|d| d.name == name).count()
     }
 
-    fn definitions_of_path(&self, path: &str) -> Option<&[DefId]> {
-        self.by_path.get(path).map(Vec::as_slice)
+    /// What a `.` operand binds: the operand resolved by sh's own rule, then looked up canonically
+    /// (`30I:rul-dot-resolves-as-sh`). `None` for a slash-less operand (a `PATH` search), an
+    /// unknown cwd, or a path the controller never loaded.
+    fn definitions_of_dot_target(&self, target: &str) -> Option<&[DefId]> {
+        self.by_path
+            .get(&self.cwd.resolve_dot(target)?)
+            .map(Vec::as_slice)
+    }
+
+    /// What a path OPERAND names — the `[ -f <path> ]` half of the decidable set, where the word
+    /// is a filesystem operand rather than a `.` target and so carries no slash-less refusal.
+    fn definitions_of_path_operand(&self, path: &str) -> Option<&[DefId]> {
+        self.by_path
+            .get(&self.cwd.resolve_operand(path)?)
+            .map(Vec::as_slice)
+    }
+
+    /// The canonical key a `.` operand names, whether or not anything is loaded there — what a
+    /// load site records so a later pass can replay the binding without re-resolving.
+    fn dot_target_key(&self, target: &str) -> Option<String> {
+        self.cwd.resolve_dot(target)
     }
 
     /// The unit-wide identity of `id` — the key every derived row this definition produced is
@@ -774,7 +817,7 @@ enum DecidableTest {
     /// Decides TRUE only. Absence from the load set is not filesystem absence — the driver knows
     /// only what it was told to read — so an unrecognized path stays ⊤ and
     /// `28K:res-host-conditional-loading` is untouched. Deciding a RESOLVED path true adds no
-    /// assumption the loading model did not already make: `. lib.sh` already binds the
+    /// assumption the loading model did not already make: `. ./lib.sh` already binds the
     /// definitions the controller read from that path.
     LoadableExists,
 }
@@ -897,7 +940,7 @@ fn file_test(
         return None;
     }
     let path = literals.literal_text(node, 2)?;
-    defs.definitions_of_path(path)
+    defs.definitions_of_path_operand(path)
         .map(|_| DecidableTest::LoadableExists)
 }
 
@@ -1147,7 +1190,7 @@ fn sourced_definitions<'a>(
 ) -> &'a [DefId] {
     env.sourced_paths
         .get(&node)
-        .and_then(|path| defs.definitions_of_path(path))
+        .and_then(|key| defs.by_path.get(key).map(Vec::as_slice))
         .unwrap_or(&[])
 }
 
@@ -1209,9 +1252,10 @@ fn load_sites(
         }
         match literals
             .literal_text(id, 1)
-            .filter(|target| defs.definitions_of_path(target).is_some())
+            .filter(|target| defs.definitions_of_dot_target(target).is_some())
+            .and_then(|target| defs.dot_target_key(target))
         {
-            Some(target) => drop(resolved.insert(id, target.to_owned())),
+            Some(key) => drop(resolved.insert(id, key)),
             None => drop(unresolvable.insert(id)),
         }
     }
@@ -1301,7 +1345,7 @@ fn command_transfer(
                 return EnvStack::Top;
             };
             // `28K` §1: we cannot know WHICH names an unloaded file defines, so all of it is ⊤.
-            let Some(contributed) = defs.definitions_of_path(target) else {
+            let Some(contributed) = defs.definitions_of_dot_target(target) else {
                 return EnvStack::Top;
             };
             let mut env = incoming.clone();
@@ -1731,7 +1775,7 @@ mod tests {
     const ROLE: &str = "yum__is_converged";
 
     /// A unit shaped like a real run: one CLI-named oracle FILE (id 0) in the ambient prefix,
-    /// registered under its own path so a book's `. lib.sh` binds the same definition, plus the
+    /// registered under its own path so a book's `. ./lib.sh` binds the same definition, plus the
     /// book's own role funcdefs (id 1) keyed positionally by their `FuncDef` node.
     fn unit(book: &str, oracle_names: &[&str]) -> (DefinitionTable, DefId) {
         let mut table = DefinitionTable::default();
@@ -1739,7 +1783,7 @@ mod tests {
             .iter()
             .map(|name| add_def(&mut table, 0, name))
             .collect();
-        table.set_loadable("lib.sh".to_owned(), ids.clone());
+        table.set_loadable("lib.sh", ids.clone());
         table.extend_ambient(ids.iter().copied());
         let loaded = ids[0];
         for (id, node) in dorc_syntax::parse(book).value.iter() {
@@ -1892,12 +1936,12 @@ mod tests {
     /// one selection idiom the design offers.
     #[test]
     fn a_subshell_scoped_re_source_does_not_trip_the_refusal() {
-        let book = "( . lib.sh; yum install -y nginx )\n";
+        let book = "( . ./lib.sh; yum install -y nginx )\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        table.set_loadable("lib.sh", vec![inner]);
         assert!(contests_of(book, &table).is_empty());
     }
 
@@ -1906,12 +1950,12 @@ mod tests {
     /// whose judgment governs the family (`28K` §6 rej-load-order-as-trust-adjudicator).
     #[test]
     fn a_top_level_re_source_trips_the_refusal() {
-        let book = ". lib.sh\nyum install -y nginx\n";
+        let book = ". ./lib.sh\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        table.set_loadable("lib.sh", vec![inner]);
         let found = contests_of(book, &table);
         assert_eq!(found.len(), 1, "the same collision, unbounded: {found:?}");
         assert_eq!(found[0].prior, outer);
@@ -2055,12 +2099,12 @@ mod tests {
     /// disagree, and it is the reason the query is per-site rather than per-unit.
     #[test]
     fn a_subshell_re_source_answers_only_within_its_scope() {
-        let book = "( . lib.sh; yum install -y nginx )\nyum install -y curl\n";
+        let book = "( . ./lib.sh; yum install -y nginx )\nyum install -y curl\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        table.set_loadable("lib.sh", vec![inner]);
         let (env, cfg, ast) = solve_positional(book, &table);
         let live = LiveDefinitions::new(&env, &table);
         let inside = command_at(&cfg, &ast, book, "yum install -y nginx");
@@ -2137,12 +2181,12 @@ mod tests {
     /// spellings of one question, and this is the one the conversion consumes.
     #[test]
     fn the_frame_lookup_names_the_definition_live_at_each_site() {
-        let book = "( . lib.sh; yum install -y nginx )\nyum install -y curl\n";
+        let book = "( . ./lib.sh; yum install -y nginx )\nyum install -y curl\n";
         let mut table = DefinitionTable::default();
         let outer = add_def_spanned(&mut table, 0, ROLE, 10);
         table.extend_ambient([outer]);
         let inner = add_def_spanned(&mut table, 1, ROLE, 20);
-        table.set_loadable("lib.sh".to_owned(), vec![inner]);
+        table.set_loadable("lib.sh", vec![inner]);
         let (env, cfg, ast) = solve_positional(book, &table);
         let live = LiveDefinitions::new(&env, &table);
         let inside = command_at(&cfg, &ast, book, "yum install -y nginx");
@@ -2273,7 +2317,7 @@ mod tests {
     fn sourceable(book: &str) -> (DefinitionTable, DefId) {
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("lib.sh".to_owned(), vec![lib]);
+        table.set_loadable("lib.sh", vec![lib]);
         for (id, node) in dorc_syntax::parse(book).value.iter() {
             if let NodeKind::FuncDef { name, .. } = &node.kind {
                 let def = add_def(&mut table, 1, name);
@@ -2325,7 +2369,7 @@ mod tests {
     #[test]
     fn a_guard_above_the_real_oracle_still_loses_to_it() {
         let book = "if ! command -v yum__is_converged >/dev/null 2>&1; then\n\
-                    yum__is_converged() { :; }\nfi\n. lib.sh\nyum install -y nginx\n";
+                    yum__is_converged() { :; }\nfi\n. ./lib.sh\nyum install -y nginx\n";
         let (table, lib) = sourceable(book);
         assert_eq!(folded(book, &table).0, Flat::Elem(Binding::Defined(lib)));
     }
@@ -2362,7 +2406,7 @@ mod tests {
     /// name already live, the `|| . backup.sh` operand is dead.
     #[test]
     fn conditional_sourcing_does_not_load_when_the_name_is_already_live() {
-        let book = "command -v yum__is_converged >/dev/null 2>&1 || . lib.sh\n";
+        let book = "command -v yum__is_converged >/dev/null 2>&1 || . ./lib.sh\n";
         let (mut table, lib) = sourceable(book);
         let ambient = add_def(&mut table, 2, ROLE);
         table.extend_ambient([ambient]);
@@ -2379,7 +2423,7 @@ mod tests {
     /// And its live half: with nothing bound, the same line DOES load the backup.
     #[test]
     fn conditional_sourcing_loads_when_the_name_is_absent() {
-        let book = "command -v yum__is_converged >/dev/null 2>&1 || . lib.sh\n";
+        let book = "command -v yum__is_converged >/dev/null 2>&1 || . ./lib.sh\n";
         let (table, lib) = sourceable(book);
         assert_eq!(folded(book, &table).0, Flat::Elem(Binding::Defined(lib)));
     }
@@ -2388,7 +2432,7 @@ mod tests {
     /// one the CONTROLLER resolved, so the test is decidable-TRUE and the load is certain.
     #[test]
     fn a_file_test_on_a_resolved_loadable_decides_true() {
-        let book = "[ -f lib.sh ] && . lib.sh\n";
+        let book = "[ -f lib.sh ] && . ./lib.sh\n";
         let (table, lib) = sourceable(book);
         let (binding, folds) = folded(book, &table);
         assert_eq!(binding, Flat::Elem(Binding::Defined(lib)));
@@ -2469,7 +2513,7 @@ mod tests {
         for book in spellings {
             let mut table = DefinitionTable::default();
             let lib = add_def(&mut table, 0, ROLE);
-            table.set_loadable("./oracles/lib.sh".to_owned(), vec![lib]);
+            table.set_loadable("./oracles/lib.sh", vec![lib]);
             let (env, cfg, ast) = solve_positional(book, &table);
             assert_eq!(
                 env.binding_before(cfg.exit(), ROLE),
@@ -2498,7 +2542,7 @@ mod tests {
         let book = ". \"$LIB/lib.sh\"\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("./oracles/lib.sh".to_owned(), vec![lib]);
+        table.set_loadable("./oracles/lib.sh", vec![lib]);
         let (env, cfg, ast) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
         assert!(
@@ -2512,6 +2556,59 @@ mod tests {
         );
     }
 
+    /// The load operand is resolved by SH's rule, against the modeled working directory
+    /// (`30I:rul-dot-resolves-as-sh`) — so where the run stands decides which file a relative
+    /// target names, and one that is not under it names nothing.
+    ///
+    /// The reversed reading this replaces resolved a target against the SOURCING FILE's own
+    /// directory, which gave one authored line a different referent under Dorc than under `dash`;
+    /// `rul-unsure-falls-toward-sh-parity` binds name resolution by name, and this is name
+    /// resolution.
+    #[test]
+    fn a_relative_target_resolves_against_the_modeled_working_directory() {
+        let book = ". ./lib.sh\nyum install -y nginx\n";
+        for (cwd, loaded, bound) in [
+            ("/ops", "/ops/lib.sh", true),
+            ("/ops", "/ops/pkg/lib.sh", false),
+            ("/ops/pkg", "/ops/pkg/lib.sh", true),
+        ] {
+            let mut table = DefinitionTable::rooted_at(dorc_core::loadpath::Cwd::at(cwd));
+            let lib = add_def(&mut table, 0, ROLE);
+            table.set_loadable(loaded, vec![lib]);
+            let (env, cfg, _) = solve_positional(book, &table);
+            let want = if bound {
+                Flat::Elem(Binding::Defined(lib))
+            } else {
+                Flat::Top
+            };
+            assert_eq!(
+                env.binding_before(cfg.exit(), ROLE),
+                want,
+                "standing in {cwd}, `. ./lib.sh` names {}",
+                if bound { loaded } else { "nothing loaded" }
+            );
+        }
+    }
+
+    /// A SLASH-LESS operand is a `PATH` search, which is outside v0 and outside what a kernel may
+    /// answer — so it resolves nowhere and havocs, even when a file of that name is loaded
+    /// (`30I` §3.2). The command-line spelling is a different question and keeps working: `-o
+    /// lib.sh` names a file in the cwd, because a path OPERAND carries no slash-less refusal.
+    #[test]
+    fn a_slash_less_target_is_a_path_search_and_resolves_nowhere() {
+        let book = ". lib.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let lib = add_def(&mut table, 0, ROLE);
+        table.set_loadable("lib.sh", vec![lib]);
+        let (env, cfg, ast) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
+        assert_eq!(
+            env.unresolvable_loads(),
+            &BTreeSet::from([command_at(&cfg, &ast, book, ". lib.sh")]),
+            "disclosed rather than silently walling — silence licenses nothing"
+        );
+    }
+
     /// A resolvable target the CONTROLLER never read is the same ⊤ by a different route, and it
     /// is the cell that keeps the richness cut honest: resolving a PATH is not learning what
     /// lives at it. Absence from the load set is not filesystem absence
@@ -2521,7 +2618,7 @@ mod tests {
         let book = "LIB=/etc/hork\n. \"$LIB/env\"\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("./oracles/lib.sh".to_owned(), vec![lib]);
+        table.set_loadable("./oracles/lib.sh", vec![lib]);
         let (env, cfg, ast) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
         assert_eq!(
@@ -2532,7 +2629,7 @@ mod tests {
 
     /// The shadow refusal reads a variable-resolved load exactly as it reads a literal one —
     /// the regime applies whole, so a cross-unit override arriving through `"$LIB/lib.sh"`
-    /// draws the same complaint `a_top_level_re_source_trips_the_refusal` pins for `. lib.sh`.
+    /// draws the same complaint `a_top_level_re_source_trips_the_refusal` pins for `. ./lib.sh`.
     /// Without this, widening the resolvable set would have widened the SILENT set with it.
     #[test]
     fn a_variable_resolved_load_trips_the_shadow_refusal() {
@@ -2541,7 +2638,7 @@ mod tests {
         let outer = add_def(&mut table, 0, ROLE);
         table.extend_ambient([outer]);
         let inner = add_def(&mut table, 1, ROLE);
-        table.set_loadable("./lib.sh".to_owned(), vec![inner]);
+        table.set_loadable("./lib.sh", vec![inner]);
         let found = contests_of(book, &table);
         assert_eq!(found.len(), 1, "{found:?}");
         assert_eq!((found[0].prior, found[0].shadowing), (outer, inner));
@@ -2558,7 +2655,7 @@ mod tests {
         let book = "LIB=.\n[ -f \"$LIB/lib.sh\" ] && yum__is_converged() { :; }\n";
         let mut table = DefinitionTable::default();
         let lib = add_def(&mut table, 0, ROLE);
-        table.set_loadable("./lib.sh".to_owned(), vec![lib]);
+        table.set_loadable("./lib.sh", vec![lib]);
         for (id, node) in dorc_syntax::parse(book).value.iter() {
             if let NodeKind::FuncDef { name, .. } = &node.kind {
                 let def = add_def(&mut table, 1, name);
