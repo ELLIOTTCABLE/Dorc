@@ -267,3 +267,22 @@ errors above are the conductor's, not the builder's.
 Owed by the conductor at the fold regardless: own-hand `both gate:full-quiet`;
 the steering prose (builder PROPOSED text in its report — conductor writes it, and
 judges first whether each line earns a permanent seat in every future context).
+
+## §10 — Specimen-respell: RATIFIED [human-typed, 2026-08-18]
+
+The case-dir cwd pin and the three one-line root re-spells stand. Ground: hardcoding
+the test-dir path into each test is a boondoggle that makes cases immovable. No ruling
+between `./oracles/foo.sh` and `./foo.sh` — both are valid product-surface; reach for
+TEST-ERGONOMICS over literalness, which leans toward keeping a case's files in one
+directory. Ideally one test covers each shape.
+
+Two LOW-priority follow-ups, explicitly punt-able, and not worth a builder's attention
+beyond a footnote (do not pollute `30I` with them unless one becomes actively wrong):
+
+- `owed-one-absolute-path-specimen` — at least one hand-written case should exercise an
+  absolute path. A mechanical e2e that copies a case into a tmpdir and drives it by
+  absolute path is one shape; performance is the constraint, and punting is sanctioned
+  if it is painful, slow, or judged not worth it.
+- `owed-e2e-subtree-support` — the e2e sandbox copy is `read_dir(case)`, top-level files
+  only, no recursion. Arbitrarily-nested relative-directory cases need it. Low priority
+  unless this arc's own new e2es force it.
