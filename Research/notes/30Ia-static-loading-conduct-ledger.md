@@ -106,28 +106,41 @@ carry it. The seam is placed to serve the intent rather than to fight it: a
 successor consuming a typed, documented load answer is LESS likely to re-resolve
 than one exhausted builder improvising an emitter at the end of its window.
 
-The seam, as issued to builder 1:
+The seam is FIXED, not builder-judged: **builder 1 lands work-order items 2–4 and
+stops; builder 2 carries items 5–7.**
 
-- FLOOR — never before work-order items 2–4 are landed, natively tested, and
-  committed (one static snapshot; the healthy-library surface; the locator DAG
-  generalized). Below that the load model is not yet one model and a successor
-  would be guessing at it.
-- PREFERENCE — also item 5 (the bundle projection existing, consumed by at least
-  one entrypoint). The cleaner semantic cut: everything
-  `rul-one-loader-many-projections` governs is then behind the seam, and the
-  successor adds only PLACEMENT.
-- CEILING — a handing-off builder does NOT start item 7. Promotion, e2e lowering,
-  and golden-drift enumeration are atomic and belong to whoever closes the lane;
-  half-done is worse than not-started.
-- TRIGGER — declare at the nearest coherent boundary past roughly 60–70% context,
-  never at exhaustion.
+`rul-never-trigger-on-self-assessed-context` [human-typed, 2026-08-18] — the seam
+was first issued with a floor/preference/ceiling and a "declare past roughly
+60–70% context" trigger. That trigger was WITHDRAWN within the hour: a model has
+no reliable read on its own context usage, so it was not an instruction a builder
+could follow, and the latitude it gated was therefore unevaluable too. The
+conductor error was writing a self-assessment gate at all; the repair is a fixed
+target chosen conservatively, because where the window actually sits is exactly
+what nobody can measure. Binds every future brief: never gate a builder's control
+flow on its own resource introspection.
+
+The conservative pole was taken deliberately. Two consequences ride it:
+
+- Item 4's force-now proof is DEFERRED, and is explicitly not a builder-1 stop
+  condition. `30I` work-order §4 wants one locator chain through a real
+  diagnostic render; the interesting chain runs through the bundle, which is item
+  5. Builder 1 proves the DAG on a chain that exists today (book source span →
+  planned replacement, two stages) and records the residual as builder 2's first
+  task. This is the priced cost of cutting at the floor rather than after item 5.
+- Item 7 (promotion, e2e lowering, golden-drift enumeration) belongs to whoever
+  CLOSES the lane. It is atomic; half-done lies about what is proven.
+
+`Research/notes/30Ib-static-loading-lane-report.md` is consequently a HARD
+deliverable rather than insurance: it is the whole mechanism by which the seam
+does not become the second resolver `30I:impl-one-builder-one-lane` forbids.
 
 Handoff artifact: `Research/notes/30Ib-static-loading-lane-report.md`, maintained
 LIVE from the first slice and committed with it — as-built seats and their
 consumption API, what is pinned where, deviations left OPEN, open questions, exact
 next steps. Not a re-plan of `30I`, not a chronology.
 
-Conductor's read, for the record: ~70% that one builder cannot close cleanly. The
+Conductor's read, for the record: ~70% that one builder could not have closed
+this cleanly. The
 volume sits in items 6–7 (a new artifact subsystem in a 23k-LOC crate whose only
 artifact surface is stdout today, then golden churn across a corpus whose quick
 tier alone is 1354 tests, twice, on two platforms). The discipline costs builder 1
