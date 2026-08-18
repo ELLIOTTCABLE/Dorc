@@ -425,6 +425,13 @@ Stream ROLES are per-subcommand. What follows rules `dorc plan` and
 defaults to it) and will grow its own claimants; the collapsed-resource principle
 binds there too, but its per-flag consequences are not settled here.
 
+`owed-apply-takes-stdin-only-by-dash` - `apply` inherits the same rule and is
+owed it: stdin reaches it through a `-` in filename position, never by a flag
+defaulting to it silently. Low priority, and punt-able as its own bite-sized
+task - EXCEPT that it lands in the same corpus argv as the `--pre-source`
+rework, so if it would cost a second test respell it is cheaper rolled into the
+first.
+
 `rul-piped-stdout-implies-one-flat-plan` [TYPED] - when stdout is not an
 interactive terminal at runtime, the invocation is single-stream intent by
 construction. Emission takes `mode-fully-flattened-plan` (7.1 mode 1), and the
@@ -443,6 +450,12 @@ rather than collide.
 
 The plan render, diagnostics, and the why-lens are stderr and are untouched by
 this rule; it governs the artifact stream alone.
+
+`lean-every-detected-mode-is-also-requestable` [direction, not now] - detection
+only ever picks among modes that are ALSO explicitly requestable. Git is the
+model: a default that figures out fast-forward-versus-merge, alongside explicit
+`--ff-only` and `--no-ff` that fail fast instead of guessing. Mirror that shape
+as modes accrue; nothing is built for it now.
 
 `rul-dash-is-stdin-in-any-filename-position` [TYPED direction] - `-` is a
 generic tool in the I/O toolkit, never a per-subcommand special case: wherever
@@ -510,6 +523,14 @@ CLI path handling may resolve an authored argument or source expression to exact
 snapshot bytes using more information than the literal token alone. That is file
 identification, not altered shell semantics: once selected, every pre-source and
 authored `.` keeps ordinary status, scope, order, and environment behavior.
+
+`rul-cli-file-resolution-is-ours` [TYPED] - CLI *file* resolution is Dorc's to
+design and rule; it is not ceded to shell source-resolution semantics. It reaches
+for standard, unsurprising CLI behaviour. Turning a resolved, extant filename into
+a `.`-style include in the internal representation is then an EXPLICIT mapping
+function, not an identity. Its detailed semantics are unruled; the separation is
+not. Authored `.` operands inside a book or oracle are the other side of this
+line and stay pure sh (`rul-dot-resolves-as-sh`).
 
 The landed sourcing-file-relative rule is rejected. It gives the same authored
 line a different referent under Dorc and stock sh, breaks regional re-sourcing,
