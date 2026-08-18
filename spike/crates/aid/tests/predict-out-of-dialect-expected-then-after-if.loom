@@ -45,3 +45,18 @@ hork.oracle.sh:
        | ^
 
 dorc lint: 5 errors, 1 warning, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: predict-out-of-dialect-expected-then-after-if
+{{funcname}} = "hork__predict"
+{{wall_count}} = "1"
+{{wall_word}} = "wall"
+{{downstream}} = "0"
+{{v0}} = "5"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

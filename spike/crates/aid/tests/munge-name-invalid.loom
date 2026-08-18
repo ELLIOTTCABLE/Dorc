@@ -31,3 +31,17 @@ oracle.sh:
        | \______________________/
 
 dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: munge-name-invalid
+{{source}} = "\\xc3\\xa4\\xc2\\xb8\\xc2\\xadpkg"
+{{funcname}} = "\\xc3\\xa4\\xc2\\xb8\\xc2\\xadpkg__predict"
+{{problem}} = "non-ASCII character `\\xc3\\xa4` (a NAME admits only ASCII\n  letters/digits/`_`)"
+{{v0}} = "2"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

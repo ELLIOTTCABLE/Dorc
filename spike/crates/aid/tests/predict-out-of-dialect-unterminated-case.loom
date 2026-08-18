@@ -33,3 +33,15 @@ hork.oracle.sh:
        | ^
 
 dorc lint: 3 errors, 1 warning, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: predict-out-of-dialect-unterminated-case
+{{funcname}} = "hork__predict"
+{{v0}} = "3"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

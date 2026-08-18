@@ -35,3 +35,18 @@ hork.oracle.sh:
   3:4 info [unmodeled-inventory:unmodeled-wall-inventory] this book carries 1 unmodeled wall -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~0 command site(s) after it fall back to runtime guards instead of full elision.
 
 dorc lint: 3 errors, 1 warning, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: predict-out-of-dialect-empty-command
+{{funcname}} = "hork__predict"
+{{wall_count}} = "1"
+{{wall_word}} = "wall"
+{{downstream}} = "0"
+{{v0}} = "3"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

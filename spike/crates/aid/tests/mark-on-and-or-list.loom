@@ -25,3 +25,14 @@ oracle.sh:
        |                          \______________________________/
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: mark-on-and-or-list
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

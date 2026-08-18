@@ -34,3 +34,15 @@ hork.oracle.sh:
        | ^
 
 dorc lint: 2 errors, 1 warning, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: predict-lex-unterminated-quote
+{{funcname}} = "hork__predict"
+{{v0}} = "unterminated\n  quote"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

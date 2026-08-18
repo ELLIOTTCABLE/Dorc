@@ -29,3 +29,14 @@ oracle.sh:
        | \________/
 
 dorc lint: 2 errors, 0 warnings, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: mark-standalone-rc-consumer
+{{v0}} = "2"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

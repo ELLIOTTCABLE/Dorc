@@ -28,3 +28,15 @@ hork.oracle.sh:
        |          \__/
 
 dorc lint: 1 error, 1 warning, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: predict-out-of-dialect-expected-test-open
+{{funcname}} = "hork__predict"
+{{v0}} = "1"
+{{v1}} = ""
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""
