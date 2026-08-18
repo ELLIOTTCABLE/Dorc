@@ -258,6 +258,21 @@ preserving every untouched variable by identity before tokenization.
 variable omission. Both are bounded and refuse structure edits, fixed-data
 edits, cross-section changes, ambiguous attribution, and excessive work.
 
+An accepted edit that gave a variable up answers `EditedWithDrops` rather than
+`Edited`, so a consumer cannot reach the edit without seeing the loss. Each
+`VariableDrop` carries the occurrence's opaque id, its rendered value, whether
+that value NEWLY appears in the edit's literal text (an occurrence-count delta
+against the baseline, so a value the prose already spelled out is not mistaken
+for one just frozen in), and the class the required-retention pass refused with.
+Those separate "you deleted this" from "you edited the text anchoring this",
+which want different repairs. errorloom reports; what to do about it is
+consumer policy.
+
+A variable's anchors are the bytes immediately beside it, and a section EDGE is
+not one: text typed before the first fragment or after the last is ordinary
+interior insertion, so appending a clause after a trailing variable, or
+prefixing a word before a leading one, preserves it.
+
 The bounds are `TransportLimits`: a per-render scalar ceiling (defaulting to one
 maximal replay output, so the transport never refuses a render the container
 accepted), an alignment work ceiling, and the removable-occurrence search bound.
