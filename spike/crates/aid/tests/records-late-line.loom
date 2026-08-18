@@ -7,3 +7,7 @@ why: 262 §1 pin-late-and-alien-records: material after the close marker means t
 $ dorc plan --book=book.sh < probe-results.txt
 warning[records-late-line]: sm 1 late (after the end-sentinel) record line(s)
 discarded (counted, never folded)
+
+$ dorc-loom --this vars
+case: records-late-line
+{{count}} = "1"

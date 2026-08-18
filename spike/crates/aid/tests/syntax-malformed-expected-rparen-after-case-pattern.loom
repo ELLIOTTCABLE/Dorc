@@ -45,3 +45,17 @@ book.sh:
        | \__/
 
 dorc lint: 7 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: syntax-malformed-expected-rparen-after-case-pattern
+{{wall_count}} = "2"
+{{wall_word}} = "walls"
+{{downstream}} = "0"
+{{v0}} = "7"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

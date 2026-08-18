@@ -28,3 +28,7 @@ widens a kind no coordinate can name (a likely mis-key).
       [ hork.oracle.sh:9:1
    9 | hork__disturbance_reaches_only() {
      | \____________________________/
+
+$ dorc-loom --this vars
+case: reaches-provider-collision
+{{name}} = "hork"

@@ -18,3 +18,8 @@ would collide with it. Rename it to stay clear of `*__predict`.
       [ book.sh:3:1
    3 | hork__predict() { hork --stub; }
      | \___________/
+
+$ dorc-loom --this vars
+case: reserved-namespace-squat
+{{name}} = "hork__predict"
+{{role}} = "__predict"

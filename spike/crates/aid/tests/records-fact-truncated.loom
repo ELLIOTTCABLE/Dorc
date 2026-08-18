@@ -8,3 +8,9 @@ $ dorc plan --book=book.sh < probe-results.txt
 note[records-fact-truncated]: the probe's records ended early: 3 of 5 declared
 site records arrived, so Dorc treats the 2 unseen site(s) as unanswered and
 leaves their commands to run.
+
+$ dorc-loom --this vars
+case: records-fact-truncated
+{{received}} = "3"
+{{declared}} = "5"
+{{unseen}} = "2"

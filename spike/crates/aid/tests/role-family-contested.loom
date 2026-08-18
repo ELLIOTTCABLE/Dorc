@@ -9,3 +9,9 @@ warning[role-family-contested]: This `yum__is_converged` overrides the
 definition at vendor/yum.oracle.sh:4 with nothing spelling the choice, so Dorc
 withholds every license from the `yum` family and its sites run -- an `unset -f
 yum__is_converged` between the two spells the override as chosen.
+
+$ dorc-loom --this vars
+case: role-family-contested
+{{name}} = "yum__is_converged"
+{{prior}} = "vendor/yum.oracle.sh:4"
+{{family}} = "yum"

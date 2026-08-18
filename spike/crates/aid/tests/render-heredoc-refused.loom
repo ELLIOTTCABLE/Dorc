@@ -11,3 +11,8 @@ command stays in place and runs verbatim.
    = help:  Move the heredoc's content out of the command -- feed it with printf
             or redirect from a file -- and Dorc can then elide or guard the
             site.
+
+$ dorc-loom --this vars
+case: render-heredoc-refused
+{{verb}} = "elide"
+{{command}} = "cat <<EOF"

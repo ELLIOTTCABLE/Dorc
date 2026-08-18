@@ -37,3 +37,8 @@ emitted until one remains.
       [ hork.oracle.sh:8:1
    8 | sm_dorc_Package__disturbance_reaches_only() {
      | \_______________________________________/
+
+$ dorc-loom --this vars
+case: reaches-conflict
+{{kind}} = "sm_dorc_Package"
+{{count}} = "2"

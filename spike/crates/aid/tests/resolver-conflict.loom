@@ -36,3 +36,8 @@ remains.
       [ hork.oracle.sh:8:1
    8 | sm_dorc_Package__resolve() {
      | \______________________/
+
+$ dorc-loom --this vars
+case: resolver-conflict
+{{kind}} = "sm_dorc_Package"
+{{count}} = "2"

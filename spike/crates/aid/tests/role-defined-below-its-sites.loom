@@ -8,3 +8,8 @@ $ dorc plan --book=book.sh
 note[role-defined-below-its-sites]: `yum__is_converged` is defined below 2 of
 its family's sites, and a definition licenses nothing above itself, so those
 sites run as if it were absent -- moving it above them is one cut-and-paste.
+
+$ dorc-loom --this vars
+case: role-defined-below-its-sites
+{{name}} = "yum__is_converged"
+{{sites}} = "2"

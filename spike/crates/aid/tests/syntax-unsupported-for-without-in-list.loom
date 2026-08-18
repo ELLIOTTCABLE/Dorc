@@ -42,3 +42,17 @@ book.sh:
        | \/
 
 dorc lint: 3 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: syntax-unsupported-for-without-in-list
+{{wall_count}} = "1"
+{{wall_word}} = "wall"
+{{downstream}} = "0"
+{{v0}} = "3"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

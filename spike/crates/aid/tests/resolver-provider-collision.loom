@@ -28,3 +28,7 @@ kind no coordinate can name (a likely mis-key).
       [ hork.oracle.sh:9:1
    9 | hork__resolve() {
      | \___________/
+
+$ dorc-loom --this vars
+case: resolver-provider-collision
+{{name}} = "hork"
