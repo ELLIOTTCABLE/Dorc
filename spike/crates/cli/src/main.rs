@@ -428,7 +428,7 @@ fn read_book_sourced(
             cwd.clone(),
             paths.clone(),
             srcs.clone(),
-            (ambient..paths.len()).collect(),
+            &(ambient..paths.len()).collect(),
             book_path,
             book_src,
         );
@@ -878,7 +878,7 @@ fn run(
         cwd.clone(),
         oracle_paths,
         oracle_srcs,
-        book_sourced,
+        &book_sourced,
         book_name,
         &book_src,
     );
@@ -3745,7 +3745,7 @@ mod snapshot_id_space_tests {
             dorc_core::loadpath::Cwd::default(),
             vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
             vec!["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
-            [].into(),
+            &std::collections::BTreeSet::new(),
             "webhost.sh",
             "# book\n",
         );

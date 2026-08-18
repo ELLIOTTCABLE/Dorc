@@ -181,7 +181,7 @@ mod tests {
             Cwd::at(cwd),
             paths,
             srcs,
-            [].into(),
+            &std::collections::BTreeSet::new(),
             &book_path,
             &book_src,
         ))

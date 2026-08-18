@@ -136,7 +136,7 @@ mod tests {
             dorc_core::loadpath::Cwd::default(),
             paths,
             srcs,
-            [].into(),
+            &std::collections::BTreeSet::new(),
             "book.sh",
             book,
         );

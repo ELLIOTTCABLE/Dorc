@@ -1225,7 +1225,7 @@ mod tests {
             dorc_core::loadpath::Cwd::default(),
             paths,
             oracles.iter().map(|s| (*s).to_owned()).collect(),
-            [].into(),
+            &std::collections::BTreeSet::new(),
             "book.sh",
             BOOK,
         );

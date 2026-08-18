@@ -18,12 +18,47 @@
 //! Sources the invocation named — and whatever their own top-level `.` reaches — load before the
 //! book's first line, so their definitions are ambient. A source reached ONLY from a book `.`
 //! loads at that line and nowhere else: making it ambient would let it license sites ABOVE its own
-//! load point, which is exactly what `visibility-is-full-positional` forbids. The split is
-//! therefore a prefix count over one ordered vector, not a second collection.
+//! load point, which is exactly what `visibility-is-full-positional` forbids.
+//!
+//! # Role is CARRIED, never derived from position
+//!
+//! A source is a book because it was named as one, not because it sorts last. The ordering that
+//! puts the book at the end is real and load-bearing for the `SourceFileId` space
+//! (`28K` §2a: CLI files are the ambient prefix, the book's own text executes after), but reading
+//! ROLE off that ordering fossilizes "exactly one book, at the end" into every consumer that
+//! re-derives it. [`SourceRole`] is on the source, so widening to several independently classified
+//! roots is a change to how this vector is BUILT rather than to everything that reads it.
+//!
+//! **The named cut that remains** (`churn-avoidance-disclosure`): several `--book` operands are
+//! still `\n`-CONCATENATED into one text at the edge, and the whole analysis below — one `Ast`,
+//! one `Cfg`, one `ValueFlow`, and `Plan::render_apply`'s span edits over one string — assumes
+//! that. Undoing it is an arc, not a slice; what this type does is stop the assumption spreading.
 
 use dorc_core::loadpath::Cwd;
 
-/// Every source this run analyses, in load order, with the book LAST.
+/// What a source IS in this run, independently of where it sits in the vector.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SourceRole {
+    /// A root the invocation named as a book: admin-authored, chaotic, and the surface the plan
+    /// renders. Its own `.` acts change visibility and mint no speaker (`30I` §2.3).
+    Book,
+    /// A root the invocation named to LOAD — an oracle, and whatever its own top level sources.
+    /// Its definitions are ambient: they load before the book's first line.
+    NamedLoad,
+    /// A root reached only from a book `.`. It loads AT that line and nowhere else, so its
+    /// definitions license nothing above their own load point.
+    BookSourced,
+}
+
+impl SourceRole {
+    /// Does this source load before the book's first line?
+    #[must_use]
+    pub const fn is_ambient(self) -> bool {
+        matches!(self, SourceRole::NamedLoad)
+    }
+}
+
+/// Every source this run analyses, in load order.
 #[derive(Debug, Clone)]
 pub struct StaticLoadSnapshot {
     cwd: Cwd,
@@ -32,38 +67,55 @@ pub struct StaticLoadSnapshot {
     /// there is one spelling of the identity rule and nothing to keep in step with it.
     paths: Vec<String>,
     srcs: Vec<String>,
-    /// Sources a book `.` reaches. Re-derived from the book on every run, never carried, so a
-    /// replay partitions exactly as its original did without the durable learning a new field
+    /// What each source is, positionally matching the two vectors above.
+    ///
+    /// A source that is BOTH invocation-named and book-sourced is classified [`BookSourced`], so
+    /// it loads positionally rather than ambiently. That is the withholding direction and it is
+    /// the disclosed cut: the sharper answer is "named wins", and it needs a boundary a replay can
+    /// recover, which today it cannot without the durable learning a field
     /// (`rul-durable-contents-reviewed-before-design`).
     ///
-    /// A source that is BOTH invocation-named and book-sourced lands here, so it loads
-    /// positionally rather than ambiently. That is the withholding direction and it is the
-    /// disclosed cut: the sharper answer is "ambient wins", and it needs a boundary a replay can
-    /// recover, which today it cannot.
-    book_sourced: std::collections::BTreeSet<usize>,
+    /// [`BookSourced`]: SourceRole::BookSourced
+    roles: Vec<SourceRole>,
 }
 
 impl StaticLoadSnapshot {
     /// Build over sources the edge already read, in load order. `book_sourced` names the ones a
-    /// book `.` reaches; everything else loads before the book's first line.
+    /// book `.` reaches; the rest of the named roots load before the book's first line.
+    ///
+    /// The book is APPENDED here, and that ordering is load-bearing for the `SourceFileId` space
+    /// (`28K` §2a): every id already minted keeps its value, and the book joining the space moves
+    /// no existing span. What is NOT load-bearing is reading role off that ordering — each source
+    /// carries its own [`SourceRole`], so widening past one book is a change to this constructor
+    /// rather than to every consumer.
     #[must_use]
     pub fn over(
         cwd: Cwd,
         oracle_paths: Vec<String>,
         oracle_srcs: Vec<String>,
-        book_sourced: std::collections::BTreeSet<usize>,
+        book_sourced: &std::collections::BTreeSet<usize>,
         book_path: &str,
         book_src: &str,
     ) -> Self {
+        let mut roles: Vec<SourceRole> = (0..oracle_paths.len())
+            .map(|file| {
+                if book_sourced.contains(&file) {
+                    SourceRole::BookSourced
+                } else {
+                    SourceRole::NamedLoad
+                }
+            })
+            .collect();
         let mut paths = oracle_paths;
         let mut srcs = oracle_srcs;
         paths.push(book_path.to_owned());
         srcs.push(book_src.to_owned());
+        roles.push(SourceRole::Book);
         Self {
             cwd,
             paths,
             srcs,
-            book_sourced,
+            roles,
         }
     }
 
@@ -73,10 +125,26 @@ impl StaticLoadSnapshot {
         &self.cwd
     }
 
-    /// Every source, oracles in load order then the book (`the-book-is-a-definition-source`).
+    /// Every source, in load order (`the-book-is-a-definition-source`).
     #[must_use]
     pub fn source_paths(&self) -> &[String] {
         &self.paths
+    }
+
+    /// What source `file` is. An index past the end is no source at all, and answering
+    /// [`SourceRole::BookSourced`] for it would be the withholding direction by accident rather
+    /// than by rule — so this says nothing instead.
+    #[must_use]
+    pub fn role_of(&self, file: usize) -> Option<SourceRole> {
+        self.roles.get(file).copied()
+    }
+
+    /// Every source with the role it plays, in load order.
+    pub fn sources(&self) -> impl Iterator<Item = (usize, &str, SourceRole)> {
+        self.roles
+            .iter()
+            .enumerate()
+            .filter_map(|(file, &role)| Some((file, self.srcs.get(file)?.as_str(), role)))
     }
 
     /// Every source's bytes, positionally matching [`Self::source_paths`].
@@ -91,23 +159,30 @@ impl StaticLoadSnapshot {
         self.srcs.iter().map(String::as_str).collect()
     }
 
-    /// The oracle sources alone — everything but the book. The whylog's record of what was LOADED
-    /// is oracle-only coherently, and so is `validate`.
+    /// The LOADED sources alone — everything that is not a book. The whylog's record of what was
+    /// loaded is load-only coherently, and so is `validate`.
+    ///
+    /// A contiguous slice because the constructor appends the book last, which is what the
+    /// `SourceFileId` ordering rests on; the SLICE is a consequence of that ordering, never the
+    /// definition of the role.
     #[must_use]
     pub fn oracle_paths(&self) -> &[String] {
-        self.paths.split_last().map_or(&[], |(_, rest)| rest)
+        self.paths.get(..self.book_index()).unwrap_or(&[])
     }
 
-    /// The oracle sources' bytes.
+    /// The loaded sources' bytes.
     #[must_use]
     pub fn oracle_srcs(&self) -> &[String] {
-        self.srcs.split_last().map_or(&[], |(_, rest)| rest)
+        self.srcs.get(..self.book_index()).unwrap_or(&[])
     }
 
-    /// The book's index in the source vectors — always the last.
+    /// The book's index in the source vectors.
     #[must_use]
     pub fn book_index(&self) -> usize {
-        self.paths.len().saturating_sub(1)
+        self.roles
+            .iter()
+            .position(|&role| role == SourceRole::Book)
+            .unwrap_or_else(|| self.paths.len().saturating_sub(1))
     }
 
     /// The book's own `SourceFileId`.
@@ -119,25 +194,21 @@ impl StaticLoadSnapshot {
     /// The book's display path.
     #[must_use]
     pub fn book_path(&self) -> &str {
-        self.paths.last().map_or("book.sh", String::as_str)
+        self.paths
+            .get(self.book_index())
+            .map_or("book.sh", String::as_str)
     }
 
     /// The book's bytes.
     #[must_use]
     pub fn book_src(&self) -> &str {
-        self.srcs.last().map_or("", String::as_str)
+        self.srcs.get(self.book_index()).map_or("", String::as_str)
     }
 
     /// Does source `file` load before the book's first line?
     #[must_use]
     pub fn is_ambient(&self, file: usize) -> bool {
-        file < self.book_index() && !self.book_sourced.contains(&file)
-    }
-
-    /// The sources a book `.` reaches, in index order.
-    #[must_use]
-    pub const fn book_sourced(&self) -> &std::collections::BTreeSet<usize> {
-        &self.book_sourced
+        self.role_of(file).is_some_and(SourceRole::is_ambient)
     }
 
     /// The canonical key source `file` is filed under, when it has one.
@@ -245,7 +316,7 @@ mod tests {
             Cwd::at("/ops"),
             vec!["pkg/entry.sh".to_owned(), "pkg/dep.sh".to_owned()],
             vec!["# entry\n".to_owned(), "# dep\n".to_owned()],
-            book_sourced.iter().copied().collect(),
+            &book_sourced.iter().copied().collect(),
             "book.sh",
             "# book\n",
         )

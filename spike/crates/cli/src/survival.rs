@@ -1761,7 +1761,7 @@ mod tests {
             dorc_core::loadpath::Cwd::default(),
             paths,
             srcs.iter().map(|s| (*s).to_owned()).collect(),
-            [].into(),
+            &std::collections::BTreeSet::new(),
             "book.sh",
             "apt-get install nginx\n",
         );

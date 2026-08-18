@@ -1,4 +1,9 @@
-//! `core::loadpath` — where a `.` operand lands (`30I:rul-dot-resolves-as-sh`).
+//! `core::loadpath` — where a `.` operand lands on the CONTROLLER (`30I:rul-dot-resolves-as-sh`).
+//!
+//! Every path here is one the machine running `dorc` can open. The TARGET-side working directory —
+//! where an emitted artifact executes, per host — is a different question with a different answer
+//! and belongs to a different type; [`Cwd`] says which side it is so the two cannot be spelled
+//! with one value.
 //!
 //! ONE seat, because the answer is asked from three places that must not drift: the CLI edge that
 //! decides which file to OPEN, the function-environment domain that decides which definitions a
@@ -25,13 +30,27 @@
 //! answer must be reproducible from the snapshot alone (`inv-determinism`). Two spellings that do
 //! not normalize alike simply do not match, which WITHHOLDS — the safe direction.
 
-/// The modeled working directory a load resolves against, or the explicit absence of one.
+/// The CONTROLLER's modeled working directory — where the machine running `dorc` stands while it
+/// resolves a load — or the explicit absence of one.
 ///
-/// A newtype rather than a bare string because "we do not know where this run stands" is a real
-/// state with a ruled consequence — an unknown cwd yields an unresolvable load, never a guessed
-/// file (`30I` §3.2) — and a bare `&str` has no spelling for it that a caller cannot mistake for a
-/// directory name. The v0 profile has exactly one cwd for a whole run: marked oracle top level
-/// cannot change directory, and full book cwd flow is owed rather than built.
+/// # Named for its SIDE, deliberately
+///
+/// There are two working directories in this system and they are never the same question. This one
+/// is the controller's, and it decides which FILE a `.` names during analysis. The target's is
+/// where an emitted artifact executes, and it decides what a surviving runtime path means on a
+/// host — a directory the controller may not even be able to name, and which differs per host the
+/// moment there is more than one. Encoding the side in the type is what stops an emitter reaching
+/// for this value to mean the other thing: a target-side cwd needs its own type, and asking for
+/// one should be a visible act rather than a reuse.
+///
+/// # Why a newtype at all
+///
+/// "We do not know where this run stands" is a real state with a ruled consequence — an unknown
+/// cwd yields an unresolvable load, never a guessed file (`30I` §3.2) — and a bare `&str` has no
+/// spelling for it a caller cannot mistake for a directory name. The v0 profile has exactly one
+/// controller cwd for a whole run: marked oracle top level cannot change directory, and full book
+/// cwd flow is owed rather than built. That is a v0 statement, not a shape: this is a VALUE
+/// carried on the loaded unit, so per-position cwd flow extends it rather than replacing it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cwd(Option<String>);
 

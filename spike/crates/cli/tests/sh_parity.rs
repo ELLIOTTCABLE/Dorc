@@ -30,7 +30,7 @@ fn snapshot_of(
         dorc_core::loadpath::Cwd::default(),
         paths.to_vec(),
         srcs.to_vec(),
-        [].into(),
+        &BTreeSet::new(),
         book_path,
         book_src,
     )

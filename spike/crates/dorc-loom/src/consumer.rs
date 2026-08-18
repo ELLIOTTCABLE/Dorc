@@ -1316,7 +1316,7 @@ fn case_snapshot(
         cwd,
         paths,
         srcs,
-        book_sourced,
+        &book_sourced,
         book_path,
         book_src,
     )

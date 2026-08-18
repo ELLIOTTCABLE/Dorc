@@ -50,6 +50,8 @@
     reason = "`support`'s selection reporter is compiled into every test binary that uses it, and this instrument reports its own destination to a human running it by hand"
 )]
 
+use std::collections::BTreeSet;
+
 mod support;
 
 /// The load snapshot a hand-built world is: sources in load order, the book last, and one flat
@@ -64,7 +66,7 @@ fn snapshot_of(
         dorc_core::loadpath::Cwd::default(),
         paths.to_vec(),
         srcs.to_vec(),
-        [].into(),
+        &BTreeSet::new(),
         book_path,
         book_src,
     )
