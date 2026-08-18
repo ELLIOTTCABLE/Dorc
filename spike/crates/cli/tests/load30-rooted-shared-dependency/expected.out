@@ -1,0 +1,1 @@
+XFAIL target transcript is minted only after the static loader and bundle projection land.

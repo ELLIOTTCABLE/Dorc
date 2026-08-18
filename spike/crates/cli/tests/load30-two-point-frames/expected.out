@@ -1,0 +1,1 @@
+XFAIL target transcript is minted only after frame-keyed load-occurrence bundling lands.

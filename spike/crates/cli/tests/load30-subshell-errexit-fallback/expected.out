@@ -1,0 +1,1 @@
+XFAIL target transcript is minted only after dot and generated-load boundaries agree under errexit.
