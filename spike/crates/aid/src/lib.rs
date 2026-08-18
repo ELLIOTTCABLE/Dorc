@@ -49,6 +49,8 @@ pub mod display;
 pub mod foreign;
 pub use foreign::{ForeignBytes, ForeignText, ParamText};
 
+pub mod locator;
+
 pub mod instant;
 
 pub mod said;

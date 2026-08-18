@@ -28,7 +28,7 @@ use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 use crate::Receipt;
 use crate::results::{SiteResults, probe_origins};
-use dorc_analysis::load::{LoadStep, LoadTarget, TargetPart};
+use dorc_analysis::load::{LoadControl, LoadStep, LoadTarget, TargetPart};
 
 use crate::snapshot::StaticLoadSnapshot;
 use crate::why::{
@@ -784,34 +784,19 @@ fn load_steps(
     by_ast: &BTreeMap<dorc_core::AstId, dorc_analysis::funcenv::DefId>,
     items: &[dorc_core::AstId],
 ) -> Vec<LoadStep> {
-    use dorc_oracle::load_inert::{include_guard, item_is_static_load, unset_functions};
-
     let mut steps = Vec::new();
     for &item in items {
         if let Some(&def) = by_ast.get(&item) {
             steps.push(LoadStep::Define(def));
             continue;
         }
-        if let Some(word) = item_is_static_load(ast, item) {
-            steps.push(LoadStep::Load(load_target(ast, word)));
+        if let Some(control) = load_control(ast, item) {
+            steps.push(LoadStep::Control(control));
             continue;
         }
-        if let Some(guard) = include_guard(ast, item) {
-            steps.push(LoadStep::Guard {
-                function: guard.function,
-                negated: guard.negated,
-                then_: load_steps(ast, by_ast, &guard.then_),
-                else_: load_steps(ast, by_ast, &guard.else_),
-            });
-            continue;
-        }
-        let NodeKind::Simple { assigns, words, .. } = &ast.node(item).kind else {
+        let NodeKind::Simple { assigns, .. } = &ast.node(item).kind else {
             continue;
         };
-        if let Some(names) = unset_functions(ast, words) {
-            steps.push(LoadStep::UnsetFunctions(names));
-            continue;
-        }
         for &assign in assigns {
             let NodeKind::Assign { name, value, .. } = &ast.node(assign).kind else {
                 continue;
@@ -823,6 +808,42 @@ fn load_steps(
         }
     }
     steps
+}
+
+/// One item as LOAD CONTROL — a `.`, an `unset -f`, or a guard over either — or `None` when it is
+/// something else.
+///
+/// A guard's branches recurse HERE rather than through [`load_steps`], which is the type doing the
+/// work: `LoadControl` has no declaring variant, so a definition cannot land in a branch even if
+/// the admission gate were widened to admit one (`dorc_analysis::load::LoadControl` carries the
+/// measured reason). A no-op branch item (`then :`) simply contributes nothing.
+fn load_control(ast: &dorc_syntax::Ast, item: dorc_core::AstId) -> Option<LoadControl> {
+    use dorc_oracle::load_inert::{include_guard, item_is_static_load, unset_functions};
+
+    if let Some(word) = item_is_static_load(ast, item) {
+        return Some(LoadControl::Load {
+            target: load_target(ast, word),
+            span: ast.node(item).span,
+        });
+    }
+    if let Some(guard) = include_guard(ast, item) {
+        let branch = |items: &[dorc_core::AstId]| {
+            items
+                .iter()
+                .filter_map(|&nested| load_control(ast, nested))
+                .collect()
+        };
+        return Some(LoadControl::Guard {
+            function: guard.function,
+            negated: guard.negated,
+            then_: branch(&guard.then_),
+            else_: branch(&guard.else_),
+        });
+    }
+    let NodeKind::Simple { words, .. } = &ast.node(item).kind else {
+        return None;
+    };
+    unset_functions(ast, words).map(LoadControl::UnsetFunctions)
 }
 
 /// A word as a load operand: literal fragments kept, variable reads left for the loading context

@@ -327,6 +327,50 @@ mod tests {
         );
     }
 
+    /// A dependency loaded from inside an INCLUDE GUARD is an authored source act like any other,
+    /// so it mints its speaker edge (`30I:rul-include-guards-are-load-semantics`). Refusing to
+    /// walk guard branches would leave every healthy shared-dependency package suspended, since
+    /// that is exactly where the shape puts its load (`30I` §2.2).
+    #[test]
+    fn a_guarded_dependency_mints_its_edge() {
+        let entry = marked(
+            "if command -v _same >/dev/null 2>&1; then\n   :\nelse\n   . ./helpers.sh\nfi\n\
+             wombat__is_converged() { _same \"$1\" ;}\n",
+        );
+        let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n");
+        let paths = vec!["entry.sh".to_owned(), "helpers.sh".to_owned()];
+        assert_eq!(
+            tree(&paths, &[&entry, &helpers], None).edges,
+            vec![(0, 1)],
+            "the guard decides WHETHER it loads at runtime; the author declared the dependency \
+             either way, and custody follows the declaration"
+        );
+    }
+
+    /// The book half of `30I:rul-books-load-but-do-not-speak`, at every spelling a book has: a
+    /// book's `.` changes which definitions are LIVE and contributes no speaker edge, guard-nested
+    /// or not. Custody is asymmetric containment, and a book sourcing two packages does not make
+    /// itself their shared author.
+    #[test]
+    fn a_books_loads_change_visibility_and_mint_no_speaker() {
+        let book = marked(
+            "if command -v _same >/dev/null 2>&1; then\n   :\nelse\n   . ./alpha.sh\nfi\n\
+             . ./beta.sh\nwombat sync\n",
+        );
+        let alpha = marked("_same() { :; }\n");
+        let beta = marked("_other() { :; }\n");
+        let paths = vec![
+            "alpha.sh".to_owned(),
+            "beta.sh".to_owned(),
+            "book.sh".to_owned(),
+        ];
+        assert_eq!(
+            tree(&paths, &[&alpha, &beta, &book], Some(2)),
+            IncludeTree::default(),
+            "no edges and no suspension — a book's loads are simply not this relation's subject"
+        );
+    }
+
     /// Spellings that differ only in `./` noise or separator name the same file. Matching is
     /// lexical, so it stops exactly there: nothing here resolves a symlink or asks the filesystem.
     #[test]

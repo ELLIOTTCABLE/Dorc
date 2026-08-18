@@ -544,6 +544,14 @@ impl FuncEnv {
         &self.wanted_loads
     }
 
+    /// Per RESOLVED `.`/`source` site, the canonical path it named — the load ACT, which is what a
+    /// locator points at when it says which line brought a file into the unit
+    /// (`30I:rul-source-maps-are-rich-and-early`).
+    #[must_use]
+    pub fn sourced_paths(&self) -> &BTreeMap<CfgNodeId, String> {
+        &self.sourced_paths
+    }
+
     /// The control-flow edges the decidable-condition fold proved dead (`28M` §9), in
     /// deterministic order. Empty whenever no condition in the unit was decidable.
     #[must_use]
@@ -1313,80 +1321,113 @@ fn run_steps(
                 // operand built from it unresolvable, which the load step below answers as ⊤.
                 None => drop(locals.remove(name)),
             },
-            LoadStep::UnsetFunctions(names) => {
-                for name in names {
-                    env.bind(name, Flat::Elem(Binding::Undefined));
-                }
-            }
-            LoadStep::Load(target) => {
-                let Some(next) = target
-                    .expand(locals, &ambient)
-                    .and_then(|text| defs.cwd.resolve_dot(&text))
-                else {
-                    return EnvStack::Top;
-                };
-                let Some(program) = defs.program_at_key(&next) else {
-                    wanted.insert(next);
-                    return EnvStack::Top;
-                };
-                if depth == 0 || !visiting.insert(next.clone()) {
-                    return EnvStack::Top;
-                }
-                env = run_program(
-                    defs,
-                    literals,
-                    node,
-                    program,
-                    &env,
-                    &mut locals.clone(),
-                    visiting,
-                    wanted,
-                    depth.saturating_sub(1),
+            LoadStep::Control(control) => {
+                env = run_control(
+                    defs, literals, node, control, &env, locals, visiting, wanted, depth,
                 );
-                visiting.remove(&next);
-            }
-            LoadStep::Guard {
-                function,
-                negated,
-                then_,
-                else_,
-            } => {
-                let holds = match env.lookup(function) {
-                    Flat::Elem(Binding::Defined(_)) => Some(true),
-                    Flat::Elem(Binding::Undefined)
-                        if dorc_oracle::reserved::role_family(function).is_some() =>
-                    {
-                        Some(false)
-                    }
-                    Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => None,
-                };
-                let branch = |steps: &[LoadStep],
-                              visiting: &mut BTreeSet<String>,
-                              wanted: &mut BTreeSet<String>| {
-                    run_steps(
-                        defs,
-                        literals,
-                        node,
-                        steps,
-                        &env,
-                        &mut locals.clone(),
-                        visiting,
-                        wanted,
-                        depth,
-                    )
-                };
-                env = match holds.map(|held| held != *negated) {
-                    Some(true) => branch(then_, visiting, wanted),
-                    Some(false) => branch(else_, visiting, wanted),
-                    // Undecided walks BOTH, so the acquisition sees every file the guard could
-                    // reach: reading one the run does not bind is harmless, missing one it does
-                    // bind is not.
-                    None => branch(then_, visiting, wanted).join(&branch(else_, visiting, wanted)),
-                };
             }
         }
     }
     env
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "see run_program: the loading context travels whole so the depth and cycle guards stay visible at every recursion"
+)]
+fn run_control(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    control: &crate::load::LoadControl,
+    incoming: &EnvStack,
+    locals: &mut BTreeMap<String, String>,
+    visiting: &mut BTreeSet<String>,
+    wanted: &mut BTreeSet<String>,
+    depth: usize,
+) -> EnvStack {
+    use crate::load::LoadControl;
+
+    let ambient = |name: &str| literals.variable_text(node, name);
+    let mut env = incoming.clone();
+    match control {
+        LoadControl::UnsetFunctions(names) => {
+            for name in names {
+                env.bind(name, Flat::Elem(Binding::Undefined));
+            }
+            env
+        }
+        LoadControl::Load { target, .. } => {
+            let Some(next) = target
+                .expand(locals, &ambient)
+                .and_then(|text| defs.cwd.resolve_dot(&text))
+            else {
+                return EnvStack::Top;
+            };
+            let Some(program) = defs.program_at_key(&next) else {
+                wanted.insert(next);
+                return EnvStack::Top;
+            };
+            if depth == 0 || !visiting.insert(next.clone()) {
+                return EnvStack::Top;
+            }
+            let loaded = run_program(
+                defs,
+                literals,
+                node,
+                program,
+                &env,
+                &mut locals.clone(),
+                visiting,
+                wanted,
+                depth.saturating_sub(1),
+            );
+            visiting.remove(&next);
+            loaded
+        }
+        LoadControl::Guard {
+            function,
+            negated,
+            then_,
+            else_,
+        } => {
+            let holds = match env.lookup(function) {
+                Flat::Elem(Binding::Defined(_)) => Some(true),
+                Flat::Elem(Binding::Undefined)
+                    if dorc_oracle::reserved::role_family(function).is_some() =>
+                {
+                    Some(false)
+                }
+                Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => None,
+            };
+            let branch = |controls: &[LoadControl],
+                          visiting: &mut BTreeSet<String>,
+                          wanted: &mut BTreeSet<String>| {
+                let mut inner = env.clone();
+                for control in controls {
+                    inner = run_control(
+                        defs,
+                        literals,
+                        node,
+                        control,
+                        &inner,
+                        &mut locals.clone(),
+                        visiting,
+                        wanted,
+                        depth,
+                    );
+                }
+                inner
+            };
+            match holds.map(|held| held != *negated) {
+                Some(true) => branch(then_, visiting, wanted),
+                Some(false) => branch(else_, visiting, wanted),
+                // Undecided walks BOTH, so the acquisition sees every file the guard could reach:
+                // reading one the run does not bind is harmless, missing one it does bind is not.
+                None => branch(then_, visiting, wanted).join(&branch(else_, visiting, wanted)),
+            }
+        }
+    }
 }
 
 /// Every canonical path the settled environment's loads NAMED that the table does not hold — the
@@ -1663,12 +1704,8 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     /// The degenerate load program: a file whose top level is a flat list of declarations.
-    fn flat(defs: Vec<DefId>) -> crate::load::LoadProgram {
-        crate::load::LoadProgram::of(
-            defs.into_iter()
-                .map(crate::load::LoadStep::Define)
-                .collect(),
-        )
+    fn flat(defs: Vec<DefId>) -> LoadProgram {
+        LoadProgram::of(defs.into_iter().map(LoadStep::Define).collect())
     }
 
     fn add_def(table: &mut DefinitionTable, file: u32, name: &str) -> DefId {
@@ -2982,15 +3019,35 @@ mod tests {
 
     // ── TABLE 6: the healthy library — a package's own top level as a load PROGRAM (`30I` §3) ──
 
-    fn guard_loading(function: &str, target: &str) -> crate::load::LoadProgram {
-        crate::load::LoadProgram::of(vec![crate::load::LoadStep::Guard {
+    use crate::load::{LoadControl, LoadProgram, LoadStep, LoadTarget, TargetPart};
+
+    fn no_span() -> Span {
+        Span::new(BytePos(0), BytePos(0))
+    }
+
+    fn loads(target: LoadTarget) -> LoadControl {
+        LoadControl::Load {
+            target,
+            span: no_span(),
+        }
+    }
+
+    fn rooted(leaf: &str) -> LoadTarget {
+        LoadTarget::of(vec![
+            TargetPart::Param("OPS_LIB".to_owned()),
+            TargetPart::Literal(leaf.to_owned()),
+        ])
+    }
+
+    /// An entrypoint that loads `target` unless `function` is already live — the canonical
+    /// shared-dependency shape (`30I` §2.2), as the loader sees it.
+    fn guarded(function: &str, target: LoadTarget) -> LoadProgram {
+        LoadProgram::of(vec![LoadStep::Control(LoadControl::Guard {
             function: function.to_owned(),
             negated: false,
             then_: Vec::new(),
-            else_: vec![crate::load::LoadStep::Load(
-                crate::load::LoadTarget::literal(target),
-            )],
-        }])
+            else_: vec![loads(target)],
+        })])
     }
 
     /// The canonical shared-dependency package: an entrypoint whose include guard loads a
@@ -3008,20 +3065,7 @@ mod tests {
         let mut table = DefinitionTable::default();
         let dependency = add_def(&mut table, 1, ROLE);
         table.set_loadable("./oracles/common.sh", flat(vec![dependency]));
-        table.set_loadable(
-            "./oracles/entry.sh",
-            crate::load::LoadProgram::of(vec![crate::load::LoadStep::Guard {
-                function: ROLE.to_owned(),
-                negated: false,
-                then_: Vec::new(),
-                else_: vec![crate::load::LoadStep::Load(crate::load::LoadTarget::of(
-                    vec![
-                        crate::load::TargetPart::Param("OPS_LIB".to_owned()),
-                        crate::load::TargetPart::Literal("/common.sh".to_owned()),
-                    ],
-                ))],
-            }]),
-        );
+        table.set_loadable("./oracles/entry.sh", guarded(ROLE, rooted("/common.sh")));
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(
             env.binding_before(cfg.exit(), ROLE),
@@ -3045,19 +3089,14 @@ mod tests {
         table.set_loadable("./oracles/common.sh", flat(vec![dependency]));
         table.set_loadable(
             "./oracles/entry.sh",
-            crate::load::LoadProgram::of(vec![crate::load::LoadStep::Load(
-                crate::load::LoadTarget::of(vec![
-                    crate::load::TargetPart::Param("OPS_LIB".to_owned()),
-                    crate::load::TargetPart::Literal("/common.sh".to_owned()),
-                ]),
-            )]),
+            LoadProgram::of(vec![LoadStep::Control(loads(rooted("/common.sh")))]),
         );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
         assert!(super::unprovable(&table, &env, cfg.exit()).contains(ROLE));
     }
 
-    /// THE GUARD'S TWO DIRECTIONS, which are not symmetric (see [`super::run_program`]).
+    /// THE GUARD'S TWO DIRECTIONS, which are not symmetric (see [`super::run_control`]).
     ///
     /// A frame that proves the name undefined decides the guard FALSE only where
     /// `dec-decidable-set-v0`'s role-shaped warrant reaches; the same guard over an ORDINARY
@@ -3070,7 +3109,10 @@ mod tests {
         let mut table = DefinitionTable::default();
         let fallback = add_def(&mut table, 1, ROLE);
         table.set_loadable("./fallback.sh", flat(vec![fallback]));
-        table.set_loadable("./entry.sh", guard_loading(ROLE, "./fallback.sh"));
+        table.set_loadable(
+            "./entry.sh",
+            guarded(ROLE, LoadTarget::literal("./fallback.sh")),
+        );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(
             env.binding_before(cfg.exit(), ROLE),
@@ -3082,7 +3124,10 @@ mod tests {
         let mut table = DefinitionTable::default();
         let fallback = add_def(&mut table, 1, helper);
         table.set_loadable("./fallback.sh", flat(vec![fallback]));
-        table.set_loadable("./entry.sh", guard_loading(helper, "./fallback.sh"));
+        table.set_loadable(
+            "./entry.sh",
+            guarded(helper, LoadTarget::literal("./fallback.sh")),
+        );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(
             env.binding_before(cfg.exit(), helper),
@@ -3102,7 +3147,10 @@ mod tests {
         let fallback = add_def(&mut table, 2, ROLE);
         table.set_loadable("./base.sh", flat(vec![live]));
         table.set_loadable("./fallback.sh", flat(vec![fallback]));
-        table.set_loadable("./entry.sh", guard_loading(ROLE, "./fallback.sh"));
+        table.set_loadable(
+            "./entry.sh",
+            guarded(ROLE, LoadTarget::literal("./fallback.sh")),
+        );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(
             env.binding_before(cfg.exit(), ROLE),
@@ -3121,8 +3169,14 @@ mod tests {
         let mut table = DefinitionTable::default();
         let shared = add_def(&mut table, 1, ROLE);
         table.set_loadable("./common.sh", flat(vec![shared]));
-        table.set_loadable("./alpha.sh", guard_loading(ROLE, "./common.sh"));
-        table.set_loadable("./beta.sh", guard_loading(ROLE, "./common.sh"));
+        table.set_loadable(
+            "./alpha.sh",
+            guarded(ROLE, LoadTarget::literal("./common.sh")),
+        );
+        table.set_loadable(
+            "./beta.sh",
+            guarded(ROLE, LoadTarget::literal("./common.sh")),
+        );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(
             env.binding_before(cfg.exit(), ROLE),
@@ -3145,12 +3199,15 @@ mod tests {
         let better = add_def(&mut table, 2, ROLE);
         table.set_loadable("./fallback.sh", flat(vec![fallback]));
         table.set_loadable("./better.sh", flat(vec![better]));
-        table.set_loadable("./entry.sh", guard_loading(ROLE, "./fallback.sh"));
+        table.set_loadable(
+            "./entry.sh",
+            guarded(ROLE, LoadTarget::literal("./fallback.sh")),
+        );
         let (env, cfg, ast) = solve_positional(book, &table);
 
-        let regional = command_at(&cfg, &ast, book, ". ./entry.sh");
+        let first = command_at(&cfg, &ast, book, ". ./entry.sh");
         assert_eq!(
-            env.binding_before(regional, ROLE),
+            env.binding_before(first, ROLE),
             Flat::Elem(Binding::Undefined),
             "the FIRST position sees nothing live, which is what makes its guard load the fallback"
         );
@@ -3171,16 +3228,16 @@ mod tests {
         let def = add_def(&mut table, 1, ROLE);
         table.set_loadable(
             "./a.sh",
-            crate::load::LoadProgram::of(vec![
-                crate::load::LoadStep::Define(def),
-                crate::load::LoadStep::Load(crate::load::LoadTarget::literal("./b.sh")),
+            LoadProgram::of(vec![
+                LoadStep::Define(def),
+                LoadStep::Control(loads(LoadTarget::literal("./b.sh"))),
             ]),
         );
         table.set_loadable(
             "./b.sh",
-            crate::load::LoadProgram::of(vec![crate::load::LoadStep::Load(
-                crate::load::LoadTarget::literal("./a.sh"),
-            )]),
+            LoadProgram::of(vec![LoadStep::Control(loads(LoadTarget::literal(
+                "./a.sh",
+            )))]),
         );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(env.binding_before(cfg.exit(), ROLE), Flat::Top);
@@ -3196,9 +3253,9 @@ mod tests {
         table.set_loadable("./base.sh", flat(vec![base]));
         table.set_loadable(
             "./strip.sh",
-            crate::load::LoadProgram::of(vec![crate::load::LoadStep::UnsetFunctions(vec![
+            LoadProgram::of(vec![LoadStep::Control(LoadControl::UnsetFunctions(vec![
                 ROLE.to_owned(),
-            ])]),
+            ]))]),
         );
         let (env, cfg, _) = solve_positional(book, &table);
         assert_eq!(
@@ -3218,15 +3275,12 @@ mod tests {
         table.set_loadable("./vendored/common.sh", flat(vec![vendored]));
         table.set_loadable(
             "./oracles/entry.sh",
-            crate::load::LoadProgram::of(vec![
-                crate::load::LoadStep::Assign {
+            LoadProgram::of(vec![
+                LoadStep::Assign {
                     name: "OPS_LIB".to_owned(),
-                    value: crate::load::LoadTarget::literal("./vendored"),
+                    value: LoadTarget::literal("./vendored"),
                 },
-                crate::load::LoadStep::Load(crate::load::LoadTarget::of(vec![
-                    crate::load::TargetPart::Param("OPS_LIB".to_owned()),
-                    crate::load::TargetPart::Literal("/common.sh".to_owned()),
-                ])),
+                LoadStep::Control(loads(rooted("/common.sh"))),
             ]),
         );
         let (env, cfg, _) = solve_positional(book, &table);

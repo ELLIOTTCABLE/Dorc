@@ -47,21 +47,17 @@ impl LoadProgram {
         &self.steps
     }
 
-    /// Every definition this file declares at top level, in file order — the flat view a consumer
-    /// that only needs "what does this file declare" reads.
+    /// Every definition this file declares, in file order — the flat view a consumer that only
+    /// needs "what does this file declare" reads.
     ///
-    /// Guard branches contribute NONE, and cannot: the admission gate refuses a branch that
-    /// declares (`dorc_oracle::load_inert::include_guard` carries the measured reason).
+    /// Guard branches contribute NONE, and cannot: [`LoadControl`] has no declaring variant.
     #[must_use]
     pub fn declarations(&self) -> Vec<DefId> {
         self.steps
             .iter()
             .filter_map(|step| match step {
                 LoadStep::Define(def) => Some(*def),
-                LoadStep::Assign { .. }
-                | LoadStep::UnsetFunctions(_)
-                | LoadStep::Load(_)
-                | LoadStep::Guard { .. } => None,
+                LoadStep::Assign { .. } | LoadStep::Control(_) => None,
             })
             .collect()
     }
@@ -69,27 +65,33 @@ impl LoadProgram {
     /// Every load operand this file spells, guard branches included, in source order — what an
     /// acquisition or a custody edge asks for, before any branch has been decided.
     #[must_use]
-    pub fn load_targets(&self) -> Vec<&LoadTarget> {
-        fn walk<'a>(steps: &'a [LoadStep], out: &mut Vec<&'a LoadTarget>) {
-            for step in steps {
-                match step {
-                    LoadStep::Load(target) => out.push(target),
-                    LoadStep::Guard { then_, else_, .. } => {
+    pub fn load_targets(&self) -> Vec<(&LoadTarget, dorc_core::Span)> {
+        fn walk<'a>(controls: &'a [LoadControl], out: &mut Vec<(&'a LoadTarget, dorc_core::Span)>) {
+            for control in controls {
+                match control {
+                    LoadControl::Load { target, span } => out.push((target, *span)),
+                    LoadControl::Guard { then_, else_, .. } => {
                         walk(then_, out);
                         walk(else_, out);
                     }
-                    LoadStep::Define(_) | LoadStep::Assign { .. } | LoadStep::UnsetFunctions(_) => {
-                    }
+                    LoadControl::UnsetFunctions(_) => {}
                 }
             }
         }
         let mut out = Vec::new();
-        walk(&self.steps, &mut out);
+        for step in &self.steps {
+            if let LoadStep::Control(control) = step {
+                walk(std::slice::from_ref(control), &mut out);
+            }
+        }
         out
     }
 }
 
 /// One step of a loadable file's top level.
+///
+/// Declaring is a TOP-LEVEL act and appears only here — [`LoadControl`] carries what a guard's
+/// branches may hold, and it cannot declare. See that type for the measured reason.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LoadStep {
     /// A function definition: binds a name, runs nothing.
@@ -102,20 +104,48 @@ pub enum LoadStep {
         /// Its value, which may itself read variables from the loading context.
         value: LoadTarget,
     },
+    /// Load control: a `.`, a removal, or a guard over either.
+    Control(LoadControl),
+}
+
+/// What a guard's branches may hold — and, by inclusion, what a top level may hold besides
+/// declaring.
+///
+/// **This type is why a guard branch cannot declare.** A role funcdef inside a conditional branch
+/// is a measured wrong-elision route: the dialect lift recognizes a role header only as a
+/// TOP-LEVEL ITEM, so a nested definition is registered by the definition table while producing
+/// ZERO lifted rows — described nowhere, detected nowhere, and licensing off a body the lift never
+/// read (`oracle/CLAUDE.md only-load-inert-sources-contribute`; pinned by `sh_parity.rs`'s
+/// `a_host_conditional_oracle_definition_licenses_nothing` and its expected-fail twin).
+///
+/// The admission gate refuses that shape too. Having BOTH is deliberate: the gate is what an
+/// author is told, and this is what the loader can even be handed, so a future builder cannot
+/// re-open the route by widening the gate alone.
+///
+/// A branch that deliberately does nothing (`then :`) is the EMPTY vector — there is no no-op
+/// step, because a no-op that had to be represented could be mistaken for one that acts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LoadControl {
     /// `unset -f NAME…` — the removal half of the load surface.
     UnsetFunctions(Vec<String>),
-    /// A `.` of the named target.
-    Load(LoadTarget),
-    /// The include guard: `command -v <function>` selecting between two branches of load control.
+    /// A `.` of the named target, at its own byte range in the file that spells it — the span a
+    /// locator names when it says which line brought a dependency in.
+    Load {
+        /// The operand, unexpanded.
+        target: LoadTarget,
+        /// The whole `. <operand>` item.
+        span: dorc_core::Span,
+    },
+    /// The include guard: `command -v <function>` selecting between two branches.
     Guard {
         /// The function the guard asks about.
         function: String,
         /// Whether the condition is `!`-negated.
         negated: bool,
         /// Taken when the condition succeeds.
-        then_: Vec<LoadStep>,
+        then_: Vec<LoadControl>,
         /// Taken when it fails.
-        else_: Vec<LoadStep>,
+        else_: Vec<LoadControl>,
     },
 }
 
@@ -184,8 +214,12 @@ impl LoadTarget {
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::{LoadProgram, LoadStep, LoadTarget, TargetPart};
+    use super::{LoadControl, LoadProgram, LoadStep, LoadTarget, TargetPart};
     use crate::funcenv::DefId;
+
+    fn nowhere() -> dorc_core::Span {
+        dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(0))
+    }
 
     fn rooted() -> LoadTarget {
         LoadTarget::of(vec![
@@ -225,16 +259,21 @@ mod tests {
     }
 
     /// Declarations are TOP-LEVEL only and loads are found through guards — the two halves every
-    /// consumer splits on, and the asymmetry the admission gate creates.
+    /// consumer splits on, and the asymmetry the TYPES create: a guard's branches are
+    /// [`LoadControl`], which has no declaring variant, so `declarations()` cannot miss one and a
+    /// branch cannot hide one.
     #[test]
     fn declarations_are_flat_and_loads_are_not() {
         let program = LoadProgram::of(vec![
-            LoadStep::Guard {
+            LoadStep::Control(LoadControl::Guard {
                 function: "_q".to_owned(),
                 negated: false,
                 then_: Vec::new(),
-                else_: vec![LoadStep::Load(LoadTarget::literal("./common.sh"))],
-            },
+                else_: vec![LoadControl::Load {
+                    target: LoadTarget::literal("./common.sh"),
+                    span: nowhere(),
+                }],
+            }),
             LoadStep::Define(DefId(7)),
         ]);
         assert_eq!(program.declarations(), vec![DefId(7)]);

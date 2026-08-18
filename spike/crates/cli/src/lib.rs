@@ -23,6 +23,7 @@
 
 pub mod fixpoint;
 pub mod kinds;
+pub mod provenance;
 pub mod results;
 pub mod snapshot;
 pub mod sourcing;
