@@ -306,6 +306,23 @@ arbitrary multi-stage DAG and every user-aid consumer resolves it maximally.
 Error output may name both the generated bundle locus and a content-verified
 original source locus.
 
+`rul-one-main-book-per-target` [TYPED direction] - each target plan has one main
+book with near-`sh book.sh` command-file semantics. Other CLI-supplied sh that
+must share its shell environment is explicit ordered prelude, never an implicit
+second main book. Target-qualified main books denote separate programs/plans,
+not a merge request; same-target multi-program orchestration remains outside v0.
+
+`rul-pre-source-is-dot-prelude` [TYPED] - repeated `--pre-source <sh>` inputs
+compile to ordinary `.` commands immediately before the main book body, in CLI
+occurrence order. An unqualified pre-source applies to every selected target; a
+target-qualified one applies only to that target. The main book is not itself
+dot-sourced.
+
+`rul-spike-has-no-short-options` [TYPED] - every single-letter CLI option is
+reserved for post-spike allocation against the complete feature/flag set. No
+spike feature receives a short spelling, including `--pre-source`; current
+short-form expedients create no precedent.
+
 The ordinary intended source shape is deliberately just sh. `SM_ORACLE_ROOT`
 below is a spike mnemonic, never a permanent name or an engine-recognized
 variable:
@@ -336,6 +353,9 @@ preserve four things:
 4. `need-channel-capabilities-vary` - some transports can materialize an
    artifact directory; the `kBOOT` floor has only one byte pipe and may have no
    writable filesystem.
+5. `need-main-book-remains-a-program` - adding transport targets, oracle
+   preludes, or other plans must not silently turn the main book into a dot
+   script or reinterpret later filename-looking tokens as merge requests.
 
 No one-file-only design satisfies all four cheaply. Always inlining contracted
 oracle code preserves the byte-pipe floor but spends attention. Always using
@@ -426,6 +446,68 @@ from both closures without Alpha and Beta merging. A later lint may discourage
 book authors from marking aggregate loader/shim files as dorc-lang, but v0 adds
 no policy net merely to police style.
 
+### 2.4 CLI preludes and target books
+
+The CLI's one settled loading flag is long-form only:
+
+```console
+dorc web.sh --pre-source common.oracle.sh --pre-source site_prelude.sh
+```
+
+Its semantic reference is plain sh:
+
+```sh
+. '/resolved/common.oracle.sh'
+. '/resolved/site_prelude.sh'
+
+# web.sh remains the main program body; it is not sourced.
+```
+
+`rul-main-book-is-not-a-pre-source` [TYPED] - this preserves the sanctioned
+single-file path near `sh web.sh`: top-level `return` is not made valid merely
+by Dorc, and the book is not given dot-file scope. The compiled plan naturally
+has its own `$0`; that visible difference is accepted rather than hidden.
+
+`rul-pre-source-order-is-cli-order` [TYPED] - after target filtering, pre-source
+operations retain their CLI occurrence order. Their textual position relative
+to target-book operands does not change their role: all execute before that
+target's main body.
+
+The eventual multi-target spelling is not ruled. A `web1:web.sh`-shaped
+positional is a useful strawman for one target-to-main-book binding, not syntax
+the loader may parse or depend upon. Invocation parsing first lowers any final
+host syntax into explicit values:
+
+```text
+TargetedBook {
+   target,
+   main_book,
+   ordered_pre_sources,
+}
+```
+
+An unqualified `--pre-source common.oracle.sh` contributes to every
+`TargetedBook`. A target-qualified
+`--pre-source web1:book_two.sh` contributes only to `web1`, with semantics
+identical to prepending `. '/resolved/book_two.sh'` before `web1`'s main book.
+`book_two.sh` receives no special `$0` or `return` treatment beyond ordinary dot
+sourcing.
+
+Multiple target-qualified main books are separate programs. V0 does not define
+the planning, approval, failure, or freshness semantics of running two main
+programs on one target; it never treats that spelling as source composition.
+The explicit `--pre-source` route is how a user asks for shared-shell merging.
+
+Controller-local execution is one target context under the same representation,
+not a separate loader species. More complex target shifts remain expressible in
+the main book as ordinary sh and future context-entry/SSH analysis; target
+qualification is orchestration-layer sugar over that user-visible capability.
+
+All Dorc options remain before `--`. The strong spike-era direction is that any
+tokens after `--` belong to the singular main book, preserving CLI namespace for
+compiler, analyzer, planner, transport, and orchestration growth. Exact argument
+support for multi-target invocations remains future work.
+
 ## 3. One static load model
 
 ### 3.1 Load context
@@ -437,7 +519,7 @@ crate placement are builder decisions; the conceptual inputs are:
 StaticLoadSnapshot {
    controller-authored source bytes,
    source identities and content digests,
-   initial modeled working directory,
+   controller load working directory,
    source-literal value flow,
    definition frames,
    load decisions and their source spans,
@@ -448,6 +530,12 @@ The I/O edge reads files once. Analysis, custody, bundling, and plan emission
 consume those same immutable bytes. A local file race between analysis and
 emission is structurally excluded rather than detected after producing a plan.
 
+The controller load cwd is not the target execution cwd and neither is the plan
+artifact directory. The first resolves controller-side source dependencies. The
+second governs relative book commands on a particular target. The third locates
+generated plan dependencies. Implementations may prove relationships among them;
+they must not collapse the three coordinates by representation.
+
 ### 3.2 Working-directory parity
 
 `rul-dot-resolves-as-sh` [TYPED direction] - a supported dot operand resolves
@@ -457,6 +545,11 @@ exactly as the modeled floor shell would:
 - a relative slash-bearing operand resolves against cwd at that load position;
 - a slashless operand requests PATH search and remains unsupported at v0;
 - an unknown cwd or operand yields an unresolvable load, never a guessed file.
+
+CLI path handling may resolve an authored argument or source expression to exact
+snapshot bytes using more information than the literal token alone. That is file
+identification, not altered shell semantics: once selected, every pre-source and
+authored `.` keeps ordinary status, scope, order, and environment behavior.
 
 The landed sourcing-file-relative rule is rejected. It gives the same authored
 line a different referent under Dorc and stock sh, breaks regional re-sourcing,
@@ -730,6 +823,22 @@ writes every plan and bundle, and only then publishes the result. A plan may
 never point at a sidecar from an earlier generation. Exact naming,
 content-derived suffixes, and filesystem API are builder decisions.
 
+### 7.6 Targeted plans share loading, not execution identity
+
+Each `TargetedBook` produces a separate main program/plan. Distinct targets may
+share one static load snapshot when their main book, ordered pre-sources,
+controller load cwd, and analysis-relevant loading policy are identical. Host
+measurements never select or reorder pre-sources.
+
+Per-target differences may change dispositions, plan reasons, target execution
+cwd, and multipart-versus-flat placement. A controller-authored mapping may
+select different main books or pre-source lists for different targets, producing
+different static snapshots before contact.
+
+The artifact/executor must preserve the target's execution cwd independently of
+where bundles are staged. Changing cwd merely to find plan dependencies changes
+ordinary relative book commands and is not a loading convenience.
+
 ## 8. TUI and richer presentation
 
 The TUI presents a projection of the already-final Plan and artifact set. It
@@ -862,6 +971,10 @@ real oracle packages representable, not finish every spelling:
 - no per-line bundle markers or separate source-map format;
 - no TUI implementation merely to demonstrate its projection;
 - no attempt to make every arbitrary book source boundary flattenable.
+- no short CLI options for any spike feature;
+- no implicit merging of multiple main-book operands; use authored sourcing or
+  explicit `--pre-source` semantics;
+- no final host-qualifier syntax or same-target multi-program orchestration.
 
 ## 13. Specimen matrix
 
@@ -899,7 +1012,9 @@ properties stay in this matrix until their first honest executable seat exists.
 Builders own:
 
 - concrete type and crate names;
-- CLI names such as `--flatten-plan` and the exact `dorc bundle` interface;
+- CLI names such as `--flatten-plan`, the exact `dorc bundle` interface, and the
+  eventual target-qualifier grammar; `--pre-source` and the no-short-option rule
+  are not builder latitude;
 - output-directory and dependency-file naming;
 - any replacement candidate for the floor-refuted loader-function lowering;
 - exact v0 bundle-comment grammar;
@@ -916,6 +1031,8 @@ They do not own these questions:
 - whether provenance is rich/early;
 - whether explicit single-stream intent may silently return multipart output;
 - whether unsupported cross-custody dependencies may degrade quietly.
+- whether a second main-book operand may be interpreted as source composition;
+- whether a spike feature may claim a single-letter option.
 
 Open pins that require human or implementation evidence:
 
@@ -951,6 +1068,16 @@ Human-typed or explicitly hard-acked in the design dialogue:
   excluded;
 - provenance recovery belongs in the forcing set;
 - network acquisition and web source recovery are later, not v0.
+- one main command-file book per target, with separate target books denoting
+  separate programs rather than implicit composition;
+- repeated `--pre-source` inputs are ordered ordinary dot preludes, global when
+  unqualified and per-target when qualified;
+- the main book is never dot-sourced merely to add CLI preludes; its compiled
+  `$0` is allowed to identify the generated plan;
+- controller load cwd, per-target execution cwd, and artifact location remain
+  distinct coordinates;
+- zero short CLI flags exist for the duration of the spike; all single-letter
+  allocation is reserved for post-spike whole-CLI design.
 
 Gently accepted or builder-latitude rather than hard-ratified:
 
