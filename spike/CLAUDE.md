@@ -722,6 +722,13 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   take a `RenderCtx` (catalog + arrangement lookup + frame; width is a parameter, the
   canonical const binds only transcripts). The arc-close accounting of every prose
   surface, incl. the law-cited never-loom set: `notes/28N`.
+- **a-section-edge-is-not-an-anchor** — a variable's anchors are the bytes immediately beside
+  it; the section's own EDGE is not one. Insertion outside the first or last fragment is
+  ordinary interior insertion, not abutment. Enforced by `Slot::edge` in
+  `errorloom::editable`, never by a marker in the rendered bytes (loom text stays natural —
+  no tags, no dividers, ever). Anchors match by CONTENT, not identity: an equivalent byte
+  beside the variable satisfies it, which is why deleting a neighbouring clause does not
+  cascade into the variable next to it.
 - **flat-test-tree-and-loom-placement** (`288` §3, `rul-flat-test-tree` +
   `rul-slug-decides-loom-placement`) — every case is a peer in a flat
   `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
