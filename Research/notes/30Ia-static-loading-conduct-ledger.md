@@ -40,9 +40,11 @@ call went the other way, on scale measured rather than assumed:
   costs a WINDOW rather than a budget, and a collapsed conductor cannot
   adjudicate the deviations the lane is certain to produce.
 
-`30I:impl-one-builder-one-lane` is typed, so the split is one builder end-to-end,
-NOT phased sub-lanes; the conductor seat stays clean for the fold. Brief at
-`_tmp-30I-brief.md` (untracked, worktree-local, regenerable from `30I` + §4).
+The conductor seat stays clean for the fold. Brief at `_tmp-30I-brief.md`
+(untracked, worktree-local, regenerable from `30I` + §4). `30I:impl-one-builder-one-lane`
+was read as forbidding phased sub-lanes at dispatch; §4a is the human's later
+softening and governs — the intent (one resolver, one source-order model) still
+binds, the one-window claim does not.
 
 ## §4 — Conductor scouting, banked (the four crossings handed to the builder)
 
