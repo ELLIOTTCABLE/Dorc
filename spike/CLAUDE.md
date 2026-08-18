@@ -702,8 +702,8 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   spellings legal since loom-final), resolves against the current typed payload, and
   compiles the fields. `dorc-loom compile/promote` over a content-bound receipt publishes
   both locks + affected cases; all candidate bytes and both fixpoints precede publication.
-  THE EDIT FLOW every case teaches in its own `edit-loop:` line: `$EDITOR` the loom →
-  `mise run loom:compile -- <case>` → `loom:promote -- <case>`; `loom:vars`/`loom:sections`
+  THE EDIT FLOW: `$EDITOR` the loom → `dorc-loom compile <case>` →
+  `dorc-loom promote <case>`; `dorc-loom vars`/`sections`
   discover; `dorc-loom add-register <case> help` seeds a help register (a typed
   `HelpRegister` tri-state, never silent absorption); `--accept-metadata` acknowledges a
   deliberate `when-fires`/`why` change (silent metadata drift refuses). `message: None`
@@ -818,7 +818,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   the one env-guarded human mint; the commit-msg census gate refuses AI-labelled growth;
   `mise run prose:census` is the burn-down instrument). Agent sessions now run pre-commit
   check-only/stash-free (`HK_FIX=0`+`HK_STASH=none`). Chafe repairs: `test:looms` path
-  filtering, shim staging, squat-lint role gaps, the `loom:compile` Windows stack fix.
+  filtering, shim staging, squat-lint role gaps, the `dorc-loom compile` Windows stack fix.
 - THE LOOM-FINAL ARC (2026-07-29→31; conduct ledger `notes/28L`; accounting
   `notes/28N`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
   the project's working prose-edit surface end-to-end. The boundary weld (diagnostic
@@ -870,8 +870,6 @@ mise run bless            # ORCHESTRATOR-ONLY golden re-bless (see below)
 mise run bless:dry        # ... acceptance summary, zero golden writes
 mise run bless:floor      # ORCHESTRATOR-ONLY: the one path that may write an `expected.emitted`
                           #   (*nix/WSL only — it needs BOTH floor binaries)
-mise run loom:compile     # dorc-loom compile CASE...
-mise run loom:promote     # dorc-loom promote CASE... (publishes the two locks)
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 mise run lint:docids      # docID dangling-reference lint (rides check)

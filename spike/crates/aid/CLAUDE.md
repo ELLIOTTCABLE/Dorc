@@ -289,7 +289,7 @@ crate's charter) · `notes/287` (errorloom as-built).
 
 - Diagnostic emission SITES belong in the crate that made the decision, never here. This
   crate owns types, catalog data, and render; it never decides.
-- The locks are generated; the transcript loop (`loom:compile`/`loom:promote`) is the
+- The locks are generated; the transcript loop (`dorc-loom compile`/`promote`) is the
   ordinary edit path. TWO sanctioned hand-edit carves exist, both orchestrator-tier and
   both proven at the byte-identity fixpoint or refused: the arrangement hand-seed
   (`arrangement-lock-is-generated-too`) and the direct-metadata catalog edit

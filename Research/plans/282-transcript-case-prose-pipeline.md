@@ -251,6 +251,7 @@ discover variables, or own a catalog. Stop abstracting there
 
 Layer 2 is consumer policy. `dorc-loom` parses the strict `{{name}}` subset, resolves
 names against Dorc payload values, applies the conservative same-section re-holer,
+<!-- /* superseded 2026-08-17: this re-holer was never built; see the marker in 13 */ -->
 and compiles the resulting `Text | Variable` series into catalog fields. It alone
 enforces defining-case ownership and applies edits to the catalog lock.
 
@@ -565,6 +566,7 @@ Spellings below are ruled unless marked latitude.
   surviving text, minimum-length/charset-gated, and never fuzzy, substring,
   cross-section, or project-global. Destroyed anchors require an explicit `{{name}}`.
   Exact thresholds are builder latitude, chosen conservatively and pinned in tests.
+<!-- /* superseded 2026-08-17: never built. No value-scanning re-holer and no length/charset floor exist; identity survives an edit only through errorloom alignment + its unique-minimum removal search, and a variable is retained iff the bytes immediately adjacent to it survive. Measured cells: crates/errorloom/src/tests.rs */ -->
 
 ### Variable discovery
 
