@@ -11,3 +11,7 @@ hork tune --profile web
 $ dorc why nosuchcommand --book=book.sh
 dorc why: no analyzed command matched nosuchcommand (an address is a SOURCE line:
 `<book>:<N>` or a bare `<N>`).
+
+$ dorc-loom --this vars
+case: why-address-unmatched
+{{v0}} = "nosuchcommand"

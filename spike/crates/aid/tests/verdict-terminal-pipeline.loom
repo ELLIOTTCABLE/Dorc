@@ -17,3 +17,14 @@ oracle.sh:
   3:1 warn [verdict-body:verdict-terminal-pipeline] this __is_converged body answers with a pipeline, so the status Dorc reads is the final stage's, not the described tool's own -- the difference between `does not hold` (status 1) and `cannot say` (2 and up) flattens into whatever the tail exits; prefer a shape where the tool's own status is the body's answer.
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: verdict-terminal-pipeline
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

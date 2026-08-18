@@ -48,3 +48,17 @@ oracle.sh:
        | \__/
 
 dorc lint: 5 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: unmodeled-wall-inventory
+{{wall_count}} = "2"
+{{wall_word}} = "walls"
+{{downstream}} = "3"
+{{v0}} = "5"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

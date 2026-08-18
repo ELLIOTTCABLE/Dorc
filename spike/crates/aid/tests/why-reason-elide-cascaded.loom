@@ -75,3 +75,9 @@ $ dorc why book.sh:7 --book=book.sh -o package.oracle.sh < probe-results.txt --a
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc-loom --this vars
+case: why-reason-elide-cascaded
+{{v0}} = "book.sh"
+{{v1}} = "skipped"
+{{v2}} = "guarded"

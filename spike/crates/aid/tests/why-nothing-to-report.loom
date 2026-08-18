@@ -21,3 +21,10 @@ receipt: [unwritten: why-receipt-when-undated], host localhost
 
 dorc why: nothing to report for book.sh -- no trust spent, no surprises, nothing dorc could
 do better with more description.
+
+$ dorc-loom --this vars
+case: why-nothing-to-report
+{{v0}} = "[unwritten: why-receipt-when-undated]"
+{{v1}} = "localhost"
+{{v2}} = "0"
+{{v3}} = "0"

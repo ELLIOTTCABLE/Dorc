@@ -55,3 +55,9 @@ receipt: [unwritten: why-receipt-when-replayed], host web1
    read top-down; every item is addressable: dorc why <line>
 
 [unwritten: why-drift-analysis-suppressed]
+
+$ dorc-loom --this vars
+case: why-drift-analysis-suppressed
+{{v0}} = "[unwritten: why-receipt-when-replayed]"
+{{v1}} = "web1"
+{{v2}} = "1"

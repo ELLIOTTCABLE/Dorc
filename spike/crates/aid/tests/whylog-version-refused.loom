@@ -12,3 +12,7 @@ whylog: warning[whylog-version-refused]: the saved why-log uses format
 `dorc-whylog/3`, which this version of dorc cannot read back
    = help:  ask the question live instead: `dorc why` (without `--last`)
             re-analyzes the current book directly
+
+$ dorc-loom --this vars
+case: whylog-version-refused
+{{found}} = "dorc-whylog/3"

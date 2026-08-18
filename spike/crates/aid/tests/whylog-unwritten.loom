@@ -8,3 +8,8 @@ $ dorc plan --book=webhost.sh
 error[whylog-unwritten]: This run completed and its artifact is unaffected, but
 the why-log did not land in /var/lib/dorc/whylog (reason: directory), so `dorc
 why --last` will have nothing to read for it.
+
+$ dorc-loom --this vars
+case: whylog-unwritten
+{{dir}} = "/var/lib/dorc/whylog"
+{{reason}} = "directory"

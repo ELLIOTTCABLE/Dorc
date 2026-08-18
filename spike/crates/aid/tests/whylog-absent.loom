@@ -13,3 +13,7 @@ back
 $ dorc-loom --this vars
 case: whylog-absent
 {{dir}} = ".whylog"
+
+$ dorc-loom --this vars
+case: whylog-absent
+{{dir}} = ".whylog"

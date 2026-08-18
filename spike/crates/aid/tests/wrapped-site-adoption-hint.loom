@@ -54,3 +54,8 @@ safe-across user`.
       [ book.sh:2:1
    2 | runas hork add nginx
      | \__________________/
+
+$ dorc-loom --this vars
+case: wrapped-site-adoption-hint
+{{provider}} = "hork"
+{{dimension}} = "user"

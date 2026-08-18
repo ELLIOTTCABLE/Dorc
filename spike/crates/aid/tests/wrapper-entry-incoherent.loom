@@ -46,3 +46,20 @@ oracle.sh:
         | \__________/
 
 dorc lint: 3 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: wrapper-entry-incoherent
+{{wall_count}} = "1"
+{{wall_word}} = "wall"
+{{downstream}} = "2"
+{{wrapper}} = "runas"
+{{entry_shifts}} = "1"
+{{lend_shifts}} = "2"
+{{v0}} = "3"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

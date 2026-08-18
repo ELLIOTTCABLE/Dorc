@@ -8,3 +8,8 @@ $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
 error[transport-apply-failed]: The apply artifact on web1.example.net ran to
 completion and exited 2; the status is the artifact's own, and a fresh `dorc
 plan` measures what actually converged.
+
+$ dorc-loom --this vars
+case: transport-apply-failed
+{{host}} = "web1.example.net"
+{{status}} = "2"

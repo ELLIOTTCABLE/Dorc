@@ -25,3 +25,7 @@ whylog: warning[whylog-book-desync]: the saved why-log no longer matches what is
 on disk: `oracle firewall.oracle.sh` has changed since it was written
    = help:  replaying old decisions against changed files would mislead; re-run
             `dorc why` live for a current answer
+
+$ dorc-loom --this vars
+case: whylog-book-desync
+{{which}} = "oracle firewall.oracle.sh"

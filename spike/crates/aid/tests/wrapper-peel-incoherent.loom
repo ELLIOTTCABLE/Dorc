@@ -10,3 +10,9 @@ disagree on where the guest begins: `__predict` reaches `"$@"` after 1 argv
 token(s), `__lend_map` after 0, so the guest would start at a different token
 depending on which member dispatched, and Dorc stops before contacting any host.
 Fix whichever argparse is wrong so both members peel to the same tail.
+
+$ dorc-loom --this vars
+case: wrapper-peel-incoherent
+{{wrapper}} = "sudo"
+{{predict_depth}} = "1"
+{{lend_map_depth}} = "0"

@@ -55,3 +55,9 @@ receipt: [unwritten: why-receipt-when-undated], host localhost
 
 dorc why: nothing to report for book.sh -- no trust spent, no surprises, nothing dorc could
 do better with more description.
+
+$ dorc-loom --this vars
+case: why-reason-skipped-converged
+{{v0}} = "book.sh"
+{{v1}} = "skipped"
+{{v2}} = "guarded"

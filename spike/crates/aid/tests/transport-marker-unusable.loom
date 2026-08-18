@@ -7,3 +7,7 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar. The sibling of transport-spa
 $ dorc plan --host web1.example.net --book=webhost.sh
 error[transport-marker-unusable]: Dorc could not turn this run's nonce into a
 session marker, so nothing was shipped and web1.example.net was never contacted.
+
+$ dorc-loom --this vars
+case: transport-marker-unusable
+{{host}} = "web1.example.net"

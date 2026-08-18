@@ -136,3 +136,9 @@ $ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc-loom --this vars
+case: why-vouch-payload-establish
+{{v0}} = "book.sh"
+{{v1}} = "skipped"
+{{v2}} = "guarded"

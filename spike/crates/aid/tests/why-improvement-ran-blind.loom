@@ -32,3 +32,10 @@ book.sh:5 | apt-get install -y nginx
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc-loom --this vars
+case: why-improvement-ran-blind
+{{v0}} = "[unwritten: why-receipt-when-undated]"
+{{v1}} = "localhost"
+{{v2}} = "0"
+{{v3}} = "0"

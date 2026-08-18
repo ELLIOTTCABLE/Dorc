@@ -14,3 +14,7 @@ whylog: warning[whylog-corrupt]: the saved why-log is damaged and cannot be read
 back (no dorc-whylog-end sentinel (a truncated write?))
    = help:  this usually means an interrupted write; re-run `dorc why` live, and
             the next plan or apply will save a fresh why-log
+
+$ dorc-loom --this vars
+case: whylog-corrupt
+{{reason}} = "no dorc-whylog-end sentinel (a truncated write?)"

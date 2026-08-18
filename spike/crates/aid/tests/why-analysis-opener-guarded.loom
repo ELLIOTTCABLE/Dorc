@@ -226,3 +226,9 @@ $ dorc why book.sh:8 --book=book.sh -o firewall.oracle.sh -o service.oracle.sh -
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc-loom --this vars
+case: why-analysis-opener-guarded
+{{v0}} = "book.sh"
+{{v1}} = "guarded"
+{{v2}} = "skipped"

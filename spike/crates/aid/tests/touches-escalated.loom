@@ -38,3 +38,8 @@ so hork.touches() shipped with the probe and answered from the host, read-only.
       [ book.sh:2:1
    2 | hork add nginx
      | \____________/
+
+$ dorc-loom --this vars
+case: touches-escalated
+{{site}} = "0"
+{{call}} = "hork.touches()"

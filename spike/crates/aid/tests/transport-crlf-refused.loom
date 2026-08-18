@@ -11,3 +11,8 @@ it carries a carriage return (first on line 1), and CRLF bytes fail on the
 remote host before any shell can run -- convert the line endings to LF and
 re-plan.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: transport-crlf-refused
+{{which}} = "webhost.dorc-plan.sh"
+{{line}} = "1"

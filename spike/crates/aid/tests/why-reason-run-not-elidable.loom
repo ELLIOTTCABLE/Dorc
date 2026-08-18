@@ -25,3 +25,9 @@ $ dorc why book.sh:4 --book=book.sh
 
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
+
+$ dorc-loom --this vars
+case: why-reason-run-not-elidable
+{{v0}} = "book.sh"
+{{v1}} = "ran"
+{{v2}} = "guarded"
