@@ -1,1 +1,1 @@
-book-root value flow, guarded transitive loading, and shared dependency custody await `30I`'s static loader
+book-root value flow and guarded transitive loading await `30I:force-root-value-flow` and `30I:force-guarded-fallback`

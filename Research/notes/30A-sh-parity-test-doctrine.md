@@ -109,7 +109,7 @@
   render as their idiomatic forms. Trigger: the emission planner.
 - p-x-blessed-toplevel-source — a `.`-sourced oracle file's definitions
   participate in resolution as sh would bind them. Trigger:
-  `pin-oracle-side-sourcing-amendment` (`28Q` §9.9).
+  `pin-oracle-side-sourcing-amendment` (`28Q` §4; since built and promoted).
 
 **P-diff — SUPERSEDED BY INVENTORY (measured at the battery's checkpoint): all
 three buildable cells were ALREADY covered by the existing ELEVEN committed floor

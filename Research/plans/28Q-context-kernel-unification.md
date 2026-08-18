@@ -439,6 +439,10 @@ be assessable as continuous; the subtleties belong to a later sitting.
 - **`rul-name-collision-fails-fast`** [TYPED 2026-08-13] — conflicting contracted names
   in loaded scope fail-fast, pre-network only; start-simple, caveats may evolve
   (priced background: `28U` §5).
+- **`pin-oracle-side-sourcing-amendment`** [ACKED; BUILT 2026-08-17] — a
+  marked file may top-level `.` another marked, contract-satisfying dorc-lang
+  file. Load-safety is author contract, never engine-proved purity; `plans/30I`
+  supersedes the landed sourcing-file-relative path rule with cwd parity.
 - The three-pillar direction as a whole [ACKED — the DIRECTION only, never the
   mechanics; the per-item grades above govern, and this line is not citable for any
   PROPOSED mechanism].
@@ -634,9 +638,6 @@ the loom Windows stack-overflow (separate small fix).
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
    unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
    it.
-9. `pin-oracle-side-sourcing-amendment` — the oracle-side load-inert `.` amendment (a marked file sourcing a proven-load-inert
-   file) — without it P2's closures stay singletons; a dialect-surface widening,
-   human's (§2).
 10. `pin-closure-membership-and-diamond` — closure MEMBERSHIP + overlap/diamond identity — the §2 open cells; owed before
     stage-ii's policy half. The diamond half is MECHANICALLY ACKED [human, 2026-08-13,
     skepticism recorded]: no single global rule is built — which inferred traits of

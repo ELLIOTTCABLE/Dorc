@@ -619,7 +619,8 @@ whole-artifact e2es whose composition adds coverage.
 Required worlds:
 
 1. `specimen-rooted-shared-dependency` - one book root; two marked entrypoints;
-   guarded shared dependency; no speaker merge; value reaches a real book command.
+   guarded shared dependency; value reaches a real book command. Custody's
+   no-speaker-merge half is already pinned natively by `core::custody`.
 2. `specimen-subshell-and-errexit` - regional source; fallback under `||`; both
    floor-shell answers; generated artifact preserves status, scope, and run set.
    The committed floor cell already refutes generated loader functions.
@@ -634,7 +635,10 @@ Required worlds:
 The current harness may not express every artifact/API claim. An unspellable
 property remains a registered/reserved pin or a document assertion until the
 first implementation seat exists; tests must never invent a production API merely
-to make a future assertion compile.
+to make a future assertion compile. The three `load30-*` e2e XFAILs assert target
+run sets for source/value/guard/frame behavior; they deliberately do not claim to
+pin bundle file layout, custody, fail-fast exit policy, or locator APIs. Those
+properties stay in this matrix until their first honest executable seat exists.
 
 ## 14. Builder latitude and open pins
 
