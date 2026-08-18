@@ -268,7 +268,7 @@ Owed by the conductor at the fold regardless: own-hand `both gate:full-quiet`;
 the steering prose (builder PROPOSED text in its report — conductor writes it, and
 judges first whether each line earns a permanent seat in every future context).
 
-## §10 — Specimen-respell: RATIFIED [human-typed, 2026-08-18]
+## §10 — ratify-specimen-respell-and-test-shape-debts [human-typed, 2026-08-18]
 
 The case-dir cwd pin and the three one-line root re-spells stand. Ground: hardcoding
 the test-dir path into each test is a boondoggle that makes cases immovable. No ruling
@@ -287,7 +287,7 @@ beyond a footnote (do not pollute `30I` with them unless one becomes actively wr
   only, no recursion. Arbitrarily-nested relative-directory cases need it. Low priority
   unless this arc's own new e2es force it.
 
-## §11 — PARKED: `command -v` as authored speech (known issues)
+## §11 — park-command-v-guard-direction
 
 Parked 2026-08-18 pending a deeper human-led dig with the usual rubber-duck model.
 Nothing is blocked; this is a value hole, not a build blocker. Resume from here.
