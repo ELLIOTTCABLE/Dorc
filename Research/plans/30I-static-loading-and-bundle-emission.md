@@ -59,8 +59,8 @@ The lane is complete when all of the following hold together:
 5. Bundle compilation carries a typed multi-stage locator DAG into at least one
    real diagnostic; bundle comments re-enter as aid-only `BundleOriginClaim`.
 6. The CLI input surface is the one in section 2.4 and 2.5: one main book per
-   target, ordered `--pre-source` dot preludes, no short options, a `-` book
-   operand as stdin's only claimant, and a piped stdout implying one flat plan
+   target, ordered `--pre-source` dot preludes, no short options, `-` naming
+   stdin in any filename position, and a piped stdout implying one flat plan
    for one target. `-o`/`--oracle` and multi-book concatenation no longer exist.
 7. The three `load30-*` XFAILs green and are promoted; the measured
    dot-vs-function floor is unchanged; lowerable properties sit in fast native
