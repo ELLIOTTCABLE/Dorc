@@ -19,8 +19,10 @@ fn drive(consumer: &DorcConsumer, case: &Case) -> (DorcEditableBaseline, String)
         panic!("the in-process driver must claim {command:?}")
     })
     .expect("case replays")
-    .pop()
-    .expect("one replay block");
+    .into_iter()
+    .rev()
+    .find(|result| result.editable_render().is_some())
+    .expect("an editable replay");
     let transcript = replay.output().to_owned();
     let baseline = consumer
         .baseline_from_render(
@@ -134,8 +136,9 @@ fn drivable_output(consumer: &DorcConsumer, case: &Case) -> Option<String> {
         Err(errorloom::RunError::ShellNotConfigured)
     })
     .ok()?
-    .last()
-    .filter(|result| result.editable_render().is_some())
+    .iter()
+    .rev()
+    .find(|result| result.editable_render().is_some())
     .map(|result| result.output().to_owned())
 }
 

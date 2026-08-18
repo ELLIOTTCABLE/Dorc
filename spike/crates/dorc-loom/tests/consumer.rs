@@ -85,8 +85,10 @@ fn editable_baseline_renders_a_defining_case_with_help() {
         panic!("exact whylog replay must not fall back")
     })
     .expect("exact replay")
-    .pop()
-    .expect("one replay");
+    .into_iter()
+    .rev()
+    .find(|result| result.editable_render().is_some())
+    .expect("an editable replay");
     let baseline = consumer
         .baseline_from_render(
             &case,

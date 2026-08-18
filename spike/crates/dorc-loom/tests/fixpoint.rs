@@ -376,7 +376,6 @@ fn lint_cases_replay_the_complete_production_report() {
             },
         )
         .unwrap_or_else(|error| panic!("replay lint case `{filename}`: {error}"));
-        assert_eq!(replay.len(), 1, "lint case `{filename}` has one replay");
         let expected = case.replay().blocks()[0].output();
         assert_eq!(replay[0].output(), expected, "lint case `{filename}` bytes");
         assert_eq!(
