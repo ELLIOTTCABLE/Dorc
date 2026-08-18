@@ -131,3 +131,64 @@ on a read-and-reason is how the fossil got there.
   (conductor skill).
 - `--all` reads mildly ambiguously once mode is optional (all *values*, every case).
   Pre-existing, not worsened; `--unused-too` is the clearer spelling if it ever grates.
+
+## §8 — The edit-transport architecture, measured (2026-08-17 sitting)
+
+Conductor-measured in-window; cells committed at `crates/errorloom/src/tests.rs`.
+
+**As-built mechanism.** `transport_edit_allow_removal` runs a required-retention pass, then
+a removal search over bitmasks at increasing removal counts, accepting a unique
+minimum-removal interpretation. `demote_occurrences` DELETES a fragment; it does not convert
+it to text. `282` §13's "conservative same-section re-holer" with its length/charset floor
+was **never built** (both sites now marked superseded in the plan).
+
+**The governing rule:** a variable survives iff the bytes IMMEDIATELY adjacent to it survive.
+Not semantic delimiters. Removing the colon in `wrote: /path` is safe (the space was the
+anchor); removing backticks around `` `apt-get` `` is fatal.
+
+**`fnd-boundary-variable-dies-to-insertion`** — a variable at a section boundary has an
+anchor on ONE side; the other is the section edge, and any insertion there abuts it. So
+appending a clause after a trailing hole, or prefixing a word before a leading one, silently
+destroys it. Both shapes ship in the catalog (registers ending in `{{oracles}}`/`{{expected}}`
+/`{{output}}`; ten beginning with a hole). The two most ordinary prose edits there are.
+
+**`fnd-it-is-a-ux-limit-not-a-technical-one`** (human) — the engine can always split on the
+known rendered bytes. Declining to asserts the author knew the seam was there. Same
+mechanical signal, opposite desired outcomes: adding backticks around a hole wants
+split-and-keep; typing `-full` after it does not. A referentially-agnostic engine cannot
+separate them. The "author edited the variable" reading is incoherent by construction (the
+value is payload-derived) and must never be acted on.
+
+**`fnd-invisible-seams-are-the-root`** — the deepest case is a variable that IS English prose
+(a sentence-tail spliced into a host sentence). The author rewrites across a seam they cannot
+see, so their intent was formed against a false model and NO alignment policy can be correct.
+The mitigation is seam visibility before the edit — which is exactly what the `vars` block is
+for, and why the back-fill matters beyond tidiness.
+
+**Reasoned, pending the errorloom lane's tests:** the abutment rule protects RETAINED
+variables inside the removal search too, so attribution follows the bytes and
+mis-attribution is hard when values are distinct (`prop-masks-keeping-the-touched-variable-die`).
+Four that hurt: adjacent-clause deletion cascades to a neighbouring hole · degradation is
+drop-every-hole-in-the-section rather than refuse (once all are demoted, alignment trivially
+succeeds) · equal-valued variables rely on ambiguity-refusal, the only constructible
+mis-attribution story · the `removable_occurrences` ceiling is a hard editability wall.
+
+**The layering** (three mechanisms, three different failures): the `vars` block prevents the
+wrong intent forming · the boundary fix stops discarding right ones · `--drop-holes` reports
+the residue.
+
+## §9 — Rulings typed this sitting (human)
+
+- **`rul-any-hole-loss-confirms`** — deletion AND confusing moves both route through the
+  confirmation path; the reversal of the earlier removal-is-fine lean. Reason: `baked()` is a
+  heuristic, and a heuristic on a correctness gate makes its false negatives into silent data
+  loss. Passes the anti-ceremony test: the author knows they deleted WORDS, and cannot know
+  they deleted a HOLE (the render shows `apt-get`, never `{{command}}`).
+- **`rul-flag-names-the-act-not-the-history`** — `--drop-holes`; a flag names what you want
+  done now, never a prior interaction. Matches the engine's own `dropped`/`demote` vocabulary
+  and dodges the git collision `--commit-holes` would carry.
+- **`rul-no-special-case-for-dropping-all`** — dropping every hole in a section gets no louder
+  path, no extra variant, no multiples handling. One shape.
+- **No frequency measurement** of the confirm path: this is a side tool.
+- **`rul-no-markers-in-loom-text`** (restated) — the boundary fix is internal only; no tags,
+  dividers, or sentinels ever enter the text an author reads.
