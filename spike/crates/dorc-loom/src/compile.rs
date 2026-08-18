@@ -38,6 +38,22 @@ impl CompiledSection {
     pub fn bindings(&self) -> &std::collections::BTreeMap<TemplateVariableName, String> {
         &self.bindings
     }
+    /// Render in the TEMPLATE spelling — every variable as `{{name}}`.
+    ///
+    /// The stored form of a register, and the only surface on which a hole that MOVED and a hole
+    /// that DIED look different: [`Self::text`] interpolates the current world, so both spell the
+    /// same bytes there.
+    #[must_use]
+    pub fn template(&self) -> String {
+        self.fragments
+            .iter()
+            .map(|fragment| match fragment {
+                CompiledFragment::Text(text) => text.clone(),
+                CompiledFragment::Variable(name) => format!("{{{{{}}}}}", name.0),
+            })
+            .collect()
+    }
+
     /// Render exact bound bytes.
     #[must_use]
     #[expect(

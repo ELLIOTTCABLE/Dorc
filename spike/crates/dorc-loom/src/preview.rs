@@ -7,14 +7,34 @@ use crate::{
     SectionVariableId, TemplateVariableName, compile_section_edits,
 };
 
+/// One hole the render stamped into a section that the compiled edit no longer interpolates.
+///
+/// Legal — omission IS the removal mechanism (`282` §13) — and silently destructive when it was not
+/// meant, which is why a publish carrying one takes the confirmation path whatever the reason
+/// (`30C:rul-any-hole-loss-confirms`). The two facts beside the name are the transport's own
+/// evidence, never a second reading of the compiled bytes
+/// (`28L:rul-editability-is-stamped-never-re-derived`); they say WHY, and the reasons are
+/// independent of each other.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct DroppedHole {
+    /// The variable this register no longer interpolates.
+    pub name: TemplateVariableName,
+    /// Its rendered value NEWLY appears in the section's own literal text: the author most likely
+    /// typed over the marker, freezing whatever this render happened to say.
+    pub value_reappears_as_text: bool,
+    /// Another occurrence in the section rendered the same bytes, so which one went is the reading
+    /// the transport selected rather than something the edited bytes settle.
+    pub value_shared_with_another_occurrence: bool,
+}
+
 /// One interpreted editable section.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SectionPreview {
     pub(crate) section: SectionKey,
     pub(crate) compiled: CompiledSection,
     pub(crate) used_bindings: Vec<(TemplateVariableName, String)>,
-    pub(crate) dropped: Vec<TemplateVariableName>,
-    pub(crate) baked: Vec<TemplateVariableName>,
+    pub(crate) dropped: Vec<DroppedHole>,
+    pub(crate) stamped: String,
 }
 
 impl SectionPreview {
@@ -36,32 +56,26 @@ impl SectionPreview {
         &self.used_bindings
     }
 
-    /// Variables the render stamped into this section that the edit no longer interpolates.
+    /// The register as the render stamped it, in `{{name}}` spelling — the BEFORE of a publish diff.
     ///
-    /// Legal — omission IS the removal mechanism (`282` §13) — and silently destructive when it
-    /// was not meant: typing a value's TEXT where its marker stood bakes the current world into
-    /// the register, and the register's `params` shrink to match. Disclosed rather than refused.
+    /// Read off the stamped fragment series rather than looked up in the registry: the render's
+    /// literal runs and its `ParamValue` holes ARE the stored template, so the two sides of the
+    /// diff come from one source and a registry lookup cannot drift out from under it.
     #[must_use]
-    pub fn dropped(&self) -> &[TemplateVariableName] {
-        &self.dropped
+    pub fn stamped_template(&self) -> &str {
+        &self.stamped
     }
 
-    /// The dropped variables whose rendered value is STILL THERE, as literal text.
-    ///
-    /// The evidenced half of [`Self::dropped`], and the only half that can be warned about honestly
-    /// (`30C` item 2): a variable removed with its value gone is an ordinary removal, but a variable
-    /// removed while its exact rendered bytes sit in the section's new literal text is a world the
-    /// author probably froze by accident. Never a refusal — the author may genuinely mean it, and
-    /// nothing here can tell.
-    ///
-    /// The evidence is the transport's own, not a second reading of the compiled bytes: errorloom
-    /// reports a NEW occurrence, counted against what the baseline section's literal text already
-    /// carried. That distinction is load-bearing rather than fussy — prose that spells a value out
-    /// beside its own variable is ordinary, and a `contains` test would call every genuine deletion
-    /// of such a variable a frozen world.
+    /// The register this edit compiles to, in the same spelling — the AFTER.
     #[must_use]
-    pub fn baked(&self) -> &[TemplateVariableName] {
-        &self.baked
+    pub fn compiled_template(&self) -> String {
+        self.compiled.template()
+    }
+
+    /// The holes this edit gives up, in render order.
+    #[must_use]
+    pub fn dropped(&self) -> &[DroppedHole] {
+        &self.dropped
     }
 }
 
@@ -105,14 +119,13 @@ pub fn compile_preview(
                 .iter()
                 .map(|name| (name.clone(), compiled.bindings()[name].clone()))
                 .collect();
-            let dropped = dropped_variables(baseline, edit.section(), &used_bindings);
-            let baked = baked_variables(&dropped, edit.drops());
+            let dropped = dropped_holes(baseline, edit.section(), &used_bindings, edit.drops());
             SectionPreview {
                 section: edit.section().clone(),
+                stamped: stamped_template(baseline, edit.section()),
                 compiled,
                 used_bindings,
-                dropped: dropped.into_iter().map(|(name, _)| name).collect(),
-                baked,
+                dropped,
             }
         })
         .collect();
@@ -125,57 +138,70 @@ pub fn compile_preview(
     Ok(CompilePreview { sections, concrete })
 }
 
-/// The names the RENDER stamped into `section` that the compiled edit no longer carries.
+/// The names the RENDER stamped into `section` that the compiled edit no longer carries, each
+/// carrying the transport's evidence about why.
 ///
 /// Read off the stamped fragments, never off the edited bytes: a value's text is ordinary words
 /// once typed, and asking the bytes which of them used to be a variable would be exactly the
 /// byte-shape re-derivation the arc outlawed (`28L:rul-editability-is-stamped-never-re-derived`).
-fn dropped_variables(
+///
+/// The reduction from occurrences to NAMES is the load-bearing step. The transport's facts are
+/// per-OCCURRENCE, so a section carrying `{{name}}` twice can lose one and keep the other and the
+/// register still interpolates it; the question a publish is holding is whether the variable is
+/// gone from the REGISTER, and any lost occurrence of a lost name carries its reason.
+fn dropped_holes(
     baseline: &DorcEditableBaseline,
     section: &SectionKey,
     used: &[(TemplateVariableName, String)],
-) -> Vec<(TemplateVariableName, String)> {
-    let mut dropped: Vec<(TemplateVariableName, String)> = Vec::new();
-    for component in baseline.render().components() {
-        let RenderComponent::EditableSection(stamped) = component else {
+    drops: &[VariableDrop<SectionVariableId>],
+) -> Vec<DroppedHole> {
+    let mut dropped: Vec<DroppedHole> = Vec::new();
+    for fragment in stamped_fragments(baseline, section) {
+        let EditableFragment::Variable { id, .. } = fragment else {
             continue;
         };
-        if stamped.id() != section {
+        let name = &id.name;
+        if used.iter().any(|(kept, _)| kept == name)
+            || dropped.iter().any(|gone| gone.name == *name)
+        {
             continue;
         }
-        for fragment in stamped.fragments() {
-            let EditableFragment::Variable { id, rendered } = fragment else {
-                continue;
-            };
-            let name = &id.name;
-            if !used.iter().any(|(kept, _)| kept == name)
-                && !dropped.iter().any(|(gone, _)| gone == name)
-            {
-                dropped.push((name.clone(), rendered.clone()));
-            }
-        }
+        let lost = || drops.iter().filter(|drop| drop.id().name == *name);
+        dropped.push(DroppedHole {
+            name: name.clone(),
+            value_reappears_as_text: lost().any(VariableDrop::value_reappears_as_text),
+            value_shared_with_another_occurrence: lost()
+                .any(VariableDrop::value_shared_with_another_occurrence),
+        });
     }
     dropped
 }
 
-/// The dropped variables whose rendered value NEWLY appears in the edit's own literal text.
-///
-/// Both halves are needed and neither implies the other. The transport's reappearance fact is
-/// per-OCCURRENCE, so a section carrying `{{name}}` twice can lose one and keep the other, and
-/// the register still interpolates it — while [`dropped_variables`] is per-NAME and answers the
-/// question the warning is actually about: is this variable gone from the register.
-fn baked_variables(
-    dropped: &[(TemplateVariableName, String)],
-    drops: &[VariableDrop<SectionVariableId>],
-) -> Vec<TemplateVariableName> {
-    dropped
+/// `section`'s fragments as the render stamped them.
+fn stamped_fragments<'a>(
+    baseline: &'a DorcEditableBaseline,
+    section: &SectionKey,
+) -> &'a [EditableFragment<SectionVariableId>] {
+    baseline
+        .render()
+        .components()
         .iter()
-        .filter(|(name, _)| {
-            drops
-                .iter()
-                .any(|drop| drop.id().name == *name && drop.value_reappears_as_text())
+        .find_map(|component| match component {
+            RenderComponent::EditableSection(stamped) if stamped.id() == section => {
+                Some(stamped.fragments())
+            }
+            _ => None,
         })
-        .map(|(name, _)| name.clone())
+        .unwrap_or_default()
+}
+
+fn stamped_template(baseline: &DorcEditableBaseline, section: &SectionKey) -> String {
+    stamped_fragments(baseline, section)
+        .iter()
+        .map(|fragment| match fragment {
+            EditableFragment::Text(text) => text.clone(),
+            EditableFragment::Variable { id, .. } => format!("{{{{{}}}}}", id.name.0),
+        })
         .collect()
 }
 

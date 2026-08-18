@@ -5,20 +5,20 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use dorc_aid::prose::Mint;
-use dorc_loom::invocation::{Breadth, PublishArgs, THIS, Verb};
+use dorc_loom::invocation::{ALL, Breadth, PublishArgs, THIS, Verb};
 use dorc_loom::{
-    DorcConsumer, DorcSectionEditRefusal, FsReceiptStore, GitRepository, InspectedCompilation,
-    InspectedReplay, Repository, SectionKey, SectionVariableId, build_publication,
-    classify_prose_changes, compile_preview, compile_receipt, corpus_ownership,
-    load_arrangement_corpus, load_corpus_by_slug, promote_receipt, refuse_foreign_components,
-    render_compile_preview, replay_case_with_inputs,
+    DorcConsumer, DorcSectionEditRefusal, FsStagingStore, GitRepository, Repository, SectionKey,
+    SectionVariableId, StagedPublication, StagedReplay, StagingStore, accept_staged,
+    build_publication, classify_prose_changes, compile_preview, corpus_ownership,
+    load_arrangement_corpus, load_corpus_by_slug, refuse_foreign_components, render_publish_diff,
+    replay_case_with_inputs, stage_publication,
 };
 use errorloom::{
     Case, CaseRenderer, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case,
     read_case_text,
 };
 
-const USAGE: &str = "usage: dorc-loom [--this] <compile|promote [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; an omitted list means every crates/aid/tests/*.loom\n       --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal\n       edit a sentence in a case's transcript, then compile and promote it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
+const USAGE: &str = "usage: dorc-loom [--this] <publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; for the read-only verbs an omitted list means every crates/aid/tests/*.loom\n       --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal\n       edit a sentence in a case's transcript, then publish it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
 
 /// Each verb's own page — what it does, what its flags mean, and the command that follows it.
 ///
@@ -28,8 +28,7 @@ const USAGE: &str = "usage: dorc-loom [--this] <compile|promote [--quiet] [--acc
 /// what they get (`28L:rul-refusals-name-the-next-command`, in its non-refusing register).
 fn usage_for(verb: &str) -> &'static str {
     match verb {
-        "compile" => COMPILE_USAGE,
-        "promote" => PROMOTE_USAGE,
+        "publish" => PUBLISH_USAGE,
         "vars" => VARS_USAGE,
         "sections" => SECTIONS_USAGE,
         "scaffold" => SCAFFOLD_USAGE,
@@ -40,9 +39,8 @@ fn usage_for(verb: &str) -> &'static str {
 }
 
 /// The verbs `usage_for` has a page for — also what makes `dorc-loom <verb> --help` route to it.
-const VERBS: [&str; 7] = [
-    "compile",
-    "promote",
+const VERBS: [&str; 6] = [
+    "publish",
     "vars",
     "sections",
     "scaffold",
@@ -50,22 +48,19 @@ const VERBS: [&str; 7] = [
     "keys",
 ];
 
-const COMPILE_USAGE: &str =
-    "usage: dorc-loom compile [--quiet] [--shell=PATH] [--path=DIR]... [CASE...]
+const PUBLISH_USAGE: &str = "usage: dorc-loom publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]
   Drive every selected case's replays, compile the prose you edited back into template form, print
-  what it understood, and record the whole inspection as a receipt under spike/target. Writes no
-  source file. Bare, it takes the whole corpus and narrows to the prose-changed cases itself.
-  --quiet     drop the header of every case that has nothing to report
-  --shell=P   lend the generic executor a shell, for a replay the in-process driver declines
-  --path=D    prepend a directory to the replay PATH (repeatable)
-  next: dorc-loom promote <the same CASE list> -- the receipt refuses a different one";
-
-const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]
-  Verify against the compile receipt, then publish: both generated locks
+  what that does to each register in {{hole}} spelling, and publish it: both generated locks
   (crates/aid/src/catalog_lock.rs and arrangement_lock.rs) plus every affected case. In-process
   renders only -- no binary is run and no fixture is executed. Every byte and both fixpoints are
-  computed before the first write, so a validation failure leaves the tree byte-identical. Nothing
-  is staged or committed; the diff is yours -- `git diff --word-diff` is how prose reads.
+  computed before the first write, so a failure leaves the tree byte-identical. Nothing is staged or
+  committed; the diff is yours -- `git diff --word-diff` is how prose reads.
+  A publish that gives up a hole writes NOTHING, says which holes and why, and exits nonzero. The
+  transcript renders values, so that loss is invisible in the case diff; the printed one is where
+  you see it. Re-run with --verbatim once you have.
+  --verbatim  publish an interpretation that gives up holes, exactly as it was just shown to you
+  --all       every committed case. This verb rewrites files, so the whole corpus is spelled out
+  --quiet     drop the header of every case that has nothing to report
   --accept-metadata  acknowledge that a case's when-fires / when-used / why REPLACES the committed
                      registry entry; without it a metadata change refuses before any write
   --human     mark every register this publishes as written by a person. Refuses in a session that
@@ -73,8 +68,9 @@ const PROMOTE_USAGE: &str = "usage: dorc-loom promote [--quiet] [--accept-metada
               Unflagged, a register is marked slop, whoever is driving.
   --slop      yes, re-mark a human-written register as slop. Unflagged, that refuses for a person
               (the forgotten --human) and proceeds with a note for an agent.
-  the other flags are compile's, and the CASE list must be the one compile saw
-  next: mise run test -- a promote republishes shared locks, so its blast radius is wider than the
+  --shell=P   lend the generic executor a shell, for a replay the in-process driver declines
+  --path=D    prepend a directory to the replay PATH (repeatable)
+  next: mise run test -- a publish republishes shared locks, so its blast radius is wider than the
         case in front of you";
 
 const VARS_USAGE: &str = "usage: dorc-loom [--this] vars [--used|--all] [CASE...]
@@ -171,18 +167,7 @@ fn main() -> ExitCode {
 }
 
 enum Command {
-    Compile {
-        cases: Vec<PathBuf>,
-        env: RunEnv,
-        quiet: bool,
-    },
-    Promote {
-        cases: Vec<PathBuf>,
-        env: RunEnv,
-        quiet: bool,
-        accept_metadata: bool,
-        provenance: Provenance,
-    },
+    Publish(Publication),
     Vars {
         breadth: Breadth,
         cases: Vec<PathBuf>,
@@ -202,6 +187,18 @@ enum Command {
     Help {
         verb: Option<String>,
     },
+}
+
+/// One resolved `publish` invocation.
+struct Publication {
+    cases: Vec<PathBuf>,
+    /// The case list as the author spelled it, so a refusal can name the re-run they would type.
+    spelled: String,
+    env: RunEnv,
+    quiet: bool,
+    accept_metadata: bool,
+    provenance: Provenance,
+    verbatim: bool,
 }
 
 /// What the author said about provenance — the `--human` / `--slop` pair. `Default` and `Slop`
@@ -226,8 +223,24 @@ type SelectedCase = (String, PathBuf);
 
 /// Refusals carry their count so the closing status line can match the exit code it explains.
 enum Inspected {
-    Ready(InspectedCompilation, DorcConsumer),
+    Ready(Interpretation),
     Refused { cases: usize },
+}
+
+/// Everything one publish computed before it decided whether it may write.
+struct Interpretation {
+    publication: StagedPublication,
+    consumer: DorcConsumer,
+    losses: Vec<HoleLoss>,
+}
+
+/// One hole a publication gives up, with enough address to point at it and the transport's reasons.
+struct HoleLoss {
+    case: String,
+    section: String,
+    hole: String,
+    reappears: bool,
+    shared: bool,
 }
 
 struct GatedCases {
@@ -242,14 +255,7 @@ fn run() -> Result<ExitCode, String> {
     let stdout = io::stdout();
     let mut out = stdout.lock();
     match command {
-        Command::Compile { cases, env, quiet } => compile_cases(&cases, &env, quiet, &mut out),
-        Command::Promote {
-            cases,
-            env,
-            quiet,
-            accept_metadata,
-            provenance,
-        } => promote_cases(&cases, &env, quiet, accept_metadata, provenance, &mut out),
+        Command::Publish(publication) => publish_cases(&publication, &mut out),
         Command::Vars { breadth, cases } => print_variables(breadth, &cases, &mut out),
         Command::Scaffold { slug } => scaffold_case(&slug),
         Command::AddRegister { case, register } => add_register(&case, &register),
@@ -351,32 +357,19 @@ fn parse_argv(words: &[String]) -> Result<Command, String> {
         ));
     }
     match invocation.verb {
-        Verb::Compile(args) => {
-            if args.accept_metadata {
-                return Err(format!(
-                    "{ACCEPT_METADATA} is a promote-time acknowledgement; compile writes nothing \
-                     to acknowledge\n{COMPILE_USAGE}"
-                ));
-            }
-            if provenance_of(&args)? != Provenance::Default {
-                return Err(format!(
-                    "{HUMAN}/{SLOP} decide how a published register is MARKED; compile publishes \
-                     nothing, so it marks nothing. Pass it to the promote instead\n{COMPILE_USAGE}"
-                ));
-            }
-            Ok(Command::Compile {
-                cases: resolve_cases(&args.cases)?,
-                env: run_env(&args)?,
-                quiet: args.quiet,
-            })
-        }
-        Verb::Promote(args) => Ok(Command::Promote {
+        Verb::Publish(args) => Ok(Command::Publish(Publication {
             cases: resolve_cases(&args.cases)?,
+            spelled: if args.cases.is_empty() {
+                ALL.to_owned()
+            } else {
+                args.cases.join(" ")
+            },
             env: run_env(&args)?,
             quiet: args.quiet,
             accept_metadata: args.accept_metadata,
             provenance: provenance_of(&args)?,
-        }),
+            verbatim: args.verbatim,
+        })),
         Verb::Vars(args) => Ok(Command::Vars {
             breadth: args.breadth(),
             cases: resolve_cases(&args.cases)?,
@@ -397,7 +390,7 @@ fn parse_argv(words: &[String]) -> Result<Command, String> {
 fn provenance_of(args: &PublishArgs) -> Result<Provenance, String> {
     match (args.human, args.slop) {
         (true, true) => Err(format!(
-            "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{PROMOTE_USAGE}"
+            "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{PUBLISH_USAGE}"
         )),
         (true, false) => Ok(Provenance::Human),
         (false, true) => Ok(Provenance::Slop),
@@ -416,12 +409,10 @@ fn run_env(args: &PublishArgs) -> Result<RunEnv, String> {
     Ok(env)
 }
 
-/// Resolve a verb's CASE list, defaulting to the whole collection.
+/// Resolve a verb's CASE list; an empty one is the whole collection.
 ///
-/// The default is the WHOLE corpus rather than an error because `compile` and `promote` must see
-/// the same list for the receipt to match, and the tool already narrows to the prose-changed subset
-/// itself (`gate_touched_set`). So "all of them" reads as "publish what I edited", not as a
-/// blunderbuss, and spares every caller from keeping two lists in sync.
+/// Which invocations may ARRIVE here empty is the grammar's question, not this function's
+/// (`invocation::Invocation::target` — a bare read-only verb may, a bare `publish` refuses).
 fn resolve_cases(cases: &[String]) -> Result<Vec<PathBuf>, String> {
     if cases.is_empty() {
         return corpus_cases();
@@ -535,10 +526,15 @@ fn scaffold_case(slug: &str) -> Result<ExitCode, String> {
     Ok(ExitCode::SUCCESS)
 }
 
-/// The one acknowledgement `promote` takes: yes, replace the committed metadata.
+/// Yes, replace the committed metadata.
 const ACCEPT_METADATA: &str = "--accept-metadata";
 const HUMAN: &str = "--human";
 const SLOP: &str = "--slop";
+
+/// Yes, publish the reading I was just shown, holes and all
+/// (`30C:rul-flag-names-the-act-not-the-history` — it names what you want done now, never a prior
+/// interaction, which is why it is not spelled `--confirm`).
+const VERBATIM: &str = "--verbatim";
 
 /// Environment variables an agent harness announces itself with. One line to extend.
 const AGENT_MARKERS: [&str; 2] = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"];
@@ -636,53 +632,135 @@ fn corpus_cases() -> Result<Vec<PathBuf>, String> {
     Ok(cases)
 }
 
-fn compile_cases(
-    cases: &[PathBuf],
-    env: &RunEnv,
-    quiet: bool,
-    out: &mut impl Write,
-) -> Result<ExitCode, String> {
-    validate_case_inputs(cases)?;
-    let gated = gate_touched_set(cases)?;
+/// `dorc-loom publish CASE...` — the one authoring verb.
+///
+/// The shape is: compute EVERYTHING, print what it does to the registers, then decide whether this
+/// run may write. There is no decision to make between those steps, which is why there is no second
+/// verb; the decision that does exist is whether a hole was lost, and the gate fires exactly there
+/// (`30C:rul-any-hole-loss-confirms`).
+fn publish_cases(publication: &Publication, out: &mut impl Write) -> Result<ExitCode, String> {
+    validate_case_inputs(&publication.cases)?;
+    let agent = looks_like_an_agent(&process_env);
+    refuse_human_mint_from_an_agent(publication.provenance, agent)?;
+    refuse_metadata_drift(publication.accept_metadata)?;
+    let gated = gate_touched_set(&publication.cases)?;
     let total = gated.paths.len();
-    let (inspection, _consumer) = match inspect_cases(&gated, env, quiet, Mint::Slop, out)? {
-        Inspected::Ready(inspection, consumer) => (inspection, consumer),
+    let interpretation = match inspect_cases(&gated, publication, out)? {
+        Inspected::Ready(interpretation) => interpretation,
         Inspected::Refused { cases } => {
             tracing::info!("{total} cases, {cases} refused");
             return Ok(ExitCode::from(1));
         }
     };
-    let store = receipt_store()?;
-    let outcome = compile_receipt(&store, &inspection)?;
-    if matches!(outcome, dorc_loom::ReceiptWriteOutcome::CleanupPending) {
-        tracing::warn!(
-            "receipt published; retained backup requires deliberate resolution; subsequent writes refuse"
-        );
+    if let Some(note) = report_demotions(
+        interpretation.consumer.demoted(),
+        publication.provenance,
+        agent,
+    )? {
+        tracing::info!("{note}");
+    }
+
+    // Byte-identical on both paths by construction: one census, emitted before either branch can
+    // add a word of its own (`30C:rul-flag-names-the-act-not-the-history`).
+    if let Some(detail) = hole_loss_detail(&interpretation.losses) {
+        tracing::warn!("{detail}");
+    }
+    let store = staging_store()?;
+    match (interpretation.losses.is_empty(), publication.verbatim) {
+        (false, false) => {
+            stage_refusal(&store, &interpretation.publication, &publication.spelled)?;
+            return Ok(ExitCode::from(1));
+        }
+        (false, true) => {
+            accept_staged(&store, &interpretation.publication, &publication.spelled)?;
+            tracing::info!("{VERBATIM}: publishing this interpretation as it stands");
+        }
+        (true, _) => {}
+    }
+
+    let affected = touched_cases(&gated)?;
+    let before = staged_bytes(&gated)?;
+    let wrote = publish(&interpretation.consumer, &affected)?;
+    if !interpretation.losses.is_empty() {
+        store.discard()?;
     }
     warn_each(staged_case_notes(
         &gated.staged,
-        &std::collections::BTreeSet::new(),
+        &rewritten_staged(&gated, &before)?,
     ));
-    // A compile changes no tracked file, so without this its only trace is a receipt under
-    // `target/` that nothing announces.
-    tracing::info!(
-        "{total} cases, {} touched, receipt {}",
-        gated.touched.len(),
-        store.path().display()
-    );
-    warn_each(nothing_moved_note(
-        gated.touched.is_empty(),
-        "compile",
-        &gated.paths,
-    ));
+    warn_each(nothing_moved_note(!wrote, &gated.paths));
     Ok(ExitCode::SUCCESS)
 }
 
-/// The warning a reader who lost an hour to a silent run needed (`30C` item 6).
+/// Hold the computed interpretation for a `--verbatim` and say what the author must do to it.
+fn stage_refusal(
+    store: &FsStagingStore,
+    computed: &StagedPublication,
+    spelled: &str,
+) -> Result<(), String> {
+    if matches!(
+        stage_publication(store, computed)?,
+        dorc_loom::StagingWriteOutcome::CleanupPending
+    ) {
+        tracing::warn!(
+            "staged; retained backup requires deliberate resolution; subsequent writes refuse"
+        );
+    }
+    tracing::warn!(
+        "nothing was written. Re-type the {{{{name}}}} markers where those values belong and \
+         re-run, or publish this reading as it stands: `dorc-loom publish {VERBATIM} {spelled}`"
+    );
+    Ok(())
+}
+
+/// The census of what a publication gives up, and the transport's reason for each.
 ///
-/// Both verbs can do exactly nothing and exit 0 — the wrong worktree, the wrong file, an edit
-/// already promoted — and the ordinary summary line reads the same either way, because "0 touched"
-/// is a number in a sentence rather than an answer to the question the reader is holding.
+/// One text, emitted identically whether this run refuses or applies, because the two runs are the
+/// same interpretation and an author comparing them should find nothing moved but the outcome.
+/// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
+fn hole_loss_detail(losses: &[HoleLoss]) -> Option<String> {
+    if losses.is_empty() {
+        return None;
+    }
+    let mut lines = vec![format!(
+        "this publish gives up {} hole(s); the transcript renders values, so this is the only \
+         place that difference is visible:",
+        losses.len()
+    )];
+    lines.extend(losses.iter().map(|loss| {
+        format!(
+            "      {{{{{}}}}} in {} ({}) -- {}",
+            loss.hole,
+            loss.case,
+            loss.section,
+            hole_loss_reason(loss)
+        )
+    }));
+    Some(lines.join("\n"))
+}
+
+/// Why one hole went. Two independent facts, so a hole can carry both: what happened to its BYTES,
+/// and whether WHICH occurrence went was settled by the edit or selected by the transport.
+fn hole_loss_reason(loss: &HoleLoss) -> String {
+    let mut reasons = Vec::new();
+    if loss.reappears {
+        reasons.push(
+            "its rendered value is still there as literal text, frozen at whatever this render \
+             happened to say",
+        );
+    }
+    if loss.shared {
+        reasons.push(
+            "another hole in that section renders the same text, so which of them this edit \
+             dropped is the reading I picked, not something the bytes settle",
+        );
+    }
+    if reasons.is_empty() {
+        reasons.push("this edit no longer interpolates it");
+    }
+    reasons.join("; and ")
+}
+
 /// The one seat that turns a note-producing function's answer into stderr lines.
 fn warn_each(notes: impl IntoIterator<Item = String>) {
     for note in notes {
@@ -690,13 +768,14 @@ fn warn_each(notes: impl IntoIterator<Item = String>) {
     }
 }
 
+/// The warning a reader who lost an hour to a silent run needed (`30C` item 6).
+///
+/// A publish can do exactly nothing and exit 0 — the wrong worktree, the wrong file, an edit
+/// already published — and the ordinary summary line reads the same either way, because "0 touched"
+/// is a number in a sentence rather than an answer to the question the reader is holding.
 ///
 /// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
-fn nothing_moved_note(
-    nothing_moved: bool,
-    verb: &str,
-    selected: &[SelectedCase],
-) -> Option<String> {
+fn nothing_moved_note(nothing_moved: bool, selected: &[SelectedCase]) -> Option<String> {
     if !nothing_moved {
         return None;
     }
@@ -705,43 +784,10 @@ fn nothing_moved_note(
         many => format!("{} selected cases", many.len()),
     };
     Some(format!(
-        "this {verb} changed nothing: {scope} carry no unpromoted prose edit against HEAD. If you \
-         expected one, check that you edited the transcript in THIS worktree and that the case you \
-         edited is the one you named."
+        "this publish changed nothing: {scope} carry no unpublished prose edit against HEAD. If \
+         you expected one, check that you edited the transcript in THIS worktree and that the case \
+         you edited is the one you named."
     ))
-}
-
-fn promote_cases(
-    cases: &[PathBuf],
-    env: &RunEnv,
-    quiet: bool,
-    accept_metadata: bool,
-    provenance: Provenance,
-    out: &mut impl Write,
-) -> Result<ExitCode, String> {
-    validate_case_inputs(cases)?;
-    let agent = looks_like_an_agent(&process_env);
-    refuse_human_mint_from_an_agent(provenance, agent)?;
-    refuse_metadata_drift(accept_metadata)?;
-    let gated = gate_touched_set(cases)?;
-    let Inspected::Ready(inspection, consumer) =
-        inspect_cases(&gated, env, quiet, provenance.mint(), out)?
-    else {
-        return Ok(ExitCode::from(1));
-    };
-    if let Some(note) = report_demotions(consumer.demoted(), provenance, agent)? {
-        tracing::info!("{note}");
-    }
-    promote_receipt(&receipt_store()?, &inspection)?;
-    let affected = touched_cases(&gated)?;
-    let before = staged_bytes(&gated)?;
-    let wrote = publish(&consumer, &affected)?;
-    warn_each(staged_case_notes(
-        &gated.staged,
-        &rewritten_staged(&gated, &before)?,
-    ));
-    warn_each(nothing_moved_note(!wrote, "promote", &gated.paths));
-    Ok(ExitCode::SUCCESS)
 }
 
 /// `--human` claims who typed the words; the one environment that can falsify it wins.
@@ -1054,14 +1100,17 @@ fn emit_case(out: &mut impl Write, path: &Path, body: &[u8], quiet: bool) -> Res
 
 fn inspect_cases(
     gated: &GatedCases,
-    env: &RunEnv,
-    quiet: bool,
-    mint: Mint,
+    publication: &Publication,
     out: &mut impl Write,
 ) -> Result<Inspected, String> {
-    let (mut consumer, mut refused, mut selected) =
-        (DorcConsumer::new().minting(mint), 0usize, Vec::new());
+    let (env, quiet) = (&publication.env, publication.quiet);
+    let (mut consumer, mut refused, mut selected) = (
+        DorcConsumer::new().minting(publication.provenance.mint()),
+        0usize,
+        Vec::new(),
+    );
     let ownership = corpus_ownership(&cases_dir())?;
+    let mut losses = Vec::new();
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in &gated.paths {
         let relative_path = relative_path.clone();
@@ -1120,30 +1169,19 @@ fn inspect_cases(
         }
         if let Some((index, error, dirty)) = case_refusal {
             refused = refused.saturating_add(1);
-            writeln!(body, "refusal in replay {index}: {}", error.explain(path))
-                .map_err(|write| write.to_string())?;
-            writeln!(body, "class: {error:?}").map_err(|write| write.to_string())?;
-            writeln!(body, "baseline: exact renderer provenance")
-                .map_err(|write| write.to_string())?;
-            writeln!(body, "edited:\n{}", bounded_evidence(&dirty))
-                .map_err(|write| write.to_string())?;
+            write_refusal(&mut body, path, index, &error, &dirty)?;
             emit_case(out, path, &body, quiet)?;
             continue;
         }
-        let mut compiled = emit_previews(&mut consumer, previews, path, &mut body)?;
-        let replays = inspected_replays
-            .into_iter()
-            .map(|(index, command, routed)| match routed.editable_render() {
-                Some(render) => InspectedReplay::editable(
-                    index,
-                    command,
-                    routed.output().to_owned(),
-                    render,
-                    &compiled.remove(&index).into_iter().collect::<Vec<_>>(),
-                ),
-                None => InspectedReplay::bytes(index, command, routed.output().to_owned()),
-            })
-            .collect();
+        let compiled = emit_previews(
+            &mut consumer,
+            previews,
+            path,
+            &relative_path,
+            &mut losses,
+            &mut body,
+        )?;
+        let replays = staged_replays(inspected_replays, compiled);
         emit_case(out, path, &body, quiet)?;
         let is_touched = gated.touched.contains(&relative_path);
         inspected_cases.push((relative_path, source, is_touched, replays));
@@ -1158,58 +1196,93 @@ fn inspect_cases(
         .filter(|(_, _, touched, _)| *touched)
         .map(|(path, _, _, _)| path.clone())
         .collect();
-    InspectedCompilation::new(catalog, selected, touched_cases, inspected_cases)
-        .map(|inspection| Inspected::Ready(inspection, consumer))
+    StagedPublication::new(catalog, selected, touched_cases, inspected_cases)
+        .map(|publication| {
+            Inspected::Ready(Interpretation {
+                publication,
+                consumer,
+                losses,
+            })
+        })
         .map_err(|error| error.to_string())
 }
 
-/// Emit each compiled preview, apply it to the mirror (the promote edited-mirror seam), and collect
-/// the previews keyed by replay index for receipt inspection.
+/// What a refused case says for itself: the refusal, its class, and the bytes that produced it.
+fn write_refusal(
+    body: &mut Vec<u8>,
+    path: &Path,
+    index: usize,
+    error: &DorcSectionEditRefusal,
+    dirty: &str,
+) -> Result<(), String> {
+    writeln!(body, "refusal in replay {index}: {}", error.explain(path))
+        .and_then(|()| writeln!(body, "class: {error:?}"))
+        .and_then(|()| writeln!(body, "baseline: exact renderer provenance"))
+        .and_then(|()| writeln!(body, "edited:\n{}", bounded_evidence(dirty)))
+        .map_err(|write| write.to_string())
+}
+
+/// One case's replays in staging form: an editable one carries its render and whatever the edit
+/// compiled to, a bytes-only one carries neither.
+fn staged_replays(
+    replays: Vec<(usize, String, ReplayResult<SectionKey, SectionVariableId>)>,
+    mut compiled: std::collections::BTreeMap<usize, dorc_loom::CompilePreview>,
+) -> Vec<StagedReplay> {
+    replays
+        .into_iter()
+        .map(|(index, command, routed)| match routed.editable_render() {
+            Some(render) => StagedReplay::editable(
+                index,
+                command,
+                routed.output().to_owned(),
+                render,
+                &compiled.remove(&index).into_iter().collect::<Vec<_>>(),
+            ),
+            None => StagedReplay::bytes(index, command, routed.output().to_owned()),
+        })
+        .collect()
+}
+
+/// Emit each preview's register diff, apply it to the mirror (the edited-mirror seam publication is
+/// computed from), collect what it gives up, and key the previews by replay index for staging.
 fn emit_previews(
     consumer: &mut DorcConsumer,
     previews: Vec<(usize, dorc_loom::CompilePreview)>,
     path: &Path,
+    case: &str,
+    losses: &mut Vec<HoleLoss>,
     out: &mut impl Write,
 ) -> Result<std::collections::BTreeMap<usize, dorc_loom::CompilePreview>, String> {
     let mut compiled = std::collections::BTreeMap::new();
     for (index, preview) in previews {
         writeln!(out, "replay: {index}").map_err(|error| error.to_string())?;
-        let rendered = render_compile_preview(&preview);
+        let rendered = render_publish_diff(&preview);
         consumer
             .apply_preview(&preview)
             .map_err(|error| format!("{}: {}", path.display(), error.explain(path)))?;
-        warn_each(baked_value_warnings(&preview));
+        losses.extend(preview.sections().iter().flat_map(|section| {
+            let key = section.section();
+            section.dropped().iter().map(move |hole| HoleLoss {
+                case: case.to_owned(),
+                section: format!(
+                    "{}.{}#{}:{}",
+                    key.owner, key.field, key.instance, key.segment
+                ),
+                hole: hole.name.0.clone(),
+                reappears: hole.value_reappears_as_text,
+                shared: hole.value_shared_with_another_occurrence,
+            })
+        }));
         compiled.insert(index, preview);
         writeln!(out, "{rendered}").map_err(|error| error.to_string())?;
     }
     Ok(compiled)
 }
 
-/// One warning per variable this edit removed while leaving its rendered value behind as text
-/// (`30C` item 2). Never a refusal: an author may genuinely mean to freeze a value, and no evidence
-/// available here can tell the two apart.
-fn baked_value_warnings(preview: &dorc_loom::CompilePreview) -> Vec<String> {
-    preview
-        .sections()
-        .iter()
-        .flat_map(|section| {
-            section.baked().iter().map(|name| {
-                format!(
-                    "`{{{{{0}}}}}` looks baked in: this edit removed the variable and its rendered \
-                     value is still there as literal text, frozen at whatever this render happened \
-                     to say. Type `{{{{{0}}}}}` where the value should go to keep it a variable; \
-                     leave it as text only if you meant to.",
-                    name.0
-                )
-            })
-        })
-        .collect()
-}
-
-fn receipt_store() -> Result<FsReceiptStore, String> {
+fn staging_store() -> Result<FsStagingStore, String> {
     // No `..` components — the store's directory-tree check rejects them (`spike/target`).
     let target = spike_dir()?.join("target");
-    FsReceiptStore::new(target)
+    FsStagingStore::new(target)
 }
 
 fn catalog_path() -> PathBuf {
@@ -1398,7 +1471,7 @@ mod tests {
     #[test]
     fn help_routes_to_the_verb_the_reader_already_chose() {
         let argv = |args: &[&str]| args.iter().map(|a| (*a).to_owned()).collect::<Vec<_>>();
-        assert_eq!(chosen_verb(&argv(&["promote", "--help"])), Some("promote"));
+        assert_eq!(chosen_verb(&argv(&["publish", "--help"])), Some("publish"));
         assert_eq!(chosen_verb(&argv(&["help", "vars"])), Some("vars"));
         assert_eq!(chosen_verb(&argv(&["help"])), None);
         assert_eq!(chosen_verb(&argv(&["--help"])), None);
@@ -1517,10 +1590,10 @@ mod tests {
         );
     }
 
-    /// A promote-time MARKING decision: compile publishes nothing so it takes neither, and the two
-    /// together are a contradiction rather than a last-one-wins.
+    /// A MARKING decision about the registers this publishes; the two flags together are a
+    /// contradiction rather than a last-one-wins.
     #[test]
-    fn the_provenance_flags_belong_to_promote_and_exclude_each_other() {
+    fn the_provenance_flags_exclude_each_other() {
         let argv = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
         let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures/cmdsub-command.loom")
@@ -1528,35 +1601,47 @@ mod tests {
             .expect("the fixture path is UTF-8")
             .to_owned();
 
-        assert!(matches!(
-            parse_argv(&argv(&["promote", &fixture, HUMAN])),
-            Ok(Command::Promote {
-                provenance: Provenance::Human,
-                ..
-            })
-        ));
-        assert!(matches!(
-            parse_argv(&argv(&["promote", &fixture, SLOP])),
-            Ok(Command::Promote {
-                provenance: Provenance::Slop,
-                ..
-            })
-        ));
-        assert!(matches!(
-            parse_argv(&argv(&["promote", &fixture])),
-            Ok(Command::Promote {
-                provenance: Provenance::Default,
-                ..
-            })
-        ));
+        for (flag, expected) in [
+            (Some(HUMAN), Provenance::Human),
+            (Some(SLOP), Provenance::Slop),
+            (None, Provenance::Default),
+        ] {
+            let mut words = vec!["publish", &fixture];
+            words.extend(flag);
+            assert!(
+                matches!(
+                    parse_argv(&argv(&words)),
+                    Ok(Command::Publish(Publication { provenance, .. })) if provenance == expected
+                ),
+                "{words:?}"
+            );
+        }
         assert!(
-            parse_argv(&argv(&["promote", &fixture, HUMAN, SLOP]))
+            parse_argv(&argv(&["publish", &fixture, HUMAN, SLOP]))
                 .is_err_and(|error| error.contains("opposite things"))
         );
-        assert!(
-            parse_argv(&argv(&["compile", &fixture, HUMAN]))
-                .is_err_and(|error| error.contains("marks nothing"))
-        );
+    }
+
+    /// `publish` MUTATES, so it never takes the whole corpus by omission: a bare invocation is a
+    /// misuse that lands on the verb's own page, and `--all` is the spelled-out whole-corpus target.
+    #[test]
+    fn a_bare_publish_lands_on_its_own_usage_page() {
+        let argv = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
+        let Err(refusal) = parse_argv(&argv(&["publish"])) else {
+            panic!("a bare publish must refuse")
+        };
+        assert!(refusal.contains("usage: dorc-loom publish"), "{refusal}");
+        assert!(refusal.contains("--all"), "{refusal}");
+
+        assert!(matches!(
+            parse_argv(&argv(&["publish", "--all"])),
+            Ok(Command::Publish(_))
+        ));
+        // The read-only verbs keep bare-means-everything; only the mutating one asks.
+        assert!(matches!(
+            parse_argv(&argv(&["vars"])),
+            Ok(Command::Vars { .. })
+        ));
     }
 
     /// Under-naming is the failure that matters: a rewritten case's staged bytes are the author's
@@ -1588,17 +1673,50 @@ mod tests {
         };
 
         let one = selected(&["crates/aid/tests/whylog-absent.loom"]);
-        let note = nothing_moved_note(true, "compile", &one).expect("a no-op run says so");
-        assert!(note.contains("this compile changed nothing"), "{note}");
+        let note = nothing_moved_note(true, &one).expect("a no-op run says so");
+        assert!(note.contains("this publish changed nothing"), "{note}");
         assert!(note.contains("whylog-absent.loom"), "{note}");
         assert!(note.contains("worktree"), "{note}");
 
         let many = selected(&["a.loom", "b.loom", "c.loom"]);
-        let note = nothing_moved_note(true, "promote", &many).expect("a no-op run says so");
-        assert!(note.contains("this promote changed nothing"), "{note}");
+        let note = nothing_moved_note(true, &many).expect("a no-op run says so");
         assert!(note.contains("3 selected cases"), "{note}");
 
-        assert_eq!(nothing_moved_note(false, "promote", &many), None);
+        assert_eq!(nothing_moved_note(false, &many), None);
+    }
+
+    /// The census is ONE text, shared byte-for-byte by the run that refuses and the `--verbatim`
+    /// that applies (`30C:rul-flag-names-the-act-not-the-history` — the flag names the act, so the
+    /// accounting beside it may not change its story between the two). It names every hole, and the
+    /// two reasons compose on one hole rather than one winning.
+    #[test]
+    fn the_hole_loss_census_names_every_hole_and_all_of_its_reasons() {
+        let loss = |hole: &str, reappears, shared| HoleLoss {
+            case: String::from("crates/aid/tests/x.loom"),
+            section: String::from("x.message#0:0"),
+            hole: String::from(hole),
+            reappears,
+            shared,
+        };
+        let detail = hole_loss_detail(&[
+            loss("command", true, false),
+            loss("to", false, true),
+            loss("both", true, true),
+            loss("plain", false, false),
+        ])
+        .expect("four losses are a census");
+
+        assert!(detail.contains("gives up 4 hole(s)"), "{detail}");
+        for hole in ["{{command}}", "{{to}}", "{{both}}", "{{plain}}"] {
+            assert!(detail.contains(hole), "{hole} unnamed: {detail}");
+        }
+        assert!(detail.contains("still there as literal text"), "{detail}");
+        assert!(detail.contains("the reading I picked"), "{detail}");
+        assert!(
+            detail.contains("frozen at whatever this render happened to say; and another hole"),
+            "both reasons compose on one hole: {detail}"
+        );
+        assert_eq!(hole_loss_detail(&[]), None, "a clean publish says nothing");
     }
 
     /// Quiet may drop a header, never a report — the corpus is ~50 cases and all but the edited one

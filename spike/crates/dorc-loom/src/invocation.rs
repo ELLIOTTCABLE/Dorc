@@ -55,10 +55,8 @@ pub struct Invocation {
 /// The verbs, each with its own arguments.
 #[derive(Subcommand, Clone, PartialEq, Eq, Debug)]
 pub enum Verb {
-    /// Drive the selected cases and compile the prose edits back into template form.
-    Compile(PublishArgs),
-    /// Verify against the compile receipt, then publish both locks and the affected cases.
-    Promote(PublishArgs),
+    /// Compile the prose edits back into template form and publish both locks and the cases.
+    Publish(PublishArgs),
     /// Print each case's named template variables and their currently-rendered values.
     Vars(VarsArgs),
     /// Print each replay's editable sections and their fragment series.
@@ -79,8 +77,7 @@ pub enum Verb {
     Keys,
 }
 
-/// The arguments `compile` and `promote` share. `compile` refuses the publish-only three itself,
-/// with words that say why a verb which writes nothing marks nothing.
+/// `publish`' own arguments.
 #[derive(Args, Clone, PartialEq, Eq, Debug)]
 #[expect(
     clippy::struct_excessive_bools,
@@ -106,7 +103,13 @@ pub struct PublishArgs {
     /// Re-mark a human-written register as slop, deliberately.
     #[arg(long)]
     pub slop: bool,
-    /// The cases; empty means the whole collection.
+    /// Apply an interpretation that gives up holes, exactly as it was already shown.
+    #[arg(long)]
+    pub verbatim: bool,
+    /// Every committed case — the explicit, dangerous whole-corpus target.
+    #[arg(long)]
+    pub all: bool,
+    /// The cases; `--all` is how the whole collection is asked for.
     pub cases: Vec<String>,
 }
 
@@ -143,35 +146,64 @@ pub struct SectionsArgs {
     pub cases: Vec<String>,
 }
 
+/// What every seat asks of a parsed verb.
+struct Shape<'a> {
+    name: &'static str,
+    cases: &'a [String],
+    takes_selector: bool,
+    /// Whether a bare, targetless invocation legally means the whole collection. The READ-ONLY
+    /// verbs say yes; `publish` MUTATES, so it makes the reader spell the whole corpus out
+    /// (`--all`) rather than reaching it by omission.
+    bare_means_everything: bool,
+}
+
 impl Invocation {
-    /// The verb's own name, its case list, and whether it takes a target selector — the three
-    /// things every seat asks of a parsed verb.
-    fn shape(&self) -> (&'static str, &[String], bool) {
+    fn shape(&self) -> Shape<'_> {
+        let shape = |name, cases, takes_selector| Shape {
+            name,
+            cases,
+            takes_selector,
+            bare_means_everything: true,
+        };
         match &self.verb {
-            Verb::Compile(args) => ("compile", &args.cases, false),
-            Verb::Promote(args) => ("promote", &args.cases, false),
-            Verb::Vars(args) => ("vars", &args.cases, true),
-            Verb::Sections(args) => ("sections", &args.cases, true),
-            Verb::Scaffold { .. } => ("scaffold", &[], false),
-            Verb::AddRegister { .. } => ("add-register", &[], false),
-            Verb::Keys => ("keys", &[], false),
+            Verb::Publish(args) => Shape {
+                bare_means_everything: args.all,
+                ..shape("publish", &args.cases, false)
+            },
+            Verb::Vars(args) => shape("vars", &args.cases, true),
+            Verb::Sections(args) => shape("sections", &args.cases, true),
+            Verb::Scaffold { .. } => shape("scaffold", &[], false),
+            Verb::AddRegister { .. } => shape("add-register", &[], false),
+            Verb::Keys => shape("keys", &[], false),
         }
     }
 
     /// The verb this invocation spells, for a caller that wants its usage page.
     #[must_use]
     pub fn verb_name(&self) -> &'static str {
-        self.shape().0
+        self.shape().name
     }
 
     /// Where this invocation's cases come from.
     ///
     /// # Errors
-    /// Refuses `--this` on a verb that takes no target, and `--this` alongside a named case: both
-    /// are a caller saying two different things about which case they mean.
+    /// Refuses `--this` on a verb that takes no target, `--this` alongside a named case (both are a
+    /// caller saying two different things about which case they mean), and a bare mutating verb.
     pub fn target(&self) -> Result<Target<'_>, String> {
-        let (name, cases, takes_selector) = self.shape();
+        let Shape {
+            name,
+            cases,
+            takes_selector,
+            bare_means_everything,
+        } = self.shape();
         if !self.this {
+            if cases.is_empty() && !bare_means_everything {
+                return Err(format!(
+                    "`{name}` rewrites the generated locks and every case it touches, so it takes \
+                     the cases it may rewrite: `dorc-loom {name} <slug>`. The whole corpus is \
+                     {ALL}, spelled out."
+                ));
+            }
             return Ok(Target::Named(cases));
         }
         if !takes_selector {
@@ -193,6 +225,9 @@ impl Invocation {
 
 /// The global selector flag, spelled once.
 pub const THIS: &str = "--this";
+
+/// `publish`' whole-corpus opt-in, spelled once.
+pub const ALL: &str = "--all";
 
 const SELECTOR_VERBS: &str = "`vars` and `sections`";
 
@@ -302,19 +337,49 @@ mod tests {
     }
 
     /// A subcommand flag in the global position must name the verb it belongs to: clap can only
-    /// say "unexpected", which a reader who believes they typed a real flag cannot act on.
+    /// say "unexpected", which a reader who believes they typed a real flag cannot act on. Two
+    /// verbs declare `--all`, and the refusal names both rather than picking one.
     #[test]
     fn a_subcommand_flag_in_the_global_position_names_its_verb() {
         let refusal = parse_words(&["dorc-loom", "--all", "vars"]).expect_err("refuses");
         assert!(refusal.contains("--all"), "{refusal}");
         assert!(refusal.contains("vars"), "{refusal}");
-        assert!(refusal.contains("dorc-loom vars --all"), "{refusal}");
+        assert!(refusal.contains("publish"), "{refusal}");
 
-        let promote = parse_words(&["dorc-loom", "--human", "promote"]).expect_err("refuses");
-        assert!(promote.contains("promote"), "{promote}");
+        let published =
+            parse_words(&["dorc-loom", "--human", "publish", "a-case"]).expect_err("refuses");
+        assert!(published.contains("publish"), "{published}");
 
         let inverted = parse_words(&["dorc-loom", "vars", "--this"]).expect_err("refuses");
         assert!(inverted.contains("dorc-loom --this vars"), "{inverted}");
+    }
+
+    /// `publish` MUTATES, so omitting the target is a misuse rather than a shorthand; `--all` is
+    /// how the whole corpus is asked for, and the refusal says so.
+    #[test]
+    fn a_bare_publish_refuses_and_names_the_whole_corpus_flag() {
+        let bare = parse_words(&["dorc-loom", "publish"]).expect_err("a bare publish refuses");
+        assert!(bare.contains("--all"), "{bare}");
+        assert!(bare.contains("dorc-loom publish <slug>"), "{bare}");
+
+        let named = parse_words(&["dorc-loom", "publish", "a-case"]).expect("a named case parses");
+        assert_eq!(
+            named.target().expect("a target"),
+            Target::Named(&["a-case".to_owned()])
+        );
+
+        let whole = parse_words(&["dorc-loom", "publish", "--all"]).expect("--all parses");
+        assert_eq!(whole.target().expect("a target"), Target::Named(&[]));
+
+        // A read-only verb keeps bare-means-everything, and this is what says the two did not
+        // drift into one rule.
+        assert_eq!(
+            parse_words(&["dorc-loom", "vars"])
+                .expect("a bare vars parses")
+                .target()
+                .expect("a target"),
+            Target::Named(&[])
+        );
     }
 
     /// `--this` and a case list say two different things about which case is meant, and a verb
@@ -347,10 +412,11 @@ mod tests {
             parse_words(&["dorc-loom", "keys"]).expect("parses").verb,
             Verb::Keys
         ));
-        let Verb::Promote(args) = parse_words(&[
+        let Verb::Publish(args) = parse_words(&[
             "dorc-loom",
-            "promote",
+            "publish",
             "--quiet",
+            "--verbatim",
             "--shell=/bin/sh",
             "--path",
             "mocks",
@@ -359,9 +425,10 @@ mod tests {
         .expect("parses")
         .verb
         else {
-            panic!("promote parses as promote")
+            panic!("publish parses as publish")
         };
         assert!(args.quiet);
+        assert!(args.verbatim);
         assert_eq!(args.shell.as_deref(), Some("/bin/sh"));
         assert_eq!(args.path, vec!["mocks".to_owned()]);
         assert_eq!(args.cases, vec!["a-case".to_owned()]);

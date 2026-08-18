@@ -24,7 +24,7 @@ fn run(args: &[&str]) -> std::process::Output {
 }
 
 #[test]
-fn compile_keeps_a_clean_selected_case_out_of_the_touched_set() {
+fn a_clean_selected_case_stays_out_of_the_touched_set() {
     let path = case("cmdsub-command.loom");
     let before =
         std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("fixture reads: {error}"));
@@ -61,7 +61,7 @@ fn inventories_are_ordered_and_do_not_widen_used_values() {
 }
 
 #[test]
-fn compile_ignores_clean_generated_inventory_replays() {
+fn clean_generated_inventory_replays_are_ignored() {
     let path = case("cmdsub-two-sections.loom");
     let output = run(&[
         "vars",
@@ -77,7 +77,7 @@ fn compile_ignores_clean_generated_inventory_replays() {
 }
 
 #[test]
-fn compile_has_no_preview_for_a_clean_selected_case() {
+fn a_clean_selected_case_has_no_preview() {
     let path = case("cmdsub-command.loom");
     let output = run(&[
         "vars",
@@ -93,7 +93,7 @@ fn compile_has_no_preview_for_a_clean_selected_case() {
 }
 
 #[test]
-fn compile_does_not_reinterpret_clean_transcript_output() {
+fn a_clean_transcript_output_is_not_reinterpreted() {
     let path = case("cmdsub-partial-refusal.loom");
     let output = run(&[
         "vars",
@@ -172,7 +172,7 @@ fn clean_cases_do_not_trigger_marker_compilation() {
         "{stderr}"
     );
 
-    let unreadable = run(&["compile", "missing-case.txt"]);
+    let unreadable = run(&["publish", "missing-case.txt"]);
     assert_eq!(unreadable.status.code(), Some(2));
 }
 
@@ -219,7 +219,7 @@ fn add_register_reaches_its_verb_rather_than_the_help_page() {
 }
 
 #[test]
-fn compile_refuses_bounded_case_input_before_edit_compilation() {
+fn publish_refuses_bounded_case_input_before_edit_compilation() {
     let dir = std::env::temp_dir().join(format!("dorc-loom-limit-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("temp dir");
@@ -233,7 +233,7 @@ fn compile_refuses_bounded_case_input_before_edit_compilation() {
     )
     .expect("write output limit case");
     let output_refusal = run(&[
-        "compile",
+        "publish",
         output_limit.to_str().unwrap_or("test path is UTF-8"),
     ]);
     assert_eq!(output_refusal.status.code(), Some(2));
@@ -245,7 +245,7 @@ fn compile_refuses_bounded_case_input_before_edit_compilation() {
     std::fs::write(&file_limit, vec![b'x'; MAX_CASE_BYTES.saturating_add(1)])
         .expect("write file limit");
     let file_refusal = run(&[
-        "compile",
+        "publish",
         file_limit.to_str().unwrap_or("test path is UTF-8"),
     ]);
     assert_eq!(file_refusal.status.code(), Some(2));

@@ -2238,7 +2238,7 @@ mod tests {
     use super::*;
     use crate::{
         DorcSectionEditRefusal, compile_fragments, compile_preview, compile_section_edit,
-        render_compile_preview,
+        render_publish_diff,
     };
     use errorloom::{EditableFragment, EditableSection, RenderComponent};
 
@@ -2807,8 +2807,12 @@ mod tests {
     /// The backslash-and-quote path is the point: these transcripts are full of `"$@"` and
     /// `%LOCALAPPDATA%\dorc`, and a `{:?}` render doubles every one of them. Only a control
     /// character may be escaped, or the view stops being readable at exactly the corpus we have.
+    ///
+    /// And the diff is the whole reason this render exists: a hole that MOVED renders the same
+    /// concrete bytes as one that DIED, so only the two template spellings, side by side, tell an
+    /// author which of the two their edit did.
     #[test]
-    fn inspection_renders_only_the_touched_section_as_a_template() {
+    fn the_diff_shows_only_the_touched_section_in_template_spelling() {
         let message = key(0);
         let baseline = baseline(vec![
             RenderComponent::Structure(String::from("message: ")),
@@ -2844,10 +2848,10 @@ mod tests {
         )
         .unwrap_or_else(|error| panic!("{error:?}"));
 
-        let interpretation = render_compile_preview(&preview);
+        let interpretation = render_publish_diff(&preview);
         assert_eq!(
             interpretation,
-            "section: code.message#0:0\n  run {{command}} using {{path}}\n  {{command}} = \"$@\"\n  {{path}} = %LOCALAPPDATA%\\dorc"
+            "section: code.message#0:0\n  - run {{path}} using {{command}}\n  + run {{command}} using {{path}}"
         );
         // An untouched section and a fixed variable are another render's business; showing them
         // here would bury the one thing this view exists to expose.
@@ -2855,12 +2859,15 @@ mod tests {
         assert!(!interpretation.contains("foreign"));
     }
 
-    /// A whole-page arrangement section is one hole-free span, so the first cut of this render
-    /// escaped a sixty-line help page into a single line and buried the edit it was meant to
-    /// expose. With no variables there is nothing here git's word-diff does not show better.
+    /// A whole-page arrangement section can be a sixty-line help page, and the hunk must be the
+    /// LINE that moved rather than the page around it: identical leading and trailing lines are
+    /// trimmed off both sides before anything is printed.
     #[test]
-    fn a_hole_free_section_renders_as_one_line() {
-        let page = key(0);
+    fn a_multi_line_section_prints_only_the_line_that_moved() {
+        let page = SectionKey {
+            field: crate::ARRANGEMENT_FIELD,
+            ..key(0)
+        };
         let baseline = baseline(vec![RenderComponent::EditableSection(
             EditableSection::new(
                 page,
@@ -2870,8 +2877,8 @@ mod tests {
         let preview = compile_preview(&baseline, "first\nsecond changed\nthird")
             .unwrap_or_else(|error| panic!("{error:?}"));
         assert_eq!(
-            render_compile_preview(&preview),
-            "section: code.message#0:0\n  no variables"
+            render_publish_diff(&preview),
+            "section: code.arrangement#0:0\n  - second\n  + second changed"
         );
     }
 
@@ -2977,14 +2984,14 @@ mod tests {
                     compiled: compiled(first),
                     used_bindings: Vec::new(),
                     dropped: Vec::new(),
-                    baked: Vec::new(),
+                    stamped: String::new(),
                 },
                 crate::SectionPreview {
                     section: shared(4),
                     compiled: compiled(second),
                     used_bindings: Vec::new(),
                     dropped: Vec::new(),
-                    baked: Vec::new(),
+                    stamped: String::new(),
                 },
             ],
             concrete: String::new(),

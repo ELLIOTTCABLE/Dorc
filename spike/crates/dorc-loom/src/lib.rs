@@ -22,7 +22,7 @@ pub use edit::{
     DorcSectionEdit, DorcSectionEditRefusal, compile_section_edit, compile_section_edits,
 };
 mod inspect;
-pub use inspect::render_compile_preview;
+pub use inspect::render_publish_diff;
 pub mod invocation;
 pub use invocation::{Breadth, Invocation, Target, Verb};
 mod ownership;
@@ -32,14 +32,14 @@ pub use ownership::{
 };
 mod preview;
 mod refusal;
-pub use preview::{CompilePreview, SectionPreview, compile_preview};
-mod receipt;
-pub use receipt::{
-    InspectedCompilation, InspectedReplay, MAX_RECEIPT_BYTES, ReceiptError, ValidatedCompilation,
-    encode as encode_receipt, validate_current as validate_receipt,
+pub use preview::{CompilePreview, DroppedHole, SectionPreview, compile_preview};
+mod staging;
+pub use staging::{
+    MAX_STAGING_BYTES, StagedPublication, StagedReplay, StagingError, accept_staged,
+    encode as encode_staging, stage as stage_publication, validate_current as validate_staging,
 };
-mod receipt_store;
-pub use receipt_store::{FsReceiptStore, ReceiptStore, ReceiptWriteOutcome};
+mod staging_store;
+pub use staging_store::{FsStagingStore, StagingStore, StagingWriteOutcome};
 mod repository;
 pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
 mod vocabulary;
@@ -47,8 +47,6 @@ pub use vocabulary::{
     DEFINING_KEYS_NOTE, FRONTMATTER_KEYS, FrontmatterKey, frontmatter_key_names,
     is_frontmatter_key, is_run_lane_key, run_lane_key_names,
 };
-mod workflow;
-pub use workflow::{compile as compile_receipt, promote as promote_receipt};
 
 /// A semantic template variable name.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

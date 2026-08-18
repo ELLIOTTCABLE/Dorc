@@ -10,7 +10,10 @@
     reason = "fixture harness over the committed corpus; the no-panic lints guard untrusted input"
 )]
 
-use dorc_loom::{DorcConsumer, DorcEditableBaseline, DorcSectionEditRefusal, compile_section_edit};
+use dorc_loom::{
+    DorcConsumer, DorcEditableBaseline, DorcSectionEditRefusal, SectionPreview,
+    compile_section_edit,
+};
 use errorloom::{Case, CaseRenderer, RenderComponent, RunEnv};
 
 /// One case, replayed through `consumer`'s own mirror into its editable baseline and transcript.
@@ -322,13 +325,13 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
     let dropped: Vec<String> = preview
         .sections()
         .iter()
-        .flat_map(|section| section.dropped().iter().map(|name| name.0.clone()))
+        .flat_map(|section| section.dropped().iter().map(|hole| hole.name.0.clone()))
         .collect();
     assert_eq!(dropped, vec![String::from("flag")], "{preview:?}");
-    let rendered = dorc_loom::render_compile_preview(&preview);
+    let rendered = dorc_loom::render_publish_diff(&preview);
     assert!(
-        rendered.contains("DROPPED VARIABLES: {{flag}}"),
-        "the compile view must say so: {rendered}"
+        rendered.contains("- ") && rendered.contains("{{flag}}"),
+        "the diff must show the hole leaving the register: {rendered}"
     );
     // Replacing the value with a DIFFERENT one is not a bake-in: `--wat` is gone from the section,
     // so there is nothing frozen for a warning to point at.
@@ -336,7 +339,8 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
         preview
             .sections()
             .iter()
-            .all(|section| section.baked().is_empty()),
+            .flat_map(SectionPreview::dropped)
+            .all(|hole| !hole.value_reappears_as_text),
         "{preview:?}"
     );
 }
@@ -358,7 +362,9 @@ fn a_value_retyped_where_its_variable_stood_is_flagged_as_baked_in() {
     let baked: Vec<String> = preview
         .sections()
         .iter()
-        .flat_map(|section| section.baked().iter().map(|name| name.0.clone()))
+        .flat_map(SectionPreview::dropped)
+        .filter(|hole| hole.value_reappears_as_text)
+        .map(|hole| hole.name.0.clone())
         .collect();
     assert_eq!(baked, vec![String::from("flag")], "{preview:?}");
 }
