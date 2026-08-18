@@ -151,10 +151,12 @@ re-paying onboarding — which is exactly what `30Ib` is for.
 
 ## §5 — Live state
 
-- **Builder lane `lane-30I-static-loading`: DISPATCHED 2026-08-18.** One
-  Opus-class builder, working in this worktree on `ai/r30-static-loading`,
-  committing granularly. Its brief forbids sub-spawning, `CLAUDE.md` edits, and
-  self-endorsed deviations.
+- **Builder lane `lane-30I-static-loading`: BUILDER 1 RETURNED 2026-08-18** at
+  `4c5cd055`, tree clean. Items 2–4 landed bar one clause (§8 row D); items 5–7
+  untouched. Builder gates: `both gate:full-quiet` W 2287/2287 · WSL 2283/2283,
+  zero golden drift, ~40 new native tests. Handoff artifact
+  `Research/notes/30Ib-static-loading-lane-report.md` is written and substantive.
+  Conductor has NOT re-run the gates (that is the fold's own-hand act, still owed).
 - Conductor hands are OFF this worktree while the lane runs (shared `target/`);
   ledger commits go in by explicit pathspec only, which has coexisted cleanly
   with the builder's own commits so far.
@@ -177,3 +179,91 @@ re-paying onboarding — which is exactly what `30Ib` is for.
   or rewrites (at minimum `forfeit-book-sourcing-walls`); `30I` §14 pin status.
 - The human queue items `30I` does NOT close stay open — `LIVING_STATUS`'s
   2026-08-17 queue minus items 2 and 3.
+
+## §8 — Builder-1 return: conductor adjudication (ALL OPEN; awaiting the human)
+
+Builder 1's six disclosed deviations, re-derived rather than accepted. `30Ib` §4
+carries the builder's own account; this section carries the conductor's verdict
+and, where one is owed, the conductor's own error.
+
+- **A · `dev-analysis-cwd-pinned-to-the-case-dir` — pin SOUND, consequential
+  spec-edit is the HUMAN's.** Pinning analysis cwd to the case directory is the
+  right answer to `fnd-e2e-analysis-cwd-is-unresolved`: cargo's package-root cwd
+  resolves nothing, `spike/`-relative ties every case to repo layout and cannot
+  work for a materialized loom case, and the case dir is the shape an admin
+  actually gets by running `dorc` where their files are — the test shape matching
+  the product shape. Verified by conductor hand: the whole lane touched the
+  committed specimens in exactly three places, one line each,
+  `SM_ORACLE_ROOT=crates/cli/tests/<case>` → `.`; `expected.ran`, `XFAIL`,
+  `head-expected.ran`, mocks and every `floor30-*` byte untouched. CONDUCTOR
+  ERROR: the brief said "pin the analysis cwd deterministically" and never said
+  that a pin forcing an edit to the human's authored specimen is a STOP. The pin
+  forced the re-spell; the re-spell is ratifiable but was never the builder's to
+  ratify.
+- **B · `dev-slash-less-dot-is-now-unresolvable` — correct, and the residue is the
+  lane's most dangerous artifact.** `pin28-variable-resolved-source-loads` now
+  pins the opposite of its own header prose with GREEN goldens, because the site
+  walled either way. That is invisible drift: a future agent reads the prose,
+  believes the property is pinned, and it is not. The builder was right that
+  re-spelling and re-blessing is golden work and out of remit, and right to pin
+  the property natively both ways meanwhile. RULING SOUGHT: this must be
+  discharged BEFORE the lane closes, listed in item 7 rather than left to be
+  noticed.
+- **C · `dev-guard-false-direction-fenced-to-role-names` — flagged not settled,
+  which is correct; and it surfaces a genuine collision in `30I` itself.** The
+  guard decides TRUE from a live definition unconditionally, but FALSE only for a
+  role-shaped name (`28M:dec-decidable-set-v0`'s warrant: nobody ships a binary
+  called `apt_get__is_converged`). `30I:rul-include-guards-are-load-semantics` is
+  TYPED and its own §2.2 example guards an ORDINARY helper name
+  (`example_common_query`). Deciding FALSE there models the fallback as loaded on
+  a host where a like-named binary answered `command -v` and the other branch
+  ran — `271:rul-sin-ordering`'s mis-attributed class, the worst cell. So the
+  typed rule and the safety direction genuinely collide, and the safe carve is
+  narrower than the rule as written. Withholding meanwhile (⊤ binds; nothing
+  licenses off ⊤), so nothing is unsafe today. HUMAN's, per `inv-superposition`.
+- **D · `dev-cross-custody-refusal-not-built` — the reason that matters STANDS;
+  the reason offered first does NOT.** Reason (b) is sound and sufficient: `30I`
+  §3.4's `dependency-explicitly-selected` case is a licensure widening against
+  human-ruled `rul-vouch-reaches-own-custody-only` (verified: the slug is real
+  law, cited across `FORFEITS`, `oracle/CLAUDE.md`, and two code seats), and
+  building a classifier with no consumer is the multi-phasic scaffolding this
+  project's own law warns against. Reason (a) — "golden movement was removed from
+  my remit" — is an OVER-READ; golden movement was never forbidden, only item 7's
+  promotion/lowering/enumeration sweep was. CONDUCTOR ERROR: the ceiling was
+  spelled "do not start item 7 (promotion, e2e lowering, golden-drift
+  enumeration)", which a builder can read as "no golden may move". Also noted:
+  under a typed-ruling collision the brief's own stop condition fired, and the
+  builder continued rather than stopping — defensible only because the seam meant
+  it would report within the same lane, and not a precedent.
+- **E · `dev-ambient-include-guards-are-not-evaluated` — the one to VERIFY rather
+  than trust.** Admitting guards created a shape where an ambient package's guard
+  is not evaluated and its guarded dependency binds UNCONDITIONALLY. Binding is
+  the licensing direction, not the withholding one; the builder's safety argument
+  is that the only winner-shifting case is already withheld by the cross-unit
+  shadow refusal. That is a real argument of exactly the "safe because another
+  mechanism catches it" shape that deserves an adversarial pass before the lane
+  closes. Not urgent (it blocks nothing today), but it should not fold unchecked.
+- **F · `dev-one-commit-lumped-two-changes`** — granularity nit, no action.
+
+Conductor's overall read: the lane did what it was told, disclosed honestly
+including two things it could have buried (B's invisible drift and E's
+self-created hole), and the handoff artifact is genuinely resumable. The two
+errors above are the conductor's, not the builder's.
+
+## §9 — The human's board (nothing dispatchable until these are typed)
+
+1. `ack-specimen-respell` — ratify or reject §8 A's three one-line edits to the
+   authored `load30-*` books.
+2. `rule-guard-false-direction` — §8 C: does `rul-include-guards-are-load-semantics`
+   bind for ordinary helper names, given that deciding them is the mis-attributed
+   class? If it does, it needs a licensure mechanism the safe carve lacks.
+3. `rule-cross-custody-refusal-licensure` — §8 D: `30I` §3.4 case 2 versus
+   `rul-vouch-reaches-own-custody-only`. Item 3's last clause is unbuilt pending it.
+4. `rule-unresolvable-ambient-load` — havoc the entry state versus contribute
+   nothing. It is `30Ib` §7 step 1, and it gates the custody repair for
+   variable-rooted dependencies (`30Ib` §5 row 2) which in turn gates item 5.
+5. `ack-dispatch-builder-two` — the §5 HARD GATE. Not conductor-dispatchable.
+
+Owed by the conductor at the fold regardless: own-hand `both gate:full-quiet`;
+the steering prose (builder PROPOSED text in its report — conductor writes it, and
+judges first whether each line earns a permanent seat in every future context).
