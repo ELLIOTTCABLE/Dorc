@@ -195,8 +195,14 @@ fn stamped_fragments<'a>(
         .unwrap_or_default()
 }
 
+/// The register as it is STORED, in `{{name}}` spelling.
+///
+/// Through the same normalization the edited side takes, which is the whole point: a render lays a
+/// register out at some width, so the stamped bytes carry line breaks the ENTRY does not. Diffing
+/// the two unnormalized made every wrapped register report a change it was not making, and buried
+/// the hole movement this view exists for under it.
 fn stamped_template(baseline: &DorcEditableBaseline, section: &SectionKey) -> String {
-    stamped_fragments(baseline, section)
+    crate::edit::normalize_register_prose(section.field, stamped_fragments(baseline, section))
         .iter()
         .map(|fragment| match fragment {
             EditableFragment::Text(text) => text.clone(),

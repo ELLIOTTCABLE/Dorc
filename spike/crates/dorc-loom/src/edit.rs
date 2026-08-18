@@ -323,7 +323,7 @@ fn prose_line_breaks(field: &str, text: &str) -> usize {
 /// trailing whitespace trims off the tail. Runs BEFORE `refuse_added_lines`, so a re-wrapped
 /// register only relaxes that check, never trips it. `message`/`help` only — arrangement chrome
 /// has its own always-single-space rule (`collapse_runs`, consumer.rs).
-fn normalize_register_prose(
+pub(crate) fn normalize_register_prose(
     field: &'static str,
     fragments: &[EditableFragment<SectionVariableId>],
 ) -> Vec<EditableFragment<SectionVariableId>> {

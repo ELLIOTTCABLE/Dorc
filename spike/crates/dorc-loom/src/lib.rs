@@ -36,7 +36,7 @@ pub use preview::{CompilePreview, DroppedHole, SectionPreview, compile_preview};
 mod staging;
 pub use staging::{
     MAX_STAGING_BYTES, StagedPublication, StagedReplay, StagingError, accept_staged,
-    encode as encode_staging, stage as stage_publication, validate_current as validate_staging,
+    encode as encode_staging, stage as stage_publication,
 };
 mod staging_store;
 pub use staging_store::{FsStagingStore, StagingStore, StagingWriteOutcome};

@@ -32,7 +32,7 @@ const MAX_COMPILED_SECTIONS: usize = 1_024;
 const MAX_COMPILED_FRAGMENTS: usize = 4_096;
 const MAX_BINDINGS: usize = 1_024;
 
-/// The complete private inspection that promotion must recompute byte-for-byte.
+/// The complete private interpretation a `--verbatim` must recompute byte-for-byte.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StagedPublication {
     catalog: String,
@@ -392,21 +392,6 @@ pub(crate) fn parse(packet: &[u8]) -> Result<StagedPublication, StagingError> {
     Ok(inspection)
 }
 
-/// Accept a stored packet only after parsing it AND recomputing its exact canonical bytes.
-///
-/// # Errors
-///
-/// Returns a refusal when the packet is invalid or was computed from different bytes.
-pub fn validate_current(packet: &[u8], current: &StagedPublication) -> Result<(), StagingError> {
-    let _ = parse(packet)?;
-    if packet != encode(current)? {
-        return Err(StagingError::Malformed(
-            "the staged interpretation was computed from different bytes",
-        ));
-    }
-    Ok(())
-}
-
 /// Hold one interpretation for a later `--verbatim` to confirm.
 ///
 /// # Errors
@@ -433,8 +418,18 @@ pub fn accept_staged(
     let packet = store
         .read()
         .map_err(|error| format!("read the staged publication: {error}"))?
-        .ok_or_else(|| stale_staging("nothing is staged", cases))?;
-    validate_current(&packet, publication).map_err(|error| stale_staging(&error.to_string(), cases))
+        .ok_or_else(|| stale_staging("nothing is staged.", cases))?;
+    // The stored packet parsed on its way out of the store, so the only question left is whether it
+    // is THIS interpretation — a byte comparison against a fresh encoding, which is what makes the
+    // confirmation bind the case bytes rather than the fact that some earlier run happened.
+    let fresh = encode(publication).map_err(|error| format!("encode this publication: {error}"))?;
+    if packet == fresh {
+        return Ok(());
+    }
+    Err(stale_staging(
+        "what is staged was computed from other bytes.",
+        cases,
+    ))
 }
 
 /// One refusal for both ways a `--verbatim` can find no interpretation to apply, because a reader
@@ -442,8 +437,8 @@ pub fn accept_staged(
 /// loss, then confirm it.
 fn stale_staging(why: &str, cases: &str) -> String {
     format!(
-        "--verbatim applies an interpretation you have already been shown, and {why}. Run \
-         `dorc-loom publish {cases}` to see what it gives up, then re-run with --verbatim."
+        "--verbatim applies an interpretation you have already been shown, and {why} Run \
+         `dorc-loom publish {cases}` to see what this one gives up, then re-run with --verbatim."
     )
 }
 
@@ -1067,7 +1062,7 @@ pub(crate) mod tests {
         let original = inspection("\0 equal = unicode \u{2603}");
         let packet = encode(&original).expect("encode");
         assert_eq!(parse(&packet), Ok(original.clone()));
-        assert!(validate_current(&packet, &original).is_ok());
+        assert_eq!(packet, encode(&original).expect("re-encode"));
         for changed in [inspection(""), inspection("\0 equal = unicode \u{2604}")] {
             assert_ne!(packet, encode(&changed).expect("encode"));
         }
@@ -1080,7 +1075,7 @@ pub(crate) mod tests {
         for variant in variants {
             let changed = encode(&variant).expect("valid changed inspection");
             assert_ne!(packet, changed);
-            assert!(validate_current(&packet, &variant).is_err());
+            assert_ne!(packet, encode(&variant).expect("re-encode"));
         }
     }
     #[test]
