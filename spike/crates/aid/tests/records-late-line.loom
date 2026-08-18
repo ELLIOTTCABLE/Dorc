@@ -2,7 +2,6 @@
 code: records-late-line
 when-fires: a record line arrived after the end-sentinel. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. `{count}` is what was seen before the walk stopped.
 why: 262 §1 pin-late-and-alien-records: material after the close marker means the stream did not end where it said it did.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- records-late-line && mise run loom:promote -- records-late-line`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all records-late-line` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh < probe-results.txt

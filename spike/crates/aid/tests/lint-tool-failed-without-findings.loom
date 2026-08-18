@@ -2,7 +2,6 @@
 code: lint-tool-failed-without-findings
 when-fires: an external linter exited nonzero but produced nothing parseable. lint/source_external.rs. `{tool}` is the tool, `{rc}` its exit status.
 why: 27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. World-as-payload: replay never runs a foreign tool.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-tool-failed-without-findings && mise run loom:promote -- lint-tool-failed-without-findings`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lint-tool-failed-without-findings` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

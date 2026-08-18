@@ -2,7 +2,6 @@
 code: cli-flag-value-not-recognized
 when-fires: a flag value outside its closed vocabulary. cli/lib.rs (--probe-capability, --format, --fail-on). {flag}, {got}, and the accepted {expected} set.
 why: 27C axis-1 and 27R section 5: these vocabularies are engine-owned and closed, so naming the whole accepted set is both possible and the fastest repair.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-flag-value-not-recognized && mise run loom:promote -- cli-flag-value-not-recognized`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-flag-value-not-recognized` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --probe-capability=wat --book=webhost.sh

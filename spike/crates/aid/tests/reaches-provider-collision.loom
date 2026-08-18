@@ -2,7 +2,6 @@
 code: reaches-provider-collision
 when-fires: a reach-function is keyed to a name matching a known COMMAND provider. cli/kinds.rs build_kind_reaches. `{name}` = the colliding name.
 why: 24G §4: reaches is keyed by KIND, not command — a likely mis-key.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- reaches-provider-collision && mise run loom:promote -- reaches-provider-collision`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all reaches-provider-collision` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

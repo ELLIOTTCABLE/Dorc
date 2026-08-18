@@ -2,7 +2,6 @@
 code: verdict-terminal-pipeline
 when-fires: a `__is_converged` body's last status-bearing statement is a PIPELINE, so the answering status is the tail stage's. lint/source_verdict.rs. No params - the span says which body.
 why: rul-rc-partition - a verdict function's exit status reads one fixed table, so a tail stage's status flattens `1 = complement` and `>=2 = cannot-say` into whatever the tail produced. FALSIFICATION-FIRST (rul-unprovable-rides-the-vouch): the check may under-report, never gate.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- verdict-terminal-pipeline && mise run loom:promote -- verdict-terminal-pipeline`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all verdict-terminal-pipeline` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

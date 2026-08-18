@@ -2,7 +2,6 @@
 arrangement: lint-clean-sentence
 when-used: The whole quiet-on-clean sentence a findings-free `dorc lint` prints instead of a report. Values, in order: file count, its plural suffix, source count, its plural suffix.
 why: 27R section 8 delta-positive-clean-sentence: clean is stated positively, never as silence.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-clean-sentence && mise run loom:promote -- lint-clean-sentence`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lint-clean-sentence` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

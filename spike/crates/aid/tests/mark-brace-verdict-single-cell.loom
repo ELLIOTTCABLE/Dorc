@@ -2,7 +2,6 @@
 code: mark-brace-verdict-single-cell
 when-fires: a brace-alternation `@{a,b}` appears on a single-cell verdict/observe mark. oracle/predict/derive.rs. Static (literal braces escaped in the template).
 why: 277 §4c: a verdict/observe mark asserts exactly one cell; the brace mints no cell and the site runs (a role-aware rejection the parser cannot make).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- mark-brace-verdict-single-cell && mise run loom:promote -- mark-brace-verdict-single-cell`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all mark-brace-verdict-single-cell` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

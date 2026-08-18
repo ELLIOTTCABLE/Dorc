@@ -2,7 +2,6 @@
 code: missing-dialect-marker
 when-fires: a dorc-lang dialect construct (a bind or trailing mark) appears in a file lacking the `# dorc-lang/v0.2` version marker. oracle/marker.rs.
 why: marker-gates-syntax-only: a loud file-level refusal. Static — the marker text is inline (MARKER / MARKER_WINDOW compile-time constants).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- missing-dialect-marker && mise run loom:promote -- missing-dialect-marker`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all missing-dialect-marker` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 foo__predict() { pkg : sm.dorc.Package = "$1"; foo l -- "$pkg"; }

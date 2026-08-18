@@ -2,7 +2,6 @@
 arrangement: cli-help-page
 when-used: `dorc --help` / `dorc -h` prints this whole page to stdout and exits 0.
 why: 288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-help-page && mise run loom:promote -- cli-help-page`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-help-page` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc --help

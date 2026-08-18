@@ -5,7 +5,6 @@ why: 27C §2: the disclosure varies by dial (default vs --escalate-any-probe). T
 owns:
   - escalation-policy-capability-root
   - escalation-policy-vouched-only
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- escalation-policy && mise run loom:promote -- escalation-policy`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all escalation-policy` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

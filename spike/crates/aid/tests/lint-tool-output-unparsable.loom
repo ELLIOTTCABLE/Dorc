@@ -2,7 +2,6 @@
 code: lint-tool-output-unparsable
 when-fires: an external linter produced non-empty output that no tier of the adapter ladder recognized. lint/source_external.rs. `{tool}` is the tool, `{output}` its bytes flattened to one truncated line (PASSTHROUGH).
 why: 27R §4 - upstream drift may cost precision, never a crash and never silence, so the raw bytes ship as one opaque finding rather than being dropped. World-as-payload: replay never runs a foreign tool.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-tool-output-unparsable && mise run loom:promote -- lint-tool-output-unparsable`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lint-tool-output-unparsable` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

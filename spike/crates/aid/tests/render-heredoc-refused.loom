@@ -2,7 +2,6 @@
 code: render-heredoc-refused
 when-fires: the leaf-exact render would elide/guard a licensed leaf whose span covers a `<<` heredoc opener (not its body), so the leaf runs verbatim instead.
 why: kFAIL-perform, arch-1 d-6: substituting the opener span would strand the heredoc body — an Error-class give-up (a broken artifact otherwise). `{verb}` = elide/guard.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- render-heredoc-refused && mise run loom:promote -- render-heredoc-refused`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all render-heredoc-refused` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

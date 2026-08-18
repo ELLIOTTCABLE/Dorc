@@ -2,7 +2,6 @@
 code: cmdsub-inner-nonleaf
 when-fires: an effect-bearing command runs inside a `$(…)` substitution body, so it has no independent leaf. effect.rs classify (né dq-cmdsub-inner-nonleaf).
 why: q-1.f silent-1/silent-4 disclosure; the inner command runs whenever its enclosing line runs. `{inner}` = the resolved inner argv.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cmdsub-inner-nonleaf && mise run loom:promote -- cmdsub-inner-nonleaf`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cmdsub-inner-nonleaf` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

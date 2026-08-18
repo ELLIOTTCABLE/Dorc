@@ -519,10 +519,8 @@ fn scaffold_case(slug: &str) -> Result<ExitCode, String> {
     // carries one at its author's judgment. It names no slug: `--this` is what keeps a rename
     // from stranding the block on a case that no longer answers to it.
     let skeleton = format!(
-        "---\ncode: {slug}\nwhen-fires:\nwhy:\n{key}: {loop_hint}\n---\n-- replay --\n\
-         $ dorc plan --book=book.sh\n\n$ dorc-loom {THIS} vars\n",
-        key = dorc_loom::EDIT_LOOP_KEY,
-        loop_hint = dorc_loom::edit_loop_hint(slug),
+        "---\ncode: {slug}\nwhen-fires:\nwhy:\n---\n-- replay --\n\
+         $ dorc plan --book=book.sh\n\n$ dorc-loom {THIS} vars\n"
     );
     std::fs::write(&path, skeleton)
         .map_err(|error| format!("write {}: {error}", path.display()))?;

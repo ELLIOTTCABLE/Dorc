@@ -2,7 +2,6 @@
 code: deriv-family-incomplete
 when-fires: a derived footprint family did not close completely (missing deriv-end, or a count mismatch). cli/survival.rs merge_derived_footprints. `{site}` = node id, `{reason}` = the match.
 why: 262 §2 / 26A stop-1: an at-most family cannot be partial — refuse ⇒ the site walls total.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- deriv-family-incomplete && mise run loom:promote -- deriv-family-incomplete`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all deriv-family-incomplete` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

@@ -1,6 +1,5 @@
 ---
 arrangement: predict-out-of-dialect-trailing-bind-word
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- predict-out-of-dialect-trailing-bind-word && mise run loom:promote -- predict-out-of-dialect-trailing-bind-word`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all predict-out-of-dialect-trailing-bind-word` lists this case's values; type {{name}} to insert or move one.
 ---
 -- hork.oracle.sh --
 # dorc-lang/v0.2

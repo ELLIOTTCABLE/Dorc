@@ -2,7 +2,6 @@
 code: lint-tool-absent
 when-fires: a configured external linter is not on PATH, so its checks did not run. lint/source_external.rs. `{tool}` is the tool name.
 why: 27R §4 dir-absent-is-info - a missing tool is the admin's environment, disclosed rather than silently skipped; --require-tools raises it to a hard CI error. The replay is the real `dorc lint` surface with tools left ENABLED; the injected runner (the one external-tool DI seam) answers every tool absent, so an airgapped machine's own output is reached with no PATH probe and no process.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- lint-tool-absent && mise run loom:promote -- lint-tool-absent`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all lint-tool-absent` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

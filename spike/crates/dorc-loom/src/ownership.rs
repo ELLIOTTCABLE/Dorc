@@ -14,9 +14,6 @@ use errorloom::{Case, FrontmatterValue};
 /// The frontmatter key a case declares extra prose-components in.
 pub const OWNS_KEY: &str = "owns";
 
-/// The frontmatter key carrying the case's own editing loop.
-pub const EDIT_LOOP_KEY: &str = "edit-loop";
-
 /// The frontmatter key naming which of the CLI's report seats really prints this case's code. The
 /// driver otherwise picks one from the command SHAPE, which is wrong for every code `run` returns
 /// as `Err` (`crates/cli/CLAUDE.md` invocation-errors-are-registry-codes).
@@ -27,29 +24,6 @@ pub const ENVELOPE_STDERR: &str = "stderr";
 
 /// [`ENVELOPE_KEY`]: render through the invocation-error seat, prefix and usage synopsis included.
 pub const ENVELOPE_INVOCATION: &str = "invocation";
-
-/// The loop, spelled out inside the case that needs it — GENERATED, never authored.
-///
-/// A `.loom` is the whole teaching surface for someone who may not open the crates that read it
-/// (`28L:rul-rust-and-loom-are-the-only-edit-surfaces`), and the two things it could not tell them
-/// were what to run afterwards and that a value can be typed at all. One const mints it, one gate
-/// holds every case to it, so it cannot drift into 75 slightly different sentences.
-///
-/// The recipe ends at the PROOF step deliberately: a promote republishes both generated locks, so
-/// its blast radius is wider than the case in front of the author, and a loop that stops at
-/// `promote` reads as though the edit were finished when nothing has yet re-run against the new
-/// bytes.
-#[must_use]
-pub fn edit_loop_hint(slug: &str) -> String {
-    format!(
-        "edit a sentence in the transcript below, then run \
-         `mise run loom:compile -- {slug} && mise run loom:promote -- {slug}`; \
-         prove it stuck with `mise run test`, which is also what catches anything else the \
-         promotion moved. \
-         `mise run loom:vars -- --all {slug}` lists this case's values; type {{{{name}}}} to \
-         insert or move one."
-    )
-}
 
 /// The rescue a blank or drifted replay block always names, armed or not
 /// (`28L:rul-refusals-name-the-next-command`).

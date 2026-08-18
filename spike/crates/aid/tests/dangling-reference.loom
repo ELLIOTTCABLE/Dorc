@@ -2,7 +2,6 @@
 code: dangling-reference
 when-fires: a coordinate resolved DANGLING (no such entity on an enumerable kind). cli/survival.rs dangling_diagnostics. `{coord}` = the rendered coordinate.
 why: 24F §4: turns a third-party-typo from silent value-loss into a pointed hint; the coord rides the may-alias degrade (the site runs). ADVISORY (fail toward run).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- dangling-reference && mise run loom:promote -- dangling-reference`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all dangling-reference` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

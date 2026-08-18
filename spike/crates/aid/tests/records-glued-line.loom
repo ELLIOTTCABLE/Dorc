@@ -2,7 +2,6 @@
 code: records-glued-line
 when-fires: a records line carried bytes after its terminal token (two atomic writes glued). plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. Static.
 why: 262 §2: reject the whole read unit, the safe direction (kFAIL-perform).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- records-glued-line && mise run loom:promote -- records-glued-line`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all records-glued-line` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh < probe-results.txt

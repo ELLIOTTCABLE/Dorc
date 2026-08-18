@@ -2,7 +2,6 @@
 code: mark-rc-arity-exceeded
 when-fires: the new-grammar mark parser found two rc-consuming marks (`asserts`/`refutes`) in one block, incl. continuations (`281` §7). oracle/predict/parser.rs validate_mark_block.
 why: 281 §7 rc-arity: one exit code witnesses one cell, so two verdicts on one block is unmeasurable ⇒ the block drops to ⊤ (`inv-top-reject`).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- mark-rc-arity-exceeded && mise run loom:promote -- mark-rc-arity-exceeded`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all mark-rc-arity-exceeded` lists this case's values; type {{name}} to insert or move one.
 ---
 -- oracle.sh --
 # dorc-lang/v0.2

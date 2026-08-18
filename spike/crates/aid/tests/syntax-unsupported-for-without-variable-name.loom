@@ -1,6 +1,5 @@
 ---
 arrangement: syntax-unsupported-for-without-variable-name
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- syntax-unsupported-for-without-variable-name && mise run loom:promote -- syntax-unsupported-for-without-variable-name`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all syntax-unsupported-for-without-variable-name` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

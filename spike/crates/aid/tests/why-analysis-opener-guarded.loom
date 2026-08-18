@@ -8,7 +8,6 @@ owns:
   - why-wall-payload
   - why-improvement-guarded-past-wall
   - why-improvement-quantified
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-analysis-opener-guarded && mise run loom:promote -- why-analysis-opener-guarded`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-analysis-opener-guarded` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

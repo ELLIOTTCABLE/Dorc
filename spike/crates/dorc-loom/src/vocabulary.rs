@@ -33,7 +33,7 @@ pub const DEFINING_KEYS_NOTE: &str = "a case declares exactly ONE of `code:` or 
 ///
 /// `todo` is the one deliberate exception and is why it is safe unread: it asserts nothing about
 /// the case, being an author's note about the case's own future.
-pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
+pub const FRONTMATTER_KEYS: [FrontmatterKey; 22] = [
     FrontmatterKey {
         name: "code",
         read_by: "the diagnostic code this case defines; keys its catalog row",
@@ -137,12 +137,6 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
         name: "expect-why-chain",
         read_by: "e2e: free-text needles the numbered why-chain must carry",
         run_lane: true,
-    },
-    FrontmatterKey {
-        name: "edit-loop",
-        read_by: "the generated editing recipe; every primary-collection case is held to the \
-                  current mint",
-        run_lane: false,
     },
     FrontmatterKey {
         name: "tests-critical-law",

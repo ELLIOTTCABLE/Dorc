@@ -2,7 +2,6 @@
 arrangement: why-address-unmatched
 when-used: The whole `dorc why <addr>` render when the address matched no analyzed command. Value: the address as given.
 why: law-lineno-identity: the ONE line-number space is the source file's, so an unmatched address says so rather than silently reporting the wrong surface.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- why-address-unmatched && mise run loom:promote -- why-address-unmatched`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all why-address-unmatched` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

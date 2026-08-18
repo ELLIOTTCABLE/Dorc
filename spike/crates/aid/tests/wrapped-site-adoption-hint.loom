@@ -2,7 +2,6 @@
 code: wrapped-site-adoption-hint
 when-fires: a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/survival.rs build_wrapped_analysis (27N). Spanned (the wrapped site's span).
 why: 27C §2 (recognize-never-license): the one-line adoption hint. The holes are typed: `{provider}` and `{dimension}` name the missing vouch.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- wrapped-site-adoption-hint && mise run loom:promote -- wrapped-site-adoption-hint`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all wrapped-site-adoption-hint` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

@@ -2,7 +2,6 @@
 code: depth-2-positional-unthreaded
 when-fires: a depth-2 inlined call's argument references a positional that does not thread two inline levels. cfg.rs (né dq-depth-2-positional-unthreaded).
 why: 216 §1.2 correction: the inner body's positional resolves ⊤, so the call runs verbatim. `{name}` = the refused call's function name. NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- depth-2-positional-unthreaded && mise run loom:promote -- depth-2-positional-unthreaded`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all depth-2-positional-unthreaded` lists this case's values; type {{name}} to insert or move one.
 ---
 -- book.sh --
 #!/bin/sh

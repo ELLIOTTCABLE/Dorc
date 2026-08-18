@@ -7,7 +7,6 @@ owns:
   - solver-consistency-failure-function-environment
   - solver-consistency-failure-reaching-defs
   - solver-consistency-failure-self-reach
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- solver-consistency-failure && mise run loom:promote -- solver-consistency-failure`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all solver-consistency-failure` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book=book.sh

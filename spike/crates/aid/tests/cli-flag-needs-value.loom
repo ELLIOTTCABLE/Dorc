@@ -2,7 +2,6 @@
 code: cli-flag-needs-value
 when-fires: a flag that takes a value was given without one. cli/lib.rs, every value-taking flag. {flag} is the flag, {wants} what it wants.
 why: AID-NEEDS:law-codes-vary-by-world-not-grammar: ONE code for the whole family - the flags differ, the failure does not, so this is grammar-fit and takes a hole rather than a sibling per flag.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-flag-needs-value && mise run loom:promote -- cli-flag-needs-value`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-flag-needs-value` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan --book

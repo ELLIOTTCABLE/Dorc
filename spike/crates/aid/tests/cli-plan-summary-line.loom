@@ -4,7 +4,6 @@ envelope: stderr
 owns:
   - cli-why-pointer-line
   - cli-decision-digest-line
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-plan-summary-line && mise run loom:promote -- cli-plan-summary-line`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-plan-summary-line` lists this case's values; type {{name}} to insert or move one.
 ---
 -- webhost.sh --
 #!/bin/sh
