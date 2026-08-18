@@ -276,7 +276,7 @@ These are intentionally mechanism-forcing rather than the easiest syntax:
 - early-return include guards and their source-boundary lowering;
 - callback/caller-provided bare cross-custody dependencies;
 - relative loading after all supported cwd mutations;
-- robust symlink and path-identity policy;
+- robust physical/logical path-identity policy;
 - PATH-based dot search under an explicit modeled PATH;
 - book source boundaries using `return`, caller-loop control, or other forms the
   v0 dumb inliner cannot preserve;
@@ -300,32 +300,14 @@ needs to validate the shared machinery.
 ### 4.4 Later acquisition, not dynamic loading
 
 Network-sourced oracle packages remain possible future work. Acquisition must
-finish before analysis: fetch, verify immutable content/signature identity,
-freeze a local snapshot, then invoke the ordinary static loader. Mutable tags,
-rollback, equivocation, dependency confusion, archive traversal, cache trust,
-and credential forwarding require a separate security design. The network never
-participates in load-order evaluation.
+finish before analysis and produce a fixed local source snapshot before invoking
+the ordinary static loader. Its acquisition, identity, update, and retention
+model is separate future design. The network never participates in load-order
+evaluation.
 
-## 5. Security and influence
+## 5. Load-decision inputs and influence
 
-### 5.1 V0 threat model
-
-The relevant threats are:
-
-- compromised or malicious oracle bytes on the controller;
-- local file/symlink substitution between analysis and emission;
-- dependency confusion through roots and load order;
-- malicious or malformed books selecting unintended paths;
-- hostile hosts tampering with transported artifacts;
-- forged bundle-origin comments laundering another author's identity;
-- Dorc selecting or attributing the wrong definition.
-
-Static snapshotting, content identity, custody, controller-owned artifact
-emission, and aid-plane distrust address those threats. Host influence does not:
-a compromised local package is supply-chain input, and a filesystem race is a
-snapshot-integrity problem.
-
-### 5.2 No prospective dynamic seam
+### 5.1 No prospective dynamic seam
 
 `rul-load-decisions-are-authored-before-contact` [TYPED direction] - every v0
 load decision is stamped `authored-before-contact` by construction. The loader
@@ -338,9 +320,8 @@ architecture, influence taxonomy, integrity policy, and authority review. It is
 not an additive feature. Pre-building a generic influenced-loader input would
 make this forbidden state representable.
 
-Future network acquisition may require a new provenance/influence grade because
-network-fetched-before-host-contact is neither honestly authored nor managed-host
-reported. V0 does not guess that taxonomy.
+Future acquisition may require a provenance/influence distinction not present in
+v0. V0 does not guess that taxonomy.
 
 ## 6. Bundle projection
 
@@ -390,19 +371,20 @@ script and can omit everything after the source point. A subshell is not a fix:
 every variable and function definition loaded inside it dies at the closing
 parenthesis.
 
-`dir-loader-function-lowering` [PROPOSED] - a promising one-file lowering gives
-each original source boundary a collision-safe generated loader function, calls
-child loaders at the original dot positions, invokes the root loader with the
-current positional parameters, then removes generated loader functions while
-preserving the root status. Ordinary assignments and definitions escape function
-calls in the floor language unless explicitly localized. Top-level `local`,
-`set --`, `shift`, traps, aliases, and similar boundary-sensitive forms remain
-outside this v0 lowering.
+`fnd-loader-function-errexit-diverges` [MEASURED 2026-08-18] - generated loader
+functions are not a universal one-file lowering. The opt-in floor specimen
+`floor30-dot-loader-function-errexit` asks both floor shells about a dot-sourced
+child and the same body in a function, under `set -e` and an enclosing `||`.
+Both shells agree: the failing child aborts its dot boundary (`dot boundary=1`),
+while the function call remains errexit-exempt, returns 1 to its caller, and
+continues through the second invocation. The observable output differs.
 
-Whether function invocation and dot sourcing agree under errexit suppression is
-a differential question, not an argument. A mismatch forces a multi-file bundle
-for that form or a different lowering. Builders may choose another mechanism;
-the property is source-boundary fidelity, not loader functions.
+A subshell cannot repair this because loaded assignments and definitions die at
+`)`. V0 therefore preserves nested source boundaries as generated files for this
+healthy form. One-file-per-root remains an optimization pin for a different,
+floor-proven lowering; builders must not revive loader functions by argument.
+Top-level `local`, `set --`, `shift`, traps, aliases, and similar
+boundary-sensitive forms remain outside any v0 one-file lowering.
 
 ### 6.4 Bundle comments
 
@@ -414,10 +396,9 @@ The accepted v0 direction is a generated, versioned, human-readable boundary:
 # dorc-bundle/v0: end source=org.example.common/entry.oracle.sh
 ```
 
-Published artifacts should avoid absolute controller paths. The visible source
-locator is package- or invocation-relative where possible; content identity and
-the in-memory locator graph carry the precise binding. The exact grammar and API
-belong to builders and may be simple at v0.
+The visible source locator is package- or invocation-relative for deterministic
+output where possible; the in-memory locator graph carries the precise binding.
+The exact grammar and API belong to builders and may be simple at v0.
 
 ## 7. Plan emission and attention
 
@@ -491,10 +472,9 @@ transport owns that initial cwd; direct use is `cd <artifact> && sh ./plan.sh`.
 ### 7.5 Artifact publication is atomic
 
 Multipart emission constructs a fresh controller-owned artifact directory,
-writes every plan and bundle, and only then publishes the result. It refuses
-symlinks, traversal, and stale dependency reuse. A plan may never point at a
-sidecar from an earlier generation. Exact naming, content-derived suffixes, and
-filesystem API are builder decisions.
+writes every plan and bundle, and only then publishes the result. A plan may
+never point at a sidecar from an earlier generation. Exact naming,
+content-derived suffixes, and filesystem API are builder decisions.
 
 ## 8. TUI and richer presentation
 
@@ -564,18 +544,16 @@ subset on a later read.
 
 Reading bundle comments creates `BundleOriginClaim` in the aid/narrative plane.
 There is no conversion to source bytes, `DefinitionId`, custody, dialect,
-vouches, facts, or license inputs. Removing or forging every comment leaves the
+vouches, facts, or license inputs. Removing or editing every comment leaves the
 analytic answer byte-identical.
 
 A claim becomes a resolved original locator only when matching source bytes are
-available and content identity verifies. Otherwise the bundle locus is primary
-and the claimed origin remains explicitly claimed. This prevents modified code
-from laundering itself into another author's name.
+available and content identity agrees. Otherwise the bundle locus is primary
+and the claimed origin remains explicitly claimed.
 
-Future pull-only aid may resolve a claim to an immutable web repository revision,
-fetch bounded source without forwarding credentials, and accept it only on digest
-match. Repository guesses are conjecture. None of that runs in planning or affects
-decisions.
+Future pull-only aid may resolve a claim to a web repository revision and accept
+it only when the retrieved source identity agrees. Repository guesses are
+conjecture. None of that runs in planning or affects decisions.
 
 ## 10. Fail-fast and diagnostics
 
@@ -607,7 +585,8 @@ real oracle packages representable, not finish every spelling:
 3. Make book source affect visibility while preserving book-no-speaker custody.
 4. Represent load decisions on Spine with fixed authored-before-contact influence.
 5. Build one exact bundle projection shared by analysis/emission entrypoints.
-6. Exercise one-bundle-per-load-occurrence and the one-file-per-root aspiration.
+6. Exercise one-bundle-per-load-occurrence, preserving nested dot boundaries as
+   files where required; keep one-file-per-root as an optimization pin.
 7. Provide multipart-plan and flattening seams; APIs/names are builder latitude.
 8. Carry one complete multi-stage locator mapping into an actual error surface.
 9. Differential-test the `||`/errexit source boundary under both floor shells.
@@ -643,6 +622,7 @@ Required worlds:
    guarded shared dependency; no speaker merge; value reaches a real book command.
 2. `specimen-subshell-and-errexit` - regional source; fallback under `||`; both
    floor-shell answers; generated artifact preserves status, scope, and run set.
+   The committed floor cell already refutes generated loader functions.
 3. `specimen-emission-modes` - two distinct book load points; default contracted
    dependencies; explicit full flatten target; original book source lines visible
    and replaced in place.
@@ -663,7 +643,7 @@ Builders own:
 - concrete type and crate names;
 - CLI names such as `--flatten-plan` and the exact `dorc bundle` interface;
 - output-directory and dependency-file naming;
-- whether loader-function lowering is viable;
+- any replacement candidate for the floor-refuted loader-function lowering;
 - exact v0 bundle-comment grammar;
 - grouping of specimens into fast tests versus retained e2es;
 - the implementation of atomic publication and transport capability requests.
@@ -683,8 +663,8 @@ Open pins that require human or implementation evidence:
 
 1. `pin-bare-dependency-injection` - which callback/caller-loaded idioms eventually
    license without an explicit source/guard.
-2. `pin-one-file-root-bundle` - whether generated loader functions preserve all
-   forced v0 dot semantics under both floor shells.
+2. `pin-one-file-root-bundle` - whether any lowering can preserve all forced v0
+   dot semantics in one file; generated loader functions are measured-refuted.
 3. `pin-complex-book-source-render` - how mutative commands from an unflattenable
    book source remain maximally reviewable on `plan.sh` while preserving a physical
    source boundary.
@@ -717,7 +697,7 @@ Human-typed or explicitly hard-acked in the design dialogue:
 Gently accepted or builder-latitude rather than hard-ratified:
 
 - the three semantic emission modes and their exact names;
-- generated loader functions as one-file bundle lowering;
+- one-file-per-root remains desired, but generated loader functions are refuted;
 - the `# dorc-bundle/v0: begin/end` grammar particulars;
 - automatic source-sidecar placement policy;
 - exact artifact publication interface.
