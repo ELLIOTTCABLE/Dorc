@@ -1757,13 +1757,15 @@ mod tests {
         let cfg = dorc_analysis::cfg::build(&book).value;
         let value = dorc_analysis::value::analyze(&cfg, &book, &mut interner);
         let paths = vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()];
-        let defs = crate::world::definition_table(
-            &dorc_core::loadpath::Cwd::default(),
-            &paths,
-            &srcs,
-            dorc_analysis::funcenv::source_file_of_index(srcs.len()),
-            &book,
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
+            dorc_core::loadpath::Cwd::default(),
+            paths,
+            srcs.iter().map(|s| (*s).to_owned()).collect(),
+            [].into(),
+            "book.sh",
+            "apt-get install nginx\n",
         );
+        let defs = crate::world::definition_table(&snapshot, &book);
         let env = {
             let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
             dorc_analysis::funcenv::analyze(&book, &cfg, &defs, &plane)

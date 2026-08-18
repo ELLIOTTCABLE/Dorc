@@ -85,7 +85,7 @@ use dorc_cli::survival::{
 };
 use dorc_cli::world::{
     definition_table, demote_on_certifier_trip, never_live_predict_rows, record_pre_network_trip,
-    ship_predict_body, ship_verdict_body, shipping_source, source_file_id,
+    ship_predict_body, ship_verdict_body, shipping_source,
 };
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
@@ -394,6 +394,70 @@ fn read_sourced_oracles(
             }
             paths.push(wanted);
             srcs.push(text);
+        }
+    }
+    (paths, srcs)
+}
+
+/// Read the sources a BOOK `.`-sources, transitively (`30I:rul-books-load-but-do-not-speak`).
+///
+/// The I/O half only: which of them a book reaches is [`dorc_cli::snapshot::book_reached`], asked
+/// once the reading is done, so the binary and the in-process why driver partition by ONE rule.
+///
+/// A book's `.` is ordinary flowing sh — its operand resolves through the same value plane every
+/// other operand does, so `SM_ORACLE_ROOT=./oracles; . "$SM_ORACLE_ROOT/alpha.oracle.sh"` names a
+/// file without the engine recognizing one variable name (`30I` §2.1).
+///
+/// **Only MARKED dorc-lang targets are admitted.** A book sourcing an ordinary shell file is
+/// outside the load model: the engine reads nothing, models nothing, and the site walls exactly as
+/// it always has. That is what keeps a book's own non-dorc-lang material — top-level `return`,
+/// caller-loop control, anything a dumb inliner would miscompile — where its author put it
+/// (`30I` §7.2).
+fn read_book_sourced(
+    cwd: &dorc_core::loadpath::Cwd,
+    book_src: &str,
+    mut paths: Vec<String>,
+    mut srcs: Vec<String>,
+) -> (Vec<String>, Vec<String>) {
+    fn admit(
+        cwd: &dorc_core::loadpath::Cwd,
+        paths: &mut Vec<String>,
+        srcs: &mut Vec<String>,
+        target: &str,
+    ) -> Option<usize> {
+        let wanted = cwd.resolve_dot(target)?;
+        if let Some(at) = paths
+            .iter()
+            .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
+        {
+            return Some(at);
+        }
+        let text = std::fs::read_to_string(&wanted).ok()?;
+        if !dorc_cli::sourcing::satisfies_the_contract(&text) {
+            return None;
+        }
+        paths.push(wanted);
+        srcs.push(text);
+        Some(paths.len().saturating_sub(1))
+    }
+
+    let mut frontier: Vec<usize> = dorc_cli::snapshot::book_load_targets(book_src)
+        .iter()
+        .filter_map(|target| admit(cwd, &mut paths, &mut srcs, target))
+        .collect();
+    // Transitive: what a book-reached package sources joins the loaded set too. Terminates
+    // because `admit` appends only a path not already present.
+    let mut seen: BTreeSet<usize> = frontier.iter().copied().collect();
+    while let Some(file) = frontier.pop() {
+        let Some(src) = srcs.get(file).cloned() else {
+            continue;
+        };
+        for target in dorc_cli::sourcing::top_level_load_targets(&src) {
+            if let Some(next) = admit(cwd, &mut paths, &mut srcs, &target)
+                && seen.insert(next)
+            {
+                frontier.push(next);
+            }
         }
     }
     (paths, srcs)
@@ -786,7 +850,6 @@ fn run(
     // driver reading that record back — consumes these two vectors, so widening them here widens
     // all of them at once and cannot leave two drivers looking at different worlds.
     let (oracle_paths, oracle_srcs) = read_sourced_oracles(cwd, oracle_paths, oracle_srcs);
-    let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
     // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
     // source like any other — and it sorts LAST, which is also its ambient-load position.
@@ -800,15 +863,31 @@ fn run(
     };
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
-    let (source_paths, source_srcs) =
-        source_table(&oracle_paths, &oracle_srcs, book_name, &book_src);
-    let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
+    // THE SNAPSHOT (`30I` §3.1): the acquisition finishes here and nothing below re-reads a path.
+    // What a book `.`-sources joins the loaded set exactly as what an oracle sources does, but
+    // NOT ambiently — it binds at its own line.
+    let (oracle_paths, oracle_srcs) = read_book_sourced(cwd, &book_src, oracle_paths, oracle_srcs);
+    let book_sourced =
+        dorc_cli::snapshot::book_reached(cwd, &oracle_paths, &oracle_srcs, &book_src);
+    let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+        cwd.clone(),
+        oracle_paths,
+        oracle_srcs,
+        book_sourced,
+        book_name,
+        &book_src,
+    );
+    let oracle_paths = snapshot.oracle_paths();
+    let oracle_srcs = snapshot.oracle_srcs();
+    let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
+    let source_paths = snapshot.source_paths();
+    let source_srcs = snapshot.source_srcs();
+    let source_refs: Vec<&str> = snapshot.source_refs();
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
-    // The book is the LAST source (`source_table`), and naming it is what lets the custody predicate
-    // see what the admin defines (`rul-vouch-reaches-own-custody-only`).
-    let book_index = source_refs.len().checked_sub(1);
-    let include_tree =
-        dorc_cli::sourcing::include_tree(cwd, &source_paths, &source_refs, book_index);
+    // The book is the LAST source, and naming it is what lets the custody predicate see what the
+    // admin defines (`rul-vouch-reaches-own-custody-only`).
+    let book_index = Some(snapshot.book_index());
+    let include_tree = dorc_cli::sourcing::include_tree(&snapshot);
     let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
         .with_include_tree(
             dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
@@ -852,7 +931,7 @@ fn run(
         advisory,
         "oracle",
         None,
-        &unloaded_sibling_oracle_diagnostics(books, &oracle_paths),
+        &unloaded_sibling_oracle_diagnostics(books, oracle_paths),
     );
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
@@ -912,13 +991,7 @@ fn run(
     //
     // Computed ONCE from the ORIGIN model, joining the FROZEN set: the fixpoint's ratchet erases
     // EFFECTS and holds no authority over BINDINGS (`the-frozen-set-includes-the-function-environment`).
-    let definitions = definition_table(
-        cwd,
-        &oracle_paths,
-        &source_refs,
-        source_file_id(source_refs.len().saturating_sub(1)),
-        &parsed.value,
-    );
+    let definitions = definition_table(&snapshot, &parsed.value);
     let env = {
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
@@ -951,7 +1024,7 @@ fn run(
     let mut trip = dorc_analysis::certify::CertifierTrip::default();
     record_pre_network_trip(&mut trip, &value, &env);
     let shadow_narrative = shadow_narratives(&shadows, &definitions);
-    for (file, diags) in shadow_diagnostics(&shadows, &definitions, &source_paths, &source_refs) {
+    for (file, diags) in shadow_diagnostics(&shadows, &definitions, source_paths, &source_refs) {
         let source = source_paths
             .get(file)
             .zip(source_refs.get(file))
@@ -964,7 +1037,7 @@ fn run(
         book_source,
         &positional_loading_notices(&parsed.value, &cfg.value, &value, &interner, live_defs),
     );
-    for (file, diags) in helper_conflict_diagnostics(&helpers, &source_paths, &source_refs) {
+    for (file, diags) in helper_conflict_diagnostics(&helpers, source_paths, &source_refs) {
         let source = source_paths
             .get(file)
             .zip(source_refs.get(file))
@@ -1033,9 +1106,9 @@ fn run(
         &escalation_policy_diagnostics(&checks, &wrapper_sets, args.dial, args.capability),
     );
     let wrapped_analysis = build_wrapped_analysis(
-        &source_srcs,
+        source_srcs,
         &source_refs,
-        &source_paths,
+        source_paths,
         &helpers,
         &checks,
         &verdict_sets,
@@ -1139,7 +1212,7 @@ fn run(
     // builder (omit the subsumed members).
     let ship_stage = |n, p, a: &[Symbol]| {
         ship_predict_stage(
-            &source_srcs,
+            source_srcs,
             &helpers,
             &checks,
             &interner,
@@ -1158,7 +1231,7 @@ fn run(
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
     let ship = |n, p, a: &[Symbol]| {
         ship_predict_body(
-            &source_srcs,
+            source_srcs,
             &helpers,
             &checks,
             &interner,
@@ -1182,7 +1255,7 @@ fn run(
             return None;
         }
         ship_verdict_body(
-            &source_srcs,
+            source_srcs,
             &helpers,
             &verdict_sets,
             &interner,
@@ -1253,7 +1326,7 @@ fn run(
         )
     };
     let resolver_lift = build_kind_resolvers(
-        &oracle_srcs,
+        oracle_srcs,
         &checks,
         &touches_paired,
         &coord_kinds,
@@ -1263,8 +1336,8 @@ fn run(
     report_by_oracle_file(
         advisory,
         "resolve",
-        &oracle_paths,
-        &oracle_srcs,
+        oracle_paths,
+        oracle_srcs,
         &resolver_lift.confusability,
     );
     let kind_resolvers = resolver_lift.value;
@@ -1286,7 +1359,7 @@ fn run(
     let resolvers = compile_resolvers(
         &resolver_coords,
         &kind_resolvers,
-        &oracle_srcs,
+        oracle_srcs,
         &helpers,
         &interner,
     );
@@ -1297,7 +1370,7 @@ fn run(
     // ship each DYNAMIC arm strip-clean, invoked with the entity; the `reach` readback expands the
     // footprints (via `Footprint::add_reached`) before the survival walk. STATIC arms never ship.
     let reaches_lift = build_kind_reaches(
-        &oracle_srcs,
+        oracle_srcs,
         &checks,
         &touches_paired,
         &coord_kinds,
@@ -1307,8 +1380,8 @@ fn run(
     report_by_oracle_file(
         advisory,
         "reaches",
-        &oracle_paths,
-        &oracle_srcs,
+        oracle_paths,
+        oracle_srcs,
         &reaches_lift.confusability,
     );
     let kind_reaches = reaches_lift.value;
@@ -1322,7 +1395,7 @@ fn run(
             &touches_sets,
             &kind_reaches,
             &reach_kinds,
-            &oracle_srcs,
+            oracle_srcs,
             &helpers,
             &mut interner,
             live_defs,
@@ -1432,8 +1505,8 @@ fn run(
     let run_sources = dorc_cli::results::RunSources {
         book_name,
         book: &book_src,
-        oracle_paths: &oracle_paths,
-        oracle_sources: &oracle_srcs,
+        oracle_paths,
+        oracle_sources: oracle_srcs,
     };
     let scope = dorc_cli::results::replay_scope(&framing, &run_sources);
     // The authority to produce an authority-bearing projection rides out of the intake beside the
@@ -1808,20 +1881,20 @@ fn run(
         emit_sigpipe_race_notes(results);
         emit_report_lane_notes(results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
         // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
-        emit_static_decline_notes(&collapse_narrative, &source_paths, &source_srcs);
+        emit_static_decline_notes(&collapse_narrative, source_paths, source_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
         // a wrong footprint silently under-executes someone else's line, so the render surface
         // must always say whose footprint you trusted. Empty when unflagged (no survivals).
-        emit_survival_attribution(&plan, &interner, &source_paths, &source_srcs);
+        emit_survival_attribution(&plan, &interner, source_paths, source_srcs);
         // 24G Part B: every converged elision a reaches() expansion DEMOTED names the reach-function
         // (the cross-author demote); empty when no reach expansion poisoned an elision.
         emit_reach_poisonings(&plan, &interner);
         // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
-        emit_guard_attribution(&plan, &parsed.value, &interner, &source_paths, &source_srcs);
+        emit_guard_attribution(&plan, &parsed.value, &interner, source_paths, source_srcs);
         // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
         // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
         // the read-set-closure proof). Empty when no site carried.
@@ -1919,7 +1992,7 @@ fn run(
                 &source_match::GitRepository,
                 std::path::Path::new(book_name),
             ),
-            oracles: oracle_paths.clone(),
+            oracles: oracle_paths.to_vec(),
             risk_profile: args.risk_faultless_skips.then_some(CONSENT_FLAG),
             tally: PlanTally::Derived(plan.disposition_counts()),
             deepest_tier: args.all,
@@ -1945,8 +2018,8 @@ fn run(
                     book_src: &book_src,
                     filename: book_name,
                     interner: &interner,
-                    source_paths: &source_paths,
-                    source_srcs: &source_srcs,
+                    source_paths,
+                    source_srcs,
                     narrative: &collapse_narrative,
                     cascades: &cascades,
                     receipt: &receipt,
@@ -1981,8 +2054,8 @@ fn run(
             &framing,
             book_name,
             &book_src,
-            &oracle_paths,
-            &oracle_srcs,
+            oracle_paths,
+            oracle_srcs,
             &decision_digest,
             clock.now(),
             results,
@@ -2477,41 +2550,6 @@ fn record_durable_arm(
             .collect(),
         grade: None,
     });
-}
-
-/// The ONE `SourceFileId` space over every input (`28K` §2a Provenance) as parallel path/source
-/// vectors a [`dorc_core::SourceFileId`] indexes directly.
-///
-/// Order is LOAD order and that is load-bearing twice: CLI-named oracles first — so every id
-/// already minted keeps its value, and the book joining the space moves no existing span — then
-/// the book, which is exactly the order the function environment reads (`28K` §2: CLI files are
-/// the ambient prefix "before line 1", the book's own text executes after). An id comparison is
-/// therefore a load-order comparison, which is what the cross-unit shadow refusal needs.
-///
-/// The predict/verdict lift and ship lanes consume THESE vectors, not the oracle-only ones: the
-/// book is a definition source (`28K` §2a in-book lift), and those lanes zip per-file lifted sets
-/// POSITIONALLY — so feeding them an `oracle_srcs` shorter than `checks` would silently truncate
-/// the book's own definitions away rather than fail. The survival lanes (`touches`, the kind
-/// resolvers/reaches) stay oracle-only, coherently among themselves; widening them is its own
-/// dispatch. What genuinely stays oracle-keyed is the whylog/attempt-scope record of what was
-/// LOADED, which is about the oracle set as such.
-fn source_table(
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
-    book_name: &str,
-    book_src: &str,
-) -> (Vec<String>, Vec<String>) {
-    let paths = oracle_paths
-        .iter()
-        .cloned()
-        .chain(std::iter::once(book_name.to_owned()))
-        .collect();
-    let srcs = oracle_srcs
-        .iter()
-        .cloned()
-        .chain(std::iter::once(book_src.to_owned()))
-        .collect();
-    (paths, srcs)
 }
 
 /// The two notices the full-positional regime owes a book author (`28K` §2
@@ -3557,15 +3595,25 @@ mod fixpoint_freezes_the_environment_tests {
 }
 
 #[cfg(test)]
-mod source_table_tests {
-    use super::{oracle_locus, source_file_id, source_table};
+mod snapshot_id_space_tests {
+    use dorc_cli::snapshot::StaticLoadSnapshot;
+
+    use dorc_cli::world::source_file_id;
+
+    use super::oracle_locus;
 
     fn table() -> (Vec<String>, Vec<String>) {
-        source_table(
-            &["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
-            &["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
+        let snapshot = StaticLoadSnapshot::over(
+            dorc_core::loadpath::Cwd::default(),
+            vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
+            vec!["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
+            [].into(),
             "webhost.sh",
             "# book\n",
+        );
+        (
+            snapshot.source_paths().to_vec(),
+            snapshot.source_srcs().to_vec(),
         )
     }
 

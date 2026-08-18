@@ -544,13 +544,8 @@ impl DorcConsumer {
         // cwd is the root of that directory and every `./x.oracle.sh` names a section
         // (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case into a real
         // directory and runs the real binary there, so the two routes agree by construction.
-        let world = dorc_cli::world::WhyWorld::analyze(
-            &dorc_core::loadpath::Cwd::default(),
-            book,
-            source,
-            &paths,
-            &sources,
-        );
+        let world =
+            dorc_cli::world::WhyWorld::analyze(&case_snapshot(book, source, paths, sources));
         Some(dorc_cli::plan_envelope_parts(
             &self.render_ctx(),
             &world,
@@ -1303,6 +1298,30 @@ fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>>
 ///
 /// The ONE seat both replay chains go through — they differ only in where a case's bytes come
 /// from, so that is the only thing `source` supplies.
+/// The load snapshot a CASE is: a flat virtual directory whose section NAMES are its paths.
+///
+/// The modeled cwd is that directory's root, so `. ./x.oracle.sh` in a case's book names the
+/// case's own section (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case
+/// into a real directory and runs the real binary standing in it, so the in-process route and the
+/// executed one resolve identically by construction rather than by agreement.
+fn case_snapshot(
+    book_path: &str,
+    book_src: &str,
+    paths: Vec<String>,
+    srcs: Vec<String>,
+) -> dorc_cli::snapshot::StaticLoadSnapshot {
+    let cwd = dorc_core::loadpath::Cwd::default();
+    let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    dorc_cli::snapshot::StaticLoadSnapshot::over(
+        cwd,
+        paths,
+        srcs,
+        book_sourced,
+        book_path,
+        book_src,
+    )
+}
+
 fn live_why_parts(
     ctx: &RenderCtx<'_>,
     why: &DirectWhyReport<'_>,
@@ -1329,11 +1348,7 @@ fn live_why_parts(
         None => dorc_cli::results::SiteResults::default(),
     };
     let world = dorc_cli::world::WhyWorld::analyze_measured(
-        &dorc_core::loadpath::Cwd::default(),
-        why.book,
-        &book,
-        &oracle_paths,
-        &oracle_srcs,
+        &case_snapshot(why.book, &book, oracle_paths.clone(), oracle_srcs.clone()),
         &results,
         why.consented,
     );

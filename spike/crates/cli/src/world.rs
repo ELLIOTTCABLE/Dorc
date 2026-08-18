@@ -28,6 +28,7 @@ use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
 
 use crate::Receipt;
 use crate::results::{SiteResults, probe_origins};
+use crate::snapshot::StaticLoadSnapshot;
 use crate::why::{
     CascadeAttribution, FirstWallHint, WallStep, WhyReport, collect_wall_steps, first_wall_hint,
 };
@@ -35,10 +36,10 @@ use crate::why::{
 /// Everything a why report reads, owned in one place so a caller can borrow a [`WhyReport`] out of
 /// it without threading seventeen lifetimes of its own.
 pub struct WhyWorld {
-    filename: String,
-    book_src: String,
-    oracle_paths: Vec<String>,
-    oracle_srcs: Vec<String>,
+    /// The one immutable authored input this world was analysed from (`30I` §3.1). Held whole
+    /// rather than shredded into four fields, so the why driver and the run cannot be handed
+    /// different worlds (`one-definition-table-two-drivers`).
+    snapshot: StaticLoadSnapshot,
     interner: Interner,
     arena: ProvArena,
     ast: dorc_syntax::ast::Ast,
@@ -57,7 +58,7 @@ impl std::fmt::Debug for WhyWorld {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("WhyWorld")
-            .field("filename", &self.filename)
+            .field("book", &self.snapshot.book_path())
             .finish_non_exhaustive()
     }
 }
@@ -65,22 +66,8 @@ impl std::fmt::Debug for WhyWorld {
 impl WhyWorld {
     /// Analyze `book_src` against `oracle_srcs` with no measurements — every fact ⊤, every site runs.
     #[must_use]
-    pub fn analyze(
-        cwd: &dorc_core::loadpath::Cwd,
-        filename: &str,
-        book_src: &str,
-        oracle_paths: &[String],
-        oracle_srcs: &[String],
-    ) -> Self {
-        Self::analyze_measured(
-            cwd,
-            filename,
-            book_src,
-            oracle_paths,
-            oracle_srcs,
-            &SiteResults::default(),
-            false,
-        )
+    pub fn analyze(snapshot: &StaticLoadSnapshot) -> Self {
+        Self::analyze_measured(snapshot, &SiteResults::default(), false)
     }
 
     /// Analyze `book_src` against `oracle_srcs` and build the plan a why report explains.
@@ -105,16 +92,14 @@ impl WhyWorld {
         reason = "one linear pipeline in the binary's own order; splitting it would let the two orders drift, which is the whole thing this seat exists to prevent"
     )]
     pub fn analyze_measured(
-        cwd: &dorc_core::loadpath::Cwd,
-        filename: &str,
-        book_src: &str,
-        oracle_paths: &[String],
-        oracle_srcs: &[String],
+        snapshot: &StaticLoadSnapshot,
         results: &SiteResults,
         consented: bool,
     ) -> Self {
         let mut interner = Interner::default();
         let mut arena = ProvArena::new();
+        let book_src = snapshot.book_src();
+        let oracle_srcs = snapshot.oracle_srcs();
         let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
         // SOURCE-WIDE, exactly as the binary's `source_table` builds it: the oracles in load order,
         // then the book, which is an ordinary definition source
@@ -122,12 +107,8 @@ impl WhyWorld {
         // the book one PAST them, so a site a book definition owned withheld here while the run
         // answered it — safe, but a why report that explains a different world than the run is a
         // decoration, which is the failure `one-definition-table-two-drivers` exists to prevent.
-        let source_srcs: Vec<String> = oracle_srcs
-            .iter()
-            .cloned()
-            .chain(std::iter::once(book_src.to_owned()))
-            .collect();
-        let source_refs: Vec<&str> = source_srcs.iter().map(String::as_str).collect();
+        let source_srcs = snapshot.source_srcs();
+        let source_refs: Vec<&str> = snapshot.source_refs();
 
         let parsed = dorc_syntax::parse(book_src);
         let cfg = dorc_analysis::cfg::build(&parsed.value);
@@ -136,13 +117,7 @@ impl WhyWorld {
         let mut degrades = BTreeMap::new();
         let mut verdict_lane = BTreeMap::new();
         let peeled = BTreeMap::new();
-        let definitions = definition_table(
-            cwd,
-            oracle_paths,
-            &source_refs,
-            source_file_id(source_refs.len().saturating_sub(1)),
-            &parsed.value,
-        );
+        let definitions = definition_table(snapshot, &parsed.value);
         let env = {
             let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
             dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
@@ -175,14 +150,8 @@ impl WhyWorld {
         // The include-tree, derived from the same vectors by the same rule the binary uses, so the
         // why driver's custody predicate answers over the run's own closures rather than a
         // singleton world that would explain suspensions the run never made.
-        let source_paths: Vec<String> = oracle_paths
-            .iter()
-            .cloned()
-            .chain(std::iter::once(filename.to_owned()))
-            .collect();
-        let book_index = source_refs.len().checked_sub(1);
-        let include_tree =
-            crate::sourcing::include_tree(cwd, &source_paths, &source_refs, book_index);
+        let book_index = Some(snapshot.book_index());
+        let include_tree = crate::sourcing::include_tree(snapshot);
         let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
             .with_include_tree(
                 dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
@@ -250,7 +219,7 @@ impl WhyWorld {
 
         let ship = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(
-                &source_srcs,
+                source_srcs,
                 &helpers,
                 &checks,
                 &interner,
@@ -265,7 +234,7 @@ impl WhyWorld {
                 .contains_key(&node)
                 .then(|| {
                     ship_verdict_body(
-                        &source_srcs,
+                        source_srcs,
                         &helpers,
                         &verdict_sets,
                         &interner,
@@ -522,10 +491,7 @@ impl WhyWorld {
         let first_wall = first_wall_hint(&wall_steps);
 
         WhyWorld {
-            filename: filename.to_owned(),
-            book_src: book_src.to_owned(),
-            oracle_paths: oracle_paths.to_vec(),
-            oracle_srcs: oracle_srcs.to_vec(),
+            snapshot: snapshot.clone(),
             interner,
             arena,
             ast: parsed.value,
@@ -565,7 +531,7 @@ impl WhyWorld {
         dorc_plan::erasability::decision_digest(
             &self.plan,
             &self.probe,
-            &self.book_src,
+            self.snapshot.book_src(),
             &self.ast,
             &self.interner,
             &identity,
@@ -612,16 +578,16 @@ impl WhyWorld {
             refusals: &self.refusals,
             arena: &self.arena,
             ast: &self.ast,
-            book_src: &self.book_src,
-            filename: &self.filename,
+            book_src: self.snapshot.book_src(),
+            filename: self.snapshot.book_path(),
             interner: &self.interner,
             // THE DISCLOSED CUT (`churn-avoidance-disclosure`; `28P:res-why-world-lifts-no-book-
             // definitions`): the binary fills these SOURCE-wide, this seat ORACLE-only, and the
             // name/value mismatch IS the disclosure. It agrees today only because a book-sited
             // definition is invisible here, so it withholds where the binary answers — safe, and a
             // coincidence. Closing it means re-lifting this seat's world: a dispatch, not a rename.
-            source_paths: &self.oracle_paths,
-            source_srcs: &self.oracle_srcs,
+            source_paths: self.snapshot.oracle_paths(),
+            source_srcs: self.snapshot.oracle_srcs(),
             narrative: &self.narrative,
             cascades: &self.cascades,
             receipt,
@@ -722,18 +688,16 @@ pub fn demote_on_certifier_trip(
 /// (`lib-target-is-a-loom-seam`).
 #[must_use]
 pub fn definition_table(
-    cwd: &dorc_core::loadpath::Cwd,
-    oracle_paths: &[String],
-    source_srcs: &[&str],
-    book_file: dorc_core::SourceFileId,
+    snapshot: &StaticLoadSnapshot,
     book: &dorc_syntax::Ast,
 ) -> dorc_analysis::funcenv::DefinitionTable {
     use dorc_analysis::funcenv::{Definition, DefinitionTable};
     use dorc_syntax::ast::NodeKind;
 
-    let mut table = DefinitionTable::rooted_at(cwd.clone());
-    for (idx, path) in oracle_paths.iter().enumerate() {
-        let Some(src) = source_srcs.get(idx) else {
+    let book_file = snapshot.book_file();
+    let mut table = DefinitionTable::rooted_at(snapshot.cwd().clone());
+    for (idx, path) in snapshot.oracle_paths().iter().enumerate() {
+        let Some(src) = snapshot.oracle_srcs().get(idx) else {
             continue;
         };
         let parsed = dorc_syntax::parse(src).value;
@@ -753,7 +717,12 @@ pub fn definition_table(
             }));
         }
         table.set_loadable(path, ids.clone());
-        table.extend_ambient(ids);
+        // Only the invocation-named prefix and its own sourcing closure load "before line 1". A
+        // source reached ONLY from a book `.` binds AT that line, and making it ambient would let
+        // it license sites above its own load point (`visibility-is-full-positional`).
+        if snapshot.is_ambient(idx) {
+            table.extend_ambient(ids);
+        }
     }
     for (id, node) in book.iter() {
         let NodeKind::FuncDef {
@@ -997,7 +966,7 @@ mod tests {
     };
     use dorc_plan::{Disposition, GuardLicense, Plan, Step, SurvivalReport, VerdictVouch};
 
-    use super::{definition_table, demote_on_certifier_trip, source_file_id};
+    use super::{StaticLoadSnapshot, definition_table, demote_on_certifier_trip};
 
     /// One node with a self-loop — the smallest system that has an edge to fail.
     struct SelfLoop;
@@ -1101,17 +1070,22 @@ mod tests {
         }
     }
 
+    const BOOK: &str = "apt-get install -y nginx
+";
+
     /// Build the REAL census input the seat reads: a definition table over parsed sources.
     fn table_over(oracles: &[&str]) -> dorc_analysis::funcenv::DefinitionTable {
         let paths: Vec<String> = (0..oracles.len()).map(|n| format!("o{n}.sh")).collect();
-        let book = dorc_syntax::parse("apt-get install -y nginx\n").value;
-        definition_table(
-            &dorc_core::loadpath::Cwd::default(),
-            &paths,
-            oracles,
-            source_file_id(oracles.len()),
-            &book,
-        )
+        let book = dorc_syntax::parse(BOOK).value;
+        let snapshot = StaticLoadSnapshot::over(
+            dorc_core::loadpath::Cwd::default(),
+            paths,
+            oracles.iter().map(|s| (*s).to_owned()).collect(),
+            [].into(),
+            "book.sh",
+            BOOK,
+        );
+        definition_table(&snapshot, &book)
     }
 
     const ONE_DECLARATION: &str = "apt_get__is_converged() { return 0; }\n";

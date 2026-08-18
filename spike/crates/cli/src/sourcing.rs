@@ -36,6 +36,8 @@ use std::collections::BTreeSet;
 
 use dorc_syntax::ast::NodeKind;
 
+use crate::snapshot::StaticLoadSnapshot;
+
 /// The include-tree, as the two things every consumer needs from it.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct IncludeTree {
@@ -51,23 +53,20 @@ pub struct IncludeTree {
     pub unresolved: BTreeSet<usize>,
 }
 
-/// Derive the include-tree from the loaded sources. `book` names the book's index, when there is
-/// one — a book contributes no edges (`rul-book-sourcing-mints-no-speaker`). `cwd` is the modeled
-/// invocation working directory every `.` operand resolves against.
+/// Derive the include-tree from one loaded snapshot. The BOOK contributes no edges however it
+/// is spelled (`rul-book-sourcing-mints-no-speaker`), and every operand resolves against the
+/// snapshot's own working directory — one input, so no caller can hand this a different world
+/// than the run analysed.
 #[must_use]
-pub fn include_tree(
-    cwd: &dorc_core::loadpath::Cwd,
-    paths: &[String],
-    srcs: &[&str],
-    book: Option<usize>,
-) -> IncludeTree {
+pub fn include_tree(snapshot: &StaticLoadSnapshot) -> IncludeTree {
     let mut tree = IncludeTree::default();
+    let srcs = snapshot.source_refs();
     for (file, src) in srcs.iter().enumerate() {
-        if book == Some(file) || !dorc_oracle::marker::has_marker(src) {
+        if file == snapshot.book_index() || !dorc_oracle::marker::has_marker(src) {
             continue;
         }
         for target in top_level_load_targets(src) {
-            match resolve(cwd, &target, paths, srcs) {
+            match resolve(snapshot, &target) {
                 Some(sourced) => tree.edges.push((file, sourced)),
                 None => drop(tree.unresolved.insert(file)),
             }
@@ -107,20 +106,13 @@ pub fn top_level_load_targets(src: &str) -> Vec<String> {
 /// Matching is LEXICAL — the resolved target against canonicalized paths — because the answer must
 /// be reproducible from the vectors alone, with no filesystem read (`inv-determinism`). Two
 /// spellings of one file that do not canonicalize alike simply do not match, which withholds.
-fn resolve(
-    cwd: &dorc_core::loadpath::Cwd,
-    target: &str,
-    paths: &[String],
-    srcs: &[&str],
-) -> Option<usize> {
-    let wanted = cwd.resolve_dot(target)?;
-    paths
-        .iter()
-        .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
-        .filter(|&file| {
-            srcs.get(file)
-                .is_some_and(|src| satisfies_the_contract(src))
-        })
+fn resolve(snapshot: &StaticLoadSnapshot, target: &str) -> Option<usize> {
+    snapshot.source_at_dot_target(target).filter(|&file| {
+        snapshot
+            .source_srcs()
+            .get(file)
+            .is_some_and(|src| satisfies_the_contract(src))
+    })
 }
 
 fn literal_text(ast: &dorc_syntax::ast::Ast, word: dorc_core::AstId) -> Option<String> {
@@ -147,7 +139,7 @@ fn literal_text(ast: &dorc_syntax::ast::Ast, word: dorc_core::AstId) -> Option<S
 mod tests {
     use dorc_core::loadpath::Cwd;
 
-    use super::{IncludeTree, include_tree, top_level_load_targets};
+    use super::{IncludeTree, StaticLoadSnapshot, include_tree, top_level_load_targets};
 
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
@@ -155,10 +147,29 @@ mod tests {
         format!("{MARKER}{body}")
     }
 
+    /// Build the one snapshot the tree derives from. `book` names which source is the BOOK, which
+    /// the snapshot always sorts last; `None` supplies an empty one.
+    fn tree_at(cwd: &str, paths: &[String], srcs: &[&str], book: Option<usize>) -> IncludeTree {
+        let mut paths: Vec<String> = paths.to_vec();
+        let mut srcs: Vec<String> = srcs.iter().map(|s| (*s).to_owned()).collect();
+        let (book_path, book_src) = match book {
+            Some(at) => (paths.remove(at), srcs.remove(at)),
+            None => ("book.sh".to_owned(), String::new()),
+        };
+        include_tree(&StaticLoadSnapshot::over(
+            Cwd::at(cwd),
+            paths,
+            srcs,
+            [].into(),
+            &book_path,
+            &book_src,
+        ))
+    }
+
     /// Most cases spell their paths relative to ONE modeled working directory, which the empty
     /// string names — the shape an admin gets by running `dorc` where their files are.
     fn tree(paths: &[String], srcs: &[&str], book: Option<usize>) -> IncludeTree {
-        include_tree(&Cwd::at(""), paths, srcs, book)
+        tree_at("", paths, srcs, book)
     }
 
     /// The package shape `28M` §7 calls community-critical: a thin entrypoints file sourcing the
@@ -325,19 +336,18 @@ mod tests {
             "/ops/pkg/helpers.sh".to_owned(),
         ];
 
-        let ops = Cwd::at("/ops");
         assert_eq!(
-            include_tree(&ops, &beside_the_admin, &sources, None).edges,
+            tree_at("/ops", &beside_the_admin, &sources, None).edges,
             vec![(0, 1)],
             "`./helpers.sh` names the file beside the ADMIN, which is what a shell would do"
         );
         assert_eq!(
-            include_tree(&ops, &beside_the_entrypoint, &sources, None).unresolved,
+            tree_at("/ops", &beside_the_entrypoint, &sources, None).unresolved,
             [0].into(),
             "a helpers file beside its ENTRYPOINT is not what that line names from here"
         );
         assert_eq!(
-            include_tree(&Cwd::at("/ops/pkg"), &beside_the_entrypoint, &sources, None).edges,
+            tree_at("/ops/pkg", &beside_the_entrypoint, &sources, None).edges,
             vec![(0, 1)],
             "...and it is exactly what the same line names once the admin stands in the package"
         );

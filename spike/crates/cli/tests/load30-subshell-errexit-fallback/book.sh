@@ -1,7 +1,7 @@
 #!/bin/sh
 # subshell fallback source boundary under `set -e` (`30I` specimen 2)
 set -e
-SM_ORACLE_ROOT=crates/cli/tests/load30-subshell-errexit-fallback
+SM_ORACLE_ROOT=.
 
 . "$SM_ORACLE_ROOT/base.dorc.sh"
 (

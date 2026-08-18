@@ -18,6 +18,24 @@
 
 mod support;
 
+/// The load snapshot a hand-built world is: sources in load order, the book last, and one flat
+/// modeled working directory their relative paths are spelled against.
+fn snapshot_of(
+    paths: &[String],
+    srcs: &[String],
+    book_path: &str,
+    book_src: &str,
+) -> dorc_cli::snapshot::StaticLoadSnapshot {
+    dorc_cli::snapshot::StaticLoadSnapshot::over(
+        dorc_core::loadpath::Cwd::default(),
+        paths.to_vec(),
+        srcs.to_vec(),
+        [].into(),
+        book_path,
+        book_src,
+    )
+}
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::effect::SkipClass;
@@ -43,13 +61,13 @@ fn classes_of(oracles: &[&str], book_src: &str) -> Vec<SkipClass> {
     let paths: Vec<String> = (0..oracles.len())
         .map(|i| format!("o{i}.oracle.sh"))
         .collect();
-    let mut refs: Vec<&str> = oracles.to_vec();
-    refs.push(book_src);
     let defs = dorc_cli::world::definition_table(
-        &dorc_core::loadpath::Cwd::default(),
-        &paths,
-        &refs,
-        dorc_analysis::funcenv::source_file_of_index(oracles.len()),
+        &snapshot_of(
+            &paths,
+            &oracles.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>(),
+            "book.sh",
+            book_src,
+        ),
         &parsed,
     );
     let env = {
@@ -284,15 +302,9 @@ fn stage_ships(oracles: &[&str], provider_word: &str) -> bool {
         .map(|i| format!("o{i}.oracle.sh"))
         .collect();
     let srcs: Vec<String> = oracles.iter().map(|src| (*src).to_owned()).collect();
-    let mut refs: Vec<&str> = oracles.to_vec();
-    refs.push(COMPOUND_BOOK);
-    let defs = dorc_cli::world::definition_table(
-        &dorc_core::loadpath::Cwd::default(),
-        &paths,
-        &refs,
-        dorc_analysis::funcenv::source_file_of_index(oracles.len()),
-        &parsed,
-    );
+    let snapshot = snapshot_of(&paths, &srcs, "book.sh", COMPOUND_BOOK);
+    let refs = snapshot.source_refs();
+    let defs = dorc_cli::world::definition_table(&snapshot, &parsed);
     let env = {
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
@@ -534,13 +546,8 @@ fn rekey_world() -> (
     let parsed = dorc_syntax::parse(REKEY_BOOK).value;
     let cfg = dorc_analysis::cfg::build(&parsed).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
-    let defs = dorc_cli::world::definition_table(
-        &dorc_core::loadpath::Cwd::default(),
-        &[],
-        &[REKEY_BOOK],
-        dorc_analysis::funcenv::source_file_of_index(0),
-        &parsed,
-    );
+    let defs =
+        dorc_cli::world::definition_table(&snapshot_of(&[], &[], "book.sh", REKEY_BOOK), &parsed);
     let env = {
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)

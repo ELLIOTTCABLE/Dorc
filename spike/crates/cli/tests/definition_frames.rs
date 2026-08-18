@@ -47,6 +47,24 @@
 
 mod support;
 
+/// The load snapshot a hand-built world is: sources in load order, the book last, and one flat
+/// modeled working directory their relative paths are spelled against.
+fn snapshot_of(
+    paths: &[String],
+    srcs: &[String],
+    book_path: &str,
+    book_src: &str,
+) -> dorc_cli::snapshot::StaticLoadSnapshot {
+    dorc_cli::snapshot::StaticLoadSnapshot::over(
+        dorc_core::loadpath::Cwd::default(),
+        paths.to_vec(),
+        srcs.to_vec(),
+        [].into(),
+        book_path,
+        book_src,
+    )
+}
+
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -420,13 +438,8 @@ fn solve_world(
     let parsed = dorc_syntax::parse(&world.book).value;
     let cfg = dorc_analysis::cfg::build(&parsed).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
-    let mut refs: Vec<&str> = world.srcs.iter().map(String::as_str).collect();
-    refs.push(world.book.as_str());
     let defs = dorc_cli::world::definition_table(
-        &dorc_core::loadpath::Cwd::default(),
-        &world.paths,
-        &refs,
-        dorc_analysis::funcenv::source_file_of_index(world.srcs.len()),
+        &snapshot_of(&world.paths, &world.srcs, "book.sh", &world.book),
         &parsed,
     );
     let env = {
@@ -884,12 +897,8 @@ fn classes_of(book_src: &str) -> Vec<dorc_analysis::effect::SkipClass> {
     let cfg = dorc_analysis::cfg::build(&parsed).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
     let paths = vec!["hork.oracle.sh".to_owned()];
-    let refs = [HORK_ORACLE, book_src];
     let defs = dorc_cli::world::definition_table(
-        &dorc_core::loadpath::Cwd::default(),
-        &paths,
-        &refs,
-        dorc_analysis::funcenv::source_file_of_index(1),
+        &snapshot_of(&paths, &[HORK_ORACLE.to_owned()], "book.sh", book_src),
         &parsed,
     );
     let env = {

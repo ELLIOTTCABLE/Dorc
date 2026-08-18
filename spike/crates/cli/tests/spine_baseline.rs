@@ -52,6 +52,24 @@
 
 mod support;
 
+/// The load snapshot a hand-built world is: sources in load order, the book last, and one flat
+/// modeled working directory their relative paths are spelled against.
+fn snapshot_of(
+    paths: &[String],
+    srcs: &[String],
+    book_path: &str,
+    book_src: &str,
+) -> dorc_cli::snapshot::StaticLoadSnapshot {
+    dorc_cli::snapshot::StaticLoadSnapshot::over(
+        dorc_core::loadpath::Cwd::default(),
+        paths.to_vec(),
+        srcs.to_vec(),
+        [].into(),
+        book_path,
+        book_src,
+    )
+}
+
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
@@ -169,11 +187,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     // Consented, so the survival tier EXISTS to be dumped; unflagged it is absent rather than quiet
     // (`empty-world-byte-identical`), which would hide every wall-crossing from the diff.
     let built = dorc_cli::world::WhyWorld::analyze_measured(
-        &dorc_core::loadpath::Cwd::default(),
-        &world.label,
-        &world.book,
-        &world.paths,
-        &world.srcs,
+        &snapshot_of(&world.paths, &world.srcs, &world.label, &world.book),
         results,
         true,
     );
