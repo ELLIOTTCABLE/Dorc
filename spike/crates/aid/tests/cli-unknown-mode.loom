@@ -8,3 +8,8 @@ $ dorc pln --book=webhost.sh
 dorc: error[cli-unknown-mode]: Dorc does not recognize the mode `pln`; did you
 mean `plan`?
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: cli-unknown-mode
+{{mode}} = "pln"
+{{suggestion}} = "plan"

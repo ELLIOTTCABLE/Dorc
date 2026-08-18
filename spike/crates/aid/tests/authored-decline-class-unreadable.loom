@@ -21,3 +21,14 @@ oracle.sh:
   4:9 info [oracle-declined-inventory:authored-decline-class-unreadable] this verdict arm deliberately declines to answer, but its class is not statically readable (a dynamic format string, or an unrecognized class token): matched sites are left to run and the class is only picked up at runtime; a literal, recognized token would make it readable here.
 
 dorc lint: 0 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: authored-decline-class-unreadable
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

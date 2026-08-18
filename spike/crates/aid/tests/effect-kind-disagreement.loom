@@ -28,3 +28,8 @@ warning[effect-kind-disagreement]: this verb spells its kind two ways: the
 identity bind declares `sm.dorc.Package` while the mark's own coordinate names
 `sm.dorc.Service` -- Dorc files the fact under the declared `sm.dorc.Package`;
 align the two spellings to clear this.
+
+$ dorc-loom --this vars
+case: effect-kind-disagreement
+{{annotated}} = "sm.dorc.Package"
+{{effect_map}} = "sm.dorc.Service"

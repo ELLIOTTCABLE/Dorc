@@ -9,3 +9,8 @@ $ dorc plan --book=webhost.sh
 dorc: error[cli-file-unreadable]: sm cannot read results `probe-results.txt`: Is
 a directory (os error 21)
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: cli-file-unreadable
+{{kind}} = "results"
+{{path}} = "probe-results.txt"

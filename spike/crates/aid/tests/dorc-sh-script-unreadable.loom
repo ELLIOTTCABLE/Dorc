@@ -7,3 +7,7 @@ why: dorc-sh is the shebang runner, so an unreadable script is the whole invocat
 $ dorc plan --book=webhost.sh
 error[dorc-sh-script-unreadable]: sm cannot read webhost.sh: No such file or
 directory (os error 2)
+
+$ dorc-loom --this vars
+case: dorc-sh-script-unreadable
+{{path}} = "webhost.sh"

@@ -125,3 +125,14 @@ book.sh:
         | \_________/
 
 dorc lint: 0 errors, 7 warnings, 0 infos across 1 file.
+
+$ dorc-loom --this vars
+case: cfg-inline-refused-per-book-budget
+{{v0}} = "install_all"
+{{v1}} = "990"
+{{v2}} = "62"
+{{v3}} = "1024"
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

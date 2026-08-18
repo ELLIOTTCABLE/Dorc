@@ -20,3 +20,15 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
   - info [shellcheck:lint-tool-absent] Dorc did not find `shellcheck` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
 
 dorc lint: 0 errors, 0 warnings, 2 infos across 1 file.
+
+$ dorc-loom --this vars
+case: lint-tool-absent
+{{tool}} = "checkbashisms"
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "2"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

@@ -11,3 +11,8 @@ $ dorc plan --book=book.sh
 note[escalation-policy]: escalation policy: probe re-uses connection authority
 (root) for `tolerates:`-vouched functions only (default); entry forms: sudo -n.
 Forbid with --no-probe-escalation; widen with --escalate-any-probe.
+
+$ dorc-loom --this vars
+case: escalation-policy
+{{v0}} = "root"
+{{v1}} = "sudo -n"

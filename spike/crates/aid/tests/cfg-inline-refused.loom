@@ -18,3 +18,7 @@ command
       [ book.sh:2:11
    2 | retry() { retry; }
      |           \___/
+
+$ dorc-loom --this vars
+case: cfg-inline-refused
+{{v0}} = "retry"

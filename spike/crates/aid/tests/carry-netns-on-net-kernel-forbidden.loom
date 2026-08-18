@@ -27,3 +27,15 @@ oracle.sh:
        |    ^
 
 dorc lint: 0 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: carry-netns-on-net-kernel-forbidden
+{{kind_munged}} = "sm_dorc_Route"
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""

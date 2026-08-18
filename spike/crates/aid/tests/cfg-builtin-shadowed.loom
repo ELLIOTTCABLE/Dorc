@@ -18,3 +18,7 @@ conclusions that lean on it may be unsound for this book.
       [ book.sh:2:1
    2 | test() { hork --stub; }
      | \__/
+
+$ dorc-loom --this vars
+case: cfg-builtin-shadowed
+{{name}} = "test"

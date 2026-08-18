@@ -8,3 +8,8 @@ $ dorc plan --book=book.sh
 warning[lint-tool-failed-without-findings]: `shellcheck` exited with status 2
 without producing any findings Dorc could read, so its checks contributed
 nothing here -- run it directly to see its own report.
+
+$ dorc-loom --this vars
+case: lint-tool-failed-without-findings
+{{tool}} = "shellcheck"
+{{rc}} = "2"

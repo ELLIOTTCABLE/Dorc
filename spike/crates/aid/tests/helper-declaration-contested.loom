@@ -10,3 +10,8 @@ warning[helper-declaration-contested]: Two differing declarations of
 can choose between same-named helpers, so Dorc withholds them all and the sites
 needing `_yum_installed` run -- load a single source, or take custody of a
 merged copy.
+
+$ dorc-loom --this vars
+case: helper-declaration-contested
+{{name}} = "_yum_installed"
+{{prior}} = "vendor/yum.oracle.sh:4"

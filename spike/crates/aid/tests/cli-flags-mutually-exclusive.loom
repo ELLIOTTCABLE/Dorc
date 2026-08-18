@@ -8,3 +8,8 @@ $ dorc why --last --whylog=run.whylog --whylog-dir=logs
 dorc: error[cli-flags-mutually-exclusive]: The `--whylog` and `--whylog-dir`
 flags cannot both be given.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: cli-flags-mutually-exclusive
+{{first}} = "--whylog"
+{{second}} = "--whylog-dir"

@@ -7,3 +7,8 @@ why: 27R section 8b: the count is a scope assertion, so drift means the glob sil
 $ dorc plan --book=webhost.sh
 error[lint-file-count-drift]: `--expect-files` declared 12 lintable files, but
 Dorc saw 9; the lint's scope has drifted.
+
+$ dorc-loom --this vars
+case: lint-file-count-drift
+{{expected}} = "12"
+{{found}} = "9"

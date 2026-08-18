@@ -34,3 +34,8 @@ already in place, so this one is left to run on every apply.
 
 $ dorc plan --book=book.sh --format=jsonl
 {"code":"cmdsub-operand-top","severity":"note"}
+
+$ dorc-loom --this vars
+case: cmdsub-operand-top
+{{position}} = "operand 3"
+{{cause}} = "a command-substitution `$(...)` /\narithmetic / operator-form expansion"

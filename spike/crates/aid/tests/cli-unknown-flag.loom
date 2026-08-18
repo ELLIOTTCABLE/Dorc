@@ -8,3 +8,7 @@ $ dorc plan --boook=webhost.sh
 dorc: error[cli-unknown-flag]: Dorc does not recognize the flag
 `--boook=webhost.sh`.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: cli-unknown-flag
+{{flag}} = "--boook=webhost.sh"

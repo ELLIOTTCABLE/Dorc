@@ -8,3 +8,9 @@ $ dorc plan --probe-capability=wat --book=webhost.sh
 dorc: error[cli-flag-value-not-recognized]: The `--probe-capability` flag does
 not accept `wat`; the choices are root|nopasswd|degraded.
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: cli-flag-value-not-recognized
+{{flag}} = "--probe-capability"
+{{got}} = "wat"
+{{expected}} = "root|nopasswd|degraded"

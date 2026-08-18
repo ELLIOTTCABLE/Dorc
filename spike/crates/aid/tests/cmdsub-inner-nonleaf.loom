@@ -17,3 +17,7 @@ whenever that line does.
       [ book.sh:1:1
    1 | #!/bin/sh
      | \___/
+
+$ dorc-loom --this vars
+case: cmdsub-inner-nonleaf
+{{inner}} = "id -u"

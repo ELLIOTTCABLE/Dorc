@@ -44,3 +44,8 @@ claimed.
       [ book.sh:2:1
    2 | hork add nginx
      | \____________/
+
+$ dorc-loom --this vars
+case: deriv-family-incomplete
+{{site}} = "0"
+{{reason}} = "no deriv-end close-record"

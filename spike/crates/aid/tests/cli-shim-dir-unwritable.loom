@@ -9,3 +9,7 @@ $ dorc plan --book=webhost.sh
 dorc: error[cli-shim-dir-unwritable]: sm cannot write shim `/run/dorc/shims`:
 Read-only file system (os error 30)
 usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+
+$ dorc-loom --this vars
+case: cli-shim-dir-unwritable
+{{path}} = "/run/dorc/shims"

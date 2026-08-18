@@ -18,3 +18,7 @@ ordinary unmodeled command.
       [ book.sh:3:12
    3 | deploy() { install_one "$1"; }
      |            \______________/
+
+$ dorc-loom --this vars
+case: depth-2-positional-unthreaded
+{{name}} = "install_one"

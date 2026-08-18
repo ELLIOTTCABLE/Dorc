@@ -9,3 +9,8 @@ warning[in-book-vocabulary-role]: `sm_dorc_Package__resolve` has no effect here:
 a kind-owner function (`__resolve`) answers for every author's sites, so it
 loads only from a marked oracle file named on the invocation -- move it into
 one.
+
+$ dorc-loom --this vars
+case: in-book-vocabulary-role
+{{name}} = "sm_dorc_Package__resolve"
+{{role}} = "__resolve"

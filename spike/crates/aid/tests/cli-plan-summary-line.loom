@@ -17,3 +17,12 @@ $ dorc plan --book=webhost.sh
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why webhost.sh:N` to query a source line
 dorc: plan-summary sites=4 elide=0 omit=0 guard=0 run=4 may-alias=0
 dorc: decision-digest c9e4bd60d91edbc2
+
+$ dorc-loom --this vars
+case: cli-plan-summary-line
+{{v0}} = "webhost.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "4"
+{{v5}} = "0"

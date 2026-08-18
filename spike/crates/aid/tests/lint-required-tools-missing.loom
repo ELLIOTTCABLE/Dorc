@@ -7,3 +7,7 @@ why: 27R section 4 dir-absent-is-info, inverted by explicit request: absence is 
 $ dorc plan --book=webhost.sh
 error[lint-required-tools-missing]: `--require-tools` was given, but these lint
 tools are missing from PATH: checkbashisms, shellcheck.
+
+$ dorc-loom --this vars
+case: lint-required-tools-missing
+{{tools}} = "checkbashisms, shellcheck"

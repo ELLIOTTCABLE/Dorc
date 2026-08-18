@@ -14,3 +14,10 @@ nginx__is_converged() {
 -- replay --
 $ dorc lint oracle.sh --no-tools
 dorc lint: clean -- nothing found across 1 file, 7 sources.
+
+$ dorc-loom --this vars
+case: lint-clean-sentence
+{{v0}} = "1"
+{{v1}} = ""
+{{v2}} = "7"
+{{v3}} = "s"

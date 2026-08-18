@@ -23,3 +23,14 @@ oracle.sh:
        | \________________/
 
 dorc lint: 0 errors, 0 warnings, 1 info across 1 file.
+
+$ dorc-loom --this vars
+case: heavy-context-no-tolerance
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "1"
+{{v5}} = ""
+{{v6}} = "1"
+{{v7}} = ""
