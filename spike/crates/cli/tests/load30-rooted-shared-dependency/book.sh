@@ -1,6 +1,5 @@
 #!/bin/sh
-# Two independent oracle authors share one guarded dependency. The book owns only
-# location and selection; its source lines mint no speaker (`30I` specimen 1).
+# book-owned location; two speakers share one guarded dependency (`30I` specimen 1)
 SM_ORACLE_ROOT=crates/cli/tests/load30-rooted-shared-dependency
 
 . "$SM_ORACLE_ROOT/alpha.dorc.sh"

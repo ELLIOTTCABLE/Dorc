@@ -1,6 +1,5 @@
 #!/bin/sh
-# The same entrypoint is loaded at two textual positions under different function
-# environments; its root bundles therefore remain per-load-occurrence (`30I` specimen 3).
+# one entrypoint at two positions and in two function frames (`30I` specimen 3)
 SM_ORACLE_ROOT=crates/cli/tests/load30-two-point-frames
 
 . "$SM_ORACLE_ROOT/entry.dorc.sh"

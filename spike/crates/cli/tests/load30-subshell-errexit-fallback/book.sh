@@ -1,6 +1,5 @@
 #!/bin/sh
-# A real dot boundary under `set -e`: the subshell removes the ambient definition,
-# loads a fallback through `||`, then loses that fallback at `)` (`30I` specimen 2).
+# subshell fallback source boundary under `set -e` (`30I` specimen 2)
 set -e
 SM_ORACLE_ROOT=crates/cli/tests/load30-subshell-errexit-fallback
 

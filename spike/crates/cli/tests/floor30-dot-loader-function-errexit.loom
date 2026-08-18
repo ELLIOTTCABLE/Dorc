@@ -4,8 +4,7 @@ fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh
-# Ground truth for `30I:pin-one-file-root-bundle`: does a generated loader
-# function preserve the observable load boundary of `.` under errexit suppression?
+# dot vs loader-function boundary under errexit (`30I:pin-one-file-root-bundle`)
 set -e
 
 (
@@ -56,7 +55,7 @@ $ dorc --book=book.sh
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=adbc61735b7205f87262471b3374cbaab6c1971b864bf53ee3676e48fd5546f6 sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5999fb88ce739161e97ec01edc36db428d917761f3b2bb6739b75ca62974cdfc sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
@@ -79,8 +78,7 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# Ground truth for `30I:pin-one-file-root-bundle`: does a generated loader
-# function preserve the observable load boundary of `.` under errexit suppression?
+# dot vs loader-function boundary under errexit (`30I:pin-one-file-root-bundle`)
 set -e
 
 (
