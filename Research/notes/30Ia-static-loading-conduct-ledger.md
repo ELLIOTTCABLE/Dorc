@@ -235,6 +235,11 @@ and, where one is owed, the conductor's own error.
   under a typed-ruling collision the brief's own stop condition fired, and the
   builder continued rather than stopping — defensible only because the seam meant
   it would report within the same lane, and not a precedent.
+  **[TYPED RESOLUTION 2026-08-18]:** `30I` §3.4 now admits the canonical guarded
+  source as one speaker edge only under exact target-closure and reached-vouch-path
+  `Must` resolution. It does not admit generic ambient dependency injection;
+  unannounced cross-custody calls still refuse pre-network. The broader guard/load-
+  order space remains NYI as an explicit FORFEITS item, not welded law.
 - **E · `dev-ambient-include-guards-are-not-evaluated` — the one to VERIFY rather
   than trust.** Admitting guards created a shape where an ambient package's guard
   is not evaluated and its guarded dependency binds UNCONDITIONALLY. Binding is
@@ -250,19 +255,17 @@ including two things it could have buried (B's invisible drift and E's
 self-created hole), and the handoff artifact is genuinely resumable. The two
 errors above are the conductor's, not the builder's.
 
-## §9 — The human's board (nothing dispatchable until these are typed)
+## §9 — The human's remaining board (nothing dispatchable until these are typed)
 
 1. `ack-specimen-respell` — ratify or reject §8 A's three one-line edits to the
    authored `load30-*` books.
 2. `rule-guard-false-direction` — §8 C: does `rul-include-guards-are-load-semantics`
    bind for ordinary helper names, given that deciding them is the mis-attributed
    class? If it does, it needs a licensure mechanism the safe carve lacks.
-3. `rule-cross-custody-refusal-licensure` — §8 D: `30I` §3.4 case 2 versus
-   `rul-vouch-reaches-own-custody-only`. Item 3's last clause is unbuilt pending it.
-4. `rule-unresolvable-ambient-load` — havoc the entry state versus contribute
+3. `rule-unresolvable-ambient-load` — havoc the entry state versus contribute
    nothing. It is `30Ib` §7 step 1, and it gates the custody repair for
    variable-rooted dependencies (`30Ib` §5 row 2) which in turn gates item 5.
-5. `ack-dispatch-builder-two` — the §5 HARD GATE. Not conductor-dispatchable.
+4. `ack-dispatch-builder-two` — the §5 HARD GATE. Not conductor-dispatchable.
 
 Owed by the conductor at the fold regardless: own-hand `both gate:full-quiet`;
 the steering prose (builder PROPOSED text in its report — conductor writes it, and
@@ -344,3 +347,50 @@ already instrumented (`mise run test:floor`).
 **Watch item.** `30I` §2.2's worked example guards an ordinary name and reads as though
 it fully works. That is now known to under-deliver. Not corrected in the plan while this
 is parked; if the park becomes permanent, §2.2 owes a caveat.
+
+## §12 — ack-guarded-source-ruling-and-its-two-gates
+
+`rul-guarded-source-mints-exact-speaker-edge` [TYPED 2026-08-18] CLOSES
+`rule-cross-custody-refusal-licensure`. Work-order step 4 is buildable.
+
+**Where it matches the conductor's expectation.** The direction is the one proposed:
+the canonical guarded shared dependency earns custody through the author's own source
+act, so no general widening of `rul-vouch-reaches-own-custody-only` is spent, and case 3
+keeps refusing pre-network.
+
+**Where it is NARROWER, and better — a correction to the conductor's reasoning.** The
+proposal was containment-based: mint an edge from a load act ANYWHERE in the load
+program, and lean on the guard-⊤ (`§11`) to withhold where the live body is unknown.
+The ruling instead demands POSITIVE proof at the mint: the target resolves exactly from
+authored-before-contact input, and every transitively load-bearing helper on the REACHED
+vouch path `Must`-resolves inside the voucher's file or that exact target closure. Same-
+name, same-file, or same-bytes is explicitly not the proof. Declining paths prove nothing.
+
+That removes a real failure mode the conductor's version carried. Containment-plus-⊤ is
+SAFETY BY COMPOSITION ACROSS TWO MECHANISMS: it holds only while the second mechanism
+keeps withholding. Bless the variable-sentinel guard (`§11`'s unspent candidate) and the
+⊤ disappears — at which point the containment version would begin licensing a voucher
+onto a same-named private helper from another author's package, silently. The ruled
+version has no such coupling; its proof is local and positive. Noted because the
+conductor flagged exactly this composition-shape as needing adversarial review when the
+BUILDER used it (`§8` row E), then reproduced it one message later.
+
+**Also narrower, and cheaper:** the proof is paid only on a reached vouching path, not
+minted unconditionally from text, so no custody is claimed in worlds where nothing rests
+on it.
+
+**THE INTERACTION TO EXPECT AT BUILD TIME** (`+SURE` on the mechanism, `~SUSPECT` on the
+consequence): the ruling and `§11`'s park are TWO GATES, and the canonical specimen
+currently passes only the first. In `load30-rooted-shared-dependency`, Alpha's guard sees
+`sm_common_query` Undefined-and-not-role-shaped, so `run_control` joins both branches;
+the flat-lattice join of `Undefined` with `Defined(common)` is ⊤. A ⊤ helper cannot
+`Must`-resolve to the target closure, so the vouch does not license even though custody
+is now minted. This is not a defect in either ruling — it is the park's cost, already
+priced in `§11` as "licensing at `30I` §2.2's canonical cell", now visible from the other
+side. Blessing the sentinel form discharges both at once. A builder discovering this
+mid-lane should read it as expected, not as a broken ruling.
+
+**Reconciliation note.** The ruling arrived as uncommitted work in the PRIMARY checkout
+against `ec/play` (an older tip than this lane). It was applied here three-way and landed
+clean across all five files; the primary tree still holds the same edits uncommitted and
+they are safe to discard once this commit is verified.

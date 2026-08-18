@@ -99,13 +99,20 @@ discipline: one rule per bullet, slugged; append to the matching section.
   definitions whose custody is the voucher's own; ANY cross-custody resolved reach
   suspends-with-decline, singular included. CLI co-loading is a temporary ingestion convenience and
   NEVER composes custody, families, or speakers. Load order still never silently adjudicates whose
-  body serves whose vouch. The seat is `HelperIndex::resolve`, and custody is proxied there by the
-  loaded-source index only while every closure is a singleton.
+  body serves whose vouch. `30I` §3.4's canonical guarded fallback is not a cross-custody exception:
+  under its exact target-closure + reached-vouch-path `Must` proof, the authored source act mints a
+  speaker edge first; generic ambient dependency injection remains NYI under
+  `FORFEITS:forfeit-unannounced-shell-name-dependency-injection`. The seat is
+  `HelperIndex::resolve`, and custody is proxied there by the loaded-source index only while every
+  closure is a singleton.
 - **rul-speaker-minting-is-oracle-sourcing-only** (human-typed 2026-08-17): files merge into one
-  speaker/custody unit ONLY via an explicit top-level `.` in a marked file, of a file that is itself
-  dorc-lang/oracle-code with no top-level commands — a HYGIENE/CONTRACT license (load-inert is
-  contract, never engine fact; refusals attribute to the contract). A book's `.` mints no speaker;
-  its only book-side value is un-walling.
+  speaker/custody unit ONLY via an explicit top-level `.` in a marked file, or the fallback `.` in
+  `30I` §3.4's recognized top-level include guard, of a file that is itself dorc-lang/oracle-code
+  with no top-level commands. The guarded form mints only under exact target-closure and reached-
+  vouch-path `Must` resolution, and changes custody for licensure without making the target
+  unconditionally visible. Both are HYGIENE/CONTRACT licenses (load-inert is contract, never engine
+  fact; refusals attribute to the contract). A book's `.` mints no speaker; its only book-side value
+  is un-walling.
 - **a-top-reject-is-not-a-definition-vector** (the emission stage, measured) —
   `UnsupportedReason::DynamicExecution` covers `eval`, a computed `.`, AND a command-position
   `"$@"` — the defining tautology of every peeling wrapper; the finer `SyntaxUnsupportedReason`

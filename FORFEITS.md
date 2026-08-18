@@ -58,6 +58,18 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   interleaving rather than a flat vector — the emission planner's territory
   (`28Q:pin-emission-planner-universal`); (a) and (b) are ruled, not owed. BACK-OUT: low
   (every suspension is additive). REVISIT: (c) with the emission planner.
+- **forfeit-unannounced-shell-name-dependency-injection** — RULE (`30I` §3.4,
+  human-typed 2026-08-18; v0, explicitly NOT welded): a canonical guarded fallback
+  may mint the exact target's speaker edge only when every load-bearing helper on
+  the reached vouch path `Must`-resolves inside that closure. A merely-live ambient
+  function mints nothing and refuses pre-network. FORFEITS: callback, plugin, patch,
+  and caller-provided function injection through ordinary shell name resolution,
+  plus richer guards around load order. CAPTURE: deliberately undesigned; a later
+  guard/load-order sitting must add an attributable acceptance rule without letting
+  co-loading or name equality mint authority (`30I:pin-bare-dependency-injection`).
+  BACK-OUT: low before published oracle habits accrete, med afterward. REVISIT:
+  real-oracle pressure for injected implementations, or the broader guard/load-order
+  design.
 - **forfeit-divergence-collapse-to-unknown** — RULE (`28Q` §3, the human-carved v0
   floor): conditional/looped lifecycle events land unknown ⇒ guard/run. FORFEITS:
   every availability-derived license below an `if`-guarded creator — and defensive

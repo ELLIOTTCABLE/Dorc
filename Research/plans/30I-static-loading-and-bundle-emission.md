@@ -105,11 +105,20 @@ Each step unblocks the next.
    either. Multiple main books become separate targeted programs, which is where
    the one-`Ast`-per-run assumption is unpicked; shared-shell merging is spelled
    `--pre-source`.
-4. **Mint the unannounced cross-custody refusal** - work-order item 3's unbuilt
-   clause. Classify a voucher's cross-custody reach as deliberate-external-utility,
-   explicitly-selected, explicitly-sourced, or merely-live, the last refusing
-   before network. Section 3.4's explicitly-selected case is a licensure question
-   against `rul-vouch-reaches-own-custody-only` and is ruled before it is built.
+4. **Mint the unannounced cross-custody refusal** - the clause the load lane left
+   unbuilt, now RULED and buildable
+   (`rul-guarded-source-mints-exact-speaker-edge`). Classify a voucher's
+   cross-custody reach as deliberate-external-utility, guarded-source-exact,
+   explicitly-sourced, or merely-live, the last refusing before network. The
+   guarded-source case mints its edge only under section 3.4's exact proof:
+   the target resolves exactly from authored-before-contact input, and every
+   transitively load-bearing helper on the REACHED vouch path `Must`-resolves
+   inside the voucher's own file or that exact target closure. Declining paths
+   prove nothing. Note the live interaction with
+   `30Ia:park-command-v-guard-direction`: while an ordinary-named
+   `command -v` guard joins to ⊤, its helper cannot `Must`-resolve, so the
+   canonical specimen earns custody without yet earning its license. That is
+   two gates, both owed, not a defect in either.
 5. **Add one bundle projection**, keyed by static load occurrence, consuming the
    snapshot and the frame answers, never re-reading a path. Copy authored segments
    exactly; add only necessary generated scaffolding and versioned boundary
@@ -181,6 +190,12 @@ source oracle entrypoints, and arrange packages in ordinary flowing sh. Those
 acts affect visibility. Only dorc-lang files mint speaker-transitive custody
 closures; a book source edge never merges the authorship of the packages it
 loads.
+
+`rul-guarded-source-mints-exact-speaker-edge` [TYPED 2026-08-18, v0] - a
+recognized include guard with a contracted fallback source may mint that
+target's speaker edge under the exact proof in section 3.4. This is the narrow
+correct floor while broader guard/load-order composition remains NYI, not a
+permanent exclusion.
 
 `rul-one-loader-many-projections` [TYPED] - analysis, probe/apply closure
 emission, explicit `dorc bundle`, ordinary multipart plan emission, and fully
@@ -316,9 +331,11 @@ alpha__is_converged() {
 
 `rul-include-guards-are-load-semantics` [TYPED] - include guards are mandatory
 language surface, not optional polish. Independent oracle authors use them to
-share dependencies and to say: use the higher-quality live implementation when
-present; otherwise load this fallback. The function environment, custody,
-emission, and bundle compiler must agree on that branch.
+share dependencies and to say: reuse this exact contracted dependency when it
+is already live; otherwise load this fallback. The function environment, custody,
+emission, and bundle compiler must agree on that branch. For speaker custody,
+the whole recognized guard is one authored dependency act under section 3.4;
+ordinary visibility still follows the branch sh takes.
 
 `rul-oracle-loading-stays-load-safe` [TYPED direction] - supporting healthy
 libraries does not mean arbitrary top-level execution. The v0 positive surface
@@ -547,7 +564,9 @@ relative path, require a collision-safe captured root, or must flatten.
 
 A book source operation changes which definitions are live, but contributes no
 speaker edge. A marked file's admitted source operation can contribute a
-speaker-minting containment edge. CLI co-loading remains ingestion only.
+speaker-minting containment edge. The guarded-source form in section 3.4 is an
+authored acceptance edge for vouch licensure only; it never makes its fallback
+unconditionally visible. CLI co-loading remains ingestion only.
 
 The same `DefinitionId` resolution answers analysis and emission. A bundle may
 copy definitions into another physical file without changing their conceptual
@@ -559,22 +578,32 @@ Three cases must not collapse:
 
 1. `dependency-explicitly-sourced` - the voucher's marked closure sources the
    resolved dependency; it may rest on that dependency under custody.
-2. `dependency-explicitly-selected` - an authored guard accepts an already-live
-   binding and loads a fallback otherwise; the guard is the attributable
-   acceptance chain to the frame-resolved definition.
+2. `dependency-guarded-source-exact` - a recognized include guard names a
+   contracted fallback source. For a reached vouching path, that target must
+   resolve exactly from authored-before-contact input, and every transitively
+   load-bearing helper must `Must`-resolve to the voucher's own file or that
+   exact resolved target closure. Then the whole guard mints the same speaker
+   edge as a direct source for this license, even when another package loaded
+   the exact target first. Declining paths need prove nothing.
 3. `dependency-merely-happened-to-be-live` - a voucher calls a cross-custody
-   function without source, guard, or other recognized selection.
+   function without the exact source-bearing acceptance in case 1 or 2.
+
+The second case changes speaker custody only; normal branch-sensitive loading
+still decides visibility. A same-named function, file, or byte sequence is not
+the proof: the frame-live composition must resolve to the exact target closure.
 
 The third case intersects ordinary POSIX habits: caller-loaded dependencies,
-callbacks, logging hooks, foundational helpers, and intentional patching. It is
-not welded out. At v0 it is nevertheless invalid contracted oracle input because
-Dorc cannot distinguish intended dependency injection from accidental function
-shadowing.
+callbacks, logging hooks, foundational helpers, and intentional patching. At v0
+it is NYI and invalid contracted oracle input because Dorc cannot distinguish
+intended dependency injection from accidental function shadowing. This is an
+explicit value forfeit, not welded law (`FORFEITS:forfeit-unannounced-shell-name-
+dependency-injection`; `pin-bare-dependency-injection`).
 
-`rul-unannounced-cross-custody-fails-before-network` [ACKED, gentle] - v0
+`rul-unannounced-cross-custody-fails-before-network` [TYPED 2026-08-18, v0] - v0
 continues static analysis far enough to batch unrelated root errors, names both
-the call and live definition, suggests `command`, explicit sourcing/guarding, or
-renaming, emits no mutation-authorizing plan, and contacts no host. This is
+the call and live definition, suggests `command`, explicit sourcing, a guarded
+fallback source, or renaming, emits no mutation-authorizing plan, and contacts
+no host. This is
 fail-fast on human timescales, not a panic or one-error abort.
 
 ## 4. Scope sets
@@ -1019,8 +1048,9 @@ They do not own these questions:
 
 Open pins that require human or implementation evidence:
 
-1. `pin-bare-dependency-injection` - which callback/caller-loaded idioms eventually
-   license without an explicit source/guard.
+1. `pin-bare-dependency-injection` - broader guards around load order and which
+   callback/caller-loaded idioms eventually license without an explicit source;
+   the narrow exact guarded-source form in section 3.4 is already ruled.
 2. `pin-one-file-root-bundle` - whether any lowering can preserve all forced v0
    dot semantics in one file; generated loader functions are measured-refuted.
 3. `pin-complex-book-source-render` - how mutative commands from an unflattenable
@@ -1039,6 +1069,10 @@ Human-typed or explicitly hard-acked in the design dialogue:
 - ordinary book-flow root/source acts, with `SM_ORACLE_ROOT` only a spike mnemonic;
 - only dorc-lang files mint speaker-transitive closures;
 - include guards are required healthy-library surface;
+- a recognized guarded fallback source mints an exact-target speaker edge only
+  when every load-bearing helper on the reached vouch path Must-resolves inside
+  that target closure; broader shell-name dependency injection stays NYI as an
+  explicit forfeit;
 - one loader/engine for analysis and bundling;
 - multipart contracted bundles by default, full flatten when requested or required,
   less-flat book tree when correctness forces it;
