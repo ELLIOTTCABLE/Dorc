@@ -12,8 +12,8 @@
 > and the CLI/TUI plan projections. It closes `30G:b8-book-side-unwalling`'s
 > artifact question in direction, supersedes
 > `30G:dev-sourced-paths-resolve-against-the-sourcer`, and gives
-> `28Q:pin-emission-planner-universal` one concrete consumer. It does not build
-> any of them.
+> `28Q:pin-emission-planner-universal` one concrete consumer. Implementation
+> state and the remaining work are kept current below.
 
 ## Implementation plan - the remaining lane
 
@@ -35,14 +35,16 @@ in `Research/notes/30Ib`):
 - each loadable file's top level as a closed `LoadProgram` (`analysis::load`),
   interpreted in place at each load site by `funcenv`, with acquisition at the
   edge DRIVEN by that loader rather than by a second resolver;
-- the include guard, `unset -f`, subshell scoping, diamonds and cycles;
+- the first load-condition species (`command -v`), `unset -f`, subshell
+  scoping, diamonds and cycles;
 - book-source visibility without book speaker minting;
 - `aid::locator` as an arbitrary multi-stage DAG with `BundleOriginClaim` sealed
   to text, and `cli::provenance` filling it from real run data.
 
-Not built, and owed below: the v0 unannounced cross-custody refusal; the bundle
-projection; the three artifact forms; the CLI-input rework; the streams rules;
-XFAIL promotion and e2e lowering.
+Not built, and owed below: the exact variable-guard speaker path and the v0
+unannounced cross-custody refusal; the bundle projection; the three artifact
+forms; the CLI-input rework; the streams rules; XFAIL promotion and e2e
+lowering.
 
 ### Target outcome
 
@@ -105,27 +107,33 @@ Each step unblocks the next.
    either. Multiple main books become separate targeted programs, which is where
    the one-`Ast`-per-run assumption is unpicked; shared-shell merging is spelled
    `--pre-source`.
-4. **Mint the unannounced cross-custody refusal** - the clause the load lane left
-   unbuilt, now RULED and buildable
+4. **Complete exact guarded-source recognition and mint the unannounced
+   cross-custody refusal** - the clause the load lane left unbuilt, now RULED
+   and buildable
    (`rul-guarded-source-mints-exact-speaker-edge`). Classify a voucher's
    cross-custody reach as deliberate-external-utility, guarded-source-exact,
    explicitly-sourced, or merely-live, the last refusing before network. The
-   guarded-source case mints its edge only under section 3.4's exact proof:
-   the target resolves exactly from authored-before-contact input, and every
-   transitively load-bearing helper on the REACHED vouch path `Must`-resolves
-   inside the voucher's own file or that exact target closure. Declining paths
-   prove nothing.
+   immediate authored target is section 2.2's ordinary variable-sentinel guard.
+   The variable name and value are entirely author-owned; neither is Dorc
+   vocabulary. The guarded-source case mints its edge only under section 3.4's
+   exact proof: on the no-source/reuse route, both the guard-tested value that
+   selected that route and every transitively load-bearing helper on the REACHED
+   vouch path `Must`-originate inside the exact fallback target closure. On the
+   source route, the explicit exact `.` is the ordinary speaker edge and its
+   resulting definitions must resolve accordingly. Declining paths prove
+   nothing.
 
    This is a PRECISION improvement, not a trust widening: recognize that the
-   canonical guard is not an analysis-time branch when both arms provably land on
-   the same exact definition, and stop driving to ⊤ there. It therefore
-   SUBSUMES `30Ia:park-command-v-guard-direction` rather than sitting beside it —
-   the recognition can only fire if the engine can rule out the then-arm being
-   answered by anything other than that exact target (a `PATH` binary, a book's
-   own function, an `unset -f` and redefine). For the FIRST guard on a name, with
-   no prior modeled load, that IS the parked FALSE-direction question, and the
-   diamond cascades off it: decide it and both guards resolve exactly; leave it
-   and both join. Size that before anything else in this step.
+   guard is not an analysis-time choice between speakers when all feasible routes
+   provably land on the same exact foreign speech, and stop driving to ⊤ there.
+   The condition never mints authority: the author's source-bearing guard, the
+   target-supplied load value, and the reached helper definition must agree on one
+   exact closure. A same-valued assignment or same-named helper from anywhere
+   else withholds. Implementation should be the smallest generic extension of
+   load-time constant propagation and source-unit provenance that expresses that
+   property; add no sentinel registry, magic name, separate explanation witness,
+   or durable state. Full `command -v` load modeling remains the open pin in
+   section 14, not a prerequisite to this lane.
 5. **Add one bundle projection**, keyed by static load occurrence, consuming the
    snapshot and the frame answers, never re-reading a path. Copy authored segments
    exactly; add only necessary generated scaffolding and versioned boundary
@@ -200,9 +208,11 @@ loads.
 
 `rul-guarded-source-mints-exact-speaker-edge` [TYPED 2026-08-18, v0] - a
 recognized include guard with a contracted fallback source may mint that
-target's speaker edge under the exact proof in section 3.4. This is the narrow
-correct floor while broader guard/load-order composition remains NYI, not a
-permanent exclusion.
+target's speaker edge under the exact proof in section 3.4. On a reuse route,
+the same exact foreign closure must supply both the decisive guard value and
+the helper definition consumed by the reached vouch; a condition alone carries
+no authority. This is the narrow correct floor while broader guard/load-order
+composition remains NYI, not a permanent exclusion.
 
 `rul-one-loader-many-projections` [TYPED] - analysis, probe/apply closure
 emission, explicit `dorc bundle`, ordinary multipart plan emission, and fully
@@ -325,9 +335,7 @@ A library entrypoint may source its own or another author's contracted package:
 ```sh
 # dorc-lang/v0.2
 
-if command -v example_common_query >/dev/null 2>&1; then
-   :
-else
+if [ "${org_example_common_loaded-}" != 'org.example.common/v1' ]; then
    . "$SM_ORACLE_ROOT/org.example.common/entry.oracle.sh"
 fi
 
@@ -336,6 +344,25 @@ alpha__is_converged() {
 }
 ```
 
+The target package defines its helpers and populates the tested value as
+ordinary sh:
+
+```sh
+# dorc-lang/v0.2
+
+example_common_query() {
+   # ...
+}
+
+org_example_common_loaded='org.example.common/v1'
+```
+
+The names and literal are the authors' own package interface. Dorc recognizes
+no `_LOADED` suffix, variable namespace, version grammar, or distinguished
+value. The pattern earns its keep outside Dorc as the ordinary shell-library
+include guard: it prevents duplicate initialization and can distinguish package
+revisions. One package sentinel may cover any number of helpers.
+
 `rul-include-guards-are-load-semantics` [TYPED] - include guards are mandatory
 language surface, not optional polish. Independent oracle authors use them to
 share dependencies and to say: reuse this exact contracted dependency when it
@@ -343,6 +370,16 @@ is already live; otherwise load this fallback. The function environment, custody
 emission, and bundle compiler must agree on that branch. For speaker custody,
 the whole recognized guard is one authored dependency act under section 3.4;
 ordinary visibility still follows the branch sh takes.
+
+`command -v` remains a meaningful, idiomatic, supported route: it asks what a
+shell would resolve under a command name, and dorc-lang must not force authors
+to abandon that question. It is not the immediate exact-package guard because
+its wider answer space (functions, aliases, builtins, reserved words, PATH
+utilities, and implementation facilities) is neither floor-identical nor exact
+package identity. Until `pin-command-v-load-model` closes, such guards retain
+ordinary sh behavior and conservatively withhold wherever exact source
+recognition cannot prove their intent. Evidence and floor measurements:
+`notes/30Ic`.
 
 `rul-oracle-loading-stays-load-safe` [TYPED direction] - supporting healthy
 libraries does not mean arbitrary top-level execution. The v0 positive surface
@@ -586,35 +623,36 @@ Three cases must not collapse:
 1. `dependency-explicitly-sourced` - the voucher's marked closure sources the
    resolved dependency; it may rest on that dependency under custody.
 2. `dependency-guarded-source-exact` - a recognized include guard names a
-   contracted fallback source. For a reached vouching path, that target must
-   resolve exactly from authored-before-contact input, and every transitively
-   load-bearing helper must `Must`-resolve to the voucher's own file or that
-   exact resolved target closure. Then the whole guard mints the same speaker
-   edge as a direct source for this license, even when another package loaded
-   the exact target first. Declining paths need prove nothing.
+   contracted fallback source. On the no-source/reuse route, the exact target
+   closure must independently supply both (a) the value that decisively selected
+   that route and (b) every transitively load-bearing helper on the reached
+   vouching path; both are `Must` questions. On the source route, the explicit
+   exact `.` supplies ordinary custody and the resulting helper definitions must
+   resolve inside that closure. Then the whole guard mints the same speaker edge
+   as a direct source for this license, even when another package loaded the
+   exact target first. Declining paths need prove nothing.
 3. `dependency-merely-happened-to-be-live` - a voucher calls a cross-custody
    function without the exact source-bearing acceptance in case 1 or 2.
 
 The second case changes speaker custody only; normal branch-sensitive loading
-still decides visibility. A same-named function, file, or byte sequence is not
-the proof: the frame-live composition must resolve to the exact target closure.
+still decides visibility. A same-valued variable, same-named function, file, or
+byte sequence is not the proof: the guard value and frame-live helper
+composition must trace to the exact target closure.
 
 Read the second case as RECOGNITION, never as a licensing widening. The idiom is
-a method, spelled in sh, by which an author says "I want exactly this function
-from exactly this file." It looks like a fork at runtime; in the cell where
-vouch-minting is allowed it is not one, because both arms land on the same
-binding at every later call site — either a prior oracle already loaded that
-exact target, or this file loads it now. The engine's job is to SEE that there is
-no analysis-time branch here and decline to drive to ⊤; it is not to trust
-anything extra. Everything must align perfectly for the recognition to fire, and
-sh's dynamism supplies many ways the shape can mislead (a same-named binary on
-`PATH`, a book's own hand-written function, an `unset -f` and redefine, any
-dynamic load). Whatever the engine cannot rule out withholds vouch, licensure and
-speaker status, and mints narrative saying why. In the ideal case this needs no
-new machinery: a rich enough engine walks the reality and derives it. Where ours
-is not yet that rich, enrich it — or special-case narrowly and temporarily, and
-say so — until it is. The door stays deliberately narrow; the structurally-sound
-wide version is later work.
+a method, spelled in sh, by which an author says "reuse this exact package when
+its own load value says it is present; otherwise source it." The same author then
+names the helper on a reached vouching path, and Dorc supplies only the missing
+symbol-resolution link: both the load value and invoked helper came from that
+package. This is the authored-intent basis for treating its closure as the
+author's accepted speech. A variable value alone, a helper name alone, or
+co-loading licenses nothing. Whatever the engine cannot align exactly withholds
+vouch, licensure, and speaker status under the existing collapse accounting.
+This is an attribution boundary: accepting either value or helper from another
+unit would make Dorc blame the voucher for a judgment they never selected or
+reviewed, the pope-sin direction.
+The door stays deliberately narrow; the structurally-sound wide version is later
+work.
 
 The third case intersects ordinary POSIX habits: caller-loaded dependencies,
 callbacks, logging hooks, foundational helpers, and intentional patching. At v0
@@ -638,8 +676,10 @@ These are intentionally mechanism-forcing rather than the easiest syntax:
 
 - `force-root-value-flow` - `SM_ORACLE_ROOT` flows from book assignment through
   nested oracle source operands.
-- `force-guarded-fallback` - one `command -v`/fallback-source include guard is
-  modeled identically by frames and emission.
+- `force-guarded-fallback` - one literal variable-value/fallback-source include
+  guard is modeled identically by constant propagation, frames, custody, and
+  emission; the fallback target supplies both the tested value and reached
+  helper.
 - `force-shared-diamond` - two independent entrypoints share one transitive
   dependency without merging speakers.
 - `force-subshell-loading` - region-local source and definitions die at the
@@ -654,6 +694,7 @@ These are intentionally mechanism-forcing rather than the easiest syntax:
 ### 4.2 Owed before real users, deliberately not perfected in this spike
 
 - equivalent healthy include-guard spellings;
+- the full meaningful `command -v` load model across the promised shell floor;
 - early-return include guards and their source-boundary lowering;
 - callback/caller-provided bare cross-custody dependencies;
 - relative loading after all supported cwd mutations;
@@ -1020,11 +1061,13 @@ whole-artifact e2es whose composition adds coverage.
 Required worlds:
 
 1. `specimen-rooted-shared-dependency` - one book root; two marked entrypoints;
-   guarded shared dependency; value reaches a real book command. Custody's
-   no-speaker-merge half is already pinned natively by `core::custody`.
-2. `specimen-subshell-and-errexit` - regional source; fallback under `||`; both
-   floor-shell answers; generated artifact preserves status, scope, and run set.
-   The committed floor cell already refutes generated loader functions.
+   one exact package sentinel populated by the shared dependency; value reaches
+   both entrypoint guards and a real book command. Custody's no-speaker-merge
+   half is already pinned natively by `core::custody`.
+2. `specimen-subshell-and-errexit` - regional source; variable-sentinel fallback
+   under `||`; both floor-shell answers; generated artifact preserves status,
+   scope, and run set. The committed floor cell already refutes generated loader
+   functions.
 3. `specimen-emission-modes` - two distinct book load points; default contracted
    dependencies; explicit full flatten target; original book source lines visible
    and replaced in place.
@@ -1039,10 +1082,11 @@ Required worlds:
    under every reading. Give the shared dependency's helper a CONVERGED verdict so
    the license has a run-set consequence — the vouching site is absent from
    `expected.ran` when it mints and present when it does not — and carry the
-   counterfactual in the same case: a same-named function defined ahead of the
-   guard must NOT mint, and the site runs. The builder additionally MUTATES the
-   mint (removes it) and confirms the case reddens, so the case is known to
-   observe the machinery rather than to pass for unrelated reasons.
+   counterfactuals in the same case: a same-valued load variable from the wrong
+   source unit and a same-named helper from the wrong source unit must each NOT
+   mint, and the site runs. The builder additionally MUTATES the mint (removes
+   it) and confirms the case reddens, so the case is known to observe the
+   machinery rather than to pass for unrelated reasons.
    Everything finer-grained — which arm resolved, which grade, which narrative
    fires on each way the recognition declines — is unit/DST-sized and belongs at
    its ownership seat, where exactly one thing reddens per break.
@@ -1098,6 +1142,12 @@ Open pins that require human or implementation evidence:
    artifact-root variable before flattening becomes preferable.
 5. `pin-bundle-map-v0-grammar` - the smallest embedded format that supports exact
    copied-segment recovery without becoming analytic authority.
+6. `pin-command-v-load-model` - `command -v` remains an expected, meaningful
+   dorc-lang route for asking what a shell resolves under a name. Settle which
+   shell categories and floor/run-target variations the load model represents,
+   and when that wider question can participate in exact guarded-source
+   recognition. Output-slash classification is refuted as a total answer by
+   `notes/30Ic`; the feature itself is not forfeited.
 
 ## 15. Ruling ledger
 
@@ -1108,9 +1158,13 @@ Human-typed or explicitly hard-acked in the design dialogue:
 - only dorc-lang files mint speaker-transitive closures;
 - include guards are required healthy-library surface;
 - a recognized guarded fallback source mints an exact-target speaker edge only
-  when every load-bearing helper on the reached vouch path Must-resolves inside
-  that target closure; broader shell-name dependency injection stays NYI as an
-  explicit forfeit;
+  when the no-source route's decisive guard value and every load-bearing helper
+  on the reached vouch path independently Must-originate inside that target
+  closure; names and values are ordinary author-owned sh, never Dorc vocabulary;
+  broader shell-name dependency injection stays NYI as an explicit forfeit;
+- `command -v` remains a meaningful supported dorc-lang route; the exact package
+  sentinel is the immediate buildable guard, while the wider cross-shell load
+  model stays an explicit open pin rather than being silently discarded;
 - one loader/engine for analysis and bundling;
 - multipart contracted bundles by default, full flatten when requested or required,
   less-flat book tree when correctness forces it;
