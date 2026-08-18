@@ -257,15 +257,21 @@ errors above are the conductor's, not the builder's.
 
 ## §9 — The human's remaining board (nothing dispatchable until these are typed)
 
-1. `ack-specimen-respell` — ratify or reject §8 A's three one-line edits to the
-   authored `load30-*` books.
-2. `rule-guard-false-direction` — §8 C: does `rul-include-guards-are-load-semantics`
-   bind for ordinary helper names, given that deciding them is the mis-attributed
-   class? If it does, it needs a licensure mechanism the safe carve lacks.
-3. `rule-unresolvable-ambient-load` — havoc the entry state versus contribute
-   nothing. It is `30Ib` §7 step 1, and it gates the custody repair for
-   variable-rooted dependencies (`30Ib` §5 row 2) which in turn gates item 5.
-4. `ack-dispatch-builder-two` — the §5 HARD GATE. Not conductor-dispatchable.
+1. `ack-specimen-respell` — CLOSED, ratified (§10).
+2. `rule-guard-false-direction` — PARKED, not resolved (§11); costs priced, no
+   build blocked.
+3. `rule-cross-custody-refusal-licensure` — CLOSED by
+   `rul-guarded-source-mints-exact-speaker-edge` (§12).
+4. `rule-unresolvable-ambient-load` — BELIEVED DISSOLVED, conductor-unconfirmed
+   (`~SUSPECT`). It was a licensure call only while CLI-supplied packages loaded
+   through a flat declaration list. Under `rul-pre-source-is-dot-prelude` a
+   pre-source is an ordinary `.`, which splits the question in two and leaves
+   neither as licensure: a CLI-named pre-source that will not resolve is a plain
+   pre-network usage error at the edge (the admin named a file we cannot read),
+   and a load INSIDE a pre-sourced file that will not resolve is the existing
+   `unresolved` ⇒ suspend-the-sourcer path. Wants the human's word before it is
+   struck; nothing is blocked meanwhile.
+5. `ack-dispatch-builder-two` — the §5 HARD GATE. Not conductor-dispatchable.
 
 Owed by the conductor at the fold regardless: own-hand `both gate:full-quiet`;
 the steering prose (builder PROPOSED text in its report — conductor writes it, and
