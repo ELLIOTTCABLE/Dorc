@@ -252,7 +252,17 @@ None is self-endorsed. Each names what was done and what the alternative was.
    its roots are book-set. A source that is BOTH invocation-named and book-sourced
    classifies `BookSourced` (withholding). The sharper answer needs a boundary a
    replay can recover, which today it cannot without growing the durable.
-7. **A floor cell for textual inlining is owed before item 5 flattens anything.**
+7. **`p-x-helper-unset-f-across-files` is now one line from greening.** Admitting
+   top-level `unset -f` forced a REAL model of removal into
+   `oracle::closure::HelperIndex::record` (the `p-helper-unset-f` pin caught the
+   widened allow-list immediately, exactly as its own doc predicted it would). That
+   model is deliberately PER FILE, so the cross-file target still fails as expected.
+   Dropping the `declaration.file != file` filter closes it — a later file's
+   top-level `unset -f` removing an earlier file's declaration is what a shell does,
+   and only unconditional top-level removals reach that seat. Greening it is a
+   PROMOTION (its `PINS` row must go in the same change), which is item 7's, and it
+   is on `30G` §4 item 9's re-check list.
+8. **A floor cell for textual inlining is owed before item 5 flattens anything.**
    `fnd-loader-function-errexit-diverges` refutes generated loader FUNCTIONS; it
    says nothing about inlining a marked, load-inert child at its source position.
    That inlining looks sound (no top-level `return` is representable in an admitted

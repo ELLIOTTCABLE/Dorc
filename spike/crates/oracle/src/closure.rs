@@ -284,6 +284,27 @@ impl HelperIndex {
                         bytes: bytes(),
                     });
             }
+            // `unset -f NAME…` REMOVES what this file declared above it, and the index has to
+            // model that rather than merely tolerate the construct
+            // (`30I:rul-oracle-loading-stays-load-safe` admits it at a marked top level; the
+            // `p-helper-unset-f` pin is what says a widened allow-list without a model is a
+            // wrong-elision route). A body below the removal reaches an UNBOUND name, so borrowing
+            // the declaration above would ship a judgment no execution could have reached —
+            // `271:rul-sin-ordering`'s mis-attribution tier. Shipping nothing declines at rc 127
+            // on the host, which is the safe direction.
+            //
+            // Per FILE, because that is what this seat indexes: a removal in one file says nothing
+            // about another's declaration, and cross-file order is `HelperIndex::resolve`'s
+            // last-wins question.
+            NodeKind::Simple { words, .. }
+                if crate::load_inert::unset_functions(ast, words).is_some() =>
+            {
+                for name in crate::load_inert::unset_functions(ast, words).unwrap_or_default() {
+                    if let Some(declarations) = self.helpers.get_mut(&name) {
+                        declarations.retain(|declaration| declaration.file != file);
+                    }
+                }
+            }
             NodeKind::Simple {
                 assigns,
                 words,
