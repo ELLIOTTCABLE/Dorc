@@ -839,8 +839,8 @@ fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
     assert!(answered.contains("{{verb}} = \"elide\""), "{answered}");
 }
 
-/// The two chains a case travels — `DorcConsumer::replay` (the EDIT chain, which `compile` and
-/// `promote` drive) and `CaseRenderer::render_case` (the FIXPOINT chain, which the looms runner
+/// The two chains a case travels — `DorcConsumer::replay` (the EDIT chain, which `publish`
+/// drives) and `CaseRenderer::render_case` (the FIXPOINT chain, which the looms runner
 /// drives) — must claim exactly the same invocations.
 ///
 /// This is the guard `28F` bought with a real divergence. Nothing structural relates the two arms:

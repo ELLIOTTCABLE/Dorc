@@ -3407,7 +3407,7 @@ pub fn render_message(code: &DiagCode, interner: &dorc_core::Interner) -> String
 }
 
 /// The [`render_message`] seat parameterized by a [`RenderCtx`]
-/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog; promote passes its
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog; publish passes its
 /// mutable mirror so an edit renders before any rebuild. `None` from the lookup synthesizes the
 /// `[unwritten: <slug>]` placeholder (both "no entry" and "unwritten message" fold here).
 #[must_use]
@@ -3590,7 +3590,7 @@ pub fn render_body(diag: &Diag, interner: &dorc_core::Interner) -> String {
 }
 
 /// The [`render_body`] seat parameterized by a [`RenderCtx`]
-/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, promote its mirror.
+/// (`283:dec-mirror-via-catalog-lookup`): production passes the const catalog, publish its mirror.
 /// Byte-identical to [`render_body`] under the production context (gate-pinned).
 #[must_use]
 pub fn render_body_with(
@@ -4582,7 +4582,7 @@ mod tests {
     /// One register's committed words, asked of the registry rather than copied out of it.
     ///
     /// Every catalog register below is case-owned, so its bytes are edited through the loom flow
-    /// (`dorc-loom compile`/`promote`) by someone who will not be reading this file. A
+    /// (`dorc-loom publish`) by someone who will not be reading this file. A
     /// literal here turns their prose edit into a `dorc-aid` unit failure with no pointer to the
     /// flow that caused it, which is exactly what `render-form-unwelded` forbids; asking the
     /// registry keeps the structural claim (this seat renders THAT register) and drops the byte

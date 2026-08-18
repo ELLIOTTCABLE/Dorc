@@ -700,10 +700,12 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   The split: errorloom transports renderer-stamped editable sections and opaque variable
   identities; dorc-loom alone parses strict whole-token `{{name}}` (attached/backticked
   spellings legal since loom-final), resolves against the current typed payload, and
-  compiles the fields. `dorc-loom compile/promote` over a content-bound receipt publishes
-  both locks + affected cases; all candidate bytes and both fixpoints precede publication.
-  THE EDIT FLOW: `$EDITOR` the loom → `dorc-loom compile <case>` →
-  `dorc-loom promote <case>`; `dorc-loom vars`/`sections`
+  compiles the fields. `dorc-loom publish CASE...` publishes both locks + affected cases;
+  all candidate bytes and both fixpoints precede publication. It prints the register diff in
+  {{hole}} spelling FIRST, and a publication that gives up a hole writes nothing, says which
+  holes and why, stages what it computed, and exits nonzero until `--verbatim` confirms it
+  (`30C:rul-any-hole-loss-confirms`).
+  THE EDIT FLOW: `$EDITOR` the loom → `dorc-loom publish <case>`; `dorc-loom vars`/`sections`
   discover; `dorc-loom add-register <case> help` seeds a help register (a typed
   `HelpRegister` tri-state, never silent absorption); `--accept-metadata` acknowledges a
   deliberate `when-fires`/`why` change (silent metadata drift refuses). `message: None`
@@ -796,7 +798,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   prose-provenance-states): `None` → `[unwritten: <slug>]` · `ProseTier::Migrated`
   (pre-pipeline builder text, frozen verbatim, never re-minted) ·
   `ProseTier::Slop` (loom-authored without `--human`; the DEFAULT mint, whoever is
-  driving) · `ProseTier::WrittenByHumanOnly` (only under `dorc-loom promote
+  driving) · `ProseTier::WrittenByHumanOnly` (only under `dorc-loom publish
   --human`, which refuses in an agent-marked environment; `DORC_HUMAN_COMMIT=1` is
   the escape). Re-minting over a human register PROCEEDS with an informational
   notice in an agent environment (reworking prose is what re-marks it; nothing is
@@ -821,11 +823,11 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
 
 - THE AUTHORSHIP ARC (2026-08-12→13; ledger `notes/28S`): 71 catalog codes prose-authored
   through the loom; prose provenance is TYPED (`aid::prose::ProseTier` {Migrated, Slop,
-  WrittenByHumanOnly} across both registries; loom edits mint Slop; `promote --human` is
+  WrittenByHumanOnly} across both registries; loom edits mint Slop; `publish --human` is
   the one env-guarded human mint; the commit-msg census gate refuses AI-labelled growth;
   `mise run prose:census` is the burn-down instrument). Agent sessions now run pre-commit
   check-only/stash-free (`HK_FIX=0`+`HK_STASH=none`). Chafe repairs: `test:looms` path
-  filtering, shim staging, squat-lint role gaps, the `dorc-loom compile` Windows stack fix.
+  filtering, shim staging, squat-lint role gaps, the `dorc-loom` Windows stack fix.
 - THE LOOM-FINAL ARC (2026-07-29→31; conduct ledger `notes/28L`; accounting
   `notes/28N`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
   the project's working prose-edit surface end-to-end. The boundary weld (diagnostic
@@ -1054,13 +1056,13 @@ no task covers, and consider adding the task instead.
 - **two-bless-paths-split-by-directory** — there are TWO blessing authorities (three, counting
   `bless:floor`, which is the e2e one under an explicit opt-in — `emitted-is-measure-once-ground-truth`)
   and they do not
-  overlap. `dorc-loom compile`/`promote CASE...` publishes the two generated locks
+  overlap. `dorc-loom publish CASE...` publishes the two generated locks
   (`crates/aid/src/{catalog,arrangement}_lock.rs`) plus the affected cases under
   `crates/aid/tests/` — in-process renders, no binary, no execution. `BLESS=1 … --test e2e`
   regenerates everything under `crates/cli/tests/` (`expected.out`, `expected.ran`, and
   whole-product loom transcripts) by RUNNING the built binary. ORDER matters when both are due:
-  promote first, then rebuild, then the e2e bless — promote rewrites Rust prose the binary prints,
-  so an e2e bless run before the rebuild goldens the pre-promote wording.
+  publish first, then rebuild, then the e2e bless — a publish rewrites Rust prose the binary
+  prints, so an e2e bless run before the rebuild goldens the pre-publish wording.
 - **bless-honours-the-trial-filter** — the "ALL cases" above is the UNFILTERED run.
   Bless rides the runner's ordinary trial filter, so `BLESS=1 … --test e2e -- <substring>`
   re-blesses only the matching trials and leaves every other golden byte-identical
@@ -1148,7 +1150,7 @@ no task covers, and consider adding the task instead.
 - **wsl-needs-a-modern-git** — the repo enables the `relativeWorktrees` extension
   (git ≥ 2.48); an older git (Ubuntu 24.04 ships 2.43) refuses the WHOLE repository
   with `fatal: unknown repository extension found`, so every git-touching step —
-  `conduct-bless`'s golden listing, `dorc-loom promote`'s repository gate — dies.
+  `conduct-bless`'s golden listing, `dorc-loom publish`'s repository gate — dies.
   `conduct-bless` now pre-flights `mise` and `git` and REFUSES in a line rather than
   surfacing it after a ten-minute green build. Sharing one `target/` between a Windows
   and a WSL cargo is NOT implicated: units are host-hashed, and each platform's test

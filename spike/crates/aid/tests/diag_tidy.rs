@@ -43,10 +43,10 @@ use std::process::Command;
 
 /// The mint recipe, named VERBATIM so a red gate hands the reader the command that repairs it
 /// (`288:rul-loom-mint-guarantee`). The lock is `@generated` and hand-rows are refused, so the ONLY
-/// repair is a defining case plus a promote.
+/// repair is a defining case plus a publish.
 const REPAIR_HINT: &str = "Mint its prose home: `dorc-loom scaffold <slug>`, author the case's \
                            when-fires/why and a replay whose output carries the slug, then have \
-                           the orchestrator run `dorc-loom promote <case>`. The lock is generated \
+                           the orchestrator run `dorc-loom publish <case>`. The lock is generated \
                            — a hand-written row is refused.";
 
 /// Every migrated catalog variant's PAYLOAD-struct name — the spine's construction marker. Each

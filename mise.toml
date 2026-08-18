@@ -494,7 +494,7 @@ dir = "spike"
 run = "cargo run -q -p internal-tooling -- docids"
 
 [tasks."prose:census"]
-description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom promote --human`."
+description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom publish --human`."
 raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- prose-census"

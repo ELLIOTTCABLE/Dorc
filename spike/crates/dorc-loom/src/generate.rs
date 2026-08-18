@@ -211,7 +211,7 @@ pub fn generate_arrangement_lock(
 }
 
 /// Load every `<dir>/*.loom` defining case keyed by its frontmatter `code` slug. The edge I/O the
-/// pure generator, the promote path, and the fixpoint gate all share. Arrangement cases (which
+/// pure generator, the publish path, and the fixpoint gate all share. Arrangement cases (which
 /// declare `arrangement:` instead) are [`load_arrangement_corpus`]'s; a case declaring NEITHER is
 /// refused, because a case that defines nothing asserts nothing.
 ///

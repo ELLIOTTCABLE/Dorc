@@ -272,7 +272,7 @@ fn no_committed_transcript_shows_a_written_arrangement_as_unwritten() {
 
 /// A WORLD-AS-PAYLOAD case — one whose replay is `dorc plan --book=book.sh` with no materialized
 /// `book.sh` — must reach the driver's editable route, exactly as `render_case` already does. When
-/// the driver declined these, `compile`/`promote` saw bytes-only results, so their prose was
+/// the driver declined these, a publish saw bytes-only results, so their prose was
 /// editable nowhere but the generated lock: the corpus contradicted its own loom-is-the-home claim.
 /// Discovered rather than listed, so a new case of this shape joins the gate on arrival.
 #[test]
@@ -403,7 +403,7 @@ fn lint_cases_replay_the_complete_production_report() {
 /// Both directions are STAGED on the mirror rather than borrowed from whichever code still happens
 /// to be unwritten (`28L:fnd-shared-fixture-collision`): first the placeholder a `None` register
 /// renders, then the words an overtype mints — each visible in the re-rendered transcript with no
-/// rebuild in between, which is the promote-then-immediate-fixpoint shape.
+/// rebuild in between, which is the publish-then-immediate-fixpoint shape.
 #[test]
 fn a_lint_route_re_render_reads_the_edited_mirror() {
     const CASE: &str = "mark-unknown-verb.loom";
@@ -537,12 +537,12 @@ fn lint_mark_diagnostics_require_their_defining_source_shape() {
 /// declares `when-fires`/`when-used`/`why` for a component that already carries committed metadata,
 /// the two say the same thing.
 ///
-/// The BELT to promote's braces: `dorc-loom promote` refuses the same drift before it writes
-/// anything, and this catches the state promote never sees — a frontmatter edit sitting in the
-/// worktree that nobody has promoted, which is the shape an author leaves behind when they meant
+/// The BELT to publish's braces: `dorc-loom publish` refuses the same drift before it writes
+/// anything, and this catches the state publish never sees — a frontmatter edit sitting in the
+/// worktree that nobody has published, which is the shape an author leaves behind when they meant
 /// the prose edit and not the metadata one. Omitting a key means "keep the committed words"
 /// (`kept_or_declared`), so reaching either gate means somebody TYPED different words. The repair
-/// is either direction: restore the committed words, or promote with `--accept-metadata`.
+/// is either direction: restore the committed words, or publish with `--accept-metadata`.
 #[test]
 fn a_case_never_silently_rewrites_committed_metadata() {
     let arrangements = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
@@ -574,7 +574,7 @@ fn assert_metadata_agrees(slug: &str, key: &str, case: &Case, committed: &str) {
         declared, committed,
         "`{slug}`: the case's `{key}:` and the committed entry disagree.\n  case:      \
          {declared:?}\n  committed: {committed:?}\nOmit `{key}:` from the case to keep the \
-         committed words, or run `dorc-loom compile crates/aid/tests/{slug}.loom && \
-         dorc-loom promote crates/aid/tests/{slug}.loom` to publish the new ones."
+         committed words, or run `dorc-loom publish crates/aid/tests/{slug}.loom` to publish the \
+         new ones."
     );
 }

@@ -8,7 +8,7 @@ pub enum ProseTier<T> {
     Migrated(T),
     /// Loom-authored without `--human`: AI-tier by definition, and the default mint.
     Slop(T),
-    /// A human at the keyboard — minted ONLY by `dorc-loom promote --human`, which refuses in an
+    /// A human at the keyboard — minted ONLY by `dorc-loom publish --human`, which refuses in an
     /// agent-marked environment.
     WrittenByHumanOnly(T),
 }
@@ -41,7 +41,7 @@ impl<T> ProseTier<T> {
 }
 
 impl ProseTier<&str> {
-    /// The owned twin — the promote-time mirror's carry-forward conversion.
+    /// The owned twin — the publish-time mirror's carry-forward conversion.
     #[must_use]
     pub fn to_owned_tier(self) -> ProseTier<String> {
         self.map(str::to_owned)
@@ -59,7 +59,7 @@ impl<T: AsRef<str>> AsRef<str> for ProseTier<T> {
 pub enum Mint {
     /// The unflagged default, whoever is driving.
     Slop,
-    /// `dorc-loom promote --human`, outside an agent-marked environment.
+    /// `dorc-loom publish --human`, outside an agent-marked environment.
     Human,
 }
 

@@ -57,7 +57,7 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining case,
   at `crates/aid/tests/<slug>.loom` (see cases-live-here); the committed transcript CASE is
   the authoring surface and `catalog_lock.rs` is DERIVED from it by
-  `dorc-loom compile/promote`. `catalog_lock.rs` is `@generated` — hand-edits
+  `dorc-loom publish`. `catalog_lock.rs` is `@generated` — hand-edits
   are refused or caught by the byte-identity fixpoint gate. Never hand-edit it; never add
   a hand-written row.
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and case
@@ -69,7 +69,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   `Some(ProseTier::Migrated(…))` (pre-pipeline builder text, frozen verbatim, never re-minted), or
   `Some(ProseTier::Slop(…))` (loom-authored without `--human` — AI-tier by definition, and the
   DEFAULT mint whoever is driving), or `Some(ProseTier::WrittenByHumanOnly(…))` (minted only under
-  `dorc-loom promote --human`, which REFUSES in an agent-marked environment; `DORC_HUMAN_COMMIT=1`
+  `dorc-loom publish --human`, which REFUSES in an agent-marked environment; `DORC_HUMAN_COMMIT=1`
   is the human-at-the-keyboard escape). `loom_minted_registers_are_case_owned` and its arrangement
   twin bind every non-`Migrated` register to `is_case_owned(slug)`; the commit-msg hook refuses an
   AI-labelled commit that grows the human census. The tier NEVER renders — retyping a discriminant
@@ -78,7 +78,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   — render-owned CHROME (help/usage pages, structure words, preambles, summary lines) lives in a
   SECOND generated table, `arrangement.rs` + the generated `arrangement_lock.rs`, keyed by
   arrangement-slug + an optional occurrence. Same pipeline as the catalog: mirror-union generation,
-  the byte-identity lock gate, the per-case render fixpoint, `dorc-loom promote` publishing both
+  the byte-identity lock gate, the per-case render fixpoint, `dorc-loom publish` publishing both
   locks. A page case declares `arrangement: <slug>` where a code case declares `code:`; the two
   corpora partition the collection.
 - **only-registry-bytes-are-editable** — a `RenderPart::Arrangement` span is chrome the renderer
@@ -244,7 +244,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   compile naming the owning file (`ForeignComponent`); an unowned component is not
   foreign — the mint path stays open. A whole-product (`cli/tests`) home is a real
   owner (its transcript is fixpoint-proven by the e2e runner), reached by
-  `compile`/`promote` via explicit path.
+  `publish` via explicit path.
 - **sync-residue-is-never-a-case** — the corpus lives in a live-synced tree; every
   corpus walk (both dorc-loom loaders, the ownership scan, the runners' discovery)
   skips `*.sync-conflict-*` filenames. Conflict-file CLEANUP stays human-owned; the
@@ -267,7 +267,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   it over the case and re-run. BOTH failures NAME that loop unconditionally
   (`dorc_loom::dump_rescue_hint`, one mint, indented into the runner's failure block): armed or
   not, because the reader who needs telling is by definition the one who has not set the variable.
-  `dorc-loom promote` cannot do this job: adding a command changes bytes outside the
+  `dorc-loom publish` cannot do this job: adding a command changes bytes outside the
   replay-output islands, which it refuses as a non-prose change — and that refusal now names WHICH
   class of change it found (frontmatter · replay command · file section · unnamed residue) and the
   one way out of each, `dump_rescue_hint` included.
@@ -289,7 +289,7 @@ crate's charter) · `notes/287` (errorloom as-built).
 
 - Diagnostic emission SITES belong in the crate that made the decision, never here. This
   crate owns types, catalog data, and render; it never decides.
-- The locks are generated; the transcript loop (`dorc-loom compile`/`promote`) is the
+- The locks are generated; the transcript loop (`dorc-loom publish`) is the
   ordinary edit path. TWO sanctioned hand-edit carves exist, both orchestrator-tier and
   both proven at the byte-identity fixpoint or refused: the arrangement hand-seed
   (`arrangement-lock-is-generated-too`) and the direct-metadata catalog edit

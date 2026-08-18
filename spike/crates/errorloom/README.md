@@ -217,7 +217,7 @@ adds the consumer-neutral driver/result boundary between them.
 
 The generic executor, editable transport, and the consumer-neutral driver/result
 boundary all exist; the embedding Dorc consumer drives exact-result provenance and owns
-the durable compile/promote loop built on top. Locating editable output by matching
+the durable publish loop built on top. Locating editable output by matching
 rendered contents was rejected and is not a compatibility surface.
 
 Every replay produces exact bytes. An embedding consumer may first try to drive
@@ -297,7 +297,7 @@ putting that language into errorloom.
 Structure regeneration and CI fixpoint checking remain generic. Implement
 `CaseRenderer`, pass the committed cases to `fixpoint_check`, and use
 `structure_bless` only when case transcripts and the generated catalog are
-clean. The consumer-specific compile/promote command is responsible for
+clean. The consumer-specific publish command is responsible for
 catalog writes and for proving its own compile-to-render fixpoint.
 
 

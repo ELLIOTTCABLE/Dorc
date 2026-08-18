@@ -237,7 +237,7 @@ fn refuse_colliding_stems(paths: &[PathBuf]) -> Result<(), String> {
             return Err(format!(
                 "two cases share the name `{}`: {} and {}. A case name is corpus-wide — every verb \
                  that takes a CASE resolves a bare slug, and an edit's owner check compares \
-                 filenames — so rename one of them, then: dorc-loom compile {}",
+                 filenames — so rename one of them, then: dorc-loom publish {}",
                 stem.to_string_lossy(),
                 held.display(),
                 path.display(),
@@ -320,7 +320,7 @@ fn insert(
         return Err(format!(
             "prose-component `{}` is claimed by two cases: {} and {}. One component has one \
              authoring home — delete the `{OWNS_KEY}:` entry from whichever case is not it, then: \
-             dorc-loom compile {}",
+             dorc-loom publish {}",
             spelling(owned),
             held.display(),
             path.display(),
@@ -477,7 +477,7 @@ mod tests {
             "both declarants are named: {refusal}"
         );
         assert!(
-            refusal.contains("dorc-loom compile"),
+            refusal.contains("dorc-loom publish"),
             "the refusal ends in its next command: {refusal}"
         );
     }

@@ -181,7 +181,7 @@ impl DorcConsumer {
         }
     }
 
-    /// The same consumer minting a different tier — `dorc-loom promote --human`'s one effect.
+    /// The same consumer minting a different tier — `dorc-loom publish --human`'s one effect.
     #[must_use]
     pub fn minting(self, mint: Mint) -> Self {
         DorcConsumer { mint, ..self }
@@ -256,7 +256,7 @@ impl DorcConsumer {
         self.apply_compiled_section(edit.section(), edit.compiled())
     }
 
-    /// Apply every compiled section of a preview to the mirror (the promote-publish edited mirror,
+    /// Apply every compiled section of a preview to the mirror (the publish-publish edited mirror,
     /// `28A` §4): the edited templates the regenerated lock and affected cases are computed from.
     ///
     /// # Errors
@@ -579,7 +579,7 @@ impl DorcConsumer {
 
     /// The editable baseline of a case's FIRST replay — what `dorc-loom vars` reports.
     ///
-    /// It drives the case exactly as `compile` does rather than re-deriving a world of its own
+    /// It drives the case exactly as `publish` does rather than re-deriving a world of its own
     /// (`_loom-final-map` §2c): a second derivation answered only for the plain diagnostic shape, so
     /// a whylog, lint, or invocation-error case got a different render — or none — from the one an
     /// edit actually compiles against, and an inventory that disagrees with the compiler is worse
@@ -820,7 +820,7 @@ impl DorcConsumer {
         plan: &DirectPlan<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         // World-as-payload, the branch `render_direct_replay` has always had. Without it the
-        // driver declined, so `compile`/`promote` never saw provenance for these cases.
+        // driver declined, so no publish ever saw provenance for these cases.
         let Some(source) = materialized_source(case, context, plan.book) else {
             let diag = Self::world_of(case).ok()?.0;
             if plan.machine {
@@ -921,7 +921,7 @@ impl DorcConsumer {
             .map(|entry| entry.slug)
             .ok_or_else(|| {
                 format!(
-                    "arrangement `{slug}` has no registry row yet -- promote the case, then rebuild"
+                    "arrangement `{slug}` has no registry row yet -- publish the case, then rebuild"
                 )
             })
     }

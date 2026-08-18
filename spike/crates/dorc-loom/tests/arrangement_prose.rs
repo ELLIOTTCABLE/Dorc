@@ -161,7 +161,7 @@ fn a_case_naming_an_unregistered_arrangement_names_the_repair() {
     let error = DorcConsumer::new()
         .editable_baseline(&case)
         .expect_err("an unregistered arrangement has no render");
-    assert!(error.contains("promote the case"), "{error}");
+    assert!(error.contains("publish the case"), "{error}");
 }
 
 /// The corpus split: arrangement cases are keyed by `arrangement`, code cases by `code`, and the

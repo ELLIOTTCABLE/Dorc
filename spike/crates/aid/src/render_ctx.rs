@@ -3,7 +3,7 @@
 //!
 //! Two facts travel together here because a seat that got one without the other would be a bug
 //! that compiles. The tables are const in production and a MUTABLE MIRROR under
-//! `dorc-loom promote`, which is the whole reason an edited row can re-render before anyone
+//! `dorc-loom publish`, which is the whole reason an edited row can re-render before anyone
 //! rebuilds (`28H:finding-why-render-reads-the-const-not-the-mirror`); a seat holding the
 //! arrangement mirror and the const catalog would show an author half of their own edit. The box
 //! rides along because it is the other thing every laid-out seat had to be handed, and threading

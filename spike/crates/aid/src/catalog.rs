@@ -11,7 +11,7 @@
 //! metadata (`when_fires` / `why` / `params` / `example`) is STRUCTURED DATA the gate tests
 //! check, never a comment block. Editing prose is editing a raw string literal in place, and one
 //! final compile takes effect — no per-edit codegen step (`amendment-single-bless-confirmed`).
-//! The d4 promote pipeline writes the whole generated target, staying diffable and committed.
+//! The d4 publish pipeline writes the whole generated target, staying diffable and committed.
 //!
 //! # The legal states of a `message` (mechanically gated)
 //!
@@ -136,7 +136,7 @@ pub fn entry(slug: &str) -> Option<&'static CatalogEntry> {
 
 /// The render seat's view of the prose catalog (`283:dec-mirror-via-catalog-lookup`): the
 /// message/help templates keyed by slug, so a render can source prose from the compiled-in const
-/// OR a promote-time mutable mirror through ONE seat. `None` from [`message`](Self::message) means
+/// OR a publish-time mutable mirror through ONE seat. `None` from [`message`](Self::message) means
 /// "no written message" (either no entry, or an unwritten one) — the render synthesizes the
 /// `[unwritten: <slug>]` placeholder in both cases; `None` from [`help`](Self::help) means "no help
 /// register". Metadata (`when_fires`/`why`/`params`/`example`) is never read at render time and is
@@ -149,7 +149,7 @@ pub trait CatalogLookup {
 }
 
 /// The production [`CatalogLookup`]: the compiled-in [`CATALOG`] const. Every production render
-/// passes [`CONST_CATALOG`]; promote passes an owned mirror instead (byte-identical renders,
+/// passes [`CONST_CATALOG`]; publish passes an owned mirror instead (byte-identical renders,
 /// gate-pinned).
 #[derive(Debug)]
 pub struct ConstCatalog;
@@ -166,7 +166,7 @@ impl CatalogLookup for ConstCatalog {
     }
 }
 
-/// An owned catalog entry — the promote-time MUTABLE mirror's element (`283:dec-mirror-via-catalog-
+/// An owned catalog entry — the publish-time MUTABLE mirror's element (`283:dec-mirror-via-catalog-
 /// lookup`). The compiled-in [`CatalogEntry`] holds `&'static str`, so it cannot carry runtime prose
 /// an author just edited; this owned twin can. `params`/`example` are NOT stored — [`serialize`]
 /// regenerates them from the prose's holes (same as the const codegen). `message: None` is the
@@ -188,7 +188,7 @@ pub struct OwnedEntry {
 }
 
 /// The compiled-in catalog as an owned, mutable mirror (`283:dec-mirror-via-catalog-lookup`) — the
-/// starting state promote edits before re-serializing. Carry-forward is by construction: an entry
+/// starting state publish edits before re-serializing. Carry-forward is by construction: an entry
 /// whose prose is not touched serializes back verbatim.
 #[must_use]
 pub fn owned_catalog() -> Vec<OwnedEntry> {

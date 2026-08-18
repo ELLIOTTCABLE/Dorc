@@ -56,7 +56,7 @@ pub use arrangement_lock::ARRANGEMENTS;
 
 /// The render seat's view of the arrangement registry — the twin of
 /// [`CatalogLookup`](crate::catalog::CatalogLookup), so a render can source chrome from the
-/// compiled-in const OR a promote-time mutable mirror through ONE seat.
+/// compiled-in const OR a publish-time mutable mirror through ONE seat.
 pub trait ArrangementLookup {
     /// The words stored under EXACTLY this key, or `None` when no such entry exists or it is
     /// unwritten. Implementors do no fallback; [`ArrangementLookup::words`] owns that.
@@ -91,7 +91,7 @@ impl ArrangementLookup for ConstArrangements {
     }
 }
 
-/// An owned entry — the promote-time MUTABLE mirror's element, the twin of
+/// An owned entry — the publish-time MUTABLE mirror's element, the twin of
 /// [`OwnedEntry`](crate::catalog::OwnedEntry).
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct OwnedArrangement {
@@ -107,7 +107,7 @@ pub struct OwnedArrangement {
     pub words: Option<ProseTier<Vec<String>>>,
 }
 
-/// The compiled-in registry as an owned, mutable mirror — the starting state promote edits
+/// The compiled-in registry as an owned, mutable mirror — the starting state publish edits
 /// before re-serializing. Carry-forward is by construction.
 #[must_use]
 pub fn owned_arrangements() -> Vec<OwnedArrangement> {

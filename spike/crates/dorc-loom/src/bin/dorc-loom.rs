@@ -23,7 +23,7 @@ const USAGE: &str = "usage: dorc-loom [--this] <publish [--verbatim] [--all] [--
 /// Each verb's own page — what it does, what its flags mean, and the command that follows it.
 ///
 /// The index above answers "which verb", and answers nothing else: it cannot say what a receipt is,
-/// why `promote` wants the same CASE list `compile` got, or which of two spellings of a flag is
+/// what `--verbatim` is for, or which of two spellings of a flag is
 /// which. A reader who has already chosen a verb and typed `--help` is asking the VERB, so that is
 /// what they get (`28L:rul-refusals-name-the-next-command`, in its non-refusing register).
 fn usage_for(verb: &str) -> &'static str {
@@ -82,7 +82,7 @@ const VARS_USAGE: &str = "usage: dorc-loom [--this] vars [--used|--all] [CASE...
   --this   the case this invocation is running inside -- a replay line's spelling, so a case never
            has to name itself. It comes before the verb and resolves nowhere else.
   next: type {{name}} into a sentence in the transcript to insert or move that value, then
-        dorc-loom compile";
+        dorc-loom publish";
 
 const SECTIONS_USAGE: &str = "usage: dorc-loom [--this] sections [CASE...]
   Per replay, print each editable section's key and its ordered Text|Variable fragment series,
@@ -91,7 +91,7 @@ const SECTIONS_USAGE: &str = "usage: dorc-loom [--this] sections [CASE...]
   worktree.
   --this   the case this invocation is running inside -- a replay line's spelling, so a case never
            has to name itself. It comes before the verb and resolves nowhere else.
-  next: edit an editable section in the case, then dorc-loom compile";
+  next: edit an editable section in the case, then dorc-loom publish";
 
 const SCAFFOLD_USAGE: &str = "usage: dorc-loom scaffold SLUG
   Write the empty defining-case skeleton for a freshly-minted code slug to
@@ -111,7 +111,7 @@ const ADD_REGISTER_USAGE: &str = "usage: dorc-loom add-register CASE help
   every other verb's -- a bare slug, a filename, or a path. `help` is the only addable register --
   `message` exists on every code already. Refuses when the case carries an unpromoted prose edit,
   or when the register is already there.
-  next: rebuild, overtype the printed [unwritten: SLUG.help] placeholder, then compile and promote";
+  next: rebuild, overtype the printed [unwritten: SLUG.help] placeholder, then publish";
 
 /// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
 /// reader who has only ever seen transcripts has no way to learn that a value can be typed at all.
@@ -144,7 +144,7 @@ fn install_diagnostics(argv: &[String]) {
 
 /// A worker thread with an explicit stack, because the main thread's is whatever the platform gave
 /// it: on Windows the nesting-bound case overflowed it, and since the bare invocation is the whole
-/// corpus, ONE case took every `compile` and `promote` down with it — an overflow, not a diagnostic.
+/// corpus, ONE case took every publish down with it — an overflow, not a diagnostic.
 fn main() -> ExitCode {
     install_diagnostics(&std::env::args().skip(1).collect::<Vec<_>>());
     let outcome = std::thread::Builder::new()
@@ -423,7 +423,7 @@ fn resolve_cases(cases: &[String]) -> Result<Vec<PathBuf>, String> {
 /// `dorc-loom add-register CASE help` — mint a code's help register so the ordinary transcript loop
 /// can fill it (`28L:rul-help-affordance-is-scaffold`).
 ///
-/// The register is a CATALOG fact, so this publishes through the same generator promote uses: the
+/// The register is a CATALOG fact, so this publishes through the same generator a publish uses: the
 /// lock gains `HelpRegister::Unwritten` and the case's transcript grows the
 /// `= help: [unwritten: <slug>.help]` line the author then overtypes. Nothing here writes prose.
 fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
@@ -448,19 +448,19 @@ fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
     if !gated.touched.is_empty() {
         return Err(format!(
             "{} has a prose edit that is not promoted yet, and adding a register rewrites the \
-             case; run `dorc-loom compile {0}` then `dorc-loom promote {0}` first",
+             case; run `dorc-loom publish {0}` first",
             path.display()
         ));
     }
     let mut consumer = DorcConsumer::new();
     consumer.seed_help_register(&slug).map_err(|refusal| match refusal {
         dorc_loom::SeedRefusal::MissingCode(slug) => format!(
-            "no catalog row for `{slug}`; promote its defining case first: `dorc-loom promote {}`",
+            "no catalog row for `{slug}`; publish its defining case first: `dorc-loom publish {}`",
             path.display()
         ),
         dorc_loom::SeedRefusal::AlreadyPresent(slug) => format!(
             "`{slug}` already has a help register; edit its `= help:` line in {}, then \
-             `dorc-loom compile {0}` and `dorc-loom promote {0}`",
+             `dorc-loom publish {0}`",
             path.display()
         ),
     })?;
@@ -472,10 +472,7 @@ fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
         "next: rebuild, then overtype `[unwritten: {slug}.help]` in {} with the remediation words",
         path.display()
     );
-    tracing::info!(
-        "then: dorc-loom compile {0} && dorc-loom promote {0}",
-        path.display()
-    );
+    tracing::info!("then: dorc-loom publish {0}", path.display());
     Ok(ExitCode::SUCCESS)
 }
 
@@ -520,7 +517,7 @@ fn scaffold_case(slug: &str) -> Result<ExitCode, String> {
         "next: author `when-fires`/`why`, then replace the replay with a command that really fires `{slug}`"
     );
     tracing::info!(
-        "then: dorc-loom promote {} (orchestrator-only, on a freshly verified binary)",
+        "then: dorc-loom publish {} (orchestrator-only, on a freshly verified binary)",
         path.display()
     );
     Ok(ExitCode::SUCCESS)
@@ -558,7 +555,7 @@ fn process_env(name: &str) -> Option<String> {
     std::env::var(name).ok()
 }
 
-/// Refuse a promote that would rewrite committed `when-fires`/`when-used`/`why` unless the caller
+/// Refuse a publish that would rewrite committed `when-fires`/`when-used`/`why` unless the caller
 /// said so (`28L:fnd-case-frontmatter-overwrites-lock-metadata`).
 ///
 /// Before any write, not after: the suite gate that also holds this property only fires once the
@@ -595,10 +592,10 @@ fn refuse_metadata_drift(accepted: bool) -> Result<(), String> {
         })
         .collect();
     Err(format!(
-        "this promote would replace committed metadata that no prose edit asked it to. One slug's \
+        "this publish would replace committed metadata that no prose edit asked it to. One slug's \
          several registry entries all read one case's frontmatter, so an unnoticed edit reaches \
          every one of them at once.{} \nOmit the key from the case to keep the committed words, \
-         or say you mean it: add {ACCEPT_METADATA} to this promote.",
+         or say you mean it: add {ACCEPT_METADATA} to this publish.",
         listed.join("")
     ))
 }
@@ -803,7 +800,7 @@ fn refuse_human_mint_from_an_agent(provenance: Provenance, agent: bool) -> Resul
     ))
 }
 
-/// What to say when this promote re-marks a human-written register as slop. An AGENT is told the
+/// What to say when this publish re-marks a human-written register as slop. An AGENT is told the
 /// truth about a consequence of its own work and asked for nothing; a PERSON has most likely
 /// forgotten `--human` mid-sprint, and losing their mark to a missing flag is worth a stop.
 /// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
@@ -819,13 +816,13 @@ fn report_demotions(
     let count = demoted.len();
     if provenance == Provenance::Slop || agent {
         return Ok(Some(format!(
-            "this promote re-marks {count} register(s) as slop that were marked \
+            "this publish re-marks {count} register(s) as slop that were marked \
              human-written: {listed}\n      Reworking prose through the loom is what re-marks it, \
              so this is the expected outcome of the edit.\n      No action is necessary."
         )));
     }
     Err(format!(
-        "this promote would re-mark {count} human-written register(s) as slop: {listed}\nRe-run \
+        "this publish would re-mark {count} human-written register(s) as slop: {listed}\nRe-run \
          with {HUMAN} to keep them marked as yours, or with {SLOP} to re-mark them deliberately."
     ))
 }
@@ -857,7 +854,7 @@ fn touched_cases(gated: &GatedCases) -> Result<std::collections::BTreeMap<String
 
 /// Naming a staged case IS the remedy: dorc-loom mutates no index
 /// (`282:rul-promote-is-one-atomic-act`), so a rewrite otherwise strands the author's `git add`
-/// on their own pre-promote bytes.
+/// on their own pre-publish bytes.
 ///
 /// Returns the notes rather than emitting them, so their wording stays testable without a
 /// subscriber.
@@ -913,7 +910,7 @@ fn rewritten_staged(
 /// validation failure leaves committed files byte-identical; a mid-publication interruption is loud
 /// in git and repaired by rerun. No journal, staging, rollback, or index mutation.
 /// Returns whether anything was actually written, which is the only honest answer to "did this
-/// promote do something".
+/// publish do something".
 fn publish(
     consumer: &DorcConsumer,
     affected: &std::collections::BTreeMap<String, Case>,
@@ -956,7 +953,7 @@ fn publish(
 /// Promote republishes only what it was handed, and that is the right blast radius to WRITE. It is
 /// the wrong one to stay silent about: a reworded shared component moves every render that spends
 /// it, and one such edit left 37 sibling transcripts stale with nothing to say so until
-/// `test:looms` went red much later, by which time nothing connected the failure to the promote
+/// `test:looms` went red much later, by which time nothing connected the failure to the publish
 /// that caused it. Naming them keeps the write narrow and the cause attached.
 ///
 /// Returns the note rather than emitting it, so its wording stays testable without a subscriber.
@@ -985,7 +982,7 @@ fn stale_siblings_note(
     }
     Some(format!(
         "{} other case(s) now render differently and were NOT republished: {}\n  they spend a \
-         component this promote reworded; `mise run test:looms` is where their stale transcripts \
+         component this publish reworded; `mise run test:looms` is where their stale transcripts \
          surface",
         stale.len(),
         stale.join(", ")
@@ -1384,7 +1381,7 @@ fn print_sections(cases: &[PathBuf], out: &mut impl Write) -> Result<ExitCode, S
     // Which bytes these describe is the one thing a reader can get wrong here.
     tracing::info!(
         "sections of the published baseline — the render your edit is attributed against; what \
-         you have typed on disk is what `dorc-loom compile` reads"
+         you have typed on disk is what `dorc-loom publish` reads"
     );
     tracing::info!("{VALUE_SYNTAX_NOTE}");
     for path in cases {
@@ -1645,7 +1642,7 @@ mod tests {
     }
 
     /// Under-naming is the failure that matters: a rewritten case's staged bytes are the author's
-    /// own pre-promote text, so a bare `git commit` would take those and drop the promotion.
+    /// own pre-publish text, so a bare `git commit` would take those and drop the publication.
     #[test]
     fn only_a_rewritten_staged_case_is_told_to_restage() {
         let staged =
@@ -1793,7 +1790,7 @@ mod tests {
         );
     }
 
-    /// The other half: an unedited consumer stales nothing, so an ordinary promote stays quiet.
+    /// The other half: an unedited consumer stales nothing, so an ordinary publish stays quiet.
     #[test]
     fn an_unreworded_promote_names_nothing() {
         let text = std::fs::read_to_string(

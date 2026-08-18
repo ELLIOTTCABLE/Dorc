@@ -273,7 +273,7 @@ fn added_help_line_refuses_and_names_the_command() {
     ));
     assert!(
         explained.contains("dorc-loom add-register crates/aid/tests/cli-no-book-given.loom help")
-            && explained.contains("dorc-loom compile crates/aid/tests/cli-no-book-given.loom"),
+            && explained.contains("dorc-loom publish crates/aid/tests/cli-no-book-given.loom"),
         "a blank line reads two ways and the refusal names the repair for both: {explained}"
     );
 }
@@ -397,7 +397,7 @@ fn editing_a_component_another_case_owns_refuses_by_name() {
         "the refusal names the component AND its home: {explained}"
     );
     assert!(
-        explained.contains("dorc-loom compile"),
+        explained.contains("dorc-loom publish"),
         "every refusal ends in its next command: {explained}"
     );
 }

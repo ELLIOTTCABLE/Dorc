@@ -53,7 +53,7 @@ impl ProseClassification {
     /// The subset of [`Self::touched`] whose edit is wholly staged rather than wholly unstaged.
     ///
     /// Classification treats the two alike — neither reads the index. They part company only
-    /// after publication, which strands a staged case's index copy on pre-promote bytes.
+    /// after publication, which strands a staged case's index copy on pre-publish bytes.
     #[must_use]
     pub fn staged(&self) -> &BTreeSet<String> {
         &self.staged
@@ -152,12 +152,12 @@ impl Repository for GitRepository {
 }
 
 /// A dirty generated lock means a PRIOR promote is still uncommitted, which a reader cannot guess
-/// from the path — nor that `compile` refuses on the same condition, nor that the batched CASE list
+/// from the path — nor that `publish` refuses on the same condition, nor that the batched CASE list
 /// avoids the serialization entirely. Nothing else in the tool says either.
 fn lock_not_clean(path: &str) -> String {
     format!(
-        "the generated lock {path} differs from HEAD, which means an earlier `dorc-loom promote` \
-         has not been committed. Both verbs refuse here: a promote would publish on top of it and \
+        "the generated lock {path} differs from HEAD, which means an earlier `dorc-loom publish` \
+         has not been committed. Both verbs refuse here: a publish would publish on top of it and \
          the two changes could no longer be committed apart, and a compile would bind those \
          uncommitted bytes into its receipt. Three ways on: commit the pending promotion (the lock \
          and the case it rewrote); or `git restore` both and start over; or, when several cases \
@@ -823,7 +823,7 @@ mod tests {
         assert!(!error.contains("outside selected prose edits"), "{error}");
     }
 
-    /// The gate is shared by `compile` and `promote`, so a refusal phrased around `promote` names
+    /// One verb holds the gate now, so a refusal phrased around publishing names
     /// a command the author may not have run. Every refused state has a different way out, so the
     /// observed `XY` pair has to appear.
     #[test]
@@ -873,7 +873,7 @@ mod tests {
 
     /// Dirt OUTSIDE the blast radius — neither a selected case nor a generated lock — no longer
     /// refuses: a source edit anywhere else in the repo used to force a throwaway commit before
-    /// `compile`/`promote` would even run (`28L` friction §4 blast-radius-scoped dirty gate).
+    /// a publish would even run (`28L` friction §4 blast-radius-scoped dirty gate).
     #[test]
     fn dirt_outside_the_blast_radius_does_not_refuse() {
         let source = case(

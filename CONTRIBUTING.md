@@ -163,8 +163,7 @@ that state.
 
 ```console
 nano spike\crates\aid\tests\cli-help-page.loom  # change a word,
-dorc-loom compile                               # check your changes,
-dorc-loom promote                               # and promote them to the catalog
+dorc-loom publish cli-help-page                 # and publish it to the catalog
 git commit spike\crates\aid\tests\cli-help-page.loom \
    spike/crates/aid/src/arrangement_lock.rs \
    -m "(- re doc) Reword the ..."
@@ -178,8 +177,11 @@ if you wish, but still, the only modified files must be looms if *any* edited
 file is a loom.) The render-back depends on the entire project's state and is
 inherently E2E.
 
-After editing, the promotion will print your changes as a preview; after
-confirming they rendered how you wanted, you can `git add` and commit.
+The publish prints your changes as a diff first — in `{{hole}}` spelling, since
+the committed transcript shows values and a moved hole and a dead one look
+identical there. If it gives up a hole, it writes nothing and exits nonzero;
+re-run with `--verbatim` once you have read what it says it is giving up. After
+confirming things rendered how you wanted, you can `git add` and commit.
 
 
 ## Commiting

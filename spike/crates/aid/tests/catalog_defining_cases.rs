@@ -98,7 +98,7 @@ fn is_case_owned(slug: &str) -> bool {
 /// (`288:rul-loom-mint-guarantee`).
 const REPAIR_HINT: &str = "Mint its prose home: `dorc-loom scaffold <slug>`, author the case's \
                            when-fires/why and a replay whose output carries the slug, then have \
-                           the orchestrator run `dorc-loom promote <case>`.";
+                           the orchestrator run `dorc-loom publish <case>`.";
 
 /// A stand-in exists to give a defining case a world; completeness (g12) keys to case FILES, so
 /// nothing else forces the fixture table's slugs to stay case-owned — a code could leave the case
