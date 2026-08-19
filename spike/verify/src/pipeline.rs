@@ -22,6 +22,10 @@ pub struct Materialized {
 }
 
 /// Materialize under an injected output root.
+///
+/// # Errors
+/// When generated inputs, derivation inputs, or output files cannot be read, written, moved, or
+/// inspected.
 pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialized, String> {
     let generated = output_root.join("minispec").join("Generated");
     if !generated.is_dir() {
@@ -64,11 +68,18 @@ pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialize
 }
 
 /// Materialize under the committed root.
+///
+/// # Errors
+/// When generated inputs, derivation inputs, or output files cannot be read, written, moved, or
+/// inspected.
 pub fn materialize_production(repo_root: &Path) -> Result<Materialized, String> {
     materialize(repo_root, repo_root)
 }
 
 /// Strictly compare output trees byte-for-byte.
+///
+/// # Errors
+/// When either output tree cannot be inspected or read.
 pub fn compare_outputs(
     committed_root: &Path,
     candidate_root: &Path,
