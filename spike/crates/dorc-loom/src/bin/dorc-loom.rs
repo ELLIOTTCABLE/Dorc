@@ -6,6 +6,7 @@ use std::process::ExitCode;
 
 use dorc_aid::prose::Mint;
 use dorc_loom::invocation::{ALL, Breadth, PublishArgs, THIS, Verb};
+use dorc_loom::usage::{self, PROGRAM, Reading};
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, FsStagingStore, GitRepository, Repository, Roots,
     SectionKey, SectionVariableId, StagedPublication, StagedReplay, StagingStore, accept_staged,
@@ -17,101 +18,6 @@ use errorloom::{
     Case, CaseRenderer, ReplayInput, ReplayResult, RunEnv, RunError, execute_generic, read_case,
     read_case_text,
 };
-
-const USAGE: &str = "usage: dorc-loom [--this] <publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; for the read-only verbs an omitted list means every crates/aid/tests/*.loom\n       --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal\n       edit a sentence in a case's transcript, then publish it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
-
-/// Each verb's own page — what it does, what its flags mean, and the command that follows it.
-///
-/// The index above answers "which verb", and answers nothing else: it cannot say what a receipt is,
-/// what `--verbatim` is for, or which of two spellings of a flag is
-/// which. A reader who has already chosen a verb and typed `--help` is asking the VERB, so that is
-/// what they get (`28L:rul-refusals-name-the-next-command`, in its non-refusing register).
-fn usage_for(verb: &str) -> &'static str {
-    match verb {
-        "publish" => PUBLISH_USAGE,
-        "vars" => VARS_USAGE,
-        "sections" => SECTIONS_USAGE,
-        "scaffold" => SCAFFOLD_USAGE,
-        "add-register" => ADD_REGISTER_USAGE,
-        "keys" => KEYS_USAGE,
-        _ => USAGE,
-    }
-}
-
-/// The verbs `usage_for` has a page for — also what makes `dorc-loom <verb> --help` route to it.
-const VERBS: [&str; 6] = [
-    "publish",
-    "vars",
-    "sections",
-    "scaffold",
-    "add-register",
-    "keys",
-];
-
-const PUBLISH_USAGE: &str = "usage: dorc-loom publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]
-  Drive every selected case's replays, compile the prose you edited back into template form, print
-  what that does to each register in {{hole}} spelling, and publish it: both generated locks
-  (crates/aid/src/catalog_lock.rs and arrangement_lock.rs) plus every affected case. In-process
-  renders only -- no binary is run and no fixture is executed. Every byte and both fixpoints are
-  computed before the first write, so a failure leaves the tree byte-identical. Nothing is staged or
-  committed; the diff is yours -- `git diff --word-diff` is how prose reads.
-  A publish that gives up a hole writes NOTHING, says which holes and why, and exits nonzero. The
-  transcript renders values, so that loss is invisible in the case diff; the printed one is where
-  you see it. Re-run with --verbatim once you have.
-  --verbatim  publish an interpretation that gives up holes, exactly as it was just shown to you
-  --all       every committed case. This verb rewrites files, so the whole corpus is spelled out
-  --quiet     drop the header of every case that has nothing to report
-  --accept-metadata  acknowledge that a case's when-fires / when-used / why REPLACES the committed
-                     registry entry; without it a metadata change refuses before any write
-  --human     mark every register this publishes as written by a person. Refuses in a session that
-              announces itself as an agent; DORC_HUMAN_COMMIT=1 says a person is at the keyboard.
-              Unflagged, a register is marked slop, whoever is driving.
-  --slop      yes, re-mark a human-written register as slop. Unflagged, that refuses for a person
-              (the forgotten --human) and proceeds with a note for an agent.
-  --shell=P   lend the generic executor a shell, for a replay the in-process driver declines
-  --path=D    prepend a directory to the replay PATH (repeatable)
-  next: mise run test -- a publish republishes shared locks, so its blast radius is wider than the
-        case in front of you";
-
-const VARS_USAGE: &str = "usage: dorc-loom [--this] vars [--used|--all] [CASE...]
-  Print each case's named template variables and their currently-rendered values, driven from the
-  same render an edit compiles against. A case with no variables prints no row at all; stderr
-  carries how many there were.
-  --used   only the variables some rendered section actually consumes (the default)
-  --all    the whole typed payload, including values no sentence spends yet
-  --this   the case this invocation is running inside -- a replay line's spelling, so a case never
-           has to name itself. It comes before the verb and resolves nowhere else.
-  next: type {{name}} into a sentence in the transcript to insert or move that value, then
-        dorc-loom publish";
-
-const SECTIONS_USAGE: &str = "usage: dorc-loom [--this] sections [CASE...]
-  Per replay, print each editable section's key and its ordered Text|Variable fragment series,
-  alongside the computed (immutable) spans around it. The answer to `which bytes in this transcript
-  are mine to edit` -- read-only, and driven from the published baseline rather than from your
-  worktree.
-  --this   the case this invocation is running inside -- a replay line's spelling, so a case never
-           has to name itself. It comes before the verb and resolves nowhere else.
-  next: edit an editable section in the case, then dorc-loom publish";
-
-const SCAFFOLD_USAGE: &str = "usage: dorc-loom scaffold SLUG
-  Write the empty defining-case skeleton for a freshly-minted code slug to
-  crates/aid/tests/SLUG.loom. Never overwrites an authored case, and never writes prose: the message
-  register stays unwritten, and everything the skeleton omits is deliberately red until a world that
-  really fires the code is authored.
-  next: the two-step follow-up the command prints";
-
-const KEYS_USAGE: &str = "usage: dorc-loom keys
-  Print the closed frontmatter-key vocabulary a case may declare, and which gate reads each key --
-  including which of `code:` and `arrangement:` a case wants. Takes no arguments and reads no case.
-  next: declare the key in the case's frontmatter; anything outside this set is refused by the
-        runners, because a key no gate reads is an assertion you only believe you made";
-
-const ADD_REGISTER_USAGE: &str = "usage: dorc-loom add-register CASE help
-  Mint a code's `help` register, so the ordinary transcript loop can fill it. The CASE spelling is
-  every other verb's -- a bare slug, a filename, or a path. `help` is the only addable register --
-  `message` exists on every code already. Refuses when the case carries an unpromoted prose edit,
-  or when the register is already there.
-  next: rebuild, overtype the printed [unwritten: SLUG.help] placeholder, then publish";
 
 /// The `{{name}}` mechanism has no other trace: every committed case is fully rendered, so a
 /// reader who has only ever seen transcripts has no way to learn that a value can be typed at all.
@@ -160,7 +66,7 @@ fn main() -> ExitCode {
     match outcome {
         Ok(code) => code,
         Err(message) => {
-            let _ = writeln!(io::stderr(), "dorc-loom: {message}");
+            let _ = writeln!(io::stderr(), "{PROGRAM}: {message}");
             ExitCode::from(2)
         }
     }
@@ -184,9 +90,7 @@ enum Command {
     },
     Keys,
     /// The index, or one verb's own page when the reader had already chosen a verb.
-    Help {
-        verb: Option<String>,
-    },
+    Help(&'static str),
 }
 
 /// One resolved `publish` invocation.
@@ -261,13 +165,9 @@ fn run() -> Result<ExitCode, String> {
         Command::AddRegister { case, register } => add_register(&roots, &case, &register),
         Command::Sections { cases } => print_sections(&cases, &mut out),
         Command::Keys => print_keys(&mut out),
-        Command::Help { verb } => writeln!(
-            out,
-            "{}",
-            verb.as_deref().map_or(USAGE, |verb| usage_for(verb))
-        )
-        .map_err(|error| error.to_string())
-        .map(|()| ExitCode::SUCCESS),
+        Command::Help(page) => writeln!(out, "{page}")
+            .map_err(|error| error.to_string())
+            .map(|()| ExitCode::SUCCESS),
     }
 }
 
@@ -300,23 +200,6 @@ fn resolve_case(roots: &Roots, arg: &str) -> Result<PathBuf, String> {
     ))
 }
 
-/// The verb this invocation is ABOUT, for the help and misuse pages: the leading verb, or the one
-/// after a leading `help`. `None` means the reader has not chosen one and wants the index.
-///
-/// Global flags are skipped first, because `--this` legitimately precedes the verb: a reader who
-/// typed `dorc-loom --this vars --help` has chosen `vars`.
-fn chosen_verb(argv: &[String]) -> Option<&str> {
-    let mut rest = argv.iter().skip_while(|arg| *arg == THIS);
-    let leading = rest.next().map(String::as_str)?;
-    if leading == "help" {
-        return rest
-            .next()
-            .map(String::as_str)
-            .filter(|next| VERBS.contains(next));
-    }
-    VERBS.contains(&leading).then_some(leading)
-}
-
 /// One parsed command line: the world it acts on, and what to do in it.
 struct Invoked {
     roots: Roots,
@@ -329,41 +212,34 @@ fn parse_args() -> Result<Invoked, String> {
 
 /// Split from [`parse_args`] so the grammar is reachable from a test without a process.
 ///
-/// `--help`/`-h` are FLAGS and are read anywhere, because a reader who has already typed a verb
-/// asks THE VERB for help. The bare word `help` is a VERB, and is read only in verb position: a
-/// subcommand's own positional argument is never a global request. That distinction is
-/// load-bearing rather than tidy — `add-register CASE help` ends in the literal token `help`, so
-/// while the scan took the bare word anywhere, the verb's only legal invocation was
-/// indistinguishable from a help request: usage page, exit 0, nothing minted.
+/// What to SAY to a command line is `usage::read`'s, shared with the in-loom driver so a
+/// transcript cannot teach words a terminal never says; what is left here is what only a terminal
+/// can decide.
 fn parse_argv(words: &[String]) -> Result<Invoked, String> {
-    let asks_for_help = words
-        .iter()
-        .any(|word| matches!(word.as_str(), "--help" | "-h"))
-        || words.first().is_some_and(|word| word == "help");
-    if asks_for_help {
+    let words: Vec<&str> = words.iter().map(String::as_str).collect();
+    let invocation = match usage::read(&words) {
         // A page reads nothing, so it never has to resolve the world the rest of the argv named.
-        return Ok(Invoked {
-            roots: Roots::built_in()?,
-            command: Command::Help {
-                verb: chosen_verb(words).map(str::to_owned),
-            },
-        });
-    }
-    let page = || usage_for(chosen_verb(words).unwrap_or_default());
-    let invocation = dorc_loom::invocation::parse(
-        std::iter::once("dorc-loom".to_owned()).chain(words.iter().cloned()),
-    )
-    .map_err(|refusal| format!("{refusal}\n{}", page()))?;
+        Reading::Help(page) => {
+            return Ok(Invoked {
+                roots: Roots::built_in()?,
+                command: Command::Help(page),
+            });
+        }
+        Reading::Refused(refusal) => return Err(refusal),
+        Reading::Runs(invocation) => *invocation,
+    };
     // A terminal is never inside a case, so this binary is the one seat `--this` can never resolve
     // at. Falling back to the bare form's every-case meaning would dump the whole corpus at
     // somebody who asked for exactly one (`30C:rul-this-is-a-global-flag`).
     if invocation.this {
-        return Err(format!(
-            "{THIS} names the case this invocation is running inside, so it resolves only where \
-             the command is a replay line in a case -- a terminal is not inside one. Name the \
-             case: `dorc-loom {} <slug>`\n{}",
-            invocation.verb_name(),
-            page()
+        return Err(usage::with_page(
+            &format!(
+                "{THIS} names the case this invocation is running inside, so it resolves only \
+                 where the command is a replay line in a case -- a terminal is not inside one. \
+                 Name the case: `dorc-loom {} <slug>`",
+                invocation.verb_name()
+            ),
+            &words,
         ));
     }
     let roots = Roots::resolve(invocation.root.as_deref())?;
@@ -402,7 +278,8 @@ fn parse_argv(words: &[String]) -> Result<Invoked, String> {
 fn provenance_of(args: &PublishArgs) -> Result<Provenance, String> {
     match (args.human, args.slop) {
         (true, true) => Err(format!(
-            "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{PUBLISH_USAGE}"
+            "{HUMAN} and {SLOP} say opposite things about the same registers; pass one\n{}",
+            usage::usage_for("publish")
         )),
         (true, false) => Ok(Provenance::Human),
         (false, true) => Ok(Provenance::Slop),
@@ -1456,40 +1333,6 @@ mod tests {
         super::parse_argv(words).map(|invoked| invoked.command)
     }
 
-    /// Every verb has a page of its own, and every page ends where the reader goes next. The index
-    /// answers "which verb" and nothing else, so a verb that falls through to it silently teaches a
-    /// reader who already knew the one thing it says.
-    #[test]
-    fn every_verb_has_its_own_page_ending_in_a_next_command() {
-        for verb in VERBS {
-            let page = usage_for(verb);
-            assert_ne!(page, USAGE, "`{verb}` falls through to the index");
-            // A synopsis may carry the global selector slot before the verb, so the pin is that it
-            // names THIS verb, not that it opens on an exact prefix.
-            let synopsis = page.lines().next().unwrap_or_default();
-            assert!(
-                synopsis.starts_with("usage: dorc-loom ") && synopsis.contains(verb),
-                "`{verb}` page opens on someone else's synopsis: {synopsis}"
-            );
-            assert!(
-                page.contains("\n  next: "),
-                "`{verb}` page has no next: {page}"
-            );
-        }
-        assert_eq!(usage_for("nonesuch"), USAGE);
-    }
-
-    /// `--help` after a verb asks the VERB; before one, or with no verb at all, it asks the index.
-    #[test]
-    fn help_routes_to_the_verb_the_reader_already_chose() {
-        let argv = |args: &[&str]| args.iter().map(|a| (*a).to_owned()).collect::<Vec<_>>();
-        assert_eq!(chosen_verb(&argv(&["publish", "--help"])), Some("publish"));
-        assert_eq!(chosen_verb(&argv(&["help", "vars"])), Some("vars"));
-        assert_eq!(chosen_verb(&argv(&["help"])), None);
-        assert_eq!(chosen_verb(&argv(&["--help"])), None);
-        assert_eq!(chosen_verb(&argv(&["nonesuch", "-h"])), None);
-    }
-
     /// The bare word `help` is `add-register`'s own second positional, so a scan that read it
     /// anywhere made the verb's ONLY legal invocation indistinguishable from a help request — it
     /// printed the page and exited 0 having minted nothing, for as long as the command existed.
@@ -1511,13 +1354,13 @@ mod tests {
         assert!(
             matches!(
                 parse_argv(&argv(&["add-register", spelled, "--help"])),
-                Ok(Command::Help { verb: Some(verb) }) if verb == "add-register"
+                Ok(Command::Help(page)) if page == usage::usage_for("add-register")
             ),
             "`--help` after a verb still asks the verb"
         );
         assert!(matches!(
             parse_argv(&argv(&["help"])),
-            Ok(Command::Help { verb: None })
+            Ok(Command::Help(usage::USAGE))
         ));
     }
 
@@ -1642,7 +1485,7 @@ mod tests {
         let Err(refusal) = parse_argv(&argv(&["publish"])) else {
             panic!("a bare publish must refuse")
         };
-        assert!(refusal.contains("usage: dorc-loom publish"), "{refusal}");
+        assert!(refusal.contains(usage::usage_for("publish")), "{refusal}");
         assert!(refusal.contains("--all"), "{refusal}");
 
         assert!(matches!(

@@ -44,6 +44,8 @@ mod repository;
 pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
 mod roots;
 pub use roots::Roots;
+pub mod usage;
+pub use usage::{PROGRAM, Reading};
 mod vocabulary;
 pub use vocabulary::{
     DEFINING_KEYS_NOTE, FRONTMATTER_KEYS, FrontmatterKey, frontmatter_key_names,

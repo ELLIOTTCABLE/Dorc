@@ -22,7 +22,8 @@ use errorloom::{
     ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
 };
 
-use crate::invocation::{self, Breadth, Target, Verb};
+use crate::invocation::{Breadth, Target, Verb};
+use crate::usage::{self, PROGRAM, Reading};
 use crate::{
     DorcSectionEdit, ENVELOPE_INVOCATION, ENVELOPE_KEY, ENVELOPE_STDERR, SectionKey,
     SectionVariableId, TemplateVariableName, to_editable_render,
@@ -681,10 +682,15 @@ impl DorcConsumer {
 
     /// The `dorc-loom …` arm of both replay chains.
     ///
-    /// Both chains route here and both parse through [`crate::invocation`] rather than matching
-    /// token slices, so the shapes a transcript may carry are exactly the shapes a terminal accepts
+    /// Both chains route here and both go through [`crate::usage`] rather than matching token
+    /// slices, so the shapes a transcript may carry are exactly the shapes a terminal accepts, and
+    /// a page or a refusal a case teaches is the one a reader will actually meet
     /// (`30C:rul-this-is-a-global-flag`). `source_of` is how the chain finds a NAMED case's bytes:
     /// a materialized input on the driven chain, a section on the re-render chain.
+    ///
+    /// `--this` is the ONE spelling that may answer differently here than at a terminal (`30C`
+    /// item 1); `-C` is the mirror of that — a replay line has no world of its own to resolve
+    /// against, so an invocation carrying one is declined rather than half-honoured.
     fn loom_replay(
         &self,
         case: &Case,
@@ -692,7 +698,14 @@ impl DorcConsumer {
         self_reference: SelfReference,
         source_of: &dyn Fn(&str) -> Option<String>,
     ) -> Option<String> {
-        let invocation = invocation::parse(tokens.iter().copied()).ok()?;
+        let invocation = match usage::read(tokens.get(1..)?) {
+            Reading::Help(page) => return Some(format!("{page}\n")),
+            Reading::Refused(refusal) => return Some(format!("{PROGRAM}: {refusal}\n")),
+            Reading::Runs(invocation) => *invocation,
+        };
+        if invocation.root.is_some() {
+            return None;
+        }
         let wanted = match &invocation.verb {
             Verb::Vars(args) => Inventory::Vars(args.breadth()),
             Verb::Sections(_) => Inventory::Sections,

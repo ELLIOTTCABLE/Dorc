@@ -168,7 +168,7 @@ fn clean_cases_do_not_trigger_marker_compilation() {
         .unwrap_or_else(|error| panic!("stderr is UTF-8: {error}"));
     assert!(stderr.contains("--wat"), "{stderr}");
     assert!(
-        stderr.contains("usage: dorc-loom [--this] vars"),
+        stderr.contains(dorc_loom::usage::usage_for("vars")),
         "{stderr}"
     );
 
@@ -180,9 +180,9 @@ fn clean_cases_do_not_trigger_marker_compilation() {
 /// uninvokable for its whole life and no test noticed, because the mint was covered at the library
 /// seat (`seed_help_register`) and nothing ever ran the verb's argv.
 ///
-/// The case here declares no `code`, which refuses inside the verb BEFORE the mint. That is
-/// deliberate and is as far as a test may go: the mint publishes the generated lock and rewrites a
-/// corpus case at paths fixed to the real tree, so a test that reached it would write sources.
+/// The case here declares no `code`, which refuses inside the verb BEFORE the mint: this
+/// invocation carries no `-C`, so reaching the mint would publish the REAL generated lock and
+/// rewrite a REAL corpus case.
 #[test]
 fn add_register_reaches_its_verb_rather_than_the_help_page() {
     let dir = std::env::temp_dir().join(format!("dorc-loom-verb-{}", std::process::id()));
@@ -212,7 +212,7 @@ fn add_register_reaches_its_verb_rather_than_the_help_page() {
     let page = String::from_utf8_lossy(&asked.stdout).into_owned();
     assert!(asked.status.success(), "{page}");
     assert!(
-        page.starts_with("usage: dorc-loom add-register"),
+        page.starts_with("usage: dorc-loom [-C DIR] add-register"),
         "the flag spelling still asks the verb: {page}"
     );
     let _ = std::fs::remove_dir_all(&dir);
@@ -222,16 +222,18 @@ fn add_register_reaches_its_verb_rather_than_the_help_page() {
 /// corpus by omission. The process-level half of the grammar's rule: a bare invocation reaches the
 /// verb's own page and a nonzero exit rather than the whole collection.
 ///
-/// This is as far as a process test may go on this verb. Its write paths land on the REAL corpus
-/// and the REAL locks at paths fixed to the tree, and a test that reached them would write sources
-/// (`288` §4: never a test side-effect). Covering them wants the injectable corpus root, which is
-/// deliberately a separate lane.
+/// This file stops at the misuse, because every invocation here resolves the REAL corpus and the
+/// REAL locks (`288` §4: never a test side-effect). The write paths are driven in
+/// `publish_write_path.rs`, against a world of their own through `-C`.
 #[test]
 fn a_bare_publish_reaches_its_own_usage_page_and_refuses() {
     let bare = run(&["publish"]);
     assert_eq!(bare.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&bare.stderr).into_owned();
-    assert!(stderr.contains("usage: dorc-loom publish"), "{stderr}");
+    assert!(
+        stderr.contains(dorc_loom::usage::usage_for("publish")),
+        "{stderr}"
+    );
     assert!(stderr.contains("--all"), "{stderr}");
     assert!(
         String::from_utf8_lossy(&bare.stdout).is_empty(),
