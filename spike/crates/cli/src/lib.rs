@@ -1631,4 +1631,101 @@ mod tests {
         let planned = args(&["plan", "book.sh"]);
         assert_eq!(planned.book.as_deref(), Some("book.sh"));
     }
+
+    /// Parse `raw`, returning the slug of whatever it refuses with — the shape every rule below
+    /// asserts, since an invocation refusal's whole product is which code fires.
+    fn refusal(raw: &[&str]) -> String {
+        match parse_args_from(raw.iter().map(|a| (*a).to_owned()).collect()) {
+            Err(diag) => diag.code.slug().to_owned(),
+            other => panic!("expected a refusal, got {other:?}"),
+        }
+    }
+
+    fn analyzed_args(raw: &[&str]) -> Box<Args> {
+        match parse_args_from(raw.iter().map(|a| (*a).to_owned()).collect()) {
+            Ok(Invocation::Analyze(args)) => args,
+            other => panic!("expected an analyze invocation, got {other:?}"),
+        }
+    }
+
+    /// `30I:rul-pre-source-is-dot-prelude` — repeated pre-sources keep their CLI occurrence order,
+    /// because they compile to ordinary `.` commands and a shell's last declaration wins.
+    #[test]
+    fn pre_sources_keep_their_cli_order() {
+        let args = analyzed_args(&[
+            "plan",
+            "book.sh",
+            "--pre-source",
+            "a.oracle.sh",
+            "--pre-source=b.oracle.sh",
+        ]);
+        assert_eq!(args.pre_sources, vec!["a.oracle.sh", "b.oracle.sh"]);
+    }
+
+    /// `30I:rul-spike-has-no-short-options` — no spike feature carries a single-letter spelling, so
+    /// the whole latin alphabet stays free for the post-spike CLI design. The retired `-o` is the
+    /// one worth pinning: it was the most-typed flag in the corpus, so a quiet re-acceptance is the
+    /// likeliest regression.
+    #[test]
+    fn no_spike_feature_claims_a_single_letter() {
+        assert_eq!(
+            refusal(&["plan", "book.sh", "-o", "x.oracle.sh"]),
+            "cli-unknown-flag"
+        );
+        assert_eq!(refusal(&["plan", "book.sh", "-h"]), "cli-unknown-flag");
+    }
+
+    /// `30I:rul-one-main-book-per-target` — a second main book is a separate PROGRAM, refused
+    /// rather than concatenated. Both spellings reach the same refusal, because the merge this
+    /// closes was reachable through either.
+    #[test]
+    fn a_second_main_book_is_refused_not_merged() {
+        assert_eq!(
+            refusal(&["plan", "book.sh", "other.sh"]),
+            "cli-several-main-books"
+        );
+        assert_eq!(
+            refusal(&["plan", "--book=book.sh", "--book=other.sh"]),
+            "cli-several-main-books"
+        );
+    }
+
+    /// `30I:rul-dash-is-stdin-in-any-filename-position` — `-` names stdin wherever a filename goes,
+    /// and is never read as a flag.
+    #[test]
+    fn a_dash_names_stdin_in_filename_position() {
+        assert_eq!(
+            analyzed_args(&["probe", "-"]).book.as_deref(),
+            Some("-"),
+            "a `-` book is that target's book, not an unknown flag"
+        );
+        assert_eq!(
+            analyzed_args(&["probe", "book.sh", "--pre-source", "-"]).pre_sources,
+            vec!["-"]
+        );
+    }
+
+    /// `30I` §2.5 — stdin is ONE resource, so two claimants refuse before network. The records lane
+    /// is a claimant too: it takes stdin by default on `plan`, which is exactly why `dorc plan -`
+    /// cannot silently win it. `probe` reads no stdin, so the same `-` book is ordinary there.
+    #[test]
+    fn two_claimants_on_stdin_refuse() {
+        assert_eq!(
+            refusal(&["probe", "-", "--pre-source", "-"]),
+            "cli-stdin-claimed-twice"
+        );
+        assert_eq!(refusal(&["plan", "-"]), "cli-stdin-claimed-twice");
+        assert_eq!(
+            analyzed_args(&["plan", "-", "--results", "r.txt"])
+                .book
+                .as_deref(),
+            Some("-"),
+            "naming the records lane a file frees the stream for the book"
+        );
+        assert_eq!(
+            analyzed_args(&["probe", "-"]).book.as_deref(),
+            Some("-"),
+            "and probe never wanted the stream at all"
+        );
+    }
 }
