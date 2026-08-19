@@ -61,8 +61,9 @@ local linters = new Mapping<String, Step> {
     }
     ["cargo_clippy"] {
         glob = "spike/**/*.rs"
-        // The spike's warnings-are-failures gate lives HERE (pre-commit), never in
-        // the manifest — mid-work builds shouldn't break on a toolchain bump.
+        // Whole-workspace Clippy can recompile after one staged Rust edit, so it belongs
+        // to builder completion rather than the bounded pre-commit floor.
+        profiles = List("full")
         check = "cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings"
     }
     ["cargo_deny"] {

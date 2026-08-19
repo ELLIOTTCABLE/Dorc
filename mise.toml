@@ -372,7 +372,7 @@ run = ["cargo clean", "cargo clippy --workspace --all-targets --quiet -- -D warn
 CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 
 [tasks.check]
-description = "All four lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — the same steps the pre-commit hook runs, from the same hk.pkl."
+description = "All lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — pre-commit uses its bounded subset from the same hk.pkl."
 raw = true
 run = "hk check --all"
 
