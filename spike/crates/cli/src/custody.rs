@@ -161,6 +161,14 @@ pub fn unannounced_cross_custody(
 /// an author who wrote NOTHING. Where an acceptance act exists and merely could not be verified,
 /// the suspension already says so and the site runs, which is the behaviour
 /// `30I` §3.4's own "whatever the engine cannot align exactly withholds" sentence describes.
+///
+/// **Disclosed cut** (`churn-avoidance-disclosure`): the walk is LITERAL-only, because the loader
+/// reports no unfiltered edge set (`30Ib` §15). An announcement spelled through a caller-set root
+/// (`. "$ROOT/dep.sh"`) is therefore invisible here. That costs nothing in the ordinary case —
+/// such a load RESOLVES, so custody reaches and no denial arises at all — and bites only in the
+/// cell where a third file then shadows the helper: the variable-rooted package refuses where its
+/// literal-rooted twin suspends. The direction is loud and conservative (a refusal emits no plan,
+/// so nothing under-executes), and closing it is the same accessor step 5 has to open with.
 fn announced(snapshot: &StaticLoadSnapshot, from: usize) -> std::collections::BTreeSet<usize> {
     let mut reached = std::collections::BTreeSet::new();
     let mut frontier = vec![from];
