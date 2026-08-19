@@ -10,11 +10,10 @@
 
 ## §0 — Where the lane stands
 
-**Work-order steps 1, 2, 3 and 4 are landed.** Steps 5–8 are untouched: no bundle
-projection, no locator-through-a-real-diagnostic, no artifact forms, no XFAIL
-promotion, no e2e lowering. The three `load30-*` specimens remain XFAIL, now
-spelled with the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit`
-is byte-identical.
+**Work-order steps 1–4 are landed, step 4 now including its refusal clause.** Steps 5–8 are
+untouched: no bundle projection, no locator-through-a-real-diagnostic, no artifact forms, no XFAIL
+promotion, no e2e lowering. The three `load30-*` specimens remain XFAIL, spelled with the sentinel
+guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit` is byte-identical.
 
 > The step numbering moved when `30I`'s work order was re-cut. This file's §1–§6
 > were written against the OLD numbering (its "items 2/3/4" are the load model,
@@ -615,3 +614,92 @@ pre-source ORDER (`common` before `delta`, glob-sorted) arranges.
    records, and pasting stdout. The ordinary (non-bless) e2e run then proves it
    byte-exact, which is the same gate a blessed transcript faces — but the
    conductor should know a golden entered the corpus by that route.
+
+## §13 — Builder 3: the step-4 remainder (`rul-unannounced-cross-custody-fails-before-network`)
+
+BUILT. `30Ib` §11's design landed with one substantive change to it, flagged below.
+
+### The census, and where it is asked
+
+`cli::custody::unannounced_cross_custody` is the whole-unit seat: for every role funcdef in every
+contract-signing non-book source, ask the SAME `HelperIndex::closure_for` the vouch lift asks, and
+keep the `ResolvedOutsideCustody` denials. Asking it of every role member rather than only of sites
+a book happens to reach is deliberate — otherwise a run whose book touches none of the affected
+families ships today and refuses tomorrow when a line moved, which is the worst moment to learn the
+packages never composed.
+
+It is CONSUMED far below where it is asked. The diagnostics report at the load edge, so they batch
+with the rest of the loading-stage report; the refusal returns after the round-trip has emitted its
+read-only probe and BEFORE the host match, so both halves of the ruling are structural rather than
+remembered: no host is contacted, and the mutation-authorizing apply artifact is never built.
+`RunOutcome::UnannouncedCrossCustody` ⇒ `EXIT_UNANNOUNCED_CROSS_CUSTODY` (16), sixth of the 10..=19
+dorc-semantic range.
+
+### `dev-narrowed-to-genuinely-unannounced-calls` (OPEN — the one real deviation)
+
+`30I` §3.4 carries two sentences that pull against each other. Case 3 defines the subject as "a
+voucher calls a cross-custody function without the exact source-bearing acceptance in case 1 or 2"
+(any inexact alignment refuses); its closing paragraph says "whatever the engine cannot align
+exactly withholds vouch, licensure, and speaker status under the existing collapse accounting" (the
+ordinary suspension, which runs the site and continues). Read the first way, the second sentence is
+dead letter.
+
+As built, the refusal's subject is a call its author announced NOWHERE. If any source the author's
+own acceptance acts transitively reach DECLARES the name, the dependency was announced, and a later
+file shadowing it — or a stranger defeating a guard's recognition — keeps the ordinary suspension.
+
+The corpus is what forced the question, and it is the evidence for the narrow reading. Under the
+broad reading `load30-speaker-minting-is-observable` cannot exist: BOTH its counterfactual worlds
+are announced-but-unaligned by construction (beta guards `. ./beta-common.oracle.sh` and loses its
+sentinel to `stranger.oracle.sh`; gamma guards `. ./gamma-common.oracle.sh` and loses its binding to
+`rogue.oracle.sh`), so the whole run refuses and no run set can be observed at all. Both authors
+wrote a perfectly ordinary guarded source; the cause is a third file in each case, and refusing in
+their name is the pope-sin direction (`271:rul-sin-ordering`). The ruling's own remediation list —
+`command`, explicit sourcing, a guarded fallback source, renaming — is also advice you can only give
+an author who wrote no acceptance act.
+
+FLAGGED, not settled (`inv-superposition`): it is a `tc-*`-shaped call about how two sentences of a
+typed ruling compose. The broad reading is one predicate away (`custody.rs`'s `announced` gate).
+
+### `dev-the-probe-artifact-still-ships-under-a-refusal` (OPEN)
+
+`30Ib` §11 said "refuse the way the intake does — `report_at(...)` then return BEFORE any artifact".
+As built, a round-trip still emits its read-only probe before the refusal returns. Two reasons:
+the ruling's own words forbid a mutation-authorizing PLAN and host contact, not all output; and
+`records30-glued-line-refuses-the-attempt` is the standing corpus precedent for exactly this shape
+(probe emitted, apply refused, exit 12). The alternative — emitting nothing — hard-fails the e2e
+runner's gate-1 empty-stdout guard, so taking it would have meant editing that gate.
+
+### The `command` carve-out was already correct
+
+`30Ib` §11 item 2 says `closure::called_names` "counts both words" of `command <name>`. MEASURED
+WRONG: the walk pushes only `words.first()` as a command name and descends other words for command
+substitutions only, so a `command`-routed operand was never a helper reach. No code change; the
+property is now pinned at its ownership seat
+(`oracle::closure::tests::a_command_routed_utility_reaches_no_helper`) and end-to-end through the
+census (`custody::tests::a_command_prefixed_utility_is_not_a_dependency`).
+
+### Mutation results — both mechanisms are genuinely observed
+
+- Forcing `cross_custody_refused = false` REDDENS `emit30-cross-custody-plural-helper-suspends`
+  (rc 0, expected 16). The refusal is what that case sees.
+- Forcing the narrowing gate to `false` (i.e. the broad reading) REDDENS
+  `load30-speaker-minting-is-observable` (rc 16, expected 0). The narrowing is what that case needs.
+
+### Golden movement (one case)
+
+`emit30-cross-custody-plural-helper-suspends`: gains `exit: 16` and the new
+`unannounced-cross-custody-call` expectation; loses its apply artifact from the transcript (the
+probe block is byte-identical apart from the book digest). Its book comment is re-spelled to
+describe the refusal — directed work under `30Ia` §10's precedent, since the ruling changed what
+the case observes — and the transcript's `book=` digest was recomputed as plain sha256 over the
+materialized book bytes (verified against the pre-edit case, which reproduced its committed digest
+exactly). The name still fits: the vouch DOES still suspend; the refusal is additional.
+
+### Wiring notes for a successor
+
+A new `DiagCode` needs SIX sites, and two of them are gates that fail late: `MIGRATED_SLUGS` in
+`aid/tests/diag_tidy.rs` (the retire-guard registry) and a single-line `slug()` match arm — that
+scan is a line-shape grep, so a name long enough for rustfmt to split the arm reads as an orphan
+catalog row. That is what shortened `unannounced-cross-custody-dependency` to
+`unannounced-cross-custody-call`.
