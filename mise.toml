@@ -419,9 +419,9 @@ description = "CONDUCTOR-ONLY law gate: completion on both platforms, then all a
 raw = true
 run = [
    "mise run both gate:full-quiet",
-   "hk check --pr --profile arc --jobs 1 --no-fail-fast",
-   "hk check --staged --profile arc --jobs 1 --no-fail-fast",
-   "hk check --unstaged --profile arc --jobs 1 --no-fail-fast",
+   "hk check --pr --profile arc --jobs 1 --no-fail-fast --quiet",
+   "hk check --staged --profile arc --jobs 1 --no-fail-fast --quiet",
+   "hk check --unstaged --profile arc --jobs 1 --no-fail-fast --quiet",
    "mise run audit",
 ]
 
