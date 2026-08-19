@@ -888,16 +888,7 @@ fn run(
     let source_paths = snapshot.source_paths();
     let source_srcs = snapshot.source_srcs();
     let source_refs: Vec<&str> = snapshot.source_refs();
-    // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
-    // The book is the LAST source, and naming it is what lets the custody predicate see what the
-    // admin defines (`rul-vouch-reaches-own-custody-only`).
     let book_index = Some(snapshot.book_index());
-    let include_tree = dorc_cli::sourcing::include_tree(&snapshot);
-    let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
-        .with_include_tree(
-            dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
-            include_tree.unresolved.clone(),
-        );
 
     // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
     // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
@@ -1001,6 +992,17 @@ fn run(
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
     };
+    // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
+    // The book is the LAST source, and naming it is what lets the custody predicate see what the
+    // admin defines (`rul-vouch-reaches-own-custody-only`). Sited BELOW the environment because the
+    // include-tree is now the loader's own account of the loads it followed, not a second walk over
+    // literal operands (`dorc_cli::sourcing::include_tree`).
+    let include_tree = dorc_cli::sourcing::include_tree(&snapshot, &env);
+    let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
+        .with_include_tree(
+            dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
+            include_tree.unresolved.clone(),
+        );
     let shadows = dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env);
     let unprovable = dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit());
     // `28K` §2 rul-visibility-is-full-positional — solved ONCE here, beside the whole-unit

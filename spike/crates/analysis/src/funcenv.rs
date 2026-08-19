@@ -509,6 +509,15 @@ pub struct FuncEnv {
     /// second resolver at the edge to drift from this one (`30I:rul-one-loader-many-projections`).
     /// Empty is the settled state.
     wanted_loads: BTreeSet<String>,
+    /// `(sourcer, target)` canonical-key pairs for every load a LOADED FILE's own program spelled
+    /// — the include-tree's whole input (`30I` §3.4).
+    ///
+    /// A book `.` and an invocation-named root contribute none: neither mints a speaker
+    /// (`30I:rul-books-load-but-do-not-speak`).
+    load_edges: BTreeSet<(String, String)>,
+    /// Loaded files whose own load named nothing the table holds. They SUSPEND: a file whose
+    /// environment the engine could not reconstruct may ship no composition.
+    unresolved_sourcers: BTreeSet<String>,
     /// The edges the decidable-condition fold proved dead (`28M` §9). Kept as data so a pin can
     /// assert WHICH condition folded rather than only its downstream effect on a binding — an
     /// empty set is the honest statement that nothing was decidable, and the corpus cell that
@@ -562,6 +571,18 @@ impl FuncEnv {
     #[must_use]
     pub fn wanted_loads(&self) -> &BTreeSet<String> {
         &self.wanted_loads
+    }
+
+    /// Which loaded file sourced which, by canonical key — the include-tree's input.
+    #[must_use]
+    pub fn load_edges(&self) -> &BTreeSet<(String, String)> {
+        &self.load_edges
+    }
+
+    /// Loaded files whose own load named nothing loadable, by canonical key.
+    #[must_use]
+    pub fn unresolved_sourcers(&self) -> &BTreeSet<String> {
+        &self.unresolved_sourcers
     }
 
     /// Per RESOLVED `.`/`source` site, the canonical path it named — the load ACT, which is what a
@@ -760,14 +781,23 @@ pub fn analyze(
         dead_edges(ast, cfg, defs, literals, states, true)
     }) {
         Ok((states, folded_edges)) => {
-            let wanted_loads = wanted_after(defs, literals, &states, &sourced_paths, &sites.named);
+            let account = settled_account(
+                defs,
+                literals,
+                cfg.entry(),
+                &states,
+                &sourced_paths,
+                &sites.named,
+            );
             FuncEnv {
                 states,
                 floor: None,
                 unresolvable_loads,
                 sourced_paths,
                 folded_edges,
-                wanted_loads,
+                wanted_loads: account.wanted,
+                load_edges: account.edges,
+                unresolved_sourcers: account.unresolved,
             }
         }
         Err(consistency) => funcenv_floor(cfg, EnvFloor::SolverInconsistent(consistency)),
@@ -832,6 +862,8 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         sourced_paths: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
         wanted_loads: BTreeSet::new(),
+        load_edges: BTreeSet::new(),
+        unresolved_sourcers: BTreeSet::new(),
     }
 }
 
@@ -1281,57 +1313,62 @@ const LOAD_DEPTH_CAP: usize = 16;
 /// typed and reads as wanting the FALSE direction for ordinary helper names too. Whether the
 /// existing role-shaped fence may be widened there is a licensure question with an owner above
 /// this component; `30Ib` §4 carries it as an open deviation.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "one recursive interpreter over a closed step vocabulary; every parameter is a distinct piece of the loading context, and bundling them would hide the depth and cycle guards this walk's termination rests on"
-)]
-fn run_program(
-    defs: &DefinitionTable,
-    literals: &SourceLiteralPlane<'_>,
+/// The loading context one program is interpreted under: everything constant across the walk.
+#[derive(Clone, Copy)]
+struct Loading<'a, 's> {
+    defs: &'a DefinitionTable,
+    literals: &'a SourceLiteralPlane<'a>,
     node: CfgNodeId,
+    /// The canonical key of the file whose program this is, when the program belongs to a loaded
+    /// file. `None` at a book `.` and at an invocation-named root, neither of which mints a
+    /// speaker edge (`30I:rul-books-load-but-do-not-speak`; CLI co-loading composes no custody).
+    sourcer: Option<&'s str>,
+    depth: usize,
+}
+
+/// What a settled walk of the load programs accounts for — the loader's own report of the load
+/// structure it followed (`30I:rul-one-loader-many-projections`).
+///
+/// The include-tree consumes these EDGES rather than re-resolving literal `.` operands of its own,
+/// which is what closes custody for a dependency sited through a caller-set root: the loader
+/// resolves `. "$ROOT/dep.sh"`, and there is no second resolver left to fail at it.
+#[derive(Debug, Default)]
+struct LoadAccount {
+    /// Canonical paths a load NAMED that the table does not hold.
+    wanted: BTreeSet<String>,
+    /// `(sourcer, target)` canonical-key pairs, for every load a loaded file's own program spelled.
+    edges: BTreeSet<(String, String)>,
+    /// Sourcers whose own load named nothing the table holds — they suspend rather than degrade.
+    unresolved: BTreeSet<String>,
+}
+
+fn run_program(
+    ctx: Loading<'_, '_>,
     program: &crate::load::LoadProgram,
     incoming: &EnvStack,
     locals: &mut BTreeMap<String, String>,
     visiting: &mut BTreeSet<String>,
-    wanted: &mut BTreeSet<String>,
-    depth: usize,
+    account: &mut LoadAccount,
 ) -> EnvStack {
-    run_steps(
-        defs,
-        literals,
-        node,
-        program.steps(),
-        incoming,
-        locals,
-        visiting,
-        wanted,
-        depth,
-    )
+    run_steps(ctx, program.steps(), incoming, locals, visiting, account)
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "see run_program: the loading context travels whole so the depth and cycle guards stay visible at every recursion"
-)]
 fn run_steps(
-    defs: &DefinitionTable,
-    literals: &SourceLiteralPlane<'_>,
-    node: CfgNodeId,
+    ctx: Loading<'_, '_>,
     steps: &[crate::load::LoadStep],
     incoming: &EnvStack,
     locals: &mut BTreeMap<String, String>,
     visiting: &mut BTreeSet<String>,
-    wanted: &mut BTreeSet<String>,
-    depth: usize,
+    account: &mut LoadAccount,
 ) -> EnvStack {
     use crate::load::LoadStep;
 
-    let ambient = |name: &str| literals.variable_text(node, name);
+    let ambient = |name: &str| ctx.literals.variable_text(ctx.node, name);
     let mut env = incoming.clone();
     for step in steps {
         match step {
             LoadStep::Define(def) => {
-                if let Some(d) = defs.get(*def) {
+                if let Some(d) = ctx.defs.get(*def) {
                     env.bind(&d.name, Flat::Elem(Binding::Defined(*def)));
                 }
             }
@@ -1342,33 +1379,24 @@ fn run_steps(
                 None => drop(locals.remove(name)),
             },
             LoadStep::Control(control) => {
-                env = run_control(
-                    defs, literals, node, control, &env, locals, visiting, wanted, depth,
-                );
+                env = run_control(ctx, control, &env, locals, visiting, account);
             }
         }
     }
     env
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "see run_program: the loading context travels whole so the depth and cycle guards stay visible at every recursion"
-)]
 fn run_control(
-    defs: &DefinitionTable,
-    literals: &SourceLiteralPlane<'_>,
-    node: CfgNodeId,
+    ctx: Loading<'_, '_>,
     control: &crate::load::LoadControl,
     incoming: &EnvStack,
     locals: &mut BTreeMap<String, String>,
     visiting: &mut BTreeSet<String>,
-    wanted: &mut BTreeSet<String>,
-    depth: usize,
+    account: &mut LoadAccount,
 ) -> EnvStack {
     use crate::load::LoadControl;
 
-    let ambient = |name: &str| literals.variable_text(node, name);
+    let ambient = |name: &str| ctx.literals.variable_text(ctx.node, name);
     let mut env = incoming.clone();
     match control {
         LoadControl::UnsetFunctions(names) => {
@@ -1378,30 +1406,35 @@ fn run_control(
             env
         }
         LoadControl::Load { target, .. } => {
+            let suspend_the_sourcer = |account: &mut LoadAccount| {
+                if let Some(sourcer) = ctx.sourcer {
+                    account.unresolved.insert(sourcer.to_owned());
+                }
+            };
             let Some(next) = target
                 .expand(locals, &ambient)
-                .and_then(|text| defs.cwd.resolve_dot(&text))
+                .and_then(|text| ctx.defs.cwd.resolve_dot(&text))
             else {
+                suspend_the_sourcer(account);
                 return EnvStack::Top;
             };
-            let Some(program) = defs.program_at_key(&next) else {
-                wanted.insert(next);
+            let Some(program) = ctx.defs.program_at_key(&next) else {
+                account.wanted.insert(next);
+                suspend_the_sourcer(account);
                 return EnvStack::Top;
             };
-            if depth == 0 || !visiting.insert(next.clone()) {
+            if let Some(sourcer) = ctx.sourcer {
+                account.edges.insert((sourcer.to_owned(), next.clone()));
+            }
+            if ctx.depth == 0 || !visiting.insert(next.clone()) {
                 return EnvStack::Top;
             }
-            let loaded = run_program(
-                defs,
-                literals,
-                node,
-                program,
-                &env,
-                &mut locals.clone(),
-                visiting,
-                wanted,
-                depth.saturating_sub(1),
-            );
+            let inner = Loading {
+                sourcer: Some(&next),
+                depth: ctx.depth.saturating_sub(1),
+                ..ctx
+            };
+            let loaded = run_program(inner, program, &env, &mut locals.clone(), visiting, account);
             visiting.remove(&next);
             loaded
         }
@@ -1422,53 +1455,60 @@ fn run_control(
             };
             let branch = |controls: &[LoadControl],
                           visiting: &mut BTreeSet<String>,
-                          wanted: &mut BTreeSet<String>| {
+                          account: &mut LoadAccount| {
                 let mut inner = env.clone();
                 for control in controls {
-                    inner = run_control(
-                        defs,
-                        literals,
-                        node,
-                        control,
-                        &inner,
-                        &mut locals.clone(),
-                        visiting,
-                        wanted,
-                        depth,
-                    );
+                    inner =
+                        run_control(ctx, control, &inner, &mut locals.clone(), visiting, account);
                 }
                 inner
             };
             match holds.map(|held| held != *negated) {
-                Some(true) => branch(then_, visiting, wanted),
-                Some(false) => branch(else_, visiting, wanted),
+                Some(true) => branch(then_, visiting, account),
+                Some(false) => branch(else_, visiting, account),
                 // Undecided walks BOTH, so the acquisition sees every file the guard could reach:
                 // reading one the run does not bind is harmless, missing one it does bind is not.
-                None => branch(then_, visiting, wanted).join(&branch(else_, visiting, wanted)),
+                None => branch(then_, visiting, account).join(&branch(else_, visiting, account)),
             }
         }
     }
 }
 
-/// Every canonical path the settled environment's loads NAMED that the table does not hold — the
-/// loader's own account of what it still wants (`30I:rul-one-loader-many-projections`).
+/// The settled environment's whole load account: what its loads still WANT, which file sourced
+/// which, and which sourcers named nothing loadable (`30I:rul-one-loader-many-projections`).
 ///
 /// A post-pass rather than an accumulation inside the transfer, for [`load_sites`]' reason: the
 /// transfer is asked once per worklist iteration and an intermediate round's account would carry
 /// paths the settled answer never names. Run against the SETTLED states, this asks the same
-/// interpreter the same question one final time.
+/// interpreter the same questions one final time.
 ///
-/// Its consumer is the binary's acquisition loop, which reads what this names and re-solves until
-/// nothing new appears. That is what makes the engine deciding a package's dependencies the same
-/// engine reading them: no second resolver exists at the edge to drift from this one.
-fn wanted_after(
+/// Two consumers, one walk. The binary's acquisition loop reads `wanted` and re-solves until
+/// nothing new appears; the include-tree reads `edges`/`unresolved`. Both therefore answer from
+/// the engine that really followed the loads — no second resolver exists to drift from this one,
+/// which is what lets a dependency sited through a caller-set root take custody at all.
+fn settled_account(
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    entry: CfgNodeId,
     states: &[EnvStack],
     sourced_paths: &BTreeMap<CfgNodeId, String>,
     unresolved_targets: &BTreeMap<CfgNodeId, String>,
-) -> BTreeSet<String> {
-    let mut wanted: BTreeSet<String> = unresolved_targets.values().cloned().collect();
+) -> LoadAccount {
+    let mut account = LoadAccount {
+        wanted: unresolved_targets.values().cloned().collect(),
+        ..LoadAccount::default()
+    };
+    let mut universe = Frame::default();
+    for name in defs.names() {
+        universe.insert(name, Flat::Elem(Binding::Undefined));
+    }
+    drop(run_ambient_prefix(
+        defs,
+        literals,
+        entry,
+        EnvStack::Frames(vec![universe]),
+        &mut account,
+    ));
     for (&node, key) in sourced_paths {
         let Some(program) = defs.program_at_key(key) else {
             continue;
@@ -1476,20 +1516,22 @@ fn wanted_after(
         let Some(incoming) = states.get(node.index()) else {
             continue;
         };
-        let mut visiting = BTreeSet::from([key.clone()]);
         drop(run_program(
-            defs,
-            literals,
-            node,
+            Loading {
+                defs,
+                literals,
+                node,
+                sourcer: Some(key),
+                depth: LOAD_DEPTH_CAP,
+            },
             program,
             incoming,
             &mut BTreeMap::new(),
-            &mut visiting,
-            &mut wanted,
-            LOAD_DEPTH_CAP,
+            &mut BTreeSet::from([key.clone()]),
+            &mut account,
         ));
     }
-    wanted
+    account
 }
 
 /// The definitions a `.`/`source` command at `node` contributes, or empty for any other command.
@@ -1616,7 +1658,15 @@ fn transfer(
             for name in universe {
                 frame.insert(name.clone(), Flat::Elem(Binding::Undefined));
             }
-            run_ambient_prefix(defs, literals, id, EnvStack::Frames(vec![frame]))
+            // The transfer discards the account, exactly as `command_transfer` does: it is asked
+            // once per worklist iteration, and the settled answer is what a caller may act on.
+            run_ambient_prefix(
+                defs,
+                literals,
+                id,
+                EnvStack::Frames(vec![frame]),
+                &mut LoadAccount::default(),
+            )
         }
         CfgNodeKind::ScopeEnter => incoming.push(),
         CfgNodeKind::ScopeExit => incoming.pop(),
@@ -1653,6 +1703,7 @@ fn run_ambient_prefix(
     literals: &SourceLiteralPlane<'_>,
     node: CfgNodeId,
     mut env: EnvStack,
+    account: &mut LoadAccount,
 ) -> EnvStack {
     let mut locals = BTreeMap::new();
     for root in &defs.ambient {
@@ -1667,17 +1718,18 @@ fn run_ambient_prefix(
         };
         let mut visiting = root.key.iter().cloned().collect();
         env = run_program(
-            defs,
-            literals,
-            node,
+            Loading {
+                defs,
+                literals,
+                node,
+                sourcer: root.key.as_deref(),
+                depth: LOAD_DEPTH_CAP,
+            },
             program,
             &env,
             &mut locals,
             &mut visiting,
-            // The transfer discards the account, exactly as `command_transfer` does: it is asked
-            // once per worklist iteration, and the settled answer is what a caller may act on.
-            &mut BTreeSet::new(),
-            LOAD_DEPTH_CAP,
+            account,
         );
     }
     env
@@ -1716,22 +1768,22 @@ fn command_transfer(
             let Some(program) = defs.program_of_dot_target(target) else {
                 return EnvStack::Top;
             };
-            let mut visiting = BTreeSet::new();
-            if let Some(key) = defs.cwd.resolve_dot(target) {
-                visiting.insert(key);
-            }
+            let key = defs.cwd.resolve_dot(target);
             run_program(
-                defs,
-                literals,
-                node,
+                Loading {
+                    defs,
+                    literals,
+                    node,
+                    sourcer: key.as_deref(),
+                    depth: LOAD_DEPTH_CAP,
+                },
                 program,
                 incoming,
                 &mut BTreeMap::new(),
-                &mut visiting,
+                &mut key.iter().cloned().collect(),
                 // The transfer discards the account: it is asked once per worklist iteration, and
-                // the settled answer is what a caller may act on ([`wanted_after`]).
-                &mut BTreeSet::new(),
-                LOAD_DEPTH_CAP,
+                // the settled answer is what a caller may act on ([`settled_account`]).
+                &mut LoadAccount::default(),
             )
         }
         "unset" => {
@@ -1889,6 +1941,8 @@ mod tests {
             sourced_paths: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
             wanted_loads: BTreeSet::new(),
+            load_edges: BTreeSet::new(),
+            unresolved_sourcers: BTreeSet::new(),
         };
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);

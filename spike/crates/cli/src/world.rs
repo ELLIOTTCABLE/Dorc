@@ -153,7 +153,7 @@ impl WhyWorld {
         // why driver's custody predicate answers over the run's own closures rather than a
         // singleton world that would explain suspensions the run never made.
         let book_index = Some(snapshot.book_index());
-        let include_tree = crate::sourcing::include_tree(snapshot);
+        let include_tree = crate::sourcing::include_tree(snapshot, &env);
         let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
             .with_include_tree(
                 dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),

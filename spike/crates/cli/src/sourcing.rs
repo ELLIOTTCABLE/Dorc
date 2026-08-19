@@ -1,31 +1,31 @@
 //! `sourcing` — the include-tree over the loaded sources: which file `.`-sources which
 //! (`28Q` §2 `syn-closure-is-the-speaker`; the contract at `30G:§1`).
 //!
-//! Everything here is a PURE function of the loaded `(path, source)` vectors, so both drivers — the
-//! binary and `WhyWorld` — derive one include-tree from one rule and cannot disagree about whose
-//! utterance a licence rests on (`one-definition-table-two-drivers`, the custody half). The
-//! filesystem half lives at the binary's edge, which is the only place allowed to open a file
-//! (`io-at-edges-only`): it READS what a `.` names; this module decides what that means.
+//! Everything here is a PURE function of the loaded `(path, source)` vectors and the settled
+//! function environment, so both drivers — the binary and `WhyWorld` — derive one include-tree from
+//! one rule and cannot disagree about whose utterance a licence rests on
+//! (`one-definition-table-two-drivers`, the custody half). The filesystem half lives at the
+//! binary's edge, which is the only place allowed to open a file (`io-at-edges-only`): it READS
+//! what a `.` names; this module decides what that means.
 //!
 //! # What is admitted, and why it is narrow
 //!
-//! An edge exists when a MARKED, non-book source spells a top-level `.` whose target resolves to
-//! another loaded source that itself satisfies the dorc-lang contract — marked, and declaring
-//! rather than running. That is the whole of `rul-only-oracle-sourcing-mints-speakers`, and the two
-//! exclusions carry its weight: CLI co-loading mints no edge, and a BOOK mints none either.
+//! An edge exists when a MARKED, non-book source's own load PROGRAM loaded another loaded source
+//! that itself satisfies the dorc-lang contract — marked, and declaring rather than running. That
+//! is the whole of `rul-only-oracle-sourcing-mints-speakers`, and the two exclusions carry its
+//! weight: CLI co-loading mints no edge, and a BOOK mints none either.
 //!
 //! Nothing here proves a file inert. The contract is the AUTHOR's promise, made by marking the
 //! file; a target that fails it is refused with that attribution and no edge forms
 //! (`30G:rul-inertness-is-contract-never-engine-fact`).
 //!
-//! # Path resolution is the shell's
+//! # Which load happened is the LOADER's answer, not this seat's
 //!
-//! A target resolves against the modeled WORKING DIRECTORY, exactly as the floor shells resolve
-//! it, and the rule itself lives at one seat both kernels share
-//! ([`dorc_core::loadpath`] · `30I:rul-dot-resolves-as-sh`). A slash-less target resolves NOWHERE
-//! — that is a `PATH` search, which reads the ambient environment a kernel may not touch
-//! (`inv-determinism` · `hermeticity-precondition`) and which POSIX leaves implementation-defined
-//! when it misses, so the construct is outside the two-binary floor.
+//! The edges arrive from `funcenv`'s settled account. This seat holds no loading context, so it
+//! could not expand `. "$ROOT/dep.sh"` even in principle — and re-resolving literals here would
+//! suspend exactly the package shape `30I` §2.1 makes canonical while looking like it worked. A
+//! target resolves against the modeled WORKING DIRECTORY, exactly as the floor shells resolve it,
+//! at the one seat both kernels share ([`dorc_core::loadpath`] · `30I:rul-dot-resolves-as-sh`).
 //!
 //! Paths are matched in canonical form (`Cwd::resolve_operand`), so an oracle named relatively on
 //! the command line and the same file sourced through a book variable are ONE entry. An
@@ -53,31 +53,57 @@ pub struct IncludeTree {
     pub unresolved: BTreeSet<usize>,
 }
 
-/// Derive the include-tree from one loaded snapshot. The BOOK contributes no edges however it
-/// is spelled (`rul-book-sourcing-mints-no-speaker`), and every operand resolves against the
-/// snapshot's own working directory — one input, so no caller can hand this a different world
-/// than the run analysed.
+/// Derive the include-tree from the loads the ENGINE followed (`30I:rul-one-loader-many-projections`).
+///
+/// The edges come from `funcenv`'s own settled account rather than from a second walk over literal
+/// `.` operands here. That is what closes custody for a dependency sited through a caller-set root
+/// (`. "$ROOT/dep.sh"`): this seat holds no loading context and could never expand one, so a
+/// re-resolution here would silently suspend exactly the package shape `30I` §2.1 makes canonical.
+/// The BOOK contributes no edges however it is spelled (`rul-book-sourcing-mints-no-speaker`), and
+/// neither does CLI co-loading — the loader records an edge only from a file whose own program
+/// spelled the load.
+///
+/// What stays HERE is the dorc-lang CONTRACT check, which the loader has no business making: a
+/// target the engine bound but that does not satisfy the contract mints no edge and suspends its
+/// sourcer, exactly as an unresolvable one does.
 #[must_use]
-pub fn include_tree(snapshot: &StaticLoadSnapshot) -> IncludeTree {
+pub fn include_tree(
+    snapshot: &StaticLoadSnapshot,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) -> IncludeTree {
     let mut tree = IncludeTree::default();
-    let srcs = snapshot.source_refs();
-    for (file, src) in srcs.iter().enumerate() {
-        if file == snapshot.book_index() || !dorc_oracle::marker::has_marker(src) {
+    let srcs = snapshot.source_srcs();
+    let at =
+        |key: &str| (0..srcs.len()).find(|&file| snapshot.key_of(file).as_deref() == Some(key));
+    let admissible = |file: usize| {
+        file != snapshot.book_index()
+            && srcs
+                .get(file)
+                .is_some_and(|src| satisfies_the_contract(src))
+    };
+    for (sourcer, target) in env.load_edges() {
+        let Some(from) = at(sourcer).filter(|&file| admissible(file)) else {
             continue;
-        }
-        for target in top_level_load_targets(src) {
-            match resolve(snapshot, &target) {
-                Some(sourced) => tree.edges.push((file, sourced)),
-                None => drop(tree.unresolved.insert(file)),
-            }
+        };
+        match at(target).filter(|&file| admissible(file)) {
+            Some(to) => tree.edges.push((from, to)),
+            None => drop(tree.unresolved.insert(from)),
         }
     }
+    for sourcer in env.unresolved_sourcers() {
+        if let Some(from) = at(sourcer).filter(|&file| admissible(file)) {
+            tree.unresolved.insert(from);
+        }
+    }
+    tree.edges.sort_unstable();
+    tree.edges.dedup();
     tree
 }
 
 /// Does this source satisfy the dorc-lang contract a `.` may name — marked, and declaring rather
-/// than running? The binary asks before admitting a file it read; [`resolve`] asks again, so a
-/// source that reached the vector some other way cannot become an edge by accident.
+/// than running? The binary asks before admitting a file it read; [`include_tree`] asks again at
+/// both ends of every edge, so a source that reached the vector some other way — named on the
+/// command line, say — cannot become an edge by accident.
 #[must_use]
 pub fn satisfies_the_contract(src: &str) -> bool {
     dorc_oracle::marker::has_marker(src) && dorc_oracle::load_inert::lint_load_inert(src).is_empty()
@@ -86,20 +112,16 @@ pub fn satisfies_the_contract(src: &str) -> bool {
 /// Every LITERALLY spelled `.` target in `src`, top level and include-guard branches alike, in
 /// source order.
 ///
-/// The binary calls this to learn what to READ; [`include_tree`] calls it to learn what to LINK.
-/// One reader, so the file the driver opened and the file the tree links are the same file by
-/// construction.
+/// The binary calls this to learn what to READ, before there is any environment to ask.
 ///
 /// Guard branches are walked because that is where the healthy shared-dependency shape puts its
 /// load (`30I` §2.2) — a dependency the engine refused to READ because it sat behind a guard would
 /// leave every guarded package suspended.
 ///
 /// **LITERAL only, and the cut is disclosed** (`churn-avoidance-disclosure`): an operand built from
-/// a variable the CALLER set has no value here — this seat holds no loading context — so it is
-/// skipped, and a sourcer whose dependency is spelled that way SUSPENDS rather than composing.
-/// That is the withholding direction. The binary's acquisition loop reads such a file anyway,
-/// because it drives the real loader; what is owed is CUSTODY for a variable-rooted dependency,
-/// which needs the load site's own environment and is `30Ib` §5's first open question.
+/// a variable the CALLER set has no value here, so it is skipped. Nothing is lost — the real loader
+/// names it through `FuncEnv::wanted_loads`, which the acquisition loop reads and re-solves — and
+/// LINKING it is [`include_tree`]'s job, which asks the loader rather than this walk.
 #[must_use]
 pub fn top_level_load_targets(src: &str) -> Vec<String> {
     fn walk(ast: &dorc_syntax::ast::Ast, items: &[dorc_core::AstId], out: &mut Vec<String>) {
@@ -120,20 +142,6 @@ pub fn top_level_load_targets(src: &str) -> Vec<String> {
     let mut out = Vec::new();
     walk(&ast, items, &mut out);
     out
-}
-
-/// Which loaded source a `.` target names, or `None` when nothing admissible answers.
-///
-/// Matching is LEXICAL — the resolved target against canonicalized paths — because the answer must
-/// be reproducible from the vectors alone, with no filesystem read (`inv-determinism`). Two
-/// spellings of one file that do not canonicalize alike simply do not match, which withholds.
-fn resolve(snapshot: &StaticLoadSnapshot, target: &str) -> Option<usize> {
-    snapshot.source_at_dot_target(target).filter(|&file| {
-        snapshot
-            .source_srcs()
-            .get(file)
-            .is_some_and(|src| satisfies_the_contract(src))
-    })
 }
 
 fn literal_text(ast: &dorc_syntax::ast::Ast, word: dorc_core::AstId) -> Option<String> {
@@ -168,23 +176,40 @@ mod tests {
         format!("{MARKER}{body}")
     }
 
-    /// Build the one snapshot the tree derives from. `book` names which source is the BOOK, which
-    /// the snapshot always sorts last; `None` supplies an empty one.
+    /// Build the snapshot AND solve the environment the tree derives from — the whole driver path,
+    /// because the edges are the loader's own account and a hand-built one would be a second
+    /// resolver of exactly the kind this seat exists not to have. `book` names which source is the
+    /// BOOK, which the snapshot always sorts last; `None` supplies an empty one.
     fn tree_at(cwd: &str, paths: &[String], srcs: &[&str], book: Option<usize>) -> IncludeTree {
+        tree_reached(cwd, paths, srcs, book, &std::collections::BTreeSet::new())
+    }
+
+    /// [`tree_at`], with `reached` naming the sources a book `.` brings in rather than the
+    /// invocation — the difference that decides whether a package's own operands see the book's
+    /// variables at all.
+    fn tree_reached(
+        cwd: &str,
+        paths: &[String],
+        srcs: &[&str],
+        book: Option<usize>,
+        reached: &std::collections::BTreeSet<usize>,
+    ) -> IncludeTree {
         let mut paths: Vec<String> = paths.to_vec();
         let mut srcs: Vec<String> = srcs.iter().map(|s| (*s).to_owned()).collect();
         let (book_path, book_src) = match book {
             Some(at) => (paths.remove(at), srcs.remove(at)),
             None => ("book.sh".to_owned(), String::new()),
         };
-        include_tree(&StaticLoadSnapshot::over(
-            Cwd::at(cwd),
-            paths,
-            srcs,
-            &std::collections::BTreeSet::new(),
-            &book_path,
-            &book_src,
-        ))
+        let snapshot =
+            StaticLoadSnapshot::over(Cwd::at(cwd), paths, srcs, reached, &book_path, &book_src);
+        let mut interner = dorc_core::Interner::default();
+        let ast = dorc_syntax::parse(&book_src).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = crate::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        include_tree(&snapshot, &env)
     }
 
     /// Most cases spell their paths relative to ONE modeled working directory, which the empty
@@ -415,6 +440,40 @@ mod tests {
             tree_at("/ops/pkg", &beside_the_entrypoint, &sources, None).edges,
             vec![(0, 1)],
             "...and it is exactly what the same line names once the admin stands in the package"
+        );
+    }
+
+    /// CUSTODY FOR A VARIABLE-ROOTED DEPENDENCY (`30I:force-root-value-flow`) — the canonical
+    /// package shape sites its own dependency through a root ITS CALLER SET, so the operand has no
+    /// value at all until the load actually happens.
+    ///
+    /// The edge exists because the engine that FOLLOWED the load is the engine that reports it.
+    /// Under the literal walk this replaced, the same package suspended its own vouches: the
+    /// operand was skipped as unreadable, the sourcer landed in `unresolved`, and the community
+    /// shape `30I` §2.1 makes canonical could not compose at all.
+    #[test]
+    fn a_dependency_sited_through_the_callers_root_takes_custody() {
+        let entry = marked(". \"$OPS_LIB/helpers.sh\"\nwombat__is_converged() { _same \"$1\" ;}\n");
+        let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n");
+        let book = "OPS_LIB=.\n. ./entry.sh\nwombat sync\n";
+        let paths = vec![
+            "entry.sh".to_owned(),
+            "helpers.sh".to_owned(),
+            "book.sh".to_owned(),
+        ];
+        let tree = tree_reached(
+            "",
+            &paths,
+            &[&entry, &helpers, book],
+            Some(2),
+            &[0, 1].into(),
+        );
+        assert_eq!(
+            tree,
+            IncludeTree {
+                edges: vec![(0, 1)],
+                unresolved: [].into()
+            }
         );
     }
 
