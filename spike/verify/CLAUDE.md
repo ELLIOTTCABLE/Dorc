@@ -16,6 +16,9 @@ greppable slugs, APPEND to sections.
   own artifact invites filtered reads.
 - **rul-staleness-names-its-diff** — a freshness refusal names WHICH sections or cells
   diverged; a bare "stale — re-run" is a defect.
+- **rul-engine-report-is-ephemeral** — the committed report is always the cheap
+  structural projection. A report recomputing Lean/Kani evidence is invocation-local;
+  `--write` with any engine flag refuses, and no gate promotes or republishes evidence.
 
 ## The catalogue lock & promote
 
@@ -37,7 +40,14 @@ greppable slugs, APPEND to sections.
 - **rul-interrogated-needs-the-coupling** — the `interrogated` badge requires the
   `{slug}_specializes_at_u32` coupling theorem alongside the nonvacuity probe and the
   battery.
+- **rul-proof-badge-is-engine-owned** — a hole-free theorem-shaped file is a proof
+  claim, not a proved theorem. Only a Lean-running tier may earn or withdraw `proved`;
+  cheap tiers report `not-recomputed-here`.
 - **rul-derivation-digest-is-an-alarm-not-trust** — the recorded source digest detects
   drift of the `#[path]`-included inputs, and nothing more. A matching digest asserts
   NOTHING about correctness; an absent one renders `UNRECORDED` honestly rather than
   silently passing; and only a real `verify:translate` run closes it.
+- **rul-translation-check-shares-generator** — generation and read-only drift checking
+  use one destination-parameterized strict translator/materializer. Check mode owns a
+  scratch root, compares the complete output tree byte-for-byte, and never mutates or
+  accepts committed artifacts.

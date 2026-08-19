@@ -863,8 +863,11 @@ mise run test:looms       # the loom corpus alone: parse + hygiene + render fixp
 mise run clippy           # workspace clippy, -D warnings
 mise run check            # all four lint gates, check-only
 mise run gate             # check + a fresh build + the whole suite (the pre-commit set)
+mise run both gate:full-quiet # builder completion: path-routed, both platform legs
+mise run gate:arc         # conductor close: completion + applicable advanced verifiers
+mise run gate:step -- X   # re-run one failed hk step, without reclassifying the change
 mise run bless            # ORCHESTRATOR-ONLY golden re-bless (see below)
-mise run bless:dry        # ... build + suite + tally, zero golden writes
+mise run bless:dry        # ... acceptance summary, zero golden writes
 mise run bless:floor      # ORCHESTRATOR-ONLY: the one path that may write an `expected.emitted`
                           #   (*nix/WSL only — it needs BOTH floor binaries)
 mise run loom:compile     # dorc-loom compile CASE...
@@ -874,8 +877,11 @@ mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 mise run lint:docids      # docID dangling-reference lint (rides check)
 mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
 mise run verify:promote   # regenerate catalogue_lock.rs from corpus + claims (review = the diff)
+mise run verify:translate-check # strict read-only comparison against committed Lean output
+mise run verify:lean-badges # recompute Lean-owned badge evidence (Windows routes through WSL)
 mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (one harness at a
                           #   time, memory-gated, CBMC reaped; trailing arg = one harness)
+mise run verify:kani-check # compile the detached harness without invoking Kani
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
 mise run test:e2e-quiet   # the e2e corpus, agent spelling: terse per-case on success,
@@ -914,12 +920,18 @@ no task covers, and consider adding the task instead.
   is a HARD dependency of this corpus — Dorc's product is sh and these gates execute what
   they render — so the fix is to resolve one explicitly, never to drop the requirement.
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
-- **verify-lane-family** (r30) — `verify:check` rides the ordinary gates on both legs
-  (cheap tier: catalogue coherence, unit/slug contracts, the hole censuses — no
-  external toolchain). `verify:translate` / `verify:lean` / `verify:report --
-  --with-lean` are opt-in Linux/WSL lanes (the derived-definitions pipeline, the lake
-  build, the badge recompute). `verify:kani` (+ one-time `verify:kani-setup`) is the
-  same opt-in tier; Windows refuses in one polite line. It drives ONE harness at a
+- **four-rung-gate-ladder** (r30) — one path-routed hk graph serves four fixed
+  lifecycle rungs: blazing pre-commit · ordinary-resource builder completion
+  (`mise run both gate:full-quiet`) · resource-heavy conductor close (`gate:arc`) ·
+  direct per-tool investigation. The contributor chooses the rung, never a
+  change-to-command decision tree; hk conservatively chooses applicable checks and
+  `gate:step` re-runs one named failure. False-positive inclusion costs wall-clock;
+  false-negative exclusion invalidates the gate.
+- **verify-lane-family** (r30) — `verify:check` rides builder completion on both legs
+  (cheap tier: catalogue coherence, unit/slug contracts, hole census, report currency;
+  no external engine). `verify:translate-check`, `verify:lean-badges`, and
+  `verify:kani` are path-routed arc-tier checks; their direct tasks remain independently
+  usable and Windows self-routes WSL-only engines. Kani drives ONE harness at a
   time, memory-gated, CBMC reaped between each — never a bare `cargo kani` battery
   (`background-wsl-children-outlive-taskstop`) — and opens with a toolchain-less
   `cargo check` of the DETACHED harness crate, the only compile standing between a
@@ -969,7 +981,7 @@ no task covers, and consider adding the task instead.
   (`verify:kani` already reaps it between harnesses — this bullet is for anything
   driving a solver outside that lane.) Heavy WSL solver/build work runs with
   per-item timeouts + reaping, and SERIALIZED across concurrent lanes
-  (the VM's ~15GiB default cap is the binding constraint, not host RAM).
+  (this workstation's 20GiB WSL cap is the binding constraint, not host RAM).
 - **never-filter-a-task** — if a task is too loud, run its `-quiet` variant; if it has
   none, ADD one. Do NOT filter at the call site: `head`/`tail`/`grep`, and their
   PowerShell spellings `Select-Object -First/-Last` and `Select-String`, truncate the
@@ -977,8 +989,11 @@ no task covers, and consider adding the task instead.
   reports tail's 0 however cmd died — that produced a false green in this repo on
   2026-07-26). On Windows also skip `2>&1` on a native command: PowerShell wraps each
   stderr line in a NativeCommandError and can flip `$?` on a process that exited 0.
-- Pre-commit gate set — `cargo fmt --check` · `clippy -D warnings` · `cargo deny check
-  licenses bans sources` · `typos` · the staged-path loom/e2e corpora. Agent shells carry
+- Pre-commit gate set — `cargo fmt --check` · `cargo deny check licenses bans sources` ·
+  `typos` · the staged-path loom/e2e/minispec corpora. Whole-workspace Clippy is a
+  path-routed builder-completion check: its invalidation-sensitive rebuild cannot meet
+  the 2–3s hook ceiling (measured hook: ~0.74s without it; ~9.1s on the caught rebuild).
+  Agent shells carry
   `HK_FIX=0` + `HK_STASH=none` (settings env), so the hook RUNS on your commits, check-only:
   refusals are loud, and it never rewrites files or stashes the tree under a running
   harness (fix-mode and stashing stay on for humans). Verified falsifiably 2026-08-13:
