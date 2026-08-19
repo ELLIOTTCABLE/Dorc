@@ -1292,6 +1292,11 @@ fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>>
                 return None;
             }
             consented = true;
+        } else if *word == "--results" {
+            // As in `parse_direct_plan`: the claim is spelled, and only `-` is recognized.
+            if *rest.next()? != "-" {
+                return None;
+            }
         } else if *word == "<" {
             if input.replace(*rest.next()?).is_some() {
                 return None;
@@ -1514,6 +1519,15 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
                 return None;
             }
             machine = true;
+        } else if *word == "--results" {
+            // The stdin CLAIM (`30I:owed-no-flag-defaults-to-stdin`): records no longer arrive
+            // implicitly, so an invocation that feeds them says so. Only `-` is recognized, and
+            // the `<` beside it still names the section the driver reads -- a named file here
+            // would be a second way to say the same thing, refused rather than guessed.
+            index = index.saturating_add(1);
+            if *words.get(index)? != "-" {
+                return None;
+            }
         } else if *word == "<" {
             let path = *words.get(index.saturating_add(1))?;
             if input.replace(path).is_some() || !case_relative_path(path) {

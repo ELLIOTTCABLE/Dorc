@@ -827,6 +827,13 @@ fn run_dorc(
     if debug_argv {
         cmd.arg("--debug-argv");
     }
+    // The stdin CLAIM (`30I:owed-no-flag-defaults-to-stdin`): records no longer arrive implicitly,
+    // and this driver always writes `stdin` to the child's pipe. `probe` reads none either way, so
+    // naming it unconditionally keeps the two passes one invocation shape.
+    if !probe_only {
+        cmd.arg("--results");
+        cmd.arg("-");
+    }
     cmd.args(oracle_args);
     cmd.stdin(Stdio::piped());
     cmd.stdout(Stdio::piped());

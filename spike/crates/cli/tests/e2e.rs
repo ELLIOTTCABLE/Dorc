@@ -1136,7 +1136,7 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
         .arg("plan")
         .arg(format!("--shim-dir={}", shim_dir.display()))
         .arg(format!("--book={}", dir.join("book.sh").display()))
-        .args(&args);
+        .args(args_reading_stdin_records(&args));
     let fixture_fed = capture(
         fixture_fed
             .stdin(Stdio::from(results))
@@ -1191,6 +1191,9 @@ fn round_trip_command(dir: &Path) -> String {
     if let Ok(Some(flags)) = marker(dir, "DORC_FLAGS") {
         let _ = write!(command, " {flags}");
     }
+    // `owed-no-flag-defaults-to-stdin`: the records lane no longer takes stdin unless a `-` names
+    // it, and the runner always feeds a framed stream -- so the invocation says so, always.
+    command.push_str(" --results -");
     if dir.join("probe-results.txt").is_file() {
         command.push_str(" < probe-results.txt");
     }
@@ -1508,6 +1511,20 @@ fn shared_args(dir: &Path) -> Result<Vec<String>, String> {
     Ok(args)
 }
 
+/// The shared argv PLUS the stdin claim, for a drive that really feeds framed records on stdin
+/// (`owed-no-flag-defaults-to-stdin`: no flag acquires stdin implicitly any more, so a drive that
+/// pipes records has to name the stream).
+///
+/// Deliberately NOT folded into [`shared_args`]: the same vector also reaches drives that must
+/// NOT claim stdin — `dorc plan --host`, where `--results` and `--host` are mutually exclusive,
+/// and the why-chain scan, which names its own `--results=<file>` and answers from the receipt.
+fn args_reading_stdin_records(args: &[String]) -> Vec<String> {
+    let mut out = args.to_vec();
+    out.push("--results".to_owned());
+    out.push("-".to_owned());
+    out
+}
+
 /// Drive one round-trip case through every gate, then apply the XFAIL/BLESS lens.
 fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     let dir = &case.dir;
@@ -1553,7 +1570,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
             .dorc(dir)
             .arg(format!("--shim-dir={}", shim_dir.display()))
             .arg(format!("--book={}", book.display()))
-            .args(&args)
+            .args(args_reading_stdin_records(&args))
             .stdin(Stdio::from(std::fs::File::open(&framed_path).unwrap()))
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()),
@@ -2103,7 +2120,7 @@ fn debug_argv(harness: &Harness, dir: &Path, args: &[String], framed: &Path) -> 
             .dorc(dir)
             .arg("--debug-argv")
             .arg(format!("--book={}", dir.join("book.sh").display()))
-            .args(args)
+            .args(args_reading_stdin_records(args))
             .stdin(Stdio::from(std::fs::File::open(framed).unwrap()))
             .stdout(Stdio::null())
             .stderr(Stdio::piped()),
@@ -2259,7 +2276,7 @@ fn dual_rail_check(
         harness
             .dorc(dir)
             .arg(format!("--book={}", dir.join("book.sh").display()))
-            .args(args)
+            .args(args_reading_stdin_records(args))
             .stdin(Stdio::from(std::fs::File::open(framed).unwrap()))
             .stdout(Stdio::piped())
             .stderr(Stdio::null()),
@@ -2451,7 +2468,7 @@ fn scan_why_chain(
         harness
             .dorc(dir)
             .arg(&book)
-            .args(args)
+            .args(args_reading_stdin_records(args))
             .arg(format!("--whylog-dir={}", whylog.display()))
             .stdin(Stdio::from(std::fs::File::open(framed).unwrap()))
             .stdout(Stdio::null())
@@ -2936,7 +2953,7 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
     ] {
         let path = scratch.path.join(format!("{tag}.loom"));
         let source = format!(
-            "---\nrun: round-trip\nfixpoint: executed\n---\n-- book.sh --\n{book}\n-- expected.ran --\n-- replay --\n$ dorc --book=book.sh\nplaceholder\n"
+            "---\nrun: round-trip\nfixpoint: executed\n---\n-- book.sh --\n{book}\n-- expected.ran --\n-- replay --\n$ dorc --book=book.sh --results -\nplaceholder\n"
         );
         std::fs::write(&path, &source).expect("write specimen loom");
         let spec = LoomCaseSpec {
@@ -3014,12 +3031,22 @@ fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
             .collect::<Vec<_>>()
             .join("\n")
     };
+    // `--results -` is the stdin claim this battery's own pipe now needs spelling
+    // (`owed-no-flag-defaults-to-stdin`); without it the run measures nothing and BOTH arms read
+    // elide=0, which is a false equality rather than a real one.
     let flagged = elide(&[
         "--pre-source".to_owned(),
         oracle.clone(),
         "--risk-faultless-skips".to_owned(),
+        "--results".to_owned(),
+        "-".to_owned(),
     ]);
-    let plain = elide(&["--pre-source".to_owned(), oracle]);
+    let plain = elide(&[
+        "--pre-source".to_owned(),
+        oracle,
+        "--results".to_owned(),
+        "-".to_owned(),
+    ]);
     (flagged == plain).then(|| format!(
         "dorc_flags_selftest FAILED — --risk-faultless-skips did not change the flagship's elision count ({flagged} flagged vs {plain} plain); the flag is not reaching the engine, so a flagged survival case's gate-6 attribution would lie."
     ))
