@@ -35,12 +35,12 @@ pub struct Materialized {
     pub axioms: usize,
 }
 
-/// Turn a raw aeneas emission under `minispec/Generated/` into the committed shape.
+/// Turn a raw aeneas emission under `output_root/minispec/Generated/` into its final shape.
 ///
 /// # Errors
 /// When the emission is missing or a file cannot be written.
-pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
-    let generated = repo_root.join("minispec").join("Generated");
+pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialized, String> {
+    let generated = output_root.join("minispec").join("Generated");
     if !generated.is_dir() {
         return Err(format!(
             "{} does not exist — run `mise run verify:translate` first",
@@ -53,7 +53,7 @@ pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
     // directory it names. Moving it is the whole reason this step exists as a step.
     let emitted_entry = generated.join("Generated.lean");
     if emitted_entry.is_file() {
-        let target = repo_root.join("minispec").join("Generated.lean");
+        let target = output_root.join("minispec").join("Generated.lean");
         let text = read(&emitted_entry)?;
         write(&target, &text)?;
         std::fs::remove_file(&emitted_entry)
@@ -73,8 +73,8 @@ pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
     // Recorded HERE because this step is the pipeline's own last act, on the stable toolchain:
     // the digest is a statement about what this translation read, and nothing else is in a
     // position to make it truthfully.
-    let lock = crate::derivation::compute(repo_root)?;
-    write(&crate::derivation::path(repo_root), &lock)?;
+    let lock = crate::derivation::compute(source_root)?;
+    write(&crate::derivation::path(output_root), &lock)?;
     written.push("spike/verify/aeneas/derivation.lock".to_owned());
 
     let (holes, axioms) = census(&generated)?;
@@ -83,6 +83,107 @@ pub fn materialize(repo_root: &Path) -> Result<Materialized, String> {
         holes,
         axioms,
     })
+}
+
+/// Materialize into the committed production paths.
+///
+/// The check lane supplies a separate output root to the same implementation.
+///
+/// # Errors
+/// When the raw emission is missing or a committed output cannot be written.
+pub fn materialize_production(repo_root: &Path) -> Result<Materialized, String> {
+    materialize(repo_root, repo_root)
+}
+
+/// Compare every generated output without normalizing its names or bytes.
+///
+/// # Errors
+/// When either tree cannot be read.
+pub fn compare_outputs(
+    committed_root: &Path,
+    candidate_root: &Path,
+) -> Result<Vec<String>, String> {
+    let outputs = [
+        PathBuf::from("minispec/Generated"),
+        PathBuf::from("minispec/Generated.lean"),
+        PathBuf::from("spike/verify/aeneas/derivation.lock"),
+    ];
+    let mut differences = Vec::new();
+    for output in outputs {
+        compare_path(
+            &committed_root.join(&output),
+            &candidate_root.join(&output),
+            &output,
+            &mut differences,
+        )?;
+    }
+    Ok(differences)
+}
+
+fn compare_path(
+    committed: &Path,
+    candidate: &Path,
+    relative: &Path,
+    differences: &mut Vec<String>,
+) -> Result<(), String> {
+    match (committed.try_exists(), candidate.try_exists()) {
+        (Ok(false), Ok(false)) => Ok(()),
+        (Ok(true), Ok(false)) => {
+            differences.push(format!("missing {}", display_path(relative)));
+            Ok(())
+        }
+        (Ok(false), Ok(true)) => {
+            differences.push(format!("extra {}", display_path(relative)));
+            Ok(())
+        }
+        (Ok(true), Ok(true)) => {
+            let committed_meta = std::fs::metadata(committed)
+                .map_err(|e| format!("{}: {e}", committed.display()))?;
+            let candidate_meta = std::fs::metadata(candidate)
+                .map_err(|e| format!("{}: {e}", candidate.display()))?;
+            if committed_meta.is_file() && candidate_meta.is_file() {
+                if std::fs::read(committed).map_err(|e| format!("{}: {e}", committed.display()))?
+                    != std::fs::read(candidate)
+                        .map_err(|e| format!("{}: {e}", candidate.display()))?
+                {
+                    differences.push(format!("changed {}", display_path(relative)));
+                }
+                return Ok(());
+            }
+            if committed_meta.is_dir() && candidate_meta.is_dir() {
+                let mut names = std::collections::BTreeSet::new();
+                for entry in std::fs::read_dir(committed)
+                    .map_err(|e| format!("{}: {e}", committed.display()))?
+                {
+                    let entry = entry.map_err(|e| format!("{}: {e}", committed.display()))?;
+                    names.insert(entry.file_name());
+                }
+                for entry in std::fs::read_dir(candidate)
+                    .map_err(|e| format!("{}: {e}", candidate.display()))?
+                {
+                    let entry = entry.map_err(|e| format!("{}: {e}", candidate.display()))?;
+                    names.insert(entry.file_name());
+                }
+                for name in names {
+                    compare_path(
+                        &committed.join(&name),
+                        &candidate.join(&name),
+                        &relative.join(name),
+                        differences,
+                    )?;
+                }
+                return Ok(());
+            }
+            differences.push(format!("changed {}", display_path(relative)));
+            Ok(())
+        }
+        (Err(e), _) => Err(format!("{}: {e}", committed.display())),
+        (_, Err(e)) => Err(format!("{}: {e}", candidate.display())),
+    }
+}
+
+fn display_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
 
 /// The sorry census plus the axiom count over a generated tree.
@@ -276,6 +377,9 @@ fn read(path: &Path) -> Result<String, String> {
 }
 
 fn write(path: &Path, text: &str) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;
+    }
     std::fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))
 }
 
@@ -330,5 +434,146 @@ mod tests {
         assert!(build.join(".lake").join("build").join("olean").exists());
         assert!(build.join("lake-manifest.json").exists());
         std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn output_comparison_reports_changed_missing_and_extra_paths_without_touching_inputs() {
+        let root = std::env::temp_dir().join("dorc-verify-output-comparison-pin");
+        let (committed, candidate) = (root.join("committed"), root.join("candidate"));
+        let _ = std::fs::remove_dir_all(&root);
+        for tree in [&committed, &candidate] {
+            std::fs::create_dir_all(tree.join("minispec").join("Generated")).unwrap();
+            std::fs::create_dir_all(tree.join("spike").join("verify").join("aeneas")).unwrap();
+            std::fs::write(tree.join("minispec").join("Generated.lean"), "entry\n").unwrap();
+            std::fs::write(
+                tree.join("spike")
+                    .join("verify")
+                    .join("aeneas")
+                    .join("derivation.lock"),
+                "lock\n",
+            )
+            .unwrap();
+        }
+        assert!(
+            compare_outputs(&committed, &candidate).unwrap().is_empty(),
+            "the identical candidate is an idempotent pass"
+        );
+        std::fs::write(
+            committed
+                .join("minispec")
+                .join("Generated")
+                .join("same.lean"),
+            "same\n",
+        )
+        .unwrap();
+        std::fs::write(
+            committed
+                .join("minispec")
+                .join("Generated")
+                .join("changed.lean"),
+            "old\n",
+        )
+        .unwrap();
+        std::fs::write(
+            committed
+                .join("minispec")
+                .join("Generated")
+                .join("missing.lean"),
+            "gone\n",
+        )
+        .unwrap();
+        std::fs::write(
+            candidate
+                .join("minispec")
+                .join("Generated")
+                .join("same.lean"),
+            "same\n",
+        )
+        .unwrap();
+        std::fs::write(
+            candidate
+                .join("minispec")
+                .join("Generated")
+                .join("changed.lean"),
+            "new\n",
+        )
+        .unwrap();
+        std::fs::write(
+            candidate
+                .join("minispec")
+                .join("Generated")
+                .join("extra.lean"),
+            "extra\n",
+        )
+        .unwrap();
+
+        assert_eq!(
+            compare_outputs(&committed, &candidate).unwrap(),
+            vec![
+                "changed minispec/Generated/changed.lean",
+                "extra minispec/Generated/extra.lean",
+                "missing minispec/Generated/missing.lean",
+            ]
+        );
+        assert_eq!(
+            std::fs::read_to_string(
+                committed
+                    .join("minispec")
+                    .join("Generated")
+                    .join("changed.lean")
+            )
+            .unwrap(),
+            "old\n"
+        );
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn materialize_places_every_output_under_the_injected_root() {
+        let root = std::env::temp_dir().join("dorc-verify-materialize-root-pin");
+        let (source, output) = (root.join("source"), root.join("output"));
+        let _ = std::fs::remove_dir_all(&root);
+        let aeneas = source.join("spike").join("verify").join("aeneas");
+        std::fs::create_dir_all(aeneas.join("src")).unwrap();
+        std::fs::write(aeneas.join("Cargo.toml"), "[package]\nname = \"fixture\"\n").unwrap();
+        std::fs::write(aeneas.join("src").join("lib.rs"), "pub mod fixture;\n").unwrap();
+
+        let generated = output.join("minispec").join("Generated");
+        std::fs::create_dir_all(&generated).unwrap();
+        std::fs::write(generated.join("Generated.lean"), "entry\n").unwrap();
+        std::fs::write(
+            generated.join("FunsExternal_Template.lean"),
+            "axiom funs_external : Unit\n",
+        )
+        .unwrap();
+        std::fs::write(
+            generated.join("TypesExternal_Template.lean"),
+            "axiom types_external : Unit\n",
+        )
+        .unwrap();
+
+        let done = materialize(&source, &output).unwrap();
+
+        assert_eq!(done.written.len(), 4);
+        assert_eq!(done.holes, 0);
+        assert_eq!(done.axioms, 2);
+        assert_eq!(
+            std::fs::read_to_string(output.join("minispec").join("Generated.lean")).unwrap(),
+            "entry\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(generated.join("FunsExternal.lean")).unwrap(),
+            "axiom funs_external : Unit\n"
+        );
+        assert!(
+            output
+                .join("spike")
+                .join("verify")
+                .join("aeneas")
+                .join("derivation.lock")
+                .is_file()
+        );
+        assert!(!source.join("minispec").exists());
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

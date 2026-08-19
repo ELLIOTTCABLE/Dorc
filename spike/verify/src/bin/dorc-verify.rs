@@ -21,6 +21,7 @@ fn main() -> ExitCode {
         Some("report") => run_report(&rest),
         Some("promote") => run_promote(&rest),
         Some("materialize") => run_materialize(),
+        Some("translate-check") => run_translate_check(),
         Some("lean-build") => run_lean_build(),
         Some("kani") => run_kani(rest.first().copied()),
         other => {
@@ -28,7 +29,7 @@ fn main() -> ExitCode {
             eprintln!(
                 "tasks: check, report [--write] [--with-lean] [--with-kani], promote \
                  [--with-lean] [--with-kani] [--seat|--proof|--harness <Slug>=<value>], \
-                 materialize, lean-build, kani [<harness>]"
+                  materialize, translate-check, lean-build, kani [<harness>]"
             );
             ExitCode::from(2)
         }
@@ -253,7 +254,7 @@ fn run_promote(args: &[&str]) -> ExitCode {
 }
 
 fn run_materialize() -> ExitCode {
-    match pipeline::materialize(repo_root()) {
+    match pipeline::materialize_production(repo_root()) {
         Err(why) => {
             eprintln!("dorc-verify materialize: {why}");
             ExitCode::from(2)
@@ -276,6 +277,122 @@ fn run_materialize() -> ExitCode {
             }
             ExitCode::SUCCESS
         }
+    }
+}
+
+fn run_translate_check() -> ExitCode {
+    if cfg!(windows) {
+        eprintln!(
+            "dorc-verify translate-check: Linux/WSL only; the root mise task self-routes from Windows"
+        );
+        return ExitCode::from(2);
+    }
+    let root = repo_root();
+    let scratch = match ScratchRoot::create(root) {
+        Ok(scratch) => scratch,
+        Err(why) => {
+            eprintln!("dorc-verify translate-check: {why}");
+            return ExitCode::from(2);
+        }
+    };
+    let result = (|| {
+        run_translator(root, scratch.path())?;
+        let materialized = pipeline::materialize(root, scratch.path())?;
+        if materialized.holes > 0 {
+            return Err(format!(
+                "strict pipeline emitted {} proof hole(s)",
+                materialized.holes
+            ));
+        }
+        let differences = pipeline::compare_outputs(root, scratch.path())?;
+        if differences.is_empty() {
+            Ok(())
+        } else {
+            Err(differences.join("\n"))
+        }
+    })();
+    let cleanup = scratch.cleanup();
+    match (result, cleanup) {
+        (Ok(()), Ok(())) => {
+            eprintln!("dorc-verify translate-check: PASS");
+            ExitCode::SUCCESS
+        }
+        (Err(why), Ok(())) => {
+            eprintln!("FAIL  dorc-verify translate-check: {why}");
+            ExitCode::from(1)
+        }
+        (Ok(()), Err(cleanup)) => {
+            eprintln!("dorc-verify translate-check: scratch cleanup failed: {cleanup}");
+            ExitCode::from(2)
+        }
+        (Err(result), Err(cleanup)) => {
+            eprintln!("FAIL  dorc-verify translate-check: {result}");
+            eprintln!("dorc-verify translate-check: scratch cleanup failed: {cleanup}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_translator(
+    repo_root: &std::path::Path,
+    output_root: &std::path::Path,
+) -> Result<(), String> {
+    let destination = output_root.join("minispec").join("Generated");
+    std::fs::create_dir_all(&destination).map_err(|e| format!("{}: {e}", destination.display()))?;
+    let status = std::process::Command::new("mise")
+        .args(["run", "aeneas:translate", "--"])
+        .arg(&destination)
+        .current_dir(repo_root.join("spike").join("verify").join("aeneas"))
+        .status()
+        .map_err(|e| format!("could not start nested mise translator: {e}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("strict translator failed: {status}"))
+    }
+}
+
+struct ScratchRoot {
+    path: std::path::PathBuf,
+}
+
+impl ScratchRoot {
+    fn create(repo_root: &std::path::Path) -> Result<Self, String> {
+        let parent = repo_root.join(".tmp").join("verify-translate");
+        std::fs::create_dir_all(&parent).map_err(|error| {
+            format!(
+                "could not create scratch parent {}: {error}",
+                parent.display()
+            )
+        })?;
+        for nonce in 0..1024_u32 {
+            let path = parent.join(format!(
+                "dorc-verify-translate-{}-{nonce}",
+                std::process::id()
+            ));
+            match std::fs::create_dir(&path) {
+                Ok(()) => return Ok(Self { path }),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(error) => {
+                    return Err(format!(
+                        "could not exclusively create {}: {error}",
+                        path.display()
+                    ));
+                }
+            }
+        }
+        Err(format!(
+            "could not exclusively create scratch under {}",
+            parent.display()
+        ))
+    }
+
+    fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+
+    fn cleanup(self) -> Result<(), String> {
+        std::fs::remove_dir_all(&self.path).map_err(|e| format!("{}: {e}", self.path.display()))
     }
 }
 
@@ -366,5 +483,28 @@ fn run_lean_build() -> ExitCode {
             eprintln!("dorc-verify lean-build: {why}");
             ExitCode::from(1)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ScratchRoot;
+
+    #[test]
+    fn scratch_cleanup_removes_only_the_exclusively_created_root() {
+        let root = std::env::temp_dir().join("dorc-verify-scratch-pin");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let sentinel = root.join("sentinel");
+        std::fs::write(&sentinel, "unchanged\n").unwrap();
+        let scratch = ScratchRoot::create(&root).unwrap();
+        let path = scratch.path().to_owned();
+        std::fs::write(path.join("owned"), "scratch\n").unwrap();
+
+        scratch.cleanup().unwrap();
+
+        assert!(!path.exists());
+        assert_eq!(std::fs::read_to_string(sentinel).unwrap(), "unchanged\n");
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

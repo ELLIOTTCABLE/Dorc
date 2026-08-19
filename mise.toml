@@ -642,15 +642,17 @@ run = [
 ]
 
 [tasks."verify:translate-check"]
-description = "Read-only strict translation drift check. Not implemented until the production translator can accept a controller-owned scratch destination without duplicating its semantics."
+description = "Read-only strict translation drift check: runs the production strict translator and materializer in controller-owned scratch, then names every changed, missing, or extra generated output. Linux/WSL-only; Windows self-routes through WSL."
 raw = true
+dir = "spike"
 run = "cargo run -q -p dorc-verify -- translate-check"
+run_windows = "wsl -- mise run verify:translate-check"
 
 [tasks."verify:translate-impl"]
 description = "The charon+aeneas half alone, under the nested shadowing toolchain pin. Prefer `verify:translate`, which also materializes and censuses."
 raw = true
 dir = "spike/verify/aeneas"
-run = "mise run aeneas:translate"
+run = "mise run aeneas:translate -- {{ config_root }}/minispec/Generated"
 
 [tasks."verify:translate-lenient"]
 description = "OPT-IN, Linux/WSL only: enumerate every construct the translator cannot model, in ONE pass, into a scratch dir. This is how the fence in spike/verify/aeneas/Cargo.toml is derived and re-derived. Never a judgement of whether the algebra translated — lenient mode emits SILENT holes."
