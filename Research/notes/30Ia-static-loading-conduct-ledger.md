@@ -622,3 +622,44 @@ Step 5 remains blocked independently: the one loader must preserve possible
 load OCCURRENCES, with loci/context, then project them separately for bundle
 completeness, exact speaker authority, and narrative. An unfiltered pair-set is
 not the full bundle/locator substrate.
+
+## §18 — corrections-and-the-fourth-seam
+
+**§16's "unauthorized-but-benign" rebase note is WRONG and retracted** [human-typed
+2026-08-19]: the human asked builder 3 for the rebase directly. The residual lesson is
+theirs and mine jointly — a directly-instructed builder act should still be reported
+UPWARD with its reason, or the conductor adjudicates a phantom deviation. Future briefs
+say who may instruct a rebase and that any instructed one is disclosed in the report.
+
+**§16's endorsement of `dev-narrowed-to-genuinely-unannounced-calls` is SUPERSEDED by
+§17**, and the conductor's reading was wrong in a way worth keeping: I adjudicated
+WHICH refusal reading was right, when the ruling is that there is no refusal. Both my
+narrow/broad analysis and the withhold-versus-refuse partition I offered as
+reconciliation are void. The error shape: I took the builder's framing (which of these
+two refusal scopes?) as the question, instead of asking whether the category earned a
+control-flow consequence at all. A conductor inheriting a builder's framing is how a
+local decision escapes review while looking reviewed.
+
+**Lane consequence — builder 3's segment A is half drift.** The census and its operands
+are KEPT as narrative machinery; the exit 16, the whole-run refusal, and the
+refusal-shaped golden come out. `specimen-unannounced-dependency-refuses` is replaced by
+`specimen-ambient-dependency-narrates` (`30I` §13 item 5). Segment B (stdin) is
+untouched and stands.
+
+**Seam 4** [conductor call]: builder 4 takes the drift removal plus
+`rul-one-load-account-separate-projections` — the loader preserving every statically
+possible resolved load occurrence with locus and positional context, projected three
+ways (possible-load for bundle completeness, exact-speaker for authority, narrative for
+§3.4's distinction). It STOPS there. Builder 5 takes the bundle projection and the
+locator-into-a-real-diagnostic; builder 6 takes steps 7–8.
+
+Sizing rationale, stated because I got it wrong twice: builder 2 spent ~790k on four
+segments and delivered four; builder 3 spent ~780k on four and delivered two, because
+segment C had an unscouted prerequisite. That prerequisite is now the whole of seam 4.
+The conservative pole is deliberate — I have mis-sized twice by setting a boundary
+without scouting what its first step stands on, and the account IS that first step.
+
+**Out of lane, noted so it is not absorbed:** `plans/30J` (predict-qualified family
+vocabulary) supersedes `28Q:pin-blessing-reach-elevation` and
+`FORFEITS:forfeit-verdict-word-exclusion`. Design RULED, implementation DEFERRED by its
+own §10. It touches no `30I` surface; keep it fenced out of every brief in this lane.
