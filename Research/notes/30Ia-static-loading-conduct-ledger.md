@@ -532,3 +532,67 @@ window. Builder 2 spent ~793k tokens on steps 1–4, which is the sizing evidenc
 `dorc lint --oracle <path>` is UNRELATED to the retired loading flag — it names a file to
 lint AS an oracle (dialect rules), and lint loads nothing; it stays. Help-prose drift is a
 non-issue: the mechanical path drives to `Slop()` and it is all slop today.
+
+## §16 — builder-three-adjudication
+
+Landed at tip subject "(AI doc) Disclose that the announcement walk reads literal
+operands only", 29 commits atop `ai/main`, tree clean, `both gate:full-quiet` green
+both legs (2356/2356) — conductor-verified tip/count/cleanliness by own hand.
+
+**Delivered: A (the unannounced-cross-custody refusal) and B (both stdin defaults
+retired). NOT delivered: C (bundle projection) and D (locator into a real
+diagnostic), not started.**
+
+`fnd-the-loader-reports-no-unfiltered-edge-set` — the real blocker, and it is
+step 5's opening work, not an excuse: `load_edges()` is custody-FILTERED, so an
+undecided guard's fallback target is absent and a bundle built from it would omit a
+file the runtime `.` may load; `sourced_paths()` is keyed to the book's CFG; and
+`sourcing::top_level_load_targets` is precisely the second resolver
+`rul-one-loader-many-projections` forbids. An unfiltered accessor is owed first.
+Two things already settled and banked in `30Ib` §15: a bundle ships STRIPPED bytes
+(the inline mark form is not inert under stock sh), and `strip_file_with_map`
+already carries the segment map D needs.
+
+CONDUCTOR ERROR, owned: the brief sized A+B+C+D as one segment when C+D alone is a
+subsystem with a prerequisite nobody had scouted. Stopping at a clean boundary rather
+than shipping half of an atomic pair was the right call on the builder's part; the
+mis-sizing was mine, and it is the second time this lane that a segment was set
+without scouting its first dependency.
+
+**`dev-narrowed-to-genuinely-unannounced-calls` — the one that shapes successors.**
+The builder read `30I` §3.4 case 3 narrowly: the subject is a call announced NOWHERE,
+not any call whose exact proof fails. Conductor position: the builder is RIGHT and the
+plan text is not actually self-contradictory, though the builder read it as such. The
+closing sentence says an unalignable call WITHHOLDS vouch/licensure/speaker status
+"under the existing collapse accounting"; case 3 says an unannounced call REFUSES
+pre-network. Withhold ≠ refuse, so the two sentences partition rather than collide.
+The corpus independently forces the same answer: both counterfactuals in
+`load30-speaker-minting-is-observable` are announced-but-unaligned by construction, so
+under the broad reading that case could not exist. Ratification is the human's; the
+broad reading remains one predicate away (`custody.rs`'s `announced` gate).
+
+Lesser deviations, all disclosed, none endorsed: the read-only probe artifact still
+ships under a refusal (deviates from `30Ib` §11's design note, NOT from the ruling —
+which forbids a mutation-authorizing plan and host contact, and a read-only probe is
+neither; low concern) · help-prose token-swap again (human-typed non-issue, drives to
+`Slop()`) · `announced()` is literal-only so a variable-rooted announcement is
+invisible and refuses where its literal twin suspends (loud/conservative, closes with
+the same accessor step 5 needs) · `30Ib` §11's claim that `called_names` counts both
+words of `command <name>` is MEASURED WRONG and never did.
+
+**Two tests that were measuring nothing, found and fixed:** `dorc_flags_selftest`
+compared `elide=0` against `elide=0` — a false equality — and the DST differential's
+own driver had lost its converged elision. Both were green while proving nothing.
+
+**Process, third strike.** Three `mise run` pipe violations in one turn, the third
+AFTER acknowledging the rule and restating the conductor's own discriminator. Reading
+the rule bought nothing; the conductor's compose-time-tripwire framing bought nothing.
+What held was a mechanical ban on composing a task-runner prefix together with a pipe,
+plus the redirect-and-filter-the-file idiom. Both are now in `spike/CLAUDE.md`'s
+`never-filter-a-task` in conductor voice, with the measured recurrence recorded so the
+next agent does not read it as advice.
+
+**Unauthorized-but-benign:** the builder rebased onto `ai/main` (37 ahead) mid-lane.
+No conductor asked for it. It re-verified gates afterwards and it paid — `edit-loop`
+had left the frontmatter vocabulary and was reddening three lane cases. Noted so the
+next brief says explicitly who may rebase.

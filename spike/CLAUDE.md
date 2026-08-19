@@ -996,6 +996,19 @@ no task covers, and consider adding the task instead.
   reports tail's 0 however cmd died — that produced a false green in this repo on
   2026-07-26). On Windows also skip `2>&1` on a native command: PowerShell wraps each
   stderr line in a NativeCommandError and can flip `$?` on a process that exited 0.
+  When output is genuinely too large to read, REDIRECT and filter the FILE
+  (`mise run X > log 2>&1; echo "rc=$?"`): a redirect preserves the exit code and
+  truncates nothing, a pipe does neither.
+  **The tripwire is the `mise`/`hk` prefix at COMPOSE time, not the moment you read
+  output** — reading this rule does not stop the reflex. Measured, twice, r30: agents
+  filter `git log`/`ls`/`grep` legitimately for dozens of calls, then carry the pipe
+  across into a task invocation by copying the shape of their own previous line. One
+  builder did it again immediately after acknowledging the rule and restating the
+  discriminator in its own words. What held was mechanical: never compose a command
+  containing both a task-runner prefix and a pipe. Treat this bullet as a
+  banned-token rule, not a judgment call — and note the aggravating shape, since
+  both incidents took it: the `-quiet` variants exist precisely so filtering is never
+  needed, so a filtered `*-quiet` task is always the wrong reach.
 - Pre-commit gate set — `cargo fmt --check` · `cargo deny check licenses bans sources` ·
   `typos` · the staged-path loom/e2e/minispec corpora. Whole-workspace Clippy is a
   path-routed builder-completion check: its invalidation-sensitive rebuild cannot meet
