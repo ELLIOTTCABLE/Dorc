@@ -41,12 +41,15 @@ narrate with different operands/repairs; neither may refuse the plan or mint
 authority. The landed exit-16 whole-run refusal is implementation drift to remove
 while retaining its census as aid machinery (`30I` §3.4; `30Ib` §13).
 
-The bundle stage opens by extending the ONE loader account, not by adding a
-resolver: preserve every statically possible resolved load occurrence with its
-locus/context, then derive separate possible-load (bundle), exact-speaker
-(authority), and dependency-narrative projections. The current custody-filtered
-edge set omits undecided fallback branches and a target-pair set loses occurrence
-identity (`30Ib` §15).
+The loader-account half of that is LANDED ("Preserve every statically possible
+load occurrence, and project it three ways"): `analysis::load::LoadAccount` holds
+ordered occurrences with sourcer/target/locus/context/route, and the three
+projections derive from it — possible-load (bundle; undecided fallbacks included),
+exact-speaker (authority; byte-for-byte the old edge set), and selection
+(narrative, no consumer yet). `30Ib` §15's blocker is discharged at the loader.
+Still owed inside step-5a: the exit-16 drift removal, the narrative projection's
+consumer, and `30Ib`'s own update — the builder paused mid-segment for a merge and
+has not written it.
 
 **[TYPED 2026-08-19] The modeled-running-wall repair is UNIFICATION NOW, not a
 narrow guard mint and not post-r30 debt.** Implementation work order
