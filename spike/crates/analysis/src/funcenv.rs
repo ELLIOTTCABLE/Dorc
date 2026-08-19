@@ -1567,7 +1567,9 @@ fn run_control(
                 }
                 inner
             };
-            match decide_guard(ctx, condition, *negated, then_, else_, &env, locals) {
+            match decide_guard(
+                ctx, condition, *negated, then_, else_, &env, locals, account,
+            ) {
                 Some(taken) => branch(taken, true, visiting, account),
                 // Undecided walks BOTH, so the acquisition sees every file the guard could reach:
                 // reading one the run does not bind is harmless, missing one it does bind is not.
@@ -1584,6 +1586,10 @@ fn run_control(
 ///
 /// The two species answer for different reasons and neither generalizes to the other; see
 /// [`command_v_decides`] and [`sentinel_decides`].
+#[expect(
+    clippy::too_many_arguments,
+    reason = "a predicate over the WHOLE guard: its condition, its polarity, both branches, and the loading context that resolves its target. Bundling them would hide which condition a caller is answering."
+)]
 fn decide_guard<'a>(
     ctx: Loading<'_, '_>,
     condition: &crate::load::LoadCondition,
@@ -1592,15 +1598,16 @@ fn decide_guard<'a>(
     else_: &'a [crate::load::LoadControl],
     env: &EnvStack,
     locals: &BTreeMap<String, String>,
+    account: &mut LoadAccount,
 ) -> Option<&'a [crate::load::LoadControl]> {
     use crate::load::LoadCondition;
     match condition {
         LoadCondition::CommandV { function } => {
             command_v_decides(env, function).map(|held| if held == negated { else_ } else { then_ })
         }
-        LoadCondition::Value { name, equals, .. } => {
-            sentinel_decides(ctx, name, *equals, negated, then_, else_, locals)
-        }
+        LoadCondition::Value { name, equals, .. } => sentinel_decides(
+            ctx, name, *equals, negated, then_, else_, env, locals, account,
+        ),
     }
 }
 
@@ -1634,13 +1641,16 @@ fn command_v_decides(env: &EnvStack, function: &str) -> Option<bool> {
 /// # This is RECOGNITION, never a licensing widening
 ///
 /// The idiom is a method, spelled in sh, by which an author says "reuse THIS exact package when
-/// its own load value says it is present; otherwise source it". It LOOKS like a fork; in the cell
-/// below it is not one, because both arms land on the same binding: either a prior oracle already
-/// loaded that exact target, or this file loads it now. The engine's job is to SEE that there is
-/// no analysis-time choice between speakers and decline to drive to ⊤. Nothing extra is trusted —
-/// the reuse arm is reachable at all only if the target really loaded, because
-/// [`DefinitionTable::sole_populator`] has proved the target's own closure is the only thing in
-/// the authored world that could have written the tested value.
+/// its own load value says it is present; otherwise source it". It LOOKS like a fork; where this
+/// fires it is not one, because both arms land on the same exact foreign speech: either a prior
+/// oracle already loaded that exact target, or this file loads it now. The engine's job is to SEE
+/// that there is no analysis-time choice between SPEAKERS and decline to drive to ⊤.
+///
+/// Nothing extra is trusted. The reuse arm is reachable at all only if the target really loaded,
+/// because [`DefinitionTable::sole_populator`] has proved that target's own closure is the only
+/// thing in the authored world that could have written the tested value; and the ARM taken is read
+/// off the environment rather than assumed, because "the package loaded earlier" and "the package
+/// loads here" are different worlds whenever anything since has shadowed a name.
 ///
 /// Whatever cannot be aligned exactly withholds: no decision, both branches join, no speaker edge.
 ///
@@ -1658,12 +1668,18 @@ fn command_v_decides(env: &EnvStack, function: &str) -> Option<bool> {
 ///    from any other unit is exactly what makes the reuse arm forgeable, and demanding both means
 ///    the only way to satisfy the guard is that the package really loaded.
 /// 5. **Nothing removes what the target declares.** An `unset -f` and redefine elsewhere in the
-///    loaded world is one of the named ways the shape can mislead, so its presence withholds.
+///    loaded world is one of the named ways the shape can mislead: the removal would leave the
+///    sentinel set with the package's names gone, so the two arms would no longer agree.
+/// 6. **The environment says which arm** ([`sentinel_arm`]).
 ///
 /// The reached-vouch-path half of `30I` §3.4 is deliberately NOT here: it is the EXISTING custody
 /// machinery (`oracle::closure::HelperIndex::resolve` gating on the closures this edge feeds, plus
 /// the frame lookup's `Must`-grade requirement). A same-named helper from another unit withholds
 /// there, where it already did.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "see decide_guard: the recognition reads the whole guard, and hiding one of its six conditions behind a bundle is exactly what this door must not do"
+)]
 fn sentinel_decides<'a>(
     ctx: Loading<'_, '_>,
     name: &str,
@@ -1671,16 +1687,18 @@ fn sentinel_decides<'a>(
     negated: bool,
     then_: &'a [crate::load::LoadControl],
     else_: &'a [crate::load::LoadControl],
+    env: &EnvStack,
     locals: &BTreeMap<String, String>,
+    account: &mut LoadAccount,
 ) -> Option<&'a [crate::load::LoadControl]> {
     use crate::load::LoadControl;
 
     // Conditions 1 and 2, together: which branch loads, and does the branch NOT taken mean the
     // sentinel matched? `then_` runs when the comparison's own sense agrees with the `!`.
     let then_runs_when_equal = equals != negated;
-    let (source, target) = match (then_, else_) {
-        ([LoadControl::Load { target, .. }], []) if !then_runs_when_equal => (then_, target),
-        ([], [LoadControl::Load { target, .. }]) if then_runs_when_equal => (else_, target),
+    let (source, reuse, target) = match (then_, else_) {
+        ([LoadControl::Load { target, .. }], []) if !then_runs_when_equal => (then_, else_, target),
+        ([], [LoadControl::Load { target, .. }]) if then_runs_when_equal => (else_, then_, target),
         _ => return None,
     };
 
@@ -1692,8 +1710,77 @@ fn sentinel_decides<'a>(
     let closure = ctx.defs.load_closure_of(&key, locals, &ambient)?;
 
     // Conditions 4 and 5.
-    (ctx.defs.sole_populator(name, &closure) && !ctx.defs.anything_removes(&closure))
-        .then_some(source)
+    if !ctx.defs.sole_populator(name, &closure) || ctx.defs.anything_removes(&closure) {
+        return None;
+    }
+    // Condition 6.
+    let arm = match sentinel_arm(ctx.defs, env, &closure)? {
+        SentinelArm::Source => source,
+        SentinelArm::Reuse => reuse,
+    };
+    // THE MINT, and it is the whole ruling: the guard mints the same speaker edge as a direct
+    // source, INCLUDING on the reuse arm where no `.` runs at all (`30I` §3.4 case 2 — "even when
+    // another package loaded the exact target first"). It sits here rather than on the `.` because
+    // the reuse arm has no `.` to hang it on.
+    if let Some(sourcer) = ctx.sourcer.filter(|_| ctx.mints_speaker) {
+        account.edges.insert((sourcer.to_owned(), key));
+    }
+    Some(arm)
+}
+
+/// Which arm of a recognized sentinel guard this environment is in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SentinelArm {
+    /// The package is not live here, so the fallback `.` runs.
+    Source,
+    /// The package is already live, and live AS ITSELF, so nothing runs.
+    Reuse,
+}
+
+/// Read the arm off the environment: is every name the target's closure declares still bound to
+/// that closure's own definition, or is none of them bound at all?
+///
+/// Those two worlds are the guard's two arms, and nothing between them is decidable. A name live
+/// from ANOTHER unit is the case that matters: a book's own hand-written function over a package
+/// name means the sentinel may well be set while the binding is somebody else's, so both arms no
+/// longer land on the same speech and the recognition must decline. A ⊤ or a mixed set says the
+/// same thing more obviously.
+///
+/// A closure that declares NOTHING answers `None` too: there is no environment evidence to read,
+/// and a guard whose target contributes no binding has nothing for this recognition to be about.
+fn sentinel_arm(
+    defs: &DefinitionTable,
+    env: &EnvStack,
+    closure: &BTreeSet<String>,
+) -> Option<SentinelArm> {
+    let declared: Vec<DefId> = closure
+        .iter()
+        .filter_map(|key| defs.program_at_key(key))
+        .flat_map(crate::load::LoadProgram::declarations)
+        .collect();
+    let files: BTreeSet<dorc_core::SourceFileId> = declared
+        .iter()
+        .filter_map(|&def| defs.get(def).map(|d| d.file))
+        .collect();
+    if declared.is_empty() {
+        return None;
+    }
+    let (mut any_absent, mut any_present) = (false, false);
+    for def in declared {
+        let name = &defs.get(def)?.name;
+        match env.lookup(name) {
+            Flat::Elem(Binding::Undefined) => any_absent = true,
+            Flat::Elem(Binding::Defined(live)) if files.contains(&defs.get(live)?.file) => {
+                any_present = true;
+            }
+            Flat::Elem(Binding::Defined(_)) | Flat::Top | Flat::Bottom => return None,
+        }
+    }
+    match (any_absent, any_present) {
+        (true, false) => Some(SentinelArm::Source),
+        (false, true) => Some(SentinelArm::Reuse),
+        _ => None,
+    }
 }
 
 /// The settled environment's whole load account: what its loads still WANT, which file sourced
@@ -3792,6 +3879,39 @@ mod tests {
             })]),
         );
         let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
+    }
+
+    /// The ARM is read off the environment, never assumed. A book's own hand-written function over
+    /// a package name is `30I` §13's named mislead: the sentinel may well be set — the package
+    /// loaded earlier — while the live binding is the book's, so the two arms no longer land on the
+    /// same speech and the recognition declines rather than picking one.
+    #[test]
+    fn a_package_name_shadowed_from_outside_withholds() {
+        let book = format!(
+            "{HELPER}() {{ common high \"$@\" ;}}\n. ./oracles/alpha.sh\nyum install -y nginx\n"
+        );
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable(
+            "./oracles/common.sh",
+            package(vec![helper], SENTINEL, VERSION),
+        );
+        table.set_loadable(
+            "./oracles/alpha.sh",
+            sentinel_guarded(
+                SENTINEL,
+                VERSION,
+                LoadTarget::literal("./oracles/common.sh"),
+            ),
+        );
+        for (id, node) in dorc_syntax::parse(&book).value.iter() {
+            if let NodeKind::FuncDef { name, .. } = &node.kind {
+                let def = add_def(&mut table, 0, name);
+                table.set_book_site(id, def);
+            }
+        }
+        let (env, cfg, _) = solve_positional(&book, &table);
         assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
     }
 
