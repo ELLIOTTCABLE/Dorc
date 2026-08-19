@@ -1,0 +1,32 @@
+---
+---
+-- replay --
+$ dorc-loom publish
+dorc-loom: `publish` rewrites the generated locks and every case it touches, so it takes the cases it may rewrite: `dorc-loom publish <slug>`. The whole corpus is --all, spelled out.
+usage: dorc-loom [-C DIR] publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]
+  Drive every selected case's replays, compile the prose you edited back into template form, print
+  what that does to each register in {{hole}} spelling, and publish it: both generated locks
+  (crates/aid/src/catalog_lock.rs and arrangement_lock.rs) plus every affected case. In-process
+  renders only -- no binary is run and no fixture is executed. Every byte and both fixpoints are
+  computed before the first write, so a failure leaves the tree byte-identical. Nothing is staged or
+  committed; the diff is yours -- `git diff --word-diff` is how prose reads.
+  A publish that gives up a hole writes NOTHING, says which holes and why, and exits nonzero. The
+  transcript renders values, so that loss is invisible in the case diff; the printed one is where
+  you see it. Re-run with --verbatim once you have.
+  --verbatim  publish an interpretation that gives up holes, exactly as it was just shown to you
+  --all       every committed case. This verb rewrites files, so the whole corpus is spelled out
+  --quiet     drop the header of every case that has nothing to report
+  --accept-metadata  acknowledge that a case's when-fires / when-used / why REPLACES the committed
+                     registry entry; without it a metadata change refuses before any write
+  --human     mark every register this publishes as written by a person. Refuses in a session that
+              announces itself as an agent; DORC_HUMAN_COMMIT=1 says a person is at the keyboard.
+              Unflagged, a register is marked slop, whoever is driving.
+  --slop      yes, re-mark a human-written register as slop. Unflagged, that refuses for a person
+              (the forgotten --human) and proceeds with a note for an agent.
+  --shell=P   lend the generic executor a shell, for a replay the in-process driver declines
+  --path=D    prepend a directory to the replay PATH (repeatable)
+  -C DIR      resolve the corpus, both locks and the staging store under DIR instead of the tree
+              this binary was built in. It comes BEFORE the verb, git-style, and nothing outside
+              DIR is read or written.
+  next: mise run test -- a publish republishes shared locks, so its blast radius is wider than the
+        case in front of you
