@@ -1,5 +1,7 @@
 amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.pkl"
 
+default_branch = "ai/main"
+
 // Pre-commit `cargo fmt` for the round-19 Rust spike, scoped to spike Rust.
 //
 // Why the spike-prefixed glob: this worktree's `.git` is a pointer into the
@@ -134,6 +136,65 @@ local corpora = new Mapping<String, Step> {
     }
 }
 
+// Completion and arc checks are deliberately separate from pre-commit: profiles are opt-in,
+// so the existing hook remains its measured staged-path floor.
+local gates = new Mapping<String, Step> {
+    ["test-floor"] {
+        profiles = List("full")
+        glob = List("spike/crates/**", "spike/e2e/**", "spike/Cargo.toml", "spike/Cargo.lock", "mise.toml", "hk.pkl")
+        check = "mise run test:floor"
+        output_summary = "combined"
+    }
+    ["test-real-tools"] {
+        profiles = List("full")
+        glob = List("spike/crates/lint/**", "spike/crates/cli/tests/**", "spike/e2e/**", "mise.toml", "hk.pkl")
+        check = "mise run test:real-tools"
+        output_summary = "combined"
+    }
+    ["test-hooks"] {
+        profiles = List("full")
+        glob = List("hk.pkl", "mise.toml", ".githooks/**", "spike/crates/internal-tooling/**")
+        check = "mise run test:hooks"
+        output_summary = "combined"
+    }
+    ["test-floor-suite"] {
+        profiles = List("full")
+        glob = List("spike/**", "minispec/Generated/**", "mise.toml", "hk.pkl")
+        check = "mise run test"
+        output_summary = "combined"
+    }
+    ["verify-check"] {
+        profiles = List("full")
+        glob = List("minispec/**", "spike/verify/**", "spike/crates/analysis/**", "spike/crates/core/**", "mise.toml", "hk.pkl")
+        check = "mise run verify:check"
+        output_summary = "combined"
+    }
+    ["verify-kani-check"] {
+        profiles = List("full")
+        glob = List("spike/verify/kani/**", "spike/crates/analysis/**", "spike/crates/core/**", "spike/Cargo.toml", "spike/Cargo.lock", "mise.toml", "hk.pkl")
+        check = "mise run verify:kani-check"
+        output_summary = "combined"
+    }
+    ["verify-translate-check"] {
+        profiles = List("arc")
+        glob = List("spike/verify/aeneas/**", "spike/crates/analysis/**", "spike/crates/core/**", "minispec/Generated/**", "minispec/lean-toolchain", "minispec/lakefile.toml", "spike/verify/**", "mise.toml", "hk.pkl")
+        check = "mise run verify:translate-check"
+        output_summary = "combined"
+    }
+    ["verify-lean-badges"] {
+        profiles = List("arc")
+        glob = List("minispec/**", "spike/verify/**", "spike/crates/analysis/**", "spike/crates/core/**", "mise.toml", "hk.pkl")
+        check = "mise run verify:lean"
+        output_summary = "combined"
+    }
+    ["verify-kani"] {
+        profiles = List("arc")
+        glob = List("spike/verify/kani/**", "spike/crates/analysis/**", "spike/crates/core/**", "spike/Cargo.toml", "spike/Cargo.lock", "mise.toml", "hk.pkl")
+        check = "mise run verify:kani"
+        output_summary = "combined"
+    }
+}
+
 hooks {
     // Budget: ~3-4s wall, and it holds only because every step is scoped to the staged paths.
     // Nothing unscoped belongs here — a hook that outgrows its budget gets `--no-verify`'d, and
@@ -166,6 +227,10 @@ hooks {
         steps = linters
     }
     ["check"] {
-        steps = linters
+        steps = (linters) {
+            for (name, step in gates) {
+                [name] = step
+            }
+        }
     }
 }

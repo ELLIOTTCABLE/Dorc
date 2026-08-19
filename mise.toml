@@ -269,12 +269,10 @@ dir = "spike"
 # paying for it every agent gate buys nothing. `gate:full` still runs it, and an hk.pkl edit
 # calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
 run = [
-  "mise run preflight gate",
-  "mise run check -- --quiet",
-  "mise run clippy:clean",
-  "cargo build --workspace --quiet",
-  "cargo test --workspace --doc --quiet",
-  "cargo nextest run --workspace --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
+   "mise run preflight gate",
+   "hk check --pr --profile full --no-fail-fast --quiet",
+   "hk check --staged --profile full --no-fail-fast --quiet",
+   "hk check --unstaged --profile full --no-fail-fast --quiet",
 ]
 
 [tasks."gate:quick"]
@@ -285,16 +283,6 @@ dir = "spike"
 # and every doctest drop out by construction rather than by a name list that would silently rot
 # as targets are added.
 run = ["mise run check", "cargo nextest run --workspace --lib --bins"]
-
-[tasks."gate:quick-quiet"]
-description = "HOT LOOP, agent-facing: `gate:quick` at minimum token cost. NOT an acceptance suite — skips the e2e corpus, the loom corpus, and the doctests; `gate:full-quiet` is what licenses calling work complete."
-raw = true
-dir = "spike"
-# Same no-swallow remit as `gate:full-quiet`: success chatter only.
-run = [
-  "mise run check -- --quiet",
-  "cargo nextest run --workspace --lib --bins --hide-progress-bar --status-level fail --failure-output final --no-fail-fast",
-]
 
 [tasks."test:e2e"]
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
@@ -415,11 +403,26 @@ raw = true
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
 run = [
   "mise run preflight gate",
-  "mise run check",
-  "mise run clippy:clean",
-  "mise run test:hooks",
-  "mise run build",
-  "mise run test",
+  "hk check --pr --profile full --no-fail-fast",
+  "hk check --staged --profile full --no-fail-fast",
+  "hk check --unstaged --profile full --no-fail-fast",
+]
+
+[tasks."gate:step"]
+description = "Re-run one named hk completion or arc step over all of its relevant paths: `mise run gate:step -- <step>`. Use `hk check --why <step>` for routing detail."
+raw = true
+usage = 'arg "step" help="hk step name from the failed gate output"'
+run = "hk check --all --profile full --profile arc --step {{ usage.step }} --no-fail-fast"
+
+[tasks."gate:arc"]
+description = "CONDUCTOR-ONLY law gate: completion on both platforms, then all applicable arc-profile checks and RustSec advisories. Read-only: never promotes, blesses, or publishes generated artifacts."
+raw = true
+run = [
+  "mise run both gate:full-quiet",
+  "hk check --pr --profile full --profile arc --no-fail-fast",
+  "hk check --staged --profile full --profile arc --no-fail-fast",
+  "hk check --unstaged --profile full --profile arc --no-fail-fast",
+  "mise run audit",
 ]
 
 [tasks."test:hooks"]
@@ -638,6 +641,11 @@ run = [
    "mise run verify:materialize",
 ]
 
+[tasks."verify:translate-check"]
+description = "Read-only strict translation drift check. Not implemented until the production translator can accept a controller-owned scratch destination without duplicating its semantics."
+raw = true
+run = "cargo run -q -p dorc-verify -- translate-check"
+
 [tasks."verify:translate-impl"]
 description = "The charon+aeneas half alone, under the nested shadowing toolchain pin. Prefer `verify:translate`, which also materializes and censuses."
 raw = true
@@ -666,6 +674,11 @@ description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane 
 raw = true
 dir = "spike"
 run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
+
+[tasks."verify:kani-check"]
+description = "Compile the detached Kani harness crate with the ordinary toolchain, catching source-signature rot without invoking Kani."
+raw = true
+run = "cargo check --manifest-path spike/verify/kani/Cargo.toml"
 
 [tasks."verify:kani-setup"]
 description = "One-time, idempotent, Linux/WSL only: fetch Kani's engine bundle (CBMC + the kani-compiler, ~1GB into ~/.kani) and the nightly it was linked against (via rustup). Both are Kani's own homes; it offers no env redirect for either. `mise install` provides only the small `cargo-kani` shim — without this, `verify:kani` refuses and names this task."
