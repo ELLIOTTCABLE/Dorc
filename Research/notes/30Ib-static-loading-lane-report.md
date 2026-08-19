@@ -14,8 +14,8 @@
 `owed-no-flag-defaults-to-stdin` is discharged.** Steps 5–8 are untouched: no bundle projection, no
 locator-through-a-real-diagnostic, no artifact forms, no XFAIL promotion, no e2e lowering — §15
 carries what scouting 5 and 6 established. The three `load30-*` specimens remain XFAIL, spelled with
-
 the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit` is byte-identical.
+
 > The step numbering moved when `30I`'s work order was re-cut. This file's §1–§6
 > were written against the OLD numbering (its "items 2/3/4" are the load model,
 > the frame answers and the locator DAG); §7 was the runway into what are now
