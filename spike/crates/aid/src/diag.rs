@@ -364,6 +364,10 @@ pub enum DiagCode {
     CliFlagsMutuallyExclusive(CliFlagsMutuallyExclusive),
     /// A flag valid only under one mode was given under another.
     CliFlagRequiresMode(CliFlagRequiresMode),
+    /// A mode whose work needs a flag the invocation did not give (`apply --host` without
+    /// `--plan`). The inverse of [`DiagCode::CliFlagRequiresMode`], and a separate world: there the
+    /// flag was wrong for the mode, here the mode is missing an input it cannot default.
+    CliModeNeedsFlag(CliModeNeedsFlag),
     /// An input file does not exist.
     CliFileNotFound(CliFileNotFound),
     /// An input file exists but is not readable by this process.
@@ -503,6 +507,7 @@ impl DiagCode {
             DiagCode::CliStdinClaimedTwice(_) => "cli-stdin-claimed-twice",
             DiagCode::CliFlagsMutuallyExclusive(_) => "cli-flags-mutually-exclusive",
             DiagCode::CliFlagRequiresMode(_) => "cli-flag-requires-mode",
+            DiagCode::CliModeNeedsFlag(_) => "cli-mode-needs-flag",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
             DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
             DiagCode::CliFileUnreadable(_) => "cli-file-unreadable",
@@ -1911,6 +1916,15 @@ pub struct CliFlagRequiresMode {
     pub mode: &'static str,
 }
 
+/// Payload of [`DiagCode::CliModeNeedsFlag`]: a mode missing an input it is not allowed to default.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliModeNeedsFlag {
+    /// The invocation that needs it (`{mode}`).
+    pub mode: &'static str,
+    /// The flag it needs (`{flag}`).
+    pub flag: &'static str,
+}
+
 /// Payload of [`DiagCode::CliFileNotFound`]: the `NotFound` arm of the read-error trichotomy.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CliFileNotFound {
@@ -2817,6 +2831,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::CliStdinClaimedTwice(_)
         | DiagCode::CliFlagsMutuallyExclusive(_)
         | DiagCode::CliFlagRequiresMode(_)
+        | DiagCode::CliModeNeedsFlag(_)
         | DiagCode::CliFileNotFound(_)
         | DiagCode::CliFilePermissionDenied(_)
         | DiagCode::CliFileUnreadable(_)
@@ -3249,6 +3264,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::CliStdinClaimedTwice(CliStdinClaimedTwice { first, second }) => {
             vec![ours("first", first.clone()), ours("second", second.clone())]
+        }
+        DiagCode::CliModeNeedsFlag(CliModeNeedsFlag { mode, flag }) => {
+            vec![
+                ours("mode", (*mode).to_owned()),
+                ours("flag", (*flag).to_owned()),
+            ]
         }
         DiagCode::CliFlagRequiresMode(CliFlagRequiresMode { flag, mode }) => {
             vec![

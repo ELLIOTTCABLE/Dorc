@@ -1,0 +1,9 @@
+---
+code: cli-mode-needs-flag
+when-fires: an invocation reached a mode whose work needs an input the mode may not default. cli/lib.rs parse_args_from; today the one caller is `dorc apply --host` without `--plan`. {mode} names the invocation, {flag} the input it needs.
+why: 30I:owed-no-flag-defaults-to-stdin - no flag acquires stdin implicitly, so the artifact lane can no longer fall back to it and must be named: a path, or `-` for stdin. The inverse of cli-flag-requires-mode, and a separate world - there the flag was wrong for the mode, here the mode is missing an input.
+---
+-- replay --
+$ dorc apply --host web1.example.net
+dorc: error[cli-mode-needs-flag]: [unwritten: cli-mode-needs-flag]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

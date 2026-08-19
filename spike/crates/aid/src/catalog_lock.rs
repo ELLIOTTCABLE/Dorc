@@ -968,4 +968,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "cli-mode-needs-flag",
+        when_fires: "an invocation reached a mode whose work needs an input the mode may not default. cli/lib.rs parse_args_from; today the one caller is `dorc apply --host` without `--plan`. {mode} names the invocation, {flag} the input it needs.",
+        why: "30I:owed-no-flag-defaults-to-stdin - no flag acquires stdin implicitly, so the artifact lane can no longer fall back to it and must be named: a path, or `-` for stdin. The inverse of cli-flag-requires-mode, and a separate world - there the flag was wrong for the mode, here the mode is missing an input.",
+        params: &[],
+        example: "[unwritten: cli-mode-needs-flag]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
