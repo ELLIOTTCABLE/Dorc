@@ -185,6 +185,13 @@ pub struct DefinitionTable {
     /// definitions execute positionally, so the transfer needs to go from "this definition
     /// statement just ran" to "which definition that is".
     by_ast: BTreeMap<AstId, DefId>,
+    /// Every variable name the BOOK assigns, anywhere in its text.
+    ///
+    /// A NAME census, never a value: the sentinel recognition needs to know whether any unit
+    /// OUTSIDE a package could have populated the value a guard tests, and the value plane cannot
+    /// answer that — an assignment whose value it reads as ⊤ is invisible to it, and an assignment
+    /// below the load point is invisible to it at the load point (`30I` §3.4).
+    book_assigns: BTreeSet<String>,
 }
 
 impl DefinitionTable {
@@ -236,6 +243,11 @@ impl DefinitionTable {
     /// Bind a BOOK definition to the `FuncDef` AST node that writes it.
     pub fn set_book_site(&mut self, ast: AstId, def: DefId) {
         self.by_ast.insert(ast, def);
+    }
+
+    /// Record every variable name the book assigns — see [`Self::book_assigns`].
+    pub fn set_book_assigns(&mut self, names: impl IntoIterator<Item = String>) {
+        self.book_assigns = names.into_iter().collect();
     }
 
     #[must_use]
@@ -308,6 +320,88 @@ impl DefinitionTable {
     /// load site records so a later pass can replay the binding without re-resolving.
     fn dot_target_key(&self, target: &str) -> Option<String> {
         self.cwd.resolve_dot(target)
+    }
+
+    /// The EXACT TARGET CLOSURE of `key`: that program plus everything it transitively loads,
+    /// by canonical key (`30I` §3.4). `None` when the table does not hold `key` at all.
+    ///
+    /// Operands expand against the guard's own loading context, which is the same expansion the
+    /// loader performs — so this closure is the set of files that load if the guard's fallback
+    /// runs, and nothing else. An operand this context cannot read contributes NOTHING rather than
+    /// a guess, which shrinks the closure and therefore only ever withholds
+    /// ([`Self::sole_populator`] reads it as "the value was populated somewhere I cannot see").
+    fn load_closure_of(
+        &self,
+        key: &str,
+        locals: &BTreeMap<String, String>,
+        ambient: &impl Fn(&str) -> Option<String>,
+    ) -> Option<BTreeSet<String>> {
+        self.program_at_key(key)?;
+        let mut closure = BTreeSet::new();
+        let mut frontier = vec![key.to_owned()];
+        while let Some(next) = frontier.pop() {
+            let Some(program) = self.program_at_key(&next) else {
+                continue;
+            };
+            if !closure.insert(next) {
+                continue;
+            }
+            for (target, _) in program.load_targets() {
+                if let Some(reached) = target
+                    .expand(locals, ambient)
+                    .and_then(|text| self.cwd.resolve_dot(&text))
+                {
+                    frontier.push(reached);
+                }
+            }
+        }
+        Some(closure)
+    }
+
+    /// Is `closure` the ONLY thing in the authored world that assigns `name` — and does it assign
+    /// it at all (`30I` §3.4's two `Must` questions, the value half)?
+    ///
+    /// Both halves, because either alone is forgeable. A copied sentinel assignment with no load
+    /// makes the reuse arm reachable without the package; an assignment nowhere at all makes the
+    /// condition vacuous. Together they mean the only way the tested value can be live is that this
+    /// exact package really loaded.
+    ///
+    /// The book counts as an outside unit ([`Self::book_assigns`]), and so does any loadable the
+    /// closure does not contain.
+    fn sole_populator(&self, name: &str, closure: &BTreeSet<String>) -> bool {
+        if self.book_assigns.contains(name) {
+            return false;
+        }
+        let mut inside = false;
+        for (key, program) in &self.by_path {
+            if !program.assigns(name) {
+                continue;
+            }
+            if closure.contains(key) {
+                inside = true;
+            } else {
+                return false;
+            }
+        }
+        inside
+    }
+
+    /// Does any loadable program `unset -f` a name `closure` declares?
+    ///
+    /// One of the named ways the sentinel shape can mislead (`30I` §3.4's dynamism list): a removal
+    /// and redefine elsewhere in the loaded world means the reuse arm's binding is not the target's
+    /// after all. Its presence withholds rather than being modelled, because modelling it exactly
+    /// is the general load-order question the door is deliberately narrow about.
+    fn anything_removes(&self, closure: &BTreeSet<String>) -> bool {
+        let declared: BTreeSet<&str> = closure
+            .iter()
+            .filter_map(|key| self.program_at_key(key))
+            .flat_map(crate::load::LoadProgram::declarations)
+            .filter_map(|def| self.get(def).map(|d| d.name.as_str()))
+            .collect();
+        self.by_path
+            .values()
+            .any(|program| program.removes_any(&declared))
     }
 
     /// The unit-wide identity of `id` — the key every derived row this definition produced is
@@ -1323,6 +1417,14 @@ struct Loading<'a, 's> {
     /// file. `None` at a book `.` and at an invocation-named root, neither of which mints a
     /// speaker edge (`30I:rul-books-load-but-do-not-speak`; CLI co-loading composes no custody).
     sourcer: Option<&'s str>,
+    /// Whether a `.` reached from here is one the engine knows really runs.
+    ///
+    /// False inside an UNDECIDED guard's speculative branch walks, and STICKY downward: an
+    /// authored `.` mints its author's speaker edge, but only where the engine can say the load
+    /// happened. On a guard's reuse route no `.` ran at all, so minting from a branch nobody
+    /// decided would rest a licence on somebody else's utterance
+    /// (`rul-speaker-minting-is-oracle-sourcing-only`).
+    mints_speaker: bool,
     depth: usize,
 }
 
@@ -1423,7 +1525,7 @@ fn run_control(
                 suspend_the_sourcer(account);
                 return EnvStack::Top;
             };
-            if let Some(sourcer) = ctx.sourcer {
+            if let Some(sourcer) = ctx.sourcer.filter(|_| ctx.mints_speaker) {
                 account.edges.insert((sourcer.to_owned(), next.clone()));
             }
             if ctx.depth == 0 || !visiting.insert(next.clone()) {
@@ -1439,39 +1541,159 @@ fn run_control(
             loaded
         }
         LoadControl::Guard {
-            function,
+            condition,
             negated,
             then_,
             else_,
         } => {
-            let holds = match env.lookup(function) {
-                Flat::Elem(Binding::Defined(_)) => Some(true),
-                Flat::Elem(Binding::Undefined)
-                    if dorc_oracle::reserved::role_family(function).is_some() =>
-                {
-                    Some(false)
-                }
-                Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => None,
-            };
             let branch = |controls: &[LoadControl],
+                          decided: bool,
                           visiting: &mut BTreeSet<String>,
                           account: &mut LoadAccount| {
+                let inner_ctx = Loading {
+                    mints_speaker: ctx.mints_speaker && decided,
+                    ..ctx
+                };
                 let mut inner = env.clone();
                 for control in controls {
-                    inner =
-                        run_control(ctx, control, &inner, &mut locals.clone(), visiting, account);
+                    inner = run_control(
+                        inner_ctx,
+                        control,
+                        &inner,
+                        &mut locals.clone(),
+                        visiting,
+                        account,
+                    );
                 }
                 inner
             };
-            match holds.map(|held| held != *negated) {
-                Some(true) => branch(then_, visiting, account),
-                Some(false) => branch(else_, visiting, account),
+            match decide_guard(ctx, condition, *negated, then_, else_, &env, locals) {
+                Some(taken) => branch(taken, true, visiting, account),
                 // Undecided walks BOTH, so the acquisition sees every file the guard could reach:
                 // reading one the run does not bind is harmless, missing one it does bind is not.
-                None => branch(then_, visiting, account).join(&branch(else_, visiting, account)),
+                // Neither walk mints a speaker: an undecided guard is exactly the world where the
+                // engine cannot say whose `.` really ran (`rul-speaker-minting-is-oracle-sourcing-only`).
+                None => branch(then_, false, visiting, account)
+                    .join(&branch(else_, false, visiting, account)),
             }
         }
     }
+}
+
+/// Which branch of a guard the engine can say is taken, or `None` for "cannot say".
+///
+/// The two species answer for different reasons and neither generalizes to the other; see
+/// [`command_v_decides`] and [`sentinel_decides`].
+fn decide_guard<'a>(
+    ctx: Loading<'_, '_>,
+    condition: &crate::load::LoadCondition,
+    negated: bool,
+    then_: &'a [crate::load::LoadControl],
+    else_: &'a [crate::load::LoadControl],
+    env: &EnvStack,
+    locals: &BTreeMap<String, String>,
+) -> Option<&'a [crate::load::LoadControl]> {
+    use crate::load::LoadCondition;
+    match condition {
+        LoadCondition::CommandV { function } => {
+            command_v_decides(env, function).map(|held| if held == negated { else_ } else { then_ })
+        }
+        LoadCondition::Value { name, equals, .. } => {
+            sentinel_decides(ctx, name, *equals, negated, then_, else_, locals)
+        }
+    }
+}
+
+/// `command -v <name>`, decided in ONE direction and joined in the other.
+///
+/// The asymmetry is the whole safety argument. A frame that names a LIVE definition decides TRUE
+/// unconditionally, because a live function shadows every builtin and every binary — nothing on
+/// the host can make that query fail. A frame that proves the name UNDEFINED decides FALSE only
+/// where `28M:dec-decidable-set-v0`'s warrant reaches: a ROLE-shaped name, which nobody ships a
+/// binary called. For any other name a host binary could still answer, so deciding FALSE would
+/// model a fallback as loaded on a host that took the other branch — the mis-attributed class
+/// (`271:rul-sin-ordering`).
+///
+/// This is why `command -v` is not the exact-package guard: its answer space is neither
+/// floor-identical nor package identity (`notes/30Ic`; `30I:pin-command-v-load-model`). It stays a
+/// supported, idiomatic route that conservatively withholds.
+fn command_v_decides(env: &EnvStack, function: &str) -> Option<bool> {
+    match env.lookup(function) {
+        Flat::Elem(Binding::Defined(_)) => Some(true),
+        Flat::Elem(Binding::Undefined)
+            if dorc_oracle::reserved::role_family(function).is_some() =>
+        {
+            Some(false)
+        }
+        Flat::Elem(Binding::Undefined) | Flat::Top | Flat::Bottom => None,
+    }
+}
+
+/// The exact package sentinel (`30I:rul-guarded-source-mints-exact-speaker-edge`).
+///
+/// # This is RECOGNITION, never a licensing widening
+///
+/// The idiom is a method, spelled in sh, by which an author says "reuse THIS exact package when
+/// its own load value says it is present; otherwise source it". It LOOKS like a fork; in the cell
+/// below it is not one, because both arms land on the same binding: either a prior oracle already
+/// loaded that exact target, or this file loads it now. The engine's job is to SEE that there is
+/// no analysis-time choice between speakers and decline to drive to ⊤. Nothing extra is trusted —
+/// the reuse arm is reachable at all only if the target really loaded, because
+/// [`DefinitionTable::sole_populator`] has proved the target's own closure is the only thing in
+/// the authored world that could have written the tested value.
+///
+/// Whatever cannot be aligned exactly withholds: no decision, both branches join, no speaker edge.
+///
+/// # The conditions, and why each is load-bearing
+///
+/// 1. **The shape is the idiom**: one branch loads exactly one target and the other is EMPTY.
+///    Anything richer — a second load, a removal, a nested guard — is a fork the engine has not
+///    been shown is not one.
+/// 2. **The polarity is the idiom**: the branch that LOADS is the one taken when the sentinel does
+///    NOT match. A guard that loads when the value DOES match says something else entirely.
+/// 3. **The target resolves exactly**, from authored-before-contact input, to a program the
+///    controller holds.
+/// 4. **The target's closure is the value's sole populator** — both halves: at least one
+///    assignment inside it, and none anywhere else, the book included. A same-valued assignment
+///    from any other unit is exactly what makes the reuse arm forgeable, and demanding both means
+///    the only way to satisfy the guard is that the package really loaded.
+/// 5. **Nothing removes what the target declares.** An `unset -f` and redefine elsewhere in the
+///    loaded world is one of the named ways the shape can mislead, so its presence withholds.
+///
+/// The reached-vouch-path half of `30I` §3.4 is deliberately NOT here: it is the EXISTING custody
+/// machinery (`oracle::closure::HelperIndex::resolve` gating on the closures this edge feeds, plus
+/// the frame lookup's `Must`-grade requirement). A same-named helper from another unit withholds
+/// there, where it already did.
+fn sentinel_decides<'a>(
+    ctx: Loading<'_, '_>,
+    name: &str,
+    equals: bool,
+    negated: bool,
+    then_: &'a [crate::load::LoadControl],
+    else_: &'a [crate::load::LoadControl],
+    locals: &BTreeMap<String, String>,
+) -> Option<&'a [crate::load::LoadControl]> {
+    use crate::load::LoadControl;
+
+    // Conditions 1 and 2, together: which branch loads, and does the branch NOT taken mean the
+    // sentinel matched? `then_` runs when the comparison's own sense agrees with the `!`.
+    let then_runs_when_equal = equals != negated;
+    let (source, target) = match (then_, else_) {
+        ([LoadControl::Load { target, .. }], []) if !then_runs_when_equal => (then_, target),
+        ([], [LoadControl::Load { target, .. }]) if then_runs_when_equal => (else_, target),
+        _ => return None,
+    };
+
+    // Condition 3.
+    let ambient = |var: &str| ctx.literals.variable_text(ctx.node, var);
+    let key = target
+        .expand(locals, &ambient)
+        .and_then(|text| ctx.defs.cwd.resolve_dot(&text))?;
+    let closure = ctx.defs.load_closure_of(&key, locals, &ambient)?;
+
+    // Conditions 4 and 5.
+    (ctx.defs.sole_populator(name, &closure) && !ctx.defs.anything_removes(&closure))
+        .then_some(source)
 }
 
 /// The settled environment's whole load account: what its loads still WANT, which file sourced
@@ -1522,6 +1744,7 @@ fn settled_account(
                 literals,
                 node,
                 sourcer: Some(key),
+                mints_speaker: true,
                 depth: LOAD_DEPTH_CAP,
             },
             program,
@@ -1723,6 +1946,7 @@ fn run_ambient_prefix(
                 literals,
                 node,
                 sourcer: root.key.as_deref(),
+                mints_speaker: true,
                 depth: LOAD_DEPTH_CAP,
             },
             program,
@@ -1775,6 +1999,7 @@ fn command_transfer(
                     literals,
                     node,
                     sourcer: key.as_deref(),
+                    mints_speaker: true,
                     depth: LOAD_DEPTH_CAP,
                 },
                 program,
@@ -3157,7 +3382,9 @@ mod tests {
     /// shared-dependency shape (`30I` §2.2), as the loader sees it.
     fn guarded(function: &str, target: LoadTarget) -> LoadProgram {
         LoadProgram::of(vec![LoadStep::Control(LoadControl::Guard {
-            function: function.to_owned(),
+            condition: crate::load::LoadCondition::CommandV {
+                function: function.to_owned(),
+            },
             negated: false,
             then_: Vec::new(),
             else_: vec![loads(target)],
@@ -3402,6 +3629,200 @@ mod tests {
             env.binding_before(cfg.exit(), ROLE),
             Flat::Elem(Binding::Defined(vendored))
         );
+    }
+
+    // ── TABLE 7: the exact package sentinel (`30I:rul-guarded-source-mints-exact-speaker-edge`) ──
+
+    /// A package: it declares `defs` and populates its own load value, which is what makes the
+    /// sentinel a fact about THIS package rather than a variable anyone could set.
+    fn package(defs: Vec<DefId>, sentinel: &str, value: &str) -> LoadProgram {
+        let mut steps: Vec<LoadStep> = defs.into_iter().map(LoadStep::Define).collect();
+        steps.push(LoadStep::Assign {
+            name: sentinel.to_owned(),
+            value: LoadTarget::literal(value),
+        });
+        LoadProgram::of(steps)
+    }
+
+    /// `30I` §2.2's canonical entrypoint: load `target` unless the sentinel already says it is live.
+    fn sentinel_guarded(sentinel: &str, value: &str, target: LoadTarget) -> LoadProgram {
+        LoadProgram::of(vec![LoadStep::Control(LoadControl::Guard {
+            condition: crate::load::LoadCondition::Value {
+                name: sentinel.to_owned(),
+                literal: value.to_owned(),
+                equals: false,
+            },
+            negated: false,
+            then_: vec![loads(target)],
+            else_: Vec::new(),
+        })])
+    }
+
+    const SENTINEL: &str = "sm_common_loaded";
+    const VERSION: &str = "sm.common/v1";
+    const HELPER: &str = "sm_common_query";
+
+    /// The canonical cross-author shared dependency, resolved (`30I` §2.2 · §3.4). Two independent
+    /// entrypoints guard on ONE package's own load value; both resolve to that package's helper.
+    ///
+    /// Under `command -v` over this same ordinary helper name neither guard decides, both branches
+    /// join, and the helper binds ⊤ — which is why the sentinel is the exact-package guard and
+    /// `command -v` is not (`notes/30Ic`). Nothing here reads the sentinel's VALUE: recognition is
+    /// the engine SEEING that both arms land on the same speech, not evaluating the test.
+    #[test]
+    fn a_recognized_sentinel_resolves_the_shared_dependency() {
+        let book =
+            "OPS_LIB=./oracles\n. ./oracles/alpha.sh\n. ./oracles/beta.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable(
+            "./oracles/common.sh",
+            package(vec![helper], SENTINEL, VERSION),
+        );
+        for entry in ["./oracles/alpha.sh", "./oracles/beta.sh"] {
+            table.set_loadable(
+                entry,
+                sentinel_guarded(SENTINEL, VERSION, rooted("/common.sh")),
+            );
+        }
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), HELPER),
+            Flat::Elem(Binding::Defined(helper)),
+            "both arms land on the same body, so there is no analysis-time choice to drive to ⊤"
+        );
+    }
+
+    /// A same-valued assignment from ANOTHER unit withholds. That unit could make the reuse arm
+    /// reachable without the package ever loading, which is exactly the forgery the two-`Must`
+    /// proof exists to refuse (`30I` §3.4).
+    #[test]
+    fn a_sentinel_another_unit_also_populates_withholds() {
+        let book = ". ./oracles/alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        let stranger = add_def(&mut table, 2, "_unrelated");
+        table.set_loadable(
+            "./oracles/common.sh",
+            package(vec![helper], SENTINEL, VERSION),
+        );
+        table.set_loadable(
+            "./oracles/stranger.sh",
+            package(vec![stranger], SENTINEL, VERSION),
+        );
+        table.set_loadable(
+            "./oracles/alpha.sh",
+            sentinel_guarded(
+                SENTINEL,
+                VERSION,
+                LoadTarget::literal("./oracles/common.sh"),
+            ),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
+    }
+
+    /// The BOOK counts as another unit, and the value plane could not have told us: an assignment
+    /// it reads as ⊤, or one sited below the load, is invisible there. The census is over NAMES.
+    #[test]
+    fn a_book_assigned_sentinel_withholds() {
+        let book = ". ./oracles/alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable(
+            "./oracles/common.sh",
+            package(vec![helper], SENTINEL, VERSION),
+        );
+        table.set_loadable(
+            "./oracles/alpha.sh",
+            sentinel_guarded(
+                SENTINEL,
+                VERSION,
+                LoadTarget::literal("./oracles/common.sh"),
+            ),
+        );
+        table.set_book_assigns([SENTINEL.to_owned()]);
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
+    }
+
+    /// A sentinel NOTHING populates withholds too — the other half of the same `Must`. Without it
+    /// the condition is vacuously satisfied by an author's typo, and the only thing that could ever
+    /// select the reuse arm is the invocation environment.
+    #[test]
+    fn a_sentinel_the_target_never_populates_withholds() {
+        let book = ". ./oracles/alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable("./oracles/common.sh", flat(vec![helper]));
+        table.set_loadable(
+            "./oracles/alpha.sh",
+            sentinel_guarded(
+                SENTINEL,
+                VERSION,
+                LoadTarget::literal("./oracles/common.sh"),
+            ),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
+    }
+
+    /// The POLARITY is the idiom: a guard that loads when the sentinel MATCHES says something else
+    /// entirely, and the engine has been shown nothing about what.
+    #[test]
+    fn loading_on_the_matching_arm_is_not_the_idiom() {
+        let book = ". ./oracles/alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable(
+            "./oracles/common.sh",
+            package(vec![helper], SENTINEL, VERSION),
+        );
+        table.set_loadable(
+            "./oracles/alpha.sh",
+            LoadProgram::of(vec![LoadStep::Control(LoadControl::Guard {
+                condition: crate::load::LoadCondition::Value {
+                    name: SENTINEL.to_owned(),
+                    literal: VERSION.to_owned(),
+                    equals: true,
+                },
+                negated: false,
+                then_: vec![loads(LoadTarget::literal("./oracles/common.sh"))],
+                else_: Vec::new(),
+            })]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
+    }
+
+    /// A removal elsewhere in the loaded world withholds: an `unset -f` and redefine is one of the
+    /// named ways the shape can mislead, and on the reuse arm it means the live body is not the
+    /// target's after all.
+    #[test]
+    fn a_removal_of_the_targets_own_name_withholds() {
+        let book = ". ./oracles/alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable(
+            "./oracles/common.sh",
+            package(vec![helper], SENTINEL, VERSION),
+        );
+        table.set_loadable(
+            "./oracles/strip.sh",
+            LoadProgram::of(vec![LoadStep::Control(LoadControl::UnsetFunctions(vec![
+                HELPER.to_owned(),
+            ]))]),
+        );
+        table.set_loadable(
+            "./oracles/alpha.sh",
+            sentinel_guarded(
+                SENTINEL,
+                VERSION,
+                LoadTarget::literal("./oracles/common.sh"),
+            ),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(env.binding_before(cfg.exit(), HELPER), Flat::Top);
     }
 
     /// A PRE-SOURCE IS A `.` (`30I:rul-pre-source-is-dot-prelude`): a source the invocation named

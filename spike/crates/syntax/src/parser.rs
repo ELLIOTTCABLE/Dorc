@@ -1327,7 +1327,7 @@ impl Parser {
             LexPart::SingleQuoted(s) => WordPart::SingleQuoted(s),
             LexPart::DoubleQuoted(inner) => WordPart::DoubleQuoted(self.lower_parts(inner)),
             LexPart::Param { name } => WordPart::Param { name },
-            LexPart::ParamComplex => WordPart::ParamComplex,
+            LexPart::ParamComplex { empty_defaulted } => WordPart::ParamComplex { empty_defaulted },
             LexPart::Arithmetic => WordPart::Arithmetic,
             LexPart::CommandSubst(inner) => {
                 let id = self.parse_subst_body(&inner);

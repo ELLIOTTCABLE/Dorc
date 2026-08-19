@@ -126,25 +126,54 @@ pub fn include_guard(ast: &Ast, item: AstId) -> Option<IncludeGuard> {
     if !elifs.is_empty() {
         return None;
     }
-    let (name, negated) = guard_condition(ast, *cond)?;
+    let (condition, negated) = guard_condition(ast, *cond)?;
     let then_ = guard_branch(ast, *then_body)?;
     let else_ = match else_body {
         Some(branch) => guard_branch(ast, *branch)?,
         None => Vec::new(),
     };
     Some(IncludeGuard {
-        function: name,
+        condition,
         negated,
         then_,
         else_,
     })
 }
 
+/// What a recognized include guard ASKS. Two species, and the difference is the whole of
+/// `30I` §2.2: one asks the host what it would resolve under a name, the other asks this shell
+/// what a variable holds.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GuardCondition {
+    /// `command -v <name>` — what a shell would resolve under that name. Idiomatic, supported,
+    /// and NOT exact package identity: its answer space spans functions, aliases, builtins,
+    /// reserved words and `PATH` utilities, and the pinned floors do not even agree on the
+    /// classification (`notes/30Ic`; `30I:pin-command-v-load-model`).
+    CommandV {
+        /// The function name the guard asks about.
+        function: String,
+    },
+    /// `[ "${name-}" = 'literal' ]` — the package sentinel a library populates when it loads
+    /// (`30I` §2.2). No `PATH` exposure, no builtin classification, and the floors agree on all
+    /// three states (`30Ic:obs-sentinel-floor-semantics-agree`).
+    ///
+    /// The name and the literal are the AUTHOR's own package interface. Dorc recognizes no
+    /// `_LOADED` suffix, namespace, version grammar, or distinguished value.
+    Value {
+        /// The variable the test reads.
+        name: String,
+        /// The literal it is compared against.
+        literal: String,
+        /// `=` rather than `!=`.
+        equals: bool,
+    },
+}
+
 /// A recognized include guard, decomposed for the loader.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IncludeGuard {
-    /// The function name the guard asks about.
-    pub function: String,
+    /// What the guard asks.
+    pub condition: GuardCondition,
     /// Whether the condition is `!`-negated, so a consumer reads the branches the right way round.
     pub negated: bool,
     /// The branch taken when the guard's condition SUCCEEDS, in source order.
@@ -153,14 +182,14 @@ pub struct IncludeGuard {
     pub else_: Vec<AstId>,
 }
 
-/// `command -v <NAME>`, with the `!`-negation the shape carries and whatever redirections the
+/// The guard's question, with the `!`-negation the shape carries and whatever redirections the
 /// author silenced it with.
 ///
 /// Redirections are permitted HERE and nowhere else in this gate: `>/dev/null 2>&1` on a query is
 /// the idiom every author writes, and a redirect on a QUERY writes nothing the way a redirect on a
-/// no-op command does (`: > /etc/x`, the standing `haz-redir-as-mutation` example). The operand
-/// must be one plain literal — a computed name would ask the loader a question it cannot answer.
-fn guard_condition(ast: &Ast, cond: AstId) -> Option<(String, bool)> {
+/// no-op command does (`: > /etc/x`, the standing `haz-redir-as-mutation` example). Every operand
+/// must be one plain literal — a computed one would ask the loader a question it cannot answer.
+fn guard_condition(ast: &Ast, cond: AstId) -> Option<(GuardCondition, bool)> {
     let mut id = cond;
     let mut negated = false;
     for _ in 0..GUARD_UNWRAP_CAP {
@@ -181,18 +210,91 @@ fn guard_condition(ast: &Ast, cond: AstId) -> Option<(String, bool)> {
                 if !assigns.is_empty() {
                     return None;
                 }
-                let [head, flag, name] = words[..] else {
-                    return None;
-                };
-                if literal_word(ast, head)? != "command" || literal_word(ast, flag)? != "-v" {
-                    return None;
-                }
-                return Some((literal_word(ast, name)?.to_owned(), negated));
+                return command_v(ast, words)
+                    .or_else(|| sentinel_test(ast, words))
+                    .map(|condition| (condition, negated));
             }
             _ => return None,
         }
     }
     None
+}
+
+/// `command -v <NAME>`.
+fn command_v(ast: &Ast, words: &[AstId]) -> Option<GuardCondition> {
+    let [head, flag, name] = words[..] else {
+        return None;
+    };
+    if literal_word(ast, head)? != "command" || literal_word(ast, flag)? != "-v" {
+        return None;
+    }
+    Some(GuardCondition::CommandV {
+        function: literal_word(ast, name)?.to_owned(),
+    })
+}
+
+/// `[ "${name-}" = 'literal' ]` / `test "${name-}" != 'literal'`, in either operand order.
+///
+/// The variable side must be the NOUNSET-SAFE spelling (`${name-}` or `${name:-}`) — the one form
+/// whose body cannot hide a command substitution, and the one an author writing for a `set -u`
+/// caller writes anyway. A bare `"$name"` is deliberately NOT admitted: it aborts the loading
+/// shell under `set -u`, so admitting it would bless an idiom the floor breaks on.
+fn sentinel_test(ast: &Ast, words: &[AstId]) -> Option<GuardCondition> {
+    let operands = match (words, words.first().and_then(|&w| literal_word(ast, w))) {
+        ([_, a, op, b, close], Some("[")) if literal_word(ast, *close)? == "]" => [*a, *op, *b],
+        ([_, a, op, b], Some("test")) => [*a, *op, *b],
+        _ => return None,
+    };
+    let [left, op, right] = operands;
+    let equals = match literal_word(ast, op)? {
+        "=" => true,
+        "!=" => false,
+        _ => return None,
+    };
+    // Either order: the variable may sit on either side of the comparison, and a test with a
+    // variable on BOTH sides compares nothing this pass can read.
+    let (name, literal) = match (sentinel_name(ast, left), sentinel_name(ast, right)) {
+        (Some(name), None) => (name, plain_text(ast, right)?),
+        (None, Some(name)) => (name, plain_text(ast, left)?),
+        _ => return None,
+    };
+    Some(GuardCondition::Value {
+        name,
+        literal,
+        equals,
+    })
+}
+
+/// The variable a `"${name-}"` operand reads, or `None` for any other word.
+fn sentinel_name(ast: &Ast, word: AstId) -> Option<String> {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return None;
+    };
+    let inner = match parts.as_slice() {
+        [WordPart::DoubleQuoted(inner)] => inner.as_slice(),
+        other => other,
+    };
+    match inner {
+        [WordPart::ParamComplex { empty_defaulted }] => empty_defaulted.clone(),
+        _ => None,
+    }
+}
+
+/// A word that is one plain literal, quoted or not — the value side of a sentinel test.
+fn plain_text(ast: &Ast, word: AstId) -> Option<String> {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return None;
+    };
+    match parts.as_slice() {
+        [WordPart::Literal(text) | WordPart::SingleQuoted(text)] => Some(text.clone()),
+        [WordPart::DoubleQuoted(inner)] => match inner.as_slice() {
+            [WordPart::Literal(text)] => Some(text.clone()),
+            [] => Some(String::new()),
+            _ => None,
+        },
+        [] => Some(String::new()),
+        _ => None,
+    }
 }
 
 /// Every item of a guard branch, when all of them are load control the loader models: a `.`, an
@@ -327,13 +429,14 @@ fn word_part_is_static(part: &WordPart) -> bool {
     match part {
         WordPart::Literal(_) | WordPart::SingleQuoted(_) | WordPart::Param { .. } => true,
         WordPart::DoubleQuoted(inner) => inner.iter().all(word_part_is_static),
-        WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex => false,
+        WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex { .. } => false,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::lint_load_inert;
+    use super::{GuardCondition, include_guard, lint_load_inert};
+    use dorc_syntax::ast::NodeKind;
 
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
@@ -529,19 +632,63 @@ _helper() { printf '%s\\n' \"$1\"; }
         );
     }
 
-    /// Only `command -v <literal name>` opens a guard. Every other condition — a file test, a
-    /// computed name, an `elif` chain — stays refused, because the loader models ONE closed
-    /// question and `inv-top-reject` biases the unknown toward refusal.
+    /// TWO conditions open a guard, and no others — a file test, a computed name, an `elif` chain
+    /// all stay refused, because the loader models a CLOSED set of questions and `inv-top-reject`
+    /// biases the unknown toward refusal.
     #[test]
-    fn only_a_command_v_condition_opens_a_guard() {
+    fn only_the_two_guard_conditions_open_a_guard() {
         for body in [
             "if [ -f ./common.sh ]; then . ./common.sh; fi\n",
             "if command -v \"$WANTED\"; then :; fi\n",
             "if command -v _q; then :; elif command -v _r; then . ./c.sh; fi\n",
             "if command -v _q && command -v _r; then :; else . ./c.sh; fi\n",
+            "if [ \"${sm_loaded-}\" ]; then :; else . ./c.sh; fi\n",
+            "if [ \"$sm_loaded\" != 'v1' ]; then . ./c.sh; fi\n",
         ] {
             assert_eq!(slugs(body), ["oracle-file-not-load-inert"], "{body}");
         }
+    }
+
+    /// THE PACKAGE SENTINEL (`30I` §2.2), in the spellings an author reaches for. The variable side
+    /// is the NOUNSET-SAFE form and nothing else: a bare `"$x"` aborts the loading shell under
+    /// `set -u`, so admitting it would bless an idiom the floor breaks on (the last case of
+    /// [`only_the_two_guard_conditions_open_a_guard`] pins that refusal).
+    #[test]
+    fn the_package_sentinel_guard_is_admitted() {
+        for body in [
+            "if [ \"${sm_loaded-}\" != 'sm.common/v1' ]; then\n   . ./common.sh\nfi\n",
+            "if [ \"${sm_loaded:-}\" != 'sm.common/v1' ]; then\n   . ./common.sh\nfi\n",
+            "if [ \"${sm_loaded-}\" = 'sm.common/v1' ]; then\n   :\nelse\n   . ./common.sh\nfi\n",
+            "if test \"${sm_loaded-}\" != 'sm.common/v1'; then . ./common.sh; fi\n",
+            "if [ 'sm.common/v1' != \"${sm_loaded-}\" ]; then . ./common.sh; fi\n",
+        ] {
+            assert!(slugs(body).is_empty(), "{body} — {:?}", slugs(body));
+        }
+    }
+
+    /// The decomposition a loader reads: which variable, which literal, and which sense — because
+    /// the sense is what says which arm loads, and the arms are not interchangeable.
+    #[test]
+    fn a_sentinel_guard_decomposes_to_its_test() {
+        let src = format!(
+            "{MARKER}if [ \"${{sm_loaded-}}\" != 'sm.common/v1' ]; then\n   . ./common.sh\nfi\n"
+        );
+        let ast = dorc_syntax::parse(&src).value;
+        let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
+            panic!("expected a script")
+        };
+        let guard = include_guard(&ast, items[0]).expect("the guard is recognized");
+        assert_eq!(
+            guard.condition,
+            GuardCondition::Value {
+                name: "sm_loaded".to_owned(),
+                literal: "sm.common/v1".to_owned(),
+                equals: false,
+            }
+        );
+        assert!(!guard.negated);
+        assert_eq!(guard.then_.len(), 1, "the load is the taken arm");
+        assert!(guard.else_.is_empty());
     }
 
     /// `unset -f` is v0 load surface (`30I:rul-oracle-loading-stays-load-safe`) — it removes a

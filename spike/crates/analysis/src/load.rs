@@ -62,6 +62,37 @@ impl LoadProgram {
             .collect()
     }
 
+    /// Does this file's top level assign `name`? A NAME question, never a value one — the sentinel
+    /// recognition asks who could have populated a value, not what it is (`30I` §3.4).
+    ///
+    /// Top level only, which is exact: [`LoadControl`] has no assigning variant, so a guard branch
+    /// cannot assign and there is nowhere else for an assignment to hide.
+    #[must_use]
+    pub fn assigns(&self, name: &str) -> bool {
+        self.steps.iter().any(|step| match step {
+            LoadStep::Assign { name: assigned, .. } => assigned == name,
+            LoadStep::Define(_) | LoadStep::Control(_) => false,
+        })
+    }
+
+    /// Does this file's top level `unset -f` any of `names`, in a guard branch or out of one?
+    #[must_use]
+    pub fn removes_any(&self, names: &std::collections::BTreeSet<&str>) -> bool {
+        fn walk(controls: &[LoadControl], names: &std::collections::BTreeSet<&str>) -> bool {
+            controls.iter().any(|control| match control {
+                LoadControl::UnsetFunctions(removed) => {
+                    removed.iter().any(|name| names.contains(name.as_str()))
+                }
+                LoadControl::Guard { then_, else_, .. } => walk(then_, names) || walk(else_, names),
+                LoadControl::Load { .. } => false,
+            })
+        }
+        self.steps.iter().any(|step| match step {
+            LoadStep::Control(control) => walk(std::slice::from_ref(control), names),
+            LoadStep::Define(_) | LoadStep::Assign { .. } => false,
+        })
+    }
+
     /// Every load operand this file spells, guard branches included, in source order — what an
     /// acquisition or a custody edge asks for, before any branch has been decided.
     #[must_use]
@@ -136,16 +167,37 @@ pub enum LoadControl {
         /// The whole `. <operand>` item.
         span: dorc_core::Span,
     },
-    /// The include guard: `command -v <function>` selecting between two branches.
+    /// The include guard, selecting between two branches.
     Guard {
-        /// The function the guard asks about.
-        function: String,
+        /// What the guard asks.
+        condition: LoadCondition,
         /// Whether the condition is `!`-negated.
         negated: bool,
         /// Taken when the condition succeeds.
         then_: Vec<LoadControl>,
         /// Taken when it fails.
         else_: Vec<LoadControl>,
+    },
+}
+
+/// What an include guard asks (`30I` §2.2). The admission gate's own vocabulary is
+/// `dorc_oracle::load_inert::GuardCondition`; this is the loader's copy of it, so the loading
+/// domain does not have to reach into the gate to interpret a program it was handed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LoadCondition {
+    /// `command -v <function>` — what a shell would resolve under that name.
+    CommandV {
+        /// The function the guard asks about.
+        function: String,
+    },
+    /// `[ "${name-}" = 'literal' ]` — the package sentinel.
+    Value {
+        /// The variable the test reads.
+        name: String,
+        /// The literal it is compared against.
+        literal: String,
+        /// `=` rather than `!=`.
+        equals: bool,
     },
 }
 
@@ -214,7 +266,7 @@ impl LoadTarget {
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::{LoadControl, LoadProgram, LoadStep, LoadTarget, TargetPart};
+    use super::{LoadCondition, LoadControl, LoadProgram, LoadStep, LoadTarget, TargetPart};
     use crate::funcenv::DefId;
 
     fn nowhere() -> dorc_core::Span {
@@ -266,7 +318,9 @@ mod tests {
     fn declarations_are_flat_and_loads_are_not() {
         let program = LoadProgram::of(vec![
             LoadStep::Control(LoadControl::Guard {
-                function: "_q".to_owned(),
+                condition: LoadCondition::CommandV {
+                    function: "_q".to_owned(),
+                },
                 negated: false,
                 then_: Vec::new(),
                 else_: vec![LoadControl::Load {

@@ -229,7 +229,17 @@ pub enum WordPart {
     CommandSubst(AstId),
     /// A parameter expansion with operators (`${x:-y}`, `${#x}`, `${x%…}`) — kept
     /// opaque for now (treated ⊤-ward by the analyzer), not decoded.
-    ParamComplex,
+    ///
+    /// `empty_defaulted` is the ONE thing recovered from the discarded body, and it is recovered
+    /// for exactly two spellings: `${name-}` and `${name:-}`, the nounset-safe "its value, or
+    /// empty" form. Their bodies cannot hold a command substitution, an arithmetic expansion, or
+    /// another expansion, so carrying the NAME decodes nothing and licenses nothing — a reader
+    /// still learns no VALUE, and every other operator form answers `None`
+    /// (`30I` §2.2: the package sentinel is spelled this way, and its name is the author's own).
+    ParamComplex {
+        /// The parameter name, for `${name-}` / `${name:-}` alone.
+        empty_defaulted: Option<String>,
+    },
     /// `$(( … ))` — arithmetic expansion. A ⊤-trigger (dynamic); flagged, not eval'd.
     Arithmetic,
 }
@@ -240,7 +250,7 @@ impl WordPart {
     pub fn splits_unquoted(&self) -> bool {
         matches!(
             self,
-            WordPart::Param { .. } | WordPart::CommandSubst(_) | WordPart::ParamComplex
+            WordPart::Param { .. } | WordPart::CommandSubst(_) | WordPart::ParamComplex { .. }
         )
     }
 }

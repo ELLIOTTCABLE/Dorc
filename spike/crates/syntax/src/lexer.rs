@@ -105,8 +105,11 @@ pub(crate) enum LexPart {
     },
     /// `$( … )` / `` `…` `` — raw inner source (no surrounding delimiters).
     CommandSubst(String),
-    /// `${x:-y}`, `${#x}`, … — opaque operator-form parameter expansion.
-    ParamComplex,
+    /// `${x:-y}`, `${#x}`, … — opaque operator-form parameter expansion. `empty_defaulted`
+    /// carries the name for `${x-}`/`${x:-}` alone; see [`crate::ast::WordPart::ParamComplex`].
+    ParamComplex {
+        empty_defaulted: Option<String>,
+    },
     /// `$(( … ))` — arithmetic expansion (opaque, a ⊤-trigger when used as a word).
     Arithmetic,
 }
@@ -689,12 +692,28 @@ impl Lexer<'_> {
                 name: String::from_utf8_lossy(body).into_owned(),
             }
         } else {
-            LexPart::ParamComplex
+            LexPart::ParamComplex {
+                empty_defaulted: Self::empty_defaulted_name(body),
+            }
         };
         if self.pos < self.src.len() {
             self.pos += 1; // consume `}`
         }
         part
+    }
+
+    /// The parameter name of a `${name-}` / `${name:-}` body, and of nothing else.
+    ///
+    /// The whole point is that these two bodies are CLOSED: the default is EMPTY, so no command
+    /// substitution, arithmetic, or further expansion can hide in one. Every other operator form —
+    /// `${x:-y}` included, whose `y` the lexer has already thrown away — answers `None` rather than
+    /// handing a reader a name whose surrounding operator it cannot see.
+    fn empty_defaulted_name(body: &[u8]) -> Option<String> {
+        let name = body
+            .strip_suffix(b":-")
+            .or_else(|| body.strip_suffix(b"-"))?;
+        (!name.is_empty() && name.iter().all(|&c| c == b'_' || c.is_ascii_alphanumeric()))
+            .then(|| String::from_utf8_lossy(name).into_owned())
     }
 
     /// `$( ... )` command substitution: capture raw inner text, balancing nested

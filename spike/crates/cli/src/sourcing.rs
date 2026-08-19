@@ -352,12 +352,16 @@ mod tests {
         );
     }
 
-    /// A dependency loaded from inside an INCLUDE GUARD is an authored source act like any other,
-    /// so it mints its speaker edge (`30I:rul-include-guards-are-load-semantics`). Refusing to
-    /// walk guard branches would leave every healthy shared-dependency package suspended, since
-    /// that is exactly where the shape puts its load (`30I` §2.2).
+    /// A guard the engine cannot decide mints NOTHING
+    /// (`rul-speaker-minting-is-oracle-sourcing-only`, as amended by
+    /// `30I:rul-guarded-source-mints-exact-speaker-edge`).
+    ///
+    /// The load is authored, but on the reuse route no `.` ran at all — so an edge minted from an
+    /// undecided branch would rest this author's licence on whoever really loaded the target. The
+    /// `command -v` shape over an ORDINARY helper name is exactly that world: a host binary could
+    /// answer the query, so neither branch is decided (`notes/30Ic`).
     #[test]
-    fn a_guarded_dependency_mints_its_edge() {
+    fn an_undecided_guard_mints_no_edge() {
         let entry = marked(
             "if command -v _same >/dev/null 2>&1; then\n   :\nelse\n   . ./helpers.sh\nfi\n\
              wombat__is_converged() { _same \"$1\" ;}\n",
@@ -365,11 +369,27 @@ mod tests {
         let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n");
         let paths = vec!["entry.sh".to_owned(), "helpers.sh".to_owned()];
         assert_eq!(
-            tree(&paths, &[&entry, &helpers], None).edges,
-            vec![(0, 1)],
-            "the guard decides WHETHER it loads at runtime; the author declared the dependency \
-             either way, and custody follows the declaration"
+            tree(&paths, &[&entry, &helpers], None),
+            IncludeTree::default()
         );
+    }
+
+    /// …and the RECOGNIZED sentinel guard does mint it
+    /// (`30I:rul-guarded-source-mints-exact-speaker-edge`): the package's own load value says
+    /// whether the package is live, so both arms land on the same speech and there is no
+    /// analysis-time choice between speakers to be made.
+    ///
+    /// The pair is the whole ruling in two cases: the same authored `.`, the same target, and the
+    /// custody follows the engine's ability to say the load really happened.
+    #[test]
+    fn a_recognized_sentinel_guard_mints_its_edge() {
+        let entry = marked(
+            "if [ \"${_sm_helpers-}\" != 'sm.helpers/v1' ]; then\n   . ./helpers.sh\nfi\n\
+             wombat__is_converged() { _same \"$1\" ;}\n",
+        );
+        let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n_sm_helpers='sm.helpers/v1'\n");
+        let paths = vec!["entry.sh".to_owned(), "helpers.sh".to_owned()];
+        assert_eq!(tree(&paths, &[&entry, &helpers], None).edges, vec![(0, 1)]);
     }
 
     /// The book half of `30I:rul-books-load-but-do-not-speak`, at every spelling a book has: a

@@ -742,7 +742,11 @@ pub fn definition_table(
             table.push_ambient(path, ids);
         }
     }
+    let mut book_assigns = Vec::new();
     for (id, node) in book.iter() {
+        if let NodeKind::Assign { name, .. } = &node.kind {
+            book_assigns.push(name.clone());
+        }
         let NodeKind::FuncDef {
             name, name_span, ..
         } = &node.kind
@@ -757,6 +761,11 @@ pub fn definition_table(
         });
         table.set_book_site(id, def);
     }
+    // Every name the book writes, anywhere, however it writes it — the outside-unit half of the
+    // sentinel recognition's sole-populator question (`30I` §3.4). A whole-AST walk rather than a
+    // top-level scan, because a book is ordinary flowing sh and an assignment inside a branch
+    // populates the same variable.
+    table.set_book_assigns(book_assigns);
     table
 }
 
@@ -834,7 +843,20 @@ fn load_control(ast: &dorc_syntax::Ast, item: dorc_core::AstId) -> Option<LoadCo
                 .collect()
         };
         return Some(LoadControl::Guard {
-            function: guard.function,
+            condition: match guard.condition {
+                dorc_oracle::load_inert::GuardCondition::CommandV { function } => {
+                    dorc_analysis::load::LoadCondition::CommandV { function }
+                }
+                dorc_oracle::load_inert::GuardCondition::Value {
+                    name,
+                    literal,
+                    equals,
+                } => dorc_analysis::load::LoadCondition::Value {
+                    name,
+                    literal,
+                    equals,
+                },
+            },
             negated: guard.negated,
             then_: branch(&guard.then_),
             else_: branch(&guard.else_),
@@ -867,7 +889,9 @@ fn load_target(ast: &dorc_syntax::Ast, word: dorc_core::AstId) -> LoadTarget {
                         return false;
                     }
                 }
-                WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex => {
+                WordPart::CommandSubst(_)
+                | WordPart::Arithmetic
+                | WordPart::ParamComplex { .. } => {
                     return false;
                 }
             }
