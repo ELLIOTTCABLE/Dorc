@@ -93,7 +93,8 @@ The gate rung follows the work lifecycle; it is never a per-change menu:
 - `gate:arc` first runs builder completion on both platforms, then applicable
   strict translation, Lean, Kani, and advisory checks. Let its preflights
   refuse when disk/RAM is insufficient; pause sibling heavy work or ask the
-  human for capacity, never bypass the bound.
+  human for capacity, never bypass the bound. It outlasts a foreground
+  timeout; background it.
 - A failed hk step names its focused rerun: `mise run gate:step -- <step>`.
   Use `hk check --why <step>` when the routing itself is unclear. After the
   focused fix is green, run the lifecycle gate again at the final branch tip.
