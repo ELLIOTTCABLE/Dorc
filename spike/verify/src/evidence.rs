@@ -59,11 +59,11 @@ fn one(
         return Evidence::Absent("unit is an unwritten stub".to_owned());
     }
     match badge {
-        // Cheap and REAL: a proof is a file that exists, names the theorem, and carries no
-        // hole. Its Lean-checkedness rides `elaborated`'s build — this badge answers the
-        // narrower question "is there a claimed, hole-free proof at all", which is exactly
-        // what a reader wants distinguished from "the whole package builds".
-        Badge::Proved => proved(row, repo_root),
+        Badge::Proved => match lean_verdict(tier) {
+            None => Evidence::NotAtThisTier,
+            Some(true) => proved(row, repo_root),
+            Some(false) => Evidence::Absent("lake build failed".to_owned()),
+        },
         Badge::Elaborated => match lean_verdict(tier) {
             None => Evidence::NotAtThisTier,
             Some(lean_built) => {

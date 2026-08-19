@@ -20,7 +20,7 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 | elaborated | earned | not-recomputed-here |
 | interrogated | earned | not-recomputed-here |
 | pinned | earned | not-recomputed-here |
-| proved | todo | absent(no proof claimed) |
+| proved | todo | not-recomputed-here |
 | demonstrated | todo | absent(no accepted binding) |
 | kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 
@@ -36,7 +36,7 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 | elaborated | earned | not-recomputed-here |
 | interrogated | earned | not-recomputed-here |
 | pinned | earned | not-recomputed-here |
-| proved | todo | absent(no proof claimed) |
+| proved | todo | not-recomputed-here |
 | demonstrated | todo | absent(no accepted binding) |
 | kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 
@@ -52,7 +52,7 @@ Tier: cheap (filesystem + parsing only; Lean/Kani/mutant evidence is not recompu
 | elaborated | earned | not-recomputed-here |
 | interrogated | earned | not-recomputed-here |
 | pinned | earned | not-recomputed-here |
-| proved | todo | absent(no proof claimed) |
+| proved | todo | not-recomputed-here |
 | demonstrated | todo | absent(no accepted binding) |
 | kill-tested | todo | absent(seam-statement-mutation-unbuilt) |
 

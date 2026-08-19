@@ -66,10 +66,10 @@ impl Badge {
     #[must_use]
     pub const fn needs_external_engine(self) -> bool {
         match self {
-            Self::Proved => false,
             Self::Elaborated
             | Self::Interrogated
             | Self::Pinned
+            | Self::Proved
             | Self::Demonstrated
             | Self::KillTested => true,
         }

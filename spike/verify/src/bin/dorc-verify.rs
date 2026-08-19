@@ -63,11 +63,10 @@ fn run_report(args: &[&str]) -> ExitCode {
     // The COMMITTED report is the cheap tier's render, because the cheap gate is what verifies
     // it is current. Writing a with-lean render would commit evidence the ordinary gate cannot
     // recompute, which is the cached-verdict shape this whole design refuses.
-    if args.contains(&"--write") && args.contains(&"--with-lean") {
+    if args.contains(&"--write") && args.iter().any(|arg| arg.starts_with("--with-")) {
         eprintln!(
-            "dorc-verify report: --write publishes the CHEAP-tier render, so --with-lean cannot \
-             ride it. Run them separately: --with-lean to recompute and compare, --write to \
-             republish."
+            "dorc-verify report: --write publishes the CHEAP-tier render, so engine flags cannot \
+             ride it. Run the engine check and republish separately."
         );
         return ExitCode::from(2);
     }
