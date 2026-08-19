@@ -42,6 +42,7 @@ use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use crate::certify::{SolveConsistency, solve_certified};
 use crate::cfg::{Branch, Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::{Flat, Lattice, MapL};
+use crate::load::LoadAccount;
 use crate::solve::{Direction, Graph, Solution};
 use crate::value::{ValueFlow, ValueOf};
 
@@ -595,23 +596,15 @@ pub struct FuncEnv {
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
     sourced_paths: BTreeMap<CfgNodeId, String>,
-    /// Canonical paths a load NAMED that the loaded set does not hold — the loader's own account
-    /// of what it still wants.
+    /// THE ONE LOAD ACCOUNT (`30I:rul-one-load-account-separate-projections`): every statically
+    /// possible resolved load occurrence the settled walk followed, with its locus and positional
+    /// context, from which every consumer derives its own projection.
     ///
-    /// The binary's acquisition loop reads exactly these and re-solves, which is what makes the
-    /// engine that decides a package's dependencies the same engine that reads them: there is no
-    /// second resolver at the edge to drift from this one (`30I:rul-one-loader-many-projections`).
-    /// Empty is the settled state.
-    wanted_loads: BTreeSet<String>,
-    /// `(sourcer, target)` canonical-key pairs for every load a LOADED FILE's own program spelled
-    /// — the include-tree's whole input (`30I` §3.4).
-    ///
-    /// A book `.` and an invocation-named root contribute none: neither mints a speaker
-    /// (`30I:rul-books-load-but-do-not-speak`).
-    load_edges: BTreeSet<(String, String)>,
-    /// Loaded files whose own load named nothing the table holds. They SUSPEND: a file whose
-    /// environment the engine could not reconstruct may ship no composition.
-    unresolved_sourcers: BTreeSet<String>,
+    /// The binary's acquisition loop reads its wanted set and re-solves; the include-tree reads its
+    /// SPEAKER edges; the cross-custody narrative reads its SELECTION edges; the bundle projection
+    /// will read the occurrences whole. There is no second resolver at any edge to drift from this
+    /// one (`30I:rul-one-loader-many-projections`).
+    loads: LoadAccount,
     /// The edges the decidable-condition fold proved dead (`28M` §9). Kept as data so a pin can
     /// assert WHICH condition folded rather than only its downstream effect on a binding — an
     /// empty set is the honest statement that nothing was decidable, and the corpus cell that
@@ -661,22 +654,10 @@ impl FuncEnv {
         &self.unresolvable_loads
     }
 
-    /// Canonical paths a load named that the loaded set does not hold, in deterministic order.
+    /// The ONE load account every projection is derived from.
     #[must_use]
-    pub fn wanted_loads(&self) -> &BTreeSet<String> {
-        &self.wanted_loads
-    }
-
-    /// Which loaded file sourced which, by canonical key — the include-tree's input.
-    #[must_use]
-    pub fn load_edges(&self) -> &BTreeSet<(String, String)> {
-        &self.load_edges
-    }
-
-    /// Loaded files whose own load named nothing loadable, by canonical key.
-    #[must_use]
-    pub fn unresolved_sourcers(&self) -> &BTreeSet<String> {
-        &self.unresolved_sourcers
+    pub fn loads(&self) -> &LoadAccount {
+        &self.loads
     }
 
     /// Per RESOLVED `.`/`source` site, the canonical path it named — the load ACT, which is what a
@@ -875,7 +856,7 @@ pub fn analyze(
         dead_edges(ast, cfg, defs, literals, states, true)
     }) {
         Ok((states, folded_edges)) => {
-            let account = settled_account(
+            let loads = settled_account(
                 defs,
                 literals,
                 cfg.entry(),
@@ -889,9 +870,7 @@ pub fn analyze(
                 unresolvable_loads,
                 sourced_paths,
                 folded_edges,
-                wanted_loads: account.wanted,
-                load_edges: account.edges,
-                unresolved_sourcers: account.unresolved,
+                loads,
             }
         }
         Err(consistency) => funcenv_floor(cfg, EnvFloor::SolverInconsistent(consistency)),
@@ -955,9 +934,7 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         unresolvable_loads: BTreeSet::new(),
         sourced_paths: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
-        wanted_loads: BTreeSet::new(),
-        load_edges: BTreeSet::new(),
-        unresolved_sourcers: BTreeSet::new(),
+        loads: LoadAccount::default(),
     }
 }
 
@@ -1423,25 +1400,33 @@ struct Loading<'a, 's> {
     /// authored `.` mints its author's speaker edge, but only where the engine can say the load
     /// happened. On a guard's reuse route no `.` ran at all, so minting from a branch nobody
     /// decided would rest a licence on somebody else's utterance
-    /// (`rul-speaker-minting-is-oracle-sourcing-only`).
-    mints_speaker: bool,
+    /// (`rul-speaker-minting-is-oracle-sourcing-only`). The occurrence is recorded EITHER WAY —
+    /// absence from the speaker projection is not absence from the possible-load one
+    /// (`30I:rul-one-load-account-separate-projections`).
+    certain: bool,
+    /// The occurrence whose descent we are inside, if any — what a nested load names as its parent.
+    within: Option<usize>,
     depth: usize,
 }
 
-/// What a settled walk of the load programs accounts for — the loader's own report of the load
-/// structure it followed (`30I:rul-one-loader-many-projections`).
-///
-/// The include-tree consumes these EDGES rather than re-resolving literal `.` operands of its own,
-/// which is what closes custody for a dependency sited through a caller-set root: the loader
-/// resolves `. "$ROOT/dep.sh"`, and there is no second resolver left to fail at it.
-#[derive(Debug, Default)]
-struct LoadAccount {
-    /// Canonical paths a load NAMED that the table does not hold.
-    wanted: BTreeSet<String>,
-    /// `(sourcer, target)` canonical-key pairs, for every load a loaded file's own program spelled.
-    edges: BTreeSet<(String, String)>,
-    /// Sourcers whose own load named nothing the table holds — they suspend rather than degrade.
-    unresolved: BTreeSet<String>,
+impl Loading<'_, '_> {
+    /// The route an occurrence reached from here sits on.
+    fn route(self, taken: crate::load::LoadRoute) -> crate::load::LoadRoute {
+        if self.certain {
+            taken
+        } else {
+            crate::load::LoadRoute::Speculative
+        }
+    }
+
+    /// Who a `.` spelled from here belongs to. A book `.` and an invocation-named root are answered
+    /// by their own root records, so anything reaching this arm with no sourcer is descending
+    /// through a file the caller could not key.
+    fn spelled_by(self) -> crate::load::LoadSourcer {
+        self.sourcer.map_or(crate::load::LoadSourcer::Book, |key| {
+            crate::load::LoadSourcer::File(key.to_owned())
+        })
+    }
 }
 
 fn run_program(
@@ -1507,10 +1492,10 @@ fn run_control(
             }
             env
         }
-        LoadControl::Load { target, .. } => {
+        LoadControl::Load { target, span } => {
             let suspend_the_sourcer = |account: &mut LoadAccount| {
                 if let Some(sourcer) = ctx.sourcer {
-                    account.unresolved.insert(sourcer.to_owned());
+                    account.suspend(sourcer.to_owned());
                 }
             };
             let Some(next) = target
@@ -1521,18 +1506,24 @@ fn run_control(
                 return EnvStack::Top;
             };
             let Some(program) = ctx.defs.program_at_key(&next) else {
-                account.wanted.insert(next);
+                account.want(next);
                 suspend_the_sourcer(account);
                 return EnvStack::Top;
             };
-            if let Some(sourcer) = ctx.sourcer.filter(|_| ctx.mints_speaker) {
-                account.edges.insert((sourcer.to_owned(), next.clone()));
-            }
+            let here = account.record(crate::load::LoadOccurrence {
+                sourcer: ctx.spelled_by(),
+                target: next.clone(),
+                locus: Some(*span),
+                at: ctx.node,
+                within: ctx.within,
+                route: ctx.route(crate::load::LoadRoute::Taken),
+            });
             if ctx.depth == 0 || !visiting.insert(next.clone()) {
                 return EnvStack::Top;
             }
             let inner = Loading {
                 sourcer: Some(&next),
+                within: Some(here),
                 depth: ctx.depth.saturating_sub(1),
                 ..ctx
             };
@@ -1551,7 +1542,7 @@ fn run_control(
                           visiting: &mut BTreeSet<String>,
                           account: &mut LoadAccount| {
                 let inner_ctx = Loading {
-                    mints_speaker: ctx.mints_speaker && decided,
+                    certain: ctx.certain && decided,
                     ..ctx
                 };
                 let mut inner = env.clone();
@@ -1696,9 +1687,13 @@ fn sentinel_decides<'a>(
     // Conditions 1 and 2, together: which branch loads, and does the branch NOT taken mean the
     // sentinel matched? `then_` runs when the comparison's own sense agrees with the `!`.
     let then_runs_when_equal = equals != negated;
-    let (source, reuse, target) = match (then_, else_) {
-        ([LoadControl::Load { target, .. }], []) if !then_runs_when_equal => (then_, else_, target),
-        ([], [LoadControl::Load { target, .. }]) if then_runs_when_equal => (else_, then_, target),
+    let (source, reuse, target, span) = match (then_, else_) {
+        ([LoadControl::Load { target, span }], []) if !then_runs_when_equal => {
+            (then_, else_, target, span)
+        }
+        ([], [LoadControl::Load { target, span }]) if then_runs_when_equal => {
+            (else_, then_, target, span)
+        }
         _ => return None,
     };
 
@@ -1715,16 +1710,21 @@ fn sentinel_decides<'a>(
     }
     // Condition 6.
     let arm = match sentinel_arm(ctx.defs, env, &closure)? {
-        SentinelArm::Source => source,
+        SentinelArm::Source => return Some(source),
         SentinelArm::Reuse => reuse,
     };
-    // THE MINT, and it is the whole ruling: the guard mints the same speaker edge as a direct
-    // source, INCLUDING on the reuse arm where no `.` runs at all (`30I` §3.4 case 2 — "even when
-    // another package loaded the exact target first"). It sits here rather than on the `.` because
-    // the reuse arm has no `.` to hang it on.
-    if let Some(sourcer) = ctx.sourcer.filter(|_| ctx.mints_speaker) {
-        account.edges.insert((sourcer.to_owned(), key));
-    }
+    // THE REUSE-ARM OCCURRENCE, and it is the whole ruling: the guard mints the same speaker edge
+    // as a direct source even where no `.` runs at all (`30I` §3.4 case 2 — "even when another
+    // package loaded the exact target first"). It is recorded HERE because the reuse arm has no
+    // `.` to hang it on; the SOURCE arm returns above, where the branch walk's own `.` records it.
+    account.record(crate::load::LoadOccurrence {
+        sourcer: ctx.spelled_by(),
+        target: key,
+        locus: Some(*span),
+        at: ctx.node,
+        within: ctx.within,
+        route: ctx.route(crate::load::LoadRoute::Reused),
+    });
     Some(arm)
 }
 
@@ -1803,10 +1803,8 @@ fn settled_account(
     sourced_paths: &BTreeMap<CfgNodeId, String>,
     unresolved_targets: &BTreeMap<CfgNodeId, String>,
 ) -> LoadAccount {
-    let mut account = LoadAccount {
-        wanted: unresolved_targets.values().cloned().collect(),
-        ..LoadAccount::default()
-    };
+    let mut account = LoadAccount::default();
+    account.want_all(unresolved_targets.values().cloned());
     let mut universe = Frame::default();
     for name in defs.names() {
         universe.insert(name, Flat::Elem(Binding::Undefined));
@@ -1825,13 +1823,26 @@ fn settled_account(
         let Some(incoming) = states.get(node.index()) else {
             continue;
         };
+        // The BOOK's own act is a root occurrence: it is what a root bundle keys to
+        // (`30I:rul-bundles-key-to-load-occurrences`), and it mints no speaker
+        // (`30I:rul-books-load-but-do-not-speak`) — which the sourcer TYPE says rather than a
+        // filter downstream having to remember it.
+        let root = account.record(crate::load::LoadOccurrence {
+            sourcer: crate::load::LoadSourcer::Book,
+            target: key.clone(),
+            locus: None,
+            at: node,
+            within: None,
+            route: crate::load::LoadRoute::Taken,
+        });
         drop(run_program(
             Loading {
                 defs,
                 literals,
                 node,
                 sourcer: Some(key),
-                mints_speaker: true,
+                certain: true,
+                within: Some(root),
                 depth: LOAD_DEPTH_CAP,
             },
             program,
@@ -2027,13 +2038,26 @@ fn run_ambient_prefix(
             continue;
         };
         let mut visiting = root.key.iter().cloned().collect();
+        // A pre-source is a root occurrence too, and its sourcer type is what says CLI co-loading
+        // composes no custody (`rul-cli-coloading-composes-nothing`) without a downstream filter.
+        let at_root = root.key.clone().map(|key| {
+            account.record(crate::load::LoadOccurrence {
+                sourcer: crate::load::LoadSourcer::Invocation,
+                target: key,
+                locus: None,
+                at: node,
+                within: None,
+                route: crate::load::LoadRoute::Taken,
+            })
+        });
         env = run_program(
             Loading {
                 defs,
                 literals,
                 node,
                 sourcer: root.key.as_deref(),
-                mints_speaker: true,
+                certain: true,
+                within: at_root,
                 depth: LOAD_DEPTH_CAP,
             },
             program,
@@ -2086,7 +2110,8 @@ fn command_transfer(
                     literals,
                     node,
                     sourcer: key.as_deref(),
-                    mints_speaker: true,
+                    certain: true,
+                    within: None,
                     depth: LOAD_DEPTH_CAP,
                 },
                 program,
@@ -2252,9 +2277,7 @@ mod tests {
             unresolvable_loads: BTreeSet::new(),
             sourced_paths: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
-            wanted_loads: BTreeSet::new(),
-            load_edges: BTreeSet::new(),
-            unresolved_sourcers: BTreeSet::new(),
+            loads: crate::load::LoadAccount::default(),
         };
         assert_eq!(solved.before(CfgNodeId(0)), EnvStack::Top);
         assert_eq!(solved.binding_before(CfgNodeId(0), "f"), Flat::Top);
@@ -4013,5 +4036,159 @@ mod tests {
             env.binding_before(cfg.exit(), ROLE),
             Flat::Elem(Binding::Defined(plain))
         );
+    }
+
+    // ── TABLE 8: the ONE load account and its three projections
+    //    (`30I:rul-one-load-account-separate-projections`) ──
+
+    use crate::load::{LoadRoute, LoadSourcer};
+
+    fn targets_of(env: &FuncEnv, route: LoadRoute) -> Vec<&str> {
+        env.loads()
+            .occurrences()
+            .iter()
+            .filter(|occurrence| occurrence.route == route)
+            .map(|occurrence| occurrence.target.as_str())
+            .collect()
+    }
+
+    /// THE BLOCKER THIS TABLE DISCHARGES (`30Ib:fnd-the-loader-reports-no-unfiltered-edge-set`):
+    /// an undecided guard's fallback target is ABSENT from the speaker projection and PRESENT in
+    /// the possible-load one.
+    ///
+    /// Both halves are load-bearing and they pull opposite ways. No authority may rest on a branch
+    /// nobody decided (`rul-speaker-minting-is-oracle-sourcing-only`), so the edge must not mint;
+    /// but a bundle built from the speaker edges alone would OMIT a file the runtime `.` really may
+    /// load, which is an artifact that does not reproduce its own book. One account, two answers.
+    #[test]
+    fn an_undecided_guards_fallback_is_possible_but_never_a_speaker() {
+        let book = ". ./entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable("./common.sh", flat(vec![helper]));
+        table.set_loadable(
+            "./entry.sh",
+            guarded(HELPER, LoadTarget::literal("./common.sh")),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), HELPER),
+            Flat::Top,
+            "an ordinary helper name decides neither way, which is what makes this the cell"
+        );
+        assert_eq!(
+            targets_of(&env, LoadRoute::Speculative),
+            ["common.sh"],
+            "the fallback IS a possible load — a bundle omitting it would not reproduce the book"
+        );
+        assert_eq!(
+            env.loads().speaker_edges(),
+            BTreeSet::new(),
+            "...and it mints nothing: an undecided branch rests no licence on anyone"
+        );
+        assert_eq!(
+            env.loads().selection_edges(),
+            BTreeSet::from([("entry.sh".to_owned(), "common.sh".to_owned())]),
+            "the author SELECTED it all the same, which is the narrative projection's whole job"
+        );
+    }
+
+    /// The recognized sentinel's REUSE arm records an occurrence with no `.` behind it, and mints.
+    /// `30I` §3.4 case 2 in one assertion: the guard is one authored dependency act whichever arm
+    /// the environment is in, so the edge exists even where another package loaded the target first.
+    #[test]
+    fn a_reuse_arm_records_its_occurrence_and_mints() {
+        let book = ". ./common.sh\n. ./alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable("./common.sh", package(vec![helper], SENTINEL, VERSION));
+        table.set_loadable(
+            "./alpha.sh",
+            sentinel_guarded(SENTINEL, VERSION, LoadTarget::literal("./common.sh")),
+        );
+        let (env, _, _) = solve_positional(book, &table);
+        assert_eq!(targets_of(&env, LoadRoute::Reused), ["common.sh"]);
+        assert_eq!(
+            env.loads().speaker_edges(),
+            BTreeSet::from([("alpha.sh".to_owned(), "common.sh".to_owned())])
+        );
+    }
+
+    /// OCCURRENCE IDENTITY IS NOT A TARGET PAIR (`30I` §6.1's insufficiency clause): two textual
+    /// load points naming ONE entrypoint are two occurrences, each with its own locus and its own
+    /// enclosing act, and a bundle keyed by pairs would collapse them into one
+    /// (`rul-bundles-key-to-load-occurrences`).
+    #[test]
+    fn two_load_points_naming_one_target_are_two_occurrences() {
+        let book = ". ./alpha.sh\n. ./beta.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable("./common.sh", flat(vec![helper]));
+        for entry in ["./alpha.sh", "./beta.sh"] {
+            table.set_loadable(
+                entry,
+                LoadProgram::of(vec![LoadStep::Control(loads(LoadTarget::literal(
+                    "./common.sh",
+                )))]),
+            );
+        }
+        let (env, _, _) = solve_positional(book, &table);
+        let account = env.loads();
+        let common: Vec<&crate::load::LoadOccurrence> = account
+            .occurrences()
+            .iter()
+            .filter(|occurrence| occurrence.target == "common.sh")
+            .collect();
+        assert_eq!(
+            common.len(),
+            2,
+            "one per textual load point, never one per file"
+        );
+        let parents: Vec<&LoadSourcer> = common
+            .iter()
+            .filter_map(|occurrence| occurrence.within)
+            .filter_map(|parent| account.occurrences().get(parent))
+            .map(|parent| &parent.sourcer)
+            .collect();
+        assert_eq!(
+            parents,
+            [&LoadSourcer::Book, &LoadSourcer::Book],
+            "each names the ROOT act it descends from, which is what a locator composes onto"
+        );
+        assert_eq!(
+            account.speaker_edges().len(),
+            2,
+            "and the pair set they collapse to has lost exactly that distinction"
+        );
+    }
+
+    /// The root acts are recorded, and their SOURCER SPECIES is what says a book `.` and a
+    /// pre-source mint nothing — by the type, rather than by a filter every consumer must remember
+    /// (`30I:rul-books-load-but-do-not-speak` · `rul-cli-coloading-composes-nothing`).
+    #[test]
+    fn root_acts_carry_the_species_that_mints_nothing() {
+        let book = ". ./sourced.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let a = add_def(&mut table, 1, HELPER);
+        let b = add_def(&mut table, 2, ROLE);
+        table.set_loadable("./sourced.sh", flat(vec![a]));
+        table.set_loadable("./named.sh", flat(vec![b]));
+        table.push_ambient("./named.sh", Vec::new());
+        let (env, _, _) = solve_positional(book, &table);
+        let species: Vec<(&LoadSourcer, &str)> = env
+            .loads()
+            .occurrences()
+            .iter()
+            .map(|occurrence| (&occurrence.sourcer, occurrence.target.as_str()))
+            .collect();
+        assert_eq!(
+            species,
+            [
+                (&LoadSourcer::Invocation, "named.sh"),
+                (&LoadSourcer::Book, "sourced.sh"),
+            ]
+        );
+        assert_eq!(env.loads().speaker_edges(), BTreeSet::new());
+        assert_eq!(env.loads().selection_edges(), BTreeSet::new());
     }
 }

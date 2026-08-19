@@ -81,7 +81,7 @@ pub fn include_tree(
                 .get(file)
                 .is_some_and(|src| satisfies_the_contract(src))
     };
-    for (sourcer, target) in env.load_edges() {
+    for (sourcer, target) in &env.loads().speaker_edges() {
         let Some(from) = at(sourcer).filter(|&file| admissible(file)) else {
             continue;
         };
@@ -90,7 +90,7 @@ pub fn include_tree(
             None => drop(tree.unresolved.insert(from)),
         }
     }
-    for sourcer in env.unresolved_sourcers() {
+    for sourcer in env.loads().unresolved() {
         if let Some(from) = at(sourcer).filter(|&file| admissible(file)) {
             tree.unresolved.insert(from);
         }
@@ -120,7 +120,7 @@ pub fn satisfies_the_contract(src: &str) -> bool {
 ///
 /// **LITERAL only, and the cut is disclosed** (`churn-avoidance-disclosure`): an operand built from
 /// a variable the CALLER set has no value here, so it is skipped. Nothing is lost — the real loader
-/// names it through `FuncEnv::wanted_loads`, which the acquisition loop reads and re-solves — and
+/// names it through `FuncEnv::loads`' wanted set, which the acquisition loop reads and re-solves — and
 /// LINKING it is [`include_tree`]'s job, which asks the loader rather than this walk.
 #[must_use]
 pub fn top_level_load_targets(src: &str) -> Vec<String> {

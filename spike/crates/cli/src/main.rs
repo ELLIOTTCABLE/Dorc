@@ -457,7 +457,7 @@ fn read_book_sourced(
         let env = dorc_analysis::funcenv::analyze(&book_ast, &cfg, &definitions, &plane);
 
         let mut grew = false;
-        for wanted in env.wanted_loads() {
+        for wanted in env.loads().wanted() {
             if !refused.insert(wanted.clone()) {
                 continue;
             }

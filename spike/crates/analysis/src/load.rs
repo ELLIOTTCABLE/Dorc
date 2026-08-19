@@ -24,9 +24,164 @@
 //! exactly that reason, and the engine recognizes no root variable name: any ordinary variable
 //! does the same work.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::funcenv::DefId;
+
+/// ONE account of every statically possible resolved load occurrence, from which consumers derive
+/// three non-interchangeable projections (`30I:rul-one-load-account-separate-projections`).
+///
+/// The loader resolves each occurrence exactly once and keeps enough of it — sourcer, target,
+/// locus, positional context, nesting — that no consumer has to re-parse a source or re-resolve a
+/// target. A second resolver is what `30I:rul-one-loader-many-projections` forbids, and a
+/// target-only pair set is what it cannot be replaced by: distinct textual load points naming one
+/// entrypoint are distinct occurrences, and both bundle keying (`rul-bundles-key-to-load-occurrences`)
+/// and locator composition need them kept apart.
+///
+/// The three projections, and why none of them substitutes for another:
+///
+/// 1. **possible-load** ([`occurrences`](LoadAccount::occurrences)) — every occurrence the walk
+///    resolved, an undecided guard's fallback branch INCLUDED. The conservative union a bundle
+///    consumes, so an artifact never omits a file the runtime `.` may load.
+/// 2. **speaker** ([`speaker_edges`](LoadAccount::speaker_edges)) — only the occurrences whose
+///    exact custody proof succeeded. Vouch composition and every other authority consumer see this
+///    one and no other.
+/// 3. **narrative** ([`selection_edges`](LoadAccount::selection_edges)) — which file's author
+///    SELECTED which dependency at all, whether or not the selection aligned. Decision-inert, and
+///    what `30I` §3.4 reads to tell a source act that failed to align from an ambient resolution
+///    nobody selected.
+///
+/// Absence from the speaker projection never means absence from the other two.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct LoadAccount {
+    occurrences: Vec<LoadOccurrence>,
+    wanted: BTreeSet<String>,
+    unresolved: BTreeSet<String>,
+}
+
+/// Which file spelled a load act.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LoadSourcer {
+    /// A CLI-named pre-source root (`30I:rul-pre-source-is-dot-prelude`). Ingestion: it composes no
+    /// custody, so it mints no speaker edge and selects nothing on anyone's behalf.
+    Invocation,
+    /// The main book's own `.`. Visibility only (`30I:rul-books-load-but-do-not-speak`).
+    Book,
+    /// A loaded file's own program spelled the `.`, by canonical key.
+    File(String),
+}
+
+/// How the modeled shell reaches a load occurrence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LoadRoute {
+    /// The engine can say this `.` runs.
+    Taken,
+    /// A speculative branch of a guard nobody decided: the runtime `.` may or may not run. A bundle
+    /// must carry the target anyway; no authority may rest on it
+    /// (`rul-speaker-minting-is-oracle-sourcing-only`).
+    Speculative,
+    /// A recognized package sentinel's fallback whose REUSE arm the environment selected: this `.`
+    /// provably does not run here, and the same exact target is live from another act. It mints its
+    /// author's speaker edge all the same (`30I:rul-guarded-source-mints-exact-speaker-edge`).
+    Reused,
+}
+
+/// One statically possible resolved load occurrence.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoadOccurrence {
+    /// Who spelled the act.
+    pub sourcer: LoadSourcer,
+    /// The canonical key the operand resolved to.
+    pub target: String,
+    /// The `. <operand>` item's own byte range inside the SOURCER's file — what a locator names
+    /// when it says which line brought a dependency in. `None` at a root act, which is spelled on
+    /// the command line or read off the book's CFG rather than out of a load program.
+    pub locus: Option<dorc_core::Span>,
+    /// The book program point the whole load act descends from — the positional context a bundle
+    /// placed at its original source point needs.
+    pub at: crate::cfg::CfgNodeId,
+    /// The enclosing occurrence, for a nested `.`; `None` at a root act. Index into
+    /// [`LoadAccount::occurrences`].
+    pub within: Option<usize>,
+    /// How the modeled shell reaches it.
+    pub route: LoadRoute,
+}
+
+impl LoadAccount {
+    /// THE POSSIBLE-LOAD PROJECTION: every occurrence, in walk order, speculative branches included.
+    #[must_use]
+    pub fn occurrences(&self) -> &[LoadOccurrence] {
+        &self.occurrences
+    }
+
+    /// Canonical paths a load NAMED that the table does not hold — the acquisition loop's whole
+    /// input, and what makes the engine that decides a package's dependencies the same engine that
+    /// reads them.
+    #[must_use]
+    pub fn wanted(&self) -> &BTreeSet<String> {
+        &self.wanted
+    }
+
+    /// Loaded files whose own load named nothing the table holds. They SUSPEND: a file whose
+    /// environment the engine could not reconstruct may ship no composition.
+    #[must_use]
+    pub fn unresolved(&self) -> &BTreeSet<String> {
+        &self.unresolved
+    }
+
+    /// THE SPEAKER PROJECTION: `(sourcer, target)` for the occurrences whose exact custody proof
+    /// succeeded — a loaded file's own act, on a route the engine can say happened.
+    ///
+    /// A book `.` and an invocation-named root contribute none, by the type: neither is a
+    /// [`LoadSourcer::File`].
+    #[must_use]
+    pub fn speaker_edges(&self) -> BTreeSet<(String, String)> {
+        self.edges(|route| route != LoadRoute::Speculative)
+    }
+
+    /// THE NARRATIVE PROJECTION: `(sourcer, target)` for every occurrence a loaded file's own
+    /// program spelled, whatever route it sits on.
+    ///
+    /// Decision-inert, and deliberately WIDER than [`speaker_edges`](Self::speaker_edges): an
+    /// author who guarded a dependency the engine could not decide still SELECTED it, and `30I`
+    /// §3.4 owes them a different sentence from one who selected nothing at all.
+    #[must_use]
+    pub fn selection_edges(&self) -> BTreeSet<(String, String)> {
+        self.edges(|_| true)
+    }
+
+    fn edges(&self, admit: impl Fn(LoadRoute) -> bool) -> BTreeSet<(String, String)> {
+        self.occurrences
+            .iter()
+            .filter(|occurrence| admit(occurrence.route))
+            .filter_map(|occurrence| match &occurrence.sourcer {
+                LoadSourcer::File(key) => Some((key.clone(), occurrence.target.clone())),
+                LoadSourcer::Invocation | LoadSourcer::Book => None,
+            })
+            .collect()
+    }
+
+    /// Record one occurrence, answering its index so a nested one can name it.
+    pub fn record(&mut self, occurrence: LoadOccurrence) -> usize {
+        self.occurrences.push(occurrence);
+        self.occurrences.len().saturating_sub(1)
+    }
+
+    /// Note a canonical path a load named that the table does not hold.
+    pub fn want(&mut self, key: String) {
+        self.wanted.insert(key);
+    }
+
+    /// Note a sourcer whose own load named nothing loadable.
+    pub fn suspend(&mut self, sourcer: String) {
+        self.unresolved.insert(sourcer);
+    }
+
+    /// Seed the wanted set from the sites whose target the table never held.
+    pub fn want_all(&mut self, keys: impl IntoIterator<Item = String>) {
+        self.wanted.extend(keys);
+    }
+}
 
 /// One loadable file's top level, in source order.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -77,8 +232,8 @@ impl LoadProgram {
 
     /// Does this file's top level `unset -f` any of `names`, in a guard branch or out of one?
     #[must_use]
-    pub fn removes_any(&self, names: &std::collections::BTreeSet<&str>) -> bool {
-        fn walk(controls: &[LoadControl], names: &std::collections::BTreeSet<&str>) -> bool {
+    pub fn removes_any(&self, names: &BTreeSet<&str>) -> bool {
+        fn walk(controls: &[LoadControl], names: &BTreeSet<&str>) -> bool {
             controls.iter().any(|control| match control {
                 LoadControl::UnsetFunctions(removed) => {
                     removed.iter().any(|name| names.contains(name.as_str()))
