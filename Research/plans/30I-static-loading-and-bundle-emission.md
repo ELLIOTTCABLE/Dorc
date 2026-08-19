@@ -17,12 +17,15 @@
 
 ## Implementation plan - the remaining lane
 
-`impl-one-lane-two-builders` - the load model, frame answers, custody, bundle
-projection, locator graph, and artifact emission are one coupled model. They are
-built by one builder at a time, never by parallel owners: a second resolver or a
-decorative source map is a likelier product of splitting than saved wall-clock.
-The lane is currently seamed once, after the load model settled, so a fresh
-window carries emission.
+`impl-one-lane-sequential-builders` - the load model, frame answers, custody,
+bundle projection, locator graph, and artifact emission are one coupled model.
+They are built by one builder at a time, never by parallel owners: a second
+resolver or a decorative source map is a likelier product of splitting than saved
+wall-clock. Seams are placed at FIXED work-order boundaries and never on a
+builder's own read of its remaining context, which is not a thing a model can
+measure. Seam 1 fell after the load model settled; seam 2 falls after step 4,
+so that the loader/custody/CLI half and the emission/artifact half each get a
+whole window.
 
 ### Where the build stands
 
@@ -134,6 +137,12 @@ Each step unblocks the next.
    property; add no sentinel registry, magic name, separate explanation witness,
    or durable state. Full `command -v` load modeling remains the open pin in
    section 14, not a prerequisite to this lane.
+
+   Consequential and easy to miss: the committed `load30-*` fixtures still spell
+   `command -v` guards from the earlier direction. Re-spell them to the sentinel
+   form section 2.2 now carries, so the executable specification and the ruling
+   agree. That is directed work, not a builder judgment call about the human's
+   authored bytes.
 5. **Add one bundle projection**, keyed by static load occurrence, consuming the
    snapshot and the frame answers, never re-reading a path. Copy authored segments
    exactly; add only necessary generated scaffolding and versioned boundary
