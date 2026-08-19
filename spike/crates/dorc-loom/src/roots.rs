@@ -1,16 +1,17 @@
 //! The one seat that answers "where is my world".
 //!
 //! The corpus, both generated locks, the staging store and the repository this tool asks about
-//! all hang off ONE directory. They used to re-derive it from `CARGO_MANIFEST_DIR` at four
-//! separate sites, which is how the second copy of a resolution silently rots
+//! all hang off ONE directory. Four separate sites used to re-derive it from the crate's own
+//! compile-time anchor, which is how the second copy of a resolution silently rots
 //! (`spike/CLAUDE.md` one-shell-answer says the same thing about interpreters). It is also what
 //! made the `publish` write path untestable: reaching it wrote REAL sources, so three specified
 //! tests could not be written and a developer's in-progress loom edit could be published by
 //! `cargo test`.
 //!
-//! Nothing outside this module may name an absolute anchor — `roots_is_the_only_absolute_anchor`
-//! in `tests/roots_confine.rs` is the gate, and it reads this crate's sources lexically because
-//! the property is "no other seat can even spell it", which no type bound expresses.
+//! Nothing outside this module may name that anchor —
+//! `only_the_resolution_seat_names_an_absolute_anchor` in `tests/roots.rs` is the gate, and it
+//! reads this crate's sources lexically because the property is "no other seat can even spell
+//! it", which no type bound expresses.
 
 use std::path::{Path, PathBuf};
 

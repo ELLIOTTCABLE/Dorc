@@ -310,7 +310,13 @@ fn validate_directory_tree(path: &Path, label: &str) -> Result<(), String> {
     let mut current = PathBuf::new();
     for component in path.components() {
         match component {
-            Component::Prefix(prefix) => current.push(prefix.as_os_str()),
+            // A Windows drive/UNC prefix is not a filesystem object and cannot be a link; stat'ing
+            // it alone answers about the drive-relative cwd on `C:` and outright FAILS on the
+            // `\\?\C:` verbatim spelling `fs::canonicalize` hands back. The walk starts at the root.
+            Component::Prefix(prefix) => {
+                current.push(prefix.as_os_str());
+                continue;
+            }
             Component::RootDir => current.push(component.as_os_str()),
             Component::Normal(segment) => current.push(segment),
             Component::CurDir | Component::ParentDir => return Err(format!("unsafe {label}")),
