@@ -4,6 +4,6 @@ when-fires: the end-sentinel carried a nonce that is not this attempt's. plan/re
 why: 306b §6e: the close marker is controller-owned framing like the header, so a wrong one means the stream is not known to have ended — the strict path refuses the whole attempt.
 ---
 -- replay --
-$ dorc plan --book=book.sh < probe-results.txt
+$ dorc plan --book=book.sh --results - < probe-results.txt
 warning[records-sentinel-nonce]: sm the end-sentinel carried a nonce that is not
 this attempt's -- ignored (the stream's own records are keyed independently)

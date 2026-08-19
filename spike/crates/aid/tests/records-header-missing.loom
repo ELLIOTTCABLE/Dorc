@@ -4,7 +4,7 @@ when-fires: framed records material arrived before any header line, or the strea
 why: 262 §1/§2: a missing header refuses the read unit (kFAIL-perform).
 ---
 -- replay --
-$ dorc plan --book=book.sh < probe-results.txt
+$ dorc plan --book=book.sh --results - < probe-results.txt
 warning[records-header-missing]: sm a framed records stream carried no
 `dorc-records/1` header (torn/absent) -- the read unit is refused, the host runs
 (kFAIL-perform)

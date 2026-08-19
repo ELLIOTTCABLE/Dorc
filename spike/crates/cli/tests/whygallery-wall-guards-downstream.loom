@@ -127,7 +127,7 @@ ran: hork tune --profile web
 ran: systemctl is-active -- nginx
 
 -- replay --
-$ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source service.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source service.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

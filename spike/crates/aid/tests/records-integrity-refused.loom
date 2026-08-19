@@ -9,7 +9,7 @@ owns:
   - records-integrity-refused-book
 ---
 -- replay --
-$ dorc plan --book=book.sh < probe-results.txt
+$ dorc plan --book=book.sh --results - < probe-results.txt
 warning[records-integrity-refused]: sm the records header failed integrity on
 the host field (it names a different host than this invocation addressed) -- the
 whole read unit is refused, the host runs (kFAIL-perform)

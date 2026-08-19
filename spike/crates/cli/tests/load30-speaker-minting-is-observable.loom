@@ -166,7 +166,7 @@ ran: beta sync b.conf
 ran: gamma sync c.conf
 
 -- replay --
-$ dorc --book=book.sh --pre-source beta-common.oracle.sh --pre-source beta.oracle.sh --pre-source common.oracle.sh --pre-source delta.oracle.sh --pre-source gamma-common.oracle.sh --pre-source gamma.oracle.sh --pre-source rogue.oracle.sh --pre-source stranger.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source beta-common.oracle.sh --pre-source beta.oracle.sh --pre-source common.oracle.sh --pre-source delta.oracle.sh --pre-source gamma-common.oracle.sh --pre-source gamma.oracle.sh --pre-source rogue.oracle.sh --pre-source stranger.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

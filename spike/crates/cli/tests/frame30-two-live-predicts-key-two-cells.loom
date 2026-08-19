@@ -95,7 +95,7 @@ exit 0
 ran: widget sync alpha
 
 -- replay --
-$ dorc --book=book.sh --pre-source widget.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source widget.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

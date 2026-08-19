@@ -104,7 +104,7 @@ case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac
 ran: apt-get install -y oldpkg
 
 -- replay --
-$ dorc --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips < probe-results.txt
+$ dorc --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

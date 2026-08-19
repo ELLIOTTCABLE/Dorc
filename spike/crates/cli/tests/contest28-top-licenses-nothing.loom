@@ -68,7 +68,7 @@ exit 0
 ran: foobar sync-certs /etc/nginx/certs
 
 -- replay --
-$ dorc --book=book.sh --pre-source foobar.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

@@ -4,7 +4,7 @@ when-fires: a records line carried bytes after its terminal token (two atomic wr
 why: 262 §2: reject the whole read unit, the safe direction (kFAIL-perform).
 ---
 -- replay --
-$ dorc plan --book=book.sh < probe-results.txt
+$ dorc plan --book=book.sh --results - < probe-results.txt
 warning[records-glued-line]: sm a records line carried bytes after its terminal
 token (two writes glued) -- the whole read unit is refused, the host runs
 (kFAIL-perform)

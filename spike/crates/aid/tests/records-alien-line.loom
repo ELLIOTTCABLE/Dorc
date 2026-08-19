@@ -4,7 +4,7 @@ when-fires: a line that is not ours at all appeared in the stream. plan/records.
 why: 262 §1 pin-late-and-alien-records: a foreign or stale-attempt writer on the channel; rejected rather than consumed.
 ---
 -- replay --
-$ dorc plan --book=book.sh < probe-results.txt
+$ dorc plan --book=book.sh --results - < probe-results.txt
 warning[records-alien-line]: sm 1 alien (non-nonce) record line(s) discarded
 (counted, never folded)
 

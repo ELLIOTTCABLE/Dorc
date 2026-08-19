@@ -44,7 +44,7 @@ override
 -- expected.ran --
 
 -- replay --
-$ dorc --book=book.sh
+$ dorc --book=book.sh --results -
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

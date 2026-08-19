@@ -70,7 +70,7 @@ ran: systemctl enable nginx
 ran: ufw allow 80/tcp
 
 -- replay --
-$ dorc --book=book.sh < probe-results.txt
+$ dorc --book=book.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

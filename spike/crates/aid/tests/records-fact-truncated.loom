@@ -4,7 +4,7 @@ when-fires: fewer site records arrived than the header declared. plan/records.rs
 why: plans/128 fc-2 states the loss is bounded and computable against the declared count; the strict path refuses the attempt all the same (306b §6e), and the forgiving deframer keeps the count-only reading. NOTE plain-language pass owed: Unknown/⊤-join wording (law-plain-language-surfaces, 24H ack-4).
 ---
 -- replay --
-$ dorc plan --book=book.sh < probe-results.txt
+$ dorc plan --book=book.sh --results - < probe-results.txt
 note[records-fact-truncated]: the probe's records ended early: 3 of 5 declared
 site records arrived, so Dorc treats the 2 unseen site(s) as unanswered and
 leaves their commands to run.

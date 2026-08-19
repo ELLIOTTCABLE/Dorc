@@ -51,7 +51,7 @@ receipts -- every plan/apply/round-trip writes one; `dorc why` reads it:
   sm  no mode, so there that per-user location is the *only protection.*
 
 stdin:  probe results, one per line -- `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-        (unless --results <file>); stdout: the selected mode's artifact(s); stderr:
+        (only with --results -); stdout: the selected mode's artifact(s); stderr:
         diagnostics / why-lens / decision-digest.
 
 exit codes:

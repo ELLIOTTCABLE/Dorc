@@ -36,7 +36,7 @@ dorc deriv 0 coord=sm.dorc.File:/etc/hork.conf @@dorc@@
 dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- replay --
-$ dorc plan --book=book.sh --pre-source hork.oracle.sh --risk-faultless-skips < probe-results.txt
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh --risk-faultless-skips --results - < probe-results.txt
 warning[deriv-family-incomplete]: site 0: the footprint derived on the host
 arrived incomplete (no deriv-end close-record), and an at-most claim cannot be
 partial, so Dorc refuses it whole and the site walls, as if nothing had been

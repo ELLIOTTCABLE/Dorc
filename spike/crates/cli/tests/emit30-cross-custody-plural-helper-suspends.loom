@@ -54,7 +54,7 @@ _wombat_dest() {
 }
 
 -- replay --
-$ dorc --book=book.sh --pre-source a-entry.oracle.sh --pre-source b-helper.oracle.sh --pre-source c-helper.oracle.sh
+$ dorc --book=book.sh --pre-source a-entry.oracle.sh --pre-source b-helper.oracle.sh --pre-source c-helper.oracle.sh --results -
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

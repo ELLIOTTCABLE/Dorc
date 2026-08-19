@@ -84,7 +84,7 @@ ran: wombat a.conf /etc/shared.conf
 ran: wombat b.conf /etc/shared.conf
 
 -- replay --
-$ dorc --book=book.sh --pre-source wombat.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source wombat.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
