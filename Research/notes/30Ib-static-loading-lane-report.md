@@ -10,11 +10,16 @@
 
 ## §0 — Where the lane stands
 
-Work-order items **2, 3 and 4 are landed**, with the single exception named in
-§4 `dev-cross-custody-refusal-not-built`. Items 5, 6 and 7 are **untouched** — no
-bundle projection, no artifact forms, no XFAIL promotion, no golden work. The
-three `load30-*` specimens remain XFAIL with empty `head-expected.ran`, and
-`floor30-dot-loader-function-errexit` is byte-identical.
+**Work-order steps 1, 2, 3 and 4 are landed.** Steps 5–8 are untouched: no bundle
+projection, no locator-through-a-real-diagnostic, no artifact forms, no XFAIL
+promotion, no e2e lowering. The three `load30-*` specimens remain XFAIL, now
+spelled with the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit`
+is byte-identical.
+
+> The step numbering moved when `30I`'s work order was re-cut. This file's §1–§6
+> were written against the OLD numbering (its "items 2/3/4" are the load model,
+> the frame answers and the locator DAG); §7 was the runway into what are now
+> steps 1 and 2. Read §8 for the current-numbering account.
 
 ## §1 — The crossing, as found (`30I` work-order §1)
 
@@ -314,3 +319,139 @@ In this order, because each unblocks the next:
    the authored stage as origin) and carry one chain into a real diagnostic —
    which discharges §5 row 1 and `30I` work-order §4 together.
 5. Only then items 6 and 7.
+
+## §8 — Builder 2: steps 1–3 as built
+
+### Step 1 — a pre-source is a `.` (`30I:rul-pre-source-is-dot-prelude`)
+
+`DefinitionTable::ambient` is now a vector of ROOTS (`AmbientRoot { key, defs }`),
+not a flat `DefId` list, and the `Entry` transfer RUNS each root's `LoadProgram`
+in invocation order through `run_ambient_prefix`. So an invocation-named package's
+include guard decides, its own `.` reaches a dependency the invocation never
+named, and its `unset -f` removes — the same interpreter a book `.` drives.
+
+Three properties are load-bearing and each is pinned in `analysis::funcenv`'s
+TABLE 6:
+
+- **the flat fallback survives.** A root with no program on file — an unmarked
+  source, which makes no dialect claim, or a path the modeled cwd could not
+  canonicalize — binds its flat declarations exactly as the whole prefix used to
+  (`a_pre_source_with_no_program_still_binds_its_declarations`). Nothing about the
+  prefix's new richness may cost a plain file its binding.
+- **one `locals` map spans the prefix**, because a shell's `.` leaves its
+  assignments live for the next one; `visiting` is per-root, each being its own
+  load act (`one_pre_source_sites_the_next`).
+- **`contests` still walks the flat declarations** of every root, in the same
+  order. That is deliberately unchanged: a guarded dependency the model does not
+  bind still counts as an ambient shadow, which over-FIRES a diagnostic and
+  withholds nothing.
+
+This discharges the old §4 row 5 (`dev-ambient-include-guards-are-not-evaluated`)
+and its open licensure question: nothing binds unconditionally through a
+flat-declaration prefix any more, so there is no unresolvable-ambient-load call to
+make. An unresolvable load inside a pre-sourced root havocs that root's
+contribution (`rul-unloadable-is-unlicensed`), which is the withholding direction.
+
+### Step 2 — the loader reports the edges it walked
+
+`FuncEnv` gained `load_edges` (`(sourcer, target)` canonical-key pairs) and
+`unresolved_sourcers`, collected by the settled post-pass (`settled_account`, née
+`wanted_after`) alongside `wanted_loads`. `cli::sourcing::include_tree` now takes
+`(&snapshot, &env)` and consumes them; its literal `.`-operand walk is GONE.
+
+That closes custody for a variable-rooted dependency — `30I` §2.1's canonical
+package shape, whose operand this seat holds no loading context to expand. Pinned
+at `cli::sourcing`'s `a_dependency_sited_through_the_callers_root_takes_custody`.
+
+Two things stayed on the cli side deliberately: the dorc-lang CONTRACT check at
+BOTH ends of every edge (the loader binds an unmarked target's declarations, but
+an unmarked target mints no edge and suspends its sourcer), and the book
+exclusion. The loader itself records an edge only from a file whose own program
+spelled the load, so a book `.` and an invocation-named root contribute none.
+
+`main.rs` moved the `include_tree`/`HelperIndex` construction BELOW
+`funcenv::analyze` — its first consumer was already below it, so the move is
+positional only. `sourcing`'s tests now drive the whole pipeline (parse to cfg to
+value to definition table to funcenv) rather than hand-building a tree; a
+hand-built one would be the second resolver this change exists to delete.
+
+**Not extended**: `settled_account` reports `wanted` for pre-sourced roots, but the
+binary's acquisition loop for ambient dependencies is still the edge's literal
+walk (`read_sourced_oracles` through `sourcing::top_level_load_targets`), which
+runs BEFORE the book acquisition. A variable-rooted operand inside a pre-sourced
+root resolves nowhere anyway (no book variable is live before line 1), so nothing
+is lost today; a root that sites a dependency through a variable ANOTHER
+pre-source set is the cell that would need the edge's loop to consume the loader's
+account too.
+
+### Step 3 — the CLI input surface (`30I` §2.4/§2.5)
+
+Landed:
+
+- **`--pre-source PATH`** (long-only, repeatable, CLI-ordered) replaces
+  `-o`/`--oracle`, which are GONE from the analyze surface. `--oracle-dir` stays
+  (see the deviation below).
+- **Zero short options.** `-o` and `-h` are both retired
+  (`30I:rul-spike-has-no-short-options`); `--help` is the only spelling.
+- **One main book per target.** A second main-book operand — positional or
+  `--book=` — is `cli-several-main-books`, refused pre-network. `Args::books:
+  Vec<String>` is now `Args::book: Option<String>`, and `read_books`'
+  newline-concatenation is deleted, which discharges the old §5 row 5.
+- **`-` names stdin in any filename position** (`read_input`), and stdin is a
+  COLLAPSED resource: `stdin_claimants` lists every lane that wants it — a `-`
+  book, a `-` pre-source, `--results -`, and the DEFAULT claimants (the records
+  lane on plan/apply/round-trip, `apply --host`'s artifact lane) — and two
+  claimants refuse with `cli-stdin-claimed-twice`, naming both.
+
+Two new codes, prose `[unwritten:]` per `error-authorship-tier`, with defining
+cases at `crates/aid/tests/cli-several-main-books.loom` and
+`crates/aid/tests/cli-stdin-claimed-twice.loom`.
+
+Corpus: the e2e runner spells `--pre-source` in both seats (`shared_args` and
+`round_trip_command`), and every committed replay line was respelled
+mechanically. `hostsim::differential`, `spine_baseline`, `dorc-loom`'s replay
+parsers and `dorc-coverage` were swept the same way.
+
+**Not built, and why**: `rul-piped-stdout-implies-one-flat-plan` needs the three
+emission modes to select BETWEEN, and there is exactly one emission form today, so
+both halves are vacuous and its refusal has nothing to refuse. Building the
+injected is-a-terminal seam now would be a seam with no consumer; it belongs with
+step 7. Likewise `TargetedBook` is not minted: `Args`'s flat
+`(book, pre_sources, host)` IS that shape at N=1, and the target-qualifier grammar
+is explicitly unruled.
+
+## §9 — Builder 2's deviation ledger (OPEN; for conductor/human adjudication)
+
+None is self-endorsed.
+
+1. **`dev-oracle-dir-survives-the-oracle-flags`** — `30I`'s ruling ledger names
+   `-o`/`--oracle` DEAD and does not name `--oracle-dir`. It survives, now
+   documented as "pre-source every `*.oracle.sh` in `<dir>`", and it is what
+   `livetest.sh` and `render-baselines.sh` drive. If the intent was that the whole
+   oracle-flag family goes, it is one rename (`--pre-source-dir`) plus those two
+   scripts. Flagged rather than decided: renaming a flag two live scripts drive is
+   not a builder's call.
+2. **`dev-lint-keeps-its-oracle-flag`** — `dorc lint --oracle`/`--oracle-dir`
+   survive (short `-o` retired). Lint LOADS nothing: the flag means "lint these
+   files AS oracles", which `--pre-source` would misname. `30I` §2.4/§2.5 rule
+   `plan`/`bundle` and say stream roles are per-subcommand, so the lint surface
+   reads as out of scope — but the ruling text is not scoped explicitly.
+3. **`dev-apply-plan-still-defaults-to-stdin`** — `owed-apply-takes-stdin-only-by-dash`
+   is NOT discharged; `apply --host` without `--plan` still reads stdin. Instead
+   that default is DECLARED as a stdin claimant, which is exactly the shape
+   `30I` §2.5's own example describes ("a `-` book beside a stdin-defaulted
+   `--plan`"). Making it `-`-only needs a "this mode requires this flag" refusal
+   that has no code yet, and the brief calls the item punt-able.
+4. **`dev-plan-dash-book-needs-explicit-results`** — because the records lane
+   claims stdin by default, `dorc plan -` REFUSES unless `--results FILE` is
+   given; `dorc probe -` is ordinary. That follows from §2.5's "never a silent
+   precedence rule", but §2.4 lists `dorc plan -` as an ordinary spelling without
+   saying it needs a companion flag. The alternative — letting a `-` book quietly
+   win the stream from the records lane — is the precedence rule §2.5 forbids.
+5. **`dev-builder-touched-help-prose`** — the usage synopsis and help page name
+   flags, so retiring flags moved registry PROSE (`cli-usage-synopsis`,
+   `cli-help-page`, and `aid-unloaded-sibling-oracle`'s help line). The edits are
+   flag-token substitutions plus the one clause that said books CONCATENATE, which
+   is now false. No new user-facing sentence was authored, and `-` is deliberately
+   NOT documented in the help page — that would be authorship. Owed to the
+   conductor: a `-` line in the options block, and prose for the two new codes.
