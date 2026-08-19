@@ -67,20 +67,21 @@ pub struct GitRepository {
 }
 
 impl GitRepository {
-    /// Locate the repository root through Git, asked from THIS crate's own directory.
+    /// Locate the repository root through Git, asked from the tree [`crate::Roots`] resolved.
     ///
-    /// Never from cwd: the corpus, the locks and the receipt store are all sited off
-    /// `CARGO_MANIFEST_DIR`, so a cwd-derived root is the one input that could point somewhere else
-    /// — a sibling worktree, or no repository at all. Asking from the crate is what lets the binary
-    /// be invoked from anywhere instead of from a wrapper that supplies a working directory.
+    /// Never from cwd: the corpus, the locks and the staging store all hang off that same tree, so
+    /// a cwd-derived root is the one input that could point somewhere else — a sibling worktree,
+    /// or no repository at all. Asking from the resolved root is what lets the binary be invoked
+    /// from anywhere instead of from a wrapper that supplies a working directory, and it is why a
+    /// `-C` world is answered by ITS repository rather than by the one this binary was built in.
     ///
     /// # Errors
     ///
     /// Returns a refusal when Git cannot identify the enclosing repository.
-    pub fn open() -> Result<Self, String> {
+    pub fn open_at(within: &Path) -> Result<Self, String> {
         let output = Command::new("git")
             .args(["rev-parse", "--show-toplevel"])
-            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .current_dir(within)
             .output()
             .map_err(|error| format!("locate git repository: {error}"))?;
         if !output.status.success() {

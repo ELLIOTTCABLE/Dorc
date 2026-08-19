@@ -47,6 +47,13 @@ pub struct Invocation {
     /// tuning one verb's behaviour.
     #[arg(long)]
     pub this: bool,
+    /// Resolve the corpus, both generated locks and the staging store relative to this directory
+    /// instead of the tree this binary was built in.
+    ///
+    /// Global for the same reason `--this` is, and spelled as git's and make's: it says which
+    /// WORLD the command acts on, which is not one verb's business.
+    #[arg(short = 'C', value_name = "DIR")]
+    pub root: Option<String>,
     /// What to do.
     #[command(subcommand)]
     pub verb: Verb,
@@ -226,6 +233,16 @@ impl Invocation {
 /// The global selector flag, spelled once.
 pub const THIS: &str = "--this";
 
+/// The global world flag, spelled once.
+pub const ROOT: &str = "-C";
+
+/// The flags that live before the verb, each with the invocation a reader who misplaced it should
+/// type instead (`28L:rul-refusals-name-the-next-command`).
+const GLOBAL_FLAGS: [(&str, &str); 2] = [
+    (THIS, "dorc-loom --this vars"),
+    (ROOT, "dorc-loom -C DIR publish <slug>"),
+];
+
 /// `publish`' whole-corpus opt-in, spelled once.
 pub const ALL: &str = "--all";
 
@@ -271,15 +288,15 @@ fn explain(error: &clap::Error) -> String {
     else {
         return error.render().to_string().trim_end().to_owned();
     };
-    if flag == THIS {
-        return format!("{THIS} comes before the verb, git-style: `dorc-loom {THIS} vars`");
+    if let Some((global, example)) = GLOBAL_FLAGS.into_iter().find(|(global, _)| flag == *global) {
+        return format!("{global} comes before the verb, git-style: `{example}`");
     }
     let verbs = verbs_declaring(flag);
     match verbs.first() {
         None => error.render().to_string().trim_end().to_owned(),
         Some(first) => format!(
-            "{flag} belongs to {} and goes after the verb; {THIS} is the only flag that comes \
-             before one: `dorc-loom {first} {flag}`",
+            "{flag} belongs to {} and goes after the verb; the global flags {THIS} and {ROOT} are \
+             the only ones that come before one: `dorc-loom {first} {flag}`",
             verbs.join(" and ")
         ),
     }
@@ -380,6 +397,35 @@ mod tests {
                 .expect("a target"),
             Target::Named(&[])
         );
+    }
+
+    /// `-C` is git-shaped: before the verb, on every verb (the world a command acts on is not one
+    /// verb's business), and misplaced it names where it goes rather than clap's "unexpected".
+    #[test]
+    fn the_world_flag_is_global_and_reaches_every_verb() {
+        for spelling in [
+            vec!["dorc-loom", "-C", "/tmp/world", "publish", "--all"],
+            vec!["dorc-loom", "-C", "/tmp/world", "vars"],
+            vec!["dorc-loom", "-C", "/tmp/world", "keys"],
+        ] {
+            let invocation = parse_words(&spelling).expect("the git shape parses");
+            assert_eq!(
+                invocation.root.as_deref(),
+                Some("/tmp/world"),
+                "{spelling:?}"
+            );
+        }
+        assert_eq!(
+            parse_words(&["dorc-loom", "vars"])
+                .expect("the bare form parses")
+                .root,
+            None,
+            "an absent -C is the tree this binary was built in"
+        );
+
+        let inverted =
+            parse_words(&["dorc-loom", "vars", "-C", "/tmp/world"]).expect_err("refuses");
+        assert!(inverted.contains("dorc-loom -C DIR"), "{inverted}");
     }
 
     /// `--this` and a case list say two different things about which case is meant, and a verb

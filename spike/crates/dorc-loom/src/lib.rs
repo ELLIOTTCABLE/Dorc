@@ -42,6 +42,8 @@ mod staging_store;
 pub use staging_store::{FsStagingStore, StagingStore, StagingWriteOutcome};
 mod repository;
 pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
+mod roots;
+pub use roots::Roots;
 mod vocabulary;
 pub use vocabulary::{
     DEFINING_KEYS_NOTE, FRONTMATTER_KEYS, FrontmatterKey, frontmatter_key_names,

@@ -7,8 +7,8 @@ use std::process::ExitCode;
 use dorc_aid::prose::Mint;
 use dorc_loom::invocation::{ALL, Breadth, PublishArgs, THIS, Verb};
 use dorc_loom::{
-    DorcConsumer, DorcSectionEditRefusal, FsStagingStore, GitRepository, Repository, SectionKey,
-    SectionVariableId, StagedPublication, StagedReplay, StagingStore, accept_staged,
+    DorcConsumer, DorcSectionEditRefusal, FsStagingStore, GitRepository, Repository, Roots,
+    SectionKey, SectionVariableId, StagedPublication, StagedReplay, StagingStore, accept_staged,
     build_publication, classify_prose_changes, compile_preview, corpus_ownership,
     load_arrangement_corpus, load_corpus_by_slug, refuse_foreign_components, render_publish_diff,
     replay_case_with_inputs, stage_publication,
@@ -251,14 +251,14 @@ struct GatedCases {
 }
 
 fn run() -> Result<ExitCode, String> {
-    let command = parse_args()?;
+    let Invoked { roots, command } = parse_args()?;
     let stdout = io::stdout();
     let mut out = stdout.lock();
     match command {
-        Command::Publish(publication) => publish_cases(&publication, &mut out),
+        Command::Publish(publication) => publish_cases(&roots, &publication, &mut out),
         Command::Vars { breadth, cases } => print_variables(breadth, &cases, &mut out),
-        Command::Scaffold { slug } => scaffold_case(&slug),
-        Command::AddRegister { case, register } => add_register(&case, &register),
+        Command::Scaffold { slug } => scaffold_case(&roots, &slug),
+        Command::AddRegister { case, register } => add_register(&roots, &case, &register),
         Command::Sections { cases } => print_sections(&cases, &mut out),
         Command::Keys => print_keys(&mut out),
         Command::Help { verb } => writeln!(
@@ -277,12 +277,12 @@ fn run() -> Result<ExitCode, String> {
 /// where the collection lives, and the previous single spelling (a path relative to `spike/`) was
 /// nowhere stated. In order: the canonical collection by slug, the canonical collection by
 /// filename, the path as given, and the path against the workspace root.
-fn resolve_case(arg: &str) -> Result<PathBuf, String> {
+fn resolve_case(roots: &Roots, arg: &str) -> Result<PathBuf, String> {
     let slug = arg.strip_suffix(".loom").unwrap_or(arg);
     let tried = [
-        cases_dir().join(format!("{slug}.loom")),
+        roots.corpus().join(format!("{slug}.loom")),
         PathBuf::from(arg),
-        spike_dir()?.join(arg),
+        roots.base().join(arg),
     ];
     if let Some(found) = tried.iter().find(|path| path.is_file()) {
         return Ok(found.clone());
@@ -296,7 +296,7 @@ fn resolve_case(arg: &str) -> Result<PathBuf, String> {
             .map(|path| path.display().to_string())
             .collect::<Vec<_>>()
             .join(", "),
-        cases_dir().display()
+        roots.corpus().display()
     ))
 }
 
@@ -317,7 +317,13 @@ fn chosen_verb(argv: &[String]) -> Option<&str> {
     VERBS.contains(&leading).then_some(leading)
 }
 
-fn parse_args() -> Result<Command, String> {
+/// One parsed command line: the world it acts on, and what to do in it.
+struct Invoked {
+    roots: Roots,
+    command: Command,
+}
+
+fn parse_args() -> Result<Invoked, String> {
     parse_argv(&std::env::args().skip(1).collect::<Vec<_>>())
 }
 
@@ -329,14 +335,18 @@ fn parse_args() -> Result<Command, String> {
 /// load-bearing rather than tidy — `add-register CASE help` ends in the literal token `help`, so
 /// while the scan took the bare word anywhere, the verb's only legal invocation was
 /// indistinguishable from a help request: usage page, exit 0, nothing minted.
-fn parse_argv(words: &[String]) -> Result<Command, String> {
+fn parse_argv(words: &[String]) -> Result<Invoked, String> {
     let asks_for_help = words
         .iter()
         .any(|word| matches!(word.as_str(), "--help" | "-h"))
         || words.first().is_some_and(|word| word == "help");
     if asks_for_help {
-        return Ok(Command::Help {
-            verb: chosen_verb(words).map(str::to_owned),
+        // A page reads nothing, so it never has to resolve the world the rest of the argv named.
+        return Ok(Invoked {
+            roots: Roots::built_in()?,
+            command: Command::Help {
+                verb: chosen_verb(words).map(str::to_owned),
+            },
         });
     }
     let page = || usage_for(chosen_verb(words).unwrap_or_default());
@@ -356,9 +366,10 @@ fn parse_argv(words: &[String]) -> Result<Command, String> {
             page()
         ));
     }
-    match invocation.verb {
-        Verb::Publish(args) => Ok(Command::Publish(Publication {
-            cases: resolve_cases(&args.cases)?,
+    let roots = Roots::resolve(invocation.root.as_deref())?;
+    let command = match invocation.verb {
+        Verb::Publish(args) => Command::Publish(Publication {
+            cases: resolve_cases(&roots, &args.cases)?,
             spelled: if args.cases.is_empty() {
                 ALL.to_owned()
             } else {
@@ -369,21 +380,22 @@ fn parse_argv(words: &[String]) -> Result<Command, String> {
             accept_metadata: args.accept_metadata,
             provenance: provenance_of(&args)?,
             verbatim: args.verbatim,
-        })),
-        Verb::Vars(args) => Ok(Command::Vars {
+        }),
+        Verb::Vars(args) => Command::Vars {
             breadth: args.breadth(),
-            cases: resolve_cases(&args.cases)?,
-        }),
-        Verb::Scaffold { slug } => Ok(Command::Scaffold { slug }),
-        Verb::AddRegister { case, register } => Ok(Command::AddRegister {
-            case: resolve_case(&case)?,
+            cases: resolve_cases(&roots, &args.cases)?,
+        },
+        Verb::Scaffold { slug } => Command::Scaffold { slug },
+        Verb::AddRegister { case, register } => Command::AddRegister {
+            case: resolve_case(&roots, &case)?,
             register,
-        }),
-        Verb::Sections(args) => Ok(Command::Sections {
-            cases: resolve_cases(&args.cases)?,
-        }),
-        Verb::Keys => Ok(Command::Keys),
-    }
+        },
+        Verb::Sections(args) => Command::Sections {
+            cases: resolve_cases(&roots, &args.cases)?,
+        },
+        Verb::Keys => Command::Keys,
+    };
+    Ok(Invoked { roots, command })
 }
 
 /// The `--human`/`--slop` pair, which say opposite things about the same registers.
@@ -413,11 +425,11 @@ fn run_env(args: &PublishArgs) -> Result<RunEnv, String> {
 ///
 /// Which invocations may ARRIVE here empty is the grammar's question, not this function's
 /// (`invocation::Invocation::target` — a bare read-only verb may, a bare `publish` refuses).
-fn resolve_cases(cases: &[String]) -> Result<Vec<PathBuf>, String> {
+fn resolve_cases(roots: &Roots, cases: &[String]) -> Result<Vec<PathBuf>, String> {
     if cases.is_empty() {
-        return corpus_cases();
+        return corpus_cases(roots);
     }
-    cases.iter().map(|case| resolve_case(case)).collect()
+    cases.iter().map(|case| resolve_case(roots, case)).collect()
 }
 
 /// `dorc-loom add-register CASE help` — mint a code's help register so the ordinary transcript loop
@@ -426,7 +438,7 @@ fn resolve_cases(cases: &[String]) -> Result<Vec<PathBuf>, String> {
 /// The register is a CATALOG fact, so this publishes through the same generator a publish uses: the
 /// lock gains `HelpRegister::Unwritten` and the case's transcript grows the
 /// `= help: [unwritten: <slug>.help]` line the author then overtypes. Nothing here writes prose.
-fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
+fn add_register(roots: &Roots, path: &Path, register: &str) -> Result<ExitCode, String> {
     if register != "help" {
         return Err(format!(
             "`help` is the only register that can be added; `message` exists on every code and \
@@ -444,7 +456,7 @@ fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
             )
         })?
         .to_owned();
-    let gated = gate_touched_set(std::slice::from_ref(&path.to_path_buf()))?;
+    let gated = gate_touched_set(roots, std::slice::from_ref(&path.to_path_buf()))?;
     if !gated.touched.is_empty() {
         return Err(format!(
             "{} has a prose edit that is not promoted yet, and adding a register rewrites the \
@@ -465,6 +477,7 @@ fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
         ),
     })?;
     publish(
+        roots,
         &consumer,
         &std::collections::BTreeMap::from([(slug.clone(), case)]),
     )?;
@@ -485,7 +498,7 @@ fn add_register(path: &Path, register: &str) -> Result<ExitCode, String> {
 /// (`check_hygiene`) until a genuinely-firing world is authored and blessed — the scaffold-and-forget
 /// guard. `message` is never written, so the code renders `[unwritten: <slug>]` at every seat:
 /// builders author zero user-facing prose (`error-authorship-tier`).
-fn scaffold_case(slug: &str) -> Result<ExitCode, String> {
+fn scaffold_case(roots: &Roots, slug: &str) -> Result<ExitCode, String> {
     if slug.is_empty()
         || !slug
             .bytes()
@@ -495,7 +508,7 @@ fn scaffold_case(slug: &str) -> Result<ExitCode, String> {
             "slug {slug:?} is not a code slug (lowercase letters, digits, and hyphens)"
         ));
     }
-    let path = cases_dir().join(format!("{slug}.loom"));
+    let path = roots.corpus().join(format!("{slug}.loom"));
     if path.exists() {
         return Err(format!(
             "{} already exists; scaffold never overwrites an authored case",
@@ -561,8 +574,8 @@ fn process_env(name: &str) -> Option<String> {
 /// Before any write, not after: the suite gate that also holds this property only fires once the
 /// files are already rewritten, which turns an accident into a revert ceremony. Both texts are
 /// shown because the reader is holding the case and cannot see the entry.
-fn refuse_metadata_drift(accepted: bool) -> Result<(), String> {
-    let cases_dir = cases_dir();
+fn refuse_metadata_drift(roots: &Roots, accepted: bool) -> Result<(), String> {
+    let cases_dir = roots.corpus();
     let drift = dorc_loom::metadata_drift(
         &load_corpus_by_slug(&cases_dir)?,
         &load_arrangement_corpus(&cases_dir)?,
@@ -611,8 +624,8 @@ fn binary_dir() -> Result<PathBuf, String> {
 /// Every committed defining case, in a stable order.
 ///
 /// Sorted because a `read_dir` order is not guaranteed and the receipt is order-sensitive.
-fn corpus_cases() -> Result<Vec<PathBuf>, String> {
-    let dir = cases_dir();
+fn corpus_cases(roots: &Roots) -> Result<Vec<PathBuf>, String> {
+    let dir = roots.corpus();
     let read =
         std::fs::read_dir(&dir).map_err(|error| format!("read {}: {error}", dir.display()))?;
     let mut cases: Vec<PathBuf> = read
@@ -635,14 +648,18 @@ fn corpus_cases() -> Result<Vec<PathBuf>, String> {
 /// run may write. There is no decision to make between those steps, which is why there is no second
 /// verb; the decision that does exist is whether a hole was lost, and the gate fires exactly there
 /// (`30C:rul-any-hole-loss-confirms`).
-fn publish_cases(publication: &Publication, out: &mut impl Write) -> Result<ExitCode, String> {
+fn publish_cases(
+    roots: &Roots,
+    publication: &Publication,
+    out: &mut impl Write,
+) -> Result<ExitCode, String> {
     validate_case_inputs(&publication.cases)?;
     let agent = looks_like_an_agent(&process_env);
     refuse_human_mint_from_an_agent(publication.provenance, agent)?;
-    refuse_metadata_drift(publication.accept_metadata)?;
-    let gated = gate_touched_set(&publication.cases)?;
+    refuse_metadata_drift(roots, publication.accept_metadata)?;
+    let gated = gate_touched_set(roots, &publication.cases)?;
     let total = gated.paths.len();
-    let interpretation = match inspect_cases(&gated, publication, out)? {
+    let interpretation = match inspect_cases(roots, &gated, publication, out)? {
         Inspected::Ready(interpretation) => interpretation,
         Inspected::Refused { cases } => {
             tracing::info!("{total} cases, {cases} refused");
@@ -662,7 +679,7 @@ fn publish_cases(publication: &Publication, out: &mut impl Write) -> Result<Exit
     if let Some(detail) = hole_loss_detail(&interpretation.losses) {
         tracing::warn!("{detail}");
     }
-    let store = staging_store()?;
+    let store = staging_store(roots)?;
     let disposition = disposition(!interpretation.losses.is_empty(), publication.verbatim);
     if disposition == Disposition::Refuse {
         stage_refusal(&store, &interpretation.publication, &publication.spelled)?;
@@ -675,7 +692,7 @@ fn publish_cases(publication: &Publication, out: &mut impl Write) -> Result<Exit
 
     let affected = touched_cases(&gated)?;
     let before = staged_bytes(&gated)?;
-    let wrote = publish(&interpretation.consumer, &affected)?;
+    let wrote = publish(roots, &interpretation.consumer, &affected)?;
     if disposition == Disposition::Confirm {
         store.discard()?;
     }
@@ -935,18 +952,19 @@ fn rewritten_staged(
 /// Returns whether anything was actually written, which is the only honest answer to "did this
 /// publish do something".
 fn publish(
+    roots: &Roots,
     consumer: &DorcConsumer,
     affected: &std::collections::BTreeMap<String, Case>,
 ) -> Result<bool, String> {
-    let cases_dir = cases_dir();
+    let cases_dir = roots.corpus();
     let corpus = load_corpus_by_slug(&cases_dir)?;
     let arrangements = load_arrangement_corpus(&cases_dir)?;
     let publication = build_publication(consumer, &corpus, &arrangements, affected)?;
 
     let mut wrote = false;
     for (path, bytes) in [
-        (catalog_path(), &publication.lock),
-        (arrangement_path(), &publication.arrangement_lock),
+        (roots.catalog_lock(), &publication.lock),
+        (roots.arrangement_lock(), &publication.arrangement_lock),
     ] {
         if file_differs(&path, bytes) {
             publish_file(&path, bytes)?;
@@ -1032,18 +1050,6 @@ fn publish_file(path: &Path, bytes: &str) -> Result<(), String> {
     std::fs::rename(&tmp, path).map_err(|e| format!("rename into {}: {e}", path.display()))
 }
 
-fn cases_dir() -> PathBuf {
-    crates_dir().join("aid").join("tests")
-}
-
-/// `spike/crates`, so every path this tool prints reads as a real location rather than as a
-/// traversal out of whichever crate happens to host the binary.
-fn crates_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .map_or_else(|| PathBuf::from("crates"), Path::to_path_buf)
-}
-
 /// Drive one case's replays through the Dorc adapter, routing declines to the generic executor.
 type DrivenReplays = Vec<ReplayResult<SectionKey, SectionVariableId>>;
 
@@ -1119,6 +1125,7 @@ fn emit_case(out: &mut impl Write, path: &Path, body: &[u8], quiet: bool) -> Res
 }
 
 fn inspect_cases(
+    roots: &Roots,
     gated: &GatedCases,
     publication: &Publication,
     out: &mut impl Write,
@@ -1129,7 +1136,7 @@ fn inspect_cases(
         0usize,
         Vec::new(),
     );
-    let ownership = corpus_ownership(&cases_dir())?;
+    let ownership = corpus_ownership(&roots.corpus())?;
     let mut losses = Vec::new();
     let mut inspected_cases = Vec::new();
     for (relative_path, path) in &gated.paths {
@@ -1209,7 +1216,7 @@ fn inspect_cases(
     if refused > 0 {
         return Ok(Inspected::Refused { cases: refused });
     }
-    let catalog = std::fs::read_to_string(catalog_path())
+    let catalog = std::fs::read_to_string(roots.catalog_lock())
         .map_err(|error| format!("read catalog input: {error}"))?;
     let touched_cases = inspected_cases
         .iter()
@@ -1299,35 +1306,14 @@ fn emit_previews(
     Ok(compiled)
 }
 
-fn staging_store() -> Result<FsStagingStore, String> {
-    // No `..` components — the store's directory-tree check rejects them (`spike/target`).
-    let target = spike_dir()?.join("target");
-    FsStagingStore::new(target)
-}
-
-fn catalog_path() -> PathBuf {
-    crates_dir().join("aid").join("src").join("catalog_lock.rs")
-}
-
-fn arrangement_path() -> PathBuf {
-    crates_dir()
-        .join("aid")
-        .join("src")
-        .join("arrangement_lock.rs")
-}
-
-fn spike_dir() -> Result<PathBuf, String> {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .map(Path::to_path_buf)
-        .ok_or_else(|| "locate spike dir".to_owned())
+fn staging_store(roots: &Roots) -> Result<FsStagingStore, String> {
+    FsStagingStore::new(roots.staging_root())
 }
 
 /// The receipt may bind only transcript-prose edits. Repository reads are isolated
 /// in `GitRepository`; this command owns only selection and inspection orchestration.
-fn gate_touched_set(cases: &[PathBuf]) -> Result<GatedCases, String> {
-    let repository = GitRepository::open()?;
+fn gate_touched_set(roots: &Roots, cases: &[PathBuf]) -> Result<GatedCases, String> {
+    let repository = GitRepository::open_at(roots.base())?;
     let mut paths: Vec<_> = cases
         .iter()
         .map(|path| {
@@ -1338,8 +1324,8 @@ fn gate_touched_set(cases: &[PathBuf]) -> Result<GatedCases, String> {
         .collect::<Result<_, _>>()?;
     paths.sort_by(|left, right| left.0.cmp(&right.0));
     let selected = paths.iter().map(|(path, _)| path.clone()).collect();
-    let catalog = repository.repository_path(&catalog_path())?;
-    let arrangement = repository.repository_path(&arrangement_path())?;
+    let catalog = repository.repository_path(&roots.catalog_lock())?;
+    let arrangement = repository.repository_path(&roots.arrangement_lock())?;
     let classification = classify_prose_changes(&repository, selected, &catalog, &arrangement)?;
     Ok(GatedCases {
         repository,
@@ -1463,6 +1449,12 @@ fn case_name(path: &Path) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// What the grammar made of one command line, without the world it also resolved — the
+    /// question every test below is asking.
+    fn parse_argv(words: &[String]) -> Result<Command, String> {
+        super::parse_argv(words).map(|invoked| invoked.command)
+    }
 
     /// Every verb has a page of its own, and every page ends where the reader goes next. The index
     /// answers "which verb" and nothing else, so a verb that falls through to it silently teaches a
