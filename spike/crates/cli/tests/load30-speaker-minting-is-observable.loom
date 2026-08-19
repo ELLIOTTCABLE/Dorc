@@ -1,0 +1,221 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - helper-declaration-contested
+  - vouched-composition-not-present
+---
+-- book.sh --
+#!/bin/sh
+# load30-speaker-minting-is-observable (`30I` §13 specimen 6) — speaker-minting bears on licensure
+# and elision, so it has to be observed SOMEWHERE as BEHAVIOUR rather than only at the seats that
+# decide it. This is that somewhere, and the observation is the RUN SET: a site whose vouch composes
+# is absent from it, and a site whose vouch suspends is present.
+#
+# Three packages, one shape, one difference each — and the difference is always about WHOSE
+# utterance the helper is, never about the bytes.
+#
+#   delta  — the recognized exact sentinel, on its REUSE arm. `common.oracle.sh` is pre-sourced
+#            ahead of it, so by the time delta's guard runs the dependency is already live and no
+#            `.` of delta's runs at all — and CLI co-loading composes no custody. So the ONLY thing
+#            that can put common's helper inside delta's custody is the recognition itself: the
+#            guard mints the same speaker edge a direct source would, because both arms land on the
+#            same exact speech. Converged ⇒ ELIDED ⇒ this line does not appear below.
+#   beta   — THE FIRST COUNTERFACTUAL: a same-valued load variable from the WRONG source unit.
+#            `stranger.oracle.sh` assigns beta's sentinel too, so the reuse arm is reachable
+#            without beta's dependency ever loading. Recognition declines, no edge mints, and the
+#            helper resolves outside beta's custody ⇒ no vouch ⇒ it RUNS.
+#   gamma  — THE SECOND: a same-named helper from the WRONG source unit. The guard IS recognized
+#            and the edge DOES mint, but `rogue.oracle.sh` declares `sm_gamma_check` too, later,
+#            so a shell binds the rogue's body — which gamma never took custody of ⇒ it RUNS.
+#
+# Both counterfactuals ride in this one case deliberately: minting is only interesting against the
+# worlds where it must NOT happen, and splitting them would let one rot while the other passed.
+delta sync a.conf
+beta sync b.conf
+gamma sync c.conf
+
+-- delta.oracle.sh --
+# dorc-lang/v0.2
+# THE RECOGNIZED CELL. `30I` §2.2's canonical guard: reuse this exact package when its own load
+# value says it is live, otherwise source it. The name and the literal are this author's own
+# package interface — Dorc recognizes no suffix, namespace, or version grammar.
+if [ "${sm_common_loaded-}" != 'sm.common/v1' ]; then
+   . ./common.oracle.sh
+fi
+
+delta__is_converged() {
+   sm_common_check "$2"
+}
+
+-- common.oracle.sh --
+# dorc-lang/v0.2
+# The shared dependency, and the SOLE populator of the value delta's guard tests. That exclusivity
+# is what makes the reuse arm unreachable unless this package really loaded.
+sm_common_check() {
+   common cmp -- "$1"
+}
+
+sm_common_loaded='sm.common/v1'
+
+-- beta.oracle.sh --
+# dorc-lang/v0.2
+# COUNTERFACTUAL ONE: the same guard, over a value a stranger also writes.
+if [ "${sm_beta_loaded-}" != 'sm.beta/v1' ]; then
+   . ./beta-common.oracle.sh
+fi
+
+beta__is_converged() {
+   sm_beta_check "$2"
+}
+
+-- beta-common.oracle.sh --
+# dorc-lang/v0.2
+sm_beta_check() {
+   common cmp -- "$1"
+}
+
+sm_beta_loaded='sm.beta/v1'
+
+-- stranger.oracle.sh --
+# dorc-lang/v0.2
+# The wrong source unit, writing the right value. Nothing here is malicious and nothing here is
+# even unusual — which is the point: a value alone can never carry authorship.
+sm_beta_loaded='sm.beta/v1'
+
+-- gamma.oracle.sh --
+# dorc-lang/v0.2
+if [ "${sm_gamma_loaded-}" != 'sm.gamma/v1' ]; then
+   . ./gamma-common.oracle.sh
+fi
+
+gamma__is_converged() {
+   sm_gamma_check "$2"
+}
+
+-- gamma-common.oracle.sh --
+# dorc-lang/v0.2
+sm_gamma_check() {
+   common cmp -- "$1"
+}
+
+sm_gamma_loaded='sm.gamma/v1'
+
+-- rogue.oracle.sh --
+# dorc-lang/v0.2
+# COUNTERFACTUAL TWO: the same helper NAME, different bytes, a different author. A shell binds this
+# one, and gamma took custody of nobody's utterance but its own dependency's.
+sm_gamma_check() {
+   common cmp --strict -- "$1"
+}
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/delta --
+#!/bin/sh
+# INERT mock. Its ABSENCE from the run log is the observation: delta's vouch composed, so this
+# mutator was elided out of the apply.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/beta --
+#!/bin/sh
+# INERT mock. Present in the run log because beta's vouch suspended.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/gamma --
+#!/bin/sh
+# INERT mock. Present in the run log because gamma's vouch suspended.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/common --
+#!/bin/sh
+# INERT mock, answering the probe's `common cmp -- …` through the cross-file helper the speaker
+# edge licensed. An unshipped helper makes this rc 127 and the site stops eliding.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: beta sync b.conf
+ran: gamma sync c.conf
+
+-- replay --
+$ dorc --book=book.sh --pre-source beta-common.oracle.sh --pre-source beta.oracle.sh --pre-source common.oracle.sh --pre-source delta.oracle.sh --pre-source gamma-common.oracle.sh --pre-source gamma.oracle.sh --pre-source rogue.oracle.sh --pre-source stranger.oracle.sh < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=fdbac2e309c0a473e235ca7575e8b6a581881a0432b71aeb0b2abd016094fb88 sites=1 @@dorc@@\n'
+# site 0: dorc-auto:delta@converged
+sm_common_loaded='sm.common/v1'
+sm_common_check() {
+   common cmp -- "$1"
+}
+delta__is_converged() {
+   sm_common_check "$2"
+}
+delta__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# load30-speaker-minting-is-observable (`30I` §13 specimen 6) — speaker-minting bears on licensure
+# and elision, so it has to be observed SOMEWHERE as BEHAVIOUR rather than only at the seats that
+# decide it. This is that somewhere, and the observation is the RUN SET: a site whose vouch composes
+# is absent from it, and a site whose vouch suspends is present.
+#
+# Three packages, one shape, one difference each — and the difference is always about WHOSE
+# utterance the helper is, never about the bytes.
+#
+#   delta  — the recognized exact sentinel, on its REUSE arm. `common.oracle.sh` is pre-sourced
+#            ahead of it, so by the time delta's guard runs the dependency is already live and no
+#            `.` of delta's runs at all — and CLI co-loading composes no custody. So the ONLY thing
+#            that can put common's helper inside delta's custody is the recognition itself: the
+#            guard mints the same speaker edge a direct source would, because both arms land on the
+#            same exact speech. Converged ⇒ ELIDED ⇒ this line does not appear below.
+#   beta   — THE FIRST COUNTERFACTUAL: a same-valued load variable from the WRONG source unit.
+#            `stranger.oracle.sh` assigns beta's sentinel too, so the reuse arm is reachable
+#            without beta's dependency ever loading. Recognition declines, no edge mints, and the
+#            helper resolves outside beta's custody ⇒ no vouch ⇒ it RUNS.
+#   gamma  — THE SECOND: a same-named helper from the WRONG source unit. The guard IS recognized
+#            and the edge DOES mint, but `rogue.oracle.sh` declares `sm_gamma_check` too, later,
+#            so a shell binds the rogue's body — which gamma never took custody of ⇒ it RUNS.
+#
+# Both counterfactuals ride in this one case deliberately: minting is only interesting against the
+# worlds where it must NOT happen, and splitting them would let one rot while the other passed.
+# delta sync a.conf   # dorc: elided (already converged / dead branch)
+beta sync b.conf
+gamma sync c.conf
+
