@@ -162,23 +162,26 @@ impl LoadAccount {
     }
 
     /// Record one occurrence, answering its index so a nested one can name it.
-    pub fn record(&mut self, occurrence: LoadOccurrence) -> usize {
+    ///
+    /// The four mutators are `pub(crate)` deliberately: outside `analysis` the account is a
+    /// READ-ONLY answer, so no consumer can forge an occurrence into the loader's own report.
+    pub(crate) fn record(&mut self, occurrence: LoadOccurrence) -> usize {
         self.occurrences.push(occurrence);
         self.occurrences.len().saturating_sub(1)
     }
 
     /// Note a canonical path a load named that the table does not hold.
-    pub fn want(&mut self, key: String) {
+    pub(crate) fn want(&mut self, key: String) {
         self.wanted.insert(key);
     }
 
     /// Note a sourcer whose own load named nothing loadable.
-    pub fn suspend(&mut self, sourcer: String) {
+    pub(crate) fn suspend(&mut self, sourcer: String) {
         self.unresolved.insert(sourcer);
     }
 
     /// Seed the wanted set from the sites whose target the table never held.
-    pub fn want_all(&mut self, keys: impl IntoIterator<Item = String>) {
+    pub(crate) fn want_all(&mut self, keys: impl IntoIterator<Item = String>) {
         self.wanted.extend(keys);
     }
 }
