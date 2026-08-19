@@ -107,7 +107,13 @@ discipline: one rule per bullet, slugged; append to the matching section.
   decision-inert narrative (`30I:rul-cross-custody-distinction-is-narrative`). Never turn learning
   an ambient function's definition into fail-fast. The seat is
   `HelperIndex::resolve`, and custody is proxied there by the loaded-source index only while every
-  closure is a singleton.
+  closure is a singleton. MECHANISM: the two narrative reasons are chosen from a SELECTION
+  relation the drivers hang beside the custody one (`with_selection`, fed by `30I`'s narrative
+  projection; absent, it reads the custody closures — right in a lane with no include-tree,
+  not merely safe). It is decision-inert by construction — read at exactly one seat, AFTER the
+  suspension is already decided, never widening custody — and splitting it HERE is what keeps
+  the distinction filtered to reached sites, since `vouched-composition-not-present` is minted
+  per suspended composition in the vouch lift. Never re-add a whole-unit pre-pass for it.
 - **rul-speaker-minting-is-oracle-sourcing-only** (human-typed 2026-08-17): files merge into one
   speaker/custody unit ONLY via an explicit top-level `.` in a marked file, or the fallback `.` in
   `30I` §3.4's recognized top-level include guard, of a file that is itself dorc-lang/oracle-code

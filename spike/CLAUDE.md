@@ -278,6 +278,18 @@ prompt you write:
   completeness burden — which is why cross-context *value* transport was refused as
   posed (`279f` §3) and the answer is measure-in-context (`27C`), never a
   completeness claim.
+- **ambient-dependencies-are-ordinary-shell**
+  (`30I:rul-ambient-dependencies-are-ordinary-shell`, human-typed 2026-08-19) — learning
+  that an otherwise-unmodeled command resolves to a function in another loaded file MUST
+  NOT turn accepted sh into a refusal. Authors already owe defensiveness against ambient
+  command and PATH resolution; VISIBILITY CREATES NO NEW CORRECTNESS CATEGORY. Exact
+  sourced/guarded custody composes a vouch; every non-exact cross-custody reach SUSPENDS,
+  leaves the book site runnable, and lets unrelated planning continue. The two non-exact
+  worlds — the author selected a dependency that did not align, versus ordinary shell
+  resolution with nothing attributable — differ only in the sentence the author is owed,
+  never in disposition, and neither may mint custody, a vouch, vocabulary, or any other
+  authority. Recorded here because it was built the other way once, at the cost of a whole
+  segment: a refusal is not the conservative reading of an ambiguity, it is a new claim.
 
 ## Invariants — observables & rc
 

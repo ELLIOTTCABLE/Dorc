@@ -140,6 +140,21 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `lake build` catches); nothing on the ordinary gate sees it, and only `verify:lean`
   does. The fence's own classes live in `spike/verify/aeneas/Cargo.toml`.
 
+- **one-load-account-many-projections** (`30I:rul-one-load-account-separate-projections`)
+  — the loader resolves each supported load occurrence ONCE into `load::LoadAccount`,
+  keeping sourcer, target, locus, positional context and nesting; a consumer takes a
+  PROJECTION and never builds a second resolver. Three, none substituting for another:
+  `occurrences()` (possible-load — undecided-guard fallbacks INCLUDED, because a bundle
+  built without them omits a file the runtime `.` may load), `speaker_edges()` (authority
+  — a `File` sourcer on a non-speculative route, nothing else), `selection_edges()`
+  (narrative — what an author NAMED, aligned or not; decision-inert, never handed to a
+  custody consumer). Absence from the speaker projection is never absence from the other
+  two. A `(sourcer, target)` pair set does NOT substitute for occurrences: two textual
+  load points naming one entrypoint are two occurrences, which bundle keying
+  (`30I:rul-bundles-key-to-load-occurrences`) and locator composition both need kept
+  apart. The sourcer SPECIES keeps a book `.` and a CLI pre-source out of both edge
+  relations by type, never by a filter each consumer must remember.
+
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 
 - **thread-the-flat-coordinate** — `(kind, entity, selector)` + context slot
