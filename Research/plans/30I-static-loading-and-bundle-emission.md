@@ -42,12 +42,15 @@ in `Research/notes/30Ib`):
   scoping, diamonds and cycles;
 - book-source visibility without book speaker minting;
 - `aid::locator` as an arbitrary multi-stage DAG with `BundleOriginClaim` sealed
-  to text, and `cli::provenance` filling it from real run data.
+  to text, and `cli::provenance` filling it from real run data;
+- exact guarded-source speaker recognition, the CLI input rework, and explicit
+  stdin claims.
 
-Not built, and owed below: the exact variable-guard speaker path and the v0
-unannounced cross-custody refusal; the bundle projection; the three artifact
-forms; the CLI-input rework; the streams rules; XFAIL promotion and e2e
-lowering.
+Not built, and owed below: the bundle projection; the three artifact forms;
+locator consumption by a real diagnostic; XFAIL promotion and e2e lowering.
+The current implementation still carries a whole-run refusal for an ambient
+cross-custody dependency. Section 3.4 rules that as drift: retain its
+differentiation as narrative and remove its authority/control-flow consequence.
 
 ### Target outcome
 
@@ -58,7 +61,8 @@ The lane is complete when all of the following hold together:
 2. Book loads affect visibility but never mint speaker custody; marked
    dorc-lang source edges form the existing asymmetric custody closures.
 3. The canonical include-guard/shared-dependency and subshell worlds resolve
-   positionally, and unannounced cross-custody calls refuse before network.
+   positionally; ambient cross-custody dependencies suspend vouch composition
+   and produce differentiated narrative without refusing the plan.
 4. Analysis, existing probe/guard closure emission, explicit `dorc bundle`,
    multipart plans, and fully flattened plans consume ONE load answer.
 5. Bundle compilation carries a typed multi-stage locator DAG into at least one
@@ -84,7 +88,8 @@ stage-iii world scopes and `28Q` section 10's authored lifecycle surface;
 blessing-reach elevation and verdict-word enrollment; committee-fence permanence
 and broader sparing composites; modeled-running-wall/guard-tier repair; the
 starter stdlib and its dialect-reach decision; at-most completion speech;
-callback/bare dependency injection beyond the explicit v0 refusal; the parked
+callback/bare dependency-injection VOUCH COMPOSITION beyond the conservative
+v0 floor; the parked
 `SortedSet::union` optimization; minispec enrichment or verified-core law changes.
 
 Do not opportunistically green their xfails, widen their allow-lists, or fold
@@ -110,13 +115,14 @@ Each step unblocks the next.
    either. Multiple main books become separate targeted programs, which is where
    the one-`Ast`-per-run assumption is unpicked; shared-shell merging is spelled
    `--pre-source`.
-4. **Complete exact guarded-source recognition and mint the unannounced
-   cross-custody refusal** - the clause the load lane left unbuilt, now RULED
-   and buildable
-   (`rul-guarded-source-mints-exact-speaker-edge`). Classify a voucher's
+4. **Complete exact guarded-source recognition and cross-custody narration**
+   (`rul-guarded-source-mints-exact-speaker-edge` plus section 3.4's
+   `rul-cross-custody-distinction-is-narrative`). Classify a voucher's
    cross-custody reach as deliberate-external-utility, guarded-source-exact,
-   explicitly-sourced, or merely-live, the last refusing before network. The
-   immediate authored target is section 2.2's ordinary variable-sentinel guard.
+   explicitly-sourced, source-act-present-but-unaligned, or
+   ambient-or-untraceable. Only the first three may avoid suspension; the last
+   two differ for aid and never refuse the plan. The immediate authored target
+   is section 2.2's ordinary variable-sentinel guard.
    The variable name and value are entirely author-owned; neither is Dorc
    vocabulary. The guarded-source case mints its edge only under section 3.4's
    exact proof: on the no-source/reuse route, both the guard-tested value that
@@ -144,12 +150,15 @@ Each step unblocks the next.
    agree. That is directed work, not a builder judgment call about the human's
    authored bytes.
 5. **Add one bundle projection**, keyed by static load occurrence, consuming the
-   snapshot and the frame answers, never re-reading a path. Copy authored segments
-   exactly; add only necessary generated scaffolding and versioned boundary
-   comments. Preserve nested source boundaries as generated files until a
-   different lowering is floor-proven - generated loader functions are measured-
-   refuted. Expose the same projection as explicit `dorc bundle`, as contracted
-   multipart dependencies, and inline for a flattened plan.
+   snapshot and the frame answers, never re-reading a path. First extend the one
+   loader account so it preserves every statically possible resolved load
+   occurrence, including speculative branches that mint no speaker edge; section
+   6.1 defines the separate projections. Copy authored segments exactly; add only
+   necessary generated scaffolding and versioned boundary comments. Preserve
+   nested source boundaries as generated files until a different lowering is
+   floor-proven - generated loader functions are measured-refuted. Expose the
+   same projection as explicit `dorc bundle`, as contracted multipart
+   dependencies, and inline for a flattened plan.
 6. **Compose bundle segments onto the existing locator edges** and carry one
    chain through a REAL diagnostic render. A debug dump or structure-only unit
    test is necessary and not sufficient. This discharges the force-now aid
@@ -634,9 +643,9 @@ The same `DefinitionId` resolution answers analysis and emission. A bundle may
 copy definitions into another physical file without changing their conceptual
 source identity or custody in the generating run.
 
-### 3.4 Cross-author dependency acceptance
+### 3.4 Cross-author dependency authority and narrative
 
-Three cases must not collapse:
+Four cases must not collapse:
 
 1. `dependency-explicitly-sourced` - the voucher's marked closure sources the
    resolved dependency; it may rest on that dependency under custody.
@@ -649,8 +658,14 @@ Three cases must not collapse:
    resolve inside that closure. Then the whole guard mints the same speaker edge
    as a direct source for this license, even when another package loaded the
    exact target first. Declining paths need prove nothing.
-3. `dependency-merely-happened-to-be-live` - a voucher calls a cross-custody
-   function without the exact source-bearing acceptance in case 1 or 2.
+3. `dependency-source-act-present-but-unaligned` - the voucher carries a
+   supported source-bearing act naming a dependency which declares the reached
+   helper, but the decisive value, live binding, or reached helper does not align
+   with that exact closure. The act is useful narrative and licenses nothing.
+4. `dependency-ambient-or-untraceable` - ordinary shell name resolution supplies
+   a helper whose relationship to the voucher is not statically attributable as
+   intended speech. This has no semantic distinction from any other ambient-world
+   command the author called; it licenses nothing and remains legal sh.
 
 The second case changes speaker custody only; normal branch-sensitive loading
 still decides visibility. A same-valued variable, same-named function, file, or
@@ -672,19 +687,37 @@ reviewed, the pope-sin direction.
 The door stays deliberately narrow; the structurally-sound wide version is later
 work.
 
-The third case intersects ordinary POSIX habits: caller-loaded dependencies,
-callbacks, logging hooks, foundational helpers, and intentional patching. At v0
-it is NYI and invalid contracted oracle input because Dorc cannot distinguish
-intended dependency injection from accidental function shadowing. This is an
-explicit value forfeit, not welded law (`FORFEITS:forfeit-unannounced-shell-name-
-dependency-injection`; `pin-bare-dependency-injection`).
+`rul-ambient-dependencies-are-ordinary-shell` [TYPED 2026-08-19] - caller-loaded
+dependencies, callbacks, logging hooks, foundational helpers, intentional
+patching, and unknown commands all inhabit the same ambient ops world. Learning
+that an otherwise-unmodeled command resolves to a function in another loaded
+file MUST NOT turn accepted sh into a pre-network refusal. Authors already owe
+defensiveness against ambient command resolution, PATH change, and version
+change; Dorc should expose what it can see without pretending that visibility
+creates a new correctness category.
 
-`rul-unannounced-cross-custody-fails-before-network` [TYPED 2026-08-18, v0] - v0
-continues static analysis far enough to batch unrelated root errors, names both
-the call and live definition, suggests `command`, explicit sourcing, a guarded
-fallback source, or renaming, emits no mutation-authorizing plan, and contacts
-no host. This is
-fail-fast on human timescales, not a panic or one-error abort.
+`rul-cross-custody-distinction-is-narrative` [TYPED 2026-08-19] - cases 3 and 4
+both suspend vouch composition under `rul-vouch-reaches-own-custody-only`; the
+book site runs and unrelated planning continues. Their distinction remains
+load-bearing in the aid plane: case 3 says the author's selected dependency and
+the live binding failed to align; case 4 says the helper came from ambient shell
+resolution and no attributable dependency selection was available. Name the
+call and live definition, state the lost capability, and offer explicit sourcing
+or a guarded fallback as ways to RECOVER vouch composition - never as admission
+requirements. `command` is suggested only when the author genuinely intends to
+bypass functions and invoke an external utility. The distinction is
+decision-inert: neither narrative may mint custody, a vouch, vocabulary, or any
+other authority. Preserve the whole-unit distinction for lint and pull; a plan
+pushes it only where the lost composition affects a reached site or another
+goal-derived selection rule asks for it.
+
+The future value-forfeit is therefore authority only, not shell expressiveness:
+ambient callback/plugin injection works as sh but cannot compose a cross-file
+vouch until an attributable mechanism is designed
+(`FORFEITS:forfeit-ambient-dependency-vouch-composition`;
+`pin-ambient-dependency-vouch-composition`). The current exit-16 refusal and its
+whole-unit control-flow consequence are implementation drift; remove them and
+retain the detection operands for narrative.
 
 ## 4. Scope sets
 
@@ -714,7 +747,8 @@ These are intentionally mechanism-forcing rather than the easiest syntax:
 - equivalent healthy include-guard spellings;
 - the full meaningful `command -v` load model across the promised shell floor;
 - early-return include guards and their source-boundary lowering;
-- callback/caller-provided bare cross-custody dependencies;
+- callback/caller-provided cross-custody VOUCH COMPOSITION (the dependencies
+  themselves are ordinary supported sh and already run conservatively);
 - relative loading after all supported cwd mutations;
 - robust physical/logical path-identity policy;
 - PATH-based dot search under an explicit modeled PATH;
@@ -778,6 +812,27 @@ StaticLoadSnapshot
           |-- multipart plan dependencies
           `-- fully flattened plan placement
 ```
+
+`rul-one-load-account-separate-projections` [PROPOSED mechanism 2026-08-19] - the
+loader resolves each supported load occurrence once and preserves enough of that
+occurrence (sourcer, target, load locus, and positional context) for consumers to
+derive three non-interchangeable projections:
+
+1. **possible-load projection** - every statically possible resolved occurrence,
+   including an undecided guard's fallback branch; bundle materialization consumes
+   this conservative union so an artifact never omits a file runtime sh may load;
+2. **speaker projection** - only source/guard edges whose exact custody proof
+   succeeded; vouch composition and every other authority consumer see only this
+   narrower relation;
+3. **narrative projection** - the source act, intended target where attributable,
+   and live binding needed to distinguish section 3.4's exact, unaligned, and
+   ambient cases. It is decision-inert.
+
+One loader does not mean one overloaded edge set. No projection re-parses source
+text or re-resolves a target, and absence from the speaker projection never means
+absence from the possible-load or narrative projections. Concrete representation
+remains builder latitude; a target-only pair that collapses distinct load
+occurrences is insufficient for bundle keying and locator composition.
 
 The projection copies exact authored ranges and adds only necessary shell
 scaffolding and generated comments. It does not alpha-rename authored code,
@@ -1022,10 +1077,14 @@ At minimum, diagnostics distinguish:
 - absent/unreadable source;
 - marked target violating its load contract;
 - dynamic loading outside the architecture;
-- unannounced cross-custody function binding;
 - source cycle or boundary form the selected emission mode cannot preserve;
 - explicit flatten intent the v0 compiler cannot satisfy;
 - stale or mismatched bundle-origin source during aid resolution.
+
+Cross-custody dependency outcomes are not members of that invalid-load list.
+They narrate the three useful states separately: exact speaker composition;
+source act present but binding/guard alignment failed; ambient or untraceable
+dependency. The latter two suspend the vouch and preserve the runnable plan.
 
 Human-facing wording remains loom-authored under `error-authorship-tier`; builders
 mint structure and defining cases with unwritten prose.
@@ -1056,7 +1115,8 @@ real oracle packages representable, not finish every spelling:
 - no PATH search;
 - no arbitrary top-level shell evaluator;
 - no dynamic loops, eval, globbed dependencies, or command-substitution paths;
-- no broad callback/bare cross-custody acceptance;
+- no broad callback/bare cross-custody VOUCH COMPOSITION; ambient calls remain
+  legal and narratable;
 - no global bundle deduplication or optimization;
 - no second resolver in `dorc bundle`;
 - no durable/whylog schema expansion merely for bundles;
@@ -1091,8 +1151,10 @@ Required worlds:
    and replaced in place.
 4. `specimen-provenance-through-bundle` - transitive helper failure maps through
    generated bundle to original source, with present/absent/mismatched origin cells.
-5. `specimen-unannounced-dependency-refuses` - bare cross-custody function call is
-   a pre-network contracted-input error, while its explicit-guard sibling proceeds.
+5. `specimen-ambient-dependency-narrates` - a bare cross-custody function call
+   preserves the runnable plan while losing vouch composition; its explicit-guard
+   sibling composes. A second cell distinguishes source-act-present-but-unaligned
+   from ambient/untraceable without changing either disposition.
 6. `specimen-speaker-minting-is-observable` - ONE multipurpose e2e, because
    speaker-minting bears on licensure and elision and must be observed SOMEWHERE
    as behaviour. Today's `load30-*` cannot see it: their `probe-results.txt` are
@@ -1140,7 +1202,8 @@ They do not own these questions:
 - bundle metadata licensing analysis;
 - whether provenance is rich/early;
 - whether explicit single-stream intent may silently return multipart output;
-- whether unsupported cross-custody dependencies may degrade quietly.
+- whether ambient cross-custody liveness may mint authority or refuse the plan
+  (it may do neither; section 3.4);
 - whether a second main-book operand may be interpreted as source composition;
 - whether a spike feature may claim a single-letter option;
 - whether `-o`/`--oracle` or multi-book concatenation survive this arc;
@@ -1148,9 +1211,11 @@ They do not own these questions:
 
 Open pins that require human or implementation evidence:
 
-1. `pin-bare-dependency-injection` - broader guards around load order and which
-   callback/caller-loaded idioms eventually license without an explicit source;
-   the narrow exact guarded-source form in section 3.4 is already ruled.
+1. `pin-ambient-dependency-vouch-composition` - which future attributable
+   mechanisms, if any, let callback/caller-loaded dependencies compose a vouch
+   without an explicit source. Ambient dependencies already remain legal and
+   narrative at the conservative floor; the narrow exact guarded-source form in
+   section 3.4 is already ruled.
 2. `pin-one-file-root-bundle` - whether any lowering can preserve all forced v0
    dot semantics in one file; generated loader functions are measured-refuted.
 3. `pin-complex-book-source-render` - how mutative commands from an unflattenable
@@ -1191,8 +1256,9 @@ Human-typed or explicitly hard-acked in the design dialogue:
 - book commands appear on `plan.sh` as written, never CFG-flattened or reordered;
 - source-map representation is rich early; bundle compilation stays simple;
 - bundle-origin readback is aid-only by type;
-- unannounced cross-custody calls fail before network at v0 but are not permanently
-  excluded;
+- ambient cross-custody dependencies remain ordinary sh; exact custody gates
+  vouch composition, while unaligned and ambient cases suspend and narrate with
+  distinct repairs;
 - provenance recovery belongs in the forcing set;
 - network acquisition and web source recovery are later, not v0.
 - one main command-file book per target, with separate target books denoting

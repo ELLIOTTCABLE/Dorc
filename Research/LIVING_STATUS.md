@@ -14,7 +14,7 @@
 
 ---
 
-## CURRENT STATE (2026-08-18 - STATIC LOADING AND BUNDLE DIRECTION RULED)
+## CURRENT STATE (2026-08-19 - STATIC LOADING PARTIAL BUILD; AMBIENT DEPENDENCIES RULED)
 
 **`plans/30I` is the single authority for the newly-closed static-load/bundle
 arc.** The human ruled cwd-faithful sh loading from one authored-before-contact
@@ -26,19 +26,27 @@ comments read back as aid-only `BundleOriginClaim`; source-map representation is
 rich/multi-stage immediately even though v0 compilation aims at exact copied
 segments.
 
-**The executable target is committed, unbuilt, and green-as-XFAIL.** Three compound
-e2e worlds pin rooted shared dependencies, subshell+errexit fallback, and two
-frame-distinct loads of one entrypoint. The opt-in dash/posh floor cell
-`floor30-dot-loader-function-errexit` measured a real divergence: a failing dot
-child aborts its sourced boundary under `set -e`, while the same body in a
-generated loader function continues; loader functions are therefore REFUTED as
-the universal one-file bundle lowering. Multiple generated files preserve nested
-source boundaries until a different lowering is floor-proven. No production code
-was built.
+**Steps 1-4 and the explicit-stdin rework are built; steps 5-8 are not.** The
+static loader, exact guarded-source speaker mint, CLI input surface, and
+multi-stage locator substrate are live. No bundle projection, artifact forms,
+real diagnostic locator consumption, or XFAIL promotion exists yet. The
+opt-in dash/posh floor cell refutes generated loader functions as a universal
+one-file lowering; nested source boundaries remain generated files until another
+lowering is floor-proven.
 
-The 2026-08-17 HUMAN QUEUE below is superseded for items 2 and 3: the book-side
-artifact and path-resolution questions are direction-closed by `30I`. Every other
-queue item remains. The sibling dorc-loom work on `ai/main` is independent.
+**[TYPED 2026-08-19] Ambient dependencies are ordinary sh, not invalid input.**
+Exact custody alone may compose a vouch. Source-act-present-but-unaligned and
+ambient/untraceable dependencies both suspend, leave the book site runnable, and
+narrate with different operands/repairs; neither may refuse the plan or mint
+authority. The landed exit-16 whole-run refusal is implementation drift to remove
+while retaining its census as aid machinery (`30I` §3.4; `30Ib` §13).
+
+The bundle stage opens by extending the ONE loader account, not by adding a
+resolver: preserve every statically possible resolved load occurrence with its
+locus/context, then derive separate possible-load (bundle), exact-speaker
+(authority), and dependency-narrative projections. The current custody-filtered
+edge set omits undecided fallback branches and a target-pair set loses occurrence
+identity (`30Ib` §15).
 
 **Family vocabulary qualification is direction-closed, implementation deferred**
 (`plans/30J`, human-acked 2026-08-19): one genuine predict qualifies the whole

@@ -162,6 +162,10 @@ Qualification is keyed by `(speaker closure, family)`.
   marked-file sourcing.
 - CLI co-loading and book sourcing mint no speaker and therefore no
   qualification relation.
+- An ambient or cross-custody helper remains legal sh; missing custody only
+  withholds its marks from this family's qualified vocabulary and narrates the
+  lost capability. It never turns the load into refusal
+  (`30I:rul-cross-custody-distinction-is-narrative`).
 - Another family's predict never qualifies this family, even when both call the
   same helper or use the same kind and selector spelling.
 - If live role members span speakers, the standing committee fence remains the

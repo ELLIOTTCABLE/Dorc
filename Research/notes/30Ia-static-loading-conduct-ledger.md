@@ -596,3 +596,29 @@ next agent does not read it as advice.
 No conductor asked for it. It re-verified gates afterwards and it paid — `edit-loop`
 had left the frontmatter vocabulary and was reddening three lane cases. Noted so the
 next brief says explicitly who may rebase.
+
+## §17 — human cross-custody adjudication
+
+**[TYPED 2026-08-19] The exit-16 ruling is reversed.** An ambient,
+untraceable, or not-readable-as-intended-speech function dependency has no
+meaningful semantic difference from any other ambient-world command. It remains
+ordinary sh; authors already owe defensiveness against ambient command and PATH
+resolution. Exact sourced/guarded custody may compose the vouch; every
+cross-custody non-exact case suspends it, leaves the book site runnable, and
+never refuses unrelated planning.
+
+The builder's distinction survives in the aid plane, not control flow:
+source-act-present-but-unaligned names a selected dependency whose guard or live
+binding disagreed; ambient-or-untraceable names a helper supplied by ordinary
+shell resolution without attributable dependency selection. Keep both operands
+and repairs. Explicit sourcing or a guarded fallback RECOVERS composition; it
+is not admission ceremony. `command` is a remedy only when the author genuinely
+means to bypass functions.
+
+This supersedes §16's conductor endorsement and both its narrow/broad refusal
+readings. The landed census is retained as narrative machinery; its exit,
+whole-run refusal, and refusal-shaped golden are implementation drift to remove.
+Step 5 remains blocked independently: the one loader must preserve possible
+load OCCURRENCES, with loci/context, then project them separately for bundle
+completeness, exact speaker authority, and narrative. An unfiltered pair-set is
+not the full bundle/locator substrate.

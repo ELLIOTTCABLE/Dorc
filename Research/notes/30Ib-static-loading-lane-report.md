@@ -10,11 +10,15 @@
 
 ## §0 — Where the lane stands
 
-**Work-order steps 1–4 are landed, step 4 now including its refusal clause, and §2.5's
-`owed-no-flag-defaults-to-stdin` is discharged.** Steps 5–8 are untouched: no bundle projection, no
-locator-through-a-real-diagnostic, no artifact forms, no XFAIL promotion, no e2e lowering — §15
-carries what scouting 5 and 6 established. The three `load30-*` specimens remain XFAIL, spelled with
-the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit` is byte-identical.
+**Work-order steps 1–4 are landed, and §2.5's `owed-no-flag-defaults-to-stdin` is
+discharged. Step 4's exact guarded-source recognition stands; its whole-run
+cross-custody refusal is SUPERSEDED and is implementation drift to remove while
+retaining the distinction as narrative (`30I` §3.4, 2026-08-19).** Steps 5–8 are
+untouched: no bundle projection, no locator-through-a-real-diagnostic, no
+artifact forms, no XFAIL promotion, no e2e lowering - §15 carries what scouting
+5 and 6 established. The three `load30-*` specimens remain XFAIL, spelled with
+the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit`
+is byte-identical.
 
 > The step numbering moved when `30I`'s work order was re-cut. This file's §1–§6
 > were written against the OLD numbering (its "items 2/3/4" are the load model,
@@ -547,6 +551,11 @@ about which idiom it exercises, and changes no engine answer.
 
 ## §11 — What step 4 did NOT land
 
+> **SUPERSEDED 2026-08-19:** §13 records what subsequently landed, and `30I`
+> §3.4 now rejects the refusal itself. This pre-build map remains historical;
+> the successor removes the exit/control-flow consequence and retains its
+> operands for differentiated narrative.
+
 1. **`rul-unannounced-cross-custody-fails-before-network` is NOT built.** The
    classifier already exists in substance — `oracle::closure::DenialReason::
    ResolvedOutsideCustody` IS `dependency-merely-happened-to-be-live`, and
@@ -616,9 +625,14 @@ pre-source ORDER (`common` before `delta`, glob-sorted) arranges.
    byte-exact, which is the same gate a blessed transcript faces — but the
    conductor should know a golden entered the corpus by that route.
 
-## §13 — Builder 3: the step-4 remainder (`rul-unannounced-cross-custody-fails-before-network`)
+## §13 — Builder 3: the superseded cross-custody refusal
 
-BUILT. `30Ib` §11's design landed with one substantive change to it, flagged below.
+BUILT as reported below, then SUPERSEDED by the human's 2026-08-19 ruling in
+`30I` §3.4. The exact guarded-source speaker mint remains; the exit-16
+whole-run refusal does not. Keep the census operands and the distinction between
+source-act-present-but-unaligned and ambient/untraceable dependencies, route
+both to narrative, and let the existing custody suspension keep the site
+runnable.
 
 ### The census, and where it is asked
 
@@ -636,7 +650,7 @@ remembered: no host is contacted, and the mutation-authorizing apply artifact is
 `RunOutcome::UnannouncedCrossCustody` ⇒ `EXIT_UNANNOUNCED_CROSS_CUSTODY` (16), sixth of the 10..=19
 dorc-semantic range.
 
-### `dev-narrowed-to-genuinely-unannounced-calls` (OPEN — the one real deviation)
+### `dev-narrowed-to-genuinely-unannounced-calls` (CLOSED by supersession)
 
 `30I` §3.4 carries two sentences that pull against each other. Case 3 defines the subject as "a
 voucher calls a cross-custody function without the exact source-bearing acceptance in case 1 or 2"
@@ -659,8 +673,10 @@ their name is the pope-sin direction (`271:rul-sin-ordering`). The ruling's own 
 `command`, explicit sourcing, a guarded fallback source, renaming — is also advice you can only give
 an author who wrote no acceptance act.
 
-FLAGGED, not settled (`inv-superposition`): it is a `tc-*`-shaped call about how two sentences of a
-typed ruling compose. The broad reading is one predicate away (`custody.rs`'s `announced` gate).
+The later ruling rejects both refusal readings: ambient dependencies are
+ordinary shell, exact custody alone grants vouch composition, and the two
+non-exact cases differ only in narrative. The landed narrowing machinery remains
+useful as an aid classifier; it no longer participates in plan control flow.
 
 ### `dev-the-probe-artifact-still-ships-under-a-refusal` (OPEN)
 
@@ -782,10 +798,14 @@ loader's own account. None of the three accessors answers it:
   second resolver the ruling forbids (it is already fenced to "what to READ before there is an
   environment to ask").
 
-So step 5 opens with a small, honest extension of the ONE loader: a settled-account accessor
-reporting every `(sourcer, target)` edge the interpreter WALKED, minting or not, beside the
-custody-filtered set that exists. That is the same shape step 2 used to close custody for
-variable-rooted dependencies, and it should be sized before any bundle code is written.
+So step 5 opens with an extension of the ONE loader account that preserves each
+statically possible resolved load OCCURRENCE, minting or not, with its source
+locus and positional context. A pair-set of `(sourcer, target)` is enough for
+transitive membership but not for per-occurrence bundle keying or locator
+composition. `30I` §6.1 rules the three projections over that one account:
+possible loads for bundle completeness, exact speaker edges for authority, and
+decision-inert dependency distinctions for narrative. Size that account before
+writing bundle code.
 
 ### Two things that are already settled and should not be re-litigated
 

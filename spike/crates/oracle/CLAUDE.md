@@ -101,8 +101,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   NEVER composes custody, families, or speakers. Load order still never silently adjudicates whose
   body serves whose vouch. `30I` §3.4's canonical guarded fallback is not a cross-custody exception:
   under its exact target-closure + reached-vouch-path `Must` proof, the authored source act mints a
-  speaker edge first; generic ambient dependency injection remains NYI under
-  `FORFEITS:forfeit-unannounced-shell-name-dependency-injection`. The seat is
+  speaker edge first. Generic ambient dependency injection remains ordinary sh but gains no vouch
+  composition (`FORFEITS:forfeit-ambient-dependency-vouch-composition`): suspend the vouch, keep the
+  book site runnable, and route source-act-present-but-unaligned vs ambient/untraceable to
+  decision-inert narrative (`30I:rul-cross-custody-distinction-is-narrative`). Never turn learning
+  an ambient function's definition into fail-fast. The seat is
   `HelperIndex::resolve`, and custody is proxied there by the loaded-source index only while every
   closure is a singleton.
 - **rul-speaker-minting-is-oracle-sourcing-only** (human-typed 2026-08-17): files merge into one

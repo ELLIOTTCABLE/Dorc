@@ -10,10 +10,11 @@ Grades: `+SURE` measured in this tree · `~SUSPECT` read but unmeasured · `-GUE
 
 ## §1 — The ruled contract (the ground; nothing below may contradict it)
 
-> **Amended 2026-08-18:** `30I` §3.4 is the current narrow rule for the
-> canonical guarded fallback: its source act may mint the exact target's speaker
-> edge under reached-vouch-path `Must` resolution. Broader guard/load-order and
-> shell-name dependency injection remain NYI under an explicit FORFEITS entry.
+> **Amended 2026-08-19:** `30I` §3.4 is the current rule for the canonical
+> guarded fallback: its source act may mint the exact target's speaker edge under
+> reached-vouch-path `Must` resolution. Ambient shell-name dependency injection
+> remains legal sh and narrates, but gains no cross-custody vouch composition;
+> broader attributable composition remains NYI under an explicit FORFEITS entry.
 
 Human-typed 2026-08-17, `307:§ack-implementation-open`, restated verbatim-in-substance:
 
