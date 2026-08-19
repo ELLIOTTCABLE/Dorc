@@ -1,6 +1,6 @@
 ---
 name: conductor
-description: Only for loading upon command ("you are a conductor"), this sets you up as a top-level conductor, with instructions for
+description: Use only when the user appoints the model as a Dorc conductor. Governs context loading, builder dispatch, verification, deviation review, steering prose, worktrees, folding, and cleanup.
 ---
 
 # Conductor instructions
@@ -16,7 +16,7 @@ synthesis-agent, for reasoning, planning, consideration, and comparison - not
 
 - Opus builders: they can be trusted to do their work effectively; you needn't
   offer deeply constrained guardrails and instructions, nor check their work in
-  mechanical fashions (if they report test-results, they clearely ran the tests,
+  mechanical fashions (if they report test-results, they clearly ran the tests,
   for instance, you needn't re-run.)
 
   They can execute on long-running, broad plans effectively, although it becomes
@@ -27,7 +27,7 @@ synthesis-agent, for reasoning, planning, consideration, and comparison - not
   They tend to be mildly larger-context-blind; the most useful thing you can
   give them is details about the surrounding design, and broad architectural
   notes. Besides that, set them concrete goals, including *both* the
-  mechanical/testable result *and* the rational. It's occasionally reasonable
+  mechanical/testable result *and* the rationale. It's occasionally reasonable
   (modulo the worktree concerns below) to include a breakpoint in ongoing work,
   keeping the context-hot in the builder, but allowing them to report concerns
   about the direction to you; but this is mildly expensive, as it spends *both*
@@ -77,6 +77,32 @@ Do not fix this upstream: resist tightening briefs into straitjackets that
 forbid deviation — builders do sometimes make good calls, and the correction
 belongs in your aftermath review, which is the core of conducting. Mild
 skepticism of their reasoning; full trust in their reports.
+
+## Verification and focused reruns
+
+The gate rung follows the work lifecycle; it is never a per-change menu:
+
+- Builders finish with `mise run both gate:full-quiet`. On Windows the bare
+  task covers only Windows; `both` is the builder-completion contract. Trust a
+  reported green instead of re-running it as conductor review.
+- Conductors close a substantial arc with `mise run gate:arc`. Run it from the
+  populated arc/conductor branch **before** folding that branch into `ai/main`:
+  hk derives applicable checks from the branch diff against `ai/main`, plus
+  staged/unstaged/untracked paths. On `ai/main` after the fold, that branch diff
+  is empty and the expensive checks may correctly select nothing.
+- `gate:arc` first runs builder completion on both platforms, then applicable
+  strict translation, Lean, Kani, and advisory checks. Let its preflights
+  refuse when disk/RAM is insufficient; pause sibling heavy work or ask the
+  human for capacity, never bypass the bound.
+- A failed hk step names its focused rerun: `mise run gate:step -- <step>`.
+  Use `hk check --why <step>` when the routing itself is unclear. After the
+  focused fix is green, run the lifecycle gate again at the final branch tip.
+- Direct `verify:*` / `test:*` tasks are investigation tools, not a fifth rung.
+  Gates detect drift; they never promote, bless, or publish generated evidence.
+
+Pre-commit is the automatic sub-three-second floor. Whole-workspace Clippy and
+other invalidation-sensitive work belong to builder completion, not the hook.
+There is no agent-facing quick completion gate.
 
 ## Steering-prose authorship (the expensive files)
 
@@ -157,12 +183,17 @@ where work is essentially complete, delete it and clean up after yourself; your
 final deliverable will often be a single, populated branch, ready for the
 human's fast-forward-to / merge-into-main.
 
-Use the harness-bulitin worktree-feature for your mutative builders & scouts, if
-available. It has caveats:
+Use the harness-built-in worktree feature for mutative builders and scouts when
+it actually provides durable isolation. Otherwise create a dedicated `ai/*`
+worktree yourself. In either case, give the builder the absolute worktree path,
+expected branch and tip, expected initial dirt, and require **every** git command
+(read-only included) as `git -C <absolute-worktree> …`. A vanished or misbased
+worktree is then a loud stop instead of a command silently landing in a sibling.
 
-- harness-worktrees branch off of `main`, not your conductor-branch. They must
-  be instructed to fast-forward their worktree to your tip before working, if
-  you want them to see your merged work-state
+Harness-managed worktrees have caveats:
+
+- do not assume their base: verify it against the conductor-stated tip before
+  any read or edit, and correct it only through the brief's authorized setup
 - they're automatically deleted when the builder returns; if you resume a
   crashed (or checkpoint-pausing) builder, their worktree may be gone (usually
   no big deal if they're committing granularly as this project requires; simply
@@ -198,9 +229,9 @@ Update the ledger *occasionally* but commit *granularly* - batch updates when
 taking a multi-turn design interaction with the human, and hold updates until
 the design or plan has quiesced.
 
-The ledger is intended to be compression/crash resistent; compress / collapse /
+The ledger is intended to be compression/crash resistant; compress / collapse /
 remove old work that's no longer relevant (i.e. a build-lane that's merged in
-doesn't need exposition.) The ledger is *not* likely to recieve a deep read from
+doesn't need exposition.) The ledger is *not* likely to receive a deep read from
 the human; critical findings and directional-decisions, esp. from long-running
 autonomous work, need to be surfaced in the final chat message when you finish
 your final turn, *after* all work is merged. (The human not scrolling up is a
@@ -218,11 +249,24 @@ finding-name with no gloss is a report they cannot triage.
 
 ### Cleanup
 
-Enedeavour to leave the worktree-list empty and the branch-list tight / focused
+Endeavour to leave the worktree-list empty and the branch-list tight / focused
 / relevant: merged work gets the branches proactively removed; if something
 needs resuming, `git branch` is right there to re-create it. Granular committing
 means worktrees, similarly, should be cheap to remove: work shouldn't be sitting
-uncomitted in builder-branches.
+uncommitted in builder-branches.
+
+Before deleting your own landed worktree/branch, prove containment, then use the
+safe deletion forms:
+
+```text
+git -C <root> merge-base --is-ancestor <branch> ai/main
+git -C <root> worktree remove <worktree>
+git -C <root> branch -d <branch>
+```
+
+Never use `-D` to turn failed containment into cleanup. Remove only worktrees
+you created, and never discard an untracked brief/report until its value is
+either committed elsewhere or the human explicitly says to drop it.
 
 ## Planning
 
