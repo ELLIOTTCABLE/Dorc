@@ -184,7 +184,7 @@ local gates = new Mapping<String, Step> {
     ["verify-lean-badges"] {
         profiles = List("arc")
         glob = List("minispec/**", "spike/verify/**", "spike/crates/analysis/**", "spike/crates/core/**", "mise.toml", "hk.pkl")
-        check = "mise run verify:lean"
+        check = "mise run verify:lean-badges"
         output_summary = "combined"
     }
     ["verify-kani"] {

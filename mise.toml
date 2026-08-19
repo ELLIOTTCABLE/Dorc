@@ -418,11 +418,11 @@ run = "hk check --all --profile full --profile arc --step {{ usage.step }} --no-
 description = "CONDUCTOR-ONLY law gate: completion on both platforms, then all applicable arc-profile checks and RustSec advisories. Read-only: never promotes, blesses, or publishes generated artifacts."
 raw = true
 run = [
-  "mise run both gate:full-quiet",
-  "hk check --pr --profile full --profile arc --no-fail-fast",
-  "hk check --staged --profile full --profile arc --no-fail-fast",
-  "hk check --unstaged --profile full --profile arc --no-fail-fast",
-  "mise run audit",
+   "mise run both gate:full-quiet",
+   "hk check --pr --profile arc --jobs 1 --no-fail-fast",
+   "hk check --staged --profile arc --jobs 1 --no-fail-fast",
+   "hk check --unstaged --profile arc --jobs 1 --no-fail-fast",
+   "mise run audit",
 ]
 
 [tasks."test:hooks"]
@@ -640,6 +640,7 @@ run = [
    "mise run verify:translate-impl",
    "mise run verify:materialize",
 ]
+run_windows = "wsl -- mise run verify:translate"
 
 [tasks."verify:translate-check"]
 description = "Read-only strict translation drift check: runs the production strict translator and materializer in controller-owned scratch, then names every changed, missing, or extra generated output. Linux/WSL-only; Windows self-routes through WSL."
@@ -653,6 +654,7 @@ description = "The charon+aeneas half alone, under the nested shadowing toolchai
 raw = true
 dir = "spike/verify/aeneas"
 run = "mise run aeneas:translate -- {{ config_root }}/minispec/Generated"
+run_windows = "wsl -- mise run verify:translate-impl"
 
 [tasks."verify:translate-lenient"]
 description = "OPT-IN, Linux/WSL only: enumerate every construct the translator cannot model, in ONE pass, into a scratch dir. This is how the fence in spike/verify/aeneas/Cargo.toml is derived and re-derived. Never a judgement of whether the algebra translated — lenient mode emits SILENT holes."
@@ -672,10 +674,11 @@ raw = true
 run = "elan-init -y --no-modify-path --default-toolchain none"
 
 [tasks."verify:kani"]
-description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Opens with a toolchain-less `cargo check` of the detached harness crate, which nothing else in the repo compiles — so a core/analysis signature the harnesses did not follow rots loudly and first. Then drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. On Windows it refuses in one line. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
+description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Opens with a toolchain-less `cargo check` of the detached harness crate, which nothing else in the repo compiles — so a core/analysis signature the harnesses did not follow rots loudly and first. Then drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. Windows self-routes through WSL. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
 raw = true
 dir = "spike"
 run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
+run_windows = "wsl -- mise run verify:kani"
 
 [tasks."verify:kani-check"]
 description = "Compile the detached Kani harness crate with the ordinary toolchain, catching source-signature rot without invoking Kani."
@@ -687,12 +690,21 @@ description = "One-time, idempotent, Linux/WSL only: fetch Kani's engine bundle 
 raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- kani --setup"
+run_windows = "wsl -- mise run verify:kani-setup"
 
 [tasks."verify:lean"]
 description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."
 raw = true
 dir = "spike"
 run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
+run_windows = "wsl -- mise run verify:lean"
+
+[tasks."verify:lean-badges"]
+description = "OPT-IN, Linux/WSL only: recompute Lean-owned badge evidence and compare it with the catalogue. Windows self-routes through WSL."
+raw = true
+dir = "spike"
+run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- report --with-lean"]
+run_windows = "wsl -- mise run verify:lean-badges"
 
 # ── livetest ─────────────────────────────────────────────────────────────────────────────────
 # NEVER a gate. These four are the only way to reach `spike/e2e/livetest.sh`, and nothing in
