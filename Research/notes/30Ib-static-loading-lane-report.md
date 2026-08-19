@@ -10,11 +10,12 @@
 
 ## §0 — Where the lane stands
 
-**Work-order steps 1–4 are landed, step 4 now including its refusal clause.** Steps 5–8 are
-untouched: no bundle projection, no locator-through-a-real-diagnostic, no artifact forms, no XFAIL
-promotion, no e2e lowering. The three `load30-*` specimens remain XFAIL, spelled with the sentinel
-guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit` is byte-identical.
+**Work-order steps 1–4 are landed, step 4 now including its refusal clause, and §2.5's
+`owed-no-flag-defaults-to-stdin` is discharged.** Steps 5–8 are untouched: no bundle projection, no
+locator-through-a-real-diagnostic, no artifact forms, no XFAIL promotion, no e2e lowering — §15
+carries what scouting 5 and 6 established. The three `load30-*` specimens remain XFAIL, spelled with
 
+the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit` is byte-identical.
 > The step numbering moved when `30I`'s work order was re-cut. This file's §1–§6
 > were written against the OLD numbering (its "items 2/3/4" are the load model,
 > the frame answers and the locator DAG); §7 was the runway into what are now
@@ -703,3 +704,107 @@ A new `DiagCode` needs SIX sites, and two of them are gates that fail late: `MIG
 scan is a line-shape grep, so a name long enough for rustfmt to split the arm reads as an orphan
 catalog row. That is what shortened `unannounced-cross-custody-dependency` to
 `unannounced-cross-custody-call`.
+
+## §14 — Builder 3: `owed-no-flag-defaults-to-stdin` retired, both halves
+
+BUILT, both flags together as the ledger directed — splitting them would have cost a second
+corpus argv respell, and the respell turned out to be the bulk of the work.
+
+### What changed
+
+`stdin_claimants` now lists ONLY explicit `-` claims; the mode, the receipt posture and the host no
+longer reach it. The records lane reads stdin iff `--results -`, reads a file iff `--results FILE`,
+and otherwise admits `NoObservation` — the honest floor, and the same answer an empty stream already
+gave. `apply --host` reads its artifact iff `--plan -` or `--plan FILE`, and the parser refuses the
+bare form with a new `cli-mode-needs-flag` (the inverse of `cli-flag-requires-mode`: there the flag
+was wrong for the mode, here the mode is missing an input it may not default).
+
+THE PAYOFF, pinned: `dorc plan -` no longer needs `--results FILE` beside it to free a stream
+nothing else asked for (`cli::lib`'s `two_claimants_on_stdin_refuse`).
+
+### The corpus respell, and the two things it caught
+
+Every drive that feeds framed records now NAMES the stream. The claim is deliberately NOT folded
+into `shared_args`, because the same vector reaches drives that must not claim stdin — `dorc plan
+--host`, where `--results` and `--host` are mutually exclusive, and the why-chain scan, which names
+its own `--results=<file>`. It rides `args_reading_stdin_records` at the four drives that really
+pipe records, and `round_trip_command` renders it so a transcript still equals the invocation the
+gates drive.
+
+Two failures worth keeping, because both were REAL and neither was in the corpus proper:
+
+- `dorc_flags_selftest` compared `--risk-faultless-skips` on/off and read `elide=0` for BOTH arms.
+  That is a FALSE EQUALITY, not a real one: with no records admitted, neither arm could elide
+  anything. The self-test would have gone on "passing" by measuring nothing.
+- the DST differential's own driver (`hostsim::differential::run_dorc`) pipes records on every
+  trial. Un-named, `judge_passes_known_good_converged_elision` stopped seeing its converged
+  elision. `probe` still names nothing, because it reads no stdin either way.
+
+The 17 aid-tier looms that pipe records are driven IN-PROCESS, so the CLI change could not redden
+them — their committed commands would simply have become spellings that no longer reproduce their
+own transcripts. That is the invisible-drift shape `30Ia` §8 row B calls the lane's most dangerous
+artifact, so they are respelled too, and `dorc-loom`'s two direct drivers learned `--results -`
+(only `-`; a named file there would be a second way to say what the `<` already says, and is
+refused rather than guessed).
+
+### `dev-builder-touched-help-prose-again` (OPEN)
+
+The help page documented the retired default in its `stdin:` line — `(unless --results <file>)` —
+which is now false. Changed to `(only with --results -)`: a parenthetical token swap in the same
+register, no new user-facing sentence, applied to BOTH `cli-help-page.loom` and the arrangement lock
+so the two stay in fixpoint. Same class builder 2 disclosed; still prose, still the conductor's to
+ratify or reword.
+
+### Not done here
+
+`rul-piped-stdout-implies-one-flat-plan` stays unbuilt for builder 2's reason, unchanged: it must
+select among emission modes and there is still exactly one emission form, so both halves are vacuous
+and its refusal has nothing to refuse. It belongs with the artifact forms.
+
+## §15 — Steps 5 and 6 are NOT built, and what the next builder should know first
+
+NOT STARTED: no bundle projection, no `dorc bundle`, no locator-through-a-real-diagnostic. What
+follows is what scouting them established, so the finding below is not re-derived.
+
+### `fnd-the-loader-reports-no-unfiltered-edge-set` (the blocker to size first)
+
+`rul-one-loader-many-projections` forbids a second bundle resolver, so the projection's file
+closure — "which sources does this load occurrence pull in, transitively" — must come from the
+loader's own account. None of the three accessors answers it:
+
+- `FuncEnv::load_edges()` is CUSTODY-filtered. `Loading::mints_speaker` is false inside an
+  undecided guard's speculative branch, so an undecided guard's fallback target is absent. A bundle
+  built from it would OMIT a file the runtime `.` may really load — a correctness hole, not a
+  cosmetic one.
+- `FuncEnv::sourced_paths()` is keyed by the BOOK's `CfgNodeId`s, so it records the book's own `.`
+  acts and nothing nested inside a package's `LoadProgram`.
+- `cli::sourcing::top_level_load_targets` is LITERAL-only and, worse, using it here would BE the
+  second resolver the ruling forbids (it is already fenced to "what to READ before there is an
+  environment to ask").
+
+So step 5 opens with a small, honest extension of the ONE loader: a settled-account accessor
+reporting every `(sourcer, target)` edge the interpreter WALKED, minting or not, beside the
+custody-filtered set that exists. That is the same shape step 2 used to close custody for
+variable-rooted dependencies, and it should be sized before any bundle code is written.
+
+### Two things that are already settled and should not be re-litigated
+
+- **A bundle ships STRIPPED bytes, not authored ones.** A bundle is `.`-sourced by an artifact a
+  stock shell runs, and the inline mark form is not inert there (`KNOBS:kTYANNOT`). "Copy authored
+  segments exactly" therefore means "exactly as `dorc strip` leaves them" — which is still pure
+  erasure, so the byte floor holds.
+- **`dorc_oracle::strip::strip_file_with_map` already carries the segment map.** It returns the
+  stripped text plus a stripped-line → original-line map derived from the SAME edits, so it cannot
+  disagree with the bytes. That is the mapping step 6's locator needs, at line granularity, from a
+  mechanism that already exists and is tested — minting a second segment map beside it would be the
+  decorative source map `30I:impl-one-lane-sequential-builders` warns about.
+
+### The coupling to step 7 that the third exposure runs into
+
+`dorc bundle` and the multipart-dependency exposure need no artifact writer: the files are a pure
+value and can be printed. The INLINE (flattened) exposure cannot be finished honestly here: textual
+inlining of a marked, load-inert child at its source position is ARGUED but not MEASURED
+(`30Ib` §5 row 8's owed floor cell), and minting that cell is `mise run bless:floor` — orchestrator
+and WSL-only, and step 8's. Until it exists, explicit flatten intent should REFUSE before network,
+which `30I` §7.1 already sanctions in so many words; it should NOT ship as an un-measured
+inlining.
