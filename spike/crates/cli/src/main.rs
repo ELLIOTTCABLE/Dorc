@@ -137,6 +137,13 @@ const EXIT_HOST_NOT_REACHED: u8 = 13;
 /// [`EXIT_HOST_NOT_REACHED`] — the caller's remedy differs, and a caller that retries this one
 /// blindly may re-apply a mutation that already landed.
 const EXIT_SESSION_LOST: u8 = 14;
+/// A loaded oracle carries an unannounced cross-custody dependency: a role definition calls a name
+/// whose live declaration sits outside its own custody, with no sourcing, guard, or `command`
+/// naming it (`30I` §3.4's `dependency-merely-happened-to-be-live`). Invalid contracted input at
+/// v0, refused before any host is contacted and before any mutation-authorizing plan exists. Sixth
+/// of the 10..=19 range.
+const EXIT_UNANNOUNCED_CROSS_CUSTODY: u8 = 16;
+
 /// A remote apply ran to completion and its artifact exited non-zero. The one KNOWN transport
 /// outcome; the remote status is reported in the diagnostic, never reproduced as our own exit
 /// (a plan exiting 13 must not be read as our "host not reached").
@@ -179,6 +186,9 @@ enum RunOutcome {
     SessionLost,
     /// A remote apply completed and its artifact exited non-zero.
     ApplyFailed,
+    /// A loaded oracle reaches a cross-custody name nobody announced — invalid contracted input
+    /// at v0, refused pre-network (`30I:rul-unannounced-cross-custody-fails-before-network`).
+    UnannouncedCrossCustody,
 }
 
 fn main() -> ExitCode {
@@ -209,6 +219,9 @@ fn main() -> ExitCode {
                 Ok(RunOutcome::HostNotReached) => ExitCode::from(EXIT_HOST_NOT_REACHED),
                 Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
                 Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
+                Ok(RunOutcome::UnannouncedCrossCustody) => {
+                    ExitCode::from(EXIT_UNANNOUNCED_CROSS_CUSTODY)
+                }
                 Err(diag) => {
                     report_invocation_error(&diag);
                     ExitCode::from(EXIT_USAGE)
@@ -1054,6 +1067,32 @@ fn run(
             .map(|(path, src)| (path.as_str(), *src));
         report_at(advisory, "loading", source, &diags);
     }
+    // `30I:rul-unannounced-cross-custody-fails-before-network` — the whole-unit census, asked
+    // HERE so its sentences batch with the rest of the load-edge report, and CONSUMED far below so
+    // analysis still runs far enough to surface unrelated root causes beside it. The refusal itself
+    // lands before any host is contacted and before the apply artifact exists.
+    let unannounced = dorc_cli::custody::unannounced_cross_custody(&snapshot, &helpers);
+    for entry in &unannounced {
+        let source = source_paths
+            .get(entry.file)
+            .zip(source_refs.get(entry.file))
+            .map(|(path, src)| (path.as_str(), *src));
+        report_at(
+            advisory,
+            "loading",
+            source,
+            &[Diag::new(
+                DiagCode::UnannouncedCrossCustodyCall(
+                    dorc_aid::diag::UnannouncedCrossCustodyCall {
+                        name: entry.name.clone(),
+                        live: entry.live.clone(),
+                    },
+                ),
+                entry.span,
+            )],
+        );
+    }
+    let cross_custody_refused = !unannounced.is_empty();
     // The withdrawal, applied ONCE to the lifted sets so no downstream consumer has to remember to
     // ask: a contested family becomes indistinguishable from one nobody described.
     //
@@ -1437,7 +1476,11 @@ fn run(
     if mode == Mode::Probe {
         print!("{}", render_probe_artifact(&framing));
         std::io::stdout().flush().ok();
-        return Ok(book_outcome);
+        return Ok(if cross_custody_refused {
+            RunOutcome::UnannouncedCrossCustody
+        } else {
+            book_outcome
+        });
     }
 
     // The round-trip emits the probe FIRST (phase 1 on stdout), then the apply (phase 2)
@@ -1446,6 +1489,15 @@ fn run(
     if mode == Mode::RoundTrip {
         print!("{}", render_probe_artifact(&framing));
         std::io::stdout().flush().ok();
+    }
+
+    // THE REFUSAL (`30I:rul-unannounced-cross-custody-fails-before-network`). Sited here, after the
+    // read-only probe a round-trip has already emitted and BEFORE the host match below, so the two
+    // halves of the ruling are structural rather than remembered: no host is contacted, and the
+    // mutation-authorizing apply artifact is never built. Everything above ran, so the report the
+    // admin just read carries this refusal beside whatever else the analysis found.
+    if cross_custody_refused {
+        return Ok(RunOutcome::UnannouncedCrossCustody);
     }
 
     let (framing, shipped_evidence) = match args.host.as_deref() {
