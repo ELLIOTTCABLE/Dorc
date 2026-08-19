@@ -791,6 +791,28 @@ mod tests {
         );
     }
 
+    /// `command <name>` asks for the external UTILITY by that name, never for whatever function
+    /// happens to be live — so it reaches no helper, closes cleanly, and denies nothing
+    /// (`30I` §3.4 `deliberate-external-utility`). This is the escape hatch
+    /// `unannounced-cross-custody-call` suggests, and the suggestion is only honest while
+    /// the walk keeps treating the operand as an argument rather than a call.
+    #[test]
+    fn a_command_routed_utility_reaches_no_helper() {
+        let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let entry =
+            format!("{MARKER}wombat__is_converged() {{\n   command _wombat_check \"$1\"\n}}\n");
+        let closure = index(&[&helpers, &entry])
+            .closure_for(
+                1,
+                "wombat__is_converged() {\n   command _wombat_check \"$1\"\n}",
+            )
+            .expect("a command-routed utility is not a cross-custody reach");
+        assert!(
+            closure.decls().is_empty(),
+            "the operand is an argument to `command`, never a helper the closure must carry"
+        );
+    }
+
     /// `28M` §8's two-file package shape, CO-LOADED: two files named on one command line, the
     /// helper in one and the entrypoint in the other. Co-loading is ingestion, so the entrypoint
     /// reaches an utterance nobody put in its custody and the vouch suspends
