@@ -941,4 +941,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "cli-several-main-books",
+        when_fires: "two main-book operands were given for one target. cli/lib.rs parse_args_from. {first} and {second} name them, in argv order.",
+        why: "30I:rul-one-main-book-per-target — separate books are separate PROGRAMS, so reading the second as source composition would silently merge two authors' shells; sharing one environment is spelled `--pre-source`.",
+        params: &[],
+        example: "[unwritten: cli-several-main-books]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
+    CatalogEntry {
+        slug: "cli-stdin-claimed-twice",
+        when_fires: "two lanes of one invocation both want stdin. cli/lib.rs parse_args_from, over the claimants `stdin_claimants` collects. {first} and {second} name them, in argv-then-lane order.",
+        why: "30I §2.5 — stdin is a collapsed SINGLE resource, so every mode wanting it declares its claim and two claimants refuse before network naming both, rather than resolving by a precedence rule the reader would have to know.",
+        params: &[],
+        example: "[unwritten: cli-stdin-claimed-twice]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
