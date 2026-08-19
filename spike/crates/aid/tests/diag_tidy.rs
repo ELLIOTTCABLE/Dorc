@@ -256,6 +256,8 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cli-flag-value-not-recognized",
     "cli-flag-value-not-a-number",
     "cli-no-book-given",
+    "cli-several-main-books",
+    "cli-stdin-claimed-twice",
     "cli-flags-mutually-exclusive",
     "cli-flag-requires-mode",
     "cli-file-not-found",
