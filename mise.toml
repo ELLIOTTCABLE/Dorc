@@ -470,13 +470,13 @@ raw = true
 run = "hk install --mise"
 
 [tasks.bless]
-description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one tally line plus the goldens' diffstat, and the failing step's tail if anything breaks. A trailing case substring SCOPES it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. SEVERAL cases at once are spelled as PATHS (`crates/aid/tests/a.loom crates/cli/tests/b.loom`), which the runner resolves to exact trial names; the bare-substring form is libtest's own filter and takes exactly one. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
+description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one summary line plus the goldens' diffstat, and the failing step's tail if anything breaks. A trailing case substring SCOPES it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. SEVERAL cases at once are spelled as PATHS (`crates/aid/tests/a.loom crates/cli/tests/b.loom`), which the runner resolves to exact trial names; the bare-substring form is libtest's own filter and takes exactly one. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
 raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless"]
 
 [tasks."bless:dry"]
-description = "bless minus the bless pass: the whole acceptance gate plus the tally, zero golden writes. The only mode a builder may run."
+description = "bless minus the bless pass: the whole acceptance gate plus its summary, zero golden writes. The only mode a builder may run."
 raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]

@@ -75,19 +75,16 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         };
         blessed = Some(out);
     }
-    let gate = match step(
+    if let Err(text) = step(
         &spike,
         "gate:full-quiet",
         Command::new("mise").args(["run", "gate:full-quiet"]),
     ) {
-        Ok(text) => text,
-        Err(text) => {
-            if !scoped {
-                teach_the_scoped_route(&spike, &text);
-            }
-            return ExitCode::FAILURE;
+        if !scoped {
+            teach_the_scoped_route(&spike, &text);
         }
-    };
+        return ExitCode::FAILURE;
+    }
     if !scoped && !dry {
         let Some(out) = bless_pass(&spike, &cases, floor) else {
             return ExitCode::FAILURE;
@@ -108,12 +105,11 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
-    let suite = passed(&gate).unwrap_or_else(|| "?".to_owned());
-    let e2e = blessed.as_deref().and_then(passed).map_or_else(
+    let e2e = blessed.as_deref().and_then(passed_count).map_or_else(
         || "not blessed (dry)".to_owned(),
         |count| format!("{count} blessed"),
     );
-    println!("bless: gates ok | suite {suite} | e2e {e2e}");
+    println!("{}", success_summary(&e2e));
 
     // The goldens the bless touched, and nothing else: the runners live beside the cases
     // they drive, so exclude them — this listing is about DATA.
@@ -313,9 +309,8 @@ fn scoped_route_advice(selectors: &[String]) -> String {
     )
 }
 
-/// The count before `passed`, from nextest's `Summary` line or libtest's `test result:`.
-/// A conductor wants one number, not a transcript; the transcript only shows up on failure.
-fn passed(output: &str) -> Option<String> {
+/// The count before `passed`, from the directly-run bless pass's test summary.
+fn passed_count(output: &str) -> Option<String> {
     let line = output.lines().rev().find(|line| line.contains(" passed"))?;
     let tokens: Vec<&str> = line.split_whitespace().collect();
     tokens
@@ -323,6 +318,10 @@ fn passed(output: &str) -> Option<String> {
         .find(|pair| pair.get(1).is_some_and(|t| t.starts_with("passed")))
         .and_then(|pair| pair.first().copied())
         .map(str::to_owned)
+}
+
+fn success_summary(e2e: &str) -> String {
+    format!("bless: gates ok | e2e {e2e}")
 }
 
 /// Did the command run and succeed? (Output discarded; this is a pre-flight, not a step.)
@@ -336,7 +335,15 @@ fn ok(command: &mut Command) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{failed_cases, scoped_route_advice};
+    use super::{failed_cases, scoped_route_advice, success_summary};
+
+    #[test]
+    fn dry_success_reports_only_the_completed_gate_and_bless_status() {
+        assert_eq!(
+            success_summary("not blessed (dry)"),
+            "bless: gates ok | e2e not blessed (dry)"
+        );
+    }
 
     #[test]
     fn the_captured_gate_output_yields_each_failing_case_once() {
