@@ -7,7 +7,7 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: the sibling of cli-unknown-f
 $ dorc plan --wat --book=webhost.sh
 dorc: error[cli-unknown-flag-did-you-mean]: Dorc does not recognize the flag
 `--wat`; did you mean `--last`?
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-unknown-flag-did-you-mean

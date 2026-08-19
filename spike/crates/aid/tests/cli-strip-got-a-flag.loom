@@ -7,7 +7,7 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: the SIBLING of cli-strip-nee
 $ dorc strip --book=webhost.sh
 dorc: error[cli-strip-got-a-flag]: `dorc strip` takes only a file path, but was
 given the flag `--book=webhost.sh`.
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-strip-got-a-flag

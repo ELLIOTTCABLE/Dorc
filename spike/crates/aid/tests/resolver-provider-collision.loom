@@ -21,7 +21,7 @@ hork__resolve() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh -o hork.oracle.sh
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh
 warning[resolver-provider-collision]: `hork__resolve()` is keyed by a command
 name, but a resolver belongs to a kind -- as written it mints identity for a
 kind no coordinate can name (a likely mis-key).

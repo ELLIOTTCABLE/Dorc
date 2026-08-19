@@ -21,7 +21,7 @@ hork__disturbance_reaches_only() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh -o hork.oracle.sh
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh
 warning[reaches-provider-collision]: `hork__disturbance_reaches_only()` is keyed
 by a command name, but a reach-function belongs to a kind -- as written it
 widens a kind no coordinate can name (a likely mis-key).

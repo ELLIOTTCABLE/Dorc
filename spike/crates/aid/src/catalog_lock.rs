@@ -525,7 +525,7 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["oracles"],
         example: "sibling oracle files exist on disk but were not loaded: `redis.oracle.sh`",
         message: Some(ProseTier::Slop("sibling oracle files exist on disk but were not loaded: {{oracles}}")),
-        help: HelpRegister::Written(ProseTier::Slop("load them with `--oracle <file>` (or point `--oracle-dir` at their directory); dorc never loads an oracle you did not name")),
+        help: HelpRegister::Written(ProseTier::Slop("load them with `--pre-source <file>` (or point `--oracle-dir` at their directory); dorc never loads an oracle you did not name")),
     },
     CatalogEntry {
         slug: "authored-decline-class",

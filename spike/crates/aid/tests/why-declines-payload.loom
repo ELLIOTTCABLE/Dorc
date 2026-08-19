@@ -90,7 +90,7 @@ wombat__is_converged() {
 }
 
 -- replay --
-$ dorc why book.sh:4 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+$ dorc why book.sh:4 --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
       [ book.sh, participating lines:
    4 | sysctl vm.drop_caches
 
@@ -129,7 +129,7 @@ $ dorc why book.sh:4 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why book.sh:5 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+$ dorc why book.sh:5 --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
       [ book.sh, participating lines:
    5 | hork tune --profile web
 
@@ -165,7 +165,7 @@ $ dorc why book.sh:5 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why book.sh:6 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+$ dorc why book.sh:6 --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
       [ book.sh, participating lines:
    6 | wombat prompt --confirm
 
@@ -202,7 +202,7 @@ $ dorc why book.sh:6 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why book.sh:7 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+$ dorc why book.sh:7 --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
       [ book.sh, participating lines:
    7 | wombat wipe --all
 
@@ -239,7 +239,7 @@ $ dorc why book.sh:7 --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wom
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why --book=book.sh -o sysctl.oracle.sh -o hork.oracle.sh -o wombat.oracle.sh
+$ dorc why --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
 receipt: [unwritten: why-receipt-when-undated], host localhost
    book book.sh (digest 9b8ed805ae3fa41a0473f1f6bcd353a94c7bde0698f7df1b9b2da63fefc641b7)
    oracles: sysctl.oracle.sh, hork.oracle.sh, wombat.oracle.sh

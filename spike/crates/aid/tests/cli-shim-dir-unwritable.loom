@@ -8,7 +8,7 @@ why: 274 section 5: shim materialization is session-establishment I/O the wrappe
 $ dorc plan --book=webhost.sh
 dorc: error[cli-shim-dir-unwritable]: sm cannot write shim `/run/dorc/shims`:
 Read-only file system (os error 30)
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-shim-dir-unwritable

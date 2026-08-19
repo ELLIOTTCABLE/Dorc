@@ -8,4 +8,4 @@ owns: cli-usage-synopsis
 $ dorc plan
 dorc: error[cli-no-book-given]: Dorc was given no book to work on; name one as a
 positional path or with `--book=PATH`.
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

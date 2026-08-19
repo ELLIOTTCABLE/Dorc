@@ -8,7 +8,7 @@ why: the read-error trichotomys second arm: the file is there, so the repair is 
 $ dorc plan --book=webhost.sh
 dorc: error[cli-file-permission-denied]: Dorc found the oracle at
 `/etc/dorc/nginx.oracle.sh`, but is not allowed to read it.
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-file-permission-denied

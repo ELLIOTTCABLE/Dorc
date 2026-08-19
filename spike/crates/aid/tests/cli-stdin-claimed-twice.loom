@@ -1,0 +1,10 @@
+---
+code: cli-stdin-claimed-twice
+when-fires: two lanes of one invocation both want stdin. cli/lib.rs parse_args_from, over the claimants `stdin_claimants` collects. {first} and {second} name them, in argv-then-lane order.
+why: 30I §2.5 — stdin is a collapsed SINGLE resource, so every mode wanting it declares its claim and two claimants refuse before network naming both, rather than resolving by a precedence rule the reader would have to know.
+edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-stdin-claimed-twice && mise run loom:promote -- cli-stdin-claimed-twice`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-stdin-claimed-twice` lists this case's values; type {{name}} to insert or move one.
+---
+-- replay --
+$ dorc plan - --pre-source -
+dorc: error[cli-stdin-claimed-twice]: [unwritten: cli-stdin-claimed-twice]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

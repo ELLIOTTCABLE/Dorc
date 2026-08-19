@@ -7,7 +7,7 @@ why: 27S did-you-mean: a near-miss is a typo, and naming the intended mode costs
 $ dorc pln --book=webhost.sh
 dorc: error[cli-unknown-mode]: Dorc does not recognize the mode `pln`; did you
 mean `plan`?
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-unknown-mode

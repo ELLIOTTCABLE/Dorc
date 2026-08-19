@@ -4,6 +4,6 @@ when-fires: a vouching verdict body reaches a name whose resolution leaves the c
 why: a vouch attaches to the code that will actually RUN, not to the text its author was looking at. Where the running composition is somebody else's — the admin's redefinition, a co-loaded stranger's declaration, or an `eval` nobody can follow — the engineer vouched a composition that is not present, and honoring the vouch would elide a mutation on the strength of a judgment nobody made about the body that ran. Suspending is the only sound act and it can only ever suspend: the rule never mints (`28R:rul-mixed-custody-suspends-vouch`). WARNING severity with no floor, on `helper-declaration-contested`'s footing — the plan stays valid and safe, the site simply runs, and what the reader loses is value. Remediation register (help) wanted: name the one edit that restores the composition, which differs per reason — rename the book's function, load one of the two colliding sources, or take custody of the helper.
 ---
 -- replay --
-$ dorc plan --book=book.sh -o wombat.oracle.sh
+$ dorc plan --book=book.sh --pre-source wombat.oracle.sh
 warning[vouched-composition-not-present]: [unwritten:
 vouched-composition-not-present]

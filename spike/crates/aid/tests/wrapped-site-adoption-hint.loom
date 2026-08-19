@@ -47,7 +47,7 @@ hork__is_converged() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh -o runas.oracle.sh -o hork.oracle.sh
+$ dorc plan --book=book.sh --pre-source runas.oracle.sh --pre-source hork.oracle.sh
 note[wrapped-site-adoption-hint]: This site would elide if hork's oracle vouched
 its verdict across the wrapped context -- one line in the verdict function: `:
 safe-across user`.

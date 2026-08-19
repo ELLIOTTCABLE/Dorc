@@ -7,7 +7,7 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar: ONE code for the whole famil
 $ dorc plan --book
 dorc: error[cli-flag-needs-value]: The `--book` flag needs a path, and none was
 given.
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-flag-needs-value

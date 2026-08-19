@@ -7,7 +7,7 @@ why: 288 rul-help-text-is-loomable: help is product prose, so it gets an editabl
 $ dorc --help
 dorc -- spec-mining static-analysis orchestrator (implementation spike)
 
-usage: dorc [<mode>] --book=<book.sh> [-o <oracle.sh>]... [options]
+usage: dorc [<mode>] --book=<book.sh> [--pre-source <sh>]... [options]
 
 modes (an optional leading token; default is the probe-then-apply round-trip):
   probe        emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
@@ -26,10 +26,10 @@ modes (an optional leading token; default is the probe-then-apply round-trip):
   (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
 
 options:
-  <book.sh>...          the book(s) to analyze -- a positional path (`dorc plan book.sh`) or
-                        --book=PATH / --book PATH; repeatable => concatenated as one unit
-  -o, --oracle <o.sh>   an oracle file to load (repeatable; -o PATH, -oPATH, --oracle PATH)
-  --oracle-dir <dir>    load every *.oracle.sh in <dir> (repeatable; glob-sorted)
+  <book.sh>             the one main book to analyze -- a positional path (`dorc plan book.sh`)
+                        or --book=PATH / --book PATH; a second one is a separate program
+  --pre-source <sh>     a file to dot-source before the book, in CLI order (repeatable)
+  --oracle-dir <dir>    pre-source every *.oracle.sh in <dir> (repeatable; glob-sorted)
   --results <file>      read the probe results from <file>; for `why`, answer from those
                         records rather than the saved receipt
   --risk-faultless-skips    opt into the survival tier (default off)
@@ -39,7 +39,7 @@ options:
   --all                 for `why`, print everything the engine holds: every link,
                         unselected, plus collapse classes with no narration yet
   --debug-argv          echo the engine's per-site resolved argv to stderr
-  -h, --help            print this help to stdout and exit 0
+  --help                print this help to stdout and exit 0
   --version             print the version to stdout and exit 0
 
 receipts -- every plan/apply/round-trip writes one; `dorc why` reads it:

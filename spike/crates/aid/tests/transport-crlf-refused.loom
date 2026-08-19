@@ -10,7 +10,7 @@ dorc: error[transport-crlf-refused]: Dorc refuses to ship webhost.dorc-plan.sh:
 it carries a carriage return (first on line 1), and CRLF bytes fail on the
 remote host before any shell can run -- convert the line endings to LF and
 re-plan.
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: transport-crlf-refused

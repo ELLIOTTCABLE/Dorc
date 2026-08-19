@@ -23,7 +23,7 @@ hork__predict() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh -o hork.oracle.sh
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh
 warning[effect-kind-disagreement]: this verb spells its kind two ways: the
 identity bind declares `sm.dorc.Package` while the mark's own coordinate names
 `sm.dorc.Service` -- Dorc files the fact under the declared `sm.dorc.Package`;

@@ -28,7 +28,7 @@ sm_dorc_Package__resolve() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh -o hork.oracle.sh -o wombat.oracle.sh
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
 error[resolver-conflict]: Kind `sm_dorc_Package` has 2 resolvers across the
 loaded oracle files, and a kind has one identity, so Dorc refuses them all --
 entities of this kind compare by name alone until exactly one `__resolve`

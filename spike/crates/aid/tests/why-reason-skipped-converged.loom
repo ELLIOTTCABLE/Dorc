@@ -29,7 +29,7 @@ dorc site 0 effect=holds rc=0 @@dorc@@
 dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- replay --
-$ dorc why book.sh:2 --book=book.sh -o hork.oracle.sh < probe-results.txt --all
+$ dorc why book.sh:2 --book=book.sh --pre-source hork.oracle.sh < probe-results.txt --all
       [ book.sh, participating lines:
    2 | hork add nginx
 
@@ -44,7 +44,7 @@ $ dorc why book.sh:2 --book=book.sh -o hork.oracle.sh < probe-results.txt --all
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why --book=book.sh -o hork.oracle.sh < probe-results.txt --all
+$ dorc why --book=book.sh --pre-source hork.oracle.sh < probe-results.txt --all
 receipt: [unwritten: why-receipt-when-undated], host localhost
    book book.sh (digest 56eaafb4f5970ae87ddd3ebeea18616885d63b77842a961def427bc69a90e981)
    oracles: hork.oracle.sh

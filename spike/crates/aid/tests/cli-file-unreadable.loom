@@ -8,7 +8,7 @@ why: the residual arm passes the platforms own words through, because there is n
 $ dorc plan --book=webhost.sh
 dorc: error[cli-file-unreadable]: sm cannot read results `probe-results.txt`: Is
 a directory (os error 21)
-usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-file-unreadable
