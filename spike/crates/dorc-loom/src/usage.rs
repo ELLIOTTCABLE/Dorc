@@ -135,8 +135,8 @@ const PUBLISH_USAGE: &str = "usage: dorc-loom [-C DIR] publish [--verbatim] [--a
   --shell=P   lend the generic executor a shell, for a replay the in-process driver declines
   --path=D    prepend a directory to the replay PATH (repeatable)
   -C DIR      resolve the corpus, both locks and the staging store under DIR instead of the tree
-              this binary was built in. It comes BEFORE the verb, git-style, and nothing outside
-              DIR is read or written.
+              this binary was built in. It comes BEFORE the verb, git-style; no file outside DIR is
+              read or written, and the repository asked what changed is the one containing DIR.
   next: mise run test -- a publish republishes shared locks, so its blast radius is wider than the
         case in front of you";
 
