@@ -248,11 +248,23 @@ DONE and folded on `ai/r30-loom-surface`: the `--this` global selector + shared 
 the six ergonomics items (stderr via `tracing`, empty-row suppression, mise-wrapper retirement,
 nothing-to-do warnings) · the `edit-loop:` eviction (193 stripped) + vars back-fill (170 added,
 23 skipped for empty inventory) · the boundary fix + typed drops + the measured test battery.
+Then: the single `publish` verb + `--verbatim` + the shared-value marking (compile/promote
+retired, no shims). Then: `dorc_loom::Roots` — ONE seat answering "where is my world" (corpus,
+both locks, staging root, git anchor), re-pointed together by the global `-C <dir>`; the three
+write-path tests it unblocked; and three `.loom` cases dogfooding the authoring loop, sited in
+`crates/dorc-loom/tests/`. The lane's ONE genuinely useful gate: a lexical walk asserting
+`CARGO_MANIFEST_DIR` appears exactly once in the crate's production sources — the no-second-seat
+property no type expresses.
 
-IN FLIGHT: `lane-publish-verb` — the single `publish` verb, `--verbatim`, and the equal-value
-marking.
+**`fnd-bare-cargo-writes-to-the-primary-checkout`** — AMENDS §5. The harness shell exports an
+absolute `CARGO_TARGET_DIR` pointing at the PRIMARY checkout, so a bare `cargo` invocation from
+any worktree writes build artifacts there; `mise run`/`mise exec` resolve it per-worktree and are
+unaffected. §5's "concurrent lanes cannot clobber each other" therefore holds for mise-driven work
+ONLY, and the bless-exclusivity rule is stale for that path but live for bare `cargo`. Build
+output only — no source, no git.
 
-NEXT, unstarted: corpus/lock root injectability (spelled `-C`) and the `.loom` cases that
-dogfood the authoring loop — the root-injection is their enabling change. Still owed from
-before this round: `307:work-loom-interior-hole-authoring`, and the conductor's unverified
-bless-exclusivity fossil (§5).
+STILL OWED: `307:work-loom-interior-hole-authoring` (banked, unchanged) · the unverified
+bless-exclusivity fossil (§5, now needing the amendment above folded in) · two flows that cannot
+be `.loom` cases at all (a refused publish, a nothing-to-do publish) because the looms runner
+drives strictly in-process with no shell and they need a real git repository and corpus — they
+would be `crates/cli/tests/` `run:` lane work, and are covered by Rust write-path tests instead.

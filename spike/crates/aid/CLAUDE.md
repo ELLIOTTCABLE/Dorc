@@ -251,9 +251,10 @@ crate's charter) · `notes/287` (errorloom as-built).
   walkers just refuse to call residue a case (it reddened the gate twice, 2026-07-31).
 - **paths-are-manifest-relative** — the case lookup (`is_case_owned`, in both `catalog.rs`
   and `catalog_defining_cases.rs`) is now manifest-LOCAL — `CARGO_MANIFEST_DIR/tests/
-  <slug>.loom` — so it survives a crate move. What still reaches ACROSS is `dorc-loom`:
-  `../aid/tests` for the corpus and `../aid/src/catalog_lock.rs` for the lock, both
-  depth-coupled to `crates/<c>/`. Moving EITHER crate breaks both, and one direction fails
+  <slug>.loom` — so it survives a crate move. What reaches ACROSS is `dorc-loom`, through
+  the ONE seat `dorc_loom::Roots` — corpus, both locks, staging root, git anchor; the global
+  `-C <dir>` re-points them together, which is what lets a test drive `publish` against a temp
+  world. A crate move is a one-line change there. One direction still fails
   silent: an empty corpus read makes the corpus-wide gates pass VACUOUSLY. `fixpoint.rs`'s
   surviving lock gate therefore asserts a NON-EMPTY corpus before it generates — never soften
   that back into a silent empty vec. (Its render-fixpoint half is gone: the ONE render-fixpoint
