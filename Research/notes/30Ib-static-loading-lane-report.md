@@ -571,14 +571,47 @@ about which idiom it exercises, and changes no engine answer.
    Expected golden movement: `emit30-cross-custody-plural-helper-suspends` turns
    from "suspends, apply is the book" into "no mutation-authorizing plan", which
    is the movement builder 1 flagged and this builder inherited.
-2. **`specimen-speaker-minting-is-observable` is NOT built**, and with it the
-   mutation check the brief asks for. The finer-grained recognition cells ARE
-   pinned at their ownership seats (`funcenv` TABLE 7, six cells;
-   `oracle::load_inert` two; `cli::sourcing` two), so what is missing is the
-   whole-product observation that minting has a RUN-SET consequence. Shape, as
-   scoped: three `--pre-source` packages against one book — one recognized
-   (converged verdict ⇒ its book site elides ⇒ absent from `expected.ran`), one
-   whose sentinel a second unit also assigns, one whose helper a second unit also
-   declares — the last two withholding, so their sites run. It needs a
-   `probe-results.txt` matching what the mocked probe produces (gate-1 compares
-   them), which is an iterate-until-green step.
+2. **The `command`-prefixed call is not carved out.** `30I` §3.4's
+   `deliberate-external-utility` classification needs `closure::called_names` to
+   stop counting the operand of `command <name>` as a helper reach; today it
+   counts both words. It costs nothing until (1) lands, because a
+   `ResolvedOutsideCustody` denial currently only suspends.
+
+## §12 — `specimen-speaker-minting-is-observable`, and its mutation result
+
+BUILT: `crates/cli/tests/load30-speaker-minting-is-observable.loom`. One book,
+three `--pre-source` packages, one run-set observation and both counterfactuals
+in the one case:
+
+- **delta** — the recognized sentinel, on its REUSE arm. `common.oracle.sh` is
+  pre-sourced AHEAD of delta, so by the time delta's guard runs the dependency is
+  already live and no `.` of delta's runs at all — and CLI co-loading composes no
+  custody. The recognition's own mint is therefore the ONLY thing that can put
+  common's helper inside delta's custody. Converged ⇒ ELIDED ⇒ `delta` is absent
+  from `expected.ran`.
+- **beta** — a same-valued load variable from the wrong source unit
+  (`stranger.oracle.sh` assigns beta's sentinel too) ⇒ `sole_populator` fails ⇒
+  no recognition ⇒ no edge ⇒ `ResolvedOutsideCustody` ⇒ it RUNS.
+- **gamma** — a same-named helper from the wrong source unit (`rogue.oracle.sh`
+  declares `sm_gamma_check` later) ⇒ recognition FIRES and the edge mints, but a
+  shell binds the rogue's body ⇒ `ResolvedOutsideCustody` ⇒ it RUNS.
+
+**MUTATION RESULT — the case observes the machinery.** Deleting the speaker-edge
+mint in `sentinel_decides` (leaving the arm decision intact) reddens it: no probe
+ships at all, so gate-1 fails `authored: site 0 effect=holds rc=0` against
+`produced: <empty>`, and delta's site returns to the run set. Restored, the case
+is green.
+
+Worth keeping, because it cost a wrong turn: the case's FIRST shape put the
+recognized package on its SOURCE arm, and there the same mutation did NOT redden —
+the ordinary `.` mints that edge anyway. A specimen that means to observe the
+recognition's own mint must put the package on the REUSE arm, which is what the
+pre-source ORDER (`common` before `delta`, glob-sorted) arranges.
+
+3. **`dev-transcript-authored-by-hand`** (OPEN) — this case's transcript was NOT
+   produced by `BLESS=1`, which is orchestrator-only and which a builder may not
+   run. It was captured by materializing the loom's sections into a scratch
+   directory, driving the real binary there with the runner's own argv and framed
+   records, and pasting stdout. The ordinary (non-bless) e2e run then proves it
+   byte-exact, which is the same gate a blessed transcript faces — but the
+   conductor should know a golden entered the corpus by that route.
