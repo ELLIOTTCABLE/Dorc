@@ -20,7 +20,8 @@
 
 ## §2 — Baseline
 
-`mise run gate:quick-quiet` measured GREEN by the conductor's own hand in this
+`gate:quick-quiet` (retired since; the lifecycle rungs are now pre-commit /
+`both gate:full-quiet` / `gate:arc`) measured GREEN by the conductor's own hand in this
 exact worktree at `80faf71d`: 1354/1354, 0 skipped. Any red a builder reports is
 theirs, not inherited.
 
@@ -485,3 +486,49 @@ say *provably unset* at a first guard, given `analysis/src/value.rs:266` models 
 variable as absent-as-⊤/⊥ — is handed to the builder as spec, with no
 size-this-first directive and no descope path pre-authorized. It reports only if the
 work proves wildly unexpected.
+
+## §15 — rebase-onto-new-main-and-the-third-seam
+
+`ai/main` moved under the lane (new gate lifecycle, conductor-skill revision,
+verify-lane growth). Zero file overlap with the 15 lane commits, so the fold was a
+clean REBASE rather than a merge; lane tip is now 15 commits atop `ai/main`. Hashes
+before that rebase are stale by construction — cite commit subjects, not hashes.
+
+**Gate lifecycle changed and the old spelling is DEAD.** `gate:quick-quiet` no longer
+exists. Rungs: pre-commit (sub-3s floor) · `mise run both gate:full-quiet` (builder
+completion, and the working loop — there is no agent-facing quick rung) · `mise run
+gate:arc` (CONDUCTOR-ONLY arc close, ~20GiB, run from the populated branch BEFORE
+folding into `ai/main`, because hk derives applicable checks from that branch diff and
+selects nothing once the diff is empty) · `mise run gate:step -- <step>` for a named
+failure. Whole-workspace clippy moved off the hook into builder completion.
+
+**Builder 2 landed steps 1–4 minus one clause** (tip subject: "List the two new slugs
+where the retire-guard reads them"). Its report claimed "steps 1–4 all landed" AND named
+`rul-unannounced-cross-custody-fails-before-network` as not built; the second statement
+governs. Two findings worth keeping: the mutation check CAUGHT a bad specimen (the first
+shape sat on the source arm, where the ordinary `.` mints anyway, so the recognition was
+never under test — it had to move to the reuse arm); and a pre-existing wrong-elision
+route was closed (an UNDECIDED guard's fallback `.` used to mint custody, contained only
+by the ⊤ the join produced — the safety-by-composition shape §12 flagged and the
+conductor then reproduced).
+
+**`owed-no-flag-defaults-to-stdin` [conductor finding, human-confirmed as a drop]** —
+`plan --results` and `apply --plan` both DEFAULT to stdin, which is precisely the
+implicit acquisition `rul-stdin-is-claimed-only-by-dash` forbids. Builder 2 declared them
+as claimants (the interim) rather than retiring the defaults (the rule), which is why
+`dorc plan -` currently refuses unless `--results FILE` frees the stream. Retire both
+together; they are one seat and splitting costs a second corpus argv respell. NB
+`--results` is an INPUT (read probe records from FILE instead of stdin), not an output.
+
+**Seam 3** [human-offered, conductor-taken]: builder 3 takes the step-4 remainder, the
+stdin-default retirement, and steps 5–6 (bundle projection, then locator composition
+carried into a real diagnostic). Builder 4 takes steps 7–8 (artifact forms with atomic
+publication, then the close: promotion, the `pin28` re-spell, e2e lowering, the owed
+inlining floor cell). Rationale: 6 composes onto 5 and is small, so they belong together;
+7 is a new on-disk subsystem and 8 is the corpus-wide golden sweep, so they get their own
+window. Builder 2 spent ~793k tokens on steps 1–4, which is the sizing evidence.
+
+**Punted, human-typed:** `--oracle-dir` dies soon-ish; punt if not trivial.
+`dorc lint --oracle <path>` is UNRELATED to the retired loading flag — it names a file to
+lint AS an oracle (dialect rules), and lint loads nothing; it stays. Help-prose drift is a
+non-issue: the mechanical path drives to `Slop()` and it is all slop today.

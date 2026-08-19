@@ -173,9 +173,15 @@ Each step unblocks the next.
    keep one compound e2e per irreducible artifact interaction. Mint the owed
    floor cell for textual inlining before flattening rests on it.
 
-Hot loop `mise run gate:quick-quiet`; completion `mise run both gate:full-quiet`,
-foreground. Golden movement is enumerated and reviewed as behaviour before
-blessing, never treated as expected refactor churn.
+Gate rungs follow the work lifecycle, never a per-change menu: pre-commit is the
+automatic sub-three-second floor; `mise run both gate:full-quiet` is builder
+completion and doubles as the working loop (there is no agent-facing quick rung
+— `gate:quick-quiet` is retired); `mise run gate:arc` is the conductor's
+arc-close, run from the populated branch BEFORE folding into `ai/main`, because
+hk derives its applicable checks from that branch diff. A failed hk step names
+its focused rerun, `mise run gate:step -- <step>`. Golden movement is enumerated
+and reviewed as behaviour before blessing, never treated as expected refactor
+churn.
 
 ### Stop conditions
 
@@ -495,12 +501,15 @@ Stream ROLES are per-subcommand. What follows rules `dorc plan` and
 defaults to it) and will grow its own claimants; the collapsed-resource principle
 binds there too, but its per-flag consequences are not settled here.
 
-`owed-apply-takes-stdin-only-by-dash` - `apply` inherits the same rule and is
-owed it: stdin reaches it through a `-` in filename position, never by a flag
-defaulting to it silently. Low priority, and punt-able as its own bite-sized
-task - EXCEPT that it lands in the same corpus argv as the `--pre-source`
-rework, so if it would cost a second test respell it is cheaper rolled into the
-first.
+`owed-no-flag-defaults-to-stdin` - two flags currently acquire stdin implicitly,
+which is exactly what the rule above forbids: `plan --results` (probe records,
+an INPUT, defaulting to stdin) and `apply --plan` (the rendered artifact it
+ships, likewise). Declaring them as claimants is the interim; RETIRING the
+defaults is the rule. Both then take `-` like any other filename, `-` becomes
+stdin's only claimant, and `dorc plan -` stops needing `--results FILE` beside it
+to free the stream — which is the papercut the interim leaves behind. Do both
+together: they are one edit at one seat, and splitting them costs a second corpus
+argv respell.
 
 `rul-piped-stdout-implies-one-flat-plan` [TYPED] - when stdout is not an
 interactive terminal at runtime, the invocation is single-stream intent by
