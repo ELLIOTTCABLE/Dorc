@@ -320,7 +320,7 @@ a generated ARRANGEMENT REGISTRY is the storage — `aid/src/arrangement.rs` plu
 ORDERED WORDS that a seat interleaves with its computed values — and renderer-stamped
 `ArrangementWords` spans are the edit surface, so a chrome-word edit in a transcript flows to its
 registry entry exactly as catalog prose does. It generalizes the catalog pipeline rather than
-minting a second one: mirror-union generation, both fixpoint gates, one `dorc-loom promote`
+minting a second one: mirror-union generation, both fixpoint gates, one `dorc-loom publish`
 publishing both locks. `282:rul-arrangement-words-exempt-v1` is thereby LIFTED for migrated
 chrome. Help text was the pilot (`$ dorc --help` as a whole-page loom); usage joined as a
 seat-appended entry. Three fences held in the build: the migrated marker is TYPED
