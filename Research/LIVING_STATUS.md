@@ -58,11 +58,12 @@ reviewed plan may gain ordinary guards but NEVER generated wall flags,
 conditional-tail state, or other visible bookkeeping. No compatibility copy of
 the walks survives.
 
-**Sequence is fixed:** finish the current `30I` seam 4 only (remove exit-16 drift
-and complete the possible-load occurrence account), then PAUSE loading for `30K`.
+**Sequence is fixed:** finish
+`30I:step-5a-complete-load-occurrence-account` only (remove exit-16 drift and
+complete the possible-load occurrence account), then PAUSE loading for `30K`.
 After the kernel stage lands, resume `30I` bundle/locator work, then artifact forms
 and final XFAIL/golden promotion. This places effective-world reach before both the
-new Plan/Spine artifact boundary and `28Q` stage-iii lifecycle/availability work,
+new Plan/Spine artifact boundary and `28Q:stage-iii-world-scopes`,
 without reopening definition factoring, verdict primacy, snapshot emission,
 Spine, or custody.
 
@@ -378,7 +379,8 @@ definition-factored positional indices (frames) · P2 entry-closure as the speak
 universal context-availability, staged 0+i–iii (stage-0, added 2026-08-01: the ship-seam
 verdict-primacy re-cut — the verdict body ships and answers at vouched sites; rulings
 banked `28Q` §4; retires the license-tier half of `tc-split-family-elides-on-two-authors`). It supersedes the `28P` bitem4/bitem5 hold,
-absorbs `26K` §0b (local-exec/scopes/wait-loops → stage-iii), and discharges the
+absorbs `26K` §0b (local-exec/scopes/wait-loops →
+`28Q:stage-iii-world-scopes`), and discharges the
 terminology rider — vocabulary ACKED: **incarnation** (context lifetime marker, softened
 per `28Q` §3's correlation door) · **lifecycle begins/ends** (re-creation = their
 composition) · **availability window**; "epoch"/"pivot"/"transit" retired. §10 (the
@@ -410,7 +412,8 @@ RESOLVED 2026-08-01 as a stdlib-oracle answer (`28Q` §4), `.`-of-proven-load-in
 human-owned (`28Q:res-dot-blessing-is-engine-side`).
 
 **NOT STARTED**: the `26K` §0a fruit arc (still zero code; parallel-anytime). The §0b
-kernel sitting is no longer a separate item — superseded into `28Q` stage-iii.
+kernel sitting is no longer a separate item — superseded into
+`28Q:stage-iii-world-scopes`.
 
 ## r26 — executed arcs closed, round OPEN (live-execution + kernel + glue-residue landed,
 compressed 2026-07-31; the `26K` §0a fruit arc and the reactive/capture + multi-host

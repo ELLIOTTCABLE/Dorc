@@ -146,7 +146,8 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   described it honestly and contradicting USER_STORY's drifted-day plan. CAPTURE:
   `notes/30K` replaces origin-Query/wall-walk split with certified effective-world
   reach, promotes both `guard26-*` XFAILs, and deletes the walks; no narrow mint or
-  compatibility path. BACK-OUT: low before `30I` artifact forms and `28Q` stage-iii,
+  compatibility path. BACK-OUT: low before `30I` artifact forms and
+  `28Q:stage-iii-world-scopes`,
   high after either accretes on the split. REVISIT: the `30K` implementation fold.
 - **forfeit-errexit-consumed-status** — RULE (as-built, measured 0.00-vs-1.00 elision;
   `24A` §3-R4): bare converged mutators under `set -e` are status-consumed and blocked

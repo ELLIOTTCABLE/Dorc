@@ -10,15 +10,18 @@
 
 ## §0 — Where the lane stands
 
-**Work-order steps 1–4 are landed, and §2.5's `owed-no-flag-defaults-to-stdin` is
-discharged. Step 4's exact guarded-source recognition stands; its whole-run
-cross-custody refusal is SUPERSEDED and is implementation drift to remove while
-retaining the distinction as narrative (`30I` §3.4, 2026-08-19).** Steps 5–8 are
-untouched: no bundle projection, no locator-through-a-real-diagnostic, no
-artifact forms, no XFAIL promotion, no e2e lowering - §15 carries what scouting
-5 and 6 established. The three `load30-*` specimens remain XFAIL, spelled with
-the sentinel guard `30I` §2.2 carries; `floor30-dot-loader-function-errexit`
-is byte-identical.
+**`30I:step-1-run-pre-sources-as-programs` through
+`30I:step-4-recognize-exact-guarded-source` are landed, and §2.5's
+`owed-no-flag-defaults-to-stdin` is discharged. Exact guarded-source recognition
+stands; its whole-run cross-custody refusal is SUPERSEDED and is implementation
+drift to remove while retaining the distinction as narrative (`30I` §3.4,
+2026-08-19).** `30I:step-5a-complete-load-occurrence-account` is next. Bundle
+projection, locator-through-a-real-diagnostic, artifact forms, XFAIL promotion,
+and e2e lowering are untouched; §15 carries what scouting
+`30I:step-5a-complete-load-occurrence-account` through
+`30I:step-6-compose-bundle-locators-into-diagnostics` established. The three
+`load30-*` specimens remain XFAIL, spelled with the sentinel guard `30I` §2.2
+carries; `floor30-dot-loader-function-errexit` is byte-identical.
 
 > The step numbering moved when `30I`'s work order was re-cut. This file's §1–§6
 > were written against the OLD numbering (its "items 2/3/4" are the load model,
@@ -777,7 +780,7 @@ ratify or reword.
 select among emission modes and there is still exactly one emission form, so both halves are vacuous
 and its refusal has nothing to refuse. It belongs with the artifact forms.
 
-## §15 — Steps 5 and 6 are NOT built, and what the next builder should know first
+## §15 — `30I:step-5a-complete-load-occurrence-account` precedes bundle work
 
 NOT STARTED: no bundle projection, no `dorc bundle`, no locator-through-a-real-diagnostic. What
 follows is what scouting them established, so the finding below is not re-derived.
@@ -798,7 +801,8 @@ loader's own account. None of the three accessors answers it:
   second resolver the ruling forbids (it is already fenced to "what to READ before there is an
   environment to ask").
 
-So step 5 opens with an extension of the ONE loader account that preserves each
+So `30I:step-5a-complete-load-occurrence-account` opens with an extension of the
+ONE loader account that preserves each
 statically possible resolved load OCCURRENCE, minting or not, with its source
 locus and positional context. A pair-set of `(sourcer, target)` is enough for
 transitive membership but not for per-occurrence bundle keying or locator
@@ -815,16 +819,18 @@ writing bundle code.
   erasure, so the byte floor holds.
 - **`dorc_oracle::strip::strip_file_with_map` already carries the segment map.** It returns the
   stripped text plus a stripped-line → original-line map derived from the SAME edits, so it cannot
-  disagree with the bytes. That is the mapping step 6's locator needs, at line granularity, from a
+  disagree with the bytes. That is the mapping
+  `30I:step-6-compose-bundle-locators-into-diagnostics` needs, at line granularity, from a
   mechanism that already exists and is tested — minting a second segment map beside it would be the
   decorative source map `30I:impl-one-lane-sequential-builders` warns about.
 
-### The coupling to step 7 that the third exposure runs into
+### Coupling to `30I:step-7-reify-plan-artifact-forms`
 
 `dorc bundle` and the multipart-dependency exposure need no artifact writer: the files are a pure
 value and can be printed. The INLINE (flattened) exposure cannot be finished honestly here: textual
 inlining of a marked, load-inert child at its source position is ARGUED but not MEASURED
 (`30Ib` §5 row 8's owed floor cell), and minting that cell is `mise run bless:floor` — orchestrator
-and WSL-only, and step 8's. Until it exists, explicit flatten intent should REFUSE before network,
+and WSL-only, and belongs to `30I:step-8-promote-executable-specification`. Until it
+exists, explicit flatten intent should REFUSE before network,
 which `30I` §7.1 already sanctions in so many words; it should NOT ship as an un-measured
 inlining.

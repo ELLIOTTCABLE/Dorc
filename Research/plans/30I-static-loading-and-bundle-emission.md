@@ -23,12 +23,11 @@ They are built by one builder at a time, never by parallel owners: a second
 resolver or a decorative source map is a likelier product of splitting than saved
 wall-clock. Seams are placed at FIXED work-order boundaries and never on a
 builder's own read of its remaining context, which is not a thing a model can
-measure. Seam 1 fell after the load model settled; seam 2 falls after step 4,
-so that the loader/custody/CLI half and the emission/artifact half each get a
-whole window.
+measure. Every handoff names its work-order boundary rather than an ordinal; the
+active one is `step-5a-complete-load-occurrence-account`, before bundle emission.
 
 `impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
-correction (2026-08-19): the loading lane's current seam first removes the
+correction (2026-08-19): `step-5a-complete-load-occurrence-account` first removes the
 superseded ambient-dependency refusal and extends the ONE loader account to preserve
 every possible resolved load occurrence with locus/context. It then STOPS for
 `notes/30K`'s effective-world-reach kernel stage. Bundle projection, locator
@@ -61,8 +60,9 @@ locator consumption by a real diagnostic; XFAIL promotion and e2e lowering.
 The current implementation still carries a whole-run refusal for an ambient
 cross-custody dependency. Section 3.4 rules that as drift: retain its
 differentiation as narrative and remove its authority/control-flow consequence.
-The same next seam completes the possible-load occurrence account required by
-step 5; after that commit the lane pauses at `30K` before writing bundle code.
+`step-5a-complete-load-occurrence-account` completes the possible-load occurrence
+account; after that commit the lane pauses at `30K` before
+`step-5b-build-bundle-projection` writes bundle code.
 
 ### Target outcome
 
@@ -96,7 +96,7 @@ than the user explicitly requested.
 
 ### Neighboring work that stays out
 
-stage-iii world scopes and `28Q` section 10's authored lifecycle surface;
+`28Q:stage-iii-world-scopes` and `28Q` section 10's authored lifecycle surface;
 blessing-reach elevation and verdict-word enrollment; committee-fence permanence
 and broader sparing composites; the
 starter stdlib and its dialect-reach decision; at-most completion speech;
@@ -117,21 +117,26 @@ builder and is implemented by its own kernel lane.
 
 Each step unblocks the next.
 
-1. **Run CLI-supplied loads as ordinary programs.** A pre-source is a `.`, so it
+1. **`step-1-run-pre-sources-as-programs` - run CLI-supplied loads as ordinary
+   programs.** A pre-source is a `.`, so it
    runs its `LoadProgram` like any other load rather than contributing a flat
    declaration list. This is what makes a CLI-supplied package's include guard
-   evaluate at all, and it is the prerequisite for step 2.
-2. **Close custody for variable-rooted dependencies.** The loader already
+   evaluate at all, and it is the prerequisite for
+   `step-2-close-variable-rooted-custody`.
+2. **`step-2-close-variable-rooted-custody` - close custody for variable-rooted
+   dependencies.** The loader already
    resolves `. "$ROOT/dep.sh"` correctly; what is missing is reporting the edges
    it walked so the include-tree consumes them instead of re-resolving a literal.
    Watch the two helper-package pins.
-3. **Rework the CLI input surface** to sections 2.4 and 2.5, retiring
+3. **`step-3-rework-cli-input-surface` - rework the CLI input surface** to
+   sections 2.4 and 2.5, retiring
    `-o`/`--oracle` and multi-book concatenation in the same arc. Reds while this
    rips are expected; the greening must land the replacement, never restore
    either. Multiple main books become separate targeted programs, which is where
    the one-`Ast`-per-run assumption is unpicked; shared-shell merging is spelled
    `--pre-source`.
-4. **Complete exact guarded-source recognition and cross-custody narration**
+4. **`step-4-recognize-exact-guarded-source` - complete exact guarded-source
+   recognition and cross-custody narration**
    (`rul-guarded-source-mints-exact-speaker-edge` plus section 3.4's
    `rul-cross-custody-distinction-is-narrative`). Classify a voucher's
    cross-custody reach as deliberate-external-utility, guarded-source-exact,
@@ -165,8 +170,9 @@ Each step unblocks the next.
    form section 2.2 now carries, so the executable specification and the ruling
    agree. That is directed work, not a builder judgment call about the human's
    authored bytes.
-5. **Complete the load-occurrence account, STOP for `30K`, then add one bundle
-   projection**, keyed by static load occurrence, consuming the snapshot and the
+5. **`step-5a-complete-load-occurrence-account`, STOP for `30K`, then
+   `step-5b-build-bundle-projection`** - complete the load-occurrence account, then
+   add one bundle projection keyed by static load occurrence, consuming the snapshot and the
    frame answers, never re-reading a path. First extend the one
    loader account so it preserves every statically possible resolved load
    occurrence, including speculative branches that mint no speaker edge; section
@@ -179,11 +185,13 @@ Each step unblocks the next.
    floor-proven - generated loader functions are measured-refuted. Expose the
    same projection as explicit `dorc bundle`, as contracted multipart
    dependencies, and inline for a flattened plan.
-6. **Compose bundle segments onto the existing locator edges** and carry one
+6. **`step-6-compose-bundle-locators-into-diagnostics` - compose bundle segments
+   onto the existing locator edges** and carry one
    chain through a REAL diagnostic render. A debug dump or structure-only unit
    test is necessary and not sufficient. This discharges the force-now aid
    requirement that could not close before the bundle existed.
-7. **Reify artifact forms at the Plan/Spine boundary.** The executable product is
+7. **`step-7-reify-plan-artifact-forms` - reify artifact forms at the Plan/Spine
+   boundary.** The executable product is
    the Plan projection plus its generated files, not ad-hoc CLI writes beside a
    string-only Plan; human and executable forms derive from one final structure.
    Implement the three semantic forms; auto chooses the most flattened safe one
@@ -191,7 +199,8 @@ Each step unblocks the next.
    when unavailable. Use cwd analysis to avoid generated artifact-root scaffolding
    wherever a simple relative dependency path suffices. Publication is atomic:
    build fresh, finish every file, then publish.
-8. **Promote the executable specification and close.** Promote each `load30-*`
+8. **`step-8-promote-executable-specification` - promote the executable
+   specification and close.** Promote each `load30-*`
    XFAIL only when its target run set is genuinely green; keep
    `head-expected.ran` until promotion proves behaviour did not drift by another
    route; keep `floor30-dot-loader-function-errexit` byte-identical. Re-spell

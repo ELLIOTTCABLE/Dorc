@@ -10,7 +10,8 @@
 > order is NO MORE PIECEMEAL work on this territory. It SUPERSEDES: the
 > `28P:amend-plural-value-loss-hold` standing order (bitem4/bitem5/withhold-softening
 > were held for exactly this plan; they land here as stage work) and `26K` §0b's
-> kernel-batch agenda (absorbed into stage-iii; `26K` remains live for its §0a fruit arc
+> kernel-batch agenda (absorbed into `stage-iii-world-scopes`; `26K` remains live
+> for its §0a fruit arc
 > and §5 sittings queue). It does NOT supersede `plans/27C` (still THE
 > wrapper/context-entry spec — §3 here generalizes its availability behavior, touching
 > none of its consent machinery) nor `28M` (still the committee-corner authority; §2 here
@@ -324,7 +325,8 @@ be assessable as continuous; the subtleties belong to a later sitting.
   target is fair game (multiple targets, each its own plan); any host one hop further
   — denoted only inside a book — is not entered without the flag (honest walls
   otherwise). Residual policy under the flag (lazy entry / timeout budgets) stays
-  stage-iii brief material, and `27C:render-authority-disclosure` grows a host
+  `stage-iii-world-scopes` brief material, and `27C:render-authority-disclosure`
+  grows a host
   coordinate.
 - **Lifecycle events are not a reach-mode** — they are world-mutations that move
   contexts' availability, and there are exactly two primitives: a context **begins**
@@ -361,8 +363,9 @@ be assessable as continuous; the subtleties belong to a later sitting.
 - **Facts carry their context including the incarnation marker**; the controller mints
   incarnation identity (the slot `rul-attribution-is-controller-minted` reserves — this
   plan IS its named re-entry trigger: a second scope becomes representable, so carrying
-  scope becomes checking scope; `WidthOneAttemptScope` goes multi, deliberately, at
-  stage-iii). Crossing stays the kind-owner's `undivided-by-transit-across <axis>` mark
+  scope becomes checking scope; `WidthOneAttemptScope` goes multi, deliberately,
+  at `stage-iii-world-scopes`). Crossing stays the kind-owner's
+  `undivided-by-transit-across <axis>` mark
   — the lifetime axis mints a NEW axis value (`272` §6's "time" row is the Linux
   time-NAMESPACE, pidns's sibling, not a temporal slot; it stays reserved for timens). `an-host-as-adversary`
   honored: availability facts are host-scoped intake, bounded; no host speaks for
@@ -371,7 +374,8 @@ be assessable as continuous; the subtleties belong to a later sitting.
   capability, `kBOOT`) and the quarantined security concerns (cross-host fact custody,
   hostile-host intake; the kSTATE unparking coupling). Orthogonal to the model.
 - **Scope-typing** (the four seam arrivals): a line's execution scope = the world-context
-  its bytes run in. Split-books stands until stage-iii lands scope-entry; oracle-declared
+  its bytes run in. Split-books stands until `stage-iii-world-scopes` lands
+  scope-entry; oracle-declared
   execution scope stays REJECTED (claim authors never relocate someone else's mutations).
   Local-exec: the controller is a context available-at-probe by definition — a supported
   mode falls out of the model rather than being bolted on.
@@ -443,13 +447,16 @@ be assessable as continuous; the subtleties belong to a later sitting.
 
 ## §5 — What this plan subsumes (the anti-piecemeal ledger)
 
-Inherited and landed here: bitem4 (the fence build → stage-ii) · bitem5 (split-family
-coherence detection, aid-plane, sized per `28M:lean-demotion-is-not-deletion` →
-stage-ii) · the withhold-softening (→ stage-i, as true resolution) · the meet-direction
-registry (`28P:tc-meet-direction-registry-not-built` → stage-ii, where the lattice
-refactor has company) · `26K` §0b entire (local-exec, scope/incarnation slot,
-wait-loops, inverse wait → stage-iii) · the wrapped-vouch and whyworld/survival seat
-asymmetries (→ stage-i) · the ship-seam verdict-primacy re-cut (→ stage-0; rulings in
+Inherited and landed here: bitem4 (the fence build → `stage-ii-closure-custody`) ·
+bitem5 (split-family coherence detection, aid-plane, sized per
+`28M:lean-demotion-is-not-deletion` → `stage-ii-closure-custody`) · the
+withhold-softening (→ `stage-i-definition-factoring`, as true resolution) · the
+meet-direction registry (`28P:tc-meet-direction-registry-not-built` →
+`stage-ii-closure-custody`, where the lattice refactor has company) · `26K` §0b
+entire (local-exec, scope/incarnation slot, wait-loops, inverse wait →
+`stage-iii-world-scopes`) · the wrapped-vouch and whyworld/survival seat asymmetries
+(→ `stage-i-definition-factoring`) · the ship-seam verdict-primacy re-cut (→
+`stage-0-ship-seam`; rulings in
 §4) · `res-survival-lanes-still-ship-closure-less` (`cli/CLAUDE.md
 one-helper-index-two-lanes` → a rider on the emission stage's closure machinery) ·
 `res-host-conditional-loading` gains its eventual story
@@ -479,7 +486,7 @@ inherits load-plane certainty (its truths are measured/vouched/claimed, not
 sh-given). The world plane's own precedent is the project's founding one:
 available-expressions/PRE — piecewise truth over program points with kill events
 (README's lazy-code-motion frame) — now implemented first for ordinary running walls by
-the r30 work order `notes/30K`, before stage-iii adds lifecycle events. `30K` additionally
+the r30 work order `notes/30K`, before `stage-iii-world-scopes` adds lifecycle events. `30K` additionally
 preserves `pin-no-outcome-as-generator` by separating a private semantic site-act from the
 output `Disposition`: decisions feed effective reach, rendered outcomes never feed analysis.
 Its human-typed plan-surface rider is permanent here: no generated wall flags,
@@ -494,7 +501,8 @@ conservatively remains a possible mutator downstream.
 - `pinned-definitions-are-the-artifact's-binding`: preserved; plural bodies at distinct
   frames use the already-built hash-munge; never two same-named funcdefs by any route.
 - `an-toctou-window` (welded WONTFIX): reconciled §3 (identified-cause only).
-- `rul-attribution-is-controller-minted`: its re-entry trigger fires at stage-iii by
+- `rul-attribution-is-controller-minted`: its re-entry trigger fires at
+  `stage-iii-world-scopes` by
   design; scope-carrying becomes scope-checking there and not before.
 - `an-reaching-ambient` / `an-written-stale` / `an-wall-topology`: the current
   origin-`Reach` + Query-pristine-bit + post-disposition-wall-walk split is an as-built
@@ -593,8 +601,9 @@ own byte-identity gate.
   progress): the `DefinitionCustody` internal re-key, asymmetric custody closures,
   oracle-side sourcing, cwd-faithful static loading, book visibility without speaker
   minting, and exact guarded-source recognition are built. `plans/30I` remains the
-  runtime-projection authority. Its next fixed seam removes the superseded ambient-
-  dependency refusal and completes ONE load-occurrence account with separate
+  runtime-projection authority. `30I:step-5a-complete-load-occurrence-account`
+  removes the superseded ambient-dependency refusal and completes ONE
+  load-occurrence account with separate
   possible-load / exact-speaker / narrative projections. Then the loading lane STOPS
   for `stage-effective-world-reach`; no bundle code begins first. The closure-keyed
   fence permanence and committee policy remain their separately-ruled consumers — green
@@ -622,7 +631,8 @@ own byte-identity gate.
 - **stage-iii-world-scopes** (P3): the context-slot host×incarnation coordinates;
   availability computation from begin/end descriptions; scope-entry (ssh as entry;
   local-exec as the controller context); the scope types go multi with checking;
-  wait-loop wall-transparency and the inverse wait as derived behavior. This stage IS
+  wait-loop wall-transparency and the inverse wait as derived behavior.
+  `stage-iii-world-scopes` IS
   the former `26K` §0b batch, human-led at its design edges (the §10 authored surface
   must be settled first for lifecycle description). Structure: definite-availability
   mechanics build against §3's domain statement; the authored begin/end surface is
