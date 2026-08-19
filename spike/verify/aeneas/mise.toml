@@ -46,7 +46,7 @@ CARGO_TARGET_DIR = "{{xdg_cache_home}}/dorc-verify-aeneas-target"
 [tasks."aeneas:translate"]
 description = "Regenerate minispec/Generated/ from the real algebra sources. STRICT: charon fails on any construct it cannot model and aeneas aborts on the first error, because a silently-degraded translation makes the Lean look better than the code is. Root wrapper: `mise run verify:translate`, which also materializes the externals and runs the sorry census."
 dir = "{{config_root}}"
-usage = 'arg "<destination>" help="the Generated/ destination; the root task supplies the committed tree or its check scratch"'
+usage = 'arg "<destination>" help="output Generated/ directory"'
 run = [
    "charon cargo --preset=aeneas --error-on-warnings --dest-file generated.llbc",
    "aeneas -backend lean -no-progress-bar -dest {{ usage.destination }} -split-files -gen-lib-entry -abort-on-error generated.llbc",

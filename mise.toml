@@ -372,7 +372,7 @@ run = ["cargo clean", "cargo clippy --workspace --all-targets --quiet -- -D warn
 CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 
 [tasks.check]
-description = "All lint gates (fmt-check, clippy -D warnings, cargo-deny licenses/bans/sources, typos), check-only — pre-commit uses its bounded subset from the same hk.pkl."
+description = "All lint gates; pre-commit uses the bounded subset."
 raw = true
 run = "hk check --all"
 
@@ -409,13 +409,13 @@ run = [
 ]
 
 [tasks."gate:step"]
-description = "Re-run one named hk completion or arc step over all of its relevant paths: `mise run gate:step -- <step>`. Use `hk check --why <step>` for routing detail."
+description = "Run one hk gate step over all matching paths."
 raw = true
 usage = 'arg "step" help="hk step name from the failed gate output"'
 run = "hk check --all --profile full --profile arc --step {{ usage.step }} --no-fail-fast"
 
 [tasks."gate:arc"]
-description = "CONDUCTOR-ONLY law gate: completion on both platforms, then all applicable arc-profile checks and RustSec advisories. Read-only: never promotes, blesses, or publishes generated artifacts."
+description = "CONDUCTOR-ONLY: run completion, arc checks, and RustSec audit."
 raw = true
 run = [
    "mise run both gate:full-quiet",
@@ -470,13 +470,13 @@ raw = true
 run = "hk install --mise"
 
 [tasks.bless]
-description = "ORCHESTRATOR-ONLY golden re-bless: the whole acceptance gate, then a BLESS=1 e2e pass; prints one summary line plus the goldens' diffstat, and the failing step's tail if anything breaks. A trailing case substring SCOPES it — only matching trials are re-blessed, and the order inverts (bless, then gate), because a case named for a sanctioned drift is red until it is blessed. SEVERAL cases at once are spelled as PATHS (`crates/aid/tests/a.loom crates/cli/tests/b.loom`), which the runner resolves to exact trial names; the bare-substring form is libtest's own filter and takes exactly one. EXCLUSIVE — agents share one target/, so never run it while a build-agent is in flight, and inspect the diff case-by-case (bless cannot prove an elision right). When a loom:promote is also due, promote FIRST, then bless."
+description = "ORCHESTRATOR-ONLY: re-bless goldens after the acceptance gate."
 raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless"]
 
 [tasks."bless:dry"]
-description = "bless minus the bless pass: the whole acceptance gate plus its summary, zero golden writes. The only mode a builder may run."
+description = "Builder-safe dry blessing; no golden writes."
 raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
@@ -643,7 +643,7 @@ run = [
 run_windows = "wsl -- mise run verify:translate"
 
 [tasks."verify:translate-check"]
-description = "Read-only strict translation drift check: runs the production strict translator and materializer in controller-owned scratch, then names every changed, missing, or extra generated output. Linux/WSL-only; Windows self-routes through WSL."
+description = "Check strict translation output against committed generated files."
 raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- translate-check"
@@ -674,14 +674,14 @@ raw = true
 run = "elan-init -y --no-modify-path --default-toolchain none"
 
 [tasks."verify:kani"]
-description = "OPT-IN, Linux/WSL only: the exhaustive-bounded-verification lane over the algebra tier. Opens with a toolchain-less `cargo check` of the detached harness crate, which nothing else in the repo compiles — so a core/analysis signature the harnesses did not follow rots loudly and first. Then drives Kani ONE HARNESS AT A TIME under a per-harness wall-clock budget, reaping CBMC between each — never a bare `cargo-kani` battery run, which has taken a 15 GiB VM down. A harness killed at the budget is a FINDING (the formula needs a shape the checker can afford), not something to wait out. Trailing arg selects one harness. Exit 0 all green, 1 a finding, 2 the lane could not run. Windows self-routes through WSL. DORC_KANI_HARNESS_BUDGET_SECS overrides the budget."
+description = "OPT-IN Linux/WSL Kani verification; Windows routes through WSL."
 raw = true
 dir = "spike"
 run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
 run_windows = "wsl -- mise run verify:kani"
 
 [tasks."verify:kani-check"]
-description = "Compile the detached Kani harness crate with the ordinary toolchain, catching source-signature rot without invoking Kani."
+description = "Check the detached Kani harness with the standard toolchain."
 raw = true
 run = "cargo check --manifest-path spike/verify/kani/Cargo.toml"
 
@@ -700,7 +700,7 @@ run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
 run_windows = "wsl -- mise run verify:lean"
 
 [tasks."verify:lean-badges"]
-description = "OPT-IN, Linux/WSL only: recompute Lean-owned badge evidence and compare it with the catalogue. Windows self-routes through WSL."
+description = "Recompute Lean badges and compare them with the catalogue."
 raw = true
 dir = "spike"
 run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- report --with-lean"]

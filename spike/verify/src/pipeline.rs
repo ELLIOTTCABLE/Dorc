@@ -35,10 +35,7 @@ pub struct Materialized {
     pub axioms: usize,
 }
 
-/// Turn a raw aeneas emission under `output_root/minispec/Generated/` into its final shape.
-///
-/// # Errors
-/// When the emission is missing or a file cannot be written.
+/// Materialize Aeneas output beneath `output_root`.
 pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialized, String> {
     let generated = output_root.join("minispec").join("Generated");
     if !generated.is_dir() {
@@ -85,20 +82,12 @@ pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialize
     })
 }
 
-/// Materialize into the committed production paths.
-///
-/// The check lane supplies a separate output root to the same implementation.
-///
-/// # Errors
-/// When the raw emission is missing or a committed output cannot be written.
+/// Materialize committed production paths.
 pub fn materialize_production(repo_root: &Path) -> Result<Materialized, String> {
     materialize(repo_root, repo_root)
 }
 
-/// Compare every generated output without normalizing its names or bytes.
-///
-/// # Errors
-/// When either tree cannot be read.
+/// Compare generated output trees byte-for-byte.
 pub fn compare_outputs(
     committed_root: &Path,
     candidate_root: &Path,

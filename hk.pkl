@@ -61,8 +61,6 @@ local linters = new Mapping<String, Step> {
     }
     ["cargo_clippy"] {
         glob = "spike/**/*.rs"
-        // Whole-workspace Clippy can recompile after one staged Rust edit, so it belongs
-        // to builder completion rather than the bounded pre-commit floor.
         profiles = List("full")
         check = "cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings"
     }
@@ -137,8 +135,6 @@ local corpora = new Mapping<String, Step> {
     }
 }
 
-// Completion and arc checks are deliberately separate from pre-commit: profiles are opt-in,
-// so the existing hook remains its measured staged-path floor.
 local gates = new Mapping<String, Step> {
     ["test-floor"] {
         profiles = List("full")

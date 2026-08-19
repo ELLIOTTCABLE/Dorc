@@ -309,7 +309,6 @@ fn scoped_route_advice(selectors: &[String]) -> String {
     )
 }
 
-/// The count before `passed`, from the directly-run bless pass's test summary.
 fn passed_count(output: &str) -> Option<String> {
     let line = output.lines().rev().find(|line| line.contains(" passed"))?;
     let tokens: Vec<&str> = line.split_whitespace().collect();
