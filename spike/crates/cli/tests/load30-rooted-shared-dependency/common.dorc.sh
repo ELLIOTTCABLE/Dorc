@@ -2,3 +2,5 @@
 sm_common_query() {
    common "$@"
 }
+
+sm_common_loaded='sm.common/v1'

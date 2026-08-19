@@ -1,7 +1,5 @@
 # dorc-lang/v0.2
-if command -v sm_common_query >/dev/null 2>&1; then
-   :
-else
+if [ "${sm_common_loaded-}" != 'sm.common/v1' ]; then
    . "$SM_ORACLE_ROOT/common.dorc.sh"
 fi
 

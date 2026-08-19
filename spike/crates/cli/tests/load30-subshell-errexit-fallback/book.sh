@@ -6,7 +6,7 @@ SM_ORACLE_ROOT=.
 . "$SM_ORACLE_ROOT/base.dorc.sh"
 (
    unset -f sm_pick
-   command -v sm_pick >/dev/null 2>&1 || . "$SM_ORACLE_ROOT/fallback.dorc.sh"
+   [ "${sm_fallback_loaded-}" = 'sm.fallback/v1' ] || . "$SM_ORACLE_ROOT/fallback.dorc.sh"
    sm_pick inside
 )
 sm_pick outside

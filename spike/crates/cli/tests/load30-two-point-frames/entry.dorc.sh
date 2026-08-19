@@ -1,7 +1,5 @@
 # dorc-lang/v0.2
-if command -v sm_pick >/dev/null 2>&1; then
-   :
-else
+if [ "${sm_fallback_loaded-}" != 'sm.fallback/v1' ]; then
    . "$SM_ORACLE_ROOT/fallback.dorc.sh"
 fi
 
