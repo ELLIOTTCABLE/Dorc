@@ -101,7 +101,7 @@ exit 0
 ran: chroot /mnt kp ip_forward 1
 
 -- replay --
-$ dorc --book=book.sh -o chroot.oracle.sh -o kp.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source chroot.oracle.sh --pre-source kp.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

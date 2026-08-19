@@ -116,7 +116,7 @@ exit 0
 
 
 -- replay --
-$ dorc --book=book.sh -o pkgindex-predict.oracle.sh -o pkgindex-verdict.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source pkgindex-predict.oracle.sh --pre-source pkgindex-verdict.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

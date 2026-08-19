@@ -92,7 +92,7 @@ ran: apt-get install -y nginx
 ran: tee /var/log/install.log
 
 -- replay --
-$ dorc --book=book.sh -o package.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source package.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

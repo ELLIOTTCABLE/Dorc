@@ -247,7 +247,7 @@ ran: systemctl is-active -- nginx
 ran: sysctl vm.drop_caches
 
 -- replay --
-$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips < probe-results.txt
+$ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -336,7 +336,7 @@ hork tune --profile web
 sysctl vm.drop_caches
 echo "web1 up"
 
-$ dorc why --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
+$ dorc why --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
 receipt: plan 2026-01-25 02:00:37, host localhost
    book book.sh (digest a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
    oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
@@ -368,7 +368,7 @@ converged
 (Receipt analysis: the run's own records, nothing re-measured. Filtered for presumed
 relevance; `--all` enumerates everything the engine holds.)
 
-$ dorc why 15 --all --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh -o sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
+$ dorc why 15 --all --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
       [ book.sh, participating lines:
    12 | apt-get install -y oldpkg
    14 | hork tune --profile web

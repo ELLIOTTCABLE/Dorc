@@ -168,7 +168,7 @@ exit 0
 
 
 -- replay --
-$ dorc --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -228,7 +228,7 @@ true || :   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; apt-get install -y ng
 # ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
 # systemctl enable nginx   # dorc: elided (already converged / dead branch)
 
-$ dorc why 8 --book=book.sh -o firewall.oracle.sh -o package.oracle.sh -o pkgstate.oracle.sh -o service.oracle.sh --results=probe-results.txt
+$ dorc why 8 --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --results=probe-results.txt
       [ book.sh, participating lines:
    8 | ufw allow 80/tcp
 

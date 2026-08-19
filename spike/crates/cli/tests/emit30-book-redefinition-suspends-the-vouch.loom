@@ -40,7 +40,7 @@ wombat__is_converged() {
 }
 
 -- replay --
-$ dorc --book=book.sh -o wombat.oracle.sh
+$ dorc --book=book.sh --pre-source wombat.oracle.sh
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):

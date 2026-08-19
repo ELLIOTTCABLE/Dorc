@@ -85,7 +85,7 @@ ran: hork provision
 ran: wombat cmp -- a.conf /etc/wombat/a.conf
 
 -- replay --
-$ dorc --book=book.sh -o wombat.oracle.sh < probe-results.txt
+$ dorc --book=book.sh --pre-source wombat.oracle.sh < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
