@@ -1,24 +1,10 @@
-//! The derived-definitions pipeline's non-charon halves.
-//!
-//! `spike/verify/aeneas/mise.toml` owns the shadowing toolchain pin and the two translator
-//! invocations; everything after them lives here, in Rust, because a mise task body carries no
-//! shell syntax (`task-bodies-are-shell-free`) and these steps are file moves, text scans and a
-//! staged build.
-//!
-//! # Why the externals are materialized rather than hand-filled
-//!
-//! aeneas emits `FunsExternal_Template.lean` / `TypesExternal_Template.lean` — the axioms
-//! standing in for std functions it does not model. Copying them VERBATIM is the honest
-//! reading of an unmodelled function, and it is what makes the count of axioms a measurement
-//! rather than a chore. Filling a hole with a hand-written body would be asserting something
-//! about std that nothing checks.
+//! Derived-definitions pipeline.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::unit;
 
-/// Files aeneas writes that this step turns into the committed tree.
 const EXTERNAL_TEMPLATES: [(&str, &str); 2] = [
     ("FunsExternal_Template.lean", "FunsExternal.lean"),
     ("TypesExternal_Template.lean", "TypesExternal.lean"),
@@ -35,7 +21,7 @@ pub struct Materialized {
     pub axioms: usize,
 }
 
-/// Materialize Aeneas output beneath `output_root`.
+/// Materialize under an injected output root.
 pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialized, String> {
     let generated = output_root.join("minispec").join("Generated");
     if !generated.is_dir() {
@@ -46,8 +32,6 @@ pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialize
     }
     let mut written = Vec::new();
 
-    // aeneas writes the lib entry INSIDE `-dest`, while lake wants it one level above the
-    // directory it names. Moving it is the whole reason this step exists as a step.
     let emitted_entry = generated.join("Generated.lean");
     if emitted_entry.is_file() {
         let target = output_root.join("minispec").join("Generated.lean");
@@ -67,9 +51,6 @@ pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialize
         }
     }
 
-    // Recorded HERE because this step is the pipeline's own last act, on the stable toolchain:
-    // the digest is a statement about what this translation read, and nothing else is in a
-    // position to make it truthfully.
     let lock = crate::derivation::compute(source_root)?;
     write(&crate::derivation::path(output_root), &lock)?;
     written.push("spike/verify/aeneas/derivation.lock".to_owned());
@@ -82,12 +63,12 @@ pub fn materialize(source_root: &Path, output_root: &Path) -> Result<Materialize
     })
 }
 
-/// Materialize committed production paths.
+/// Materialize under the committed root.
 pub fn materialize_production(repo_root: &Path) -> Result<Materialized, String> {
     materialize(repo_root, repo_root)
 }
 
-/// Compare generated output trees byte-for-byte.
+/// Strictly compare output trees byte-for-byte.
 pub fn compare_outputs(
     committed_root: &Path,
     candidate_root: &Path,
