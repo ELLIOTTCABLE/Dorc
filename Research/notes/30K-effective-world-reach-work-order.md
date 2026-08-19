@@ -12,8 +12,9 @@
 > No backwards-compatibility obligation exists: obsolete internal variants and walks
 > are deleted rather than adapted.
 >
-> Sequencing: `30I` seam 4 first finishes the one complete static-load-occurrence
-> account and removes the superseded ambient-dependency refusal. This stage then lands
+> Sequencing: `30I:step-5a-complete-load-occurrence-account` first finishes the one
+> complete static-load-occurrence account and removes the superseded
+> ambient-dependency refusal. This conversion then lands
 > before `30I` writes bundle projection code, artifact forms, or final XFAIL/golden
 > promotions. `30I` builders do not absorb this work.
 
@@ -488,23 +489,26 @@ The final plan surface gains no new shell form. Expected behavior changes are or
 `Run -> Guard` and, where a formerly late wall was genuinely absent, `Guard/Run -> Replace`.
 Every such change remains visible in the disposition smoke diff and e2e run set.
 
-## 8. Implementation work order
+## 8. One conversion work order
 
-### Stage 0 - census and red-first specification
+`constraint-one-red-window-no-intermediate-landing` - this is one builder conversion,
+not four implementation phases. The builder may commit incrementally for recoverability,
+but no partial commit is folded, called a completed stage, or handed to another builder.
+`step-1-*` and `step-2-*` are the first hours of the same window; `step-3-*` is the
+atomic red conversion; `step-4-*` is ordinary close. No intermediate human checkpoint
+is intended. Stop only on section 10's actual design/correctness conflicts.
 
-Before conversion:
+1. **`step-1-map-effective-invalidator-ownership`** - enumerate every
+   producer/consumer of `Reach`, `SkipClass::{EstablishAmbient,EstablishWritten,
+   QueryResolvable}`, `invalidators`, `kills`, both wall walks, `WallVerdict`,
+   `SurvivalWitness`, `facts_from_sites` validity, and certifier cleanup. For every
+   invalidator, record its explicit effective owner, including non-leaves. This is a
+   builder scratch census, not a durable deliverable or review gate; unexpected ownerless
+   shapes trigger the named stop condition.
 
-1. Enumerate every producer/consumer of `Reach`, `SkipClass::{EstablishAmbient,
-   EstablishWritten,QueryResolvable}`, `invalidators`, `kills`, wall walks,
-   `WallVerdict`, `SurvivalWitness`, `facts_from_sites` validity, and certifier cleanup.
-2. Enumerate every invalidator's effective owner, including non-leaves. A non-empty census
-   is a gate; source-shape allow-lists are file-local and two-way if typing cannot express it.
-3. Freeze a deterministic decision-state dump over current dispositions, Query validity,
-   wall/survival outcomes, and effective invalidators. Review-only, build-to-kill, following
-   `309`'s Spine migration precedent.
-4. Confirm the two `guard26-*` XFAILs fail for the named reason and the unmodeled control
-   remains green.
-5. Add red-first ownership-seat tests for:
+2. **`step-2-pin-effective-reach-red-first`** - confirm the two `guard26-*`
+   XFAILs fail for the named reason and the unmodeled control remains green, then add
+   focused ownership-seat pins for:
    - modeled decline and modeled divergence -> downstream Guard;
    - flag-off total wall;
    - flag-on disjoint survival and collision -> Guard;
@@ -513,45 +517,36 @@ Before conversion:
    - effective Query validity flips only as walls disappear;
    - replacement render refusal never erases its effect;
    - internal/spliced/redirection effects follow their owner;
-   - provisional rounds cannot write Spine (compile-fail or lexical fence);
+   - provisional rounds cannot write Spine (module privacy or a lexical fence);
    - an effective solve inconsistency takes the named floor.
 
-### Stage 1 - types and certified domain
+3. **`step-3-convert-settlement-and-delete-split-machinery`** - in one knowingly
+   red conversion, add the distinct origin/effective types, closed wall policy,
+   semantic site-act, proof-carrying no-execution entry, explicit ownership, and
+   provisional/settled boundary with their first consumers. Replace
+   `settle_validity_fixpoint` with the grow-only settlement, retaining frozen records,
+   origin probe, erasure provenance, cap-to-origin discipline, and `CertifierTrip`.
+   Move Query validity, effective freshness, guard fallback, and survival recheck into
+   the loop. Delete `wall_walk_total`, `wall_walk_survival`, their `is_mutator` side
+   channel, and any final apply authority still read from origin `Reach::is_pristine`.
+   Rename or reshape `EstablishAmbient`/`EstablishWritten` so their remaining role is
+   unambiguously origin/probe classification. Keep every intermediate product private
+   and output-free. If the domain touches translated algebra files, STOP for the
+   verified-core access rules; the preferred plan-local domain should not require
+   minispec or Kani changes merely by analogy.
 
-Add the distinct origin/effective types, closed wall policy, semantic site-act,
-proof-carrying no-execution entry, explicit ownership, and provisional/settled boundary.
-Implement and unit-test `ReachingWalls` plus its certified solve before changing plan output.
-If the domain touches translated algebra files, STOP for the verified-core access rules;
-the preferred plan-local domain should not require minispec or Kani changes merely by analogy.
+   Re-home `attribute_cascades` in this same conversion: its cause population is no
+   longer only dead-branch erasures. Final attribution comes from effective wall /
+   no-execution proofs. Do not broaden the old function until its name and operands tell
+   the truth. No compatibility wall walk, feature flag, or old/new switch survives.
 
-### Stage 2 - unified settlement
-
-Replace `settle_validity_fixpoint` with the grow-only settlement, retaining frozen records,
-origin probe, erasure provenance, cap-to-origin discipline, and `CertifierTrip`. Move Query
-validity, effective freshness, guard fallback, and survival recheck into the loop. Keep every
-intermediate product private and output-free.
-
-### Stage 3 - delete the split machinery
-
-Delete `wall_walk_total`, `wall_walk_survival`, their `is_mutator` side channel, and any final
-apply authority still read from origin `Reach::is_pristine`. Rename or reshape
-`EstablishAmbient`/`EstablishWritten` so their remaining role is unambiguously origin/probe
-classification; do not leave names that imply they are final apply freshness.
-
-Re-home `attribute_cascades`: its cause population is no longer only dead-branch erasures.
-Final attribution comes from effective wall/no-execution proofs. Do not broaden the old
-function until its name and operands tell the truth.
-
-### Stage 4 - behavior close and cleanup
-
-Promote `guard26-classed-decline-guards-below` and
-`guard26-diverged-wall-guards-below`; retire the defect twin after its negative lesson has an
-ownership-seat test. Run a complete disposition/run-set diff. Every movement outside the
-enumerated effective-wall population is a finding, never refactor churn.
-
-Delete the temporary state dump after review. Update `FORFEITS`, `ANALYZER-NEEDS`, current
-steering law, and `28Q` stage status to the as-built truth. Do not leave a compatibility wall
-walk or an old/new switch.
+4. **`step-4-review-drift-promote-pins-and-close`** - promote
+   `guard26-classed-decline-guards-below` and
+   `guard26-diverged-wall-guards-below`; retire the defect twin after its negative
+   lesson has an ownership-seat test. Run a complete disposition/run-set diff. Every
+   movement outside the enumerated effective-wall population is a finding, never
+   refactor churn. Update `FORFEITS`, `ANALYZER-NEEDS`, current steering law, and
+   `28Q:stage-effective-world-reach` to the as-built truth.
 
 ## 9. Gates and review
 
@@ -565,9 +560,15 @@ Required close evidence:
 - solve-certifier fault injection for effective reach;
 - Spine projection/digest/why agreement;
 - full e2e/loom corpus and `mise run both gate:full-quiet` foreground;
-- `mise run gate:arc` at conductor close, from the populated branch;
-- adversarial review centered on wrong erasure, owner loss, flag-off footprint access,
-  provisional output leakage, and reference-check bypass.
+- the round conductor retains the populated branch evidence needed by the eventual
+  `mise run gate:arc` and round-close review.
+
+`constraint-adversarial-review-belongs-to-round-close` - do not dispatch a dedicated
+adversarial review for 30K. The r30 changes are tightly coupled, and the expensive
+cross-cutting review runs once after the whole round quiesces. During this conversion,
+ordinary builder/conductor review focuses on wrong erasure, owner loss, flag-off
+footprint access, provisional output leakage, and reference-check bypass; it is not a
+separate lane or checkpoint.
 
 No golden bless proves a guard or elision correct. Behavior drift is reviewed from the
 decision/run-set diff first, then blessed only through the sanctioned path.
@@ -578,7 +579,7 @@ Out of scope:
 
 - conditional-tail or generated wall-state plan emission (NACKED);
 - new oracle syntax or metadata;
-- stage-iii lifecycle/context authored surface;
+- `28Q:stage-iii-world-scopes` lifecycle/context authored surface;
 - new Query footprint-sparing authority;
 - changes to coordinate compare, dialect, resolver, or backing semantics;
 - changes to at-most completion speech;
