@@ -150,6 +150,17 @@ pub struct Definition {
     pub name_span: Span,
 }
 
+/// One source the invocation named to load: a pre-source, whose whole top-level program runs
+/// before the book's first line.
+#[derive(Debug, Clone)]
+struct AmbientRoot {
+    /// The canonical key its program is filed under, when the modeled cwd could name one.
+    key: Option<String>,
+    /// Its declarations in file order — the binding this root contributes when no program is filed
+    /// for it, which is every unmarked source and any unit whose path would not canonicalize.
+    defs: Vec<DefId>,
+}
+
 /// Every definition in the analysis unit, plus the load structure over them.
 ///
 /// Built at the cli edge (the only place allowed to read files) and handed in whole, so this
@@ -167,9 +178,9 @@ pub struct DefinitionTable {
     /// (`crate::load::LoadProgram`). A file whose top level is a flat list of declarations is the
     /// degenerate case, and applying it left-to-right reproduces sh's last-wins exactly as before.
     by_path: BTreeMap<String, crate::load::LoadProgram>,
-    /// The ambient prefix: the CLI-named sources' definitions, in command-line then file order
-    /// (`28K` §2 — they load "before line 1").
-    ambient: Vec<DefId>,
+    /// The ambient prefix: the CLI-named sources, in command-line order (`28K` §2 — they load
+    /// "before line 1"; `30I:rul-pre-source-is-dot-prelude` — each one is an ordinary `.`).
+    ambient: Vec<AmbientRoot>,
     /// For a definition sited in the BOOK, the `FuncDef` AST node that writes it. The book's
     /// definitions execute positionally, so the transfer needs to go from "this definition
     /// statement just ran" to "which definition that is".
@@ -208,9 +219,18 @@ impl DefinitionTable {
         }
     }
 
-    /// Append to the ambient prefix (a CLI-named source's definitions, in order).
-    pub fn extend_ambient(&mut self, defs: impl IntoIterator<Item = DefId>) {
-        self.ambient.extend(defs);
+    /// Append a CLI-named source to the ambient prefix, in invocation order.
+    ///
+    /// `path` is the spelling the invocation used; the entry transfer runs the program filed under
+    /// its canonical form, so a pre-source behaves as the `.` it is
+    /// (`30I:rul-pre-source-is-dot-prelude`) — its include guard decides, its own `.` loads, its
+    /// `unset -f` removes. `defs` is the flat declaration list, which is what binds when this unit
+    /// has no program on file (an unmarked source, or a cwd that could name no key).
+    pub fn push_ambient(&mut self, path: &str, defs: Vec<DefId>) {
+        self.ambient.push(AmbientRoot {
+            key: self.cwd.resolve_operand(path),
+            defs,
+        });
     }
 
     /// Bind a BOOK definition to the `FuncDef` AST node that writes it.
@@ -1187,7 +1207,7 @@ pub fn contests(ast: &Ast, cfg: &Cfg, defs: &DefinitionTable, env: &FuncEnv) -> 
     // The ambient prefix loads inside the ENTRY transfer, so no CFG node witnesses it; walk the
     // same ordered list the transfer applies (`28K` §2: CLI files load "before line 1").
     let mut ambient: BTreeMap<&str, DefId> = BTreeMap::new();
-    for &def in &defs.ambient {
+    for &def in defs.ambient.iter().flat_map(|root| &root.defs) {
         let Some(d) = defs.get(def) else { continue };
         if let Some(prior) = ambient.insert(d.name.as_str(), def)
             && proven(&d.name)
@@ -1596,13 +1616,7 @@ fn transfer(
             for name in universe {
                 frame.insert(name.clone(), Flat::Elem(Binding::Undefined));
             }
-            let mut env = EnvStack::Frames(vec![frame]);
-            for &def in &defs.ambient {
-                if let Some(d) = defs.get(def) {
-                    env.bind(&d.name, Flat::Elem(Binding::Defined(def)));
-                }
-            }
-            env
+            run_ambient_prefix(defs, literals, id, EnvStack::Frames(vec![frame]))
         }
         CfgNodeKind::ScopeEnter => incoming.push(),
         CfgNodeKind::ScopeExit => incoming.pop(),
@@ -1621,6 +1635,52 @@ fn transfer(
         CfgNodeKind::Command => command_transfer(defs, literals, id, incoming),
         _ => incoming.clone(),
     }
+}
+
+/// Apply the ambient prefix to the entry state: each CLI-named source in invocation order, as the
+/// ordinary `.` a pre-source is (`30I:rul-pre-source-is-dot-prelude`).
+///
+/// Running the PROGRAM rather than applying a flat declaration list is what makes a pre-sourced
+/// package's include guard decide at all, and what lets its own `.` reach a dependency the
+/// invocation never named. A root with no program on file — an unmarked source, which makes no
+/// dialect claim, or one whose path would not canonicalize — falls back to its declarations, which
+/// is what the whole prefix used to do.
+///
+/// One `locals` map spans the prefix, because a shell's `.` leaves its assignments live for the
+/// next one; `visiting` is per-root, because each is a separate load act.
+fn run_ambient_prefix(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    mut env: EnvStack,
+) -> EnvStack {
+    let mut locals = BTreeMap::new();
+    for root in &defs.ambient {
+        let program = root.key.as_deref().and_then(|key| defs.program_at_key(key));
+        let Some(program) = program else {
+            for &def in &root.defs {
+                if let Some(d) = defs.get(def) {
+                    env.bind(&d.name, Flat::Elem(Binding::Defined(def)));
+                }
+            }
+            continue;
+        };
+        let mut visiting = root.key.iter().cloned().collect();
+        env = run_program(
+            defs,
+            literals,
+            node,
+            program,
+            &env,
+            &mut locals,
+            &mut visiting,
+            // The transfer discards the account, exactly as `command_transfer` does: it is asked
+            // once per worklist iteration, and the settled answer is what a caller may act on.
+            &mut BTreeSet::new(),
+            LOAD_DEPTH_CAP,
+        );
+    }
+    env
 }
 
 /// The definition bound by an in-book `FuncDef` statement.
@@ -2108,7 +2168,7 @@ mod tests {
             .map(|name| add_def(&mut table, 0, name))
             .collect();
         table.set_loadable("lib.sh", flat(ids.clone()));
-        table.extend_ambient(ids.iter().copied());
+        table.push_ambient("ambient.sh", ids.clone());
         let loaded = ids[0];
         for (id, node) in dorc_syntax::parse(book).value.iter() {
             if let NodeKind::FuncDef { name, .. } = &node.kind {
@@ -2249,7 +2309,7 @@ mod tests {
         let mut table = DefinitionTable::default();
         let first = add_def(&mut table, 0, ROLE);
         let second = add_def(&mut table, 0, ROLE);
-        table.extend_ambient([first, second]);
+        table.push_ambient("ambient.sh", vec![first, second]);
         assert!(contests_of(book, &table).is_empty());
     }
 
@@ -2263,7 +2323,7 @@ mod tests {
         let book = "( . ./lib.sh; yum install -y nginx )\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
-        table.extend_ambient([outer]);
+        table.push_ambient("ambient.sh", vec![outer]);
         let inner = add_def(&mut table, 1, ROLE);
         table.set_loadable("lib.sh", flat(vec![inner]));
         assert!(contests_of(book, &table).is_empty());
@@ -2277,7 +2337,7 @@ mod tests {
         let book = ". ./lib.sh\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
-        table.extend_ambient([outer]);
+        table.push_ambient("ambient.sh", vec![outer]);
         let inner = add_def(&mut table, 1, ROLE);
         table.set_loadable("lib.sh", flat(vec![inner]));
         let found = contests_of(book, &table);
@@ -2295,7 +2355,7 @@ mod tests {
         let mut table = DefinitionTable::default();
         let first = add_def(&mut table, 0, ROLE);
         let second = add_def(&mut table, 1, ROLE);
-        table.extend_ambient([first, second]);
+        table.push_ambient("ambient.sh", vec![first, second]);
         let found = contests_of(book, &table);
         assert_eq!(found.len(), 1, "{found:?}");
         assert_eq!((found[0].prior, found[0].shadowing), (first, second));
@@ -2426,7 +2486,7 @@ mod tests {
         let book = "( . ./lib.sh; yum install -y nginx )\nyum install -y curl\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
-        table.extend_ambient([outer]);
+        table.push_ambient("ambient.sh", vec![outer]);
         let inner = add_def(&mut table, 1, ROLE);
         table.set_loadable("lib.sh", flat(vec![inner]));
         let (env, cfg, ast) = solve_positional(book, &table);
@@ -2508,7 +2568,7 @@ mod tests {
         let book = "( . ./lib.sh; yum install -y nginx )\nyum install -y curl\n";
         let mut table = DefinitionTable::default();
         let outer = add_def_spanned(&mut table, 0, ROLE, 10);
-        table.extend_ambient([outer]);
+        table.push_ambient("ambient.sh", vec![outer]);
         let inner = add_def_spanned(&mut table, 1, ROLE, 20);
         table.set_loadable("lib.sh", flat(vec![inner]));
         let (env, cfg, ast) = solve_positional(book, &table);
@@ -2733,7 +2793,7 @@ mod tests {
         let book = "command -v yum__is_converged >/dev/null 2>&1 || . ./lib.sh\n";
         let (mut table, lib) = sourceable(book);
         let ambient = add_def(&mut table, 2, ROLE);
-        table.extend_ambient([ambient]);
+        table.push_ambient("ambient.sh", vec![ambient]);
         let (binding, folds) = folded(book, &table);
         assert_eq!(
             binding,
@@ -2960,7 +3020,7 @@ mod tests {
         let book = "LIB=.\n. \"$LIB/lib.sh\"\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let outer = add_def(&mut table, 0, ROLE);
-        table.extend_ambient([outer]);
+        table.push_ambient("ambient.sh", vec![outer]);
         let inner = add_def(&mut table, 1, ROLE);
         table.set_loadable("./lib.sh", flat(vec![inner]));
         let found = contests_of(book, &table);
@@ -3001,7 +3061,7 @@ mod tests {
         let book = "yum install -y nginx\n";
         let mut table = DefinitionTable::default();
         let second = add_def(&mut table, 1, ROLE);
-        table.extend_ambient([second]);
+        table.push_ambient("ambient.sh", vec![second]);
         let (env, cfg, ast) = solve_positional(book, &table);
         let live = LiveDefinitions::new(&env, &table);
         let site = command_at(&cfg, &ast, book, "yum install -y nginx");
@@ -3287,6 +3347,76 @@ mod tests {
         assert_eq!(
             env.binding_before(cfg.exit(), ROLE),
             Flat::Elem(Binding::Defined(vendored))
+        );
+    }
+
+    /// A PRE-SOURCE IS A `.` (`30I:rul-pre-source-is-dot-prelude`): a source the invocation named
+    /// runs its own top-level program before the book's first line, so its include guard decides
+    /// and its own dependency loads.
+    ///
+    /// Under the flat declaration list this replaced, a CLI-named package's guard was never
+    /// evaluated at all and its guarded dependency bound unconditionally — the same file, read as
+    /// a bag of definitions rather than as the program its author wrote.
+    #[test]
+    fn a_pre_source_runs_its_own_program() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./entry.sh",
+            guarded(ROLE, LoadTarget::literal("./common.sh")),
+        );
+        table.push_ambient("./entry.sh", Vec::new());
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(dependency)),
+            "the prelude's guard answered absent, so its dependency loaded"
+        );
+    }
+
+    /// The prelude is ORDERED, and one `.`'s variables are live for the next — a shell's own
+    /// behaviour, and what lets one pre-source site the next one's dependency.
+    #[test]
+    fn one_pre_source_sites_the_next() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 2, ROLE);
+        table.set_loadable("./vendored/common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./root.sh",
+            LoadProgram::of(vec![LoadStep::Assign {
+                name: "OPS_LIB".to_owned(),
+                value: LoadTarget::literal("./vendored"),
+            }]),
+        );
+        table.set_loadable(
+            "./entry.sh",
+            LoadProgram::of(vec![LoadStep::Control(loads(rooted("/common.sh")))]),
+        );
+        table.push_ambient("./root.sh", Vec::new());
+        table.push_ambient("./entry.sh", Vec::new());
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(dependency))
+        );
+    }
+
+    /// A source with no program on file — an unmarked one, which makes no dialect claim — keeps
+    /// contributing its flat declarations. Nothing about the prelude's richness may cost a plain
+    /// file its binding.
+    #[test]
+    fn a_pre_source_with_no_program_still_binds_its_declarations() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let plain = add_def(&mut table, 0, ROLE);
+        table.push_ambient("./plain.sh", vec![plain]);
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(plain))
         );
     }
 }

@@ -739,7 +739,7 @@ pub fn definition_table(
         // source reached ONLY from a book `.` binds AT that line, and making it ambient would let
         // it license sites above its own load point (`visibility-is-full-positional`).
         if snapshot.is_ambient(idx) {
-            table.extend_ambient(ids);
+            table.push_ambient(path, ids);
         }
     }
     for (id, node) in book.iter() {
