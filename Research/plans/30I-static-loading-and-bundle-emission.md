@@ -27,6 +27,16 @@ measure. Seam 1 fell after the load model settled; seam 2 falls after step 4,
 so that the loader/custody/CLI half and the emission/artifact half each get a
 whole window.
 
+`impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
+correction (2026-08-19): the loading lane's current seam first removes the
+superseded ambient-dependency refusal and extends the ONE loader account to preserve
+every possible resolved load occurrence with locus/context. It then STOPS for
+`notes/30K`'s effective-world-reach kernel stage. Bundle projection, locator
+consumption, artifact forms, and final XFAIL/golden promotion resume only after that
+stage lands. `30K` is not added to a loading builder's remit; the durable `30Ib`
+handoff makes this pause cheap. Ground: final plan dispositions must settle before
+new executable projections and their corpus are built around the old wall walks.
+
 ### Where the build stands
 
 Landed (`ai/r30-static-loading`; as-built map, consumption API and open questions
@@ -51,6 +61,8 @@ locator consumption by a real diagnostic; XFAIL promotion and e2e lowering.
 The current implementation still carries a whole-run refusal for an ambient
 cross-custody dependency. Section 3.4 rules that as drift: retain its
 differentiation as narrative and remove its authority/control-flow consequence.
+The same next seam completes the possible-load occurrence account required by
+step 5; after that commit the lane pauses at `30K` before writing bundle code.
 
 ### Target outcome
 
@@ -86,7 +98,7 @@ than the user explicitly requested.
 
 stage-iii world scopes and `28Q` section 10's authored lifecycle surface;
 blessing-reach elevation and verdict-word enrollment; committee-fence permanence
-and broader sparing composites; modeled-running-wall/guard-tier repair; the
+and broader sparing composites; the
 starter stdlib and its dialect-reach decision; at-most completion speech;
 callback/bare dependency-injection VOUCH COMPOSITION beyond the conservative
 v0 floor; the parked
@@ -96,6 +108,10 @@ Do not opportunistically green their xfails, widen their allow-lists, or fold
 their decisions into a convenient load abstraction. A real prerequisite is a
 blocking finding, not permission to absorb the adjacent arc. The sibling
 dorc-loom work is mechanically independent.
+
+The modeled-running-wall/guard-tier repair is no longer neighboring work to defer:
+it is the mandatory `30K` interlude above. It remains OUT OF SCOPE for every `30I`
+builder and is implemented by its own kernel lane.
 
 ### Work order
 
@@ -149,11 +165,15 @@ Each step unblocks the next.
    form section 2.2 now carries, so the executable specification and the ruling
    agree. That is directed work, not a builder judgment call about the human's
    authored bytes.
-5. **Add one bundle projection**, keyed by static load occurrence, consuming the
-   snapshot and the frame answers, never re-reading a path. First extend the one
+5. **Complete the load-occurrence account, STOP for `30K`, then add one bundle
+   projection**, keyed by static load occurrence, consuming the snapshot and the
+   frame answers, never re-reading a path. First extend the one
    loader account so it preserves every statically possible resolved load
    occurrence, including speculative branches that mint no speaker edge; section
-   6.1 defines the separate projections. Copy authored segments exactly; add only
+   6.1 defines the separate projections. This account plus the section 3.4 drift
+   removal is the current builder's fixed deliverable. Commit and stop; the
+   effective-world-reach stage in `notes/30K` lands next. Only after it is folded:
+   copy authored segments exactly; add only
    necessary generated scaffolding and versioned boundary comments. Preserve
    nested source boundaries as generated files until a different lowering is
    floor-proven - generated loader functions are measured-refuted. Expose the

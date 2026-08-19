@@ -478,7 +478,13 @@ DISCIPLINE, never implementation — the load plane never grows a probe-data inp
 inherits load-plane certainty (its truths are measured/vouched/claimed, not
 sh-given). The world plane's own precedent is the project's founding one:
 available-expressions/PRE — piecewise truth over program points with kill events
-(README's lazy-code-motion frame) — worth handing stage-iii builders by name.
+(README's lazy-code-motion frame) — now implemented first for ordinary running walls by
+the r30 work order `notes/30K`, before stage-iii adds lifecycle events. `30K` additionally
+preserves `pin-no-outcome-as-generator` by separating a private semantic site-act from the
+output `Disposition`: decisions feed effective reach, rendered outcomes never feed analysis.
+Its human-typed plan-surface rider is permanent here: no generated wall flags,
+conditional-tail state, or controller bookkeeping enters reviewed `plan.sh`; a Guard
+conservatively remains a possible mutator downstream.
 
 ## §7 — Constraint reconciliations (against the needs-ledgers and as-built law)
 
@@ -490,6 +496,15 @@ available-expressions/PRE — piecewise truth over program points with kill even
 - `an-toctou-window` (welded WONTFIX): reconciled §3 (identified-cause only).
 - `rul-attribution-is-controller-minted`: its re-entry trigger fires at stage-iii by
   design; scope-carrying becomes scope-checking there and not before.
+- `an-reaching-ambient` / `an-written-stale` / `an-wall-topology`: the current
+  origin-`Reach` + Query-pristine-bit + post-disposition-wall-walk split is an as-built
+  interim, not three mechanisms to extend. `30K` keeps origin reach for probe construction
+  and replaces every apply-time freshness consumer with certified effective-world reach.
+  `plan::wall_walk_total` and `wall_walk_survival` die; no compatibility path remains.
+- `the-fixpoint-owns-the-rounds-and-builds-nothing-else` and `law-spine-outside-the-kernel`:
+  `30K` generalizes W-C's grow-only proof ledger, but provisional decisions cannot write
+  Spine, Plan, render, digest, or whylog. One quiescent certified result writes final
+  dispositions once; Spine itself never feeds the solve.
 - The expense center is stage-i's TOUCH-COUNT (the resolution seats + `build_vouches`'
   map shape), not asymptotics — O(frames) is bounded by env-mutating statements and the
   corpus's common case is one frame. Size this first in the stage-i brief.
@@ -574,19 +589,36 @@ own byte-identity gate.
   `oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`; hash-consing
   skipped, capture-noted, empty population; the wrapped guard's inline
   snapshot blob is the disclosed residue).
-- **stage-ii-closure-custody** (P2): the `DefinitionCustody` internal re-key; the
-  frame-relative, closure-keyed fence (build-as-spiked, UNRATIFIED marker stands until
-  the fence sitting); kind-owner occupancy per closure; bitem5's coherence detection; the
-  meet-direction registry. Gate: single-closure byte-identity + the fence's six stage-E
-  cells re-verified closure-keyed, PLUS the `plans/30I` runtime half: cwd-faithful
-  static loading, book visibility without speaker minting, and the same bundle
-  projection emitted as multipart contracted dependencies or a fully-flattened plan.
-  Its architecture specimens include direct execution, guarded transitive diamonds,
-  and an isolated-cwd artifact. Split discipline: the
-  custody INFRASTRUCTURE (types, provenance, closure computation) is buildable now and
-  license-inert; the POLICY consumers (the fence's permanence and the §9 membership
-  cells) land only with their rulings — green on infrastructure
-  never asserts policy.
+- **stage-ii-closure-custody** (P2, infrastructure LANDED; runtime projection in
+  progress): the `DefinitionCustody` internal re-key, asymmetric custody closures,
+  oracle-side sourcing, cwd-faithful static loading, book visibility without speaker
+  minting, and exact guarded-source recognition are built. `plans/30I` remains the
+  runtime-projection authority. Its next fixed seam removes the superseded ambient-
+  dependency refusal and completes ONE load-occurrence account with separate
+  possible-load / exact-speaker / narrative projections. Then the loading lane STOPS
+  for `stage-effective-world-reach`; no bundle code begins first. The closure-keyed
+  fence permanence and committee policy remain their separately-ruled consumers — green
+  infrastructure never asserts policy.
+- **stage-effective-world-reach** (r30, implementation work order **`notes/30K`**;
+  HUMAN-DIRECTED, unbuilt): replace the split apply-staleness machinery with one
+  certified, disposition-fed world analysis while retaining a distinct origin view for
+  the frozen probe. Required structural outcome: a private semantic site-act and final
+  disposition mint from the same proof; a grow-only rendered-no-execution ledger; a
+  CFG `ReachingWalls` domain; closed honest-vs-risk-accepted wall policy; Query validity,
+  guard fallback, and survival all consume the same reaching wall set; independent
+  sparing re-derivation demotes before effect erasure; only a settled round writes Spine.
+  Delete both wall walks and retire their final-authority use of
+  `EstablishAmbient`/`EstablishWritten`. Guards remain possible mutators; no conditional
+  tail or wall bookkeeping is emitted. Gate: the two `guard26-*` XFAILs promote, the
+  unmodeled control remains green, probe bytes/site IDs stay unchanged, every solve
+  certifies, survival differential remains demote-only, and all behavior drift is
+  disposition/run-set enumerated before blessing.
+- **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`): build the one
+  bundle projection, compose the locator DAG into a real diagnostic, reify multipart /
+  flattened / preserved-tree artifact forms at the Plan/Spine boundary, and only then
+  promote the `load30-*` executable specification. Gate: single-closure byte identity,
+  direct execution, guarded transitive diamonds, isolated-cwd artifacts, and the final
+  effective-world dispositions all agree before the corpus-wide golden sweep.
 - **stage-iii-world-scopes** (P3): the context-slot host×incarnation coordinates;
   availability computation from begin/end descriptions; scope-entry (ssh as entry;
   local-exec as the controller context); the scope types go multi with checking;
@@ -605,10 +637,11 @@ Builder on-ramp (read in order): this document → `28M` §§7–11 → `28K` (e
 record; §10's as-built bitem ledger `28P`) → `27C` → the `spike/CLAUDE.md` invariant
 sections cited in §6/§7 → `notes/300` §2 + `notes/301` (the checker/facade/minispec
 riders) + the
-`verified-core-discipline` skill (loads itself when a builder nears the strict core). Unchanged pending work lives where it lived: `26K` §0a fruit
-arc + §5 sittings queue · the three parked rulings (guard-tier classed-decline ·
-records-8 · D9) in LIVING_STATUS · `tc-inert-mocks-rail-is-dash-shaped` (separate lane) ·
-the loom Windows stack-overflow (separate small fix).
+`verified-core-discipline` skill (loads itself when a builder nears the strict core).
+Unchanged pending work lives where it lived: `26K` §0a fruit arc + §5 sittings queue ·
+the parked records/D9 rulings in LIVING_STATUS · the guard-tier classed-decline is no
+longer parked (implementation target `30K`) · `tc-inert-mocks-rail-is-dash-shaped`
+(separate lane) · the loom Windows stack-overflow (separate small fix).
 
 ## §9 — Open pins and owed rulings (the complete list; nothing else is open here)
 

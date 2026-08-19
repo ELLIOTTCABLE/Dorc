@@ -71,7 +71,9 @@ and carries the license-contamination map.
   r24-era per-landing ledger is `notes/24C`); spike-1 history in `plans/16P`/`16Q`.
 - **The context/kernel unification (frames · entry-closure · context-availability)** —
   **`plans/28Q`** (THE live kernel plan; §9 is its pin ledger) + `notes/28R` (the six-lane
-  review round, folded into the plan 2026-08-13).
+  review round, folded into the plan 2026-08-13) + **`notes/30K`** (the r30
+  implementation work order that replaces origin-Query + post-disposition wall walks
+  with certified apply-effective world reach before stage-iii).
 - **Oracle loading & name-resolution (custody, committee speech, one-name-two-definitions)** —
   `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`;
   same-role-name collisions fail-fast pre-network (the `28Q` §4 rider; priced background
@@ -79,7 +81,9 @@ and carries the license-contamination map.
 - **Static loading & bundle emission (cwd parity, transitive dependencies, plan forms,
   source maps)** — **`plans/30I`** (THE design; one load model feeding analysis,
   explicit bundles, multipart plans, and full flattening; its §13 is the xfail
-  specimen matrix) over the closure build record `notes/30G`.
+  specimen matrix) over the closure build record `notes/30G`; its current implementation
+  pauses after the complete load-occurrence account for `notes/30K`, then resumes bundle
+  and artifact projections.
 - **When convergence vocabulary may license survival** — **`plans/30J`** (THE
   ruled P2 model: one genuine predict qualifies the whole family's verdict/read
   selectors within its speaker closure; implementation waits for the real-oracle

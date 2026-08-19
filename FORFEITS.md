@@ -138,13 +138,16 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner
   factors helpers (walls, never corruption). CAPTURE: the `HelperIndex` extension —
   staged as an emission-stage rider. REVISIT: that stage's fold.
-- **forfeit-guard-tier-classed-decline** — RULE (as-built; the open ruling
-  `fnd-classed-decline-unwalls-guard-tier`): classing an honest decline yields a
-  strictly WORSE plan than shipping no oracle (vouched sites below it lose the guard
-  tier). FORFEITS: the guard tier below any classed decline — punishing exactly the
-  author who classified honestly; an anti-gradual-enhancement inversion. CAPTURE: the
-  licensing-tier repair (widens what guards), deliberately unmade. REVISIT: human
-  ruling, any time; pre-stdlib preferred.
+- **forfeit-guard-tier-classed-decline** — RULE (as-built; design resolved by
+  `30K:target-effective-reach-replaces-walks`): classing an honest decline, or
+  measuring a modeled mutator diverged, yields a strictly WORSE plan than shipping no
+  oracle because the late wall walks demote Replace directly to Run. FORFEITS: the
+  guard tier below every modeled running wall — punishing exactly the author who
+  described it honestly and contradicting USER_STORY's drifted-day plan. CAPTURE:
+  `notes/30K` replaces origin-Query/wall-walk split with certified effective-world
+  reach, promotes both `guard26-*` XFAILs, and deletes the walks; no narrow mint or
+  compatibility path. BACK-OUT: low before `30I` artifact forms and `28Q` stage-iii,
+  high after either accretes on the split. REVISIT: the `30K` implementation fold.
 - **forfeit-errexit-consumed-status** — RULE (as-built, measured 0.00-vs-1.00 elision;
   `24A` §3-R4): bare converged mutators under `set -e` are status-consumed and blocked
   from elision. FORFEITS: elision across strict-mode books — the defensive-author

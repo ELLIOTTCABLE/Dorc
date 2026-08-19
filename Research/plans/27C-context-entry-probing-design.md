@@ -413,22 +413,21 @@ Recorded v1-defer option if even this ceremony is unwanted: honest-walls-for-wor
 register-backed value transport is analytic and stands; world-cell values are captured
 in-context where entered, and otherwise sit behind the same fallback fences.
 
-## §5 — Guards and conditional tails (residue containment)
+## §5 — Guards and readable tails (residue containment)
 
 A wrapped site that cannot elide guards at apply: the entry-composed check invocation
 immediately ahead of the original bytes (which survive verbatim, always), under the
-same dial × vouch license. Residual guarded walls no longer cost the whole tail
-(`27C:route-conditional-tail`): each guarded wall sets a flag iff its fallback body
-actually executed; tail lines conditioned on it keep their probe-time elision license
-along the didn't-act branch (sound: a short-circuited wall ran nothing) and degrade to
-ordinary in-position guards along the fired branch. Zero steady-state check-tax (the
-conditional short-circuits before the check runs). This is the IDENTIFIED-CAUSE side of
-the standing TOCTOU ruling (hork-catching is in); detailed design belongs to the
-placement-spectrum round; render under welded attention law (may-execute lines never
-hidden — at most dimmed, "executes nothing unless line 8 acts"; any fold into the
-non-verbose count is a future human product ruling). The `236b`-alt2 kind
-generation-probes revive as the fired-branch fast path (one bracket read revalidates a
-kind's crossing facts in O(1)).
+same dial × vouch license. A Guard conservatively remains a possible mutator for every
+downstream effective-world consumer; the r30 unification is `30K`. Downstream sites use
+their ordinary readable guard or run form.
+
+`27C:route-conditional-tail` is NACKED (human-typed 2026-08-19): no generated wall
+flags, conditional tail blocks, or controller bookkeeping enters reviewed `plan.sh` to
+recover execution precision. Such machinery spends the user-attention currency the
+whole product exists to save. The probe artifact may privately use complex mechanics;
+the approval surface may not. This is intentionally conservative: a short-circuited
+guard did not mutate, but Dorc pays the resulting check-tax/extra guards rather than
+making the plan harder to review.
 
 ## §6 — Mined idioms: lint-feeders only
 
@@ -461,8 +460,8 @@ wrapper-blindness) · netns not utterable (engine/wrapper/kind tier only).
 ## §7 — Residual holes (who bleeds)
 
 - `27C:hole-static-identity` — non-root, no acquisition: wrapped sites guard at apply
-  instead of eliding at plan. Best-effort tier by ruling; conditional tails +
-  generation-probes contain the drifted-day cost.
+  instead of eliding at plan. Best-effort tier by ruling; ordinary downstream guards
+  contain the drifted-day correctness risk without generated tail machinery.
 - `27C:hole-app-auth` — state behind application-level credentials no OS context
   grants: can't-say forever; authors read on-disk state or decline. No design reaches
   this; none did.
@@ -541,7 +540,7 @@ the §4(a) pure-predicate carry is the opted substrate-fallback mechanism (`27Xf
 Tier-1), its closure pass the spike's to build-and-prove; honest-walls-for-worlds
 remains the degradation if the pass is not yet built · netns
 entry-form details (root-only; `ip netns exec`/`nsenter`; the wrapper-author's seat) ·
-conditional tails' render fold (human product ruling, later) ·
+the guard-cascade check-tax/attention cost (accepted; no generated tail machinery) ·
 `27C:law-perfect-overlap` wants promotion into the standing-rulings surface (human
 act).
 
@@ -601,6 +600,6 @@ STRAWMAN (swappable stubs; conductor's): every spelling and member/flag name —
 `tolerates:`, `__enter`, the dial names, the `user-invariant` token's placement
 details · the sudo siting-discharge spellings (§9: the `-l` gate + same-head
 tripwire) · the lifted-guards-gated-too reading of `--no-probe-escalation` ·
-conditional-tail mechanics and the generation-probe revival · the seams
+generation-probe optimization (probe-private only) · the seams
 (`fs-read-arms`, `containment-jackets`, `no-root-targets-subdial`) · the trial
 prediction.

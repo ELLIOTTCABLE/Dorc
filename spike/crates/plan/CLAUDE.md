@@ -188,10 +188,17 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 - **re-key** — the elision predicate goes per-selector/per-cell at the
   entity-algebra-rebuild; ALL coordinate/selector comparison through core's
   chokepoints, never inline.
-- **conditional-tails** (`27C` §5, block-context) — a guarded wall sets a flag
-  iff its fallback body actually executed; tail lines conditioned on it keep
-  their probe-time elision along the didn't-act branch. Render stays under the
-  attention law (any fold is a future human product ruling).
+- **effective-reach-replaces-wall-walks** (`30K`, HUMAN-DIRECTED) — retain
+  origin classifications for the frozen probe, but final Query validity,
+  freshness, total walls, and footprint survival consume one certified CFG
+  reaching-wall analysis fed by private semantic site-acts. Output
+  `Disposition` never feeds analysis; only a settled round writes Spine. Delete
+  `wall_walk_total`/`wall_walk_survival`; no compatibility path.
+- **no-visible-wall-bookkeeping** (`27C` §5, HUMAN-TYPED 2026-08-19) — Guard is
+  conservatively a possible mutator downstream. Never emit wall flags,
+  conditional-tail blocks, or controller bookkeeping into reviewed `plan.sh` to
+  recover precision; downstream lines use only ordinary guard/run forms. Probe
+  artifacts may use private machinery because they are not the approval surface.
 - **wire-records** — probe results move to the `262` §2 records lane at
   block-rebuild (partial deriv-family ⇒ wall-total; additive keys).
 

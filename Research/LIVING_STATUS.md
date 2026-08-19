@@ -48,6 +48,24 @@ locus/context, then derive separate possible-load (bundle), exact-speaker
 edge set omits undecided fallback branches and a target-pair set loses occurrence
 identity (`30Ib` §15).
 
+**[TYPED 2026-08-19] The modeled-running-wall repair is UNIFICATION NOW, not a
+narrow guard mint and not post-r30 debt.** Implementation work order
+**`notes/30K`** lives under `28Q`: retain origin reach for the one frozen probe;
+replace Query-pristine + `wall_walk_total` + `wall_walk_survival` with one
+certified apply-effective `ReachingWalls` analysis fed by private semantic site
+acts; only a settled round writes Spine. Guards remain possible mutators. The
+reviewed plan may gain ordinary guards but NEVER generated wall flags,
+conditional-tail state, or other visible bookkeeping. No compatibility copy of
+the walks survives.
+
+**Sequence is fixed:** finish the current `30I` seam 4 only (remove exit-16 drift
+and complete the possible-load occurrence account), then PAUSE loading for `30K`.
+After the kernel stage lands, resume `30I` bundle/locator work, then artifact forms
+and final XFAIL/golden promotion. This places effective-world reach before both the
+new Plan/Spine artifact boundary and `28Q` stage-iii lifecycle/availability work,
+without reopening definition factoring, verdict primacy, snapshot emission,
+Spine, or custody.
+
 **Family vocabulary qualification is direction-closed, implementation deferred**
 (`plans/30J`, human-acked 2026-08-19): one genuine predict qualifies the whole
 family's assertion/refutation/read vocabulary within its speaker closure. The former
