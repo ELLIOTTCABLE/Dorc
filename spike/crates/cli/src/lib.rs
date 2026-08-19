@@ -287,7 +287,9 @@ pub struct Args {
     /// `--oracle-dir DIR` (ack-6): pre-source every `*.oracle.sh` in DIR (glob-sorted,
     /// deterministic), repeatable — the bulk form.
     pub oracle_dirs: Vec<String>,
-    /// `--results FILE` (flow pick): read the probe results from FILE instead of the default stdin.
+    /// `--results FILE`: read the probe results from FILE; `--results -` reads them from stdin.
+    /// Absent, the run measures NOTHING and every site runs -- no flag acquires stdin implicitly
+    /// (`30I:owed-no-flag-defaults-to-stdin`).
     pub results: Option<String>,
     /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
     /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
@@ -354,7 +356,8 @@ pub struct Args {
     /// an ssh destination — an alias from the user's own ssh config is first-class, and Dorc
     /// never parses it (`260` §2).
     pub host: Option<String>,
-    /// `--plan PATH`: the already-rendered artifact `apply --host` ships. Default: stdin.
+    /// `--plan PATH`: the already-rendered artifact `apply --host` ships; `-` names stdin.
+    /// Required for that mode -- there is no default (`30I:owed-no-flag-defaults-to-stdin`).
     ///
     /// Deliberately not the book positional. A remote apply consumes a PLAN the user has already
     /// read and consented to; letting it take a book would put build-and-apply in one breath,
@@ -407,22 +410,19 @@ const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
     last || (matches!(mode, Mode::Why) && !has_results)
 }
 
-/// Every claimant this invocation puts on stdin, in argv-then-lane order
+/// Every claimant this invocation puts on stdin, in argv order
 /// (`30I` §2.5: stdin is a collapsed single resource).
 ///
-/// A `-` in filename position is an EXPLICIT claim
-/// (`30I:rul-dash-is-stdin-in-any-filename-position`); the records lane and `apply --host`'s
-/// artifact lane still claim it by DEFAULT, which is why they are listed here rather than treated
-/// as a fallback that quietly loses. Naming them is what lets the refusal say what the other
-/// claimant was.
+/// EVERY claim is explicit, because `-` in filename position is the only way to acquire stdin
+/// (`30I:rul-dash-is-stdin-in-any-filename-position` · `owed-no-flag-defaults-to-stdin`). The
+/// records lane and `apply --host`'s artifact lane used to take it by DEFAULT and were declared
+/// here so that a refusal could at least name them; retiring those defaults is what this list now
+/// records, and it is why the mode, the receipt posture and the host no longer reach this seat.
 fn stdin_claimants(
     book: Option<&str>,
     pre_sources: &[String],
     results: Option<&str>,
     plan: Option<&str>,
-    mode: Mode,
-    last: bool,
-    has_host: bool,
 ) -> Vec<&'static str> {
     let mut claims = Vec::new();
     if book == Some("-") {
@@ -434,20 +434,8 @@ fn stdin_claimants(
     if results == Some("-") {
         claims.push("--results");
     }
-    let ships_a_rendered_plan = matches!(mode, Mode::Apply) && has_host;
-    if ships_a_rendered_plan {
-        // The artifact lane: named or defaulted, `apply --host` spends stdin on the plan it ships.
-        // `owed-apply-takes-stdin-only-by-dash` would make the default explicit; until it is typed,
-        // the default still claims and is declared here rather than winning silently.
-        if plan.is_none() || plan == Some("-") {
-            claims.push("--plan");
-        }
-    } else if results.is_none()
-        && !has_host
-        && !matches!(mode, Mode::Probe)
-        && !reads_the_receipt(mode, last, false)
-    {
-        claims.push("the probe records");
+    if plan == Some("-") {
+        claims.push("--plan");
     }
     claims
 }
@@ -762,9 +750,6 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         &pre_sources,
         results.as_deref(),
         plan.as_deref(),
-        mode,
-        last,
-        host.is_some(),
     )[..]
     {
         return Err(Diag::new_spanless_site(DiagCode::CliStdinClaimedTwice(
@@ -787,6 +772,17 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             dorc_aid::diag::CliFlagRequiresMode {
                 flag: "--host",
                 mode: "dorc plan or dorc apply",
+            },
+        )));
+    }
+    // `owed-no-flag-defaults-to-stdin`: the artifact lane no longer falls back to stdin, so a
+    // remote apply must NAME what it ships -- a path, or `-` for stdin. Refusing here is what
+    // keeps "no flag acquires stdin implicitly" a rule rather than a preference.
+    if ships_a_rendered_plan && plan.is_none() {
+        return Err(Diag::new_spanless_site(DiagCode::CliModeNeedsFlag(
+            dorc_aid::diag::CliModeNeedsFlag {
+                mode: "dorc apply --host",
+                flag: "--plan",
             },
         )));
     }
@@ -1715,18 +1711,50 @@ mod tests {
             refusal(&["probe", "-", "--pre-source", "-"]),
             "cli-stdin-claimed-twice"
         );
-        assert_eq!(refusal(&["plan", "-"]), "cli-stdin-claimed-twice");
         assert_eq!(
-            analyzed_args(&["plan", "-", "--results", "r.txt"])
-                .book
-                .as_deref(),
+            refusal(&["plan", "-", "--results", "-"]),
+            "cli-stdin-claimed-twice"
+        );
+        assert_eq!(
+            analyzed_args(&["plan", "-"]).book.as_deref(),
             Some("-"),
-            "naming the records lane a file frees the stream for the book"
+            "THE PAYOFF of `owed-no-flag-defaults-to-stdin`: a `-` book no longer has to name \
+             `--results FILE` beside it to free a stream nothing else asked for"
         );
         assert_eq!(
             analyzed_args(&["probe", "-"]).book.as_deref(),
             Some("-"),
             "and probe never wanted the stream at all"
+        );
+    }
+
+    /// `owed-no-flag-defaults-to-stdin` from the other side: with no `-` anywhere, NOTHING claims
+    /// stdin -- which is what makes `-` its only claimant rather than its loudest one.
+    #[test]
+    fn no_flag_acquires_stdin_implicitly() {
+        assert!(analyzed_args(&["plan", "book.sh"]).results.is_none());
+        assert_eq!(
+            analyzed_args(&["plan", "book.sh", "--results", "-"])
+                .results
+                .as_deref(),
+            Some("-"),
+            "the records lane takes stdin only when told to"
+        );
+    }
+
+    /// The artifact lane's half: `apply --host` used to fall back to stdin, so it could be spelled
+    /// with no input at all. Now it must NAME one, and the refusal says which flag is missing.
+    #[test]
+    fn a_remote_apply_must_name_its_artifact() {
+        assert_eq!(
+            refusal(&["apply", "--host", "web1.example.net"]),
+            "cli-mode-needs-flag"
+        );
+        assert_eq!(
+            analyzed_args(&["apply", "--host", "web1.example.net", "--plan", "-"])
+                .plan
+                .as_deref(),
+            Some("-")
         );
     }
 }

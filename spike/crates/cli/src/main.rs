@@ -1562,8 +1562,9 @@ fn run(
     };
 
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
-    // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
-    // the default stdin (the harness pipes them in).
+    // when run remotely (the round-trip's return channel). From `--results FILE`, or from stdin
+    // when `--results -` names it; UNNAMED is no records at all, never a silent stdin read
+    // (`30I:owed-no-flag-defaults-to-stdin`).
     let run_sources = dorc_cli::results::RunSources {
         book_name,
         book: &book_src,
@@ -1597,6 +1598,11 @@ fn run(
                     std::io::Cursor::new(captured),
                     dorc_plan::records::HostEvidenceLimits::spike_default(),
                 )
+            } else if let Some("-") = args.results.as_deref() {
+                dorc_plan::records::read_host_evidence(
+                    std::io::stdin(),
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                )
             } else if let Some(path) = &args.results {
                 let file = std::fs::File::open(path)
                     .map_err(|e| humane_read_error("results", path, &e))?;
@@ -1605,10 +1611,10 @@ fn run(
                     dorc_plan::records::HostEvidenceLimits::spike_default(),
                 )
             } else {
-                dorc_plan::records::read_host_evidence(
-                    std::io::stdin(),
-                    dorc_plan::records::HostEvidenceLimits::spike_default(),
-                )
+                // `owed-no-flag-defaults-to-stdin`: unnamed records are NO records, never a silent
+                // stdin read. Nothing was measured, so every site runs -- the honest floor, and the
+                // same answer an empty stream already gave.
+                dorc_plan::records::Admission::NoObservation
             };
             let admitted = match evidence {
                 dorc_plan::records::Admission::Admitted(bytes) => {
@@ -3944,13 +3950,25 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
     reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
 )]
 fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
-    let artifact = if let Some(path) = args.plan.as_deref() {
-        std::fs::read(path).map_err(|e| humane_read_error("plan", path, &e))?
-    } else {
-        let mut bytes = Vec::new();
-        std::io::Read::read_to_end(&mut std::io::stdin(), &mut bytes)
-            .map_err(|e| humane_read_error("plan", "<stdin>", &e))?;
-        bytes
+    // `owed-no-flag-defaults-to-stdin`: the artifact is NAMED or it is nothing. `-` is stdin like
+    // any other filename position; absent is refused by the parser, so the `None` arm here is
+    // unreachable and says so rather than quietly re-acquiring the stream.
+    let artifact = match args.plan.as_deref() {
+        Some("-") => {
+            let mut bytes = Vec::new();
+            std::io::Read::read_to_end(&mut std::io::stdin(), &mut bytes)
+                .map_err(|e| humane_read_error("plan", "<stdin>", &e))?;
+            bytes
+        }
+        Some(path) => std::fs::read(path).map_err(|e| humane_read_error("plan", path, &e))?,
+        None => {
+            return Err(Diag::new_spanless_site(DiagCode::CliModeNeedsFlag(
+                dorc_aid::diag::CliModeNeedsFlag {
+                    mode: "dorc apply --host",
+                    flag: "--plan",
+                },
+            )));
+        }
     };
     let destination =
         dorc_transport::HostId::new(host).map_err(|_| transport_edge::host_rejected(host))?;
