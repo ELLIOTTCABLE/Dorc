@@ -197,6 +197,10 @@ pub enum DiagCode {
     /// refuse rather than dedup). Spanned at the later declaration.
     HelperDeclarationContested(HelperDeclarationContested),
     VouchedCompositionNotPresent(VouchedCompositionNotPresent),
+    /// A role definition reaches a name whose live declaration sits outside its custody with no
+    /// authorship act naming it — `30I` §3.4's `dependency-merely-happened-to-be-live`. Refused
+    /// whole-run, pre-network (`30I:rul-unannounced-cross-custody-fails-before-network`).
+    UnannouncedCrossCustodyCall(UnannouncedCrossCustodyCall),
 
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
@@ -436,6 +440,7 @@ impl DiagCode {
             DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
             DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
             DiagCode::VouchedCompositionNotPresent(_) => "vouched-composition-not-present",
+            DiagCode::UnannouncedCrossCustodyCall(_) => "unannounced-cross-custody-call",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1211,6 +1216,24 @@ pub struct HelperDeclarationContested {
     pub name: String,
     /// Where the EARLIER declaration was authored, `file:line`-shaped (`{prior}`).
     pub prior: String,
+}
+
+/// Payload of [`DiagCode::UnannouncedCrossCustodyCall`] (TEMPLATIZED): the cross-custody
+/// name a role definition calls with no authorship act naming it, and where the declaration a
+/// shell would bind is authored.
+///
+/// Spanned at the CALLING definition, because the author who can repair it is the one who wrote
+/// the call — by sourcing the dependency, guarding it with its package sentinel, routing through
+/// `command` when the external tool was meant, or renaming. `30I` §3.4 keeps this apart from
+/// the two announced cases on purpose: the engine cannot distinguish an intended dependency
+/// injection from an accidental function shadow, so it refuses rather than choosing between two
+/// humans' meanings.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnannouncedCrossCustodyCall {
+    /// The name whose live declaration sits outside the calling definition's custody (`{name}`).
+    pub name: String,
+    /// Where that declaration is authored, `file:line`-shaped (`{live}`).
+    pub live: String,
 }
 
 /// Payload of [`DiagCode::VouchedCompositionNotPresent`] (TEMPLATIZED): the reached name whose
@@ -2507,6 +2530,14 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // ERROR with a DENY floor: this is the one composition world the engine cannot describe,
+        // so it refuses the whole run pre-network rather than shipping a plan built on a guess
+        // (`30I:rul-unannounced-cross-custody-fails-before-network`).
+        DiagCode::UnannouncedCrossCustodyCall(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         // WARNING on the same footing: the license is withheld, the site runs, and the plan is safe.
         // What the reader loses is value, and what they need is to know which composition to restore.
         DiagCode::VouchedCompositionNotPresent(_) => CodeSpec {
@@ -3392,6 +3423,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::HelperDeclarationContested(HelperDeclarationContested { name, prior }) => {
             vec![ours("name", name.clone()), ours("prior", prior.clone())]
+        }
+        DiagCode::UnannouncedCrossCustodyCall(UnannouncedCrossCustodyCall { name, live }) => {
+            vec![ours("name", name.clone()), ours("live", live.clone())]
         }
         DiagCode::VouchedCompositionNotPresent(VouchedCompositionNotPresent { name, reason }) => {
             vec![

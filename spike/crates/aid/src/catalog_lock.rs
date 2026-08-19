@@ -959,4 +959,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "unannounced-cross-custody-call",
+        when_fires: "a role definition in a loaded oracle calls a name whose live declaration sits in a source its own file never sourced, guarded, or routed through `command`. cli/custody.rs unannounced_cross_custody, over every role member of every contract-signing source. {name} is the call; {live} is where the declaration a shell would bind is authored.",
+        why: "30I:rul-unannounced-cross-custody-fails-before-network — co-loading files on one command line is ingestion and composes no custody, so the reach lands in an utterance this author never made. Dorc cannot tell an intended dependency injection from an accidental function shadow, and choosing either way blames somebody for a judgment they never selected, so v0 refuses the whole run before any host is contacted and before any mutation-authorizing plan exists.",
+        params: &[],
+        example: "[unwritten: unannounced-cross-custody-call]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
