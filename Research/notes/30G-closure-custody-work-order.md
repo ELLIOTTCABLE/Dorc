@@ -203,14 +203,13 @@ land AFTER it (the human's lean: pin the future, never pin the hole).
    Single-closure world (today's whole corpus) stays byte-identical: with no oracle-side `.`,
    `custody(F) = {F}` and the predicate is the phase-1 one, term for term.
 
-6. **`b6-blessing-keying-family-rooted`** — NOT BUILT, and correctly so. The keying is acked, but
-   the thing it would key does not exist: `dorc_oracle::build_dialect` mints from predict-derived
-   cells through a whole-unit `dialect_minting_source` fold and has no reachability or blessing
-   notion at all. The blessing mechanism itself is `28Q` §9 pin 13
-   `pin-blessing-reach-elevation` — UNRULED, "one typed line owed" — and it interacts with the
-   verdict-word enrollment question that is out of this lane's scope. Building a key for an absent
-   lock is the multi-phasic-scaffolding pattern the project's own law warns against; the keying
-   lands with its consumer.
+6. **`b6-blessing-keying-family-rooted`** — NOT BUILT, and correctly so. The design is now ruled
+   by `plans/30J`: one genuine predict qualifies the whole family's verdict/read vocabulary within
+   its speaker closure, and implementation waits until the real-oracle boundary. The thing it would
+   key still does not exist: `dorc_oracle::build_dialect` mints from predict-derived cells through a
+   whole-unit `dialect_minting_source` fold and has no qualification consumer. Building a key for
+   an absent lock is the multi-phasic-scaffolding pattern the project's own law warns against; the
+   key lands with its consumer.
 
 7. **`b7-repin-the-discarded-package`** — `pin28-helper-package-entrypoints-discarded.loom` re-pins
    via a thin entrypoints ORACLE that SOURCES the helpers (the spelling the ruling leaves); the

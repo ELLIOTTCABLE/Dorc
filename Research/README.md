@@ -80,6 +80,10 @@ and carries the license-contamination map.
   source maps)** — **`plans/30I`** (THE design; one load model feeding analysis,
   explicit bundles, multipart plans, and full flattening; its §13 is the xfail
   specimen matrix) over the closure build record `notes/30G`.
+- **When convergence vocabulary may license survival** — **`plans/30J`** (THE
+  ruled P2 model: one genuine predict qualifies the whole family's verdict/read
+  selectors within its speaker closure; implementation waits for the real-oracle
+  boundary).
 - **Correctness-tooling (checker triad · Lean mini-model · Aeneas)** — **`notes/28T`** (the
   adoption plan); evidence base `.claude/research/refinement-types-industrial-cost/`; the two
   proof spikes live on `ai/research-{lean-sparing,aeneas}-spike` (disposition pending).

@@ -91,12 +91,6 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   composite-license admissibility ruling (the fence sitting, unscheduled). BACK-OUT:
   low pre-publication (`rul-strawman-formats-no-compat`); med after real oracles
   publish. REVISIT: the fence sitting; field evidence.
-- **forfeit-verdict-word-exclusion** — RULE (`28M` §11, keep-for-now): verdict-minted
-  words never enroll in the sparing dialect. FORFEITS: selector-granular sparing for
-  multi-arm verdict-only families (the stage-4½ hill — the greenest real authoring
-  population). CAPTURE: lift, or reach-keyed enrollment (`28Q` §9
-  `pin-blessing-reach-elevation`, under active sitting). REVISIT: the spike-end
-  fires-often × bites-rarely instrument.
 - **forfeit-command-v-poison-wall** — RULE (as-built; `28P`): a polyfill guard's own
   `command -v` line is an unmodeled running command ⇒ walls; the delivered polyfill
   cell guards instead of eliding. FORFEITS: elision in every polyfilled book.

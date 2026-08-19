@@ -40,6 +40,13 @@ The 2026-08-17 HUMAN QUEUE below is superseded for items 2 and 3: the book-side
 artifact and path-resolution questions are direction-closed by `30I`. Every other
 queue item remains. The sibling dorc-loom work on `ai/main` is independent.
 
+**Family vocabulary qualification is direction-closed, implementation deferred**
+(`plans/30J`, human-acked 2026-08-19): one genuine predict qualifies the whole
+family's assertion/refutation/read vocabulary within its speaker closure. The former
+`28Q:pin-blessing-reach-elevation` and verdict-word forfeit are closed. This does NOT
+join the current `30I` lane; it must land before the starter stdlib, a real survival-
+authoring field trial, or third-party oracle publication, whichever comes first.
+
 ## CURRENT STATE (2026-08-17 late — THE IMPLEMENTATION PUSH IS FOLDED)
 
 **Everything below this block is FOLDED at the arc's final tip.** Six lanes landed and
@@ -357,8 +364,8 @@ exception + winner-shifting rider, §2's closure-rooting rule, the gate rebuild
 availability-domain statement + host carves, and the new
 **stage-emission-snapshot-transplant** between i and ii (the `28R:§snapshot` rulings).
 §9 grew five slugged pins: `pin-two-position-sparing` is ACKED extremely-soft (the
-collide floor; forfeit-logged) · `pin-blessing-reach-elevation` is under active sitting
-(the reach-keyed-enrollment exploration) · `pin-closure-membership-and-diamond`'s
+collide floor; forfeit-logged) · vocabulary qualification is now ruled by `plans/30J` ·
+`pin-closure-membership-and-diamond`'s
 diamond half is mechanically acked (no global infectiousness rule, human skepticism
 recorded). Root **`FORFEITS.md`** minted 2026-08-13 (human-directed): the register of
 deliberately-forfeited capturable value (⊤-narrowing TODOs) — add a row whenever a

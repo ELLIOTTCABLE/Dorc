@@ -233,22 +233,16 @@ Re-keyed seats:
   (version-skewed vendored copies refuse rather than dedup — the bitem1 rider restated
   closure-relative).
 
-**`rul-blessing-flows-from-best-caller` [TYPED substance]** — custody and GRADE are
-different relations and flow in different directions. Custody: the speaker is the
-closure; helpers are subordinate for fence/attribution purposes. Grade
-(trustworthiness-for-purpose): INFECTIOUS, outward from the blessed use — `predict()` and
-`is_converged()` carry mildly-opposite care-leans (description-tier lexical discipline vs
-judgment-tier proxy-checking; the ground for `28M` §11's verdict-word enrollment
-exclusion), and a helper that a family's `predict()` ever reaches transitively was
-demonstrably built under description-tier care — so its gen-marks carry predict-tier
-vocab-minting rights EVEN when invoked from `is_converged()`. The exclusion is rescinded
-for blessed TEXT, never for a blessed call-site; elevation flows from the best caller.
-Consequence: the keep-the-exclusion lean gets cheaper (multi-arm verdict-only authors
-factor describing lines into helpers reached by one thin predict; the stage-4½ hill
-flattens). **Open pin `pin-blessing-keying`:** family-rooted-within-the-closure
-(reachable from THIS family's predict members; conductor lean) vs closure-global
-(`ack-shared-bytes-transitive-permission` reads closure-rooted). One line of ruling; only
-bites when one closure hosts families of divergent care.
+**`rul-predict-authorship-qualifies-family-vocabulary` [TYPED/ACKED 2026-08-19]** —
+custody and qualification are different relations. Custody names the speaker closure;
+qualification is family-rooted within it. One admitted, somewhere-live, genuinely
+modeling `family__predict` qualifies the WHOLE family's assertion, refutation, and read
+selector vocabulary, including custody-valid helpers and unrelated verdict branches.
+Qualification is deliberately NOT call-path- or branch-relative: it is a soft
+authorship-attention gate, not a proof that predict modeled each judgment. A verdict-only
+family's marks still key facts and widen backings but remain conservative for
+selector-distinct survival; consequential denial mints counterfactual aid. Full design,
+UX pricing, and deferred build boundary: `plans/30J`.
 
 Boundaries: the closure is identity/attribution keying ONLY — never separation, never
 trust-widening (keyed-not-partitioned stands); `AID:law-lineno-identity` survives
@@ -386,8 +380,8 @@ be assessable as continuous; the subtleties belong to a later sitting.
 
 ## §4 — Rulings banked (this plan's ack-ledger; grades exact)
 
-- **`rul-blessing-flows-from-best-caller`** [TYPED substance] — §2. Open:
-  `pin-blessing-keying`.
+- **`rul-predict-authorship-qualifies-family-vocabulary`** [TYPED/ACKED
+  2026-08-19] — §2; full ruling and deferred implementation boundary: `plans/30J`.
 - **`rul-command-v-is-a-stdlib-oracle`** [ACKED] — no engine blessing beyond the one
   narrow, referent-aware, load-plane capability ("do not analyze `command -v
   <unit-defined-fn>` as a PATH question"; the decidable-set v0 contract, unchanged) plus
@@ -582,8 +576,7 @@ own byte-identity gate.
   snapshot blob is the disclosed residue).
 - **stage-ii-closure-custody** (P2): the `DefinitionCustody` internal re-key; the
   frame-relative, closure-keyed fence (build-as-spiked, UNRATIFIED marker stands until
-  the fence sitting); kind-owner occupancy per closure; blessing-reachability for
-  vocab-minting (pending `pin-blessing-keying`); bitem5's coherence detection; the
+  the fence sitting); kind-owner occupancy per closure; bitem5's coherence detection; the
   meet-direction registry. Gate: single-closure byte-identity + the fence's six stage-E
   cells re-verified closure-keyed, PLUS the `plans/30I` runtime half: cwd-faithful
   static loading, book visibility without speaker minting, and the same bundle
@@ -591,8 +584,8 @@ own byte-identity gate.
   Its architecture specimens include direct execution, guarded transitive diamonds,
   and an isolated-cwd artifact. Split discipline: the
   custody INFRASTRUCTURE (types, provenance, closure computation) is buildable now and
-  license-inert; the POLICY consumers (the fence's permanence, `pin-blessing-keying`,
-  the §9 membership cells) land only with their rulings — green on infrastructure
+  license-inert; the POLICY consumers (the fence's permanence and the §9 membership
+  cells) land only with their rulings — green on infrastructure
   never asserts policy.
 - **stage-iii-world-scopes** (P3): the context-slot host×incarnation coordinates;
   availability computation from begin/end descriptions; scope-entry (ssh as entry;
@@ -619,7 +612,6 @@ the loom Windows stack-overflow (separate small fix).
 
 ## §9 — Open pins and owed rulings (the complete list; nothing else is open here)
 
-1. `pin-blessing-keying` — family-rooted vs closure-global (§2; one line).
 2. `res-dot-blessing-is-engine-side` — the `.`-of-proven-load-inert blessing (§2;
    human-owned; gates P2's book-side payoff).
 3. The stdlib `command` oracle — authoring rides the stdlib revival (which remains
@@ -660,12 +652,6 @@ the loom Windows stack-overflow (separate small fix).
     a deliberate value-forfeit, logged
     (`FORFEITS.md:forfeit-two-position-sparing-collide`); the capture path stays live
     and the wariness is the point. Lands first in `28T`'s sparing mini-model.
-13. `pin-blessing-reach-elevation` — `rul-blessing-flows-from-best-caller` × the `28M` §11 keep-verdict: the
-    reachability-elevation tension (`28R:adj-blessing-vs-keep-verdict`: enrollment
-    becomes refactor-sensitive call-graph topology; the reverse-flow cell sits inside
-    one closure); one typed line owed (re-affirm knowingly · fold into the spike-end
-    instrument · key elevation to marks-reached-from-predict). Bites at stage-ii
-    vocab-minting, not before.
 14. `pin-emission-planner-universal` [human-ruled DIRECTION, 2026-08-16; build
     unscheduled] — ONE abstract emission planner representing the sh truths
     (definition visibility · death-at-paren · errexit-exemption of the `||`-left),
