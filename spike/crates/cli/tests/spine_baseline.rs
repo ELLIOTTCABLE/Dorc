@@ -132,7 +132,7 @@ fn oracle_args(dir: &Path) -> Vec<String> {
     oracles.sort();
     oracles
         .iter()
-        .flat_map(|path| ["-o".to_owned(), path.display().to_string()])
+        .flat_map(|path| ["--pre-source".to_owned(), path.display().to_string()])
         .collect()
 }
 

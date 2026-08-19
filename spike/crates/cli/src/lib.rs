@@ -49,7 +49,7 @@ pub type InvocationError = Diag;
 /// (`289:rul-arrangement-home-is-registry-plus-transcripts`); [`usage_text`] renders it.
 pub const USAGE_ARRANGEMENT: &str = "cli-usage-synopsis";
 
-/// The arrangement slug of the long help page `--help`/`-h` prints
+/// The arrangement slug of the long help page `--help` prints
 /// (`288:rul-help-text-is-loomable`). Its defining loom drives `$ dorc --help` and its
 /// transcript IS the editing surface for the page's prose.
 pub const HELP_ARRANGEMENT: &str = "cli-help-page";
@@ -173,7 +173,7 @@ fn usage_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
     why_parts(vec![registry_paragraph(ctx, USAGE_ARRANGEMENT)], 0)
 }
 
-/// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to STDOUT
+/// The long help (ack-1 + the cheap help-is-success item): `--help` prints this to STDOUT
 /// and exits 0 (a help request is a success, not a usage error).
 #[must_use]
 pub fn help_text(ctx: &RenderCtx<'_>) -> String {
@@ -222,7 +222,7 @@ pub enum Invocation {
     /// this enum is built and matched once per process, so the indirection is free and the
     /// alternative is every invocation carrying the analysis surface's footprint.
     Analyze(Box<Args>),
-    /// `-h`/`--help`: print [`help_text`] to stdout, exit 0.
+    /// `--help`: print [`help_text`] to stdout, exit 0.
     Help,
     /// `--version`: print the version to stdout, exit 0.
     Version,
@@ -272,14 +272,19 @@ pub enum Mode {
 pub struct Args {
     /// Which behavioral mode of the core to drive.
     pub mode: Mode,
-    /// The book(s) to analyze — a positional (`dorc plan book.sh`, the day-one ergonomic) OR
-    /// `--book=PATH`, repeatable. Multiple books CONCATENATE into one analyzed unit (a book split
-    /// across files reads as one). At least one is required.
-    pub books: Vec<String>,
-    /// `-o`/`--oracle PATH`: the explicitly-named oracle files, in argv order.
-    pub oracles: Vec<String>,
-    /// `--oracle-dir DIR` (ack-6): load every `*.oracle.sh` in DIR (glob-sorted, deterministic),
-    /// repeatable — the explicit bulk form alongside `-o` for the spike.
+    /// The ONE main book this target's plan is of — a positional (`dorc plan book.sh`, the day-one
+    /// ergonomic) or `--book=PATH` (`30I:rul-one-main-book-per-target`). `-` names stdin.
+    ///
+    /// Exactly one, never a list: a second main-book operand is a separate PROGRAM, and reading it
+    /// as source composition is the concatenation `30I` retired. Sharing one shell environment is
+    /// spelled `--pre-source`.
+    pub book: Option<String>,
+    /// `--pre-source PATH`, repeatable: ordinary `.` preludes, run in CLI occurrence order
+    /// immediately before the main book body (`30I:rul-pre-source-is-dot-prelude`). `-` names
+    /// stdin.
+    pub pre_sources: Vec<String>,
+    /// `--oracle-dir DIR` (ack-6): pre-source every `*.oracle.sh` in DIR (glob-sorted,
+    /// deterministic), repeatable — the bulk form.
     pub oracle_dirs: Vec<String>,
     /// `--results FILE` (flow pick): read the probe results from FILE instead of the default stdin.
     pub results: Option<String>,
@@ -401,6 +406,51 @@ const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
     last || (matches!(mode, Mode::Why) && !has_results)
 }
 
+/// Every claimant this invocation puts on stdin, in argv-then-lane order
+/// (`30I` §2.5: stdin is a collapsed single resource).
+///
+/// A `-` in filename position is an EXPLICIT claim
+/// (`30I:rul-dash-is-stdin-in-any-filename-position`); the records lane and `apply --host`'s
+/// artifact lane still claim it by DEFAULT, which is why they are listed here rather than treated
+/// as a fallback that quietly loses. Naming them is what lets the refusal say what the other
+/// claimant was.
+fn stdin_claimants(
+    book: Option<&str>,
+    pre_sources: &[String],
+    results: Option<&str>,
+    plan: Option<&str>,
+    mode: Mode,
+    last: bool,
+    has_host: bool,
+) -> Vec<&'static str> {
+    let mut claims = Vec::new();
+    if book == Some("-") {
+        claims.push("the book");
+    }
+    if pre_sources.iter().any(|path| path == "-") {
+        claims.push("--pre-source");
+    }
+    if results == Some("-") {
+        claims.push("--results");
+    }
+    let ships_a_rendered_plan = matches!(mode, Mode::Apply) && has_host;
+    if ships_a_rendered_plan {
+        // The artifact lane: named or defaulted, `apply --host` spends stdin on the plan it ships.
+        // `owed-apply-takes-stdin-only-by-dash` would make the default explicit; until it is typed,
+        // the default still claims and is declared here rather than winning silently.
+        if plan.is_none() || plan == Some("-") {
+            claims.push("--plan");
+        }
+    } else if results.is_none()
+        && !has_host
+        && !matches!(mode, Mode::Probe)
+        && !reads_the_receipt(mode, last, false)
+    {
+        claims.push("the probe records");
+    }
+    claims
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
@@ -417,7 +467,8 @@ const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
 pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> {
     // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
     // errors, and they win even alongside a malformed flag (the conventional precedence).
-    if raw.iter().any(|a| a == "-h" || a == "--help") {
+    // Long-form only, like every other spike flag (`30I:rul-spike-has-no-short-options`).
+    if raw.iter().any(|a| a == "--help") {
         return Ok(Invocation::Help);
     }
     if raw.iter().any(|a| a == "--version") {
@@ -445,7 +496,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     }
 
     let mut books: Vec<String> = Vec::new();
-    let mut oracles = Vec::new();
+    let mut pre_sources = Vec::new();
     let mut oracle_dirs = Vec::new();
     let mut results: Option<String> = None;
     let mut debug_argv = false;
@@ -518,10 +569,13 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 it.next()
                     .ok_or_else(|| flag_needs_value("--book", "a path"))?,
             );
-        } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or_else(|| flag_needs_value("-o", "a path"))?);
-        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
-            oracles.push(p.to_string());
+        } else if arg == "--pre-source" {
+            pre_sources.push(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--pre-source", "a path"))?,
+            );
+        } else if let Some(p) = arg.strip_prefix("--pre-source=") {
+            pre_sources.push(p.to_string());
         } else if let Some(p) = arg.strip_prefix("--oracle-dir=") {
             oracle_dirs.push(p.to_string());
         } else if arg == "--oracle-dir" {
@@ -630,12 +684,14 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 .next()
                 .ok_or_else(|| flag_needs_value("--apply-timeout", "seconds"))?;
             apply_timeout = Some(seconds_value("--apply-timeout", &v)?);
-        } else if arg.starts_with('-') {
+        } else if arg.starts_with('-') && arg != "-" {
             // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
-            // "unexpected argument" (the recon's missing-suggestion hazard).
+            // "unexpected argument" (the recon's missing-suggestion hazard). A bare `-` is not a
+            // flag at all — it names stdin in filename position
+            // (`30I:rul-dash-is-stdin-in-any-filename-position`) and falls through below.
             let known = [
                 "--book",
-                "--oracle",
+                "--pre-source",
                 "--oracle-dir",
                 "--results",
                 "--debug-argv",
@@ -676,18 +732,45 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             // sits — taking it only when it leads answered the wrong surface at rc 0.
             why_address = Some(arg);
         } else {
-            // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
-            // repeatable ⇒ multi-book concatenation).
+            // A bare word, or `-`: this target's ONE main book (the day-one `dorc plan book.sh`
+            // ergonomic). A second one is refused below, never merged.
             books.push(arg);
         }
     }
     let ships_a_rendered_plan = mode == Mode::Apply && host.is_some();
-    if books.is_empty()
-        && !ships_a_rendered_plan
-        && !reads_the_receipt(mode, last, results.is_some())
+    if let [first, second, ..] = &books[..] {
+        return Err(Diag::new_spanless_site(DiagCode::CliSeveralMainBooks(
+            dorc_aid::diag::CliSeveralMainBooks {
+                first: first.clone(),
+                second: second.clone(),
+            },
+        )));
+    }
+    let book = books.into_iter().next();
+    if book.is_none() && !ships_a_rendered_plan && !reads_the_receipt(mode, last, results.is_some())
     {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
+        )));
+    }
+    // Stdin is ONE resource and every mode wanting it declares its claim (`30I` §2.5). Two
+    // claimants refuse before network and NAME BOTH, rather than ranking them by a silent
+    // precedence the reader would have to know.
+    if let [first, second, ..] = &stdin_claimants(
+        book.as_deref(),
+        &pre_sources,
+        results.as_deref(),
+        plan.as_deref(),
+        mode,
+        last,
+        host.is_some(),
+    )[..]
+    {
+        return Err(Diag::new_spanless_site(DiagCode::CliStdinClaimedTwice(
+            dorc_aid::diag::CliStdinClaimedTwice {
+                first: (*first).to_owned(),
+                second: (*second).to_owned(),
+            },
         )));
     }
     if results.is_some() && host.is_some() {
@@ -732,8 +815,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     }
     Ok(Invocation::Analyze(Box::new(Args {
         mode,
-        books,
-        oracles,
+        book,
+        pre_sources,
         oracle_dirs,
         results,
         debug_argv,
@@ -846,7 +929,7 @@ pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Invoca
 pub struct LintArgs {
     /// The lintable files given as positionals.
     pub files: Vec<String>,
-    /// `-o`/`--oracle PATH`: oracle sources to lint as oracles.
+    /// `--oracle PATH`: oracle sources to lint as oracles.
     pub oracles: Vec<String>,
     /// `--oracle-dir DIR`: every `*.oracle.sh` in DIR, glob-sorted.
     pub oracle_dirs: Vec<String>,
@@ -911,9 +994,12 @@ pub fn parse_lint_args(raw: &[String]) -> Result<Invocation, InvocationError> {
                 it.next()
                     .ok_or_else(|| flag_needs_value("--oracle-dir", "a directory"))?,
             );
-        } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or_else(|| flag_needs_value("-o", "a path"))?);
-        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
+        } else if arg == "--oracle" {
+            oracles.push(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--oracle", "a path"))?,
+            );
+        } else if let Some(p) = arg.strip_prefix("--oracle=") {
             oracles.push(p.to_owned());
         } else if let Some(p) = arg.strip_prefix("--format=") {
             format = parse_lint_format(p)?;
@@ -1537,12 +1623,12 @@ mod tests {
             "the address must survive a preceding flag"
         );
         assert!(
-            after_last.books.is_empty(),
+            after_last.book.is_none(),
             "and must not be mistaken for a positional book"
         );
 
         // The `why`-mode carve does not leak: every other mode still reads a bare word as a book.
         let planned = args(&["plan", "book.sh"]);
-        assert_eq!(planned.books, vec!["book.sh".to_owned()]);
+        assert_eq!(planned.book.as_deref(), Some("book.sh"));
     }
 }

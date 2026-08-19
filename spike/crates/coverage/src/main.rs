@@ -7,7 +7,7 @@
 //! `spike/tools/coverage.sh`).
 //!
 //! ```text
-//! usage: dorc-coverage --book=<book.sh> [-o <oracle.sh>]... [--probe-results=<file>]
+//! usage: dorc-coverage --book=<book.sh> [--pre-source <sh>]... [--probe-results=<file>]
 //!                      [--tsv=<out.tsv>] [--no-table]
 //! ```
 //!
@@ -33,7 +33,7 @@ use dorc_coverage::{
     build_report,
 };
 
-const USAGE: &str = "usage: dorc-coverage --book=<book.sh> [-o <oracle.sh>]... \
+const USAGE: &str = "usage: dorc-coverage --book=<book.sh> [--pre-source <sh>]... \
                      [--probe-results=<file>] [--tsv=<out.tsv>] [--no-table]";
 
 fn main() -> ExitCode {
@@ -55,7 +55,7 @@ struct Args {
 }
 
 /// Hand-rolled arg parsing (no `clap` dep, cli parity): `--book=PATH`/`--book PATH`,
-/// `-o PATH`/`-oPATH`/`--oracle PATH` (repeatable), `--probe-results=PATH`,
+/// `--pre-source PATH` (repeatable), `--probe-results=PATH`,
 /// `--tsv=PATH`, `--no-table`.
 fn parse_args() -> Result<Args, String> {
     let mut book: Option<String> = None;
@@ -69,10 +69,8 @@ fn parse_args() -> Result<Args, String> {
             book = Some(p.to_string());
         } else if arg == "--book" {
             book = Some(it.next().ok_or("--book needs a path")?);
-        } else if arg == "-o" || arg == "--oracle" {
-            oracles.push(it.next().ok_or("-o needs a path")?);
-        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
-            oracles.push(p.to_string());
+        } else if arg == "--pre-source" {
+            oracles.push(it.next().ok_or("--pre-source needs a path")?);
         } else if let Some(p) = arg.strip_prefix("--probe-results=") {
             probe_results = Some(p.to_string());
         } else if arg == "--probe-results" {
@@ -83,7 +81,7 @@ fn parse_args() -> Result<Args, String> {
             tsv = Some(it.next().ok_or("--tsv needs a path")?);
         } else if arg == "--no-table" {
             no_table = true;
-        } else if arg == "-h" || arg == "--help" {
+        } else if arg == "--help" {
             return Err(USAGE.to_string());
         } else {
             return Err(format!("unexpected argument {arg:?}; {USAGE}"));

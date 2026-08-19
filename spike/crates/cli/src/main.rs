@@ -222,7 +222,7 @@ fn main() -> ExitCode {
     }
 }
 
-/// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
+/// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `--help`
 /// and `--version` win unconditionally (a pre-scan — ack-1 help-is-success, so a help request
 /// beats a malformed flag) and return the stdout-and-exit-0 variants. Otherwise: an OPTIONAL
 /// leading mode token (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` /
@@ -308,34 +308,38 @@ fn strip_command(path: &str) -> Result<(), Diag> {
     Ok(())
 }
 
-/// Read + CONCATENATE the book(s) into one analyzed unit (`\n`-joined so no two files' lines
-/// merge — multi-book concatenation-as-one-unit). Humane per-file errors.
+/// Read one named input, taking `-` as stdin (`30I:rul-dash-is-stdin-in-any-filename-position`).
+///
+/// The claim on stdin was already adjudicated by the parser — two claimants refuse before anything
+/// is read — so this seat only has to honour the spelling. A file literally named `-` is `./-`, per
+/// the same convention.
 #[expect(
     clippy::result_large_err,
     reason = "cold invocation path; see dorc_cli::parse_args_from"
 )]
-fn read_books(books: &[String]) -> Result<String, Diag> {
-    let mut out = String::new();
-    for (i, path) in books.iter().enumerate() {
-        if i > 0 {
-            out.push('\n');
-        }
-        out.push_str(
-            &std::fs::read_to_string(path).map_err(|e| humane_read_error("book", path, &e))?,
-        );
+fn read_input(kind: &str, path: &str) -> Result<String, Diag> {
+    if path == "-" {
+        let mut text = String::new();
+        return std::io::Read::read_to_string(&mut std::io::stdin(), &mut text)
+            .map(|_| text)
+            .map_err(|e| humane_read_error(kind, "<stdin>", &e));
     }
-    Ok(out)
+    std::fs::read_to_string(path).map_err(|e| humane_read_error(kind, path, &e))
 }
 
-/// Resolve the oracle PATHS (ack-6): the explicit `-o` list first, then every `*.oracle.sh` in
-/// each `--oracle-dir` (glob-sorted for determinism — the cli is the I/O edge, but the ORDER it
-/// hands the kernel must be stable). A directory that cannot be read is a humane error.
+/// Resolve the ordered PRE-SOURCE paths (`30I:rul-pre-source-is-dot-prelude`): the explicit
+/// `--pre-source` list first, then every `*.oracle.sh` in each `--oracle-dir` (glob-sorted for
+/// determinism — the cli is the I/O edge, but the ORDER it hands the kernel must be stable). A
+/// directory that cannot be read is a humane error.
 #[expect(
     clippy::result_large_err,
     reason = "cold invocation path; see dorc_cli::parse_args_from"
 )]
-fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, Diag> {
-    let mut paths: Vec<String> = oracles.to_vec();
+fn resolve_pre_sources(
+    pre_sources: &[String],
+    oracle_dirs: &[String],
+) -> Result<Vec<String>, Diag> {
+    let mut paths: Vec<String> = pre_sources.to_vec();
     for dir in oracle_dirs {
         let entries =
             std::fs::read_dir(dir).map_err(|e| humane_read_error("oracle directory", dir, &e))?;
@@ -588,7 +592,7 @@ fn lint_command(args: &LintArgs) -> ExitCode {
             return ExitCode::from(EXIT_LINT_OPERATIONAL);
         }
     };
-    let oracle_paths = match resolve_oracle_paths(&args.oracles, &args.oracle_dirs) {
+    let oracle_paths = match resolve_pre_sources(&args.oracles, &args.oracle_dirs) {
         Ok(p) => p,
         Err(diag) => {
             report_invocation_error(&diag);
@@ -844,11 +848,11 @@ fn run(
 
     let oracle_paths = match &replay {
         Some(r) => r.oracle_paths.clone(),
-        None => resolve_oracle_paths(&args.oracles, &args.oracle_dirs)?,
+        None => resolve_pre_sources(&args.pre_sources, &args.oracle_dirs)?,
     };
     let oracle_srcs: Vec<String> = oracle_paths
         .iter()
-        .map(|p| std::fs::read_to_string(p).map_err(|e| humane_read_error("oracle", p, &e)))
+        .map(|p| read_input("pre-source", p))
         .collect::<Result<_, _>>()?;
     // What the loaded oracles `.`-source joins the loaded set, transitively (`28Q` §2). This is the
     // ONE seam the whole sourcing build needs: every downstream seat — `source_table`, the lifts,
@@ -859,16 +863,15 @@ fn run(
 
     // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
     // source like any other — and it sorts LAST, which is also its ambient-load position.
-    let replay_books: Vec<String>;
-    let books: &[String] = match &replay {
-        Some(r) => {
-            replay_books = vec![r.book_path.clone()];
-            &replay_books
-        }
-        None => &args.books,
+    let book_path: Option<&str> = match &replay {
+        Some(r) => Some(r.book_path.as_str()),
+        None => args.book.as_deref(),
     };
-    let book_src = read_books(books)?;
-    let book_name = books.first().map_or("book.sh", String::as_str);
+    let book_src = match book_path {
+        Some(path) => read_input("book", path)?,
+        None => String::new(),
+    };
+    let book_name = book_path.unwrap_or("book.sh");
     // THE SNAPSHOT (`30I` §3.1): the acquisition finishes here and nothing below re-reads a path.
     // What a book `.`-sources joins the loaded set exactly as what an oracle sources does, but
     // NOT ambiently — it binds at its own line.
@@ -927,7 +930,7 @@ fn run(
         advisory,
         "oracle",
         None,
-        &unloaded_sibling_oracle_diagnostics(books, oracle_paths),
+        &unloaded_sibling_oracle_diagnostics(book_path, oracle_paths),
     );
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
@@ -4307,15 +4310,15 @@ fn oracle_path_key(path: &str) -> String {
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
-fn unloaded_sibling_oracle_diagnostics(books: &[String], oracle_paths: &[String]) -> Vec<Diag> {
+fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[String]) -> Vec<Diag> {
     use std::path::Path;
     // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
-    // Windows) while the loaded set carries the `-o` args verbatim (forward slash), so a raw string
+    // Windows) while the loaded set carries the `--pre-source` args verbatim (forward slash), so a raw string
     // compare would miss every loaded oracle on Windows and falsely report it unloaded.
     let norm = |p: &str| p.replace('\\', "/");
     let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| oracle_path_key(p)).collect();
     let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
-    for p in oracle_paths.iter().chain(books.iter()) {
+    for p in oracle_paths.iter().map(String::as_str).chain(book) {
         if let Some(parent) = Path::new(p).parent() {
             // An empty parent (a bare filename) means the current directory.
             let dir = if parent.as_os_str().is_empty() {

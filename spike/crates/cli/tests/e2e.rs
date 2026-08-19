@@ -1186,7 +1186,7 @@ fn round_trip_command(dir: &Path) -> String {
         .collect();
     oracles.sort();
     for oracle in oracles {
-        let _ = write!(command, " -o {oracle}");
+        let _ = write!(command, " --pre-source {oracle}");
     }
     if let Ok(Some(flags)) = marker(dir, "DORC_FLAGS") {
         let _ = write!(command, " {flags}");
@@ -1499,7 +1499,7 @@ fn shared_args(dir: &Path) -> Result<Vec<String>, String> {
         .collect();
     oracles.sort();
     for oracle in oracles {
-        args.push("-o".to_owned());
+        args.push("--pre-source".to_owned());
         args.push(oracle.display().to_string());
     }
     if let Some(flags) = marker(dir, "DORC_FLAGS")? {
@@ -3015,11 +3015,11 @@ fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
             .join("\n")
     };
     let flagged = elide(&[
-        "-o".to_owned(),
+        "--pre-source".to_owned(),
         oracle.clone(),
         "--risk-faultless-skips".to_owned(),
     ]);
-    let plain = elide(&["-o".to_owned(), oracle]);
+    let plain = elide(&["--pre-source".to_owned(), oracle]);
     (flagged == plain).then(|| format!(
         "dorc_flags_selftest FAILED — --risk-faultless-skips did not change the flagship's elision count ({flagged} flagged vs {plain} plain); the flag is not reaching the engine, so a flagged survival case's gate-6 attribution would lie."
     ))

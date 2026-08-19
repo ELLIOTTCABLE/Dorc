@@ -742,7 +742,7 @@ pub fn run_trial(tools: &Tools, trial: &Trial) -> Result<RunOutcome, RunError> {
 
     let oracle_args: Vec<String> = oracle_paths
         .iter()
-        .flat_map(|p| ["-o".to_string(), p.to_string_lossy().into_owned()])
+        .flat_map(|p| ["--pre-source".to_string(), p.to_string_lossy().into_owned()])
         .collect();
 
     // PASS A — capture the probe artifact (empty stdin; we only want the probe block).

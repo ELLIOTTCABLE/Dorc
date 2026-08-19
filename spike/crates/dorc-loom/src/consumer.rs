@@ -1283,7 +1283,7 @@ fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>>
     while let Some(word) = rest.next() {
         if let Some(path) = word.strip_prefix("--book=") {
             book = Some(path);
-        } else if *word == "-o" || *word == "--oracle" {
+        } else if *word == "--pre-source" {
             oracles.push(*rest.next()?);
         } else if *word == "--all" {
             deepest = true;
@@ -1457,7 +1457,7 @@ struct DirectPlan<'a> {
     book: &'a str,
     /// Did the invocation consent to the survival tier (`--risk-faultless-skips`)?
     consented: bool,
-    /// The `-o <path>` oracle set, in the order the invocation names it — the same order
+    /// The `--pre-source <path>` set, in the order the invocation names it — the same order
     /// `law-lineno-identity` keys oracle file indices by, so a threaded span frames into the
     /// section the author expects.
     oracles: Vec<&'a str>,
@@ -1489,7 +1489,7 @@ fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
             if book.replace(path).is_some() || !case_relative_path(path) {
                 return None;
             }
-        } else if *word == "-o" {
+        } else if *word == "--pre-source" {
             index = index.saturating_add(1);
             let path = *words.get(index)?;
             if !case_relative_path(path) || oracles.contains(&path) {

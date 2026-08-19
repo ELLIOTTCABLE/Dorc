@@ -352,6 +352,10 @@ pub enum DiagCode {
     CliFlagValueNotANumber(CliFlagValueNotANumber),
     /// No book was given, by positional or by flag.
     CliNoBookGiven(CliNoBookGiven),
+    /// Two main-book operands were given for one target.
+    CliSeveralMainBooks(CliSeveralMainBooks),
+    /// Two claimants on stdin, which is one resource.
+    CliStdinClaimedTwice(CliStdinClaimedTwice),
     /// Two flags that cannot both be given were.
     CliFlagsMutuallyExclusive(CliFlagsMutuallyExclusive),
     /// A flag valid only under one mode was given under another.
@@ -490,6 +494,8 @@ impl DiagCode {
             DiagCode::CliFlagValueNotRecognized(_) => "cli-flag-value-not-recognized",
             DiagCode::CliFlagValueNotANumber(_) => "cli-flag-value-not-a-number",
             DiagCode::CliNoBookGiven(_) => "cli-no-book-given",
+            DiagCode::CliSeveralMainBooks(_) => "cli-several-main-books",
+            DiagCode::CliStdinClaimedTwice(_) => "cli-stdin-claimed-twice",
             DiagCode::CliFlagsMutuallyExclusive(_) => "cli-flags-mutually-exclusive",
             DiagCode::CliFlagRequiresMode(_) => "cli-flag-requires-mode",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
@@ -1845,6 +1851,25 @@ pub struct CliFlagValueNotANumber {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CliNoBookGiven;
 
+/// Payload of [`DiagCode::CliSeveralMainBooks`]: two main-book operands for one target
+/// (`30I:rul-one-main-book-per-target`). Separate books are separate PROGRAMS, never a merge.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliSeveralMainBooks {
+    /// The book operand that came first (`{first}`).
+    pub first: String,
+    /// The one that followed it (`{second}`).
+    pub second: String,
+}
+
+/// Payload of [`DiagCode::CliStdinClaimedTwice`]: two claimants on one stream (`30I` §2.5).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CliStdinClaimedTwice {
+    /// The first claimant (`{first}`).
+    pub first: String,
+    /// The second (`{second}`).
+    pub second: String,
+}
+
 /// Payload of [`DiagCode::CliFlagsMutuallyExclusive`]: two flags that cannot both hold.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CliFlagsMutuallyExclusive {
@@ -2757,6 +2782,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::CliFlagValueNotRecognized(_)
         | DiagCode::CliFlagValueNotANumber(_)
         | DiagCode::CliNoBookGiven(_)
+        | DiagCode::CliSeveralMainBooks(_)
+        | DiagCode::CliStdinClaimedTwice(_)
         | DiagCode::CliFlagsMutuallyExclusive(_)
         | DiagCode::CliFlagRequiresMode(_)
         | DiagCode::CliFileNotFound(_)
@@ -3186,6 +3213,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("first", (*first).to_owned()),
             ours("second", (*second).to_owned()),
         ],
+        DiagCode::CliSeveralMainBooks(CliSeveralMainBooks { first, second }) => {
+            vec![ours("first", first.clone()), ours("second", second.clone())]
+        }
+        DiagCode::CliStdinClaimedTwice(CliStdinClaimedTwice { first, second }) => {
+            vec![ours("first", first.clone()), ours("second", second.clone())]
+        }
         DiagCode::CliFlagRequiresMode(CliFlagRequiresMode { flag, mode }) => {
             vec![
                 ours("flag", (*flag).to_owned()),
