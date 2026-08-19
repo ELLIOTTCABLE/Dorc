@@ -2,7 +2,6 @@
 code: cli-several-main-books
 when-fires: two main-book operands were given for one target. cli/lib.rs parse_args_from. {first} and {second} name them, in argv order.
 why: 30I:rul-one-main-book-per-target — separate books are separate PROGRAMS, so reading the second as source composition would silently merge two authors' shells; sharing one environment is spelled `--pre-source`.
-edit-loop: edit a sentence in the transcript below, then run `mise run loom:compile -- cli-several-main-books && mise run loom:promote -- cli-several-main-books`; prove it stuck with `mise run test`, which is also what catches anything else the promotion moved. `mise run loom:vars -- --all cli-several-main-books` lists this case's values; type {{name}} to insert or move one.
 ---
 -- replay --
 $ dorc plan book.sh other.sh
