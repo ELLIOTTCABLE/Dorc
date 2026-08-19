@@ -163,9 +163,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // every `install` victim would run and the net's elision coverage would vanish. Always-on
     // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped.
     let helpers = dorc_oracle::closure::HelperIndex::build(&[ORACLE_SH], None);
-    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &helpers, &classes, &value, i, ambient)
-        .0
-        .value;
+    let vouches =
+        dorc_plan::build_vouches(&[ORACLE_SH], &[], &helpers, &classes, &value, i, ambient)
+            .0
+            .value;
 
     // The identity-CANONICALIZATION map (24F §3/§7.1): built from the modeled host's DECLARED
     // resolver answers (`Host::resolve` — the sweep stand-in for shipping `package__resolve()` +

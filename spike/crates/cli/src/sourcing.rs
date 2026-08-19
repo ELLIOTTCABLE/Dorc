@@ -38,11 +38,18 @@ use dorc_syntax::ast::NodeKind;
 
 use crate::snapshot::StaticLoadSnapshot;
 
-/// The include-tree, as the two things every consumer needs from it.
+/// The include-tree, as the three things its consumers need from it.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct IncludeTree {
     /// The speaker-minting `(sourcer, sourced)` edges, in source then item order.
     pub edges: Vec<(usize, usize)>,
+    /// THE NARRATIVE PROJECTION (`30I:rul-one-load-account-separate-projections`): the
+    /// `(sourcer, sourced)` pairs a loaded file's own program NAMED, aligned or not — a superset of
+    /// `edges` carrying an undecided guard's fallback and anything else custody withheld.
+    ///
+    /// Decision-inert, and it must never be handed to a custody consumer: its whole job is telling
+    /// `30I` §3.4's selected-but-unaligned case from its ambient sibling in the aid plane.
+    pub selected: Vec<(usize, usize)>,
     /// Sources holding a top-level `.` that named nothing admissible.
     ///
     /// These SUSPEND rather than degrade. A file whose environment the engine could not reconstruct
@@ -90,6 +97,18 @@ pub fn include_tree(
             None => drop(tree.unresolved.insert(from)),
         }
     }
+    // The SELECTION half: the same walk over the wider projection, and deliberately WITHOUT the
+    // target-end contract check. What the author selected is a fact about their own act; whether
+    // the target signed the dorc-lang contract is a separate refusal that already suspends them
+    // (`UnresolvedLoad`), and folding it in here would silently retitle that world.
+    for (sourcer, target) in &env.loads().selection_edges() {
+        if let (Some(from), Some(to)) = (
+            at(sourcer).filter(|&file| admissible(file)),
+            at(target).filter(|&file| file != snapshot.book_index()),
+        ) {
+            tree.selected.push((from, to));
+        }
+    }
     for sourcer in env.loads().unresolved() {
         if let Some(from) = at(sourcer).filter(|&file| admissible(file)) {
             tree.unresolved.insert(from);
@@ -97,6 +116,8 @@ pub fn include_tree(
     }
     tree.edges.sort_unstable();
     tree.edges.dedup();
+    tree.selected.sort_unstable();
+    tree.selected.dedup();
     tree
 }
 
@@ -230,6 +251,7 @@ mod tests {
             tree,
             IncludeTree {
                 edges: vec![(0, 1)],
+                selected: vec![(0, 1)],
                 unresolved: [].into()
             }
         );
@@ -368,10 +390,9 @@ mod tests {
         );
         let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n");
         let paths = vec!["entry.sh".to_owned(), "helpers.sh".to_owned()];
-        assert_eq!(
-            tree(&paths, &[&entry, &helpers], None),
-            IncludeTree::default()
-        );
+        let tree = tree(&paths, &[&entry, &helpers], None);
+        assert_eq!(tree.edges, Vec::new());
+        assert_eq!(tree.unresolved, [].into());
     }
 
     /// …and the RECOGNIZED sentinel guard does mint it
@@ -390,6 +411,38 @@ mod tests {
         let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n_sm_helpers='sm.helpers/v1'\n");
         let paths = vec!["entry.sh".to_owned(), "helpers.sh".to_owned()];
         assert_eq!(tree(&paths, &[&entry, &helpers], None).edges, vec![(0, 1)]);
+    }
+
+    /// THE NARRATIVE PROJECTION, beside the speaker one, over the SAME undecided guard
+    /// (`30I:rul-one-load-account-separate-projections`). Nothing about the licence moves: the edge
+    /// still does not mint. What the wider relation buys is the difference between telling this
+    /// author their guarded dependency did not align and telling them they named none — and getting
+    /// that backwards points them at a repair they already made (`271:rul-sin-ordering`).
+    #[test]
+    fn an_undecided_guard_is_selected_though_it_mints_no_edge() {
+        let entry = marked(
+            "if command -v _same >/dev/null 2>&1; then\n   :\nelse\n   . ./helpers.sh\nfi\n\
+             wombat__is_converged() { _same \"$1\" ;}\n",
+        );
+        let helpers = marked("_same() { wombat cmp -- \"$1\" ;}\n");
+        let paths = vec!["entry.sh".to_owned(), "helpers.sh".to_owned()];
+        let tree = tree(&paths, &[&entry, &helpers], None);
+        assert_eq!(tree.edges, Vec::new());
+        assert_eq!(tree.selected, vec![(0, 1)]);
+    }
+
+    /// A BOOK selects nothing on anyone's behalf, in either relation — the sourcer species keeps it
+    /// out of both (`30I:rul-books-load-but-do-not-speak`), so a book's `.` can never make an
+    /// oracle's ambient reach read as that oracle author's own selection.
+    #[test]
+    fn a_books_loads_select_nothing_either() {
+        let book = marked(". ./alpha.sh\nwombat sync\n");
+        let alpha = marked("_same() { :; }\n");
+        let paths = vec!["alpha.sh".to_owned(), "book.sh".to_owned()];
+        assert_eq!(
+            tree(&paths, &[&alpha, &book], Some(1)),
+            IncludeTree::default()
+        );
     }
 
     /// The book half of `30I:rul-books-load-but-do-not-speak`, at every spelling a book has: a
@@ -492,6 +545,7 @@ mod tests {
             tree,
             IncludeTree {
                 edges: vec![(0, 1)],
+                selected: vec![(0, 1)],
                 unresolved: [].into()
             }
         );

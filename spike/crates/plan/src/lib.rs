@@ -1490,6 +1490,7 @@ fn resolve_vouch_operands(
 /// label + operands are resolved for the invocation/attribution, never decoded (the 24A §1b fence).
 pub fn build_vouches(
     oracle_srcs: &[&str],
+    oracle_paths: &[&str],
     helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
@@ -1507,6 +1508,7 @@ pub fn build_vouches(
         .collect();
     let (lifted, aid) = build_vouches_from_sets(
         oracle_srcs,
+        oracle_paths,
         &verdict_sets,
         helpers,
         classes,
@@ -1533,6 +1535,22 @@ pub struct VouchLiftAid {
     pub suspensions: Vec<(usize, Diag)>,
 }
 
+/// `path:line` for the declaration a shell would bind, or empty where the denial named no site.
+///
+/// The paths are the CALLER's, which is why they are threaded in rather than derived: one
+/// line-number space, the source file's, everywhere (`AID:law-lineno-identity`). A lane that holds
+/// no paths passes none and the operand stays empty — the two cross-custody reasons are the ones
+/// `30I` §3.4 wants it for, and only the real drivers raise them.
+fn live_locus(paths: &[&str], srcs: &[&str], sites: &[(usize, dorc_core::Span)]) -> String {
+    let Some(&(file, span)) = sites.last() else {
+        return String::new();
+    };
+    let (Some(path), Some(src)) = (paths.get(file), srcs.get(file)) else {
+        return String::new();
+    };
+    let (line, _) = dorc_aid::diag::line_col(src, span.lo.0 as usize);
+    format!("{path}:{line}")
+}
 /// The [`dorc_aid::diag::VouchedCompositionReason`] one closure denial maps to. Two vocabularies, one
 /// crossing seat: `dorc-oracle` decides WHY a composition carries no license, `dorc-aid` owns how a
 /// reason is said, and neither imports the other's enum.
@@ -1544,7 +1562,8 @@ fn suspension_reason(
     match reason {
         Found::BookRedefinesHelper => Said::BookRedefinesHelper,
         Found::BookShadowsCommand => Said::BookShadowsCommand,
-        Found::ResolvedOutsideCustody => Said::ResolvedOutsideCustody,
+        Found::DependencySelectedButUnaligned => Said::DependencySelectedButUnaligned,
+        Found::DependencyAmbientOrUntraceable => Said::DependencyAmbientOrUntraceable,
         Found::ContestedWithinCustody => Said::ContestedWithinCustody,
         Found::UnresolvedLoad => Said::UnresolvedLoad,
         Found::UnenumerableCall => Said::UnenumerableCall,
@@ -1562,11 +1581,15 @@ fn suspension_reason(
 /// wall nothing else in the run agreed with (`28P:fnd-build-vouches-relifted-the-verdict-sets`).
 #[expect(
     clippy::too_many_lines,
+    clippy::too_many_arguments,
     reason = "the ONE composition every driver shares (vouch lift + decline-narrative mint); \
-              splitting it would scatter the single vouch-authoring path"
+              splitting it would scatter the single vouch-authoring path. Each argument is a \
+              distinct world the lift reads, and the paths are the caller's by law \
+              (`AID:law-lineno-identity`)"
 )]
 pub fn build_vouches_from_sets(
     oracle_srcs: &[&str],
+    oracle_paths: &[&str],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     helpers: &dorc_oracle::closure::HelperIndex,
     classes: &[(CfgNodeId, SkipClass)],
@@ -1722,6 +1745,7 @@ pub fn build_vouches_from_sets(
                             dorc_aid::diag::VouchedCompositionNotPresent {
                                 name: denial.name,
                                 reason,
+                                live: live_locus(oracle_paths, oracle_srcs, &denial.sites),
                             },
                         ),
                         verdict.name_span,
@@ -6380,6 +6404,7 @@ apt_get__is_converged() { return 0; }
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
         let (_vouches, narrative) = build_vouches(
             &[verdict_src],
+            &[],
             &dorc_oracle::closure::HelperIndex::default(),
             &classes,
             &value,
@@ -6424,6 +6449,7 @@ apt_get__is_converged() { return 0; }
         let vouching_src = "apt_get__is_converged() { dpkg -s \"$2\" : package:\"$2\"@installed ;}";
         let (_vouches, none) = build_vouches(
             &[vouching_src],
+            &[],
             &dorc_oracle::closure::HelperIndex::default(),
             &classes,
             &value,
@@ -7363,6 +7389,7 @@ apt_get__is_converged() {
         .value;
         let mut vouches = build_vouches(
             &[CORPUS_VERDICT_SRC],
+            &[],
             &dorc_oracle::closure::HelperIndex::default(),
             &classes,
             &value,

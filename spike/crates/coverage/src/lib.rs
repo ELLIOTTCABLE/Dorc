@@ -558,6 +558,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let vouches = dorc_plan::build_vouches(
         inputs.oracles,
+        &[],
         &dorc_oracle::closure::HelperIndex::build(inputs.oracles, None),
         &classes,
         &value,

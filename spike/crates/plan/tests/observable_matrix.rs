@@ -224,6 +224,7 @@ fn vouch_all(
 ) -> dorc_plan::Vouches {
     dorc_plan::build_vouches(
         &[CORPUS_VERDICT_SRC],
+        &[],
         &dorc_oracle::closure::HelperIndex::default(),
         classes,
         value,

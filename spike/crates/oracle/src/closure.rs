@@ -161,7 +161,22 @@ pub enum DenialReason {
     /// The declaration a shell binds lies outside the voucher's own custody. Co-loading files on
     /// one command line is ingestion, never composition, so the reach lands in an utterance this
     /// voucher did not make — and load order is not an adjudicator of authorship (`28K` §6).
-    ResolvedOutsideCustody,
+    /// `30I` §3.4 case 3: the voucher's own file DID select a dependency declaring this name — a
+    /// `.`, or an include guard naming it — but the declaration a shell binds is not the one that
+    /// selection reaches. The guard's recognition failed, a later file shadowed the helper, or the
+    /// load could not be aligned exactly. The author wrote an acceptance act; it did not land.
+    DependencySelectedButUnaligned,
+    /// `30I` §3.4 case 4: ordinary shell name resolution supplied the declaration, with no
+    /// attributable dependency selection anywhere in the voucher's own file. Co-loading files on
+    /// one command line is ingestion, never composition, so the reach lands in an utterance this
+    /// voucher did not make — and load order is not an adjudicator of authorship (`28K` §6).
+    ///
+    /// This is ORDINARY SH and never an invalid oracle set
+    /// (`30I:rul-ambient-dependencies-are-ordinary-shell`): authors already owe defensiveness
+    /// against ambient command and PATH resolution, and learning that a call resolves to a
+    /// function in another loaded file may not turn accepted sh into a refusal. It suspends the
+    /// composition exactly as its sibling does; only the sentence differs.
+    DependencyAmbientOrUntraceable,
     /// The voucher's own custody declares the name more than once, with DIFFERING bytes. Which one
     /// a shell binds depends on the exact interleaving of a file's own declarations with the ones
     /// its `.` lines pull in, and a flat load-order vector cannot express that interleaving — so
@@ -217,6 +232,15 @@ pub struct HelperIndex {
     /// which is what makes every lane holding no include-tree keep its pre-sourcing answers and the
     /// no-oracle-sourcing world byte-identical.
     closures: dorc_core::CustodyClosures,
+    /// THE NARRATIVE RELATION (`30I:rul-one-load-account-separate-projections`, projection 3):
+    /// which sources each file's author SELECTED — every dependency its own program named,
+    /// whether or not the selection aligned exactly. Strictly wider than `closures`, and used for
+    /// nothing but telling `30I` §3.4's two non-exact cases apart in the aid plane.
+    ///
+    /// `None` ⇒ read `closures`, which is right rather than merely safe: a lane with no
+    /// include-tree has no sourcing for anyone to have selected, so every out-of-custody reach
+    /// there really is ambient.
+    selected: Option<dorc_core::CustodyClosures>,
     /// Sources whose own `.` named nothing admissible: every vouch they carry suspends.
     unresolved_loads: BTreeSet<usize>,
 }
@@ -353,6 +377,27 @@ impl HelperIndex {
         self
     }
 
+    /// Attach the loader's SELECTION relation — which dependencies each file's author named at
+    /// all (`30I:rul-one-load-account-separate-projections`, projection 3).
+    ///
+    /// Separate from [`with_include_tree`](Self::with_include_tree) because the two relations
+    /// answer different questions and only the two real drivers hold the wider one. Nothing here
+    /// widens a license: the relation is read at exactly one seat, to choose between two
+    /// decision-inert sentences for a suspension that has already happened.
+    #[must_use]
+    pub fn with_selection(mut self, selected: dorc_core::CustodyClosures) -> Self {
+        self.selected = Some(selected);
+        self
+    }
+
+    /// Did `asker`'s author name `target` as a dependency at all?
+    fn selects(&self, asker: usize, target: usize) -> bool {
+        self.selected
+            .as_ref()
+            .unwrap_or(&self.closures)
+            .reaches(asker, target)
+    }
+
     /// Whether the unit declares any non-role top-level material at all. The empty answer is the
     /// whole corpus today, and it is what makes this pass `empty-world-byte-identical`: with
     /// nothing to capture, every pinned definition is exactly its own stripped bytes.
@@ -477,7 +522,9 @@ impl HelperIndex {
     ///
     /// 1. The asker's own file sourced something the driver could not load, so the environment its
     ///    body would run in is not reconstructible at all.
-    /// 2. The declaration a shell binds lies outside the asker's custody.
+    /// 2. The declaration a shell binds lies outside the asker's custody. It splits into two
+    ///    decision-inert SENTENCES on whether the asker selected that dependency at all
+    ///    (`30I` section 3.4 cases 3 and 4); the suspension is the same either way.
     /// 3. The asker's custody declares the name more than once with DIFFERING bytes. Which one a
     ///    shell binds turns on how a file's own declarations interleave with the ones its `.` lines
     ///    pull in, and the flat load-order vector this index is built from cannot express that
@@ -511,7 +558,20 @@ impl HelperIndex {
             return Err(deny(DenialReason::UnresolvedLoad));
         }
         if !self.closures.reaches(asker, chosen.file) {
-            return Err(deny(DenialReason::ResolvedOutsideCustody));
+            // `30I` §3.4's two non-exact cases, told apart by the SELECTION relation and by
+            // nothing else. Both suspend identically; the distinction buys the author the right
+            // repair — 'your guard did not align' versus 'you named no dependency at all' — and
+            // naming the second author in the first's sentence is the pope-sin direction
+            // (`271:rul-sin-ordering`). ANY declaration of the name inside the selection answers:
+            // the act was written even where load order handed the site somebody else's body.
+            let selected = declarations
+                .iter()
+                .any(|declaration| self.selects(asker, declaration.file));
+            return Err(deny(if selected {
+                DenialReason::DependencySelectedButUnaligned
+            } else {
+                DenialReason::DependencyAmbientOrUntraceable
+            }));
         }
         if declarations
             .iter()
@@ -826,7 +886,10 @@ mod tests {
             .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
             .expect_err("co-loading composes no custody");
         assert_eq!(denied.name, "_wombat_check");
-        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
+        assert_eq!(
+            denied.reason,
+            super::DenialReason::DependencyAmbientOrUntraceable
+        );
     }
 
     /// ...and the SAME two files compose the moment the entrypoint SOURCES the helpers. This is
@@ -864,7 +927,10 @@ mod tests {
             )
             .closure_for(0, "wombat__is_converged() {\n   _entry_only \"$1\"\n}")
             .expect_err("custody flows down the include-tree, never up");
-        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
+        assert_eq!(
+            denied.reason,
+            super::DenialReason::DependencyAmbientOrUntraceable
+        );
     }
 
     /// Two declarations inside ONE custody with DIFFERING bytes suspend rather than letting load
@@ -1006,7 +1072,10 @@ mod tests {
             .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
             .expect_err("the resolved body is somebody else's");
         assert_eq!(denied.name, "_wombat_check");
-        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
+        assert_eq!(
+            denied.reason,
+            super::DenialReason::DependencyAmbientOrUntraceable
+        );
         assert_eq!(
             denied.sites.iter().map(|(f, _)| *f).collect::<Vec<_>>(),
             vec![1, 2]
@@ -1025,7 +1094,51 @@ mod tests {
             .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
             .expect_err("one declaration in another custody is still another custody");
         assert_eq!(denied.name, "_wombat_check");
-        assert_eq!(denied.reason, super::DenialReason::ResolvedOutsideCustody);
+        assert_eq!(
+            denied.reason,
+            super::DenialReason::DependencyAmbientOrUntraceable
+        );
+    }
+
+    /// `30I` §3.4's TWO NON-EXACT CASES, told apart, with the disposition held constant.
+    ///
+    /// Both worlds are one voucher reaching a helper a shell binds from outside its custody, and
+    /// both suspend — same denial, same name, same sites, site runs. The only difference is the
+    /// SENTENCE the author gets, and it is the difference between "your guarded dependency did not
+    /// align" and "you named no dependency at all". Naming the first author in the second's words
+    /// points them at a repair they already made, which is the pope-sin direction
+    /// (`271:rul-sin-ordering`) and the whole reason the split exists.
+    ///
+    /// The engine sees them apart ONLY through the selection relation: the two runs below differ in
+    /// nothing else, not one byte of source.
+    #[test]
+    fn selecting_a_dependency_changes_the_sentence_and_not_the_disposition() {
+        let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
+        let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
+        let body = "wombat__is_converged() {\n   _wombat_check \"$1\"\n}";
+        let index = || {
+            HelperIndex::build(&[&helpers, &entry], None)
+                .with_include_tree(dorc_core::CustodyClosures::singletons(2), BTreeSet::new())
+        };
+
+        let ambient = index()
+            .closure_for(1, body)
+            .expect_err("co-loading composes no custody, selection or not");
+        assert_eq!(
+            ambient.reason,
+            super::DenialReason::DependencyAmbientOrUntraceable
+        );
+
+        let unaligned = index()
+            .with_selection(dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]))
+            .closure_for(1, body)
+            .expect_err("selecting a dependency never mints custody");
+        assert_eq!(
+            unaligned.reason,
+            super::DenialReason::DependencySelectedButUnaligned
+        );
+        assert_eq!(unaligned.name, ambient.name);
+        assert_eq!(unaligned.sites, ambient.sites);
     }
 
     /// The book redefining a helper the engineer's body reaches SUSPENDS: at apply the hoisted

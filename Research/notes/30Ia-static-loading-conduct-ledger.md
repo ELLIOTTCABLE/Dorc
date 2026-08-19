@@ -663,3 +663,41 @@ without scouting what its first step stands on, and the account IS that first st
 vocabulary) supersedes `28Q:pin-blessing-reach-elevation` and
 `FORFEITS:forfeit-verdict-word-exclusion`. Design RULED, implementation DEFERRED by its
 own §10. It touches no `30I` surface; keep it fenced out of every brief in this lane.
+
+## §19 — the-30K-interposition-supersedes-the-seam-plan
+
+`notes/30K` (effective world reach) is placed BETWEEN this lane's halves by
+`30I:impl-effective-reach-interposes-before-bundles` [human-directed 2026-08-19].
+**§18's seam plan is superseded**: builder 4 finishes
+`step-5a-complete-load-occurrence-account` (the drift removal plus the possible-load
+occurrence account) and the lane then PAUSES. Bundle projection, locator consumption,
+artifact forms, and final XFAIL/golden promotion resume at
+`step-5b-build-bundle-projection`, only after 30K lands. Do not dispatch a bundle
+builder into that pause.
+
+`30K` is explicitly NOT a loading builder's remit — its own one-red-window conversion,
+its own builder, no intermediate checkpoint (`30K:constraint-one-red-window-no-intermediate-landing`),
+and no dedicated adversarial review (`30K:constraint-adversarial-review-belongs-to-round-close`).
+The durable `30Ib` handoff is what makes the pause cheap.
+
+Why the ordering is right, in one line: 30K settles what a final plan disposition IS
+(deleting `plan::wall_walk_total`/`wall_walk_survival` and reshaping
+`EstablishAmbient`/`EstablishWritten` into unambiguous origin/probe classification), and
+building bundle emission plus its corpus on top of the old wall walks would mean building
+the executable projections around machinery scheduled for deletion.
+
+Worth knowing, because it has been fenced out of every brief in this lane since dispatch:
+30K ABSORBS the modeled-running-wall/guard-tier repair — `fnd-classed-decline-unwalls-guard-tier`,
+the burndown's `repair-guard-tier-walls`, open since r26 — and promotes
+`guard26-classed-decline-guards-below` and `guard26-diverged-wall-guards-below` at its
+`step-4`. `30I`'s neighboring-work list is rewritten accordingly: the repair is no longer
+deferred, it is the mandatory interlude, and it stays out of scope for every 30I builder.
+
+OPEN, to raise when builder 4 returns rather than now: whether this conductor dispatches
+the 30K lane or a sibling does. It is a kernel conversion, not a loading one; the human's
+placement ("adjacent to your scope, a builder after yours") reads either way.
+
+WATCH at the fold: builder 4's A′ reshapes `oracle::closure::DenialReason` and the
+`vouched-composition-not-present` reached-site push; 30K reshapes dispositions, reach, and
+the certifier's pass vocabulary. The seats look disjoint, but both touch what a reached
+site is told about a lost composition — check the overlap before either folds.

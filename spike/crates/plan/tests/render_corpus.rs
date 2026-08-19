@@ -118,6 +118,7 @@ fn vouch_all(
         VouchMode::Reached => {
             dorc_plan::build_vouches(
                 &[CORPUS_VERDICT_SRC, SERVICE_VERDICT_SRC, YUM_VERDICT_SRC],
+                &[],
                 &dorc_oracle::closure::HelperIndex::default(),
                 classes,
                 value,
@@ -570,6 +571,7 @@ fn render_scoped(
     }
     let vouches = dorc_plan::build_vouches(
         &verdict_srcs,
+        &[],
         &dorc_oracle::closure::HelperIndex::default(),
         &classes,
         &value,

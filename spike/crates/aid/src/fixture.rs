@@ -36,9 +36,9 @@ use crate::diag::{
     SolverConsistencyFailure, SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement,
     SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
     TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
-    UnannouncedCrossCustodyCall, VouchedCompositionNotPresent, VouchedCompositionReason,
-    WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten,
-    WhylogVersionRefused, WrapperPeelIncoherent,
+    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
+    WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -223,15 +223,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::VouchedCompositionNotPresent(VouchedCompositionNotPresent {
                 name: "_yum_installed".to_owned(),
                 reason: VouchedCompositionReason::BookRedefinesHelper,
-            }),
-        ),
-        // Same seat, one refusal further: the whole-unit census runs at the load edge and its
-        // refusal returns before any artifact, so no in-process consumer can drive it either.
-        (
-            "unannounced-cross-custody-call",
-            DiagCode::UnannouncedCrossCustodyCall(UnannouncedCrossCustodyCall {
-                name: "_yum_installed".to_owned(),
-                live: "vendor/yum.oracle.sh:4".to_owned(),
+                live: String::new(),
             }),
         ),
         // Read back from a RECORDS stream: a replay drives no host and admits no records.

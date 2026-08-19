@@ -21,7 +21,6 @@
 
 #![forbid(unsafe_code)]
 
-pub mod custody;
 pub mod fixpoint;
 pub mod kinds;
 pub mod provenance;

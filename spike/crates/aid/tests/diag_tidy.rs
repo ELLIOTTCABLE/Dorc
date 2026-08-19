@@ -199,7 +199,6 @@ const MIGRATED_SLUGS: &[&str] = &[
     "in-book-vocabulary-role",
     "helper-declaration-contested",
     "vouched-composition-not-present",
-    "unannounced-cross-custody-call",
     "missing-dialect-marker",
     "marker-version-unrecognized",
     "tolerates-unknown-dimension",
@@ -284,6 +283,7 @@ const MIGRATED_SLUGS: &[&str] = &[
 /// codes. Recorded so the git-diff retire-guard reads a rename as intentional, not a silent
 /// deletion (`assert_no_slug_vanished` accepts a committed slug here).
 const RETIRED_SLUGS: &[&str] = &[
+    "unannounced-cross-custody-call",
     "transport-not-attempted",
     "dq-cmdsub-operand-top",
     "dq-site-unresolvable",

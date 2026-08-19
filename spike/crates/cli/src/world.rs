@@ -111,6 +111,8 @@ impl WhyWorld {
         // decoration, which is the failure `one-definition-table-two-drivers` exists to prevent.
         let source_srcs = snapshot.source_srcs();
         let source_refs: Vec<&str> = snapshot.source_refs();
+        let source_path_refs: Vec<&str> =
+            snapshot.source_paths().iter().map(String::as_str).collect();
 
         let parsed = dorc_syntax::parse(book_src);
         let cfg = dorc_analysis::cfg::build(&parsed.value);
@@ -158,7 +160,11 @@ impl WhyWorld {
             .with_include_tree(
                 dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
                 include_tree.unresolved,
-            );
+            )
+            .with_selection(dorc_core::CustodyClosures::from_edges(
+                source_refs.len(),
+                &include_tree.selected,
+            ));
         let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
             .iter()
             .map(|src| {
@@ -211,6 +217,7 @@ impl WhyWorld {
 
         let (vouch_lift, vouch_aid) = dorc_plan::build_vouches(
             &source_refs,
+            &source_path_refs,
             &helpers,
             &classes,
             &value,

@@ -197,11 +197,6 @@ pub enum DiagCode {
     /// refuse rather than dedup). Spanned at the later declaration.
     HelperDeclarationContested(HelperDeclarationContested),
     VouchedCompositionNotPresent(VouchedCompositionNotPresent),
-    /// A role definition reaches a name whose live declaration sits outside its custody with no
-    /// authorship act naming it — `30I` §3.4's `dependency-merely-happened-to-be-live`. Refused
-    /// whole-run, pre-network (`30I:rul-unannounced-cross-custody-fails-before-network`).
-    UnannouncedCrossCustodyCall(UnannouncedCrossCustodyCall),
-
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
     ToleratesUnknownDimension(ToleratesUnknownDimension),
@@ -444,7 +439,6 @@ impl DiagCode {
             DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
             DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
             DiagCode::VouchedCompositionNotPresent(_) => "vouched-composition-not-present",
-            DiagCode::UnannouncedCrossCustodyCall(_) => "unannounced-cross-custody-call",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1223,26 +1217,9 @@ pub struct HelperDeclarationContested {
     pub prior: String,
 }
 
-/// Payload of [`DiagCode::UnannouncedCrossCustodyCall`] (TEMPLATIZED): the cross-custody
-/// name a role definition calls with no authorship act naming it, and where the declaration a
-/// shell would bind is authored.
-///
-/// Spanned at the CALLING definition, because the author who can repair it is the one who wrote
-/// the call — by sourcing the dependency, guarding it with its package sentinel, routing through
-/// `command` when the external tool was meant, or renaming. `30I` §3.4 keeps this apart from
-/// the two announced cases on purpose: the engine cannot distinguish an intended dependency
-/// injection from an accidental function shadow, so it refuses rather than choosing between two
-/// humans' meanings.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UnannouncedCrossCustodyCall {
-    /// The name whose live declaration sits outside the calling definition's custody (`{name}`).
-    pub name: String,
-    /// Where that declaration is authored, `file:line`-shaped (`{live}`).
-    pub live: String,
-}
-
 /// Payload of [`DiagCode::VouchedCompositionNotPresent`] (TEMPLATIZED): the reached name whose
-/// resolution left the vouching engineer's composition, and which of the four worlds it is.
+/// resolution left the vouching engineer's composition, which of the six worlds it is, and where
+/// the declaration a shell would bind is authored.
 ///
 /// The vouch attaches to the code that will actually RUN — the verdict body's reached closure,
 /// resolved at the site's frame (`28R:rul-mixed-custody-suspends-vouch`). Where the composition that
@@ -1253,9 +1230,17 @@ pub struct UnannouncedCrossCustodyCall {
 pub struct VouchedCompositionNotPresent {
     /// The reached name whose resolution carries no license (`{name}`).
     pub name: String,
-    /// Which of the four worlds this is — one license outcome, four reason-sentences, so a typed
-    /// enum rather than four sibling codes (`28L:rul-reason-enums-not-sibling-codes`).
+    /// Which of the SIX worlds this is — one license outcome, one reason-sentence each, so a typed
+    /// enum rather than six sibling codes (`28L:rul-reason-enums-not-sibling-codes`).
     pub reason: VouchedCompositionReason,
+    /// Where the declaration a shell would bind is authored, `file:line`-shaped (`{live}`), or
+    /// empty where the world names no such site (the book-shadow, unresolved-load and
+    /// unenumerable-call reasons have none by construction).
+    ///
+    /// `30I` §3.4 wants the call AND the live definition named for the two cross-custody reasons:
+    /// the repair is to look at the body a shell really binds, and an author who cannot find it
+    /// cannot make it.
+    pub live: String,
 }
 
 /// Why a vouched composition is not the one that will run (see [`CfgTopNodeReason`] for why the
@@ -1271,11 +1256,21 @@ pub enum VouchedCompositionReason {
     /// definition runs unvouched book code inside a read-only check, bypassing it under-executes in
     /// context-wrapper books, and each is unsound in a real cell. Declining is the only sound act.
     BookShadowsCommand,
-    /// The declaration a shell binds lies outside the voucher's own custody. Naming files together
-    /// on one command line is INGESTION, never composition, so the reach lands in an utterance this
-    /// engineer never made — however many declarations there were, and whatever load order did with
-    /// them (`28K` §6 — load order is not an adjudicator of authorship).
-    ResolvedOutsideCustody,
+    /// `30I` §3.4 case 3: the voucher's own file SELECTED a dependency declaring this name — a `.`,
+    /// or an include guard naming it — and the declaration a shell binds is not the one that
+    /// selection reaches. The author wrote an acceptance act; the guard's recognition, the live
+    /// binding, or the reached helper failed to align with that exact closure.
+    DependencySelectedButUnaligned,
+    /// `30I` §3.4 case 4: ordinary shell name resolution supplied the declaration and no
+    /// attributable dependency selection exists. Naming files together on one command line is
+    /// INGESTION, never composition, so the reach lands in an utterance this engineer never made —
+    /// however many declarations there were, and whatever load order did with them (`28K` §6 —
+    /// load order is not an adjudicator of authorship).
+    ///
+    /// Ordinary sh, never invalid input (`30I:rul-ambient-dependencies-are-ordinary-shell`): the
+    /// plan stays runnable and this suspends exactly as its sibling does. Explicit sourcing or a
+    /// guarded fallback RECOVERS the composition; neither is an admission requirement.
+    DependencyAmbientOrUntraceable,
     /// The voucher's own custody declares the name more than once, with DIFFERING bytes. Which one
     /// a shell binds turns on how a file's own declarations interleave with the ones its `.` lines
     /// pull in, which a flat load-order vector cannot express — so the composition suspends rather
@@ -2544,14 +2539,6 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
-        // ERROR with a DENY floor: this is the one composition world the engine cannot describe,
-        // so it refuses the whole run pre-network rather than shipping a plan built on a guess
-        // (`30I:rul-unannounced-cross-custody-fails-before-network`).
-        DiagCode::UnannouncedCrossCustodyCall(_) => CodeSpec {
-            severity: Severity::Error,
-            floor: Floor::WarnOrDeny,
-            remediation: RemediationClass::DeclareIdentity,
-        },
         // WARNING on the same footing: the license is withheld, the site runs, and the plan is safe.
         // What the reader loses is value, and what they need is to know which composition to restore.
         DiagCode::VouchedCompositionNotPresent(_) => CodeSpec {
@@ -3445,13 +3432,15 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::HelperDeclarationContested(HelperDeclarationContested { name, prior }) => {
             vec![ours("name", name.clone()), ours("prior", prior.clone())]
         }
-        DiagCode::UnannouncedCrossCustodyCall(UnannouncedCrossCustodyCall { name, live }) => {
-            vec![ours("name", name.clone()), ours("live", live.clone())]
-        }
-        DiagCode::VouchedCompositionNotPresent(VouchedCompositionNotPresent { name, reason }) => {
+        DiagCode::VouchedCompositionNotPresent(VouchedCompositionNotPresent {
+            name,
+            reason,
+            live,
+        }) => {
             vec![
                 ours("name", name.clone()),
                 component("reason", vouched_composition_text(ctx, *reason)),
+                ours("live", live.clone()),
             ]
         }
         // Static-message codes (no interpolation): no params. Their payload fields are still named
@@ -4227,8 +4216,11 @@ fn vouched_composition_text(
         VouchedCompositionReason::BookShadowsCommand => {
             "vouched-composition-not-present-book-shadows-command"
         }
-        VouchedCompositionReason::ResolvedOutsideCustody => {
-            "vouched-composition-not-present-resolved-outside-custody"
+        VouchedCompositionReason::DependencySelectedButUnaligned => {
+            "vouched-composition-not-present-dependency-selected-but-unaligned"
+        }
+        VouchedCompositionReason::DependencyAmbientOrUntraceable => {
+            "vouched-composition-not-present-dependency-ambient-or-untraceable"
         }
         VouchedCompositionReason::ContestedWithinCustody => {
             "vouched-composition-not-present-contested-within-custody"
