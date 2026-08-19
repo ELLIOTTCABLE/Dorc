@@ -442,3 +442,46 @@ ruling's precondition for the first-loader case, and sizing it is the first thin
 2 does in work-order step 4. `§11`'s unspent variable-sentinel candidate is one way to
 discharge it; a dictate that contracted dependency names cannot be shadowed by host
 binaries is another; both are human calls.
+
+## §14 — supersede-the-command-v-park [human-typed, 2026-08-18]
+
+**`§11` and `§13`'s conclusions are SUPERSEDED.** Evidence: `notes/30Ic`. Ruling:
+`30I` `c57dd0cf`. Read those, not the two sections above, for current truth. What
+changed and what a successor must not re-derive:
+
+- The conductor's slash-discriminator proposal is REFUTED empirically, not just
+  weakened. `PATH=:` — an ordinary leading/trailing/adjacent colon — makes BOTH pinned
+  floors print a BARE name for an external, contradicting POSIX Issue 8's own output
+  table (`30Ic:fnd-zero-prefix-defeats-slash-test`, `+SURE`, with dash's `padvance()`
+  named as the cause). Plus: alias text can carry slashes; posh exposes neither aliases
+  nor reserved words; POSIX warns subenvironment queries lose shell-resident categories;
+  and no searched source uses slash-parsing as an include-guard idiom, so blessing it
+  would have minted a Dorc invention rather than recognizing a habit. The conductor's
+  POSIX reading was correct and its empirical check was absent — the same failure the
+  human had already been bitten by once.
+- The carve-out basis is now the VARIABLE SENTINEL, which passes the habit bar the
+  slash test failed (Shellac, 1Password agent-hooks, published guidance;
+  `30Ic:fnd-sentinel-guards-are-established`) and whose floor semantics agree across
+  dash and posh on all three states (`30Ic:obs-sentinel-floor-semantics-agree`).
+- `§13`'s claim that the ruling SUBSUMES `§11` as its precondition is now WRONG. A
+  value test carries no PATH exposure, so the first-guard decision no longer routes
+  through `command -v` at all and the diamond cascade the conductor described does not
+  arise. `command -v` stays a supported, aspired-to route under
+  `30I:pin-command-v-load-model` — conservatively withholding, explicitly not forfeited.
+- The design's sharp half, which the conductor had not reached: the exact target
+  closure must INDEPENDENTLY supply both the decisive guard value AND the reached
+  helper. Either alone is forgeable (a copied sentinel assignment with no load; a
+  same-named helper from anywhere), and demanding both trace to one closure means the
+  only way to satisfy it is that the package really loaded and is really what is live.
+  Both are `Must`, so ambiguity withholds. The condition never mints authority.
+
+**Not a concern** [human-typed]: the parent environment happening to carry a matching
+sentinel. Dorc is not pursuing hermeticity against its invocation environment yet, and
+whether a local pivot book should inherit system environment or be scrubbed toward
+ssh-parity is genuinely open (`30Ic` §8.4). Do not treat it as a gate on this work.
+
+**Not lawed** [human-typed]: the residual sizing question — whether the value plane can
+say *provably unset* at a first guard, given `analysis/src/value.rs:266` models an unset
+variable as absent-as-⊤/⊥ — is handed to the builder as spec, with no
+size-this-first directive and no descope path pre-authorized. It reports only if the
+work proves wildly unexpected.
