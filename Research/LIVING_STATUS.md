@@ -41,15 +41,20 @@ narrate with different operands/repairs; neither may refuse the plan or mint
 authority. The landed exit-16 whole-run refusal is implementation drift to remove
 while retaining its census as aid machinery (`30I` §3.4; `30Ib` §13).
 
-The loader-account half of that is LANDED ("Preserve every statically possible
-load occurrence, and project it three ways"): `analysis::load::LoadAccount` holds
-ordered occurrences with sourcer/target/locus/context/route, and the three
-projections derive from it — possible-load (bundle; undecided fallbacks included),
-exact-speaker (authority; byte-for-byte the old edge set), and selection
-(narrative, no consumer yet). `30Ib` §15's blocker is discharged at the loader.
-Still owed inside step-5a: the exit-16 drift removal, the narrative projection's
-consumer, and `30Ib`'s own update — the builder paused mid-segment for a merge and
-has not written it.
+`30I:step-5a-complete-load-occurrence-account` is COMPLETE. `analysis::load::LoadAccount`
+holds ordered occurrences with sourcer/target/locus/context/route, and three projections
+derive from it — possible-load (bundle; undecided fallbacks included), exact-speaker
+(authority; byte-for-byte the old edge set), and selection (narrative). `30Ib` §15's
+blocker is discharged. The exit-16 refusal is gone — exit code, `RunOutcome`, both
+returns, the whole-unit walk, and the `unannounced-cross-custody-call` code — and
+`emit30-cross-custody-plural-helper-suspends` is byte-identical to its pre-refusal self,
+which is the evidence the removal restored exactly what the refusal took. The narrative
+projection has its consumer: the cross-custody suspension carries two reasons,
+selected-but-unaligned vs ambient-or-untraceable, chosen at `HelperIndex::resolve` from a
+selection relation the drivers hang beside the custody one, so the distinction rides the
+existing reached-site `vouched-composition-not-present` push and nothing whole-unit is
+emitted. `emit30-ambient-dependency-narrates` is the new specimen; `30Ib` §0/§15/§16 are
+current. The lane now PAUSES for `notes/30K`.
 
 **[TYPED 2026-08-19] The modeled-running-wall repair is UNIFICATION NOW, not a
 narrow guard mint and not post-r30 debt.** Implementation work order

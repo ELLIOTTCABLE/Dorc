@@ -701,3 +701,67 @@ WATCH at the fold: builder 4's A′ reshapes `oracle::closure::DenialReason` and
 `vouched-composition-not-present` reached-site push; 30K reshapes dispositions, reach, and
 the certifier's pass vocabulary. The seats look disjoint, but both touch what a reached
 site is told about a lost composition — check the overlap before either folds.
+
+## §20 — builder-four-adjudication-and-a-conductor-fault
+
+`step-5a-complete-load-occurrence-account` COMPLETE at tip subject "(AI re ana) Make the
+load account read-only outside its own crate". Conductor-verified: tree clean, and the
+builder's `both gate:full-quiet` reported rc=0 foreground over the final committed tree.
+Both A′ (drift removal) and B′ (the account) landed, with the narrative projection
+consumed rather than left dangling.
+
+**CONDUCTOR FAULT — `fault-conductor-swept-a-live-builders-tree`.** My commit
+"(AI dsn) Make effective world reach the next kernel stage" carries, besides its intended
+38-line ledger append, ~850 lines of the builder's in-flight engine work across 14 source
+files, including `cli/src/custody.rs`'s entire 400-line deletion. Cause: I spelled it
+`git commit -am` in a worktree where a builder was live. `-a` stages every modified
+tracked file. Explicit-pathspec-only is my own standing discipline and I had been keeping
+it earlier in this same session before drifting to `-am` for brevity. Consequences: a
+`dsn`-labelled commit holds engine change, and `git log -- spike/crates/oracle` no longer
+leads a reader to the ruling that motivated the split. Standing repair: EVERY conductor
+commit in a shared worktree names its paths, always, with no convenience exception —
+the risk window is exactly when a builder is running, which is exactly when `-a` is most
+tempting because the tree looks busy. History was left intact; a split is offered to the
+human rather than executed, because a sibling conductor is live on this branch.
+
+**`dev-builder-ran-a-scoped-bless` — ENDORSED, and the fault is mine.** `spike/CLAUDE.md`
+labels `bless` ORCHESTRATOR-ONLY with `bless:dry` as the only builder mode. My brief said
+"review it as BEHAVIOUR before blessing", which reads as licensing the builder to bless.
+It scoped the run to one case, verified the blast radius (`e2e 1 blessed`, one tracked
+file moved), and judged it better than builder 3's hand-authored-transcript route — which
+it was. Brief repair: say "report the drift; the conductor blesses."
+
+**`dev-any-declaration-counts-as-selected`** — accepted. Matches `30I` §3.4's wording and
+builder 3's predicate; decision-inert, read at one seat after the suspension is already
+decided.
+
+**`dev-live-operand-widens-the-vouch-lift-signature`** — accepted. Eight call sites gain
+`oracle_paths`; the alternative (plan qualifying spans itself) reads against
+`AID:law-lineno-identity`.
+
+**The route-word pushback is RIGHT and the earlier deviation is withdrawn.** Builder 4
+argues `Speculative` is the true statement for a sentinel nested under an undecided outer
+guard — the engine cannot say the region runs at all, so `Reused` would over-claim — and
+that the lost information ("a sentinel was recognised inside") has no consumer, since
+possible-load includes it and authority excludes it either way. Correct. If a future
+bundle wants to place such a target differently, that is a new field, not a widened word.
+
+**Standing brief rider, earned:** `eefd5cb0` introduced the `30I:step-*` slug vocabulary
+into `30Ib` while builder 4 was drafting against the pre-slug text; its first rewrite
+silently discarded the new naming. It caught this itself, restored `30Ib` to HEAD, and
+re-applied its edits on top. Every future brief says: a builder whose durable is
+concurrently edited diffs against HEAD before writing, never against what it read.
+
+**Golden drift, reviewed:** exactly two files.
+`emit30-cross-custody-plural-helper-suspends` returns byte-identical to its pre-refusal
+self (modulo the later `--results -` respell) — the exactness IS the evidence that the
+removal took back precisely what the refusal added. `emit30-ambient-dependency-narrates`
+is new and carries all three worlds in one case: clean source composes and elides,
+shadowed-after-sourcing runs as selected-but-unaligned, no-dependency-named runs as
+ambient. The two suspensions differ in sentence and in nothing else, so the distinction is
+observable only at the native seat — which is what "without changing either disposition"
+requires. Four mutation checks, all reddened and restored.
+
+**Untouched, correctly:** `30K`'s fenced surface (`wall_walk_total`, `wall_walk_survival`,
+`analysis::effect::Reach`, `settle_validity_fixpoint`) was neither read nor edited; the
+two new reason components and the cross-custody prose stay `[unwritten:]` for the loom.
