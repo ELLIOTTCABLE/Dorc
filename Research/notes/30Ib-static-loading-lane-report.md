@@ -455,3 +455,130 @@ None is self-endorsed.
    is now false. No new user-facing sentence was authored, and `-` is deliberately
    NOT documented in the help page — that would be authorship. Owed to the
    conductor: a `-` line in the options block, and prose for the two new codes.
+
+## §10 — Builder 2: step 4 as built (the exact package sentinel)
+
+### The parser keeps one name it used to throw away
+
+`${x-}` and `${x:-}` lex to `WordPart::ParamComplex { empty_defaulted: Some("x") }`;
+every other operator form answers `None` and stays as opaque as it was. Those two
+bodies are CLOSED — the default is EMPTY — so no command substitution, arithmetic
+or further expansion can hide in one, which is why carrying the NAME decodes
+nothing and licenses nothing. No reader learns a VALUE.
+
+That is the whole parser change, and it exists because the guard `30I` §2.2 spells
+is nounset-safe and its variable's name was previously discarded. A bare `"$x"`
+sentinel is deliberately NOT admitted: it aborts the loading shell under `set -u`,
+so admitting it would bless an idiom the floor breaks on.
+
+### The guard grew a second species, and the loader a decision
+
+`oracle::load_inert::GuardCondition` is `CommandV { function }` |
+`Value { name, literal, equals }`; `analysis::load::LoadCondition` is the loader's
+copy. `[ "${x-}" = 'lit' ]` and `test`-spelled, either operand order, both senses.
+`command -v` is untouched: same admission, same one-directional decision, same
+conservative withhold (`30I:pin-command-v-load-model`).
+
+`funcenv::sentinel_decides` is the recognition. Six conditions, each of which
+withholds alone:
+
+1. one branch loads exactly ONE target, the other is EMPTY;
+2. the LOADING branch is the one taken when the sentinel does NOT match;
+3. the target resolves exactly, from authored input, to a program the controller
+   holds;
+4. `sole_populator` — the target's own transitive closure assigns the tested
+   variable, and NOTHING else in the authored world does, the book included;
+5. `anything_removes` — no loadable program `unset -f`s a name that closure
+   declares;
+6. `sentinel_arm` — the ENVIRONMENT says which arm: every name the closure
+   declares is bound to that closure's own definition (REUSE), or every one is
+   Undefined (SOURCE). Mixed, ⊤, or live-from-another-unit withholds.
+
+Condition 6 was a REPAIR mid-lane, and the reason is worth keeping: the first
+implementation always took the source arm, which models a package RE-LOADING over
+a regional shadow the reuse arm would have left standing — the licensing
+direction, and exactly `30I` §13's "a book's own hand-written function" mislead.
+Reading the arm off the environment costs the precision `command -v` had at
+`load30-two-point-frames`'s regional load point (it decided TRUE there from a live
+definition; the sentinel withholds because the live definition is the BOOK's) and
+buys the correctness back. Pinned as
+`a_package_name_shadowed_from_outside_withholds`.
+
+The value plane is never asked what the sentinel HOLDS, and could not answer:
+`analysis/src/value.rs` models an unset variable as absent-⊤, so "provably unset"
+is unavailable there. **That is this lane's answer to `30Ia` §14's residual sizing
+question — it is DISSOLVED rather than solved.** Recognition reads the idiom's
+structure plus a NAME census (who could have populated the value at all), and the
+environment for the arm; a value comparison never happens. The book-side half of
+the census is `DefinitionTable::book_assigns`, a whole-AST NAME walk, because the
+value plane cannot see an assignment it reads as ⊤ or one sited below the load.
+
+### Minting moved to where a load is KNOWN to happen
+
+`Loading::mints_speaker` is false inside an UNDECIDED guard's speculative branch
+walks and sticky downward. So:
+
+- an ordinary top-level `.` in a marked file mints, as before;
+- a DECIDED guard's fallback `.` mints (the engine can say it runs);
+- a RECOGNIZED sentinel guard mints `(sourcer, target)` explicitly, on BOTH arms —
+  `30I` §3.4 case 2's "even when another package loaded the exact target first";
+- an UNDECIDED guard's fallback mints NOTHING.
+
+The last is a behaviour change from what builder 1 landed and from the literal
+walk before it, both of which minted from any guard branch. It is the ruling
+(`rul-speaker-minting-is-oracle-sourcing-only`, as `30I` §3.4 amends it), and
+`cli::sourcing`'s `an_undecided_guard_mints_no_edge` /
+`a_recognized_sentinel_guard_mints_its_edge` are the pair. Previously that hole
+was contained only by the ⊤ the join produced — safety by composition across two
+mechanisms, which `30Ia` §12 flagged as the shape to remove.
+
+The reached-vouch-path `Must` half of `30I` §3.4 is deliberately NOT new code: it
+is `HelperIndex::resolve` gating on the closures this edge feeds, plus the frame
+lookup's `Must`-grade requirement. A same-named helper from another unit withholds
+there, where it already did.
+
+### The specimens
+
+`load30-*` are re-spelled to the sentinel (directed work). Run sets are unchanged
+and all three remain XFAIL; `floor30-dot-loader-function-errexit` is
+byte-identical. `load30-subshell-errexit-fallback`'s guard is in the BOOK, so it is
+ordinary book control flow either way — the re-spell keeps the specimen honest
+about which idiom it exercises, and changes no engine answer.
+
+## §11 — What step 4 did NOT land
+
+1. **`rul-unannounced-cross-custody-fails-before-network` is NOT built.** The
+   classifier already exists in substance — `oracle::closure::DenialReason::
+   ResolvedOutsideCustody` IS `dependency-merely-happened-to-be-live`, and
+   `explicitly-sourced` / `guarded-source-exact` are the two ways custody now
+   reaches — but it SUSPENDS where the ruling wants a whole-run refusal. Design,
+   ready to implement:
+   - a cli-edge pre-pass beside `helper_conflict_diagnostics`, sited after the
+     `HelperIndex` (which now sits below `funcenv::analyze`) and before the
+     `probe`-mode early return: walk each non-book source's top-level role
+     funcdefs, `closure_for(file, body)`, keep the `ResolvedOutsideCustody`
+     denials;
+   - mint one code (payload: the name, and the live declaration's `path:line`),
+     prose `[unwritten:]`, spanned at the calling definition; a defining case like
+     `cli-several-main-books`'s;
+   - refuse the way the intake does — `report_at(...)` then
+     `return Ok(RunOutcome::X)` BEFORE any artifact — with its own exit code,
+     rather than `wrapper_incoherent`'s ship-then-signal shape;
+   - `deliberate-external-utility` needs `closure::called_names` to stop counting
+     the operand of `command <name>` as a reach. It currently counts both words;
+     the fix is one arm in `walk`, and it must not also stop counting an ordinary
+     call.
+   Expected golden movement: `emit30-cross-custody-plural-helper-suspends` turns
+   from "suspends, apply is the book" into "no mutation-authorizing plan", which
+   is the movement builder 1 flagged and this builder inherited.
+2. **`specimen-speaker-minting-is-observable` is NOT built**, and with it the
+   mutation check the brief asks for. The finer-grained recognition cells ARE
+   pinned at their ownership seats (`funcenv` TABLE 7, six cells;
+   `oracle::load_inert` two; `cli::sourcing` two), so what is missing is the
+   whole-product observation that minting has a RUN-SET consequence. Shape, as
+   scoped: three `--pre-source` packages against one book — one recognized
+   (converged verdict ⇒ its book site elides ⇒ absent from `expected.ran`), one
+   whose sentinel a second unit also assigns, one whose helper a second unit also
+   declares — the last two withholding, so their sites run. It needs a
+   `probe-results.txt` matching what the mocked probe produces (gate-1 compares
+   them), which is an iterate-until-green step.
