@@ -1,0 +1,190 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - helper-declaration-contested
+  - vouched-composition-not-present
+---
+-- book.sh --
+#!/bin/sh
+# emit30-ambient-dependency-narrates (`30I` §13 specimen 5;
+# `30I:rul-ambient-dependencies-are-ordinary-shell`, TYPED 2026-08-19) — a cross-custody dependency
+# is ORDINARY SH. Learning that a call resolves to a function in another loaded file costs the
+# vouch and NOTHING else: the plan stays runnable, the site runs, unrelated planning continues.
+#
+# Three packages, one authorship difference each, and the observation is the RUN SET.
+#
+#   alpha  — AMBIENT OR UNTRACEABLE (`30I` §3.4 case 4). Its body calls `sm_shared_check`, which a
+#            co-loaded file happens to declare. Nothing in alpha's own file names that dependency,
+#            so ordinary shell name resolution is the whole story. Its vouch does not compose, and
+#            this line RUNS — which is exactly what it did before anyone loaded `shared.oracle.sh`.
+#   beta   — SOURCE ACT PRESENT BUT UNALIGNED (`30I` §3.4 case 3). Its file DOES `.` the dependency
+#            that declares `sm_beta_check`; a third author's co-loaded file declares the same name
+#            later, so a shell binds THEIRS. Same disposition as alpha — suspend, run — and a
+#            different sentence, because the repair differs and naming beta's author in alpha's
+#            words would point them at work they already did.
+#   delta  — THE COMPOSING SIBLING. The identical shape with no stranger in it: the `.` takes
+#            custody, the vouch attaches, the probe measures converged, and the line is ELIDED.
+#
+# Read the pair alpha/delta first: it is the whole offer. Sourcing a dependency RECOVERS
+# composition; it is not an admission ticket, and its absence refuses nothing.
+delta sync d.conf
+alpha sync a.conf
+beta sync b.conf
+
+-- alpha.oracle.sh --
+# dorc-lang/v0.2
+# No `.`, no guard: the helper below is whatever the shell has live. That is legal sh an author is
+# already defensive about, and Dorc treats it as such.
+alpha__is_converged() {
+   sm_shared_check "$2"
+}
+
+-- shared.oracle.sh --
+# dorc-lang/v0.2
+# Co-loaded, never sourced. Naming files together on one command line is INGESTION.
+sm_shared_check() {
+   common cmp -- "$1"
+}
+
+-- beta-common.oracle.sh --
+# dorc-lang/v0.2
+sm_beta_check() {
+   common cmp -- "$1"
+}
+
+-- beta.oracle.sh --
+# dorc-lang/v0.2
+# The acceptance act is written and unambiguous. What defeats it is somebody else's file.
+. ./beta-common.oracle.sh
+
+beta__is_converged() {
+   sm_beta_check "$2"
+}
+
+-- rogue.oracle.sh --
+# dorc-lang/v0.2
+# The same helper NAME, different bytes, a different author, loaded later — so a shell binds this
+# body, and beta took custody of nobody's utterance but its own dependency's.
+sm_beta_check() {
+   common cmp --strict -- "$1"
+}
+
+-- delta-common.oracle.sh --
+# dorc-lang/v0.2
+sm_delta_check() {
+   common cmp -- "$1"
+}
+
+-- delta.oracle.sh --
+# dorc-lang/v0.2
+. ./delta-common.oracle.sh
+
+delta__is_converged() {
+   sm_delta_check "$2"
+}
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/alpha --
+#!/bin/sh
+# INERT mock. Present in the run log because an ambient dependency costs the vouch, never the run.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/beta --
+#!/bin/sh
+# INERT mock. Present in the run log because a stranger's declaration won the binding.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/delta --
+#!/bin/sh
+# INERT mock. Its ABSENCE from the run log is the observation: delta's `.` took custody, so its
+# vouch composed and the converged site was elided out of the apply.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/common --
+#!/bin/sh
+# INERT mock, answering the probe's `common cmp -- …` through the helper delta's `.` licensed.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: alpha sync a.conf
+ran: beta sync b.conf
+
+-- replay --
+$ dorc --book=book.sh --pre-source alpha.oracle.sh --pre-source beta-common.oracle.sh --pre-source beta.oracle.sh --pre-source delta-common.oracle.sh --pre-source delta.oracle.sh --pre-source rogue.oracle.sh --pre-source shared.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=099ae4a7e3975759bfd79f6bbb24fb35ad8f67518c8eb2e6b1df4a963e4ccb88 sites=1 @@dorc@@\n'
+# site 0: dorc-auto:delta@converged
+sm_delta_check() {
+   common cmp -- "$1"
+}
+delta__is_converged() {
+   sm_delta_check "$2"
+}
+delta__is_converged 'sync' 'd.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# emit30-ambient-dependency-narrates (`30I` §13 specimen 5;
+# `30I:rul-ambient-dependencies-are-ordinary-shell`, TYPED 2026-08-19) — a cross-custody dependency
+# is ORDINARY SH. Learning that a call resolves to a function in another loaded file costs the
+# vouch and NOTHING else: the plan stays runnable, the site runs, unrelated planning continues.
+#
+# Three packages, one authorship difference each, and the observation is the RUN SET.
+#
+#   alpha  — AMBIENT OR UNTRACEABLE (`30I` §3.4 case 4). Its body calls `sm_shared_check`, which a
+#            co-loaded file happens to declare. Nothing in alpha's own file names that dependency,
+#            so ordinary shell name resolution is the whole story. Its vouch does not compose, and
+#            this line RUNS — which is exactly what it did before anyone loaded `shared.oracle.sh`.
+#   beta   — SOURCE ACT PRESENT BUT UNALIGNED (`30I` §3.4 case 3). Its file DOES `.` the dependency
+#            that declares `sm_beta_check`; a third author's co-loaded file declares the same name
+#            later, so a shell binds THEIRS. Same disposition as alpha — suspend, run — and a
+#            different sentence, because the repair differs and naming beta's author in alpha's
+#            words would point them at work they already did.
+#   delta  — THE COMPOSING SIBLING. The identical shape with no stranger in it: the `.` takes
+#            custody, the vouch attaches, the probe measures converged, and the line is ELIDED.
+#
+# Read the pair alpha/delta first: it is the whole offer. Sourcing a dependency RECOVERS
+# composition; it is not an admission ticket, and its absence refuses nothing.
+# delta sync d.conf   # dorc: elided (already converged / dead branch)
+alpha sync a.conf
+beta sync b.conf

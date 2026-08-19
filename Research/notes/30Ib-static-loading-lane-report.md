@@ -11,14 +11,21 @@
 ## §0 — Where the lane stands
 
 **`30I:step-1-run-pre-sources-as-programs` through
-`30I:step-4-recognize-exact-guarded-source` are landed, and §2.5's
-`owed-no-flag-defaults-to-stdin` is discharged. Exact guarded-source recognition
-stands; its whole-run cross-custody refusal is SUPERSEDED and is implementation
-drift to remove while retaining the distinction as narrative (`30I` §3.4,
-2026-08-19).** `30I:step-5a-complete-load-occurrence-account` is next. Bundle
-projection, locator-through-a-real-diagnostic, artifact forms, XFAIL promotion,
-and e2e lowering are untouched; §15 carries what scouting
-`30I:step-5a-complete-load-occurrence-account` through
+`30I:step-4-recognize-exact-guarded-source` are landed, §2.5's
+`owed-no-flag-defaults-to-stdin` is discharged, and
+`30I:step-5a-complete-load-occurrence-account` is DONE.** The superseded cross-custody
+refusal is gone — exit 16, its `RunOutcome`, both refusal returns, its whole-unit walk
+and its diagnostic code — so the plan is runnable again and
+`emit30-cross-custody-plural-helper-suspends` is byte-identical to its pre-refusal self.
+Exact guarded-source recognition stands. The ONE load account
+(`30I:rul-one-load-account-separate-projections`) is built and all three of its
+projections have consumers; §16 carries its shape.
+
+Per `30I:impl-effective-reach-interposes-before-bundles` the lane now PAUSES at
+`notes/30K` before `30I:step-5b-build-bundle-projection`. Bundle projection,
+locator-through-a-real-diagnostic, artifact forms, XFAIL promotion and e2e lowering are
+untouched; §15 carries what scouting
+`30I:step-5b-build-bundle-projection` through
 `30I:step-6-compose-bundle-locators-into-diagnostics` established. The three
 `load30-*` specimens remain XFAIL, spelled with the sentinel guard `30I` §2.2
 carries; `floor30-dot-loader-function-errexit` is byte-identical.
@@ -104,13 +111,15 @@ Guard decision is ASYMMETRIC and that is the safety argument:
 - anything else ⇒ both branches JOIN (can't-say, withholds).
 
 `LOAD_DEPTH_CAP` plus a visiting-stack cycle guard; a diamond is followed twice, a
-cycle answers ⊤. `FuncEnv::wanted_loads()` is the loader's own account of paths it
-named but does not hold — a settled post-pass (`wanted_after`), never an
-accumulation inside the transfer. `FuncEnv::sourced_paths()` exposes the load acts.
+cycle answers ⊤. `FuncEnv::loads()` is the ONE account the settled post-pass
+(`settled_account`) builds — never an accumulation inside the transfer, which is asked
+once per worklist iteration and would carry paths the settled answer never names. §16
+carries its shape and its three projections. `FuncEnv::sourced_paths()` still keys the
+book's own resolved `.` sites by `CfgNodeId`, which is what the shadow pass replays.
 
 ### `cli` edge — acquisition driven BY the loader
 `main.rs::read_book_sourced` loops: build a snapshot, build the definition table,
-run `funcenv::analyze`, read whatever `wanted_loads()` names that satisfies the
+run `funcenv::analyze`, read whatever the account's `wanted()` names that satisfies the
 dorc-lang contract, repeat until nothing new (`ACQUISITION_ROUNDS_CAP`). There is
 no second resolver at the edge to drift from the engine. Only MARKED
 contract-satisfying targets are admitted; everything the loop appends is
@@ -296,6 +305,13 @@ None is self-endorsed. Each names what was done and what the alternative was.
   `unset` out.
 - `analysis::load` — operand expansion against the loading context, file-local
   constants shadowing the caller, declarations flat while loads are not.
+- `analysis::funcenv` TABLE 8 — the load account's three projections: an undecided guard's
+  fallback possible-but-never-a-speaker, a reuse arm's occurrence and mint, two load points
+  naming one target staying two occurrences, root acts carrying the species that mints nothing.
+- `oracle::closure` — selecting a dependency changes the SENTENCE and not the disposition
+  (`30I` §3.4 cases 3 and 4 over one unchanged pair of files).
+- `cli::sourcing` — the speaker and selection halves of one include-tree walk: an undecided
+  guard mints no edge yet IS selected; a book's loads reach neither relation.
 - `analysis::funcenv` TABLE 5/6 — cwd-relative resolution across three cwds,
   slash-less unresolvable, root reaching a guarded dependency, unset root
   resolving nowhere, both guard directions, the diamond, one entrypoint at two
@@ -308,7 +324,9 @@ None is self-endorsed. Each names what was done and what the alternative was.
   its guarded dependency (and not a co-resident stranger), an unmarked target never
   opened, an invocation-named oracle staying ambient.
 
-**e2e:** unchanged. The three `load30-*` remain XFAIL; `floor30-*` byte-identical.
+**e2e:** the three `load30-*` remain XFAIL and `floor30-*` is byte-identical;
+`emit30-cross-custody-plural-helper-suspends` is back to its pre-refusal bytes and
+`emit30-ambient-dependency-narrates` is new (§16).
 
 ## §7 — Next steps into item 5
 
@@ -631,7 +649,8 @@ pre-source ORDER (`common` before `delta`, glob-sorted) arranges.
 ## §13 — Builder 3: the superseded cross-custody refusal
 
 BUILT as reported below, then SUPERSEDED by the human's 2026-08-19 ruling in
-`30I` §3.4. The exact guarded-source speaker mint remains; the exit-16
+`30I` §3.4, and REMOVED in §16 — read this section as history of a shape that no
+longer exists. The exact guarded-source speaker mint remains; the exit-16
 whole-run refusal does not. Keep the census operands and the distinction between
 source-act-present-but-unaligned and ambient/untraceable dependencies, route
 both to narrative, and let the existing custody suspension keep the site
@@ -780,36 +799,38 @@ ratify or reword.
 select among emission modes and there is still exactly one emission form, so both halves are vacuous
 and its refusal has nothing to refuse. It belongs with the artifact forms.
 
-## §15 — `30I:step-5a-complete-load-occurrence-account` precedes bundle work
+## §15 — `30I:step-5a-complete-load-occurrence-account` is DONE; bundle work is not
 
 NOT STARTED: no bundle projection, no `dorc bundle`, no locator-through-a-real-diagnostic. What
 follows is what scouting them established, so the finding below is not re-derived.
 
-### `fnd-the-loader-reports-no-unfiltered-edge-set` (the blocker to size first)
+### `fnd-the-loader-reports-no-unfiltered-edge-set` (DISCHARGED at the loader; §16)
 
 `rul-one-loader-many-projections` forbids a second bundle resolver, so the projection's file
 closure — "which sources does this load occurrence pull in, transitively" — must come from the
-loader's own account. None of the three accessors answers it:
+loader's own account. When this was written, none of the three accessors answered it:
 
-- `FuncEnv::load_edges()` is CUSTODY-filtered. `Loading::mints_speaker` is false inside an
-  undecided guard's speculative branch, so an undecided guard's fallback target is absent. A bundle
-  built from it would OMIT a file the runtime `.` may really load — a correctness hole, not a
-  cosmetic one.
+- `FuncEnv::load_edges()` was CUSTODY-filtered. `Loading::mints_speaker` is false inside an
+  undecided guard's speculative branch, so an undecided guard's fallback target was absent. A
+  bundle built from it would OMIT a file the runtime `.` may really load — a correctness hole,
+  not a cosmetic one.
 - `FuncEnv::sourced_paths()` is keyed by the BOOK's `CfgNodeId`s, so it records the book's own `.`
   acts and nothing nested inside a package's `LoadProgram`.
 - `cli::sourcing::top_level_load_targets` is LITERAL-only and, worse, using it here would BE the
   second resolver the ruling forbids (it is already fenced to "what to READ before there is an
   environment to ask").
 
-So `30I:step-5a-complete-load-occurrence-account` opens with an extension of the
-ONE loader account that preserves each
-statically possible resolved load OCCURRENCE, minting or not, with its source
-locus and positional context. A pair-set of `(sourcer, target)` is enough for
-transitive membership but not for per-occurrence bundle keying or locator
-composition. `30I` §6.1 rules the three projections over that one account:
-possible loads for bundle completeness, exact speaker edges for authority, and
-decision-inert dependency distinctions for narrative. Size that account before
-writing bundle code.
+All three accessors are gone. `FuncEnv::loads()` is the ONE account
+(`analysis::load::LoadAccount`), and it preserves every statically possible resolved load
+OCCURRENCE with its sourcer, target, locus, positional context and nesting. So
+`30I:step-5b-build-bundle-projection`'s remaining question is no longer "where does the file set
+come from" but "how are root bundles keyed and placed over these occurrences", which is that
+step's own work.
+
+The one thing a successor must NOT do is flatten the occurrences back into a pair set on the way
+into the bundle. Two textual load points naming one entrypoint are two occurrences, and both
+bundle keying (`rul-bundles-key-to-load-occurrences`) and locator composition need them apart;
+`funcenv`'s `two_load_points_naming_one_target_are_two_occurrences` is the pin that says so.
 
 ### Two things that are already settled and should not be re-litigated
 
@@ -834,3 +855,84 @@ and WSL-only, and belongs to `30I:step-8-promote-executable-specification`. Unti
 exists, explicit flatten intent should REFUSE before network,
 which `30I` §7.1 already sanctions in so many words; it should NOT ship as an un-measured
 inlining.
+
+## §16 — Builder 4: the one load account, and the refusal removed
+
+### The account, and why it is one thing with three readers
+
+`analysis::load::LoadAccount` is the ONE record of loading
+(`30I:rul-one-load-account-separate-projections`). The settled walk records a
+`LoadOccurrence` for every statically possible RESOLVED load it meets — `sourcer`
+(`Invocation` / `Book` / `File(key)`), `target` (canonical key), `locus` (the `. <operand>`
+span inside the sourcer's own bytes), `at` (the book program point the act descends from),
+`within` (the enclosing occurrence, so nesting survives), and `route`:
+
+- `Taken` — the engine can say this `.` runs;
+- `Speculative` — a branch of a guard nobody decided;
+- `Reused` — a recognized package sentinel's fallback whose REUSE arm the environment
+  selected, recorded in `sentinel_decides` because there is no `.` there to hang it on (the
+  SOURCE arm returns early and the branch walk's own `.` records it, so no occurrence is
+  recorded twice).
+
+Three projections, and the whole point is that none substitutes for another:
+
+| projection | reader | rule |
+|---|---|---|
+| `occurrences()` | the bundle (step 5) | everything, speculative branches INCLUDED |
+| `speaker_edges()` | `include_tree` ⇒ custody ⇒ every authority consumer | `File` sourcer AND `route != Speculative` |
+| `selection_edges()` | `IncludeTree::selected` ⇒ the §3.4 narrative split | every `File`-spelled act, aligned or not |
+
+`FuncEnv::{load_edges,wanted_loads,unresolved_sourcers}` are GONE, replaced by
+`FuncEnv::loads()`. The sourcer SPECIES is what keeps a book `.` and a CLI pre-source out of
+both edge relations — a type rather than a filter every consumer has to remember.
+
+Root acts (a book `.`, a pre-sourced root) are recorded with `locus: None`, because
+`rul-bundles-key-to-load-occurrences` keys ROOT bundles to exactly them and step 5 would
+otherwise re-derive them from `sourced_paths`/`defs.ambient`.
+
+### The refusal is out, and the distinction moved into the reason enum
+
+Per `30I` §3.4 as re-cut 2026-08-19 and `30Ia` §17, the exit-16 whole-run refusal is
+implementation drift and is gone: `EXIT_UNANNOUNCED_CROSS_CUSTODY`,
+`RunOutcome::UnannouncedCrossCustody`, both refusal returns, the `unannounced-cross-custody-call`
+code, and `cli::custody`'s whole-unit walk are all deleted.
+
+What replaced it is a SPLIT at the seat that already answers the question.
+`oracle::closure::DenialReason::ResolvedOutsideCustody` became two variants, and
+`aid::VouchedCompositionReason` mirrors them:
+
+- `DependencySelectedButUnaligned` — some declaration of the reached name sits inside the
+  asker's SELECTION relation, so the author wrote an acceptance act that did not land;
+- `DependencyAmbientOrUntraceable` — none does, so ordinary shell resolution is the whole story.
+
+`HelperIndex` carries the selection relation beside its custody one (`with_selection`,
+defaulting to the custody closures — right rather than merely safe, since a lane with no
+include-tree has no sourcing for anyone to have selected). The predicate is ANY declaration of
+the name, matching §3.4 case 3's "naming a dependency which declares the reached helper".
+
+Two properties this shape buys for free:
+
+1. **The push is already filtered to reached sites.** `vouched-composition-not-present` is
+   minted in the vouch lift, per suspended composition, so a plan pushes the distinction exactly
+   where the lost composition affects a site — which is what the ruling asks and what the
+   deleted whole-unit walk could not do.
+2. **The literal-only cut is closed.** `custody::announced` walked literal `.` operands, so a
+   variable-rooted announcement was invisible and read as ambient. The selection relation is the
+   loader's own account, so `. "$ROOT/dep.sh"` announces exactly as its literal twin does.
+
+`VouchedCompositionNotPresent` grew a `live` operand (`path:line` of the declaration a shell
+would bind), so the two cross-custody sentences can name the call AND the live definition when
+their prose is authored. It is computed at `plan::live_locus` from paths the CALLER threads in
+(`AID:law-lineno-identity`); a lane holding no paths passes none and the operand stays empty.
+
+### Specimens
+
+- `emit30-cross-custody-plural-helper-suspends` is byte-identical to its pre-refusal self
+  (its `exit: 16`, its `unannounced-cross-custody-call` expectation and its missing apply
+  artifact all came back out together). That exactness is the evidence the refusal's removal
+  restored precisely what it took.
+- `emit30-ambient-dependency-narrates` is new (`30I` §13 specimen 5): three packages, one
+  authorship difference each. `delta` sources its dependency cleanly ⇒ composes ⇒ converged ⇒
+  ELIDED. `beta` sources its dependency and a later co-loaded file shadows the helper ⇒
+  selected-but-unaligned ⇒ RUNS. `alpha` names no dependency at all ⇒ ambient ⇒ RUNS. The run
+  set is the observation, and the two suspensions differ in sentence and in nothing else.
