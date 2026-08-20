@@ -8055,6 +8055,31 @@ apt_get__is_converged() {
         );
     }
 
+    #[test]
+    fn every_disjoint_inline_establish_survives_as_one_replacement() {
+        let (plan, _) = effective_plan(
+            "install_both() { apt-get install -y nginx; apt-get install -y curl; }\n\
+             apt-get install -y oldpkg\n\
+             install_both\n",
+            |entity| {
+                if entity == "oldpkg" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+            Some(&|entity: &str| (entity == "oldpkg").then(|| "oldpkg".to_owned())),
+        );
+        let aggregate = find(&plan, "install_both");
+        internal_tooling::xfail::xfail_until("p-x-aggregate-universal-survival", || {
+            assert!(
+                matches!(aggregate.disposition, Disposition::Replace(..)),
+                "the external footprint is disjoint from both body establishes, so the atomic \
+                 call replacement may survive"
+            );
+        });
+    }
+
     /// A GUARD is itself a wall for everything below it (`30K` §5.3), isolated so the pin can only
     /// pass for that reason: the running wall's footprint is disjoint from the third site, so the
     /// ONLY thing that can stale it is the guard in between — which carries no footprint, and so

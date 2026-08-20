@@ -163,6 +163,12 @@ pub const PINS: &[Pin] = &[
         state: PinState::Reserved,
     },
     Pin {
+        name: "p-x-aggregate-universal-survival",
+        trigger: "the aggregate freshness witness universally confirms every erased establish",
+        horizon: Horizon::Scheduled("r30:aggregate-universal-freshness"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-definition-grade-keying",
         trigger: "a per-DEFINITION lift: the KEYING half landed (rows carry their own \
                   `DefinitionId` and the `(file, role)` join is gone), so what remains is that \
