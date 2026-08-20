@@ -57,23 +57,32 @@ emitted. `emit30-ambient-dependency-narrates` is the new specimen; `30Ib` §0/§
 current. The lane now PAUSES for `notes/30K`.
 
 **[TYPED 2026-08-19] The modeled-running-wall repair is UNIFICATION NOW, not a
-narrow guard mint and not post-r30 debt.** Implementation work order
-**`notes/30K`** lives under `28Q`: retain origin reach for the one frozen probe;
-replace Query-pristine + `wall_walk_total` + `wall_walk_survival` with one
-certified apply-effective `ReachingWalls` analysis fed by private semantic site
-acts; only a settled round writes Spine. Guards remain possible mutators. The
-reviewed plan may gain ordinary guards but NEVER generated wall flags,
-conditional-tail state, or other visible bookkeeping. No compatibility copy of
-the walks survives.
+narrow guard mint and not post-r30 debt.** Work order **`notes/30K`** under `28Q`:
+retain origin reach for the one frozen probe; replace Query-pristine +
+`wall_walk_total` + `wall_walk_survival` with one certified apply-effective
+`ReachingWalls` analysis fed by private semantic site acts; only a settled round
+writes Spine. Guards remain possible mutators. The reviewed plan may gain ordinary
+guards but NEVER generated wall flags, conditional-tail state, or other visible
+bookkeeping. No compatibility copy of the walks survives.
 
-**Sequence is fixed:** finish
-`30I:step-5a-complete-load-occurrence-account` only (remove exit-16 drift and
-complete the possible-load occurrence account), then PAUSE loading for `30K`.
-After the kernel stage lands, resume `30I` bundle/locator work, then artifact forms
-and final XFAIL/golden promotion. This places effective-world reach before both the
-new Plan/Spine artifact boundary and `28Q:stage-iii-world-scopes`,
-without reopening definition factoring, verdict primacy, snapshot emission,
-Spine, or custody.
+**`28Q:stage-effective-world-reach` IS BUILT; its goldens await a conductor bless.**
+As-built record **`notes/30Ka`** (seats · deviations · enumerated drift · proposed
+steering prose). Both wall walks are deleted, `plan::settle` is the ONE grow-only
+settlement (it subsumes W-C's rounds), `plan::world` holds the domain and the closed
+`WallPolicy`, and `cfg::ExecutionOwner` answers per node whose decision governs it.
+**Both `guard26-*` XFAILs XPASS and are promoted; the defect twin is retired.** The
+repair is broader than that pair: five `strawman24-*`/`pin28-*` cases move from a bare
+RUN to a GUARD, two `frame30-*` cases from GUARD to ELIDE (an elided mutation retires
+its wall), and `exec-subst-body-nonleaf` from ELIDE to GUARD — a closed wrong-elision,
+since a `$( … )`-internal install really runs and the retired walk could not see it.
+Four OPEN deviations and two owed prose items ride `30Ka` §3/§5; nothing there is
+self-endorsed.
+
+**Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account` (done), then
+`30K` (done). RESUME `30I` bundle/locator work next, then artifact forms and final
+XFAIL/golden promotion. This placed effective-world reach before both the new
+Plan/Spine artifact boundary and `28Q:stage-iii-world-scopes`, without reopening
+definition factoring, verdict primacy, snapshot emission, Spine, or custody.
 
 **Family vocabulary qualification is direction-closed, implementation deferred**
 (`plans/30J`, human-acked 2026-08-19): one genuine predict qualifies the whole

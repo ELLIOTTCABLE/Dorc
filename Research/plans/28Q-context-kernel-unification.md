@@ -504,11 +504,12 @@ conservatively remains a possible mutator downstream.
 - `rul-attribution-is-controller-minted`: its re-entry trigger fires at
   `stage-iii-world-scopes` by
   design; scope-carrying becomes scope-checking there and not before.
-- `an-reaching-ambient` / `an-written-stale` / `an-wall-topology`: the current
-  origin-`Reach` + Query-pristine-bit + post-disposition-wall-walk split is an as-built
-  interim, not three mechanisms to extend. `30K` keeps origin reach for probe construction
-  and replaces every apply-time freshness consumer with certified effective-world reach.
-  `plan::wall_walk_total` and `wall_walk_survival` die; no compatibility path remains.
+- `an-reaching-ambient` / `an-written-stale` / `an-wall-topology`: the origin-`Reach` +
+  Query-pristine-bit + post-disposition-wall-walk split is GONE (`stage-effective-world-reach`).
+  Origin reach survives for probe construction alone; every apply-time freshness consumer
+  reads one certified effective-world answer, and both wall walks are deleted with no
+  compatibility path. `Reach::is_pristine` is likewise probe-only — the fold's validity
+  view is the effective one.
 - `the-fixpoint-owns-the-rounds-and-builds-nothing-else` and `law-spine-outside-the-kernel`:
   `30K` generalizes W-C's grow-only proof ledger, but provisional decisions cannot write
   Spine, Plan, render, digest, or whylog. One quiescent certified result writes final
@@ -608,20 +609,25 @@ own byte-identity gate.
   for `stage-effective-world-reach`; no bundle code begins first. The closure-keyed
   fence permanence and committee policy remain their separately-ruled consumers — green
   infrastructure never asserts policy.
-- **stage-effective-world-reach** (r30, implementation work order **`notes/30K`**;
-  HUMAN-DIRECTED, unbuilt): replace the split apply-staleness machinery with one
-  certified, disposition-fed world analysis while retaining a distinct origin view for
-  the frozen probe. Required structural outcome: a private semantic site-act and final
-  disposition mint from the same proof; a grow-only rendered-no-execution ledger; a
-  CFG `ReachingWalls` domain; closed honest-vs-risk-accepted wall policy; Query validity,
-  guard fallback, and survival all consume the same reaching wall set; independent
-  sparing re-derivation demotes before effect erasure; only a settled round writes Spine.
-  Delete both wall walks and retire their final-authority use of
-  `EstablishAmbient`/`EstablishWritten`. Guards remain possible mutators; no conditional
-  tail or wall bookkeeping is emitted. Gate: the two `guard26-*` XFAILs promote, the
-  unmodeled control remains green, probe bytes/site IDs stay unchanged, every solve
-  certifies, survival differential remains demote-only, and all behavior drift is
-  disposition/run-set enumerated before blessing.
+- **stage-effective-world-reach** (r30, work order **`notes/30K`**, as-built record
+  **`notes/30Ka`**; HUMAN-DIRECTED, BUILT — goldens pending a conductor bless): the split
+  apply-staleness machinery is gone. One certified `ReachingWalls` solve over the CFG
+  answers which mutations may ACTUALLY execute, and apply-time freshness, effective Query
+  validity, total walls, and footprint survival all read it. `plan::wall_walk_total` and
+  `wall_walk_survival` are deleted with no compatibility path; the two establish classes
+  are renamed `EstablishProbeAmbient`/`EstablishProbeWritten` and `prove_replaceable`
+  takes a fact rather than a class, so neither can gate a tier again. A private
+  `EffectiveAct` and the output `Disposition` mint from one decision (`plan::decide_site`);
+  a grow-only `NoExecutionLedger` carries both proof species; `WallPolicy` is the closed
+  honest-vs-risk-accepted authority; `cfg::ExecutionOwner` answers, per node, whose
+  decision governs it, so a `$( … )` body, a redirection write, and a spliced call body
+  retire with their owner and keep their wall otherwise. Guards remain possible mutators;
+  the reviewed plan gains no wall state. The settlement is ONE grow-only loop
+  (`plan::settle`) that subsumes W-C's rounds, and only its quiescent round — sealed by a
+  `Quiescence` the ledger alone mints — writes Spine.
+  Landed: both `guard26-*` XFAILs XPASS and are promoted, the unmodeled control is
+  unchanged, the defect twin is retired. Enumerated drift and the OPEN deviations ride
+  `notes/30Ka`.
 - **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`): build the one
   bundle projection, compose the locator DAG into a real diagnostic, reify multipart /
   flattened / preserved-tree artifact forms at the Plan/Spine boundary, and only then
