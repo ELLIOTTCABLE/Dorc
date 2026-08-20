@@ -546,7 +546,8 @@ own byte-identity gate.
   CONVERGENCE the shipped body's rc asserts", which is the site's cell, the
   predict author's declaration where one resolves; the re-key alternative was
   REJECTED on the staleness route it opens. Residues:
-  `FORFEITS:forfeit-member-lanes-predict-measured`; pin30 still does not flip,
+  aggregate predict-measurement is a correctness defect routed to `30La`; pin30
+  still does not flip,
   two candidate seats remain) — (the verdict-primacy re-cut; a
   deliberate behavior change, deliberately OUTSIDE stage-i's byte-identity
   gate): invert the ship-seat preference —

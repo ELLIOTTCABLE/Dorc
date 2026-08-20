@@ -229,8 +229,8 @@ staleness route it opens — a dropped Establish leaves a downstream Query
 pristine). Also landed: the entry-consent gate (a mark licenses only the body
 that ships) and the wrapped-guard-carried-the-predict closure. pin30 STILL does
 not flip — six causes eliminated, two candidate seats remain (FORFEITS row).
-NEW forfeit: member/inline lanes still predict-measured
-(`forfeit-member-lanes-predict-measured`). NEXT: the conductor's own-hand gate
+The member/inline predict-measurement residue has since been reclassified as the
+correctness defect `30La`. NEXT: the conductor's own-hand gate
 over the folded tip, then lane-snapshot-emission (rulings banked, `28R:§snapshot`),
 then the Spine census (`plans/309`, pre-ack). Details below stand where not
 superseded.

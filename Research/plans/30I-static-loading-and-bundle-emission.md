@@ -36,6 +36,14 @@ stage lands. `30K` is not added to a loading builder's remit; the durable `30Ib`
 handoff makes this pause cheap. Ground: final plan dispositions must settle before
 new executable projections and their corpus are built around the old wall walks.
 
+`impl-aggregate-verdict-primacy-precedes-bundles` - HUMAN-DIRECTED correctness
+correction (2026-08-20): after `30K` and before `step-5b-build-bundle-projection`,
+the next conductor lands `30La` as a separate serial rider. Member-loop and inline-call
+aggregates currently measure through `__predict` while licensing through
+`__is_converged`; this is a model bug, not a FORFEITS floor. The two product-facing
+`aggregate30-*-verdict-primacy` XFAILs are the acceptance surface. Step 5b, locator
+consumption, and `30L` consume the repaired primitive; steps 7/8 never see the interim.
+
 ### Where the build stands
 
 Landed (`ai/r30-static-loading`; as-built map, consumption API and open questions

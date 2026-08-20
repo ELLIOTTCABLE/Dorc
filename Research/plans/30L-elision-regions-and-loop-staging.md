@@ -309,15 +309,13 @@ Verdict-primacy (`28Q` §4, `307:rul-primacy-moves-the-body-never-the-cell`) gov
 which body measures at a vouched site, inside a function body exactly as at top level.
 One sequencing requirement rides this: the member-loop and inline-call lanes currently
 ship predict bodies and elide on their measurements
-(`FORFEITS:forfeit-member-lanes-predict-measured`;
+(`30La:rul-predict-measured-aggregates-are-a-bug`;
 `analysis/src/effect.rs` `no_verdict_lane_in_members`). Shared-region decisions
 consume exactly those lanes, at much larger surface. **`req-member-lane-ruling-
-precedes-consumption` [DERIVED]** - the member/inline verdict-ship question (which
-cell a member record keys; how vouch-cardinality matching survives) is ruled in its
-own small sitting before, or as stage-0 of, this plan's build — OR the stage
-explicitly floors on the predict-measured interim with a fresh FORFEITS row saying so.
-Building the route-proof seats atop the interim silently is the one prohibited
-option.
+precedes-consumption` [DERIVED]** - `30La`'s member/inline verdict-ship correctness
+repair (which cell a member record keys; how vouch-cardinality matching survives)
+lands before this plan's build. Building route-proof seats atop the predict-measured
+interim is prohibited; there is no FORFEITS floor for model incorrectness.
 
 ### 4.2 Effects and freshness
 
@@ -611,9 +609,9 @@ The stage is complete only when all hold:
 
 ## 12. Implementation stages
 
-0. **`stage-member-lane-ruling`** - the member/inline verdict-ship sitting (§4.1),
-   or the explicit predict-measured floor decision with its FORFEITS row. Nothing
-   downstream consumes aggregate lanes before this is answered.
+0. **`stage-member-lane-ruling`** - verify `30La`'s member/inline verdict-ship repair
+   and product-facing acceptance cases are folded. Nothing downstream consumes
+   aggregate lanes before this is true.
 1. **`stage-size-census-and-pin-battery`** - budget/representation sizing (§3.4:
    clone vs overlay decided; constants re-set against measured wrapped-book shapes);
    then the red-first battery: mixed Replace/Run bodies; agreeing twin calls;
@@ -644,7 +642,7 @@ The stage is complete only when all hold:
   closed route populations, universal region decisions, the iteration dimension;
 - `FORFEITS`: partial function-body elision remains forfeited until the stage lands;
   after staging, a row for loop populations Open-until-propagation (capture: the
-  propagation lane); plus whatever stage-0 decides about the member lanes;
+  propagation lane); aggregate verdict primacy is a correctness repair, not a row;
 - `spike/CLAUDE.md`: the `inv-leaf-seam` amendment (execution leaves vs elision
   regions, site-keyed results unweakened);
 - crate steering: `analysis/CLAUDE.md seam-interproc`'s all-or-nothing CALL license

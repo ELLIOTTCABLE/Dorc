@@ -773,9 +773,9 @@ fn member_family(
             // A member's degrade never reaches a surface: the whole family collapses to the
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
-            // The member lane ships PREDICT bodies and elides on their measurements
-            // (`FORFEITS:forfeit-member-lanes-predict-measured`), so no verdict measurement is
-            // minted here and there is none to discard.
+            // The member lane still ships PREDICT bodies and elides on their measurements; this is
+            // the correctness defect pinned by `30La:rul-predict-measured-aggregates-are-a-bug`, so
+            // no verdict measurement is minted here and there is none to discard.
             &mut None,
             id,
             live_defs,
