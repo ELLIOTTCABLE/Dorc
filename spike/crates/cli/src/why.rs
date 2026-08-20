@@ -740,8 +740,14 @@ fn survival_chain(
     let mut claimants: Vec<String> = Vec::new();
     let mut leverage: Option<String> = None;
     let mut claims: Vec<ChainLink> = Vec::new();
+    let mut claimed_walls = BTreeSet::new();
     for (_, witness, _) in &members {
         for c in witness.crossings() {
+            // One authored footprint is one speech act even when several aggregate members
+            // independently rely on it. The per-member derivations stay separate below.
+            if !claimed_walls.insert(c.wall_leaf()) {
+                continue;
+            }
             let provider = interner.resolve(c.provider()).to_owned();
             claimants.push(provider.clone());
             wall_refs.push(
