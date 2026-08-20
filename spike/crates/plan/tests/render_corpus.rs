@@ -75,6 +75,7 @@ fn classify_with(
     i: &mut Interner,
 ) -> (
     Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)>,
+    std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
     dorc_analysis::value::ValueFlow,
 ) {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
@@ -83,7 +84,7 @@ fn classify_with(
         .map(|s| dorc_oracle::predict::lift_predicts(i, s).value)
         .collect();
     let mut arena = dorc_core::ProvArena::new();
-    let classes = dorc_analysis::effect::classify(
+    let classification = dorc_analysis::effect::classify(
         cfg,
         &value,
         ast,
@@ -92,9 +93,10 @@ fn classify_with(
         &dorc_oracle::verdict::VerdictIndex::default(),
         i,
         &mut arena,
-    )
-    .value;
-    (classes, value)
+    );
+    let classes = classification.value;
+    let invalidators = classification.invalidators;
+    (classes, invalidators, value)
 }
 
 const CORPUS_VERDICT_SRC: &str = r"
@@ -174,7 +176,7 @@ fn render_core(
 ) -> (String, Plan) {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_with(&cfg, &parsed.value, idx, predict_srcs, i);
+    let (classes, invalidators, value) = classify_with(&cfg, &parsed.value, idx, predict_srcs, i);
     let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
@@ -187,6 +189,7 @@ fn render_core(
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, mode, i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -453,7 +456,7 @@ fn render_query_for(
 
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_with(
+    let (classes, invalidators, value) = classify_with(
         &cfg,
         &parsed.value,
         &idx,
@@ -493,6 +496,7 @@ fn render_query_for(
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, VouchMode::Reached, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -555,7 +559,7 @@ fn render_scoped(
 
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_with(
+    let (classes, invalidators, value) = classify_with(
         &cfg,
         &parsed.value,
         &idx,
@@ -594,6 +598,7 @@ fn render_scoped(
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouches,
         observe,
         &mut dorc_core::ProvArena::new(),

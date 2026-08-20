@@ -105,6 +105,8 @@ use dorc_cli::{
     humane_read_error, parse_args_from,
 };
 #[cfg(test)]
+use dorc_core::{Observable, Verdict};
+#[cfg(test)]
 use dorc_core::{OutBytes, Predicted, Rc};
 // The why REPORT composes across the same seam (`28L:rul-full-driver-this-arc`): this edge builds
 // the world and prints the bytes, the lib turns that world into a stamped part stream.
@@ -1740,9 +1742,13 @@ fn run(
         // writes is host-influenced. Carried by construction, not by each mint site remembering.
         minted_at: Some(scoped_results.influence()),
     };
-    let fixpoint_cap = u32::try_from(origin.classes.len())
-        .unwrap_or(u32::MAX)
-        .max(1);
+    // The ledger holds CFG SITES (leaves and non-leaves alike) and grows by at least one per
+    // non-quiescent round, so the bound is the node count plus the settling round. The leaf count
+    // is NOT the bound — it misses every non-leaf invalidator, and it is one short besides.
+    let fixpoint_cap =
+        u32::try_from(dorc_analysis::solve::Graph::node_count(&cfg.value).saturating_add(1))
+            .unwrap_or(u32::MAX)
+            .max(1);
     let settled = settle_world(
         &frozen,
         &probe,
@@ -6068,11 +6074,23 @@ apt_get__predict() {
             )
         };
         let results = parse_str(records, &mut interner);
-        settle_validity_fixpoint(
+        let vouches = dorc_plan::Vouches::new();
+        let connected = dorc_plan::ConnectedPipes::default();
+        let plan_inputs = dorc_plan::SettleInputs {
+            src: book,
+            ast: &parsed.value,
+            cfg: &cfg,
+            vouches: &vouches,
+            connected: &connected,
+            policy: dorc_plan::WallPolicy::Honest,
+            minted_at: None,
+        };
+        let _ = origin;
+        settle_world(
             &frozen,
             &probe,
             &results,
-            origin,
+            &plan_inputs,
             cap,
             &mut interner,
             &mut arena,
@@ -6091,7 +6109,7 @@ apt_get__predict() {
         );
         assert_eq!(settled.ledger.len(), 2, "both installs are proven dead");
         assert!(
-            settled.ledger.entries().any(|e| e.round().0 >= 2),
+            settled.ledger.entries().any(|(_, e)| e.round().0 >= 2),
             "the second erasure is a round-2+ finding — that IS the cascade"
         );
     }
@@ -6336,6 +6354,7 @@ apt_get__predict() {
             &mut arena,
         );
         let classes = classified.value;
+        let invalidators = classified.invalidators;
         let probe = dorc_plan::compile_probe(
             &parsed.value,
             &cfg.value,
@@ -6352,6 +6371,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg.value,
             &classes,
+            &invalidators,
             // All-Unknown ⇒ nothing elides regardless of any vouch; empty is honest here.
             &dorc_plan::Vouches::new(),
             |_| Observable::verdict_only(Verdict::Unknown),

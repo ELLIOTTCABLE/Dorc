@@ -433,12 +433,24 @@ apt_get__predict() {
         }
     }
 
+    /// Every origin Query is effectively valid in these models: nothing upstream mutates, which is
+    /// the world each fixture is about.
+    fn all_valid(model: &Model) -> BTreeMap<CfgNodeId, bool> {
+        model
+            .classes
+            .iter()
+            .filter(|(_, class)| matches!(class, SkipClass::QueryResolvable { .. }))
+            .map(|(node, _)| (*node, true))
+            .collect()
+    }
+
     fn proofs_for(model: &Model, rc: i32) -> Vec<DeadBranchProof> {
         prove_dead_branches(
             &model.ast,
             &model.cfg,
             &model.classes,
             &model.invalidators,
+            &all_valid(model),
             measured(model, rc),
         )
     }
@@ -472,6 +484,7 @@ apt_get__predict() {
             &m.cfg,
             &m.classes,
             &m.invalidators,
+            &all_valid(&m),
             |_f: FactKey| Observable::verdict_only(Verdict::Converged),
         );
         assert!(proofs.is_empty(), "a ⊤ guard licenses no erasure");

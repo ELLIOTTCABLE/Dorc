@@ -228,7 +228,7 @@ apt_get__predict() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -237,8 +237,9 @@ apt_get__predict() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let mut vouches = crate::Vouches::new();
         for (node, class) in &classes {
             if let dorc_analysis::effect::SkipClass::EstablishProbeAmbient(fact) = class {
@@ -250,6 +251,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouches,
             |f: FactKey| {
                 if f.kind == package

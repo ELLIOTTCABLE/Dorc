@@ -431,9 +431,12 @@ impl WhyWorld {
         // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
         // decisions is the round-tagged cascade attribution, which is the only way a why report can
         // answer for an elision that only became legal once something upstream was proven dead.
-        let cap = u32::try_from(origin.classes.len())
-            .unwrap_or(u32::MAX)
-            .max(1);
+        // The ledger holds CFG SITES (leaves and non-leaves alike) and grows by at least one per
+        // non-quiescent round, so the bound is the node count plus the settling round.
+        let cap =
+            u32::try_from(dorc_analysis::solve::Graph::node_count(&cfg.value).saturating_add(1))
+                .unwrap_or(u32::MAX)
+                .max(1);
         let settled = crate::fixpoint::settle_world(
             &frozen,
             &probe,

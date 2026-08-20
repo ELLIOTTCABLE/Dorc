@@ -130,12 +130,13 @@ fn classify_value(
     i: &mut Interner,
 ) -> (
     Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)>,
+    std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
     dorc_analysis::value::ValueFlow,
 ) {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
     let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
     let mut arena = dorc_core::ProvArena::new();
-    let classes = dorc_analysis::effect::classify(
+    let classification = dorc_analysis::effect::classify(
         cfg,
         &value,
         ast,
@@ -144,9 +145,10 @@ fn classify_value(
         &dorc_oracle::verdict::VerdictIndex::default(),
         i,
         &mut arena,
-    )
-    .value;
-    (classes, value)
+    );
+    let classes = classification.value;
+    let invalidators = classification.invalidators;
+    (classes, invalidators, value)
 }
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
@@ -193,7 +195,7 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         .collect();
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, invalidators, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted, 202 §5) — a
     // mutator's status is ⊤ (`inv-probe-sourced-values`); only the Effect channel arrives.
     let observe = move |f: FactKey| {
@@ -208,6 +210,7 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -433,7 +436,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     let src = "apt-get install -y nginx || systemctl start nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, invalidators, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // Converged, but NO rc declared (the real CLI/hostsim default after `19D` — an
     // un-injected rc is ⊤, never a fabricated 0).
     let observe = move |f: FactKey| {
@@ -448,6 +451,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -721,7 +725,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
     let src = "set -e\napt-get install -y nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, invalidators, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // fs-4: the install is EstablishProbeAmbient (set -e did not poison the effect analysis).
     let install_is_ambient = classes
         .iter()
@@ -743,6 +747,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -842,7 +847,7 @@ fn plan_query_and_ast(
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
     let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC_Q).value];
     let mut arena = dorc_core::ProvArena::new();
-    let classes = dorc_analysis::effect::classify(
+    let classification = dorc_analysis::effect::classify(
         &cfg,
         &value,
         &parsed.value,
@@ -851,8 +856,9 @@ fn plan_query_and_ast(
         &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut arena,
-    )
-    .value;
+    );
+    let classes = classification.value;
+    let invalidators = classification.invalidators;
 
     // Mirror the cli firewall: is the guard site a VALID Query? (Only then does its rc
     // reach Status.) Read the bit off the guard cell's classification.
@@ -890,6 +896,7 @@ fn plan_query_and_ast(
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -1192,7 +1199,7 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
         .collect();
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let (classes, invalidators, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
     let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
@@ -1205,6 +1212,7 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes, &value, &mut i),
         observe,
         &mut dorc_core::ProvArena::new(),
@@ -1487,7 +1495,7 @@ fn inline_call_emits_site_n_m_probe_records() {
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
     let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-    let classes = dorc_analysis::effect::classify(
+    let classification = dorc_analysis::effect::classify(
         &cfg,
         &value,
         &parsed.value,
@@ -1496,8 +1504,9 @@ fn inline_call_emits_site_n_m_probe_records() {
         &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut dorc_core::ProvArena::new(),
-    )
-    .value;
+    );
+    let classes = classification.value;
+    let invalidators = classification.invalidators;
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg,
@@ -1548,7 +1557,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-    let classes = dorc_analysis::effect::classify(
+    let classification = dorc_analysis::effect::classify(
         &cfg,
         &value,
         &parsed.value,
@@ -1557,8 +1566,9 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &dorc_oracle::verdict::VerdictIndex::default(),
         &mut i,
         &mut dorc_core::ProvArena::new(),
-    )
-    .value;
+    );
+    let classes = classification.value;
+    let invalidators = classification.invalidators;
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg,

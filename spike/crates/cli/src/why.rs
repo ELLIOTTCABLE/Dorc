@@ -2938,6 +2938,7 @@ mod not_ours_bytes_tests {
             &mut arena,
         );
         let classes = classified.value;
+        let invalidators = classified.invalidators;
         let probe = dorc_plan::compile_probe(
             &parsed.value,
             &cfg.value,
@@ -2954,6 +2955,7 @@ mod not_ours_bytes_tests {
             &parsed.value,
             &cfg.value,
             &classes,
+            &invalidators,
             &dorc_plan::Vouches::new(),
             |_| Observable::verdict_only(Verdict::Unknown),
             &mut arena,

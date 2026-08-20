@@ -13,10 +13,10 @@
 //!   (*elide*). Its fields are private, so the only way to obtain one is
 //!   [`ReplaceLicense::prove_replaceable`]; a plan emitter takes a `ReplaceLicense`, never
 //!   a `bool`, so "skip" cannot be spelled without the proof.
-//! * **`inv-must-may` + the ambient gate**, enforced inside `prove_replaceable`:
-//!   only a [`Grade::Must`] fact that `analysis` classified [`SkipClass::EstablishProbeAmbient`]
-//!   (no upstream same-run mutation reaches it — note 162 O-1) and that the host
-//!   probe found `Converged` may be elided.
+//! * **`inv-must-may` + the freshness gate**, enforced inside `prove_replaceable` and by its
+//!   caller: only a [`Grade::Must`] fact the host probe found `Converged`, whose site the
+//!   settlement proved FRESH (no mutation that may actually execute reaches it — `crate::world`),
+//!   may be elided.
 //!
 //! Determinism (`inv-determinism`): a pure function of its inputs; the host
 //! verdict is injected (the real host / `hostsim` is a later seam).
@@ -34,7 +34,7 @@
 //! use dorc_plan::{PhasedVerdict, Probe, ReplaceLicense, VerdictVouch};
 //!
 //! let _pinned: fn(
-//!     &dorc_analysis::effect::SkipClass,
+//!     dorc_core::FactKey,
 //!     dorc_core::Grade,
 //!     PhasedVerdict<Probe>,
 //!     dorc_analysis::lattice::May<dorc_analysis::lattice::Powerset<dorc_core::Channel>>,
@@ -3638,18 +3638,29 @@ pub fn build_plan(
     src: &str,
     ast: &Ast,
     cfg: &Cfg,
-    classification: &RoundClassification,
+    classes: &[(CfgNodeId, SkipClass)],
+    invalidators: &BTreeSet<CfgNodeId>,
     vouches: &Vouches,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
+    // `kills` and the backing map are the SURVIVAL lane's inputs and this entry is honest-walls, so
+    // they are genuinely empty here rather than defaulted: nothing on the honest path reads either.
+    // `invalidators` is NOT optional in the same way — it is the effective world itself, and a
+    // caller that dropped it would elide past a mutation nobody could see (`30K` §3.7).
+    let classification = RoundClassification {
+        classes: classes.to_vec(),
+        kills: BTreeSet::new(),
+        invalidators: invalidators.clone(),
+        fact_backings: BTreeMap::new(),
+    };
     // The intakeless entry: this world was never measured, so there is no channel whose integrity
     // could have been lost (`spine::PlanAuthority::without_intake`).
     let spine = build_plan_walled(
         src,
         ast,
         cfg,
-        classification,
+        &classification,
         WallPolicy::Honest,
         vouches,
         &ConnectedPipes::default(),
@@ -3709,7 +3720,10 @@ pub fn build_plan_walled(
         policy,
         minted_at,
     };
-    let cap = u32::try_from(classification.classes.len())
+    // The ledger holds CFG SITES and grows by at least one per non-quiescent round, so the bound is
+    // the node count plus the one round that proves nothing new. Leaf count is NOT the bound: a
+    // `$( … )` body command, a redirection write, and an unmodeled construct are all sites.
+    let cap = u32::try_from(dorc_analysis::solve::Graph::node_count(cfg).saturating_add(1))
         .unwrap_or(u32::MAX)
         .max(1);
     let mut spine = settle_effective_world(&inputs, &mut model, cap).spine;
@@ -5985,7 +5999,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -5994,8 +6008,9 @@ apt_get__is_converged() { return 0; }
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -6034,7 +6049,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -6043,8 +6058,9 @@ apt_get__is_converged() { return 0; }
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -6086,7 +6102,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -6095,8 +6111,9 @@ apt_get__is_converged() { return 0; }
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -6125,7 +6142,7 @@ apt_get__is_converged() { return 0; }
         // `sites == elide + omit + guard + run` invariant the greppable grammar promises.
         let fact = nginx_fact();
         let license = ReplaceLicense::prove_replaceable::<Apply>(
-            &SkipClass::EstablishProbeAmbient(fact),
+            fact,
             Grade::Must,
             PhasedVerdict::new(Verdict::Converged),
             quiet(),
@@ -6212,7 +6229,7 @@ apt_get__is_converged() { return 0; }
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -6221,8 +6238,9 @@ apt_get__is_converged() { return 0; }
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
         let (_vouches, narrative) = build_vouches(
             &[verdict_src],
@@ -6671,7 +6689,7 @@ apt_get__is_converged() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -6680,8 +6698,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
 
         let probe = compile_probe(
             &parsed.value,
@@ -6699,6 +6718,7 @@ apt_get__is_converged() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouch_all(&classes),
             |_f| Observable::verdict_only(Verdict::Diverged),
             &mut dorc_core::ProvArena::new(),
@@ -6728,7 +6748,7 @@ apt_get__is_converged() {
         // declared Must, and the probe found it already holds.
         let f = nginx_fact();
         let Some(lic) = ReplaceLicense::prove_replaceable(
-            &SkipClass::EstablishProbeAmbient(f),
+            f,
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
@@ -6754,7 +6774,7 @@ apt_get__is_converged() {
         let f = nginx_fact();
         assert!(
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishProbeAmbient(f),
+                f,
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
@@ -6793,7 +6813,7 @@ apt_get__is_converged() {
         };
         for file in [0_u32, 3] {
             let lic = ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishProbeAmbient(f),
+                f,
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
@@ -6808,16 +6828,12 @@ apt_get__is_converged() {
                  that author changes"
             );
         }
-        let query = ReplaceLicense::prove_replaceable(
-            &SkipClass::QueryResolvable {
-                fact: f,
-                valid: true,
-            },
-            Grade::Must,
-            PhasedVerdict::<Probe>::new(Verdict::Converged),
-            quiet(),
+        let query = ReplaceLicense::prove_query_replaceable(
+            f,
+            true,
+            Verdict::Converged,
+            &quiet(),
             Predicted::Value(Rc(0)),
-            None,
         )
         .expect("a valid known-rc Query substitutes");
         assert_eq!(
@@ -6842,7 +6858,7 @@ apt_get__is_converged() {
     fn a_split_family_establish_elide_reproduces_nothing_predict_derived() {
         let f = nginx_fact();
         let lic = ReplaceLicense::prove_replaceable(
-            &SkipClass::EstablishProbeAmbient(f),
+            f,
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
@@ -6881,7 +6897,7 @@ apt_get__is_converged() {
         let f = nginx_fact();
         let mint = |consumed| {
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishProbeAmbient(f),
+                f,
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 consumed,
@@ -6914,7 +6930,7 @@ apt_get__is_converged() {
             let consumed = May(Powerset::singleton(obs));
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishProbeAmbient(f),
+                    f,
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed,
@@ -6939,7 +6955,7 @@ apt_get__is_converged() {
         // Undeclared rc ⇒ BLOCK (the safe run-it floor).
         assert!(
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishProbeAmbient(f),
+                f,
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 consumed(),
@@ -6953,7 +6969,7 @@ apt_get__is_converged() {
         for rc in [Rc(0), Rc(9)] {
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishProbeAmbient(f),
+                    f,
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed(),
@@ -6982,7 +6998,7 @@ apt_get__is_converged() {
         ] {
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishProbeAmbient(f),
+                    f,
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     May(Powerset::singleton(Channel::StatusIterated)),
@@ -7002,7 +7018,7 @@ apt_get__is_converged() {
         for v in [Verdict::Diverged, Verdict::Unknown] {
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishProbeAmbient(f),
+                    f,
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(v),
                     quiet(),
@@ -7021,7 +7037,7 @@ apt_get__is_converged() {
         let f = nginx_fact();
         assert!(
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishProbeAmbient(f),
+                f,
                 Grade::May,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
@@ -7030,27 +7046,6 @@ apt_get__is_converged() {
             )
             .is_none()
         );
-    }
-
-    #[test]
-    fn no_license_for_written_or_mustrun_class() {
-        // Only EstablishProbeAmbient is elidable. EstablishProbeWritten (an upstream same-run
-        // mutation reaches it) and MustRun must run even with a Converged probe.
-        let f = nginx_fact();
-        for class in [SkipClass::EstablishProbeWritten(f), SkipClass::MustRun] {
-            assert!(
-                ReplaceLicense::prove_replaceable(
-                    &class,
-                    Grade::Must,
-                    PhasedVerdict::<Probe>::new(Verdict::Converged),
-                    quiet(),
-                    Predicted::Value(Rc(0)),
-                    Some(test_vouch()),
-                )
-                .is_none(),
-                "{class:?} must not license a skip"
-            );
-        }
     }
 
     #[test]
@@ -7111,7 +7106,7 @@ apt_get__is_converged() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -7120,8 +7115,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         // fork-mutator-rc (202 §5 / 206 §3): a MUTATOR's status has no sanctioned source —
         // only its Effect channel (convergence) arrives from the probe, the rc is ⊤. So
         // `verdict_only` everywhere, never a fabricated `Rc(0)`.
@@ -7137,6 +7133,7 @@ apt_get__is_converged() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouch_all(&classes),
             observe,
             &mut dorc_core::ProvArena::new(),
@@ -7157,7 +7154,7 @@ apt_get__is_converged() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -7166,8 +7163,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         // Resolve each package entity's verdict by its interned operand text. The closure
         // captures the entity strings it cares about; an unknown entity ⇒ Unknown.
         let observe = |f: FactKey| {
@@ -7184,6 +7182,7 @@ apt_get__is_converged() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouch_all(&classes),
             observe,
             &mut dorc_core::ProvArena::new(),
@@ -7198,7 +7197,7 @@ apt_get__is_converged() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -7207,8 +7206,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let mut vouches = build_vouches(
             &[CORPUS_VERDICT_SRC],
             &[],
@@ -7241,6 +7241,7 @@ apt_get__is_converged() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouches,
             |_| Observable::verdict_only(Verdict::Converged),
             &mut dorc_core::ProvArena::new(),
@@ -7260,7 +7261,7 @@ apt_get__is_converged() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -7269,14 +7270,16 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let observe = |_f: FactKey| Observable::verdict_only(Verdict::Converged);
         let plan = build_plan(
             src,
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouch_all(&classes),
             observe,
             &mut dorc_core::ProvArena::new(),
@@ -7413,7 +7416,7 @@ apt_get__is_converged() {
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
             let checks =
                 vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-            let classes = dorc_analysis::effect::classify(
+            let classification = dorc_analysis::effect::classify(
                 &cfg,
                 &value,
                 &parsed.value,
@@ -7422,8 +7425,9 @@ apt_get__is_converged() {
                 &dorc_oracle::verdict::VerdictIndex::default(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
-            )
-            .value;
+            );
+            let classes = classification.value;
+            let invalidators = classification.invalidators;
             assert!(
                 classes
                     .iter()
@@ -7568,32 +7572,32 @@ apt_get__is_converged() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (
-            classified,
-            _why,
-            kills_found,
-            _kill_coords,
-            _fact_backings,
-            _narrative,
-            _invalidators,
-        ) = dorc_analysis::effect::classify_with_why_diags(
-            &cfg,
-            &value,
-            &parsed.value,
-            &idx,
-            &checks,
-            &dorc_oracle::verdict::VerdictIndex::default(),
-            &BTreeMap::new(),
-            &dorc_analysis::erase::ErasedSites::none(),
-            &mut i,
-            &mut arena,
-            &mut BTreeMap::new(),
-            &mut BTreeMap::new(),
-            &mut dorc_analysis::certify::CertifierTrip::default(),
-            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
-        );
+        let (classified, _why, kills_found, _kill_coords, _fact_backings, _narrative, invalidators) =
+            dorc_analysis::effect::classify_with_why_diags(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &dorc_oracle::verdict::VerdictIndex::default(),
+                &BTreeMap::new(),
+                &dorc_analysis::erase::ErasedSites::none(),
+                &mut i,
+                &mut arena,
+                &mut BTreeMap::new(),
+                &mut BTreeMap::new(),
+                &mut dorc_analysis::certify::CertifierTrip::default(),
+                dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+            );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };
+        // Kill-UNAWARE means the caller never saw the kill at all: it is absent from the effective
+        // world too, which is what makes the pair a real before/after of the closed gap.
+        let invalidators = if walled {
+            invalidators
+        } else {
+            BTreeSet::new()
+        };
         let observe = |f: FactKey| {
             if f.kind == package
                 && f.selector == installed
@@ -7603,21 +7607,24 @@ apt_get__is_converged() {
             }
             Observable::verdict_only(Verdict::Unknown)
         };
+        let classification = RoundClassification {
+            classes: classes.clone(),
+            kills,
+            invalidators,
+            fact_backings: BTreeMap::new(),
+        };
         let spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
-            &classes,
-            &kills,
-            None,
-            None,
-            &Dialect::empty(),
-            &BTreeMap::new(),
+            &classification,
+            WallPolicy::Honest,
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             &BTreeMap::new(),
             observe,
             &mut arena,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             None,
         );
         let plan = project_plan(&spine, &PlanAuthority::without_intake());
@@ -7715,7 +7722,7 @@ apt_get__is_converged() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -7724,8 +7731,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut arena,
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         // Every establish-bearing node footprints its own coordinate (the coherent shape).
         let footprints = self_footprints.then(|| {
             let mut tf = TrustedFootprints::new();
@@ -7750,21 +7758,34 @@ apt_get__is_converged() {
             }
             Observable::verdict_only(Verdict::Unknown)
         };
+        let classification = RoundClassification {
+            classes: classes.clone(),
+            kills: BTreeSet::new(),
+            invalidators,
+            fact_backings: BTreeMap::new(),
+        };
+        let resolutions = Resolutions::none();
+        let dialect = dorc_core::Dialect::empty();
+        let policy = match footprints.as_ref() {
+            Some(fp) => WallPolicy::RiskAccepted {
+                footprints: fp,
+                resolutions: &resolutions,
+                dialect: &dialect,
+            },
+            None => WallPolicy::Honest,
+        };
         let spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
-            &classes,
-            &BTreeSet::new(),
-            footprints.as_ref(),
-            None,
-            &Dialect::empty(),
-            &BTreeMap::new(),
+            &classification,
+            policy,
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             &BTreeMap::new(),
             observe,
             &mut arena,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             None,
         );
         project_plan(&spine, &PlanAuthority::without_intake())
@@ -7827,7 +7848,7 @@ apt_get__is_converged() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -7836,8 +7857,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut arena,
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let empty = TrustedFootprints::new();
         let observe = |f: FactKey| {
             if f.kind == package
@@ -7848,21 +7870,30 @@ apt_get__is_converged() {
             }
             Observable::verdict_only(Verdict::Unknown)
         };
+        let classification = RoundClassification {
+            classes: classes.clone(),
+            kills: BTreeSet::new(),
+            invalidators,
+            fact_backings: BTreeMap::new(),
+        };
+        let resolutions = Resolutions::none();
+        let dialect = dorc_core::Dialect::empty();
         let spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
-            &classes,
-            &BTreeSet::new(),
-            Some(&empty),
-            None,
-            &Dialect::empty(),
-            &BTreeMap::new(),
+            &classification,
+            WallPolicy::RiskAccepted {
+                footprints: &empty,
+                resolutions: &resolutions,
+                dialect: &dialect,
+            },
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             &BTreeMap::new(),
             observe,
             &mut arena,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             None,
         );
         project_plan(&spine, &PlanAuthority::without_intake())
@@ -8356,7 +8387,7 @@ apt_get__is_converged() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -8365,8 +8396,9 @@ apt_get__is_converged() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         assert!(!classes.is_empty(), "fixture has classify leaves");
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {

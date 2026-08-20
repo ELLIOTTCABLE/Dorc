@@ -813,14 +813,17 @@ apt_get__predict() {
         ast: &dorc_syntax::ast::Ast,
         idx: &dorc_oracle::KindIndex,
         i: &mut Interner,
-    ) -> Vec<(
-        dorc_analysis::cfg::CfgNodeId,
-        dorc_analysis::effect::SkipClass,
-    )> {
+    ) -> (
+        Vec<(
+            dorc_analysis::cfg::CfgNodeId,
+            dorc_analysis::effect::SkipClass,
+        )>,
+        std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    ) {
         let value = dorc_analysis::value::analyze(cfg, ast, i);
         let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             cfg,
             &value,
             ast,
@@ -829,8 +832,8 @@ apt_get__predict() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             i,
             &mut arena,
-        )
-        .value
+        );
+        (classification.value, classification.invalidators)
     }
 
     /// `kind:entity@installed` — the re-keyed cell (`notes/193`). These host-model
@@ -1112,13 +1115,14 @@ apt_get__predict() {
 
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-            let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+            let (classes, invalidators) = classify_value(&cfg, &parsed.value, &idx, &mut i);
             let mut arena = dorc_core::ProvArena::new();
             let plan = dorc_plan::build_plan(
                 src,
                 &parsed.value,
                 &cfg,
                 &classes,
+                &invalidators,
                 &vouch_all(&classes),
                 |f| host.observe(f),
                 &mut arena,
@@ -1188,7 +1192,7 @@ apt_get__predict() {
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
             let checks =
                 vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-            let classes = dorc_analysis::effect::classify(
+            let classification = dorc_analysis::effect::classify(
                 &cfg,
                 &value,
                 &parsed.value,
@@ -1197,8 +1201,9 @@ apt_get__predict() {
                 &dorc_oracle::verdict::VerdictIndex::default(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
-            )
-            .value;
+            );
+            let classes = classification.value;
+            let invalidators = classification.invalidators;
 
             // (1) compile the SITE-keyed probe — R3: ship the provider's stripped check body
             // invoked per-site with the site's argv (`inv-site-keyed-results`, round-20 task-D1).
@@ -1250,6 +1255,7 @@ apt_get__predict() {
                 &parsed.value,
                 &cfg,
                 &classes,
+                &invalidators,
                 &vouch_all(&classes),
                 observe,
                 &mut dorc_core::ProvArena::new(),
@@ -1312,7 +1318,7 @@ apt_get__predict() {
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -1321,8 +1327,9 @@ apt_get__predict() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
 
         // R3: no shippable probe (the ship closure returns None — "the oracle declares no
         // probe") ⇒ the EstablishProbeAmbient site is unresolvable ⇒ not elided (kFAIL-perform).
@@ -1359,6 +1366,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             // The site is unprobeable ⇒ Unknown ⇒ runs regardless of any vouch; empty is honest.
             &dorc_plan::Vouches::new(),
             observe,
@@ -1474,25 +1482,29 @@ grep__predict() {
             dorc_analysis::cfg::CfgNodeId,
             dorc_analysis::effect::SkipClass,
         )],
+        invalidators: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
         connected: &dorc_plan::ConnectedPipes,
         observe: impl Fn(FactKey) -> Observable,
     ) -> dorc_plan::Plan {
+        let classification = dorc_plan::RoundClassification {
+            classes: classes.to_vec(),
+            // Survival off ⇒ the kill set and the `277` §5 backing map are never consulted.
+            kills: BTreeSet::new(),
+            invalidators: invalidators.clone(),
+            fact_backings: BTreeMap::new(),
+        };
         let spine = dorc_plan::build_plan_walled(
             book,
             ast,
             cfg,
-            classes,
-            &BTreeSet::new(),
-            None,
-            None,
-            &dorc_core::Dialect::empty(),
-            // Survival off (`None`) ⇒ the `277` §5 backing map is never consulted.
-            &BTreeMap::new(),
+            &classification,
+            dorc_plan::WallPolicy::Honest,
             &dorc_plan::Vouches::new(),
             connected,
             &BTreeMap::new(), // no probe-origin witnesses in DST (C6: Witness is EXEMPT)
             observe,
             &mut dorc_core::ProvArena::new(),
+            &mut dorc_analysis::certify::CertifierTrip::default(),
             // No intake: DST analyses the unmeasured world.
             None,
         );
@@ -1517,7 +1529,7 @@ grep__predict() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let idx = dorc_oracle::lift(&mut i, &[CONNECTED_ORACLE]).value;
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CONNECTED_ORACLE).value];
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -1526,8 +1538,9 @@ grep__predict() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
 
         let connected = connected_check_pipes(
             &parsed.value,
@@ -1566,7 +1579,17 @@ grep__predict() {
                     Observable::verdict_only(Verdict::Unknown)
                 }
             };
-            let build = || raced_plan(book, &parsed.value, &cfg, &classes, &connected, observe);
+            let build = || {
+                raced_plan(
+                    book,
+                    &parsed.value,
+                    &cfg,
+                    &classes,
+                    &invalidators,
+                    &connected,
+                    observe,
+                )
+            };
             // (1) no flap: two builds at the SAME seed render byte-identical.
             assert_eq!(
                 build().render_sh(&i),

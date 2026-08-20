@@ -1770,24 +1770,46 @@ pub fn classify(
     verdicts: &VerdictIndex,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
-) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
-    classify_with_why_diags(
-        cfg,
-        value,
-        ast,
-        idx,
-        checks,
-        verdicts,
-        &BTreeMap::new(),
-        &crate::erase::ErasedSites::none(),
-        interner,
-        arena,
-        &mut BTreeMap::new(),
-        &mut BTreeMap::new(),
-        &mut CertifierTrip::default(),
-        crate::funcenv::LiveDefinitions::unsolved(),
-    )
-    .0
+) -> Classification {
+    let (carrier, _why, _kills, _coords, _backings, _narrative, invalidators) =
+        classify_with_why_diags(
+            cfg,
+            value,
+            ast,
+            idx,
+            checks,
+            verdicts,
+            &BTreeMap::new(),
+            &crate::erase::ErasedSites::none(),
+            interner,
+            arena,
+            &mut BTreeMap::new(),
+            &mut BTreeMap::new(),
+            &mut CertifierTrip::default(),
+            crate::funcenv::LiveDefinitions::unsolved(),
+        );
+    Classification {
+        value: carrier.value,
+        diags: carrier.diags,
+        invalidators,
+    }
+}
+
+/// What [`classify`] answers: the per-leaf classes, the diagnostics, and the EFFECTIVE INVALIDATOR
+/// set — every node that gens into the world, leaves and non-leaves alike.
+///
+/// The invalidators ride along rather than being re-derivable, because they are not derivable from
+/// the classes: a `$( … )` body command, a write-shaped redirection, and an unmodeled construct all
+/// mutate without being leaves at all, and a plan built without them would elide past a mutation
+/// nothing in its inputs could see (`30K` §3.7).
+#[derive(Debug, Clone)]
+pub struct Classification {
+    /// The per-leaf classes.
+    pub value: Vec<(CfgNodeId, SkipClass)>,
+    /// The classification diagnostics.
+    pub diags: Vec<Diag>,
+    /// Every node that gens into the effective world.
+    pub invalidators: BTreeSet<CfgNodeId>,
 }
 
 /// [`classify_with_why_diags`]'s survival-backing product accessor (`277` §5): the fact →

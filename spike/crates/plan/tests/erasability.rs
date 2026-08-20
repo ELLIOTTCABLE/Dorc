@@ -229,6 +229,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &mut arena,
     );
     let classes = classified.value;
+    let invalidators = classified.invalidators;
 
     let probe = compile_probe(
         &parsed.value,
@@ -255,6 +256,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &parsed.value,
         &cfg,
         &classes,
+        &invalidators,
         &vouch_all(&classes),
         observe,
         &mut arena,
@@ -397,7 +399,7 @@ fn digest_is_receipt_invariant_across_runs() {
             ArenaMode::Normal => ProvArena::new(),
             ArenaMode::Adversarial { seed } => ProvArena::adversarial(seed),
         };
-        let classes = dorc_analysis::effect::classify(
+        let classification = dorc_analysis::effect::classify(
             &cfg,
             &value,
             &parsed.value,
@@ -406,8 +408,9 @@ fn digest_is_receipt_invariant_across_runs() {
             &dorc_oracle::verdict::VerdictIndex::default(),
             i,
             &mut arena,
-        )
-        .value;
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -431,6 +434,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &parsed.value,
             &cfg,
             &classes,
+            &invalidators,
             &vouch_all(&classes),
             observe,
             &mut arena,
