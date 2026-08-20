@@ -80,6 +80,10 @@ skepticism of their reasoning; full trust in their reports.
 
 ## Verification and focused reruns
 
+Our gates must stay carefully tuned to their purpose. *Do not* pipe them through
+`head`/`tail`; if the `-quiet` gate isn't quiet, *fix that*. Critical errors
+have been missed this way. This applies to your builders as well.
+
 The gate rung follows the work lifecycle; it is never a per-change menu:
 
 - Builders finish with `mise run both gate:full-quiet`. On Windows the bare
@@ -98,8 +102,11 @@ The gate rung follows the work lifecycle; it is never a per-change menu:
 - A failed hk step names its focused rerun: `mise run gate:step -- <step>`.
   Use `hk check --why <step>` when the routing itself is unclear. After the
   focused fix is green, run the lifecycle gate again at the final branch tip.
-- Direct `verify:*` / `test:*` tasks are investigation tools, not a fifth rung.
-  Gates detect drift; they never promote, bless, or publish generated evidence.
+- Direct `verify:*` / `test:*` tasks, as well as direct invocation of the
+  various tools, are for investigation only. They are *not* to be used as a
+  'faster' alternative to the full gates, where the full gates are owed.
+
+Gates may detect drift; they never promote, bless, or publish generated evidence.
 
 Pre-commit is the automatic sub-three-second floor. Whole-workspace Clippy and
 other invalidation-sensitive work belong to builder completion, not the hook.
@@ -155,7 +162,11 @@ files:
   the analyzer kernel needs, across the product)
 - AID-NEEDS.md (ditto, but for the why/explain/hint/warn/error layer, which
   threads through everything)
-- FORFEITS.md (any time 'value' is passed up in favour of velocity; wherever we punt on a decision that is plausibly tractable, but requires additional engine effort)
+- FORFEITS.md (any time 'value' is passed up in favour of velocity; wherever we
+  punt on a decision that is plausibly tractable, but requires additional engine
+  effort)
+- SIBLINGS.md (a mapping of Dorc's concepts and values against various related
+  tools, so it's always clear where *our* value-positioning and goals lies)
 
 *You* may not ever read anything in the quarantine, unless directly asked to by
 the human. However, your subagents, in some cases, may. (Fable-class subagents,
