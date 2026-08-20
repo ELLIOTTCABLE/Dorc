@@ -289,10 +289,12 @@ pub fn settle_effective_world(
                 origin_validity: origin_validity.unwrap_or_default(),
                 ledger,
                 capped: false,
+                discarded_on_cap: 0,
                 effective_solve_failures: failures,
             };
         }
         if number >= cap {
+            let discarded = u32::try_from(ledger.len()).unwrap_or(u32::MAX);
             ledger.rebuild_from_origin();
             let outcome = one_round(inputs, model, &ledger);
             failures = failures.saturating_add(outcome.solve_failures);
@@ -308,6 +310,7 @@ pub fn settle_effective_world(
                 origin_validity: origin_validity.unwrap_or_default(),
                 ledger,
                 capped: true,
+                discarded_on_cap: discarded,
                 effective_solve_failures: failures,
             };
         }
@@ -332,6 +335,9 @@ pub struct Settlement {
     pub ledger: NoExecutionLedger,
     /// Did the loop hit its cap and degrade to the maximal-effects answer?
     pub capped: bool,
+    /// How many proofs the cap DISCARDED — captured before the ledger was rebuilt, because the
+    /// number the narrative owes its reader is what was withdrawn, not what survived (nothing does).
+    pub discarded_on_cap: u32,
     /// How many effective-reach post-fixpoint CHECKS failed across every round (`30K` §4.4).
     ///
     /// A scalar, and accumulated across ALL rounds rather than kept from the settled one, for the
@@ -647,9 +653,13 @@ mod tests {
         );
     }
 
-    /// A provisional round has no route to Spine. This is a COMPILE-tier property, so the pin is a
-    /// doctest-shaped one: the method does not exist, and a maintainer adding one has to delete
-    /// this.
+    /// A provisional round has no route to Spine (`309:law-spine-write-only-during-run`).
+    ///
+    /// The real enforcement is the type: `write_spine` lives on `SettledEffectiveAnalysis`, and
+    /// the only way there is `seal`, which consumes a `Quiescence` whose field is private and whose
+    /// sole mint is the ledger's own no-growth answer. This scan is the second half — a maintainer
+    /// can still ADD a method to the provisional impl, and that is what it catches. Doc lines are
+    /// stripped: they are prose ABOUT the fence and necessarily name what it forbids.
     #[test]
     fn a_provisional_round_names_no_spine_setter() {
         let source = include_str!("settle.rs");
@@ -657,10 +667,19 @@ mod tests {
             .split("impl ProvisionalEffectiveRound {")
             .nth(1)
             .expect("the provisional impl block");
-        let body = provisional.split("\n}\n").next().expect("its body");
-        assert!(
-            !body.contains("Spine") && !body.contains("push_") && !body.contains("set_"),
-            "a provisional round must not reach a Spine setter; found:\n{body}"
-        );
+        let body: String = provisional
+            .split("\n}\n")
+            .next()
+            .expect("its body")
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("//"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for forbidden in ["Spine", "push_", "set_"] {
+            assert!(
+                !body.contains(forbidden),
+                "a provisional round must not reach a Spine setter (`{forbidden}`); found:\n{body}"
+            );
+        }
     }
 }

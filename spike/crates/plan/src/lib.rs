@@ -7368,12 +7368,20 @@ apt_get__is_converged() {
             env!("CARGO_MANIFEST_DIR"),
             "/../../fixtures/pi-webhost.book.sh"
         ));
+        // Since effective world reach (`30K`), the residual poison costs the ELISION and lands the
+        // site on the GUARD rung rather than a bare run: the neighbours really execute, so the
+        // resting measurement is stale, but the oracle's own check can re-decide live at apply.
+        // The datum is unchanged — the install is not elided on this scrappy book — and what moved
+        // is only how honestly the plan says so.
         let (plan, _) = plan_for(fixture, Verdict::Converged);
         assert!(
-            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
-            "install still runs: two upstream un-oracled neighbours ($(hostname) in the \
-             case scrutinee, and `command -v nginx` in the if-guard) poison it — `update` \
-             is no longer the poison, but it is not the only one (notes/193 strain-5)"
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Guard(_)
+            ),
+            "install still does not elide: two upstream un-oracled neighbours ($(hostname) in the \
+             case scrutinee, and `command -v nginx` in the if-guard) really run — `update` is no \
+             longer the poison, but it is not the only one (notes/193 strain-5)"
         );
     }
 

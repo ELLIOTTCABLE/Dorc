@@ -43,7 +43,7 @@ use crate::cfg::CfgNodeId;
 
 /// Permission to erase ONE site's invalidator-hood from the analyzer model.
 ///
-/// Minted solely by `dorc_plan::erase::ErasureEntry::license`, which exists only for a
+/// Minted solely by `dorc_plan::world::NoExecutionLedger::classify_overlay`, which exists only for a
 /// ledger entry, which exists only for a records-proven-dead derivation. See the module
 /// docs for why that chain is lexically rather than type-enforced at this hop.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

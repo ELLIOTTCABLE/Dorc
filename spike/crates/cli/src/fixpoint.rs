@@ -362,6 +362,18 @@ pub fn settle_world(
         collapsed: BTreeMap::new(),
     };
     let settlement = dorc_plan::settle_effective_world(plan_inputs, &mut model, cap);
+    // Withdrawing licensed elisions is a safety-narrowing like any other, so it narrates. Minted
+    // here rather than inside the settlement because the narrative belongs to the fold's own slice
+    // and a provisional round may not build a narrative surface at all.
+    if settlement.capped {
+        model.merge_narrative.push(CollapseNarrative::new(
+            dorc_aid::narrative::SpeechAct::Derived,
+            dorc_aid::narrative::CollapseKind::FixpointCapDegrade {
+                rounds: cap,
+                discarded: settlement.discarded_on_cap,
+            },
+        ));
+    }
     SettledFixpoint {
         round: model
             .round

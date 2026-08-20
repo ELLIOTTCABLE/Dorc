@@ -3626,16 +3626,26 @@ mod fixpoint_freezes_the_environment_tests {
     fn the_fixpoint_loop_body_calls_no_funcenv_entry_point() {
         let src = include_str!("fixpoint.rs");
         // Column-0 anchored (`spanless-gate-is-lexical`); the driver moved to the lib seam's
-        // `fixpoint.rs` at the loom-final fold, so that is the file the fence scans.
-        let start = src
-            .find("\npub fn settle_validity_fixpoint(")
-            .expect("the fixpoint driver is still a column-0 item of this name");
-        // Bounded at the column-0 closer; a slice running to EOF would make the gate worthless.
-        let rest = &src[start..];
-        let end = rest
-            .find("\n}\n")
-            .expect("the fixpoint driver has a column-0 closing brace");
-        let body = &rest[..end];
+        // `fixpoint.rs` at the loom-final fold, so that is the file the fence scans. TWO regions
+        // are in scope since `30K`: the settlement driver, and the round MODEL whose `classify` is
+        // what a round actually re-derives through. Scanning the driver alone would leave the real
+        // loop body unguarded.
+        let region = |anchor: &str| -> String {
+            let start = src
+                .find(anchor)
+                .unwrap_or_else(|| panic!("`{anchor}` is still a column-0 item of this file"));
+            // Bounded at the column-0 closer; a slice running to EOF would make the gate worthless.
+            let rest = &src[start..];
+            let end = rest
+                .find("\n}\n")
+                .expect("the region has a column-0 closing brace");
+            rest[..end].to_owned()
+        };
+        let body = format!(
+            "{}{}",
+            region("\npub fn settle_world("),
+            region("\nimpl dorc_plan::RoundModel for WorldRoundModel<'_> {")
+        );
         for forbidden in [
             "funcenv",
             "FuncEnv",
@@ -3644,9 +3654,9 @@ mod fixpoint_freezes_the_environment_tests {
         ] {
             assert!(
                 !body.contains(forbidden),
-                "`{forbidden}` appears inside the validity fixpoint — env resolution is frozen \
-                 pre-loop, and re-deriving it per round would let a later round change which \
-                 definition was live"
+                "`{forbidden}` appears inside the settlement — env resolution is frozen pre-loop, \
+                 and re-deriving it per round would let a later round change which definition was \
+                 live"
             );
         }
     }
@@ -6178,6 +6188,7 @@ apt_get__predict() {
         );
     }
 
+    /// FAULT INJECTION for `CollapseKind::FixpointCapDegrade`: force the cap to 1 so a settlement
     /// that genuinely wants a second round trips it. The degrade must discard EVERY erasure (the
     /// answer becomes the pre-W-C one, never a partial fixpoint) and must narrate — withdrawing
     /// licensed elisions is a safety-narrowing like any other.

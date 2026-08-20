@@ -15,18 +15,14 @@
 //!
 //! # The chain, and where each link is sealed
 //!
-//! `FoldResult` → [`DeadBranchProof`] → [`ErasureEntry`] → [`ErasureLicense`] → overlay.
+//! `FoldResult` → [`DeadBranchProof`] → `world::NoExecutionLedger` → [`ErasureLicense`] →
+//! overlay.
 //!
-//! The first two links are type-sealed against the whole workspace: [`DeadBranchProof`] has
-//! private fields and its sole mint is [`prove_dead_branches`], which folds internally, and
+//! The first link is type-sealed against the whole workspace: [`DeadBranchProof`] has private
+//! fields and its sole mint is [`prove_dead_branches`], which folds internally, and
 //! `FoldResult`'s `dead` map is private with no public inserter while `fold::fold` is
-//! `pub(crate)` — so no crate outside `plan` can manufacture a proof.
-//!
-//! ```compile_fail
-//! // A ledger entry demands a proof BY VALUE; a bare site id is not one.
-//! let mut ledger = dorc_plan::erase::ErasureLedger::new();
-//! ledger.record(dorc_analysis::cfg::CfgNodeId(0), dorc_plan::erase::RoundId(1));
-//! ```
+//! `pub(crate)` — so no crate outside `plan` can manufacture a proof, and the ledger demands
+//! one BY VALUE.
 //!
 //! The last link is the acked weak seam: `analysis` cannot depend on `plan`, so
 //! `ErasureLicense::for_site` must be public and the type system cannot prove every licence
@@ -78,6 +74,19 @@ pub struct DeadBranchProof {
 }
 
 impl DeadBranchProof {
+    /// A proof for a sibling module's TESTS, and reachable from nowhere else: the fields are
+    /// private so `prove_dead_branches` stays the only production mint, and `#[cfg(test)]` is what
+    /// keeps this from becoming a second one (`rul-fixture-identity-never-production` — the fence
+    /// is the absence of the constructor, not a comment).
+    #[cfg(test)]
+    pub(crate) fn fixture(site: CfgNodeId) -> Self {
+        DeadBranchProof {
+            site,
+            controller: AstId(0),
+            controller_rc: Rc(0),
+        }
+    }
+
     /// The site whose invalidator-hood this proof licenses erasing.
     #[must_use]
     pub fn site(&self) -> CfgNodeId {
@@ -94,119 +103,6 @@ impl DeadBranchProof {
     #[must_use]
     pub fn controller_rc(&self) -> Rc {
         self.controller_rc
-    }
-}
-
-/// One erasure, with its derivation and the round that minted it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ErasureEntry {
-    proof: DeadBranchProof,
-    round: RoundId,
-}
-
-impl ErasureEntry {
-    /// The derivation behind this erasure.
-    #[must_use]
-    pub fn proof(&self) -> &DeadBranchProof {
-        &self.proof
-    }
-
-    /// Which round minted it (the why-chain's round tag).
-    #[must_use]
-    pub fn round(&self) -> RoundId {
-        self.round
-    }
-
-    /// The site this entry erases.
-    #[must_use]
-    pub fn site(&self) -> CfgNodeId {
-        self.proof.site
-    }
-
-    /// Permission to shrink the model at this site. The ONLY route to an
-    /// [`ErasureLicense`], which is the only route to an overlay member.
-    #[must_use]
-    pub fn license(&self) -> ErasureLicense {
-        ErasureLicense::for_site(self.proof.site)
-    }
-}
-
-/// The fixpoint's sole cross-round accumulator: grow-only WITHIN a fixed record-world.
-///
-/// `brg-ledger-resets-on-record-world-change` (`26H` §4¾): monotonicity is conditional. Any
-/// record-set change invalidates the ledger entirely — discard, rebuild the residual from
-/// the frozen origin, recompute the whole fixpoint. An erasure "permanent" within its
-/// record-world is NOT permanent across record-worlds, and carrying one across is the exact
-/// composition mistake the cross-round state law exists to forbid. `rebuild_from_origin` is
-/// that contract, exercised by test; v1 has no production path that reaches it, because
-/// admission runs once and the records are frozen before the loop starts.
-#[derive(Debug, Clone, Default)]
-pub struct ErasureLedger {
-    entries: BTreeMap<CfgNodeId, ErasureEntry>,
-}
-
-impl ErasureLedger {
-    /// An empty ledger — the origin model.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            entries: BTreeMap::new(),
-        }
-    }
-
-    /// Record a proven-dead derivation, consuming the proof BY VALUE. Returns whether this
-    /// was new; a site already erased in an earlier round is not re-recorded (the round tag
-    /// names the round that FIRST proved it, which is what the cascade renders).
-    pub fn record(&mut self, proof: DeadBranchProof, round: RoundId) -> bool {
-        match self.entries.entry(proof.site) {
-            std::collections::btree_map::Entry::Occupied(_) => false,
-            std::collections::btree_map::Entry::Vacant(slot) => {
-                slot.insert(ErasureEntry { proof, round });
-                true
-            }
-        }
-    }
-
-    /// Discard every erasure and return to the origin model (`brg-ledger-resets-on-record-
-    /// world-change`). The record-world changed; nothing proven under the old one survives.
-    pub fn rebuild_from_origin(&mut self) {
-        self.entries.clear();
-    }
-
-    /// How many sites are erased.
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.entries.len()
-    }
-
-    /// Is nothing erased?
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-
-    /// The entries, in site order (`inv-determinism`).
-    pub fn entries(&self) -> impl Iterator<Item = &ErasureEntry> + '_ {
-        self.entries.values()
-    }
-
-    /// This site's entry, if it is erased.
-    #[must_use]
-    pub fn entry(&self, site: CfgNodeId) -> Option<&ErasureEntry> {
-        self.entries.get(&site)
-    }
-
-    /// The erased site set.
-    pub fn sites(&self) -> impl Iterator<Item = CfgNodeId> + '_ {
-        self.entries.keys().copied()
-    }
-
-    /// The overlay this ledger licenses — the residual model `analysis` will be handed.
-    #[must_use]
-    pub fn overlay(&self) -> dorc_analysis::erase::ErasedSites {
-        dorc_analysis::erase::ErasedSites::from_licenses(
-            self.entries.values().map(ErasureEntry::license),
-        )
     }
 }
 
@@ -549,60 +445,6 @@ apt_get__predict() {
     }
 
     #[test]
-    fn a_ledger_records_one_entry_per_site_keeping_the_first_round() {
-        let proof = DeadBranchProof {
-            site: CfgNodeId(3),
-            controller: AstId(1),
-            controller_rc: Rc(0),
-        };
-        let mut ledger = ErasureLedger::new();
-        assert!(ledger.record(proof, RoundId(1)), "first record is new");
-        assert!(
-            !ledger.record(proof, RoundId(2)),
-            "a site already erased is not re-recorded"
-        );
-        assert_eq!(ledger.len(), 1);
-        assert_eq!(
-            ledger.entry(CfgNodeId(3)).map(ErasureEntry::round),
-            Some(RoundId(1)),
-            "the round tag names the round that FIRST proved it"
-        );
-    }
-
-    #[test]
-    fn an_overlay_carries_exactly_the_ledgers_sites() {
-        let mut ledger = ErasureLedger::new();
-        ledger.record(
-            DeadBranchProof {
-                site: CfgNodeId(7),
-                controller: AstId(2),
-                controller_rc: Rc(0),
-            },
-            RoundId(1),
-        );
-        let overlay = ledger.overlay();
-        assert!(overlay.contains(CfgNodeId(7)));
-        assert_eq!(overlay.len(), 1);
-    }
-
-    #[test]
-    fn rebuild_from_origin_discards_every_erasure() {
-        let mut ledger = ErasureLedger::new();
-        ledger.record(
-            DeadBranchProof {
-                site: CfgNodeId(1),
-                controller: AstId(0),
-                controller_rc: Rc(0),
-            },
-            RoundId(1),
-        );
-        assert_eq!(ledger.len(), 1);
-        ledger.rebuild_from_origin();
-        assert!(ledger.is_empty(), "a new record-world keeps no erasure");
-        assert!(ledger.overlay().is_empty(), "and licenses no shrink");
-    }
-
-    #[test]
     fn licence_mint_has_exactly_one_caller() {
         // A second caller is not a refactor; it is an unproven route to shrinking the model.
         let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -623,7 +465,9 @@ apt_get__predict() {
                     stack.push(path);
                 } else if path.extension().is_some_and(|e| e == "rs") {
                     let src = std::fs::read_to_string(&path).unwrap_or_default();
-                    if src.contains("ErasureLicense::for_site(") {
+                    // Split so this scan does not find ITSELF: the fence is about production
+                    // callers, and a needle spelled whole here would be a permanent false hit.
+                    if src.contains(concat!("ErasureLicense", "::for_site(")) {
                         callers.push(path.display().to_string().replace('\\', "/"));
                     }
                 }
@@ -637,8 +481,8 @@ apt_get__predict() {
             "exactly one caller of the licence mint; found {callers:?}"
         );
         assert!(
-            callers[0].ends_with("plan/src/erase.rs"),
-            "the sole caller is plan::erase; found {callers:?}"
+            callers[0].ends_with("plan/src/world.rs"),
+            "the sole caller is the no-execution ledger's overlay projection; found {callers:?}"
         );
     }
 }

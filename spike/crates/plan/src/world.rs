@@ -489,14 +489,14 @@ mod tests {
                     stack.push(path);
                 } else if path.extension().is_some_and(|e| e == "rs") {
                     let src = std::fs::read_to_string(&path).unwrap_or_default();
-                    if src.contains("ReplacementDeathProof::mint(") {
+                    // Split so this scan does not find ITSELF (the `erase` fence's own lesson).
+                    if src.contains(concat!("ReplacementDeathProof", "::mint(")) {
                         callers.push(path.display().to_string().replace('\\', "/"));
                     }
                 }
             }
         }
         callers.sort();
-        callers.retain(|p| !p.ends_with("plan/src/world.rs"));
         assert_eq!(
             callers.len(),
             1,
@@ -543,6 +543,33 @@ mod tests {
             "the round tag names the round that FIRST proved it"
         );
         assert!(!ledger.proves_no_execution(CfgNodeId(9)));
+    }
+
+    /// `brg-ledger-resets-on-record-world-change`: monotonicity is conditional on ONE fixed
+    /// record-world, so a change to it discards everything proven under the old one. Carrying an
+    /// erasure across is the exact composition mistake the cross-round state law forbids.
+    #[test]
+    fn rebuilding_from_origin_discards_every_proof_and_licenses_no_shrink() {
+        let mut ledger = NoExecutionLedger::new();
+        let _ = ledger.record_round(
+            RoundId(1),
+            [(
+                CfgNodeId(1),
+                NoMutationProof::DeadBranch(DeadBranchProof::fixture(CfgNodeId(1))),
+            )],
+        );
+        assert_eq!(ledger.len(), 1);
+        assert!(ledger.classify_overlay().contains(CfgNodeId(1)));
+        ledger.rebuild_from_origin();
+        assert!(ledger.is_empty(), "a new record-world keeps no proof");
+        assert!(
+            ledger.classify_overlay().is_empty(),
+            "and licenses no shrink"
+        );
+        assert!(
+            !ledger.proves_no_execution(CfgNodeId(1)),
+            "and retires no wall"
+        );
     }
 
     #[test]
