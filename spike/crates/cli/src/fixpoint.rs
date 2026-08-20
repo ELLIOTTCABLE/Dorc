@@ -95,6 +95,9 @@ pub struct SettledFixpoint {
     /// production bound, so the caller `debug_assert`s it false; the fault-injection pin drives it
     /// true deliberately.
     pub capped: bool,
+    /// Failing effective-reach post-fixpoint checks across every round (`30K` §4.4). Zero is the
+    /// healthy state; anything else is OUR defect and the whole window took its floor.
+    pub effective_solve_failures: u32,
     /// Round 1's validity bits — the ORIGIN model's answer, kept so the why-chain can tell a
     /// site that was always trustworthy from one whose guard only became trustworthy because
     /// something upstream was proven not to run. The latter is the cascade `26H` §4.6 requires be
@@ -371,5 +374,6 @@ pub fn settle_world(
         ledger: settlement.ledger,
         capped: settlement.capped,
         origin_validity: settlement.origin_validity,
+        effective_solve_failures: settlement.effective_solve_failures,
     }
 }

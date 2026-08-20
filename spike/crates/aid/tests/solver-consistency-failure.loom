@@ -7,7 +7,6 @@ owns:
   - solver-consistency-failure-function-environment
   - solver-consistency-failure-reaching-defs
   - solver-consistency-failure-self-reach
-  - solver-consistency-failure-effective-reach
 ---
 -- replay --
 $ dorc plan --book=book.sh

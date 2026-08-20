@@ -1780,6 +1780,23 @@ fn run(
         &settled.origin_validity,
     );
     report_at(advisory, "classify", book_source, &round_diags);
+    // `30K` §4.4: the effective-reach solve reports under its OWN pass name. It is a different
+    // question from the origin reaching-defs one — only this answer can license an apply-time
+    // elision — so a failure here must not read as the other's. The failing INDICES stay behind in
+    // the in-memory outcome; the push surface carries the count (`rul-chain-is-pull-only`).
+    if settled.effective_solve_failures > 0 {
+        report_at(
+            advisory,
+            "solve",
+            None,
+            &[Diag::new_spanless_site(DiagCode::SolverConsistencyFailure(
+                dorc_aid::diag::SolverConsistencyFailure {
+                    pass: dorc_aid::diag::SolvePass::EffectiveReach,
+                    failing: settled.effective_solve_failures.to_string(),
+                },
+            ))],
+        );
+    }
     // The shared-cell collapse reaches a surface (`26G:fnd-shared-auto-cell-collides`): sites that
     // reported cleanly lose their licence because a SIBLING on the same cell disagreed or could not
     // answer, and until now the only trace was an unconsumed narrative. Spanless — the cell is a

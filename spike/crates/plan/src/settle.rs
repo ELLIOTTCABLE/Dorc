@@ -31,7 +31,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::narrative::{ChannelCoverage, DemoteTag};
 use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
-use dorc_analysis::certify::CertifierTrip;
+use dorc_analysis::certify::{CertifierTrip, SolveConsistency};
 use dorc_analysis::cfg::{Cfg, CfgNodeId};
 use dorc_analysis::effect::SkipClass;
 use dorc_core::spine::{Grade, SpineSurvival, SurvivalDemote, SurvivalOutcome};
@@ -273,8 +273,10 @@ pub fn settle_effective_world(
     let mut ledger = NoExecutionLedger::new();
     let mut number = 1u32;
     let mut origin_validity: Option<BTreeMap<LeafId, bool>> = None;
+    let mut failures = 0u32;
     loop {
         let outcome = one_round(inputs, model, &ledger);
+        failures = failures.saturating_add(outcome.solve_failures);
         if origin_validity.is_none() {
             origin_validity = Some(outcome.validity.clone());
         }
@@ -287,11 +289,13 @@ pub fn settle_effective_world(
                 origin_validity: origin_validity.unwrap_or_default(),
                 ledger,
                 capped: false,
+                effective_solve_failures: failures,
             };
         }
         if number >= cap {
             ledger.rebuild_from_origin();
             let outcome = one_round(inputs, model, &ledger);
+            failures = failures.saturating_add(outcome.solve_failures);
             // The maximal-effects answer is a fixpoint of an empty ledger by construction: nothing
             // it proves is recorded, so nothing it proves can license anything downstream.
             let witness = NoExecutionLedger::new()
@@ -304,6 +308,7 @@ pub fn settle_effective_world(
                 origin_validity: origin_validity.unwrap_or_default(),
                 ledger,
                 capped: true,
+                effective_solve_failures: failures,
             };
         }
         number = number.saturating_add(1);
@@ -327,6 +332,14 @@ pub struct Settlement {
     pub ledger: NoExecutionLedger,
     /// Did the loop hit its cap and degrade to the maximal-effects answer?
     pub capped: bool,
+    /// How many effective-reach post-fixpoint CHECKS failed across every round (`30K` §4.4).
+    ///
+    /// A scalar, and accumulated across ALL rounds rather than kept from the settled one, for the
+    /// reason the certifier latch is threaded the same way: an intermediate round is never
+    /// observed, so a failure there would otherwise be invisible to every reader of the settled
+    /// answer. Scalars only — the failing lattice values stay behind in the `SolveConsistency`
+    /// (`303:fnd-witness-operands-cannot-enter-narrative`).
+    pub effective_solve_failures: u32,
 }
 
 /// One round's products, none of which survives a growing ledger.
@@ -334,6 +347,8 @@ struct RoundOutcome {
     round: ProvisionalEffectiveRound,
     classification: RoundClassification,
     validity: BTreeMap<LeafId, bool>,
+    /// Failing post-fixpoint CHECKS across this round's effective solves.
+    solve_failures: u32,
 }
 
 fn one_round(
@@ -353,6 +368,7 @@ fn one_round(
     let effective = effective_invalidators(cfg, &classification.invalidators, ledger);
     let (reach, consistency) = solve_reaching_walls(cfg, &effective, None);
     model.trip().record(&consistency);
+    let mut solve_failures = failing_checks(&consistency);
     let trusted = consistency.is_consistent();
     let walls_at = |node: CfgNodeId| -> ReachingWalls {
         reach
@@ -372,6 +388,7 @@ fn one_round(
         }
         let (solo, solo_consistency) = solve_reaching_walls(cfg, &effective, Some(*node));
         model.trip().record(&solo_consistency);
+        solve_failures = solve_failures.saturating_add(failing_checks(&solo_consistency));
         let walls = if solo_consistency.is_consistent() {
             solo.states
                 .get(node.index())
@@ -427,16 +444,15 @@ fn one_round(
                 .unwrap_or_else(dorc_analysis::lattice::Lattice::bottom),
             _ => walls_at(*node),
         };
-        let freshness = if trusted {
+        let freshness = floor_uncertified(
+            &consistency,
             inputs.policy.freshness(
                 &site_walls,
                 survival_subject(class),
                 &classification.fact_backings,
                 &leaf_of,
-            )
-        } else {
-            Freshness::Stale(StaleCause::SolveInconsistent)
-        };
+            ),
+        );
         let decision = decide_site(&crate::DecideSite {
             cfg,
             ast,
@@ -481,6 +497,36 @@ fn one_round(
         },
         classification,
         validity,
+        solve_failures,
+    }
+}
+
+/// How many post-fixpoint checks one effective-reach answer failed — the scalar the aid plane may
+/// carry (`303:fnd-witness-operands-cannot-enter-narrative`). Zero for a certified answer.
+fn failing_checks(consistency: &SolveConsistency<ReachingWalls>) -> u32 {
+    match consistency {
+        SolveConsistency::Consistent(_) => 0,
+        SolveConsistency::Inconsistent(report) => u32::try_from(report.total()).unwrap_or(u32::MAX),
+    }
+}
+
+/// THE EFFECTIVE-REACH FLOOR (`30K` §4.4). An answer that failed its own post-fixpoint check is
+/// inadmissible for freshness or survival: every fact reads STALE across potential mutations, so
+/// nothing Replaces, Survives, or Omits on its strength. A guard may still stand — it rests on the
+/// independent vouch and the probe's own measurement, and it re-decides live — and otherwise the
+/// site runs.
+///
+/// A named seat rather than an inline `if`, for the reason `effect::self_reach_answer` is one: the
+/// load-bearing half is that a CLEAN policy answer does not rescue an uncertified solve, and only a
+/// test holding both can say so.
+pub(crate) fn floor_uncertified(
+    consistency: &SolveConsistency<ReachingWalls>,
+    answer: Freshness,
+) -> Freshness {
+    if consistency.is_consistent() {
+        answer
+    } else {
+        Freshness::Stale(StaleCause::SolveInconsistent)
     }
 }
 
@@ -526,6 +572,80 @@ pub(crate) fn replacement_death(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE EFFECTIVE-REACH FLOOR, driven by a REAL `Inconsistent` (`30K` §4.4 · `302` §6.8's
+    /// shape): a clean policy answer does not rescue an answer that failed its own post-fixpoint
+    /// check. Both halves have to be held at once for the pin to mean anything, which is why the
+    /// inconsistency comes from the real checker over a real (deliberately wrong) solution rather
+    /// than from a hand-built outcome (`anti-masking-tests`).
+    #[test]
+    fn an_uncertified_effective_answer_makes_every_fact_stale() {
+        use dorc_analysis::certify::certify_solution;
+        use dorc_analysis::lattice::Lattice as _;
+        use dorc_analysis::solve::{Direction, Solution};
+
+        // A two-node line graph whose transfer gens a wall at node 0, against a solution claiming
+        // the wall reaches nowhere: the per-edge check `transfer(0, s0) ⊑ s1` fails for real.
+        struct Line;
+        impl dorc_analysis::solve::Graph for Line {
+            fn node_count(&self) -> usize {
+                2
+            }
+            fn succ(&self, node: usize) -> &[usize] {
+                if node == 0 { &[1] } else { &[] }
+            }
+            fn pred(&self, node: usize) -> &[usize] {
+                if node == 1 { &[0] } else { &[] }
+            }
+        }
+        let transfer = |node: usize, incoming: &ReachingWalls| {
+            let mut out = incoming.clone();
+            if node == 0 {
+                out.insert(crate::world::WallId::of(CfgNodeId(0)));
+            }
+            out
+        };
+        let wrong = Solution {
+            states: vec![ReachingWalls::bottom(), ReachingWalls::bottom()],
+            converged: true,
+            rounds: 1,
+        };
+        let init = vec![ReachingWalls::bottom(); 2];
+        let consistency = certify_solution(&Line, Direction::Forward, &init, transfer, &wrong);
+        assert!(
+            !consistency.is_consistent(),
+            "the fixture must produce a REAL inconsistency, or the pin proves nothing"
+        );
+        assert!(
+            matches!(
+                floor_uncertified(&consistency, Freshness::FreshClean),
+                Freshness::Stale(StaleCause::SolveInconsistent)
+            ),
+            "a clean policy answer must not rescue an uncertified solve"
+        );
+        assert_eq!(failing_checks(&consistency), 1, "and the count is measured");
+        let clean = certify_solution(
+            &Line,
+            Direction::Forward,
+            &init,
+            transfer,
+            &Solution {
+                states: vec![
+                    ReachingWalls::bottom(),
+                    ReachingWalls::singleton(crate::world::WallId::of(CfgNodeId(0))),
+                ],
+                converged: true,
+                rounds: 1,
+            },
+        );
+        assert!(
+            matches!(
+                floor_uncertified(&clean, Freshness::FreshClean),
+                Freshness::FreshClean
+            ),
+            "and a certified answer passes through untouched — the floor is not a blanket refuse"
+        );
+    }
 
     /// A provisional round has no route to Spine. This is a COMPILE-tier property, so the pin is a
     /// doctest-shaped one: the method does not exist, and a maintainer adding one has to delete
