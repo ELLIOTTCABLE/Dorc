@@ -150,6 +150,25 @@ Recorded as taken, never self-endorsed.
   repair moved five `strawman24-*`/`pin28-*` survival cases from a bare RUN to a GUARD. The
   defect was never specific to classed declines: any site whose ONLY lost elision
   precondition was freshness used to run bare.
+- `fnd-fail-fast-hid-four-real-failures-behind-the-golden-drift` **[+SURE]** — with eleven
+  e2e cases red, nextest's fail-fast stopped `gate:full-quiet` at 611 of 2368 trials, so the
+  whole unit tier went unrun and read as "green except the drift". It was not. Running
+  `gate:quick` (lint + unit tier, no corpora) surfaced FOUR genuine failures the composite
+  gate could not have shown while any case was red: both re-homed lexical fences, the lost
+  cap-degrade narrative, and one behaviour move. **A conversion whose goldens are pending a
+  bless MUST be gated tier-by-tier — `gate:quick`, `test:looms-quiet`, `test:e2e-quiet` —
+  and never by the composite alone.**
+- `fnd-a-lexical-fence-can-find-itself` **[+SURE]** — `licence_mint_has_exactly_one_caller`
+  scans the workspace for a literal needle. Once the mint's sole caller moved out of the
+  file holding the fence, the ONLY remaining match in that file was the fence's own needle
+  string, and the census read 2. Both fences (this one and the new
+  `replacement_death_mint_has_exactly_one_caller`) now spell the needle as `concat!(…)`, so
+  the scan cannot match itself. A fence whose subject moves needs re-aiming AND re-checking
+  that it still measures what it names.
+- `fnd-the-funcenv-fence-stopped-covering-the-loop-body` **[+SURE]** — the fence scanned the
+  driver FUNCTION body for env entry points. Under the settlement the real per-round work
+  moved into `WorldRoundModel::classify`, outside that slice, so the fence would have been
+  silently vacuous for the property it exists to hold. It now scans both regions.
 - `fnd-a-notEffective-act-cannot-be-mutated-into-a-wall-removal` **[+SURE]**, methodology —
   the first attempt at the guard-walls-downstream mutation used
   `NoMutationProof::NotEffective`, which `record_round` deliberately drops, so the mutation
@@ -200,6 +219,7 @@ Every moved case, with the mechanism that moved it. Reviewed as behaviour before
 
 | case | movement |
 |---|---|
+| `dorc-plan tests::fixture_install_on_realistic_book_still_runs_residual_poison` | run ⇒ guard on the realistic `pi-webhost` book; the datum (no elision) is unchanged, the honesty improved. Assertion updated in place |
 | `guard26-classed-decline-guards-below` | XFAIL ⇒ XPASS, promoted (marker + `head-expected.ran` removed) |
 | `guard26-diverged-wall-guards-below` | XFAIL ⇒ XPASS, promoted |
 | `guard26-classed-decline-demotes-guard` | the defect twin — RETIRED (deleted); its lesson is now `a_modeled_running_wall_leaves_the_guard_tier_reachable_below_it` plus the promoted twin |
@@ -316,9 +336,18 @@ should read as DISCHARGED by `28Q:stage-effective-world-reach`, pointing at
 - Comment budget: 177 non-doc comment lines added over 3015 added lines (5.9%); doc
   comments billed separately at 550. Command:
   `git diff -U0 <base>..HEAD -- 'spike/**/*.rs' | grep -c '^+[[:space:]]*// '`.
-- Gates: `mise run gate:full-quiet` on BOTH legs (Windows, then WSL, in that order per
-  `preflight-bounds-before-spend`). Both green except the eleven §6 cases, and both name
-  exactly the same eleven — no platform-cfg divergence. Lint gates, the loom corpus (279),
-  the unit tier, and `verify:check` are green on both. `test:floor` and `test:real-tools`
-  re-run the same e2e corpus under extra env, so they fail on the same eleven and nothing
-  else. `bless:dry` refuses for the same reason and prints the scoped bless.
+- Gates, run TIER BY TIER on both legs because the composite fail-fasts past the unit tier
+  while any case is red (`fnd-fail-fast-hid-four-real-failures-behind-the-golden-drift`).
+  Windows first, then WSL, per `preflight-bounds-before-spend`:
+
+| tier | Windows | WSL |
+|---|---|---|
+| `gate:quick` (four lint gates + unit tier) | 1455/1455 GREEN | 1451/1451 GREEN |
+| `test:looms-quiet` | 279/279 GREEN | 279/279 GREEN |
+| `test:e2e-quiet` | 156 pass, the 11 of §6 | 156 pass, the SAME 11 |
+
+  The 1455/1451 delta is the `cfg`-gated platform tests, not a divergence: the two legs
+  name the same eleven e2e cases and differ in nothing else. `test:floor` and
+  `test:real-tools` re-run the same e2e corpus under extra env, so they fail on the same
+  eleven; `bless:dry` refuses for the same reason and prints the scoped bless above.
+  `verify:check` rides `gate:full-quiet` and is green on both.
