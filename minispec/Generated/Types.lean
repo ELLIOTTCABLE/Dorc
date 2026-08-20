@@ -67,7 +67,7 @@ inductive lattice.Flat (T : Type) where
 def lattice.Product (A : Type) (B : Type) := A × B
 
 /-- [generated::sorted::SortedMap]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 185:0-187:1
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 212:0-214:1
     Visibility: public -/
 structure sorted.SortedMap (K : Type) (V : Type) where
   entries : alloc.vec.Vec (K × V)

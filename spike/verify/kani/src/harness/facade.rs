@@ -15,11 +15,12 @@
 //! harness per length or length-pair, and each declares exactly the universe it verifies.
 //!
 //! The same wall reappears INSIDE the two set operators, which is why their enumerations are
-//! lopsided. `union` clones the left side and then `insert`s the right side element by element;
-//! the second such insert reallocates a backing whose length has ALREADY become symbolic. So
-//! `union` is affordable with at most ONE element on the right (measured: green with one,
-//! over-budget with two, at every left-hand length tried), and `intersection` — which inserts
-//! survivors of the LEFT side into a fresh set — with at most one element on the left.
+//! lopsided. `union` reuses a canonical-prefix operand, but its general path clones the left side
+//! and `insert`s the right side element by element; the second such insert reallocates a backing
+//! whose length has ALREADY become symbolic. So an unconstrained `union` is affordable with at
+//! most ONE element on the right (measured: green with one, over-budget with two, at every
+//! left-hand length tried), and `intersection` — which inserts survivors of the LEFT side into a
+//! fresh set — with at most one element on the left.
 //!
 //! **What that leaves unjudged, stated rather than buried:** `union` with two or more elements on
 //! the right, `intersection` with two or more on the left, and therefore the commutativity of

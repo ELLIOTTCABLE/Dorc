@@ -66,5 +66,5 @@ The subsets of the analysis engine opted into Lean verification, as the census o
 
 - `minispec/Generated/` proof holes: **0**. A lenient translation emits SILENT holes and a hole typechecks, so a green build proves nothing without this number.
 - external axioms in `Generated/`: **13**. Each is a std or fenced function the translator does not model, standing in for a body nothing checks. The fence — which items are axiomatized and why — is `spike/verify/aeneas/Cargo.toml`, where every entry carries its class and its reason.
-- derivation digest: **7c1587c7252e0483**. `Generated/` is derived from the Rust the translation unit includes; this is the digest of those inputs as of the derivation that produced it (`spike/verify/aeneas/derivation.lock`). Whether the sources have MOVED since is a warning `dorc-verify check` and `report` print, never a value in this file.
+- derivation digest: **96caadff3386ca92**. `Generated/` is derived from the Rust the translation unit includes; this is the digest of those inputs as of the derivation that produced it (`spike/verify/aeneas/derivation.lock`). Whether the sources have MOVED since is a warning `dorc-verify check` and `report` print, never a value in this file.
 

@@ -1118,7 +1118,7 @@ no task covers, and consider adding the task instead.
   `verify:kani`, `verify:lean` and `verify:translate` open with `mise run preflight
   <profile>`, which prints one line and exits nonzero when free disk (on the volume
   holding the profile's build cache) or available RAM is under the bound. The hot loop
-  (`gate:quick*`, `test`) is deliberately unburdened, and pre-commit MUST NOT gain it.
+  (`test`) is deliberately unburdened, and pre-commit MUST NOT gain it.
   Bounds live in one table in `internal-tooling`'s `preflight.rs`, each carrying its
   measurement's provenance in a comment — conservative round numbers, because a bound
   that fires spuriously is a bound people learn to skip. Two disk figures per profile

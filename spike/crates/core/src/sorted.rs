@@ -138,12 +138,39 @@ impl<T: Ord> SortedSet<T> {
     pub fn contains(&self, value: &T) -> bool {
         matches!(self.position(value), Slot::At(_))
     }
+
+    fn is_prefix_of(&self, other: &Self) -> bool {
+        if self.len() > other.len() {
+            return false;
+        }
+
+        let mut index = 0usize;
+        while let Some(item) = self.items.get(index) {
+            match other.items.get(index) {
+                Some(other_item) if item == other_item => {
+                    index = index.saturating_add(1);
+                }
+                _ => return false,
+            }
+        }
+        true
+    }
 }
 
 impl<T: Ord + Clone> SortedSet<T> {
     /// `self ∪ other`.
+    ///
+    /// Reuses a canonical-prefix operand so [`insert`](Self::insert) remains the only
+    /// canonical-form construction seat.
     #[must_use]
     pub fn union(&self, other: &Self) -> Self {
+        if self.is_prefix_of(other) {
+            return other.clone();
+        }
+        if other.is_prefix_of(self) {
+            return self.clone();
+        }
+
         let mut out = self.clone();
         let mut index = 0usize;
         while let Some(item) = other.items.get(index) {
@@ -319,13 +346,14 @@ impl<K: Ord, V> SortedMap<K, V> {
 ///
 /// # The same shape arises INSIDE the operators, which caps what they can be asked
 ///
-/// [`union`](SortedSet::union) clones the left side and then [`insert`](SortedSet::insert)s the
-/// right side element by element. The first insert lands on a concrete length; the SECOND lands
-/// on a length that has already become symbolic (the first either grew the set or did not), with
-/// a full backing — the pathological combination again, arrived at from the inside, where no
-/// choice of INPUT length can prevent it. Measured: green with one element on the right,
-/// over-budget with two, at every left-hand length tried. [`intersection`](SortedSet::intersection)
-/// is the mirror image, since it inserts survivors of the LEFT side into a fresh set.
+/// [`union`](SortedSet::union) reuses an operand when one canonical backing prefixes the other.
+/// Otherwise it clones the left side and [`insert`](SortedSet::insert)s the right side element by
+/// element. The first insert lands on a concrete length; the SECOND lands on a length that has
+/// already become symbolic (the first either grew the set or did not), with a full backing — the
+/// pathological combination again, arrived at from the inside, where no choice of INPUT length
+/// can prevent it. Measured: green with one element on the right, over-budget with two, at every
+/// left-hand length tried. [`intersection`](SortedSet::intersection) is the mirror image, since it
+/// inserts survivors of the LEFT side into a fresh set.
 ///
 /// So the Kani battery judges `union` only with at most one element on the right and
 /// `intersection` only with at most one on the left, and `analysis::lattice`'s two
@@ -521,6 +549,31 @@ mod tests {
         let empty = SortedSet::new();
         assert_eq!(a.union(&empty), a, "∅ is ∪'s identity");
         assert_eq!(a.intersection(&empty), empty, "∅ absorbs under ∩");
+    }
+
+    #[test]
+    fn set_union_matches_every_pair_in_a_small_universe() {
+        for left_mask in 0u8..16 {
+            for right_mask in 0u8..16 {
+                let left: SortedSet<u8> = (0u8..4)
+                    .filter(|value| left_mask & (1u8 << u32::from(*value)) != 0)
+                    .collect();
+                let right: SortedSet<u8> = (0u8..4)
+                    .filter(|value| right_mask & (1u8 << u32::from(*value)) != 0)
+                    .collect();
+                let expected: Vec<u8> = (0u8..4)
+                    .filter(|value| (left_mask | right_mask) & (1u8 << u32::from(*value)) != 0)
+                    .collect();
+
+                let union = left.union(&right);
+                assert_eq!(
+                    elements(&union),
+                    expected,
+                    "masks {left_mask:04b}, {right_mask:04b}"
+                );
+                assert_eq!(union, right.union(&left), "union commutes for every pair");
+            }
+        }
     }
 
     #[test]
