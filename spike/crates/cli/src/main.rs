@@ -72,9 +72,7 @@ use dorc_core::{Interner, ProvArena, Symbol};
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_aid::SpeechAct;
-use dorc_cli::fixpoint::{
-    FrozenModel, attribute_dead_branch_cascades, classify_round, settle_world,
-};
+use dorc_cli::fixpoint::{FrozenModel, attribute_cascades, classify_round, settle_world};
 use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
 use dorc_cli::results::{ReportRecord, RunClock, SiteResults, probe_origins};
 use dorc_cli::survival::{
@@ -1770,7 +1768,7 @@ fn run(
     let classify_narrative = round.classify_narrative;
     let round_diags = round.diags;
     let (merge_narrative, collapsed_cells) = (settled.merge_narrative, settled.collapsed);
-    let cascades = attribute_dead_branch_cascades(
+    let cascades = attribute_cascades(
         &cfg.value,
         &parsed.value,
         &book_src,
@@ -6041,6 +6039,32 @@ apt_get__predict() {
 }
 "#;
 
+    const REPLACEMENT_CASCADE_ORACLE: &str = r#"
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   case $verb in
+      install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+   esac
+}
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 : sm.dorc.Package:"$1"@installed ;;
+      *) return 2 ;;
+   esac
+}
+"#;
+
     /// Drive the REAL fixpoint over a two-rung ladder at the given iteration `cap`.
     fn settle_ladder(cap: u32, records: &str) -> SettledFixpoint {
         let book = "dpkg -s alpha >/dev/null 2>&1 || apt-get install -y alpha\n\
@@ -6164,6 +6188,167 @@ apt_get__predict() {
         assert!(
             settled.origin_validity.values().any(|v| !*v),
             "and the SECOND one was not valid at origin — that gap IS the cascade this pins"
+        );
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one anti-masking specimen drives the real settlement, ledger, and attribution path"
+    )]
+    fn a_replacement_cascade_retains_its_typed_cause_without_a_controller() {
+        let book = "apt-get install -y oldpkg\n\
+                    dpkg -s beta >/dev/null 2>&1 || apt-get install -y beta\n";
+        let mut interner = Interner::default();
+        let oracle_srcs = vec![REPLACEMENT_CASCADE_ORACLE.to_owned()];
+        let oracle_refs = vec![REPLACEMENT_CASCADE_ORACLE];
+        let oracle_paths = vec!["replacement-cascade.oracle.sh"];
+        let helpers = dorc_oracle::closure::HelperIndex::default();
+        let checks = vec![
+            dorc_oracle::predict::lift_predicts(&mut interner, REPLACEMENT_CASCADE_ORACLE).value,
+        ];
+        let verdict_sets = vec![
+            dorc_oracle::verdict::VerdictSet::lift(&mut interner, REPLACEMENT_CASCADE_ORACLE).value,
+        ];
+        let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
+        let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
+        let parsed = dorc_syntax::parse(book);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
+        let peeled = BTreeMap::new();
+        let live = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+        let frozen = FrozenModel {
+            cfg: &cfg,
+            value: &value,
+            ast: &parsed.value,
+            idx: &idx,
+            checks: &checks,
+            verdicts: &verdicts,
+            peeled: &peeled,
+            live,
+        };
+        let mut arena = ProvArena::new();
+        let mut verdict_lane = BTreeMap::new();
+        let origin = classify_round(
+            &frozen,
+            &dorc_analysis::erase::ErasedSites::none(),
+            &mut interner,
+            &mut arena,
+            &mut BTreeMap::new(),
+            &mut verdict_lane,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
+        );
+        let upstream_fact = origin
+            .classes
+            .iter()
+            .find_map(|(_, class)| match class {
+                dorc_analysis::effect::SkipClass::EstablishProbeAmbient(fact)
+                | dorc_analysis::effect::SkipClass::EstablishProbeWritten(fact) => Some(*fact),
+                _ => None,
+            })
+            .expect("the upstream install establishes one fact");
+        let (vouches, _) = dorc_plan::build_vouches(
+            &oracle_refs,
+            &oracle_paths,
+            &helpers,
+            &origin.classes,
+            &value,
+            &mut interner,
+            live,
+        );
+        let vouches = vouches.value;
+        let probe = dorc_plan::compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &origin.classes,
+            &BTreeMap::new(),
+            &dorc_plan::ConnectedPipes::default(),
+            |node, provider, argv| {
+                ship_predict_body(
+                    &oracle_srcs,
+                    &helpers,
+                    &checks,
+                    &interner,
+                    provider,
+                    argv,
+                    node,
+                    live,
+                )
+            },
+            |node, provider, _| {
+                verdict_lane.contains_key(&node).then(|| {
+                    ship_verdict_body(
+                        &oracle_srcs,
+                        &helpers,
+                        &verdict_sets,
+                        &interner,
+                        provider,
+                        node,
+                        live,
+                    )
+                })?
+            },
+            |_| false,
+        );
+        let results = parse_str(
+            "site 0 effect=holds\nsite 1 effect=holds rc=0\nsite 2 effect=holds\n",
+            &mut interner,
+        );
+        let connected = dorc_plan::ConnectedPipes::default();
+        let plan_inputs = dorc_plan::SettleInputs {
+            src: book,
+            ast: &parsed.value,
+            cfg: &cfg,
+            vouches: &vouches,
+            connected: &connected,
+            policy: dorc_plan::WallPolicy::Honest,
+            minted_at: None,
+        };
+        let settled = settle_world(
+            &frozen,
+            &probe,
+            &results,
+            &plan_inputs,
+            64,
+            &mut interner,
+            &mut arena,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
+        );
+        let cascades = attribute_cascades(
+            &cfg,
+            &parsed.value,
+            book,
+            &settled.round.classes,
+            &settled.ledger,
+            &settled.validity,
+            &settled.origin_validity,
+        );
+        let attribution = cascades
+            .values()
+            .find(|attribution| {
+                attribution
+                    .causes
+                    .iter()
+                    .any(|cause| matches!(cause, dorc_cli::why::CascadeCause::Replacement { .. }))
+            })
+            .expect("the query validity flip retains its replacement cause");
+        let replacement = attribution
+            .causes
+            .iter()
+            .find_map(|cause| match cause {
+                dorc_cli::why::CascadeCause::Replacement {
+                    replaced_line,
+                    fact,
+                    round,
+                } => Some((*replaced_line, *fact, *round)),
+                dorc_cli::why::CascadeCause::DeadBranch { .. } => None,
+            })
+            .expect("the retained cause is replacement-shaped");
+        assert_eq!(replacement, (1, upstream_fact, 1));
+        assert!(
+            attribution.dead_branch.is_none(),
+            "a replacement-only cascade must not fabricate a dead-branch controller"
         );
     }
 

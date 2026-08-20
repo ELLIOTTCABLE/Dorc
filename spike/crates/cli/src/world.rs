@@ -447,7 +447,7 @@ impl WhyWorld {
             &mut arena,
             &mut trip,
         );
-        let cascades = crate::fixpoint::attribute_dead_branch_cascades(
+        let cascades = crate::fixpoint::attribute_cascades(
             &cfg.value,
             &parsed.value,
             book_src,

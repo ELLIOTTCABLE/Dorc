@@ -129,8 +129,15 @@ pub struct ReplacementDeathProof {
 impl ReplacementDeathProof {
     /// Mint the proof. `licensed` is the site's real [`crate::ReplaceLicense`]-bearing decision and
     /// `renders_dead` is the render's own refusal predicate, both supplied by the ONE caller.
-    pub(crate) fn mint(site: CfgNodeId, fact: FactKey, renders_dead: bool) -> Option<Self> {
-        renders_dead.then_some(ReplacementDeathProof { site, fact })
+    pub(crate) fn mint(
+        site: CfgNodeId,
+        license: &crate::ReplaceLicense,
+        renders_dead: bool,
+    ) -> Option<Self> {
+        renders_dead.then_some(ReplacementDeathProof {
+            site,
+            fact: license.fact(),
+        })
     }
 
     /// The site whose mutation this proof retires.
@@ -505,6 +512,24 @@ mod tests {
         assert!(
             callers[0].ends_with("plan/src/settle.rs"),
             "the sole caller is the provisional decision constructor; found {callers:?}"
+        );
+    }
+
+    #[test]
+    fn effective_act_projects_from_a_private_conclusion_not_disposition() {
+        let source = include_str!("lib.rs");
+        let seat = source
+            .split("enum DecisionConclusion")
+            .nth(1)
+            .and_then(|tail| tail.split("fn site_conclusion").next())
+            .expect("the private decision projection seat");
+        assert!(
+            !seat.contains("&Disposition") && !seat.contains("site_act"),
+            "effective analysis must not read the public output disposition"
+        );
+        assert!(
+            seat.contains("replacement_death(p.ast, p.node, p.ast_id, &license)"),
+            "replacement death must possess the actual replacement authority"
         );
     }
 

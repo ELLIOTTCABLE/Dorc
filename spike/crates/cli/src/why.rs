@@ -22,16 +22,50 @@ use weft::{
 
 use crate::{CONSENT_FLAG, Receipt, paragraph, receipt_banner, registry_paragraph, why_parts};
 
-/// Why one site's guard became trustworthy only after the fixpoint ran (`26H` §4.6 —
-/// ATTRIBUTION IS A HARD REQUIREMENT). Decision-inert: the aid plane reads it, nothing else.
+/// The proof species whose no-execution result made a later guard trustworthy.
+#[derive(Debug)]
+pub enum CascadeCause {
+    /// A measured controller proved a branch dead.
+    DeadBranch {
+        /// The erased mutator's source line.
+        erased_line: usize,
+        /// The measured controller's source line.
+        controller_line: usize,
+        /// The first settlement round carrying the proof.
+        round: u32,
+    },
+    /// A licensed replacement retired its own mutation.
+    Replacement {
+        /// The replaced mutator's source line.
+        replaced_line: usize,
+        /// The cell whose established state licensed replacement.
+        fact: dorc_core::FactKey,
+        /// The first settlement round carrying the proof.
+        round: u32,
+    },
+}
+
+/// The existing dead-branch-only projection consumed by the current renderer.
+#[derive(Debug)]
+pub struct DeadBranchCascade {
+    /// Source lines of the erased mutators, in book order.
+    pub erased_lines: Vec<usize>,
+    /// The line whose measured status proved the last branch dead.
+    pub controller_line: usize,
+    /// The round carrying that proof.
+    pub round: u32,
+}
+
+/// Why one site's guard became trustworthy only after settlement.
+///
+/// Decision-inert: the aid plane reads it, nothing else. Every proof species remains in `causes`;
+/// the current prose renderer consumes only `dead_branch` until replacement prose is authored.
 #[derive(Debug)]
 pub struct CascadeAttribution {
-    /// Source lines of the erased mutators that had to be proven dead first, in book order.
-    pub erased_lines: Vec<usize>,
-    /// The line whose measured rc proved the last of them dead.
-    pub controller_line: usize,
-    /// The round that proof landed in.
-    pub round: u32,
+    /// Every no-execution cause reaching the newly valid query.
+    pub causes: Vec<CascadeCause>,
+    /// The subset the current authored prose can render without misattribution.
+    pub dead_branch: Option<DeadBranchCascade>,
 }
 
 /// cheap-7: is this command source text a STRUCTURALLY-UNPROBEABLE site — one for which no
@@ -1741,7 +1775,10 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                     "why-reason-skipped-converged",
                     &[&dorc_plan::fact_label(interner, license.fact())],
                 )];
-                if let Some(cascade) = cascades.get(&step.leaf) {
+                if let Some(cascade) = cascades
+                    .get(&step.leaf)
+                    .and_then(|cascade| cascade.dead_branch.as_ref())
+                {
                     reasons.push(Said::words(
                         "why-reason-elide-cascaded",
                         &[

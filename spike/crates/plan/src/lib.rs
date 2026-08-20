@@ -310,7 +310,7 @@ pub struct Derivation {
     /// The SURVIVAL attribution (Stage 2 / TC-3), if this elision crossed ≥1 running wall under
     /// `--risk-faultless-skips`. `None` for every ordinary elision (pre-wall, or flag-off); `Some`
     /// names which walls it crossed + whose footprint licensed each. Attached post-mint by the
-    /// wall walk ([`ReplaceLicense::with_survival`]); read ONLY by the why-lens render (never the
+    /// effective freshness decision ([`ReplaceLicense::with_survival`]); read ONLY by the why-lens render (never the
     /// artifact — rec-1). NOT a proof of adequacy (converged≠no-op stays the vouch's) — see
     /// [`survival`].
     pub survival: Option<SurvivalWitness>,
@@ -814,7 +814,7 @@ impl ReplaceLicense {
 
     /// Attach the SURVIVAL witness post-mint (Stage 2 / TC-3) — the attribution for an elision
     /// that crossed ≥1 running wall. Like [`with_witness`](Self::with_witness) it is pure OUTPUT
-    /// provenance set AFTER the mint (the survival decision happens in the wall walk, downstream
+    /// provenance set AFTER the mint (the survival decision happens in effective freshness, downstream
     /// of the license mint), so it never influences whether the license was granted. Rides the
     /// render surface (the why-lens) only — never the byte-floored artifact (rec-1).
     #[must_use]
@@ -3863,6 +3863,62 @@ pub(crate) struct SiteDecision {
     pub(crate) survival: SurvivalAccount,
 }
 
+/// The private semantic conclusion from which both public output and effective analysis project.
+enum DecisionConclusion {
+    Run,
+    Replace(ReplaceLicense, StandIn),
+    Omit { controller: AstId },
+    Guard(GuardLicense),
+}
+
+impl DecisionConclusion {
+    fn project(self, p: &DecideSite<'_>) -> (Disposition, EffectiveAct) {
+        let not_effective = || EffectiveAct::NoMutation(NoMutationProof::NotEffective);
+        match self {
+            DecisionConclusion::Run => (
+                Disposition::Run,
+                if p.invalidator {
+                    EffectiveAct::may_mutate(p.node)
+                } else {
+                    not_effective()
+                },
+            ),
+            DecisionConclusion::Guard(license) => (
+                Disposition::Guard(license),
+                if p.invalidator {
+                    EffectiveAct::may_mutate(p.node)
+                } else {
+                    not_effective()
+                },
+            ),
+            DecisionConclusion::Replace(license, stand_in) => {
+                let act = if p.invalidator {
+                    match settle::replacement_death(p.ast, p.node, p.ast_id, &license) {
+                        Some(proof) => EffectiveAct::NoMutation(NoMutationProof::Replaced(proof)),
+                        None => EffectiveAct::may_mutate(p.node),
+                    }
+                } else {
+                    not_effective()
+                };
+                (Disposition::Replace(license, stand_in), act)
+            }
+            DecisionConclusion::Omit { controller } => {
+                let act = if p.invalidator {
+                    match p.dead {
+                        Some(proof) => {
+                            EffectiveAct::NoMutation(NoMutationProof::DeadBranch(*proof))
+                        }
+                        None => EffectiveAct::may_mutate(p.node),
+                    }
+                } else {
+                    not_effective()
+                };
+                (Disposition::Omit { controller }, act)
+            }
+        }
+    }
+}
+
 /// The inputs one site's decision reads. A struct because the seat genuinely needs the whole
 /// context and a twelve-argument function hides which of them are frozen.
 pub(crate) struct DecideSite<'a> {
@@ -3890,8 +3946,8 @@ pub(crate) struct DecideSite<'a> {
 
 /// Decide one site (`30K` §5) — the disposition and the semantic act, from one pass.
 pub(crate) fn decide_site(p: &DecideSite<'_>) -> SiteDecision {
-    let (disposition, survival) = site_disposition(p);
-    let act = site_act(p, &disposition);
+    let (conclusion, survival) = site_conclusion(p);
+    let (disposition, act) = conclusion.project(p);
     SiteDecision {
         disposition,
         act,
@@ -3903,31 +3959,6 @@ pub(crate) fn decide_site(p: &DecideSite<'_>) -> SiteDecision {
     }
 }
 
-/// What the ORIGINAL mutation can still do, once the disposition is known.
-///
-/// Run and Guard are the same answer here, and that is the point (`30K` §5.3): a guard's check is
-/// read-only, but its untouched fallback IS the authored mutation, so the world may still move at
-/// that line. Only a real proof of no-execution retires a wall — and a `Replace` the render will
-/// REFUSE (a heredoc-carrying leaf keeps its bytes verbatim) is not one.
-fn site_act(p: &DecideSite<'_>, disposition: &Disposition) -> EffectiveAct {
-    if !p.invalidator {
-        return EffectiveAct::NoMutation(NoMutationProof::NotEffective);
-    }
-    match disposition {
-        Disposition::Replace(license, _) => {
-            match settle::replacement_death(p.ast, p.node, p.ast_id, license.fact()) {
-                Some(proof) => EffectiveAct::NoMutation(NoMutationProof::Replaced(proof)),
-                None => EffectiveAct::may_mutate(p.node),
-            }
-        }
-        Disposition::Omit { .. } => match p.dead {
-            Some(proof) => EffectiveAct::NoMutation(NoMutationProof::DeadBranch(*proof)),
-            None => EffectiveAct::may_mutate(p.node),
-        },
-        Disposition::Run | Disposition::Guard(_) => EffectiveAct::may_mutate(p.node),
-    }
-}
-
 /// The per-leaf disposition: the connected-pipe collapse, then the aggregates, then the in-loop
 /// floor, then the fold (a provably-dead leaf is `Omit`ted), then the freshness-gated ternary —
 /// elide a fresh converged site, guard a stale one, run everything else.
@@ -3935,7 +3966,7 @@ fn site_act(p: &DecideSite<'_>, disposition: &Disposition) -> EffectiveAct {
 /// The fold takes precedence over convergence-elision because a *dead* leaf has no status a
 /// consumer reads — `Omit` is strictly the right disposition (vs `Replace`, which exists to
 /// reproduce a status). Both are the apply collapse; a leaf that is neither runs (`kFAIL-perform`).
-fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
+fn site_conclusion(p: &DecideSite<'_>) -> (DecisionConclusion, SurvivalAccount) {
     // 24J §2 — a SUBSUMED non-last stage of a connected check-pipe: OMIT it (controlled by the
     // governing last stage) once that governing stage's connected verdict is KNOWN. An unknown/⊤
     // governing verdict, or a ⊤-successor member, ⇒ RUN (`kFAIL-perform`).
@@ -3946,11 +3977,11 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
             .get(&gov_ast)
             .is_some_and(|f| matches!((p.observe)(*f).status, Predicted::Value(_)));
         let disposition = if gov_known && !has_top_successor(p.cfg, p.node) {
-            Disposition::Omit {
+            DecisionConclusion::Omit {
                 controller: gov_ast,
             }
         } else {
-            Disposition::Run
+            DecisionConclusion::Run
         };
         return (disposition, SurvivalAccount::Silent);
     }
@@ -3967,7 +3998,7 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
     // (0) the in-loop render floor (task-L1, `209` brk-1): the line-granular render cannot elide
     // one iteration, and per-iteration deadness is not line-expressible.
     if p.cfg.in_loop_body(p.node) {
-        return (Disposition::Run, SurvivalAccount::Silent);
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
     }
 
     // (2) the fold: a provably-dead branch leaf is omitted. Minted ONLY from a known controlling
@@ -3977,7 +4008,7 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
         && let Some(controller_ast) = p.fold.dead_controller(p.ast_id)
     {
         return (
-            Disposition::Omit {
+            DecisionConclusion::Omit {
                 controller: controller_ast,
             },
             SurvivalAccount::Silent,
@@ -3996,8 +4027,8 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
                 &consumed,
                 observed.status,
             ) {
-                Some(license) => Disposition::Replace(license, standin_for(observed.status)),
-                None => Disposition::Run,
+                Some(license) => DecisionConclusion::Replace(license, standin_for(observed.status)),
+                None => DecisionConclusion::Run,
             };
             (disposition, SurvivalAccount::Silent)
         }
@@ -4006,7 +4037,7 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
         {
             establish_disposition(p, *fact)
         }
-        _ => (Disposition::Run, SurvivalAccount::Silent),
+        _ => (DecisionConclusion::Run, SurvivalAccount::Silent),
     }
 }
 
@@ -4017,7 +4048,10 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
 /// and lost it to a wall — the same population the retired wall walk demoted. A stale site falls to
 /// the guard tier, whose own conditions are unchanged: a reached vouch, a converged measurement,
 /// and no consumed channel the insertion would answer for.
-fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, SurvivalAccount) {
+fn establish_disposition(
+    p: &DecideSite<'_>,
+    fact: FactKey,
+) -> (DecisionConclusion, SurvivalAccount) {
     let observed = (p.observe)(fact);
     let vouch = p.vouches.get(p.node, fact);
     let verdict = PhasedVerdict::<Probe>::new(observed.effect);
@@ -4032,18 +4066,18 @@ fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, Sur
     );
     match (p.freshness, licensed) {
         (Freshness::FreshClean, Some(license)) => (
-            Disposition::Replace(license, standin_for(observed.status)),
+            DecisionConclusion::Replace(license, standin_for(observed.status)),
             SurvivalAccount::Clean,
         ),
         (Freshness::FreshSurvived(witness), Some(license)) => (
-            Disposition::Replace(
+            DecisionConclusion::Replace(
                 license.with_survival(witness.clone()),
                 standin_for(observed.status),
             ),
             SurvivalAccount::Survived,
         ),
         (Freshness::FreshClean | Freshness::FreshSurvived(_), None) => {
-            (Disposition::Run, SurvivalAccount::Silent)
+            (DecisionConclusion::Run, SurvivalAccount::Silent)
         }
         // The guard tier (rul-ternary-verdict's third verb). A site whose ONLY lost elision
         // precondition is freshness re-decides LIVE at apply: `( check ) || <original>`, so the
@@ -4057,10 +4091,10 @@ fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, Sur
             };
             let disposition = match vouch {
                 Some(v) => match GuardLicense::mint(fact, v.clone(), observed.effect, &consumed) {
-                    Some(license) => Disposition::Guard(license),
-                    None => Disposition::Run,
+                    Some(license) => DecisionConclusion::Guard(license),
+                    None => DecisionConclusion::Run,
                 },
-                None => Disposition::Run,
+                None => DecisionConclusion::Run,
             };
             (disposition, account)
         }
@@ -4094,9 +4128,9 @@ fn members_disposition(
     p: &DecideSite<'_>,
     members: &[FactKey],
     self_reached: bool,
-) -> (Disposition, SurvivalAccount) {
+) -> (DecisionConclusion, SurvivalAccount) {
     if has_top_successor(p.cfg, p.node) {
-        return (Disposition::Run, SurvivalAccount::Silent);
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
     }
     let member_verdicts: Vec<Verdict> = members.iter().map(|f| (p.observe)(*f).effect).collect();
     let consumed = May(p.cfg.consumed_observables(p.node).clone());
@@ -4105,7 +4139,7 @@ fn members_disposition(
     let status = Predicted::Top;
     let expected: Vec<(CfgNodeId, FactKey)> = members.iter().map(|fact| (p.node, *fact)).collect();
     let Some(all_vouched) = AllEstablishesVouched::mint(&expected, p.vouches) else {
-        return (Disposition::Run, SurvivalAccount::Silent);
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
     };
     let licensed = ReplaceLicense::prove_members_replaceable(
         all_vouched,
@@ -4124,11 +4158,14 @@ fn members_disposition(
 ///
 /// Freshness is read at the CALL node, where the body's own writes are not yet in the in-state: the
 /// splice is wired AFTER the call, so an aggregate's own effects never stale it.
-fn inline_disposition(p: &DecideSite<'_>, sites: &[InlineSite]) -> (Disposition, SurvivalAccount) {
+fn inline_disposition(
+    p: &DecideSite<'_>,
+    sites: &[InlineSite],
+) -> (DecisionConclusion, SurvivalAccount) {
     // The in-loop render floor, EXPLICIT here (the Members precedent): an in-loop inlined call
     // never mints a license, robustly, rather than relying on the back-edge self-poison.
     if p.cfg.in_loop_body(p.node) || has_top_successor(p.cfg, p.node) {
-        return (Disposition::Run, SurvivalAccount::Silent);
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
     }
     let consumed = May(p.cfg.consumed_observables(p.node).clone());
     // The CALL aggregate's status: ⊤ (a mutator-shaped call's rc has no sanctioned source).
@@ -4144,41 +4181,45 @@ fn inline_disposition(p: &DecideSite<'_>, sites: &[InlineSite]) -> (Disposition,
         .collect();
     if expected.is_empty() {
         let Some(proof) = ReadSubstitutionProof::mint(sites, p.observe) else {
-            return (Disposition::Run, SurvivalAccount::Silent);
+            return (DecisionConclusion::Run, SurvivalAccount::Silent);
         };
         let stand_in = match proof.status {
             Predicted::Value(rc) => StandIn::from_rc(rc),
-            Predicted::Top => return (Disposition::Run, SurvivalAccount::Silent),
+            Predicted::Top => return (DecisionConclusion::Run, SurvivalAccount::Silent),
         };
         let licensed = ReplaceLicense::prove_inline_query_replaceable(proof, &consumed);
         return aggregate_outcome(p, licensed, stand_in);
     }
     let Some(all_vouched) = AllEstablishesVouched::mint(&expected, p.vouches) else {
-        return (Disposition::Run, SurvivalAccount::Silent);
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
     };
     let licensed =
         ReplaceLicense::prove_inline_replaceable(sites, all_vouched, p.observe, &consumed, status);
     aggregate_outcome(p, licensed, StandIn::True)
 }
 
-/// Gate an aggregate's minted license on the aggregate's own effective freshness — the same
-/// three-way outcome the single-fact path takes, minus the guard tier, which has no aggregate form.
+/// Gate an aggregate's minted license on effective freshness.
+///
+/// A single-fact survival witness cannot authorize erasing every establish in an aggregate. Until
+/// the aggregate carries a cardinality-matched universal freshness proof, any reaching wall takes
+/// the run floor; wall-free replacement remains available (`30Kb:required-aggregate-running-floor`).
 fn aggregate_outcome(
     p: &DecideSite<'_>,
     licensed: Option<ReplaceLicense>,
     stand_in: StandIn,
-) -> (Disposition, SurvivalAccount) {
+) -> (DecisionConclusion, SurvivalAccount) {
     match (p.freshness, licensed) {
         (Freshness::FreshClean, Some(license)) => (
-            Disposition::Replace(license, stand_in),
+            DecisionConclusion::Replace(license, stand_in),
             SurvivalAccount::Clean,
         ),
-        (Freshness::FreshSurvived(witness), Some(license)) => (
-            Disposition::Replace(license.with_survival(witness.clone()), stand_in),
-            SurvivalAccount::Survived,
-        ),
-        (Freshness::Stale(cause), Some(_)) => (Disposition::Run, SurvivalAccount::Demoted(*cause)),
-        (_, None) => (Disposition::Run, SurvivalAccount::Silent),
+        (Freshness::FreshSurvived(_), Some(_)) => {
+            (DecisionConclusion::Run, SurvivalAccount::Silent)
+        }
+        (Freshness::Stale(cause), Some(_)) => {
+            (DecisionConclusion::Run, SurvivalAccount::Demoted(*cause))
+        }
+        (_, None) => (DecisionConclusion::Run, SurvivalAccount::Silent),
     }
 }
 
@@ -7892,6 +7933,31 @@ apt_get__is_converged() {
         }
     }
 
+    #[test]
+    fn a_replaced_inline_call_retires_every_owned_body_wall() {
+        let (plan, _) = effective_plan(
+            "install_both() { apt-get install -y nginx; apt-get install -y curl; }\n\
+             install_both\n\
+             apt-get install -y wombat\n",
+            |_| Verdict::Converged,
+            None,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install_both").disposition,
+                Disposition::Replace(..)
+            ),
+            "the all-converged inline aggregate replaces"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y wombat").disposition,
+                Disposition::Replace(..)
+            ),
+            "the replaced call owns both spliced establishes, so neither may wall the later site"
+        );
+    }
+
     /// A GUARD is a possible mutator downstream (`30K` §5.3): its check is read-only, but its
     /// untouched fallback is the authored mutation, so everything below it stays stale. And the
     /// recovery is spelled in ordinary forms only — no wall flags, no conditional tails, no
@@ -7964,6 +8030,28 @@ apt_get__is_converged() {
                 Disposition::Guard(_)
             ),
             "a colliding footprint costs the elision — and lands on the guard rung, not a bare run"
+        );
+    }
+
+    #[test]
+    fn a_later_inline_establish_collision_keeps_the_call_running() {
+        let (plan, _) = effective_plan(
+            "install_both() { apt-get install -y nginx; apt-get install -y curl; }\n\
+             apt-get install -y oldpkg\n\
+             install_both\n",
+            |entity| {
+                if entity == "oldpkg" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+            Some(&|entity: &str| (entity == "oldpkg").then(|| "curl".to_owned())),
+        );
+        assert!(
+            matches!(find(&plan, "install_both").disposition, Disposition::Run),
+            "the exact upstream footprint misses representative nginx but hits later body fact \
+             curl; replacing the call would under-execute"
         );
     }
 

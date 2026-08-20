@@ -13,7 +13,20 @@ use dorc_aid::diag::Diag;
 use dorc_core::{Interner, Observable, ProvArena, Verdict};
 
 use crate::results::{SiteResults, facts_from_sites};
-use crate::why::CascadeAttribution;
+use crate::why::{CascadeAttribution, CascadeCause, DeadBranchCascade};
+
+enum RawCascadeCause {
+    Dead {
+        site: dorc_analysis::cfg::CfgNodeId,
+        round: dorc_plan::erase::RoundId,
+        controller: dorc_core::AstId,
+    },
+    Replaced {
+        site: dorc_analysis::cfg::CfgNodeId,
+        round: dorc_plan::erase::RoundId,
+        fact: dorc_core::FactKey,
+    },
+}
 
 /// The FROZEN inputs of the validity fixpoint (`26H` §4¾): carried verbatim across every
 /// round, never re-derived and never re-admitted. Book, CFG, spans, value-flow, the effect
@@ -105,19 +118,17 @@ pub struct SettledFixpoint {
     pub origin_validity: BTreeMap<dorc_plan::LeafId, bool>,
 }
 
-/// Attribute every round-2+ validity flip to the DEAD-BRANCH erasures that caused it.
+/// Attribute every round-2+ validity flip to every no-execution proof that caused it.
 ///
 /// A guard becomes valid exactly when every invalidator reaching it has been retired, so the cause
 /// of site `L`'s flip is the ledger entries whose sites REACH `L` in the control-flow graph.
 /// Computed once, after quiescence, over the frozen CFG — forward reachability from each retired
 /// site, which is exact and cheap next to the network this whole engine exists to avoid.
 ///
-/// NAMED RESIDUE (`30K` §8 step-3): only the dead-branch species is attributed. A Query can now
-/// also become valid because an upstream mutation was ELIDED, and that cascade has no controller
-/// line to point at — its chain needs a shape this render does not have, so it is honestly absent
-/// rather than mis-attributed to a controller that did not exist (`271:rul-sin-ordering`).
+/// The renderer still consumes only the dead-branch projection. Replacement causes remain typed in
+/// memory rather than borrowing a controller they do not have (`271:rul-sin-ordering`).
 #[must_use]
-pub fn attribute_dead_branch_cascades(
+pub fn attribute_cascades(
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
@@ -133,18 +144,20 @@ pub fn attribute_dead_branch_cascades(
         let lo = ast.node(cfg.node(node).ast).span.lo.0 as usize;
         dorc_aid::diag::line_col(book_src, lo).0
     };
-    // The dead-branch causes, with the controller each one rests on.
-    let dead: Vec<(
-        dorc_analysis::cfg::CfgNodeId,
-        dorc_plan::erase::RoundId,
-        dorc_core::AstId,
-    )> = ledger
+    let causes: Vec<RawCascadeCause> = ledger
         .entries()
         .filter_map(|(site, entry)| match entry.proof() {
-            dorc_plan::world::NoMutationProof::DeadBranch(proof) => {
-                Some((site, entry.round(), proof.controller()))
-            }
-            _ => None,
+            dorc_plan::world::NoMutationProof::DeadBranch(proof) => Some(RawCascadeCause::Dead {
+                site,
+                round: entry.round(),
+                controller: proof.controller(),
+            }),
+            dorc_plan::world::NoMutationProof::Replaced(proof) => Some(RawCascadeCause::Replaced {
+                site,
+                round: entry.round(),
+                fact: proof.fact(),
+            }),
+            dorc_plan::world::NoMutationProof::NotEffective => None,
         })
         .collect();
     let mut out = BTreeMap::new();
@@ -152,26 +165,74 @@ pub fn attribute_dead_branch_cascades(
         if validity.get(&leaf) != Some(&true) || origin_validity.get(&leaf) != Some(&false) {
             continue;
         }
-        let causes: Vec<_> = dead
+        let reaching: Vec<_> = causes
             .iter()
-            .filter(|(site, _, _)| reaches(cfg, *site, node))
+            .filter(|cause| {
+                let site = match cause {
+                    RawCascadeCause::Dead { site, .. } | RawCascadeCause::Replaced { site, .. } => {
+                        *site
+                    }
+                };
+                reaches(cfg, site, node)
+            })
             .collect();
-        let Some(last) = causes.iter().max_by_key(|(_, round, _)| *round) else {
+        if reaching.is_empty() {
             continue;
-        };
+        }
+        let typed: Vec<CascadeCause> = reaching
+            .iter()
+            .map(|cause| match cause {
+                RawCascadeCause::Dead {
+                    site,
+                    round,
+                    controller,
+                } => CascadeCause::DeadBranch {
+                    erased_line: line_of_node(*site),
+                    controller_line: dorc_aid::diag::line_col(
+                        book_src,
+                        ast.node(*controller).span.lo.0 as usize,
+                    )
+                    .0,
+                    round: round.0,
+                },
+                RawCascadeCause::Replaced { site, round, fact } => CascadeCause::Replacement {
+                    replaced_line: line_of_node(*site),
+                    fact: *fact,
+                    round: round.0,
+                },
+            })
+            .collect();
+        let dead: Vec<_> = reaching
+            .iter()
+            .filter_map(|cause| match cause {
+                RawCascadeCause::Dead {
+                    site,
+                    round,
+                    controller,
+                } => Some((*site, *round, *controller)),
+                RawCascadeCause::Replaced { .. } => None,
+            })
+            .collect();
+        let dead_branch =
+            dead.iter()
+                .max_by_key(|(_, round, _)| *round)
+                .map(|last| DeadBranchCascade {
+                    erased_lines: dead
+                        .iter()
+                        .map(|(site, _, _)| line_of_node(*site))
+                        .collect(),
+                    controller_line: dorc_aid::diag::line_col(
+                        book_src,
+                        ast.node(last.2).span.lo.0 as usize,
+                    )
+                    .0,
+                    round: last.1.0,
+                });
         out.insert(
             leaf,
             CascadeAttribution {
-                erased_lines: causes
-                    .iter()
-                    .map(|(site, _, _)| line_of_node(*site))
-                    .collect(),
-                controller_line: dorc_aid::diag::line_col(
-                    book_src,
-                    ast.node(last.2).span.lo.0 as usize,
-                )
-                .0,
-                round: last.1.0,
+                causes: typed,
+                dead_branch,
             },
         );
     }

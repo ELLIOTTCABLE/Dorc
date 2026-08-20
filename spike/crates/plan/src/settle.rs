@@ -159,6 +159,10 @@ pub struct ProvisionalEffectiveRound {
     minted_at: Grade,
 }
 
+/// The cap path intentionally discards every no-execution proof and seals the maximal-effects
+/// floor, rather than claiming ordinary ledger quiescence.
+struct MaximalEffectsFloor;
+
 impl ProvisionalEffectiveRound {
     /// The proofs this round established, for the ledger.
     fn no_execution_proofs(&self) -> Vec<(CfgNodeId, NoMutationProof)> {
@@ -175,6 +179,14 @@ impl ProvisionalEffectiveRound {
     /// produce one, so it cannot reach any Spine setter.
     #[must_use]
     fn seal(self, _quiescent: Quiescence) -> SettledEffectiveAnalysis {
+        SettledEffectiveAnalysis {
+            decisions: self.decisions,
+            walls: self.walls,
+            minted_at: self.minted_at,
+        }
+    }
+
+    fn seal_floor(self, _floor: MaximalEffectsFloor) -> SettledEffectiveAnalysis {
         SettledEffectiveAnalysis {
             decisions: self.decisions,
             walls: self.walls,
@@ -298,13 +310,8 @@ pub fn settle_effective_world(
             ledger.rebuild_from_origin();
             let outcome = one_round(inputs, model, &ledger);
             failures = failures.saturating_add(outcome.solve_failures);
-            // The maximal-effects answer is a fixpoint of an empty ledger by construction: nothing
-            // it proves is recorded, so nothing it proves can license anything downstream.
-            let Some(witness) = NoExecutionLedger::new().record_round(RoundId(number), []) else {
-                continue;
-            };
             return Settlement {
-                spine: outcome.round.seal(witness).write_spine(),
+                spine: outcome.round.seal_floor(MaximalEffectsFloor).write_spine(),
                 classification: outcome.classification,
                 validity: outcome.validity,
                 origin_validity: origin_validity.unwrap_or_default(),
@@ -579,9 +586,9 @@ pub(crate) fn replacement_death(
     ast: &Ast,
     node: CfgNodeId,
     ast_id: AstId,
-    fact: FactKey,
+    license: &crate::ReplaceLicense,
 ) -> Option<ReplacementDeathProof> {
-    ReplacementDeathProof::mint(node, fact, replacement_renders_dead(ast, ast_id))
+    ReplacementDeathProof::mint(node, license, replacement_renders_dead(ast, ast_id))
 }
 
 #[cfg(test)]
