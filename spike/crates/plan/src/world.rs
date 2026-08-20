@@ -38,8 +38,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_analysis::cfg::{Cfg, CfgNodeId, ExecutionOwner};
 use dorc_analysis::certify::{SolveConsistency, solve_certified};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, ExecutionOwner};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::{Direction, Solution};
 use dorc_core::{Dialect, FactBacking, FactKey, LeafId};
@@ -64,6 +64,13 @@ impl WallId {
     #[must_use]
     pub fn node(self) -> CfgNodeId {
         self.0
+    }
+
+    /// A wall standing at `node` — the floor a consumer hands itself when an answer it cannot
+    /// trust would otherwise read as an empty set.
+    #[must_use]
+    pub fn of(node: CfgNodeId) -> Self {
+        WallId(node)
     }
 }
 
@@ -378,7 +385,7 @@ impl WallPolicy<'_> {
     pub(crate) fn freshness(
         &self,
         walls: &ReachingWalls,
-        fact: FactKey,
+        fact: Option<FactKey>,
         backings: &BTreeMap<FactKey, FactBacking>,
         leaf_of: &BTreeMap<CfgNodeId, LeafId>,
     ) -> Freshness {
@@ -391,6 +398,12 @@ impl WallPolicy<'_> {
             dialect,
         } = self
         else {
+            return Freshness::Stale(StaleCause::TotalWall);
+        };
+        // No cell to compare means no backing, and a backing-set is non-empty by construction
+        // (`inv-backing-set-nonempty-by-construction`): the honest reading is that everything
+        // collides, never that nothing does.
+        let Some(fact) = fact else {
             return Freshness::Stale(StaleCause::TotalWall);
         };
         let mut accumulated: Vec<AccumulatedWall> = Vec::with_capacity(walls.len());

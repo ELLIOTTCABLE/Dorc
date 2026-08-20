@@ -242,6 +242,7 @@ pub fn prove_dead_branches(
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
     invalidators: &BTreeSet<CfgNodeId>,
+    effective_valid: &BTreeMap<CfgNodeId, bool>,
     observe: impl Fn(FactKey) -> Observable,
 ) -> Vec<DeadBranchProof> {
     let leaf_fact = leaf_facts(cfg, classes);
@@ -280,6 +281,7 @@ pub fn prove_dead_branches(
             &node_of_ast,
             &class_of_node,
             &leaf_fact,
+            effective_valid,
             &observe,
         ) {
             continue;
@@ -313,6 +315,7 @@ fn controller_substitutes_away(
     node_of_ast: &BTreeMap<AstId, Option<CfgNodeId>>,
     class_of_node: &BTreeMap<CfgNodeId, &SkipClass>,
     leaf_fact: &BTreeMap<AstId, FactKey>,
+    effective_valid: &BTreeMap<CfgNodeId, bool>,
     observe: &impl Fn(FactKey) -> Observable,
 ) -> bool {
     let mut any_leaf = false;
@@ -326,14 +329,17 @@ fn controller_substitutes_away(
         if cfg.in_loop_body(node) || has_top_successor(cfg, node) {
             return false;
         }
-        let Some(SkipClass::QueryResolvable { valid, .. }) = class_of_node.get(&node).copied()
-        else {
+        let Some(SkipClass::QueryResolvable { .. }) = class_of_node.get(&node).copied() else {
             return false;
         };
+        // The EFFECTIVE validity, not the class's origin bit (`30K` §5.2): the fold that produced
+        // `observe` already ran under this view, so reading the frozen probe's bit here would judge
+        // the controller against a different world than the one that measured it.
+        let valid = effective_valid.get(&node).copied().unwrap_or(false);
         let status = leaf_fact
             .get(&leaf)
             .map_or(Predicted::Top, |f| observe(*f).status);
-        query_substitutes(*valid, &May(cfg.consumed_observables(node).clone()), status)
+        query_substitutes(valid, &May(cfg.consumed_observables(node).clone()), status)
     });
     any_leaf && all
 }

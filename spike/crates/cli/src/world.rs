@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::CollapseNarrative;
 use dorc_aid::diag::Diag;
-use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
+use dorc_core::{Interner, ProvArena, Symbol};
 
 use crate::Receipt;
 use crate::results::{SiteResults, probe_origins};
@@ -214,6 +214,7 @@ impl WhyWorld {
             &mut trip,
         );
         let classes = origin.classes.clone();
+        let (kills, kill_coords) = (origin.kills.clone(), origin.kill_coords.clone());
 
         let (vouch_lift, vouch_aid) = dorc_plan::build_vouches(
             &source_refs,
@@ -266,39 +267,6 @@ impl WhyWorld {
             |node| vouches.contains_site(node),
         )
         .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
-
-        // The validity fixpoint, to quiescence, over the frozen origin — the binary's own rounds
-        // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
-        // fold is the round-tagged cascade attribution, which is the only way a why report can
-        // answer for an elision that only became legal once something upstream was proven dead.
-        let cap = u32::try_from(origin.classes.len())
-            .unwrap_or(u32::MAX)
-            .max(1);
-        let settled = crate::fixpoint::settle_validity_fixpoint(
-            &frozen,
-            &probe,
-            results,
-            origin,
-            cap,
-            &mut interner,
-            &mut arena,
-            &mut trip,
-        );
-        let cascades = crate::fixpoint::attribute_cascades(
-            &cfg.value,
-            &parsed.value,
-            book_src,
-            &settled.round.classes,
-            &settled.ledger,
-            &settled.origin_validity,
-        );
-        let round = settled.round;
-        let classes = round.classes;
-        let (kills, kill_coords, fact_backings) =
-            (round.kills, round.kill_coords, round.fact_backings);
-        let (why_diags, classify_narrative) = (round.why_diags, round.classify_narrative);
-        let (by_fact, merge_narrative) = (settled.by_fact, settled.merge_narrative);
-        let probe_attributions = probe_origins(&probe, results, &mut arena);
 
         // The survival tier, flag-gated exactly as a run is (`rul24-mode-gate`, TC-1): unflagged,
         // the footprint data does not exist at all, so a running mutator walls totally.
@@ -436,30 +404,67 @@ impl WhyWorld {
             resolutions.add_auto_kind(kind);
         }
 
-        let mut spine = dorc_plan::build_plan_walled(
-            book_src,
-            &parsed.value,
-            &cfg.value,
-            &classes,
-            &kills,
-            survival.as_ref(),
-            consented.then_some(&resolutions),
-            &dorc_oracle::build_dialect(&idx),
-            &fact_backings,
-            &vouches,
-            &dorc_plan::ConnectedPipes::default(),
-            &probe_attributions,
-            |f| {
-                by_fact
-                    .get(&f)
-                    .copied()
-                    .unwrap_or(Observable::verdict_only(Verdict::Unknown))
+        // The dialect the survival tier compares selectors within, hoisted so the policy can
+        // borrow it for the whole settlement.
+        let dialect = dorc_oracle::build_dialect(&idx);
+        let policy = match survival.as_ref() {
+            Some(footprints) if consented => dorc_plan::WallPolicy::RiskAccepted {
+                footprints,
+                resolutions: &resolutions,
+                dialect: &dialect,
             },
-            &mut arena,
+            _ => dorc_plan::WallPolicy::Honest,
+        };
+        let plan_inputs = dorc_plan::SettleInputs {
+            src: book_src,
+            ast: &parsed.value,
+            cfg: &cfg.value,
+            vouches: &vouches,
+            connected: &dorc_plan::ConnectedPipes::default(),
+            policy,
             // A why world reads results somebody already admitted, and reaching for host bytes at
             // all is what makes what follows influenced — so it widens through the one named seat
             // rather than holding a carrier (`307a:dis-phase-by-free-widening`).
-            Some(crate::results::influence_after_reaching_for_host_bytes()),
+            minted_at: Some(crate::results::influence_after_reaching_for_host_bytes()),
+        };
+        // The settlement, to quiescence, over the frozen origin — the binary's own rounds
+        // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
+        // decisions is the round-tagged cascade attribution, which is the only way a why report can
+        // answer for an elision that only became legal once something upstream was proven dead.
+        let cap = u32::try_from(origin.classes.len())
+            .unwrap_or(u32::MAX)
+            .max(1);
+        let settled = crate::fixpoint::settle_world(
+            &frozen,
+            &probe,
+            results,
+            &plan_inputs,
+            cap,
+            &mut interner,
+            &mut arena,
+            &mut trip,
+        );
+        let cascades = crate::fixpoint::attribute_dead_branch_cascades(
+            &cfg.value,
+            &parsed.value,
+            book_src,
+            &settled.round.classes,
+            &settled.ledger,
+            &settled.validity,
+            &settled.origin_validity,
+        );
+        let round = settled.round;
+        let classes = round.classes;
+        let (why_diags, classify_narrative) = (round.why_diags, round.classify_narrative);
+        let (by_fact, merge_narrative) = (settled.by_fact, settled.merge_narrative);
+        let _ = by_fact;
+        let probe_attributions = probe_origins(&probe, results, &mut arena);
+        let mut spine = settled.spine;
+        dorc_plan::attach_spine_probe_provenance(
+            &mut spine,
+            &parsed.value,
+            &probe_attributions,
+            &mut arena,
         );
         // The same whole-artifact emission decision the binary makes, by the same rule: a why report
         // that explained an artifact with different bindings than the run's would be a decoration

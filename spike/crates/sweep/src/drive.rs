@@ -71,7 +71,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let mut arena = ProvArena::new();
     // ONE inline oracle, so no unit spans two files and positional == ambient (`28K` §2).
     let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
-    let (classified, _why, kills, _kill_coords, fact_backings, _narrative, _invalidators) =
+    let (classified, _why, kills, _kill_coords, fact_backings, _narrative, invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
             &value,
@@ -178,16 +178,27 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
 
     // The net drives the kernel over a modeled host with no intake at all, so the projection takes
     // the intakeless authority.
+    let dialect = dorc_oracle::build_dialect(&idx);
+    let classification = dorc_plan::RoundClassification {
+        classes: classes.clone(),
+        kills: kills.clone(),
+        invalidators,
+        fact_backings,
+    };
+    let policy = match survival.as_ref() {
+        Some(footprints) => dorc_plan::WallPolicy::RiskAccepted {
+            footprints,
+            resolutions: &resolutions,
+            dialect: &dialect,
+        },
+        None => dorc_plan::WallPolicy::Honest,
+    };
     let spine = dorc_plan::build_plan_walled(
         &declared.book_sh,
         &parsed.value,
         &cfg,
-        &classes,
-        &kills,
-        survival.as_ref(),
-        Some(&resolutions),
-        &dorc_oracle::build_dialect(&idx),
-        &fact_backings,
+        &classification,
+        policy,
         &vouches,
         &connected,
         &std::collections::BTreeMap::new(), // no probe-origin witnesses (C6: Witness is EXEMPT)
@@ -199,6 +210,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             }
         },
         &mut arena,
+        &mut dorc_analysis::certify::CertifierTrip::default(),
         // No intake: the net drives a modeled host.
         None,
     );

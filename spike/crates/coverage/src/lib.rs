@@ -495,23 +495,24 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // Kill-AWARE classify (24A §3): mirrors the cli so the dashboard sees the same kill-wall the
     // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
     // why-diags are cli-render-only; coverage discards them.
-    let (classified, _why_diags, kills, ..) = dorc_analysis::effect::classify_with_why_diags(
-        &cfg,
-        &value,
-        &parsed.value,
-        &idx,
-        &checks,
-        &verdicts,
-        &BTreeMap::new(),
-        &dorc_analysis::erase::ErasedSites::none(),
-        &mut interner,
-        &mut arena,
-        &mut BTreeMap::new(),
-        &mut BTreeMap::new(),
-        &mut dorc_analysis::certify::CertifierTrip::default(),
-        // An INSTRUMENT, never a gate: reach is measured ambiently (`28K` §2).
-        dorc_analysis::funcenv::LiveDefinitions::unsolved(),
-    );
+    let (classified, _why_diags, kills, _kill_coords, fact_backings, _narrative, invalidators) =
+        dorc_analysis::effect::classify_with_why_diags(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &verdicts,
+            &BTreeMap::new(),
+            &dorc_analysis::erase::ErasedSites::none(),
+            &mut interner,
+            &mut arena,
+            &mut BTreeMap::new(),
+            &mut BTreeMap::new(),
+            &mut dorc_analysis::certify::CertifierTrip::default(),
+            // An INSTRUMENT, never a gate: reach is measured ambiently (`28K` §2).
+            dorc_analysis::funcenv::LiveDefinitions::unsolved(),
+        );
     let classes = classified.value;
 
     // c3 source: per-site Effect verdict (the dashboard reads the plan's own
@@ -569,24 +570,26 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     .value;
     // The dashboard analyses the unmeasured world, so its authority is the intakeless one: there is
     // no channel here whose integrity could have been lost.
+    let classification = dorc_plan::RoundClassification {
+        classes: classes.clone(),
+        kills,
+        invalidators,
+        fact_backings,
+    };
     let spine = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,
         &cfg,
-        &classes,
-        &kills,
-        None,
-        None,
-        // Survival is OFF here (dashboard parity with the honest baseline), so the dialect and the
-        // `277` §5 backing map are never consulted — the empty values are correct, byte-identical.
-        &dorc_core::Dialect::empty(),
-        &BTreeMap::new(),
+        &classification,
+        // Survival is OFF here (dashboard parity with the honest baseline).
+        dorc_plan::WallPolicy::Honest,
         &vouches,
         &connected,
         // No probe-origin witnesses here (C6): the Witness is EXEMPT output-only.
         &BTreeMap::new(),
         observe,
         &mut arena,
+        &mut dorc_analysis::certify::CertifierTrip::default(),
         // No intake: the dashboard analyses the unmeasured world.
         None,
     );

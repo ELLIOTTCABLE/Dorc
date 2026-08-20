@@ -68,15 +68,15 @@ use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::Diag;
-use dorc_aid::narrative::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
+use dorc_aid::narrative::{AuthoredReason, MintSpan};
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, ByVouch, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId, Observable,
-    Predicted, Rc, Rung, SourceFileId, Symbol, Verdict,
+    AstId, ByVouch, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted, Rc, Rung,
+    SourceFileId, Symbol, Verdict,
 };
 use dorc_oracle::touches::DISTURBS_SUFFIX;
 use dorc_oracle::verdict::VERDICT_SUFFIX;
@@ -115,6 +115,17 @@ pub use survival::{
     FootprintOrigin, MayAliasReason, ReachExpansion, Resolution, Resolutions, SurvivalWitness,
     TrustedFootprints, disjoint,
 };
+
+pub mod world;
+pub use world::{NoExecutionLedger, ReachingWalls, WallId, WallPolicy};
+
+pub mod settle;
+use erase::DeadBranchProof;
+use settle::SurvivalAccount;
+pub use settle::{
+    RoundClassification, RoundModel, SettleInputs, Settlement, settle_effective_world,
+};
+use world::{EffectiveAct, Freshness, NoMutationProof};
 
 pub mod spine;
 pub use spine::{Authorised, PlanAuthority, PlanPlane, Spine, project_plan};
@@ -386,7 +397,10 @@ struct ReadSubstitutionProof {
 }
 
 impl ReadSubstitutionProof {
-    fn mint(sites: &[InlineSite], observe: &impl Fn(FactKey) -> Observable) -> Option<Self> {
+    fn mint(
+        sites: &[InlineSite],
+        observe: &(impl Fn(FactKey) -> Observable + ?Sized),
+    ) -> Option<Self> {
         let [site] = sites else { return None };
         let SkipClass::QueryResolvable { fact, valid: true } = site.class else {
             return None;
@@ -462,9 +476,10 @@ impl ReplaceLicense {
     /// conservative *run-it* direction (note 165 L2 / `inv-must-may` / the ambient
     /// gate):
     ///
-    /// 1. the command's effect is [`SkipClass::EstablishProbeAmbient`] (classify proved
-    ///    no upstream same-run mutation reaches it — else its resting state is
-    ///    stale and the probe is not authoritative);
+    /// 1. the caller established the fact is FRESH — no mutation that may actually execute reaches
+    ///    the site (`Freshness`). It is the CALLER's conjunct rather than a class
+    ///    test on purpose: the origin classification answers which check could ship, and reading
+    ///    its per-cell ambient-ness as apply-time freshness is exactly the split `30K` closed;
     /// 2. the fact is [`Grade::Must`] (oracle-declared; a `May` hint never licenses);
     /// 3. the probe verdict folds to [`Resolved::Replaceable`] — a definite
     ///    `Converged`; `Diverged` and (via [`Bias`]) `Unknown` do not.
@@ -504,10 +519,10 @@ impl ReplaceLicense {
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
     /// (`Probe`) and the leaf's observed rc.
     ///
-    /// task-D2 dispatch: an [`SkipClass::EstablishProbeAmbient`] takes the
-    /// convergence-elision precondition above; a [`SkipClass::QueryResolvable`] takes
-    /// the Query-guard path ([`prove_query_replaceable`](ReplaceLicense::prove_query_replaceable)).
-    /// Any other class never licenses.
+    /// task-D2 dispatch: this is the convergence-elision path; a read-only Query guard's
+    /// substitution takes [`prove_query_replaceable`](ReplaceLicense::prove_query_replaceable)
+    /// instead, and the two are separate entry points rather than one class match — a Query's
+    /// precondition is its own measured rc's validity, not a mutation's freshness.
     ///
     /// **The elide-weld (24D §3 / rul24-vouch-is-verdict-authoring).** The full-skip (elide)
     /// license now DEMANDS the reached `vouch` — the SAME [`ByVouch<VerdictVouch>`] the guard mint
@@ -525,54 +540,46 @@ impl ReplaceLicense {
         reason = "by-value verdict/consumed/vouch keeps this minting API a clean owned-args boundary; the vouch is CONSUMED as the tier check (24D §3), never needless"
     )]
     pub fn prove_replaceable<P: Bias>(
-        class: &SkipClass,
+        fact: FactKey,
         grade: Grade,
         verdict: PhasedVerdict<P>,
         consumed: May<Powerset<Channel>>,
         status: Predicted<Rc>,
         vouch: Option<ByVouch<VerdictVouch>>,
     ) -> Option<ReplaceLicense> {
-        match class {
-            SkipClass::EstablishProbeAmbient(fact) => {
-                // The elide-weld (TC-tier-2): consume the reached vouch BY VALUE — no vouch ⇒ run.
-                // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
-                // measurement alone no longer elides (the vouchless-elide gap, closed).
-                let vouch: ByVouch<VerdictVouch> = vouch?;
-                // C7: read the vouch's defining span (display-only) BEFORE it drops, for the
-                // survival render's `file:line` (a vouch informs, never becomes a fact — TC-tier-3).
-                let vouch_span = vouch.vouch().defining_span();
-                // Read off the CONSUMED vouch, never passed beside it (`28M` §8).
-                let custody = dorc_core::LicenseCustody::Vouched(vouch.vouch().custody());
-                if grade != Grade::Must {
-                    return None;
-                }
-                if verdict.resolve() != Resolved::Replaceable {
-                    return None;
-                }
-                consumption_ok(&consumed, status).then_some(ReplaceLicense {
-                    custody,
-                    fact: *fact,
-                    derivation: Derivation {
-                        fact: *fact,
-                        via: LicenseVia::ConvergedEstablish,
-                        ambient: true,
-                        grade,
-                        verdict: Verdict::Converged,
-                        // Empty at mint (the minter has no arena); `build_plan` attaches the
-                        // real witness post-mint via `with_witness` (arch-1, output-only/exempt).
-                        witness: dorc_core::Witness::empty(),
-                        survival: None,
-                        vouch_span,
-                        establish_vouches: Vec::new(),
-                        probe: None,
-                    },
-                })
-            }
-            SkipClass::QueryResolvable { fact, valid } => {
-                Self::prove_query_replaceable(*fact, *valid, verdict.raw(), &consumed, status)
-            }
-            _ => None,
+        // The elide-weld (TC-tier-2): consume the reached vouch BY VALUE — no vouch ⇒ run.
+        // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
+        // measurement alone no longer elides (the vouchless-elide gap, closed).
+        let vouch: ByVouch<VerdictVouch> = vouch?;
+        // C7: read the vouch's defining span (display-only) BEFORE it drops, for the
+        // survival render's `file:line` (a vouch informs, never becomes a fact — TC-tier-3).
+        let vouch_span = vouch.vouch().defining_span();
+        // Read off the CONSUMED vouch, never passed beside it (`28M` §8).
+        let custody = dorc_core::LicenseCustody::Vouched(vouch.vouch().custody());
+        if grade != Grade::Must {
+            return None;
         }
+        if verdict.resolve() != Resolved::Replaceable {
+            return None;
+        }
+        consumption_ok(&consumed, status).then_some(ReplaceLicense {
+            custody,
+            fact,
+            derivation: Derivation {
+                fact,
+                via: LicenseVia::ConvergedEstablish,
+                ambient: true,
+                grade,
+                verdict: Verdict::Converged,
+                // Empty at mint (the minter has no arena); `build_plan` attaches the
+                // real witness post-mint via `with_witness` (arch-1, output-only/exempt).
+                witness: dorc_core::Witness::empty(),
+                survival: None,
+                vouch_span,
+                establish_vouches: Vec::new(),
+                probe: None,
+            },
+        })
     }
 
     /// Mint a license for a read-only **Query guard**'s value-preserving substitution
@@ -596,7 +603,7 @@ impl ReplaceLicense {
     /// withholds the stale rc), so condition (2) already blocks it — but we also gate
     /// on `valid` directly so a mis-wired caller cannot smuggle a stale rc through.
     #[must_use]
-    fn prove_query_replaceable(
+    pub(crate) fn prove_query_replaceable(
         fact: FactKey,
         valid: bool,
         verdict: Verdict,
@@ -718,7 +725,7 @@ impl ReplaceLicense {
     fn prove_inline_replaceable(
         sites: &[InlineSite],
         all_vouched: AllEstablishesVouched,
-        observe: &impl Fn(FactKey) -> Observable,
+        observe: &(impl Fn(FactKey) -> Observable + ?Sized),
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
@@ -2864,7 +2871,24 @@ pub fn compile_derivations(
 /// Deterministic (`inv-determinism`): a total sort by `(span.lo, span.hi)`. Classify
 /// already excluded expansion-internal non-leaves (find-cli-1), so every entry is a
 /// genuine plan/apply leaf.
-fn site_order<'a>(
+/// Each classified site's stable [`LeafId`], in span order — the ONE id space the probe records,
+/// the plan's steps, and every site-keyed diagnostic share (`inv-site-keyed-results`).
+///
+/// Exposed because a driver that indexes `classes` positionally is keying on CFG ALLOCATION order,
+/// which coincides with span order for straight-line books and silently does not for others.
+#[must_use]
+pub fn leaf_ids(
+    ast: &Ast,
+    cfg: &Cfg,
+    classes: &[(CfgNodeId, SkipClass)],
+) -> Vec<(LeafId, CfgNodeId)> {
+    site_order(ast, cfg, classes)
+        .into_iter()
+        .map(|(leaf, node, _)| (leaf, node))
+        .collect()
+}
+
+pub(crate) fn site_order<'a>(
     ast: &Ast,
     cfg: &Cfg,
     classes: &'a [(CfgNodeId, SkipClass)],
@@ -3614,7 +3638,7 @@ pub fn build_plan(
     src: &str,
     ast: &Ast,
     cfg: &Cfg,
-    classes: &[(CfgNodeId, SkipClass)],
+    classification: &RoundClassification,
     vouches: &Vouches,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
@@ -3625,220 +3649,100 @@ pub fn build_plan(
         src,
         ast,
         cfg,
-        classes,
-        &BTreeSet::new(),
-        None,
-        None,
-        &Dialect::empty(),
-        // Survival is off (`None`) here, so the backing map is never consulted — the empty map is
-        // the honest floor for this kill-unaware / flag-off entry.
-        &BTreeMap::new(),
+        classification,
+        WallPolicy::Honest,
         vouches,
         &ConnectedPipes::default(),
-        // No probe-origin witnesses in this flag-off/kill-unaware entry (C6): the Witness is EXEMPT.
+        // No probe-origin witnesses in this flag-off entry (C6): the Witness is EXEMPT.
         &BTreeMap::new(),
         observe,
         arena,
+        &mut dorc_analysis::certify::CertifierTrip::default(),
         // The intakeless entry reads no host bytes, so its records are authored-before-contact.
         None,
     );
     project_plan(&spine, &PlanAuthority::without_intake())
 }
 
-/// [`build_plan`] PLUS the **kill-node set** (R3 / 24A §3 — the kill gap). `kills` is the set
-/// of leaf [`CfgNodeId`]s the analysis flagged `Kills` (`apt-get purge` — an `EstablishInverted`
-/// claim ⇒ `CommandEffect::Kills` ⇒ classifies `MustRun`). A `MustRun` is opaque to the wall
-/// predicate — a pure builtin, an opaque, and a kill all classify `MustRun` — but a kill is a
-/// real mutator: a RUNNING kill may touch anything it did not declare (the frame problem, 233),
-/// so it must WALL downstream different-cell converged establishes, exactly like a modeled
-/// establish (the same under-execute shape fd10 closed). Pure builtins stay out of `kills` and
-/// never wall (`exec-pure-builtin`); opaque handling is unchanged (an opaque already ⊤-poisons
-/// downstream statically). Demotion stays Replace→Run only (`inv-kfail`). This is BASELINE
-/// ground-truth behaviour — never flag-gated (rul24-mode-gate governs the survival tier, not
-/// wall honesty). Deterministic (`kills` is a `BTreeSet`; `inv-determinism`).
+/// [`build_plan`] PLUS the run's wall POLICY.
 ///
-/// # Survival tier (Stage 2 — the golden hill; mode-gate `survival`, TC-1)
+/// `policy` is the closed authority (`30K` §3.3): [`world::WallPolicy::Honest`] is the default and
+/// the only honest answer without the admin's typed consent, and
+/// [`world::WallPolicy::RiskAccepted`] is constructible ONLY with every input the survival decision
+/// needs — so a maintainer cannot reach a footprint the admin did not consent to, and there is no
+/// `Option` pair a future caller could half-fill.
 ///
-/// `survival` is the mode-gate DATA (`--risk-faultless-skips`): `None` ⇒ the honest Stage-1 wall
-/// (a running mutator is a TOTAL wall — every downstream converged `Replace` demotes), the
-/// byte-identical baseline. `Some(footprints)` ⇒ the frame-rule walk: a running mutator WITH a
-/// lifted footprint scopes its wall (accumulates its coordinates) instead of totalising it, and
-/// a downstream converged `Replace` SURVIVES (elides past the running wall) iff its backing is
-/// disjoint from every accumulated footprint (`survival::wall_verdict`). A running mutator
-/// WITHOUT a footprint (silence, a ⊤ lift, a refused coherence check) still totalises the wall.
-/// Survival only ever *keeps* a `Replace`; demotion stays Replace→Run (`inv-kfail`). The
-/// survival arm is structurally unreachable when `survival` is `None` — the footprints were
-/// never lifted, so no maintainer can consult them unflagged (data-absence, not a checked bool).
+/// This entry runs ONE settlement (`settle::settle_effective_world`) whose classification is
+/// CONSTANT: it has no records to re-fold and no dead-branch cascade to chase, so its rounds move
+/// only as replacement deaths retire walls. The cli's driver supplies the reclassifying model, and
+/// both go through the same loop — a second settlement implementation is how the two would drift.
 #[must_use]
 #[expect(
     clippy::too_many_arguments,
-    reason = "the kernel entry threads the whole compiled context (src/ast/cfg/classes/kills/survival/fact-backings/observe/arena); each is a distinct input, not a bundle-able struct — widening it once here is clearer than a params object that hides the seams"
+    reason = "the kernel entry threads the whole compiled context; each argument is a distinct input, and the four model-derived ones are already bundled behind `RoundClassification`"
 )]
 pub fn build_plan_walled(
     src: &str,
     ast: &Ast,
     cfg: &Cfg,
-    classes: &[(CfgNodeId, SkipClass)],
-    kills: &BTreeSet<CfgNodeId>,
-    survival: Option<&TrustedFootprints>,
-    resolutions: Option<&Resolutions>,
-    dialect: &Dialect,
-    fact_backings: &BTreeMap<FactKey, FactBacking>,
+    classification: &RoundClassification,
+    policy: WallPolicy<'_>,
     vouches: &Vouches,
     connected: &ConnectedPipes,
     probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
+    trip: &mut dorc_analysis::certify::CertifierTrip,
     minted_at: dorc_core::spine::Grade,
 ) -> Spine {
-    let leaf_fact = leaf_facts(cfg, classes);
-
-    // Run the apply fold. A leaf's fold-status is its injected observation; a leaf
-    // with no fact (MustRun / opaque / query without an oracle effect) is ⊤ ⇒ no fold
-    // through it (`inv-kfail`).
-    let fold = fold::fold(ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
-
-    // Each step is paired with the wall predicate (`class_is_establish_bearing`): is this a
-    // modeled MUTATOR whose run would invalidate downstream elide-licenses (silence=wall,
-    // `23Ib-fd10`)? Computed here where the `SkipClass` is in scope (a `Step` does not carry
-    // it) and consumed by the plan-time wall walk after the span-sort below.
-    // Each entry: the step, its wall-bearing bit, and its `CfgNodeId` (the footprint-lookup
-    // key for the survival walk — `TrustedFootprints` is node-keyed).
-    let mut steps: Vec<(Step, bool, CfgNodeId)> = Vec::with_capacity(classes.len());
-    for (node, class) in classes {
-        let ast_id = cfg.node(*node).ast;
-        let sh = command_text(src, ast, ast_id);
-        // 24J §2 — a SUBSUMED non-last stage of a connected check-pipe: OMIT it (controlled by
-        // the governing last stage) once that governing stage's connected verdict is KNOWN — a
-        // known rc (converged OR diverged) lets the whole READ-ONLY pipe be substituted, saving
-        // the check-tax; the governing stage reproduces the rc, so the member's own status/stdout
-        // never escape the collapsed unit. An unknown/⊤ governing verdict, or a ⊤-successor member,
-        // ⇒ RUN (`kFAIL-perform`). The Omit render is gated on the governing stage neutralising
-        // (`is_neutralised` walks the pipe's leaves), so a governing stage that fails to Replace
-        // keeps this member verbatim too — the safe direction.
-        let disposition = if let Some(gov_node) = connected.member_governor(*node) {
-            let gov_ast = cfg.node(gov_node).ast;
-            let gov_known = leaf_fact
-                .get(&gov_ast)
-                .is_some_and(|f| matches!(observe(*f).status, Predicted::Value(_)));
-            if gov_known && !has_top_successor(cfg, *node) {
-                Disposition::Omit {
-                    controller: gov_ast,
-                }
-            } else {
-                Disposition::Run
-            }
-        }
-        // An in-loop Members site and an inlined CALL each take their own all-or-nothing
-        // license path (the PER-MEMBER / PER-BODY-SITE observations); every other class
-        // takes the single-fact `disposition_for`.
-        else {
-            match class {
-                SkipClass::EstablishMembers {
-                    members,
-                    self_reached,
-                } => members_disposition(cfg, *node, members, *self_reached, vouches, &observe),
-                // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
-                SkipClass::InlineCall { sites } => {
-                    inline_disposition(cfg, *node, sites, vouches, &observe)
-                }
-                _ => {
-                    let observed = match class {
-                        SkipClass::EstablishProbeAmbient(f)
-                        | SkipClass::EstablishProbeWritten(f)
-                        | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
-                        SkipClass::EstablishMembers { .. }
-                        | SkipClass::InlineCall { .. }
-                        | SkipClass::MustRun => None,
-                    };
-                    disposition_for(
-                        cfg,
-                        &fold,
-                        *node,
-                        class,
-                        ast_id,
-                        observed,
-                        match class {
-                            SkipClass::EstablishProbeAmbient(fact)
-                            | SkipClass::EstablishProbeWritten(fact) => vouches.get(*node, *fact),
-                            _ => None,
-                        },
-                    )
-                }
-            }
-        };
-        let disposition =
-            attach_probe_provenance(disposition, ast.node(ast_id).span, probe_origins, arena);
-        // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
-        // kill mutates but classifies `MustRun`, invisible to `class_is_establish_bearing`, so
-        // the threaded `kills` set restores it. A pure builtin / opaque `MustRun` is NOT in
-        // `kills`, so it still never walls.
-        let is_mutator = class_is_establish_bearing(class) || kills.contains(node);
-        steps.push((
-            Step {
-                leaf: LeafId(0),
-                ast: ast_id,
-                sh,
-                disposition,
-            },
-            is_mutator,
-            *node,
-        ));
-    }
-
-    // Source order (classify yields CFG-alloc order; sort by span for a faithful
-    // reading). This sort MUST stay byte-identical to [`site_order`]'s sort+enumerate: the
-    // probe's site-ids and the leaf-ids assigned below are ONE id space
-    // (`inv-site-keyed-results`), so a record `site N …` keys back to leaf N.
-    // `probe_site_id_equals_plan_leaf_id` pins the equivalence. Sort BEFORE the wall walk so
-    // the walk sees steps in execution order (book order IS execution order — order-is-sacred).
-    steps.sort_by_key(|(s, _, _)| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
-
-    // Assign stable leaf ids in span order (the `inv-site-keyed-results` equivalence a record
-    // `site N …` depends on). Done BEFORE the wall walk so the survival walk can name the wall
-    // leaf a downstream elision crossed (the attribution witness, TC-3). Leaf-id assignment is
-    // a pure function of span order — the walk only reads/rewrites dispositions, never ids — so
-    // moving it earlier is byte-neutral for the flag-off path.
-    for (i, (step, _, _)) in steps.iter_mut().enumerate() {
-        step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
-    }
-
-    // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED mutator
-    // that will RUN at apply may touch anything it did not declare (the frame problem, `233`),
-    // so silence licenses nothing. `survival` selects HOW a running mutator walls (TC-1):
-    // Every record this build writes carries the run's grade (`309` §2; `306c` §2's positional v0
-    // flip). Handed in rather than derived, because the kernel is a pure function of its inputs and
-    // whether host bytes were read is a property of the CALLER's phase, not of this analysis.
-    let mut spine = Spine::minted_at(minted_at);
-    match survival {
-        // Flag-off (BASELINE, byte-identical to Stage-1): a running mutator is a TOTAL wall.
-        None => wall_walk_total(&mut steps),
-        // Flag-on (the golden hill): a running FOOTPRINTED mutator scopes its wall; a downstream
-        // converged `Replace` survives iff its backing SET is disjoint from every footprint (TC-3).
-        Some(footprints) => wall_walk_survival(
-            &mut steps,
-            footprints,
-            resolutions,
-            dialect,
-            fact_backings,
-            &mut spine,
-        ),
-    }
-
-    // The decisions land on Spine, keyed by the FINE site (`inv-site-keyed-results`); `Plan` is a
-    // projection of them (`spine::project_plan`) rather than a second assembly. `member` is `None`
-    // here because the kernel mints one decision per leaf today — the key carries the slot so that
-    // a per-member decision is a widening rather than a re-key (`30E:stop-siteid-digest-rekey`).
-    for (step, _, _) in steps {
-        spine.set_disposition(dorc_core::spine::SpineDisposition {
-            site: dorc_core::SiteId::leaf(step.leaf),
-            ast: step.ast,
-            sh: step.sh,
-            decision: step.disposition,
-            grade: None,
-        });
-    }
+    let mut model = FrozenRoundModel {
+        classification,
+        observe,
+        trip,
+    };
+    let inputs = SettleInputs {
+        src,
+        ast,
+        cfg,
+        vouches,
+        connected,
+        policy,
+        minted_at,
+    };
+    let cap = u32::try_from(classification.classes.len())
+        .unwrap_or(u32::MAX)
+        .max(1);
+    let mut spine = settle_effective_world(&inputs, &mut model, cap).spine;
+    attach_spine_probe_provenance(&mut spine, ast, probe_origins, arena);
     spine
+}
+
+/// The settlement model for a caller with no records: one classification, computed once, and an
+/// observer that answers from the caller's own oracle.
+///
+/// The overlay is IGNORED here, deliberately. This entry proves no dead branches of its own (its
+/// caller holds no records to ground one), so the only ledger growth it can see is replacement
+/// deaths, which never reach the analyzer's effect seam anyway (`world::NoExecutionLedger`).
+struct FrozenRoundModel<'a, F: Fn(FactKey) -> Observable> {
+    classification: &'a RoundClassification,
+    observe: F,
+    trip: &'a mut dorc_analysis::certify::CertifierTrip,
+}
+
+impl<F: Fn(FactKey) -> Observable> RoundModel for FrozenRoundModel<'_, F> {
+    fn classify(&mut self, _erased: &dorc_analysis::erase::ErasedSites) -> RoundClassification {
+        self.classification.clone()
+    }
+
+    fn fold(&mut self, _validity: &BTreeMap<LeafId, bool>) {}
+
+    fn observe(&self, fact: FactKey) -> Observable {
+        (self.observe)(fact)
+    }
+
+    fn trip(&mut self) -> &mut dorc_analysis::certify::CertifierTrip {
+        self.trip
+    }
 }
 
 /// arch-1 witness (`vp-17`/`vp-18`) + C6: the FULL granted witness for a licensed `Replace` — the
@@ -3853,7 +3757,26 @@ pub fn build_plan_walled(
 ///
 /// Runs strictly after the decision, and both licenses treat it as exempt from their identity
 /// planes, so nothing here can perturb what was decided.
-fn attach_probe_provenance(
+/// Attach the post-mint probe provenance to every licensing decision on a SETTLED Spine.
+///
+/// A separate pass, over the settled result, for two reasons that agree: the provenance is EXEMPT
+/// output-only material and must not be able to perturb a decision (the WELD), and a settlement
+/// round that could reach the arena would be a round that could reach an output surface — which is
+/// exactly what `309:law-spine-write-only-during-run` exists to make unrepresentable.
+pub fn attach_spine_probe_provenance(
+    spine: &mut Spine,
+    ast: &Ast,
+    probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
+    arena: &mut dorc_core::ProvArena,
+) {
+    for record in spine.dispositions_mut() {
+        let span = ast.node(record.ast).span;
+        let decision = std::mem::replace(&mut record.decision, Disposition::Run);
+        record.decision = attach_probe_provenance(decision, span, probe_origins, arena);
+    }
+}
+
+pub(crate) fn attach_probe_provenance(
     disposition: Disposition,
     site_span: dorc_core::Span,
     probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
@@ -3889,376 +3812,289 @@ fn attach_replace_provenance(
         .with_probe_attribution(attribution)
 }
 
-/// The BASELINE wall walk (flag-off / Stage-1 / `23Ib-fd10`): walk once in execution order
-/// maintaining a single `walled` flag. An elided/omitted mutator casts NO shadow (it never
-/// runs), so only a *running* mutator walls; once walled, every later establish-bearing
-/// `Replace` demotes to `Run`. Demotion is ONLY ever Replace→Run (`inv-kfail`). Structurally
-/// identical to the pre-Stage-2 inline walk — kept a `bool`, no footprints in sight.
-fn wall_walk_total(steps: &mut [(Step, bool, CfgNodeId)]) {
-    let mut walled = false;
-    for (step, is_mutator, _node) in steps {
-        if walled && *is_mutator && matches!(step.disposition, Disposition::Replace(..)) {
-            step.disposition = Disposition::Run;
-        }
-        if *is_mutator && matches!(step.disposition, Disposition::Run) {
-            walled = true;
-        }
-    }
+/// Everything one site's decision establishes: what the plan does with the leaf, whether its
+/// original mutation can still execute, and what the survival tier concluded — all minted
+/// TOGETHER, from one proof (`30K` §3.4 `constraint-semantic-acts-not-dispositions`).
+///
+/// The act is not read off the disposition. It is the other half of the same conclusion, which is
+/// what lets effective reach be decision-fed while `pin-no-outcome-as-generator` holds: a rendered
+/// outcome never re-enters analysis, because the analysis input was established at the same instant
+/// the outcome was, from the same conditions.
+pub(crate) struct SiteDecision {
+    pub(crate) disposition: Disposition,
+    pub(crate) act: EffectiveAct,
+    pub(crate) survival: SurvivalAccount,
 }
 
-/// The SURVIVAL wall walk (flag-on / Stage 2 / the golden hill). In execution order, maintain a
-/// `total_wall` flag (set by a running FOOTPRINT-LESS mutator — silence = wall, unchanged) plus
-/// the accumulated running-wall footprints. A downstream establish-bearing `Replace` is put
-/// through the ONE total [`survival::wall_verdict`]: it survives (stays `Replace`) iff no total
-/// wall stands AND its backing is disjoint from every accumulated footprint; a crossing of ≥1
-/// wall attaches the attribution witness (TC-3). A running mutator (whether it just demoted, or
-/// was never converged) then contributes: WITH a lifted footprint it scopes the wall (union its
-/// coordinates); WITHOUT one it totalises the wall. Demotion stays Replace→Run only (`inv-kfail`).
-/// Record one demoted survival on both planes: the decision record, and its narration.
-///
-/// 24G Part B rides the record's `poisoned_by`: where a reach-expanded coordinate poisoned the
-/// elision, the reach-function KIND travels with the decision so the why-lens can name it
-/// ("…poisoned via `<kind>.reaches()`") without re-deriving which arm fired.
-fn record_survival_demotion(spine: &mut Spine, leaf: LeafId, reason: survival::DemoteReason) {
-    let (demote, poisoned_by) = match reason {
-        survival::DemoteReason::TotalWall => (dorc_core::spine::SurvivalDemote::TotalWall, None),
-        survival::DemoteReason::Poisoned { via_reach } => {
-            (dorc_core::spine::SurvivalDemote::Poisoned, via_reach)
-        }
-        survival::DemoteReason::MayAlias => (dorc_core::spine::SurvivalDemote::MayAlias, None),
-    };
-    spine.push_survival(dorc_core::spine::SpineSurvival {
-        leaf,
-        outcome: dorc_core::spine::SurvivalOutcome::Demoted(demote),
-        poisoned_by,
-        grade: None,
-    });
-    let tag = match reason {
-        survival::DemoteReason::TotalWall => DemoteTag::TotalWall,
-        survival::DemoteReason::Poisoned { .. } => DemoteTag::Poisoned,
-        survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
-    };
-    spine.push_narrative(CollapseNarrative::new(
-        SpeechAct::Derived,
-        CollapseKind::Demotion {
-            site: dorc_aid::diag::SiteId::leaf(leaf),
-            reason: tag,
+/// The inputs one site's decision reads. A struct because the seat genuinely needs the whole
+/// context and a twelve-argument function hides which of them are frozen.
+pub(crate) struct DecideSite<'a> {
+    pub(crate) cfg: &'a Cfg,
+    pub(crate) ast: &'a Ast,
+    pub(crate) fold: &'a FoldResult,
+    pub(crate) node: CfgNodeId,
+    pub(crate) ast_id: AstId,
+    pub(crate) class: &'a SkipClass,
+    pub(crate) freshness: &'a Freshness,
+    pub(crate) vouches: &'a Vouches,
+    pub(crate) connected: &'a ConnectedPipes,
+    pub(crate) observe: &'a dyn Fn(FactKey) -> Observable,
+    /// This round's EFFECTIVE Query validity, per node.
+    pub(crate) valid_at: &'a BTreeMap<CfgNodeId, bool>,
+    /// The fact each leaf establishes or reads, for the connected-pipe governor lookup.
+    pub(crate) leaf_fact: &'a BTreeMap<AstId, FactKey>,
+    /// This site's dead-branch derivation, if one exists this round.
+    pub(crate) dead: Option<&'a DeadBranchProof>,
+    /// Does this site gen into the effective world at all? A pure builtin never becomes a wall.
+    pub(crate) invalidator: bool,
+    /// Does the run's policy account for survivals? Honest walls record nothing.
+    pub(crate) accounts_survival: bool,
+}
+
+/// Decide one site (`30K` §5) — the disposition and the semantic act, from one pass.
+pub(crate) fn decide_site(p: &DecideSite<'_>) -> SiteDecision {
+    let (disposition, survival) = site_disposition(p);
+    let act = site_act(p, &disposition);
+    SiteDecision {
+        disposition,
+        act,
+        survival: if p.accounts_survival {
+            survival
+        } else {
+            SurvivalAccount::Silent
         },
-    ));
-}
-
-fn wall_walk_survival(
-    steps: &mut [(Step, bool, CfgNodeId)],
-    footprints: &TrustedFootprints,
-    resolutions: Option<&Resolutions>,
-    dialect: &Dialect,
-    fact_backings: &BTreeMap<FactKey, FactBacking>,
-    spine: &mut Spine,
-) {
-    // `None` resolvers ⇒ the token-equality floor (24F §3): the empty map, every kind resolver-less.
-    let empty = Resolutions::none();
-    let resolutions = resolutions.unwrap_or(&empty);
-    let mut total_wall = false;
-    let mut accumulated: Vec<survival::AccumulatedWall> = Vec::new();
-    for (step, is_mutator, node) in steps {
-        // 1. Survival test for a converged mutator's `Replace` against the walls so far — both the
-        //    backing and each accumulated footprint canonicalized through the resolvers (24F §3).
-        if *is_mutator && let Disposition::Replace(license, _) = &step.disposition {
-            // `277` §5 backing-SETS: build the fact's backing SET — its own cell plus the
-            // observe-backing-widening siblings, carrying the THREADED minting family. A map-MISS
-            // (a file-write / auto-cell / Members fact, or a caller with no threaded map) falls to
-            // the singleton `Backing::of_fact` (the reverse-lookup floor — today's behavior).
-            let fact = license.fact();
-            let backing = match fact_backings.get(&fact) {
-                Some(fb) => Backing::widened(fact, fb.family, fb.observed.clone()),
-                None => Backing::of_fact(fact),
-            };
-            match survival::wall_verdict(total_wall, &accumulated, &backing, resolutions, dialect) {
-                // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
-                // flag-off world would (no witness, `Replace` untouched).
-                survival::WallVerdict::SurvivedClean => {
-                    spine.push_survival(dorc_core::spine::SpineSurvival {
-                        leaf: step.leaf,
-                        outcome: dorc_core::spine::SurvivalOutcome::Clean,
-                        poisoned_by: None,
-                        grade: None,
-                    });
-                }
-                // Crossed ≥1 running wall, all disjoint — survives WITH attribution, ONCE the
-                // independent reference model re-derives the same answer
-                // (`300:lane-sparing-rederivation`). The re-check consumes the minted witness and
-                // can only hand it back or refuse it, so this seat can remove a survival and never
-                // add one; a refusal demotes here, INSIDE the walk, so the now-running site
-                // contributes its wall to everything downstream exactly as any other run does.
-                survival::WallVerdict::Survived(witness) => {
-                    match rederive::recheck_survival(
-                        witness,
-                        &backing,
-                        &accumulated,
-                        resolutions,
-                        dialect,
-                    ) {
-                        rederive::Recheck::Confirmed(witness) => {
-                            if let Disposition::Replace(license, stand_in) =
-                                std::mem::replace(&mut step.disposition, Disposition::Run)
-                            {
-                                step.disposition =
-                                    Disposition::Replace(license.with_survival(witness), stand_in);
-                            }
-                            spine.push_survival(dorc_core::spine::SpineSurvival {
-                                leaf: step.leaf,
-                                outcome: dorc_core::spine::SurvivalOutcome::Survived,
-                                poisoned_by: None,
-                                grade: None,
-                            });
-                        }
-                        rederive::Recheck::Demoted(disagreement) => {
-                            spine.push_survival(dorc_core::spine::SpineSurvival {
-                                leaf: step.leaf,
-                                outcome: dorc_core::spine::SurvivalOutcome::RederivationDisagreed {
-                                    wall: u32::try_from(disagreement.wall).unwrap_or(u32::MAX),
-                                },
-                                poisoned_by: None,
-                                grade: None,
-                            });
-                            spine.push_narrative(CollapseNarrative::new(
-                                SpeechAct::Derived,
-                                CollapseKind::Demotion {
-                                    site: dorc_aid::diag::SiteId::leaf(step.leaf),
-                                    reason: DemoteTag::RederivationDisagreement,
-                                },
-                            ));
-                            step.disposition = Disposition::Run;
-                        }
-                    }
-                }
-                // A total wall stands, the backing hit a footprint, or a same-kind pair could not be
-                // canonicalized (§3a may-alias) — demote (`inv-kfail`, fail toward run). A may-alias
-                // demote is instrumented (24F §3a — the yardstick shows the fire-rate).
-                survival::WallVerdict::Demoted(reason) => {
-                    record_survival_demotion(spine, step.leaf, reason);
-                    step.disposition = Disposition::Run;
-                }
-            }
-        }
-        // 2. Wall contribution: a RUNNING mutator walls — scoped if it has a footprint, total
-        // otherwise (silence = wall). An elided/omitted mutator (survived, or converged away)
-        // casts no shadow, so it is skipped here.
-        if *is_mutator && matches!(step.disposition, Disposition::Run) {
-            // C5 aid: a running mutator forms an Effect-channel wall (`rul-only-oracle-bytes-ship`).
-            spine.push_narrative(CollapseNarrative::new(
-                SpeechAct::Derived,
-                CollapseKind::WallFormation {
-                    participant: step.leaf,
-                    channel: ChannelCoverage {
-                        channel: Channel::Effect,
-                    },
-                },
-            ));
-            match footprints.get(*node) {
-                Some(footprint) => accumulated.push(survival::AccumulatedWall {
-                    wall_leaf: step.leaf,
-                    footprint: footprint.clone(),
-                }),
-                None => total_wall = true,
-            }
-        }
     }
 }
 
-/// The per-leaf disposition: the fold first (a provably-dead leaf is `Omit`ted), then
-/// convergence-elision (`Replace` with the value-preserving stand-in), else `Run`.
+/// What the ORIGINAL mutation can still do, once the disposition is known.
 ///
-/// The fold takes precedence over convergence-elision because a *dead* leaf has no
-/// status a consumer reads — `Omit` is strictly the right disposition (vs `Replace`,
-/// which exists to reproduce a status). Both are the apply collapse; a leaf that is
-/// neither runs (`kFAIL-perform`).
-fn disposition_for(
-    cfg: &Cfg,
-    fold: &FoldResult,
-    node: CfgNodeId,
-    class: &SkipClass,
-    ast_id: AstId,
-    observed: Option<Observable>,
-    vouch: Option<&ByVouch<VerdictVouch>>,
-) -> Disposition {
-    // (0) the in-loop render floor (task-L1, `209` brk-1): a leaf inside a loop body or
-    // condition is MustRun — UNLESS it is the in-loop Members shape, which is routed to
-    // `members_disposition` BEFORE this function (task-L2 item-3 lifts the floor for
-    // exactly that shape). For every OTHER in-loop leaf (a single-fact establish, an
-    // in-loop Query, the loop condition) the floor stands: the line-granular render still
-    // cannot elide a single iteration, and per-iteration `&&`/`||` deadness is not
-    // line-expressible. POST-loop leaves are NOT in-loop, so the value below a converged
-    // loop unlocks normally (the brk-1 value-unlock).
-    if cfg.in_loop_body(node) {
-        return Disposition::Run;
+/// Run and Guard are the same answer here, and that is the point (`30K` §5.3): a guard's check is
+/// read-only, but its untouched fallback IS the authored mutation, so the world may still move at
+/// that line. Only a real proof of no-execution retires a wall — and a `Replace` the render will
+/// REFUSE (a heredoc-carrying leaf keeps its bytes verbatim) is not one.
+fn site_act(p: &DecideSite<'_>, disposition: &Disposition) -> EffectiveAct {
+    if !p.invalidator {
+        return EffectiveAct::NoMutation(NoMutationProof::NotEffective);
     }
-
-    // (2) the fold: a provably-dead branch leaf is omitted. Minted ONLY from a known
-    // controlling status (`fold` records `dead` only then) — `inv-kfail`. The fold
-    // reached the deadness via the controller leaf's AstId; resolve its fact for
-    // provenance + the render's neutralised-controller gate. Top-containment still
-    // gates: a ⊤-contaminated leaf is never folded away (context unmodeled).
-    if !has_top_successor(cfg, node)
-        && let Some(controller_ast) = fold.dead_controller(ast_id)
-    {
-        return Disposition::Omit {
-            controller: controller_ast,
-        };
-    }
-
-    // (1) value-preserving substitution: convergence-elision of a converged-establish,
-    // OR a Query-guard substitution (task-D2 — both minted through `prove_replaceable`,
-    // which dispatches on the class). Reached only for a leaf the fold did NOT omit
-    // (its branch stays live). Top-containment (16G hole-5): a ⊤-successor leaf is
-    // never replaced.
-    match class {
-        SkipClass::EstablishProbeAmbient(_) | SkipClass::QueryResolvable { .. }
-            if !has_top_successor(cfg, node) =>
-        {
-            let verdict =
-                PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.effect));
-            let consumed = May(cfg.consumed_observables(node).clone());
-            let status = observed.map_or(Predicted::Top, |o| o.status);
-            // The elide-weld (24D §3): thread the reached vouch from the `Vouches` map (Part A's
-            // `build_vouches` already populates ambient sites — no re-lift). An ambient site with
-            // no vouch runs; a Query site is never in the map (`None`) and its arm ignores it.
-            match ReplaceLicense::prove_replaceable(
-                class,
-                Grade::Must,
-                verdict,
-                consumed,
-                status,
-                vouch.cloned(),
-            ) {
-                Some(license) => {
-                    // The value-preserving stand-in reproduces the predicted Status channel.
-                    // An unpredicted status (`Predicted::Top`) falls back to `true` (rc 0) in
-                    // two cases, neither fabricating a value a LIVE reader consumes: (a) a
-                    // converged-establish whose status is not branch-consumed (`prove_replaceable`
-                    // blocks a branch-consumed `Top` via `StatusRelaxable`, `19D`; a Query guard
-                    // always carries a known rc) — the rc-0 placeholder is never read by a branch;
-                    // (b) door-3 (`20V` §4): a `cmd || true` left whose ⊤ status is `StatusInvariant`
-                    // -consumed. There `true` is the IDIOM, not a predicted value — the mint is
-                    // licensed by INVARIANCE (both `||` continuations rejoin identically, so any rc
-                    // is extensionally faithful), NOT by a claim cmd exits 0. This keeps weld-5 (no
-                    // fabricated values for LIVE reads) intact: the `||` read is dead-in-fact.
-                    // (A book defining a `true()` function never reaches this arm — door-3
-                    // refuses at the cfg mark, find-I: the stand-in word would resolve to the
-                    // function, not the builtin.)
-                    let stand_in = match status {
-                        Predicted::Value(rc) => StandIn::from_rc(rc),
-                        Predicted::Top => StandIn::True,
-                    };
-                    Disposition::Replace(license, stand_in)
-                }
-                None => Disposition::Run,
+    match disposition {
+        Disposition::Replace(license, _) => {
+            match settle::replacement_death(p.ast, p.node, p.ast_id, license.fact()) {
+                Some(proof) => EffectiveAct::NoMutation(NoMutationProof::Replaced(proof)),
+                None => EffectiveAct::may_mutate(p.node),
             }
         }
-        // The guard tier (rul-ternary-verdict's third verb — rul-guard-license). A past-a-wall
-        // `EstablishProbeWritten` site (an opaque upstream poisoned its resting probe, so it can no
-        // longer ELIDE) with a REACHED vouch and a CONVERGED probe-verdict mints a `Guard`: the
-        // oracle's own verdict check re-decides LIVE at apply (`( check ) || <original>`), so the
-        // stale plan-time convergence is never trusted (X-drift). No vouch, or a diverged/unknown
-        // verdict, ⇒ run — a guard at a predicted-change site buys nothing (`inv-kfail`;
-        // `GuardLicense::mint` returns `None` off `Verdict::Converged`). Top-containment: a
-        // ⊤-successor site (`cmd &`) never guards, exactly as it never Replaces (P-background).
-        SkipClass::EstablishProbeWritten(fact) if !has_top_successor(cfg, node) => match vouch {
-            Some(v) => {
-                let verdict = observed.map_or(Verdict::Unknown, |o| o.effect);
-                match GuardLicense::mint(*fact, v.clone(), verdict) {
+        Disposition::Omit { .. } => match p.dead {
+            Some(proof) => EffectiveAct::NoMutation(NoMutationProof::DeadBranch(*proof)),
+            None => EffectiveAct::may_mutate(p.node),
+        },
+        Disposition::Run | Disposition::Guard(_) => EffectiveAct::may_mutate(p.node),
+    }
+}
+
+/// The per-leaf disposition: the connected-pipe collapse, then the aggregates, then the in-loop
+/// floor, then the fold (a provably-dead leaf is `Omit`ted), then the freshness-gated ternary —
+/// elide a fresh converged site, guard a stale one, run everything else.
+///
+/// The fold takes precedence over convergence-elision because a *dead* leaf has no status a
+/// consumer reads — `Omit` is strictly the right disposition (vs `Replace`, which exists to
+/// reproduce a status). Both are the apply collapse; a leaf that is neither runs (`kFAIL-perform`).
+fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
+    // 24J §2 — a SUBSUMED non-last stage of a connected check-pipe: OMIT it (controlled by the
+    // governing last stage) once that governing stage's connected verdict is KNOWN. An unknown/⊤
+    // governing verdict, or a ⊤-successor member, ⇒ RUN (`kFAIL-perform`).
+    if let Some(gov_node) = p.connected.member_governor(p.node) {
+        let gov_ast = p.cfg.node(gov_node).ast;
+        let gov_known = p
+            .leaf_fact
+            .get(&gov_ast)
+            .is_some_and(|f| matches!((p.observe)(*f).status, Predicted::Value(_)));
+        let disposition = if gov_known && !has_top_successor(p.cfg, p.node) {
+            Disposition::Omit {
+                controller: gov_ast,
+            }
+        } else {
+            Disposition::Run
+        };
+        return (disposition, SurvivalAccount::Silent);
+    }
+    // An in-loop Members site and an inlined CALL each take their own all-or-nothing license path
+    // (the PER-MEMBER / PER-BODY-SITE observations) BEFORE the in-loop floor below.
+    match p.class {
+        SkipClass::EstablishMembers {
+            members,
+            self_reached,
+        } => return members_disposition(p, members, *self_reached),
+        SkipClass::InlineCall { sites } => return inline_disposition(p, sites),
+        _ => {}
+    }
+    // (0) the in-loop render floor (task-L1, `209` brk-1): the line-granular render cannot elide
+    // one iteration, and per-iteration deadness is not line-expressible.
+    if p.cfg.in_loop_body(p.node) {
+        return (Disposition::Run, SurvivalAccount::Silent);
+    }
+
+    // (2) the fold: a provably-dead branch leaf is omitted. Minted ONLY from a known controlling
+    // status (`fold` records `dead` only then) — `inv-kfail`. Top-containment still gates: a
+    // ⊤-contaminated leaf is never folded away (context unmodeled).
+    if !has_top_successor(p.cfg, p.node)
+        && let Some(controller_ast) = p.fold.dead_controller(p.ast_id)
+    {
+        return (
+            Disposition::Omit {
+                controller: controller_ast,
+            },
+            SurvivalAccount::Silent,
+        );
+    }
+
+    match p.class {
+        SkipClass::QueryResolvable { fact, .. } if !has_top_successor(p.cfg, p.node) => {
+            let observed = (p.observe)(*fact);
+            let consumed = May(p.cfg.consumed_observables(p.node).clone());
+            let valid = p.valid_at.get(&p.node).copied().unwrap_or(false);
+            let disposition = match ReplaceLicense::prove_query_replaceable(
+                *fact,
+                valid,
+                observed.effect,
+                &consumed,
+                observed.status,
+            ) {
+                Some(license) => Disposition::Replace(license, standin_for(observed.status)),
+                None => Disposition::Run,
+            };
+            (disposition, SurvivalAccount::Silent)
+        }
+        SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact)
+            if !has_top_successor(p.cfg, p.node) =>
+        {
+            establish_disposition(p, *fact)
+        }
+        _ => (Disposition::Run, SurvivalAccount::Silent),
+    }
+}
+
+/// A vouched establish's fate — the whole ternary, in one place.
+///
+/// The elision license is minted FIRST and then gated on freshness, which is what makes the
+/// demotion account exact: "an elision the walls refused" is precisely a site that held a license
+/// and lost it to a wall — the same population the retired wall walk demoted. A stale site falls to
+/// the guard tier, whose own conditions are unchanged: a reached vouch, a converged measurement,
+/// and a render that can carry the insertion.
+fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, SurvivalAccount) {
+    let observed = (p.observe)(fact);
+    let vouch = p.vouches.get(p.node, fact);
+    let verdict = PhasedVerdict::<Probe>::new(observed.effect);
+    let consumed = May(p.cfg.consumed_observables(p.node).clone());
+    let licensed = ReplaceLicense::prove_replaceable(
+        fact,
+        Grade::Must,
+        verdict,
+        consumed,
+        observed.status,
+        vouch.cloned(),
+    );
+    match (p.freshness, licensed) {
+        (Freshness::FreshClean, Some(license)) => (
+            Disposition::Replace(license, standin_for(observed.status)),
+            SurvivalAccount::Clean,
+        ),
+        (Freshness::FreshSurvived(witness), Some(license)) => (
+            Disposition::Replace(
+                license.with_survival(witness.clone()),
+                standin_for(observed.status),
+            ),
+            SurvivalAccount::Survived,
+        ),
+        (Freshness::FreshClean | Freshness::FreshSurvived(_), None) => {
+            (Disposition::Run, SurvivalAccount::Silent)
+        }
+        // The guard tier (rul-ternary-verdict's third verb). A site whose ONLY lost elision
+        // precondition is freshness re-decides LIVE at apply: `( check ) || <original>`, so the
+        // stale plan-time convergence is never trusted. No vouch, or a diverged/unknown verdict,
+        // ⇒ run — a guard at a predicted-change site buys nothing (`inv-kfail`).
+        (Freshness::Stale(cause), licensed) => {
+            let account = if licensed.is_some() {
+                SurvivalAccount::Demoted(*cause)
+            } else {
+                SurvivalAccount::Silent
+            };
+            let disposition = match vouch {
+                Some(v) => match GuardLicense::mint(fact, v.clone(), observed.effect) {
                     Some(license) => Disposition::Guard(license),
                     None => Disposition::Run,
-                }
-            }
-            None => Disposition::Run,
-        },
-        _ => Disposition::Run,
+                },
+                None => Disposition::Run,
+            };
+            (disposition, account)
+        }
     }
 }
 
-/// The disposition for an in-loop **Members** body leaf (task-L2 item-3, `209` brk-1(b)) —
-/// the all-or-nothing in-loop license. Observe EVERY member's host verdict (the Effect
-/// channel), then mint a [`LicenseVia::MembersLoop`] `Replace` via
-/// [`ReplaceLicense::prove_members_replaceable`] iff all are Converged, the site is
-/// `self_reached`, and the consumption gates pass. The stand-in is always `true` (the body
-/// is replaced by a `true` that the loop still iterates N times over — observable-
-/// preserving given all-converged + the consumed-status gate). On refusal the leaf runs.
+/// The value-preserving stand-in for a substituted leaf's status.
 ///
-/// Top-containment (16G hole-5): a ⊤-successor leaf is never replaced (a loop body leaf
-/// with a `cmd &` shape, say). The in-loop leaf's status is ⊤ for a mutator (fork-mutator-
-/// rc), so a consumed status (errexit-region, or a post-loop `$?` reading the body —
-/// item-6a) blocks via the consumption gate, exactly as the single-fact path.
+/// An unpredicted status falls back to `true` (rc 0) in two cases, neither fabricating a value a
+/// LIVE reader consumes: a converged-establish whose status is not branch-consumed (the mint blocks
+/// a branch-consumed ⊤ via `StatusRelaxable`), and door-3's `cmd || true` left, where `true` is the
+/// IDIOM rather than a predicted value — the mint is licensed by INVARIANCE, not by a claim that
+/// the command exits 0.
+fn standin_for(status: Predicted<Rc>) -> StandIn {
+    match status {
+        Predicted::Value(rc) => StandIn::from_rc(rc),
+        Predicted::Top => StandIn::True,
+    }
+}
+
+/// The disposition for an in-loop **Members** body leaf (task-L2 item-3, `209` brk-1(b)) — the
+/// all-or-nothing in-loop license: every member Converged, `self_reached`, the consumption gates
+/// pass, and the aggregate's own position effectively FRESH. The stand-in is always `true` (the
+/// loop still iterates N times over it).
+///
+/// `30K` §5.4, disclosed: the aggregate takes ONE position's freshness — its own, from the
+/// self-suppressed solve — rather than proving effective freshness per erased establish. Where the
+/// representation cannot express the universal statement the whole aggregate runs, the conservative
+/// direction; recovering that value needs the typed per-member proof first.
 fn members_disposition(
-    cfg: &Cfg,
-    node: CfgNodeId,
+    p: &DecideSite<'_>,
     members: &[FactKey],
     self_reached: bool,
-    vouches: &Vouches,
-    observe: &impl Fn(FactKey) -> Observable,
-) -> Disposition {
-    if has_top_successor(cfg, node) {
-        return Disposition::Run;
+) -> (Disposition, SurvivalAccount) {
+    if has_top_successor(p.cfg, p.node) {
+        return (Disposition::Run, SurvivalAccount::Silent);
     }
-    let member_verdicts: Vec<Verdict> = members.iter().map(|f| observe(*f).effect).collect();
-    let consumed = May(cfg.consumed_observables(node).clone());
-    // The in-loop body leaf's status: a mutator's rc is ⊤ (fork-mutator-rc), and a Members
-    // site is a mutator (an establish), so ⊤. The consumption gate blocks a consumed ⊤.
+    let member_verdicts: Vec<Verdict> = members.iter().map(|f| (p.observe)(*f).effect).collect();
+    let consumed = May(p.cfg.consumed_observables(p.node).clone());
+    // The in-loop body leaf's status: a mutator's rc is ⊤ (fork-mutator-rc), and a Members site is
+    // a mutator, so ⊤. The consumption gate blocks a consumed ⊤.
     let status = Predicted::Top;
-    let expected: Vec<(CfgNodeId, FactKey)> = members.iter().map(|fact| (node, *fact)).collect();
-    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, vouches) else {
-        return Disposition::Run;
+    let expected: Vec<(CfgNodeId, FactKey)> = members.iter().map(|fact| (p.node, *fact)).collect();
+    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, p.vouches) else {
+        return (Disposition::Run, SurvivalAccount::Silent);
     };
-    match ReplaceLicense::prove_members_replaceable(
+    let licensed = ReplaceLicense::prove_members_replaceable(
         all_vouched,
         &member_verdicts,
         self_reached,
         &consumed,
         status,
-    ) {
-        // The body is substituted by `true` (the loop still iterates N times over it).
-        Some(license) => Disposition::Replace(license, StandIn::True),
-        None => Disposition::Run,
-    }
+    );
+    aggregate_outcome(p, licensed, StandIn::True)
 }
 
-/// The disposition for an inlined function-CALL leaf (arch-2, brk-2, `i-3`) — the
-/// all-or-nothing CALL license. Observe each spliced body Establish site's host verdict, then
-/// mint a [`LicenseVia::InlineCall`] `Replace` (the CALL span → `true`) via
-/// [`ReplaceLicense::prove_inline_replaceable`] iff every effect-bearing body leaf licenses
-/// elision. On refusal the call RUNS — the real function body executes (the run-it floor,
-/// `kFAIL-perform`).
+/// The disposition for an inlined function-CALL leaf (arch-2, brk-2, `i-3`) — the all-or-nothing
+/// CALL license (the CALL span → `true`) iff every effect-bearing body leaf licenses elision AND
+/// the call's own position is effectively fresh. On refusal the call RUNS — the real function body
+/// executes (the run-it floor, `kFAIL-perform`).
 ///
-/// The CALL leaf's own status is ⊤ (a mutator-shaped aggregate, fork-mutator-rc), so a consumed
-/// status (errexit-region, a `$?`-reader, a bare `||` operand) blocks via the consumption gate
-/// — exactly the single-fact path. Top-containment (16G hole-5): a ⊤-successor CALL (e.g. a
-/// `prov &` background) is never replaced. The body sites are NOT render-edited (`i-3`); only
-/// the CALL span is. `observe` reads the same per-fact host oracle the rest of the plan uses.
-fn inline_disposition(
-    cfg: &Cfg,
-    node: CfgNodeId,
-    sites: &[InlineSite],
-    vouches: &Vouches,
-    observe: &impl Fn(FactKey) -> Observable,
-) -> Disposition {
-    // The in-loop render floor (task-L1, `209` brk-1): an inlined CALL inside a loop body is
-    // MustRun this round — the line/span render cannot elide a single iteration of a call, and
-    // a member-precision path for inlined calls is not built (it would compose the Members
-    // value with the call's positionals, a deferred multi-leaf case). EXPLICIT here (not
-    // relying on the back-edge self-poison that incidentally tends to make an in-loop body
-    // establish `EstablishProbeWritten`): an in-loop inlined call NEVER mints a license, robustly.
-    // (`inline_disposition` runs BEFORE `disposition_for`'s floor — the Members precedent — so
-    // the floor must be re-checked here, like `members_disposition` re-checks `has_top_successor`.)
-    if cfg.in_loop_body(node) {
-        return Disposition::Run;
+/// Freshness is read at the CALL node, where the body's own writes are not yet in the in-state: the
+/// splice is wired AFTER the call, so an aggregate's own effects never stale it.
+fn inline_disposition(p: &DecideSite<'_>, sites: &[InlineSite]) -> (Disposition, SurvivalAccount) {
+    // The in-loop render floor, EXPLICIT here (the Members precedent): an in-loop inlined call
+    // never mints a license, robustly, rather than relying on the back-edge self-poison.
+    if p.cfg.in_loop_body(p.node) || has_top_successor(p.cfg, p.node) {
+        return (Disposition::Run, SurvivalAccount::Silent);
     }
-    if has_top_successor(cfg, node) {
-        return Disposition::Run;
-    }
-    let consumed = May(cfg.consumed_observables(node).clone());
-    // The CALL aggregate's status: ⊤ (a mutator-shaped call's rc has no sanctioned source,
-    // fork-mutator-rc). A consumed ⊤ status blocks via the consumption gate (door-3 `|| true`
-    // does not — `StatusInvariant`).
+    let consumed = May(p.cfg.consumed_observables(p.node).clone());
+    // The CALL aggregate's status: ⊤ (a mutator-shaped call's rc has no sanctioned source).
     let status = Predicted::Top;
     let expected: Vec<(CfgNodeId, FactKey)> = sites
         .iter()
@@ -4268,26 +4104,42 @@ fn inline_disposition(
         })
         .collect();
     if expected.is_empty() {
-        let Some(proof) = ReadSubstitutionProof::mint(sites, observe) else {
-            return Disposition::Run;
+        let Some(proof) = ReadSubstitutionProof::mint(sites, p.observe) else {
+            return (Disposition::Run, SurvivalAccount::Silent);
         };
         let stand_in = match proof.status {
             Predicted::Value(rc) => StandIn::from_rc(rc),
-            Predicted::Top => return Disposition::Run,
+            Predicted::Top => return (Disposition::Run, SurvivalAccount::Silent),
         };
-        return match ReplaceLicense::prove_inline_query_replaceable(proof, &consumed) {
-            Some(license) => Disposition::Replace(license, stand_in),
-            None => Disposition::Run,
-        };
+        let licensed = ReplaceLicense::prove_inline_query_replaceable(proof, &consumed);
+        return aggregate_outcome(p, licensed, stand_in);
     }
-    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, vouches) else {
-        return Disposition::Run;
+    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, p.vouches) else {
+        return (Disposition::Run, SurvivalAccount::Silent);
     };
-    match ReplaceLicense::prove_inline_replaceable(sites, all_vouched, observe, &consumed, status) {
-        // The whole CALL span substitutes to `true` (the body is gone — observable-preserving
-        // given every body establish is converged + the consumed-status gate).
-        Some(license) => Disposition::Replace(license, StandIn::True),
-        None => Disposition::Run,
+    let licensed =
+        ReplaceLicense::prove_inline_replaceable(sites, all_vouched, p.observe, &consumed, status);
+    aggregate_outcome(p, licensed, StandIn::True)
+}
+
+/// Gate an aggregate's minted license on the aggregate's own effective freshness — the same
+/// three-way outcome the single-fact path takes, minus the guard tier, which has no aggregate form.
+fn aggregate_outcome(
+    p: &DecideSite<'_>,
+    licensed: Option<ReplaceLicense>,
+    stand_in: StandIn,
+) -> (Disposition, SurvivalAccount) {
+    match (p.freshness, licensed) {
+        (Freshness::FreshClean, Some(license)) => (
+            Disposition::Replace(license, stand_in),
+            SurvivalAccount::Clean,
+        ),
+        (Freshness::FreshSurvived(witness), Some(license)) => (
+            Disposition::Replace(license.with_survival(witness.clone()), stand_in),
+            SurvivalAccount::Survived,
+        ),
+        (Freshness::Stale(cause), Some(_)) => (Disposition::Run, SurvivalAccount::Demoted(*cause)),
+        (_, None) => (Disposition::Run, SurvivalAccount::Silent),
     }
 }
 
@@ -4301,7 +4153,7 @@ fn command_text_oneline(sh: &str) -> String {
 /// The verbatim source text of a node's `[lo, hi)` span — the exact sh the admin
 /// wrote. Resolving a span for display is allowed under `inv-referent-agnostic`
 /// (it is provenance, not a logic branch).
-fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
+pub(crate) fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
     let span = ast.node(id).span;
     src.get(span.lo.0 as usize..span.hi.0 as usize)
         .unwrap_or_default()
@@ -4343,45 +4195,9 @@ pub(crate) fn leaf_facts(
         .collect()
 }
 
-fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
+pub(crate) fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
     cfg.succ_ids(node)
         .any(|s| cfg.node(s).kind == CfgNodeKind::Top)
-}
-
-/// The plan-time wall predicate (silence=wall / `23Ib-fd10`): is this class a modeled
-/// **mutator** — an establish-bearing site whose *running* would invalidate downstream
-/// elide-licenses? A running such site walls; a walled such site's `Replace` is demoted.
-///
-/// Establish-bearing = `EstablishProbeAmbient`/`EstablishProbeWritten`/`EstablishMembers`, and an
-/// `InlineCall` any of whose body sites establish (a spliced body mutation runs when the call
-/// runs). Deliberately NOT establish-bearing, so they never wall:
-/// * `QueryResolvable` — a declared read-only guard; a read kills nothing (and a downstream
-///   Query of any upstream mutator is *already* run by rule-query-validity, so it never
-///   reaches a post-wall `Replace` to demote);
-/// * `MustRun` — the lossy residue. A pure builtin (`:`/`echo`/`cd`) is `MustRun` and must NOT
-///   wall (see `exec-pure-builtin`: `cd /tmp` runs, the install below it still elides). An
-///   *opaque* is also `MustRun`, but it already `⊤`-poisons every downstream fact in `classify`
-///   (⇒ they are `EstablishProbeWritten` ⇒ never elide), so not walling it here is harmless
-///   redundancy. A *kill* (`apt-get purge`) is `MustRun` too and DOES mutate — this predicate
-///   cannot see it (the `CommandEffect` is not in the `SkipClass`), so the R3 kill gap (24A §3)
-///   is closed one layer up: [`build_plan_walled`] ORs this predicate with a threaded
-///   kill-node set, so a running kill walls without a `SkipClass` change. Kill-unaware
-///   [`build_plan`] passes an empty set (unchanged behaviour for `hostsim`/tests).
-fn class_is_establish_bearing(class: &SkipClass) -> bool {
-    match class {
-        SkipClass::EstablishProbeAmbient(_)
-        | SkipClass::EstablishProbeWritten(_)
-        | SkipClass::EstablishMembers { .. } => true,
-        SkipClass::InlineCall { sites } => sites.iter().any(|s| {
-            matches!(
-                s.class,
-                SkipClass::EstablishProbeAmbient(_)
-                    | SkipClass::EstablishProbeWritten(_)
-                    | SkipClass::EstablishMembers { .. }
-            )
-        }),
-        SkipClass::QueryResolvable { .. } | SkipClass::MustRun => false,
-    }
 }
 
 impl Plan {
@@ -5246,7 +5062,7 @@ fn region_ends_in_quote(line: &str) -> bool {
 /// consumers: [`Plan::collect_edits`] (drop the edit), [`Plan::render_refusal_diagnostics`]
 /// (disclose it), and [`is_neutralised`] (a refused controller is KEPT, so it is not
 /// neutralised — the omit-safety gate). A future refusal class must extend all three.
-fn leaf_has_heredoc(ast: &Ast, leaf: AstId) -> bool {
+pub(crate) fn leaf_has_heredoc(ast: &Ast, leaf: AstId) -> bool {
     let (NodeKind::Simple { redirs, .. }
     | NodeKind::Subshell { redirs, .. }
     | NodeKind::Group { redirs, .. }) = &ast.node(leaf).kind

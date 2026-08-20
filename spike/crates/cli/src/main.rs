@@ -67,13 +67,13 @@ mod whylog_store;
 use dorc_aid::diag::{AidUnloadedSiblingOracle, Diag, DiagCode, EscalationPolicy};
 use dorc_aid::said::Said;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Severity};
-use dorc_core::{Interner, Observable, ProvArena, Symbol, Verdict};
+use dorc_core::{Interner, ProvArena, Symbol};
 
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 use dorc_aid::SpeechAct;
 use dorc_cli::fixpoint::{
-    FrozenModel, attribute_cascades, classify_round, settle_validity_fixpoint,
+    FrozenModel, attribute_dead_branch_cascades, classify_round, settle_world,
 };
 use dorc_cli::kinds::{KindReaches, KindResolvers, build_kind_reaches, build_kind_resolvers};
 use dorc_cli::results::{ReportRecord, RunClock, SiteResults, probe_origins};
@@ -1168,6 +1168,7 @@ fn run(
     );
     let classes = origin.classes.clone();
     let kills = origin.kills.clone();
+    let kill_coords = origin.kill_coords.clone();
 
     // `302` §4 — the ORIGIN round is PRE-NETWORK, so its consistency failures are reported HERE,
     // not with the rest of the classify diags far below (R3, cross-lineage review). That later
@@ -1617,62 +1618,6 @@ fn run(
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let fixpoint_cap = u32::try_from(origin.classes.len())
-        .unwrap_or(u32::MAX)
-        .max(1);
-    let settled = settle_validity_fixpoint(
-        &frozen,
-        &probe,
-        results,
-        origin,
-        fixpoint_cap,
-        &mut interner,
-        &mut arena,
-        &mut trip,
-    );
-    debug_assert!(
-        !settled.capped,
-        "the validity fixpoint hit its site-count cap — erasure stopped being monotone"
-    );
-    let round = settled.round;
-    let classes = round.classes;
-    let kills = round.kills;
-    let kill_coords = round.kill_coords;
-    let fact_backings = round.fact_backings;
-    let why_diags = round.why_diags;
-    let classify_narrative = round.classify_narrative;
-    let round_diags = round.diags;
-    let (by_fact, merge_narrative, collapsed_cells) =
-        (settled.by_fact, settled.merge_narrative, settled.collapsed);
-    let cascades = attribute_cascades(
-        &cfg.value,
-        &parsed.value,
-        &book_src,
-        &classes,
-        &settled.ledger,
-        &settled.origin_validity,
-    );
-    report_at(advisory, "classify", book_source, &round_diags);
-    // The shared-cell collapse reaches a surface (`26G:fnd-shared-auto-cell-collides`): sites that
-    // reported cleanly lose their licence because a SIBLING on the same cell disagreed or could not
-    // answer, and until now the only trace was an unconsumed narrative. Spanless — the cell is a
-    // cross-site coordinate, so blaming any one line's caret would misattribute a shared collapse.
-    report_at(
-        advisory,
-        "records",
-        None,
-        &collapsed_cells
-            .iter()
-            .map(|(fact, sites)| {
-                Diag::new_spanless_site(DiagCode::SharedCellMeasurementsDisagree(
-                    dorc_aid::diag::SharedCellMeasurementsDisagree {
-                        cell: dorc_plan::fact_label(&interner, *fact),
-                        sites: *sites,
-                    },
-                ))
-            })
-            .collect::<Vec<_>>(),
-    );
     let probe_origins = probe_origins(&probe, results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
@@ -1767,30 +1712,90 @@ fn run(
         None, // dangling-reference notes are spanless (no book/oracle location)
         &dangling_diagnostics(&resolutions, &interner),
     );
-    let mut spine = dorc_plan::build_plan_walled(
-        &book_src,
-        &parsed.value,
-        &cfg.value,
-        &classes,
-        &kills,
-        survival.as_ref(),
-        args.risk_faultless_skips.then_some(&resolutions),
-        &dorc_oracle::build_dialect(&idx),
-        &fact_backings,
-        &vouches,
-        &connected,
-        &probe_origins,
-        |f| {
-            by_fact
-                .get(&f)
-                .copied()
-                .unwrap_or(Observable::verdict_only(Verdict::Unknown))
+    // THE SETTLEMENT (`30K` §4.2): one grow-only loop from the frozen world to one certified set of
+    // decisions. It runs HERE, after the survival inputs are lifted, because the wall policy is one
+    // of its frozen authorities — a settlement that discovered its own footprints mid-loop would be
+    // deciding what it is allowed to trust while it decided what to trust it for.
+    //
+    // The footprints above are lifted from the ORIGIN classification rather than the settled one:
+    // erasure only ever REMOVES sites, so the origin-lifted set is a superset whose extra entries
+    // belong to sites that gen no wall and are therefore never looked up.
+    let dialect = dorc_oracle::build_dialect(&idx);
+    let policy = match survival.as_ref() {
+        Some(footprints) => dorc_plan::WallPolicy::RiskAccepted {
+            footprints,
+            resolutions: &resolutions,
+            dialect: &dialect,
         },
-        &mut arena,
-        // `309` §2 grade-stamping: this build is downstream of the intake, so every record it
+        None => dorc_plan::WallPolicy::Honest,
+    };
+    let plan_inputs = dorc_plan::SettleInputs {
+        src: &book_src,
+        ast: &parsed.value,
+        cfg: &cfg.value,
+        vouches: &vouches,
+        connected: &connected,
+        policy,
+        // `309` §2 grade-stamping: this settlement is downstream of the intake, so every record it
         // writes is host-influenced. Carried by construction, not by each mint site remembering.
-        Some(scoped_results.influence()),
+        minted_at: Some(scoped_results.influence()),
+    };
+    let fixpoint_cap = u32::try_from(origin.classes.len())
+        .unwrap_or(u32::MAX)
+        .max(1);
+    let settled = settle_world(
+        &frozen,
+        &probe,
+        results,
+        &plan_inputs,
+        fixpoint_cap,
+        &mut interner,
+        &mut arena,
+        &mut trip,
     );
+    debug_assert!(
+        !settled.capped,
+        "the settlement hit its site-count cap — no-execution stopped being monotone"
+    );
+    let round = settled.round;
+    let classes = round.classes;
+    let kills = round.kills;
+    let why_diags = round.why_diags;
+    let classify_narrative = round.classify_narrative;
+    let round_diags = round.diags;
+    let (merge_narrative, collapsed_cells) = (settled.merge_narrative, settled.collapsed);
+    let cascades = attribute_dead_branch_cascades(
+        &cfg.value,
+        &parsed.value,
+        &book_src,
+        &classes,
+        &settled.ledger,
+        &settled.validity,
+        &settled.origin_validity,
+    );
+    report_at(advisory, "classify", book_source, &round_diags);
+    // The shared-cell collapse reaches a surface (`26G:fnd-shared-auto-cell-collides`): sites that
+    // reported cleanly lose their licence because a SIBLING on the same cell disagreed or could not
+    // answer, and until now the only trace was an unconsumed narrative. Spanless — the cell is a
+    // cross-site coordinate, so blaming any one line's caret would misattribute a shared collapse.
+    report_at(
+        advisory,
+        "records",
+        None,
+        &collapsed_cells
+            .iter()
+            .map(|(fact, sites)| {
+                Diag::new_spanless_site(DiagCode::SharedCellMeasurementsDisagree(
+                    dorc_aid::diag::SharedCellMeasurementsDisagree {
+                        cell: dorc_plan::fact_label(&interner, *fact),
+                        sites: *sites,
+                    },
+                ))
+            })
+            .collect::<Vec<_>>(),
+    );
+    let mut spine = settled.spine;
+    dorc_plan::attach_spine_probe_provenance(&mut spine, &parsed.value, &probe_origins, &mut arena);
     // DEFENSIVE emission (`28R:rul-defensive-mode-definition-vectors`): if the unit carries an
     // unresolved in-process definition vector, a BARE emitted name is no longer a proof that the
     // artifact's own body is what answers it, so every emitted name munges. Two halves, and the
