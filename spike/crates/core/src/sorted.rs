@@ -552,6 +552,31 @@ mod tests {
     }
 
     #[test]
+    fn set_union_matches_every_pair_in_a_small_universe() {
+        for left_mask in 0u8..16 {
+            for right_mask in 0u8..16 {
+                let left: SortedSet<u8> = (0u8..4)
+                    .filter(|value| left_mask & (1u8 << u32::from(*value)) != 0)
+                    .collect();
+                let right: SortedSet<u8> = (0u8..4)
+                    .filter(|value| right_mask & (1u8 << u32::from(*value)) != 0)
+                    .collect();
+                let expected: Vec<u8> = (0u8..4)
+                    .filter(|value| (left_mask | right_mask) & (1u8 << u32::from(*value)) != 0)
+                    .collect();
+
+                let union = left.union(&right);
+                assert_eq!(
+                    elements(&union),
+                    expected,
+                    "masks {left_mask:04b}, {right_mask:04b}"
+                );
+                assert_eq!(union, right.union(&left), "union commutes for every pair");
+            }
+        }
+    }
+
+    #[test]
     fn map_insert_sorts_keys_and_replaces_values() {
         let mut m = SortedMap::new();
         for (k, v) in [(5u8, "e"), (1, "a"), (9, "i")] {
