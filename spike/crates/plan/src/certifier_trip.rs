@@ -241,7 +241,7 @@ apt_get__predict() {
         .value;
         let mut vouches = crate::Vouches::new();
         for (node, class) in &classes {
-            if let dorc_analysis::effect::SkipClass::EstablishAmbient(fact) = class {
+            if let dorc_analysis::effect::SkipClass::EstablishProbeAmbient(fact) = class {
                 vouches.insert(*node, *fact, a_vouch("apt_get__is_converged", "body"));
             }
         }

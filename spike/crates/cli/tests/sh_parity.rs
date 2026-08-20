@@ -129,7 +129,7 @@ command -v hork__predict >/dev/null 2>&1 || hork__predict() {
 fn is_elidable_establish(classes: &[SkipClass]) -> bool {
     classes
         .iter()
-        .any(|class| matches!(class, SkipClass::EstablishAmbient(_)))
+        .any(|class| matches!(class, SkipClass::EstablishProbeAmbient(_)))
 }
 
 /// The providers a dialect lift found in `src`, and the role headers it merely DETECTED.

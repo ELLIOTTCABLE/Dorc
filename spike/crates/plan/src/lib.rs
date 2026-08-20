@@ -14,7 +14,7 @@
 //!   [`ReplaceLicense::prove_replaceable`]; a plan emitter takes a `ReplaceLicense`, never
 //!   a `bool`, so "skip" cannot be spelled without the proof.
 //! * **`inv-must-may` + the ambient gate**, enforced inside `prove_replaceable`:
-//!   only a [`Grade::Must`] fact that `analysis` classified [`SkipClass::EstablishAmbient`]
+//!   only a [`Grade::Must`] fact that `analysis` classified [`SkipClass::EstablishProbeAmbient`]
 //!   (no upstream same-run mutation reaches it — note 162 O-1) and that the host
 //!   probe found `Converged` may be elided.
 //!
@@ -235,7 +235,7 @@ impl<P: Bias> PhasedVerdict<P> {
 /// records which one it proved.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LicenseVia {
-    /// Convergence-elision: an `EstablishAmbient` mutator whose effect the host
+    /// Convergence-elision: an `EstablishProbeAmbient` mutator whose effect the host
     /// reports already holds (`Converged`), oracle-declared `Must`, ambient.
     ConvergedEstablish,
     /// Query-guard substitution (202 §2 / task-D2): a read-only guard with a valid,
@@ -252,7 +252,7 @@ pub enum LicenseVia {
     MembersLoop,
     /// Inlined function-CALL convergence-elision (arch-2, brk-2, `i-3`): an
     /// [`SkipClass::InlineCall`] whose EVERY effect-bearing spliced body leaf licenses elision
-    /// — each body Establish is `EstablishAmbient` + Converged (a body Kill/Opaque/⊤/written
+    /// — each body Establish is `EstablishProbeAmbient` + Converged (a body Kill/Opaque/⊤/written
     /// establish, or a non-Converged one, blocks the WHOLE call), Queries pass their gates, and
     /// the CALL site's own consumed channels are reproduced. The all-or-nothing CALL license
     /// (the Members precedent): the CALL leaf's span substitutes to `true`; one non-licensing
@@ -270,7 +270,7 @@ pub struct Derivation {
     /// Which substitution path was proved ([`LicenseVia`]) — convergence-elision or a
     /// Query-guard value-preserving substitution.
     pub via: LicenseVia,
-    /// `analysis` classified this command [`SkipClass::EstablishAmbient`]: no
+    /// `analysis` classified this command [`SkipClass::EstablishProbeAmbient`]: no
     /// upstream same-run mutation reaches it (the W5 ambient gate, note 162 O-1).
     /// Always `true` for [`LicenseVia::ConvergedEstablish`]; `false` for a Query guard
     /// (a Query has no ambient-establish gate — rule-query-validity gates it instead).
@@ -462,7 +462,7 @@ impl ReplaceLicense {
     /// conservative *run-it* direction (note 165 L2 / `inv-must-may` / the ambient
     /// gate):
     ///
-    /// 1. the command's effect is [`SkipClass::EstablishAmbient`] (classify proved
+    /// 1. the command's effect is [`SkipClass::EstablishProbeAmbient`] (classify proved
     ///    no upstream same-run mutation reaches it — else its resting state is
     ///    stale and the probe is not authoritative);
     /// 2. the fact is [`Grade::Must`] (oracle-declared; a `May` hint never licenses);
@@ -504,7 +504,7 @@ impl ReplaceLicense {
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
     /// (`Probe`) and the leaf's observed rc.
     ///
-    /// task-D2 dispatch: an [`SkipClass::EstablishAmbient`] takes the
+    /// task-D2 dispatch: an [`SkipClass::EstablishProbeAmbient`] takes the
     /// convergence-elision precondition above; a [`SkipClass::QueryResolvable`] takes
     /// the Query-guard path ([`prove_query_replaceable`](ReplaceLicense::prove_query_replaceable)).
     /// Any other class never licenses.
@@ -512,7 +512,7 @@ impl ReplaceLicense {
     /// **The elide-weld (24D §3 / rul24-vouch-is-verdict-authoring).** The full-skip (elide)
     /// license now DEMANDS the reached `vouch` — the SAME [`ByVouch<VerdictVouch>`] the guard mint
     /// consumes (TC-tier-2). It arrives as an `Option` (the caller's [`Vouches`] lookup); the
-    /// `EstablishAmbient` arm consumes it BY VALUE, and that consumption IS the tier check — a
+    /// `EstablishProbeAmbient` arm consumes it BY VALUE, and that consumption IS the tier check — a
     /// [`core::claim::ByObservation`] or [`core::claim::BySilence`] cannot inhabit
     /// `Option<ByVouch<_>>`, so a measurement alone can never license a mutation-skip
     /// (proviso-read-erasure, `24A §1c`: the fact tier licenses read-reproduction, NEVER a
@@ -533,7 +533,7 @@ impl ReplaceLicense {
         vouch: Option<ByVouch<VerdictVouch>>,
     ) -> Option<ReplaceLicense> {
         match class {
-            SkipClass::EstablishAmbient(fact) => {
+            SkipClass::EstablishProbeAmbient(fact) => {
                 // The elide-weld (TC-tier-2): consume the reached vouch BY VALUE — no vouch ⇒ run.
                 // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
                 // measurement alone no longer elides (the vouchless-elide gap, closed).
@@ -690,9 +690,9 @@ impl ReplaceLicense {
     /// mints a [`LicenseVia::InlineCall`] `Replace` (the CALL span → `true`) iff EVERY
     /// effect-bearing body leaf licenses elision, every ambiguity ⇒ REFUSE:
     ///
-    /// * every body site that is an `EstablishAmbient` has a Converged fact (`observe`(fact)
+    /// * every body site that is an `EstablishProbeAmbient` has a Converged fact (`observe`(fact)
     ///   reports the Effect channel; a single non-Converged ⇒ refuse — the whole call runs);
-    /// * NO body site is a blocker — an `EstablishWritten` (stale resting probe), a `MustRun`
+    /// * NO body site is a blocker — an `EstablishProbeWritten` (stale resting probe), a `MustRun`
     ///   (a body Kill, an Opaque/⊤ command, a multi-cell verb, an unreachable establish), an
     ///   in-loop `EstablishMembers` (an in-loop call body — out of slice), or a nested
     ///   `InlineCall` (defensive — transitive inlines are flattened to leaves, so one should
@@ -725,7 +725,7 @@ impl ReplaceLicense {
         let mut representative: Option<FactKey> = None;
         for site in sites {
             match &site.class {
-                SkipClass::EstablishAmbient(f) => {
+                SkipClass::EstablishProbeAmbient(f) => {
                     if observe(*f).effect != Verdict::Converged {
                         return None; // a non-converged body establish ⇒ the whole call runs
                     }
@@ -737,7 +737,7 @@ impl ReplaceLicense {
                 // Every other class blocks the whole call (all-or-nothing): a written establish
                 // (stale probe), a MustRun (Kill/Opaque/⊤), an in-loop Members body, or a
                 // nested InlineCall (defensive — should be flattened).
-                SkipClass::EstablishWritten(_)
+                SkipClass::EstablishProbeWritten(_)
                 | SkipClass::MustRun
                 | SkipClass::EstablishMembers { .. }
                 | SkipClass::InlineCall { .. } => return None,
@@ -1616,7 +1616,7 @@ pub fn build_vouches_from_sets(
         .iter()
         .enumerate()
         .flat_map(|(leaf_idx, (node, class))| match class {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => {
+            SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => {
                 vec![(leaf_idx, *node, *f, false)]
             }
             SkipClass::EstablishMembers { members, .. } => members
@@ -1626,7 +1626,9 @@ pub fn build_vouches_from_sets(
             SkipClass::InlineCall { sites } => sites
                 .iter()
                 .filter_map(|site| match site.class {
-                    SkipClass::EstablishAmbient(fact) => Some((leaf_idx, site.node, fact, false)),
+                    SkipClass::EstablishProbeAmbient(fact) => {
+                        Some((leaf_idx, site.node, fact, false))
+                    }
                     _ => None,
                 })
                 .collect(),
@@ -1839,7 +1841,9 @@ pub fn build_wrapped_vouches(
             continue; // a Degrade site runs — no vouch
         };
         let fact = classes.iter().find_map(|(n, c)| match c {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) if n == node => {
+            SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f)
+                if n == node =>
+            {
                 Some(*f)
             }
             _ => None,
@@ -2289,7 +2293,7 @@ pub type WrappedProbes = BTreeMap<CfgNodeId, WrappedProbe>;
 
 /// A compiled probe: per-resolvable-site read-only checks whose answers drive the
 /// apply's elision (apply-2), plus the un-resolvable sites recorded for transparency.
-/// A site is **resolvable** iff its class is [`SkipClass::EstablishAmbient`] (the
+/// A site is **resolvable** iff its class is [`SkipClass::EstablishProbeAmbient`] (the
 /// elidable establish — note 162 O-1) OR [`SkipClass::QueryResolvable`] (a read-only
 /// guard whose check IS the probe — 202 §2 / task-D2), AND its kind has a *declared*
 /// read-only probe; only resolvable sites get an invocation. An un-resolvable site (a
@@ -2807,7 +2811,7 @@ pub fn compile_derivations(
     for (site, node, class) in site_order(ast, cfg, classes) {
         let is_wall_candidate = matches!(
             class,
-            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+            SkipClass::EstablishProbeAmbient(_) | SkipClass::EstablishProbeWritten(_)
         ) || kills.contains(&node);
         if !is_wall_candidate {
             continue;
@@ -3117,7 +3121,7 @@ fn ship_stage_for_argv(
 }
 
 /// Compile the probe from the analysis result, keyed by command **site**
-/// (`inv-site-keyed-results`): each [`SkipClass::EstablishAmbient`] / resolvable-Query
+/// (`inv-site-keyed-results`): each [`SkipClass::EstablishProbeAmbient`] / resolvable-Query
 /// site becomes one [`ProbePredict`] shipping its provider's stripped `<provider>__predict`
 /// funcdef invoked with the site's argv (R3 / 23D §1 — the check IS the oracle). `ship_body`
 /// maps a site's (provider-word, argv-after-word0) to that stripped funcdef (the oracle seam
@@ -3134,11 +3138,11 @@ fn ship_stage_for_argv(
 /// (`can't-probe ⇒ can't-elide`, `kFAIL-perform`).
 ///
 /// `is_vouched` closes strain-classify-coupling (24C): a **past-wall** site is
-/// [`SkipClass::EstablishWritten`] (an opaque upstream poisoned its resting probe), so at HEAD it
+/// [`SkipClass::EstablishProbeWritten`] (an opaque upstream poisoned its resting probe), so at HEAD it
 /// ships NO probe — but a guard needs its probe-verdict (the witness's probe half; plan-prediction
-/// and apply-guard run the same check, 233 §guard-license). So a `EstablishWritten` site the cli
+/// and apply-guard run the same check, 233 §guard-license). So a `EstablishProbeWritten` site the cli
 /// reports VOUCHED (its provider authored a verdict function reaching a vouching path) DOES ship
-/// its read-only Establish probe. An unvouched `EstablishWritten` stays unresolvable (jc-probe-
+/// its read-only Establish probe. An unvouched `EstablishProbeWritten` stays unresolvable (jc-probe-
 /// scope: whether unvouched walled sites ship hint-probes is deliberately OPEN).
 ///
 /// `connected` ([`connected_check_pipes`], 24J §2) re-routes a recognised connected check-pipe: the
@@ -3180,8 +3184,8 @@ pub fn compile_probe(
         // the wrapper word) would mis-resolve to the wrapper's own model, so it is skipped here.
         if let Some(wp) = wrapped.get(&node) {
             let fact = match class {
-                SkipClass::EstablishAmbient(f)
-                | SkipClass::EstablishWritten(f)
+                SkipClass::EstablishProbeAmbient(f)
+                | SkipClass::EstablishProbeWritten(f)
                 | SkipClass::QueryResolvable { fact: f, .. } => Some(*f),
                 _ => None,
             };
@@ -3270,7 +3274,7 @@ pub fn compile_probe(
             );
             continue;
         }
-        // Both an EstablishAmbient and a (resolvable) Query site ship a check — each is
+        // Both an EstablishProbeAmbient and a (resolvable) Query site ship a check — each is
         // probe-resolvable iff the provider's `<provider>__predict` resolves the site's argv
         // (R3 / 23D §1). The `site_kind` discriminant rides along so the cli's firewall
         // knows whether the record-rc is the probe command's (Establish ⇒ never fold) or
@@ -3278,11 +3282,11 @@ pub fn compile_probe(
         // claim, opaque, pure, MustRun — none resolvable (`can't-probe ⇒ can't-elide`,
         // `kFAIL-perform`).
         let resolvable = match class {
-            SkipClass::EstablishAmbient(fact) => Some((*fact, ProbeSiteKind::Establish)),
+            SkipClass::EstablishProbeAmbient(fact) => Some((*fact, ProbeSiteKind::Establish)),
             // strain-classify-coupling (24C): a vouched past-wall establish still probes (the
             // guard witness needs the verdict). Establish-class ⇒ its record-rc is the probe
             // command's, never fed to the fold (the firewall is unmoved).
-            SkipClass::EstablishWritten(fact) if is_vouched(node) => {
+            SkipClass::EstablishProbeWritten(fact) if is_vouched(node) => {
                 Some((*fact, ProbeSiteKind::Establish))
             }
             SkipClass::QueryResolvable { fact, valid } => {
@@ -3494,7 +3498,7 @@ fn push_member_predicts(
 /// Compile the per-body-site checks for an inlined function-CALL (arch-2, brk-2, `i-4`): one
 /// [`ProbePredict`] per effect-bearing/probeable spliced body site, each carrying its body-site
 /// index as `member` (the `site N.M` sub-record, M = the index into the call's body-site list)
-/// and the body site's resolved cell (positionals bound at the call, `i-2`). An `EstablishAmbient`
+/// and the body site's resolved cell (positionals bound at the call, `i-2`). An `EstablishProbeAmbient`
 /// body site is an Establish-class record; a `QueryResolvable` body site is a Query-class record
 /// (its rc is fold-usable per its `valid` bit, the wrapper-pun's `dpkg -s "$1"`); a Pure/MustRun/
 /// Written body site ships nothing (not elision-gating).
@@ -3519,7 +3523,7 @@ fn push_inline_predicts(
         // [`ValueFlow::argv_values`] returns the positional-bound form for a body node).
         let body_argv = value.argv_values(body.node);
         match &body.class {
-            SkipClass::EstablishAmbient(fact) => {
+            SkipClass::EstablishProbeAmbient(fact) => {
                 let Some((provider, args, shipped)) =
                     ship_for_argv(&body_argv, body.node, ship_body)
                 else {
@@ -3565,7 +3569,7 @@ fn push_inline_predicts(
                 }
             }
             // Not elision-gating ⇒ no record.
-            SkipClass::EstablishWritten(_)
+            SkipClass::EstablishProbeWritten(_)
             | SkipClass::MustRun
             | SkipClass::EstablishMembers { .. }
             | SkipClass::InlineCall { .. } => {}
@@ -3584,7 +3588,7 @@ fn push_inline_predicts(
 ///
 /// Two collapses, both apply-phase (`inv-superposition` — the caller argues the
 /// phase; the engine never bakes it):
-/// 1. **convergence-elision** (the existing path): an `EstablishAmbient` + `Must` +
+/// 1. **convergence-elision** (the existing path): an `EstablishProbeAmbient` + `Must` +
 ///    `Converged` + no-unvouched-consumed leaf is `Replace`d by the value-preserving
 ///    [`StandIn`] reproducing its observed exit status (`true` for the conforming rc
 ///    0, `(exit 9)` for a non-conforming establish — NOT always `:`).
@@ -3740,8 +3744,8 @@ pub fn build_plan_walled(
                 }
                 _ => {
                     let observed = match class {
-                        SkipClass::EstablishAmbient(f)
-                        | SkipClass::EstablishWritten(f)
+                        SkipClass::EstablishProbeAmbient(f)
+                        | SkipClass::EstablishProbeWritten(f)
                         | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
                         SkipClass::EstablishMembers { .. }
                         | SkipClass::InlineCall { .. }
@@ -3755,8 +3759,8 @@ pub fn build_plan_walled(
                         ast_id,
                         observed,
                         match class {
-                            SkipClass::EstablishAmbient(fact)
-                            | SkipClass::EstablishWritten(fact) => vouches.get(*node, *fact),
+                            SkipClass::EstablishProbeAmbient(fact)
+                            | SkipClass::EstablishProbeWritten(fact) => vouches.get(*node, *fact),
                             _ => None,
                         },
                     )
@@ -4109,7 +4113,7 @@ fn disposition_for(
     // (its branch stays live). Top-containment (16G hole-5): a ⊤-successor leaf is
     // never replaced.
     match class {
-        SkipClass::EstablishAmbient(_) | SkipClass::QueryResolvable { .. }
+        SkipClass::EstablishProbeAmbient(_) | SkipClass::QueryResolvable { .. }
             if !has_top_successor(cfg, node) =>
         {
             let verdict =
@@ -4152,14 +4156,14 @@ fn disposition_for(
             }
         }
         // The guard tier (rul-ternary-verdict's third verb — rul-guard-license). A past-a-wall
-        // `EstablishWritten` site (an opaque upstream poisoned its resting probe, so it can no
+        // `EstablishProbeWritten` site (an opaque upstream poisoned its resting probe, so it can no
         // longer ELIDE) with a REACHED vouch and a CONVERGED probe-verdict mints a `Guard`: the
         // oracle's own verdict check re-decides LIVE at apply (`( check ) || <original>`), so the
         // stale plan-time convergence is never trusted (X-drift). No vouch, or a diverged/unknown
         // verdict, ⇒ run — a guard at a predicted-change site buys nothing (`inv-kfail`;
         // `GuardLicense::mint` returns `None` off `Verdict::Converged`). Top-containment: a
         // ⊤-successor site (`cmd &`) never guards, exactly as it never Replaces (P-background).
-        SkipClass::EstablishWritten(fact) if !has_top_successor(cfg, node) => match vouch {
+        SkipClass::EstablishProbeWritten(fact) if !has_top_successor(cfg, node) => match vouch {
             Some(v) => {
                 let verdict = observed.map_or(Verdict::Unknown, |o| o.effect);
                 match GuardLicense::mint(*fact, v.clone(), verdict) {
@@ -4242,7 +4246,7 @@ fn inline_disposition(
     // a member-precision path for inlined calls is not built (it would compose the Members
     // value with the call's positionals, a deferred multi-leaf case). EXPLICIT here (not
     // relying on the back-edge self-poison that incidentally tends to make an in-loop body
-    // establish `EstablishWritten`): an in-loop inlined call NEVER mints a license, robustly.
+    // establish `EstablishProbeWritten`): an in-loop inlined call NEVER mints a license, robustly.
     // (`inline_disposition` runs BEFORE `disposition_for`'s floor — the Members precedent — so
     // the floor must be re-checked here, like `members_disposition` re-checks `has_top_successor`.)
     if cfg.in_loop_body(node) {
@@ -4259,7 +4263,7 @@ fn inline_disposition(
     let expected: Vec<(CfgNodeId, FactKey)> = sites
         .iter()
         .filter_map(|site| match site.class {
-            SkipClass::EstablishAmbient(fact) => Some((site.node, fact)),
+            SkipClass::EstablishProbeAmbient(fact) => Some((site.node, fact)),
             _ => None,
         })
         .collect();
@@ -4327,8 +4331,8 @@ pub(crate) fn leaf_facts(
         .iter()
         .filter_map(|(node, class)| {
             let fact = match class {
-                SkipClass::EstablishAmbient(f)
-                | SkipClass::EstablishWritten(f)
+                SkipClass::EstablishProbeAmbient(f)
+                | SkipClass::EstablishProbeWritten(f)
                 | SkipClass::QueryResolvable { fact: f, .. } => *f,
                 SkipClass::EstablishMembers { .. }
                 | SkipClass::InlineCall { .. }
@@ -4348,7 +4352,7 @@ fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
 /// **mutator** — an establish-bearing site whose *running* would invalidate downstream
 /// elide-licenses? A running such site walls; a walled such site's `Replace` is demoted.
 ///
-/// Establish-bearing = `EstablishAmbient`/`EstablishWritten`/`EstablishMembers`, and an
+/// Establish-bearing = `EstablishProbeAmbient`/`EstablishProbeWritten`/`EstablishMembers`, and an
 /// `InlineCall` any of whose body sites establish (a spliced body mutation runs when the call
 /// runs). Deliberately NOT establish-bearing, so they never wall:
 /// * `QueryResolvable` — a declared read-only guard; a read kills nothing (and a downstream
@@ -4357,7 +4361,7 @@ fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
 /// * `MustRun` — the lossy residue. A pure builtin (`:`/`echo`/`cd`) is `MustRun` and must NOT
 ///   wall (see `exec-pure-builtin`: `cd /tmp` runs, the install below it still elides). An
 ///   *opaque* is also `MustRun`, but it already `⊤`-poisons every downstream fact in `classify`
-///   (⇒ they are `EstablishWritten` ⇒ never elide), so not walling it here is harmless
+///   (⇒ they are `EstablishProbeWritten` ⇒ never elide), so not walling it here is harmless
 ///   redundancy. A *kill* (`apt-get purge`) is `MustRun` too and DOES mutate — this predicate
 ///   cannot see it (the `CommandEffect` is not in the `SkipClass`), so the R3 kill gap (24A §3)
 ///   is closed one layer up: [`build_plan_walled`] ORs this predicate with a threaded
@@ -4365,14 +4369,14 @@ fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
 ///   [`build_plan`] passes an empty set (unchanged behaviour for `hostsim`/tests).
 fn class_is_establish_bearing(class: &SkipClass) -> bool {
     match class {
-        SkipClass::EstablishAmbient(_)
-        | SkipClass::EstablishWritten(_)
+        SkipClass::EstablishProbeAmbient(_)
+        | SkipClass::EstablishProbeWritten(_)
         | SkipClass::EstablishMembers { .. } => true,
         SkipClass::InlineCall { sites } => sites.iter().any(|s| {
             matches!(
                 s.class,
-                SkipClass::EstablishAmbient(_)
-                    | SkipClass::EstablishWritten(_)
+                SkipClass::EstablishProbeAmbient(_)
+                    | SkipClass::EstablishProbeWritten(_)
                     | SkipClass::EstablishMembers { .. }
             )
         }),
@@ -5576,7 +5580,7 @@ apt_get__is_converged() { return 0; }
     }
 
     /// Test convenience (elide-weld, 24D §3): vouch every AMBIENT establish site so the
-    /// plan-mechanics helpers keep exercising ELISION. Deliberately NOT `EstablishWritten` — a
+    /// plan-mechanics helpers keep exercising ELISION. Deliberately NOT `EstablishProbeWritten` — a
     /// vouched+converged written site fires the GUARD tier (`Disposition::Guard`), which these
     /// elision/wall/fold tests do not expect (guards are pinned by the guard23 e2e + the guard
     /// unit tests). The vouch GATE is pinned by [`no_license_for_ambient_without_vouch`] + e2e +
@@ -5585,7 +5589,9 @@ apt_get__is_converged() { return 0; }
         let mut vouches = Vouches::new();
         for (node, class) in classes {
             match class {
-                SkipClass::EstablishAmbient(fact) => vouches.insert(*node, *fact, test_vouch()),
+                SkipClass::EstablishProbeAmbient(fact) => {
+                    vouches.insert(*node, *fact, test_vouch())
+                }
                 SkipClass::EstablishMembers { members, .. } => {
                     for fact in members {
                         vouches.insert(*node, *fact, test_vouch());
@@ -5593,12 +5599,12 @@ apt_get__is_converged() { return 0; }
                 }
                 SkipClass::InlineCall { sites } => {
                     for site in sites {
-                        if let SkipClass::EstablishAmbient(fact) = site.class {
+                        if let SkipClass::EstablishProbeAmbient(fact) = site.class {
                             vouches.insert(site.node, fact, test_vouch());
                         }
                     }
                 }
-                SkipClass::EstablishWritten(_)
+                SkipClass::EstablishProbeWritten(_)
                 | SkipClass::QueryResolvable { .. }
                 | SkipClass::MustRun => {}
             }
@@ -6303,7 +6309,7 @@ apt_get__is_converged() { return 0; }
         // `sites == elide + omit + guard + run` invariant the greppable grammar promises.
         let fact = nginx_fact();
         let license = ReplaceLicense::prove_replaceable::<Apply>(
-            &SkipClass::EstablishAmbient(fact),
+            &SkipClass::EstablishProbeAmbient(fact),
             Grade::Must,
             PhasedVerdict::new(Verdict::Converged),
             quiet(),
@@ -6359,7 +6365,7 @@ apt_get__is_converged() { return 0; }
 
     #[test]
     fn compile_probe_resolvable_sites_probed_unresolvable_recorded() {
-        // The probe = EstablishAmbient sites WITH a declared read-only probe. A site
+        // The probe = EstablishProbeAmbient sites WITH a declared read-only probe. A site
         // whose kind has an effect but NO probe is un-checkable ⇒ NOT invoked, recorded
         // `unresolvable` (can't-probe ⇒ can't-elide, kFAIL-perform). A MustRun site
         // (the un-oracled `systemctl reload`) is likewise unresolvable. Here only
@@ -6528,7 +6534,7 @@ apt_get__is_converged() { return 0; }
         assert_eq!(
             derivations.derivations.len(),
             1,
-            "only the apt-get install (an EstablishAmbient wall candidate) escalated"
+            "only the apt-get install (an EstablishProbeAmbient wall candidate) escalated"
         );
         assert_eq!(
             derivations.derivations[0].site,
@@ -6698,7 +6704,7 @@ apt_get__is_converged() {
         // `inv-site-keyed-results` (the core of the re-key): two same-command sites are
         // NEVER collapsed (spike-2's per-fact dedup is gone). Two IDENTICAL `apt-get
         // install -y nginx` lines on the SAME cell: the SECOND sees the first establish
-        // its cell upstream ⇒ EstablishWritten ⇒ unresolvable (correct — its resting
+        // its cell upstream ⇒ EstablishProbeWritten ⇒ unresolvable (correct — its resting
         // probe is stale). So site 0 is resolvable (a check) and site 1 is recorded
         // unresolvable — distinct ids, no collapse. (A finding the test premise first
         // got wrong: same-cell re-establish is Written, NOT a second ambient site;
@@ -6906,7 +6912,7 @@ apt_get__is_converged() {
         // declared Must, and the probe found it already holds.
         let f = nginx_fact();
         let Some(lic) = ReplaceLicense::prove_replaceable(
-            &SkipClass::EstablishAmbient(f),
+            &SkipClass::EstablishProbeAmbient(f),
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
@@ -6932,7 +6938,7 @@ apt_get__is_converged() {
         let f = nginx_fact();
         assert!(
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishAmbient(f),
+                &SkipClass::EstablishProbeAmbient(f),
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
@@ -6971,7 +6977,7 @@ apt_get__is_converged() {
         };
         for file in [0_u32, 3] {
             let lic = ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishAmbient(f),
+                &SkipClass::EstablishProbeAmbient(f),
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
@@ -7020,7 +7026,7 @@ apt_get__is_converged() {
     fn a_split_family_establish_elide_reproduces_nothing_predict_derived() {
         let f = nginx_fact();
         let lic = ReplaceLicense::prove_replaceable(
-            &SkipClass::EstablishAmbient(f),
+            &SkipClass::EstablishProbeAmbient(f),
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
@@ -7059,7 +7065,7 @@ apt_get__is_converged() {
         let f = nginx_fact();
         let mint = |consumed| {
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishAmbient(f),
+                &SkipClass::EstablishProbeAmbient(f),
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 consumed,
@@ -7092,7 +7098,7 @@ apt_get__is_converged() {
             let consumed = May(Powerset::singleton(obs));
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishAmbient(f),
+                    &SkipClass::EstablishProbeAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed,
@@ -7117,7 +7123,7 @@ apt_get__is_converged() {
         // Undeclared rc ⇒ BLOCK (the safe run-it floor).
         assert!(
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishAmbient(f),
+                &SkipClass::EstablishProbeAmbient(f),
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 consumed(),
@@ -7131,7 +7137,7 @@ apt_get__is_converged() {
         for rc in [Rc(0), Rc(9)] {
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishAmbient(f),
+                    &SkipClass::EstablishProbeAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed(),
@@ -7160,7 +7166,7 @@ apt_get__is_converged() {
         ] {
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishAmbient(f),
+                    &SkipClass::EstablishProbeAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     May(Powerset::singleton(Channel::StatusIterated)),
@@ -7180,7 +7186,7 @@ apt_get__is_converged() {
         for v in [Verdict::Diverged, Verdict::Unknown] {
             assert!(
                 ReplaceLicense::prove_replaceable(
-                    &SkipClass::EstablishAmbient(f),
+                    &SkipClass::EstablishProbeAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(v),
                     quiet(),
@@ -7199,7 +7205,7 @@ apt_get__is_converged() {
         let f = nginx_fact();
         assert!(
             ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishAmbient(f),
+                &SkipClass::EstablishProbeAmbient(f),
                 Grade::May,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
@@ -7212,10 +7218,10 @@ apt_get__is_converged() {
 
     #[test]
     fn no_license_for_written_or_mustrun_class() {
-        // Only EstablishAmbient is elidable. EstablishWritten (an upstream same-run
+        // Only EstablishProbeAmbient is elidable. EstablishProbeWritten (an upstream same-run
         // mutation reaches it) and MustRun must run even with a Converged probe.
         let f = nginx_fact();
-        for class in [SkipClass::EstablishWritten(f), SkipClass::MustRun] {
+        for class in [SkipClass::EstablishProbeWritten(f), SkipClass::MustRun] {
             assert!(
                 ReplaceLicense::prove_replaceable(
                     &class,
@@ -7403,7 +7409,7 @@ apt_get__is_converged() {
                 members.first().map(|fact| (*node, *fact))
             }
             SkipClass::InlineCall { sites } => sites.iter().find_map(|site| match site.class {
-                SkipClass::EstablishAmbient(fact) => Some((site.node, fact)),
+                SkipClass::EstablishProbeAmbient(fact) => Some((site.node, fact)),
                 _ => None,
             }),
             _ => None,
@@ -7575,12 +7581,12 @@ apt_get__is_converged() {
             "no poison ⇒ elides"
         );
         // `set -e` is a pure builtin (fs-4) — it must NOT POISON (the install stays
-        // EstablishAmbient at the EFFECT layer). But under C-3 (205 §2 / 206 §3),
+        // EstablishProbeAmbient at the EFFECT layer). But under C-3 (205 §2 / 206 §3),
         // `set -e` CONSUMES the install's status, which for a mutator is ⊤
         // (fork-mutator-rc), so the plan disposition is now Run — NOT elided. The old
         // `ambient(set -e …)` assert masked C-3 by feeding a fabricated rc-0 through
         // `plan_for`; with the faithful ⊤-rc the install RUNS. Pin the EFFECT-layer
-        // non-poison (classify EstablishAmbient) directly, separate from the plan-level
+        // non-poison (classify EstablishProbeAmbient) directly, separate from the plan-level
         // status block.
         {
             let mut i = Interner::default();
@@ -7605,8 +7611,8 @@ apt_get__is_converged() {
             assert!(
                 classes
                     .iter()
-                    .any(|(_, c)| matches!(c, SkipClass::EstablishAmbient(_))),
-                "fs-4: set -e does not poison ⇒ the install stays EstablishAmbient: {classes:?}"
+                    .any(|(_, c)| matches!(c, SkipClass::EstablishProbeAmbient(_))),
+                "fs-4: set -e does not poison ⇒ the install stays EstablishProbeAmbient: {classes:?}"
             );
         }
         // …but at the PLAN level the C-3 ⊤-rc status block makes it RUN (206 §3).
@@ -7660,7 +7666,7 @@ apt_get__is_converged() {
     fn running_modeled_mutator_walls_downstream_converged_establish() {
         // The (a)-direction of the plan-time wall (silence=wall / `23Ib-fd10` / `23O` §2 —
         // the honest-baseline repair). Two installs of DIFFERENT packages ⇒ DISTINCT cells, so
-        // the static ambient gate (same-cell reasoning) leaves BOTH `EstablishAmbient` — no
+        // the static ambient gate (same-cell reasoning) leaves BOTH `EstablishProbeAmbient` — no
         // same-cell poison rescues this. curl is DIVERGED ⇒ it RUNS ⇒ it is a modeled mutator
         // that runs, which by the frame problem (233) may touch anything it did not declare. So
         // the downstream CONVERGED nginx install — which the static gate would elide — is
@@ -7909,7 +7915,7 @@ apt_get__is_converged() {
             let mut tf = TrustedFootprints::new();
             for (node, class) in &classes {
                 let fact = match class {
-                    SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
+                    SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => *f,
                     _ => continue,
                 };
                 let coord = EntityCoord::new(fact.kind, fact.entity);
@@ -8223,7 +8229,7 @@ apt_get__is_converged() {
         // `loop-post-elision-revives` case witnesses): a converged install BELOW a PURE
         // loop now ELIDES. Pre-L1 the loop was a ⊤ node whose ⊤-containment + havoc
         // killed this; with the loop lowered + a pure body, the post-loop install is
-        // EstablishAmbient and Converged ⇒ Replace.
+        // EstablishProbeAmbient and Converged ⇒ Replace.
         let (plan, _) = plan_for(
             "for f in a b; do echo \"$f\"; done\napt-get install -y nginx\n",
             Verdict::Converged,

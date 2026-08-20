@@ -1243,7 +1243,7 @@ fn run(
 
     // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
-    // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
+    // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishProbeWritten`
     // site ships its probe here (at HEAD it would be `unresolvable-no-probe`).
     let ship = |n, p, a: &[Symbol]| {
         ship_predict_body(
@@ -2494,8 +2494,8 @@ fn record_new_arm(
     for (node, class) in classes {
         let (label, cells) = match class {
             SkipClass::MustRun => ("MustRun", Vec::new()),
-            SkipClass::EstablishAmbient(fact) => ("EstablishAmbient", vec![*fact]),
-            SkipClass::EstablishWritten(fact) => ("EstablishWritten", vec![*fact]),
+            SkipClass::EstablishProbeAmbient(fact) => ("EstablishProbeAmbient", vec![*fact]),
+            SkipClass::EstablishProbeWritten(fact) => ("EstablishProbeWritten", vec![*fact]),
             SkipClass::QueryResolvable { fact, .. } => ("QueryResolvable", vec![*fact]),
             SkipClass::EstablishMembers { members, .. } => ("EstablishMembers", members.clone()),
             SkipClass::InlineCall { .. } => ("InlineCall", Vec::new()),
@@ -3017,7 +3017,7 @@ fn collect_reach_probes(
     for (node, class) in classes {
         let is_wall_candidate = matches!(
             class,
-            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+            SkipClass::EstablishProbeAmbient(_) | SkipClass::EstablishProbeWritten(_)
         ) || kills.contains(node);
         if !is_wall_candidate {
             continue;
@@ -5354,7 +5354,7 @@ mod tests {
         let established = pkg(&mut i, "curl");
         let kill_node = CfgNodeId(7);
         let est_node = CfgNodeId(3);
-        let classes = vec![(est_node, SkipClass::EstablishAmbient(established))];
+        let classes = vec![(est_node, SkipClass::EstablishProbeAmbient(established))];
         let mut kill_coords = BTreeMap::new();
         kill_coords.insert(kill_node, killed);
         assert_eq!(

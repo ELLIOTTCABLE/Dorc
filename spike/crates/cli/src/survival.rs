@@ -106,7 +106,7 @@ pub fn build_survival_footprints(
         // A wall candidate: an establish-bearing class OR a kill. Both now carry their OWN effect
         // coordinate for the coherence check (24E §7: the kill's coord rides `kill_coords`).
         let establish = match class {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => Some(*f),
             _ => None,
         };
         if establish.is_none() && !kills.contains(node) {
@@ -565,7 +565,7 @@ fn establish_fact_of(
             return None;
         }
         match c {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => Some(*f),
             _ => None,
         }
     })
@@ -1475,8 +1475,8 @@ pub fn collect_resolver_coords(
     };
     for (node, class) in classes {
         // Backing coords: the cell each establish/query site is about.
-        if let SkipClass::EstablishAmbient(f)
-        | SkipClass::EstablishWritten(f)
+        if let SkipClass::EstablishProbeAmbient(f)
+        | SkipClass::EstablishProbeWritten(f)
         | SkipClass::QueryResolvable { fact: f, .. } = class
         {
             consider(dorc_plan::EntityCoord::new(f.kind, f.entity), &mut coords);
@@ -1484,7 +1484,7 @@ pub fn collect_resolver_coords(
         // Footprint coords: a wall-candidate's touches() emissions.
         let is_wall_candidate = matches!(
             class,
-            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+            SkipClass::EstablishProbeAmbient(_) | SkipClass::EstablishProbeWritten(_)
         ) || kills.contains(node);
         if is_wall_candidate
             && let Some((_, fp_coords, _)) =
@@ -1712,15 +1712,15 @@ pub fn collect_coord_kinds(
     use dorc_analysis::effect::SkipClass;
     let mut kinds = BTreeSet::new();
     for (node, class) in classes {
-        if let SkipClass::EstablishAmbient(f)
-        | SkipClass::EstablishWritten(f)
+        if let SkipClass::EstablishProbeAmbient(f)
+        | SkipClass::EstablishProbeWritten(f)
         | SkipClass::QueryResolvable { fact: f, .. } = class
         {
             kinds.insert(f.kind.0);
         }
         let is_wall_candidate = matches!(
             class,
-            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+            SkipClass::EstablishProbeAmbient(_) | SkipClass::EstablishProbeWritten(_)
         ) || kills.contains(node);
         if is_wall_candidate
             && let Some((_, fp_coords, _)) =

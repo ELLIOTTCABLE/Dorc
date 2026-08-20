@@ -66,7 +66,7 @@ pub enum CommandEffect {
     /// nginx` ⇒ `Queries(tool:nginx@present)`; 202 §2 / task-D2). A `Query`
     /// **poisons no reaching-defs and establishes nothing** (the reaching-defs gen
     /// treats it like `Pure`): a guard reads state, it does not change it, so it must
-    /// not force a downstream establish to `EstablishWritten` nor invalidate a
+    /// not force a downstream establish to `EstablishProbeWritten` nor invalidate a
     /// downstream Query (st-3, 20A §4). Distinct from `Pure` only so a Query SITE is
     /// probe-resolvable (its check IS the probe) and its probed rc can feed the fold's
     /// Status channel (gated by rule-query-validity).
@@ -1023,14 +1023,14 @@ pub enum SkipClass {
     /// un-certified solve (`SolveConsistency::is_consistent`) ⇒ run.
     MustRun,
     /// Establishes `fact`, ambient here (no upstream mutation) ⇒ probe the host.
-    EstablishAmbient(FactKey),
+    EstablishProbeAmbient(FactKey),
     /// Establishes `fact`, but the fact was mutated upstream in-script ⇒ the
     /// resting probe is not authoritative ⇒ run (or reason in-script; conservatively
     /// run). The `purge X; … install X` case.
-    EstablishWritten(FactKey),
+    EstablishProbeWritten(FactKey),
     /// A read-only **Query** guard reading `fact` (`command -v nginx` ⇒
     /// `tool:nginx@present`; 202 §2 / task-D2). Probe-resolvable like an
-    /// `EstablishAmbient` (its check IS the probe), but its probed rc feeds the
+    /// `EstablishProbeAmbient` (its check IS the probe), but its probed rc feeds the
     /// fold's **Status** channel rather than gating a mutation-elision — and ONLY
     /// when [`valid`](SkipClass::QueryResolvable::valid) holds.
     ///
@@ -1076,7 +1076,7 @@ pub enum SkipClass {
     ///
     /// ALL-OR-NOTHING (the Members precedent, 20S): the call licenses a `Replace` ONLY when
     /// EVERY effect-bearing body site licenses elision — every body Establish/Kill is an
-    /// `EstablishAmbient` whose fact is Converged (a body Kill, an Opaque, a ⊤, or a non-self/
+    /// `EstablishProbeAmbient` whose fact is Converged (a body Kill, an Opaque, a ⊤, or a non-self/
     /// written establish blocks the WHOLE call), Queries pass their own gates, and the CALL
     /// site's own consumed channels are reproduced. One non-licensing body leaf ⇒ the call
     /// RUNS (the real body executes). No partial-body render ever (`i-3`).
@@ -1094,8 +1094,8 @@ pub struct InlineSite {
     /// leaf of its own — the CALL is the render unit, `i-3`).
     pub node: CfgNodeId,
     /// The body site's own classification (with the call's positionals bound, `i-2`): an
-    /// `EstablishAmbient`/`QueryResolvable` is per-site probeable (`site N.M`); a Kill/Opaque/
-    /// MustRun/EstablishWritten blocks the whole call.
+    /// `EstablishProbeAmbient`/`QueryResolvable` is per-site probeable (`site N.M`); a Kill/Opaque/
+    /// MustRun/EstablishProbeWritten blocks the whole call.
     pub class: SkipClass,
 }
 
@@ -1445,9 +1445,9 @@ fn classify_one_site(
     match cells.as_slice() {
         [CommandEffect::Establishes(f)] if trust_reach && site_reachable => {
             if state.mutated(f) {
-                SkipClass::EstablishWritten(*f)
+                SkipClass::EstablishProbeWritten(*f)
             } else {
-                SkipClass::EstablishAmbient(*f)
+                SkipClass::EstablishProbeAmbient(*f)
             }
         }
         [CommandEffect::Queries(f)] if trust_reach && site_reachable => {
@@ -1730,7 +1730,7 @@ fn resolve_node_effects(
 /// Classify every `Command` node for the skip decision: resolve each command's
 /// effect cells (through the book's value-flow [`ValueFlow`] + the oracle's own
 /// `check()`), then a forward reaching-defs pass tells us, per establishing command,
-/// whether its fact is ambient. An establish is only offered as `EstablishAmbient`
+/// whether its fact is ambient. An establish is only offered as `EstablishProbeAmbient`
 /// when its reaching-context is *trustworthy* — reachable from entry AND under a
 /// CERTIFIED solve (`SolveConsistency::is_consistent`, never the advisory `converged`
 /// flag); otherwise it folds to the safe `MustRun` (find-A/find-B).
@@ -2511,12 +2511,12 @@ command__predict() {
     #[test]
     fn lone_install_is_ambient() {
         // Why: the simplest establish with nothing upstream — must be probe-able
-        // (EstablishAmbient), the precondition for ever skipping it.
+        // (EstablishProbeAmbient), the precondition for ever skipping it.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get install nginx", &mut i, &idx);
         assert_eq!(
             classes,
-            vec![SkipClass::EstablishAmbient(pkg_installed(
+            vec![SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "nginx"
             ))]
         );
@@ -2531,13 +2531,15 @@ command__predict() {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
         // purge ⇒ MustRun (a kill, not an elidable establish); install ⇒ Written.
-        assert!(classes.contains(&SkipClass::EstablishWritten(pkg_installed(
-            &mut i, &s, "nginx"
-        ))));
+        assert!(
+            classes.contains(&SkipClass::EstablishProbeWritten(pkg_installed(
+                &mut i, &s, "nginx"
+            )))
+        );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+                .any(|c| matches!(c, SkipClass::EstablishProbeAmbient(_)))
         );
     }
 
@@ -2696,12 +2698,12 @@ command__predict() {
         assert!(
             classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_)))
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_)))
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+                .any(|c| matches!(c, SkipClass::EstablishProbeAmbient(_)))
         );
     }
 
@@ -2711,7 +2713,7 @@ command__predict() {
         // update` establishes a *distinct cell* (`package-index@fresh`), so it no
         // longer poisons the `apt-get install nginx` below it. Before the re-key,
         // `update` was doubly-unkeyable (no operand, and — pre-modeling — no verb) ⇒
-        // Opaque ⇒ Reach::Top ⇒ install forced EstablishWritten. Now it's ambient.
+        // Opaque ⇒ Reach::Top ⇒ install forced EstablishProbeWritten. Now it's ambient.
         //
         // This pins the STATIC (classify) tier, which `23Ib-fd10` leaves UNCHANGED: the
         // ambient gate is same-cell only, so a distinct-cell `update` never poisons the
@@ -2724,15 +2726,15 @@ command__predict() {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get update\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
-            "modeled `update` (distinct cell) must leave install EstablishAmbient: {classes:?}"
+            "modeled `update` (distinct cell) must leave install EstablishProbeAmbient: {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_))),
             "no Written: update's cell (package-index@fresh) ≠ install's (package:nginx@installed)"
         );
     }
@@ -2745,15 +2747,15 @@ command__predict() {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishWritten(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeWritten(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
-            "same-cell purge must keep install EstablishWritten (no over-loosening): {classes:?}"
+            "same-cell purge must keep install EstablishProbeWritten (no over-loosening): {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+                .any(|c| matches!(c, SkipClass::EstablishProbeAmbient(_)))
         );
     }
 
@@ -2762,7 +2764,7 @@ command__predict() {
         // The selector regression (`notes/193` §7.4): `systemctl enable nginx` and
         // `systemctl start nginx` gate DIFFERENT selectors of the SAME service:nginx
         // cell (@enabled vs @active). Neither discharges the other — both stay
-        // EstablishAmbient (an `is-active` probe must not satisfy an unmet `@enabled`).
+        // EstablishProbeAmbient (an `is-active` probe must not satisfy an unmet `@enabled`).
         // A flat key (one bit per kind+entity) could not hold this — the second would
         // see the first reach its cell and (mis-)classify Written.
         let mut i = Interner::default();
@@ -2801,17 +2803,17 @@ command__predict() {
             context: Context::HostDefault,
         };
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(enabled_cell)),
+            classes.contains(&SkipClass::EstablishProbeAmbient(enabled_cell)),
             "enable nginx ⇒ service:nginx@enabled, ambient: {classes:?}"
         );
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(active_cell)),
+            classes.contains(&SkipClass::EstablishProbeAmbient(active_cell)),
             "start nginx ⇒ service:nginx@active, ambient (NOT discharged by @enabled): {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_))),
             "distinct selectors ⇒ neither reaches the other's cell ⇒ no Written"
         );
     }
@@ -2828,15 +2830,15 @@ command__predict() {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src(":\necho hi\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
-            "pure builtins (`:`/`echo`) upstream must keep the install EstablishAmbient: {classes:?}"
+            "pure builtins (`:`/`echo`) upstream must keep the install EstablishProbeAmbient: {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_))),
             "no spurious Written from a pure-builtin upstream"
         );
     }
@@ -2859,8 +2861,8 @@ command__predict() {
         );
         // (2) the END-TO-END wall — `trap … EXIT` upstream is Opaque ⇒ ⊤ ⇒ it poisons the
         //     downstream converged install's ambient-ness, exactly like the un-oracled `ufw allow`
-        //     dual (`opaque_upstream_poisons_ambientness`). The install is EstablishWritten
-        //     (walled), never EstablishAmbient (elidable): no silent acceptance, no modeling.
+        //     dual (`opaque_upstream_poisons_ambientness`). The install is EstablishProbeWritten
+        //     (walled), never EstablishProbeAmbient (elidable): no silent acceptance, no modeling.
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src(
             "trap 'rm -f /tmp/lock' EXIT\napt-get install nginx",
@@ -2870,14 +2872,14 @@ command__predict() {
         assert!(
             classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
-            "trap at tip walls the downstream install (EstablishWritten): {classes:?}"
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_))),
+            "trap at tip walls the downstream install (EstablishProbeWritten): {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishAmbient(_))),
-            "no EstablishAmbient survives past an unmodeled trap — no silent acceptance"
+                .any(|c| matches!(c, SkipClass::EstablishProbeAmbient(_))),
+            "no EstablishProbeAmbient survives past an unmodeled trap — no silent acceptance"
         );
     }
 
@@ -2886,7 +2888,7 @@ command__predict() {
         // arch-2 (brk-2): a call to a same-file-earlier funcdef is INLINED — the body is
         // spliced at the call, and the CALL is the one render/apply leaf, aggregating the
         // body's effect-bearing sites. `p() { apt-get install nginx; }\np` ⇒ exactly ONE
-        // leaf: an `InlineCall` whose single body site is the install's `EstablishAmbient`
+        // leaf: an `InlineCall` whose single body site is the install's `EstablishProbeAmbient`
         // (the body becomes reachable through the splice — the find-7 un-detaching). The
         // detached DEFINITION body is no longer an independent leaf (`i-3`), so there is no
         // second `MustRun`. (Supersedes the round-20 `detached_function_body_establish_is_
@@ -2903,8 +2905,8 @@ command__predict() {
         };
         assert_eq!(sites.len(), 1, "one effect-bearing body site (the install)");
         assert!(
-            matches!(sites[0].class, SkipClass::EstablishAmbient(_)),
-            "the body install is EstablishAmbient (reachable via the splice), not Written/\
+            matches!(sites[0].class, SkipClass::EstablishProbeAmbient(_)),
+            "the body install is EstablishProbeAmbient (reachable via the splice), not Written/\
              MustRun — the call node gens Pure, so it does not poison its own spliced body"
         );
     }
@@ -3562,7 +3564,7 @@ apt_get__is_converged() {
     fn opaque_var_operand_is_top_when_unresolved_but_resolves_when_flowed() {
         // The value-plane's reach: a command-prefix/assigned operand. `PKG=nginx;
         // apt-get install -y "$PKG"` — value-flow resolves `"$PKG"` to nginx, so the
-        // site is fully concrete and the check resolves entity=nginx (EstablishAmbient).
+        // site is fully concrete and the check resolves entity=nginx (EstablishProbeAmbient).
         // This is the value-flow win the old engine-side stand-in (which saw `"$PKG"`
         // as a non-literal operand ⇒ Opaque) could not reach. Contrast: an UNASSIGNED
         // `"$X"` stays ⊤ ⇒ Opaque. (GOLDEN: `exec-opaque-var` flips elsewhere — flagged.)
@@ -3571,7 +3573,7 @@ apt_get__is_converged() {
         // one we assert resolved.
         let flowed = classify_src("PKG=nginx\napt-get install -y \"$PKG\"", &mut i, &idx);
         assert!(
-            flowed.contains(&SkipClass::EstablishAmbient(pkg_installed(
+            flowed.contains(&SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
             "value-flow resolves the assigned operand ⇒ the install is identity-resolved: {flowed:?}"
@@ -3648,20 +3650,20 @@ apt_get__is_converged() {
     fn query_does_not_poison_downstream_establish() {
         // A Query READS, it does not write — so an upstream `command -v nginx` must NOT
         // poison a downstream `apt-get install nginx`'s ambient-ness (contrast an Opaque
-        // neighbour, which does). The install stays EstablishAmbient. This is the
+        // neighbour, which does). The install stays EstablishProbeAmbient. This is the
         // gen-side of task-D2 (a Query gens nothing into Reach).
         let mut i = Interner::default();
         let idx = package_and_query_index(&mut i);
         let classes = classify_src("command -v nginx\napt-get install -y nginx", &mut i, &idx);
         let install = pkg_installed_with(&mut i, "nginx");
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(install)),
+            classes.contains(&SkipClass::EstablishProbeAmbient(install)),
             "an upstream Query must NOT poison the install (it reads, doesn't write): {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_))),
             "no Written: a Query gens nothing into Reach"
         );
     }
@@ -3998,13 +4000,13 @@ command__predict() {
         // A write-redirect is a WRITER, so — like any Opaque/mutator — it makes a downstream
         // establish non-ambient when... actually NO: a `file` cell is a DIFFERENT cell from
         // `package:nginx@installed`, so by the poison-wall keystone it must NOT poison the
-        // install (distinct cells don't cross-poison). The install stays EstablishAmbient.
+        // install (distinct cells don't cross-poison). The install stays EstablishProbeAmbient.
         // This pins that the file-cell is a real per-path cell (not a ⊤ that havocs): only
         // the SAME cell (or an Opaque ⊤) invalidates ambient-ness.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src(": > /etc/marker\napt-get install -y nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
             "a file-write cell is a distinct cell ⇒ it must NOT poison a package install (keystone): {classes:?}"
@@ -4097,7 +4099,7 @@ command__predict() {
         // THE brk-1 value-unlock at the EFFECT layer: a PURE loop body (`echo` only —
         // gens nothing) does NOT poison a converged install BELOW the loop. The
         // reaching-defs back-edge carries no write out of the loop, so the post-loop
-        // install stays EstablishAmbient (elidable). Pre-L1 the loop was a ⊤ node whose
+        // install stays EstablishProbeAmbient (elidable). Pre-L1 the loop was a ⊤ node whose
         // havoc + ⊤-containment killed this — the poison the L1 lowering removes.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src(
@@ -4106,7 +4108,7 @@ command__predict() {
             &idx,
         );
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
             "a pure loop body must NOT poison the post-loop install: {classes:?}"
@@ -4117,7 +4119,7 @@ command__predict() {
     fn opaque_in_loop_body_poisons_post_loop_install() {
         // The honest residual cost (exclusion-check, the other cell): an OPAQUE command
         // inside the loop body propagates Reach::Top across the back-edge and OUT to the
-        // post-loop install ⇒ it is forced EstablishWritten (runs). A loop is not magic —
+        // post-loop install ⇒ it is forced EstablishProbeWritten (runs). A loop is not magic —
         // an un-oracled body command poisons exactly as it would in straight-line code.
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src(
@@ -4128,13 +4130,13 @@ command__predict() {
         assert!(
             classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+                .any(|c| matches!(c, SkipClass::EstablishProbeWritten(_))),
             "an Opaque loop-body command poisons the post-loop install (back-edge ⊤): {classes:?}"
         );
         assert!(
             !classes
                 .iter()
-                .any(|c| matches!(c, SkipClass::EstablishAmbient(_))),
+                .any(|c| matches!(c, SkipClass::EstablishProbeAmbient(_))),
             "no ambient install survives the in-loop Opaque"
         );
     }
@@ -4248,7 +4250,7 @@ command__predict() {
         // Members site gens its MEMBER cells into Reach, NOT Opaque. So a post-loop install
         // of a DISTINCT package is NOT poisoned to Written by the loop. `for pkg in nginx
         // curl; do apt-get install -y "$pkg"; done; apt-get install -y redis` ⇒ the redis
-        // install stays EstablishAmbient (the loop genned nginx/curl cells, not ⊤).
+        // install stays EstablishProbeAmbient (the loop genned nginx/curl cells, not ⊤).
         let (mut i, idx, s) = package_setup();
         let classes = classify_src(
             "for pkg in nginx curl; do apt-get install -y \"$pkg\"; done\napt-get install -y redis",
@@ -4256,7 +4258,7 @@ command__predict() {
             &idx,
         );
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeAmbient(pkg_installed(
                 &mut i, &s, "redis"
             ))),
             "a resolved Members loop gens member cells (not ⊤) ⇒ a distinct post-loop install stays ambient: {classes:?}"
@@ -4266,7 +4268,7 @@ command__predict() {
     #[test]
     fn members_family_poisons_post_loop_same_cell() {
         // Exclusion-check (the other cell): a post-loop install of a cell the LOOP
-        // establishes IS reached by the loop's member-establish ⇒ EstablishWritten (stale
+        // establishes IS reached by the loop's member-establish ⇒ EstablishProbeWritten (stale
         // resting probe). `for pkg in nginx curl; …; apt-get install -y nginx` ⇒ the
         // post-loop nginx install sees the loop's nginx member-cell upstream ⇒ Written.
         let (mut i, idx, s) = package_setup();
@@ -4276,9 +4278,9 @@ command__predict() {
             &idx,
         );
         // The post-loop nginx is Written (a member-cell reached it); curl was never
-        // post-installed. No EstablishAmbient for nginx.
+        // post-installed. No EstablishProbeAmbient for nginx.
         assert!(
-            classes.contains(&SkipClass::EstablishWritten(pkg_installed(
+            classes.contains(&SkipClass::EstablishProbeWritten(pkg_installed(
                 &mut i, &s, "nginx"
             ))),
             "a post-loop install of a loop-member cell is Written (the member-establish reaches it): {classes:?}"

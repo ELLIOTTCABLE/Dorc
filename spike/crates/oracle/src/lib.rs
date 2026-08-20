@@ -222,7 +222,7 @@ pub struct KindIndex {
     /// this selector) rather than standing as its own Query row (`derive.rs`: the model forces
     /// all a `(provider, verb)`'s cells to one `(kind, entity)`, so the widening is selector-only).
     /// Recorded here INSTEAD of an [`EffectCell`], so the establish site still classifies
-    /// `EstablishAmbient`/`Written` (a mixed `[Establishes, Queries]` slice would fall to
+    /// `EstablishProbeAmbient`/`Written` (a mixed `[Establishes, Queries]` slice would fall to
     /// `MustRun`). An observe with NO co-occurring verdict stays a `Queries` cell (its own row,
     /// "widens nothing"). Safe direction: widening only GROWS a fact's kill-surface.
     widenings: BTreeMap<(usize, ProviderId, Symbol), BTreeSet<SelectorId>>,

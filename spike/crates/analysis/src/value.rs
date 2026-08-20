@@ -937,7 +937,7 @@ impl<'a> Prep<'a> {
     /// reference the for-var is skipped (no family — the ordinary `argv` entry serves it,
     /// the same concrete every iteration). A site that references it gets a family even for
     /// a single member (one cell), so the in-loop license (item-3) routes uniformly through
-    /// the Members path rather than the Flat `EstablishAmbient` (which the in-loop floor
+    /// the Members path rather than the Flat `EstablishProbeAmbient` (which the in-loop floor
     /// still runs).
     fn record_member_sites(
         &self,

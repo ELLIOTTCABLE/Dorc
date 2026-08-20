@@ -36,7 +36,7 @@
 //!
 //! * `hunt-1` (Eq/fixpoint): `Top(a) != Top(b)` would perturb `solve`'s convergence → a
 //!   different classification. Fixture: `opaque_then_install` (a ⊤ poisons a downstream
-//!   establish). Run-B's sentinel cause must not change the `EstablishWritten` verdict.
+//!   establish). Run-B's sentinel cause must not change the `EstablishProbeWritten` verdict.
 //! * `hunt-2` (ordering via a map key): a `ProvId` in a decision `BTreeMap`/`BTreeSet` key
 //!   would reorder rendered output. Structurally impossible (`ProvId: !Ord`); the byte-exact
 //!   artifact compare is the backstop. Fixture: any multi-site book.
@@ -72,9 +72,9 @@ fn vouch_all(
     use dorc_analysis::effect::SkipClass;
     let mut vouches = dorc_plan::Vouches::new();
     for (node, class) in classes {
-        // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, out of scope
-        // for the erasability digests (elide-weld's concern is EstablishAmbient — 24D §3).
-        if let SkipClass::EstablishAmbient(fact) = class {
+        // Ambient-only: a vouched+converged EstablishProbeWritten fires the guard tier, out of scope
+        // for the erasability digests (elide-weld's concern is EstablishProbeAmbient — 24D §3).
+        if let SkipClass::EstablishProbeAmbient(fact) = class {
             let vouch = dorc_plan::VerdictVouch::new(
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -153,7 +153,7 @@ apt_get__predict() {
 /// exercise the receipts plane where a leak COULD bite: ⊤-causes, control-flow joins, loops
 /// (re-derived ⊤), and the disposition variety (Run/Replace/Omit).
 const FIXTURES: &[(&str, &str)] = &[
-    // hunt-1: a ⊤ (un-oracled `ufw`) poisons the downstream install ⇒ EstablishWritten. The
+    // hunt-1: a ⊤ (un-oracled `ufw`) poisons the downstream install ⇒ EstablishProbeWritten. The
     // sentinel cause in run-B must not change that.
     (
         "opaque_then_install",

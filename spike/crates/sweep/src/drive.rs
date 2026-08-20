@@ -108,7 +108,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
         };
         // The sweep exercises the elision/survival soundness net, not the GUARD tier: no
-        // EstablishWritten site ships a guard probe (`is_vouched: |_| false` — guard scenarios are a
+        // EstablishProbeWritten site ships a guard probe (`is_vouched: |_| false` — guard scenarios are a
         // Stage-3 stretch, tc-flagged in the report). The ELIDE vouches (below) are separate — an
         // ambient site always ships its probe, and the elide-weld demands its vouch.
         dorc_plan::compile_probe(
@@ -334,7 +334,7 @@ fn build_survival_footprints(
     let mut footprints = TrustedFootprints::new();
     for (node, class) in classes {
         let establish = match class {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => Some(*f),
             _ => None,
         };
         if establish.is_none() && !kills.contains(node) {
@@ -504,7 +504,7 @@ fn establish_fact_of(classes: &[(CfgNodeId, SkipClass)], node: CfgNodeId) -> Opt
             return None;
         }
         match c {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => Some(*f),
             _ => None,
         }
     })

@@ -952,7 +952,7 @@ fn a_book_definition_vector_walls_its_own_call_site() {
     assert!(
         plain
             .iter()
-            .any(|class| matches!(class, SkipClass::EstablishAmbient(_))),
+            .any(|class| matches!(class, SkipClass::EstablishProbeAmbient(_))),
         "control: an unshadowed `hork tune` must be an elidable establish, else this proves \
          nothing — got {plain:?}"
     );
@@ -965,7 +965,7 @@ fn a_book_definition_vector_walls_its_own_call_site() {
         assert!(
             !shadowed
                 .iter()
-                .any(|class| matches!(class, SkipClass::EstablishAmbient(_))),
+                .any(|class| matches!(class, SkipClass::EstablishProbeAmbient(_))),
             "a book definition vector must wall its call site, whatever the body ({body:?}): the \
              engine modelled the TOOL at a name the shell binds to the BOOK's function — got \
              {shadowed:?}"

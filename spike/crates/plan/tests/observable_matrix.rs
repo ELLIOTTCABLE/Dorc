@@ -44,7 +44,7 @@
 //! un-marked is closed. A *known/probe-sourced* rc still folds (the relaxation seam),
 //! so a conforming converged establish with a declared rc-0 stays replaceable; only the
 //! ⊤-rc case is lost. (fs-4 still holds at the EFFECT layer: `set -e` does not POISON
-//! ambient-ness — the install stays `EstablishAmbient`; it runs for the *status* reason,
+//! ambient-ness — the install stays `EstablishProbeAmbient`; it runs for the *status* reason,
 //! not the poison reason. The adjacent spec at the bottom pins exactly that separation.)
 //!
 //! NOTE — most cases below deliberately omit `set -e` to isolate the observable
@@ -256,7 +256,7 @@ fn is_replaced(plan: &Plan, needle: &str) -> bool {
 // matrix isolates the OBSERVABLE dimension, so every cell below assumes converged.
 //
 // "status consumed by `set -e`" IS now a clean cell (C-3, 205 §2): `set -e` is
-// target-state-pure (fs-4) so the install stays `EstablishAmbient` and DOES reach the
+// target-state-pure (fs-4) so the install stays `EstablishProbeAmbient` and DOES reach the
 // status question, where its ⊤-rc `StatusRelaxable` mark blocks the license ⇒ it runs
 // (`errexit_consumed_top_status_runs_c3`). The `&&`/`||` cells exercise the same
 // rc-relaxable status from a different locus.
@@ -654,7 +654,7 @@ fn spec_converged_enclosing_group_redirect_must_run() {
 fn spec_converged_subst_in_redir_target_poisons() {
     // 16G HOLE#1: `$(apt-get purge nginx)` in a redirect TARGET runs (purges nginx)
     // but is never lowered into the CFG, so its Kill doesn't poison => the install is
-    // wrongly EstablishAmbient => replaced. Fix: lower substs in redirect targets +
+    // wrongly EstablishProbeAmbient => replaced. Fix: lower substs in redirect targets +
     // case patterns (a CFG-lowering completeness gap; deferred). HOST: installed.
     let plan = plan_for(
         "apt-get install -y nginx < \"$(apt-get purge nginx)\"\n",
@@ -692,7 +692,7 @@ fn spec_topcontext_background_leaf_must_run() {
 // (classify). C-3 (205 §2) is a SEPARATE, later gate: even with `set -e` non-poisoning
 // at the effect layer, `set -e` consumes each command's status, so a ⊤-rc mutator under
 // it runs anyway. The exclusion-check below keeps the two cleanly apart — the install
-// stays `EstablishAmbient` (fs-4 holds) yet its plan disposition is Run (C-3 blocks).
+// stays `EstablishProbeAmbient` (fs-4 holds) yet its plan disposition is Run (C-3 blocks).
 // ===========================================================================
 
 #[test]
@@ -700,7 +700,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
     // HOST: nginx installed (converged). Two separate claims, exclusion-checked apart:
     //
     // fs-4 (EFFECT layer): `set -e` toggles a shell option and touches NO package fact,
-    // so it must NOT poison — the install stays `EstablishAmbient` (NOT `EstablishWritten`
+    // so it must NOT poison — the install stays `EstablishProbeAmbient` (NOT `EstablishProbeWritten`
     // / `MustRun`). Were `set -e` still Opaque ⇒ Reach::Top, the install would be Written.
     //
     // C-3 (STATUS layer, 205 §2): `set -e` nonetheless consumes the install's rc, which
@@ -722,13 +722,13 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let (classes, value) = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    // fs-4: the install is EstablishAmbient (set -e did not poison the effect analysis).
+    // fs-4: the install is EstablishProbeAmbient (set -e did not poison the effect analysis).
     let install_is_ambient = classes
         .iter()
-        .any(|(_, class)| matches!(class, SkipClass::EstablishAmbient(f) if *f == nginx));
+        .any(|(_, class)| matches!(class, SkipClass::EstablishProbeAmbient(f) if *f == nginx));
     assert!(
         install_is_ambient,
-        "fs-4: set -e is target-state-pure ⇒ the install stays EstablishAmbient (not poisoned)"
+        "fs-4: set -e is target-state-pure ⇒ the install stays EstablishProbeAmbient (not poisoned)"
     );
     // C-3: but its ⊤-rc status is errexit-consumed ⇒ Run.
     let observe = move |f: FactKey| {
@@ -1584,9 +1584,9 @@ fn inline_call_inside_loop_is_floored_even_when_converged() {
     // establish is converged. `for pkg in nginx; do w "$pkg"; done` with `w` inlining + nginx
     // converged ⇒ the call `w "$pkg"` RUNS (the loop renders verbatim). `inline_disposition`
     // re-checks `in_loop_body` EXPLICITLY (not relying on the back-edge self-poison that also
-    // tends to make the in-loop body establish EstablishWritten). The single-member loop makes
+    // tends to make the in-loop body establish EstablishProbeWritten). The single-member loop makes
     // the for-var a CONCRETE `nginx` (so the positional binds and the body would otherwise be
-    // an EstablishAmbient site), isolating the floor as the operative block.
+    // an EstablishProbeAmbient site), isolating the floor as the operative block.
     let plan = plan_for(
         "w() { apt-get install -y \"$1\" >/dev/null 2>&1; }\nfor pkg in nginx; do w \"$pkg\"; done\n",
         &[("package", "nginx")],

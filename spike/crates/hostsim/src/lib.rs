@@ -754,9 +754,9 @@ apt_get__predict() {
         use dorc_analysis::effect::SkipClass;
         let mut vouches = dorc_plan::Vouches::new();
         for (node, class) in classes {
-            // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, which these
-            // elision DSTs do not exercise (elide-weld's concern is EstablishAmbient — 24D §3).
-            if let SkipClass::EstablishAmbient(fact) = class {
+            // Ambient-only: a vouched+converged EstablishProbeWritten fires the guard tier, which these
+            // elision DSTs do not exercise (elide-weld's concern is EstablishProbeAmbient — 24D §3).
+            if let SkipClass::EstablishProbeAmbient(fact) = class {
                 let vouch = dorc_plan::VerdictVouch::new(
                     "apt_get__is_converged".to_string(),
                     "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -1325,7 +1325,7 @@ apt_get__predict() {
         .value;
 
         // R3: no shippable probe (the ship closure returns None — "the oracle declares no
-        // probe") ⇒ the EstablishAmbient site is unresolvable ⇒ not elided (kFAIL-perform).
+        // probe") ⇒ the EstablishProbeAmbient site is unresolvable ⇒ not elided (kFAIL-perform).
         let probe = compile_probe(
             &parsed.value,
             &cfg,

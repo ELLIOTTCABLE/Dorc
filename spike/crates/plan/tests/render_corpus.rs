@@ -503,7 +503,7 @@ fn render_query_for(
 }
 
 /// Render harness for the GUARD tier (`guard23-why-attribution`): a vouched install PAST a poison
-/// wall. Vouches `EstablishWritten` too (`incl_written`), so a converged past-wall install mints a
+/// wall. Vouches `EstablishProbeWritten` too (`incl_written`), so a converged past-wall install mints a
 /// `Guard` (the oracle's verdict body re-decides LIVE at apply). `holds` are `(entity)` package cells.
 fn render_guard_for(src: &str, holds: &[&str]) -> (String, Plan) {
     let mut i = Interner::default();
@@ -1263,7 +1263,7 @@ fn twin_inline21_errexit_call_composes() {
 #[test]
 fn twin_inline21_in_loop_call_floored() {
     // né inline21-in-loop-call-floored: an inlined call INSIDE a loop is floored (task-L1 in-loop
-    // floor + the 20M §5 self-establish-via-back-edge ⇒ the body reads EstablishWritten). Converged
+    // floor + the 20M §5 self-establish-via-back-edge ⇒ the body reads EstablishProbeWritten). Converged
     // host — the call STILL runs verbatim (the floor, not divergence, is why; a stronger pin than the
     // retired empty-host case).
     let (rendered, plan) = render_for(
@@ -2015,7 +2015,7 @@ fn twin_guard23_vouch_gates_elision() {
 fn twin_guard23_cross_oracle_vouch_scoped() {
     // né guard23-cross-oracle-vouch-scoped (23C-fd9 / vouch-scope-is-the-body-never-the-tool): apt's
     // vouch is scoped to apt's own sites. `systemctl enable foo` PAST the `hork` wall is
-    // EstablishWritten but UNVOUCHED by apt (different kind) ⇒ no guard ⇒ runs. The apt nginx install
+    // EstablishProbeWritten but UNVOUCHED by apt (different kind) ⇒ no guard ⇒ runs. The apt nginx install
     // (before the wall, vouched) elides — proving the vouch reached its OWN kind but not systemctl's.
     let (rendered, plan) = render_scoped(
         "apt-get install -y nginx\nhork wombat\nsystemctl enable foo\n",

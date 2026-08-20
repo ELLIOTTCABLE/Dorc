@@ -156,7 +156,7 @@ fn oracle_excerpt(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WallRole {
     /// A running UNMODELED (opaque) command — the poison wall. Its run ⊤-poisons every downstream
-    /// fact in `classify` (⇒ `EstablishWritten` ⇒ guard-or-run), so no downstream elision survives
+    /// fact in `classify` (⇒ `EstablishProbeWritten` ⇒ guard-or-run), so no downstream elision survives
     /// it. Detected at the cli edge as a probe-UNRESOLVABLE real command — the same
     /// `probe.unresolvable` ∩ not-[`is_structurally_unprobeable`] set the firehose already discloses.
     Opaque,
@@ -216,11 +216,11 @@ pub struct FirstWallHint {
     /// wall").
     ///
     /// CONSERVATIVE APPROXIMATION (flagged — the honest counterfactual is NOT a plan-level re-fold):
-    /// an opaque wall's poison is applied in `classify` (⊤-reach ⇒ downstream `EstablishWritten`),
+    /// an opaque wall's poison is applied in `classify` (⊤-reach ⇒ downstream `EstablishProbeWritten`),
     /// NOT in the plan wall-walk, so "re-fold the plan with this wall treated as non-walling" cannot
     /// un-poison — the honest count needs a re-CLASSIFY with the command's effect forced Pure. This
     /// tally instead counts the walled guards in the wall's own window. It is EXACT in the common
-    /// case and OVER-counts only when a downstream guard is `EstablishWritten` from a same-cell
+    /// case and OVER-counts only when a downstream guard is `EstablishProbeWritten` from a same-cell
     /// in-script write rather than from this wall (the `install X; hork; install X` shape), where
     /// lifting this wall alone would not recover it. Erring high on an advisory nag is acceptable.
     pub unwall: usize,
@@ -389,11 +389,15 @@ pub fn collect_wall_steps(
 fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
     use dorc_analysis::effect::SkipClass as Sc;
     match class {
-        Sc::EstablishAmbient(_) | Sc::EstablishWritten(_) | Sc::EstablishMembers { .. } => true,
+        Sc::EstablishProbeAmbient(_)
+        | Sc::EstablishProbeWritten(_)
+        | Sc::EstablishMembers { .. } => true,
         Sc::InlineCall { sites } => sites.iter().any(|s| {
             matches!(
                 s.class,
-                Sc::EstablishAmbient(_) | Sc::EstablishWritten(_) | Sc::EstablishMembers { .. }
+                Sc::EstablishProbeAmbient(_)
+                    | Sc::EstablishProbeWritten(_)
+                    | Sc::EstablishMembers { .. }
             )
         }),
         Sc::QueryResolvable { .. } | Sc::MustRun => false,

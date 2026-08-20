@@ -170,7 +170,7 @@ pub enum BlockReason {
     InLoopFloor,
     /// A consumed `Stdout`/`Stderr`: vouched by nothing ⇒ blocks unconditionally.
     ConsumedOutput,
-    /// The fact was mutated upstream in-script (`EstablishWritten`) ⇒ the resting
+    /// The fact was mutated upstream in-script (`EstablishProbeWritten`) ⇒ the resting
     /// probe is stale ⇒ runs (the `purge X; … install X` shape).
     WrittenUpstream,
     /// The disposition LICENSED an elision (`Replace`) but the leaf-exact render
@@ -911,7 +911,7 @@ fn classify_facts(
             None,
         ),
         // ambient-vs-written is a c4 BlockReason distinction, not a c1/c2 one.
-        SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => {
+        SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => {
             (Analyzable::Yes, None, true, Some(*f))
         }
         SkipClass::QueryResolvable { fact, .. } => (Analyzable::Yes, None, true, Some(*fact)),
@@ -1028,8 +1028,8 @@ fn block_reason(
     // here (seam-1), so the coarse bucket is the honest floor.
     match class {
         SkipClass::MustRun => BlockReason::NoOracle,
-        SkipClass::EstablishWritten(_) => BlockReason::WrittenUpstream,
-        SkipClass::EstablishAmbient(_)
+        SkipClass::EstablishProbeWritten(_) => BlockReason::WrittenUpstream,
+        SkipClass::EstablishProbeAmbient(_)
         | SkipClass::QueryResolvable { .. }
         | SkipClass::EstablishMembers { .. }
         // arch-2: a ran InlineCall blocks like any oracled site — the call's consumed
@@ -1094,7 +1094,7 @@ fn attribute_rung(door: &Door, class: &SkipClass) -> Rung {
             BlockReason::ConsumedStatusTop => {
                 if matches!(
                     class,
-                    SkipClass::EstablishAmbient(_) | SkipClass::EstablishMembers { .. }
+                    SkipClass::EstablishProbeAmbient(_) | SkipClass::EstablishMembers { .. }
                 ) {
                     Rung::NeedsDeclaration
                 } else {
@@ -1613,7 +1613,7 @@ dpkg__predict() {
 
     #[test]
     fn written_upstream_purge_then_install() {
-        // `purge X; install X` (same cell) => the install is EstablishWritten => runs with
+        // `purge X; install X` (same cell) => the install is EstablishProbeWritten => runs with
         // written-upstream (its resting probe is stale). Pins the c4 reason precision.
         let r = report(
             "apt-get purge nginx\napt-get install -y nginx\n",
