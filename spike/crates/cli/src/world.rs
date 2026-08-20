@@ -1244,8 +1244,13 @@ mod tests {
                 ast: AstId(0),
                 sh: "apt-get install -y nginx".to_string(),
                 disposition: Disposition::Guard(
-                    GuardLicense::mint(fact, vouch, Verdict::Converged)
-                        .expect("a converged probe verdict mints a guard"),
+                    GuardLicense::mint(
+                        fact,
+                        vouch,
+                        Verdict::Converged,
+                        &dorc_analysis::lattice::May(dorc_analysis::lattice::Powerset::default()),
+                    )
+                    .expect("a converged probe verdict mints a guard"),
                 ),
             }],
             survival_report: SurvivalReport::default(),

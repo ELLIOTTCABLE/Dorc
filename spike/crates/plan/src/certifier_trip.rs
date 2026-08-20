@@ -286,8 +286,13 @@ apt_get__predict() {
             ast: AstId(leaf),
             sh: "apt-get install -y nginx".to_string(),
             disposition: Disposition::Guard(
-                crate::GuardLicense::mint(fact, a_vouch(fn_name, "body"), Verdict::Converged)
-                    .expect("a converged probe verdict mints a guard"),
+                crate::GuardLicense::mint(
+                    fact,
+                    a_vouch(fn_name, "body"),
+                    Verdict::Converged,
+                    &dorc_analysis::lattice::May(dorc_analysis::lattice::Powerset::default()),
+                )
+                .expect("a converged probe verdict mints a guard"),
             ),
         }
     }

@@ -732,7 +732,7 @@ impl ReplaceLicense {
         let mut representative: Option<FactKey> = None;
         for site in sites {
             match &site.class {
-                SkipClass::EstablishProbeAmbient(f) => {
+                SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => {
                     if observe(*f).effect != Verdict::Converged {
                         return None; // a non-converged body establish ⇒ the whole call runs
                     }
@@ -741,11 +741,10 @@ impl ReplaceLicense {
                 // A read-only Query guard never blocks (the wrapper-pun's `dpkg -s "$1"`); its
                 // own convergence does not gate the call's elision.
                 SkipClass::QueryResolvable { .. } => {}
-                // Every other class blocks the whole call (all-or-nothing): a written establish
-                // (stale probe), a MustRun (Kill/Opaque/⊤), an in-loop Members body, or a
-                // nested InlineCall (defensive — should be flattened).
-                SkipClass::EstablishProbeWritten(_)
-                | SkipClass::MustRun
+                // Every other class blocks the whole call (all-or-nothing): a MustRun
+                // (Kill/Opaque/⊤), an in-loop Members body, or a nested InlineCall (defensive —
+                // should be flattened).
+                SkipClass::MustRun
                 | SkipClass::EstablishMembers { .. }
                 | SkipClass::InlineCall { .. } => return None,
             }
@@ -1348,13 +1347,33 @@ impl GuardLicense {
     /// site 3). CONSUMES the [`ByVouch<VerdictVouch>`] by value (TC-tier-2: a [`core::claim::ByObservation`]
     /// or a silence claim does not satisfy this signature). A diverged/unknown verdict ⇒ `None` ⇒
     /// the site runs (`inv-kfail`).
+    ///
+    /// AND iff no consumed channel would read a value the guard REPLACES. `guards-mint-no-values`
+    /// is usually read as the guard's freedom — it reproduces nothing, so it needs no
+    /// probe-provenance — but it has a second edge: on the PASS path the line's status is the
+    /// CHECK's live rc and its output is the check's, not the original's. So a site whose Status,
+    /// Stdout, or Stderr some consumer reads cannot be guarded at all: `apt-get install -y vim;
+    /// rc=0` would capture `apt_get__is_converged`'s status, a value the authored program could
+    /// never produce. A mutator's own status is ⊤ (`fork-mutator-rc`) and the check's is unknown
+    /// until apply, so the gate is [`consumption_ok`] at ⊤ — which admits exactly
+    /// `StatusInvariant` (the `cmd || true` left, consumed-in-form and dead-in-fact) and blocks
+    /// every reader that could tell the difference.
+    ///
+    /// The conjunct lives in the MINT rather than beside its caller because it is a property of
+    /// the verb, not of one decision path: before effective world reach the guard rung was
+    /// reachable only from `EstablishProbeWritten`, whose rc-consuming population happened to be
+    /// empty in the corpus, so the omission was invisible.
     #[must_use]
     pub fn mint(
         fact: FactKey,
         vouch: ByVouch<VerdictVouch>,
         probe_verdict: Verdict,
+        consumed: &May<Powerset<Channel>>,
     ) -> Option<GuardLicense> {
         if probe_verdict != Verdict::Converged {
+            return None;
+        }
+        if !consumption_ok(consumed, Predicted::Top) {
             return None;
         }
         Some(GuardLicense {
@@ -1633,7 +1652,8 @@ pub fn build_vouches_from_sets(
             SkipClass::InlineCall { sites } => sites
                 .iter()
                 .filter_map(|site| match site.class {
-                    SkipClass::EstablishProbeAmbient(fact) => {
+                    SkipClass::EstablishProbeAmbient(fact)
+                    | SkipClass::EstablishProbeWritten(fact) => {
                         Some((leaf_idx, site.node, fact, false))
                     }
                     _ => None,
@@ -3522,10 +3542,10 @@ fn push_member_predicts(
 /// Compile the per-body-site checks for an inlined function-CALL (arch-2, brk-2, `i-4`): one
 /// [`ProbePredict`] per effect-bearing/probeable spliced body site, each carrying its body-site
 /// index as `member` (the `site N.M` sub-record, M = the index into the call's body-site list)
-/// and the body site's resolved cell (positionals bound at the call, `i-2`). An `EstablishProbeAmbient`
-/// body site is an Establish-class record; a `QueryResolvable` body site is a Query-class record
-/// (its rc is fold-usable per its `valid` bit, the wrapper-pun's `dpkg -s "$1"`); a Pure/MustRun/
-/// Written body site ships nothing (not elision-gating).
+/// and the body site's resolved cell (positionals bound at the call, `i-2`). An establish body site
+/// is an Establish-class record; a `QueryResolvable` body site is a Query-class record (its rc is
+/// fold-usable per its `valid` bit, the wrapper-pun's `dpkg -s "$1"`); a Pure/MustRun body site
+/// ships nothing (not elision-gating).
 ///
 /// ALL-OR-NOTHING on probe-ability (the call's all-or-nothing license cannot elide a partial
 /// body): if any ESTABLISH body site has no declared probe body, the WHOLE call is unresolvable
@@ -3547,7 +3567,7 @@ fn push_inline_predicts(
         // [`ValueFlow::argv_values`] returns the positional-bound form for a body node).
         let body_argv = value.argv_values(body.node);
         match &body.class {
-            SkipClass::EstablishProbeAmbient(fact) => {
+            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
                 let Some((provider, args, shipped)) =
                     ship_for_argv(&body_argv, body.node, ship_body)
                 else {
@@ -3593,8 +3613,7 @@ fn push_inline_predicts(
                 }
             }
             // Not elision-gating ⇒ no record.
-            SkipClass::EstablishProbeWritten(_)
-            | SkipClass::MustRun
+            SkipClass::MustRun
             | SkipClass::EstablishMembers { .. }
             | SkipClass::InlineCall { .. } => {}
         }
@@ -3634,6 +3653,10 @@ fn push_inline_predicts(
 /// vouch, so this entry now takes the [`Vouches`] map too (build it with [`build_vouches`]). The
 /// survival tier is still off (`None`) — this entry stays kill-unaware AND flag-off.
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the compatibility entry accepts the complete kernel context before bundling the survival-only inputs for the shared settlement"
+)]
 pub fn build_plan(
     src: &str,
     ast: &Ast,
@@ -3993,7 +4016,7 @@ fn site_disposition(p: &DecideSite<'_>) -> (Disposition, SurvivalAccount) {
 /// demotion account exact: "an elision the walls refused" is precisely a site that held a license
 /// and lost it to a wall — the same population the retired wall walk demoted. A stale site falls to
 /// the guard tier, whose own conditions are unchanged: a reached vouch, a converged measurement,
-/// and a render that can carry the insertion.
+/// and no consumed channel the insertion would answer for.
 fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, SurvivalAccount) {
     let observed = (p.observe)(fact);
     let vouch = p.vouches.get(p.node, fact);
@@ -4003,7 +4026,7 @@ fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, Sur
         fact,
         Grade::Must,
         verdict,
-        consumed,
+        consumed.clone(),
         observed.status,
         vouch.cloned(),
     );
@@ -4033,7 +4056,7 @@ fn establish_disposition(p: &DecideSite<'_>, fact: FactKey) -> (Disposition, Sur
                 SurvivalAccount::Silent
             };
             let disposition = match vouch {
-                Some(v) => match GuardLicense::mint(fact, v.clone(), observed.effect) {
+                Some(v) => match GuardLicense::mint(fact, v.clone(), observed.effect, &consumed) {
                     Some(license) => Disposition::Guard(license),
                     None => Disposition::Run,
                 },
@@ -4113,7 +4136,9 @@ fn inline_disposition(p: &DecideSite<'_>, sites: &[InlineSite]) -> (Disposition,
     let expected: Vec<(CfgNodeId, FactKey)> = sites
         .iter()
         .filter_map(|site| match site.class {
-            SkipClass::EstablishProbeAmbient(fact) => Some((site.node, fact)),
+            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+                Some((site.node, fact))
+            }
             _ => None,
         })
         .collect();
@@ -5423,7 +5448,7 @@ apt_get__is_converged() { return 0; }
                 // so a scaffold that vouched only ambient sites would hide the guard rung from
                 // every native test (`30K` §5.1).
                 SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
-                    vouches.insert(*node, *fact, test_vouch())
+                    vouches.insert(*node, *fact, test_vouch());
                 }
                 SkipClass::EstablishMembers { members, .. } => {
                     for fact in members {
@@ -5432,7 +5457,9 @@ apt_get__is_converged() { return 0; }
                 }
                 SkipClass::InlineCall { sites } => {
                     for site in sites {
-                        if let SkipClass::EstablishProbeAmbient(fact) = site.class {
+                        if let SkipClass::EstablishProbeAmbient(fact)
+                        | SkipClass::EstablishProbeWritten(fact) = site.class
+                        {
                             vouches.insert(site.node, fact, test_vouch());
                         }
                     }
@@ -5465,7 +5492,8 @@ apt_get__is_converged() { return 0; }
             GuardLicense::mint(
                 nginx_fact(),
                 ByVouch::vouched(vouch(), Rung::Both),
-                Verdict::Diverged
+                Verdict::Diverged,
+                &quiet(),
             )
             .is_none(),
             "a diverged probe-verdict must not mint a guard"
@@ -5474,7 +5502,8 @@ apt_get__is_converged() { return 0; }
             GuardLicense::mint(
                 nginx_fact(),
                 ByVouch::vouched(vouch(), Rung::Both),
-                Verdict::Unknown
+                Verdict::Unknown,
+                &quiet(),
             )
             .is_none(),
             "an unknown probe-verdict must not mint a guard"
@@ -5483,6 +5512,7 @@ apt_get__is_converged() { return 0; }
             nginx_fact(),
             ByVouch::vouched(vouch(), Rung::Both),
             Verdict::Converged,
+            &quiet(),
         )
         .expect("a converged probe-verdict + vouch mints a guard");
         assert_eq!(license.fact(), nginx_fact());
@@ -5503,6 +5533,7 @@ apt_get__is_converged() { return 0; }
             nginx_fact(),
             ByVouch::vouched(vouch, Rung::Both),
             Verdict::Converged,
+            &quiet(),
         )
         .unwrap();
         // The guard_shape law: `( <check> ) || <original verbatim>   # dorc: guard [...]`.
@@ -5552,6 +5583,7 @@ apt_get__is_converged() { return 0; }
                         nginx_fact(),
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
+                        &quiet(),
                     )
                     .unwrap(),
                 ),
@@ -5607,6 +5639,7 @@ apt_get__is_converged() { return 0; }
                         nginx_fact(),
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
+                        &quiet(),
                     )
                     .unwrap(),
                 ),
@@ -5736,6 +5769,7 @@ apt_get__is_converged() { return 0; }
                         nginx_fact(),
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
+                        &quiet(),
                     )
                     .unwrap(),
                 ),
@@ -5782,6 +5816,7 @@ apt_get__is_converged() { return 0; }
                         Rung::Both,
                     ),
                     Verdict::Converged,
+                    &quiet(),
                 )
                 .unwrap(),
             ),
@@ -6011,7 +6046,6 @@ apt_get__is_converged() { return 0; }
             &mut dorc_core::ProvArena::new(),
         );
         let classes = classification.value;
-        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -6061,7 +6095,6 @@ apt_get__is_converged() { return 0; }
             &mut dorc_core::ProvArena::new(),
         );
         let classes = classification.value;
-        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -6114,7 +6147,6 @@ apt_get__is_converged() { return 0; }
             &mut dorc_core::ProvArena::new(),
         );
         let classes = classification.value;
-        let invalidators = classification.invalidators;
         let probe = compile_probe(
             &parsed.value,
             &cfg,
@@ -6241,7 +6273,6 @@ apt_get__is_converged() { return 0; }
             &mut dorc_core::ProvArena::new(),
         );
         let classes = classification.value;
-        let invalidators = classification.invalidators;
         let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
         let (_vouches, narrative) = build_vouches(
             &[verdict_src],
@@ -7226,7 +7257,9 @@ apt_get__is_converged() {
                 members.first().map(|fact| (*node, *fact))
             }
             SkipClass::InlineCall { sites } => sites.iter().find_map(|site| match site.class {
-                SkipClass::EstablishProbeAmbient(fact) => Some((site.node, fact)),
+                SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+                    Some((site.node, fact))
+                }
                 _ => None,
             }),
             _ => None,
@@ -7368,17 +7401,11 @@ apt_get__is_converged() {
             env!("CARGO_MANIFEST_DIR"),
             "/../../fixtures/pi-webhost.book.sh"
         ));
-        // Since effective world reach (`30K`), the residual poison costs the ELISION and lands the
-        // site on the GUARD rung rather than a bare run: the neighbours really execute, so the
-        // resting measurement is stale, but the oracle's own check can re-decide live at apply.
-        // The datum is unchanged — the install is not elided on this scrappy book — and what moved
-        // is only how honestly the plan says so.
+        // The residual poison costs the elision. The book's `set -e` also consumes the install's
+        // status, so a guard would replace that status with the check's live answer; it must run.
         let (plan, _) = plan_for(fixture, Verdict::Converged);
         assert!(
-            matches!(
-                find(&plan, "apt-get install").disposition,
-                Disposition::Guard(_)
-            ),
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
             "install still does not elide: two upstream un-oracled neighbours ($(hostname) in the \
              case scrutinee, and `command -v nginx` in the if-guard) really run — `update` is no \
              longer the poison, but it is not the only one (notes/193 strain-5)"
@@ -7436,7 +7463,6 @@ apt_get__is_converged() {
                 &mut dorc_core::ProvArena::new(),
             );
             let classes = classification.value;
-            let invalidators = classification.invalidators;
             assert!(
                 classes
                     .iter()
@@ -7711,6 +7737,8 @@ apt_get__is_converged() {
     // that mechanism away and confirming the pin reddens (the lane report records the results).
     // =======================================================================
 
+    type FootprintChooser<'a> = &'a dyn Fn(&str) -> Option<String>;
+
     /// Build a plan over the package corpus with full control of the world (`30K` §4).
     ///
     /// `verdict_of` answers `package:<entity>@installed`; `footprints_of` decides the run's policy
@@ -7719,7 +7747,7 @@ apt_get__is_converged() {
     fn effective_plan(
         src: &str,
         verdict_of: impl Fn(&str) -> Verdict,
-        footprints_of: Option<&dyn Fn(&str) -> Option<String>>,
+        footprints_of: Option<FootprintChooser<'_>>,
     ) -> (Plan, Interner) {
         let mut i = Interner::default();
         let idx = package_index(&mut i);
@@ -8723,7 +8751,6 @@ apt_get__is_converged() {
             &mut dorc_core::ProvArena::new(),
         );
         let classes = classification.value;
-        let invalidators = classification.invalidators;
         assert!(!classes.is_empty(), "fixture has classify leaves");
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {

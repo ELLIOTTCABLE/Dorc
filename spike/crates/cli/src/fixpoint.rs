@@ -323,6 +323,20 @@ impl dorc_plan::RoundModel for WorldRoundModel<'_> {
     }
 }
 
+impl WorldRoundModel<'_> {
+    fn classify_origin(&mut self) -> ClassifiedRound {
+        classify_round(
+            self.frozen,
+            &dorc_analysis::erase::ErasedSites::none(),
+            self.interner,
+            self.arena,
+            &mut BTreeMap::new(),
+            &mut BTreeMap::new(),
+            self.trip,
+        )
+    }
+}
+
 /// Settle the effective world to quiescence (`30K` §4.2), over the frozen model and the frozen
 /// records.
 ///
@@ -375,9 +389,10 @@ pub fn settle_world(
         ));
     }
     SettledFixpoint {
-        round: model
-            .round
-            .expect("a settlement runs at least one classification round"),
+        round: match model.round.take() {
+            Some(round) => round,
+            None => model.classify_origin(),
+        },
         by_fact: model.by_fact,
         merge_narrative: model.merge_narrative,
         collapsed: model.collapsed,

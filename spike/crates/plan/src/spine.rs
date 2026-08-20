@@ -305,8 +305,15 @@ mod tests {
                     ast: AstId(0),
                     sh: "apt-get install curl".to_owned(),
                     disposition: Disposition::Guard(
-                        crate::GuardLicense::mint(fact, vouch, Verdict::Converged)
-                            .expect("a converged probe verdict mints a guard"),
+                        crate::GuardLicense::mint(
+                            fact,
+                            vouch,
+                            Verdict::Converged,
+                            &dorc_analysis::lattice::May(
+                                dorc_analysis::lattice::Powerset::default(),
+                            ),
+                        )
+                        .expect("a converged probe verdict mints a guard"),
                     ),
                 },
                 Step {

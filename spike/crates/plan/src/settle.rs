@@ -32,7 +32,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use dorc_aid::narrative::{ChannelCoverage, DemoteTag};
 use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_analysis::certify::{CertifierTrip, SolveConsistency};
-use dorc_analysis::cfg::{Cfg, CfgNodeId};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, ExecutionOwner};
 use dorc_analysis::effect::SkipClass;
 use dorc_core::spine::{Grade, SpineSurvival, SurvivalDemote, SurvivalOutcome};
 use dorc_core::{AstId, Channel, FactBacking, FactKey, KindId, LeafId, Observable};
@@ -300,9 +300,9 @@ pub fn settle_effective_world(
             failures = failures.saturating_add(outcome.solve_failures);
             // The maximal-effects answer is a fixpoint of an empty ledger by construction: nothing
             // it proves is recorded, so nothing it proves can license anything downstream.
-            let witness = NoExecutionLedger::new()
-                .record_round(RoundId(number), [])
-                .expect("an empty ledger records nothing");
+            let Some(witness) = NoExecutionLedger::new().record_round(RoundId(number), []) else {
+                continue;
+            };
             return Settlement {
                 spine: outcome.round.seal(witness).write_spine(),
                 classification: outcome.classification,
@@ -357,6 +357,10 @@ struct RoundOutcome {
     solve_failures: u32,
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one round keeps the effective solve, validity fold, decisions, and proof collection in their required causal order"
+)]
 fn one_round(
     inputs: &SettleInputs<'_>,
     model: &mut dyn RoundModel,
@@ -459,6 +463,9 @@ fn one_round(
                 &leaf_of,
             ),
         );
+        let owns_invalidator = classification.invalidators.iter().any(|invalidator| {
+            matches!(cfg.execution_owner(*invalidator), ExecutionOwner::Leaf(owner) if owner == *node)
+        });
         let decision = decide_site(&crate::DecideSite {
             cfg,
             ast,
@@ -473,7 +480,7 @@ fn one_round(
             valid_at: &valid_at,
             leaf_fact: &leaf_fact,
             dead: dead.get(node),
-            invalidator: classification.invalidators.contains(node),
+            invalidator: owns_invalidator,
             accounts_survival,
         });
         let disposition = decision.disposition;
@@ -549,7 +556,9 @@ fn survival_subject(class: &SkipClass) -> Option<FactKey> {
         }
         SkipClass::EstablishMembers { members, .. } => members.first().copied(),
         SkipClass::InlineCall { sites } => sites.iter().find_map(|site| match site.class {
-            SkipClass::EstablishProbeAmbient(fact) => Some(fact),
+            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+                Some(fact)
+            }
             _ => None,
         }),
         SkipClass::QueryResolvable { .. } | SkipClass::MustRun => None,

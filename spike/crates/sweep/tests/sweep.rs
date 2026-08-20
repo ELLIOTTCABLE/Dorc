@@ -39,7 +39,7 @@ fn end_state_equality_and_attribution_under_lies() {
         assert!(
             !t.off_diverged(),
             "seed {s} [{:?}]: flag-OFF baseline under-executed (s_bare != s_apply_off) — the \
-             conservative baseline elided something unsafe.\n  victim={}\n  bare={:?}\n  off={:?}",
+              conservative baseline elided something unsafe.\n  victim={}\n  bare={:?}\n  off={:?}",
             t.topology,
             t.victim_label,
             t.s_bare,

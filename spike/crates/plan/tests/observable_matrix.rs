@@ -1506,7 +1506,6 @@ fn inline_call_emits_site_n_m_probe_records() {
         &mut dorc_core::ProvArena::new(),
     );
     let classes = classification.value;
-    let invalidators = classification.invalidators;
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg,
@@ -1568,7 +1567,6 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &mut dorc_core::ProvArena::new(),
     );
     let classes = classification.value;
-    let invalidators = classification.invalidators;
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg,

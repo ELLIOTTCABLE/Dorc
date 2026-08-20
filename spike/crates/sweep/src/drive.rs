@@ -8,8 +8,8 @@
 //! provably cannot observe a command's true effect (rul24-overtype, the whole point of the split).
 //!
 //! [`evolve`] then walks the two host copies from the same S0: **bare** applies every mutator's
-//! true effect in book order; **plan** applies only the `Run`-disposition sites' effects (an
-//! elided/omitted site "didn't run"). End-state equality of the two is the soundness oracle
+//! true effect in book order; **plan** applies `Run` sites and a `Guard`'s fallback when its live
+//! fact is diverged (an elided/omitted site "didn't run"). End-state equality of the two is the soundness oracle
 //! (24B §5).
 //!
 //! Approach-#3 discipline (`notes/123` f18/f23): the kernel is pure, the sole entropy is the
@@ -218,8 +218,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
 }
 
 /// Evolve two host copies from `s0` and return `(S_bare, S_apply)` (24B §3). **bare** applies
-/// every mutator's true effect in book order (the whole book ran); **plan** applies only the
-/// `Run`-disposition sites' effects (an elided/omitted site applies nothing — it "didn't run").
+/// every mutator's true effect in book order (the whole book ran); **plan** applies `Run` sites and
+/// a `Guard`'s fallback when its live fact is diverged (an elided/omitted site applies nothing — it
+/// "didn't run").
 /// The zip is 1:1 by book order — the plan's steps are span-sorted (== book order) and the
 /// generator emits one command per site — so a length mismatch is a generator/kernel drift and
 /// panics WITH nothing to hide (a structural bug in the net itself, not an untrusted-input path).
@@ -243,7 +244,12 @@ pub(crate) fn evolve(
     for (step, effect) in plan.steps.iter().zip(&ground.site_effects) {
         let Some(effect) = effect else { continue };
         bare.apply_delta(effect.delta());
-        if matches!(step.disposition, Disposition::Run) {
+        let executes = match &step.disposition {
+            Disposition::Run => true,
+            Disposition::Guard(license) => applied.verdict(license.fact()) != Verdict::Converged,
+            Disposition::Replace(..) | Disposition::Omit { .. } => false,
+        };
+        if executes {
             applied.apply_delta(effect.delta());
         }
     }

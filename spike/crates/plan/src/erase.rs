@@ -44,7 +44,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::{Cfg, CfgNodeId};
 use dorc_analysis::effect::{FactKey, SkipClass};
-use dorc_analysis::erase::ErasureLicense;
 use dorc_analysis::lattice::May;
 use dorc_core::{AstId, Observable, Predicted, Rc};
 use dorc_syntax::ast::Ast;
@@ -204,6 +203,10 @@ pub fn prove_dead_branches(
 /// span-elided along with the command that binds it, so it suppresses nothing. Including it
 /// would not be merely conservative; `cmd >/dev/null 2>&1 || mutator` is the ladder idiom, and
 /// refusing it would disable the fixpoint for the exact shape it exists to fix.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one predicate cross-checks the controller's AST shape, CFG context, classification, effective validity, and observation against the shared replacement seat"
+)]
 fn controller_substitutes_away(
     ast: &Ast,
     cfg: &Cfg,

@@ -251,12 +251,12 @@ impl NoExecutionLedger {
     /// The dead-branch half, as the analysis-side overlay (`erasure-is-applied-once-never-consulted`).
     #[must_use]
     pub fn classify_overlay(&self) -> dorc_analysis::erase::ErasedSites {
-        dorc_analysis::erase::ErasedSites::from_licenses(self.entries.iter().filter_map(
-            |(site, entry)| {
-                matches!(entry.proof, NoMutationProof::DeadBranch(_))
-                    .then(|| dorc_analysis::erase::ErasureLicense::for_site(*site))
-            },
-        ))
+        dorc_analysis::erase::ErasedSites::from_licenses(
+            self.entries
+                .iter()
+                .filter(|(_, entry)| matches!(entry.proof, NoMutationProof::DeadBranch(_)))
+                .map(|(site, _)| dorc_analysis::erase::ErasureLicense::for_site(*site)),
+        )
     }
 }
 

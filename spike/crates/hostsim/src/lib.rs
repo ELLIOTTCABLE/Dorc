@@ -818,7 +818,7 @@ apt_get__predict() {
             dorc_analysis::cfg::CfgNodeId,
             dorc_analysis::effect::SkipClass,
         )>,
-        std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+        BTreeSet<dorc_analysis::cfg::CfgNodeId>,
     ) {
         let value = dorc_analysis::value::analyze(cfg, ast, i);
         let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
@@ -1156,6 +1156,10 @@ apt_get__predict() {
     }
 
     #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one deterministic seed loop exercises the entire probe-to-plan pipeline and its per-seed assertions"
+    )]
     fn dst_apply2_chain_probe_simulate_elide_over_seeds() {
         // apply-2 end-to-end — the WHOLE compiler chain with NO executor (the human's
         // split): source → analyze → compile_probe → SIMULATE the probe against the
