@@ -3,16 +3,19 @@ arrangement: why-vouch-payload-establish
 ---
 -- book.sh --
 #!/bin/sh
-# The firewall site survives a running package wall, so its why-chain carries the firewall vouch
-# beside the package author's at-most claim. The two authors know nothing about each other; Dorc
-# derives their disjointness. Every tool named here is an inert corpus stand-in.
+# The surviving site is an AGGREGATE: one call whose inlined body carries two establishes, erased
+# together, so the survival chain quotes one vouch per erased establish rather than one for the
+# site. `apt-get install` came back diverged and RUNS, walling the book above the call. Every tool
+# named here is an inert corpus stand-in.
 apt-get install -y oldpkg
-ufw allow 443/tcp
+open_https() { ufw allow 443/tcp; ufw allow 80/tcp; }
+open_https
 
 -- firewall.oracle.sh --
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.2
-# Nothing here knows about packages; this vouch speaks only for firewall state.
+# Nothing here knows about packages: the disjointness the survival rests on is derived from the
+# two kinds, never declared by either author.
 ufw__predict() {
    verb=$1; shift
    rule : sm.dorc.Firewall = "$1"
@@ -32,7 +35,7 @@ ufw__is_converged() {
 -- package.oracle.sh --
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.2
-# The package model remains complete enough to describe either world-state of the upstream site.
+# The `disturbs` member below is the AT-MOST claim the whole survival hangs on.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -65,33 +68,36 @@ apt_get__is_converged() {
 }
 
 -- probe-results.txt --
-dorc-records/1 nonce=dorc attempt=1 host=localhost book=eef94f5f4fd62ed4fd766db6123f949c31df38b822f137f76db95396020fb3b5 sites=2 @@dorc@@
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=0427f89526ba54777c8219f181c7d124b9a01459da4e3b166f60b5228d8a1d9f sites=3 @@dorc@@
 dorc site 0 effect=absent rc=1 @@dorc@@
-dorc site 1 effect=holds rc=0 @@dorc@@
+dorc site 1.0 effect=holds rc=0 @@dorc@@
+dorc site 1.1 effect=holds rc=0 @@dorc@@
 dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- replay --
-$ dorc why book.sh:6 --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt --all
+$ dorc why book.sh:8 --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt --all
       [ book.sh, participating lines:
-   5 | apt-get install -y oldpkg
-   6 | ufw allow 443/tcp
+   6 | apt-get install -y oldpkg
+   8 | open_https
 
    [unwritten: why-participating-lines-closure]
 
    === OUTCOME ===
 
-   6|ufw skipped RATHER THAN guarded:
-      5|apt-get ran above it, which normally forces an apply-time guard-clause; but
+   8|open_https skipped RATHER THAN guarded:
+      6|apt-get ran above it, which normally forces an apply-time guard-clause; but
       --risk-faultless-skips activates acting on authors' at-most claims, and that claim
       does not reach what the skip was reported on.
 
    === ANALYSIS ===
 
-   6|ufw being skipped stood on all of the following, together:
+   8|open_https being skipped stood on all of the following, together:
 
-   * firewall.oracle.sh:12  reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
-   * firewall.oracle.sh:15  vouches   "re-running this line adds nothing worth running
-                                      while sm.dorc.Firewall:443/tcp holds"
+   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:80/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:16  vouches   "re-establishing sm.dorc.Firewall:443/tcp@allowed
+                                      sm.dorc.Firewall:80/tcp@allowed adds nothing worth
+                                      running"
    ! package.oracle.sh:21   claims    "`apt-get` touches AT MOST {sm.dorc.Package:oldpkg}"
 
       This speaks for everything it did NOT measure. Fact derived from as-written contract
@@ -103,20 +109,23 @@ $ dorc why book.sh:6 --book=book.sh --pre-source firewall.oracle.sh --pre-source
    * dorc                   derives   that claim is proven disjoint from
                                       sm.dorc.Firewall:443/tcp -- it does not overlap what
                                       was reported
+   * dorc                   derives   that claim is proven disjoint from
+                                      sm.dorc.Firewall:80/tcp -- it does not overlap what
+                                      was reported
 
    `!` marks the link that covers unmeasurable things; the class of information no runnable
    command could test.
 
-   so: nothing 5|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp, which is what
-   the skip was reported on; the skip stood.
+   so: nothing 6|apt-get claims to touch overlaps sm.dorc.Firewall:443/tcp
+   sm.dorc.Firewall:80/tcp, which is what the skip was reported on; the skip stood.
 
    === NEXT STEPS ===
 
-   if 6|ufw SHOULD have run:
+   if 8|open_https SHOULD have run:
 
-      suspect:  the 5|apt-get claim -- the only link speaking for unmeasured state. if it
-                also touches sm.dorc.Firewall:443/tcp, it is what wrongly kept this line
-                out.
+      suspect:  the 6|apt-get claim -- the only link speaking for unmeasured state. if it
+                also touches sm.dorc.Firewall:443/tcp sm.dorc.Firewall:80/tcp, it is what
+                wrongly kept this line out.
 
       fix:      package.oracle.sh:21 (widen the claim; every consumer heals)
    OR
@@ -125,7 +134,7 @@ $ dorc why book.sh:6 --book=book.sh --pre-source firewall.oracle.sh --pre-source
 
       verify:   `dorc plan <book> <host>` (re-measures the world as it is now; a fact that
                 came back wrong comes back diverged, and the line returns)
-      review:   `dorc why book.sh:6 --all` (every link, unselected, exhaustive)
+      review:   `dorc why book.sh:8 --all` (every link, unselected, exhaustive)
 
    [unnarrated: WallFormation]
 
