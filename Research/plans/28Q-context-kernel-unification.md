@@ -637,10 +637,12 @@ own byte-identity gate.
   unchanged, the defect twin is retired. Review residue that does not reopen this stage:
   frozen-backing lifetime, an honest/non-leaf wall narrative operand, final-round typestate,
   and the effective-reach prose defining case (`30Kb`).
-- **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`): build the one
-  bundle projection, compose the locator DAG into a real diagnostic, reify multipart /
-  flattened / preserved-tree artifact forms at the Plan/Spine boundary, and only then
-  promote the `load30-*` executable specification. Gate: single-closure byte identity,
+- **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`): land `30La`, build
+  the one bundle projection, and compose the locator DAG into a real diagnostic; then
+  `plans/30L` establishes definition-keyed elision regions and shared route decisions
+  before `30I` reifies multipart / flattened / preserved-tree artifact forms at the
+  Plan/Spine boundary and promotes the `load30-*` executable specification. Gate:
+  single-closure byte identity,
   direct execution, guarded transitive diamonds, isolated-cwd artifacts, and the final
   effective-world dispositions all agree before the corpus-wide golden sweep.
 - **stage-iii-world-scopes** (P3): the context-slot host×incarnation coordinates;

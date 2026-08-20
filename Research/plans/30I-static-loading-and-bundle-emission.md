@@ -44,6 +44,12 @@ aggregates currently measure through `__predict` while licensing through
 `aggregate30-*-verdict-primacy` XFAILs are the acceptance surface. Step 5b, locator
 consumption, and `30L` consume the repaired primitive; steps 7/8 never see the interim.
 
+`impl-elision-regions-precede-artifact-forms` - HUMAN-DIRECTED sequencing correction
+(2026-08-20): after step 6 has produced the bundle projection and one real locator
+consumer, `plans/30L` lands definition-keyed elision regions and universal shared-route
+decisions. Only then may steps 7/8 reify the Plan/Spine artifact boundary and bless its
+corpus. Artifact forms consume region identity; they do not reserve a retrofit seat for it.
+
 ### Where the build stands
 
 Landed (`ai/r30-static-loading`; as-built map, consumption API and open questions
@@ -197,9 +203,10 @@ Each step unblocks the next.
    onto the existing locator edges** and carry one
    chain through a REAL diagnostic render. A debug dump or structure-only unit
    test is necessary and not sufficient. This discharges the force-now aid
-   requirement that could not close before the bundle existed.
-7. **`step-7-reify-plan-artifact-forms` - reify artifact forms at the Plan/Spine
-   boundary.** The executable product is
+   requirement that could not close before the bundle existed. Commit and stop for
+   `plans/30L`; step 7 does not begin before its region identities and shared decisions land.
+7. **`step-7-reify-plan-artifact-forms` - after `plans/30L`, reify artifact forms at
+   the Plan/Spine boundary.** The executable product is
    the Plan projection plus its generated files, not ad-hoc CLI writes beside a
    string-only Plan; human and executable forms derive from one final structure.
    Implement the three semantic forms; auto chooses the most flattened safe one

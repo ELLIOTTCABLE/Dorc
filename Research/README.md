@@ -83,8 +83,13 @@ and carries the license-contamination map.
   source maps)** — **`plans/30I`** (THE design; one load model feeding analysis,
   explicit bundles, multipart plans, and full flattening; its §13 is the xfail
   specimen matrix) over the closure build record `notes/30G`; its current implementation
-  pauses after the complete load-occurrence account for `notes/30K`, then resumes bundle
-  and artifact projections.
+  completed the load-occurrence account and `notes/30K`, then resumes through the
+  `30La` repair and bundle/locator work before `plans/30L` interposes ahead of
+  artifact forms.
+- **Function-body elision & loop staging** — **`plans/30L`** (THE design: definition-keyed
+  elision regions meet every closed invocation route at `Must`; loop populations gain their
+  final identity shape now and remain `Open` until propagation) over `30K`'s effective-world
+  settlement; `notes/30La` is its aggregate verdict-primacy correctness prerequisite.
 - **When convergence vocabulary may license survival** — **`plans/30J`** (THE
   ruled P2 model: one genuine predict qualifies the whole family's verdict/read
   selectors within its speaker closure; implementation waits for the real-oracle
@@ -265,6 +270,11 @@ and carries the license-contamination map.
   synthesis **`notes/28T`**. Human queues ride `28F`/`28H`/`28Q` §9.
 
 - **r29** — a quarantined lane (`Research/quarantine-DO-NOT-READ/`); off-limits.
+
+- **r30 (OPEN)** — correctness tooling and Spine landed (`notes/300`–`309`); current
+  product work is the static-load/artifact sequence `plans/30I` → `notes/30K` →
+  `plans/30L`, with the deferred prediction-contract designs in `notes/30D` and
+  `plans/30J`. Current state and exact next boundary: `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the

@@ -70,11 +70,20 @@ erasure); honest/non-leaf wall formation lacks a truthful non-`LeafId` narrative
 `WorldRoundModel::classify_origin` remains an impossible-state fallback pending final-round
 typestate; the effective-reach prose component still lacks a genuine defining case.
 
+**Function-body elision is direction-ruled in `plans/30L`.** Definition-keyed
+`ElisionRegion`s on the book-custody surface receive one shared edit only when every route in
+a closed invocation population proves the same result at `Must`; dorc-lang interiors remain
+outside the attention surface. Loop/member identity is staged now, but loop-generated
+populations remain `Open` until the later propagation lane. `30L` consumes `30K`'s settlement
+and `30I`'s bundle loci, and carries the frozen-backing and non-leaf narrative residues above.
+
 **Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account` and `30K` are done.
-RESUME `30I:step-5b-build-bundle-projection` next, then locator consumption, artifact forms,
-and final XFAIL/golden promotion. This placed effective-world reach before both the new
-Plan/Spine artifact boundary and `28Q:stage-iii-world-scopes`, without reopening
-definition factoring, verdict primacy, snapshot emission, Spine, or custody.
+Land the `30La` aggregate verdict-primacy repair next; then resume
+`30I:step-5b-build-bundle-projection` and locator consumption; then build `30L`; only then
+reify artifact forms and perform final XFAIL/golden promotion. This places effective-world
+reach and region identity before the new Plan/Spine artifact boundary and
+`28Q:stage-iii-world-scopes`, without reopening definition factoring, snapshot emission,
+Spine, or custody.
 
 **Family vocabulary qualification is direction-closed, implementation deferred**
 (`plans/30J`, human-acked 2026-08-19): one genuine predict qualifies the whole

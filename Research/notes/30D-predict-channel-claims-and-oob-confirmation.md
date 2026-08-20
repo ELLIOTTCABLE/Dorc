@@ -12,6 +12,9 @@
 > the outer-wrapper implementation direction; and preserve the alternatives and
 > rejected routes that led here. This does not change the verdict-function
 > `0 / 1 / >=2` partition.
+> `plans/30L` is a later consumer, not an implementation seat: its universal route
+> proofs consume the already-admitted per-channel view and must not rederive coverage,
+> freeze today's defaults, or apply the verdict partition to predicted Status.
 >
 > Confidence markers: `+SURE` directly follows typed law or current design;
 > `~SUSPECT` is a reasoned direction; `-GUESS` is weak; `--WONDER` is open.

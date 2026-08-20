@@ -524,6 +524,8 @@ Grounds:
   producer rather than the load, bundle, artifact, or locator models.
 - speaker/custody closures already exist; no queued r30 mechanic needs a
   qualification witness.
+- `plans/30L` edits book-custody regions and consumes the existing dialect/survival
+  answer; its universal route meet neither needs nor mints a P2 qualification witness.
 - no wire, durable, cache, or public format must reserve a field now.
 - the project has no real stdlib or published third-party oracle corpus whose
   behavior currently depends on the ruling.
