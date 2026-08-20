@@ -20,6 +20,12 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
   Complete when both `guard26-*` XFAILs promote, the unmodeled control stays green, and
   the obsolete walks are deleted. Evidence: `trial/r26/predictions.md` §7 · `notes/26F`.
 
+* [ ] **post-kernel predict-contract arc (`30D` + `30J`)** — after the current kernel/loading
+  push quiesces, replace `return 2`-as-predict-decline atomically with exact Status plus
+  authored DREP channel speech, then implement predict-qualified family vocabulary. This
+  must land before the starter stdlib, a real survival-authoring trial, or third-party
+  oracle publication; the current kernel owes only `30Da`'s narrow preservation rider.
+
 * [ ] **the `command -v` load model (`30I:pin-command-v-load-model`)** — `command -v` stays a meaningful, idiomatic, supported dorc-lang route for asking what a shell resolves under a name, and is explicitly NOT forfeited; it is simply not the basis for exact-package guard recognition, which now rides the variable sentinel. Owed: which shell categories and floor/run-target variations the load model represents, and when that wider question may participate in exact guarded-source recognition. Evidence and floor measurements: `notes/30Ic` (output-slash classification measured-refuted — `PATH=:` makes both pinned floors print a bare name for an external; aliases can carry slashes; posh exposes neither aliases nor reserved words).
 
 * [ ] **model-`local` in the tracers** — the builtin-deny (`26J`) now ⊤-degrades `local`, but the ruled dialect is "POSIX + `local`": any realistic oracle body using it walls its site. Safe, but caps value the moment real oracles get written; modeling local-assignment is the obvious small next increment. Second-order kin: book-side `set --` sub-form (`26J` residue).
