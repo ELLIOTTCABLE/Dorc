@@ -7711,7 +7711,7 @@ apt_get__is_converged() {
     fn effective_plan(
         src: &str,
         verdict_of: impl Fn(&str) -> Verdict,
-        footprints_of: Option<&dyn Fn(&FactKey) -> Option<EntityCoord>>,
+        footprints_of: Option<&dyn Fn(&str) -> Option<String>>,
     ) -> (Plan, Interner) {
         let mut i = Interner::default();
         let idx = package_index(&mut i);
@@ -7735,17 +7735,28 @@ apt_get__is_converged() {
         );
         let classes = classification.value;
         let invalidators = classification.invalidators;
+        // `choose(entity)` answers which ENTITY a wall claims, or `None` for "no trustworthy
+        // footprint" — which is the shape that makes an unfootprinted wall total.
         let footprints = footprints_of.map(|choose| {
             let mut tf = TrustedFootprints::new();
+            let mut claims: Vec<(CfgNodeId, String)> = Vec::new();
             for (node, class) in &classes {
                 let fact = match class {
                     SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => *f,
                     _ => continue,
                 };
-                if let Some(coord) = choose(&fact)
-                    && let Some(fp) = Footprint::authored(provider, vec![coord])
-                {
-                    tf.insert(*node, fp);
+                let EntityRef::Operand(tok) = fact.entity else {
+                    continue;
+                };
+                if let Some(claimed) = choose(i.resolve(tok.0)) {
+                    claims.push((*node, claimed));
+                }
+            }
+            for (node, claimed) in claims {
+                let entity = EntityRef::Operand(OpaqueToken(i.intern(&claimed)));
+                let coord = EntityCoord::new(package, entity);
+                if let Some(fp) = Footprint::authored(provider, vec![coord]) {
+                    tf.insert(node, fp);
                 }
             }
             tf
@@ -7898,8 +7909,8 @@ apt_get__is_converged() {
             }
         };
         let src = "apt-get install -y oldpkg\napt-get install -y nginx\n";
-        // Every wall footprints its OWN coordinate ⇒ disjoint from a different entity's backing.
-        let disjoint = |fact: &FactKey| Some(EntityCoord::new(fact.kind, fact.entity));
+        // Every wall claims its OWN entity ⇒ disjoint from a different entity's backing.
+        let disjoint = |e: &str| Some(e.to_owned());
         let (survived, _) = effective_plan(src, verdict, Some(&disjoint));
         assert!(
             matches!(
@@ -7908,14 +7919,8 @@ apt_get__is_converged() {
             ),
             "a disjoint footprint keeps the elision past the running wall"
         );
-        // Every wall claims the DOWNSTREAM entity's cell ⇒ a proven collision.
-        let nginx = {
-            let (_, mut probe_i) = effective_plan(src, verdict, None);
-            let kind = KindId(probe_i.intern("package"));
-            let entity = EntityRef::Operand(OpaqueToken(probe_i.intern("nginx")));
-            EntityCoord::new(kind, entity)
-        };
-        let collides = |_: &FactKey| Some(nginx);
+        // The wall claims the DOWNSTREAM entity's own cell ⇒ a proven collision.
+        let collides = |_: &str| Some("nginx".to_owned());
         let (poisoned, _) = effective_plan(src, verdict, Some(&collides));
         assert!(
             matches!(
@@ -7923,6 +7928,46 @@ apt_get__is_converged() {
                 Disposition::Guard(_)
             ),
             "a colliding footprint costs the elision — and lands on the guard rung, not a bare run"
+        );
+    }
+
+    /// A GUARD is itself a wall for everything below it (`30K` §5.3), isolated so the pin can only
+    /// pass for that reason: the running wall's footprint is disjoint from the third site, so the
+    /// ONLY thing that can stale it is the guard in between — which carries no footprint, and so
+    /// walls total.
+    #[test]
+    fn a_guard_is_the_only_wall_the_third_site_can_be_stale_from() {
+        let (plan, _) = effective_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\napt-get install -y curl\n",
+            |e| {
+                if e == "oldpkg" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+            // oldpkg's wall claims nginx's cell (so nginx must guard) and nothing else; nginx's own
+            // guard is UNFOOTPRINTED, so if a guard walls at all, curl is stale.
+            Some(&|e: &str| match e {
+                "oldpkg" => Some("nginx".to_owned()),
+                "curl" => Some("curl".to_owned()),
+                _ => None,
+            }),
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Guard(_)
+            ),
+            "the colliding wall costs nginx its elision"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y curl").disposition,
+                Disposition::Guard(_)
+            ),
+            "curl is disjoint from the RUNNING wall, so only the guard in between can stale it — \
+             a guard's untouched fallback is the authored mutation"
         );
     }
 

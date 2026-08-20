@@ -1007,6 +1007,10 @@ pub enum SolvePass {
     ReachingDefs,
     /// The per-Members-site self-reach re-solve (`analysis::effect`).
     SelfReach,
+    /// The settlement's effective-world reach solve (`plan::world`) — which mutations may
+    /// actually execute before each position. Named apart from `ReachingDefs` because the two
+    /// answer different questions and only one of them can license an apply-time elision.
+    EffectiveReach,
 }
 
 /// Payload of [`DiagCode::PredictOutOfDialect`]: a check function body uses a construct outside
@@ -4043,6 +4047,7 @@ fn solve_pass_text(ctx: &RenderCtx<'_>, pass: SolvePass) -> ComponentText {
         SolvePass::FunctionEnvironment => "solver-consistency-failure-function-environment",
         SolvePass::ReachingDefs => "solver-consistency-failure-reaching-defs",
         SolvePass::SelfReach => "solver-consistency-failure-self-reach",
+        SolvePass::EffectiveReach => "solver-consistency-failure-effective-reach",
     };
     component_text(ctx.arrangements(), slug, None, &[])
 }

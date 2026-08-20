@@ -6115,6 +6115,52 @@ apt_get__predict() {
     }
 
     /// FAULT INJECTION for `CollapseKind::FixpointCapDegrade`: force the cap to 1 so a fixpoint
+    /// Effective Query validity flips ONLY as walls disappear (`30K` §5.2).
+    ///
+    /// A guard's measured rc is fold-usable exactly when nothing that may execute reaches it. The
+    /// ladder's second rung is the witness: with both rungs measured, rung 1's install is proven
+    /// dead, its wall goes, and rung 2's guard becomes valid — which is what lets the whole ladder
+    /// cascade. Break the effective-validity derivation and only the first rung folds.
+    #[test]
+    fn a_query_becomes_valid_only_as_the_walls_above_it_disappear() {
+        let settled = settle_ladder(
+            64,
+            "site 0 effect=holds rc=0\nsite 1 effect=holds\n\
+             site 2 effect=holds rc=0\nsite 3 effect=holds\n",
+        );
+        let valid: Vec<bool> = settled.validity.values().copied().collect();
+        assert_eq!(
+            valid,
+            vec![true, true],
+            "both guards end effectively valid: nothing that may execute reaches either"
+        );
+        assert!(
+            settled.origin_validity.values().any(|v| !*v),
+            "and the SECOND one was not valid at origin — that gap IS the cascade this pins"
+        );
+    }
+
+    /// A guard whose own rc says the fallback is LIVE keeps its wall, so the rung below it stays
+    /// invalid: validity tracks what may execute, not what was measured (`30K` §5.2).
+    #[test]
+    fn a_live_fallback_keeps_the_rung_below_it_invalid() {
+        let settled = settle_ladder(
+            64,
+            "site 0 effect=holds rc=1\nsite 1 effect=holds\n\
+             site 2 effect=holds rc=0\nsite 3 effect=holds\n",
+        );
+        let valid: Vec<bool> = settled.validity.values().copied().collect();
+        assert_eq!(
+            valid,
+            vec![true, false],
+            "rung 1's install is LIVE (rc 1 left of `||`), so it walls rung 2's guard"
+        );
+        assert!(
+            settled.ledger.is_empty(),
+            "and nothing is proven un-runnable, so no wall is retired"
+        );
+    }
+
     /// that genuinely wants a second round trips it. The degrade must discard EVERY erasure (the
     /// answer becomes the pre-W-C one, never a partial fixpoint) and must narrate — withdrawing
     /// licensed elisions is a safety-narrowing like any other.

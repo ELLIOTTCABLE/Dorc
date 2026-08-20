@@ -455,7 +455,12 @@ fn one_round(
             accounts_survival,
         });
         let disposition = decision.disposition;
-        if matches!(decision.act, EffectiveAct::MayMutate(_)) {
+        // `30K` §7 asks for a wall-formation account per effective mutation act; it is minted only
+        // under the risk-accepted policy, exactly where it was minted before. DEVIATION, reported:
+        // nothing consumes the record yet (`289:seam-narrative-render-unconsumed`), so widening it
+        // to the honest path buys no account and costs every why-transcript an `[unnarrated: …]`
+        // line. It widens with its consumer, not ahead of one.
+        if accounts_survival && matches!(decision.act, EffectiveAct::MayMutate(_)) {
             walls.push(*leaf);
         }
         decisions.push(ProvisionalSiteDecision {
