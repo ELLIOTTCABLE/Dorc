@@ -1,3 +1,6 @@
 # Scratch space for local/manual testing (CONTRIBUTING.md's "Use Dorc by hand"): throwaway
 # keys, ssh configs, demo books. Never committed, nothing here is ever load-bearing.
 .tmp/*
+
+# Temporary markdown documents, agent handoffs, and the like
+_*.md
