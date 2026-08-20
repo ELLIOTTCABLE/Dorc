@@ -48,9 +48,6 @@ re-create or re-aim it yourself.
 Step 0.5: `mise trust` here (already done once), and again inside WSL before your
 first `mise run both`.
 
-BASELINE, measured by the conductor at `80faf71d` (this tip's parent; `7d04f066` adds only a ledger note) in this exact worktree:
-`mise run gate:quick-quiet` = green, 1354/1354. Any red you see is yours.
-
 ## Read first
 
 1. `Research/quarantine-DO-NOT-READ/AGENTS.for-builders-only.md` FIRST, then obey
@@ -226,8 +223,7 @@ Add the minimum whole-product coverage for multipart/flattened artifact behavior
 and for full provenance reaching a REAL diagnostic render (a debug dump or
 structure-only unit test is necessary but not sufficient — `30I` work-order §4).
 
-Use project tasks only. Hot loop: `mise run gate:quick-quiet`. Completion gate:
-`mise run both gate:full-quiet`, foreground. Never filter task output through
+Use project tasks only. Completion gate: `mise run both gate:full-quiet`, foreground. Never filter task output through
 `head`/`tail`, never `--no-verify`, never widen a verification fence, never weaken
 a law, never bless unexplained drift. Any golden movement is enumerated and
 reviewed as BEHAVIOR before blessing.

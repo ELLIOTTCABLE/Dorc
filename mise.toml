@@ -245,15 +245,10 @@ dir = "spike"
 usage = 'arg "[filter]" var=#true help="substring(s) selecting trials; bare runs everything"'
 run = [
   "cargo test --workspace --doc {{ usage.filter | join(sep=' ') }}",
-  "cargo nextest run --workspace {{ usage.filter | join(sep=' ') }}",
+  "cargo nextest run --workspace --no-fail-fast {{ usage.filter | join(sep=' ') }}",
 ]
 
-# The gate matrix: {full, quick} x {human, -quiet}. FULL is the acceptance suite — everything,
-# nothing skipped. QUICK is the hot loop — lint plus the unit tier, ~9s against full's ~30s,
-# and NOT an acceptance suite: it skips the e2e and loom corpora and the doctests, so it cannot
-# tell you your work is done. The `-quiet` half exists only to cut an agent's token burn and
-# must never buy that by hiding a failure; the bare half is for a human reading a terminal and
-# must never be quietened to save an agent tokens. Neither should compromise for the other.
+# Full gate: human output or quiet agent output; both preserve failures.
 
 [tasks."gate:full-quiet"]
 description = "ACCEPTANCE, agent-facing: everything `gate:full` runs bar the hook self-test, at minimum token cost — ~95 lines against ~2000. Silent on success, LOUD and complete on failure. The one to run before calling work complete; `mise run both gate:full-quiet` covers the other platform too."
@@ -274,15 +269,6 @@ run = [
    "hk check --staged --profile full --no-fail-fast --quiet",
    "hk check --unstaged --profile full --no-fail-fast --quiet",
 ]
-
-[tasks."gate:quick"]
-description = "HOT LOOP, human-facing: the four lint gates plus the unit tier (lib + bin tests), ~9s. NOT an acceptance suite — it skips the e2e corpus, the loom corpus, and the doctests, so a green run here never licenses calling work complete. Run `gate:full` before you do."
-raw = true
-dir = "spike"
-# `--lib --bins` is the whole skip: it selects cargo TARGETS, so the two harness=false corpora
-# and every doctest drop out by construction rather than by a name list that would silently rot
-# as targets are added.
-run = ["mise run check", "cargo nextest run --workspace --lib --bins"]
 
 [tasks."test:e2e"]
 description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
