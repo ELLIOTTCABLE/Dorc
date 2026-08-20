@@ -168,8 +168,8 @@ pub struct Resolutions {
     /// Typeless-floor auto-cell kinds present in the plan (`24L` §7 `fence-no-disjoint`). The plan
     /// is interner-free, so the edge (which HAS the interner) resolves which kinds are auto and
     /// deposits them here; [`disjoint`] reads an auto coordinate as may-touch, never a distinct
-    /// canonical. Threaded via `Resolutions` (already carried into the survival walk) rather than a
-    /// new parameter down `build_plan_walled → wall_walk_survival → wall_verdict → disjoint`.
+    /// canonical. Threaded via `Resolutions` (already carried by the wall policy) rather than a new
+    /// parameter down `WallPolicy::freshness → wall_verdict → disjoint`.
     auto_kinds: BTreeSet<KindId>,
 }
 
