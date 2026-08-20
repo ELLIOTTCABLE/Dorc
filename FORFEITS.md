@@ -149,13 +149,6 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   compatibility path. BACK-OUT: low before `30I` artifact forms and
   `28Q:stage-iii-world-scopes`,
   high after either accretes on the split. REVISIT: the `30K` implementation fold.
-- **forfeit-errexit-consumed-status** — RULE (as-built, measured 0.00-vs-1.00 elision;
-  `24A` §3-R4): bare converged mutators under `set -e` are status-consumed and blocked
-  from elision. FORFEITS: elision across strict-mode books — the defensive-author
-  population, again the best-written books. CAPTURE: the `20V` doors program (door-4
-  built; door-2 dead-on-principle; the remainder open). REVISIT: door-by-door, with
-  the stdlib's arrival making marked verdicts (which declare their rc and elide)
-  common.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)
