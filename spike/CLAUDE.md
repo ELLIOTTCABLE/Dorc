@@ -170,7 +170,11 @@ prompt you write:
   as a standalone one does. The aggregate proof is private, non-empty when mutation
   exists, and identity- and cardinality-matched to the exact ordered establish sites;
   missing, extra, duplicate, reordered, declined, dynamically-unresolved, or
-  wrong-site/wrong-fact vouches reject the WHOLE aggregate, atomically. Convergence,
+  wrong-site/wrong-fact vouches reject the WHOLE aggregate, atomically. The SAME exact
+  non-empty ordered establish identity also governs effective freshness: every member
+  independently crosses every external wall and passes demote-only reference re-derivation;
+  identity/cardinality/order mismatch or any stale/colliding/may-alias/demoted member rejects
+  the WHOLE aggregate. The representative fact is display-only. Convergence,
   self-reach, grade, consumption, and render-floor gates remain independently
   necessary — a vouch is an added condition, never a substitute. A genuinely
   query-only body proves its read-substitution separately and must never manufacture

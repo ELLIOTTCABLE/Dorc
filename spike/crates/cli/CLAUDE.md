@@ -63,9 +63,10 @@ discipline: one rule per bullet, slugged; append to the matching section.
   real transport, concurrency, retry, cross-host reuse, saved approval — carrying
   the scope has to become checking it, and this is the choke point where that
   lands.
-- **the-fixpoint-owns-the-rounds-and-builds-nothing-else** (`26H` §4/§4¾ — W-C) —
-  `settle_validity_fixpoint` re-derives classify + the records fold against the residual model
-  until a round proves no further branch dead. Three things bind. FROZEN: book/CFG/value-flow, the
+- **the-fixpoint-owns-the-rounds-and-builds-nothing-else** (`26H` §4/§4¾, generalized by `30K`) —
+  `plan::settle_effective_world`, driven by `fixpoint::WorldRoundModel`, re-derives classify,
+  certified effective reach, decisions, and the records fold against the residual model until a
+  round proves no further mutation un-runnable. Three things bind. FROZEN: book/CFG/value-flow, the
   ADMITTED records (admission runs ONCE, before the loop — no re-probe, no re-admission), the
   vouches, and the compiled probe. Probe EMISSION is untouched because there is exactly ONE
   `ProbePlan`, built from round 1 and never rebuilt; what moves per round is a validity VIEW over

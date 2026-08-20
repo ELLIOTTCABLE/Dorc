@@ -14,7 +14,7 @@
 
 ---
 
-## CURRENT STATE (2026-08-19 - STATIC LOADING PARTIAL BUILD; AMBIENT DEPENDENCIES RULED)
+## CURRENT STATE (2026-08-20 - EFFECTIVE WORLD REACH REVIEWED GREEN; STATIC LOADING RESUMES)
 
 **`plans/30I` is the single authority for the newly-closed static-load/bundle
 arc.** The human ruled cwd-faithful sh loading from one authored-before-contact
@@ -26,10 +26,11 @@ comments read back as aid-only `BundleOriginClaim`; source-map representation is
 rich/multi-stage immediately even though v0 compilation aims at exact copied
 segments.
 
-**Steps 1-4 and the explicit-stdin rework are built; steps 5-8 are not.** The
+**Steps 1-5a and the explicit-stdin rework are built; steps 5b-8 are not.** The
 static loader, exact guarded-source speaker mint, CLI input surface, and
-multi-stage locator substrate are live. No bundle projection, artifact forms,
-real diagnostic locator consumption, or XFAIL promotion exists yet. The
+multi-stage locator substrate are live; the complete load-occurrence account has
+separate possible-load / exact-speaker / narrative projections. No bundle projection,
+artifact forms, real diagnostic locator consumption, or XFAIL promotion exists yet. The
 opt-in dash/posh floor cell refutes generated loader functions as a universal
 one-file lowering; nested source boundaries remain generated files until another
 lowering is floor-proven.
@@ -38,23 +39,8 @@ lowering is floor-proven.
 Exact custody alone may compose a vouch. Source-act-present-but-unaligned and
 ambient/untraceable dependencies both suspend, leave the book site runnable, and
 narrate with different operands/repairs; neither may refuse the plan or mint
-authority. The landed exit-16 whole-run refusal is implementation drift to remove
-while retaining its census as aid machinery (`30I` §3.4; `30Ib` §13).
-
-`30I:step-5a-complete-load-occurrence-account` is COMPLETE. `analysis::load::LoadAccount`
-holds ordered occurrences with sourcer/target/locus/context/route, and three projections
-derive from it — possible-load (bundle; undecided fallbacks included), exact-speaker
-(authority; byte-for-byte the old edge set), and selection (narrative). `30Ib` §15's
-blocker is discharged. The exit-16 refusal is gone — exit code, `RunOutcome`, both
-returns, the whole-unit walk, and the `unannounced-cross-custody-call` code — and
-`emit30-cross-custody-plural-helper-suspends` is byte-identical to its pre-refusal self,
-which is the evidence the removal restored exactly what the refusal took. The narrative
-projection has its consumer: the cross-custody suspension carries two reasons,
-selected-but-unaligned vs ambient-or-untraceable, chosen at `HelperIndex::resolve` from a
-selection relation the drivers hang beside the custody one, so the distinction rides the
-existing reached-site `vouched-composition-not-present` push and nothing whole-unit is
-emitted. `emit30-ambient-dependency-narrates` is the new specimen; `30Ib` §0/§15/§16 are
-current. The lane now PAUSES for `notes/30K`.
+authority. The former exit-16 whole-run refusal is gone; its census remains as
+decision-inert aid machinery (`30I` §3.4; `30Ib` §13).
 
 **[TYPED 2026-08-19] The modeled-running-wall repair is UNIFICATION NOW, not a
 narrow guard mint and not post-r30 debt.** Work order **`notes/30K`** under `28Q`:
@@ -65,22 +51,28 @@ writes Spine. Guards remain possible mutators. The reviewed plan may gain ordina
 guards but NEVER generated wall flags, conditional-tail state, or other visible
 bookkeeping. No compatibility copy of the walks survives.
 
-**`28Q:stage-effective-world-reach` IS BUILT; its goldens await a conductor bless.**
-As-built record **`notes/30Ka`** (seats · deviations · enumerated drift · proposed
-steering prose). Both wall walks are deleted, `plan::settle` is the ONE grow-only
+**`28Q:stage-effective-world-reach` IS BUILT, REVIEWED, AND BOTH-PLATFORM GREEN.**
+Work order `notes/30K`; as-built record `notes/30Ka`; architectural review `notes/30Kb`.
+Both wall walks are deleted, `plan::settle` is the ONE grow-only
 settlement (it subsumes W-C's rounds), `plan::world` holds the domain and the closed
 `WallPolicy`, and `cfg::ExecutionOwner` answers per node whose decision governs it.
-**Both `guard26-*` XFAILs XPASS and are promoted; the defect twin is retired.** The
-repair is broader than that pair: five `strawman24-*`/`pin28-*` cases move from a bare
-RUN to a GUARD, two `frame30-*` cases from GUARD to ELIDE (an elided mutation retires
-its wall), and `exec-subst-body-nonleaf` from ELIDE to GUARD — a closed wrong-elision,
-since a `$( … )`-internal install really runs and the retired walk could not see it.
-Four OPEN deviations and two owed prose items ride `30Ka` §3/§5; nothing there is
-self-endorsed.
+Modeled running walls preserve the guard rung; an elided owner retires its non-leaf/body
+walls; consumed observables block guards; replacement-driven cascades retain typed causes.
+Aggregates now share one exact non-empty ordered identity across vouches and effective
+freshness: every erased establish independently crosses every external wall and passes
+demote-only reference re-derivation before one atomic replacement mints. The original
+aggregate vouch-chain loom is restored and shows both measurements/derivations while one
+authored wall claim renders once.
 
-**Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account` (done), then
-`30K` (done). RESUME `30I` bundle/locator work next, then artifact forms and final
-XFAIL/golden promotion. This placed effective-world reach before both the new
+**REVIEW RESIDUE, non-blocking but real (`30Kb`):** fact backings are semantically frozen
+probe inputs but still ride round classification (currently stable because collected before
+erasure); honest/non-leaf wall formation lacks a truthful non-`LeafId` narrative operand;
+`WorldRoundModel::classify_origin` remains an impossible-state fallback pending final-round
+typestate; the effective-reach prose component still lacks a genuine defining case.
+
+**Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account` and `30K` are done.
+RESUME `30I:step-5b-build-bundle-projection` next, then locator consumption, artifact forms,
+and final XFAIL/golden promotion. This placed effective-world reach before both the new
 Plan/Spine artifact boundary and `28Q:stage-iii-world-scopes`, without reopening
 definition factoring, verdict primacy, snapshot emission, Spine, or custody.
 

@@ -73,7 +73,8 @@ and carries the license-contamination map.
   **`plans/28Q`** (THE live kernel plan; §9 is its pin ledger) + `notes/28R` (the six-lane
   review round, folded into the plan 2026-08-13) + **`notes/30K`** (the r30 work order that replaced origin-Query + post-disposition
   wall walks with certified apply-effective world reach, before
-  `28Q:stage-iii-world-scopes`) over its as-built record **`notes/30Ka`**.
+  `28Q:stage-iii-world-scopes`) over its as-built record **`notes/30Ka`** and
+  architectural review/repair record **`notes/30Kb`**.
 - **Oracle loading & name-resolution (custody, committee speech, one-name-two-definitions)** —
   `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`;
   same-role-name collisions fail-fast pre-network (the `28Q` §4 rider; priced background

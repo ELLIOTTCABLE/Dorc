@@ -22,8 +22,12 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   `AllEstablishesVouched` is the private, non-empty (head+tail) proof; its mint
   takes the exact ORDERED `(site, fact)` list and rejects missing, extra,
   duplicate, reordered, wrong-site, and wrong-fact vouches — the whole aggregate,
-  atomically. Query-only bodies prove `ReadSubstitutionProof` separately and must
-  NEVER manufacture a vouch to share an API. Keep both types and both provers
+  atomically. One private `AggregateEstablishes` value is the shared identity for that
+  vouch proof AND universal effective freshness: every member independently crosses every
+  external wall and passes reference re-derivation; `AggregateSurvivalWitness` must match the
+  vouch receipts exactly before one atomic replacement mints. Any member failure rejects whole;
+  the representative fact is display-only. Query-only bodies prove `ReadSubstitutionProof`
+  separately and must NEVER manufacture a vouch to share an API. Keep both types and both provers
   private: the doctest in the crate doc pins that, and exposing either "for a
   test" is the regression it guards.
 - **vouch-built-once** — vouches are built once (`build_vouches`) and threaded
@@ -161,9 +165,9 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   a body that truncates and exits 0 stays invisible, and that residue is human-owned design
   (`ANALYZER-NEEDS:an-atmost-completion-signal`). Do not build toward it.
 - **rederivation-is-demote-only** (r30; `notes/300` §2b) — before a plan ships, every
-  survival re-derives through the naive reference model (`dorc-sparing-reference`) via
-  `plan::rederive`, seated INSIDE `wall_walk_survival`'s Survived arm (a post-pass
-  demote would let a now-running site cast no wall downstream). The minted
+  standalone OR aggregate-member survival re-derives through the naive reference model
+  (`dorc-sparing-reference`) inside effective freshness, before any replacement witness
+  mints (a post-pass demote would let a now-running site cast no wall downstream). The minted
   `SurvivalWitness` goes in BY VALUE and comes back `Confirmed(witness) | Demoted(..)`
   — the re-check cannot fabricate a witness, agreement licenses nothing new, and the
   adapter never touches the production compare path (zero shared helpers; lexically

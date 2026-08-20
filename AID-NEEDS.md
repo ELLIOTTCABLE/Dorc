@@ -79,12 +79,12 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   *operands*, at the moment of collapse. A new safety-narrowing without its narrative mint
   (and, usually, its row here) is a defect. "Evidence" is deliberately reserved for
   possible future correctness-plane use (`288:rul-narrative-layer-naming`).
-  Mechanics: `27V` §1. AS-BUILT (2026-07-24): the MINT half is complete and gate-held
-  (a no-wildcard completeness census over `CollapseKind` plus per-class fault-injection
-  pins); the CONSUME half is not — only `VerdictDecline` with an `authored_reason` reaches
-  a user surface, so a missing narrative omits silently rather than advertising itself.
-  There is no `Unexplained` class. That gap is the named seam
-  `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round.
+  Mechanics: `27V` §1. AS-BUILT correction (`30Kb`): the class census is gate-held, but
+  `WallFormation` is still minted only on the risk-accepted leaf path; honest walls and
+  always-at-node/non-leaf invalidators lack a truthful participant because the current operand
+  requires `LeafId`. The mint half is therefore NOT complete. The broader consume gap remains
+  `289:seam-narrative-render-unconsumed`, owned by the arrangement-home round; fixing the mint
+  requires an effective-wall participant/owner operand, never fabricated leaf attribution.
 - **law-trust-tier-is-syntax** — the epistemic tier of every rendered link (strawman
   spellings: measured / vouched / ran / claimed / derived / consented) is a typed field
   rendered uniformly by arrangement code; prose never hand-writes epistemics, so a claim
@@ -166,7 +166,7 @@ Registry
 | aid-loaded-oracle-inventory | which oracles/dirs were actually loaded this run | invoc | rev▶ ci▶ | m | `WhylogV2Metadata.oracles` (ordered path+digest, ordinal-checked on read) | B |
 | aid-survives-attribution | whose at-most claim licensed each survival; the disjointness derivation; the resolver involved | facts+topo | rev▶ post◀ | m+c+d | SurvivalWitness; an-attribution-lanes | B |
 | aid-guard-license-attribution | whose check guards each verify line, under whose vouch | facts+topo | rev▶ post◀ | c+d | GuardLicense lane | B |
-| aid-cross-custody-dependency-narration | why a role's ambient helper cannot join its vouch: distinguish source-act-present-but-unaligned (selected dependency vs live binding/guard mismatch) from ambient-or-untraceable (ordinary shell resolution with no attributable selection); name call + live definition + lost capability, and present source/guard as value recovery rather than admission. Both preserve the runnable plan; whole-unit inventory is lint/pull, plan-push only when a reached site loses composition | text+orcl+topo | olo▶ blo▶ rev▶ post◀ | d | `30I:rul-cross-custody-distinction-is-narrative`; vouch-custody suspension | S (detection B; refusal routing is drift) |
+| aid-cross-custody-dependency-narration | why a role's ambient helper cannot join its vouch: distinguish source-act-present-but-unaligned (selected dependency vs live binding/guard mismatch) from ambient-or-untraceable (ordinary shell resolution with no attributable selection); name call + live definition + lost capability, and present source/guard as value recovery rather than admission. Both preserve the runnable plan; whole-unit inventory is lint/pull, plan-push only when a reached site loses composition | text+orcl+topo | olo▶ blo▶ rev▶ post◀ | d | `30I:rul-cross-custody-distinction-is-narrative`; vouch-custody suspension | B |
 | aid-carry-attribution | which cross-context carries happened, under which invariant lines + closure proof | facts+topo | rev▶ post◀ | c+d | `27C` §4(a); an-read-set-closure | B |
 | aid-bundle-origin-chain | for generated plan/bundle code: every compilation locus through to the deepest content-matching original source, while retaining generated loci; absent/changed originals fall back honestly. Re-ingested markers mint aid-only `BundleOriginClaim`, never analytic identity | text+orcl+invoc | rev▶ olo▶ post◀ | c+d | an-locator-dag; an-graft-provenance; `30I` §9 | S |
 | aid-run-cause-disclosure | why a line can never elide (unknowable operand etc.), with remediation | text+topo | rev▶ blo▶ | d | why-lens; `(cause,site)` dedup | B |

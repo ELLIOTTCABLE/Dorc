@@ -610,7 +610,8 @@ own byte-identity gate.
   fence permanence and committee policy remain their separately-ruled consumers — green
   infrastructure never asserts policy.
 - **stage-effective-world-reach** (r30, work order **`notes/30K`**, as-built record
-  **`notes/30Ka`**; HUMAN-DIRECTED, BUILT — goldens pending a conductor bless): the split
+  **`notes/30Ka`**, architectural review **`notes/30Kb`**; HUMAN-DIRECTED, BUILT and
+  both-platform green): the split
   apply-staleness machinery is gone. One certified `ReachingWalls` solve over the CFG
   answers which mutations may ACTUALLY execute, and apply-time freshness, effective Query
   validity, total walls, and footprint survival all read it. `plan::wall_walk_total` and
@@ -625,9 +626,16 @@ own byte-identity gate.
   the reviewed plan gains no wall state. The settlement is ONE grow-only loop
   (`plan::settle`) that subsumes W-C's rounds, and only its quiescent round — sealed by a
   `Quiescence` the ledger alone mints — writes Spine.
+  Aggregate mutation replacement uses one private non-empty ordered identity for BOTH
+  `AllEstablishesVouched` and effective freshness; every erased establish independently
+  crosses the external reaching-wall set and passes the demote-only reference re-derivation,
+  then an identity/cardinality/order-matched `AggregateSurvivalWitness` authorizes one atomic
+  replacement. The representative fact is display-only. Standalone/aggregate survival is a
+  closed attribution sum consumed consistently by Spine, why, stderr, and sweep fingerprints.
   Landed: both `guard26-*` XFAILs XPASS and are promoted, the unmodeled control is
-  unchanged, the defect twin is retired. Enumerated drift and the OPEN deviations ride
-  `notes/30Ka`.
+  unchanged, the defect twin is retired. Review residue that does not reopen this stage:
+  frozen-backing lifetime, an honest/non-leaf wall narrative operand, final-round typestate,
+  and the effective-reach prose defining case (`30Kb`).
 - **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`): build the one
   bundle projection, compose the locator DAG into a real diagnostic, reify multipart /
   flattened / preserved-tree artifact forms at the Plan/Spine boundary, and only then

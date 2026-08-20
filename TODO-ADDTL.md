@@ -12,14 +12,6 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 *(The 2026-07-27 trio — ssh executor, live-acceptance gate, CRLF gate — is BUILT and folded on `ai/r26-unify`; Dorc has now run for real against a VPS and a container. What stands now:)*
 
-* [ ] **effective-world-reach unification (`fnd-classed-decline-unwalls-guard-tier`)** —
-  design RULED 2026-08-19; implementation work order `notes/30K`. Keep origin reach for
-  the frozen probe, but replace Query-pristine + both post-disposition wall walks with one
-  certified, semantic-decision-fed reach analysis; only settled decisions write Spine.
-  Guards remain possible mutators and no wall bookkeeping enters reviewed `plan.sh`.
-  Complete when both `guard26-*` XFAILs promote, the unmodeled control stays green, and
-  the obsolete walks are deleted. Evidence: `trial/r26/predictions.md` §7 · `notes/26F`.
-
 * [ ] **post-kernel predict-contract arc (`30D` + `30J`)** — after the current kernel/loading
   push quiesces, replace `return 2`-as-predict-decline atomically with exact Status plus
   authored DREP channel speech, then implement predict-qualified family vocabulary. This
