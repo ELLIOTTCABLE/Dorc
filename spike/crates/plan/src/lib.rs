@@ -8124,13 +8124,11 @@ apt_get__is_converged() {
             Some(&|entity: &str| (entity == "oldpkg").then(|| "oldpkg".to_owned())),
         );
         let aggregate = find(&plan, "install_both");
-        internal_tooling::xfail::xfail_until("p-x-aggregate-universal-survival", || {
-            assert!(
-                matches!(aggregate.disposition, Disposition::Replace(..)),
-                "the external footprint is disjoint from both body establishes, so the atomic \
-                 call replacement may survive"
-            );
-        });
+        assert!(
+            matches!(aggregate.disposition, Disposition::Replace(..)),
+            "the external footprint is disjoint from both body establishes, so the atomic call \
+             replacement may survive"
+        );
     }
 
     #[test]
