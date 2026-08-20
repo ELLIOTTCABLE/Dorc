@@ -69,7 +69,7 @@ _DL_NL='
 exit 0
 
 -- expected.ran --
-ran: foobar status --certs-current -- /etc/nginx/certs
+
 
 -- replay --
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
@@ -99,17 +99,6 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
-# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
-# authored bytes verbatim, no engine-synthesized sh).
-foobar__is_converged() {
-   verb="$1"; shift
-   case "$verb" in
-   sync-certs) foobar status --certs-current -- "$1" ;;
-   *) return 2 ;;
-   esac
-}
-
 #!/bin/sh
 # frame30-subshell-body-answers-inside-only (`28Q` §1 syn-definition-factored-indices) — the
 # plural-idiom golden the conversion earns. Two sites, one role name, TWO live bodies.
@@ -129,4 +118,4 @@ foobar__is_converged() {
 }
 true   # dorc: elided [foobar sync-certs /etc/nginx/certs] (already converged / dead branch)
 )
-( foobar__is_converged sync-certs /etc/nginx/certs ) || foobar sync-certs /etc/nginx/certs   # dorc: guard [dorc-auto:foobar converged-vouch; probe: holds]
+# foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)

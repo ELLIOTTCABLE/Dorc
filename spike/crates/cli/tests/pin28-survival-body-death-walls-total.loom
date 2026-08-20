@@ -144,7 +144,7 @@ while IFS= read -r _l; do printf 'sm.dorc.File:%s\n' "$_l"; done
 
 -- expected.ran --
 ran: apt-get install -y oldpkg
-ran: apt-get install -y nginx
+ran: dpkg-query -W nginx
 
 -- replay --
 $ dorc --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt
@@ -196,6 +196,19 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
 # pin28-survival-body-death-walls-total (`28P:dec-whole-body-atomic-refusal`) — the SECOND
 # atomicity of an at-most claim, and the one a record count cannot see.
 #
@@ -223,4 +236,4 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # still cannot see is a body that truncates its survey and exits 0 — that residue belongs to
 # ANALYZER-NEEDS:an-atmost-completion-signal, which is a design question, not this gate.
 apt-get install -y oldpkg
-apt-get install -y nginx
+( apt_get__is_converged install -y nginx ) || apt-get install -y nginx   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]

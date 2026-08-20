@@ -22,5 +22,12 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+enablesvc__is_converged() {
+   systemctl is-enabled -- "$1" >/dev/null 2>&1
+}
+
 hork tune nginx
-enablesvc nginx
+( enablesvc__is_converged nginx ) || enablesvc nginx   # dorc: guard [sm.dorc.Service converged-vouch; probe: holds]

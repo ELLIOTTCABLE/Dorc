@@ -33,6 +33,16 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
+}
+
 # strawman24-alias-provides (24F Stage 5 — the aliasing-closure flagship). The wall and the victim
 apt-get install nginx
-apt-get install nginx-full
+( apt_get__is_converged install nginx-full ) || apt-get install nginx-full   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]

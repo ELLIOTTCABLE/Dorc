@@ -149,6 +149,13 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+installfile__is_converged() {
+   stat -- "$1" >/dev/null 2>&1
+}
+
 # pin28-reach-arm-death-walls-total — the B half of the reach lane's atomicity pair
 # (`28P:dec-reach-expansion-refuses-whole-footprint`). Byte-identical to
 # pin28-reach-arm-survey-complete-spares except for `body-rc` in one record, and the admin's
@@ -167,4 +174,4 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # toward run. What it still cannot see is an arm that truncates its survey and exits 0; that
 # residue is ANALYZER-NEEDS:an-atmost-completion-signal, a design question and not this gate.
 hork tune nginx
-installfile /etc/nginx/nginx.conf
+( installfile__is_converged /etc/nginx/nginx.conf ) || installfile /etc/nginx/nginx.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]

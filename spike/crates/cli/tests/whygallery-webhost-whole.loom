@@ -411,6 +411,8 @@ $ dorc why 15 --all --book=book.sh --pre-source firewall.oracle.sh --pre-source 
    describe:  [unwritten: why-next-step-describe-walls]
    review:    `dorc why book.sh:15 --all` (every link, unselected, exhaustive)
 
+   [unnarrated: Demotion]
+
    [unnarrated: FactMergeDisagreement]
 
    [unnarrated: WallFormation]

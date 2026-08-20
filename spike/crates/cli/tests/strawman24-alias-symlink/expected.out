@@ -30,6 +30,13 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+writeconf__is_converged() {
+   conf-exists "$1"
+}
+
 # strawman24-alias-symlink (24F Stage 5 — the aliasing closure on the `fs` KIND, per-kind gradual
 writeconf /etc/app.conf
-writeconf /etc/app.conf.lnk
+( writeconf__is_converged /etc/app.conf.lnk ) || writeconf /etc/app.conf.lnk   # dorc: guard [sm.dorc.Fs converged-vouch; probe: holds]

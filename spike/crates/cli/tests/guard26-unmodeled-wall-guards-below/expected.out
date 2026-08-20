@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=77522cf097c939132ae8d8345fa4dcc7dc8cf965000f2a2b971506ebd48aa18a sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=3e6a4e6dffc43900b768ea1032b7a5dafbca51a4e0ddc7708506b72fada29c2e sites=2 @@dorc@@\n'
 # site 1: sm.dorc.File:/etc/a.conf@content
 wombat__is_converged() {
    dst="$2"
@@ -28,13 +28,8 @@ wombat__is_converged() {
 }
 
 #!/bin/sh
-# guard26-unmodeled-wall-guards-below — the CONTROL half of a two-case pair; read it beside
-# `guard26-classed-decline-demotes-guard`, whose book and oracle are byte-identical to this one.
-# The pair's ONLY difference is that the sibling also loads a `hork` oracle that classes a decline.
-#
-# Here `hork` is unmodeled, so it is Opaque and WALLS. Both drops below it are therefore
-# `EstablishWritten`, each with a reached vouch and a `holds` record on its own authored cell, so
-# each mints a guard: `( check ) || original`. Two sites, two cells, two guards.
+# guard26-unmodeled-wall-guards-below — the control: an unmodeled `hork` is a total wall.
+# Both converged, vouched drops re-check live below it, matching the modeled-wall siblings.
 hork provision
 ( wombat__is_converged a.conf /etc/a.conf ) || wombat a.conf /etc/a.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
 ( wombat__is_converged b.conf /etc/b.conf ) || wombat b.conf /etc/b.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
