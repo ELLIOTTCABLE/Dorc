@@ -160,8 +160,24 @@ Recorded as taken, never self-endorsed.
 
 ## §5 — Next steps / residue
 
-1. **The goldens.** 15 e2e cases + 2 loom-corpus transcripts move (§6). All are the repair
-   or its direct consequence; none is refactor churn. `mise run bless` is the conductor's.
+1. **The goldens.** ELEVEN cases move (§6) — all the repair or its direct consequence, none
+   refactor churn. `mise run bless` is the conductor's; `bless:dry` names the exact scoped
+   form (an unfiltered bless verifies before it writes, so it can never accept a sanctioned
+   drift):
+
+   ```
+   mise run bless -- crates/cli/tests/exec-subst-body-nonleaf \
+     crates/cli/tests/frame30-nested-region-inherits-the-outer-body.loom \
+     crates/cli/tests/frame30-subshell-body-answers-inside-only.loom \
+     crates/cli/tests/pin28-reach-arm-death-walls-total.loom \
+     crates/cli/tests/pin28-survival-body-death-walls-total.loom \
+     crates/cli/tests/strawman24-alias-provides \
+     crates/cli/tests/strawman24-alias-symlink \
+     crates/cli/tests/strawman24-reach-crossauthor \
+     crates/cli/tests/strawman24-reach-static-service \
+     crates/cli/tests/strawman24-survive-multiwall \
+     crates/cli/tests/whygallery-webhost-whole.loom
+   ```
 2. **The three `guard26-*` books carry stale prose.** The two promoted cases still describe
    themselves as XFAIL-until-the-ruling, and the control still names the retired defect
    twin. Their headers were deliberately NOT rewritten: a book byte-change moves the
@@ -211,11 +227,17 @@ case, and it is a closed wrong-elision:
 |---|---|
 | `exec-subst-body-nonleaf` | `apt-get install -y curl` elide ⇒ guard — the `$(apt-get install -y nginx)` inside the `echo` REALLY RUNS, and the retired walk could not see it |
 
-**D. Downstream of A/B/C.** Two why-transcripts re-render because the dispositions they
-explain moved: `whygallery-decline-unsound-arm`, `whygallery-webhost-whole`.
+**D. Downstream of A/B/C.** One why-transcript re-renders because the dispositions it
+explains moved: `whygallery-webhost-whole`.
 
 Nothing outside these four classes moved. **[+SURE]** — measured over the full 168-case
-e2e corpus and the 279-case loom corpus.
+e2e corpus and the 279-case loom corpus, identically on BOTH platform legs (the two
+`gate:full-quiet` runs name the same eleven cases and differ in nothing else).
+
+An earlier cut of this conversion also moved `whygallery-decline-unsound-arm`,
+`why-reason-render-refused`, and `why-analysis-opener-guarded` by minting the
+wall-formation account on the honest path. That is `dev-wall-formation-account-stays-flag-gated`:
+the mint was scoped back to the flagged path and those three cases are byte-identical again.
 
 ## §7 — Proposed steering prose (text only; the conductor applies)
 
@@ -294,3 +316,9 @@ should read as DISCHARGED by `28Q:stage-effective-world-reach`, pointing at
 - Comment budget: 177 non-doc comment lines added over 3015 added lines (5.9%); doc
   comments billed separately at 550. Command:
   `git diff -U0 <base>..HEAD -- 'spike/**/*.rs' | grep -c '^+[[:space:]]*// '`.
+- Gates: `mise run gate:full-quiet` on BOTH legs (Windows, then WSL, in that order per
+  `preflight-bounds-before-spend`). Both green except the eleven §6 cases, and both name
+  exactly the same eleven — no platform-cfg divergence. Lint gates, the loom corpus (279),
+  the unit tier, and `verify:check` are green on both. `test:floor` and `test:real-tools`
+  re-run the same e2e corpus under extra env, so they fail on the same eleven and nothing
+  else. `bless:dry` refuses for the same reason and prints the scoped bless.
