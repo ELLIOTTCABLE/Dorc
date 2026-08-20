@@ -47,8 +47,9 @@ use dorc_core::{Dialect, FactBacking, FactKey, LeafId};
 use crate::erase::{DeadBranchProof, RoundId};
 use crate::rederive;
 use crate::survival::{
-    AccumulatedWall, Backing, DemoteReason, Resolutions, SurvivalWitness, TrustedFootprints,
-    WallVerdict, wall_verdict,
+    AccumulatedWall, AggregateEstablishes, AggregateSurvivalWitness, Backing, DemoteReason,
+    Resolutions, SurvivalAttribution, SurvivalWitness, TrustedFootprints, WallVerdict,
+    wall_verdict,
 };
 
 /// One mutation-capable act that may execute, identified by the CFG node that performs it.
@@ -352,10 +353,21 @@ pub enum Freshness {
     FreshClean,
     /// Mutations reach it, every one provably disjoint from the fact's backing, and the reference
     /// model confirmed it: the design's one naked-trust cell, fully attributed.
-    FreshSurvived(SurvivalWitness),
+    FreshSurvived(SurvivalAttribution),
     /// The measurement may have been overtaken. A guard can still re-check it live; an elision
     /// cannot stand on it.
     Stale(StaleCause),
+}
+
+/// The exact mutation population whose resting measurements need to cross the reaching walls.
+#[derive(Clone, Copy)]
+pub(crate) enum FreshnessSubject<'a> {
+    /// No mutation replacement can consume freshness at this site.
+    None,
+    /// One standalone establish.
+    Standalone(FactKey),
+    /// Every establish erased by one atomic aggregate.
+    Aggregate(&'a AggregateEstablishes),
 }
 
 /// Why a fact is stale. Carried so the demotion narrates the operand it actually failed on
@@ -392,7 +404,7 @@ impl WallPolicy<'_> {
     pub(crate) fn freshness(
         &self,
         walls: &ReachingWalls,
-        fact: Option<FactKey>,
+        subject: FreshnessSubject<'_>,
         backings: &BTreeMap<FactKey, FactBacking>,
         leaf_of: &BTreeMap<CfgNodeId, LeafId>,
     ) -> Freshness {
@@ -405,12 +417,6 @@ impl WallPolicy<'_> {
             dialect,
         } = self
         else {
-            return Freshness::Stale(StaleCause::TotalWall);
-        };
-        // No cell to compare means no backing, and a backing-set is non-empty by construction
-        // (`inv-backing-set-nonempty-by-construction`): the honest reading is that everything
-        // collides, never that nothing does.
-        let Some(fact) = fact else {
             return Freshness::Stale(StaleCause::TotalWall);
         };
         let mut accumulated: Vec<AccumulatedWall> = Vec::with_capacity(walls.len());
@@ -431,36 +437,79 @@ impl WallPolicy<'_> {
         // Execution order, so the attribution chain reads the way the book does. The set arrives
         // in node order, which is allocation order and not always source order.
         accumulated.sort_by_key(|wall| wall.wall_leaf.0);
-        let backing = match backings.get(&fact) {
-            Some(fb) => Backing::widened(fact, fb.family, fb.observed.clone()),
-            None => Backing::of_fact(fact),
-        };
-        match wall_verdict(false, &accumulated, &backing, resolutions, dialect) {
-            WallVerdict::SurvivedClean => Freshness::FreshClean,
-            WallVerdict::Survived(witness) => {
-                match rederive::recheck_survival(
-                    witness,
-                    &backing,
-                    &accumulated,
-                    resolutions,
-                    dialect,
-                ) {
-                    rederive::Recheck::Confirmed(witness) => Freshness::FreshSurvived(witness),
-                    rederive::Recheck::Demoted(disagreement) => {
-                        Freshness::Stale(StaleCause::RederivationDisagreed {
-                            wall: u32::try_from(disagreement.wall).unwrap_or(u32::MAX),
-                        })
+        match subject {
+            FreshnessSubject::None => Freshness::Stale(StaleCause::TotalWall),
+            FreshnessSubject::Standalone(fact) => {
+                match survived_fact(fact, backings, &accumulated, resolutions, dialect) {
+                    Ok(witness) => {
+                        Freshness::FreshSurvived(SurvivalAttribution::Standalone(witness))
                     }
+                    Err(cause) => Freshness::Stale(cause),
                 }
             }
-            WallVerdict::Demoted(DemoteReason::TotalWall) => {
-                Freshness::Stale(StaleCause::TotalWall)
+            FreshnessSubject::Aggregate(establishes) => {
+                match aggregate_survival(establishes, |establish| {
+                    survived_fact(
+                        establish.fact(),
+                        backings,
+                        &accumulated,
+                        resolutions,
+                        dialect,
+                    )
+                }) {
+                    Ok(witness) => {
+                        Freshness::FreshSurvived(SurvivalAttribution::Aggregate(witness))
+                    }
+                    Err(cause) => Freshness::Stale(cause),
+                }
             }
-            WallVerdict::Demoted(DemoteReason::Poisoned { via_reach }) => {
-                Freshness::Stale(StaleCause::Poisoned { via_reach })
-            }
-            WallVerdict::Demoted(DemoteReason::MayAlias) => Freshness::Stale(StaleCause::MayAlias),
         }
+    }
+}
+
+fn aggregate_survival(
+    establishes: &AggregateEstablishes,
+    mut survive: impl FnMut(crate::survival::AggregateEstablish) -> Result<SurvivalWitness, StaleCause>,
+) -> Result<AggregateSurvivalWitness, StaleCause> {
+    let mut members = Vec::with_capacity(establishes.len());
+    for establish in establishes.iter() {
+        members.push(AggregateSurvivalWitness::member(
+            establish,
+            survive(establish)?,
+        ));
+    }
+    AggregateSurvivalWitness::mint(establishes, members).ok_or(StaleCause::TotalWall)
+}
+
+fn survived_fact(
+    fact: FactKey,
+    backings: &BTreeMap<FactKey, FactBacking>,
+    accumulated: &[AccumulatedWall],
+    resolutions: &Resolutions,
+    dialect: &Dialect,
+) -> Result<SurvivalWitness, StaleCause> {
+    let backing = match backings.get(&fact) {
+        Some(fb) => Backing::widened(fact, fb.family, fb.observed.clone()),
+        None => Backing::of_fact(fact),
+    };
+    match wall_verdict(false, accumulated, &backing, resolutions, dialect) {
+        WallVerdict::SurvivedClean | WallVerdict::Demoted(DemoteReason::TotalWall) => {
+            Err(StaleCause::TotalWall)
+        }
+        WallVerdict::Survived(witness) => {
+            match rederive::recheck_survival(witness, &backing, accumulated, resolutions, dialect) {
+                rederive::Recheck::Confirmed(witness) => Ok(witness),
+                rederive::Recheck::Demoted(disagreement) => {
+                    Err(StaleCause::RederivationDisagreed {
+                        wall: u32::try_from(disagreement.wall).unwrap_or(u32::MAX),
+                    })
+                }
+            }
+        }
+        WallVerdict::Demoted(DemoteReason::Poisoned { via_reach }) => {
+            Err(StaleCause::Poisoned { via_reach })
+        }
+        WallVerdict::Demoted(DemoteReason::MayAlias) => Err(StaleCause::MayAlias),
     }
 }
 
@@ -471,6 +520,107 @@ mod tests {
     /// Any real cell — these tests are about the ledger's bookkeeping, not about the coordinate.
     fn fixture_fact() -> FactKey {
         dorc_core::auto_fact(&mut dorc_core::Interner::default(), "wombat")
+    }
+
+    #[test]
+    fn a_later_may_alias_member_demotes_the_whole_aggregate() {
+        let mut i = dorc_core::Interner::default();
+        let selector = dorc_core::SelectorId(i.intern("installed"));
+        let first = FactKey {
+            kind: dorc_core::KindId(i.intern("com.dorc.First")),
+            entity: dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(i.intern("nginx"))),
+            selector,
+            context: dorc_core::Context::HostDefault,
+        };
+        let second_kind = dorc_core::KindId(i.intern("com.dorc.Second"));
+        let second = FactKey {
+            kind: second_kind,
+            entity: dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(i.intern("curl"))),
+            selector,
+            context: dorc_core::Context::HostDefault,
+        };
+        let establishes = AggregateEstablishes::mint(vec![
+            crate::survival::AggregateEstablish::new(CfgNodeId(20), first),
+            crate::survival::AggregateEstablish::new(CfgNodeId(21), second),
+        ])
+        .expect("non-empty unique aggregate identity");
+        let wall = CfgNodeId(10);
+        let mut footprints = TrustedFootprints::new();
+        footprints.insert(
+            wall,
+            crate::Footprint::authored(
+                i.intern("hork"),
+                vec![crate::EntityCoord::new(
+                    second_kind,
+                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(i.intern("other"))),
+                )],
+            )
+            .expect("non-empty footprint"),
+        );
+        let mut resolutions = Resolutions::none();
+        resolutions.add_resolver_kind(second_kind);
+        let dialect = Dialect::empty();
+        let policy = WallPolicy::RiskAccepted {
+            footprints: &footprints,
+            resolutions: &resolutions,
+            dialect: &dialect,
+        };
+        let walls = ReachingWalls::singleton(WallId::of(wall));
+        let leaf_of = BTreeMap::from([(wall, LeafId(0))]);
+        assert!(matches!(
+            policy.freshness(
+                &walls,
+                FreshnessSubject::Aggregate(&establishes),
+                &BTreeMap::new(),
+                &leaf_of,
+            ),
+            Freshness::Stale(StaleCause::MayAlias)
+        ));
+    }
+
+    #[test]
+    fn a_later_reference_demotion_rejects_the_whole_aggregate() {
+        let mut i = dorc_core::Interner::default();
+        let first = dorc_core::auto_fact(&mut i, "first");
+        let second = dorc_core::auto_fact(&mut i, "second");
+        let establishes = AggregateEstablishes::mint(vec![
+            crate::survival::AggregateEstablish::new(CfgNodeId(20), first),
+            crate::survival::AggregateEstablish::new(CfgNodeId(21), second),
+        ])
+        .expect("non-empty unique aggregate identity");
+        let wall = AccumulatedWall {
+            wall_leaf: LeafId(0),
+            footprint: crate::Footprint::authored(
+                i.intern("hork"),
+                vec![crate::EntityCoord::new(
+                    dorc_core::KindId(i.intern("com.dorc.Elsewhere")),
+                    dorc_core::EntityRef::Singleton,
+                )],
+            )
+            .expect("non-empty footprint"),
+        };
+        let first_survival = match wall_verdict(
+            false,
+            &[wall],
+            &Backing::of_fact(first),
+            &Resolutions::none(),
+            &Dialect::empty(),
+        ) {
+            WallVerdict::Survived(witness) => witness,
+            other => panic!("cross-kind wall must spare, got {other:?}"),
+        };
+        let mut member = 0usize;
+        assert!(matches!(
+            aggregate_survival(&establishes, |_| {
+                member = member.saturating_add(1);
+                if member == 1 {
+                    Ok(first_survival.clone())
+                } else {
+                    Err(StaleCause::RederivationDisagreed { wall: 0 })
+                }
+            }),
+            Err(StaleCause::RederivationDisagreed { wall: 0 })
+        ));
     }
 
     /// A second minter of the replacement-death proof is not a refactor; it is an unproven route

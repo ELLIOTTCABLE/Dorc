@@ -1,4 +1,4 @@
-//! `plan::rederive` — the survival re-derivation seat: every SURVIVAL verdict the wall walk mints
+//! `plan::rederive` — the survival re-derivation seat: every SURVIVAL verdict effective freshness mints
 //! is re-derived through the independent reference model (`dorc-sparing-reference`) before the plan
 //! ships, and a disagreement DEMOTES that site to the guard/run tier.
 //!

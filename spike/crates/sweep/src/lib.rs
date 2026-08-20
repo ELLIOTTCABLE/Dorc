@@ -250,22 +250,33 @@ fn survivals_of(plan: &Plan, i: &Interner) -> Vec<Survival> {
         let Disposition::Replace(license, _) = &step.disposition else {
             continue;
         };
-        let Some(witness) = &license.derivation().survival else {
+        let Some(survival) = &license.derivation().survival else {
             continue;
         };
-        out.push(Survival {
-            elided_leaf: step.leaf.0,
-            elided_label: fact_label(license.fact(), i),
-            crossed_walls: witness
-                .crossings()
-                .iter()
-                .map(|c| CrossedWall {
-                    wall_leaf: c.wall_leaf().0,
-                    provider: i.resolve(c.provider()).to_owned(),
-                    resolver: c.via_resolver().map(|k| i.resolve(k.0).to_owned()),
-                })
+        let members: Vec<_> = match survival {
+            dorc_plan::SurvivalAttribution::Standalone(witness) => {
+                vec![(license.fact(), witness)]
+            }
+            dorc_plan::SurvivalAttribution::Aggregate(witness) => witness
+                .members()
+                .map(|member| (member.fact(), member.survival()))
                 .collect(),
-        });
+        };
+        out.extend(members.into_iter().map(|(fact, witness)| {
+            Survival {
+                elided_leaf: step.leaf.0,
+                elided_label: fact_label(fact, i),
+                crossed_walls: witness
+                    .crossings()
+                    .iter()
+                    .map(|c| CrossedWall {
+                        wall_leaf: c.wall_leaf().0,
+                        provider: i.resolve(c.provider()).to_owned(),
+                        resolver: c.via_resolver().map(|k| i.resolve(k.0).to_owned()),
+                    })
+                    .collect(),
+            }
+        }));
     }
     out
 }
@@ -303,22 +314,40 @@ fn plan_fingerprint(plan: &Plan, i: &Interner) -> String {
             Disposition::Replace(license, stand_in) => {
                 let survival = license.derivation().survival.as_ref().map_or_else(
                     || "clean".to_owned(),
-                    |w| {
-                        let crossings: Vec<String> = w
-                            .crossings()
-                            .iter()
-                            .map(|c| {
-                                let fps: Vec<String> =
-                                    c.footprint().iter().map(|co| coord_label(*co, i)).collect();
-                                // 24F §6: the resolver attribution rides the fingerprint, so a
-                                // nondeterministic canonicalization would perturb the determinism guard.
-                                let via = c
-                                    .via_resolver()
-                                    .map_or_else(String::new, |k| format!("~{}", i.resolve(k.0)));
-                                format!("@{}[{}]{via}", c.wall_leaf().0, fps.join(","))
+                    |survival| {
+                        let members: Vec<_> = match survival {
+                            dorc_plan::SurvivalAttribution::Standalone(witness) => {
+                                vec![(license.fact(), witness)]
+                            }
+                            dorc_plan::SurvivalAttribution::Aggregate(witness) => witness
+                                .members()
+                                .map(|member| (member.fact(), member.survival()))
+                                .collect(),
+                        };
+                        let crossings: Vec<String> = members
+                            .into_iter()
+                            .map(|(fact, witness)| {
+                                let walls: Vec<String> = witness
+                                    .crossings()
+                                    .iter()
+                                    .map(|c| {
+                                        let fps: Vec<String> = c
+                                            .footprint()
+                                            .iter()
+                                            .map(|co| coord_label(*co, i))
+                                            .collect();
+                                        // 24F §6: the resolver attribution rides the fingerprint, so a
+                                        // nondeterministic canonicalization would perturb the determinism guard.
+                                        let via = c.via_resolver().map_or_else(String::new, |k| {
+                                            format!("~{}", i.resolve(k.0))
+                                        });
+                                        format!("@{}[{}]{via}", c.wall_leaf().0, fps.join(","))
+                                    })
+                                    .collect();
+                                format!("{}{}", fact_label(fact, i), walls.join(""))
                             })
                             .collect();
-                        format!("survived{}", crossings.join(""))
+                        format!("survived{}", crossings.join(";"))
                     },
                 );
                 format!("replace({stand_in:?},{survival})")

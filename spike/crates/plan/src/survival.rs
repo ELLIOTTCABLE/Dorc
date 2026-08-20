@@ -13,7 +13,7 @@
 //!   at-least claim) into a `Footprint`: the 233 sin (silence-as-at-most) cannot be spelled.
 //! * **TC-3 — survival is witnessed, and the witness IS the attribution.** [`DisjointnessProof`]
 //!   is minted ONLY by [`disjoint`]; a [`SurvivalWitness`] aggregates one [`Crossing`] per
-//!   running wall crossed and is constructible only inside the wall walk, only when EVERY
+//!   running wall crossed and is constructible only inside [`wall_verdict`], when EVERY
 //!   crossed wall contributed a proof ([`wall_verdict`]). The why-lens renders attribution by
 //!   READING the witness — type-enforcement and attribution-primacy are one object.
 //!
@@ -797,7 +797,7 @@ impl Crossing {
 }
 
 /// The aggregated attribution for one SURVIVED elision (TC-3): its backing plus one
-/// [`Crossing`] per running wall it outlasted. Constructible only inside the wall walk
+/// [`Crossing`] per running wall it outlasted. Constructible only inside the freshness decision
 /// ([`SurvivalWitness::new`] is `pub(crate)`), only when EVERY crossed wall yielded a proof —
 /// so holding one is proof the elision is licensed past every wall between the probe and its
 /// site. The why-lens renders attribution by READING this (never recomputing).
@@ -810,8 +810,144 @@ pub struct SurvivalWitness {
     crossings: Vec<Crossing>,
 }
 
+/// One establish erased as part of an atomic aggregate replacement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AggregateEstablish {
+    site: CfgNodeId,
+    fact: FactKey,
+}
+
+impl AggregateEstablish {
+    pub(crate) fn new(site: CfgNodeId, fact: FactKey) -> Self {
+        Self { site, fact }
+    }
+
+    pub(crate) fn site(self) -> CfgNodeId {
+        self.site
+    }
+
+    pub(crate) fn fact(self) -> FactKey {
+        self.fact
+    }
+}
+
+/// The exact non-empty ordered identity of an aggregate's erased establishes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AggregateEstablishes {
+    head: AggregateEstablish,
+    tail: Vec<AggregateEstablish>,
+}
+
+impl AggregateEstablishes {
+    pub(crate) fn mint(entries: Vec<AggregateEstablish>) -> Option<Self> {
+        let mut entries = entries.into_iter();
+        let head = entries.next()?;
+        let tail: Vec<_> = entries.collect();
+        let mut seen = BTreeSet::new();
+        if !std::iter::once(head)
+            .chain(tail.iter().copied())
+            .all(|entry| seen.insert((entry.site, entry.fact)))
+        {
+            return None;
+        }
+        Some(Self { head, tail })
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = AggregateEstablish> + '_ {
+        std::iter::once(self.head).chain(self.tail.iter().copied())
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        1usize.saturating_add(self.tail.len())
+    }
+}
+
+/// One member's independently confirmed crossing result.
+#[derive(Debug, Clone)]
+pub struct AggregateMemberSurvival {
+    establish: AggregateEstablish,
+    survival: SurvivalWitness,
+}
+
+impl AggregateMemberSurvival {
+    /// The body/member site whose establish is erased.
+    #[must_use]
+    pub fn site(&self) -> CfgNodeId {
+        self.establish.site
+    }
+
+    /// The exact fact established at that site.
+    #[must_use]
+    pub fn fact(&self) -> FactKey {
+        self.establish.fact
+    }
+
+    /// This member's independently confirmed crossings.
+    #[must_use]
+    pub fn survival(&self) -> &SurvivalWitness {
+        &self.survival
+    }
+}
+
+/// Universal freshness and survival for one atomic aggregate replacement.
+///
+/// Its private mint compares the complete ordered member identity before this value can authorize
+/// erasing the aggregate. Each member's nested witness has already passed the independent reference
+/// model; a representative fact is not an authority input.
+#[derive(Debug, Clone)]
+pub struct AggregateSurvivalWitness {
+    head: AggregateMemberSurvival,
+    tail: Vec<AggregateMemberSurvival>,
+}
+
+impl AggregateSurvivalWitness {
+    pub(crate) fn mint(
+        expected: &AggregateEstablishes,
+        members: Vec<AggregateMemberSurvival>,
+    ) -> Option<Self> {
+        if members.len() != expected.len()
+            || !members
+                .iter()
+                .map(|member| member.establish)
+                .eq(expected.iter())
+        {
+            return None;
+        }
+        let mut members = members.into_iter();
+        Some(Self {
+            head: members.next()?,
+            tail: members.collect(),
+        })
+    }
+
+    pub(crate) fn member(
+        establish: AggregateEstablish,
+        survival: SurvivalWitness,
+    ) -> AggregateMemberSurvival {
+        AggregateMemberSurvival {
+            establish,
+            survival,
+        }
+    }
+
+    /// Every erased establish and its crossing result, in exact execution identity order.
+    pub fn members(&self) -> impl Iterator<Item = &AggregateMemberSurvival> {
+        std::iter::once(&self.head).chain(self.tail.iter())
+    }
+}
+
+/// Survival attribution follows the replacement species rather than treating one displayed fact
+/// as authority for an aggregate.
+#[derive(Debug, Clone)]
+pub enum SurvivalAttribution {
+    /// One standalone establish crossed the walls.
+    Standalone(SurvivalWitness),
+    /// Every establish erased by one atomic aggregate crossed them independently.
+    Aggregate(AggregateSurvivalWitness),
+}
+
 impl SurvivalWitness {
-    /// Mint a witness — `pub(crate)`, so ONLY the wall walk ([`wall_verdict`]) constructs one.
+    /// Mint a witness — `pub(crate)`, so only [`wall_verdict`] constructs one.
     pub(crate) fn new(backing: EntityCoord, crossings: Vec<Crossing>) -> Self {
         Self { backing, crossings }
     }
@@ -1065,6 +1201,79 @@ mod tests {
             family: None,
             widen: BTreeSet::new(),
         }
+    }
+
+    #[test]
+    fn aggregate_survival_requires_exact_ordered_establish_identity() {
+        let mut i = dorc_core::Interner::default();
+        let selector = SelectorId(i.intern("installed"));
+        let mut keyed_fact = |kind: &str, entity: &str| FactKey {
+            kind: KindId(i.intern(kind)),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
+            selector,
+            context: dorc_core::Context::HostDefault,
+        };
+        let first_fact = keyed_fact("com.dorc.First", "nginx");
+        let second_fact = keyed_fact("com.dorc.Second", "curl");
+        let wrong_fact = keyed_fact("com.dorc.Third", "wombat");
+        let first = AggregateEstablish::new(CfgNodeId(20), first_fact);
+        let second = AggregateEstablish::new(CfgNodeId(21), second_fact);
+        let expected = AggregateEstablishes::mint(vec![first, second]).expect("exact identity");
+        let witness_for = |fact: FactKey, i: &mut dorc_core::Interner| {
+            let wall = AccumulatedWall {
+                wall_leaf: LeafId(0),
+                footprint: Footprint::authored(
+                    i.intern("hork"),
+                    vec![EntityCoord::new(
+                        KindId(i.intern("com.dorc.Elsewhere")),
+                        EntityRef::Singleton,
+                    )],
+                )
+                .expect("non-empty footprint"),
+            };
+            match wall_verdict(
+                false,
+                &[wall],
+                &Backing::of_fact(fact),
+                &Resolutions::none(),
+                &Dialect::empty(),
+            ) {
+                WallVerdict::Survived(witness) => witness,
+                other => panic!("cross-kind wall must spare, got {other:?}"),
+            }
+        };
+        let survival = witness_for(first_fact, &mut i);
+        let member = |establish| AggregateSurvivalWitness::member(establish, survival.clone());
+        let exact = || vec![member(first), member(second)];
+
+        assert!(AggregateSurvivalWitness::mint(&expected, exact()).is_some());
+
+        let mut missing = exact();
+        missing.pop();
+        assert!(AggregateSurvivalWitness::mint(&expected, missing).is_none());
+
+        let mut extra = exact();
+        extra.push(member(AggregateEstablish::new(CfgNodeId(22), wrong_fact)));
+        assert!(AggregateSurvivalWitness::mint(&expected, extra).is_none());
+
+        let mut reordered = exact();
+        reordered.reverse();
+        assert!(AggregateSurvivalWitness::mint(&expected, reordered).is_none());
+
+        let duplicate = vec![exact().remove(0), exact().remove(0)];
+        assert!(AggregateSurvivalWitness::mint(&expected, duplicate).is_none());
+
+        let wrong_site = vec![
+            member(AggregateEstablish::new(CfgNodeId(99), first_fact)),
+            exact().remove(1),
+        ];
+        assert!(AggregateSurvivalWitness::mint(&expected, wrong_site).is_none());
+
+        let wrong_fact_members = vec![
+            exact().remove(0),
+            member(AggregateEstablish::new(CfgNodeId(21), wrong_fact)),
+        ];
+        assert!(AggregateSurvivalWitness::mint(&expected, wrong_fact_members).is_none());
     }
 
     #[test]

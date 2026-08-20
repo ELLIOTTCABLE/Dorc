@@ -162,7 +162,8 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
                 report.rederivation_demotions.push((record.leaf, wall));
             }
             SurvivalOutcome::Clean
-            | SurvivalOutcome::Survived
+            | SurvivalOutcome::SurvivedStandalone
+            | SurvivalOutcome::SurvivedAggregate { .. }
             | SurvivalOutcome::Demoted(SurvivalDemote::TotalWall) => {}
         }
     }

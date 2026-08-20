@@ -522,7 +522,12 @@ pub enum SurvivalOutcome {
     /// Crossed no wall — an ordinary pre-wall elision.
     Clean,
     /// Crossed ≥1 running wall, all provably disjoint, under the consent flag.
-    Survived,
+    SurvivedStandalone,
+    /// One atomic aggregate survived only after every erased establish crossed independently.
+    SurvivedAggregate {
+        /// Exact number of establishes erased by the aggregate.
+        establishes: u32,
+    },
     /// Demoted to run, for one of the three reasons the walk distinguishes.
     Demoted(SurvivalDemote),
     /// The naive reference model declined to confirm a survival the wall walk had minted

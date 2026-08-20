@@ -40,12 +40,13 @@ use dorc_syntax::ast::Ast;
 
 use crate::erase::{DeadBranchProof, RoundId, prove_dead_branches};
 use crate::world::{
-    EffectiveAct, Freshness, NoExecutionLedger, NoMutationProof, Quiescence, ReachingWalls,
-    ReplacementDeathProof, StaleCause, WallPolicy, effective_invalidators, solve_reaching_walls,
+    EffectiveAct, Freshness, FreshnessSubject, NoExecutionLedger, NoMutationProof, Quiescence,
+    ReachingWalls, ReplacementDeathProof, StaleCause, WallPolicy, effective_invalidators,
+    solve_reaching_walls,
 };
 use crate::{
-    ConnectedPipes, Disposition, Spine, Vouches, decide_site, leaf_facts, leaf_has_heredoc,
-    site_order,
+    AggregateEstablish, AggregateEstablishes, ConnectedPipes, Disposition, Spine, Vouches,
+    decide_site, leaf_facts, leaf_has_heredoc, site_order,
 };
 
 /// One round's PURE DERIVATION of the analyzer model from (frozen inputs, ledger).
@@ -134,7 +135,9 @@ pub(crate) enum SurvivalAccount {
     /// An elision that crossed no wall at all.
     Clean,
     /// An elision kept past ≥1 running wall, reference-confirmed.
-    Survived,
+    SurvivedStandalone,
+    /// An atomic aggregate whose every erased establish survived independently.
+    SurvivedAggregate { establishes: u32 },
     /// An elision the walls refused.
     Demoted(StaleCause),
 }
@@ -231,7 +234,10 @@ fn record_survival(spine: &mut Spine, leaf: LeafId, account: SurvivalAccount) {
     let outcome = match account {
         SurvivalAccount::Silent => return,
         SurvivalAccount::Clean => SurvivalOutcome::Clean,
-        SurvivalAccount::Survived => SurvivalOutcome::Survived,
+        SurvivalAccount::SurvivedStandalone => SurvivalOutcome::SurvivedStandalone,
+        SurvivalAccount::SurvivedAggregate { establishes } => {
+            SurvivalOutcome::SurvivedAggregate { establishes }
+        }
         SurvivalAccount::Demoted(StaleCause::RederivationDisagreed { wall }) => {
             SurvivalOutcome::RederivationDisagreed { wall }
         }
@@ -461,11 +467,22 @@ fn one_round(
                 .unwrap_or_else(dorc_analysis::lattice::Lattice::bottom),
             _ => walls_at(*node),
         };
+        let aggregate_establishes = aggregate_establishes(*node, class);
+        let subject = match (class, aggregate_establishes.as_ref()) {
+            (
+                SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact),
+                _,
+            ) => FreshnessSubject::Standalone(*fact),
+            (SkipClass::EstablishMembers { .. } | SkipClass::InlineCall { .. }, Some(entries)) => {
+                FreshnessSubject::Aggregate(entries)
+            }
+            _ => FreshnessSubject::None,
+        };
         let freshness = floor_uncertified(
             &consistency,
             inputs.policy.freshness(
                 &site_walls,
-                survival_subject(class),
+                subject,
                 &classification.fact_backings,
                 &leaf_of,
             ),
@@ -489,6 +506,7 @@ fn one_round(
             dead: dead.get(node),
             invalidator: owns_invalidator,
             accounts_survival,
+            aggregate_establishes: aggregate_establishes.as_ref(),
         });
         let disposition = decision.disposition;
         // `30K` §7 asks for a wall-formation account per effective mutation act; it is minted only
@@ -550,25 +568,31 @@ pub(crate) fn floor_uncertified(
     }
 }
 
-/// The cell a site's elision would be spared ON — the coordinate the survival tier compares each
-/// crossed footprint against.
-///
-/// An aggregate answers with its REPRESENTATIVE member, which is the cell its own license carries
-/// (`AllEstablishesVouched::representative`); a shape with no cell at all answers `None`, which the
-/// policy reads as "everything collides" rather than as "nothing does".
-fn survival_subject(class: &SkipClass) -> Option<FactKey> {
+/// The one exact aggregate identity shared by freshness and vouch authorization.
+fn aggregate_establishes(node: CfgNodeId, class: &SkipClass) -> Option<AggregateEstablishes> {
     match class {
-        SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
-            Some(*fact)
-        }
-        SkipClass::EstablishMembers { members, .. } => members.first().copied(),
-        SkipClass::InlineCall { sites } => sites.iter().find_map(|site| match site.class {
-            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
-                Some(fact)
-            }
-            _ => None,
-        }),
-        SkipClass::QueryResolvable { .. } | SkipClass::MustRun => None,
+        SkipClass::EstablishMembers { members, .. } => AggregateEstablishes::mint(
+            members
+                .iter()
+                .map(|fact| AggregateEstablish::new(node, *fact))
+                .collect(),
+        ),
+        SkipClass::InlineCall { sites } => AggregateEstablishes::mint(
+            sites
+                .iter()
+                .filter_map(|site| match site.class {
+                    SkipClass::EstablishProbeAmbient(fact)
+                    | SkipClass::EstablishProbeWritten(fact) => {
+                        Some(AggregateEstablish::new(site.node, fact))
+                    }
+                    _ => None,
+                })
+                .collect(),
+        ),
+        SkipClass::EstablishProbeAmbient(_)
+        | SkipClass::EstablishProbeWritten(_)
+        | SkipClass::QueryResolvable { .. }
+        | SkipClass::MustRun => None,
     }
 }
 

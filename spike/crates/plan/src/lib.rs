@@ -110,9 +110,11 @@ pub mod rederive;
 pub mod certifier_trip;
 
 pub mod survival;
+use survival::{AggregateEstablish, AggregateEstablishes};
 pub use survival::{
-    Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
-    FootprintOrigin, MayAliasReason, ReachExpansion, Resolution, Resolutions, SurvivalWitness,
+    AggregateMemberSurvival, AggregateSurvivalWitness, Backing, CanonicalCoord, Crossing,
+    DisjointOutcome, DisjointnessProof, EntityCoord, Footprint, FootprintOrigin, MayAliasReason,
+    ReachExpansion, Resolution, Resolutions, SurvivalAttribution, SurvivalWitness,
     TrustedFootprints, disjoint,
 };
 
@@ -313,7 +315,7 @@ pub struct Derivation {
     /// effective freshness decision ([`ReplaceLicense::with_survival`]); read ONLY by the why-lens render (never the
     /// artifact — rec-1). NOT a proof of adequacy (converged≠no-op stays the vouch's) — see
     /// [`survival`].
-    pub survival: Option<SurvivalWitness>,
+    pub survival: Option<SurvivalAttribution>,
     /// The licensing vouch's DEFINING span + oracle-file id (C7 `27V:mech-minting-line-threading`),
     /// for the survival attribution's `file:line`. `Some` only on the [`LicenseVia::ConvergedEstablish`]
     /// (elide-weld) path, which consumes a [`ByVouch<VerdictVouch>`]; `None` for Query/loop/call
@@ -375,6 +377,7 @@ pub struct EstablishVouchReceipt {
     pub site: CfgNodeId,
     pub fact: FactKey,
     pub defining_span: Option<(dorc_core::Span, SourceFileId)>,
+    pub probe: Option<ProbeAttribution>,
 }
 
 #[derive(Debug, Clone)]
@@ -411,27 +414,31 @@ impl ReadSubstitutionProof {
 }
 
 impl AllEstablishesVouched {
-    fn mint(expected: &[(CfgNodeId, FactKey)], vouches: &Vouches) -> Option<Self> {
+    fn mint(expected: &AggregateEstablishes, vouches: &Vouches) -> Option<Self> {
         if expected
             .iter()
-            .any(|(site, fact)| vouches.is_duplicate(*site, *fact))
+            .any(|entry| vouches.is_duplicate(entry.site(), entry.fact()))
         {
             return None;
         }
-        let involved: BTreeSet<CfgNodeId> = expected.iter().map(|(site, _)| *site).collect();
+        let involved: BTreeSet<CfgNodeId> = expected.iter().map(AggregateEstablish::site).collect();
         let supplied: Vec<_> = vouches
             .ordered_keys()
             .into_iter()
             .filter(|(site, _)| involved.contains(site))
             .collect();
-        if supplied.as_slice() != expected || expected.is_empty() {
+        let identities: Vec<_> = expected
+            .iter()
+            .map(|entry| (entry.site(), entry.fact()))
+            .collect();
+        if supplied != identities {
             return None;
         }
-        let mut entries = expected.iter().map(|(site, fact)| {
+        let mut entries = expected.iter().map(|entry| {
             Some(EstablishVouch {
-                site: *site,
-                fact: *fact,
-                vouch: vouches.get(*site, *fact)?.clone(),
+                site: entry.site(),
+                fact: entry.fact(),
+                vouch: vouches.get(entry.site(), entry.fact())?.clone(),
             })
         });
         Some(Self {
@@ -451,6 +458,7 @@ impl AllEstablishesVouched {
                 site: entry.site,
                 fact: entry.fact,
                 defining_span: entry.vouch.vouch().defining_span(),
+                probe: None,
             })
             .collect()
     }
@@ -818,9 +826,25 @@ impl ReplaceLicense {
     /// of the license mint), so it never influences whether the license was granted. Rides the
     /// render surface (the why-lens) only — never the byte-floored artifact (rec-1).
     #[must_use]
-    pub fn with_survival(mut self, witness: SurvivalWitness) -> Self {
+    pub fn with_survival(mut self, witness: SurvivalAttribution) -> Self {
         self.derivation.survival = Some(witness);
         self
+    }
+
+    fn with_aggregate_survival(mut self, witness: AggregateSurvivalWitness) -> Option<Self> {
+        let receipts = self
+            .derivation
+            .establish_vouches
+            .iter()
+            .map(|receipt| (receipt.site, receipt.fact));
+        let survived = witness
+            .members()
+            .map(|member| (member.site(), member.fact()));
+        if !receipts.eq(survived) {
+            return None;
+        }
+        self.derivation.survival = Some(SurvivalAttribution::Aggregate(witness));
+        Some(self)
     }
 
     /// Attach the probe-side attribution post-mint (`27V` Lane A) — who reported the licensing
@@ -829,6 +853,17 @@ impl ReplaceLicense {
     #[must_use]
     pub fn with_probe_attribution(mut self, attribution: Option<ProbeAttribution>) -> Self {
         self.derivation.probe = attribution;
+        self
+    }
+
+    fn with_aggregate_probe_attribution(
+        mut self,
+        attributions: &BTreeMap<FactKey, ProbeAttribution>,
+    ) -> Self {
+        self.derivation.probe = attributions.get(&self.fact).copied();
+        for receipt in &mut self.derivation.establish_vouches {
+            receipt.probe = attributions.get(&receipt.fact).copied();
+        }
         self
     }
 
@@ -3840,13 +3875,23 @@ fn attach_replace_provenance(
 ) -> ReplaceLicense {
     let book = arena.leaf(dorc_core::OriginKind::BookSource, Some(site_span));
     let attribution = probe_origins.get(&license.fact()).copied();
-    let origins = match attribution {
-        Some(measured) => vec![book, measured.origin],
-        None => vec![book],
-    };
+    let mut origins = vec![book];
+    if license.derivation.establish_vouches.is_empty() {
+        if let Some(measured) = attribution {
+            origins.push(measured.origin);
+        }
+    } else {
+        origins.extend(
+            license
+                .derivation
+                .establish_vouches
+                .iter()
+                .filter_map(|receipt| probe_origins.get(&receipt.fact).map(|probe| probe.origin)),
+        );
+    }
     license
         .with_witness(dorc_core::Witness::of(origins))
-        .with_probe_attribution(attribution)
+        .with_aggregate_probe_attribution(probe_origins)
 }
 
 /// Everything one site's decision establishes: what the plan does with the leaf, whether its
@@ -3942,6 +3987,8 @@ pub(crate) struct DecideSite<'a> {
     pub(crate) invalidator: bool,
     /// Does the run's policy account for survivals? Honest walls record nothing.
     pub(crate) accounts_survival: bool,
+    /// The one exact aggregate identity shared by freshness and vouch authorization.
+    pub(crate) aggregate_establishes: Option<&'a AggregateEstablishes>,
 }
 
 /// Decide one site (`30K` §5) — the disposition and the semantic act, from one pass.
@@ -4069,14 +4116,15 @@ fn establish_disposition(
             DecisionConclusion::Replace(license, standin_for(observed.status)),
             SurvivalAccount::Clean,
         ),
-        (Freshness::FreshSurvived(witness), Some(license)) => (
+        (Freshness::FreshSurvived(SurvivalAttribution::Standalone(witness)), Some(license)) => (
             DecisionConclusion::Replace(
-                license.with_survival(witness.clone()),
+                license.with_survival(SurvivalAttribution::Standalone(witness.clone())),
                 standin_for(observed.status),
             ),
-            SurvivalAccount::Survived,
+            SurvivalAccount::SurvivedStandalone,
         ),
-        (Freshness::FreshClean | Freshness::FreshSurvived(_), None) => {
+        (Freshness::FreshSurvived(SurvivalAttribution::Aggregate(_)), Some(_))
+        | (Freshness::FreshClean | Freshness::FreshSurvived(_), None) => {
             (DecisionConclusion::Run, SurvivalAccount::Silent)
         }
         // The guard tier (rul-ternary-verdict's third verb). A site whose ONLY lost elision
@@ -4120,10 +4168,9 @@ fn standin_for(status: Predicted<Rc>) -> StandIn {
 /// pass, and the aggregate's own position effectively FRESH. The stand-in is always `true` (the
 /// loop still iterates N times over it).
 ///
-/// `30K` §5.4, disclosed: the aggregate takes ONE position's freshness — its own, from the
-/// self-suppressed solve — rather than proving effective freshness per erased establish. Where the
-/// representation cannot express the universal statement the whole aggregate runs, the conservative
-/// direction; recovering that value needs the typed per-member proof first.
+/// Reaching walls come from the existing self-suppressed solve; every member then crosses those
+/// external walls independently. The aggregate's own writes remain absent because replacement
+/// erases them atomically.
 fn members_disposition(
     p: &DecideSite<'_>,
     members: &[FactKey],
@@ -4137,8 +4184,10 @@ fn members_disposition(
     // The in-loop body leaf's status: a mutator's rc is ⊤ (fork-mutator-rc), and a Members site is
     // a mutator, so ⊤. The consumption gate blocks a consumed ⊤.
     let status = Predicted::Top;
-    let expected: Vec<(CfgNodeId, FactKey)> = members.iter().map(|fact| (p.node, *fact)).collect();
-    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, p.vouches) else {
+    let Some(establishes) = p.aggregate_establishes else {
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
+    };
+    let Some(all_vouched) = AllEstablishesVouched::mint(establishes, p.vouches) else {
         return (DecisionConclusion::Run, SurvivalAccount::Silent);
     };
     let licensed = ReplaceLicense::prove_members_replaceable(
@@ -4170,16 +4219,7 @@ fn inline_disposition(
     let consumed = May(p.cfg.consumed_observables(p.node).clone());
     // The CALL aggregate's status: ⊤ (a mutator-shaped call's rc has no sanctioned source).
     let status = Predicted::Top;
-    let expected: Vec<(CfgNodeId, FactKey)> = sites
-        .iter()
-        .filter_map(|site| match site.class {
-            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
-                Some((site.node, fact))
-            }
-            _ => None,
-        })
-        .collect();
-    if expected.is_empty() {
+    if p.aggregate_establishes.is_none() {
         let Some(proof) = ReadSubstitutionProof::mint(sites, p.observe) else {
             return (DecisionConclusion::Run, SurvivalAccount::Silent);
         };
@@ -4190,7 +4230,10 @@ fn inline_disposition(
         let licensed = ReplaceLicense::prove_inline_query_replaceable(proof, &consumed);
         return aggregate_outcome(p, licensed, stand_in);
     }
-    let Some(all_vouched) = AllEstablishesVouched::mint(&expected, p.vouches) else {
+    let Some(establishes) = p.aggregate_establishes else {
+        return (DecisionConclusion::Run, SurvivalAccount::Silent);
+    };
+    let Some(all_vouched) = AllEstablishesVouched::mint(establishes, p.vouches) else {
         return (DecisionConclusion::Run, SurvivalAccount::Silent);
     };
     let licensed =
@@ -4200,9 +4243,8 @@ fn inline_disposition(
 
 /// Gate an aggregate's minted license on effective freshness.
 ///
-/// A single-fact survival witness cannot authorize erasing every establish in an aggregate. Until
-/// the aggregate carries a cardinality-matched universal freshness proof, any reaching wall takes
-/// the run floor; wall-free replacement remains available (`30Kb:required-aggregate-running-floor`).
+/// A survived aggregate can replace only when its cardinality-matched witness names the same exact
+/// ordered establishes as its vouch receipts. Any mismatch takes the atomic run floor.
 fn aggregate_outcome(
     p: &DecideSite<'_>,
     licensed: Option<ReplaceLicense>,
@@ -4213,7 +4255,18 @@ fn aggregate_outcome(
             DecisionConclusion::Replace(license, stand_in),
             SurvivalAccount::Clean,
         ),
-        (Freshness::FreshSurvived(_), Some(_)) => {
+        (Freshness::FreshSurvived(SurvivalAttribution::Aggregate(witness)), Some(license)) => {
+            match license.with_aggregate_survival(witness.clone()) {
+                Some(license) => (
+                    DecisionConclusion::Replace(license, stand_in),
+                    SurvivalAccount::SurvivedAggregate {
+                        establishes: u32::try_from(witness.members().count()).unwrap_or(u32::MAX),
+                    },
+                ),
+                None => (DecisionConclusion::Run, SurvivalAccount::Silent),
+            }
+        }
+        (Freshness::FreshSurvived(SurvivalAttribution::Standalone(_)), Some(_)) => {
             (DecisionConclusion::Run, SurvivalAccount::Silent)
         }
         (Freshness::Stale(cause), Some(_)) => {
@@ -8080,6 +8133,97 @@ apt_get__is_converged() {
         });
     }
 
+    #[test]
+    fn inline_survival_attributes_every_erased_establish_and_crossing() {
+        let (plan, i) = effective_plan(
+            "install_both() { apt-get install -y nginx; apt-get install -y curl; }\n\
+             apt-get install -y oldpkg\n\
+             install_both\n",
+            |entity| {
+                if entity == "oldpkg" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+            Some(&|entity: &str| (entity == "oldpkg").then(|| "oldpkg".to_owned())),
+        );
+        let Disposition::Replace(license, _) = &find(&plan, "install_both").disposition else {
+            panic!("the universally spared aggregate must replace")
+        };
+        let Some(SurvivalAttribution::Aggregate(witness)) = &license.derivation().survival else {
+            panic!("aggregate replacement must carry aggregate survival attribution")
+        };
+        let members: Vec<_> = witness.members().collect();
+        assert_eq!(
+            members.len(),
+            2,
+            "both erased establishes remain attributed"
+        );
+        assert_eq!(
+            members
+                .iter()
+                .map(|member| i.resolve(match member.fact().entity {
+                    EntityRef::Operand(token) => token.0,
+                    EntityRef::Singleton => panic!("package facts are operand-keyed"),
+                }))
+                .collect::<Vec<_>>(),
+            ["nginx", "curl"],
+            "identity order is the body's establish order"
+        );
+        assert!(
+            members
+                .iter()
+                .all(|member| member.survival().crossings().len() == 1),
+            "each member independently records the load-bearing external crossing"
+        );
+    }
+
+    #[test]
+    fn wall_free_inline_aggregate_is_disposition_and_byte_identical() {
+        let src = "install_both() { apt-get install -y nginx; apt-get install -y curl; }\n\
+                   install_both\n";
+        let (honest, honest_i) = effective_plan(src, |_| Verdict::Converged, None);
+        let (risk, risk_i) = effective_plan(
+            src,
+            |_| Verdict::Converged,
+            Some(&|entity: &str| Some(entity.to_owned())),
+        );
+        assert!(matches!(
+            find(&honest, "install_both").disposition,
+            Disposition::Replace(..)
+        ));
+        assert!(matches!(
+            find(&risk, "install_both").disposition,
+            Disposition::Replace(..)
+        ));
+        assert_eq!(honest.render_sh(&honest_i), risk.render_sh(&risk_i));
+    }
+
+    #[test]
+    fn external_wall_stays_blocked_by_members_self_reach_gate() {
+        let (plan, _) = effective_plan(
+            "apt-get install -y oldpkg\n\
+             for pkg in nginx curl; do apt-get install -y \"$pkg\"; done\n",
+            |entity| {
+                if entity == "oldpkg" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+            Some(&|entity: &str| (entity == "oldpkg").then(|| "oldpkg".to_owned())),
+        );
+        assert!(
+            matches!(
+                find(&plan, "apt-get install -y \"$pkg\"").disposition,
+                Disposition::Run
+            ),
+            "the existing Members self-reach gate rejects this external writer before aggregate \
+             freshness can license anything; widening that gate is outside this repair"
+        );
+    }
+
     /// A GUARD is itself a wall for everything below it (`30K` §5.3), isolated so the pin can only
     /// pass for that reason: the running wall's footprint is disjoint from the third site, so the
     /// ONLY thing that can stale it is the guard in between — which carries no footprint, and so
@@ -8397,6 +8541,9 @@ apt_get__is_converged() {
                     .survival
                     .as_ref()
                     .expect("a survived elision past a wall carries a survival witness");
+                let SurvivalAttribution::Standalone(witness) = witness else {
+                    panic!("one establish must carry standalone survival attribution")
+                };
                 assert_eq!(witness.crossings().len(), 1, "one wall crossed");
             }
             other => panic!("nginx must SURVIVE (Replace) past the disjoint wall, got {other:?}"),
@@ -8687,7 +8834,13 @@ apt_get__is_converged() {
             for fact in &family {
                 vouches.insert(site, *fact, test_vouch());
             }
-            let expected: Vec<_> = family.iter().map(|fact| (site, *fact)).collect();
+            let expected = AggregateEstablishes::mint(
+                family
+                    .iter()
+                    .map(|fact| AggregateEstablish::new(site, *fact))
+                    .collect(),
+            )
+            .expect("the member identity is non-empty and unique");
             AllEstablishesVouched::mint(&expected, &vouches).expect("exact member vouches")
         };
         // All converged + self-reached + quiet ⇒ license.
@@ -8779,38 +8932,51 @@ apt_get__is_converged() {
         let wombat = fact(i.intern("wombat"));
         let first = CfgNodeId(41);
         let second = CfgNodeId(42);
-        let expected = vec![(first, nginx), (second, curl)];
+        let expected = || {
+            AggregateEstablishes::mint(vec![
+                AggregateEstablish::new(first, nginx),
+                AggregateEstablish::new(second, curl),
+            ])
+            .expect("the expected identity is non-empty and unique")
+        };
         let exact = || {
             let mut vouches = Vouches::new();
             vouches.insert(first, nginx, test_vouch());
             vouches.insert(second, curl, test_vouch());
             vouches
         };
-        assert!(AllEstablishesVouched::mint(&expected, &exact()).is_some());
+        assert!(AllEstablishesVouched::mint(&expected(), &exact()).is_some());
 
         let mut missing = Vouches::new();
         missing.insert(first, nginx, test_vouch());
-        assert!(AllEstablishesVouched::mint(&expected, &missing).is_none());
+        assert!(AllEstablishesVouched::mint(&expected(), &missing).is_none());
 
         let mut extra = exact();
         extra.insert(first, wombat, test_vouch());
-        assert!(AllEstablishesVouched::mint(&expected, &extra).is_none());
+        assert!(AllEstablishesVouched::mint(&expected(), &extra).is_none());
 
         let mut reordered = Vouches::new();
         reordered.insert(second, curl, test_vouch());
         reordered.insert(first, nginx, test_vouch());
-        assert!(AllEstablishesVouched::mint(&expected, &reordered).is_none());
+        assert!(AllEstablishesVouched::mint(&expected(), &reordered).is_none());
 
         let mut wrong_site = Vouches::new();
         wrong_site.insert(first, nginx, test_vouch());
         wrong_site.insert(CfgNodeId(43), curl, test_vouch());
-        assert!(AllEstablishesVouched::mint(&expected, &wrong_site).is_none());
+        assert!(AllEstablishesVouched::mint(&expected(), &wrong_site).is_none());
 
         let mut duplicate = exact();
         duplicate.insert(first, nginx, test_vouch());
-        assert!(AllEstablishesVouched::mint(&expected, &duplicate).is_none());
+        assert!(AllEstablishesVouched::mint(&expected(), &duplicate).is_none());
 
-        assert!(AllEstablishesVouched::mint(&[(first, nginx), (first, nginx)], &exact()).is_none());
+        assert!(
+            AggregateEstablishes::mint(vec![
+                AggregateEstablish::new(first, nginx),
+                AggregateEstablish::new(first, nginx),
+            ])
+            .is_none(),
+            "duplicate aggregate identities are unrepresentable before vouch matching"
+        );
     }
 
     #[test]

@@ -664,19 +664,45 @@ fn survival_chain(
     source_paths: &[String],
     source_srcs: &[String],
 ) -> Option<ChainRender> {
-    let witness = license.derivation().survival.as_ref()?;
-    let backing = render_coord(witness.backing(), interner);
+    let survival = license.derivation().survival.as_ref()?;
     let outcome = outcome_word(ctx, disposition);
-    let reported = license.derivation().probe.and_then(|p| p.reported);
-    let report = ChainLink {
-        tier: SpeechAct::Measured,
-        speaker: reported_speaker(reference, reported, source_paths, source_srcs),
-        payload: Said::Value(dorc_plan::fact_label(interner, license.fact())),
-        quoted: true,
-        event: reported.map(reported_event),
-        explanation: None,
-        excerpt: None,
+    let members: Vec<_> = match survival {
+        dorc_plan::SurvivalAttribution::Standalone(witness) => {
+            vec![(license.fact(), witness, license.derivation().probe)]
+        }
+        dorc_plan::SurvivalAttribution::Aggregate(witness) => witness
+            .members()
+            .map(|member| {
+                let probe = license
+                    .derivation()
+                    .establish_vouches
+                    .iter()
+                    .find(|receipt| receipt.site == member.site() && receipt.fact == member.fact())
+                    .and_then(|receipt| receipt.probe);
+                (member.fact(), member.survival(), probe)
+            })
+            .collect(),
     };
+    let backings: Vec<_> = members
+        .iter()
+        .map(|(_, witness, _)| render_coord(witness.backing(), interner))
+        .collect();
+    let backing = backings.join(" ");
+    let reports: Vec<_> = members
+        .iter()
+        .map(|(fact, _, probe)| {
+            let reported = probe.and_then(|p| p.reported);
+            ChainLink {
+                tier: SpeechAct::Measured,
+                speaker: reported_speaker(reference, reported, source_paths, source_srcs),
+                payload: Said::Value(dorc_plan::fact_label(interner, *fact)),
+                quoted: true,
+                event: reported.map(reported_event),
+                explanation: None,
+                excerpt: None,
+            }
+        })
+        .collect();
     let vouches: Vec<ChainLink> = if license.derivation().establish_vouches.is_empty() {
         vec![ChainLink {
             tier: SpeechAct::Vouched,
@@ -714,42 +740,47 @@ fn survival_chain(
     let mut claimants: Vec<String> = Vec::new();
     let mut leverage: Option<String> = None;
     let mut claims: Vec<ChainLink> = Vec::new();
-    for c in witness.crossings() {
-        let provider = interner.resolve(c.provider()).to_owned();
-        claimants.push(provider.clone());
-        wall_refs.push(
-            walls
-                .get(&c.wall_leaf())
-                .cloned()
-                .unwrap_or_else(|| provider.clone()),
-        );
-        let coords: Vec<String> = c
-            .footprint()
-            .iter()
-            .map(|fc| render_coord(*fc, interner))
-            .collect();
-        let locus = oracle_locus(c.footprint_span(), source_paths, source_srcs);
-        leverage = leverage.or_else(|| locus.clone());
-        claims.push(ChainLink {
-            tier: SpeechAct::Claimed,
-            speaker: locus,
-            payload: Said::words("why-claims-payload", &[&provider, &coords.join(" ")]),
-            quoted: true,
-            event: None,
-            explanation: Some(Said::words("why-claims-covers-unmeasured", &[])),
-            excerpt: oracle_excerpt(c.footprint_span(), source_paths, source_srcs),
-        });
+    for (_, witness, _) in &members {
+        for c in witness.crossings() {
+            let provider = interner.resolve(c.provider()).to_owned();
+            claimants.push(provider.clone());
+            wall_refs.push(
+                walls
+                    .get(&c.wall_leaf())
+                    .cloned()
+                    .unwrap_or_else(|| provider.clone()),
+            );
+            let coords: Vec<String> = c
+                .footprint()
+                .iter()
+                .map(|fc| render_coord(*fc, interner))
+                .collect();
+            let locus = oracle_locus(c.footprint_span(), source_paths, source_srcs);
+            leverage = leverage.or_else(|| locus.clone());
+            claims.push(ChainLink {
+                tier: SpeechAct::Claimed,
+                speaker: locus,
+                payload: Said::words("why-claims-payload", &[&provider, &coords.join(" ")]),
+                quoted: true,
+                event: None,
+                explanation: Some(Said::words("why-claims-covers-unmeasured", &[])),
+                excerpt: oracle_excerpt(c.footprint_span(), source_paths, source_srcs),
+            });
+        }
     }
-    let derivation = ChainLink {
-        tier: SpeechAct::Derived,
-        speaker: Some(ENGINE_SPEAKER.to_owned()),
-        payload: Said::words("why-derives-payload-disjoint", &[&backing]),
-        quoted: false,
-        event: None,
-        explanation: None,
-        excerpt: None,
-    };
-    let links = survival_row_order(report, vouches, claims, derivation);
+    let derivations = backings
+        .iter()
+        .map(|member_backing| ChainLink {
+            tier: SpeechAct::Derived,
+            speaker: Some(ENGINE_SPEAKER.to_owned()),
+            payload: Said::words("why-derives-payload-disjoint", &[member_backing]),
+            quoted: false,
+            event: None,
+            explanation: None,
+            excerpt: None,
+        })
+        .collect();
+    let links = survival_row_order(reports, vouches, claims, derivations);
 
     let joined_walls = wall_refs.join(", ");
     let unmeasured = links
@@ -826,15 +857,15 @@ fn survival_chain(
 /// distrust-ordered-or-otherwise-arranged render would otherwise have to reverse-engineer out of
 /// straight-line code. No ordering machinery: the seat is the affordance.
 fn survival_row_order(
-    report: ChainLink,
+    reports: Vec<ChainLink>,
     vouches: Vec<ChainLink>,
     claims: Vec<ChainLink>,
-    derivation: ChainLink,
+    derivations: Vec<ChainLink>,
 ) -> Vec<ChainLink> {
-    let mut links = vec![report];
+    let mut links = reports;
     links.extend(vouches);
     links.extend(claims);
-    links.push(derivation);
+    links.extend(derivations);
     links
 }
 
@@ -1679,13 +1710,20 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                 source_srcs,
             )
         {
-            let crossed = license
-                .derivation()
-                .survival
-                .iter()
-                .flat_map(dorc_plan::SurvivalWitness::crossings)
-                .filter_map(|c| lines_by_leaf.get(&c.wall_leaf()).copied());
-            chain.participants = participants(line, crossed);
+            let crossed: Vec<_> = match license.derivation().survival.as_ref() {
+                Some(dorc_plan::SurvivalAttribution::Standalone(witness)) => witness
+                    .crossings()
+                    .iter()
+                    .filter_map(|c| lines_by_leaf.get(&c.wall_leaf()).copied())
+                    .collect(),
+                Some(dorc_plan::SurvivalAttribution::Aggregate(witness)) => witness
+                    .members()
+                    .flat_map(|member| member.survival().crossings())
+                    .filter_map(|c| lines_by_leaf.get(&c.wall_leaf()).copied())
+                    .collect(),
+                None => Vec::new(),
+            };
+            chain.participants = participants(line, crossed.into_iter());
             chains.push((line, chain));
         }
         if let Disposition::Guard(license) = &step.disposition {

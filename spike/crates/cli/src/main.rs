@@ -3399,78 +3399,80 @@ fn emit_survival_attribution(
         let dorc_plan::Disposition::Replace(license, _) = &step.disposition else {
             continue;
         };
-        let Some(witness) = &license.derivation().survival else {
+        let Some(survival) = &license.derivation().survival else {
             continue;
         };
-        let crossings: Vec<String> = witness
-            .crossings()
-            .iter()
-            .map(|c| {
-                let provider = interner.resolve(c.provider());
-                let coords: Vec<String> = c
-                    .footprint()
-                    .iter()
-                    .map(|fc| render_coord(*fc, interner))
-                    .collect();
-                // 24E §9: name a host-DERIVED footprint's provenance ("DERIVED at probe from
-                // <call>"); an authored (static) footprint carries no extra locus.
-                let origin = match c.origin() {
-                    dorc_plan::FootprintOrigin::Derived { call } => {
-                        format!("; DERIVED at probe from {call}")
-                    }
-                    dorc_plan::FootprintOrigin::Authored => String::new(),
-                };
-                // 24F §6: name the resolver that canonicalized this crossing's coords ("disjoint
-                // AFTER <kind>.resolve()"). The aliasing closure is the sharpest claim in the design,
-                // so a survival it licensed must always name whose identity-judgment it trusted.
-                let via = c.via_resolver().map_or_else(String::new, |k| {
-                    format!(
-                        "; disjoint AFTER {}.resolve() canonicalization",
-                        interner.resolve(k.0)
-                    )
-                });
-                // 24G §8: name the engine-supplied OWN-effect coordinate distinctly — present only
-                // when the union WIDENED the footprint (the derived lane; the authored lane's canary
-                // folds own into the `touches()` claim, so it is not repeated). Provenance: the site's
-                // declared effect, NOT the author's claim.
-                let own = c.own().map_or_else(String::new, |o| {
-                    format!("; own-effect {}", render_coord(o, interner))
-                });
-                format!(
-                    "wall site {} ({provider} touches {{{}}}{own}{origin}{via})",
-                    c.wall_leaf().0,
-                    coords.join(" ")
-                )
-            })
-            .collect();
-        let aggregate_loci: Vec<String> = license
-            .derivation()
-            .establish_vouches
-            .iter()
-            .map(|receipt| {
-                let locus = oracle_locus(receipt.defining_span, oracle_paths, oracle_srcs)
-                    .map(|value| format!(" at {value}"))
-                    .unwrap_or_default();
-                format!(
-                    "site {} {} vouched{locus}",
-                    receipt.site.0,
-                    dorc_plan::fact_label(interner, receipt.fact)
-                )
-            })
-            .collect();
-        let locus = if aggregate_loci.is_empty() {
-            oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
-                .map(|value| format!("; vouched at {value}"))
-                .unwrap_or_default()
-        } else {
-            format!("; {}", aggregate_loci.join(", "))
+        let members: Vec<_> = match survival {
+            dorc_plan::SurvivalAttribution::Standalone(witness) => {
+                vec![(witness, license.derivation().vouch_span)]
+            }
+            dorc_plan::SurvivalAttribution::Aggregate(witness) => witness
+                .members()
+                .map(|member| {
+                    let defining = license
+                        .derivation()
+                        .establish_vouches
+                        .iter()
+                        .find(|receipt| {
+                            receipt.site == member.site() && receipt.fact == member.fact()
+                        })
+                        .and_then(|receipt| receipt.defining_span);
+                    (member.survival(), defining)
+                })
+                .collect(),
         };
-        eprintln!(
-            "why: site {} survives+elides past {} -- backing {} disjoint (trusted footprint){locus}",
-            step.leaf.0,
-            crossings.join(", "),
-            render_coord(witness.backing(), interner),
-        );
+        for (witness, defining) in members {
+            let crossings: Vec<String> = witness
+                .crossings()
+                .iter()
+                .map(|c| {
+                    let provider = interner.resolve(c.provider());
+                    let coords: Vec<String> = c
+                        .footprint()
+                        .iter()
+                        .map(|fc| render_coord(*fc, interner))
+                        .collect();
+                    // 24E §9: name a host-DERIVED footprint's provenance ("DERIVED at probe from
+                    // <call>"); an authored (static) footprint carries no extra locus.
+                    let origin = match c.origin() {
+                        dorc_plan::FootprintOrigin::Derived { call } => {
+                            format!("; DERIVED at probe from {call}")
+                        }
+                        dorc_plan::FootprintOrigin::Authored => String::new(),
+                    };
+                    // 24F §6: name the resolver that canonicalized this crossing's coords ("disjoint
+                    // AFTER <kind>.resolve()"). The aliasing closure is the sharpest claim in the design,
+                    // so a survival it licensed must always name whose identity-judgment it trusted.
+                    let via = c.via_resolver().map_or_else(String::new, |k| {
+                        format!(
+                            "; disjoint AFTER {}.resolve() canonicalization",
+                            interner.resolve(k.0)
+                        )
+                    });
+                    // 24G §8: name the engine-supplied OWN-effect coordinate distinctly — present only
+                    // when the union WIDENED the footprint (the derived lane; the authored lane's canary
+                    // folds own into the `touches()` claim, so it is not repeated). Provenance: the site's
+                    // declared effect, NOT the author's claim.
+                    let own = c.own().map_or_else(String::new, |o| {
+                        format!("; own-effect {}", render_coord(o, interner))
+                    });
+                    format!(
+                        "wall site {} ({provider} touches {{{}}}{own}{origin}{via})",
+                        c.wall_leaf().0,
+                        coords.join(" ")
+                    )
+                })
+                .collect();
+            let locus = oracle_locus(defining, oracle_paths, oracle_srcs)
+                .map(|value| format!("; vouched at {value}"))
+                .unwrap_or_default();
+            eprintln!(
+                "why: site {} survives+elides past {} -- backing {} disjoint (trusted footprint){locus}",
+                step.leaf.0,
+                crossings.join(", "),
+                render_coord(witness.backing(), interner),
+            );
+        }
     }
 }
 
