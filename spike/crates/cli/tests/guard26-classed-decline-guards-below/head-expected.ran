@@ -1,3 +1,0 @@
-ran: hork provision
-ran: wombat a.conf /etc/a.conf
-ran: wombat b.conf /etc/b.conf

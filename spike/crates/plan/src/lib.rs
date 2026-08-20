@@ -5419,7 +5419,10 @@ apt_get__is_converged() { return 0; }
         let mut vouches = Vouches::new();
         for (node, class) in classes {
             match class {
-                SkipClass::EstablishProbeAmbient(fact) => {
+                // BOTH establish species: the origin ambient/written split no longer gates the tier,
+                // so a scaffold that vouched only ambient sites would hide the guard rung from
+                // every native test (`30K` §5.1).
+                SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
                     vouches.insert(*node, *fact, test_vouch())
                 }
                 SkipClass::EstablishMembers { members, .. } => {
@@ -5434,9 +5437,7 @@ apt_get__is_converged() { return 0; }
                         }
                     }
                 }
-                SkipClass::EstablishProbeWritten(_)
-                | SkipClass::QueryResolvable { .. }
-                | SkipClass::MustRun => {}
+                SkipClass::QueryResolvable { .. } | SkipClass::MustRun => {}
             }
         }
         vouches
@@ -7489,10 +7490,10 @@ apt_get__is_converged() {
         // the static ambient gate (same-cell reasoning) leaves BOTH `EstablishProbeAmbient` — no
         // same-cell poison rescues this. curl is DIVERGED ⇒ it RUNS ⇒ it is a modeled mutator
         // that runs, which by the frame problem (233) may touch anything it did not declare. So
-        // the downstream CONVERGED nginx install — which the static gate would elide — is
-        // DEMOTED Replace→Run (`inv-kfail`: when unsure, act). At HEAD nginx wrongly elides past
-        // the running curl; the wall closes that under-execution. No `set -e`, so the demotion
-        // is the wall's doing, not errexit consuming the mutator's ⊤ status.
+        // the downstream CONVERGED nginx install — which the static gate would elide — loses its
+        // elision (`inv-kfail`: when unsure, act) and falls to the GUARD rung, which re-decides
+        // live after curl has run. No `set -e`, so the demotion is the wall's doing, not errexit
+        // consuming the mutator's ⊤ status.
         let (plan, _) = plan_for_pkgs("apt-get install -y curl\napt-get install -y nginx\n", |e| {
             if e == "curl" {
                 Verdict::Diverged
@@ -7507,9 +7508,9 @@ apt_get__is_converged() {
         assert!(
             matches!(
                 find(&plan, "install -y nginx").disposition,
-                Disposition::Run
+                Disposition::Guard(_)
             ),
-            "silence=wall: the converged install is demoted to Run past the running curl mutator"
+            "silence=wall: the converged install loses its elision past the running curl mutator, \n             and re-checks live rather than running bare"
         );
     }
 
@@ -7658,9 +7659,9 @@ apt_get__is_converged() {
         assert!(
             matches!(
                 find(&plan, "install -y nginx").disposition,
-                Disposition::Run
+                Disposition::Guard(_)
             ),
-            "silence=wall: the converged install is demoted to Run past the running kill"
+            "silence=wall: the converged install loses its elision past the running kill, and \n             re-checks live rather than running bare"
         );
     }
 
@@ -7692,6 +7693,276 @@ apt_get__is_converged() {
     }
 
     // ── Stage 2: the survival tier (the golden hill) ────────────────────────────────────────
+
+    // =======================================================================
+    // Effective world reach (`30K`) — the ownership-seat pins
+    //
+    // One fact decides apply-time freshness: which mutations may ACTUALLY execute. These pin the
+    // seats where that fact is produced and consumed, because the whole-product cases can only see
+    // the composed answer. Each names the mechanism it observes, and each was checked by MUTATING
+    // that mechanism away and confirming the pin reddens (the lane report records the results).
+    // =======================================================================
+
+    /// Build a plan over the package corpus with full control of the world (`30K` §4).
+    ///
+    /// `verdict_of` answers `package:<entity>@installed`; `footprints_of` decides the run's policy
+    /// — `None` is honest-walls, `Some(f)` builds the risk-accepted policy from a per-node
+    /// footprint chooser, which is what the flag buys and nothing else.
+    fn effective_plan(
+        src: &str,
+        verdict_of: impl Fn(&str) -> Verdict,
+        footprints_of: Option<&dyn Fn(&FactKey) -> Option<EntityCoord>>,
+    ) -> (Plan, Interner) {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let provider = i.intern("apt-get");
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let mut arena = dorc_core::ProvArena::new();
+        let classification = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &mut i,
+            &mut arena,
+        );
+        let classes = classification.value;
+        let invalidators = classification.invalidators;
+        let footprints = footprints_of.map(|choose| {
+            let mut tf = TrustedFootprints::new();
+            for (node, class) in &classes {
+                let fact = match class {
+                    SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => *f,
+                    _ => continue,
+                };
+                if let Some(coord) = choose(&fact)
+                    && let Some(fp) = Footprint::authored(provider, vec![coord])
+                {
+                    tf.insert(*node, fp);
+                }
+            }
+            tf
+        });
+        let observe = |f: FactKey| {
+            if f.kind == package
+                && f.selector == installed
+                && let EntityRef::Operand(tok) = f.entity
+            {
+                return Observable::verdict_only(verdict_of(i.resolve(tok.0)));
+            }
+            Observable::verdict_only(Verdict::Unknown)
+        };
+        let resolutions = Resolutions::none();
+        let dialect = dorc_core::Dialect::empty();
+        let policy = match footprints.as_ref() {
+            Some(fp) => WallPolicy::RiskAccepted {
+                footprints: fp,
+                resolutions: &resolutions,
+                dialect: &dialect,
+            },
+            None => WallPolicy::Honest,
+        };
+        let classification = RoundClassification {
+            classes: classes.clone(),
+            kills: BTreeSet::new(),
+            invalidators,
+            fact_backings: BTreeMap::new(),
+        };
+        let spine = build_plan_walled(
+            src,
+            &parsed.value,
+            &cfg,
+            &classification,
+            policy,
+            &vouch_all(&classes),
+            &ConnectedPipes::default(),
+            &BTreeMap::new(),
+            observe,
+            &mut arena,
+            &mut dorc_analysis::certify::CertifierTrip::default(),
+            None,
+        );
+        (project_plan(&spine, &PlanAuthority::without_intake()), i)
+    }
+
+    /// A modeled mutator that RUNS walls exactly like an unmodeled one, and the sites below it
+    /// reach the GUARD tier rather than running bare (`30K` §0's target).
+    ///
+    /// This is `fnd-classed-decline-unwalls-guard-tier` at the seat: before effective reach, a
+    /// downstream converged site below a modeled running wall classified ambient, minted a
+    /// `Replace`, and the wall walk could only turn that into `Run` — so an honest oracle produced
+    /// a strictly worse plan than no oracle at all.
+    #[test]
+    fn a_modeled_running_wall_leaves_the_guard_tier_reachable_below_it() {
+        let (plan, _) = effective_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\n",
+            |e| {
+                if e == "nginx" {
+                    Verdict::Converged
+                } else {
+                    Verdict::Diverged
+                }
+            },
+            None,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y oldpkg").disposition,
+                Disposition::Run
+            ),
+            "the diverged wall runs"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Guard(_)
+            ),
+            "the converged, vouched site below it re-checks LIVE rather than running bare"
+        );
+    }
+
+    /// An upstream site that ELIDES casts no wall, and the cascade is real: with both converged,
+    /// the second site elides too rather than guarding behind the first (`30K` §4.3).
+    #[test]
+    fn an_elided_upstream_mutation_removes_its_own_wall() {
+        let (plan, _) = effective_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+            None,
+        );
+        for needle in ["install -y oldpkg", "install -y nginx"] {
+            assert!(
+                matches!(find(&plan, needle).disposition, Disposition::Replace(..)),
+                "{needle}: a mutation nobody will run cannot invalidate anything below it"
+            );
+        }
+    }
+
+    /// A GUARD is a possible mutator downstream (`30K` §5.3): its check is read-only, but its
+    /// untouched fallback is the authored mutation, so everything below it stays stale. And the
+    /// recovery is spelled in ordinary forms only — no wall flags, no conditional tails, no
+    /// controller bookkeeping in the reviewed plan (`constraint-plan-surface-stays-readable`).
+    #[test]
+    fn a_guard_stays_a_wall_for_everything_below_it() {
+        let (plan, i) = effective_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\napt-get install -y curl\n",
+            |e| {
+                if e == "oldpkg" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+            None,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Guard(_)
+            ),
+            "the first site below the running wall guards"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y curl").disposition,
+                Disposition::Guard(_)
+            ),
+            "and so does the site below THAT guard — a guard's fallback may still mutate"
+        );
+        let rendered = plan.render_sh(&i);
+        for bookkeeping in ["_dorc_wall", "DORC_WALL", "_dorc_tail"] {
+            assert!(
+                !rendered.contains(bookkeeping),
+                "the reviewed plan carries no generated wall state ({bookkeeping})"
+            );
+        }
+    }
+
+    /// The flag buys survival and NOTHING else: with a disjoint footprint the elision is kept past
+    /// the running wall; with a colliding one the site falls to the guard tier rather than running
+    /// bare, exactly as an unfootprinted wall leaves it (`30K` §5.1).
+    #[test]
+    fn a_colliding_footprint_demotes_to_the_guard_tier_not_to_a_bare_run() {
+        let verdict = |e: &str| {
+            if e == "nginx" {
+                Verdict::Converged
+            } else {
+                Verdict::Diverged
+            }
+        };
+        let src = "apt-get install -y oldpkg\napt-get install -y nginx\n";
+        // Every wall footprints its OWN coordinate ⇒ disjoint from a different entity's backing.
+        let disjoint = |fact: &FactKey| Some(EntityCoord::new(fact.kind, fact.entity));
+        let (survived, _) = effective_plan(src, verdict, Some(&disjoint));
+        assert!(
+            matches!(
+                find(&survived, "install -y nginx").disposition,
+                Disposition::Replace(..)
+            ),
+            "a disjoint footprint keeps the elision past the running wall"
+        );
+        // Every wall claims the DOWNSTREAM entity's cell ⇒ a proven collision.
+        let nginx = {
+            let (_, mut probe_i) = effective_plan(src, verdict, None);
+            let kind = KindId(probe_i.intern("package"));
+            let entity = EntityRef::Operand(OpaqueToken(probe_i.intern("nginx")));
+            EntityCoord::new(kind, entity)
+        };
+        let collides = |_: &FactKey| Some(nginx);
+        let (poisoned, _) = effective_plan(src, verdict, Some(&collides));
+        assert!(
+            matches!(
+                find(&poisoned, "install -y nginx").disposition,
+                Disposition::Guard(_)
+            ),
+            "a colliding footprint costs the elision — and lands on the guard rung, not a bare run"
+        );
+    }
+
+    /// A `$( … )` body command mutates without being a leaf, and its wall follows its OWNER: the
+    /// enclosing line's decision is what can remove it (`30K` §3.7). Dropping the non-leaf
+    /// invalidators would elide the site below against a mutation that really runs.
+    #[test]
+    fn an_expansion_internal_mutation_walls_through_its_owner() {
+        let (plan, _) = effective_plan(
+            "echo \"$(apt-get install -y oldpkg)\"\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+            None,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Guard(_)
+            ),
+            "the substitution's install really runs when its `echo` runs, so the site below is stale"
+        );
+    }
+
+    /// A replacement the RENDER will refuse keeps its wall (`30K` §2.4 — the wrong-yes fence). A
+    /// heredoc-carrying leaf renders verbatim however licensed it was, so treating its `Replace`
+    /// as proof of no-execution would license every downstream elision against a live mutation.
+    #[test]
+    fn a_render_refused_replacement_never_retires_its_wall() {
+        let (plan, _) = effective_plan(
+            "apt-get install -y oldpkg <<EOF\npayload\nEOF\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+            None,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Guard(_)
+            ),
+            "the heredoc site's licensed Replace is refused at render, so its wall stands"
+        );
+    }
 
     /// The survival books the mode-gate equality test iterates (install-only shapes so the
     /// corpus predict resolves them without the purge effect-add; the purge/kill and cross-kind
@@ -7824,13 +8095,14 @@ apt_get__is_converged() {
                 disp(&empty),
                 "flag-off (None) must equal Some(empty footprints) — the Stage-1 total wall — on {src:?}"
             );
-            // And the survivor DEMOTES (the honest baseline: no footprint ⇒ no survival).
+            // And the survivor DEMOTES (the honest baseline: no footprint ⇒ no survival) — onto the
+            // guard rung, which is where an elision the walls refused now lands.
             assert!(
                 matches!(
                     find(&none, "install -y nginx").disposition,
-                    Disposition::Run
+                    Disposition::Guard(_)
                 ),
-                "unflagged: the converged nginx demotes past the running wall on {src:?}"
+                "unflagged: the converged nginx loses its elision past the running wall on {src:?}"
             );
         }
     }

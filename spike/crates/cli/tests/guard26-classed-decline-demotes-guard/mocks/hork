@@ -1,4 +1,0 @@
-#!/bin/sh
-# INERT mock for the walling command. Mutates nothing.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0
