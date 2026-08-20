@@ -105,7 +105,7 @@ axiom
   {T : Type} : sorted.SortedSet T → Result (core.slice.iter.Iter T)
 
 /-- [generated::sorted::{impl core::iter::traits::collect::FromIterator<T> for generated::sorted::SortedSet<T>}::from_iter]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 173:4-179:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 200:4-206:5
     Visibility: public -/
 axiom sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator.from_iter
   {T : Type} {I : Type} {Clause1_IntoIter : Type} (corecmpOrdInst :
@@ -114,7 +114,7 @@ axiom sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator.from_iter
   I → Result (sorted.SortedSet T)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 220:4-222:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 247:4-249:5
     Visibility: public -/
 axiom sorted.SortedMap.iter
   {K : Type} {V : Type} :
@@ -122,14 +122,14 @@ axiom sorted.SortedMap.iter
     (core.slice.iter.Iter (K × V)) (sorted.SortedMap.iter.closure K V))
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnOnce<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}::call_once]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 221:32-221:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 248:32-248:47 -/
 axiom
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnOnceTupleSharedPairPairSharedKSharedV.call_once
   {K : Type} {V : Type} :
   sorted.SortedMap.iter.closure K V → (K × V) → Result (K × V)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnMut<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}::call_mut]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 221:32-221:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 248:32-248:47 -/
 axiom
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnMutTupleSharedPairPairSharedKSharedV.call_mut
   {K : Type} {V : Type} :

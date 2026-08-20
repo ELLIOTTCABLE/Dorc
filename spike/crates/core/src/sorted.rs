@@ -138,12 +138,39 @@ impl<T: Ord> SortedSet<T> {
     pub fn contains(&self, value: &T) -> bool {
         matches!(self.position(value), Slot::At(_))
     }
+
+    fn is_prefix_of(&self, other: &Self) -> bool {
+        if self.len() > other.len() {
+            return false;
+        }
+
+        let mut index = 0usize;
+        while let Some(item) = self.items.get(index) {
+            match other.items.get(index) {
+                Some(other_item) if item == other_item => {
+                    index = index.saturating_add(1);
+                }
+                _ => return false,
+            }
+        }
+        true
+    }
 }
 
 impl<T: Ord + Clone> SortedSet<T> {
     /// `self ∪ other`.
+    ///
+    /// Reuses a canonical-prefix operand so [`insert`](Self::insert) remains the only
+    /// canonical-form construction seat.
     #[must_use]
     pub fn union(&self, other: &Self) -> Self {
+        if self.is_prefix_of(other) {
+            return other.clone();
+        }
+        if other.is_prefix_of(self) {
+            return self.clone();
+        }
+
         let mut out = self.clone();
         let mut index = 0usize;
         while let Some(item) = other.items.get(index) {
@@ -319,13 +346,14 @@ impl<K: Ord, V> SortedMap<K, V> {
 ///
 /// # The same shape arises INSIDE the operators, which caps what they can be asked
 ///
-/// [`union`](SortedSet::union) clones the left side and then [`insert`](SortedSet::insert)s the
-/// right side element by element. The first insert lands on a concrete length; the SECOND lands
-/// on a length that has already become symbolic (the first either grew the set or did not), with
-/// a full backing — the pathological combination again, arrived at from the inside, where no
-/// choice of INPUT length can prevent it. Measured: green with one element on the right,
-/// over-budget with two, at every left-hand length tried. [`intersection`](SortedSet::intersection)
-/// is the mirror image, since it inserts survivors of the LEFT side into a fresh set.
+/// [`union`](SortedSet::union) reuses an operand when one canonical backing prefixes the other.
+/// Otherwise it clones the left side and [`insert`](SortedSet::insert)s the right side element by
+/// element. The first insert lands on a concrete length; the SECOND lands on a length that has
+/// already become symbolic (the first either grew the set or did not), with a full backing — the
+/// pathological combination again, arrived at from the inside, where no choice of INPUT length
+/// can prevent it. Measured: green with one element on the right, over-budget with two, at every
+/// left-hand length tried. [`intersection`](SortedSet::intersection) is the mirror image, since it
+/// inserts survivors of the LEFT side into a fresh set.
 ///
 /// So the Kani battery judges `union` only with at most one element on the right and
 /// `intersection` only with at most one on the left, and `analysis::lattice`'s two

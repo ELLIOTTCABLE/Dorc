@@ -4,6 +4,6 @@
 # minispec/Generated/. A DRIFT ALARM only: a match says the inputs have not moved, never that
 # the translation is right, and nothing may read it as trust.
 a515de7ff758cbc2  spike/crates/analysis/src/lattice.rs
-4e9b376e7db81712  spike/crates/core/src/sorted.rs
+914d6d63b0341df9  spike/crates/core/src/sorted.rs
 61eedd048548c7de  spike/verify/aeneas/Cargo.toml
 2d3883efa2688796  spike/verify/aeneas/src/lib.rs

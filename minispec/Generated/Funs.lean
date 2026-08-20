@@ -389,7 +389,7 @@ def lattice.Powerset.Insts.CoreIterTraitsCollectFromIterator {T : Type}
 }
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::intersection]: loop body 0:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 162:8-167:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 189:8-194:9
     Visibility: public -/
 @[rust_loop_body]
 def sorted.SortedSet.intersection_loop.body
@@ -417,7 +417,7 @@ def sorted.SortedSet.intersection_loop.body
     ok (cont (out1, index1))
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::intersection]: loop 0:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 162:8-167:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 189:8-194:9
     Visibility: public -/
 @[rust_loop]
 def sorted.SortedSet.intersection_loop
@@ -432,7 +432,7 @@ def sorted.SortedSet.intersection_loop
     (out, index)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::intersection]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 159:4-169:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 186:4-196:5
     Visibility: public -/
 def sorted.SortedSet.intersection
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -457,8 +457,63 @@ def lattice.Powerset.Insts.GeneratedLatticeLattice.meet
     sorted.SortedSet.intersection corecmpOrdInst corecloneCloneInst self other
   ok ss
 
+/-- [generated::sorted::{generated::sorted::SortedSet<T>}::is_prefix_of]: loop body 0:
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 148:8-157:5 -/
+@[rust_loop_body]
+def sorted.SortedSet.is_prefix_of_loop.body
+  {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
+  (other : sorted.SortedSet T) (index : Std.Usize) :
+  Result (ControlFlow Std.Usize Bool)
+  := do
+  let s := alloc.vec.Vec.deref self.items
+  let o ←
+    core.slice.Slice.get (core.slice.index.SliceIndexUsizeSlice T) s index
+  match o with
+  | none => ok (done true)
+  | some item =>
+    let s1 := alloc.vec.Vec.deref other.items
+    let o1 ←
+      core.slice.Slice.get (core.slice.index.SliceIndexUsizeSlice T) s1 index
+    match o1 with
+    | none => ok (done false)
+    | some other_item =>
+      let b ←
+        core.cmp.impls.PartialEqShared.eq corecmpOrdInst.eqInst.partialEqInst
+          item other_item
+      if b
+      then
+        let index1 ← lift (core.num.Usize.saturating_add index 1#usize)
+        ok (cont index1)
+      else ok (done false)
+
+/-- [generated::sorted::{generated::sorted::SortedSet<T>}::is_prefix_of]: loop 0:
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 148:8-157:5 -/
+@[rust_loop]
+def sorted.SortedSet.is_prefix_of_loop
+  {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
+  (other : sorted.SortedSet T) (index : Std.Usize) :
+  Result Bool
+  := do
+  loop
+    (fun index1 => sorted.SortedSet.is_prefix_of_loop.body corecmpOrdInst self
+      other index1)
+    index
+
+/-- [generated::sorted::{generated::sorted::SortedSet<T>}::is_prefix_of]:
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 142:4-157:5 -/
+def sorted.SortedSet.is_prefix_of
+  {T : Type} (corecmpOrdInst : core.cmp.Ord T) (self : sorted.SortedSet T)
+  (other : sorted.SortedSet T) :
+  Result Bool
+  := do
+  let i ← sorted.SortedSet.len self
+  let i1 ← sorted.SortedSet.len other
+  if i > i1
+  then ok false
+  else sorted.SortedSet.is_prefix_of_loop corecmpOrdInst self other 0#usize
+
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::union]: loop body 0:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 149:8-152:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 176:8-179:9
     Visibility: public -/
 @[rust_loop_body]
 def sorted.SortedSet.union_loop.body
@@ -479,7 +534,7 @@ def sorted.SortedSet.union_loop.body
     ok (cont (out1, index1))
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::union]: loop 0:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 149:8-152:9
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 176:8-179:9
     Visibility: public -/
 @[rust_loop]
 def sorted.SortedSet.union_loop
@@ -494,7 +549,7 @@ def sorted.SortedSet.union_loop
     (out, index)
 
 /-- [generated::sorted::{generated::sorted::SortedSet<T>}::union]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 146:4-154:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 166:4-181:5
     Visibility: public -/
 def sorted.SortedSet.union
   {T : Type} (corecmpOrdInst : core.cmp.Ord T) (corecloneCloneInst :
@@ -502,10 +557,18 @@ def sorted.SortedSet.union
   :
   Result (sorted.SortedSet T)
   := do
-  let out ←
-    sorted.SortedSet.Insts.CoreCloneClone.clone corecloneCloneInst self
-  sorted.SortedSet.union_loop corecmpOrdInst corecloneCloneInst other out
-    0#usize
+  let b ← sorted.SortedSet.is_prefix_of corecmpOrdInst self other
+  if b
+  then sorted.SortedSet.Insts.CoreCloneClone.clone corecloneCloneInst other
+  else
+    let b1 ← sorted.SortedSet.is_prefix_of corecmpOrdInst other self
+    if b1
+    then sorted.SortedSet.Insts.CoreCloneClone.clone corecloneCloneInst self
+    else
+      let out ←
+        sorted.SortedSet.Insts.CoreCloneClone.clone corecloneCloneInst self
+      sorted.SortedSet.union_loop corecmpOrdInst corecloneCloneInst other out
+        0#usize
 
 /-- [generated::lattice::{impl generated::lattice::Lattice for generated::lattice::Powerset<T>}::join]:
     Source: 'src/../../../crates/analysis/src/lattice.rs', lines 124:4-126:5
@@ -979,7 +1042,7 @@ def lattice.Product.Insts.GeneratedLatticeBoundedLattice {A : Type} {B : Type}
 }
 
 /-- [generated::sorted::{impl core::fmt::Debug for generated::sorted::SortedMap<K, V>}::fmt]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:9-184:14
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:9-211:14
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreFmtDebug.fmt
   {K : Type} {V : Type} (corefmtDebugInst : core.fmt.Debug K)
@@ -994,7 +1057,7 @@ def sorted.SortedMap.Insts.CoreFmtDebug.fmt
     "entries") dyn
 
 /-- Trait implementation: [generated::sorted::{impl core::fmt::Debug for generated::sorted::SortedMap<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:9-184:14 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:9-211:14 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreFmtDebug {K : Type} {V : Type} (corefmtDebugInst
   : core.fmt.Debug K) (corefmtDebugInst1 : core.fmt.Debug V) : core.fmt.Debug
@@ -1030,7 +1093,7 @@ def lattice.MapL.Insts.CoreFmtDebug {K : Type} {V : Type} (corefmtDebugInst :
 }
 
 /-- [generated::sorted::{impl core::clone::Clone for generated::sorted::SortedMap<K, V>}::clone]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:16-184:21
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:16-211:21
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreCloneClone.clone
   {K : Type} {V : Type} (corecloneCloneInst : core.clone.Clone K)
@@ -1076,7 +1139,7 @@ def lattice.MapL.Insts.CoreMarkerStructuralPartialEq {K : Type} {V : Type}
 }
 
 /-- [generated::sorted::{impl core::cmp::PartialEq<generated::sorted::SortedMap<K, V>> for generated::sorted::SortedMap<K, V>}::eq]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:23-184:32
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:23-211:32
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap.eq
   {K : Type} {V : Type} (corecmpPartialEqInst : core.cmp.PartialEq K K)
@@ -1139,7 +1202,7 @@ def lattice.MapL.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::new]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 192:4-196:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 219:4-223:5
     Visibility: public -/
 def sorted.SortedMap.new
   (K : Type) (V : Type) : Result (sorted.SortedMap K V) := do
@@ -1167,7 +1230,7 @@ def lattice.MapL.Insts.CoreDefaultDefault {K : Type} {V : Type} (corecmpOrdInst
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::position]: loop body 0:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 235:8-243:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 262:8-270:5 -/
 @[rust_loop_body]
 def sorted.SortedMap.position_loop.body
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1193,7 +1256,7 @@ def sorted.SortedMap.position_loop.body
       ok (cont index1)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::position]: loop 0:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 235:8-243:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 262:8-270:5 -/
 @[rust_loop]
 def sorted.SortedMap.position_loop
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1206,7 +1269,7 @@ def sorted.SortedMap.position_loop
     index
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::position]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 233:4-243:5 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 260:4-270:5 -/
 @[reducible]
 def sorted.SortedMap.position
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1216,7 +1279,7 @@ def sorted.SortedMap.position
   sorted.SortedMap.position_loop corecmpOrdInst self probe 0#usize
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::get]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 247:4-255:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 274:4-282:5
     Visibility: public -/
 def sorted.SortedMap.get
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1251,7 +1314,7 @@ def lattice.MapL.get
   | some v => LatticeInst.corecloneCloneInst.clone v
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::remove]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 283:4-288:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 310:4-315:5
     Visibility: public -/
 def sorted.SortedMap.remove
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1266,7 +1329,7 @@ def sorted.SortedMap.remove
   | sorted.Slot.Before _ => ok (none, self)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::insert]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 269:4-280:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 296:4-307:5
     Visibility: public -/
 def sorted.SortedMap.insert
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
@@ -1313,7 +1376,7 @@ def lattice.MapL.insert
        ok sm
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::get_at]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 212:4-217:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 239:4-244:5
     Visibility: public -/
 def sorted.SortedMap.get_at
   {K : Type} {V : Type} (self : sorted.SortedMap K V) (index : Std.Usize) :
@@ -1881,7 +1944,7 @@ def sorted.SortedSet.remove
   | sorted.Slot.Before _ => ok (false, self)
 
 /-- Trait implementation: [generated::sorted::{impl core::iter::traits::collect::FromIterator<T> for generated::sorted::SortedSet<T>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 172:0-180:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 199:0-207:1 -/
 @[reducible]
 def sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator {T : Type}
   (corecmpOrdInst : core.cmp.Ord T) : core.iter.traits.collect.FromIterator
@@ -1894,7 +1957,7 @@ def sorted.SortedSet.Insts.CoreIterTraitsCollectFromIterator {T : Type}
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::clone::Clone for generated::sorted::SortedMap<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:16-184:21 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:16-211:21 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreCloneClone {K : Type} {V : Type}
   (corecloneCloneInst : core.clone.Clone K) (corecloneCloneInst1 :
@@ -1904,14 +1967,14 @@ def sorted.SortedMap.Insts.CoreCloneClone {K : Type} {V : Type}
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::marker::StructuralPartialEq for generated::sorted::SortedMap<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:23-184:32 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:23-211:32 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreMarkerStructuralPartialEq (K : Type) (V : Type)
   : core.marker.StructuralPartialEq (sorted.SortedMap K V) := {
 }
 
 /-- Trait implementation: [generated::sorted::{impl core::cmp::PartialEq<generated::sorted::SortedMap<K, V>> for generated::sorted::SortedMap<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:23-184:32 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:23-211:32 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap {K : Type} {V : Type}
   (corecmpPartialEqInst : core.cmp.PartialEq K K) (corecmpPartialEqInst1 :
@@ -1922,7 +1985,7 @@ def sorted.SortedMap.Insts.CoreCmpPartialEqSortedMap {K : Type} {V : Type}
 }
 
 /-- [generated::sorted::{impl core::cmp::Eq for generated::sorted::SortedMap<K, V>}::assert_fields_are_eq]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:34-184:36
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:34-211:36
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreCmpEq.assert_fields_are_eq
   {K : Type} {V : Type} (corecmpEqInst : core.cmp.Eq K) (corecmpEqInst1 :
@@ -1932,7 +1995,7 @@ def sorted.SortedMap.Insts.CoreCmpEq.assert_fields_are_eq
   ok ()
 
 /-- Trait implementation: [generated::sorted::{impl core::cmp::Eq for generated::sorted::SortedMap<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 184:34-184:36 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 211:34-211:36 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
   core.cmp.Eq K) (corecmpEqInst1 : core.cmp.Eq V) : core.cmp.Eq
@@ -1944,21 +2007,21 @@ def sorted.SortedMap.Insts.CoreCmpEq {K : Type} {V : Type} (corecmpEqInst :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::len]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 200:4-202:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 227:4-229:5
     Visibility: public -/
 def sorted.SortedMap.len
   {K : Type} {V : Type} (self : sorted.SortedMap K V) : Result Std.Usize := do
   ok (alloc.vec.Vec.len self.entries)
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::is_empty]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 206:4-208:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 233:4-235:5
     Visibility: public -/
 def sorted.SortedMap.is_empty
   {K : Type} {V : Type} (self : sorted.SortedMap K V) : Result Bool := do
   alloc.vec.Vec.is_empty Global self.entries
 
 /-- Trait implementation: [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnOnce<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 221:32-221:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 248:32-248:47 -/
 @[reducible]
 def
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnOnceTupleSharedPairPairSharedKSharedV
@@ -1969,7 +2032,7 @@ def
 }
 
 /-- Trait implementation: [generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::{impl core::ops::function::FnMut<(&'_ (K, V),), (&'_ K, &'_ V)> for generated::sorted::{generated::sorted::SortedMap<K, V>}::iter::closure<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 221:32-221:47 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 248:32-248:47 -/
 @[reducible]
 def
   sorted.SortedMap.iter.closure.Insts.CoreOpsFunctionFnMutTupleSharedPairPairSharedKSharedV
@@ -1983,14 +2046,14 @@ def
 }
 
 /-- [generated::sorted::{impl core::default::Default for generated::sorted::SortedMap<K, V>}::default]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 226:4-228:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 253:4-255:5
     Visibility: public -/
 def sorted.SortedMap.Insts.CoreDefaultDefault.default
   (K : Type) (V : Type) : Result (sorted.SortedMap K V) := do
   sorted.SortedMap.new K V
 
 /-- Trait implementation: [generated::sorted::{impl core::default::Default for generated::sorted::SortedMap<K, V>}]
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 225:0-229:1 -/
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 252:0-256:1 -/
 @[reducible]
 def sorted.SortedMap.Insts.CoreDefaultDefault (K : Type) (V : Type) :
   core.default.Default (sorted.SortedMap K V) := {
@@ -1998,7 +2061,7 @@ def sorted.SortedMap.Insts.CoreDefaultDefault (K : Type) (V : Type) :
 }
 
 /-- [generated::sorted::{generated::sorted::SortedMap<K, V>}::get_mut]:
-    Source: 'src/../../../crates/core/src/sorted.rs', lines 258:4-266:5
+    Source: 'src/../../../crates/core/src/sorted.rs', lines 285:4-293:5
     Visibility: public -/
 def sorted.SortedMap.get_mut
   {K : Type} {V : Type} (corecmpOrdInst : core.cmp.Ord K)
