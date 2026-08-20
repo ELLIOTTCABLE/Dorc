@@ -196,6 +196,20 @@ pub struct CfgNode {
     pub kind: CfgNodeKind,
 }
 
+/// Whose decision governs a CFG node's execution (`30K` §3.7 — the effective-owner census).
+///
+/// A mutation-capable node only stops mutating when something REMOVES it, and what can remove
+/// it is a render unit's decision. This names that unit — or says, explicitly, that no decision
+/// reaches it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionOwner {
+    /// No render unit's decision governs this node: it executes whenever control reaches it.
+    /// The FLOOR, and the default — an unclaimed invalidator keeps its wall rather than guessing.
+    AlwaysAtNode,
+    /// The plan leaf whose decision governs it (itself, for an ordinary command leaf).
+    Leaf(CfgNodeId),
+}
+
 /// A control-flow graph over [`CfgNodeId`]s. Adjacency is stored as sorted,
 /// de-duplicated successor/predecessor lists kept mutually consistent
 /// (`w ∈ succ(v) ⟺ v ∈ pred(w)`), so iteration into any analysis output is
@@ -236,6 +250,16 @@ pub struct Cfg {
     /// `site N.M` sub-record per body site (M = the index into this list). `BTreeMap` for
     /// `inv-determinism`.
     call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
+    /// Per-node: WHOSE decision governs whether this node executes (`30K` §3.7).
+    ///
+    /// Effect-bearing nodes are not all plan leaves — a `$( … )` body command, a write-shaped
+    /// redirection, and a spliced function body all mutate without owning a span anyone can
+    /// decide about. Recorded here at lowering, by the code that allocates them, so no consumer
+    /// re-derives it from spans or adjacency. The default is the FLOOR
+    /// ([`ExecutionOwner::AlwaysAtNode`]): a node nobody claimed executes whenever control
+    /// reaches it, which is what keeps a newly-added node kind walling until someone decides
+    /// otherwise rather than silently disappearing.
+    execution_owner: Vec<ExecutionOwner>,
     /// Per-node: the unvouched output observables this node's *context* consumes
     /// (note 16J, `inv-superposition`). Computed during lowering — the single
     /// exhaustive structural traversal — so it is **total over nodes**: an empty
@@ -309,6 +333,32 @@ impl Cfg {
     #[must_use]
     pub fn is_spliced_internal(&self, id: CfgNodeId) -> bool {
         self.spliced_internal[id.index()]
+    }
+
+    /// Whose decision governs this node's execution (`30K` §3.7).
+    ///
+    /// Total over nodes and recorded at lowering: `lower_simple` claims every node it allocates
+    /// between its entry and its command word (its redirections and its `$( … )` bodies), and a
+    /// splice overwrites its whole range with the CALL — so a nested splice resolves to the
+    /// OUTERMOST call in ONE step and no consumer walks a chain. An ordinary command leaf owns
+    /// itself. Everything unclaimed answers [`ExecutionOwner::AlwaysAtNode`].
+    #[must_use]
+    pub fn execution_owner(&self, id: CfgNodeId) -> ExecutionOwner {
+        match self.execution_owner[id.index()] {
+            ExecutionOwner::Leaf(leaf) => ExecutionOwner::Leaf(leaf),
+            // A command that owns no recorded region is its own render unit, unless it is one of
+            // the two non-leaf command species (a `$()` body, a spliced definition body), which
+            // reach here only when nothing claimed them — a DETACHED funcdef body, unreachable
+            // from entry, whose gen therefore reaches only its own island.
+            ExecutionOwner::AlwaysAtNode
+                if self.nodes[id.index()].kind == CfgNodeKind::Command
+                    && !self.expansion_internal[id.index()]
+                    && !self.spliced_internal[id.index()] =>
+            {
+                ExecutionOwner::Leaf(id)
+            }
+            ExecutionOwner::AlwaysAtNode => ExecutionOwner::AlwaysAtNode,
+        }
     }
 
     /// The ordered body LEAF [`CfgNodeKind::Command`] nodes a function-call splice produced for
@@ -498,6 +548,10 @@ struct Builder<'a> {
     /// pass in [`splice_funcdef_body`](Builder::splice_funcdef_body); emitted on the [`Cfg`]
     /// so the leaf set excludes a spliced body command (the CALL is the render unit, `i-3`).
     spliced_internal: Vec<bool>,
+    /// Per-node: whose decision governs execution (`30K` §3.7). Claimed by the allocating
+    /// lowering — `lower_simple` over its own redirection/substitution region,
+    /// `splice_funcdef_body` over its whole spliced range. Unclaimed stays the floor.
+    execution_owner: Vec<ExecutionOwner>,
     /// arch-2: the funcdef registry — name ↦ each definition's `(body AstId, def-start
     /// BytePos)`, in source order. Built once in [`new`](Builder::new) over the AST. A name
     /// with `len() > 1` is REDEFINED ⇒ every call to it ⊤-rejects (out of slice, `i-1`); a
@@ -572,6 +626,7 @@ impl<'a> Builder<'a> {
             expansion_internal: Vec::new(),
             in_loop: Vec::new(),
             spliced_internal: Vec::new(),
+            execution_owner: Vec::new(),
             funcdefs: collect_funcdefs(ast),
             inline_stack: Vec::new(),
             spliced_node_total: 0,
@@ -597,6 +652,7 @@ impl<'a> Builder<'a> {
         self.expansion_internal.push(false);
         self.in_loop.push(false);
         self.spliced_internal.push(false);
+        self.execution_owner.push(ExecutionOwner::AlwaysAtNode);
         self.consumed.push(Powerset::default());
         id
     }
@@ -759,6 +815,10 @@ impl<'a> Builder<'a> {
         entry_pred: CfgNodeId,
     ) -> CfgNodeId {
         let mut cur = entry_pred;
+        // `30K` §3.7: everything allocated from here to the command node lives inside THIS
+        // leaf's byte span — its redirections and its `$( … )` bodies — so a replacement that
+        // edits the span takes their effects with it. Claimed below, once the node exists.
+        let owned_start = self.nodes.len();
         for &r in redirs {
             let rn = self.fresh(r, CfgNodeKind::Redir);
             // A failing redirection aborts under `set -e` regardless of the command
@@ -782,6 +842,9 @@ impl<'a> Builder<'a> {
         }
         let cmd = self.fresh(id, CfgNodeKind::Command);
         self.add_edge(cur, cmd);
+        for v in owned_start..=cmd.index() {
+            self.execution_owner[v] = ExecutionOwner::Leaf(cmd);
+        }
 
         // Output-consumption (note 16J): this command's OWN redirections that
         // capture fd 1/2 to a real (non-`/dev/null`) sink consume that observable.
@@ -995,9 +1058,14 @@ impl<'a> Builder<'a> {
         self.inline_stack.pop();
         let body_end = self.nodes.len();
 
-        // Spliced body commands are non-leaves (the CALL is the render unit, i-3).
+        // Spliced body commands are non-leaves (the CALL is the render unit, i-3), and the
+        // CALL's all-or-nothing decision is what governs whether any of them execute
+        // (`30K` §3.7). Overwriting the whole range — including the inner owners
+        // `lower_simple` just claimed, and any nested splice's — is what makes the answer
+        // ONE step deep: the outermost call always wins.
         for v in body_start..body_end {
             self.spliced_internal[v] = true;
+            self.execution_owner[v] = ExecutionOwner::Leaf(cmd);
         }
         self.spliced_node_total = self
             .spliced_node_total
@@ -2029,6 +2097,7 @@ impl<'a> Builder<'a> {
             expansion_internal: self.expansion_internal,
             in_loop: self.in_loop,
             spliced_internal: self.spliced_internal,
+            execution_owner: self.execution_owner,
             call_body_sites: self.call_body_sites,
             consumed: self.consumed,
             branches: self.branches,
