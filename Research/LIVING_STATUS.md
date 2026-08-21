@@ -58,12 +58,19 @@ XFAILs promoted with `expected.ran` UNMOVED; en route the lane found and repaire
 published a dependency in a real invocation — mirroring now states against the LOAD
 cwd) and the `unset -f` variable-plane havoc; the e2e harness now executes a declared
 artifact set from its own published generation
-(discharging `28K:res-book-ships-its-load-closure`). **The `30I` arc is CLOSED short
-of**: the unscheduled textual-inlining lowering · the loom-form artifact-set
-frontmatter key (micro-lane in flight) · the human queue (`30N`'s open-items list /
-the burndown). The loop-propagation lane is the natural next build; the sentinel red
-pin `p-x-sentinel-value-conjunct` greens only on the human's
-`rule-sentinel-value-conjunct`.
+(discharging `28K:res-book-ships-its-load-closure`). **THE ARTIFACT-SEMANTICS SITTING (human-typed 2026-08-21) then re-ruled the form
+defaults — durable record `notes/30Ng`**: non-interactive stdout carries a FULL
+single-stream bundled plan under every flag-form (fail-fast on incoherence); the
+default bundles dorc-lang subgraphs and rewrites generated-plan imports
+(imports-only; generated plans are not off-ramp durables); both flatten extremes
+supported, bundle-points tunable, CLI malleable. Two conductor endorsements REVERSED
+accordingly (`30N`'s sitting entry). The REWORK LANE is in flight, carrying also the
+loom-form artifact-set frontmatter key and the loud-and-complete region-routes
+account. Still open besides: the book-inlining half of the flatten extreme (floor
+evidence minted; gated on the rework's bundling base) · the human queue (`30N`'s
+open-items / the burndown, incl. the new `attn-render-refusal-feeds-the-spine`
+attention item) · the loop-propagation lane (parallel-eligible) · the sentinel red
+pin (`rule-sentinel-value-conjunct`).
 
 ## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)
 

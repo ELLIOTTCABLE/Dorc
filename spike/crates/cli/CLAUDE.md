@@ -80,7 +80,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   asserting stdout alone cannot see which form it took
   (`30Nf:fnd-multipart-never-placed-anything-in-production`). A dependency OUTSIDE the
   load cwd is unplaceable rather than fudged
-  (`need-controller-paths-never-cross-hosts`).
+  (`need-controller-paths-never-cross-hosts`). DIRECTION RULED 2026-08-21, rework in
+  flight (`30Ng` — this bullet describes the pre-rework as-built): the default bundles
+  dorc-lang subgraphs at the dep-graph points where they become dorc-lang and REWRITES
+  generated-plan imports (generated plans are not off-ramp durables; the rewrite
+  license is imports-only); a non-interactive stdout carries a FULL single-stream
+  bundled plan under every flag-form, failing fast on incoherence
+  (`30Ng:rul-piped-stdout-carries-a-full-plan` ·
+  `30Ng:rul-bundle-at-dorc-lang-boundaries`).
 - **region-openers-are-demanded-not-defaulted** (`30N:rul-census-inputs-are-non-optional`) — the
   elision-region census is handed `region::CensusOpeners`, whose constructor requires EVERY
   opener signal the census cannot see for itself: `funcenv::unresolvable_loads`, the definition

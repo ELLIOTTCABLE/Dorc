@@ -338,6 +338,25 @@ not all conductor-re-read (marked):
     `dev-fmt-stages-what-it-rewrites` (process footgun; future briefs carry
     "reset or `git commit -- <pathspec>` after `mise run fmt`") · the
     tc- trio on mirroring-refusal/exec-cwd/guard-scope (recorded, no action).
+- **THE ARTIFACT-SEMANTICS ADJUDICATION SITTING (human-typed 2026-08-21; durable
+  record `notes/30Ng`)** — five conductor items ruled in chat (the human acking
+  what they READ, reconciliation accounted in `30Ng`): region-refusal disclosure
+  ACKED (+ the un-ruled `30Ng:attn-render-refusal-feeds-the-spine` attention
+  item — render refusals as spine-fed minted decisions cycling to fixpoint);
+  license-at-settlement ACKED + the entire-contributor-DAG narrative directive
+  (as-built gap: the k-capped, silently-filtering routes account —
+  `30Ng:work-region-routes-account-loud-and-complete` queued);
+  census-inputs-non-optional ACKED. TWO CONDUCTOR ENDORSEMENTS REVERSED:
+  `adj-endorse-artifact-stream-reading` NACKED →
+  `30Ng:rul-piped-stdout-carries-a-full-plan` (non-interactive stdout carries a
+  FULL single-stream bundled plan under every flag-form, fail-fast on
+  incoherence; the interactivity probe returns as a DI-injected edge input);
+  `adj-endorse-multipart-mirroring` SUPERSEDED →
+  `30Ng:rul-bundle-at-dorc-lang-boundaries` (generated plans are not
+  off-ramp durables; imports in them may be rewritten, exclusively; the default
+  bundles dorc-lang subgraphs at the dep-graph points where they become
+  dorc-lang; both flatten extremes supported; bundle-points tunable; CLI
+  malleable). The rework lane carries both.
 - **`chk-loop-types-paper-review` — PASSED (conductor's own, 2026-08-21;
   `30L:pin-loop-types-need-no-rekey` §11/§12-stage-6).** The propagation lane
   can turn `Open` → `Closed(members)` without re-keying: (1) a member becomes a
