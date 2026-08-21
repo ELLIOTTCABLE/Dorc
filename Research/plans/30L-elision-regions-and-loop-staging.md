@@ -307,15 +307,13 @@ effective side never accepts the public output enum as input.
 
 Verdict-primacy (`28Q` §4, `307:rul-primacy-moves-the-body-never-the-cell`) governs
 which body measures at a vouched site, inside a function body exactly as at top level.
-One sequencing requirement rides this: the member-loop and inline-call lanes currently
-ship predict bodies and elide on their measurements
-(`30La:rul-predict-measured-aggregates-are-a-bug`;
-`analysis/src/effect.rs` `no_verdict_lane_in_members`). Shared-region decisions
-consume exactly those lanes, at much larger surface. **`req-member-lane-ruling-
-precedes-consumption` [DERIVED]** - `30La`'s member/inline verdict-ship correctness
-repair (which cell a member record keys; how vouch-cardinality matching survives)
-lands before this plan's build. Building route-proof seats atop the predict-measured
-interim is prohibited; there is no FORFEITS floor for model incorrectness.
+**`req-member-lane-ruling-precedes-consumption` [DERIVED, SATISFIED 2026-08-20]** -
+`30La` repaired the member-loop and inline-call lanes before this plan consumes them.
+Predict-derived cells and topology remain fixed, while an exact all-vouched establish
+population ships reached verdict bodies as its ordered measurements; a partially vouched
+population cannot replace, selected verdict shipping is all-or-nothing, and query-only
+substitution stays separate. Shared-region
+decisions consume this repaired primitive, never the former predict-measured interim.
 
 ### 4.2 Effects and freshness
 
@@ -609,9 +607,9 @@ The stage is complete only when all hold:
 
 ## 12. Implementation stages
 
-0. **`stage-member-lane-ruling`** - verify `30La`'s member/inline verdict-ship repair
-   and product-facing acceptance cases are folded. Nothing downstream consumes
-   aggregate lanes before this is true.
+0. **`stage-member-lane-ruling` - SATISFIED 2026-08-20.** `30La`'s member/inline
+   verdict-ship repair and both product-facing acceptance cases are folded; downstream
+   stages consume the repaired aggregate primitive.
 1. **`stage-size-census-and-pin-battery`** - budget/representation sizing (§3.4:
    clone vs overlay decided; constants re-set against measured wrapped-book shapes);
    then the red-first battery: mixed Replace/Run bodies; agreeing twin calls;

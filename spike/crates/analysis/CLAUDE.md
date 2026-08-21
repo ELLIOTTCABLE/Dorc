@@ -207,11 +207,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
   primacy moves the measuring BODY and never the CELL — the predict author's declared
   coordinate remains the site's establish, so no invalidation, backing, or why-coordinate
   moves; "the cell the shipped body measures" means the cell whose CONVERGENCE the rc
-  asserts, which is the site's cell. DEFECT: the member and inline-call lanes still ship
-  predicts and elide on them (`30La:rul-predict-measured-aggregates-are-a-bug`) — the
-  lane is a per-SITE out-param, never derived from the fact's kind
-  and never by try-order over the ship closures (the shipped body's measurement must be
-  the cell the record keys). A vouched, mutation-capable site is verdict-lane: the verdict
+  asserts, which is the site's cell. Member and inline-call aggregates retain an exact
+  ordered measurement subject beside their predict-derived topology; only an exact
+  all-vouched population may ship reached verdict bodies, and an incomplete population
+  stays unable to replace (`30La`). The lane is a per-SITE out-param, never derived from
+  the fact's kind and never by try-order over the ship closures (the shipped body's
+  measurement must be the cell the record keys). A vouched, mutation-capable site is verdict-lane: the verdict
   body measures, keyed by the author's coordinate when the reached path carries exactly
   one fully-resolved verdict mark, else the `24L` §2 auto-cell, else `Opaque`. Prediction
   never licenses elision; predict cells feed the static concern topology whatever ships.

@@ -26,7 +26,11 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   vouch proof AND universal effective freshness: every member independently crosses every
   external wall and passes reference re-derivation; `AggregateSurvivalWitness` must match the
   vouch receipts exactly before one atomic replacement mints. Any member failure rejects whole;
-  the representative fact is display-only. Query-only bodies prove `ReadSubstitutionProof`
+  the representative fact is display-only. The same exact population selects probe bodies:
+  only an all-vouched mutation population ships reached verdict bodies as its ordered
+  measurements; if any selected verdict cannot ship, the whole population is unresolvable.
+  Predictions may still measure a population that cannot replace; query-only records remain
+  independently predict-sourced (`30La`). Query-only bodies prove `ReadSubstitutionProof`
   separately and must NEVER manufacture a vouch to share an API. Keep both types and both provers
   private: the doctest in the crate doc pins that, and exposing either "for a
   test" is the regression it guards.

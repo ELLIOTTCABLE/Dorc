@@ -83,8 +83,8 @@ and carries the license-contamination map.
   source maps)** — **`plans/30I`** (THE design; one load model feeding analysis,
   explicit bundles, multipart plans, and full flattening; its §13 is the xfail
   specimen matrix) over the closure build record `notes/30G`; its current implementation
-  completed the load-occurrence account and `notes/30K`, then resumes through the
-  `30La` repair and bundle/locator work before `plans/30L` interposes ahead of
+  completed the load-occurrence account, `notes/30K`, and the `30La` repair, then
+  resumes through bundle/locator work before `plans/30L` interposes ahead of
   artifact forms.
 - **Function-body elision & loop staging** — **`plans/30L`** (THE design: definition-keyed
   elision regions meet every closed invocation route at `Must`; loop populations gain their

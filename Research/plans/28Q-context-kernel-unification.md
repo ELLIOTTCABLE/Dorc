@@ -545,9 +545,10 @@ own byte-identity gate.
   measuring BODY, never the CELL; §4's W-B sentence reads "the cell whose
   CONVERGENCE the shipped body's rc asserts", which is the site's cell, the
   predict author's declaration where one resolves; the re-key alternative was
-  REJECTED on the staleness route it opens. Residues:
-  aggregate predict-measurement is a correctness defect routed to `30La`; pin30
-  still does not flip,
+  REJECTED on the staleness route it opens. The aggregate residue is CLOSED by
+  `30La`: exact all-vouched member and inline-call populations now ship reached
+  verdict bodies while predict-derived cells and topology stay fixed. Residue: pin30
+  still does not flip;
   two candidate seats remain) — (the verdict-primacy re-cut; a
   deliberate behavior change, deliberately OUTSIDE stage-i's byte-identity
   gate): invert the ship-seat preference —
@@ -637,8 +638,8 @@ own byte-identity gate.
   unchanged, the defect twin is retired. Review residue that does not reopen this stage:
   frozen-backing lifetime, an honest/non-leaf wall narrative operand, final-round typestate,
   and the effective-reach prose defining case (`30Kb`).
-- **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`): land `30La`, build
-  the one bundle projection, and compose the locator DAG into a real diagnostic; then
+- **stage-ii-bundle-and-artifact-close** (`plans/30I`, after `30K`; `30La` LANDED):
+  build the one bundle projection, and compose the locator DAG into a real diagnostic; then
   `plans/30L` establishes definition-keyed elision regions and shared route decisions
   before `30I` reifies multipart / flattened / preserved-tree artifact forms at the
   Plan/Spine boundary and promotes the `load30-*` executable specification. Gate:

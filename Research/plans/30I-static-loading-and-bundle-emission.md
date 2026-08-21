@@ -24,7 +24,7 @@ resolver or a decorative source map is a likelier product of splitting than save
 wall-clock. Seams are placed at FIXED work-order boundaries and never on a
 builder's own read of its remaining context, which is not a thing a model can
 measure. Every handoff names its work-order boundary rather than an ordinal; the
-active one is `step-5a-complete-load-occurrence-account`, before bundle emission.
+active one is `step-5b-build-bundle-projection`.
 
 `impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
 correction (2026-08-19): `step-5a-complete-load-occurrence-account` first removes the
@@ -36,13 +36,14 @@ stage lands. `30K` is not added to a loading builder's remit; the durable `30Ib`
 handoff makes this pause cheap. Ground: final plan dispositions must settle before
 new executable projections and their corpus are built around the old wall walks.
 
-`impl-aggregate-verdict-primacy-precedes-bundles` - HUMAN-DIRECTED correctness
-correction (2026-08-20): after `30K` and before `step-5b-build-bundle-projection`,
-the next conductor lands `30La` as a separate serial rider. Member-loop and inline-call
-aggregates currently measure through `__predict` while licensing through
-`__is_converged`; this is a model bug, not a FORFEITS floor. The two product-facing
-`aggregate30-*-verdict-primacy` XFAILs are the acceptance surface. Step 5b, locator
-consumption, and `30L` consume the repaired primitive; steps 7/8 never see the interim.
+`impl-aggregate-verdict-primacy-precedes-bundles` - BUILT 2026-08-20. `30La` landed as
+the separate serial correctness rider after `30K`: member-loop and inline-call aggregates
+retain predict-derived topology while exact all-vouched establish populations ship their
+reached `__is_converged` bodies as ordered measurements. A partially vouched population
+cannot replace; selected verdict shipping is all-or-nothing, query-only substitution
+remains separate, and both product-facing
+`aggregate30-*-verdict-primacy` XFAILs are promoted. Step 5b, locator consumption, and
+`30L` consume this repaired primitive; steps 7/8 never see the interim.
 
 `impl-elision-regions-precede-artifact-forms` - HUMAN-DIRECTED sequencing correction
 (2026-08-20): after step 6 has produced the bundle projection and one real locator
@@ -67,16 +68,14 @@ in `Research/notes/30Ib`):
 - `aid::locator` as an arbitrary multi-stage DAG with `BundleOriginClaim` sealed
   to text, and `cli::provenance` filling it from real run data;
 - exact guarded-source speaker recognition, the CLI input rework, and explicit
-  stdin claims.
+  stdin claims;
+- aggregate verdict primacy across member-loop and inline-call replacement lanes.
 
 Not built, and owed below: the bundle projection; the three artifact forms;
-locator consumption by a real diagnostic; XFAIL promotion and e2e lowering.
-The current implementation still carries a whole-run refusal for an ambient
-cross-custody dependency. Section 3.4 rules that as drift: retain its
-differentiation as narrative and remove its authority/control-flow consequence.
-`step-5a-complete-load-occurrence-account` completes the possible-load occurrence
-account; after that commit the lane pauses at `30K` before
-`step-5b-build-bundle-projection` writes bundle code.
+locator consumption by a real diagnostic; final `load30-*` XFAIL promotion and e2e
+lowering. The complete load-occurrence account, the effective-world-reach interlude,
+and aggregate verdict-primacy rider are closed; `step-5b-build-bundle-projection` is
+the active boundary.
 
 ### Target outcome
 
