@@ -1794,17 +1794,65 @@ fn mutual_recursion_terminates_no_infinite_splice() {
     );
 }
 
+/// A chain `f0 → f1 → … → fN` of function calls, `fN` doing the one real mutation.
+fn call_chain(levels: usize) -> String {
+    let mut src = String::from("f0() { apt-get install -y nginx; }\n");
+    for level in 1..levels {
+        src.push_str(&format!("f{level}() {{ f{}; }}\n", level - 1));
+    }
+    src.push_str(&format!("f{}\n", levels.saturating_sub(1)));
+    src
+}
+
 #[test]
-fn depth_budget_refuses_a_fourth_level() {
-    // `i-1`: inline depth <= 2. A chain `a`->`b`->`c` inlines `b` (depth 1) and `c` (depth 2);
-    // a fourth level `a`->`b`->`c`->`d` refuses `d` at depth 2 (the stack is already 2 deep).
-    let src = "d() { apt-get install -y nginx; }\nc() { d; }\nb() { c; }\na() { b; }\na\n";
+fn the_motivating_wrapped_factoring_is_admitted() {
+    // `30L:req-census-admits-the-wrapped-book`: `main → task_fn → helper` is THE motivating
+    // shape (the style-guide wrapper over a factored book), and the inherited depth-2 budget
+    // refused it. The stage re-sized the budget deliberately, so the whole chain now splices —
+    // and the mutation at the bottom is visible to the analyzer instead of hidden behind the
+    // call's `Opaque` wall. Pinned as a shape, not a constant: the assertion is that the
+    // motivating factoring is admitted, whatever the number that admits it.
+    let src = "helper() { apt-get install -y nginx; }\n\
+               task_fn() { helper; systemctl enable --now nginx; }\n\
+               main() { task_fn; ufw allow 443/tcp; }\n\
+               main\n";
     assert!(
-        inline_refused_because(src, |reason| matches!(
+        inline_refusals(src).is_empty(),
+        "the depth-3 wrapped factoring is admitted: {:?}",
+        inline_refusals(src)
+    );
+    let sites = require(
+        call_body_sites_of(&cfg_of(src), src, "main"),
+        "`main` inlines",
+    );
+    assert_eq!(
+        sites.len(),
+        3,
+        "the CALL's flattened body-leaf set carries every transitively-spliced mutation once — \
+         `apt-get`, `systemctl`, `ufw` — with no double-count from the nested flatten"
+    );
+}
+
+#[test]
+fn depth_budget_refuses_past_the_re_sized_depth() {
+    // `i-1`: the depth budget still REFUSES, proportionally and by name, once a chain outruns
+    // it — the re-size moved the boundary and did not remove it. Found by walking outward from
+    // the admitted shape rather than by naming the constant, so the pin survives the next
+    // re-size and still fails if the budget is ever removed.
+    let deepest_admitted = (1..=16)
+        .take_while(|levels| inline_refusals(&call_chain(*levels)).is_empty())
+        .last();
+    let deepest = require(deepest_admitted, "some chain length inlines cleanly");
+    assert!(
+        deepest >= 4,
+        "the motivating `main → task_fn → helper` factoring (3 levels of call) is admitted"
+    );
+    assert!(
+        inline_refused_because(&call_chain(deepest + 1), |reason| matches!(
             reason,
             CfgInlineRefusedReason::DepthBudget { .. }
         )),
-        "the 4th-level call refuses at the depth budget"
+        "one level past the deepest admitted chain refuses AT the depth budget, by name"
     );
 }
 
@@ -1882,10 +1930,11 @@ fn body_write_redirect_to_real_file_refuses_but_devnull_is_exempt() {
 
 #[test]
 fn at_budget_body_inlines_over_budget_refuses() {
-    // `i-1` budget boundary: a tiny body inlines (well under the 64-node budget); a large body
-    // (100 `:` commands, well over) refuses with a budget diagnostic. The estimate is the
-    // AST-subtree node count (a conservative proxy); the test finds the boundary by extremes so
-    // it does not hard-code the per-node AST cost.
+    // `i-1` budget boundary: a tiny body inlines; a body far past the per-call budget refuses
+    // with a budget diagnostic. The estimate is the AST-subtree node count (a conservative
+    // proxy); the test finds the boundary by extremes so it does not hard-code the per-node AST
+    // cost — which is also why the re-size (`30L:req-census-admits-the-wrapped-book`) only moved
+    // the large extreme rather than rewriting the pin.
     let body_of = |n: usize| {
         let mut b = String::from("p() { ");
         for _ in 0..n {
@@ -1897,7 +1946,7 @@ fn at_budget_body_inlines_over_budget_refuses() {
     let small = body_of(1);
     assert!(call_body_sites_of(&cfg_of(&small), &small, "p").is_some());
     assert!(inline_refusals(&small).is_empty());
-    let big = body_of(100);
+    let big = body_of(4000);
     assert!(
         call_body_sites_of(&cfg_of(&big), &big, "p").is_none(),
         "an over-budget body is not inlined"

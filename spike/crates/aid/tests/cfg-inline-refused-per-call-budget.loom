@@ -4,46 +4,96 @@ arrangement: cfg-inline-refused-per-call-budget
 -- book.sh --
 #!/bin/sh
 install_all() {
-   hork add pkg00
-   hork add pkg01
-   hork add pkg02
-   hork add pkg03
-   hork add pkg04
-   hork add pkg05
-   hork add pkg06
-   hork add pkg07
-   hork add pkg08
-   hork add pkg09
-   hork add pkg10
-   hork add pkg11
-   hork add pkg12
-   hork add pkg13
-   hork add pkg14
-   hork add pkg15
-   hork add pkg16
-   hork add pkg17
-   hork add pkg18
-   hork add pkg19
-   hork add pkg20
-   hork add pkg21
-   hork add pkg22
-   hork add pkg23
-   hork add pkg24
-   hork add pkg25
-   hork add pkg26
-   hork add pkg27
-   hork add pkg28
-   hork add pkg29
-   hork add pkg30
-   hork add pkg31
-   hork add pkg32
-   hork add pkg33
-   hork add pkg34
-   hork add pkg35
-   hork add pkg36
-   hork add pkg37
-   hork add pkg38
-   hork add pkg39
+   hork add pkg000 pkg001 pkg002 pkg003 pkg004 pkg005 pkg006 pkg007 pkg008 pkg009
+   hork add pkg010 pkg011 pkg012 pkg013 pkg014 pkg015 pkg016 pkg017 pkg018 pkg019
+   hork add pkg020 pkg021 pkg022 pkg023 pkg024 pkg025 pkg026 pkg027 pkg028 pkg029
+   hork add pkg030 pkg031 pkg032 pkg033 pkg034 pkg035 pkg036 pkg037 pkg038 pkg039
+   hork add pkg040 pkg041 pkg042 pkg043 pkg044 pkg045 pkg046 pkg047 pkg048 pkg049
+   hork add pkg050 pkg051 pkg052 pkg053 pkg054 pkg055 pkg056 pkg057 pkg058 pkg059
+   hork add pkg060 pkg061 pkg062 pkg063 pkg064 pkg065 pkg066 pkg067 pkg068 pkg069
+   hork add pkg070 pkg071 pkg072 pkg073 pkg074 pkg075 pkg076 pkg077 pkg078 pkg079
+   hork add pkg080 pkg081 pkg082 pkg083 pkg084 pkg085 pkg086 pkg087 pkg088 pkg089
+   hork add pkg090 pkg091 pkg092 pkg093 pkg094 pkg095 pkg096 pkg097 pkg098 pkg099
+   hork add pkg100 pkg101 pkg102 pkg103 pkg104 pkg105 pkg106 pkg107 pkg108 pkg109
+   hork add pkg110 pkg111 pkg112 pkg113 pkg114 pkg115 pkg116 pkg117 pkg118 pkg119
+   hork add pkg120 pkg121 pkg122 pkg123 pkg124 pkg125 pkg126 pkg127 pkg128 pkg129
+   hork add pkg130 pkg131 pkg132 pkg133 pkg134 pkg135 pkg136 pkg137 pkg138 pkg139
+   hork add pkg140 pkg141 pkg142 pkg143 pkg144 pkg145 pkg146 pkg147 pkg148 pkg149
+   hork add pkg150 pkg151 pkg152 pkg153 pkg154 pkg155 pkg156 pkg157 pkg158 pkg159
+   hork add pkg160 pkg161 pkg162 pkg163 pkg164 pkg165 pkg166 pkg167 pkg168 pkg169
+   hork add pkg170 pkg171 pkg172 pkg173 pkg174 pkg175 pkg176 pkg177 pkg178 pkg179
+   hork add pkg180 pkg181 pkg182 pkg183 pkg184 pkg185 pkg186 pkg187 pkg188 pkg189
+   hork add pkg190 pkg191 pkg192 pkg193 pkg194 pkg195 pkg196 pkg197 pkg198 pkg199
+   hork add pkg200 pkg201 pkg202 pkg203 pkg204 pkg205 pkg206 pkg207 pkg208 pkg209
+   hork add pkg210 pkg211 pkg212 pkg213 pkg214 pkg215 pkg216 pkg217 pkg218 pkg219
+   hork add pkg220 pkg221 pkg222 pkg223 pkg224 pkg225 pkg226 pkg227 pkg228 pkg229
+   hork add pkg230 pkg231 pkg232 pkg233 pkg234 pkg235 pkg236 pkg237 pkg238 pkg239
+   hork add pkg240 pkg241 pkg242 pkg243 pkg244 pkg245 pkg246 pkg247 pkg248 pkg249
+   hork add pkg250 pkg251 pkg252 pkg253 pkg254 pkg255 pkg256 pkg257 pkg258 pkg259
+   hork add pkg260 pkg261 pkg262 pkg263 pkg264 pkg265 pkg266 pkg267 pkg268 pkg269
+   hork add pkg270 pkg271 pkg272 pkg273 pkg274 pkg275 pkg276 pkg277 pkg278 pkg279
+   hork add pkg280 pkg281 pkg282 pkg283 pkg284 pkg285 pkg286 pkg287 pkg288 pkg289
+   hork add pkg290 pkg291 pkg292 pkg293 pkg294 pkg295 pkg296 pkg297 pkg298 pkg299
+   hork add pkg300 pkg301 pkg302 pkg303 pkg304 pkg305 pkg306 pkg307 pkg308 pkg309
+   hork add pkg310 pkg311 pkg312 pkg313 pkg314 pkg315 pkg316 pkg317 pkg318 pkg319
+   hork add pkg320 pkg321 pkg322 pkg323 pkg324 pkg325 pkg326 pkg327 pkg328 pkg329
+   hork add pkg330 pkg331 pkg332 pkg333 pkg334 pkg335 pkg336 pkg337 pkg338 pkg339
+   hork add pkg340 pkg341 pkg342 pkg343 pkg344 pkg345 pkg346 pkg347 pkg348 pkg349
+   hork add pkg350 pkg351 pkg352 pkg353 pkg354 pkg355 pkg356 pkg357 pkg358 pkg359
+   hork add pkg360 pkg361 pkg362 pkg363 pkg364 pkg365 pkg366 pkg367 pkg368 pkg369
+   hork add pkg370 pkg371 pkg372 pkg373 pkg374 pkg375 pkg376 pkg377 pkg378 pkg379
+   hork add pkg380 pkg381 pkg382 pkg383 pkg384 pkg385 pkg386 pkg387 pkg388 pkg389
+   hork add pkg390 pkg391 pkg392 pkg393 pkg394 pkg395 pkg396 pkg397 pkg398 pkg399
+   hork add pkg400 pkg401 pkg402 pkg403 pkg404 pkg405 pkg406 pkg407 pkg408 pkg409
+   hork add pkg410 pkg411 pkg412 pkg413 pkg414 pkg415 pkg416 pkg417 pkg418 pkg419
+   hork add pkg420 pkg421 pkg422 pkg423 pkg424 pkg425 pkg426 pkg427 pkg428 pkg429
+   hork add pkg430 pkg431 pkg432 pkg433 pkg434 pkg435 pkg436 pkg437 pkg438 pkg439
+   hork add pkg440 pkg441 pkg442 pkg443 pkg444 pkg445 pkg446 pkg447 pkg448 pkg449
+   hork add pkg450 pkg451 pkg452 pkg453 pkg454 pkg455 pkg456 pkg457 pkg458 pkg459
+   hork add pkg460 pkg461 pkg462 pkg463 pkg464 pkg465 pkg466 pkg467 pkg468 pkg469
+   hork add pkg470 pkg471 pkg472 pkg473 pkg474 pkg475 pkg476 pkg477 pkg478 pkg479
+   hork add pkg480 pkg481 pkg482 pkg483 pkg484 pkg485 pkg486 pkg487 pkg488 pkg489
+   hork add pkg490 pkg491 pkg492 pkg493 pkg494 pkg495 pkg496 pkg497 pkg498 pkg499
+   hork add pkg500 pkg501 pkg502 pkg503 pkg504 pkg505 pkg506 pkg507 pkg508 pkg509
+   hork add pkg510 pkg511 pkg512 pkg513 pkg514 pkg515 pkg516 pkg517 pkg518 pkg519
+   hork add pkg520 pkg521 pkg522 pkg523 pkg524 pkg525 pkg526 pkg527 pkg528 pkg529
+   hork add pkg530 pkg531 pkg532 pkg533 pkg534 pkg535 pkg536 pkg537 pkg538 pkg539
+   hork add pkg540 pkg541 pkg542 pkg543 pkg544 pkg545 pkg546 pkg547 pkg548 pkg549
+   hork add pkg550 pkg551 pkg552 pkg553 pkg554 pkg555 pkg556 pkg557 pkg558 pkg559
+   hork add pkg560 pkg561 pkg562 pkg563 pkg564 pkg565 pkg566 pkg567 pkg568 pkg569
+   hork add pkg570 pkg571 pkg572 pkg573 pkg574 pkg575 pkg576 pkg577 pkg578 pkg579
+   hork add pkg580 pkg581 pkg582 pkg583 pkg584 pkg585 pkg586 pkg587 pkg588 pkg589
+   hork add pkg590 pkg591 pkg592 pkg593 pkg594 pkg595 pkg596 pkg597 pkg598 pkg599
+   hork add pkg600 pkg601 pkg602 pkg603 pkg604 pkg605 pkg606 pkg607 pkg608 pkg609
+   hork add pkg610 pkg611 pkg612 pkg613 pkg614 pkg615 pkg616 pkg617 pkg618 pkg619
+   hork add pkg620 pkg621 pkg622 pkg623 pkg624 pkg625 pkg626 pkg627 pkg628 pkg629
+   hork add pkg630 pkg631 pkg632 pkg633 pkg634 pkg635 pkg636 pkg637 pkg638 pkg639
+   hork add pkg640 pkg641 pkg642 pkg643 pkg644 pkg645 pkg646 pkg647 pkg648 pkg649
+   hork add pkg650 pkg651 pkg652 pkg653 pkg654 pkg655 pkg656 pkg657 pkg658 pkg659
+   hork add pkg660 pkg661 pkg662 pkg663 pkg664 pkg665 pkg666 pkg667 pkg668 pkg669
+   hork add pkg670 pkg671 pkg672 pkg673 pkg674 pkg675 pkg676 pkg677 pkg678 pkg679
+   hork add pkg680 pkg681 pkg682 pkg683 pkg684 pkg685 pkg686 pkg687 pkg688 pkg689
+   hork add pkg690 pkg691 pkg692 pkg693 pkg694 pkg695 pkg696 pkg697 pkg698 pkg699
+   hork add pkg700 pkg701 pkg702 pkg703 pkg704 pkg705 pkg706 pkg707 pkg708 pkg709
+   hork add pkg710 pkg711 pkg712 pkg713 pkg714 pkg715 pkg716 pkg717 pkg718 pkg719
+   hork add pkg720 pkg721 pkg722 pkg723 pkg724 pkg725 pkg726 pkg727 pkg728 pkg729
+   hork add pkg730 pkg731 pkg732 pkg733 pkg734 pkg735 pkg736 pkg737 pkg738 pkg739
+   hork add pkg740 pkg741 pkg742 pkg743 pkg744 pkg745 pkg746 pkg747 pkg748 pkg749
+   hork add pkg750 pkg751 pkg752 pkg753 pkg754 pkg755 pkg756 pkg757 pkg758 pkg759
+   hork add pkg760 pkg761 pkg762 pkg763 pkg764 pkg765 pkg766 pkg767 pkg768 pkg769
+   hork add pkg770 pkg771 pkg772 pkg773 pkg774 pkg775 pkg776 pkg777 pkg778 pkg779
+   hork add pkg780 pkg781 pkg782 pkg783 pkg784 pkg785 pkg786 pkg787 pkg788 pkg789
+   hork add pkg790 pkg791 pkg792 pkg793 pkg794 pkg795 pkg796 pkg797 pkg798 pkg799
+   hork add pkg800 pkg801 pkg802 pkg803 pkg804 pkg805 pkg806 pkg807 pkg808 pkg809
+   hork add pkg810 pkg811 pkg812 pkg813 pkg814 pkg815 pkg816 pkg817 pkg818 pkg819
+   hork add pkg820 pkg821 pkg822 pkg823 pkg824 pkg825 pkg826 pkg827 pkg828 pkg829
+   hork add pkg830 pkg831 pkg832 pkg833 pkg834 pkg835 pkg836 pkg837 pkg838 pkg839
+   hork add pkg840 pkg841 pkg842 pkg843 pkg844 pkg845 pkg846 pkg847 pkg848 pkg849
+   hork add pkg850 pkg851 pkg852 pkg853 pkg854 pkg855 pkg856 pkg857 pkg858 pkg859
+   hork add pkg860 pkg861 pkg862 pkg863 pkg864 pkg865 pkg866 pkg867 pkg868 pkg869
+   hork add pkg870 pkg871 pkg872 pkg873 pkg874 pkg875 pkg876 pkg877 pkg878 pkg879
+   hork add pkg880 pkg881 pkg882 pkg883 pkg884 pkg885 pkg886 pkg887 pkg888 pkg889
+   hork add pkg890 pkg891 pkg892 pkg893 pkg894 pkg895 pkg896 pkg897 pkg898 pkg899
 }
 install_all
 
@@ -53,10 +103,10 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 book.sh:
   warning[cfg-inline-refused]: call to `install_all` exceeds the per-call
-  inline-node budget (162 > 64); not inlined -- it runs as an ordinary unmodeled
-  command
-        [ book.sh:44:1
-     44 | install_all
+  inline-node budget (1172 > 1024); not inlined -- it runs as an ordinary
+  unmodeled command
+        [ book.sh:94:1
+     94 | install_all
         | \_________/
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
@@ -64,8 +114,8 @@ dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
 $ dorc-loom --this vars
 case: cfg-inline-refused-per-call-budget
 {{v0}} = "install_all"
-{{v1}} = "162"
-{{v2}} = "64"
+{{v1}} = "1172"
+{{v2}} = "1024"
 {{v3}} = ""
 {{v4}} = "0"
 {{v5}} = "s"

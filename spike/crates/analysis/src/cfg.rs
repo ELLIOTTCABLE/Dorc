@@ -44,18 +44,39 @@ use crate::lattice::Powerset;
 // B4 mechanical sweep: cfg codes migrated onto the Diag spine. Payloads live in
 // `dorc_aid::diag`; emit sites use `Diag::new(Code::Variant(…), span).label(…).to_legacy(…)`.
 
-/// arch-2 inlining budgets (`211` §1 / `209` brk-2; pre-spelled in the round-21 charter).
-/// Over-budget ⇒ the call stays `Opaque` WITH a `CfgInlineRefused` diagnostic naming the
-/// exceeded budget — proportional degradation, never a silent cliff.
-mod inline_budget {
-    /// Maximum inline-splice depth (a call inside an inlined body inside an inlined body is
-    /// depth 2; deeper ⇒ refuse). Keeps the recursion-stack shallow and the spliced-node
-    /// count bounded.
-    pub(super) const MAX_DEPTH: u32 = 2;
+/// arch-2 inlining budgets. Over-budget ⇒ the call stays `Opaque` WITH a `CfgInlineRefused`
+/// diagnostic naming the exceeded budget — proportional degradation, never a silent cliff.
+///
+/// RE-SIZED at `30L:req-census-admits-the-wrapped-book`, against measured corpus-shaped
+/// strawmen rather than inherited from the round-21 charter. The measurements that set them
+/// (AST-subtree estimates, the unit the per-site check counts):
+///
+/// * the `fixtures/pi-webhost.book.sh` body — 15 commands, ~45 lines — is **63** nodes, so
+///   realistic sh runs ~4 AST nodes per command. Under the inherited 64 it fit with ONE node
+///   to spare: `main() { <that book> }` was the largest whole-book wrapper that could ever be
+///   admitted, and the style-guide `main`-wraps-everything shape is precisely what this stage
+///   exists to descend into.
+/// * `main → task_fn → helper` — the motivating factoring — refused at the inherited depth 2.
+/// * a realistically factored book (5 tasks × 1 helper each) refused every helper.
+///
+/// These are LICENSURE-widening knobs, not perf knobs: an un-spliced call is `Opaque` ⇒ ⊤ ⇒ a
+/// poison wall, so raising a budget makes mutations visible that were previously hidden behind a
+/// wall, and elisions become available downstream. Raise deliberately.
+pub(crate) mod inline_budget {
+    /// Maximum inline-splice depth: the number of enclosing spliced bodies a call may sit
+    /// inside. `main → task_fn → helper` needs 3; 4 leaves one level of headroom for the
+    /// `main → task → helper → leaf` factoring, and stops there because each further level
+    /// multiplies the clone count by the fan-out.
+    pub(crate) const MAX_DEPTH: u32 = 4;
     /// Maximum spliced CFG nodes for ONE call site (the body's whole lowering, recursively).
-    pub(super) const MAX_NODES_PER_SITE: usize = 64;
-    /// Maximum spliced CFG nodes across the WHOLE book (all call sites summed).
-    pub(super) const MAX_NODES_PER_BOOK: usize = 1024;
+    /// At the measured ~4 nodes/command this admits a ~250-command whole-book wrapper — past
+    /// the top of the hand-written range, while still refusing a machine-generated body.
+    pub(crate) const MAX_NODES_PER_SITE: usize = 1024;
+    /// Maximum spliced CFG nodes across the WHOLE book (all call sites summed). Four times the
+    /// per-site cap: one whole-book wrapper plus three more full bodies' worth of factored-helper
+    /// splices. This is the multiplicative backstop — per-site bounds one body, and only this
+    /// bounds fan-out^depth.
+    pub(crate) const MAX_NODES_PER_BOOK: usize = 4096;
 }
 
 // ===========================================================================
@@ -570,6 +591,11 @@ struct Builder<'a> {
     /// arch-2: the CALL node → its ordered body-leaf list, accumulated as splices complete
     /// (`i-3`/`i-4`). Emitted on the [`Cfg`] as [`Cfg::call_body_sites`].
     call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
+    /// arch-2: the CALL node → the half-open arena range its splice minted. An enclosing splice's
+    /// leaf scan uses it to skip a nested call's WHOLE region in one step: the nested call has
+    /// already flattened everything under it, and re-walking the region flattens each deeper
+    /// call a second time. Builder-local (nothing downstream needs it).
+    spliced_ranges: BTreeMap<CfgNodeId, (usize, usize)>,
     /// Per-node: the unvouched output observables this node's context consumes
     /// (note 16J). Populated in lowering by `mark_consumed_range` (the enclosing
     /// pipeline-stage / redirected-group context propagated to inner leaves, the
@@ -631,6 +657,7 @@ impl<'a> Builder<'a> {
             inline_stack: Vec::new(),
             spliced_node_total: 0,
             call_body_sites: BTreeMap::new(),
+            spliced_ranges: BTreeMap::new(),
             consumed: Vec::new(),
             branches: Vec::new(),
             exit_to_enter: BTreeMap::new(),
@@ -1072,15 +1099,19 @@ impl<'a> Builder<'a> {
             .saturating_add(body_end - body_start);
 
         // The call's effect-bearing leaf sites (i-4), in arena order. An inner inlined CALL is
-        // not itself a site — flatten its own body leaves in. Those flattened leaves ALSO sit
-        // directly in `body_start..body_end` (a transitively-spliced body command is in this
-        // arena range too), so the direct scan must SKIP them, or each depth-2 inner leaf
-        // double-counts: once via the inner call's flatten, once via the direct push (the
-        // `site 0.0`/`site 0.1` bug). The inner CALL precedes its body leaves in arena order,
-        // so accumulating the flattened set as we go covers every later direct hit.
+        // not itself a site — it has ALREADY flattened everything beneath it, so this scan takes
+        // its list and then skips its whole arena region. Region-skipping rather than
+        // leaf-subtraction is what makes the answer right at every depth: a leaf-set subtraction
+        // hides a nested leaf but not the nested CALL that produced it, so at three levels the
+        // middle call re-flattened its own body and the bottom mutation appeared TWICE in the
+        // outermost list (measured; duplicate members reject the whole aggregate, forfeiting the
+        // deep elision this stage exists to deliver).
         let mut sites: Vec<CfgNodeId> = Vec::new();
-        let mut flattened_inner: BTreeSet<CfgNodeId> = BTreeSet::new();
+        let mut skip_until = body_start;
         for v in body_start..body_end {
+            if v < skip_until {
+                continue;
+            }
             let node = CfgNodeId(v as u32);
             if self.nodes[v].kind != CfgNodeKind::Command || self.expansion_internal[v] {
                 continue;
@@ -1089,15 +1120,18 @@ impl<'a> Builder<'a> {
                 debug_assert!(
                     inner_sites.iter().all(|&s| s.0 > node.0),
                     "inline ordering: inner CALL {node:?} must precede its flattened body sites \
-                     {inner_sites:?} (the flattened_inner dedupe relies on arena order; 217 section 5 obs-2)"
+                     {inner_sites:?} (the region skip relies on arena order; 217 section 5 obs-2)"
                 );
                 sites.extend(inner_sites.iter().copied());
-                flattened_inner.extend(inner_sites.iter().copied());
-            } else if !flattened_inner.contains(&node) {
+                if let Some(&(_, inner_end)) = self.spliced_ranges.get(&node) {
+                    skip_until = inner_end;
+                }
+            } else {
                 sites.push(node);
             }
         }
         self.call_body_sites.insert(cmd, sites);
+        self.spliced_ranges.insert(cmd, (body_start, body_end));
         Some(body_exit)
     }
 

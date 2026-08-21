@@ -4,9 +4,11 @@ arrangement: cfg-inline-refused-depth-budget
 -- book.sh --
 #!/bin/sh
 leaf() { hork add nginx; }
-mid() { leaf; }
+inner() { leaf; }
+mid() { inner; }
 outer() { mid; }
-outer
+top() { outer; }
+top
 
 -- replay --
 $ dorc lint book.sh --no-tools
@@ -14,17 +16,17 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 book.sh:
   warning[cfg-inline-refused]: call to `leaf` exceeds the inline-depth budget
-  (2); not inlined -- it runs as an ordinary unmodeled command
-        [ book.sh:3:9
-     3 | mid() { leaf; }
-       |         \__/
+  (4); not inlined -- it runs as an ordinary unmodeled command
+        [ book.sh:3:11
+     3 | inner() { leaf; }
+       |           \__/
 
 dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
 
 $ dorc-loom --this vars
 case: cfg-inline-refused-depth-budget
 {{v0}} = "leaf"
-{{v1}} = "2"
+{{v1}} = "4"
 {{v2}} = "1"
 {{v3}} = ""
 {{v4}} = "0"

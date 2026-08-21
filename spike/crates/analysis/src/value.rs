@@ -245,10 +245,13 @@ impl ValueFlow {
 /// concatenation is interner-free; interned only at the public boundary).
 pub type ValueEnv = MapL<String, Flat<String>>;
 
-/// arch-2 (`i-2`): bounded iterations of the inline positional-binding pass — depth ≤ 2 ⇒ at
-/// most 3 passes for an inner-of-inner positional (`outer() { inner "$1"; }`) to settle once the
-/// outer binding lands. Monotone (a concrete binding never changes) ⇒ the fixed count suffices.
-const MAX_INLINE_PASSES: usize = 3;
+/// arch-2 (`i-2`): bounded iterations of the inline positional-binding pass — one pass per
+/// splice level, plus one, so an inner-of-inner positional (`outer() { inner "$1"; }`) settles
+/// once the outer binding lands. Monotone (a concrete binding never changes) ⇒ the fixed count
+/// suffices. Derived from the splice budget rather than restated, because the two were coupled by
+/// a comment and the depth re-size (`30L:req-census-admits-the-wrapped-book`) would have left it
+/// silently stale.
+const MAX_INLINE_PASSES: usize = crate::cfg::inline_budget::MAX_DEPTH as usize + 1;
 
 /// An abstract word value mid-analysis: known literal text, or `⊤` with its [`TopCause`].
 #[derive(Debug, Clone, PartialEq, Eq)]

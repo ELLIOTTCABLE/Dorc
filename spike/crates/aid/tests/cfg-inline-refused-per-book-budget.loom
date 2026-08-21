@@ -75,6 +75,103 @@ install_all
 install_all
 install_all
 install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
+install_all
 
 -- replay --
 $ dorc lint book.sh --no-tools
@@ -82,56 +179,26 @@ dorc lint findings (advisory; the machine format `--format=jsonl` is the stable 
 
 book.sh:
   warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
+  inline-node budget (4050 spliced + 62 more > 4096); not inlined -- it runs as
   an ordinary unmodeled command
-        [ book.sh:67:1
-     67 | install_all
-        | \_________/
+        [ book.sh:169:1
+     169 | install_all
+         | \_________/
   warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
+  inline-node budget (4050 spliced + 62 more > 4096); not inlined -- it runs as
   an ordinary unmodeled command
-        [ book.sh:68:1
-     68 | install_all
-        | \_________/
-  warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
-  an ordinary unmodeled command
-        [ book.sh:69:1
-     69 | install_all
-        | \_________/
-  warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
-  an ordinary unmodeled command
-        [ book.sh:70:1
-     70 | install_all
-        | \_________/
-  warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
-  an ordinary unmodeled command
-        [ book.sh:71:1
-     71 | install_all
-        | \_________/
-  warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
-  an ordinary unmodeled command
-        [ book.sh:72:1
-     72 | install_all
-        | \_________/
-  warning[cfg-inline-refused]: call to `install_all` exceeds the per-book
-  inline-node budget (990 spliced + 62 more > 1024); not inlined -- it runs as
-  an ordinary unmodeled command
-        [ book.sh:73:1
-     73 | install_all
-        | \_________/
+        [ book.sh:170:1
+     170 | install_all
+         | \_________/
 
-dorc lint: 0 errors, 7 warnings, 0 infos across 1 file.
+dorc lint: 0 errors, 2 warnings, 0 infos across 1 file.
 
 $ dorc-loom --this vars
 case: cfg-inline-refused-per-book-budget
 {{v0}} = "install_all"
-{{v1}} = "990"
+{{v1}} = "4050"
 {{v2}} = "62"
-{{v3}} = "1024"
+{{v3}} = "4096"
 {{v4}} = "0"
 {{v5}} = "s"
 {{v6}} = "1"
