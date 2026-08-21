@@ -2455,10 +2455,9 @@ impl DecidedRender {
             }
         }
 
-        // Conservative in exactly one direction: an account that cannot answer "every invocation"
-        // keeps its edit (`30L:pin-whole-helper-derived-only`). Since `30Ng` §2 the keyed set is
-        // COMPLETE, so the only such account is one holding a route with no plan site — a call
-        // whose neutralisation this walk cannot ask about.
+        // Conservative in one direction: an account that cannot answer "every invocation" keeps its
+        // edit (`30L:pin-whole-helper-derived-only`). Since `30Ng` §2 the keyed set is COMPLETE, so
+        // that is exactly an account holding a route with no plan site.
         let live_regions: BTreeSet<AstId> = regions
             .iter()
             .filter(|region| {
@@ -5634,11 +5633,9 @@ impl Plan {
                 comment_out,
             });
         }
-        // The generated plan's own imports (`30Ng:rul-bundle-at-dorc-lang-boundaries`). Always
-        // SELF-COMMENTED: the shared provenance line says "elided", and an import that now names a
-        // bundle was not elided — the load still runs, from somewhere the artifact carries. A
-        // re-point's own disclosure rides the PLAN surface instead (`two-surfaces`), because its
-        // span is one WORD and there is nowhere mid-line to put a `#`.
+        // The generated plan's own imports (`30Ng:rul-bundle-at-dorc-lang-boundaries`). SELF-
+        // COMMENTED because the shared provenance line says "elided", and a re-pointed load is not
+        // elided — it still runs, from somewhere the artifact carries.
         for import in &self.render.imports {
             let span = ast.node(import.ast()).span;
             let replacement = match import {

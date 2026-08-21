@@ -276,13 +276,9 @@ impl Harness {
         // stays the throwaway sandbox `rail` supplies.
         command.current_dir(at);
         command.env(FIXTURE_CLOCK_ENV, FIXTURE_CLOCK_MS.to_string());
-        // THE STDOUT POSTURE, injected rather than inherited
-        // (`30Ng:rul-piped-stdout-carries-a-full-plan`: the real edge asks the terminal, every test
-        // says which cell it means). The battery reads a RENDER — it captures stdout to compare
-        // bytes and drives the artifact SET through `--artifact-dir` — which is the TERMINAL cell:
-        // a person looking at a plan while the artifact lives somewhere else. Left to the true
-        // answer it would be the KEPT-stream cell, where naming a directory claims the artifact
-        // twice and the run refuses before it renders anything to compare.
+        // The battery reads a RENDER while the artifact SET goes to `--artifact-dir`, which is the
+        // TERMINAL cell; left to the true answer it would be the kept-stream one, where naming a
+        // directory claims the artifact twice and the run refuses before rendering anything.
         command.env(STDOUT_POSTURE_ENV, "interactive");
         for key in ["XDG_STATE_HOME", "LOCALAPPDATA"] {
             command.env(key, &self.state_root);
@@ -1331,10 +1327,8 @@ fn round_trip_command(dir: &Path) -> String {
     if let Ok(Some(flags)) = marker(dir, "DORC_FLAGS") {
         let _ = write!(command, " {flags}");
     }
-    // DISCLOSED, not omitted: naming an artifact stream is what decides which FORM the run takes,
-    // so a transcript that hid it would show a command producing different bytes than the one the
-    // gates drive. The value is a shell VARIABLE rather than the scratch path, because the real one
-    // is a per-run temporary and a committed transcript must be a fixpoint.
+    // DISCLOSED: naming an artifact stream decides which FORM the run takes. A shell VARIABLE
+    // rather than the scratch path, because a committed transcript must be a fixpoint.
     if has_marker(dir, "ARTIFACT_SET") {
         command.push_str(" --artifact-dir=$ARTIFACT_DIR");
     }
@@ -3108,8 +3102,6 @@ fn artifact_set_selftest() -> Vec<String> {
         fails.push("as-two (two generations answered as if one drive published)".to_owned());
     }
 
-    // The loom-form DECLARATION: `published` is the vocabulary, and anything else is a refusal
-    // rather than a marker nobody writes.
     if ArtifactSetDeclaration::parse("published") != Ok(ArtifactSetDeclaration::Published) {
         fails.push("as-decl (the one legal declaration did not resolve)".to_owned());
     }
@@ -3117,8 +3109,6 @@ fn artifact_set_selftest() -> Vec<String> {
         fails.push("as-decl-open (a value outside the vocabulary was accepted)".to_owned());
     }
 
-    // The published tree OBSERVES its own imports, in both directions: a rewritten import naming a
-    // file the generation carries is silent, and one naming nothing is named.
     let generation = root.join("artifact-0001");
     std::fs::write(generation.join("here.dorc-bundle.sh"), "true\n").expect("write bundle");
     let plan = ". './here.dorc-bundle.sh'\n. './gone.dorc-bundle.sh'\n. \"$ROOT/x.sh\"\n";

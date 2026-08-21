@@ -684,8 +684,8 @@ pub fn select(
     request: FormRequest,
     posture: StreamPosture,
 ) -> Result<Selection, FormRefusal> {
-    // A book with nothing to load is ALREADY one stream, and a book whose every load's bundle can
-    // stand where its `.` stands becomes one (`floor30-inline-dot-boundary`'s measured cell).
+    // A book with nothing to load is ALREADY one stream; one whose every bundle can stand where its
+    // `.` stands becomes one (`floor30-inline-dot-boundary`'s measured cell).
     let inlined = inline_imports(projection, loads);
     let inline_debt = loads
         .iter()
@@ -753,8 +753,8 @@ pub fn select(
                 form: ArtifactForm::MirroredTree,
             }),
         },
-        // A preserved tree is an artifact that needs files beside it, so naming it on a stream that
-        // is being KEPT asks for an artifact that cannot run where it lands.
+        // A preserved tree needs files beside it, so naming it on a KEPT stream asks for an
+        // artifact that cannot run where it lands.
         FormRequest::Explicit(ArtifactForm::PreservedBookTree) => match posture {
             StreamPosture::PipedArtifact if !loads.is_empty() => {
                 Err(FormRefusal::IncompleteSingleStream { loads: loads.len() })

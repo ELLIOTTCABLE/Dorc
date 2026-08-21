@@ -2148,10 +2148,8 @@ fn run(
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
 
-    // The generated plan's own imports, on the PLAN surface (`two-surfaces`): the artifact carries
-    // the bytes and this carries the account of which authored `.` now names something else. On
-    // `report_at`'s advisory route rather than `report`'s, because it is a Note about the emission
-    // this run chose, not a correctness give-up an `apply` must be told about.
+    // The generated plan's own imports, on the PLAN surface (`two-surfaces`). Advisory-routed: a
+    // Note about the emission this run chose, not a give-up an `apply` must be told about.
     report_at(
         advisory,
         "emission",

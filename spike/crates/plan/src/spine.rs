@@ -269,8 +269,7 @@ pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
         });
     }
     // SITE-LESS and REGION-LESS, on `DefensiveEmission`'s precedent: an import edit belongs to a
-    // book line rather than to an execution or an authored region, and a new identity gets a new
-    // axis rather than borrowing one that means something else (`a-second-key-axis-never-widens-siteid`).
+    // book line, and a new identity gets a new axis (`a-second-key-axis-never-widens-siteid`).
     for import in plan.import_edits() {
         spine.push_render_decision(SpineRenderDecision {
             site: None,
