@@ -76,6 +76,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // ONE inline oracle, so no unit spans two files and positional == ambient (`28K` §2).
     let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
     let mut verdict_lane = std::collections::BTreeMap::new();
+    // ONE latch across classification and settlement, spent before the projection below
+    // (`302:rul-certifier-trip-guard-only`): a net whose plans keep elisions the shipped tool would
+    // have demoted is a green witness to nothing (`30Md:fnd-discarded-trip-retains-elisions`).
+    let mut trip = dorc_analysis::certify::CertifierTrip::default();
     let (classified, _why, kills, _kill_coords, fact_backings, _narrative, invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
@@ -90,7 +94,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &mut arena,
             &mut std::collections::BTreeMap::new(),
             &mut verdict_lane,
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             ambient,
         );
     let classes = classified.value;
@@ -212,7 +216,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         },
         None => dorc_plan::WallPolicy::Honest,
     };
-    let spine = dorc_plan::build_plan_walled(
+    let mut spine = dorc_plan::build_plan_walled(
         &declared.book_sh,
         &parsed.value,
         &cfg,
@@ -229,11 +233,15 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             }
         },
         &mut arena,
-        &mut dorc_analysis::certify::CertifierTrip::default(),
+        &mut trip,
         // No intake: the net drives a modeled host.
         None,
     );
-    dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake())
+    dorc_plan::certifier_trip::project_censusless(
+        &mut spine,
+        &trip,
+        &dorc_plan::PlanAuthority::without_intake(),
+    )
 }
 
 /// Evolve two host copies from `s0` and return `(S_bare, S_apply)` (24B §3). **bare** applies

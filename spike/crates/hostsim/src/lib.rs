@@ -1497,7 +1497,8 @@ grep__predict() {
             invalidators: invalidators.clone(),
             fact_backings: BTreeMap::new(),
         };
-        let spine = dorc_plan::build_plan_walled(
+        let mut trip = dorc_analysis::certify::CertifierTrip::default();
+        let mut spine = dorc_plan::build_plan_walled(
             book,
             ast,
             cfg,
@@ -1508,11 +1509,15 @@ grep__predict() {
             &BTreeMap::new(), // no probe-origin witnesses in DST (C6: Witness is EXEMPT)
             observe,
             &mut dorc_core::ProvArena::new(),
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             // No intake: DST analyses the unmeasured world.
             None,
         );
-        dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake())
+        dorc_plan::certifier_trip::project_censusless(
+            &mut spine,
+            &trip,
+            &dorc_plan::PlanAuthority::without_intake(),
+        )
     }
 
     #[test]

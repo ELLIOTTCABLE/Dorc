@@ -1810,6 +1810,7 @@ pub fn classify(
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> Classification {
+    let mut trip = CertifierTrip::default();
     let (carrier, _why, _kills, _coords, _backings, _narrative, invalidators) =
         classify_with_why_diags(
             cfg,
@@ -1824,13 +1825,14 @@ pub fn classify(
             arena,
             &mut BTreeMap::new(),
             &mut BTreeMap::new(),
-            &mut CertifierTrip::default(),
+            &mut trip,
             crate::funcenv::LiveDefinitions::unsolved(),
         );
     Classification {
         value: carrier.value,
         diags: carrier.diags,
         invalidators,
+        trip,
     }
 }
 
@@ -1849,6 +1851,12 @@ pub struct Classification {
     pub diags: Vec<Diag>,
     /// Every node that gens into the effective world.
     pub invalidators: BTreeSet<CfgNodeId>,
+    /// The latch this classification's own solves raised, HANDED OUT rather than dropped
+    /// (`302:rul-certifier-trip-guard-only`). A producer starts the run's latch from this value and
+    /// threads it onward; a caller that only reads classes ignores it. Carried as a value because
+    /// the latch has exactly one mutator and it takes a real `SolveConsistency` — merging two
+    /// latches would need a second one, which is the fence, not a convenience.
+    pub trip: crate::certify::CertifierTrip,
 }
 
 /// [`classify_with_why_diags`]'s survival-backing product accessor (`277` §5): the fact →

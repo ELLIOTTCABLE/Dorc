@@ -3740,7 +3740,13 @@ pub fn build_plan(
     };
     // The intakeless entry: this world was never measured, so there is no channel whose integrity
     // could have been lost (`spine::PlanAuthority::without_intake`).
-    let spine = build_plan_walled(
+    //
+    // The latch is NAMED and spent below. The caller's own classification may have latched a trip
+    // this entry cannot see — it takes classes, not a `Classification` — so what is closed here is
+    // the settlement's own; a caller whose classification tripped threads that latch through
+    // `build_plan_walled` directly.
+    let mut trip = dorc_analysis::certify::CertifierTrip::default();
+    let mut spine = build_plan_walled(
         src,
         ast,
         cfg,
@@ -3752,11 +3758,11 @@ pub fn build_plan(
         &BTreeMap::new(),
         observe,
         arena,
-        &mut dorc_analysis::certify::CertifierTrip::default(),
+        &mut trip,
         // The intakeless entry reads no host bytes, so its records are authored-before-contact.
         None,
     );
-    project_plan(&spine, &PlanAuthority::without_intake())
+    certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake())
 }
 
 /// [`build_plan`] PLUS the run's wall POLICY.

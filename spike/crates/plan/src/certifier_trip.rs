@@ -30,8 +30,9 @@
 
 use dorc_aid::CollapseNarrative;
 use dorc_aid::narrative::{CollapseKind, DemoteTag, SpeechAct};
+use dorc_analysis::certify::CertifierTrip;
 
-use crate::{Disposition, Spine};
+use crate::{Disposition, Plan, PlanAuthority, Spine};
 
 /// What the cleanup did (`302` §5): the count for the plan-prominent banner, and the per-site
 /// narrative records that stay pull-tier.
@@ -94,9 +95,12 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
         ));
     }
     // `dec-certifier-trip-cleanup` (`30E` §3) lands in the decision plane rather than staying a
-    // post-construction mutation nobody records: the cleanup is a decision about a decision, and a
-    // NEW driver forgetting to call it is exactly the must-remember-to-ask surface the reification
-    // dissolves.
+    // post-construction mutation nobody records. What the record does NOT do is dissolve the
+    // must-remember-to-ask surface: it moved the cleanup's RESULT into the plane, never the ACT of
+    // calling it, and four producers had already forgotten the act by the time this was written
+    // (`30Md:fnd-discarded-trip-retains-elisions`). Dissolving it structurally is
+    // `30M:rec-dissolve-trip-must-remember-structurally`, unbuilt; until then the surface is held
+    // by `project_censusless` and the lexical producer fence beside it.
     for site in demoted_sites {
         spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
             site: Some(site),
@@ -105,6 +109,31 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
         });
     }
     out
+}
+
+/// The whole TAIL of a plan producer that holds no body-occupancy census: spend the run's latch,
+/// then project (`302:rul-certifier-trip-guard-only`).
+///
+/// One seat rather than a spend-then-project pair at each producer, because the two are not
+/// independent acts. `build_plan_walled` hands back a Spine AND a latch its settlement may have
+/// raised, and projecting without spending it is exactly what four producers were doing
+/// (`30Md:fnd-discarded-trip-retains-elisions`): a cross-window trip is invisible to the
+/// mid-pipeline floors, so the terminal walk is the only thing that evicts it.
+///
+/// Censusless is the honest posture for every instrument here — none of them holds a
+/// `DefinitionTable` — so every guard demotes with everything else
+/// (`FORFEITS:forfeit-certifier-trip-demotes-guards`: always safe, merely poorer). The cli, which
+/// does hold one, keeps its own census-aware seat and its banner.
+#[must_use]
+pub fn project_censusless(
+    spine: &mut Spine,
+    trip: &CertifierTrip,
+    authority: &PlanAuthority,
+) -> Plan {
+    if trip.tripped() {
+        drop(demote_on_trip(spine, |_| false));
+    }
+    crate::project_plan(spine, authority)
 }
 
 #[cfg(test)]
@@ -380,20 +409,116 @@ apt_get__predict() {
         );
     }
 
+    /// The producer TAIL, over a REAL elision and a REAL trip: a censusless driver that spends its
+    /// latch through the shared seat cannot ship a tripped plan that still elides
+    /// (`30Md:fnd-discarded-trip-retains-elisions`, which four producers had).
+    ///
+    /// The latch is the genuine checker's, threaded into the seat as a producer threads it — never
+    /// a demotion hand-applied at the projection, which would assert the policy against itself
+    /// (`anti-masking-tests`). The clean-latch half is what makes it non-vacuous: the same spine,
+    /// the same seat, an untripped latch, and the elision SURVIVES.
     #[test]
-    #[ignore = "round-30 adversarial review: plan producers project before trip cleanup"]
-    fn a_tripped_plan_projected_without_cleanup_must_not_retain_elision() {
-        let spine = spine_of(a_real_elide_plan().steps);
-        let trip = a_real_trip();
-        assert!(trip.tripped());
+    fn a_censusless_producer_spends_its_trip_before_projecting() {
+        let elided = a_real_elide_plan().steps;
+        let mut tripped_spine = spine_of(elided.clone());
+        let mut clean_spine = spine_of(elided);
+        let authority = crate::PlanAuthority::without_intake();
 
-        let plan = projected(&spine);
+        let tripped = super::project_censusless(&mut tripped_spine, &a_real_trip(), &authority);
+        let clean = super::project_censusless(&mut clean_spine, &a_real_clean_latch(), &authority);
 
         assert!(
-            plan.steps
+            tripped
+                .steps
                 .iter()
                 .all(|step| matches!(step.disposition, Disposition::Run)),
-            "a genuine certifier disagreement must reach the terminal demotion before projection"
+            "a genuine certifier disagreement reaches the terminal demotion before projection"
+        );
+        assert!(
+            clean
+                .steps
+                .iter()
+                .any(|step| matches!(step.disposition, Disposition::Replace(..))),
+            "...and an untripped latch spends nothing, or the assertion above proves only that the \
+             seat always demotes"
+        );
+    }
+
+    /// THE PRODUCER FENCE. `build_plan_walled` hands its caller a Spine *and* a latch its own
+    /// settlement may have raised; a cross-window trip is invisible to the mid-pipeline floors, so
+    /// the terminal walk is the only thing that evicts it and projecting without one retains
+    /// elisions a tripped run may not keep. Four producers did exactly that, silently
+    /// (`30Md:fnd-discarded-trip-retains-elisions`).
+    ///
+    /// The set of files that may produce a plan is therefore ENUMERATED here and checked both ways:
+    /// a producer that stops spending its latch fails, and a FIFTH producer is a deliberate act
+    /// with a diff rather than a silent omission. Lexical, in the shape
+    /// `erase::licence_mint_has_exactly_one_caller` already uses, because "no file builds a walled
+    /// plan without spending its latch" is a property no type bound expresses while
+    /// `30M:rec-dissolve-trip-must-remember-structurally` is unbuilt.
+    #[test]
+    fn every_plan_producer_spends_its_certifier_trip() {
+        // Split so this scan does not find ITSELF — the fence is about production call sites.
+        let builds = concat!("build_plan", "_walled(");
+        let spends = [
+            concat!("project_", "censusless("),
+            concat!("demote_on_", "trip("),
+        ];
+        let expected = [
+            "coverage/src/lib.rs",
+            "hostsim/src/lib.rs",
+            "plan/src/lib.rs",
+            "sweep/src/drive.rs",
+        ];
+
+        let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("crates dir");
+        let mut producers: Vec<String> = Vec::new();
+        let mut stack = vec![crates.to_path_buf()];
+        while let Some(dir) = stack.pop() {
+            for entry in std::fs::read_dir(&dir)
+                .expect("readable crates dir")
+                .flatten()
+            {
+                let path = entry.path();
+                if path.is_dir() {
+                    if path.file_name().is_some_and(|n| n == "target") {
+                        continue;
+                    }
+                    stack.push(path);
+                } else if path.extension().is_some_and(|e| e == "rs") {
+                    let src = std::fs::read_to_string(&path).unwrap_or_default();
+                    if !src.contains(builds) {
+                        continue;
+                    }
+                    let shown = path.display().to_string().replace('\\', "/");
+                    assert!(
+                        spends.iter().any(|needle| src.contains(needle)),
+                        "{shown} builds a walled plan and spends no certifier trip"
+                    );
+                    producers.push(shown);
+                }
+            }
+        }
+        producers.sort();
+        assert!(
+            !producers.is_empty(),
+            "discovery floor: the walk found no plan producers, so this fence proves nothing"
+        );
+        let found: Vec<&str> = producers
+            .iter()
+            .map(|path| {
+                expected
+                    .iter()
+                    .find(|tail| path.ends_with(*tail))
+                    .copied()
+                    .unwrap_or(path.as_str())
+            })
+            .collect();
+        assert_eq!(
+            found, expected,
+            "the plan-producer roster moved; adding one is a governed act, not a local edit"
         );
     }
 

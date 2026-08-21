@@ -532,6 +532,11 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
     // why-diags are cli-render-only; coverage discards them.
     let mut verdict_lane = BTreeMap::new();
+    // ONE latch for the whole readout, classification and settlement alike, spent before the
+    // projection below (`302:rul-certifier-trip-guard-only`). An instrument that kept elisions a
+    // tripped run's plan would not is worse than no instrument: it disagrees with production
+    // exactly where the disagreement matters (`30Md:fnd-discarded-trip-retains-elisions`).
+    let mut trip = dorc_analysis::certify::CertifierTrip::default();
     let (classified, _why_diags, kills, _kill_coords, fact_backings, _narrative, invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
@@ -546,7 +551,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             &mut arena,
             &mut BTreeMap::new(),
             &mut verdict_lane,
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             // An INSTRUMENT, never a gate: reach is measured ambiently (`28K` §2).
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
@@ -637,7 +642,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         invalidators,
         fact_backings,
     };
-    let spine = dorc_plan::build_plan_walled(
+    let mut spine = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,
         &cfg,
@@ -650,11 +655,15 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &BTreeMap::new(),
         observe,
         &mut arena,
-        &mut dorc_analysis::certify::CertifierTrip::default(),
+        &mut trip,
         // No intake: the dashboard analyses the unmeasured world.
         None,
     );
-    let plan = dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake());
+    let plan = dorc_plan::certifier_trip::project_censusless(
+        &mut spine,
+        &trip,
+        &dorc_plan::PlanAuthority::without_intake(),
+    );
 
     // classify yields CfgNodeId→SkipClass; the plan keys by AstId. Bridge via AstId.
     let disposition_of: BTreeMap<dorc_core::AstId, &Disposition> =
