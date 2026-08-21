@@ -9,6 +9,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Law — the dangers (each one is a latent wrong-elision or a hang)
 
+- **lvalue-builtin-flags-are-spelled-not-guessed** (`30Nf` §3) — `value::transfer_lvalue_builtin`
+  havocs EVERY tracked binding when it cannot say which variable an lvalue builtin wrote, and
+  that floor stands. The one modelled exception is a LEADING `unset -f`, whose operands name
+  FUNCTIONS by the builtin's specification, so the variable plane is untouched; only leading,
+  because both floor shells stop option parsing at the first non-option word and `unset x -f`
+  really does name a variable. Widening the exception set is licensure-relevant in the same
+  species as a funcenv precision change (`28Q` §1's winner-shifting rider): a resolved variable
+  resolves a load, a resolved load binds definitions, and bound definitions license. The
+  measured cost of the un-narrowed form was a whole package never acquired.
 - **spliced-internal-covers-detached-bodies** — `Cfg::is_spliced_internal` is true for a
   funcdef's OWN detached body lowering as well as for a call's spliced copy; both mean only
   "not a plan leaf". A consumer that needs "this is an execution" must ALSO check

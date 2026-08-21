@@ -69,7 +69,18 @@ discipline: one rule per bullet, slugged; append to the matching section.
   says. FLATTENING REFUSES rather than inlining while textual inlining rests on the
   `floor30-inline-dot-boundary` measurement alone, so an explicitly named form that
   cannot be served refuses pre-network and `auto` falls back and SAYS SO — never a
-  silently different form.
+  silently different form. Mirroring is stated against the LOAD CWD
+  (`dorc_core::loadpath::Cwd::relativize`, the inverse of `resolve_operand`), never
+  against a stored path's own spelling: every source a book `.` reaches is filed under
+  its CANONICAL key, which is ABSOLUTE whenever the edge could answer where the run
+  stands — so a seat asking whether the stored spelling looked relative answered
+  "unplaceable" for every real invocation while every in-process test, whose modelled
+  cwd is the flat virtual one, said the opposite. That divergence shipped once and was
+  invisible, because `plan.sh` is byte-identical under all three forms and a case
+  asserting stdout alone cannot see which form it took
+  (`30Nf:fnd-multipart-never-placed-anything-in-production`). A dependency OUTSIDE the
+  load cwd is unplaceable rather than fudged
+  (`need-controller-paths-never-cross-hosts`).
 - **region-openers-are-demanded-not-defaulted** (`30N:rul-census-inputs-are-non-optional`) — the
   elision-region census is handed `region::CensusOpeners`, whose constructor requires EVERY
   opener signal the census cannot see for itself: `funcenv::unresolvable_loads`, the definition
@@ -229,6 +240,19 @@ discipline: one rule per bullet, slugged; append to the matching section.
   check-mode blindness).
 
 ## The acceptance harness (`tests/e2e.rs` + `tests/looms.rs`; this contract is law)
+
+- **an-artifact-set-runs-from-its-own-generation** (`30Nf` §4) — a case declaring `ARTIFACT_SET`
+  gives its round-trip drive an `--artifact-dir`, and the exec gates run the PUBLISHED
+  `<generation>/plan.sh` from inside that generation — the cwd the multipart execution
+  contract gives an artifact (`30I`, the artifact-forms step). Exactly one generation is
+  required; none means the run took a form that materializes nothing, and every exec gate
+  below would then have measured the plan alone in an empty sandbox and passed. The
+  published plan is asserted byte-equal to the apply block on stdout. Copying a case's own
+  AUTHORED sources into the sandbox is the refused alternative: it would green a case
+  against controller-side files the target never receives. The general law this encodes: a
+  case minted to DEMONSTRATE a capability must OBSERVE that capability — an assertion that
+  cannot distinguish feature-on from feature-off is not a demonstration
+  (`30Nf:fnd-multipart-never-placed-anything-in-production` is the burn).
 
 - **runners-live-here-cases-are-peers** (`288:phase-flat-tree-move`) — this crate owns the
   two central `harness = false` runners and the round-trip / lint case collections that sit
