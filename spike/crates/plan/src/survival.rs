@@ -2001,46 +2001,16 @@ mod tests {
         );
     }
 
+    /// `top-identifies-with-nothing` at the transport gate: two equal CONCRETE selectors identify,
+    /// and a ⊤ selector identifies with nothing — so a selector-less coordinate never transports.
+    ///
+    /// This is what remains of a test that also re-asserted its own local closures
+    /// (`survival_spares` and a `transport_licensed_by_relation` that returned `false` outright).
+    /// Those proved the test's own arithmetic, not the engine's (`30Me` F3): the CONSUMER MAP they
+    /// modelled is `ternary-compare-consumer-map`, and it lives in `world.rs`'s freshness gate and
+    /// this module's `disjoint`, both of which have their own pins above.
     #[test]
-    fn synthetic_cross_generator_consumer_map_holds() {
-        // `279f` §5 cross-generator DST cases — SYNTHETIC (the lend + invariance generators arrive
-        // at block-context; this pins the REGISTRY SHAPE the consumer map welds — `277` §2). Two
-        // cases modeled by their verdict, since the generators do not yet exist in code:
-        //  - mapped-lend × keyed kind: keying/lend re-indexes ⇒ blocks transport, NEVER
-        //    ProvablyDisjoint (`never-derive-separation` — keying never feeds survival). Verdict:
-        //    Unknown ⇒ safe for both consumers.
-        //  - full-lend × invariant kind: an invariance line yields transport across a context
-        //    boundary ⇒ feeds TRANSPORT only, never survival sparing. `compare`'s verdict is
-        //    Overlaps (survival-COLLIDE); transport is a SEPARATE decision the block-context
-        //    consumer makes via `selector_identifies` on the concrete selectors — NEVER the
-        //    Overlaps variant (`27D` disposition-relation-same-misnomer, tc-same-is-overlap-not-
-        //    identity). The old `Same` name conflated these two; the rename splits them.
-        // The consumer map (the single source of truth these route through at block-context):
-        let survival_spares = |r: Relation| matches!(r, Relation::ProvablyDisjoint);
-        // Transport is NOT a function of `Relation`: it is `selector_identifies`-gated. No
-        // `Relation` variant licenses it by itself.
-        let transport_licensed_by_relation = |_r: Relation| false;
-        // mapped-lend / keying ⇒ Unknown: blocks transport AND collides survival.
-        assert!(
-            !survival_spares(Relation::Unknown),
-            "keying/mapped-lend never feeds survival sparing"
-        );
-        assert!(
-            !transport_licensed_by_relation(Relation::Unknown),
-            "keying/mapped-lend blocks transport too (the safe bottom)"
-        );
-        // Overlaps: survival collides, and it does NOT license transport by itself.
-        assert!(
-            !transport_licensed_by_relation(Relation::Overlaps),
-            "Overlaps is the survival-collide reading, never a transport license (misnomer fixed)"
-        );
-        assert!(
-            !survival_spares(Relation::Overlaps),
-            "an Overlaps never feeds survival sparing (only provably-disjoint spares)"
-        );
-        // Transport for a full-lend/invariance case is gated on concrete-selector identity. Two
-        // equal concrete tokens identify (transport-eligible); a ⊤ selector identifies with
-        // nothing (`top-identifies-with-nothing`).
+    fn a_top_selector_identifies_with_nothing_at_the_transport_gate() {
         let mut i = dorc_core::Interner::default();
         let sel = SelectorId(i.intern("enabled"));
         assert!(
