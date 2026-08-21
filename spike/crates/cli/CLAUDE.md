@@ -55,6 +55,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   resolves to current source only on exact snapshot-byte agreement and stays aid-only either way.
   Static incoherence renders its located diagnostic but returns before archive stdout, preserving
   the existing refusal/exit. No locator value may enter loading, planning, or authority.
+- **only-invocation-roots-are-ambient** (`30Mc:required-root-occurrence-identity`) — acquisition
+  retains the explicit ordered pre-source ROOTS separately from the files it opens for their load
+  programs. Only the roots reach `push_ambient`; a dependency is `SourceRole::LoadDependency`,
+  loadable and positional, reached at its authored `.` inside its root's own `LoadProgram`. A
+  dependency promoted to a root replays its program AFTER the authored one finished, which
+  restores definitions the author `unset -f`'d — engine-created vouch authority. The
+  classification is DEMANDED by `snapshot::LoadPositions` rather than defaulted, because two bare
+  index sets side by side are swappable without a type error.
 - **probe-ships-oracle-bytes-only** — the compiled probe is synthesized
   scaffolding + oracle bodies, never book contents (it never inherits the
   book's `trap`s). The `24J` raw-ship debt is REPAIRED and machine-pinned

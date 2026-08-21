@@ -132,7 +132,13 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   just-run. Planner economics, never a license question.
 - **certifier-trip-cleanup-runs-in-every-driver** (`302:rul-certifier-trip-guard-only`)
   — `certifier_trip::demote_on_trip` runs immediately after `build_plan_walled` in
-  EVERY plan-producing driver; a NEW driver MUST call it. On a tripped run,
+  EVERY plan-producing driver; the censusless producers reach it through the one seat
+  `certifier_trip::project_censusless`, and `every_plan_producer_spends_its_certifier_trip`
+  is the two-way lexical roster that makes a FIFTH producer a diff rather than a silent
+  omission (four had already forgotten — `30Md:fnd-discarded-trip-retains-elisions`).
+  The reification moved the cleanup's RESULT into the decision plane, never the ACT of
+  calling it; dissolving that surface by type is
+  `30M:rec-dissolve-trip-must-remember-structurally`, unbuilt. On a tripped run,
   Replace and Omit demote to run (`DemoteTag::CertifierTripped`, a reason-enum arm,
   never a sibling code); guards STAND only on the syntactic occupancy-1 census over
   `DefinitionTable` — the census consults NO solve, and that independence IS its

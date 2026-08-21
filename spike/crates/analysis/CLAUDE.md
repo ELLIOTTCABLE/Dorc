@@ -51,6 +51,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `ProgramText` at this stage) — which is precisely why the door is closed NOW,
   ahead of `core`'s `seam-re-bind` folding captured values back into the value plane.
   Never widen the accessor; never read `ValueFlow` directly from that domain.
+  As of `30Na` the wall is a GATE, not a sentence: `funcenv::admits_a_load` is the one
+  seat, and `variable_text` consults it through `VARIABLE_PLANE_GRADE` — the whole-hog
+  grade the variable plane carries, since `ValueEnv` records none per value. When
+  `seam-re-bind` lands, that constant is what stops being true and the gate then
+  refuses rather than resolving off a host answer.
 - **funcenv-is-a-pre-pass-not-a-round** (`28K` §2; `cli/CLAUDE.md`
   the-fixpoint-owns-the-rounds-and-builds-nothing-else) — env resolution is computed
   ONCE from the ORIGIN model and joins the frozen set; the validity fixpoint's ratchet
