@@ -1828,12 +1828,12 @@ fn mutual_recursion_terminates_no_infinite_splice() {
 
 /// A chain `f0 → f1 → … → fN` of function calls, `fN` doing the one real mutation.
 fn call_chain(levels: usize) -> String {
-    let mut src = String::from("f0() { apt-get install -y nginx; }\n");
+    let mut lines = vec![String::from("f0() { apt-get install -y nginx; }")];
     for level in 1..levels {
-        src.push_str(&format!("f{level}() {{ f{}; }}\n", level - 1));
+        lines.push(format!("f{level}() {{ f{}; }}", level.saturating_sub(1)));
     }
-    src.push_str(&format!("f{}\n", levels.saturating_sub(1)));
-    src
+    lines.push(format!("f{}", levels.saturating_sub(1)));
+    lines.join("\n") + "\n"
 }
 
 #[test]

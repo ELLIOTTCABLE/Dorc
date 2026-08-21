@@ -11,8 +11,7 @@
 
 #![expect(
     clippy::panic,
-    clippy::arithmetic_side_effects,
-    reason = "test helpers: panic-based require(), index arithmetic over small fixture vectors"
+    reason = "test helpers: panic-based require()/sole_region, the in-tests allowance the policy intends"
 )]
 
 use dorc_analysis::cfg::build;
@@ -78,7 +77,7 @@ fn regions(c: &RegionCensus) -> Vec<(ElisionRegion, RoutePopulation)> {
 fn sole_region(c: &RegionCensus) -> (ElisionRegion, RoutePopulation) {
     let all = regions(c);
     assert_eq!(all.len(), 1, "expected exactly one region: {all:?}");
-    all.into_iter().next().unwrap_or_else(|| unreachable!())
+    require(all.into_iter().next(), "the sole region")
 }
 
 #[track_caller]

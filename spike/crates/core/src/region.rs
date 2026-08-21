@@ -137,7 +137,7 @@ mod tests {
     }
 
     fn def(file: u32, lo: u32) -> DefinitionId {
-        DefinitionId::at(SourceFileId(file), span(lo, lo + 100))
+        DefinitionId::at(SourceFileId(file), span(lo, lo.saturating_add(100)))
     }
 
     fn book_only() -> RegionUniverse {

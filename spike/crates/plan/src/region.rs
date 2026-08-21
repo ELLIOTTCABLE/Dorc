@@ -34,11 +34,10 @@
 //! [`RouteInstance`] therefore carries both axes — `cfg_node` for the clone, `iteration` for the
 //! overlay — and a population may mix them without either axis meaning the other.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::{Diag, DiagCode};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, ExecutionOwner};
-use dorc_analysis::solve::Graph;
 use dorc_core::influence::InfluencePhase;
 use dorc_core::region::{ElisionRegion, IterationSlot, RegionUniverse};
 use dorc_core::{AstId, DefinitionId, FactKey, SourceFileId, Span};
@@ -219,7 +218,7 @@ pub fn census(
         // its vacuous-⊥ in-state as ambient is a wrong-elision (`vacuous-entry-fold`).
         if cfg_node.kind != CfgNodeKind::Command
             || !cfg.is_spliced_internal(node)
-            || !reachable[node.index()]
+            || !reachable.contains(&node)
             || cfg.call_body_sites(node).is_some()
         {
             continue;
@@ -670,14 +669,12 @@ fn refused_function_names(diags: &[Diag]) -> Vec<String> {
 }
 
 /// Nodes control can actually reach — a forward walk from entry.
-fn reachable_from_entry(cfg: &Cfg) -> Vec<bool> {
-    let mut seen = vec![false; cfg.node_count()];
+fn reachable_from_entry(cfg: &Cfg) -> BTreeSet<CfgNodeId> {
+    let mut seen = BTreeSet::from([cfg.entry()]);
     let mut stack = vec![cfg.entry()];
-    seen[cfg.entry().index()] = true;
     while let Some(node) = stack.pop() {
         for next in cfg.succ_ids(node) {
-            if !seen[next.index()] {
-                seen[next.index()] = true;
+            if seen.insert(next) {
                 stack.push(next);
             }
         }
