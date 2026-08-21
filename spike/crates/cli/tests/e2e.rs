@@ -2961,6 +2961,35 @@ fn selection_floor_selftest() -> Vec<String> {
     fails
 }
 
+/// Drive the artifact-set gate's own requirement, in all three directions.
+///
+/// The failure this closes is a SILENT one: a case declaring `ARTIFACT_SET` whose run published
+/// nothing would have every exec gate below it measure the plan alone in an empty sandbox — the
+/// flattened world, under a multipart name — and pass. So "exactly one generation" has to be a
+/// refusal rather than an `unwrap_or_default`, and a refusal nothing exercises is a refusal that
+/// rots.
+fn artifact_set_selftest() -> Vec<String> {
+    let mut fails = Vec::new();
+    let scratch = Scratch::new("artifactset");
+    let root = scratch.path.join("artifacts");
+    std::fs::create_dir_all(&root).expect("create artifact root");
+    if published_generation(&root).is_ok() {
+        fails.push("as-none (an empty artifact root answered a generation)".to_owned());
+    }
+    std::fs::create_dir_all(root.join("artifact-0001")).expect("create generation");
+    match published_generation(&root) {
+        Ok(one) if one.ends_with("artifact-0001") => {}
+        other => fails.push(format!(
+            "as-one (the sole generation did not answer: {other:?})"
+        )),
+    }
+    std::fs::create_dir_all(root.join("artifact-0002")).expect("create second generation");
+    if published_generation(&root).is_ok() {
+        fails.push("as-two (two generations answered as if one drive published)".to_owned());
+    }
+    fails
+}
+
 /// Drive the floor-transcript WRITE policy on a throwaway case: the refusal in both directions,
 /// and the mint's fold plus its byte-stability. No committed golden and no floor binary take part
 /// — gate-9 owns the measurement; what is proven here is who may commit it. Both directions are
@@ -3331,6 +3360,13 @@ fn preflight(harness: &Harness, discovered: usize) {
         fatal.push(format!(
             "FATAL  selection_floor_selftest FAILED — path selection does not sort real paths from absent ones:\n  {}",
             selection.join("\n  ")
+        ));
+    }
+    let artifact_set = artifact_set_selftest();
+    if !artifact_set.is_empty() {
+        fatal.push(format!(
+            "FATAL  artifact_set_selftest FAILED — a declared artifact set could go unpublished and every exec gate would measure the plan alone:\n  {}",
+            artifact_set.join("\n  ")
         ));
     }
     let floor_bless = floor_bless_selftest();

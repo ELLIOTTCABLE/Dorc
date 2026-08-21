@@ -799,6 +799,48 @@ mod tests {
         );
     }
 
+    /// THE DIAMOND, at the placement seat: two book load points reach one shared dependency through
+    /// separate roots, and it is placed ONCE.
+    ///
+    /// `rul-bundles-key-to-load-occurrences` keeps the two occurrences apart on purpose, so the
+    /// dedup has to happen where the DESTINATION is decided rather than by collapsing the account —
+    /// and it has to be a dedup rather than a second write, because two writes to one path is what
+    /// `artifact_store`'s exclusive create refuses outright. `load30-rooted-shared-dependency`
+    /// exercises the same shape end-to-end; this is the seat that owns the rule.
+    #[test]
+    fn a_shared_dependency_reached_twice_is_placed_once() {
+        let selection = book_sourced_at(
+            &Cwd::at("/ops/case"),
+            ". ./alpha.oracle.sh\n. ./beta.oracle.sh\nwombat sync a.conf\n",
+            vec![
+                "/ops/case/common.oracle.sh".to_owned(),
+                "/ops/case/alpha.oracle.sh".to_owned(),
+                "/ops/case/beta.oracle.sh".to_owned(),
+            ],
+            vec![
+                "# dorc-lang/v0.2\nsm_common_query() { :; }\n".to_owned(),
+                "# dorc-lang/v0.2\n. ./common.oracle.sh\nalpha__is_converged() { :; }\n".to_owned(),
+                "# dorc-lang/v0.2\n. ./common.oracle.sh\nbeta__is_converged() { :; }\n".to_owned(),
+            ],
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("every dependency is inside the load cwd");
+        assert_eq!(selection.form(), ArtifactForm::Multipart);
+        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            [
+                "plan.sh",
+                "alpha.oracle.sh",
+                "beta.oracle.sh",
+                "common.oracle.sh"
+            ],
+            "the shared dependency appears once, and every transitively reached file is placed"
+        );
+    }
+
     /// A dependency the book reached OUTSIDE the load working directory has no relative spelling
     /// under an artifact root, so the form is unavailable rather than fudged — the half of
     /// `need-controller-paths-never-cross-hosts` that a cwd-relative rule must not lose.
