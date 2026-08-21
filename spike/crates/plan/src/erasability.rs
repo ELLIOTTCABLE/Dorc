@@ -105,12 +105,38 @@ pub fn canonical_decision(
     interner: &dorc_core::Interner,
     diags: &[Diag],
 ) -> String {
+    // EXHAUSTIVE destructure, exactly as [`canon_step`] takes a `Step` apart: a new `Plan` field
+    // stops this compiling until somebody classifies it identity-or-exempt. Field-by-field reads
+    // caught a new field only when it happened to move rendered bytes
+    // (`30Nd:fnd-the-canon-does-not-destructure-plan`).
+    let Plan {
+        steps,
+        regions,
+        // EXEMPT (Exempt::Timing): the survival report is 24F §3a INSTRUMENTATION — fire-rates and
+        // demotion counts, never a decision. Its own doc already says digest-exempt.
+        survival_report: _,
+        // EXEMPT as DERIVED, not as unimportant: `DecidedRender` is a pure function of `steps`,
+        // `regions`, the defensive-emission input and `(src, ast)`, and every one of those reaches
+        // this canon — the first two structurally below, the last three through the byte-exact
+        // `render.apply` at (3), which is where a defensive munge or a refused edit shows up.
+        render: _,
+    } = plan;
     let mut out = String::new();
     // (1) the per-site dispositions (the structured decision).
     out.push_str("== plan ==\n");
-    for step in &plan.steps {
+    for step in steps {
         out.push_str(&canon_step(step));
         out.push('\n');
+    }
+    // (1a) the SHARED region decisions (`plans/30L`). Emitted only when the book has any, so a
+    // book with no eligible calls keeps the canon it had before regions existed
+    // (`30L:pin-empty-function-world-parity`).
+    if !regions.is_empty() {
+        out.push_str("== regions ==\n");
+        for region in regions {
+            out.push_str(&canon_region(region));
+            out.push('\n');
+        }
     }
     // (2) the probe plan (site-keyed checks + unresolvable list).
     out.push_str("== probe ==\n");
@@ -166,6 +192,28 @@ fn canon_step(step: &Step) -> String {
     format!(
         "leaf={} ast={} sh={sh:?} {}",
         leaf.0,
+        ast.0,
+        canon_disposition(disposition)
+    )
+}
+
+/// Canonicalize one [`RegionStep`] — EXHAUSTIVE destructure, same rule as [`canon_step`].
+///
+/// `region`/`ast`/`sh` are edit identity; `disposition` is the one shared decision. `routes` is the
+/// contributing-invocation ACCOUNT: attribution the why plane reads, and already narrower than the
+/// census by construction (`SpineRegionDecision::routes`), so it is exempt on the same footing as a
+/// license's witness — it names WHO licensed the edit, never WHAT the edit is.
+fn canon_region(region: &crate::RegionStep) -> String {
+    let crate::RegionStep {
+        region,
+        ast,
+        sh,
+        disposition,
+        routes: _, // EXEMPT: Exempt::ReceiptId — contributing-route attribution, output-only.
+    } = region;
+    format!(
+        "region={:?} ast={} sh={sh:?} {}",
+        region.span(),
         ast.0,
         canon_disposition(disposition)
     )

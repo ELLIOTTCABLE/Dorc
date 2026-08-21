@@ -244,7 +244,7 @@ fn vouch_all(
 /// (`Omit` is the fold's dead-branch disposition; `is_replaced` is specifically about
 /// the convergence-elision `Replace`, so it does NOT count `Omit`.)
 fn is_replaced(plan: &Plan, needle: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_, _)))
 }
@@ -461,7 +461,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
         "undeclared-rc `&&`/`||` left operand must NOT be replaced (kFAIL-perform floor)"
     );
     assert!(
-        plan.steps.iter().any(|s| s.sh.contains("install -y nginx")
+        plan.steps().iter().any(|s| s.sh.contains("install -y nginx")
             && matches!(s.disposition, Disposition::Run)),
         "its disposition is Run — a converged establish whose status is branch-consumed \
          but whose rc is undeclared runs (never a fabricated-rc-0 elision)"
@@ -494,7 +494,7 @@ fn door3_oror_true_converged_mutator_is_replaced() {
         "a converged `cmd || true` left mints despite ⊤ rc (door-3: StatusInvariant never blocks)"
     );
     assert!(
-        plan.steps.iter().any(|s| s.sh.contains("install -y nginx")
+        plan.steps().iter().any(|s| s.sh.contains("install -y nginx")
             && matches!(&s.disposition, Disposition::Replace(_, stand_in) if stand_in.sh() == "true")),
         "the door-3 stand-in is `true` (the idiom, not a predicted rc-0)"
     );
@@ -907,7 +907,7 @@ fn plan_query_and_ast(
 /// Is the leaf containing `needle` **omitted** (fold-dead branch)? Distinct from
 /// `is_replaced` (a value-preserving substitution of a live leaf).
 fn is_omitted(plan: &Plan, needle: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Omit { .. }))
 }
@@ -929,7 +929,7 @@ fn query_guard_holds_omits_install_and_substitutes_guard() {
     assert!(
         is_omitted(&plan, "apt-get install"),
         "guard rc 0 ⇒ the || install is fold-dead (Omit): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -963,7 +963,7 @@ fn query_guard_absent_keeps_install_live_exit_revival() {
     );
     // The guard substitutes to `false` (rc 1) — the Exit(n)/from_rc non-zero path.
     let guard = plan
-        .steps
+        .steps()
         .iter()
         .find(|s| s.sh.contains("command -v nginx"))
         .expect("the guard is a leaf");
@@ -1039,7 +1039,7 @@ fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
     assert!(
         is_omitted(&plan, "apt-get install"),
         "the disposition still folds the dead body (the fix is render-side only): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1399,14 +1399,14 @@ fn render_multiline_leaf_on_scaffolding_line_substitutes_cleanly() {
 /// Is the CALL leaf whose verbatim text is exactly `call` REPLACED? (The call's own span is
 /// the render unit — its `Step.sh` is the call text, e.g. `w nginx`.)
 fn call_replaced(plan: &Plan, call: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.trim() == call && matches!(s.disposition, Disposition::Replace(_, _)))
 }
 
 /// Is the CALL leaf whose verbatim text is exactly `call` a RUN step?
 fn call_runs(plan: &Plan, call: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.trim() == call && matches!(s.disposition, Disposition::Run))
 }

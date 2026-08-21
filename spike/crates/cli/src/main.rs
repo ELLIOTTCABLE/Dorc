@@ -1949,7 +1949,7 @@ fn run(
         &env,
         &verdict_lane,
         &plan
-            .steps
+            .steps()
             .iter()
             .map(|step| (step.ast, step.leaf))
             .collect::<Vec<_>>(),
@@ -3317,7 +3317,7 @@ fn emit_debug_argv(
         .filter(|(_, n)| n.kind == dorc_analysis::cfg::CfgNodeKind::Command)
         .map(|(id, n)| (n.ast, id))
         .collect();
-    for step in &plan.steps {
+    for step in plan.steps() {
         let Some(&node) = node_of_ast.get(&step.ast) else {
             continue;
         };
@@ -3341,11 +3341,11 @@ fn emit_debug_argv(
     // legitimate apply-only lines (the guard's live check runs at apply, absent from the bare
     // book) — never an unrelated one (cf-5). Deterministic (`BTreeSet`, `inv-determinism`).
     let region_verb: BTreeMap<dorc_core::AstId, &str> = plan
-        .regions
+        .regions()
         .iter()
         .map(|region| (region.ast, disposition_tag(&region.disposition)))
         .collect();
-    for step in &plan.steps {
+    for step in plan.steps() {
         let Some(&node) = node_of_ast.get(&step.ast) else {
             continue;
         };
@@ -3376,10 +3376,10 @@ fn emit_debug_argv(
     }
     let mut guard_cmds: BTreeSet<&str> = BTreeSet::new();
     for disposition in plan
-        .steps
+        .steps()
         .iter()
         .map(|step| &step.disposition)
-        .chain(plan.regions.iter().map(|region| &region.disposition))
+        .chain(plan.regions().iter().map(|region| &region.disposition))
     {
         if let dorc_plan::Disposition::Guard(license) = disposition {
             for c in license.insert().check_cmds() {
@@ -3411,7 +3411,7 @@ fn emit_debug_argv(
 /// tidy-gate reachability unchanged). The `unresolvable` [`LeafId`]s share the apply plan's
 /// span-sorted site space (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`,
 /// whose span resolves to the book source. A site with no matching step is ASSERTED-UNREACHABLE
-/// (human ruling 22-q2: `unresolvable ⊆ plan.steps` by construction) then skipped — `debug_assert`
+/// (human ruling 22-q2: `unresolvable ⊆ plan.steps()` by construction) then skipped — `debug_assert`
 /// loud in debug/DST, safe-degrade (skip) in release (never-vouch: the reachability claim is ours).
 fn unresolvable_diagnostics(
     probe: &dorc_plan::ProbePlan,
@@ -3421,7 +3421,7 @@ fn unresolvable_diagnostics(
 ) -> Vec<Diag> {
     use dorc_aid::diag::{SiteId, SiteUnresolvable};
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
-        plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
+        plan.steps().iter().map(|s| (s.leaf, s.ast)).collect();
 
     // The REAL (worth-disclosing) unresolvable sites, in the probe's site order — each with the
     // tracer's give-up reason where one exists (`26G:fnd-existence-gate-darkens-oracle`: naming the
@@ -3431,7 +3431,7 @@ fn unresolvable_diagnostics(
         let Some(&id) = ast_of_leaf.get(&leaf) else {
             debug_assert!(
                 false,
-                "unresolvable site has no plan step -- unresolvable is a subset of plan.steps by \
+                "unresolvable site has no plan step -- unresolvable is a subset of plan.steps() by \
                  construction (f-7); a hit means the probe/plan site spaces diverged"
             );
             continue;
@@ -3558,7 +3558,7 @@ fn emit_survival_attribution(
     oracle_paths: &[String],
     oracle_srcs: &[String],
 ) {
-    for step in &plan.steps {
+    for step in plan.steps() {
         let dorc_plan::Disposition::Replace(license, _) = &step.disposition else {
             continue;
         };
@@ -3674,7 +3674,7 @@ fn emit_guard_attribution(
     // mutator runs verbatim. rul-attention-honesty: never claim a skip that did not happen; disclose
     // the refusal (gate-7 `refus`) instead of the licensing line.
     let refused = plan.guard_refused_asts();
-    for step in &plan.steps {
+    for step in plan.steps() {
         let dorc_plan::Disposition::Guard(license) = &step.disposition else {
             continue;
         };
@@ -3710,7 +3710,7 @@ fn emit_guard_attribution(
 /// `carried` is keyed by the site's `AstId` (built at the carry decision); this re-keys to the plan's
 /// per-site number. Empty when no site carried. Deterministic (plan step order).
 fn emit_carry_attribution(plan: &dorc_plan::Plan, carried: &BTreeMap<dorc_core::AstId, String>) {
-    for step in &plan.steps {
+    for step in plan.steps() {
         if let Some(text) = carried.get(&step.ast) {
             eprintln!("why: site {} {text}", step.leaf.0);
         }

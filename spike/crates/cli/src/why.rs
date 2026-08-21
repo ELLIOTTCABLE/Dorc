@@ -379,7 +379,7 @@ pub fn collect_wall_steps(
         .iter()
         .map(|(node, class)| (cfg.node(*node).ast, (*node, class)))
         .collect();
-    plan.steps
+    plan.steps()
         .iter()
         .map(|step| {
             let span = ast.node(step.ast).span;
@@ -1675,7 +1675,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
     let mut sites: Vec<WhySite> = Vec::new();
     // A chain names the walls it crossed by `N|command`, never by internal site id (`28E` §8).
     let walls: BTreeMap<dorc_plan::LeafId, String> = plan
-        .steps
+        .steps()
         .iter()
         .map(|step| {
             let span = ast.node(step.ast).span;
@@ -1687,7 +1687,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         })
         .collect();
     let lines_by_leaf: BTreeMap<dorc_plan::LeafId, usize> = plan
-        .steps
+        .steps()
         .iter()
         .map(|step| {
             let lo = ast.node(step.ast).span.lo.0 as usize;
@@ -1695,7 +1695,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         })
         .collect();
     let mut chains: Vec<(usize, ChainRender)> = Vec::new();
-    for step in &plan.steps {
+    for step in plan.steps() {
         let span = ast.node(step.ast).span;
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_aid::diag::line_col(book_src, lo).0;
@@ -1897,7 +1897,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         });
     }
     // `30L` §9, DEFINITION-ward: an addressable decision of its own, never a note on a leaf.
-    for region in &plan.regions {
+    for region in plan.regions() {
         let span = ast.node(region.ast).span;
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_aid::diag::line_col(book_src, lo).0;
@@ -1952,7 +1952,7 @@ fn region_lines_executed_by(
     book_src: &str,
     call: dorc_core::AstId,
 ) -> Vec<usize> {
-    plan.regions
+    plan.regions()
         .iter()
         .filter(|region| region.routes.shown().iter().any(|route| route.ast == call))
         .map(|region| dorc_aid::diag::line_col(book_src, ast.node(region.ast).span.lo.0 as usize).0)

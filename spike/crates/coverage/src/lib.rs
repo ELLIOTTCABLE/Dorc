@@ -668,10 +668,13 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     );
 
     // classify yields CfgNodeId→SkipClass; the plan keys by AstId. Bridge via AstId.
-    let disposition_of: BTreeMap<dorc_core::AstId, &Disposition> =
-        plan.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+    let disposition_of: BTreeMap<dorc_core::AstId, &Disposition> = plan
+        .steps()
+        .iter()
+        .map(|s| (s.ast, &s.disposition))
+        .collect();
     let leaf_of: BTreeMap<dorc_core::AstId, LeafId> =
-        plan.steps.iter().map(|s| (s.ast, s.leaf)).collect();
+        plan.steps().iter().map(|s| (s.ast, s.leaf)).collect();
 
     // fix-1 (the dashboard heredoc lie, `21B` hunt-1): a `Replace` disposition the leaf-exact
     // render REFUSES (a heredoc-bearing leaf) runs verbatim despite the disposition. Consult the
@@ -726,7 +729,7 @@ fn render_refused_leaves(
 ) -> (std::collections::BTreeSet<LeafId>, u32) {
     // span (lo,hi) → leaf, from the steps (the render-refusal diagnostics carry the same span).
     let leaf_by_span: BTreeMap<(u32, u32), LeafId> = plan
-        .steps
+        .steps()
         .iter()
         .filter_map(|s| {
             let span = ast.node(s.ast).span;

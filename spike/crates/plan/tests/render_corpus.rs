@@ -610,21 +610,21 @@ fn render_scoped(
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a stand-in)?
 fn is_replaced(plan: &Plan, needle: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_, _)))
 }
 
 /// Is the leaf containing `needle` **omitted** (a fold-dead branch — distinct from a `Replace`)?
 fn is_omitted(plan: &Plan, needle: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Omit { .. }))
 }
 
 /// Is the leaf containing `needle` **guarded** (the oracle's verdict re-decides live at apply)?
 fn is_guarded(plan: &Plan, needle: &str) -> bool {
-    plan.steps
+    plan.steps()
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Guard(_)))
 }
@@ -677,7 +677,7 @@ fn must_cover_door3_oror_true_renders_runnable() {
     assert!(
         is_replaced(&plan, "install -y nginx"),
         "the converged `cmd || true` left mints a Replace (door-3 StatusInvariant): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -829,7 +829,7 @@ fn twin_loop_members_all_converged_elides() {
     assert!(
         is_replaced(&plan, "install -y \"$pkg\""),
         "both members converged ⇒ the in-loop install elides: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -858,7 +858,7 @@ fn twin_loop_members_partial_runs() {
     assert!(
         !is_replaced(&plan, "install -y \"$pkg\""),
         "a partially-converged loop keeps the install (all-or-nothing floor): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -928,7 +928,7 @@ fn twin_same_cell_kill_forces_install() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "the same-cell kill (purge) walls the converged install's elision ⇒ it runs: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1052,7 +1052,7 @@ fn twin_render_if_guard_toprc_runs() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "the install-as-if-guard runs (⊤ rc, StatusRelaxable): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1101,7 +1101,7 @@ fn twin_door3_or_handler_blocks() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "a `|| handler-group` left is not door-3 ⇒ the converged mutator runs: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1125,7 +1125,7 @@ fn twin_exec_opaque_neighbour_poisons() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "the un-oracled `ufw` walls the converged install ⇒ it runs (poison, not divergence): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1170,7 +1170,7 @@ fn twin_exec_detached_fn_splice() {
         is_replaced(&cplan, "prov"),
         "converged spliced body ⇒ the CALL elides (all-or-nothing license): {:?}",
         cplan
-            .steps
+            .steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1223,7 +1223,7 @@ fn twin_inline21_wrapper_diverged_runs() {
     assert!(
         !is_replaced(&plan, "apt_install curl"),
         "the diverged curl call runs (independent per-call license): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1250,7 +1250,7 @@ fn twin_inline21_errexit_call_composes() {
     assert!(
         !is_replaced(&plan, "apt_install nginx"),
         "the bare call runs (errexit-consumed ⊤ body status): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1278,7 +1278,7 @@ fn twin_inline21_in_loop_call_floored() {
     assert!(
         !is_replaced(&plan, "w \"$pkg\""),
         "the in-loop call is floored ⇒ runs even converged: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1313,7 +1313,7 @@ fn twin_two_oracles() {
     assert!(
         is_replaced(&plan, "systemctl enable nginx"),
         "the converged service enable elides: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1373,7 +1373,7 @@ fn twin_exec_enabled_not_active_host() {
     assert!(
         !is_replaced(&plan, "systemctl start nginx"),
         "start RUNS (@active diverged — distinct from @enabled): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1408,7 +1408,7 @@ fn twin_seam_two_providers_one_kind() {
     assert!(
         is_replaced(&plan, "yum install -y httpd"),
         "the yum install (same kind, other provider) elides: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1429,7 +1429,7 @@ fn twin_exec_singleton_update() {
     assert!(
         is_replaced(&plan, "apt-get update"),
         "the converged Singleton index-refresh elides: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1584,7 +1584,7 @@ fn twin_door1_door3_inner_elides() {
     assert!(
         is_replaced(&plan, "install -y curl"),
         "the converged inner curl elides via door-3 `|| true`: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1612,7 +1612,7 @@ fn twin_door1_door3_inner_runs() {
     assert!(
         !is_replaced(&plan, "install -y curl"),
         "the diverged inner curl runs (door-3 clears Status, Effect gates): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1641,7 +1641,7 @@ fn twin_render21_if_guard_query_elides() {
     assert!(
         is_omitted(&plan, "install -y nginx"),
         "the then-body install is fold-dead (Omit): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1670,7 +1670,7 @@ fn twin_render21_while_guard_floored() {
     assert!(
         !is_replaced(&plan, "dpkg -s nginx"),
         "the in-loop guard is floored (not folded/substituted): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1703,7 +1703,7 @@ fn twin_guard23_why_attribution() {
     assert!(
         is_guarded(&plan, "install -y nginx"),
         "the walled-but-vouched converged install GUARDS (not elide/run): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -1919,7 +1919,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
     let (_bare_render, bare) =
         render_guard_for("hork wombat\napt-get install -y nginx\n", &["nginx"]);
     let license = bare
-        .steps
+        .steps()
         .iter()
         .find_map(|step| match &step.disposition {
             Disposition::Guard(license) => Some(license.clone()),
@@ -1928,7 +1928,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         .expect("the redirect-free twin mints a REAL guard license");
     // Re-DECIDED, not poked: the render-time answers are a function of the dispositions
     // (`30E` §3), so re-homing the license means re-deciding the plan it belongs to.
-    let mut steps = planned.steps.clone();
+    let mut steps = planned.steps().to_vec();
     let redirected = steps
         .iter_mut()
         .find(|step| step.sh.contains(">>log"))
@@ -2024,7 +2024,7 @@ fn twin_guard23_explicit_rc_consumers_run() {
         assert!(
             !is_guarded(&plan, pkg) && !is_replaced(&plan, pkg),
             "the rc-consumed `{pkg}` runs (StatusRelaxable + ⊤ blocks) — no guard, no elide: {:?}",
-            plan.steps
+            plan.steps()
                 .iter()
                 .map(|s| (&s.sh, &s.disposition))
                 .collect::<Vec<_>>()
@@ -2057,7 +2057,7 @@ fn twin_guard23_canttell_plan_runs() {
     assert!(
         !is_guarded(&plan, "install -y curl"),
         "a cant-tell (Unknown) verdict never mints a guard: {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -2093,7 +2093,7 @@ fn twin_guard23_vouch_gates_elision() {
     assert!(
         !is_replaced(&plan, "systemctl enable nginx"),
         "the UNVOUCHED converged service enable runs (vouch gates the elision): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
@@ -2131,7 +2131,7 @@ fn twin_guard23_cross_oracle_vouch_scoped() {
     assert!(
         !is_guarded(&plan, "systemctl enable foo"),
         "apt's vouch does NOT guard systemctl's past-wall site (vouch-scope): {:?}",
-        plan.steps
+        plan.steps()
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()

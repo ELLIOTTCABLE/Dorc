@@ -1246,12 +1246,12 @@ mod tests {
     fn guarded_spine(fn_name: &str) -> dorc_plan::Spine {
         let plan = guarded_plan(fn_name);
         let mut spine = dorc_plan::Spine::new();
-        for step in plan.steps {
+        for step in plan.steps() {
             spine.set_disposition(dorc_core::spine::SpineDisposition {
                 site: dorc_core::SiteId::leaf(step.leaf),
                 ast: step.ast,
-                sh: step.sh,
-                decision: step.disposition,
+                sh: step.sh.clone(),
+                decision: step.disposition.clone(),
                 grade: None,
             });
         }
@@ -1348,7 +1348,7 @@ mod tests {
         );
         assert!(
             matches!(
-                projected(&mut sole, &sole_spent).steps[0].disposition,
+                projected(&mut sole, &sole_spent).steps()[0].disposition,
                 Disposition::Guard(_)
             ),
             "a census-unique family keeps its runtime net"
@@ -1362,7 +1362,7 @@ mod tests {
         );
         assert!(
             matches!(
-                projected(&mut plural, &plural_spent).steps[0].disposition,
+                projected(&mut plural, &plural_spent).steps()[0].disposition,
                 Disposition::Run
             ),
             "a plural family's guard could run somebody else's judgment — it demotes"
@@ -1418,7 +1418,7 @@ mod tests {
         assert!(narrative.is_empty());
         assert!(
             matches!(
-                projected(&mut plan, &spent).steps[0].disposition,
+                projected(&mut plan, &spent).steps()[0].disposition,
                 Disposition::Guard(_)
             ),
             "the plural census demotes NOTHING without a trip — the trip is the whole trigger"

@@ -364,7 +364,7 @@ apt_get__predict() {
             &mut dorc_core::ProvArena::new(),
         );
         assert!(
-            plan.steps
+            plan.steps()
                 .iter()
                 .any(|s| matches!(s.disposition, Disposition::Replace(..))),
             "the fixture must really elide — otherwise the eviction below proves nothing"
@@ -464,7 +464,7 @@ apt_get__predict() {
     fn a_real_trip_evicts_a_shared_region_elision_too() {
         let elide = a_real_elide_plan();
         let Some(Disposition::Replace(license, stand_in)) =
-            elide.steps.first().map(|step| step.disposition.clone())
+            elide.steps().first().map(|step| step.disposition.clone())
         else {
             panic!("the fixture must really carry a licensed replacement");
         };
@@ -494,7 +494,7 @@ apt_get__predict() {
 
         assert!(
             matches!(
-                plan.regions.first().map(|r| &r.disposition),
+                plan.regions().first().map(|r| &r.disposition),
                 Some(Disposition::Run)
             ),
             "a shared replacement demotes to run exactly as a site's does"
@@ -530,16 +530,16 @@ apt_get__predict() {
         let plan = project(&mut spine, &spent);
 
         assert_eq!(
-            plan.steps.len(),
+            plan.steps().len(),
             before,
             "nothing is removed — the plan becomes verbatim-or-guarded, never shorter"
         );
         assert!(
-            plan.steps
+            plan.steps()
                 .iter()
                 .all(|s| matches!(s.disposition, Disposition::Run)),
             "every elide and every omit demotes to run: {:?}",
-            plan.steps
+            plan.steps()
                 .iter()
                 .map(|s| &s.disposition)
                 .collect::<Vec<_>>()
@@ -693,11 +693,11 @@ apt_get__predict() {
         let plan = project(&mut spine, &spent);
 
         assert!(
-            matches!(plan.steps[0].disposition, Disposition::Guard(_)),
+            matches!(plan.steps()[0].disposition, Disposition::Guard(_)),
             "the census-unique family keeps its guard"
         );
         assert!(
-            matches!(plan.steps[1].disposition, Disposition::Run),
+            matches!(plan.steps()[1].disposition, Disposition::Run),
             "the plural family loses its guard: its body identity is analysis-chosen"
         );
         assert_eq!(cleanup.demoted(), 1);
@@ -713,7 +713,7 @@ apt_get__predict() {
         let (_, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| false);
         let plan = project(&mut spine, &spent);
 
-        assert!(matches!(plan.steps[0].disposition, Disposition::Run));
+        assert!(matches!(plan.steps()[0].disposition, Disposition::Run));
     }
 
     /// THE STRUCTURAL DISSOLUTION (`30M:rec-dissolve-trip-must-remember-structurally`) — the
@@ -735,7 +735,7 @@ apt_get__predict() {
         let plan = projected(&mut spine, trip);
 
         assert!(
-            plan.steps
+            plan.steps()
                 .iter()
                 .all(|step| matches!(step.disposition, Disposition::Run)),
             "a genuine certifier disagreement must reach the terminal demotion before projection"

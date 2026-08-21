@@ -262,15 +262,15 @@ pub(crate) fn evolve(
     ground: &GroundTruth,
 ) -> (BTreeSet<FactKey>, BTreeSet<FactKey>) {
     assert_eq!(
-        plan.steps.len(),
+        plan.steps().len(),
         ground.site_effects.len(),
         "sweep net drift: {} plan steps vs {} generated commands -- the 1:1 book-order zip broke",
-        plan.steps.len(),
+        plan.steps().len(),
         ground.site_effects.len(),
     );
     let mut bare = s0.clone();
     let mut applied = s0.clone();
-    for (step, effect) in plan.steps.iter().zip(&ground.site_effects) {
+    for (step, effect) in plan.steps().iter().zip(&ground.site_effects) {
         let Some(effect) = effect else { continue };
         bare.apply_delta(effect.delta());
         let executes = match &step.disposition {

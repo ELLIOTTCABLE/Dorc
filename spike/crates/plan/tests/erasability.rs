@@ -266,7 +266,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
     // (the anti-masking floor: a fixture set that NEVER elides cannot test receipt-inertness of
     // a Replace decision — exactly the bug an effect-less oracle would silently introduce).
     let replaces = plan
-        .steps
+        .steps()
         .iter()
         .filter(|s| matches!(s.disposition, Disposition::Replace(_, _)))
         .count();
@@ -274,7 +274,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
     // gate's witness-exemption test is VACUOUS if no witness is ever populated, so the canary
     // asserts ≥1 across the fixtures (catches a regression that stops populating it).
     let witnessed = plan
-        .steps
+        .steps()
         .iter()
         .filter(|s| match &s.disposition {
             Disposition::Replace(license, _) => !license.derivation().witness.is_empty(),

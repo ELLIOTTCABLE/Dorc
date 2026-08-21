@@ -1129,7 +1129,7 @@ apt_get__predict() {
             );
 
             let is_skipped = |needle: &str| {
-                plan.steps
+                plan.steps()
                     .iter()
                     .find(|s| s.sh.contains(needle))
                     .is_some_and(|s| matches!(s.disposition, dorc_plan::Disposition::Replace(_, _)))
@@ -1147,7 +1147,7 @@ apt_get__predict() {
                  RUNS and walls the curl elision — silence=wall, 23Ib-fd10)"
             );
             let reload_runs = plan
-                .steps
+                .steps()
                 .iter()
                 .find(|s| s.sh.contains("systemctl reload"))
                 .is_some_and(|s| matches!(s.disposition, dorc_plan::Disposition::Run));
@@ -1267,7 +1267,7 @@ apt_get__predict() {
 
             let elided = |needle: &str| {
                 apply
-                    .steps
+                    .steps()
                     .iter()
                     .find(|s| s.sh.contains(needle))
                     .is_some_and(|s| matches!(s.disposition, Disposition::Replace(_, _)))
@@ -1285,7 +1285,7 @@ apt_get__predict() {
                  RUNS and walls the curl elision — silence=wall, 23Ib-fd10)"
             );
             let reload_runs = apply
-                .steps
+                .steps()
                 .iter()
                 .find(|s| s.sh.contains("systemctl reload"))
                 .is_some_and(|s| matches!(s.disposition, Disposition::Run));
@@ -1377,7 +1377,7 @@ apt_get__predict() {
             &mut dorc_core::ProvArena::new(),
         );
         assert!(
-            matches!(apply.steps[0].disposition, Disposition::Run),
+            matches!(apply.steps()[0].disposition, Disposition::Run),
             "un-probeable fact must run even though the host holds it"
         );
         assert!(
@@ -1619,7 +1619,7 @@ grep__predict() {
                 // (2b) SAFE: the governing grep stage RUNS (never elides) under the sink verdict.
                 let plan = build();
                 let gov_step = plan
-                    .steps
+                    .steps()
                     .iter()
                     .find(|s| s.sh.contains("grep -q"))
                     .expect("the governing grep stage renders");

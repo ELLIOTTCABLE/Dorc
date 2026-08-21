@@ -246,7 +246,7 @@ fn coord_label(coord: EntityCoord, i: &Interner) -> String {
 /// `Replace` whose derivation carries a `SurvivalWitness` — the site crossed ≥1 running wall.
 fn survivals_of(plan: &Plan, i: &Interner) -> Vec<Survival> {
     let mut out = Vec::new();
-    for step in &plan.steps {
+    for step in plan.steps() {
         let Disposition::Replace(license, _) = &step.disposition else {
             continue;
         };
@@ -296,8 +296,8 @@ fn reach_poisonings_of(plan: &Plan, i: &Interner) -> Vec<(u32, String)> {
 /// `Replace`) the crossed walls' leaves + footprints. Any nondeterminism in the pure kernel (an
 /// observable `HashMap` iteration, a non-`BTree` order leak — `inv-determinism`) perturbs this.
 fn plan_fingerprint(plan: &Plan, i: &Interner) -> String {
-    let mut lines = Vec::with_capacity(plan.steps.len());
-    for step in &plan.steps {
+    let mut lines = Vec::with_capacity(plan.steps().len());
+    for step in plan.steps() {
         let disp = match &step.disposition {
             Disposition::Run => "run".to_owned(),
             Disposition::Omit { .. } => "omit".to_owned(),

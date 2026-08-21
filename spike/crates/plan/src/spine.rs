@@ -234,7 +234,7 @@ pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
     use dorc_core::spine::{RefusalCause, RenderDecision, SpineRenderDecision};
 
     let pinned = plan.pinned_definitions();
-    for step in &plan.steps {
+    for step in plan.steps() {
         if let Some(invoked) = pinned.invoked(step.ast) {
             spine.push_render_decision(SpineRenderDecision {
                 site: Some(dorc_core::SiteId::leaf(step.leaf)),

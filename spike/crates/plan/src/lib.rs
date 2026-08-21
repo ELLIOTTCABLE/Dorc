@@ -2431,11 +2431,16 @@ fn refusal_cause(ast: &Ast, node: AstId, is_guard: bool) -> Option<RenderRefusal
 
 #[derive(Debug, Clone)]
 pub struct Plan {
-    pub steps: Vec<Step>,
+    /// PRIVATE behind [`steps`](Plan::steps), with [`regions`](Plan::regions), because a decided
+    /// plan carries a render plane decided AGAINST these values: a caller that mutated either would
+    /// leave the plane describing a plan that no longer exists
+    /// (`30Nd:fnd-plan-steps-stay-publicly-mutable`). Re-decide instead — `Plan::decided` is cheap
+    /// and is the only thing that keeps the two halves in step.
+    steps: Vec<Step>,
     /// The authored regions inside function bodies this plan edits (`plans/30L`). EMPTY for a book
     /// with no eligible calls, which is what keeps such a book byte-identical
     /// (`30L:pin-empty-function-world-parity`).
-    pub regions: Vec<RegionStep>,
+    regions: Vec<RegionStep>,
     /// The survival-tier instrumentation (24F §3a). Empty on the flag-off / no-resolver path.
     pub survival_report: SurvivalReport,
     /// The render-time decisions, taken at [`Plan::decided`] and read — never re-taken — by every
@@ -4968,6 +4973,18 @@ impl Plan {
     pub fn render_plane(&self) -> &DecidedRender {
         &self.render
     }
+
+    /// The per-leaf dispositions, in book order.
+    #[must_use]
+    pub fn steps(&self) -> &[Step] {
+        &self.steps
+    }
+
+    /// The shared authored-region decisions, in census order (`plans/30L`).
+    #[must_use]
+    pub fn regions(&self) -> &[RegionStep] {
+        &self.regions
+    }
 }
 
 /// Decide **which body each guard invokes, and under what name** (`28K` §4
@@ -6615,7 +6632,7 @@ apt_get__is_converged() { return 0; }
         );
 
         let defensive = Plan::decided(
-            plan.steps.clone(),
+            plan.steps().to_vec(),
             Vec::new(),
             SurvivalReport::default(),
             true,
@@ -8025,9 +8042,9 @@ apt_get__is_converged() {
     }
 
     fn find<'a>(plan: &'a Plan, needle: &str) -> &'a Step {
-        match plan.steps.iter().find(|s| s.sh.contains(needle)) {
+        match plan.steps().iter().find(|s| s.sh.contains(needle)) {
             Some(s) => s,
-            None => panic!("no leaf containing {needle:?} in {:?}", plan.steps),
+            None => panic!("no leaf containing {needle:?} in {:?}", plan.steps()),
         }
     }
 
@@ -9057,7 +9074,7 @@ apt_get__is_converged() {
                 Disposition::Guard(_) => "guard",
             };
             let disp = |p: &Plan| -> Vec<&'static str> {
-                p.steps.iter().map(|s| tag(&s.disposition)).collect()
+                p.steps().iter().map(|s| tag(&s.disposition)).collect()
             };
             assert_eq!(
                 disp(&none),
@@ -9690,17 +9707,22 @@ apt_get__is_converged() {
             Verdict::Diverged,
         );
         assert_eq!(
-            plan.steps.len(),
+            plan.steps().len(),
             2,
             "only the two top-level commands are leaves: {:?}",
-            plan.steps.iter().map(|s| s.sh.clone()).collect::<Vec<_>>()
+            plan.steps()
+                .iter()
+                .map(|s| s.sh.clone())
+                .collect::<Vec<_>>()
         );
         assert!(
-            plan.steps.iter().any(|s| s.sh.starts_with("echo")),
+            plan.steps().iter().any(|s| s.sh.starts_with("echo")),
             "echo is a leaf"
         );
         assert!(
-            plan.steps.iter().any(|s| s.sh.contains("apt-get install")),
+            plan.steps()
+                .iter()
+                .any(|s| s.sh.contains("apt-get install")),
             "install is a leaf"
         );
     }
