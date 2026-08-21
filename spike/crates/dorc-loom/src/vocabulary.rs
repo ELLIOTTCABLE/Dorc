@@ -33,7 +33,7 @@ pub const DEFINING_KEYS_NOTE: &str = "a case declares exactly ONE of `code:` or 
 ///
 /// `todo` is the one deliberate exception and is why it is safe unread: it asserts nothing about
 /// the case, being an author's note about the case's own future.
-pub const FRONTMATTER_KEYS: [FrontmatterKey; 22] = [
+pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
     FrontmatterKey {
         name: "code",
         read_by: "the diagnostic code this case defines; keys its catalog row",
@@ -100,6 +100,12 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 22] = [
         name: "tolerate",
         read_by: "e2e: a named nondeterminism class, whose normalizer is applied to the RUN LOG at \
                   bless and at check. Never to rendered output",
+        run_lane: true,
+    },
+    FrontmatterKey {
+        name: "artifact-set",
+        read_by: "e2e: `published` gives the round-trip drive its own artifact directory and runs \
+                  the exec gates from the published generation. Any other value is refused",
         run_lane: true,
     },
     FrontmatterKey {

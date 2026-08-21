@@ -826,6 +826,35 @@ fn published_generation(root: &Path) -> Result<PathBuf, String> {
     }
 }
 
+/// Every LITERAL relative `.`/`source` operand in a published plan that the generation does not
+/// carry — the assertion that makes an artifact set observe its own tree
+/// (`an-artifact-set-runs-from-its-own-generation`, widened past "exactly one generation exists").
+///
+/// LITERAL operands only, and the cut is the honest one: an operand the plan builds from a variable
+/// is resolved by the target's own shell against values the artifact sets, which this seat holds no
+/// model of. What it does cover is exactly the class an import REWRITE produces — a controller-decided
+/// relative path naming a file the same run published — so a rewrite pointing at nothing, or a bundle
+/// the publication dropped, reddens here instead of passing on stdout bytes alone
+/// (`30Nf:fnd-multipart-never-placed-anything-in-production` is the burn this widens against).
+fn unresolved_generated_imports(generation: &Path, plan: &str) -> Vec<String> {
+    plan.lines()
+        .filter_map(|line| {
+            let rest = line
+                .trim_start()
+                .strip_prefix(". ")
+                .or_else(|| line.trim_start().strip_prefix("source "))?;
+            let operand = rest.split_whitespace().next()?;
+            let operand = operand
+                .strip_prefix('\'')
+                .and_then(|inner| inner.strip_suffix('\''))
+                .unwrap_or(operand);
+            let relative = operand.strip_prefix("./")?;
+            (!relative.contains(['$', '"', '\'', '`']) && !generation.join(relative).is_file())
+                .then(|| operand.to_owned())
+        })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // the tolerated-nondeterminism normalizers
 
@@ -860,6 +889,34 @@ impl Normalizer {
     fn apply(self, log: &str) -> String {
         match self {
             Normalizer::PipeStageOrder => sort_lines(log),
+        }
+    }
+}
+
+/// What a case's `artifact-set:` frontmatter may say — a CLOSED vocabulary, on
+/// [`Normalizer::parse`]'s precedent (`288:prop-normalizer-closed-vocabulary`).
+///
+/// The dir form spells this as a bare `ARTIFACT_SET` presence file, which a `.loom` cannot carry:
+/// a loom's fixture space is txtar sections, and a marker with no content has no section. So the
+/// loom form declares a VALUE, and the value is checked rather than ignored — an unread declaration
+/// is exactly the silence `30Nf:dev-artifact-set-is-dir-form-only` left open, on the very case
+/// minted to demonstrate the capability.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum ArtifactSetDeclaration {
+    /// The run gets its own artifact directory and must publish exactly one generation there.
+    Published,
+}
+
+impl ArtifactSetDeclaration {
+    /// Resolve a declared value, refusing anything outside the vocabulary.
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "published" => Ok(ArtifactSetDeclaration::Published),
+            _ => Err(format!(
+                "unknown `artifact-set: {value}` — the vocabulary is CLOSED; `published` is the \
+                 only value, and it means the run's artifact set is published to a directory of \
+                 its own and the exec gates run from that generation"
+            )),
         }
     }
 }
@@ -1006,6 +1063,11 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
     }
     if let Some(value) = scalar("tolerate") {
         write(&format!("tolerate={value}"), String::new())?;
+    }
+    if let Some(value) = scalar("artifact-set") {
+        match ArtifactSetDeclaration::parse(&value)? {
+            ArtifactSetDeclaration::Published => write("ARTIFACT_SET", String::new())?,
+        }
     }
     if let Some(value) = scalar("probe-results") {
         write(&format!("PROBE_RESULTS={value}"), String::new())?;
@@ -1231,6 +1293,13 @@ fn round_trip_command(dir: &Path) -> String {
     }
     if let Ok(Some(flags)) = marker(dir, "DORC_FLAGS") {
         let _ = write!(command, " {flags}");
+    }
+    // DISCLOSED, not omitted: naming an artifact stream is what decides which FORM the run takes,
+    // so a transcript that hid it would show a command producing different bytes than the one the
+    // gates drive. The value is a shell VARIABLE rather than the scratch path, because the real one
+    // is a per-run temporary and a committed transcript must be a fixpoint.
+    if has_marker(dir, "ARTIFACT_SET") {
+        command.push_str(" --artifact-dir=$ARTIFACT_DIR");
     }
     // `owed-no-flag-defaults-to-stdin`: the records lane no longer takes stdin unless a `-` names
     // it, and the runner always feeds a framed stream -- so the invocation says so, always.
@@ -1663,6 +1732,11 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
             run.failures.push(format!(
                 "FAIL  {name}  [ARTIFACT_SET: the published plan.sh and the apply block on stdout are not the same bytes — the two surfaces must READ one artifact set, never assemble it twice]\n{}",
                 divergence(&apply_art, &planned)
+            ));
+        }
+        for missing in unresolved_generated_imports(generation, &planned) {
+            run.failures.push(format!(
+                "FAIL  {name}  [ARTIFACT_SET: the published plan sources `{missing}`, which the generation does not contain — a generated plan's own imports name files the artifact carries, or the artifact is not one]"
             ));
         }
     }
@@ -2986,6 +3060,27 @@ fn artifact_set_selftest() -> Vec<String> {
     std::fs::create_dir_all(root.join("artifact-0002")).expect("create second generation");
     if published_generation(&root).is_ok() {
         fails.push("as-two (two generations answered as if one drive published)".to_owned());
+    }
+
+    // The loom-form DECLARATION: `published` is the vocabulary, and anything else is a refusal
+    // rather than a marker nobody writes.
+    if ArtifactSetDeclaration::parse("published") != Ok(ArtifactSetDeclaration::Published) {
+        fails.push("as-decl (the one legal declaration did not resolve)".to_owned());
+    }
+    if ArtifactSetDeclaration::parse("yes").is_ok() {
+        fails.push("as-decl-open (a value outside the vocabulary was accepted)".to_owned());
+    }
+
+    // The published tree OBSERVES its own imports, in both directions: a rewritten import naming a
+    // file the generation carries is silent, and one naming nothing is named.
+    let generation = root.join("artifact-0001");
+    std::fs::write(generation.join("here.dorc-bundle.sh"), "true\n").expect("write bundle");
+    let plan = ". './here.dorc-bundle.sh'\n. './gone.dorc-bundle.sh'\n. \"$ROOT/x.sh\"\n";
+    if unresolved_generated_imports(&generation, plan) != vec!["./gone.dorc-bundle.sh".to_owned()] {
+        fails.push(
+            "as-imports (the import check did not name exactly the absent literal operand)"
+                .to_owned(),
+        );
     }
     fails
 }
