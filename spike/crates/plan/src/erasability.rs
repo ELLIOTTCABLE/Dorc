@@ -248,6 +248,7 @@ fn canon_via(via: LicenseVia) -> &'static str {
         LicenseVia::QueryGuard => "QueryGuard",
         LicenseVia::MembersLoop => "MembersLoop",
         LicenseVia::InlineCall => "InlineCall",
+        LicenseVia::SharedRegion => "SharedRegion",
     }
 }
 
@@ -378,6 +379,7 @@ mod tests {
         // hashes to a fixed value (drift-detection baseline). Two calls agree.
         let plan = Plan {
             steps: vec![],
+            regions: Vec::new(),
             survival_report: crate::SurvivalReport::default(),
             defensive_emission: false,
         };

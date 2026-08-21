@@ -38,7 +38,13 @@ use dorc_core::spine::{Grade, SpineSurvival, SurvivalDemote, SurvivalOutcome};
 use dorc_core::{AstId, Channel, FactBacking, FactKey, KindId, LeafId, Observable};
 use dorc_syntax::ast::Ast;
 
+use dorc_core::region::ElisionRegion;
+
 use crate::erase::{DeadBranchProof, RoundId, prove_dead_branches};
+use crate::region::{
+    RegionCensus, RouteAdmission, RouteConclusion, RouteInstance, RoutePopulation,
+    RouteRegionProof, SharedConclusion, SharedGuard, SharedRegionDecision, decide_region,
+};
 use crate::world::{
     EffectiveAct, Freshness, FreshnessSubject, NoExecutionLedger, NoMutationProof, Quiescence,
     ReachingWalls, ReplacementDeathProof, StaleCause, WallPolicy, effective_invalidators,
@@ -106,6 +112,15 @@ pub struct SettleInputs<'a> {
     pub connected: &'a ConnectedPipes,
     /// How this run treats a mutation that will really execute.
     pub policy: WallPolicy<'a>,
+    /// The elision-region census — which authored regions exist and whose route populations are
+    /// closed (`plans/30L` §3).
+    ///
+    /// FROZEN with everything else here, and for the same reason: the population freezes before
+    /// round 1, and settlement may prove more regions non-executing but never discover an
+    /// invocation or change a binding (`30L` §6). An EMPTY census is the honest answer for a driver
+    /// that holds no region information — it decides nothing, so that driver's output is exactly
+    /// what it was before regions existed.
+    pub regions: &'a RegionCensus,
     /// The influence grade every Spine record this settlement writes carries.
     pub minted_at: Grade,
 }
@@ -142,6 +157,25 @@ pub(crate) enum SurvivalAccount {
     Demoted(StaleCause),
 }
 
+/// One AUTHORED REGION's settled answer: the one edit every invocation instance agreed to, the
+/// instances that licensed it, and the per-instance no-execution proofs it establishes.
+///
+/// The proofs travel WITH the decision rather than beside it, because
+/// `30L:inv-no-posthoc-shared-demotion` is the whole safety argument: no per-instance replacement
+/// may enter the ledger before the shared agreement exists, or a later Run meet would have to
+/// re-introduce walls and the grow-only proof would be gone.
+#[derive(Debug)]
+struct ProvisionalRegionDecision {
+    region: ElisionRegion,
+    ast: AstId,
+    sh: String,
+    disposition: Disposition,
+    /// Which invocation each contributing route executes under, in census order — the route
+    /// attribution `30L` §9 records on Spine, and the half `dorc why` walks call-ward.
+    routes: Vec<LeafId>,
+    proofs: Vec<(CfgNodeId, NoMutationProof)>,
+}
+
 /// One settled round's decisions, sealed and therefore allowed to write Spine.
 ///
 /// Private constructor: the only route here is [`ProvisionalEffectiveRound::seal`], which consumes
@@ -149,7 +183,8 @@ pub(crate) enum SurvivalAccount {
 #[derive(Debug)]
 pub struct SettledEffectiveAnalysis {
     decisions: Vec<ProvisionalSiteDecision>,
-    walls: Vec<LeafId>,
+    regions: Vec<ProvisionalRegionDecision>,
+    walls: Vec<(LeafId, Option<ElisionRegion>)>,
     minted_at: Grade,
 }
 
@@ -158,7 +193,8 @@ pub struct SettledEffectiveAnalysis {
 #[derive(Debug)]
 pub struct ProvisionalEffectiveRound {
     decisions: Vec<ProvisionalSiteDecision>,
-    walls: Vec<LeafId>,
+    regions: Vec<ProvisionalRegionDecision>,
+    walls: Vec<(LeafId, Option<ElisionRegion>)>,
     minted_at: Grade,
 }
 
@@ -167,7 +203,7 @@ pub struct ProvisionalEffectiveRound {
 struct MaximalEffectsFloor;
 
 impl ProvisionalEffectiveRound {
-    /// The proofs this round established, for the ledger.
+    /// The proofs this round established, for the ledger — per-site and per-region alike.
     fn no_execution_proofs(&self) -> Vec<(CfgNodeId, NoMutationProof)> {
         self.decisions
             .iter()
@@ -175,6 +211,11 @@ impl ProvisionalEffectiveRound {
                 EffectiveAct::NoMutation(proof) => Some((decision.node, proof.clone())),
                 EffectiveAct::MayMutate(_) => None,
             })
+            .chain(
+                self.regions
+                    .iter()
+                    .flat_map(|region| region.proofs.iter().cloned()),
+            )
             .collect()
     }
 
@@ -184,6 +225,7 @@ impl ProvisionalEffectiveRound {
     fn seal(self, _quiescent: Quiescence) -> SettledEffectiveAnalysis {
         SettledEffectiveAnalysis {
             decisions: self.decisions,
+            regions: self.regions,
             walls: self.walls,
             minted_at: self.minted_at,
         }
@@ -192,6 +234,7 @@ impl ProvisionalEffectiveRound {
     fn seal_floor(self, _floor: MaximalEffectsFloor) -> SettledEffectiveAnalysis {
         SettledEffectiveAnalysis {
             decisions: self.decisions,
+            regions: self.regions,
             walls: self.walls,
             minted_at: self.minted_at,
         }
@@ -204,16 +247,29 @@ impl SettledEffectiveAnalysis {
     #[must_use]
     pub fn write_spine(self) -> Spine {
         let mut spine = Spine::minted_at(self.minted_at);
-        for leaf in self.walls {
+        for (leaf, region) in self.walls {
             spine.push_narrative(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::WallFormation {
                     participant: leaf,
+                    region,
                     channel: ChannelCoverage {
                         channel: Channel::Effect,
                     },
                 },
             ));
+        }
+        for region in self.regions {
+            spine.push_region_decision(dorc_core::spine::SpineRegionDecision {
+                region: region.region,
+                ast: region.ast,
+                sh: region.sh,
+                decision: region.disposition,
+                routes: dorc_core::spine::Account::capped(
+                    region.routes.into_iter().map(dorc_core::SiteId::leaf),
+                ),
+                grade: None,
+            });
         }
         for decision in self.decisions {
             record_survival(&mut spine, decision.leaf, decision.survival);
@@ -293,12 +349,21 @@ pub fn settle_effective_world(
     let mut ledger = NoExecutionLedger::new();
     let mut number = 1u32;
     let mut origin_validity: Option<BTreeMap<LeafId, bool>> = None;
+    // `30L:req-backings-freeze-at-probe-boundary` (`30Kb:required-backing-is-frozen-beside-policy`)
+    // — a fact's survival BACKING is a probe/model input, so it freezes WITH them and every round
+    // consumes the same account. Re-derived per round it would drift as the ledger erases, and the
+    // policy beside it is frozen: an authority that moves under a settlement is one the settlement
+    // is deciding while it decides what to trust it for.
+    let mut origin_backings: Option<BTreeMap<FactKey, FactBacking>> = None;
     let mut failures = 0u32;
     loop {
-        let outcome = one_round(inputs, model, &ledger);
+        let outcome = one_round(inputs, model, &ledger, origin_backings.as_ref());
         failures = failures.saturating_add(outcome.solve_failures);
         if origin_validity.is_none() {
             origin_validity = Some(outcome.validity.clone());
+        }
+        if origin_backings.is_none() {
+            origin_backings = Some(outcome.classification.fact_backings.clone());
         }
         let quiescent = ledger.record_round(RoundId(number), outcome.round.no_execution_proofs());
         if let Some(witness) = quiescent {
@@ -316,7 +381,7 @@ pub fn settle_effective_world(
         if number >= cap {
             let discarded = u32::try_from(ledger.len()).unwrap_or(u32::MAX);
             ledger.rebuild_from_origin();
-            let outcome = one_round(inputs, model, &ledger);
+            let outcome = one_round(inputs, model, &ledger, origin_backings.as_ref());
             failures = failures.saturating_add(outcome.solve_failures);
             return Settlement {
                 spine: outcome.round.seal_floor(MaximalEffectsFloor).write_spine(),
@@ -387,6 +452,7 @@ fn one_round(
     inputs: &SettleInputs<'_>,
     model: &mut dyn RoundModel,
     ledger: &NoExecutionLedger,
+    frozen_backings: Option<&BTreeMap<FactKey, FactBacking>>,
 ) -> RoundOutcome {
     let (ast, cfg) = (inputs.ast, inputs.cfg);
     let classification = model.classify(&ledger.classify_overlay());
@@ -396,9 +462,13 @@ fn one_round(
         .map(|(leaf, node, _)| (*node, *leaf))
         .collect();
 
+    // The frozen backing account (`req-backings-freeze-at-probe-boundary`); round 1 IS the origin,
+    // so it supplies its own.
+    let backings = frozen_backings.unwrap_or(&classification.fact_backings);
     // The one fact. Everything below reads it and nothing re-derives a second answer.
     let effective = effective_invalidators(cfg, &classification.invalidators, ledger);
-    let (reach, consistency) = solve_reaching_walls(cfg, &effective, None);
+    let nothing_suppressed = BTreeSet::new();
+    let (reach, consistency) = solve_reaching_walls(cfg, &effective, &nothing_suppressed);
     model.trip().record(&consistency);
     let mut solve_failures = failing_checks(&consistency);
     let trusted = consistency.is_consistent();
@@ -418,7 +488,7 @@ fn one_round(
         if !matches!(class, SkipClass::EstablishMembers { .. }) {
             continue;
         }
-        let (solo, consistency) = solve_reaching_walls(cfg, &effective, Some(*node));
+        let (solo, consistency) = solve_reaching_walls(cfg, &effective, &BTreeSet::from([*node]));
         model.trip().record(&consistency);
         solve_failures = solve_failures.saturating_add(failing_checks(&consistency));
         let walls = solo
@@ -483,12 +553,9 @@ fn one_round(
         };
         // BOTH certifications floor this site: the self-suppressed solo solve is a SECOND answer,
         // and the window's certification says nothing about it (`30Mb:fnd-members-floor-is-a-sentinel`).
-        let policy_answer = inputs.policy.freshness(
-            &site_walls,
-            subject,
-            &classification.fact_backings,
-            &leaf_of,
-        );
+        let policy_answer = inputs
+            .policy
+            .freshness(&site_walls, subject, backings, &leaf_of);
         let freshness = members.map_or_else(
             || policy_answer.clone(),
             |answer| members_freshness(answer, policy_answer.clone()),
@@ -521,8 +588,15 @@ fn one_round(
         // nothing consumes the record yet (`289:seam-narrative-render-unconsumed`), so widening it
         // to the honest path buys no account and costs every why-transcript an `[unnarrated: …]`
         // line. It widens with its consumer, not ahead of one.
-        if accounts_survival && matches!(decision.act, EffectiveAct::MayMutate(_)) {
-            walls.push(*leaf);
+        // `30L:req-wall-narrative-gains-region-operand` — the OPERAND, and nothing else. The wall
+        // this record narrates stands at the act's own node, and where that node is a spliced body
+        // instance rather than a plan leaf, the truthful thing to name is the authored REGION it
+        // executes (`30Kb:finding-nonleaf-walls-have-no-account-seat`). The population and the
+        // policy gate above are exactly as they were: whether a wall narrates at all is the
+        // ratify-or-mint question `30M` §3 leaves to the human, and this rider must be correct under
+        // either answer.
+        if accounts_survival && let EffectiveAct::MayMutate(wall) = decision.act {
+            walls.push((*leaf, region_of_node(inputs.regions, wall.node())));
         }
         decisions.push(ProvisionalSiteDecision {
             leaf: *leaf,
@@ -534,9 +608,25 @@ fn one_round(
             survival: decision.survival,
         });
     }
+    let regions = decide_regions(&RegionRound {
+        inputs,
+        classification: &classification,
+        backings,
+        effective: &effective,
+        window: &consistency,
+        reach: &reach,
+        leaf_of: &leaf_of,
+        fold: &fold,
+        observe: &observe,
+        valid_at: &valid_at,
+        leaf_fact: &leaf_fact,
+        dead: &dead,
+        accounts_survival,
+    });
     RoundOutcome {
         round: ProvisionalEffectiveRound {
             decisions,
+            regions,
             walls,
             minted_at: inputs.minted_at,
         },
@@ -544,6 +634,294 @@ fn one_round(
         validity,
         solve_failures,
     }
+}
+
+/// Which authored region a CFG node executes, when it executes one at all.
+fn region_of_node(census: &RegionCensus, node: CfgNodeId) -> Option<ElisionRegion> {
+    census
+        .regions()
+        .find_map(|(region, population)| match population {
+            RoutePopulation::Closed(routes) => routes
+                .routes()
+                .any(|route| route.cfg_node() == node)
+                .then_some(*region),
+            RoutePopulation::Open => None,
+        })
+}
+
+/// Everything one round's region pass reads. A struct because it is genuinely the whole round —
+/// bundling it is what keeps the pass's inputs visibly the SAME ones the site pass already
+/// consumed, rather than a second derivation of the world.
+struct RegionRound<'a> {
+    inputs: &'a SettleInputs<'a>,
+    classification: &'a RoundClassification,
+    backings: &'a BTreeMap<FactKey, FactBacking>,
+    effective: &'a BTreeSet<CfgNodeId>,
+    window: &'a SolveConsistency<ReachingWalls>,
+    reach: &'a dorc_analysis::solve::Solution<ReachingWalls>,
+    leaf_of: &'a BTreeMap<CfgNodeId, LeafId>,
+    fold: &'a crate::FoldResult,
+    observe: &'a dyn Fn(FactKey) -> Observable,
+    valid_at: &'a BTreeMap<CfgNodeId, bool>,
+    leaf_fact: &'a BTreeMap<AstId, FactKey>,
+    dead: &'a BTreeMap<CfgNodeId, DeadBranchProof>,
+    accounts_survival: bool,
+}
+
+/// Decide every closed-population elision region: per-instance route proofs, the universal meet, and
+/// the lowering into one license plus per-instance no-execution proofs (`30L` §6, steps 1–5).
+///
+/// An OPEN population is absent here rather than recorded as Run: an unenumerated invocation forces
+/// Run for every region it may execute (`30L:pin-open-route-runs`), and a Run region is a region
+/// whose authored bytes ship untouched — which is exactly the artifact a region nobody decided
+/// produces. Nothing is hidden either way (`rul-attention-honesty`).
+fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
+    let (ast, cfg, src) = (round.inputs.ast, round.inputs.cfg, round.inputs.src);
+    // A spliced body site is not a plan leaf, so its classification lives inside its owning CALL's
+    // aggregate (`effect::classify`'s `InlineCall` arm) rather than in `classes`.
+    let body_class: BTreeMap<CfgNodeId, &SkipClass> = round
+        .classification
+        .classes
+        .iter()
+        .filter_map(|(_, class)| match class {
+            SkipClass::InlineCall { sites } => Some(sites),
+            _ => None,
+        })
+        .flatten()
+        .map(|site| (site.node, &site.class))
+        .collect();
+
+    let mut decided = Vec::new();
+    for (region, population) in round.inputs.regions.regions() {
+        let RoutePopulation::Closed(routes) = population else {
+            continue;
+        };
+        let region_ast = match ast_of_region(cfg, routes.routes().map(|route| route.cfg_node())) {
+            Some(id) => id,
+            None => continue,
+        };
+        let argv = crate::source_argv(src, ast, region_ast);
+        // THE SELF-SUPPRESSED SOLVE (`effect::self_reach_holds`'s shape, one level up): sibling
+        // instances of ONE region write to each other along the ordinary sequence, and the region's
+        // own ATOMIC replacement is what removes them, so its freshness is answered with the whole
+        // population silenced. Only for a plural population — a lone instance is never in its own
+        // in-state — and only ever read beside this solve's OWN certification.
+        let suppress: BTreeSet<CfgNodeId> = routes.routes().map(|route| route.cfg_node()).collect();
+        let solo =
+            (routes.count() > 1).then(|| solve_reaching_walls(cfg, round.effective, &suppress));
+        let mut answers = Vec::with_capacity(routes.count());
+        for route in routes.routes() {
+            answers.push(decide_one_route(
+                round,
+                *route,
+                &body_class,
+                &solo,
+                argv.as_deref(),
+            ));
+        }
+        let proofs: Vec<RouteRegionProof> = routes
+            .routes()
+            .zip(answers.iter())
+            .map(|(route, answer)| {
+                RouteRegionProof::new(
+                    *route,
+                    RouteAdmission::project(
+                        &answer.conclusion,
+                        answer
+                            .guard
+                            .as_ref()
+                            .map(|license| SharedGuard::of(license.canonical())),
+                    ),
+                    round.inputs.minted_at,
+                )
+            })
+            .collect();
+        let decision = decide_region(*region, population, &proofs);
+        let sh = crate::command_text(src, ast, region_ast);
+        let (disposition, proofs) = lower_shared_decision(round, &decision, &answers, region_ast);
+        decided.push(ProvisionalRegionDecision {
+            region: *region,
+            ast: region_ast,
+            sh,
+            disposition,
+            routes: routes
+                .routes()
+                .filter_map(|route| round.leaf_of.get(&route.invocation().node()).copied())
+                .collect(),
+            proofs,
+        });
+    }
+    decided
+}
+
+/// The one authored AST node every instance of a region shares — the edit unit.
+fn ast_of_region(cfg: &Cfg, instances: impl Iterator<Item = CfgNodeId>) -> Option<AstId> {
+    let mut ids = instances.map(|node| cfg.node(node).ast);
+    let first = ids.next()?;
+    // Clones of one body lower the SAME AST subtree, so this holds by construction; a population
+    // that disagreed would have no single span to edit and must not be given one.
+    ids.all(|id| id == first).then_some(first)
+}
+
+/// One instance's answer, through the ordinary site seat.
+fn decide_one_route(
+    round: &RegionRound<'_>,
+    route: RouteInstance,
+    body_class: &BTreeMap<CfgNodeId, &SkipClass>,
+    solo: &Option<(
+        dorc_analysis::solve::Solution<ReachingWalls>,
+        SolveConsistency<ReachingWalls>,
+    )>,
+    argv: Option<&str>,
+) -> crate::RouteDecision {
+    let node = route.cfg_node();
+    let Some(class) = body_class.get(&node).copied() else {
+        // An instance whose owning call carries no aggregate classification (an expansion-internal
+        // command, a call the census enumerated and classify did not) admits nothing, so the whole
+        // region meets to Run — the population must be covered exactly or not at all.
+        return crate::RouteDecision {
+            conclusion: RouteConclusion::Run,
+            guard: None,
+            establish: None,
+        };
+    };
+    let at = |states: &dorc_analysis::solve::Solution<ReachingWalls>| {
+        states
+            .states
+            .get(node.index())
+            .cloned()
+            .unwrap_or_else(dorc_analysis::lattice::Lattice::bottom)
+    };
+    let walls = solo
+        .as_ref()
+        .map_or_else(|| at(round.reach), |(s, _)| at(s));
+    let subject = match class {
+        SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+            FreshnessSubject::Standalone(*fact)
+        }
+        _ => FreshnessSubject::None,
+    };
+    let answer = round
+        .inputs
+        .policy
+        .freshness(&walls, subject, round.backings, round.leaf_of);
+    // BOTH certifications floor the instance, for the reason the Members lane's do: the solo is a
+    // SECOND answer and the window's certification says nothing about it.
+    let freshness = floor_uncertified(round.window, answer);
+    let freshness = match solo.as_ref() {
+        Some((_, consistency)) => floor_uncertified(consistency, freshness),
+        None => freshness,
+    };
+    crate::decide_route(
+        &crate::DecideSite {
+            cfg: round.inputs.cfg,
+            ast: round.inputs.ast,
+            fold: round.fold,
+            node,
+            ast_id: round.inputs.cfg.node(node).ast,
+            class,
+            freshness: &freshness,
+            vouches: round.inputs.vouches,
+            connected: round.inputs.connected,
+            observe: round.observe,
+            valid_at: round.valid_at,
+            leaf_fact: round.leaf_fact,
+            dead: round.dead.get(&node),
+            invalidator: round.classification.invalidators.contains(&node),
+            accounts_survival: round.accounts_survival,
+            aggregate_establishes: None,
+        },
+        argv,
+    )
+}
+
+/// Lower one shared conclusion into the artifact's disposition and the ledger's proofs
+/// (`30L` §6 steps 4–5; `30N:rul-license-mints-at-settlement-from-shared-conclusion`).
+///
+/// The real license mints HERE, from the PRIVATE conclusion plus the cross-instance witness, and
+/// never from the public outcome (`pin-no-outcome-as-generator`). The proofs are all-or-nothing by
+/// construction: one license, then one death proof per instance, and an empty vector wherever the
+/// license did not mint.
+fn lower_shared_decision(
+    round: &RegionRound<'_>,
+    decision: &SharedRegionDecision,
+    answers: &[crate::RouteDecision],
+    region_ast: AstId,
+) -> (Disposition, Vec<(CfgNodeId, NoMutationProof)>) {
+    match decision.conclusion() {
+        SharedConclusion::Replace(stand_in) => {
+            match shared_replacement(round, answers, region_ast) {
+                Some((license, proofs)) => {
+                    (Disposition::Replace(license, stand_in.stand_in()), proofs)
+                }
+                None => (Disposition::Run, Vec::new()),
+            }
+        }
+        SharedConclusion::Guard(_) => {
+            // The meet already proved every instance admits BYTE-IDENTICAL guard bytes, so any
+            // instance's license is the shared one. The probe word it discloses is re-stamped
+            // `Unknown`: instances can answer differently and no single word is true of all of them.
+            match answers.iter().find_map(|answer| answer.guard.clone()) {
+                Some(license) => (
+                    Disposition::Guard(license.with_probe_verdict(dorc_core::Verdict::Unknown)),
+                    Vec::new(),
+                ),
+                None => (Disposition::Run, Vec::new()),
+            }
+        }
+        // NAMED RESIDUE, and a run floor rather than a gap: a region-tier `Omit` needs a
+        // `DeadBranchProof` per instance and a controller the artifact really neutralises, and the
+        // fold cannot reach inside a spliced body today (its statuses are keyed by the leaves it
+        // classified, and a body site is not one). So the arm is unreachable, and if it ever fires
+        // the region renders and retires nothing — the safe direction, never a silent `:`.
+        SharedConclusion::Omit { .. } | SharedConclusion::Run => (Disposition::Run, Vec::new()),
+    }
+}
+
+/// The shared replacement's license and its per-instance death proofs, or nothing.
+fn shared_replacement(
+    round: &RegionRound<'_>,
+    answers: &[crate::RouteDecision],
+    region_ast: AstId,
+) -> Option<(crate::ReplaceLicense, Vec<(CfgNodeId, NoMutationProof)>)> {
+    let establishes: Option<Vec<AggregateEstablish>> = answers
+        .iter()
+        .map(|answer| {
+            answer
+                .establish
+                .map(|(node, fact)| AggregateEstablish::new(node, fact))
+        })
+        .collect();
+    let establishes = AggregateEstablishes::mint(establishes?)?;
+    let all_vouched = crate::AllEstablishesVouched::mint(&establishes, round.inputs.vouches)?;
+    // The UNION of every instance's consumed channels: one authored edit answers for every call
+    // context at once, and a union can only block.
+    let mut consumed = dorc_analysis::lattice::Powerset::default();
+    for establish in establishes.iter() {
+        for channel in round
+            .inputs
+            .cfg
+            .consumed_observables(establish.site())
+            .iter()
+        {
+            consumed.insert(*channel);
+        }
+    }
+    // A mutator's own status is ⊤ (fork-mutator-rc), which is what every instance's own license
+    // already proved its consumers can live with.
+    let license = crate::ReplaceLicense::prove_shared_region_replaceable(
+        all_vouched,
+        &dorc_analysis::lattice::May(consumed),
+        dorc_core::Predicted::Top,
+    )?;
+    let proofs: Option<Vec<_>> = establishes
+        .iter()
+        .map(|establish| {
+            replacement_death(round.inputs.ast, establish.site(), region_ast, &license)
+                .map(|proof| (establish.site(), NoMutationProof::Replaced(proof)))
+        })
+        .collect();
+    Some((license, proofs?))
 }
 
 /// How many post-fixpoint checks one effective-reach answer failed — the scalar the aid plane may

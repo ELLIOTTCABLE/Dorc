@@ -68,6 +68,15 @@ pub trait DecidePlane {
     /// narration. `narrative-is-sealed-by-type-not-place` is what makes co-location safe: the seal
     /// is private fields and `ProvId: !Ord`, not which crate the value sits in.
     type Narrative: core::fmt::Debug + Clone;
+    /// The license-bearing decision one AUTHORED REGION reached (`plan::Disposition` at the one
+    /// instantiation).
+    ///
+    /// Its own associated type rather than a reuse of [`Decision`](Self::Decision), because the two
+    /// are keyed by different identities and `30L:rul-two-identities-never-conflated` is the point:
+    /// a `Decision` keys by `SiteId` (execution), a region decision by `ElisionRegion` (edit). They
+    /// happen to instantiate to one enum today; a seam that let one be handed where the other was
+    /// expected would make that coincidence load-bearing.
+    type RegionDecision: core::fmt::Debug + Clone;
 }
 
 /// How many exemplars an unbounded operand account keeps before it reports a count instead
@@ -167,6 +176,8 @@ pub enum SpineSpecies {
     Survival,
     /// The render-time decisions `30E` §3 audited out of hiding.
     RenderDecision,
+    /// One authored elision region's shared decision and its contributing route attribution.
+    RegionDecision,
     /// The run's outcome: exit-code class, advisory routing, durable eligibility.
     Outcome,
 }
@@ -192,7 +203,7 @@ pub enum CensusArm {
 impl SpineSpecies {
     /// Every species, in declaration order. The array is what makes the census walkable; the
     /// no-wildcard match in [`census_arm`](Self::census_arm) is what makes it complete.
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 16] = [
         Self::Invocation,
         Self::RecordStream,
         Self::Disposition,
@@ -207,6 +218,7 @@ impl SpineSpecies {
         Self::ValidityRound,
         Self::Survival,
         Self::RenderDecision,
+        Self::RegionDecision,
         Self::Outcome,
     ];
 
@@ -230,6 +242,11 @@ impl SpineSpecies {
             | Self::ValidityRound
             | Self::Survival
             | Self::RenderDecision
+            // In-memory, and the arm is the whole answer: a region decision names an authored span,
+            // a shared license, and route attribution, and putting any of that on operator disk
+            // would be entering the durable arm — the tripwire
+            // (`rul-durable-contents-reviewed-before-design`), not a field addition.
+            | Self::RegionDecision
             | Self::Outcome => CensusArm::New,
         }
     }
@@ -252,6 +269,7 @@ impl SpineSpecies {
             Self::ValidityRound => "SpineValidityRound",
             Self::Survival => "SpineSurvival",
             Self::RenderDecision => "SpineRenderDecision",
+            Self::RegionDecision => "SpineRegionDecision",
             Self::Outcome => "SpineOutcome",
         }
     }
@@ -617,6 +635,33 @@ pub enum RefusalCause {
     BlockingRedirect,
 }
 
+/// One AUTHORED ELISION REGION's shared decision (`plans/30L` §9).
+///
+/// Keyed by [`ElisionRegion`](crate::region::ElisionRegion) rather than by
+/// [`SiteId`](crate::SiteId), and that is the species' reason for existing: a region has MANY
+/// executions and exactly ONE edit, so a leaf-keyed record cannot hold it without either collapsing
+/// the instances or inventing a leaf the edit does not have
+/// (`30L:rul-two-identities-never-conflated`; `spike/CLAUDE.md inv-leaf-seam`).
+///
+/// `routes` is the attribution that makes `dorc why` bidirectional: definition region → the
+/// invocations that licensed this edit, and (read backwards) call instance → the shared edits it
+/// executes. Capped like every unbounded operand account (`309:law-spine-operands-capped`).
+#[derive(Debug, Clone)]
+pub struct SpineRegionDecision<P: DecidePlane> {
+    /// The authored span all instances would edit.
+    pub region: crate::region::ElisionRegion,
+    /// The source back-map for that span.
+    pub ast: AstId,
+    /// The verbatim region bytes.
+    pub sh: String,
+    /// The one shared, license-bearing decision.
+    pub decision: P::RegionDecision,
+    /// Which invocation each contributing route executes under, in census order.
+    pub routes: Account<SiteId>,
+    /// The grade at mint.
+    pub grade: Grade,
+}
+
 /// The run's outcome — authority-adjacent, because `EXIT_BOOK_UNMODELED` exists precisely so a
 /// `dorc … && deploy` chain STOPS (`30E` §4).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -655,6 +700,7 @@ pub struct Spine<P: DecidePlane> {
     rounds: Vec<SpineValidityRound>,
     survivals: Vec<SpineSurvival>,
     render_decisions: Vec<SpineRenderDecision>,
+    region_decisions: Vec<SpineRegionDecision<P>>,
     outcome: Option<SpineOutcome>,
     narratives: Vec<P::Narrative>,
     grade: Grade,
@@ -677,6 +723,7 @@ impl<P: DecidePlane> Default for Spine<P> {
             rounds: Vec::new(),
             survivals: Vec::new(),
             render_decisions: Vec::new(),
+            region_decisions: Vec::new(),
             outcome: None,
             narratives: Vec::new(),
             grade: None,
@@ -899,6 +946,24 @@ impl<P: DecidePlane> Spine<P> {
         self.render_decisions.push(record);
     }
 
+    /// Append one authored region's shared decision.
+    pub fn push_region_decision(&mut self, mut record: SpineRegionDecision<P>) {
+        record.grade = self.grade;
+        self.region_decisions.push(record);
+    }
+
+    /// Every authored region's shared decision, in census order.
+    #[must_use]
+    pub fn region_decisions(&self) -> &[SpineRegionDecision<P>] {
+        &self.region_decisions
+    }
+
+    /// One region's shared decision, mutably — for the post-construction demotions the
+    /// certifier-trip cleanup performs, which are Spine writes like any other.
+    pub fn region_decisions_mut(&mut self) -> impl Iterator<Item = &mut SpineRegionDecision<P>> {
+        self.region_decisions.iter_mut()
+    }
+
     /// The render-time decisions, in mint order.
     #[must_use]
     pub fn render_decisions(&self) -> &[SpineRenderDecision] {
@@ -1019,6 +1084,15 @@ impl<P: DecidePlane> Spine<P> {
         for record in &self.render_decisions {
             let _ = writeln!(out, "  render {:?} {:?}", record.site, record.decision);
         }
+        for record in &self.region_decisions {
+            let _ = writeln!(
+                out,
+                "  region {:?} routes={} {:?}",
+                record.region,
+                record.routes.total(),
+                record.decision
+            );
+        }
         if let Some(record) = &self.outcome {
             let _ = writeln!(
                 out,
@@ -1048,6 +1122,7 @@ impl<P: DecidePlane> Spine<P> {
             SpineSpecies::ValidityRound => self.rounds.len(),
             SpineSpecies::Survival => self.survivals.len(),
             SpineSpecies::RenderDecision => self.render_decisions.len(),
+            SpineSpecies::RegionDecision => self.region_decisions.len(),
             SpineSpecies::Outcome => usize::from(self.outcome.is_some()),
         };
         u32::try_from(count).unwrap_or(u32::MAX)
@@ -1067,6 +1142,7 @@ mod tests {
         type Decision = &'static str;
         type Records = ();
         type Narrative = ();
+        type RegionDecision = &'static str;
     }
 
     #[test]

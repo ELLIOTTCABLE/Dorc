@@ -483,8 +483,16 @@ pub enum CollapseKind {
     },
     /// A running mutator formed a wall (`rul-only-oracle-bytes-ship`) ⇒ downstream survival is
     /// constrained. Names the participant + the channel-coverage failure.
+    ///
+    /// `region` is the truthful NON-`LeafId` operand (`30L:req-wall-narrative-gains-region-operand`,
+    /// closing `30Kb:finding-nonleaf-walls-have-no-account-seat`): a wall can stand at a spliced
+    /// function-body instance, which owns no plan leaf and whose participant is therefore the CALL
+    /// governing it. Where that is what happened, the authored ELISION REGION is what a reader needs
+    /// named — a `LeafId` alone points at the call and leaves the line unfindable. `None` is the
+    /// ordinary top-level wall, where the participant IS the mutator.
     WallFormation {
         participant: LeafId,
+        region: Option<dorc_core::region::ElisionRegion>,
         channel: ChannelCoverage,
     },
     /// A substitution refused because a CONSUMED channel predicted ⊤ (`inv-probe-sourced-values`)

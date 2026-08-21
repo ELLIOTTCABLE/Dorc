@@ -41,7 +41,7 @@ use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, ExecutionOwner};
 use dorc_core::influence::InfluencePhase;
 use dorc_core::region::{ElisionRegion, IterationSlot, RegionUniverse};
 use dorc_core::{AstId, DefinitionId, FactKey, SourceFileId, Span};
-use dorc_syntax::ast::{Ast, NodeKind, UnsupportedReason};
+use dorc_syntax::ast::{Ast, NodeKind, UnsupportedReason, WordPart};
 
 use crate::StandIn;
 
@@ -177,13 +177,135 @@ impl RegionCensus {
     }
 }
 
+/// Every shell-level string-execution site in a unit: a command word that hands the SHELL a string
+/// to run later (`trap`), which can therefore name any function the enumerated call set does not.
+///
+/// A driver-minted value rather than a census-internal walk, because it is one of the opener
+/// signals [`CensusOpeners`] demands and the demand is what makes it unforgettable
+/// (`30N:rul-census-inputs-are-non-optional`).
+///
+/// Literal command WORDS only, the discrimination
+/// `oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector` records: a dynamic command position is
+/// already a `DynamicExecution` ⊤-reject and reading that as a string-execution site would put every
+/// peeling wrapper in the world into this trigger. Deliberately not narrowed to "names a function":
+/// deciding which function a trap's action string could reach means parsing a string the engine has
+/// no closed enumeration of, and an unenumerable happy path falls back to the defensive answer
+/// (`rul-happy-path-is-a-closed-set`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct StringExecutionSites {
+    sites: Vec<AstId>,
+}
+
+impl StringExecutionSites {
+    /// Scan one unit's AST for string-execution command words.
+    #[must_use]
+    pub fn of_unit(ast: &Ast) -> Self {
+        let sites = ast
+            .iter()
+            .filter_map(|(id, node)| match &node.kind {
+                NodeKind::Simple { words, .. } => {
+                    let first = words.first()?;
+                    literal_word(ast, *first)
+                        .filter(|word| is_string_execution_word(word))
+                        .map(|_| id)
+                }
+                _ => None::<AstId>,
+            })
+            .collect();
+        Self { sites }
+    }
+
+    /// The sites found, in AST order — provenance for a narrative that wants to name one.
+    pub fn sites(&self) -> impl Iterator<Item = AstId> + '_ {
+        self.sites.iter().copied()
+    }
+
+    /// Did the unit hand the shell any string to execute?
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.sites.is_empty()
+    }
+}
+
+/// Does this literal command word hand the SHELL a string to execute later?
+fn is_string_execution_word(word: &str) -> bool {
+    word == "trap"
+}
+
+/// A word's literal text, when the word is a single literal fragment — the same
+/// referent-agnostic read `dorc_oracle::closure`'s helper scan takes.
+fn literal_word(ast: &Ast, word: AstId) -> Option<&str> {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return None;
+    };
+    match parts.as_slice() {
+        [WordPart::Literal(text) | WordPart::SingleQuoted(text)] => Some(text.as_str()),
+        _ => None,
+    }
+}
+
+/// Every opener signal the census cannot see for itself, as ONE value whose constructor demands all
+/// of them (`30N:rul-census-inputs-are-non-optional`, answering `30Nb:tc-census-driver-inputs`).
+///
+/// An opener the census does not see is a population wrongly CLOSED, which is a wrong-elision one
+/// abstraction level up — so the shape is a required constructor rather than a defaulted parameter:
+/// a census cannot be built without its openers, and a driver that acquires a new signal must visit
+/// this seat to drop it.
+#[derive(Debug, Clone, Copy)]
+pub struct CensusOpeners<'a> {
+    universe: &'a RegionUniverse,
+    unresolvable_loads: &'a BTreeSet<CfgNodeId>,
+    definition_vectors: &'a BTreeSet<String>,
+    string_execution: &'a StringExecutionSites,
+}
+
+impl<'a> CensusOpeners<'a> {
+    /// The opener inputs, all of them.
+    ///
+    /// * `universe` — which files may hold regions at all (`30L:rul-region-universe-is-book-custody`).
+    /// * `unresolvable_loads` — `funcenv::unresolvable_loads`: a `.`/`source` whose target the value
+    ///   plane could not name can load anything, a redefinition of the region's function included.
+    /// * `definition_vectors` — `dorc_oracle::closure::definition_vectors`: an `alias` (or an `eval`
+    ///   reaching an emission decision) rebinds a NAME for every later caller, so the enumerated
+    ///   call set stops being the executing one.
+    /// * `string_execution` — [`StringExecutionSites`]: a `trap` action is shell text run at a
+    ///   moment no CFG edge models.
+    #[must_use]
+    pub fn of(
+        universe: &'a RegionUniverse,
+        unresolvable_loads: &'a BTreeSet<CfgNodeId>,
+        definition_vectors: &'a BTreeSet<String>,
+        string_execution: &'a StringExecutionSites,
+    ) -> Self {
+        Self {
+            universe,
+            unresolvable_loads,
+            definition_vectors,
+            string_execution,
+        }
+    }
+
+    /// Does a driver-side signal open EVERY population in the unit?
+    ///
+    /// Whole-unit rather than per-region, for the reason the dynamic-execution walk is: each of
+    /// these can name any function, and silence never means "no other calls"
+    /// (`silence-licenses-nothing`).
+    #[must_use]
+    fn opens_every_population(&self) -> bool {
+        !self.unresolvable_loads.is_empty()
+            || !self.definition_vectors.is_empty()
+            || !self.string_execution.is_empty()
+    }
+}
+
 /// Build the census over one book's analysis (`30L` §3).
 ///
 /// `book` is the source id the book's definitions belong to; `diags` are the CFG build's own
 /// diagnostics, which are where a refused inline is recorded.
 ///
-/// Closedness (`30L:rul-call-census-must-be-closed`) fails toward OPEN on three signals, each of
-/// which means some execution of the region is not in the enumerated set:
+/// Closedness (`30L:rul-call-census-must-be-closed`) fails toward OPEN on six signals, each of
+/// which means some execution of the region is not in the enumerated set. Three the census reads
+/// off the unit it was handed:
 ///
 /// * a shell-level DYNAMIC-EXECUTION construct anywhere in the unit — `eval`, a computed `.`, a
 ///   dynamic command word, a command-position `"$@"`. Whole-unit, because such a construct can name
@@ -197,16 +319,21 @@ impl RegionCensus {
 /// * an instance inside a loop body — today, always (`30L:pin-loop-population-open-until-proven`).
 ///   The propagation lane turns exactly this into `Closed` member populations, and that is the one
 ///   thing it changes.
+///
+/// The other three arrive through [`CensusOpeners`], because they are facts about the LOADED SET
+/// and the resolved environment rather than about this AST: unresolvable loads, definition vectors,
+/// and string execution.
 #[must_use]
 pub fn census(
     ast: &Ast,
     cfg: &Cfg,
     diags: &[Diag],
-    universe: &RegionUniverse,
+    openers: CensusOpeners<'_>,
     book: SourceFileId,
 ) -> RegionCensus {
+    let universe = openers.universe;
     let definitions = definition_spans(ast, book);
-    let dynamic_execution = unit_has_dynamic_execution(ast);
+    let dynamic_execution = unit_has_dynamic_execution(ast) || openers.opens_every_population();
     let refused = refused_function_names(diags);
     let owners = execution_owners(cfg);
 
@@ -290,23 +417,34 @@ impl SharedStandIn {
 
 /// The parametric guard a route admits, as the shared decision compares it.
 ///
-/// `canonical` is the guard's DECISION-relevant bytes — emitted function name, invocation, and
-/// preamble. Comparing those is how `30L:pin-guard-resolution-is-frame-live` is enforced without
-/// promoting a display value into a decision: two instances resolving DIFFERENT live verdict
-/// definitions ship different preamble bytes, so they compare unequal and the shared guard
-/// refuses; two instances resolving byte-identical bodies are the same definition under the
+/// `canonical` is the guard's DECISION-relevant bytes — emitted function name, SOURCE-level
+/// invocation, and preamble. Comparing those is how `30L:pin-guard-resolution-is-frame-live` is
+/// enforced without promoting a display value into a decision: two instances resolving DIFFERENT
+/// live verdict definitions ship different preamble bytes, so they compare unequal and the shared
+/// guard refuses; two instances resolving byte-identical bodies are the same definition under the
 /// artifact's own content-dedup rule, so they compare equal and correctly may share.
+///
+/// Deliberately NOT keyed on the cell, for the reason [`SharedStandIn`] is not: `install_pkg nginx`
+/// and `install_pkg curl` re-verify DIFFERENT cells through ONE authored region, each licensed by
+/// its own reached vouch over its own argv, and the EDIT they admit is the same parametric bytes
+/// (`30L` §4.5). A cell in the identity would refuse exactly the case the parametric guard exists
+/// for. The per-route cell stays on [`RouteConclusion::Guard`], where it is that route's own truth.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SharedGuard {
-    fact: FactKey,
     canonical: String,
 }
 
 impl SharedGuard {
-    /// The cell the shared guard re-verifies.
+    /// The shared guard whose decision-relevant bytes are `canonical`.
     #[must_use]
-    pub fn fact(&self) -> FactKey {
-        self.fact
+    pub fn of(canonical: String) -> Self {
+        SharedGuard { canonical }
+    }
+
+    /// The decision-relevant bytes every contributing route must agree on.
+    #[must_use]
+    pub fn canonical(&self) -> &str {
+        &self.canonical
     }
 }
 
@@ -328,16 +466,25 @@ pub struct RouteAdmission {
 }
 
 impl RouteAdmission {
-    /// Project one site's decided conclusion into what it admits at its region.
+    /// Project one site's decided conclusion, plus the guard it could carry, into what it admits at
+    /// its region.
     ///
     /// Every failed property — an absent vouch, a diverged verdict, a stale world, a consumed
     /// channel with no probe-sourced stand-in, a ⊤ successor — has already collapsed the conclusion
-    /// to `Run` at the site seat, so an all-`None` admission here IS "some property did not hold",
-    /// with no second place for the answer to be wrong.
+    /// to `Run` at the site seat, so an all-`None` admission IS "some property did not hold", with
+    /// no second place for the answer to be wrong.
+    ///
+    /// `guard` arrives BESIDE the conclusion rather than out of it, and that is the whole reason
+    /// this is a product (`30L:rul-every-property-meets-universally`). A route whose fact is
+    /// converged-and-fresh concludes `Replace` and would carry no guard; a sibling route whose fact
+    /// DIVERGED concludes `Run` and carries no replacement. Read only their preferred answers and
+    /// the region meets to Run — which is exactly the value §4.5's parametric guard exists to
+    /// recover, since a guard re-decides per invocation inside sh. So the site seat computes both:
+    /// what the route would do alone, and what it would ADMIT.
     #[must_use]
-    pub fn project(conclusion: &RouteConclusion) -> Self {
-        match conclusion {
-            RouteConclusion::Run => RouteAdmission::default(),
+    pub fn project(conclusion: &RouteConclusion, guard: Option<SharedGuard>) -> Self {
+        let admits = match conclusion {
+            RouteConclusion::Run | RouteConclusion::Guard { .. } => RouteAdmission::default(),
             RouteConclusion::Replace(stand_in) => RouteAdmission {
                 replace: Some(SharedStandIn(*stand_in)),
                 ..RouteAdmission::default()
@@ -346,14 +493,8 @@ impl RouteAdmission {
                 omit: Some(*controller),
                 ..RouteAdmission::default()
             },
-            RouteConclusion::Guard { fact, canonical } => RouteAdmission {
-                guard: Some(SharedGuard {
-                    fact: *fact,
-                    canonical: canonical.clone(),
-                }),
-                ..RouteAdmission::default()
-            },
-        }
+        };
+        RouteAdmission { guard, ..admits }
     }
 }
 
@@ -373,9 +514,10 @@ pub enum RouteConclusion {
     Replace(StandIn),
     /// The fold proved this route's branch dead, controlled by this leaf.
     Omit { controller: AstId },
-    /// The route admits a guard: the cell it re-verifies, and the guard's decision-relevant bytes
-    /// (`GuardInsert::canonical` — emitted name, invocation, preamble).
-    Guard { fact: FactKey, canonical: String },
+    /// The route's own answer was a guard, over the cell it re-verifies. The BYTES the region meets
+    /// on ride the admission's guard candidate, not this arm: a route that concluded `Run` can still
+    /// admit the same parametric guard, and only the candidate can say so.
+    Guard { fact: FactKey },
 }
 
 /// One route's proof: which instance, what it admits, and how far its answer stands from
@@ -453,6 +595,10 @@ pub enum SharedOutcome {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SharedRegionDecision {
     region: ElisionRegion,
+    /// The PREMISE both public halves projected from, retained so the settlement seat can mint the
+    /// real license from the conclusion rather than from the rendered outcome
+    /// (`30N:rul-license-mints-at-settlement-from-shared-conclusion`; `pin-no-outcome-as-generator`).
+    conclusion: SharedConclusion,
     outcome: SharedOutcome,
     act: SharedRegionAct,
     contributing: Vec<RouteInstance>,
@@ -464,6 +610,11 @@ impl SharedRegionDecision {
     #[must_use]
     pub fn region(&self) -> ElisionRegion {
         self.region
+    }
+
+    /// The private conclusion the settlement lowers into licenses and effective acts.
+    pub(crate) fn conclusion(&self) -> &SharedConclusion {
+        &self.conclusion
     }
 
     /// What the plan does with the region.
@@ -591,9 +742,10 @@ pub fn decide_region(
     } else {
         SharedConclusion::Run
     };
-    let (outcome, act) = conclusion.project();
+    let (outcome, act) = conclusion.clone().project();
     SharedRegionDecision {
         region,
+        conclusion,
         outcome,
         act,
         contributing,

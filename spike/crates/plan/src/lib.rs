@@ -273,6 +273,13 @@ pub enum LicenseVia {
     /// (the Members precedent): the CALL leaf's span substitutes to `true`; one non-licensing
     /// body leaf ⇒ the call RUNS (the real body executes). No partial-body render (`i-3`).
     InlineCall,
+    /// Shared-region convergence-elision (`plans/30L` §5): ONE authored region inside a function
+    /// body, whose EVERY statically possible invocation instance independently proved the same
+    /// observable-preserving replacement. The license's witness spans every contributing instance's
+    /// establish (`30L:pin-shared-witness-spans-instances`) — a per-call witness never stands in
+    /// for it — and the edit lands once, at the authored definition
+    /// (`30L:rul-edit-authored-definition-once`).
+    SharedRegion,
 }
 
 /// Why a replacement was licensed — the audit trail a plan UI greys-out as the "why"
@@ -780,6 +787,50 @@ impl ReplaceLicense {
             derivation: Derivation {
                 fact,
                 via: LicenseVia::InlineCall,
+                ambient: true,
+                grade: Grade::Must,
+                verdict: Verdict::Converged,
+                witness: dorc_core::Witness::empty(),
+                survival: None,
+                vouch_span: None,
+                establish_vouches,
+                probe: None,
+            },
+        })
+    }
+
+    /// Mint the license for ONE authored region that every invocation instance agreed to replace
+    /// (`30L` §5/§6).
+    ///
+    /// The per-instance conditions are already discharged: each route ran the ordinary site
+    /// decision, so each proved its own vouch, verdict, freshness, and consumption independently,
+    /// and the meet then required them to reproduce the SAME stand-in (`30L`
+    /// `rul-shared-edit-reproduces-every-route`). What this mint adds is the thing no route can
+    /// carry — the CROSS-INSTANCE witness. `all_vouched` is built from the exact ordered union of
+    /// every contributing instance's `(site, cell)`, identity- and cardinality-matched by
+    /// [`AllEstablishesVouched::mint`], so a witness that spans fewer instances than the population
+    /// cannot be spelled (`30L:pin-shared-witness-spans-instances`).
+    ///
+    /// `consumed` is the UNION over every instance's consumed channels, re-checked here rather than
+    /// trusted: one authored edit answers for every call context at once, and a union can only
+    /// block.
+    #[must_use]
+    fn prove_shared_region_replaceable(
+        all_vouched: AllEstablishesVouched,
+        consumed: &May<Powerset<Channel>>,
+        status: Predicted<Rc>,
+    ) -> Option<ReplaceLicense> {
+        if !consumption_ok(consumed, status) {
+            return None;
+        }
+        let fact = all_vouched.representative();
+        let establish_vouches = all_vouched.into_receipts();
+        Some(ReplaceLicense {
+            custody: dorc_core::LicenseCustody::VouchedSeverally,
+            fact,
+            derivation: Derivation {
+                fact,
+                via: LicenseVia::SharedRegion,
                 ambient: true,
                 grade: Grade::Must,
                 verdict: Verdict::Converged,
@@ -1423,6 +1474,64 @@ impl GuardLicense {
             },
             probe: None,
         })
+    }
+
+    /// Mint the guard ONE ELISION REGION admits, over the region's AUTHORED argv expression
+    /// (`30L` §4.5 — the divergent-instances valve).
+    ///
+    /// Two differences from [`mint`](Self::mint), and the asymmetry between them is the point.
+    ///
+    /// The INVOCATION is the region's source-level words rather than this instance's resolved
+    /// operands, because one authored region has one set of bytes and there is no second author to
+    /// answer for a specialized copy (`30L:rul-no-specialized-shell`). Every enumerated instance's
+    /// own argv passed the author's argparse when its vouch was reached, and the census is CLOSED —
+    /// so every value `"$1"` can hold at runtime is one the author already accepted.
+    ///
+    /// The `Converged` conjunct is ABSENT, and only that one. The vouch demand, the consumption gate
+    /// at ⊤, and the `|| <original bytes>` fall-through are untouched, so nothing about what may
+    /// execute changes; what changes is which region is worth paying a check for. See
+    /// [`crate::region_guard_candidate`] for why that reads differently at a region than at a site.
+    #[must_use]
+    pub(crate) fn mint_for_shared_region(
+        fact: FactKey,
+        vouch: ByVouch<VerdictVouch>,
+        probe_verdict: Verdict,
+        consumed: &May<Powerset<Channel>>,
+        source_argv: &str,
+    ) -> Option<GuardLicense> {
+        if !consumption_ok(consumed, Predicted::Top) {
+            return None;
+        }
+        let mut vouch = vouch.into_vouch();
+        vouch.invocation = if source_argv.is_empty() {
+            vouch.fn_name.clone()
+        } else {
+            format!("{} {source_argv}", vouch.fn_name)
+        };
+        Some(GuardLicense {
+            fact,
+            insert: GuardInsert {
+                vouch,
+                probe_verdict,
+            },
+            probe: None,
+        })
+    }
+
+    /// This guard's decision-relevant bytes — the identity a shared region meets on.
+    pub(crate) fn canonical(&self) -> String {
+        self.insert.canonical()
+    }
+
+    /// Re-stamp the plan-time probe word this guard DISCLOSES.
+    ///
+    /// Display-only (`GuardInsert::probe_word`): the guard re-decides live at apply and never trusts
+    /// this. A shared region's instances can answer differently, and no single word is true of all
+    /// of them, so the settlement stamps `Unknown` — "cant-tell" — rather than picking one
+    /// instance's answer to speak for the rest.
+    pub(crate) fn with_probe_verdict(mut self, verdict: Verdict) -> Self {
+        self.insert.probe_verdict = verdict;
+        self
     }
 
     /// Attach the probe-side attribution post-mint — the guard's twin of
@@ -2086,9 +2195,32 @@ impl SurvivalReport {
 /// A whole-book plan: an ordered list of leaf [`Step`]s (the leaf-seam — never a
 /// single opaque script). Render with [`render_sh`](Plan::render_sh). Carries the survival-tier
 /// [`SurvivalReport`] (24F §3a instrumentation — the may-alias fire-rate; digest-exempt).
+/// One AUTHORED REGION of the plan: the definition-keyed span, the verbatim sh inside it, the ONE
+/// decision every invocation instance agreed to, and how many instances that is (`plans/30L` §8).
+///
+/// Not a [`Step`], and the separation is `30L:rul-two-identities-never-conflated`: a `Step` is
+/// EXECUTION identity (one `LeafId`, one probe record, one run), while a region is EDIT identity —
+/// many executions, exactly one authored span to rewrite. Folding regions into `steps` would either
+/// mint leaf ids for spans that never execute as leaves, or collapse instances the site-keyed
+/// results lane must keep apart (`inv-site-keyed-results` · `inv-leaf-seam`).
+#[derive(Debug, Clone)]
+pub struct RegionStep {
+    pub region: dorc_core::region::ElisionRegion,
+    pub ast: AstId,
+    pub sh: String,
+    pub disposition: Disposition,
+    /// How many statically possible invocation instances this ONE edit is universal over — the
+    /// route count the pull and why surfaces show (`30L` §8).
+    pub routes: u32,
+}
+
 #[derive(Debug, Clone)]
 pub struct Plan {
     pub steps: Vec<Step>,
+    /// The authored regions inside function bodies this plan edits (`plans/30L`). EMPTY for a book
+    /// with no eligible calls, which is what keeps such a book byte-identical
+    /// (`30L:pin-empty-function-world-parity`).
+    pub regions: Vec<RegionStep>,
     /// The survival-tier instrumentation (24F §3a). Empty on the flag-off / no-resolver path.
     pub survival_report: SurvivalReport,
     /// DEFENSIVE emission (`28R:rul-defensive-mode-definition-vectors`): the unit carries an
@@ -3804,6 +3936,10 @@ pub fn build_plan_walled(
         observe,
         trip,
     };
+    // No region census: this entry analyses one book without the driver's loaded-source set, so it
+    // holds no opener signals and no book-custody universe. An EMPTY census decides no region, which
+    // is why every censusless driver's output is exactly what it was before regions existed.
+    let regions = region::RegionCensus::default();
     let inputs = SettleInputs {
         src,
         ast,
@@ -3811,6 +3947,7 @@ pub fn build_plan_walled(
         vouches,
         connected,
         policy,
+        regions: &regions,
         minted_at,
     };
     // The ledger holds CFG SITES and grows by at least one per non-quiescent round, so the bound is
@@ -3952,6 +4089,28 @@ enum DecisionConclusion {
 }
 
 impl DecisionConclusion {
+    /// THE BRIDGE into the region plane (`30Nb` §11.1): one total match, at the site seat, and the
+    /// only sanctioned producer of a [`region::RouteConclusion`].
+    ///
+    /// The region plane needs a route's answer without being handed the route's LICENSE: a shared
+    /// replacement's license must carry the cross-instance witness spanning every contributing
+    /// establish (`30L:pin-shared-witness-spans-instances`), and a per-call license standing in for
+    /// it is the exact substitution that pin forbids. So the shadow vocabulary crosses and the
+    /// license does not; the settlement mints the real one from the shared conclusion
+    /// (`30N:rul-license-mints-at-settlement-from-shared-conclusion`).
+    fn as_route(&self) -> region::RouteConclusion {
+        match self {
+            DecisionConclusion::Run => region::RouteConclusion::Run,
+            DecisionConclusion::Replace(_, stand_in) => region::RouteConclusion::Replace(*stand_in),
+            DecisionConclusion::Omit { controller } => region::RouteConclusion::Omit {
+                controller: *controller,
+            },
+            DecisionConclusion::Guard(license) => region::RouteConclusion::Guard {
+                fact: license.fact(),
+            },
+        }
+    }
+
     fn project(self, p: &DecideSite<'_>) -> (Disposition, EffectiveAct) {
         let not_effective = || EffectiveAct::NoMutation(NoMutationProof::NotEffective);
         match self {
@@ -4024,6 +4183,71 @@ pub(crate) struct DecideSite<'a> {
     pub(crate) accounts_survival: bool,
     /// The one exact aggregate identity shared by freshness and vouch authorization.
     pub(crate) aggregate_establishes: Option<&'a AggregateEstablishes>,
+}
+
+/// One region INSTANCE's answer: what the route concluded alone, what edit it would admit as one of
+/// many, and which establish it would erase.
+///
+/// The three travel together because they are one pass over one set of conditions, exactly as
+/// [`SiteDecision`]'s three halves are — and because separating them is how a route's own preferred
+/// answer would silently become the only thing the region meet could see
+/// (`30L:rul-every-property-meets-universally`).
+pub(crate) struct RouteDecision {
+    pub(crate) conclusion: region::RouteConclusion,
+    /// The parametric guard this route would admit, whatever it concluded alone.
+    pub(crate) guard: Option<GuardLicense>,
+    /// The `(site, cell)` this instance's replacement would erase — one member of the shared
+    /// replacement's cross-instance witness.
+    pub(crate) establish: Option<(CfgNodeId, FactKey)>,
+}
+
+/// Decide one region instance (`30L` §4) — the route's own conclusion, plus what it admits.
+///
+/// `source_argv` is the region's AUTHORED argv expression (`install "$1"`), which is what makes a
+/// shared guard parametric: positional parameters re-bind naturally per invocation, so one authored
+/// check serves every operand, and a per-call literal never installs into shared source that also
+/// serves another (`30L` §4.5).
+pub(crate) fn decide_route(p: &DecideSite<'_>, source_argv: Option<&str>) -> RouteDecision {
+    let (conclusion, _) = site_conclusion(p);
+    RouteDecision {
+        conclusion: conclusion.as_route(),
+        guard: source_argv.and_then(|argv| region_guard_candidate(p, argv)),
+        establish: match p.class {
+            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+                Some((p.node, *fact))
+            }
+            _ => None,
+        },
+    }
+}
+
+/// The parametric guard one region instance ADMITS — the region tier's own guard question.
+///
+/// Every safety conjunct of [`GuardLicense::mint`] is here: a reached vouch (so the check is the
+/// author's own body over argv their argparse accepted), and the consumption gate at ⊤ (so no reader
+/// can tell the check's rc or output from the original's). What is NOT here is the mint's
+/// `Converged` conjunct, and the difference is economics rather than safety: at a SITE a guard over
+/// a diverged fact buys nothing, because the check is known to fall through to the command that was
+/// going to run anyway. At a shared REGION serving many invocations it buys the converged ones,
+/// because the guard re-decides per invocation inside sh — which is the whole of `30L` §4.5, and the
+/// reason the ordinary site mint is left exactly as it is.
+fn region_guard_candidate(p: &DecideSite<'_>, source_argv: &str) -> Option<GuardLicense> {
+    if has_top_successor(p.cfg, p.node) || p.cfg.in_loop_body(p.node) {
+        return None;
+    }
+    let fact = match p.class {
+        SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => *fact,
+        _ => return None,
+    };
+    let vouch = p.vouches.get(p.node, fact)?.clone();
+    let consumed = May(p.cfg.consumed_observables(p.node).clone());
+    GuardLicense::mint_for_shared_region(
+        fact,
+        vouch,
+        (p.observe)(fact).effect,
+        &consumed,
+        source_argv,
+    )
 }
 
 /// Decide one site (`30K` §5) — the disposition and the semantic act, from one pass.
@@ -4318,6 +4542,35 @@ fn command_text_oneline(sh: &str) -> String {
     sh.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// A command's AUTHORED argv expression: its words after the command name, each verbatim from the
+/// source, single-space joined.
+///
+/// This is what makes a shared region's guard PARAMETRIC (`30L` §4.5): `install "$1"` re-binds per
+/// invocation inside sh, so one authored check serves every operand the closed census enumerated,
+/// and no per-call literal ever installs into shared source that also serves another. Contrast the
+/// ordinary site guard, whose invocation carries that site's RESOLVED operands — correct there,
+/// because a top-level site has exactly one.
+///
+/// `None` for a node that is not a simple command: without an argv there is no parametric form, so
+/// the region admits no shared guard. The join normalises inter-word whitespace, which is engine
+/// glue rather than the author's preserved bytes — the `||`-right keeps those verbatim — and it is
+/// what keeps an interleaved redirection out of the check's arguments.
+pub(crate) fn source_argv(src: &str, ast: &Ast, id: AstId) -> Option<String> {
+    let NodeKind::Simple { words, .. } = &ast.node(id).kind else {
+        return None;
+    };
+    let operands: Vec<&str> = words
+        .iter()
+        .skip(1)
+        .map(|word| {
+            let span = ast.node(*word).span;
+            src.get(span.lo.0 as usize..span.hi.0 as usize)
+                .unwrap_or_default()
+        })
+        .collect();
+    Some(operands.join(" "))
+}
+
 /// The verbatim source text of a node's `[lo, hi)` span — the exact sh the admin
 /// wrote. Resolving a span for display is allowed under `inv-referent-agnostic`
 /// (it is provenance, not a logic branch).
@@ -4531,8 +4784,10 @@ impl Plan {
         let invoked = self
             .steps
             .iter()
+            .map(RenderedEdit::of_step)
+            .chain(self.regions.iter().map(RenderedEdit::of_region))
             .filter_map(|step| {
-                let Disposition::Guard(license) = &step.disposition else {
+                let Disposition::Guard(license) = step.disposition else {
                     return None;
                 };
                 let insert = license.insert();
@@ -4547,14 +4802,18 @@ impl Plan {
     /// blocking redirect) runs verbatim, so pinning its definition would hoist a dead one and take
     /// a guard-free book off its byte floor.
     fn rendered_guards<'a>(&'a self, ast: &Ast) -> impl Iterator<Item = &'a GuardInsert> {
-        self.steps.iter().filter_map(move |step| {
-            let Disposition::Guard(license) = &step.disposition else {
-                return None;
-            };
-            // OOB-safe: a synthetic test Plan's `AstId`s may index no real node.
-            (!(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast)))
-                .then(|| license.insert())
-        })
+        self.steps
+            .iter()
+            .map(RenderedEdit::of_step)
+            .chain(self.regions.iter().map(RenderedEdit::of_region))
+            .filter_map(move |step| {
+                let Disposition::Guard(license) = step.disposition else {
+                    return None;
+                };
+                // OOB-safe: a synthetic test Plan's `AstId`s may index no real node.
+                (!(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast)))
+                    .then(|| license.insert())
+            })
     }
 
     /// The `AstId`s of `Guard` steps whose render is REFUSED ([`guard_render_refused`] — a heredoc
@@ -4827,7 +5086,17 @@ impl Plan {
         };
 
         let mut edits: Vec<SpanEdit> = Vec::new();
-        for step in &self.steps {
+        // A region's edit lands ONCE, at the authored definition, and calls stay calls
+        // (`30L:rul-edit-authored-definition-once`). The spans are disjoint from every leaf's by
+        // construction — a leaf is a top-level execution and a region is inside a body — so the two
+        // edit sources compose without an ordering rule, and `normalise_edits` still holds the
+        // overlap invariant if that ever stops being true.
+        for step in self
+            .steps
+            .iter()
+            .map(RenderedEdit::of_step)
+            .chain(self.regions.iter().map(RenderedEdit::of_region))
+        {
             let span = ast.node(step.ast).span;
             // d-6: a heredoc leaf refuses ANY neutralising edit (its span does not cover the body
             // lines, so substituting would strand them). A GUARD ALSO refuses a non-devnull output
@@ -4906,6 +5175,34 @@ impl Plan {
             });
         }
         normalise_edits(edits)
+    }
+}
+
+/// What the span render needs from a decided unit, whichever identity it wears.
+///
+/// A `Step` and a `RegionStep` answer to different identities and cannot merge (`inv-leaf-seam`),
+/// but the RENDER's question is the same for both: which authored span, and what does the decision
+/// put there. This view is that question and nothing else — no leaf id, so nothing downstream can
+/// key on an identity the unit may not have.
+#[derive(Clone, Copy)]
+struct RenderedEdit<'a> {
+    ast: AstId,
+    disposition: &'a Disposition,
+}
+
+impl<'a> RenderedEdit<'a> {
+    fn of_step(step: &'a Step) -> Self {
+        Self {
+            ast: step.ast,
+            disposition: &step.disposition,
+        }
+    }
+
+    fn of_region(region: &'a RegionStep) -> Self {
+        Self {
+            ast: region.ast,
+            disposition: &region.disposition,
+        }
     }
 }
 
@@ -5731,6 +6028,7 @@ apt_get__is_converged() { return 0; }
         };
         let plan = Plan {
             steps: vec![mk(0), mk(1)],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         };
@@ -5787,6 +6085,7 @@ apt_get__is_converged() { return 0; }
         };
         Plan {
             steps: vec![step(0, bodies[0]), step(1, bodies[1])],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         }
@@ -5914,6 +6213,7 @@ apt_get__is_converged() { return 0; }
                     .unwrap(),
                 ),
             }],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         };
@@ -5963,6 +6263,7 @@ apt_get__is_converged() { return 0; }
         };
         let plan = Plan {
             steps: vec![step(0), step(1)],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         };
@@ -6341,6 +6642,7 @@ apt_get__is_converged() { return 0; }
                 ),
                 step(3, Disposition::Run),
             ],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         };
@@ -6361,6 +6663,7 @@ apt_get__is_converged() { return 0; }
         assert_eq!(
             Plan {
                 steps: vec![],
+                regions: Vec::new(),
                 survival_report: SurvivalReport::default(),
                 defensive_emission: false,
             }

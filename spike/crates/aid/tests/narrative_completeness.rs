@@ -94,6 +94,7 @@ fn constructible_classes() -> Vec<CollapseKind> {
             authored_reason: None,
         },
         CollapseKind::WallFormation {
+            region: None,
             participant: LeafId(0),
             channel: ChannelCoverage {
                 channel: Channel::StatusRelaxable,

@@ -419,6 +419,30 @@ impl WhyWorld {
             },
             _ => dorc_plan::WallPolicy::Honest,
         };
+        // The SAME census the run built, from the same frozen inputs — a why report answering from a
+        // different region population than the run would be a decoration, which is the failure
+        // `one-definition-table-two-drivers` exists to prevent.
+        let region_universe = dorc_core::region::RegionUniverse::of_book_custody_files(
+            source_refs
+                .iter()
+                .enumerate()
+                .filter(|(_, src)| !dorc_oracle::marker::has_marker(src))
+                .map(|(index, _)| dorc_analysis::funcenv::source_file_of_index(index)),
+        );
+        let string_execution = dorc_plan::region::StringExecutionSites::of_unit(&parsed.value);
+        let definition_vectors = dorc_oracle::closure::definition_vectors(&source_refs);
+        let regions = dorc_plan::region::census(
+            &parsed.value,
+            &cfg.value,
+            &cfg.diags,
+            dorc_plan::region::CensusOpeners::of(
+                &region_universe,
+                env.unresolvable_loads(),
+                &definition_vectors,
+                &string_execution,
+            ),
+            snapshot.book_file(),
+        );
         let plan_inputs = dorc_plan::SettleInputs {
             src: book_src,
             ast: &parsed.value,
@@ -426,6 +450,7 @@ impl WhyWorld {
             vouches: &vouches,
             connected: &dorc_plan::ConnectedPipes::default(),
             policy,
+            regions: &regions,
             // A why world reads results somebody already admitted, and reaching for host bytes at
             // all is what makes what follows influenced — so it widens through the one named seat
             // rather than holding a carrier (`307a:dis-phase-by-free-widening`).
@@ -1258,6 +1283,7 @@ mod tests {
                     .expect("a converged probe verdict mints a guard"),
                 ),
             }],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         }

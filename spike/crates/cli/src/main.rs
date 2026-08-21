@@ -1798,6 +1798,35 @@ fn run(
         },
         None => dorc_plan::WallPolicy::Honest,
     };
+    // THE ELISION-REGION CENSUS (`plans/30L` §3), frozen with everything else here. The universe
+    // admits exactly the loaded files that are NOT dorc-lang: a dorc-lang file is contracted
+    // non-mutative, so its interior is not attention product and receives no elision work at any
+    // tier — an EXCLUSION, not a deferral (`30L:rul-region-universe-is-book-custody`).
+    let region_universe = dorc_core::region::RegionUniverse::of_book_custody_files(
+        source_refs
+            .iter()
+            .enumerate()
+            .filter(|(_, src)| !dorc_oracle::marker::has_marker(src))
+            .map(|(index, _)| dorc_analysis::funcenv::source_file_of_index(index)),
+    );
+    // The opener signals the census cannot see for itself, all of them, through one constructor that
+    // demands each (`30N:rul-census-inputs-are-non-optional`). Two are the very signals defensive
+    // emission already reads below — a name-rebinding vector and an unresolvable load — because both
+    // questions are "can something outside the enumerated set change what this name means".
+    let string_execution = dorc_plan::region::StringExecutionSites::of_unit(&parsed.value);
+    let definition_vectors = dorc_oracle::closure::definition_vectors(&source_refs);
+    let regions = dorc_plan::region::census(
+        &parsed.value,
+        &cfg.value,
+        &cfg.diags,
+        dorc_plan::region::CensusOpeners::of(
+            &region_universe,
+            env.unresolvable_loads(),
+            &definition_vectors,
+            &string_execution,
+        ),
+        snapshot.book_file(),
+    );
     let plan_inputs = dorc_plan::SettleInputs {
         src: &book_src,
         ast: &parsed.value,
@@ -1805,6 +1834,7 @@ fn run(
         vouches: &vouches,
         connected: &connected,
         policy,
+        regions: &regions,
         // `309` §2 grade-stamping: this settlement is downstream of the intake, so every record it
         // writes is host-influenced. Carried by construction, not by each mint site remembering.
         minted_at: Some(scoped_results.influence()),
@@ -6507,6 +6537,7 @@ apt_get__is_converged() {
             vouches: &vouches,
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
+            regions: &dorc_plan::region::RegionCensus::default(),
             minted_at: None,
         };
         let _ = origin;
@@ -6679,6 +6710,7 @@ apt_get__is_converged() {
             vouches: &vouches,
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
+            regions: &dorc_plan::region::RegionCensus::default(),
             minted_at: None,
         };
         let settled = settle_world(

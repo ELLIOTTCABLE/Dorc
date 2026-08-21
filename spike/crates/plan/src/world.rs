@@ -284,9 +284,17 @@ pub fn effective_invalidators(
     invalidators
         .iter()
         .copied()
-        .filter(|&node| match cfg.execution_owner(node) {
-            ExecutionOwner::AlwaysAtNode => true,
-            ExecutionOwner::Leaf(owner) => !ledger.proves_no_execution(owner),
+        // TWO ways out of the effective world, and they are different claims: the render unit that
+        // GOVERNS this mutation disappeared, or the mutation was proven at its OWN node — which is
+        // what a shared elision region establishes (`plans/30L` §6). The authored bytes every
+        // instance would have run are replaced once at the definition, so each instance's mutation
+        // retires while the CALL that governs it still runs. Neither substitutes for the other.
+        .filter(|&node| {
+            !ledger.proves_no_execution(node)
+                && match cfg.execution_owner(node) {
+                    ExecutionOwner::AlwaysAtNode => true,
+                    ExecutionOwner::Leaf(owner) => !ledger.proves_no_execution(owner),
+                }
         })
         .collect()
 }
@@ -296,18 +304,24 @@ pub fn effective_invalidators(
 /// Forward, `out = in ∪ gen(node)`, gen non-empty exactly at an effective invalidator — monotone
 /// and finite-height by construction, and certified like every production answer
 /// (`solve-is-certified-only`). `suppress` is the self-reach shape (`effect::self_reach_holds`):
-/// an in-loop aggregate's own writes come back to it over the back-edge, and its own elision is
-/// what removes them, so its freshness is answered with itself silenced — the same fixed-point
-/// argument the Members license has always rested on.
+/// an aggregate's own writes come back to it — over a loop's back-edge for an in-loop Members site,
+/// and along the ordinary sequence for the SIBLING INSTANCES of one shared elision region — and its
+/// own atomic elision is what removes them, so its freshness is answered with itself silenced.
+///
+/// A SET rather than one node, because a region's population is many instances and they are
+/// replaced atomically or not at all (`30L:inv-no-posthoc-shared-demotion`); suppressing one at a
+/// time would answer a question no decision corresponds to. The suppressed answer is only ever
+/// consumed beside its OWN certification (`30Mb:fnd-members-floor-is-a-sentinel`) — it is a second
+/// answer, and the window's certification says nothing about it.
 #[must_use]
 pub fn solve_reaching_walls(
     cfg: &Cfg,
     effective: &BTreeSet<CfgNodeId>,
-    suppress: Option<CfgNodeId>,
+    suppress: &BTreeSet<CfgNodeId>,
 ) -> (Solution<ReachingWalls>, SolveConsistency<ReachingWalls>) {
     solve_certified(cfg, Direction::Forward, |i, incoming: &ReachingWalls| {
         let node = CfgNodeId(u32::try_from(i).unwrap_or(u32::MAX));
-        if suppress == Some(node) || !effective.contains(&node) {
+        if suppress.contains(&node) || !effective.contains(&node) {
             return incoming.clone();
         }
         let mut out = incoming.clone();

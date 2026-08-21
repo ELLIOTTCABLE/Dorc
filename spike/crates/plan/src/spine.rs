@@ -27,6 +27,11 @@ impl DecidePlane for PlanPlane {
     type Decision = Disposition;
     type Records = crate::records::AdmittedUnscopedHostRecords;
     type Narrative = CollapseNarrative;
+    /// One authored region's shared decision is the same VERB set a site's is — replace, guard, or
+    /// run the authored bytes — because `30L:rul-no-specialized-shell` leaves no third thing an edit
+    /// could be. The identities differ (`ElisionRegion` vs `SiteId`), which is why the seam keeps
+    /// them separate types even where they instantiate to one enum.
+    type RegionDecision = Disposition;
 }
 
 /// The engine's Spine: one structure, every decision (`309` §0).
@@ -130,8 +135,20 @@ pub fn project_plan(spine: &Spine, _authority: &PlanAuthority) -> Plan {
             disposition: record.decision.clone(),
         })
         .collect();
+    let regions = spine
+        .region_decisions()
+        .iter()
+        .map(|record| crate::RegionStep {
+            region: record.region,
+            ast: record.ast,
+            sh: record.sh.clone(),
+            disposition: record.decision.clone(),
+            routes: record.routes.total(),
+        })
+        .collect();
     Plan {
         steps,
+        regions,
         survival_report: project_survival_report(spine),
         defensive_emission: projected_defensive_emission(spine),
     }
@@ -333,6 +350,7 @@ mod tests {
                     },
                 },
             ],
+            regions: Vec::new(),
             survival_report: SurvivalReport::default(),
             defensive_emission: false,
         };

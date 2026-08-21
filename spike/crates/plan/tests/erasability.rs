@@ -461,6 +461,7 @@ fn empty_probe_plan_default_is_inert() {
     let i = Interner::default();
     let plan = dorc_plan::Plan {
         steps: vec![],
+        regions: Vec::new(),
         survival_report: dorc_plan::SurvivalReport::default(),
         defensive_emission: false,
     };

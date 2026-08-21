@@ -100,6 +100,33 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
     // already forgotten the act (`30Md:fnd-discarded-trip-retains-elisions`). Dissolving it is
     // `30M:rec-dissolve-trip-must-remember-structurally`, unbuilt; until then the surface is held
     // by `project_censusless` and the lexical producer fence beside it.
+    // A REGION decision is the same walk over the same verbs, and it has to be here rather than
+    // implied: a shared region's elision is a whole family of instances at once, so a tripped run
+    // that kept one would keep more mutations un-run than any single site could
+    // (`30Md:fnd-discarded-trip-retains-elisions`, at the region grain). Guards stand on the same
+    // census answer, and the region's own narration keys by its contributing routes' invocation
+    // leaves, since a region owns no leaf of its own.
+    for record in spine.region_decisions_mut() {
+        let stands = match &record.decision {
+            Disposition::Run => true,
+            Disposition::Guard(license) => census_unique(license.insert().fn_name()),
+            Disposition::Replace(..) | Disposition::Omit { .. } => false,
+        };
+        if stands {
+            continue;
+        }
+        record.decision = Disposition::Run;
+        out.demoted = out.demoted.saturating_add(1);
+        for route in record.routes.shown() {
+            out.narrative.push(CollapseNarrative::new(
+                SpeechAct::Derived,
+                CollapseKind::Demotion {
+                    site: dorc_aid::diag::SiteId::leaf(route.leaf),
+                    reason: DemoteTag::CertifierTripped,
+                },
+            ));
+        }
+    }
     for site in demoted_sites {
         spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
             site: Some(site),

@@ -14,14 +14,17 @@
     reason = "test helpers: panic-based require()/sole_region, the in-tests allowance the policy intends"
 )]
 
+use std::collections::BTreeSet;
+
 use dorc_analysis::cfg::build;
 use dorc_core::influence::Influenced;
 use dorc_core::region::{ElisionRegion, RegionUniverse};
 use dorc_core::{AstId, EntityRef, FactKey, Interner, KindId, SelectorId, SourceFileId};
 use dorc_plan::StandIn;
 use dorc_plan::region::{
-    RegionCensus, RouteAdmission, RouteConclusion, RouteInstance, RoutePopulation,
-    RouteRegionProof, SharedOutcome, SharedRegionAct, SharedStandIn, census, decide_region,
+    CensusOpeners, RegionCensus, RouteAdmission, RouteConclusion, RouteInstance, RoutePopulation,
+    RouteRegionProof, SharedGuard, SharedOutcome, SharedRegionAct, SharedStandIn,
+    StringExecutionSites, census, decide_region,
 };
 use dorc_syntax::parse;
 
@@ -31,28 +34,37 @@ fn book_universe() -> RegionUniverse {
     RegionUniverse::of_book_custody_files([BOOK])
 }
 
-/// Census over `src`, with the book admitted to the region universe.
+/// The opener signals of a unit nothing outside it can reach: no unresolvable load, no
+/// name-rebinding vector, no string execution.
+fn quiet_openers<'a>(
+    universe: &'a RegionUniverse,
+    string_execution: &'a StringExecutionSites,
+    loads: &'a BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    vectors: &'a BTreeSet<String>,
+) -> CensusOpeners<'a> {
+    CensusOpeners::of(universe, loads, vectors, string_execution)
+}
+
+/// Census over `src`, with the book admitted to the region universe and no driver-side opener.
 fn census_of(src: &str) -> RegionCensus {
-    let parsed = parse(src);
-    let built = build(&parsed.value);
-    census(
-        &parsed.value,
-        &built.value,
-        &built.diags,
-        &book_universe(),
-        BOOK,
-    )
+    census_with(src, &book_universe())
 }
 
 /// Census over `src` with an EMPTY universe — the world where no file is book-custody.
 fn census_with_no_universe(src: &str) -> RegionCensus {
+    census_with(src, &RegionUniverse::default())
+}
+
+fn census_with(src: &str, universe: &RegionUniverse) -> RegionCensus {
     let parsed = parse(src);
     let built = build(&parsed.value);
+    let string_execution = StringExecutionSites::of_unit(&parsed.value);
+    let (loads, vectors) = (BTreeSet::new(), BTreeSet::new());
     census(
         &parsed.value,
         &built.value,
         &built.diags,
-        &RegionUniverse::default(),
+        quiet_openers(universe, &string_execution, &loads, &vectors),
         BOOK,
     )
 }
@@ -97,20 +109,35 @@ fn fact(selector: &str) -> FactKey {
     )
 }
 
-fn guard_conclusion(bytes: &str) -> RouteConclusion {
-    RouteConclusion::Guard {
-        fact: fact("installed"),
-        canonical: bytes.to_owned(),
-    }
+/// A route whose own answer was a guard, and whose admitted guard bytes are `bytes`.
+fn guarding(bytes: &str) -> (RouteConclusion, Option<SharedGuard>) {
+    (
+        RouteConclusion::Guard {
+            fact: fact("installed"),
+        },
+        Some(SharedGuard::of(bytes.to_owned())),
+    )
 }
 
-fn proofs_of(routes: &[RouteInstance], conclusions: &[RouteConclusion]) -> Vec<RouteRegionProof> {
-    assert_eq!(routes.len(), conclusions.len(), "one conclusion per route");
+/// A route whose own answer was `conclusion` and which admits no guard.
+fn alone(conclusion: RouteConclusion) -> (RouteConclusion, Option<SharedGuard>) {
+    (conclusion, None)
+}
+
+fn proofs_of(
+    routes: &[RouteInstance],
+    admissions: &[(RouteConclusion, Option<SharedGuard>)],
+) -> Vec<RouteRegionProof> {
+    assert_eq!(routes.len(), admissions.len(), "one admission per route");
     routes
         .iter()
-        .zip(conclusions.iter())
-        .map(|(route, conclusion)| {
-            RouteRegionProof::new(*route, RouteAdmission::project(conclusion), None)
+        .zip(admissions.iter())
+        .map(|(route, (conclusion, guard))| {
+            RouteRegionProof::new(
+                *route,
+                RouteAdmission::project(conclusion, guard.clone()),
+                None,
+            )
         })
         .collect()
 }
@@ -247,6 +274,85 @@ fn a_dynamic_execution_construct_opens_every_census() {
     assert_eq!(population, RoutePopulation::Open);
 }
 
+/// Census over `src` with ONE driver-side opener signal supplied, so the three signals the census
+/// cannot see for itself get the same cell treatment the three it can see already have.
+fn census_with_driver_opener(
+    src: &str,
+    loads: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    vectors: &BTreeSet<String>,
+) -> RegionCensus {
+    let parsed = parse(src);
+    let built = build(&parsed.value);
+    let string_execution = StringExecutionSites::of_unit(&parsed.value);
+    let universe = book_universe();
+    census(
+        &parsed.value,
+        &built.value,
+        &built.diags,
+        CensusOpeners::of(&universe, loads, vectors, &string_execution),
+        BOOK,
+    )
+}
+
+/// An UNRESOLVABLE LOAD opens every census: a `.` whose target the value plane could not name can
+/// load anything, a redefinition of the region's own function included
+/// (`30L:rul-call-census-must-be-closed`, "unresolved source/load").
+///
+/// A driver-side signal, so the region a quiet unit would have censused Closed goes Open the moment
+/// the driver reports one — which is the direction that matters: a population wrongly Closed is a
+/// wrong-elision one abstraction level up.
+#[test]
+fn an_unresolvable_load_opens_every_census_and_the_region_runs() {
+    let src = "p() { apt-get install -y nginx; }\np\n";
+    let (none, no_vectors) = (BTreeSet::new(), BTreeSet::new());
+    let (region, population) = sole_region(&census_with_driver_opener(src, &none, &no_vectors));
+    assert!(matches!(population, RoutePopulation::Closed(_)));
+    let loaded = BTreeSet::from([dorc_analysis::cfg::CfgNodeId(0)]);
+    let (region_open, opened) = sole_region(&census_with_driver_opener(src, &loaded, &no_vectors));
+    assert_eq!(region, region_open, "the same authored region, either way");
+    assert_eq!(opened, RoutePopulation::Open);
+    assert_eq!(
+        *decide_region(region_open, &opened, &[]).outcome(),
+        SharedOutcome::Run,
+        "and an open population runs"
+    );
+}
+
+/// A DEFINITION VECTOR opens every census: an `alias` rebinds a name for every later caller, so the
+/// enumerated call set stops being the executing one
+/// (`30L:rul-call-census-must-be-closed`, "unresolved callback or alias").
+#[test]
+fn a_definition_vector_opens_every_census_and_the_region_runs() {
+    let src = "p() { apt-get install -y nginx; }\np\n";
+    let no_loads = BTreeSet::new();
+    let vectors = BTreeSet::from(["alias".to_owned()]);
+    let (region, population) = sole_region(&census_with_driver_opener(src, &no_loads, &vectors));
+    assert_eq!(population, RoutePopulation::Open);
+    assert_eq!(
+        *decide_region(region, &population, &[]).outcome(),
+        SharedOutcome::Run
+    );
+}
+
+/// STRING EXECUTION opens every census: a `trap` action is shell text the shell runs at a moment no
+/// CFG edge models, and it can name any function
+/// (`30L:rul-call-census-must-be-closed`, "trap or string execution that may name the function").
+///
+/// Word-keyed, not effect-keyed: `hork` above is an opaque EXTERNAL command and opens nothing, while
+/// `trap` is the shell itself being handed a program.
+#[test]
+fn a_trap_opens_every_census_and_the_region_runs() {
+    let quiet = census_of("p() { apt-get install -y nginx; }\np\n");
+    assert!(matches!(sole_region(&quiet).1, RoutePopulation::Closed(_)));
+    let census = census_of("p() { apt-get install -y nginx; }\ntrap 'p' EXIT\np\n");
+    let (region, population) = sole_region(&census);
+    assert_eq!(population, RoutePopulation::Open);
+    assert_eq!(
+        *decide_region(region, &population, &[]).outcome(),
+        SharedOutcome::Run
+    );
+}
+
 /// `30L:pin-loop-population-open-until-proven` — the EXPECTED-OPEN literal-loop cell. A call inside
 /// an authored `for` over a LITERAL list is many evaluations, and today the census cannot enumerate
 /// them, so the population is Open and the region runs. That is the CURRENT truth; the target is
@@ -349,8 +455,8 @@ fn agreeing_twin_calls_meet_to_one_replacement() {
     let proofs = proofs_of(
         &routes,
         &[
-            RouteConclusion::Replace(StandIn::True),
-            RouteConclusion::Replace(StandIn::True),
+            alone(RouteConclusion::Replace(StandIn::True)),
+            alone(RouteConclusion::Replace(StandIn::True)),
         ],
     );
     let decision = decide_region(region, &population, &proofs);
@@ -380,7 +486,7 @@ fn cardinality_one_falls_out_of_the_general_meet() {
         &one_population,
         &proofs_of(
             &closed_routes(&one_population),
-            &[RouteConclusion::Replace(StandIn::True)],
+            &[alone(RouteConclusion::Replace(StandIn::True))],
         ),
     );
 
@@ -392,8 +498,8 @@ fn cardinality_one_falls_out_of_the_general_meet() {
         &proofs_of(
             &closed_routes(&twin_population),
             &[
-                RouteConclusion::Replace(StandIn::True),
-                RouteConclusion::Replace(StandIn::True),
+                alone(RouteConclusion::Replace(StandIn::True)),
+                alone(RouteConclusion::Replace(StandIn::True)),
             ],
         ),
     );
@@ -416,8 +522,8 @@ fn one_failing_route_forces_run_for_the_whole_region() {
     let proofs = proofs_of(
         &routes,
         &[
-            RouteConclusion::Replace(StandIn::True),
-            RouteConclusion::Run,
+            alone(RouteConclusion::Replace(StandIn::True)),
+            alone(RouteConclusion::Run),
         ],
     );
     assert_eq!(
@@ -438,8 +544,8 @@ fn differing_reproduced_statuses_run() {
     let proofs = proofs_of(
         &routes,
         &[
-            RouteConclusion::Replace(StandIn::True),
-            RouteConclusion::Replace(StandIn::Exit(9)),
+            alone(RouteConclusion::Replace(StandIn::True)),
+            alone(RouteConclusion::Replace(StandIn::Exit(9))),
         ],
     );
     assert_eq!(
@@ -460,8 +566,8 @@ fn agreeing_guards_meet_to_one_guard_that_still_walls() {
     let proofs = proofs_of(
         &routes,
         &[
-            guard_conclusion("fn=p__is_converged inv=p__is_converged nginx preamble=BODY"),
-            guard_conclusion("fn=p__is_converged inv=p__is_converged nginx preamble=BODY"),
+            guarding("fn=p__is_converged inv=p__is_converged nginx preamble=BODY"),
+            guarding("fn=p__is_converged inv=p__is_converged nginx preamble=BODY"),
         ],
     );
     let decision = decide_region(region, &population, &proofs);
@@ -482,8 +588,8 @@ fn divergent_live_guard_definitions_refuse_the_shared_guard() {
     let proofs = proofs_of(
         &routes,
         &[
-            guard_conclusion("fn=p__is_converged inv=p__is_converged nginx preamble=BODY-A"),
-            guard_conclusion("fn=p__is_converged inv=p__is_converged nginx preamble=BODY-B"),
+            guarding("fn=p__is_converged inv=p__is_converged nginx preamble=BODY-A"),
+            guarding("fn=p__is_converged inv=p__is_converged nginx preamble=BODY-B"),
         ],
     );
     assert_eq!(
@@ -492,12 +598,11 @@ fn divergent_live_guard_definitions_refuse_the_shared_guard() {
     );
 }
 
-/// The divergent-facts-one-guard cell, at its CURRENT behaviour: one converged route and one
-/// diverged route meet to Run today, because the engine's guard tier is freshness-driven and a
-/// diverged-but-vouched site concludes Run rather than admitting a guard. Named interim, per the
-/// xfail seat's own rule that an interim assertion lives in its own test.
+/// A route that admits NO guard cannot be carried by a sibling that does. Two divergent
+/// conclusions and no shared bytes to fall back on is Run, which is the floor the arm below only
+/// climbs off when every route independently admits the same edit.
 #[test]
-fn interim_divergent_route_facts_run_rather_than_guarding() {
+fn divergent_route_facts_with_no_shared_guard_run() {
     let census =
         census_of("install_pkg() { apt-get install -y nginx; }\ninstall_pkg\ninstall_pkg\n");
     let (region, population) = sole_region(&census);
@@ -505,8 +610,8 @@ fn interim_divergent_route_facts_run_rather_than_guarding() {
     let proofs = proofs_of(
         &routes,
         &[
-            RouteConclusion::Replace(StandIn::True),
-            RouteConclusion::Run,
+            alone(RouteConclusion::Replace(StandIn::True)),
+            alone(RouteConclusion::Run),
         ],
     );
     assert_eq!(
@@ -515,29 +620,46 @@ fn interim_divergent_route_facts_run_rather_than_guarding() {
     );
 }
 
-/// The TARGET of that cell, red-first (`30L` §4.5): where route facts DIVERGE but every route
-/// admits the SAME invocation-parametric guard, Guard absorbs what Replace cannot. Two things are
-/// missing and both belong to later stages: a diverged route must be able to ADMIT a guard, and the
-/// guard's argv must be the SOURCE-level expression rather than each site's resolved operands.
+/// `30L` §4.5, the divergent-instances valve: where route facts DIVERGE but every route admits the
+/// SAME invocation-parametric guard, Guard absorbs what Replace cannot.
+///
+/// The two things this needed are what the settlement stage built. A route's ADMISSION is a product
+/// rather than its preferred answer, so a converged-and-fresh route that would replace still admits
+/// the guard beside it and a diverged sibling that concludes Run still admits one at all; and the
+/// guard's identity is its SOURCE-level bytes, so `install "$1"` is one edit across operands that a
+/// per-call resolved invocation would have split in two.
 #[test]
-fn p_x_divergent_routes_share_one_parametric_guard() {
+fn divergent_routes_share_one_parametric_guard() {
     let census =
         census_of("install_pkg() { apt-get install -y nginx; }\ninstall_pkg\ninstall_pkg\n");
     let (region, population) = sole_region(&census);
     let routes = closed_routes(&population);
-    internal_tooling::xfail::xfail_until("p-x-divergent-routes-share-one-parametric-guard", || {
-        let proofs = proofs_of(
-            &routes,
-            &[
-                RouteConclusion::Replace(StandIn::True),
-                RouteConclusion::Run,
-            ],
-        );
-        assert!(matches!(
+    let parametric = "fn=p__is_converged inv=p__is_converged install \"$1\" preamble=BODY";
+    let proofs = vec![
+        RouteRegionProof::new(
+            routes[0],
+            RouteAdmission::project(
+                &RouteConclusion::Replace(StandIn::True),
+                Some(SharedGuard::of(parametric.to_owned())),
+            ),
+            None,
+        ),
+        RouteRegionProof::new(
+            routes[1],
+            RouteAdmission::project(
+                &RouteConclusion::Run,
+                Some(SharedGuard::of(parametric.to_owned())),
+            ),
+            None,
+        ),
+    ];
+    assert!(
+        matches!(
             decide_region(region, &population, &proofs).outcome(),
             SharedOutcome::Guard(_)
-        ));
-    });
+        ),
+        "a replacing route and a running route that admit ONE parametric guard share it"
+    );
 }
 
 /// Agreeing source-level Omits meet to Omit. Controllers must agree: two clones of one body share
@@ -552,12 +674,12 @@ fn agreeing_omits_meet_to_one_omit() {
     let agreeing = proofs_of(
         &routes,
         &[
-            RouteConclusion::Omit {
+            alone(RouteConclusion::Omit {
                 controller: AstId(3),
-            },
-            RouteConclusion::Omit {
+            }),
+            alone(RouteConclusion::Omit {
                 controller: AstId(3),
-            },
+            }),
         ],
     );
     assert_eq!(
@@ -569,12 +691,12 @@ fn agreeing_omits_meet_to_one_omit() {
     let disagreeing = proofs_of(
         &routes,
         &[
-            RouteConclusion::Omit {
+            alone(RouteConclusion::Omit {
                 controller: AstId(3),
-            },
-            RouteConclusion::Omit {
+            }),
+            alone(RouteConclusion::Omit {
                 controller: AstId(4),
-            },
+            }),
         ],
     );
     assert_eq!(
@@ -597,12 +719,12 @@ fn one_influenced_route_influences_the_shared_decision() {
     let proofs = vec![
         RouteRegionProof::new(
             routes[0],
-            RouteAdmission::project(&RouteConclusion::Replace(StandIn::True)),
+            RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
             None,
         ),
         RouteRegionProof::new(
             routes[1],
-            RouteAdmission::project(&RouteConclusion::Replace(StandIn::True)),
+            RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
             Some(influenced),
         ),
     ];
@@ -623,7 +745,10 @@ fn proofs_that_do_not_cover_the_population_run() {
         census_of("install_pkg() { apt-get install -y nginx; }\ninstall_pkg\ninstall_pkg\n");
     let (region, population) = sole_region(&census);
     let routes = closed_routes(&population);
-    let short = proofs_of(&routes[..1], &[RouteConclusion::Replace(StandIn::True)]);
+    let short = proofs_of(
+        &routes[..1],
+        &[alone(RouteConclusion::Replace(StandIn::True))],
+    );
     assert_eq!(
         *decide_region(region, &population, &short).outcome(),
         SharedOutcome::Run
@@ -643,9 +768,9 @@ fn a_mixed_body_decides_its_regions_independently() {
         .enumerate()
         .map(|(index, (region, population))| {
             let conclusion = if index == 0 {
-                RouteConclusion::Replace(StandIn::True)
+                alone(RouteConclusion::Replace(StandIn::True))
             } else {
-                RouteConclusion::Run
+                alone(RouteConclusion::Run)
             };
             let proofs = proofs_of(&closed_routes(population), &[conclusion]);
             decide_region(*region, population, &proofs)
@@ -707,8 +832,8 @@ fn one_region_serves_a_status_consuming_call_and_a_bare_one() {
     let proofs = proofs_of(
         &closed_routes(&body.1),
         &[
-            RouteConclusion::Replace(StandIn::True),
-            RouteConclusion::Run,
+            alone(RouteConclusion::Replace(StandIn::True)),
+            alone(RouteConclusion::Run),
         ],
     );
     assert_eq!(
@@ -731,7 +856,7 @@ fn a_wholly_replaceable_helper_is_all_replace_regions_and_no_call_decision() {
     for (region, population) in &all {
         let proofs = proofs_of(
             &closed_routes(population),
-            &[RouteConclusion::Replace(StandIn::True)],
+            &[alone(RouteConclusion::Replace(StandIn::True))],
         );
         let decision = decide_region(*region, population, &proofs);
         assert_eq!(decision.act(), SharedRegionAct::RetiresEveryInstance);
