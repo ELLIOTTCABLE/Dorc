@@ -449,6 +449,20 @@ pub enum RenderRefusalTag {
     OutputRedirect,
 }
 
+/// WHICH identity the render refused an edit at (`30N:rul-region-refusal-discloses-region-keyed`).
+///
+/// The two are not interchangeable and this enum is what keeps them from being flattened into one
+/// nullable field: a `Site` is one execution, a `Region` is one authored edit many executions share
+/// (`30L:rul-two-identities-never-conflated`). A consumer that wants a leaf asks for the arm and
+/// gets nothing from a region, which is the honest answer rather than a borrowed call's id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RefusedEditSubject {
+    /// One execution: the leaf whose span could not be edited.
+    Site(SiteId),
+    /// One authored edit: the region whose shared span could not be edited.
+    Region(dorc_core::region::ElisionRegion),
+}
+
 /// The RESERVED cancellation-narrative marker (`27V` Lane A: cancellation is an r26 narrative kind
 /// the type must not FORECLOSE). Uninhabited — [`CollapseKind::Cancellation`] cannot be constructed
 /// at v1, but the variant holds the slot so no consumer's exhaustive match forecloses it. The r26
@@ -512,9 +526,9 @@ pub enum CollapseKind {
     },
     /// A converged mutator's `Replace` demoted to `Run` (`survival::WallVerdict::Demoted`).
     Demotion { site: SiteId, reason: DemoteTag },
-    /// The leaf-exact render refused to elide/guard (c8; stays a [`crate::diag::DiagCode`]).
+    /// The span render refused to elide/guard (c8; stays a [`crate::diag::DiagCode`]).
     RenderRefusal {
-        site: SiteId,
+        subject: RefusedEditSubject,
         cause: RenderRefusalTag,
     },
     /// The validity fixpoint hit its iteration cap and DEGRADED TO ORIGIN (`26H` §4.4): every
@@ -614,7 +628,7 @@ impl CollapseKind {
     #[must_use]
     pub fn render_refusal_heredoc(site: SiteId) -> Self {
         CollapseKind::RenderRefusal {
-            site,
+            subject: RefusedEditSubject::Site(site),
             cause: RenderRefusalTag::Heredoc,
         }
     }

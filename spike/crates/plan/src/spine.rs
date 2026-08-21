@@ -227,9 +227,9 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
 /// `30F` §4.4 disclosed — a record that cannot disagree with the artifact because it is not a
 /// second computation of the same question.
 ///
-/// A refused REGION carries no leaf and so reaches no `SpineRenderDecision`
-/// (`30Nd:fnd-region-refusal-is-undisclosed`); it is decided and readable on the plane
-/// (`DecidedRender::refused`), and the record species would need a region key to hold it.
+/// A refused REGION reaches a row on the species' REGION axis
+/// (`30N:rul-region-refusal-discloses-region-keyed`): the same record, keyed by the identity a
+/// region has, never by one of the invocations that share the edit.
 pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
     use dorc_core::spine::{RefusalCause, RenderDecision, SpineRenderDecision};
 
@@ -238,6 +238,7 @@ pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
         if let Some(invoked) = pinned.invoked(step.ast) {
             spine.push_render_decision(SpineRenderDecision {
                 site: Some(dorc_core::SiteId::leaf(step.leaf)),
+                region: None,
                 decision: RenderDecision::PinnedBinding {
                     invoked: invoked.to_owned(),
                 },
@@ -246,9 +247,12 @@ pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
         }
     }
     for refusal in plan.render_plane().refused() {
-        let Some(leaf) = refusal.leaf else { continue };
+        if refusal.leaf.is_none() && refusal.region.is_none() {
+            continue;
+        }
         spine.push_render_decision(SpineRenderDecision {
-            site: Some(dorc_core::SiteId::leaf(leaf)),
+            site: refusal.leaf.map(dorc_core::SiteId::leaf),
+            region: refusal.region,
             // The REAL cause. Hard-coding `Heredoc` made the record state a falsehood for every
             // redirect-refused guard — the class `30Mf` F2 had just made reachable.
             decision: RenderDecision::Refused {
@@ -265,6 +269,7 @@ pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
     for (leaf, neutralised) in plan.omit_neutralisations() {
         spine.push_render_decision(SpineRenderDecision {
             site: Some(dorc_core::SiteId::leaf(leaf)),
+            region: None,
             decision: RenderDecision::OmitNeutralised { neutralised },
             grade: None,
         });

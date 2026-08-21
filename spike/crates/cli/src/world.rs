@@ -501,6 +501,7 @@ impl WhyWorld {
         // (`one-definition-table-two-drivers`).
         spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
             site: None,
+            region: None,
             decision: dorc_core::spine::RenderDecision::DefensiveEmission {
                 defensive: !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
                     || !env.unresolvable_loads().is_empty(),

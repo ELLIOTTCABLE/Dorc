@@ -89,6 +89,12 @@ pub enum DiagCode {
     /// (`kFAIL-perform`; arch-1 d-6). An Error-class give-up (a broken artifact would ship
     /// otherwise).
     RenderHeredocRefused(RenderHeredocRefused),
+    /// The span render REFUSED a licensed edit at an authored REGION — the same predicate its
+    /// leaf-keyed cousin answers, at the identity a region has (`30L:rul-two-identities-never-
+    /// conflated`). A sibling code rather than a reason arm because the SUBJECT differs: one edit
+    /// many invocations share is not one execution, and smearing the refusal across the
+    /// contributing calls is the shape `30N:rul-region-refusal-discloses-region-keyed` forbids.
+    RenderRegionRefused(RenderRegionRefused),
 
     // ── B4 mechanical sweep: former `diag::legacy` survivors ────────────────
     /// A command runs inside a `$(…)` substitution body — effect-bearing but not independently
@@ -413,6 +419,7 @@ impl DiagCode {
             DiagCode::CmdsubOperandTop(_) => "cmdsub-operand-top",
             DiagCode::SiteUnresolvable(_) => "site-unresolvable",
             DiagCode::RenderHeredocRefused(_) => "render-heredoc-refused",
+            DiagCode::RenderRegionRefused(_) => "render-region-refused",
             DiagCode::CmdsubInnerNonleaf(_) => "cmdsub-inner-nonleaf",
             DiagCode::RedirTargetTop(_) => "redir-target-top",
             DiagCode::Depth2PositionalUnthreaded(_) => "depth-2-positional-unthreaded",
@@ -652,6 +659,24 @@ pub struct RenderHeredocRefused {
     pub verb: &'static str,
     /// The one-line command text the refusal points at (display only) — the template's `{command}`.
     pub command: String,
+}
+
+/// Payload of [`DiagCode::RenderRegionRefused`]: the authored REGION whose shared edit the span
+/// render refused (`30N:rul-region-refusal-discloses-region-keyed`).
+///
+/// It carries no [`SiteId`] and must never grow one: a region is EDIT identity and owns no
+/// execution, so a leaf here would either invent one or borrow a contributing call's, which is the
+/// smearing the ruling forbids. The diagnostic's SPAN is the authored region — that is the key a
+/// reader navigates by, and it is the same span every invocation would have shared.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderRegionRefused {
+    /// The disposition verb the refusal names (`elide` for a Replace/Omit, `guard` for a Guard).
+    pub verb: &'static str,
+    /// The one-line region text the refusal points at (display only).
+    pub command: String,
+    /// How many statically possible invocations shared the edit that did not land — the number
+    /// that says why this is not a per-call disclosure.
+    pub routes: usize,
 }
 
 // ===========================================================================
@@ -2378,6 +2403,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
+        // Same give-up, same floor, at the region's identity: the licensed edit did not land and
+        // every invocation runs the authored bytes.
+        DiagCode::RenderRegionRefused(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         // ── B4 sweep: former diag::legacy survivors ──────────────────────────
         // Pure disclosures (the apply runs these sites regardless) → Note + Floor::None.
         DiagCode::CmdsubInnerNonleaf(_) => CodeSpec {
@@ -3072,6 +3104,13 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("verb", (*verb).to_owned()),
             ours("command", command.clone()),
         ],
+        // Its register is unwritten, so it has no holes to fill yet; the payload's fields are what
+        // the prose act will reach for when somebody writes the words.
+        DiagCode::RenderRegionRefused(RenderRegionRefused {
+            verb: _,
+            command: _,
+            routes: _,
+        }) => Vec::new(),
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
             vec![ours("inner", inner.clone())]
         }

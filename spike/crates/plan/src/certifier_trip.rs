@@ -158,6 +158,7 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
     for site in demoted_sites {
         spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
             site: Some(site),
+            region: None,
             decision: dorc_core::spine::RenderDecision::CertifierTripDemote,
             grade: None,
         });

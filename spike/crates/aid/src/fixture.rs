@@ -31,14 +31,14 @@ use crate::diag::{
     MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
     RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch,
     RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine,
-    RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused, RoleDefinedBelowItsSites,
-    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass,
-    SolverConsistencyFailure, SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement,
-    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
-    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
-    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
-    WrapperPeelIncoherent,
+    RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused, RenderRegionRefused,
+    RoleDefinedBelowItsSites, RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId,
+    SiteUnresolvable, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
+    SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
+    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
+    TransportSessionLost, TransportSpawnRefused, VouchedCompositionNotPresent,
+    VouchedCompositionReason, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
+    WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -87,6 +87,14 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 site: SiteId::leaf(LeafId(7)),
                 verb: "elide",
                 command: "cat <<EOF".to_owned(),
+            }),
+        ),
+        (
+            "render-region-refused",
+            DiagCode::RenderRegionRefused(RenderRegionRefused {
+                verb: "elide",
+                command: "cat <<EOF".to_owned(),
+                routes: 2,
             }),
         ),
         (

@@ -651,6 +651,13 @@ pub enum SurvivalDemote {
 pub struct SpineRenderDecision {
     /// The site the decision belongs to, where it has one.
     pub site: Option<SiteId>,
+    /// The authored REGION the decision belongs to, where it has one
+    /// (`30N:rul-region-refusal-discloses-region-keyed`).
+    ///
+    /// A SECOND key axis rather than a widening of `site`, on `SpineRegionDecision`'s precedent: a
+    /// region owns no execution, so a row that keyed it by a contributing invocation's `SiteId`
+    /// would be the smearing the ruling forbids. At most one axis is populated on any row.
+    pub region: Option<crate::region::ElisionRegion>,
     /// Which render-time decision this is.
     pub decision: RenderDecision,
     /// The grade at mint.

@@ -2229,15 +2229,18 @@ pub struct RegionStep {
 /// One authored span the decision plane LICENSED to edit and the span render must REFUSE.
 ///
 /// Keyed by the authored span's node, which is the EDIT unit a [`Step`] and a [`RegionStep`] both
-/// have. `leaf` is the EXECUTION identity, which only a step has
-/// (`30L:rul-two-identities-never-conflated`) — the three disclosure surfaces are leaf-keyed, so a
-/// refused REGION carries `None` and is presently undisclosed.
+/// have. `leaf` and `region` are the two IDENTITIES the refusal can wear, exactly one of which is
+/// populated (`30L:rul-two-identities-never-conflated`): a step has an execution, a region has an
+/// authored edit many executions share. Keeping both rather than one nullable leaf is what let the
+/// region half stop being silently undisclosed (`30Nd:fnd-region-refusal-is-undisclosed`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RefusedEdit {
     /// The authored span the edit would have landed on.
     pub ast: AstId,
     /// The execution the refusal belongs to, where the refused unit is one.
     pub leaf: Option<LeafId>,
+    /// The authored region the refusal belongs to, where the refused unit is one.
+    pub region: Option<dorc_core::region::ElisionRegion>,
     /// The disposition-aware verb the disclosure uses: a guard says "guard", an elision "elide".
     pub verb: &'static str,
     /// Why the span could not be edited.
@@ -2385,6 +2388,7 @@ impl DecidedRender {
             refused.push(RefusedEdit {
                 ast: edit.ast,
                 leaf: edit.leaf,
+                region: edit.region,
                 verb: if is_guard { "guard" } else { "elide" },
                 cause,
             });
@@ -5218,9 +5222,26 @@ impl Plan {
     /// safe; a broken artifact is not), and this surfaces WHY (the apply silently running a
     /// converged mutator would otherwise be invisible). The cli `report()`s these on stderr;
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
+    ///
+    /// A refused REGION is disclosed on the same surface at its OWN identity
+    /// (`30N:rul-region-refusal-discloses-region-keyed`): a `render-region-refused` sited at the
+    /// authored span, once, never one row per contributing invocation.
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
-        use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
+        use dorc_aid::diag::{DiagCode, RenderHeredocRefused, RenderRegionRefused, SiteId};
+        let regions =
+            self.refused_render_regions()
+                .into_iter()
+                .map(|(region, verb, _cause)| -> Diag {
+                    Diag::new(
+                        DiagCode::RenderRegionRefused(RenderRegionRefused {
+                            verb,
+                            command: command_text_oneline(&region.sh),
+                            routes: region.routes.shown().len(),
+                        }),
+                        ast.node(region.ast).span,
+                    )
+                });
         self.refused_render_steps()
             .into_iter()
             .map(|(step, verb, _cause)| {
@@ -5239,6 +5260,7 @@ impl Plan {
                     ast.node(step.ast).span,
                 )
             })
+            .chain(regions)
             .collect()
     }
 
@@ -5254,6 +5276,19 @@ impl Plan {
     /// not yet read narratives (`289:seam-narrative-render-unconsumed`).
     #[must_use]
     pub fn render_refusal_narratives(&self) -> Vec<CollapseNarrative> {
+        use dorc_aid::narrative::RefusedEditSubject;
+        let regions = self
+            .refused_render_regions()
+            .into_iter()
+            .map(|(region, _, cause)| {
+                CollapseNarrative::new(
+                    SpeechAct::Derived,
+                    CollapseKind::RenderRefusal {
+                        subject: RefusedEditSubject::Region(region.region),
+                        cause,
+                    },
+                )
+            });
         self.refused_render_steps()
             .into_iter()
             .map(|(step, _, cause)| {
@@ -5262,11 +5297,12 @@ impl Plan {
                 CollapseNarrative::new(
                     SpeechAct::Derived,
                     CollapseKind::RenderRefusal {
-                        site: dorc_core::SiteId::leaf(step.leaf),
+                        subject: RefusedEditSubject::Site(dorc_core::SiteId::leaf(step.leaf)),
                         cause,
                     },
                 )
             })
+            .chain(regions)
             .collect()
     }
 
@@ -5301,10 +5337,9 @@ impl Plan {
     /// CAUSE. A GUARD refusal says "guard" (X-heredoc's expected-diagnostics pins it), a
     /// Replace/Omit refusal says "elide".
     ///
-    /// The three disclosure surfaces are leaf-keyed, so a refused REGION — which has no leaf
-    /// (`30L:rul-two-identities-never-conflated`) — is filtered out here and stays undisclosed.
-    /// That gap is `30Nd:fnd-region-refusal-is-undisclosed`; the plane records it either way, which
-    /// is what makes it findable rather than invisible.
+    /// LEAF-KEYED, and its region twin is [`refused_render_regions`](Self::refused_render_regions):
+    /// the two identities stay apart at every disclosure surface rather than one borrowing the
+    /// other's key (`30N:rul-region-refusal-discloses-region-keyed`).
     fn refused_render_steps(&self) -> Vec<(&Step, &'static str, RenderRefusalTag)> {
         let by_leaf: BTreeMap<LeafId, &Step> =
             self.steps.iter().map(|step| (step.leaf, step)).collect();
@@ -5314,6 +5349,29 @@ impl Plan {
             .filter_map(|refusal| {
                 let step = by_leaf.get(&refusal.leaf?)?;
                 Some((*step, refusal.verb, refusal.cause))
+            })
+            .collect()
+    }
+
+    /// The REGION-bearing half of the decided refusals — one entry per authored edit that the span
+    /// render would not land, never one per contributing invocation.
+    ///
+    /// The smearing this refuses is not a style preference: N rows for one edit would point N
+    /// readers at calls that did nothing wrong, which is the mis-attribution direction
+    /// (`271:rul-sin-ordering`), and it would re-open the identity split
+    /// `30L:rul-two-identities-never-conflated` welds.
+    fn refused_render_regions(&self) -> Vec<(&RegionStep, &'static str, RenderRefusalTag)> {
+        let by_region: BTreeMap<dorc_core::region::ElisionRegion, &RegionStep> = self
+            .regions
+            .iter()
+            .map(|region| (region.region, region))
+            .collect();
+        self.render
+            .refused()
+            .iter()
+            .filter_map(|refusal| {
+                let region = by_region.get(&refusal.region?)?;
+                Some((*region, refusal.verb, refusal.cause))
             })
             .collect()
     }
@@ -5438,6 +5496,7 @@ impl Plan {
 struct RenderedEdit<'a> {
     ast: AstId,
     leaf: Option<LeafId>,
+    region: Option<dorc_core::region::ElisionRegion>,
     disposition: &'a Disposition,
 }
 
@@ -5446,6 +5505,7 @@ impl<'a> RenderedEdit<'a> {
         Self {
             ast: step.ast,
             leaf: Some(step.leaf),
+            region: None,
             disposition: &step.disposition,
         }
     }
@@ -5454,6 +5514,7 @@ impl<'a> RenderedEdit<'a> {
         Self {
             ast: region.ast,
             leaf: None,
+            region: Some(region.region),
             disposition: &region.disposition,
         }
     }
