@@ -371,17 +371,17 @@ mod tests {
     use super::{Cwd, LoadPositions, SourceRole, StaticLoadSnapshot, book_reached};
 
     fn snapshot(book_sourced: &[usize]) -> StaticLoadSnapshot {
-        positioned(LoadPositions::book_sourced(
+        positioned(&LoadPositions::book_sourced(
             book_sourced.iter().copied().collect(),
         ))
     }
 
-    fn positioned(positions: LoadPositions) -> StaticLoadSnapshot {
+    fn positioned(positions: &LoadPositions) -> StaticLoadSnapshot {
         StaticLoadSnapshot::over(
             Cwd::at("/ops"),
             vec!["pkg/entry.sh".to_owned(), "pkg/dep.sh".to_owned()],
             vec!["# entry\n".to_owned(), "# dep\n".to_owned()],
-            &positions,
+            positions,
             "book.sh",
             "# book\n",
         )
@@ -419,7 +419,7 @@ mod tests {
     /// (`30Mc:required-root-occurrence-identity`).
     #[test]
     fn a_load_dependency_is_never_a_prelude_root() {
-        let snap = positioned(LoadPositions::roots_only().with_dependencies([1].into()));
+        let snap = positioned(&LoadPositions::roots_only().with_dependencies([1].into()));
         assert!(snap.is_ambient(0), "the invocation named this one");
         assert!(!snap.is_ambient(1));
         assert_eq!(snap.role_of(1), Some(SourceRole::LoadDependency));
