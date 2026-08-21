@@ -176,7 +176,9 @@ Each step unblocks the next.
    `--pre-source`.
 4. **`step-4-recognize-exact-guarded-source` - complete exact guarded-source
    recognition and cross-custody narration**
-   (`rul-guarded-source-mints-exact-speaker-edge` plus section 3.4's
+   (`rul-load-semantics-stay-full-fidelity`,
+   `rul-guarded-source-speech-is-lossy`, and
+   `rul-guarded-source-mints-exact-speaker-edge` plus section 3.4's
    `rul-cross-custody-distinction-is-narrative`). Classify a voucher's
    cross-custody reach as deliberate-external-utility, guarded-source-exact,
    explicitly-sourced, source-act-present-but-unaligned, or
@@ -184,13 +186,14 @@ Each step unblocks the next.
    two differ for aid and never refuse the plan. The immediate authored target
    is section 2.2's ordinary variable-sentinel guard.
    The variable name and value are entirely author-owned; neither is Dorc
-   vocabulary. The guarded-source case mints its edge only under section 3.4's
-   exact proof: on the no-source/reuse route, both the guard-tested value that
-   selected that route and every transitively load-bearing helper on the REACHED
-   vouch path `Must`-originate inside the exact fallback target closure. On the
+   vocabulary. The full load model retains the literal comparison and the branch
+   sh takes. A separate, intentionally lossy speech projection may recognize
+   authorship when some directly constant-propagated value used to guard the
+   fallback and every transitively load-bearing helper on the REACHED vouch path
+   `Must`-originate inside the exact fallback target closure. It retains that
+   co-origin and CFG relationship, not the specific value or literal. On the
    source route, the explicit exact `.` is the ordinary speaker edge and its
-   resulting definitions must resolve accordingly. Declining paths prove
-   nothing.
+   resulting definitions must resolve accordingly. Declining paths prove nothing.
 
    This is a PRECISION improvement, not a trust widening: recognize that the
    guard is not an analysis-time choice between speakers when all feasible routes
@@ -198,10 +201,9 @@ Each step unblocks the next.
    The condition never mints authority: the author's source-bearing guard, the
    target-supplied load value, and the reached helper definition must agree on one
    exact closure. A same-valued assignment or same-named helper from anywhere
-   else withholds. Implementation should be the smallest generic extension of
-   load-time constant propagation and source-unit provenance that expresses that
-   property; add no sentinel registry, magic name, separate explanation witness,
-   or durable state. Full `command -v` load modeling remains the open pin in
+   else withholds. The ruling prescribes no representation or staging; add no
+   sentinel registry, magic name, or distinguished value. Implementation remains
+   builder latitude. Full `command -v` load modeling remains the open pin in
    section 14, not a prerequisite to this lane.
 
    Consequential and easy to miss: the committed `load30-*` fixtures still spell
@@ -305,6 +307,21 @@ the same exact foreign closure must supply both the decisive guard value and
 the helper definition consumed by the reached vouch; a condition alone carries
 no authority. This is the narrow correct floor while broader guard/load-order
 composition remains NYI, not a permanent exclusion.
+
+`rul-load-semantics-stay-full-fidelity` [TYPED 2026-08-21] - the static load
+model preserves every supported sh load-semantic needed to decide what executes,
+including the live constant, the compared literal, and the resulting guard
+branch. A lossy authorship or aid projection may never feed its discarded detail
+back into visibility, load occurrence, ordering, status, or artifact behavior.
+
+`rul-guarded-source-speech-is-lossy` [TYPED 2026-08-21] - guarded-source
+authorship is a separate, deliberately lossy projection over that full model. It
+asks whether an author used some directly constant-propagated value from a source
+closure to guard that same source, and whether the reached helper also resolves
+to that closure. When those origin and CFG relationships hold at `Must`, they are
+strong evidence that the helper resolution was intentional. The projection
+discards the variable name, exact value, compared literal, and any supposed
+meaning of them; Dorc recognizes no sentinel protocol or version language.
 
 `rul-one-loader-many-projections` [TYPED] - analysis, probe/apply closure
 emission, explicit `dorc bundle`, ordinary multipart plan emission, and fully
@@ -454,6 +471,13 @@ no `_LOADED` suffix, variable namespace, version grammar, or distinguished
 value. The pattern earns its keep outside Dorc as the ordinary shell-library
 include guard: it prevents duplicate initialization and can distinguish package
 revisions. One package sentinel may cover any number of helpers.
+
+The full load model evaluates that authored interface as sh does: the exact
+value and literal determine whether the fallback runs. Guarded-source speech is
+intentionally less detailed. Once the directly propagated value, guarded source,
+and reached helper share one source closure, the speech projection retains that
+relationship and discards which value was compared. The first answer preserves
+behavior; the second infers intent without inventing a Dorc package protocol.
 
 `rul-include-guards-are-load-semantics` [TYPED] - include guards are mandatory
 language surface, not optional polish. Independent oracle authors use them to
@@ -711,6 +735,12 @@ The same `DefinitionId` resolution answers analysis and emission. A bundle may
 copy definitions into another physical file without changing their conceptual
 source identity or custody in the generating run.
 
+The separation also applies to information fidelity. Visibility and load
+occurrences consume the full supported sh interpretation. Custody consumes the
+lossy speech projection in `rul-guarded-source-speech-is-lossy`. The projection
+may forget execution detail after deriving its answer; it may never become a
+substitute load interpreter.
+
 ### 3.4 Cross-author dependency authority and narrative
 
 Four cases must not collapse:
@@ -718,14 +748,16 @@ Four cases must not collapse:
 1. `dependency-explicitly-sourced` - the voucher's marked closure sources the
    resolved dependency; it may rest on that dependency under custody.
 2. `dependency-guarded-source-exact` - a recognized include guard names a
-   contracted fallback source. On the no-source/reuse route, the exact target
-   closure must independently supply both (a) the value that decisively selected
-   that route and (b) every transitively load-bearing helper on the reached
-   vouching path; both are `Must` questions. On the source route, the explicit
-   exact `.` supplies ordinary custody and the resulting helper definitions must
-   resolve inside that closure. Then the whole guard mints the same speaker edge
-   as a direct source for this license, even when another package loaded the
-   exact target first. Declining paths need prove nothing.
+   contracted fallback source. The full load model first decides the guard and
+   source occurrence with supported sh semantics. Separately, the speech
+   projection asks whether some directly constant-propagated value used by that
+   guard and every transitively load-bearing helper on the reached vouching path
+   independently `Must`-originate inside the exact target closure. It does not
+   preserve or interpret the specific value or literal. On the source route, the
+   explicit exact `.` supplies ordinary custody and the resulting helper
+   definitions must resolve accordingly. Then the whole guard mints the same
+   speaker edge as a direct source for this license, even when another package
+   loaded the exact target first. Declining paths need prove nothing.
 3. `dependency-source-act-present-but-unaligned` - the voucher carries a
    supported source-bearing act naming a dependency which declares the reached
    helper, but the decisive value, live binding, or reached helper does not align
@@ -736,9 +768,10 @@ Four cases must not collapse:
    command the author called; it licenses nothing and remains legal sh.
 
 The second case changes speaker custody only; normal branch-sensitive loading
-still decides visibility. A same-valued variable, same-named function, file, or
-byte sequence is not the proof: the guard value and frame-live helper
-composition must trace to the exact target closure.
+still decides visibility from the exact value comparison. A same-valued variable,
+same-named function, file, or byte sequence is not the proof: the directly
+propagated guard value and frame-live helper must trace to the exact target
+closure.
 
 Read the second case as RECOGNITION, never as a licensing widening. The idiom is
 a method, spelled in sh, by which an author says "reuse this exact package when
@@ -754,6 +787,13 @@ unit would make Dorc blame the voucher for a judgment they never selected or
 reviewed, the pope-sin direction.
 The door stays deliberately narrow; the structurally-sound wide version is later
 work.
+
+The speech gloss is loose on purpose. The value may spell a load bit, ABI,
+revision, feature set, or any other author-owned constant; Dorc neither knows nor
+cares. Requiring only the distinctive co-origin-plus-guard shape admits the broad
+family of idiomatic sh spellings while making an accidental wrong-helper reading
+require the tested constant, guarded source, and live helper to converge on the
+same wrong closure together.
 
 `rul-ambient-dependencies-are-ordinary-shell` [TYPED 2026-08-19] - caller-loaded
 dependencies, callbacks, logging hooks, foundational helpers, intentional
@@ -891,17 +931,21 @@ derive three non-interchangeable projections:
    including an undecided guard's fallback branch; bundle materialization consumes
    this conservative union so an artifact never omits a file runtime sh may load;
 2. **speaker projection** - only source/guard edges whose exact custody proof
-   succeeded; vouch composition and every other authority consumer see only this
+   succeeded; guarded-source speech intentionally retains the directly propagated
+   value's origin and guard relationship while discarding its exact value and
+   literal; vouch composition and every other authority consumer see only this
    narrower relation;
 3. **narrative projection** - the source act, intended target where attributable,
    and live binding needed to distinguish section 3.4's exact, unaligned, and
    ambient cases. It is decision-inert.
 
-One loader does not mean one overloaded edge set. No projection re-parses source
-text or re-resolves a target, and absence from the speaker projection never means
-absence from the possible-load or narrative projections. Concrete representation
-remains builder latitude; a target-only pair that collapses distinct load
-occurrences is insufficient for bundle keying and locator composition.
+One loader does not mean one overloaded edge set. The full supported sh answer is
+computed before any projection forgets detail. No projection re-parses source
+text or re-resolves a target, no lossy result feeds back into that answer, and
+absence from the speaker projection never means absence from the possible-load or
+narrative projections. Concrete representation remains builder latitude; a
+target-only pair that collapses distinct load occurrences is insufficient for
+bundle keying and locator composition.
 
 The projection copies exact authored ranges and adds only necessary shell
 scaffolding and generated comments. It does not alpha-rename authored code,
@@ -1310,6 +1354,11 @@ Human-typed or explicitly hard-acked in the design dialogue:
 - ordinary book-flow root/source acts, with `SM_ORACLE_ROOT` only a spike mnemonic;
 - only dorc-lang files mint speaker-transitive closures;
 - include guards are required healthy-library surface;
+- the supported load interpretation preserves the exact value/literal comparison
+  and branch sh executes; lossy downstream projections never replace that answer;
+- guarded-source speech deliberately forgets the exact sentinel name, value, and
+  literal after establishing that a directly propagated guard value, guarded
+  source, and reached helper share one source closure;
 - a recognized guarded fallback source mints an exact-target speaker edge only
   when the no-source route's decisive guard value and every load-bearing helper
   on the reached vouch path independently Must-originate inside that target

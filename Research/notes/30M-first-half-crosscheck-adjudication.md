@@ -245,6 +245,15 @@ The inventory, adjudicated into two tiers:
 
 ## §5 — Design-sitting: the guarded-source value conjunct, and the reviewers' one real disagreement
 
+> **SUPERSEDED 2026-08-21:** the binary ratify-dissolution-or-build framing below
+> conflated two consumers. `30I:rul-load-semantics-stay-full-fidelity` requires
+> the supported sh load model to preserve the literal comparison and branch;
+> `30I:rul-guarded-source-speech-is-lossy` separately requires the authorship
+> projection to retain only direct-constant origin, guarded-source, and helper
+> co-resolution. The exact value is load-bearing for behavior and deliberately
+> discarded for the speech act. This historical disagreement remains useful as
+> the evidence that exposed the missing separation.
+
 **`30M:adj-sentinel-literal-needs-ratify-or-build`** — crediting
 `30Md:fnd-sentinel-literal-never-participates` (Sol, medium, red test committed) as the
 finding, WITH Fable's contrary "inert" verdict (`30Mb` §9 did-not-hold) as a genuine

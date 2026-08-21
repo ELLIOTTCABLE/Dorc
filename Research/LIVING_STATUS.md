@@ -33,7 +33,7 @@ stay `Open` with the identity/witness shapes propagation-ready — the
 and registers are current (crate CLAUDE.mds · `spike/CLAUDE.md inv-leaf-seam` ·
 ANALYZER-NEEDS ×5 rows · FORFEITS loop-population row). **The human queue is `30N`'s
 open-items list, mirrored slug-by-slug at the top of root `_tmp-human-burndown.md`**
-(the two remaining `30M` rulings · the prelude-floor veto · two tc- domain questions · the
+(the one remaining `30M` ruling · the prelude-floor veto · two tc- domain questions · the
 prose queue). `mise run gate:arc` ran by the HUMAN's own hand and `ai/main` is ff'd
 (now one arc behind conduct again). **The `30M:rec-own-the-309-boundary-close` lane is
 FOLDED** (report `notes/30Nd`; adjudications + the veto-eligible
@@ -47,6 +47,12 @@ corpus docIDs. The Spine influence boundary is HUMAN-RULED and closed in design
 their own mints, Spine preserves rather than globally stamps it, and views continue
 carriage into projection/output decisions. The landed one-grade-per-Spine code remains
 implementation debt; `30Nd` deliberately left that grade slice read-only.
+The guarded-source projection split is HUMAN-RULED and closed in design
+(`30I:rul-load-semantics-stay-full-fidelity` plus
+`30I:rul-guarded-source-speech-is-lossy`; closure ledger
+`30N:closed-guarded-source-projection-split`): full supported sh loading retains
+the exact value and branch, while the distinct authorship gloss intentionally
+forgets the value after proving the guard-value/source/helper co-origin shape.
 **`30I:step-7-reify-plan-artifact-forms` is FOLDED** (report
 `notes/30Ne`; adjudications incl. two veto-eligible typed-text readings in `30N`'s lane
 list, quick-acks on the burndown): all three semantic forms in `cli::artifact` from ONE
@@ -83,7 +89,8 @@ conductor-derived refusal cell (`--artifact-dir` + piped stdout; conductor now l
 BOTH-outputs, human's call) · book-code load acquisition · the kept-stream e2e lane ·
 `WhyWorld` not carrying import edits. Still open besides: the human queue (`30N`'s
 open-items / the burndown) · the loop-propagation lane (parallel-eligible) · the
-sentinel red pin (`rule-sentinel-value-conjunct`).
+guarded-source implementation pin (`p-x-sentinel-value-conjunct`; design closed by
+the two `30I` rulings above).
 
 ## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)
 

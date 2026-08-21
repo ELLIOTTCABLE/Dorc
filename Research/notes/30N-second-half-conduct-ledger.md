@@ -427,10 +427,16 @@ not all conductor-re-read (marked):
 
 ## §4 — Open items riding this conduct (not mine to decide)
 
-1. The two remaining `30M` human rulings: wall-narration ratify-or-mint (§3) ·
-   guarded-source sentinel-value ratify-or-build (§5; test `176e0818` waits on
-   `worktree-sol-adversarial-30M` — do NOT `-D` that branch before this ruling
-   lands or the test is cherry-picked).
+1. The one remaining `30M` human ruling: wall-narration ratify-or-mint (§3).
+
+**`30N:closed-guarded-source-projection-split` [HUMAN-RULED 2026-08-21]** — the
+former sentinel-value ratify-or-build item is CLOSED in design. Durable authority:
+`30I:rul-load-semantics-stay-full-fidelity` and
+`30I:rul-guarded-source-speech-is-lossy`. Full supported sh loading retains the
+literal and branch; the separate authorship gloss intentionally retains only the
+direct-constant origin, guarded-source, and helper co-resolution. Implementation
+remains builder latitude. Test `176e0818` still waits on
+`worktree-sol-adversarial-30M`; do NOT `-D` that branch before it is recovered.
 
 **`30N:closed-spine-influence-boundary` [HUMAN-RULED 2026-08-21]** — the former
 third item, `30M:ask-spine-grade-boundary`, is CLOSED in design. Durable authority:
