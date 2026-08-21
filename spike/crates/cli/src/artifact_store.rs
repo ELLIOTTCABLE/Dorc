@@ -337,8 +337,8 @@ mod tests {
     fn a_failed_mid_publication_leaves_no_partial_artifact() {
         let scratch = Scratch::new("failed-publication-leaves-nothing");
         let root = PathBuf::from(scratch.dir());
-        // Occupy the `oracles` name inside the staging directory the first attempt will choose, so
-        // the plan writes and then the dependency's parent cannot be created.
+        // Occupy `oracles` inside the staging name the first attempt takes, so the plan writes and
+        // the dependency's parent then cannot be created.
         let staging = root.join(".dorc-staging-0001");
         std::fs::create_dir(&staging).expect("staging squat");
         std::fs::write(staging.join("oracles"), b"not a directory").expect("occupant");

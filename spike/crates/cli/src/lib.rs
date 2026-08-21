@@ -848,10 +848,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             },
         )));
     }
-    // `probe` is deliberately IN this set although it emits no plan: it is the round-trip's own
-    // first PHASE, so refusing there would stop one invocation carrying one set of flags across
-    // both halves — which is how the round-trip is driven. `bundle` and `why` produce something
-    // else entirely and are told so.
+    // `probe` is IN although it emits no plan: it is the round-trip's own first PHASE, and refusing
+    // there would stop one invocation carrying one flag set across both halves.
     let plans_or_probes = matches!(
         mode,
         Mode::Plan | Mode::Apply | Mode::RoundTrip | Mode::Probe

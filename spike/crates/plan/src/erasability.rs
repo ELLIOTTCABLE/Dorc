@@ -112,9 +112,8 @@ pub fn canonical_decision(
         regions,
         // EXEMPT (Exempt::Timing): 24F §3a instrumentation, never a decision.
         survival_report: _,
-        // EXEMPT as DERIVED: a pure function of the two fields above plus the defensive-emission
-        // input and `(src, ast)`, all of which reach this canon — the last three through the
-        // byte-exact `render.apply` at (3), where a munge or a refused edit shows up.
+        // EXEMPT as DERIVED: a pure function of the fields above plus `(src, ast)` and the
+        // defensive-emission input, all of which reach the byte-exact `render.apply` at (3).
         render: _,
     } = plan;
     let mut out = String::new();
@@ -124,9 +123,8 @@ pub fn canonical_decision(
         out.push_str(&canon_step(step));
         out.push('\n');
     }
-    // (1a) the SHARED region decisions (`plans/30L`), emitted only when the book has any — so a
-    // book with no eligible calls keeps its pre-region canon
-    // (`30L:pin-empty-function-world-parity`).
+    // (1a) the SHARED region decisions, emitted only when the book has any — so a book with no
+    // eligible calls keeps its pre-region canon (`30L:pin-empty-function-world-parity`).
     if !regions.is_empty() {
         out.push_str("== regions ==\n");
         for region in regions {

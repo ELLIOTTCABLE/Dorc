@@ -299,8 +299,8 @@ fn dependency_files(
     let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
     let mut unplaceable = 0_usize;
     for id in &wanted {
-        // Unplaceable, never silently skipped: quietly omitting a file the runtime `.` will look
-        // for is the omission the possible-load projection exists to prevent (`30I` §6.1).
+        // Unplaceable, never silently skipped: omitting a file the runtime `.` will look for is
+        // what the possible-load projection exists to prevent (`30I` §6.1).
         let Some(root) = projection.roots().iter().find(|root| root.id() == *id) else {
             unplaceable = unplaceable.saturating_add(1);
             continue;
@@ -393,8 +393,7 @@ pub fn select(
     request: FormRequest,
     posture: StreamPosture,
 ) -> Result<Selection, FormRefusal> {
-    // A book with nothing to load is ALREADY one stream, so the flattened form is available there
-    // and identical to what every other form would print.
+    // A book with nothing to load is ALREADY one stream: the flattened form is available there.
     let inline_debt = loads.len();
     let flat = inline_debt == 0;
     let multipart = match posture {
@@ -437,8 +436,7 @@ pub fn select(
             }),
         },
         FormRequest::Explicit(ArtifactForm::PreservedBookTree) => Ok(preserved(None)),
-        // One stream can only ever hold the flat form; a materializable one aims at the
-        // contracted-dependency default (`30I` §7.1: auto aims for mode 2).
+        // One stream holds only the flat form; a materializable one aims at mode 2 (`30I` §7.1).
         FormRequest::Auto => Ok(match posture {
             StreamPosture::SingleStream if flat => flattened,
             StreamPosture::SingleStream => {

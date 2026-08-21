@@ -2209,16 +2209,13 @@ fn run(
         return Ok(book_outcome);
     }
 
-    // ONE structure: the stream below and the published tree both READ it, and there is
-    // deliberately no second assembly of the same bytes to fall back to
-    // (`30I:step-7-reify-plan-artifact-forms`). rec-1 / ru-12 BYTE FLOOR holds inside it — `plan`
-    // and `apply` emit BYTE-IDENTICAL, receipt-free apply bytes; only the stderr disclosure above
-    // differed, and the round-trip's second shebang block is these same bytes.
+    // ONE structure: the stream and the published tree both READ it, and there is deliberately no
+    // second assembly to fall back to. rec-1 / ru-12 BYTE FLOOR holds inside it — `plan` and
+    // `apply` emit byte-identical receipt-free bytes, and so does the round-trip's second block.
     let artifact = form_selection.with_plan(plan.render_apply(&book_src, &parsed.value));
     print!("{}", artifact.primary().bytes);
 
-    // On the PLAN surface, never woven into the artifact bytes (`two-surfaces`): an admin whose
-    // plan is not self-contained learns it here rather than on the target.
+    // On the PLAN surface, never woven into the artifact bytes (`two-surfaces`).
     if let Some(fallback) = artifact.fallback() {
         report_at(
             advisory,

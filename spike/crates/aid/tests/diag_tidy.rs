@@ -343,8 +343,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
-    // cli/main.rs — the emission planner's three: a FORM is a whole-run property, and a caret on a
-    // book command would blame the admin's text for a v0 limit (`271:rul-sin-ordering`).
+    // cli/main.rs — a FORM is a whole-run property; a caret on a book command would blame the
+    // admin's text for a v0 limit (`271:rul-sin-ordering`).
     "ArtifactFormRefused",
     "ArtifactFormFallback",
     "ArtifactPublishRefused",

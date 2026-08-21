@@ -2449,8 +2449,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // The three refusals produced NO artifact of the requested shape; the fallback produced a
-        // valid one and lost only flattening. Each row's own `why` carries the argument.
+        // The refusals produced no artifact of the requested shape; the fallback lost flattening.
         DiagCode::RenderRegionRefused(_)
         | DiagCode::ArtifactFormRefused(_)
         | DiagCode::ArtifactPublishRefused(_) => CodeSpec {
@@ -3157,8 +3156,8 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("verb", (*verb).to_owned()),
             ours("command", command.clone()),
         ],
-        // Registers still unwritten, so no holes to fill: the destructures are what the prose act
-        // will reach for when somebody writes the words.
+        // Registers still unwritten: no holes to fill, and the destructures name what a prose act
+        // will reach for.
         DiagCode::RenderRegionRefused(RenderRegionRefused {
             verb: _,
             command: _,
