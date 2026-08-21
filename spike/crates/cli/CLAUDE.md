@@ -55,39 +55,48 @@ discipline: one rule per bullet, slugged; append to the matching section.
   resolves to current source only on exact snapshot-byte agreement and stays aid-only either way.
   Static incoherence renders its located diagnostic but returns before archive stdout, preserving
   the existing refusal/exit. No locator value may enter loading, planning, or authority.
-- **artifact-forms-derive-from-one-structure** (`30I:step-7-reify-plan-artifact-forms`) —
-  `cli::artifact` settles ONE `Selection` (form + fallback + dependency files) from
-  authored-before-contact inputs, and `Selection::with_plan` binds it to the plan
-  projection. The stdout stream and the published tree both READ that `ArtifactSet`;
-  there is deliberately no second assembly of the same bytes to fall back to. A form's
-  dependency LAYOUT is the authored relative one, mirrored under the artifact root,
-  because that is what makes every authored `.` operand — the book's and every nested
-  one — resolve on the target unchanged (the cwd-analysis answer): the availability
-  question is therefore a PATH question, and an absolute or escaping controller path
-  makes the form unavailable rather than fudged. `plan.sh` is byte-identical under all
-  three forms; a form is about where the generated files live, never about what the plan
-  says. FLATTENING REFUSES rather than inlining while textual inlining rests on the
-  `floor30-inline-dot-boundary` measurement alone, so an explicitly named form that
-  cannot be served refuses pre-network and `auto` falls back and SAYS SO — never a
-  silently different form. Mirroring is stated against the LOAD CWD
+- **artifact-forms-derive-from-one-structure** (`30I:step-7-reify-plan-artifact-forms`,
+  re-cut by `30Ng`'s human-typed rulings) — `cli::artifact` settles ONE `Selection` (form
+  + fallback + dependency files + IMPORT EDITS) from authored-before-contact inputs, and
+  `Selection::with_plan` binds it to the plan projection. The stdout stream and the
+  published tree both READ that `ArtifactSet`; there is deliberately no second assembly
+  of the same bytes to fall back to. WHICH STREAM carries the artifact derives from
+  stdout INTERACTIVITY, injected at the edge (`30Ng:rul-piped-stdout-carries-a-full-plan`):
+  a non-interactive stdout is a stream the user is KEEPING to review, so it carries a
+  COMPLETE plan or the run refuses pre-network, under every flag-form — and naming
+  `--artifact-dir` beside it claims one artifact twice, which refuses naming both
+  claimants rather than ranking them (the loading design's collapsed-resource rule, one
+  level up; this cell is a conductor derivation, veto-eligible). An interactive stdout
+  carries the RENDER: with a directory the tree publishes there, without one `auto` may
+  settle for a less flattened form and SAY SO. THE DEFAULT BUNDLES
+  (`30Ng:rul-bundle-at-dorc-lang-boundaries`): each book-sited root at which dependencies
+  become dorc-lang composes ONE generated file, and the generated plan's own import is
+  RE-SAID to name it. That rewrite is the single edit Dorc reserves over a plan it
+  generated — a generated plan is a durable but not an OFF-RAMP durable — and it is a
+  first-class plan edit: an input to `Plan::decided`, disclosed as
+  `plan-import-rewritten` on the plan surface, recorded as
+  `RenderDecision::ImportRewritten` on the plane. The authored BOOK is never written and
+  every byte of it that reaches the artifact reaches it verbatim (`two-surfaces`).
+  BUNDLING IS POSITIONAL AND MEASURED-ONLY: a nested `.` is absorbed IN PLACE, so an
+  include guard still decides whether the absorbed bytes run, and only at the shape
+  `floor30-inline-dot-boundary` measured (a `.` that is the whole of its own line, and
+  for a BOOK `.` also a top-level redirect-free command). Anything else stays a separate
+  generated file and the authored `.` that names it survives — when in doubt, separate
+  files. Front-LIFTING a bundle ahead of the book is NOT layout: it changes which
+  definition is live at the lines it moves past, so it waits on a licence
+  (`30Nh:tc-bundle-lift-needs-the-spine`). Mirroring is stated against the LOAD CWD
   (`dorc_core::loadpath::Cwd::relativize`, the inverse of `resolve_operand`), never
   against a stored path's own spelling: every source a book `.` reaches is filed under
   its CANONICAL key, which is ABSOLUTE whenever the edge could answer where the run
-  stands — so a seat asking whether the stored spelling looked relative answered
-  "unplaceable" for every real invocation while every in-process test, whose modelled
-  cwd is the flat virtual one, said the opposite. That divergence shipped once and was
-  invisible, because `plan.sh` is byte-identical under all three forms and a case
-  asserting stdout alone cannot see which form it took
+  stands, so a seat asking whether the stored spelling looked relative answered
+  "unplaceable" for every real invocation while every in-process test said the opposite
   (`30Nf:fnd-multipart-never-placed-anything-in-production`). A dependency OUTSIDE the
-  load cwd is unplaceable rather than fudged
-  (`need-controller-paths-never-cross-hosts`). DIRECTION RULED 2026-08-21, rework in
-  flight (`30Ng` — this bullet describes the pre-rework as-built): the default bundles
-  dorc-lang subgraphs at the dep-graph points where they become dorc-lang and REWRITES
-  generated-plan imports (generated plans are not off-ramp durables; the rewrite
-  license is imports-only); a non-interactive stdout carries a FULL single-stream
-  bundled plan under every flag-form, failing fast on incoherence
-  (`30Ng:rul-piped-stdout-carries-a-full-plan` ·
-  `30Ng:rul-bundle-at-dorc-lang-boundaries`).
+  load cwd is unplaceable rather than fudged (`need-controller-paths-never-cross-hosts`).
+  BOTH ENDS OF THE BUNDLE-POINT AXIS stay reachable by name — one emission
+  (`flattened`) and none at all (`mirrored-tree`) — with the default at neither. Every
+  form name and file name here is STRAWMAN and renames in place
+  (`rul-strawman-formats-no-compat`); what is ruled is the axis, the stream semantics,
+  and the rewrite's scope.
 - **region-openers-are-demanded-not-defaulted** (`30N:rul-census-inputs-are-non-optional`) — the
   elision-region census is handed `region::CensusOpeners`, whose constructor requires EVERY
   opener signal the census cannot see for itself: `funcenv::unresolvable_loads`, the definition
@@ -259,7 +268,20 @@ discipline: one rule per bullet, slugged; append to the matching section.
   against controller-side files the target never receives. The general law this encodes: a
   case minted to DEMONSTRATE a capability must OBSERVE that capability — an assertion that
   cannot distinguish feature-on from feature-off is not a demonstration
-  (`30Nf:fnd-multipart-never-placed-anything-in-production` is the burn).
+  (`30Nf:fnd-multipart-never-placed-anything-in-production` is the burn). A published
+  plan's own LITERAL relative imports must resolve inside the generation
+  (`unresolved_generated_imports`), which is what makes the import rewrite observable
+  end-to-end rather than a stdout-only claim. The COUNTERFACTUAL rails are the one carve
+  and they are a different question: gate-5 and gate-6 compare an artifact against the
+  BOOK, and since the bundling those two resolve their imports in different places, so
+  they run in the generation laid over a copy of the case's authored top-level files.
+  `exec_check` is untouched and still runs the published plan from the generation ALONE —
+  that is where self-containment is asked, and nothing here relaxes it. The harness
+  injects the stdout posture (`DORC_STDOUT_POSTURE=interactive` on every drive, beside
+  the fixture clock): the round-trip battery READS a render while driving the artifact
+  set to a directory, which is the terminal cell; the kept-stream cell's two behaviours
+  are both pre-network refusals with empty stdout, which the battery cannot express —
+  they are pinned natively, and an expected-empty-stdout lane is the named harness gap.
 
 - **runners-live-here-cases-are-peers** (`288:phase-flat-tree-move`) — this crate owns the
   two central `harness = false` runners and the round-trip / lint case collections that sit

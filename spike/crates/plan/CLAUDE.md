@@ -213,7 +213,13 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   the refusal wears — `render-heredoc-refused` at a leaf, `render-region-refused` at a
   region — and NEVER smear one region's refusal across its contributing invocations, which
   would report N refusals for one edit and point N readers at calls that did nothing wrong
-  (`271:rul-sin-ordering`).
+  (`271:rul-sin-ordering`). An IMPORT EDIT (`30Ng:rul-bundle-at-dorc-lang-boundaries`) is
+  decided like every other render answer: `plan::ImportEdit` is an INPUT to `Plan::decided`,
+  settled before the plan exists from authored-before-contact inputs, and it reaches the
+  artifact bytes, the plan surface (`plan-import-rewritten`) and the decision plane
+  (`RenderDecision::ImportRewritten`) from that one decision. There is no emission-time
+  substitution, and there must never be one: the whole reason the rewrite is a narrow
+  grant is that no use of it is silent.
 - **no-specialized-shell** (`30L:rul-edit-authored-definition-once` ·
   `pin-no-generated-specialization`) — a shared region's edit lands ONCE, at the authored
   function-body span; definitions stay in place and calls stay calls. Never a per-call

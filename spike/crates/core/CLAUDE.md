@@ -115,7 +115,17 @@ new entries to the matching section.
   `SpineRegionDecision`'s precedent. A region owns no execution, so keying its row by a
   contributing invocation's `SiteId` would be the smear the ruling forbids, and widening
   `SiteId` to hold a region would weaken `inv-site-keyed-results` for every other consumer.
-  A new identity gets a new axis.
+  A new identity gets a new axis. `RenderDecision::ImportRewritten` is site-less AND
+  region-less on `DefensiveEmission`'s precedent: an import edit belongs to a book LINE,
+  which is neither an execution nor an authored region, so it borrows neither axis. And
+  `SpineRegionDecision.routes` is `RegionRoutes` rather than an `Account` — a deliberate,
+  human-directed carve of `309:law-spine-operands-capped` for this one TRANSITORY species
+  (`30Ng` §2): the contributor set is COMPLETE, because a region's population is a property
+  of the analysed unit (bounded by the census, bounded by the splice budgets) rather than of
+  the world, and it is what two pull surfaces ask for by name; a route the round could not
+  key to a plan leaf is RETAINED under `RegionRouteUnkeyed::NoPlanLeaf` rather than
+  filtered, because an account that quietly drops a contributor reads as complete and is
+  not.
 - **a-record-says-what-its-population-holds** (the `30Nd` meaning-audit) — the census proves
   every Spine species PROJECTS; it does not prove a field means what its name says. A Spine
   field's doc states the population its writer actually produces: universally-`None` columns
