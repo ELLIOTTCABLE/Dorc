@@ -196,12 +196,22 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 - **re-key** — the elision predicate goes per-selector/per-cell at the
   entity-algebra-rebuild; ALL coordinate/selector comparison through core's
   chokepoints, never inline.
-- **effective-reach-replaces-wall-walks** (`30K`, HUMAN-DIRECTED) — retain
-  origin classifications for the frozen probe, but final Query validity,
-  freshness, total walls, and footprint survival consume one certified CFG
-  reaching-wall analysis fed by private semantic site-acts. Output
-  `Disposition` never feeds analysis; only a settled round writes Spine. Delete
-  `wall_walk_total`/`wall_walk_survival`; no compatibility path.
+- **one-settlement-one-world** (`30K`, BUILT) — every apply-time answer derives from one
+  grow-only settlement (`plan::settle`) over one fact: which mutations may ACTUALLY
+  execute. A round applies the ledger, re-derives the model, solves `ReachingWalls`, folds
+  the frozen records through the validity that reach implies, decides every site, and
+  proves what cannot execute; a growing round discards every provisional product. Only the
+  quiescent round — sealed by a `Quiescence` the ledger alone mints — writes Spine, and a
+  `ProvisionalEffectiveRound` has no Spine API to reach for. Never add a second settlement.
+- **acts-and-dispositions-mint-together** — `decide_site` returns BOTH the `Disposition`
+  and the private `EffectiveAct`, from one pass over one set of conditions. There is no
+  `From<Disposition> for EffectiveAct` and there must never be one: the act is the other
+  half of the conclusion, not a reading of the outcome (`pin-no-outcome-as-generator`).
+- **only-a-proof-retires-a-wall** — a `Guard` walls exactly like a `Run` (its untouched
+  fallback is the authored mutation), and a `Replace` the RENDER will refuse walls too. A
+  wall is retired ONLY by a `NoMutationProof` in the ledger, and the two species reach
+  different consumers on purpose: a DeadBranch shrinks the analyzer's effect model, a
+  Replaced one must not (that spelling would also destroy the site's own class).
 - **no-visible-wall-bookkeeping** (`27C` §5, HUMAN-TYPED 2026-08-19) — Guard is
   conservatively a possible mutator downstream. Never emit wall flags,
   conditional-tail blocks, or controller bookkeeping into reviewed `plan.sh` to

@@ -182,18 +182,19 @@ discipline: one rule per bullet, slugged; append to the matching section.
   must-remember surface. The same pass returns the INVALIDATOR set (Establish/Kill/Opaque, taken
   POST-erasure) because `SkipClass` cannot answer "does this gen into reach": a kill, an opaque,
   and a blessed pure builtin all classify `MustRun`.
-- **origin-reach-is-never-final-freshness** (`30K`, HUMAN-DIRECTED) — the existing
-  `Reach`/`EstablishAmbient`/`EstablishWritten` answer remains origin-pessimistic input
-  to the frozen probe; it cannot authorize final apply freshness. Post-intake Query
-  validity, guard fallback, total walls, and footprint survival consume a distinct
-  certified effective-wall reach. Never make the two species generic behind one trait or
-  convert effective reach back into probe eligibility.
-- **effective-reach-consumes-semantic-acts** (`30K`) — final apply reach does not read
-  `plan::Disposition` (and this crate cannot name it). A plan-private semantic act and
-  output disposition mint from the same proof; only the semantic no-mutation/may-mutate
-  act enters reach, and only a settled round writes Spine. W-C's one effect-erasure seam
-  remains the only shrink point; replacement erasure must arrive through a private
-  rendered-death proof and the proof-carrying ledger, never a second bare overlay caller.
+- **origin-reach-is-probe-only** (`30K`, BUILT) — `Reach`, `Reach::is_pristine`, and
+  `SkipClass::EstablishProbe{Ambient,Written}` answer ONE question: which check may ship,
+  and which cell the authored model names. They carry no apply-time authority and their
+  names say so. Apply-time freshness, effective Query validity, total walls, and
+  footprint survival read `plan::world::ReachingWalls` and nothing else. Never make the
+  two species generic behind one trait, and never convert effective reach back into probe
+  eligibility.
+- **classify-answers-with-its-invalidators** (`30K` §3.7) — `classify` returns
+  `Classification { value, diags, invalidators }` because the invalidator set is NOT
+  derivable from the classes: a `$( … )` body command, a write-shaped redirection, and an
+  unmodeled construct all gen into the world without being leaves. A caller that drops it
+  elides past a mutation nothing in its inputs can see. `cfg::ExecutionOwner` says whose
+  decision governs each of them, recorded at lowering and never re-derived.
 - **erasure-licence-is-a-fence-not-a-guarantee** — `erase::ErasureLicense::for_site` is PUBLIC and
   therefore forgeable: this crate cannot depend on `plan`, so the type system cannot prove a
   licence traces to a records-proven derivation. Do not read that seal as a type guarantee. The
