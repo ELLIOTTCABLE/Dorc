@@ -17,20 +17,24 @@
 ## CURRENT STATE (2026-08-21 — THIRD CONDUCT OPEN; THE OWED-WORK ACCOUNTING IS MINTED, PRE-ACK)
 
 **The successor conductor's first product is `notes/30O`** — the complete accounting of
-still-owed r30 kernel work measured against every `28Q`/`309`/`30I`/`30L` stage, and its
-schedule: WAVE A in parallel (`lane-bundle-front-lift` + the `30Nh` why/harness residue ·
-`lane-load-plane-precision` = guarded-source fidelity MERGED with the three
-`r31:closure-custody` xfails, one license-review · `lane-loop-propagation`, the end-of-r30
-xfail · the non-kernel `26K` §0a fruit arc) → WAVE B serial and alone
-(`lane-influence-carriage`, `306b` §10) → round-close crosscheck → veto sweep → `gate:arc`
-→ `CURRENT_ROUND` bump. `fnd-handoff-undercounts-by-stage`: the `30N` handoff's three lanes
-were all stage-ii-bundle-close residue; the loop xfail, the closure-custody pins, `309`'s
-accounting remainder, the lapsed Flux pencil, and the unscheduled emission planner were
-outside it. NOTHING IS DISPATCHED: `30O` §4's questions (emission-planner scoping for the
-front-lift · the lane-2 merge · whether influence carriage is this round) gate Wave A's
+still-owed r30 kernel work measured against every `28Q`/`309`/`30I`/`30L` stage
+(`30O:the-measuring-stick`), and its schedule (`30O:the-schedule`):
+`sched-parallel-disjoint-lanes` (`lane-bundle-front-lift` + the `30Nh` why/harness residue ·
+`lane-load-plane-precision` = the guarded-source fidelity charter MERGED with the three
+closure-custody precision xfails under one license-review,
+`30O:dec-merge-guarded-source-with-closure-pins` · `lane-loop-propagation`, the end-of-r30
+xfail · the non-kernel `lane-fruit-arc`) → `sched-serial-constructor-reshape`
+(`lane-influence-carriage`, `306b:influence-carriage-across-entities`) →
+`sched-round-close-ceremony` (crosscheck → veto sweep → `gate:arc` → `CURRENT_ROUND` bump).
+`30O:fnd-handoff-undercounts-by-stage`: the `30N` handoff's three lanes were all
+`28Q:stage-ii-bundle-and-artifact-close` residue; the loop xfail, the closure-custody pins,
+`309:stage-306-accounting`'s influence remainder, and the unscheduled emission planner were
+outside it. `300:lane-flux-engine-hardening` is PUNTED to `TODO-ADDTL` (human, 2026-08-21).
+NOTHING IS DISPATCHED: `30O:ask-dispatch-gating-questions` (planner scope for the
+front-lift · the load-plane merge · whether influence carriage is this round) gate the
 briefs, and the human sizes lanes to builders first. Six scout claims of open work were
-refuted by verification and are listed in `30O` §6 so they are not re-chased. The tracked
-SyncThing conflict file in `core/src` is gone (human's own `-` commit, ff'd both ways).
+refuted by verification (`30O:refuted-scout-claims`). The tracked SyncThing conflict file in
+`core/src` is gone (human's own `-` commit, ff'd both ways).
 
 ## STATE (2026-08-21 — SECOND-HALF CONDUCT HANDED OFF; superseded above where they overlap)
 
