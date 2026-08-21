@@ -1,1 +1,0 @@
-member-loop measurements come from `__predict` instead of the reached `__is_converged` verdict (`30La`)
