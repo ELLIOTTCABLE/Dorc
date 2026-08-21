@@ -14,7 +14,33 @@
 
 ---
 
-## CURRENT STATE (2026-08-20 - EFFECTIVE WORLD REACH REVIEWED GREEN; STATIC LOADING RESUMES)
+## CURRENT STATE (2026-08-21 — FIRST-HALF CROSSCHECK ADJUDICATED)
+
+**The five-lane adversarial review of the landed r30 range (`68709783..3011daae`) is
+adjudicated: `notes/30M`** (kit: quarantine `30Ma`; raw reports `30Mb`–`30Mf`;
+1×Fable-adversarial + 2×Sol + 2×DeepSeek). Headlines: NO live wrong elision on the
+production CLI path — the post-`30Kb` settlement kernel held unanimously; the exposure
+is elsewhere. (1) CRITICAL, demonstrated: CLI pre-source acquisition replays transitive
+dependencies as synthetic roots, able to restore an author-`unset -f`'d verdict
+function — engine-created vouch authority (`30Mc` §1; scout-confirmed red reproducer) —
+and the sibling's freshly-landed 5b bundle projection consumes that corrupted
+load-occurrence account, so the repair must land before any bundle-shape golden
+promotion. (2) The certifier-trip terminal cleanup is absent from `plan::build_plan` and
+all three instrument drivers (hostsim/sweep/coverage) — three-lineage convergent,
+demonstrated; instruments are blind on tripped runs. (3) THREE HUMAN RULINGS OWED
+(`30M` §§3–5): wall-narration ratify-or-mint (sits on the `kWARN` weld; twice-REJECTED
+deviation, downgrade never acked); the guarded-source sentinel VALUE conjunct
+ratify-dissolution-or-build (builder default contradicts `30I` §3.4 [TYPED]); the Spine
+grade boundary (two TYPED rulings jointly unrepresentable in the one-grade-per-Spine
+type). Just-fix-it repairs are remitted in **`notes/30Mg`** (dispatch one builder after
+the sibling's `30La`+`30I`-5b/6 fold; four red evidence tests ride the two KEPT
+branches `worktree-agent-aae734f66adb32de5` / `worktree-sol-adversarial-30M`, deleted
+after the remit folds). Conductor-owed follow-through (`30M` §9): the overdue `30Ka` §7
+steering texts, the stale `FORFEITS` guard-tier row, two ledger close-outs, the `309`
+boundary-close assignment before `30I` steps 7/8, and the `307` §5 veto sweep at
+round-close.
+
+## STATE (2026-08-20 - EFFECTIVE WORLD REACH REVIEWED GREEN; STATIC LOADING RESUMES; superseded above where they overlap)
 
 **`plans/30I` is the single authority for the newly-closed static-load/bundle
 arc.** The human ruled cwd-faithful sh loading from one authored-before-contact
