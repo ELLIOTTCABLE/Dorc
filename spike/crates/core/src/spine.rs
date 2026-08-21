@@ -719,6 +719,93 @@ pub struct RegionRoute {
     pub ast: AstId,
 }
 
+/// Why a contributing route carries no plan-site identity.
+///
+/// A typed reason rather than absence, because absence was how the whole route went missing: the
+/// round used to `filter_map` an unkeyable invocation away, leaving an account that read as complete
+/// and was not (`30Ng` §2's entire-DAG directive).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RegionRouteUnkeyed {
+    /// The invocation is not itself a plan leaf, so this round minted no `SiteId` for it. The call
+    /// still executes the shared edit, and its source back-map still names it.
+    NoPlanLeaf,
+}
+
+/// A contributing route the round could not key to a plan site — RETAINED, with the identity it
+/// does have and the typed reason it lacks the other.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UnkeyedRegionRoute {
+    /// The invocation's source back-map — enough for every surface that answers by LINE.
+    pub ast: AstId,
+    /// Why no site identity exists for it.
+    pub reason: RegionRouteUnkeyed,
+}
+
+/// Every contributing route of one shared region decision, COMPLETE (`30Ng` §2, human-typed: the
+/// narrative must carry the entire DAG of causative contributors, not a sample).
+///
+/// Deliberately NOT an [`Account`], and the carve is narrow and reasoned. The cap
+/// (`309:law-spine-operands-capped`) bounds an operand list whose length is a property of the WORLD;
+/// a region's contributor population is a property of the analysed unit — bounded by the census,
+/// which is bounded by `cfg::inline_budget`'s per-book node budget — and it is the answer two pull
+/// surfaces ask for by name. A sampled contributor set would point a reader at some of the calls that
+/// share an edit and silently omit the rest, which is the mis-attribution direction
+/// (`271:rul-sin-ordering`). This species is transitory (never durable), so nothing here reaches
+/// operator disk.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RegionRoutes {
+    keyed: Vec<RegionRoute>,
+    unkeyed: Vec<UnkeyedRegionRoute>,
+}
+
+impl RegionRoutes {
+    /// The complete population, split by whether the round could key it.
+    #[must_use]
+    pub fn of(keyed: Vec<RegionRoute>, unkeyed: Vec<UnkeyedRegionRoute>) -> Self {
+        Self { keyed, unkeyed }
+    }
+
+    /// The routes carrying a plan-site identity, in census order.
+    #[must_use]
+    pub fn keyed(&self) -> &[RegionRoute] {
+        &self.keyed
+    }
+
+    /// The routes carrying only a source back-map, in census order.
+    #[must_use]
+    pub fn unkeyed(&self) -> &[UnkeyedRegionRoute] {
+        &self.unkeyed
+    }
+
+    /// Every contributing invocation's source back-map, keyed or not — what a surface answering by
+    /// LINE walks, and the reason an unkeyable route is retained rather than filtered.
+    pub fn asts(&self) -> impl Iterator<Item = AstId> + '_ {
+        self.keyed
+            .iter()
+            .map(|route| route.ast)
+            .chain(self.unkeyed.iter().map(|route| route.ast))
+    }
+
+    /// How many invocations share this edit.
+    #[must_use]
+    pub fn total(&self) -> usize {
+        self.keyed.len().saturating_add(self.unkeyed.len())
+    }
+
+    /// Did every contributing route key to a plan site? `false` is the conservative trigger: a
+    /// consumer that has to ask something of every invocation cannot ask it of one with no site.
+    #[must_use]
+    pub fn every_route_is_keyed(&self) -> bool {
+        self.unkeyed.is_empty()
+    }
+
+    /// Did the census find no contributing route at all?
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.total() == 0
+    }
+}
+
 /// One AUTHORED ELISION REGION's shared decision (`plans/30L` §9).
 ///
 /// Keyed by [`ElisionRegion`](crate::region::ElisionRegion) rather than by
@@ -729,7 +816,7 @@ pub struct RegionRoute {
 ///
 /// `routes` is the attribution that makes `dorc why` bidirectional: definition region → the
 /// invocations that licensed this edit, and (read backwards) call instance → the shared edits it
-/// executes. Capped like every unbounded operand account (`309:law-spine-operands-capped`).
+/// executes.
 #[derive(Debug, Clone)]
 pub struct SpineRegionDecision<P: DecidePlane> {
     /// The authored span all instances would edit.
@@ -740,14 +827,9 @@ pub struct SpineRegionDecision<P: DecidePlane> {
     pub sh: String,
     /// The one shared, license-bearing decision.
     pub decision: P::RegionDecision,
-    /// Which invocation each contributing route executes under, in census order.
-    ///
-    /// Two ways this is NARROWER than the census population, and only the first is visible in the
-    /// value: the cap reports what it dropped, while a route whose invocation the round could not
-    /// key to a leaf is filtered out silently and leaves `dropped` at zero. Both narrowings run in
-    /// the safe direction at the one consumer (`Plan::live_regions` treats a capped or empty account
-    /// as still-live), but nothing may read this as the complete route set.
-    pub routes: Account<RegionRoute>,
+    /// Which invocation each contributing route executes under, in census order — COMPLETE, with an
+    /// unkeyable one retained under its typed reason rather than filtered away.
+    pub routes: RegionRoutes,
     /// The grade at mint.
     pub grade: Grade,
 }
@@ -1182,9 +1264,10 @@ impl<P: DecidePlane> Spine<P> {
         for record in &self.region_decisions {
             let _ = writeln!(
                 out,
-                "  region {:?} routes={} {:?}",
+                "  region {:?} routes={} unkeyed={} {:?}",
                 record.region,
                 record.routes.total(),
+                record.routes.unkeyed().len(),
                 record.decision
             );
         }

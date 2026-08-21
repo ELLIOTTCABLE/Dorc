@@ -2258,8 +2258,8 @@ pub struct RegionStep {
     pub disposition: Disposition,
     /// Every statically possible invocation instance this ONE edit is universal over — the route
     /// count the pull and why surfaces show, and the call identities `dorc why` walks
-    /// (`30L` §8/§9).
-    pub routes: dorc_core::spine::Account<dorc_core::spine::RegionRoute>,
+    /// (`30L` §8/§9), COMPLETE (`30Ng` §2).
+    pub routes: dorc_core::spine::RegionRoutes,
 }
 
 /// One authored span the decision plane LICENSED to edit and the span render must REFUSE.
@@ -2380,16 +2380,18 @@ impl DecidedRender {
             }
         }
 
-        // Conservative in exactly one direction: a route account that was CAPPED cannot answer
-        // "every invocation", so a truncated one keeps its edit (`30L:pin-whole-helper-derived-only`).
+        // Conservative in exactly one direction: an account that cannot answer "every invocation"
+        // keeps its edit (`30L:pin-whole-helper-derived-only`). Since `30Ng` §2 the keyed set is
+        // COMPLETE, so the only such account is one holding a route with no plan site — a call
+        // whose neutralisation this walk cannot ask about.
         let live_regions: BTreeSet<AstId> = regions
             .iter()
             .filter(|region| {
-                region.routes.dropped() > 0
-                    || region.routes.shown().is_empty()
+                !region.routes.every_route_is_keyed()
+                    || region.routes.is_empty()
                     || region
                         .routes
-                        .shown()
+                        .keyed()
                         .iter()
                         .any(|route| !is_neutralised(&by_ast, ast, route.ast, 0))
             })
@@ -5279,7 +5281,7 @@ impl Plan {
                         DiagCode::RenderRegionRefused(RenderRegionRefused {
                             verb,
                             command: command_text_oneline(&region.sh),
-                            routes: region.routes.shown().len(),
+                            routes: region.routes.total(),
                         }),
                         ast.node(region.ast).span,
                     )

@@ -42,7 +42,7 @@ use dorc_core::region::ElisionRegion;
 
 use crate::erase::{DeadBranchProof, RoundId, prove_dead_branches};
 use crate::region::{
-    RegionCensus, RouteAdmission, RouteConclusion, RouteInstance, RoutePopulation,
+    ClosedRoutes, RegionCensus, RouteAdmission, RouteConclusion, RouteInstance, RoutePopulation,
     RouteRegionProof, SharedConclusion, SharedGuard, SharedRegionDecision, decide_region,
 };
 use crate::world::{
@@ -171,8 +171,10 @@ struct ProvisionalRegionDecision {
     sh: String,
     disposition: Disposition,
     /// Which invocation each contributing route executes under, in census order — the route
-    /// attribution `30L` §9 records on Spine, and the half `dorc why` walks call-ward.
-    routes: Vec<dorc_core::spine::RegionRoute>,
+    /// attribution `30L` §9 records on Spine, and the half `dorc why` walks call-ward. COMPLETE
+    /// (`30Ng` §2): an invocation this round could not key to a plan leaf is retained under its
+    /// typed reason rather than filtered out of the account.
+    routes: dorc_core::spine::RegionRoutes,
     proofs: Vec<(CfgNodeId, NoMutationProof)>,
 }
 
@@ -265,7 +267,7 @@ impl SettledEffectiveAnalysis {
                 ast: region.ast,
                 sh: region.sh,
                 decision: region.disposition,
-                routes: dorc_core::spine::Account::capped(region.routes),
+                routes: region.routes,
                 grade: None,
             });
         }
@@ -750,20 +752,44 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
             ast: region_ast,
             sh,
             disposition,
-            routes: routes
-                .routes()
-                .filter_map(|route| {
-                    let call = route.invocation().node();
-                    Some(dorc_core::spine::RegionRoute {
-                        invocation: dorc_core::SiteId::leaf(round.leaf_of.get(&call).copied()?),
-                        ast: cfg.node(call).ast,
-                    })
-                })
-                .collect(),
+            routes: region_routes(cfg, round.leaf_of, routes),
             proofs,
         });
     }
     decided
+}
+
+/// Every contributing invocation of one region, keyed where this round minted a plan site for it and
+/// RETAINED under a typed reason where it did not (`30Ng` §2, human-typed: the entire DAG of
+/// causative contributors, never a sample).
+///
+/// The filtered shape this replaces read as complete and was not: a route whose call is not itself a
+/// plan leaf vanished, leaving an account that said "these are the invocations" while a why report
+/// answered from fewer. Retaining the call's source back-map is what keeps every contributor
+/// reachable on the surfaces that answer by LINE, and the missing plan site becomes a stated fact
+/// rather than an absence.
+fn region_routes(
+    cfg: &Cfg,
+    leaf_of: &BTreeMap<CfgNodeId, LeafId>,
+    routes: &ClosedRoutes,
+) -> dorc_core::spine::RegionRoutes {
+    let mut keyed = Vec::new();
+    let mut unkeyed = Vec::new();
+    for route in routes.routes() {
+        let call = route.invocation().node();
+        let ast = cfg.node(call).ast;
+        match leaf_of.get(&call).copied() {
+            Some(leaf) => keyed.push(dorc_core::spine::RegionRoute {
+                invocation: dorc_core::SiteId::leaf(leaf),
+                ast,
+            }),
+            None => unkeyed.push(dorc_core::spine::UnkeyedRegionRoute {
+                ast,
+                reason: dorc_core::spine::RegionRouteUnkeyed::NoPlanLeaf,
+            }),
+        }
+    }
+    dorc_core::spine::RegionRoutes::of(keyed, unkeyed)
 }
 
 /// The one authored AST node every instance of a region shares — the edit unit.
@@ -1250,6 +1276,67 @@ mod tests {
         assert!(
             region_of_node(&census, top_level).is_none(),
             "and an ordinary leaf wall gains no operand it does not have"
+        );
+    }
+
+    /// `30Ng` §2 (human-typed): the contributor account carries the ENTIRE population, so a route
+    /// this round could not key to a plan leaf is RETAINED under its typed reason instead of being
+    /// filtered into silence.
+    ///
+    /// Driven by starving `leaf_of` of one of two real census routes rather than by hand-building an
+    /// account, because what is being pinned is the seat's own partition: the retired shape was a
+    /// `filter_map`, and a `filter_map` over a hand-built input proves only that the input was
+    /// short. The consequences ride along in the same assertion — the total still counts both, the
+    /// unkeyed one still names its call, and `every_route_is_keyed` goes false, which is what makes
+    /// `Plan::decided` keep the edit rather than ask a neutralisation question about a call it
+    /// cannot see.
+    #[test]
+    fn an_invocation_with_no_plan_leaf_stays_in_the_contributor_account() {
+        let src = "p() { apt-get install -y nginx; }\np\np\n";
+        let parsed = dorc_syntax::parse(src);
+        let built = dorc_analysis::cfg::build(&parsed.value);
+        let universe =
+            dorc_core::region::RegionUniverse::of_book_custody_files([dorc_core::SourceFileId(0)]);
+        let string_execution = crate::region::StringExecutionSites::of_unit(&parsed.value);
+        let (loads, vectors) = (BTreeSet::new(), BTreeSet::new());
+        let census = crate::region::census(
+            &parsed.value,
+            &built.value,
+            &built.diags,
+            crate::region::CensusOpeners::of(&universe, &loads, &vectors, &string_execution),
+            dorc_core::SourceFileId(0),
+        );
+        let routes = census
+            .regions()
+            .find_map(|(_, population)| match population {
+                RoutePopulation::Closed(routes) => Some(routes),
+                RoutePopulation::Open => None,
+            })
+            .expect("two calls of one body are a closed two-route population");
+        assert_eq!(routes.count(), 2, "the fixture must really carry two calls");
+        let mut calls = routes.routes().map(|route| route.invocation().node());
+        let keyed_call = calls.next().expect("the first invocation");
+        let starved: BTreeMap<CfgNodeId, LeafId> = [(keyed_call, LeafId(0))].into_iter().collect();
+
+        let account = region_routes(&built.value, &starved, routes);
+        assert_eq!(account.total(), 2, "neither contributor is lost");
+        assert_eq!(account.keyed().len(), 1);
+        assert_eq!(
+            account.unkeyed(),
+            [dorc_core::spine::UnkeyedRegionRoute {
+                ast: built
+                    .value
+                    .node(calls.next().expect("the second invocation"))
+                    .ast,
+                reason: dorc_core::spine::RegionRouteUnkeyed::NoPlanLeaf,
+            }],
+            "the unkeyable contributor keeps the identity it has and states the one it lacks"
+        );
+        assert!(!account.every_route_is_keyed());
+        assert_eq!(
+            account.asts().count(),
+            2,
+            "and every contributing call is reachable by the surfaces that answer by line"
         );
     }
 

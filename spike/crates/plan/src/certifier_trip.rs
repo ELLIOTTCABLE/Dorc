@@ -140,7 +140,7 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
         }
         record.decision = Disposition::Run;
         out.demoted = out.demoted.saturating_add(1);
-        for route in record.routes.shown() {
+        for route in record.routes.keyed() {
             out.narrative.push(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::Demotion {
@@ -483,10 +483,13 @@ apt_get__predict() {
             ast: AstId(1),
             sh: "apt-get install -y nginx".to_string(),
             decision: Disposition::Replace(license, stand_in),
-            routes: dorc_core::spine::Account::capped([dorc_core::spine::RegionRoute {
-                invocation: dorc_core::SiteId::leaf(LeafId(7)),
-                ast: AstId(9),
-            }]),
+            routes: dorc_core::spine::RegionRoutes::of(
+                vec![dorc_core::spine::RegionRoute {
+                    invocation: dorc_core::SiteId::leaf(LeafId(7)),
+                    ast: AstId(9),
+                }],
+                Vec::new(),
+            ),
             grade: None,
         });
 

@@ -1902,11 +1902,14 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_aid::diag::line_col(book_src, lo).0;
         let raw = book_src.get(lo..hi).unwrap_or("<source unavailable>");
+        // EVERY contributing invocation, keyed or not (`30Ng` §2's entire-DAG directive): the line
+        // comes from the call's own source back-map, which an unkeyable route carries too — so a
+        // contributor with no plan site is still named rather than quietly absent from the list of
+        // calls this shared edit is universal over.
         let invocations: Vec<usize> = region
             .routes
-            .shown()
-            .iter()
-            .filter_map(|route| lines_by_leaf.get(&route.invocation.leaf).copied())
+            .asts()
+            .map(|call| dorc_aid::diag::line_col(book_src, ast.node(call).span.lo.0 as usize).0)
             .collect();
         sites.push(WhySite {
             line,
@@ -1954,7 +1957,7 @@ fn region_lines_executed_by(
 ) -> Vec<usize> {
     plan.regions()
         .iter()
-        .filter(|region| region.routes.shown().iter().any(|route| route.ast == call))
+        .filter(|region| region.routes.asts().any(|route| route == call))
         .map(|region| dorc_aid::diag::line_col(book_src, ast.node(region.ast).span.lo.0 as usize).0)
         .collect()
 }
