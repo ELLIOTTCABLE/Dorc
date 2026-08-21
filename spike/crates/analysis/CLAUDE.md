@@ -9,6 +9,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Law — the dangers (each one is a latent wrong-elision or a hang)
 
+- **spliced-internal-covers-detached-bodies** — `Cfg::is_spliced_internal` is true for a
+  funcdef's OWN detached body lowering as well as for a call's spliced copy; both mean only
+  "not a plan leaf". A consumer that needs "this is an execution" must ALSO check
+  reachability-from-entry, or `ExecutionOwner::Leaf(call)` with `call != node`, which is the
+  exact discriminator. Reading a detached body's vacuous-⊥ state as ambient is a wrong-elision
+  (`vacuous-entry-fold`), and the flag alone does not stop you.
 - **solve-termination-unenforceable** — the worklist's preconditions (monotone
   transfer · finite-height domain · semantic `Eq`) are caller-upheld and
   un-type-enforceable; a violation would HANG (empirically hundreds of
@@ -162,6 +168,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 
+- **splice-budgets-are-licensure-not-perf** (`30L:req-census-admits-the-wrapped-book`) — the
+  `cfg::inline_budget` constants are a LICENCE surface, not a performance knob: an un-spliced
+  call is `Opaque` ⇒ ⊤ ⇒ a poison wall, so raising a budget makes mutations visible that were
+  hidden behind a wall and makes downstream elisions available. They were re-sized against
+  measured corpus-shaped strawmen (a 15-command wrapped book is 63 AST nodes; the inherited
+  per-call 64 admitted exactly one such book and nothing larger), and each carries its
+  measurement in its own doc comment. Move one deliberately, with the corpus re-measured, never
+  to make a fixture fit — and any change here carries the same winner-shifting review posture
+  as a funcenv precision change (`28Q` §1): budgets decide which mutations exist to the model.
 - **thread-the-flat-coordinate** — `(kind, entity, selector)` + context slot
   through `FactKey` → `Reach` → `command_effect` → `classify`/`SkipClass`.
   Per-selector CELLS are the poison-wall fix: `apt-get update` establishes the

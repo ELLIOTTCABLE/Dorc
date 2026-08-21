@@ -223,6 +223,12 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   conditional-tail blocks, or controller bookkeeping into reviewed `plan.sh` to
   recover precision; downstream lines use only ordinary guard/run forms. Probe
   artifacts may use private machinery because they are not the approval surface.
+- **region-decisions-meet-universally** (`plans/30L` §5) — `plan::region` groups per-instance
+  answers by the authored span they would edit and meets them: Replace → Omit → Guard → Run,
+  universally quantified, semantic (never tag-level) equivalence, biased to Run. Nothing
+  branches on route-set cardinality; an `Open` population runs without consulting a proof; and
+  a proof list that does not correspond exactly to the census's population runs. The decisions
+  are computed and consumed by nothing until the settlement stage lands.
 - **wire-records** — probe results move to the `262` §2 records lane at
   block-rebuild (partial deriv-family ⇒ wall-total; additive keys).
 
