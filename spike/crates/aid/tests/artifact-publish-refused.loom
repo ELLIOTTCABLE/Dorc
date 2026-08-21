@@ -1,0 +1,8 @@
+---
+code: artifact-publish-refused
+when-fires: an artifact set could not be written to its `--artifact-dir`, so NOTHING was written. Minted at the cli's publication edge, spanless, once per run. `{reason}` = the publisher's own closed reason word (`directory`, `write`, `names-exhausted`, `oversize`).
+why: 30I §7.5: publication is atomic — a fresh staging directory takes every file and only a complete set is moved into place, so a plan can never point at a sidecar from an earlier generation. A partial set is exactly the failure the staging exists to prevent, so the refusal reports rather than salvaging, and the run leaves the destination as it found it. Error severity with a WarnOrDeny floor: a silenced publication failure is how somebody applies yesterday's artifact believing it is today's, which is the worst reading of a stale plan. Remediation register (help) wanted: name the destination and the reason word plainly; the repair is the operator's own filesystem, not the book.
+---
+-- replay --
+$ dorc plan --book=book.sh
+error[artifact-publish-refused]: [unwritten: artifact-publish-refused]

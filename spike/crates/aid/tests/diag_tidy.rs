@@ -59,6 +59,10 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "SiteUnresolvable",
     "RenderHeredocRefused",
     "RenderRegionRefused",
+    // cli/main.rs (the emission planner's edge)
+    "ArtifactFormRefused",
+    "ArtifactFormFallback",
+    "ArtifactPublishRefused",
     "CmdsubInnerNonleaf",
     "RedirTargetTop",
     "Depth2PositionalUnthreaded",
@@ -175,6 +179,9 @@ const MIGRATED_SLUGS: &[&str] = &[
     "site-unresolvable",
     "render-heredoc-refused",
     "render-region-refused",
+    "artifact-form-refused",
+    "artifact-form-fallback",
+    "artifact-publish-refused",
     "cmdsub-inner-nonleaf",
     "redir-target-top",
     "depth-2-positional-unthreaded",
@@ -337,6 +344,13 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
+    // cli/main.rs — the emission planner's three. A FORM is a property of the whole run, not of
+    // any one line: a caret on a book command would blame the admin's text for a v0 emission
+    // limit or the operator's own filesystem, which is the mis-attribution direction
+    // (`271:rul-sin-ordering`).
+    "ArtifactFormRefused",
+    "ArtifactFormFallback",
+    "ArtifactPublishRefused",
     // lint — the external-tool trio is ABOUT a foreign process, not about any dorc bytes, so its
     // emit context genuinely has no span. The four dorc-native lint codes DO carry real spans.
     "LintToolAbsent",

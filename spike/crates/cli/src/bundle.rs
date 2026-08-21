@@ -34,6 +34,12 @@ impl BundleRootId {
     const fn index(self) -> usize {
         self.0 as usize
     }
+
+    /// The first root a projection assigns — the one identity a test can name without a run.
+    #[must_use]
+    pub const fn first() -> Self {
+        Self(0)
+    }
 }
 
 /// Exact stripped bytes copied from one source, with their original line identity.

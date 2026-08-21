@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod artifact;
 pub mod bundle;
 pub mod fixpoint;
 pub mod kinds;
@@ -39,6 +40,8 @@ use dorc_aid::diag::{Diag, DiagCode};
 use dorc_aid::said::{Said, WHY_VALUE_CAP};
 use dorc_aid::weave::Face;
 use weft::{Banner, Document, LabeledRow, Node, NodeKind, Paragraph};
+
+use crate::artifact::ArtifactForm;
 
 /// The invocation-error carrier (`288` §6). A plain [`Diag`]: the parsers hand the print seat the
 /// same typed value every other surface carries, and boxing it would buy nothing but an indirection
@@ -382,6 +385,20 @@ pub struct Args {
     /// deliberately so — an apply is the user's real work, and killing one does not fail it, it
     /// mints Unknown. Opting in means accepting that outcome.
     pub apply_timeout: Option<u64>,
+    /// `--artifact-dir DIR` (`30I` §7.5): the artifact set's own stream. Present, the run may
+    /// materialize a dependency tree beside `plan.sh` and the emission planner is free to choose a
+    /// multipart form; absent, stdout is the artifact stream and one stream means one flat plan
+    /// (`30I:rul-piped-stdout-implies-one-flat-plan`).
+    ///
+    /// The directory is CONTROLLER-OWNED and is published atomically: a fresh staging directory
+    /// receives every file, and only a complete set is moved into place, so a plan can never point
+    /// at a sidecar from an earlier generation.
+    pub artifact_dir: Option<String>,
+    /// `--form <flattened|multipart|preserved-book-tree>` (`30I` §7.1): name a semantic emission
+    /// form. Absent ⇒ `auto`, which picks the most flattened SAFE form for the stream posture and
+    /// explains what it settled for. Named and unavailable ⇒ a pre-network REFUSAL: returning a
+    /// different form than the one asked for is explicitly not builder latitude (`30I` §14).
+    pub form: Option<ArtifactForm>,
     /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
     /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
     /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
@@ -503,6 +520,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut no_whylog = false;
     let mut all = false;
     let mut shim_dir: Option<String> = None;
+    let mut artifact_dir: Option<String> = None;
+    let mut form: Option<ArtifactForm> = None;
     let mut host: Option<String> = None;
     let mut plan: Option<String> = None;
     let mut accept_new = false;
@@ -630,6 +649,30 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             last = true;
         } else if arg == "--no-whylog" {
             no_whylog = true;
+        } else if let Some(p) = arg.strip_prefix("--artifact-dir=") {
+            artifact_dir = Some(p.to_string());
+        } else if arg == "--artifact-dir" {
+            artifact_dir = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--artifact-dir", "a directory"))?,
+            );
+        } else if let Some(f) = arg
+            .strip_prefix("--form=")
+            .map(ToOwned::to_owned)
+            .map_or_else(|| (arg == "--form").then(|| it.next()).flatten(), Some)
+        {
+            form = Some(match f.as_str() {
+                "flattened" => ArtifactForm::Flattened,
+                "multipart" => ArtifactForm::Multipart,
+                "preserved-book-tree" => ArtifactForm::PreservedBookTree,
+                other => {
+                    return Err(value_not_recognized(
+                        "--form",
+                        other,
+                        "flattened|multipart|preserved-book-tree",
+                    ));
+                }
+            });
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
             shim_dir = Some(p.to_string());
         } else if arg == "--shim-dir" {
@@ -805,6 +848,22 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             },
         )));
     }
+    // The emission planner only exists where a plan is emitted; `probe`, `bundle` and `why` have
+    // their own stdout contracts and no artifact set to place (`stdout-contract`).
+    let emits_a_plan = matches!(mode, Mode::Plan | Mode::Apply | Mode::RoundTrip);
+    for (named, flag) in [
+        (artifact_dir.is_some(), "--artifact-dir"),
+        (form.is_some(), "--form"),
+    ] {
+        if named && !emits_a_plan {
+            return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+                dorc_aid::diag::CliFlagRequiresMode {
+                    flag,
+                    mode: "dorc plan, dorc apply or the round-trip",
+                },
+            )));
+        }
+    }
     if whylog.is_some() && whylog_dir.is_some() {
         return Err(Diag::new_spanless_site(
             DiagCode::CliFlagsMutuallyExclusive(dorc_aid::diag::CliFlagsMutuallyExclusive {
@@ -844,6 +903,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         connect_timeout,
         probe_timeout,
         apply_timeout,
+        artifact_dir,
+        form,
         shim_dir,
     })))
 }

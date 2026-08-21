@@ -21,24 +21,25 @@ use dorc_core::{Capability, EscalationDial, LeafId, TopCause};
 use crate::ForeignBytes;
 
 use crate::diag::{
-    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied,
-    CliFileUnreadable, CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference,
-    DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
-    HelperDeclarationContested, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind,
-    InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
-    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
-    MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
-    MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
-    RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch,
-    RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine,
-    RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused, RenderRegionRefused,
-    RoleDefinedBelowItsSites, RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId,
-    SiteUnresolvable, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
-    SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
-    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
-    TransportSessionLost, TransportSpawnRefused, VouchedCompositionNotPresent,
-    VouchedCompositionReason, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
-    WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
+    AidUnloadedSiblingOracle, ArtifactFormFallback, ArtifactFormRefused, ArtifactPublishRefused,
+    CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable,
+    CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference, DiagCode,
+    DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy, HelperDeclarationContested,
+    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, InBookVocabularyRole,
+    LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing, LintToolAbsent,
+    LintToolFailedWithoutFindings, LintToolOutputUnparsable, MarkHashcolonMalformed,
+    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
+    MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsAlienLine,
+    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing,
+    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
+    RecordsTornLine, RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites,
+    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass,
+    SolverConsistencyFailure, SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement,
+    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
+    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
+    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
+    WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -95,6 +96,28 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 verb: "elide",
                 command: "cat <<EOF".to_owned(),
                 routes: 2,
+            }),
+        ),
+        (
+            "artifact-form-refused",
+            DiagCode::ArtifactFormRefused(ArtifactFormRefused {
+                form: "flattened",
+                cause: "inlining-unproven",
+                loads: 1,
+            }),
+        ),
+        (
+            "artifact-form-fallback",
+            DiagCode::ArtifactFormFallback(ArtifactFormFallback {
+                form: "preserved-book-tree",
+                cause: "inlining-unproven",
+                loads: 1,
+            }),
+        ),
+        (
+            "artifact-publish-refused",
+            DiagCode::ArtifactPublishRefused(ArtifactPublishRefused {
+                reason: "directory",
             }),
         ),
         (

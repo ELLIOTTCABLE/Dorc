@@ -95,6 +95,16 @@ pub enum DiagCode {
     /// many invocations share is not one execution, and smearing the refusal across the
     /// contributing calls is the shape `30N:rul-region-refusal-discloses-region-keyed` forbids.
     RenderRegionRefused(RenderRegionRefused),
+    /// An explicitly named emission FORM cannot be served for this book, so the run refuses before
+    /// network rather than returning a different form (`30I` §7.1's standing rule).
+    ArtifactFormRefused(ArtifactFormRefused),
+    /// `auto` settled for a less flattened form than it aimed at, and says which and why
+    /// (`30I` §7.1: auto aims for the contracted-dependency default and falls toward the preserved
+    /// tree WITH an explicit explanation).
+    ArtifactFormFallback(ArtifactFormFallback),
+    /// The artifact set could not be published, so NOTHING was published: publication is atomic
+    /// and a partial artifact set is what it exists to prevent (`30I` §7.5).
+    ArtifactPublishRefused(ArtifactPublishRefused),
 
     // ── B4 mechanical sweep: former `diag::legacy` survivors ────────────────
     /// A command runs inside a `$(…)` substitution body — effect-bearing but not independently
@@ -420,6 +430,9 @@ impl DiagCode {
             DiagCode::SiteUnresolvable(_) => "site-unresolvable",
             DiagCode::RenderHeredocRefused(_) => "render-heredoc-refused",
             DiagCode::RenderRegionRefused(_) => "render-region-refused",
+            DiagCode::ArtifactFormRefused(_) => "artifact-form-refused",
+            DiagCode::ArtifactFormFallback(_) => "artifact-form-fallback",
+            DiagCode::ArtifactPublishRefused(_) => "artifact-publish-refused",
             DiagCode::CmdsubInnerNonleaf(_) => "cmdsub-inner-nonleaf",
             DiagCode::RedirTargetTop(_) => "redir-target-top",
             DiagCode::Depth2PositionalUnthreaded(_) => "depth-2-positional-unthreaded",
@@ -677,6 +690,39 @@ pub struct RenderRegionRefused {
     /// How many statically possible invocations shared the edit that did not land — the number
     /// that says why this is not a per-call disclosure.
     pub routes: usize,
+}
+
+/// Payload of [`DiagCode::ArtifactFormRefused`]: which form was asked for, and what blocked it.
+///
+/// BOTH halves are load-bearing. A refusal that named only the form leaves the reader unable to
+/// tell a v0 limit from their own mistake; one that named only the cause leaves them unable to tell
+/// which of their flags is the one to change.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtifactFormRefused {
+    /// The form the invocation named.
+    pub form: &'static str,
+    /// The closed cause word.
+    pub cause: &'static str,
+    /// How many book-sited load occurrences the cause counted.
+    pub loads: usize,
+}
+
+/// Payload of [`DiagCode::ArtifactFormFallback`]: what `auto` settled for, and why.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtifactFormFallback {
+    /// The form the run actually emitted.
+    pub form: &'static str,
+    /// The closed cause word.
+    pub cause: &'static str,
+    /// How many book-sited load occurrences the cause counted.
+    pub loads: usize,
+}
+
+/// Payload of [`DiagCode::ArtifactPublishRefused`]: why the artifact set did not reach disk.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtifactPublishRefused {
+    /// The closed reason word, from the publisher's own refusal enum.
+    pub reason: &'static str,
 }
 
 // ===========================================================================
@@ -2410,6 +2456,27 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
+        // The run produced NO artifact, so this can never be quieted into a run that looks like it
+        // worked.
+        DiagCode::ArtifactFormRefused(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
+        // A fallback is a pure disclosure: the artifact is valid, and what the reader lost is
+        // flattening, not correctness.
+        DiagCode::ArtifactFormFallback(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::Structural,
+        },
+        // Nothing reached disk. Silencing that below a warning is how somebody applies yesterday's
+        // artifact believing it is today's.
+        DiagCode::ArtifactPublishRefused(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         // ── B4 sweep: former diag::legacy survivors ──────────────────────────
         // Pure disclosures (the apply runs these sites regardless) → Note + Floor::None.
         DiagCode::CmdsubInnerNonleaf(_) => CodeSpec {
@@ -3111,6 +3178,19 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             command: _,
             routes: _,
         }) => Vec::new(),
+        // Likewise unwritten: the emission-planner family's words are a prose act, and its payloads
+        // are what that act will reach for.
+        DiagCode::ArtifactFormRefused(ArtifactFormRefused {
+            form: _,
+            cause: _,
+            loads: _,
+        })
+        | DiagCode::ArtifactFormFallback(ArtifactFormFallback {
+            form: _,
+            cause: _,
+            loads: _,
+        })
+        | DiagCode::ArtifactPublishRefused(ArtifactPublishRefused { reason: _ }) => Vec::new(),
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
             vec![ours("inner", inner.clone())]
         }

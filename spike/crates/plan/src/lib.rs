@@ -1331,21 +1331,57 @@ impl GuardInsert {
     }
 }
 
-/// What the apply artifact hoists, and which name each guarded site's check invokes
+/// One body the artifact must place ahead of the guards that invoke it (`28K` §4).
+///
+/// FORM-NEUTRAL by construction: it carries the decided bytes and the name they are bound under,
+/// and nothing about where or how a particular artifact typesets them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PinnedDefinition {
+    /// The exact bytes to place — a stripped helper declaration or a stripped role body, already
+    /// carrying its emitted name.
+    pub bytes: String,
+    /// The AUTHORED function these bytes are, where the emission had to munge the name and a
+    /// reader therefore cannot map it back on their own (`28K` §4 `rul-hash-munge-disambiguation`).
+    /// `None` for a helper declaration and for a body emitted under its own name.
+    pub disambiguated: Option<String>,
+}
+
+/// What the apply artifact places, and which name each guarded site's check invokes
 /// (`28K` §4 — see [`DecidedRender::decide`], which is the only constructor).
+///
+/// The SPLIT is `30Nd` §6.2's, forced by the second artifact form: `invoked` is the DECISION
+/// (which body a guard calls, under what name — the thing the Spine records and the thing a
+/// misalignment would make pope-sin tier), while `definitions` is the ordered material a form
+/// typesets for itself. A form that lays its dependencies out differently re-typesets from the
+/// same bindings rather than re-deriving them.
 #[derive(Debug, Default, Clone)]
 pub struct PinnedDefinitions {
-    hoisted: String,
+    definitions: Vec<PinnedDefinition>,
     invoked: BTreeMap<AstId, String>,
 }
 
 impl PinnedDefinitions {
-    /// The definitions to emit above the book, in a deterministic order. EMPTY when every pinned
-    /// body is already in place, which is what keeps a guard-free — and an in-book-oracle — book
-    /// byte-identical to its own text.
+    /// The definitions to place, in a deterministic order — helper declarations first, then role
+    /// bodies. EMPTY when every pinned body is already in place, which is what keeps a guard-free
+    /// — and an in-book-oracle — book byte-identical to its own text.
     #[must_use]
-    pub fn hoisted(&self) -> &str {
-        &self.hoisted
+    pub fn definitions(&self) -> &[PinnedDefinition] {
+        &self.definitions
+    }
+
+    /// The sh-form typesetting of [`definitions`](Self::definitions): each body's bytes on their
+    /// own lines, a disambiguated one preceded by the provenance comment naming what it authored.
+    #[must_use]
+    pub fn hoisted(&self) -> String {
+        let mut out = String::new();
+        for definition in &self.definitions {
+            if let Some(authored) = &definition.disambiguated {
+                out.push_str(&render::apply::pinned_provenance(authored));
+            }
+            out.push_str(&definition.bytes);
+            out.push('\n');
+        }
+        out
     }
 
     /// The funcname the guard at `ast` invokes. Absent for a site that guards nothing.
@@ -5057,10 +5093,12 @@ fn pin_definitions<'a>(
         }
     }
     let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
-    let mut hoisted = String::new();
+    let mut definitions: Vec<PinnedDefinition> = Vec::new();
     for bytes in snapshot.into_values() {
-        hoisted.push_str(bytes);
-        hoisted.push('\n');
+        definitions.push(PinnedDefinition {
+            bytes: bytes.to_owned(),
+            disambiguated: None,
+        });
     }
     for (name, distinct) in &bodies {
         let book_claims = book_defines_at_top_level(ast, name);
@@ -5071,18 +5109,19 @@ fn pin_definitions<'a>(
             }
             let plural = distinct.len() > 1;
             if !(plural || book_claims || defensive_emission) {
-                hoisted.push_str(body);
-                hoisted.push('\n');
+                definitions.push(PinnedDefinition {
+                    bytes: (*body).to_owned(),
+                    disambiguated: None,
+                });
                 emitted_names.insert((name, body), (*name).to_owned());
                 continue;
             }
             let emitted = format!("{name}_h{}", short_digest(body));
-            if plural {
-                hoisted.push_str(&render::apply::pinned_provenance(name));
-            }
             let header = format!("{name}()");
-            hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
-            hoisted.push('\n');
+            definitions.push(PinnedDefinition {
+                bytes: body.replacen(&header, &format!("{emitted}()"), 1),
+                disambiguated: plural.then(|| (*name).to_owned()),
+            });
             emitted_names.insert((name, body), emitted);
         }
     }
@@ -5096,7 +5135,10 @@ fn pin_definitions<'a>(
             Some((edit.ast, emitted.clone()))
         })
         .collect();
-    PinnedDefinitions { hoisted, invoked }
+    PinnedDefinitions {
+        definitions,
+        invoked,
+    }
 }
 
 impl Plan {
@@ -6779,7 +6821,7 @@ apt_get__is_converged() { return 0; }
         let plan = one_guard_plan(body, &src);
         let guards = plan.disposition_counts().guard;
         let once = plan.pinned_definitions();
-        let hoisted = once.hoisted().to_owned();
+        let hoisted = once.hoisted();
         internal_tooling::xfail::xfail_until("p-x-placement-tuning-pair", || {
             assert_eq!(guards, 1, "the single site still guards");
             assert!(

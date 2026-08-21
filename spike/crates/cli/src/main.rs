@@ -60,6 +60,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::process::ExitCode;
 
+mod artifact_store;
 mod source_match;
 mod transport_edge;
 mod whylog_store;
@@ -141,6 +142,10 @@ const EXIT_SESSION_LOST: u8 = 14;
 /// outcome; the remote status is reported in the diagnostic, never reproduced as our own exit
 /// (a plan exiting 13 must not be read as our "host not reached").
 const EXIT_APPLY_FAILED: u8 = 15;
+/// The invocation NAMED an emission form this book cannot be given, or an artifact set could not
+/// be published (`30I` §7.1 / §7.5). Sixth of the reserved 10..=19 dorc-semantic range, and
+/// pre-network on the refusal arm: nothing was probed, nothing was contacted, nothing was written.
+const EXIT_ARTIFACT_UNSERVABLE: u8 = 16;
 
 /// `dorc lint`: findings AT OR ABOVE the `--fail-on` threshold were reported (`27R` §5 exit
 /// trichotomy). Distinct from clean (0) and from operational (below); shares linter convention.
@@ -179,6 +184,9 @@ enum RunOutcome {
     SessionLost,
     /// A remote apply completed and its artifact exited non-zero.
     ApplyFailed,
+    /// The emission form the invocation named cannot be served, or its artifact set could not be
+    /// published — either way no artifact of the requested shape exists.
+    ArtifactUnservable,
 }
 
 fn main() -> ExitCode {
@@ -209,6 +217,7 @@ fn main() -> ExitCode {
                 Ok(RunOutcome::HostNotReached) => ExitCode::from(EXIT_HOST_NOT_REACHED),
                 Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
                 Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
+                Ok(RunOutcome::ArtifactUnservable) => ExitCode::from(EXIT_ARTIFACT_UNSERVABLE),
                 Err(diag) => {
                     report_invocation_error(&diag);
                     ExitCode::from(EXIT_USAGE)
@@ -1061,6 +1070,33 @@ fn run(
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
     }
+    // THE EMISSION PLANNER, sited here on purpose: everything it needs is authored-before-contact
+    // (`30I:rul-load-decisions-are-authored-before-contact`), so a form the run cannot serve is
+    // refused with no probe emitted, no host reached and no file created (`30I` §10).
+    let form_selection =
+        match select_artifact_form(args, &snapshot, &cfg.value, &parsed.value, &env) {
+            Ok(selection) => selection,
+            Err(refusal) => {
+                report_at(
+                    advisory,
+                    "emission",
+                    None,
+                    &[Diag::new_spanless_site(DiagCode::ArtifactFormRefused(
+                        dorc_aid::diag::ArtifactFormRefused {
+                            form: refusal.form().name(),
+                            cause: refusal.cause(),
+                            loads: match refusal {
+                                dorc_cli::artifact::FormRefusal::Unavailable {
+                                    because, ..
+                                } => because.loads(),
+                                dorc_cli::artifact::FormRefusal::NoArtifactStream { .. } => 0,
+                            },
+                        },
+                    ))],
+                );
+                return Ok(RunOutcome::ArtifactUnservable);
+            }
+        };
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
     // The book is the LAST source, and naming it is what lets the custody predicate see what the
     // admin defines (`rul-vouch-reaches-own-custody-only`). Sited BELOW the environment because the
@@ -2174,10 +2210,52 @@ fn run(
         return Ok(book_outcome);
     }
 
+    // THE ARTIFACT SET: the settled form bound to the plan projection it describes. One structure,
+    // and both the stream below and the published tree derive from it rather than from two
+    // independent assemblies of the same bytes (`30I:step-7-reify-plan-artifact-forms`).
+    let artifact = form_selection
+        .map(|selection| selection.with_plan(plan.render_apply(&book_src, &parsed.value)));
+
     // rec-1 / ru-12 BYTE FLOOR: `plan` and `apply` emit BYTE-IDENTICAL apply bytes here — the
     // artifact is receipt-free in both; only the stderr disclosure above differed. The
     // round-trip emits the same bytes as its second shebang block.
-    print!("{}", plan.render_apply(&book_src, &parsed.value));
+    match &artifact {
+        Some(set) => print!("{}", set.primary().bytes),
+        None => print!("{}", plan.render_apply(&book_src, &parsed.value)),
+    }
+    if let Some(set) = &artifact {
+        // The fallback is stated on the PLAN surface, never woven into the artifact bytes
+        // (`two-surfaces`): an admin whose plan is not self-contained learns it here rather than
+        // on the target.
+        if let Some(fallback) = set.fallback() {
+            report_at(
+                advisory,
+                "emission",
+                None,
+                &[Diag::new_spanless_site(DiagCode::ArtifactFormFallback(
+                    dorc_aid::diag::ArtifactFormFallback {
+                        form: set.form().name(),
+                        cause: fallback.cause(),
+                        loads: fallback.loads(),
+                    },
+                ))],
+            );
+        }
+        if let Some(dir) = &args.artifact_dir
+            && let Err(refusal) = publish_artifact(dir, set)
+        {
+            report(
+                "emission",
+                None,
+                &[Diag::new_spanless_site(DiagCode::ArtifactPublishRefused(
+                    dorc_aid::diag::ArtifactPublishRefused {
+                        reason: refusal.reason(),
+                    },
+                ))],
+            );
+            return Ok(RunOutcome::ArtifactUnservable);
+        }
+    }
 
     // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
     emit_plan_summary(&plan);
@@ -2462,6 +2540,67 @@ fn write_whylog(dir: &str, projection: &dorc_plan::whylog::DurableProjection<'_>
     if let Err(refusal) = whylog_store::publish(dir, &bytes, WHYLOG_CAP, WHYLOG_KEEP) {
         report_whylog_unwritten(dir, refusal.reason());
     }
+}
+
+/// Publish a whole artifact set under `dir`, atomically (`30I` §7.5).
+///
+/// # Errors
+/// Returns the publisher's closed refusal, having left no partial generation behind.
+fn publish_artifact(
+    dir: &str,
+    set: &dorc_cli::artifact::ArtifactSet,
+) -> Result<(), artifact_store::PublishRefusal> {
+    artifact_store::publish(
+        dir,
+        set.files()
+            .map(|file| (file.path.as_str(), file.bytes.as_str())),
+    )
+    .map(|_| ())
+}
+
+/// Decide this run's emission form from authored inputs alone (`30I` §7.1).
+///
+/// `None` for a mode that emits no plan — `probe`, `why` and the bundle archive have their own
+/// stdout contracts and no artifact set to place (`stdout-contract`), and the parser already
+/// refuses the two flags there.
+///
+/// The STREAM POSTURE is the injected, non-hermetic edge fact
+/// (`30I:rul-piped-stdout-implies-one-flat-plan`): naming `--artifact-dir` moves the ARTIFACT
+/// stream off stdout, which is what §2.5 says leaves the planner free to choose — with no
+/// directory the artifact IS stdout, and one stream means one flat plan.
+///
+/// # Errors
+/// Refuses when the invocation NAMED a form this book cannot be given.
+fn select_artifact_form(
+    args: &Args,
+    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
+    cfg: &dorc_analysis::cfg::Cfg,
+    book: &dorc_syntax::Ast,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) -> Result<Option<dorc_cli::artifact::Selection>, dorc_cli::artifact::FormRefusal> {
+    use dorc_cli::artifact::{FormRequest, StreamPosture, book_loads, select};
+
+    if !matches!(args.mode, Mode::Plan | Mode::Apply | Mode::RoundTrip) {
+        return Ok(None);
+    }
+    let projection = dorc_cli::bundle::project(snapshot, env.loads())
+        .map(dorc_cli::bundle::BundleProjectionOutput::into_projection)
+        .unwrap_or_default();
+    let loads = book_loads(cfg, book, &projection);
+    let posture = if args.artifact_dir.is_some() {
+        StreamPosture::Materializable
+    } else {
+        StreamPosture::SingleStream
+    };
+    let request = args.form.map_or(FormRequest::Auto, FormRequest::Explicit);
+    select(
+        snapshot.source_paths(),
+        &projection,
+        &loads,
+        request,
+        posture,
+    )
+    .map(Some)
 }
 
 /// Where this run's receipt goes: the admin's `--whylog-dir`, else the per-user state directory.

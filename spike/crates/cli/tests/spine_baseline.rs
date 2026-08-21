@@ -263,7 +263,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
         out,
         "  hoisted bytes={} digest={}",
         pinned.hoisted().len(),
-        short_digest(pinned.hoisted())
+        short_digest(&pinned.hoisted())
     );
 
     let survival = &plan.survival_report;
