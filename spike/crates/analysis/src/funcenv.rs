@@ -1527,7 +1527,10 @@ fn run_control(
                 depth: ctx.depth.saturating_sub(1),
                 ..ctx
             };
-            let loaded = run_program(inner, program, &env, &mut locals.clone(), visiting, account);
+            // `locals` itself, never a copy: a `.` runs in the caller's own shell, so what the
+            // loaded file assigns at its top level is live for everything the sourcer does next
+            // (`30I:rul-dot-resolves-as-sh`).
+            let loaded = run_program(inner, program, &env, locals, visiting, account);
             visiting.remove(&next);
             loaded
         }
@@ -4038,6 +4041,65 @@ mod tests {
         );
     }
 
+    /// A `.` RUNS IN ITS CALLER'S SHELL (`30I:rul-dot-resolves-as-sh`): what a nested load assigns
+    /// at its top level is live for everything its sourcer does afterwards, so one file can site
+    /// the next one's dependency. Handed a COPY of the caller's variables, the loaded file's
+    /// assignments died with the copy and the second load resolved nowhere
+    /// (`30Mc:finding-dot-locals-are-discarded`).
+    #[test]
+    fn a_nested_loads_assignment_sites_its_sourcers_next_load() {
+        let book = ". ./entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 2, ROLE);
+        table.set_loadable("./vendored/common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./root.sh",
+            LoadProgram::of(vec![LoadStep::Assign {
+                name: "OPS_LIB".to_owned(),
+                value: LoadTarget::literal("./vendored"),
+            }]),
+        );
+        table.set_loadable(
+            "./entry.sh",
+            LoadProgram::of(vec![
+                LoadStep::Control(loads(LoadTarget::literal("./root.sh"))),
+                LoadStep::Control(loads(rooted("/common.sh"))),
+            ]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(dependency))
+        );
+        assert!(targets_of(&env, LoadRoute::Taken).contains(&"vendored/common.sh"));
+    }
+
+    /// THE SCOPE FLOOR, stated positively so a later widening cannot quietly cross it: a `.` inside
+    /// a subshell assigns inside that subshell, and the variable is gone at the closing paren — so
+    /// a load AFTER the paren resolves nowhere. Held today for the broader reason that no book-level
+    /// `.` propagates variables at all (`30Na:fnd-book-level-dot-locals-need-a-domain`); it becomes
+    /// load-bearing the moment they do.
+    #[test]
+    fn a_subshell_scoped_sources_assignment_dies_at_the_closing_paren() {
+        let book = "(\n   . ./root.sh\n)\n. ./entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 2, ROLE);
+        table.set_loadable("./vendored/common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./root.sh",
+            LoadProgram::of(vec![LoadStep::Assign {
+                name: "OPS_LIB".to_owned(),
+                value: LoadTarget::literal("./vendored"),
+            }]),
+        );
+        table.set_loadable(
+            "./entry.sh",
+            LoadProgram::of(vec![LoadStep::Control(loads(rooted("/common.sh")))]),
+        );
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert!(!targets_of(&env, LoadRoute::Taken).contains(&"vendored/common.sh"));
+    }
+
     /// THE PRELUDE FLOOR (conductor default at `30Mg` R1; human veto invited): an unresolvable act
     /// inside a prelude's load program floors the WHOLE prelude from that point — the later root's
     /// declarations do not bind, and neither does anything the book defines afterwards.
@@ -4081,8 +4143,16 @@ mod tests {
             .collect()
     }
 
+    /// TARGET: two BOOK-level `.`s, where the first assigns the root the second's operand is built
+    /// from. Sh keeps that variable — a `.` is not a subshell — so the second load resolves.
+    ///
+    /// The engine does not: a book's `.` sites are separate CFG nodes and the load-time variable map
+    /// is minted fresh at each, so nothing crosses between them. Closing it means the variables
+    /// joining this domain (or the value plane learning what a `.` assigns), which is a
+    /// winner-shifting domain change with its own monotonicity question — hence a pin rather than a
+    /// patch (`30Na:fnd-book-level-dot-locals-need-a-domain`). The NESTED cell above is the half
+    /// that was design-free, and it is fixed.
     #[test]
-    #[ignore = "round-30 review demonstration: sourced assignments do not reach their caller"]
     fn a_sourced_assignment_sites_a_later_load() {
         let book = ". ./root.sh\n. ./entry.sh\nyum install -y nginx\n";
         let mut table = DefinitionTable::default();
@@ -4102,14 +4172,16 @@ mod tests {
 
         let (env, cfg, _) = solve_positional(book, &table);
 
-        assert_eq!(
-            targets_of(&env, LoadRoute::Taken),
-            ["root.sh", "entry.sh", "vendored/common.sh"]
-        );
-        assert_eq!(
-            env.binding_before(cfg.exit(), ROLE),
-            Flat::Elem(Binding::Defined(dependency))
-        );
+        internal_tooling::xfail::xfail_until("p-x-book-level-dot-locals", || {
+            assert_eq!(
+                targets_of(&env, LoadRoute::Taken),
+                ["root.sh", "entry.sh", "vendored/common.sh"]
+            );
+            assert_eq!(
+                env.binding_before(cfg.exit(), ROLE),
+                Flat::Elem(Binding::Defined(dependency))
+            );
+        });
     }
 
     /// THE BLOCKER THIS TABLE DISCHARGES (`30Ib:fnd-the-loader-reports-no-unfiltered-edge-set`):

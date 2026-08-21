@@ -127,6 +127,7 @@ dependencies = [
  "dorc-core",
  "dorc-oracle",
  "dorc-syntax",
+ "internal-tooling",
 ]
 
 [[package]]

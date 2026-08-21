@@ -210,6 +210,20 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
+        name: "p-x-book-level-dot-locals",
+        trigger: "load-time VARIABLES joining the function-environment domain (or the value plane \
+                  learning what a `.` assigns): the nested-load half of POSIX `.` parity landed, so \
+                  one load program's assignment sites the next, but a book's `.` sites are separate \
+                  CFG nodes and mint a fresh variable map each",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the domain change is winner-shifting and carries an open monotonicity question, \
+                  so it is unscheduled design work; this boundary is where the census should force \
+                  the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-blessed-toplevel-conditional",
         trigger: "the oracle-side blessing of read-only top-level commands \
                   (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \
