@@ -289,6 +289,55 @@ not all conductor-re-read (marked):
   - Banked: `tc-multipart-has-no-published-tree-assertion` (harness question) ·
     `tc-form-flag-spelling` + four `[unwritten:]` registers + the undocumented
     `--artifact-dir`/`--form` help rows → the prose queue.
+- **lane-spec-promotion** (`30I:step-8-promote-executable-specification`): FOLDED
+  2026-08-21 at `d4749a32`; worktree/branch cleaned; report `notes/30Nf`; both
+  legs green. All three `load30-*` XFAILs PROMOTED with `expected.ran` unmoved
+  (the strongest promotion evidence: the target run sets ARE what the real path
+  produces); the two ringfenced pins untouched; both floor cases byte-identical.
+  Fold adjudications:
+  - `adj-endorse-mirroring-repair` — ENDORSED
+    (`30Nf:fnd-multipart-never-placed-anything-in-production` +
+    `dev-mirroring-repair-was-not-in-the-remit`): leaving a demonstrably
+    non-functional flagship feature broken behind a green case, per the remit's
+    letter, would have been the wrong obedience; the repair is small, keeps the
+    refusal half, and adds the missing production-cwd cell. **CONDUCTOR MEA
+    CULPA, the second this arc**: at the artifact-forms fold I banked
+    `30Ne:tc-multipart-has-no-published-tree-assertion` as "a harness question
+    for later" — it was the one observation channel that would have caught the
+    defect, on a case MINTED to demonstrate the capability. The law extracted
+    (now in `cli/CLAUDE.md an-artifact-set-runs-from-its-own-generation`): a
+    demonstration case must OBSERVE its capability; an assertion that cannot
+    distinguish feature-on from feature-off is not a demonstration — and a tc-
+    flag saying "this case cannot see X" on a case that exists to show X is a
+    stop-sign, not a parkable nicety.
+  - **`rul-unset-f-spares-the-variable-plane` [CONDUCTOR license review,
+    veto-eligible]** (ratifying `30Nf:tc-unset-f-precision-is-licensure-relevant`):
+    the leading-`unset -f` exception is ADMITTED. Grounds: it is EXACT (the
+    builtin's own specification — no confidence threshold anywhere), it is the
+    posture `rul-unsure-falls-toward-sh-parity` DIRECTS for name-resolution
+    behavior, both floor binaries agree, the human-typed `30I` subshell-errexit
+    specimen requires it, and the corpus effect measured zero. The havoc floor
+    stands for every other lvalue-builtin shape; widening the exception set
+    re-enters license review each time (steering bullet
+    `lvalue-builtin-flags-are-spelled-not-guessed`). Quick-ack on the burndown.
+  - `adj-endorse-artifact-set-harness-lane` — ENDORSED: the exec gates running
+    the PUBLISHED generation is a strictly stricter question; the refused
+    copy-authored-sources alternative is a masking-test shape; falsified by
+    selftest at zero/one/two generations. Discharges
+    `28K:res-book-ships-its-load-closure`.
+  - `adj-endorse-no-e2e-deleted` — ENDORSED (`30Nf:dev-no-e2e-deleted`,
+    overruling invited and declined): each retained case observes a distinct
+    irreducible real-shell run set no native test can produce; the lowerable
+    tier was already native (plus five new pins this lane); the two
+    over-coverage candidates belong to adjacent arcs and absorbing them
+    violates the arc's stay-out fence. Deleting run-set observations to satisfy
+    the instruction's letter would have been coverage theater in reverse.
+  - Endorsed without ceremony: `dev-artifact-set-is-dir-form-only` (residue —
+    the loom-form frontmatter key; a micro-lane dispatched at this fold to
+    close the twice-burned observation gap in-arc) ·
+    `dev-fmt-stages-what-it-rewrites` (process footgun; future briefs carry
+    "reset or `git commit -- <pathspec>` after `mise run fmt`") · the
+    tc- trio on mirroring-refusal/exec-cwd/guard-scope (recorded, no action).
 - **`chk-loop-types-paper-review` — PASSED (conductor's own, 2026-08-21;
   `30L:pin-loop-types-need-no-rekey` §11/§12-stage-6).** The propagation lane
   can turn `Open` → `Closed(members)` without re-keying: (1) a member becomes a

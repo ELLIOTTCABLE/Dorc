@@ -50,9 +50,19 @@ corpus drift); flattening REFUSES a book-sited load pre-network rather than ship
 unmeasured inlining; atomic generation publication; the region-refusal disclosure built
 region-keyed as ruled. The `floor30-inline-dot-boundary` manifest is MINTED (conductor
 hand, WSL, dash∩posh agreeing) — the inlining LOWERING is now measurable-against and
-deliberately unscheduled. NEXT: `30I:step-8-promote-executable-specification` (XFAIL
-promotion + e2e lowering + close); the loop-propagation lane is parallel-eligible; the
-sentinel red pin `p-x-sentinel-value-conjunct` greens only on the human's
+deliberately unscheduled. **`30I:step-8-promote-executable-specification` is FOLDED**
+(report `notes/30Nf`; adjudications incl. the veto-eligible license ruling
+`30N:rul-unset-f-spares-the-variable-plane` in `30N`'s lane list): all three `load30-*`
+XFAILs promoted with `expected.ran` UNMOVED; en route the lane found and repaired
+`30Nf:fnd-multipart-never-placed-anything-in-production` (the multipart form had never
+published a dependency in a real invocation — mirroring now states against the LOAD
+cwd) and the `unset -f` variable-plane havoc; the e2e harness now executes a declared
+artifact set from its own published generation
+(discharging `28K:res-book-ships-its-load-closure`). **The `30I` arc is CLOSED short
+of**: the unscheduled textual-inlining lowering · the loom-form artifact-set
+frontmatter key (micro-lane in flight) · the human queue (`30N`'s open-items list /
+the burndown). The loop-propagation lane is the natural next build; the sentinel red
+pin `p-x-sentinel-value-conjunct` greens only on the human's
 `rule-sentinel-value-conjunct`.
 
 ## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)

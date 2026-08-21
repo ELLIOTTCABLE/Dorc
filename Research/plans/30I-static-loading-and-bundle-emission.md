@@ -80,14 +80,18 @@ in `Research/notes/30Ib`):
   generated, nested-load, book-load, and authored frames with exact-byte claim resolution.
 
 Landed since: `30M:rec-own-the-309-boundary-close` (the render decides nothing; the
-certifier-trip witness is typed) and `step-7-reify-plan-artifact-forms` itself — all
-three semantic forms in `cli::artifact`, one `Selection`/`ArtifactSet` structure, the
-mirrored-relative-layout answer to the cwd-analysis directive, atomic generation
-publication, and the region-refusal disclosure (`30Ne` is the lane report). Not built,
-and owed below: the textual-inlining lowering itself (its floor MEASUREMENT is minted —
-`floor30-inline-dot-boundary` — but the flattened form still refuses rather than
-inlines a book-sited load), and `step-8-promote-executable-specification`'s `load30-*`
-XFAIL promotion and e2e lowering.
+certifier-trip witness is typed) · `step-7-reify-plan-artifact-forms` (all three
+semantic forms in `cli::artifact`, one `Selection`/`ArtifactSet` structure, atomic
+generation publication, the region-refusal disclosure; lane report `30Ne`) ·
+`step-8-promote-executable-specification` (lane report `30Nf`): all three `load30-*`
+XFAILs promoted against their unmoved target run sets, the multipart placement defect
+repaired (mirroring stated against the LOAD cwd — it had never published a dependency
+in a real invocation), the leading `unset -f` variable-plane precision landed, and the
+e2e harness executes a declared artifact set from its own published generation. Not
+built, and owed: the textual-inlining LOWERING itself (its floor measurement
+`floor30-inline-dot-boundary` is minted; the flattened form still refuses a book-sited
+load, deliberately and unscheduled), and the arc-close residue in `30Nf`'s tail (the
+loom-form artifact-set frontmatter key; the prose queue).
 
 ### Target outcome
 
