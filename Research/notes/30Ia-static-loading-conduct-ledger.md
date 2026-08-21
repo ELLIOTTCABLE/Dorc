@@ -873,3 +873,19 @@ never substitutes a tier subset for the completion rung.
 - `fault-conductor-blessed-into-a-red-tree` (above).
 - Twice mis-sized a segment by setting a boundary without scouting what its first step
   stood on (§18). Scout the first step before naming the seam.
+
+## §22 — step-5b-bundle-projection-fold
+
+`30I:step-5b-build-bundle-projection` landed after the `30La` correctness rider and its
+directory-invariant audit. One review finding changed the first cut before fold: exact copied
+nested source bytes plus occurrence-index filenames do not by themselves preserve
+`. ./shared.sh`. The final step-5b API therefore calls those names archive `storage_path`s,
+states that the pure file set is not a placement recipe, and renders `dorc bundle` as inert
+heredoc-quoted inspection data. Executable placement remains step 7, where its required cwd and
+artifact-root facts exist. This is boundary honesty, not a deferred compatibility copy.
+
+Builder completion was both-platform green; zero golden/XFAIL drift. OPEN, non-blocking and
+human-authored: the help page does not list `dorc bundle`. A fresh Sol builder takes only step 6,
+using `CopiedSegment::{source,line_map}`, occurrence identity, and storage-path loci to compose one
+real diagnostic chain. It must read every applicable directory-local `CLAUDE.md` explicitly; the
+harness does not inject them.

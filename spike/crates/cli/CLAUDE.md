@@ -15,7 +15,8 @@ discipline: one rule per bullet, slugged; append to the matching section.
   the shared ship-body helpers) · `kinds.rs` (resolver/reaches) · `survival.rs` (footprints/
   wrapped-analysis/carry) · `results.rs` (the intake segment: scope types, `parse_admitted_results`,
   `admit_controller_records` vs the fenced `admit_fixture_records`) · `fixpoint.rs` (validity
-  rounds + cascade attribution). One implementation — `main.rs` keeps call sites and every I/O
+  rounds + cascade attribution) · `bundle.rs` (the pure occurrence-keyed bundle/storage
+  projection). One implementation — `main.rs` keeps call sites and every I/O
   edge (clock readers, git, terminal width). It exists so `dorc-loom` can drive REAL invocations
   in-process; it is NEVER a public API — `publish = false`, nothing outside `dorc-loom` and the
   two bins may depend on it. VALUES cross the seam, QUERIES do not. If something in the lib
@@ -34,9 +35,18 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (`parse → cfg → classify → compile_probe/build_plan`) stays a total
   `Carrier<T>` function of its inputs; never let a clock/RNG/env-read leak
   inward "to help".
-- **stdout-contract** — stdout is EXACTLY probe-then-apply (split on shebangs);
-  diagnostics go to stderr only — anything else breaks the e2e capture and any
-  real downstream pipe.
+- **stdout-contract** — plan-producing modes emit EXACTLY probe-then-apply (split on
+  shebangs); `bundle` emits only its deterministic inert archive. Diagnostics go to
+  stderr in every mode. A new stdout species must be mode-owned rather than interleaved
+  with either contract.
+- **bundle-projection-is-pre-contact-and-not-placement** (`30I` step 5b) —
+  `bundle::project` consumes only `StaticLoadSnapshot` plus the loader's complete
+  `LoadAccount`; it resolves and reads nothing. Every textual occurrence remains distinct,
+  speculative branches are included, and copied bytes plus line maps come only from
+  `strip_file_with_map`. Generated `storage_path`s name inert archive entries, never runtime
+  `.` targets or a materialization recipe. `dorc bundle` returns before records intake,
+  planning, settlement, whylog writing, or host contact; executable placement and source-line
+  replacement remain the post-`30L` artifact stage.
 - **probe-ships-oracle-bytes-only** — the compiled probe is synthesized
   scaffolding + oracle bodies, never book contents (it never inherits the
   book's `trap`s). The `24J` raw-ship debt is REPAIRED and machine-pinned

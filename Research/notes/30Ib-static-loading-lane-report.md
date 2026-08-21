@@ -936,3 +936,31 @@ their prose is authored. It is computed at `plan::live_locus` from paths the CAL
   ELIDED. `beta` sources its dependency and a later co-loaded file shadows the helper ⇒
   selected-but-unaligned ⇒ RUNS. `alpha` names no dependency at all ⇒ ambient ⇒ RUNS. The run
   set is the observation, and the two suspensions differ in sentence and in nothing else.
+
+## §17 — Step 5b: the pure bundle projection
+
+`30I:step-5b-build-bundle-projection` is BUILT and both-platform green. The implementation
+home is `cli::bundle`: `BundleProjection` consumes `StaticLoadSnapshot` and
+`LoadAccount::occurrences()` only. It preserves every full `LoadOccurrence`, assigns one
+`BundleRoot` per root occurrence, and retains nested/speculative occurrences separately.
+Two textual roots naming one target therefore remain two roots; diamond children remain two
+occurrences under their respective roots.
+
+Each `BundleFile` holds one `CopiedSegment` from the existing
+`dorc_oracle::strip::strip_file_with_map` seat: exact stripped text, source `SourceFileId`, and
+the same original-line map step 6 consumes. The projection names no filesystem reader or target
+resolver. Source-derived origin text passes through the shell-comment sink encoder; storage paths
+are controller-owned occurrence indices and cannot carry source traversal/control bytes.
+
+`dorc bundle` exposes the same value as a deterministic inert archive. Each body is inside a
+quoted heredoc with a source-collision-avoiding delimiter, so executing the inspection form cannot
+accidentally flatten the source boundaries. `BundleFile::storage_path` is deliberately NOT a
+runtime `.` target, and `BundleProjection::files()` is not by itself a materialization recipe:
+runtime cwd/artifact-root placement remains step 7, after `30L`. This correction was forced by
+reviewing the first projection against `. ./shared.sh`; occurrence-index storage paths alone could
+not satisfy that authored lookup.
+
+No goldens or XFAILs moved. The human-authored help page does not yet list `dorc bundle`. Next:
+compose `BundleFile::occurrence`, storage path, copied source, and line map onto the existing
+locator DAG and carry one chain into a real diagnostic (`30I` step 6); do not rebuild source
+identity or alter placement.

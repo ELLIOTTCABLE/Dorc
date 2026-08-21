@@ -24,7 +24,7 @@ resolver or a decorative source map is a likelier product of splitting than save
 wall-clock. Seams are placed at FIXED work-order boundaries and never on a
 builder's own read of its remaining context, which is not a thing a model can
 measure. Every handoff names its work-order boundary rather than an ordinal; the
-active one is `step-5b-build-bundle-projection`.
+active one is `step-6-compose-bundle-locators-into-diagnostics`.
 
 `impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
 correction (2026-08-19): `step-5a-complete-load-occurrence-account` first removes the
@@ -53,7 +53,7 @@ corpus. Artifact forms consume region identity; they do not reserve a retrofit s
 
 ### Where the build stands
 
-Landed (`ai/r30-static-loading`; as-built map, consumption API and open questions
+Landed (as-built map, consumption API and open questions
 in `Research/notes/30Ib`):
 
 - one controller-side `Cwd` (`core::loadpath`) resolving `.` as sh does;
@@ -69,13 +69,15 @@ in `Research/notes/30Ib`):
   to text, and `cli::provenance` filling it from real run data;
 - exact guarded-source speaker recognition, the CLI input rework, and explicit
   stdin claims;
-- aggregate verdict primacy across member-loop and inline-call replacement lanes.
+- aggregate verdict primacy across member-loop and inline-call replacement lanes;
+- one occurrence-keyed pure `BundleProjection`, exact stripped segments plus line maps,
+  an inert explicit `dorc bundle` archive, and the multipart storage-entry seam.
 
-Not built, and owed below: the bundle projection; the three artifact forms;
-locator consumption by a real diagnostic; final `load30-*` XFAIL promotion and e2e
+Not built, and owed below: the three artifact forms; locator consumption by a real
+diagnostic; final `load30-*` XFAIL promotion and e2e
 lowering. The complete load-occurrence account, the effective-world-reach interlude,
-and aggregate verdict-primacy rider are closed; `step-5b-build-bundle-projection` is
-the active boundary.
+aggregate verdict-primacy rider, and bundle projection are closed;
+`step-6-compose-bundle-locators-into-diagnostics` is the active boundary.
 
 ### Target outcome
 

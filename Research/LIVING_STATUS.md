@@ -14,7 +14,7 @@
 
 ---
 
-## CURRENT STATE (2026-08-20 - AGGREGATE PRIMACY GREEN; BUNDLE PROJECTION NEXT)
+## CURRENT STATE (2026-08-20 - BUNDLE PROJECTION GREEN; LOCATOR CONSUMPTION NEXT)
 
 **`plans/30I` is the single authority for the newly-closed static-load/bundle
 arc.** The human ruled cwd-faithful sh loading from one authored-before-contact
@@ -26,15 +26,23 @@ comments read back as aid-only `BundleOriginClaim`; source-map representation is
 rich/multi-stage immediately even though v0 compilation aims at exact copied
 segments.
 
-**Steps 1-5a, the explicit-stdin rework, and the `30La` correctness rider are built;
-steps 5b-8 are not.** The
+**Steps 1-5b, the explicit-stdin rework, and the `30La` correctness rider are built;
+steps 6-8 are not.** The
 static loader, exact guarded-source speaker mint, CLI input surface, and
 multi-stage locator substrate are live; the complete load-occurrence account has
-separate possible-load / exact-speaker / narrative projections. No bundle projection,
-artifact forms, real diagnostic locator consumption, or XFAIL promotion exists yet. The
+separate possible-load / exact-speaker / narrative projections. No artifact forms,
+real diagnostic locator consumption, or final `load30-*` XFAIL promotion exists yet. The
 opt-in dash/posh floor cell refutes generated loader functions as a universal
 one-file lowering; nested source boundaries remain generated files until another
 lowering is floor-proven.
+
+**`30I:step-5b-build-bundle-projection` IS BUILT AND BOTH-PLATFORM GREEN.** One pure
+`BundleProjection` consumes the immutable snapshot plus complete occurrence account; every
+root/nested/speculative occurrence remains distinct, executable bytes and line maps come from
+the existing strip seat, and no path is re-read or target re-resolved. `dorc bundle` renders
+the value as an inert heredoc-quoted archive. Its controller-owned storage paths are explicitly
+not runtime `.` targets: executable placement remains step-7 work, where runtime cwd and
+artifact-root relationships exist. The human-authored help page does not yet list the new mode.
 
 **`30La` IS BUILT AND BOTH-PLATFORM GREEN.** Member-loop and inline-call aggregate
 topology remains predict-derived, while an exact all-vouched establish population ships
@@ -86,9 +94,9 @@ outside the attention surface. Loop/member identity is staged now, but loop-gene
 populations remain `Open` until the later propagation lane. `30L` consumes `30K`'s settlement
 and `30I`'s bundle loci, and carries the frozen-backing and non-leaf narrative residues above.
 
-**Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account`, `30K`, and `30La`
-are done. Resume `30I:step-5b-build-bundle-projection` and locator consumption; then
-build `30L`; only then
+**Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account`, `30K`, `30La`, and
+`30I:step-5b-build-bundle-projection` are done. Compose bundle locators into one real
+diagnostic (`30I` step 6); then build `30L`; only then
 reify artifact forms and perform final XFAIL/golden promotion. This places effective-world
 reach and region identity before the new Plan/Spine artifact boundary and
 `28Q:stage-iii-world-scopes`, without reopening definition factoring, snapshot emission,
