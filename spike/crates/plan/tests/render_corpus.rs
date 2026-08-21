@@ -1988,6 +1988,68 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
     );
 }
 
+/// AN IMPORT REWRITE IS A FIRST-CLASS PLAN EDIT (`30Ng:rul-bundle-at-dorc-lang-boundaries`,
+/// human-typed): it reaches the artifact's bytes, the plan surface, and the decision plane, and it
+/// reaches all three from ONE decision taken at `Plan::decided`.
+///
+/// All three are asserted together on purpose. The grant is narrow — where an import points, in a
+/// plan Dorc generated, and nothing else — and what keeps it narrow in practice is that no use of it
+/// is silent. An edit that changed the bytes and told nobody would be the same shape as the render
+/// decisions `30E` §3 audited out of hiding, on the one line whose meaning moved.
+#[test]
+fn a_rewritten_import_reaches_the_bytes_the_surface_and_the_plane() {
+    let src = ". ./pkg.oracle.sh\napt-get install -y nginx\n";
+    let ast = dorc_syntax::parse(src).value;
+    // The operand WORD, which is the only thing a re-point moves.
+    let operand = ast
+        .iter()
+        .find_map(|(_, node)| match &node.kind {
+            dorc_syntax::ast::NodeKind::Simple { words, .. } => words.get(1).copied(),
+            _ => None,
+        })
+        .expect("the load's operand");
+    let plan = Plan::decided(
+        Vec::new(),
+        Vec::new(),
+        SurvivalReport::default(),
+        false,
+        &[dorc_plan::ImportEdit::Repoint {
+            ast: operand,
+            path: "./pkg.dorc-bundle.sh".to_owned(),
+        }],
+        src,
+        &ast,
+    );
+
+    let artifact = plan.render_apply(src, &ast);
+    assert!(
+        artifact.contains(". './pkg.dorc-bundle.sh'") && !artifact.contains("./pkg.oracle.sh"),
+        "the artifact's own import names the bundle, and nothing else on the line moved:\n{artifact}"
+    );
+    let disclosed = plan.import_diagnostics(&ast);
+    assert_eq!(disclosed.len(), 1, "disclosed once, at the authored line");
+    assert!(
+        matches!(
+            &disclosed[0].code,
+            dorc_aid::diag::DiagCode::PlanImportRewritten(payload)
+                if payload.verb == "repointed" && payload.names == "./pkg.dorc-bundle.sh"
+        ),
+        "and says what it now names: {:?}",
+        disclosed[0].code
+    );
+    let mut spine = dorc_plan::Spine::new();
+    dorc_plan::spine::record_render_decisions(&mut spine, &plan);
+    assert!(
+        spine.render_decisions().iter().any(|record| matches!(
+            &record.decision,
+            dorc_core::spine::RenderDecision::ImportRewritten { verb, names }
+                if *verb == "repointed" && names == "./pkg.dorc-bundle.sh"
+        )),
+        "the decision plane holds it too: {:?}",
+        spine.render_decisions()
+    );
+}
+
 #[test]
 fn twin_guard23_rundelta_never_guards() {
     // né guard23-rundelta-never-guards: `systemctl restart nginx`. `restart` is a run-delta verb the
