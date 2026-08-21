@@ -1033,6 +1033,9 @@ fn run(
                 diagnostic.diag(),
             );
         }
+        if wrapper_incoherent {
+            return Ok(book_outcome);
+        }
         print!("{}", projection.projection().render_archive());
         std::io::stdout().flush().ok();
         return Ok(book_outcome);

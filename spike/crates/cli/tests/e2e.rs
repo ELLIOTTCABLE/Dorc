@@ -3252,6 +3252,68 @@ fn preflight(harness: &Harness, discovered: usize) {
     }
 }
 
+fn run_bundle_integration(harness: &Harness) -> Result<(), Failed> {
+    let located = Scratch::new("bundle-locator");
+    std::fs::write(located.path.join("book.sh"), ". ./entry.sh\n").expect("write bundle book");
+    std::fs::write(
+        located.path.join("entry.sh"),
+        "# dorc-lang/v0.2\n. ./dep.sh\n",
+    )
+    .expect("write bundle entry");
+    std::fs::write(
+        located.path.join("dep.sh"),
+        "# dorc-lang/v0.2\nrunas__lend_map() {\n   printf '%s\\n' \"$1\" : lends frobnicate\n}\n",
+    )
+    .expect("write bundle dependency");
+    let output = capture(
+        harness
+            .dorc(&located.path)
+            .args(["bundle", "book.sh"])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped()),
+    );
+    if output.code != 0
+        || !output.stdout.contains("# dorc-bundle-set/v0")
+        || !output.stderr.contains("dep.sh:3:")
+        || !output
+            .stderr
+            .contains("dorc-bundle/v0/root-00000000/occurrence-00000001.sh:3:")
+        || !output.stderr.contains("book.sh:1:")
+    {
+        return Err(format!(
+            "bundle locator integration failed (rc={}):\nstdout:\n{}\nstderr:\n{}",
+            output.code, output.stdout, output.stderr
+        )
+        .into());
+    }
+
+    let refused = Scratch::new("bundle-refusal");
+    std::fs::write(refused.path.join("book.sh"), "hork setup\n").expect("write refusal book");
+    std::fs::write(
+        refused.path.join("w.oracle.sh"),
+        "# dorc-lang/v0.2\nw__predict() { verb=$1; shift; env \"$@\"; }\nw__lend_map() { : lends user; : lends fs-view; : lends netns; \"$@\"; }\n",
+    )
+    .expect("write incoherent wrapper");
+    let output = capture(
+        harness
+            .dorc(&refused.path)
+            .args(["bundle", "book.sh", "--pre-source", "w.oracle.sh"])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped()),
+    );
+    if output.code != 11
+        || !output.stdout.is_empty()
+        || !output.stderr.contains("wrapper-peel-incoherent")
+    {
+        return Err(format!(
+            "bundle incoherence refusal failed (rc={}):\nstdout:\n{}\nstderr:\n{}",
+            output.code, output.stdout, output.stderr
+        )
+        .into());
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 
 /// The case a repo path belongs to, or `None` for an argument that is not a case path.
@@ -3280,6 +3342,12 @@ fn main() {
         .map(|case| case.dir.clone());
 
     let mut trials: Vec<Trial> = Vec::new();
+    {
+        let harness = Arc::clone(&harness);
+        trials.push(Trial::test("bundle-integration".to_owned(), move || {
+            run_bundle_integration(&harness)
+        }));
+    }
     for loom in looms {
         match loom_spec(&loom) {
             Ok(None) => {}
