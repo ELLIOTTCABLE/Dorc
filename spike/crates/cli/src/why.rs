@@ -1962,6 +1962,7 @@ pub fn region_invocation_lines(
 /// Keyed by the call's own `AstId` through the region's route attribution, never by span
 /// containment: a region lives in a DEFINITION and a call lives wherever its author put it, so the
 /// two spans need not nest at all.
+#[must_use]
 pub fn region_lines_executed_by(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
