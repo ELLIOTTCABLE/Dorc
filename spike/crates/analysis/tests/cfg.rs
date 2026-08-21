@@ -1199,17 +1199,12 @@ fn consumed_errexit_marks_relaxable_status_c3() {
 
 #[test]
 fn consumed_errexit_inside_a_spliced_body_matches_top_level() {
-    // `30L:pin-errexit-rides-status-law` + `ctx-errexit-is-authored-speech`: there is no separate
-    // errexit path in EITHER direction — no optimistic exemption inside a function body, and no
-    // special block beyond ordinary status consumption. So the mark a command carries inside a
-    // spliced body under `set -e` is the mark it carries at top level, and `|| true` releases it
-    // in the body exactly as it does outside one. Descent raises the wrapped book's ceiling to
-    // match top level; it exempts nobody from errexit's speech.
-    // The SPLICED copy, never the funcdef's own detached lowering — which `is_spliced_internal`
-    // ALSO flags, both meaning only "not a plan leaf". The discriminator is execution ownership: a
-    // spliced instance is governed by the CALL, a detached body command by itself. Only the
-    // spliced one is an execution, and the detached island's vacuous state is exactly what must
-    // never be read (`analysis/CLAUDE.md vacuous-entry-fold`).
+    // `30L:pin-errexit-rides-status-law` + `ctx-errexit-is-authored-speech`: no separate errexit
+    // path in EITHER direction — no optimistic exemption inside a body, no special block beyond
+    // status consumption, and `|| true` releases it in a body exactly as outside one.
+    // The SPLICED copy, never the funcdef's own detached lowering — `is_spliced_internal` flags
+    // both, meaning only "not a plan leaf". Execution ownership is the discriminator, and the
+    // detached island's vacuous state is what must never be read (`vacuous-entry-fold`).
     let spliced_consumption = |src: &str| {
         let cfg = cfg_of(src);
         let node = require(
@@ -1843,12 +1838,9 @@ fn call_chain(levels: usize) -> String {
 
 #[test]
 fn the_motivating_wrapped_factoring_is_admitted() {
-    // `30L:req-census-admits-the-wrapped-book`: `main → task_fn → helper` is THE motivating
-    // shape (the style-guide wrapper over a factored book), and the inherited depth-2 budget
-    // refused it. The stage re-sized the budget deliberately, so the whole chain now splices —
-    // and the mutation at the bottom is visible to the analyzer instead of hidden behind the
-    // call's `Opaque` wall. Pinned as a shape, not a constant: the assertion is that the
-    // motivating factoring is admitted, whatever the number that admits it.
+    // `30L:req-census-admits-the-wrapped-book`: `main → task_fn → helper` is THE motivating shape,
+    // and the inherited depth-2 budget refused it — so the bottom mutation stayed hidden behind the
+    // call's `Opaque` wall. Pinned as a SHAPE, so it survives the next re-size.
     let src = "helper() { apt-get install -y nginx; }\n\
                task_fn() { helper; systemctl enable --now nginx; }\n\
                main() { task_fn; ufw allow 443/tcp; }\n\
@@ -1872,10 +1864,8 @@ fn the_motivating_wrapped_factoring_is_admitted() {
 
 #[test]
 fn depth_budget_refuses_past_the_re_sized_depth() {
-    // `i-1`: the depth budget still REFUSES, proportionally and by name, once a chain outruns
-    // it — the re-size moved the boundary and did not remove it. Found by walking outward from
-    // the admitted shape rather than by naming the constant, so the pin survives the next
-    // re-size and still fails if the budget is ever removed.
+    // `i-1`: the budget still REFUSES by name once a chain outruns it — the re-size moved the
+    // boundary, it did not remove it. Found by walking outward, never by naming the constant.
     let deepest_admitted = (1..=16)
         .take_while(|levels| inline_refusals(&call_chain(*levels)).is_empty())
         .last();
@@ -1970,8 +1960,7 @@ fn at_budget_body_inlines_over_budget_refuses() {
     // `i-1` budget boundary: a tiny body inlines; a body far past the per-call budget refuses
     // with a budget diagnostic. The estimate is the AST-subtree node count (a conservative
     // proxy); the test finds the boundary by extremes so it does not hard-code the per-node AST
-    // cost — which is also why the re-size (`30L:req-census-admits-the-wrapped-book`) only moved
-    // the large extreme rather than rewriting the pin.
+    // cost — which is why the `30L` re-size moved only the large extreme.
     let body_of = |n: usize| {
         let mut b = String::from("p() { ");
         for _ in 0..n {

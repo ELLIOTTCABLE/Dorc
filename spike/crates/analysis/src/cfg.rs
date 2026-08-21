@@ -1100,12 +1100,10 @@ impl<'a> Builder<'a> {
 
         // The call's effect-bearing leaf sites (i-4), in arena order. An inner inlined CALL is
         // not itself a site — it has ALREADY flattened everything beneath it, so this scan takes
-        // its list and then skips its whole arena region. Region-skipping rather than
-        // leaf-subtraction is what makes the answer right at every depth: a leaf-set subtraction
-        // hides a nested leaf but not the nested CALL that produced it, so at three levels the
-        // middle call re-flattened its own body and the bottom mutation appeared TWICE in the
-        // outermost list (measured; duplicate members reject the whole aggregate, forfeiting the
-        // deep elision this stage exists to deliver).
+        // its list and skips its whole arena region. Region-skipping, not leaf-subtraction: a
+        // leaf-set subtraction hides a nested leaf but not the nested CALL that produced it, so at
+        // three levels the middle call re-flattened its own body and the bottom mutation appeared
+        // TWICE (measured; a duplicate member rejects the whole aggregate).
         let mut sites: Vec<CfgNodeId> = Vec::new();
         let mut skip_until = body_start;
         for v in body_start..body_end {

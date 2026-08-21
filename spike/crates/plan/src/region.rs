@@ -215,9 +215,8 @@ pub fn census(
     let mut instances: BTreeMap<ElisionRegion, Vec<RouteInstance>> = BTreeMap::new();
     let mut opened: BTreeMap<ElisionRegion, bool> = BTreeMap::new();
     for (node, cfg_node) in cfg.iter() {
-        // A detached funcdef-body lowering is not an EXECUTION: nothing reaches it, and reading its
-        // vacuous-⊥ in-state as ambient is a wrong-elision (`analysis/CLAUDE.md
-        // vacuous-entry-fold`). Only the spliced copies a call actually reaches are routes.
+        // A detached funcdef-body lowering is flagged spliced too, and is not an EXECUTION: reading
+        // its vacuous-⊥ in-state as ambient is a wrong-elision (`vacuous-entry-fold`).
         if cfg_node.kind != CfgNodeKind::Command
             || !cfg.is_spliced_internal(node)
             || !reachable[node.index()]
@@ -549,9 +548,8 @@ impl SharedConclusion {
                 SharedOutcome::Omit { controller },
                 SharedRegionAct::RetiresEveryInstance,
             ),
-            // A guard leaves the authored bytes able to execute, exactly as a run does, so both are
-            // may-mutate: only a proof that the artifact really neutralises the site retires a wall
-            // (`plan/CLAUDE.md only-a-proof-retires-a-wall`).
+            // A guard leaves the authored bytes able to execute, exactly as a run does: only a
+            // proof that the artifact neutralises the site retires a wall (`only-a-proof-retires-a-wall`).
             SharedConclusion::Guard(guard) => (
                 SharedOutcome::Guard(guard),
                 SharedRegionAct::MayMutateEveryInstance,
