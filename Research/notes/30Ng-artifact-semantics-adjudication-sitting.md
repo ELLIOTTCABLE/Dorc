@@ -117,3 +117,42 @@ Reconciliation notes (conductor):
 - `two-surfaces`' byte-floor: the authored BOOK remains byte-floored where it appears;
   the license just granted is scoped to GENERATED plans' import lines and dorc-lang
   material. Steering must say this narrowly.
+
+## §6 — The single-stream review surface is a core product TENSION, not a bug (typed follow-up)
+
+Typed substance (2026-08-21):
+
+- The fully-collapsed single-stream bundle, though explicitly a review surface, is a
+  LESS-THAN-IDEAL one — a core product tension that cannot be resolved, not a bug to fix.
+  Using it is the human EXPLICITLY requesting one fully-reviewable artifact for some
+  reason of their own.
+- It sucks for the attention model: the non-mutative oracle ocean cannot be hidden from
+  the end-user in one stream. The day-one buy-in to Dorc is the admin choosing to
+  review "the small bit of code I wrote and KNOW is mutative, deciding which known-
+  mutative bits run today" while agreeing that "the much larger body of supposedly-
+  non-mutative code is something I may review occasionally but probably won't". The
+  single-stream request is, inherently, backing slightly out of that choice — asking to
+  have the vaguely-related oracle ocean placed in-stream between the user and their
+  task. Dorc respects the request and still does its best toward the attention goal.
+- Takeaway (typed, details TBD, do not over-encode): the single-stream output STILL
+  uses the bundling and lifting mechanics — lifting/hoisting, munging as necessary to
+  keep shell semantics — to improve that review surface. Probable shape: TWO explicit
+  sections; all supposedly-non-mutative / low-attention code lifted to the FRONT
+  (munged as needed); the INTENDED review surface — the book's mutative code — placed
+  at the END (shell has no native hoisting, so the definitions must precede their
+  uses) after some header/divider.
+
+Provenance note (conductor): this restates and strengthens the single-stream
+presentation obligation the prior conductor recorded in `plans/30L`'s render section
+from the 2026-08-20 sitting (top-lift + munge per `28Q:pin-emission-planner-universal`;
+section boundary comments). The artifact-forms lane discharged it at v0 scale only
+(`30Ne`'s presentation section: the stream then carried only the guard preamble; the
+closing boundary was priced and deferred as `tc-flattened-section-boundary`). Under
+`rul-piped-stdout-carries-a-full-plan` the obligation is live at full scale; the rework
+lane carries it.
+
+Candidate KNOB (conductor-proposed for the human's registry, not minted): the
+single-fully-reviewable-artifact request vs the attention-product's mutative/non-
+mutative partition — a dial the admin sets per invocation by choosing the stream;
+Dorc's job on the single-artifact pole is partition-by-LAYOUT rather than
+partition-by-absence.
