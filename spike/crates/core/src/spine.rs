@@ -395,9 +395,16 @@ pub struct SpineSiteClassification {
     pub class: &'static str,
     /// Whether the site is verdict-lane (`verdict-lane-is-site-keyed`).
     pub verdict_lane: bool,
-    /// Whether the site gens into reach as an invalidator.
+    /// Whether this LEAF gens into reach as an invalidator.
+    ///
+    /// Leaf-scoped, and the narrower truth on purpose: the effective invalidator set also holds
+    /// non-leaves — a `$( … )` body command, a write-shaped redirection, an unmodeled construct
+    /// (`classify-answers-with-its-invalidators`) — and those have no site to be keyed by, so this
+    /// record cannot speak for them. Reading a `false` here as "nothing gens at this position" is
+    /// therefore wrong; widening the record to carry them is a representation question, not a fix.
     pub invalidator: bool,
-    /// The cells this site's decision keys on, capped.
+    /// The cells this site's decision keys on, capped. For an aggregate that is its ORDERED member
+    /// account, not a representative (`aggregate-mints-carry-the-same-demand`).
     pub cells: Account<FactKey>,
     /// The grade at mint.
     pub grade: Grade,

@@ -4098,6 +4098,11 @@ mod tests {
         );
         let (env, cfg, _) = solve_positional(book, &table);
         assert!(!targets_of(&env, LoadRoute::Taken).contains(&"vendored/common.sh"));
+        assert_ne!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(dependency)),
+            "and nothing the paren-scoped source reached can bind past it"
+        );
     }
 
     /// THE PRELUDE FLOOR (conductor default at `30Mg` R1; human veto invited): an unresolvable act
