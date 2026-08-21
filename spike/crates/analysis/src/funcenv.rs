@@ -4127,6 +4127,49 @@ mod tests {
         );
     }
 
+    /// CONTAINMENT (`30Mb` §9): a value only the HOST ENVIRONMENT could have supplied moves the
+    /// license plane nowhere, on either of the two doors it could reach.
+    ///
+    /// The engine models one program's own text. A variable no assignment in that text populates
+    /// reads ⊥ everywhere, so a load built from it resolves nowhere and the site havocs; and the
+    /// sentinel census counts ASSIGNMENTS, so a name the program never assigns has no populator at
+    /// all and the guard declines to decide. Both land on ⊤, which is the run direction, whatever
+    /// the host's environment actually holds — an exported `SM_COMMON_LOADED=sm.common/v1` cannot
+    /// buy a reuse arm, and an exported root cannot pick which file answers a site.
+    #[test]
+    fn a_host_environment_value_neither_sites_a_load_nor_decides_a_guard() {
+        let mut sited = DefinitionTable::default();
+        let dependency = add_def(&mut sited, 1, ROLE);
+        sited.set_loadable("./vendored/common.sh", flat(vec![dependency]));
+        let (env, cfg, _) = solve_positional(". \"$SM_ROOT/common.sh\"\ntrue\n", &sited);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Top,
+            "a root only the environment could hold sites nothing"
+        );
+        assert!(targets_of(&env, LoadRoute::Taken).is_empty());
+
+        let mut guarded = DefinitionTable::default();
+        let helper = add_def(&mut guarded, 1, HELPER);
+        // The dependency declares the helper and assigns NO sentinel: the only thing that could set
+        // one is the host environment.
+        guarded.set_loadable("./oracles/common.sh", flat(vec![helper]));
+        guarded.set_loadable(
+            "./oracles/alpha.sh",
+            sentinel_guarded(
+                SENTINEL,
+                VERSION,
+                LoadTarget::literal("./oracles/common.sh"),
+            ),
+        );
+        let (env, cfg, _) = solve_positional(". ./oracles/alpha.sh\ntrue\n", &guarded);
+        assert_eq!(
+            env.binding_before(cfg.exit(), HELPER),
+            Flat::Top,
+            "an unpopulated sentinel decides nothing: both arms walk and the binding joins to ⊤"
+        );
+    }
+
     /// `funcenv-reads-source-literal-plane-only`, as a TABLE rather than a sentence. Exactly one of
     /// the five provenances may site a load; the other four are the value-prediction species
     /// (`275` §1), and admitting any of them would make which oracle answers a site depend on what
