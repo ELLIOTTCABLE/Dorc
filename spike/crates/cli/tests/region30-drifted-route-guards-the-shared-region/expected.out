@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1f4fde1d6e31eb8e2f6950bb2632c2573e25f9175ade152a24cf10d024b54e43 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=54ccc0b7999caf6586d08b797ed369cc14e4adb84d3e3d6959b79aa408076632 sites=2 @@dorc@@\n'
 # site 0.0: sm.dorc.Package:nginx@installed
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -37,6 +37,16 @@ apt_get__is_converged() {
 }
 
 #!/bin/sh
+# THE DIVERGENT-INSTANCES VALVE (`30L` §4.5). nginx is installed; curl is not. One authored region
+# serves both, so no universal Replace exists — and Guard absorbs exactly what Replace cannot,
+# because the runtime dispatch happens per invocation, inside sh, authored.
+#
+# What this pins, and it is the whole point: the guard's argv is the SOURCE-level expression
+# `install -y "$1"`, never either site's resolved operands. A per-call literal guard would install
+# into shared source that also serves the other operand, which is the specialized shell
+# `30L:rul-no-specialized-shell` forbids. Every enumerated route's own argv passed the oracle
+# author's argparse when its vouch was reached, and the census is CLOSED — so every value `$1` can
+# hold at runtime is one that author already accepted.
 install_pkg() {
    ( apt_get__is_converged install -y "$1" ) || apt-get install -y "$1"   # dorc: guard [sm.dorc.Package converged-vouch; probe: cant-tell]
 }

@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b51769e7ba703066b54b3c625e39f7dca95dc6696c0f4032c0d6e6c1e30cac8d sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9e071ffaee25050539a5c60d26f5ff9dbf28b68586b885159809d3e9afe77a5d sites=2 @@dorc@@\n'
 # site 0.0: sm.dorc.Package:nginx@installed
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -24,6 +24,11 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
+# `30L:pin-whole-helper-derived-only` (§8): full elision of a helper is DERIVED, never primitive.
+# Every body establish is converged and the call's own consumed observables are reproducible, so
+# the CALL replaces with the ordinary stand-in — and the definition it no longer reaches keeps its
+# authored bytes. No delete-helper mechanism exists, and no region stand-in is written into a body
+# no route can execute.
 main() {
    apt-get install -y nginx
    apt-get install -y curl

@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1f4fde1d6e31eb8e2f6950bb2632c2573e25f9175ade152a24cf10d024b54e43 sites=2 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ec2caaa284760c9682e3b320e1d1a7ac29fbdeb1d1ac7a248fcdf3f83885732b sites=2 @@dorc@@\n'
 # site 0.0: sm.dorc.Package:nginx@installed
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -24,6 +24,15 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
+# ONE route measured; the other could not be answered at all (a >=2 sink landing, so cant-tell).
+# The shared region RUNS: `30L:rul-shared-region-needs-universal-must` demands every route hold at
+# `Must`, and one route's convergence buys the region nothing.
+#
+# Nor does the guard valve reach it. A DIVERGED route is a measurement — the world answered "not
+# yet" — so a converged sibling makes a shared check worth paying for. An UNKNOWN route is the
+# ABSENCE of an answer, and paying a check to discover what the probe could not is the unsure
+# direction (`inv-kfail`). The sibling's own CALL still elides on its own aggregate license: a
+# different decision, about a different identity.
 install_pkg() {
    apt-get install -y "$1"
 }
