@@ -24,7 +24,8 @@ resolver or a decorative source map is a likelier product of splitting than save
 wall-clock. Seams are placed at FIXED work-order boundaries and never on a
 builder's own read of its remaining context, which is not a thing a model can
 measure. Every handoff names its work-order boundary rather than an ordinal. Steps 1-6
-are complete; `plans/30L` is the active external boundary before steps 7-8 resume.
+are complete and `plans/30L` is built (its ledger is `notes/30N`); steps 7-8 are the
+open remainder.
 
 `impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
 correction (2026-08-19): `step-5a-complete-load-occurrence-account` first removes the
@@ -46,10 +47,11 @@ remains separate, and both product-facing
 `30L` consume this repaired primitive; steps 7/8 never see the interim.
 
 `impl-elision-regions-precede-artifact-forms` - HUMAN-DIRECTED sequencing correction
-(2026-08-20): after step 6 has produced the bundle projection and one real locator
-consumer, `plans/30L` lands definition-keyed elision regions and universal shared-route
-decisions. Only then may steps 7/8 reify the Plan/Spine artifact boundary and bless its
-corpus. Artifact forms consume region identity; they do not reserve a retrofit seat for it.
+(2026-08-20); SATISFIED 2026-08-21: `plans/30L`'s definition-keyed elision regions and
+universal shared-route decisions are landed (`core::region` · `plan::region` ·
+`plan::settle`; reports `notes/30Nb`/`30Nc`). Steps 7/8 may now reify the Plan/Spine
+artifact boundary and bless its corpus, and they CONSUME region identity — the
+region render step edits the authored definition once — never a retrofit seat for it.
 
 ### Where the build stands
 
@@ -77,8 +79,10 @@ in `Research/notes/30Ib`):
 
 Not built, and owed below: the three artifact forms; final `load30-*` XFAIL promotion and e2e
 lowering. The complete load-occurrence account, the effective-world-reach interlude,
-aggregate verdict-primacy rider, bundle projection, and real locator consumer are closed;
-`plans/30L` interposes before steps 7-8.
+aggregate verdict-primacy rider, bundle projection, real locator consumer, and
+`plans/30L`'s region machinery are all closed; steps 7-8 are unblocked (the `309`
+boundary-close assignment, `30M` §4, is the recommended precursor before step 7
+freezes the Plan/Spine boundary).
 
 ### Target outcome
 
@@ -205,8 +209,8 @@ Each step unblocks the next.
    onto the existing locator edges** and carry one
    chain through a REAL diagnostic render. A debug dump or structure-only unit
    test is necessary and not sufficient. This discharges the force-now aid
-   requirement that could not close before the bundle existed. Commit and stop for
-   `plans/30L`; step 7 does not begin before its region identities and shared decisions land.
+   requirement that could not close before the bundle existed. Step 7 consumes
+   `plans/30L`'s landed region identities and shared decisions.
 7. **`step-7-reify-plan-artifact-forms` - after `plans/30L`, reify artifact forms at
    the Plan/Spine boundary.** The executable product is
    the Plan projection plus its generated files, not ad-hoc CLI writes beside a
@@ -220,10 +224,9 @@ Each step unblocks the next.
    specification and close.** Promote each `load30-*`
    XFAIL only when its target run set is genuinely green; keep
    `head-expected.ran` until promotion proves behaviour did not drift by another
-   route; keep `floor30-dot-loader-function-errexit` byte-identical. Re-spell
-   `pin28-variable-resolved-source-loads`, whose header prose and pinned
-   behaviour disagree since slash-less `.` became unresolvable - its goldens did
-   not move, so the drift is invisible and must not be left to be noticed. Lower
+   route; keep `floor30-dot-loader-function-errexit` byte-identical.
+   (`pin28-variable-resolved-source-loads` is already re-spelled and re-blessed —
+   its `./` operand resolves and site 2 ships a real verdict-lane check.) Lower
    settled properties into fast native tests and remove the e2es they replace;
    keep one compound e2e per irreducible artifact interaction. Mint the owed
    floor cell for textual inlining before flattening rests on it.
