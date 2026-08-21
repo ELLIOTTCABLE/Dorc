@@ -1939,6 +1939,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         Vec::new(),
         SurvivalReport::default(),
         false,
+        &[],
         src,
         &ast,
     );

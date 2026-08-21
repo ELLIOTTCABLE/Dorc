@@ -2283,6 +2283,73 @@ pub struct RefusedEdit {
     pub cause: RenderRefusalTag,
 }
 
+/// ONE edit to a GENERATED PLAN's own import line — the single rewrite Dorc reserves over a plan it
+/// generated (`30Ng:rul-bundle-at-dorc-lang-boundaries`, human-typed).
+///
+/// # Why this is not a hole in the byte floor
+///
+/// `two-surfaces` floors the AUTHORED book wherever its bytes appear, and that is untouched: the
+/// authored file on disk is never written, and every byte of it that reaches the artifact reaches it
+/// verbatim. What the ruling licenses is narrower than "the plan is ours" — a generated plan is a
+/// durable, but not an OFF-RAMP durable, and the one thing Dorc may re-say in it is where an import
+/// points. Nothing else about the line moves: not its position, not its guard, not the command it is.
+///
+/// # A decision, never a post-process
+///
+/// The variants are the two shapes a re-point takes, and which one applies is settled before the
+/// plan exists, from authored inputs alone — so it lands at `Plan::decided` with every other render
+/// answer (`the-render-decides-nothing`) and is recorded on the decision plane beside them. A
+/// silent rewrite at emission time would be exactly the hidden decision `30E` §3 audited out.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ImportEdit {
+    /// The `.` now names a generated bundle the artifact set carries beside the plan. Only the
+    /// OPERAND word moves, so the shape works wherever an author put the load — inside a guard, as
+    /// an `||` right operand, inside a subshell.
+    Repoint {
+        /// The operand WORD's authored node.
+        ast: AstId,
+        /// The artifact-relative path the operand now names.
+        path: String,
+    },
+    /// The bundle's own bytes stand where the `.` did, because one stream cannot carry a file
+    /// beside the plan. Licensed only at the shape `floor30-inline-dot-boundary` measured.
+    Inline {
+        /// The whole `.` COMMAND's authored node.
+        ast: AstId,
+        /// The bundled dorc-lang text, exactly as the projection composed it.
+        sh: String,
+    },
+}
+
+impl ImportEdit {
+    /// The authored node this edit lands on.
+    #[must_use]
+    pub const fn ast(&self) -> AstId {
+        match self {
+            Self::Repoint { ast, .. } | Self::Inline { ast, .. } => *ast,
+        }
+    }
+
+    /// The greppable word for what the plan did with the import.
+    #[must_use]
+    pub const fn verb(&self) -> &'static str {
+        match self {
+            Self::Repoint { .. } => "repointed",
+            Self::Inline { .. } => "inlined",
+        }
+    }
+
+    /// What the plan's import now names — a path for a re-point, and the empty string for an inline,
+    /// which names nothing because there is nothing left to name.
+    #[must_use]
+    pub fn names(&self) -> &str {
+        match self {
+            Self::Repoint { path, .. } => path,
+            Self::Inline { .. } => "",
+        }
+    }
+}
+
 /// The render-time decisions, DECIDED ONCE in the decision plane and merely PRINTED by the render
 /// (`30E` §3's hidden-decision audit; `30F` §4.4's disclosed deviation, closed).
 ///
@@ -2306,6 +2373,7 @@ pub struct DecidedRender {
     refused: Vec<RefusedEdit>,
     neutralised: BTreeSet<AstId>,
     live_regions: BTreeSet<AstId>,
+    imports: Vec<ImportEdit>,
 }
 
 impl DecidedRender {
@@ -2319,6 +2387,12 @@ impl DecidedRender {
     #[must_use]
     pub fn refused(&self) -> &[RefusedEdit] {
         &self.refused
+    }
+
+    /// Every import this plan re-says, in authored order (`dec-import-rewrite`).
+    #[must_use]
+    pub fn imports(&self) -> &[ImportEdit] {
+        &self.imports
     }
 
     /// Does the span render refuse the edit at this authored span?
@@ -2358,6 +2432,7 @@ impl DecidedRender {
         steps: &[Step],
         regions: &[RegionStep],
         defensive_emission: bool,
+        imports: &[ImportEdit],
         src: &str,
         ast: &Ast,
     ) -> Self {
@@ -2445,6 +2520,7 @@ impl DecidedRender {
             refused,
             neutralised,
             live_regions,
+            imports: imports.to_vec(),
         }
     }
 }
@@ -4913,10 +4989,11 @@ impl Plan {
         regions: Vec<RegionStep>,
         survival_report: SurvivalReport,
         defensive_emission: bool,
+        imports: &[ImportEdit],
         src: &str,
         ast: &Ast,
     ) -> Self {
-        let render = DecidedRender::decide(&steps, &regions, defensive_emission, src, ast);
+        let render = DecidedRender::decide(&steps, &regions, defensive_emission, imports, src, ast);
         Self {
             steps,
             regions,
@@ -5026,6 +5103,37 @@ impl Plan {
     #[must_use]
     pub fn regions(&self) -> &[RegionStep] {
         &self.regions
+    }
+
+    /// The imports this plan re-says, in authored order (`30Ng:rul-bundle-at-dorc-lang-boundaries`).
+    #[must_use]
+    pub fn import_edits(&self) -> &[ImportEdit] {
+        self.render.imports()
+    }
+
+    /// One `plan-import-rewritten` per import this plan re-says — the PLAN-SURFACE half of the
+    /// disclosure (`two-surfaces`: the artifact carries the bytes, the render carries the account).
+    ///
+    /// Sited at the authored `.`, because that is the line whose meaning moved, and the reader owed
+    /// the sentence is the one reviewing this plan. `rul-attention-honesty` is what makes it a
+    /// disclosure rather than an option: a load that now names something the author never wrote is
+    /// precisely the class of change that must never be silent.
+    #[must_use]
+    pub fn import_diagnostics(&self, ast: &Ast) -> Vec<Diag> {
+        use dorc_aid::diag::{DiagCode, PlanImportRewritten};
+        self.render
+            .imports()
+            .iter()
+            .map(|import| {
+                Diag::new(
+                    DiagCode::PlanImportRewritten(PlanImportRewritten {
+                        verb: import.verb(),
+                        names: import.names().to_owned(),
+                    }),
+                    ast.node(import.ast()).span,
+                )
+            })
+            .collect()
     }
 }
 
@@ -5215,8 +5323,9 @@ impl Plan {
         }
         let header = render::apply::apply_header();
         format!(
-            "{header}{}{preamble}\n{}",
+            "{header}{}{preamble}\n{}\n{}",
             render::apply::guard_preamble_banner(),
+            render::apply::lifted_section_close(),
             &artifact[header.len()..],
         )
     }
@@ -5523,6 +5632,26 @@ impl Plan {
                 original,
                 self_commented,
                 comment_out,
+            });
+        }
+        // The generated plan's own imports (`30Ng:rul-bundle-at-dorc-lang-boundaries`). Always
+        // SELF-COMMENTED: the shared provenance line says "elided", and an import that now names a
+        // bundle was not elided — the load still runs, from somewhere the artifact carries. A
+        // re-point's own disclosure rides the PLAN surface instead (`two-surfaces`), because its
+        // span is one WORD and there is nowhere mid-line to put a `#`.
+        for import in &self.render.imports {
+            let span = ast.node(import.ast()).span;
+            let replacement = match import {
+                ImportEdit::Repoint { path, .. } => render::apply::import_operand(path),
+                ImportEdit::Inline { sh, .. } => render::apply::inlined_bundle(sh),
+            };
+            edits.push(SpanEdit {
+                lo: span.lo.0 as usize,
+                hi: span.hi.0 as usize,
+                replacement,
+                original: command_text(src, ast, import.ast()),
+                self_commented: true,
+                comment_out: false,
             });
         }
         normalise_edits(edits)
@@ -6388,6 +6517,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             "",
             &ast,
         );
@@ -6445,6 +6575,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             src,
             &dorc_syntax::parse(src).value,
         )
@@ -6573,6 +6704,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             &src,
             &ast,
         );
@@ -6625,6 +6757,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             "",
             &dorc_syntax::parse("").value,
         );
@@ -6741,6 +6874,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             true,
+            &[],
             "",
             &dorc_syntax::parse("").value,
         );
@@ -6777,6 +6911,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             src,
             &dorc_syntax::parse(src).value,
         )
@@ -7023,6 +7158,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             "",
             &empty_ast,
         );
@@ -7046,6 +7182,7 @@ apt_get__is_converged() { return 0; }
                 Vec::new(),
                 SurvivalReport::default(),
                 false,
+                &[],
                 "",
                 &empty_ast,
             )

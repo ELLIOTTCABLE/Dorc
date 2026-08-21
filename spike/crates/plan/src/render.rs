@@ -715,4 +715,46 @@ pub mod apply {
     pub const fn commented_original_provenance() -> &'static str {
         "   # dorc: elided (already converged / dead branch)"
     }
+
+    /// The single-quoted operand a RE-POINTED import now names
+    /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`).
+    ///
+    /// Single quotes because the path is a CONTROLLER-decided artifact-relative name and nothing in
+    /// it may expand: the whole value of re-pointing is that the artifact resolves its own imports
+    /// without depending on a variable the book happened to set. An embedded `'` closes and reopens
+    /// the quote in the one spelling every floor shell agrees on (`two-binary-floor`).
+    #[must_use]
+    pub fn import_operand(path: &str) -> String {
+        format!("'{}'", path.replace('\'', "'\\''"))
+    }
+
+    /// A bundled dorc-lang subgraph standing where its `.` stood, opened by the comment that says
+    /// so (`floor30-inline-dot-boundary`'s measured cell).
+    ///
+    /// GUARANTEE: the banner is one `#`-comment line, and the bytes below it are the projection's
+    /// own composed text — `dorc strip` output concatenated, never edited in body
+    /// (`strip-is-pure-erasure`). No trailing newline: the span render supplies the one the replaced
+    /// line had.
+    #[must_use]
+    pub fn inlined_bundle(sh: &str) -> String {
+        format!("{}{}", inlined_bundle_banner(), sh.trim_end_matches('\n'))
+    }
+
+    /// The comment opening an inlined bundle. Split out so a reader grepping the artifact for the
+    /// boundary finds one emitter rather than a format string.
+    #[must_use]
+    pub const fn inlined_bundle_banner() -> &'static str {
+        "# dorc bundle: the dorc-lang subgraph this line loaded, stripped and composed in place.\n"
+    }
+
+    /// The banner CLOSING the artifact's lifted section — the guard preamble and anything else the
+    /// emission planner hoisted — so a reader knows where the low-attention material ends and the
+    /// book they came to review begins (`30L` §8's single-stream presentation note).
+    ///
+    /// Emitted only where a lifted section exists at all, so a book that hoists nothing stays
+    /// byte-identical.
+    #[must_use]
+    pub const fn lifted_section_close() -> &'static str {
+        "# dorc: end of lifted material; the book follows, in its authored order.\n"
+    }
 }

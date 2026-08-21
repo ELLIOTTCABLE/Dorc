@@ -40,8 +40,9 @@
 //! minted. A book with nothing to inline is already one stream, and the flattened form is
 //! available and byte-identical there — which is why the whole existing corpus is unaffected.
 
-use dorc_core::Span;
 use dorc_core::loadpath::Cwd;
+use dorc_core::{AstId, Span};
+use dorc_plan::ImportEdit;
 
 use crate::bundle::{BundleProjection, BundleRootId};
 
@@ -227,13 +228,21 @@ impl ArtifactSet {
 /// One book-sited load the emission planner must account for.
 ///
 /// ROOT occurrences only: a nested `.` inside a copied dependency is already inside that
-/// dependency's bytes and is placed by mirroring, not by the planner.
+/// dependency's bytes and is handled by the bundle, not by the planner.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BookLoad {
+    /// The `.` command's own node in the book.
+    pub command: AstId,
     /// The `.` command's span in the book's own bytes.
     pub span: Span,
+    /// The operand WORD's node, where the command has one. Absent means there is nothing to
+    /// re-point, so no form that depends on re-pointing is available for this load.
+    pub operand: Option<AstId>,
     /// The root bundle the occurrence opened.
     pub root: BundleRootId,
+    /// Is this `.` a top-level simple command standing alone on its own line — the ONE shape
+    /// `floor30-inline-dot-boundary` measured a bundle may stand in for?
+    pub absorbable: bool,
 }
 
 /// The book's own root load occurrences, paired with the bundle roots they opened.
@@ -245,8 +254,19 @@ pub struct BookLoad {
 pub fn book_loads(
     cfg: &dorc_analysis::cfg::Cfg,
     book: &dorc_syntax::Ast,
+    book_src: &str,
     projection: &BundleProjection,
 ) -> Vec<BookLoad> {
+    use dorc_syntax::ast::NodeKind;
+
+    let top_level: std::collections::BTreeSet<AstId> = match &book.node(book.root()).kind {
+        NodeKind::Script { items } => items
+            .iter()
+            .copied()
+            .filter(|&id| matches!(book.node(id).kind, NodeKind::Simple { .. }))
+            .collect(),
+        _ => std::collections::BTreeSet::new(),
+    };
     projection
         .occurrences()
         .iter()
@@ -257,11 +277,46 @@ pub fn book_loads(
                     dorc_analysis::load::LoadSourcer::Book
                 )
         })
-        .map(|occurrence| BookLoad {
-            span: book.node(cfg.node(occurrence.load().at).ast).span,
-            root: occurrence.root(),
+        .map(|occurrence| {
+            let command = cfg.node(occurrence.load().at).ast;
+            let span = book.node(command).span;
+            let (operand, redirected) = match &book.node(command).kind {
+                NodeKind::Simple { words, redirs, .. } => {
+                    (words.get(1).copied(), !redirs.is_empty())
+                }
+                _ => (None, true),
+            };
+            BookLoad {
+                command,
+                span,
+                operand,
+                root: occurrence.root(),
+                absorbable: top_level.contains(&command)
+                    && !redirected
+                    && alone_on_line(book_src, span),
+            }
         })
         .collect()
+}
+
+/// Is this span the whole of its own line, bar whitespace and a trailing comment?
+///
+/// The same question `plan`'s commented-original render asks of an elided leaf, asked here for the
+/// same reason: bytes standing in for a command that shares its line either swallow a sibling
+/// statement or land inside one.
+fn alone_on_line(src: &str, span: Span) -> bool {
+    let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
+    let start = src
+        .get(..lo)
+        .and_then(|s| s.rfind('\n'))
+        .map_or(0, |i| i + 1);
+    let end = src
+        .get(hi..)
+        .and_then(|s| s.find('\n'))
+        .map_or(src.len(), |i| hi.saturating_add(i));
+    let leading = src.get(start..lo).unwrap_or("").trim();
+    let trailing = src.get(hi..end).unwrap_or("").trim();
+    leading.is_empty() && (trailing.is_empty() || trailing.starts_with('#'))
 }
 
 /// The relative destination a controller-side path mirrors to, or `None` when it cannot be
@@ -304,59 +359,124 @@ pub fn mirrored(cwd: &Cwd, authored: &str) -> Option<String> {
     placeable(&cwd.relativize(authored)?)
 }
 
-/// The dependency files a multipart set would place, or the count that made it impossible.
+/// The artifact-relative name a bundle takes: the entry's own mirrored spelling, with its `.sh`
+/// suffix replaced by `.dorc-bundle.sh`.
 ///
-/// Deduplicated by DESTINATION: a diamond reaches one file through two occurrences, and both
-/// copies are the same stripped bytes of the same source. Two DIFFERENT byte-sets claiming one
-/// destination is unplaceable rather than last-wins — an artifact whose dependency depends on
-/// which occurrence was walked last is not a projection of anything.
-fn dependency_files(
+/// STRAWMAN, and renameable in place under `rul-strawman-formats-no-compat`. What the name has to do
+/// is not be the authored path: the file is GENERATED — one author's dorc-lang subgraph, stripped and
+/// composed — and publishing it under the authored spelling would put bytes on the target under a
+/// name that promises to be somebody's file. A `.dorc` segment ahead of `.sh` is dropped so the
+/// common `alpha.dorc.sh` does not become `alpha.dorc.dorc-bundle.sh`.
+#[must_use]
+pub fn bundle_name(mirrored_path: &str) -> String {
+    let stem = mirrored_path.strip_suffix(".sh").unwrap_or(mirrored_path);
+    let stem = stem.strip_suffix(".dorc").unwrap_or(stem);
+    format!("{stem}.dorc-bundle.sh")
+}
+
+/// What a multipart set would place, and which import each book load then names — or the count that
+/// made it impossible.
+///
+/// Each book-sited root becomes ONE bundle at the dep-graph point where the book's dependencies
+/// become dorc-lang (`30Ng:rul-bundle-at-dorc-lang-boundaries`), plus a mirrored file for every
+/// nested load the bundle could not absorb, whose authored `.` still names it.
+///
+/// Deduplicated by DESTINATION: two load points naming one entrypoint compose the same bytes, and
+/// both imports may name the one file. Two DIFFERENT byte-sets claiming one destination is
+/// unplaceable rather than last-wins — an artifact whose dependency depends on which occurrence was
+/// walked last is not a projection of anything.
+fn bundle_files(
     cwd: &Cwd,
     snapshot_paths: &[String],
     projection: &BundleProjection,
     loads: &[BookLoad],
-) -> Result<Vec<ArtifactFile>, usize> {
-    let wanted: std::collections::BTreeSet<BundleRootId> =
-        loads.iter().map(|load| load.root).collect();
+) -> Result<(Vec<ArtifactFile>, Vec<ImportEdit>), usize> {
     let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+    let mut imports: Vec<ImportEdit> = Vec::new();
     let mut unplaceable = 0_usize;
-    for id in &wanted {
+    let mut place = |destination: String, bytes: String, unplaceable: &mut usize| match placed
+        .get(&destination)
+    {
+        Some(existing) if *existing != bytes => *unplaceable = unplaceable.saturating_add(1),
+        Some(_) => {}
+        None => drop(placed.insert(destination, bytes)),
+    };
+    let authored_of = |file: &crate::bundle::BundleFile| {
+        snapshot_paths
+            .get(file.copied().source().0 as usize)
+            .map_or("", String::as_str)
+    };
+    for load in loads {
         // Unplaceable, never silently skipped: omitting a file the runtime `.` will look for is
         // what the possible-load projection exists to prevent (`30I` §6.1).
-        let Some(root) = projection.roots().iter().find(|root| root.id() == *id) else {
+        let Some((root, entry, operand)) = projection
+            .roots()
+            .iter()
+            .find(|root| root.id() == load.root)
+            .and_then(|root| Some((root, projection.file(root.entry())?, load.operand?)))
+        else {
             unplaceable = unplaceable.saturating_add(1);
             continue;
         };
-        for &id in root.files() {
+        let Some(destination) = mirrored(cwd, authored_of(entry)).map(|path| bundle_name(&path))
+        else {
+            unplaceable = unplaceable.saturating_add(1);
+            continue;
+        };
+        place(
+            destination.clone(),
+            root.bundled().to_owned(),
+            &mut unplaceable,
+        );
+        imports.push(ImportEdit::Repoint {
+            ast: operand,
+            path: format!("./{destination}"),
+        });
+        for &id in root.separate() {
             let Some(file) = projection.file(id) else {
                 continue;
             };
-            let authored = snapshot_paths
-                .get(file.copied().source().0 as usize)
-                .map_or("", String::as_str);
-            let Some(destination) = mirrored(cwd, authored) else {
+            let Some(beside) = mirrored(cwd, authored_of(file)) else {
                 unplaceable = unplaceable.saturating_add(1);
                 continue;
             };
-            let bytes = file.copied().text().to_owned();
-            match placed.get(&destination) {
-                Some(existing) if *existing != bytes => {
-                    unplaceable = unplaceable.saturating_add(1);
-                }
-                Some(_) => {}
-                None => {
-                    placed.insert(destination, bytes);
-                }
-            }
+            place(beside, file.copied().text().to_owned(), &mut unplaceable);
         }
     }
     if unplaceable > 0 || placed.len() > MAX_DEPENDENCIES {
         return Err(unplaceable.max(placed.len().saturating_sub(MAX_DEPENDENCIES)));
     }
-    Ok(placed
-        .into_iter()
-        .map(|(path, bytes)| ArtifactFile { path, bytes })
-        .collect())
+    Ok((
+        placed
+            .into_iter()
+            .map(|(path, bytes)| ArtifactFile { path, bytes })
+            .collect(),
+        imports,
+    ))
+}
+
+/// The in-place substitutions a single-stream set needs, or `None` when one of its loads cannot be
+/// served by the measured shape.
+///
+/// One stream carries no file beside the plan, so every book-sited dorc-lang root has to stand in
+/// the stream itself. That is exactly `floor30-inline-dot-boundary`'s cell 1, and only that cell:
+/// a `.` that shares its line, carries a redirect, or is not a top-level command is outside what was
+/// measured, so the FORM is unavailable rather than the substitution being attempted anyway.
+fn inline_imports(projection: &BundleProjection, loads: &[BookLoad]) -> Option<Vec<ImportEdit>> {
+    loads
+        .iter()
+        .map(|load| {
+            let root = projection
+                .roots()
+                .iter()
+                .find(|root| root.id() == load.root)
+                .filter(|_| load.absorbable)?;
+            Some(ImportEdit::Inline {
+                ast: load.command,
+                sh: root.bundled().to_owned(),
+            })
+        })
+        .collect()
 }
 
 /// The artifact-set filename every form puts its plan projection under.
@@ -372,6 +492,7 @@ pub struct Selection {
     form: ArtifactForm,
     fallback: Option<FormFallback>,
     dependencies: Vec<ArtifactFile>,
+    imports: Vec<ImportEdit>,
 }
 
 impl Selection {
@@ -385,6 +506,17 @@ impl Selection {
     #[must_use]
     pub const fn fallback(&self) -> Option<FormFallback> {
         self.fallback
+    }
+
+    /// What each book-sited import says in the GENERATED plan under this form
+    /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`).
+    ///
+    /// Handed to `Plan::decided` as an input, never applied afterwards: the form is settled from
+    /// authored inputs before the plan exists, and what a plan's import line says is a decision like
+    /// any other (`the-render-decides-nothing`).
+    #[must_use]
+    pub fn imports(&self) -> &[ImportEdit] {
+        &self.imports
     }
 
     /// Bind the settled form to the plan projection it describes.
@@ -416,13 +548,18 @@ pub fn select(
     request: FormRequest,
     posture: StreamPosture,
 ) -> Result<Selection, FormRefusal> {
-    // A book with nothing to load is ALREADY one stream: the flattened form is available there.
-    let inline_debt = loads.len();
-    let flat = inline_debt == 0;
+    // A book with nothing to load is ALREADY one stream, and a book whose every load's bundle can
+    // stand where its `.` stands becomes one (`floor30-inline-dot-boundary`'s measured cell).
+    let inlined = inline_imports(projection, loads);
+    let inline_debt = loads
+        .iter()
+        .filter(|load| !load.absorbable)
+        .count()
+        .max(usize::from(inlined.is_none()));
     let multipart = match posture {
         StreamPosture::SingleStream => Err(None),
         StreamPosture::Materializable => {
-            dependency_files(cwd, snapshot_paths, projection, loads).map_err(Some)
+            bundle_files(cwd, snapshot_paths, projection, loads).map_err(Some)
         }
     };
 
@@ -430,25 +567,28 @@ pub fn select(
         form: ArtifactForm::PreservedBookTree,
         fallback,
         dependencies: Vec::new(),
+        imports: Vec::new(),
     };
-    let flattened = Selection {
+    let flattened = |imports: Vec<ImportEdit>| Selection {
         form: ArtifactForm::Flattened,
         fallback: None,
         dependencies: Vec::new(),
+        imports,
     };
 
     match request {
         FormRequest::Explicit(ArtifactForm::Flattened) => {
-            flat.then_some(flattened).ok_or(FormRefusal::Unavailable {
+            inlined.map(flattened).ok_or(FormRefusal::Unavailable {
                 form: ArtifactForm::Flattened,
                 because: FormFallback::InliningUnproven { loads: inline_debt },
             })
         }
         FormRequest::Explicit(ArtifactForm::Multipart) => match multipart {
-            Ok(dependencies) => Ok(Selection {
+            Ok((dependencies, imports)) => Ok(Selection {
                 form: ArtifactForm::Multipart,
                 fallback: None,
                 dependencies,
+                imports,
             }),
             Err(None) => Err(FormRefusal::NoArtifactStream {
                 form: ArtifactForm::Multipart,
@@ -461,18 +601,19 @@ pub fn select(
         FormRequest::Explicit(ArtifactForm::PreservedBookTree) => Ok(preserved(None)),
         // One stream holds only the flat form; a materializable one aims at mode 2 (`30I` §7.1).
         FormRequest::Auto => Ok(match posture {
-            StreamPosture::SingleStream if flat => flattened,
-            StreamPosture::SingleStream => {
-                preserved(Some(FormFallback::InliningUnproven { loads: inline_debt }))
-            }
+            StreamPosture::SingleStream => match inlined {
+                Some(imports) => flattened(imports),
+                None => preserved(Some(FormFallback::InliningUnproven { loads: inline_debt })),
+            },
             StreamPosture::Materializable => match multipart {
-                Ok(dependencies) => Selection {
+                Ok((dependencies, imports)) => Selection {
                     form: ArtifactForm::Multipart,
                     fallback: None,
                     dependencies,
+                    imports,
                 },
                 Err(unplaceable) => preserved(Some(FormFallback::DependencyUnplaceable {
-                    loads: unplaceable.unwrap_or(inline_debt),
+                    loads: unplaceable.unwrap_or(loads.len()),
                 })),
             },
         }),
@@ -482,8 +623,8 @@ pub fn select(
 #[cfg(test)]
 mod tests {
     use super::{
-        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, StreamPosture, mirrored,
-        placeable, select,
+        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, ImportEdit,
+        StreamPosture, mirrored, placeable, select,
     };
     use crate::bundle::BundleProjection;
     use dorc_core::loadpath::Cwd;
@@ -502,10 +643,15 @@ mod tests {
             .map(|selection| selection.with_plan(plan_sh.to_owned()))
     }
 
+    /// A book load naming a root NO projection holds — so nothing can be composed for it, under any
+    /// form. The unservable cell, spelled without a world.
     fn one_load() -> super::BookLoad {
         super::BookLoad {
+            command: dorc_core::AstId(0),
             span: dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
+            operand: Some(dorc_core::AstId(1)),
             root: crate::bundle::BundleRootId::first(),
+            absorbable: true,
         }
     }
 
@@ -703,7 +849,7 @@ mod tests {
         let projection = crate::bundle::project(&snapshot, env.loads())
             .map(crate::bundle::BundleProjectionOutput::into_projection)
             .expect("one closed occurrence forest");
-        let loads = super::book_loads(&cfg, &ast, &projection);
+        let loads = super::book_loads(&cfg, &ast, book, &projection);
         select(
             cwd,
             snapshot.source_paths(),
@@ -714,16 +860,17 @@ mod tests {
         )
     }
 
-    /// THE MULTIPART PLACEMENT, end to end over a real load: the dependency lands at the SAME
-    /// relative path the book's own operand names, carrying STRIPPED bytes.
+    /// THE MULTIPART PLACEMENT, end to end over a real load: the book's dorc-lang dependency is
+    /// published as a BUNDLE, and the plan's own import names it
+    /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`, human-typed).
     ///
-    /// Both halves matter. Mirroring is what lets the book's `. ./wombat.oracle.sh` — and every
-    /// nested operand inside a copied file — resolve on the target with no rewritten byte and no
-    /// generated root variable (`30I` §7.4). Stripping is what lets a stock shell source it at all
-    /// (`30Ib` §15: a bundle ships `dorc strip`'s output, which is still pure erasure, so the byte
-    /// floor holds).
+    /// Three halves, and all three are the ruling rather than styling. The file is GENERATED, so it
+    /// does not sit under the author's own spelling; the plan is a generated durable, so its import
+    /// may be re-said to name what the artifact actually carries; and the bytes are `dorc strip`
+    /// output, so a stock shell can source them at all and the byte floor still holds
+    /// (`strip-is-pure-erasure`).
     #[test]
-    fn a_multipart_dependency_lands_at_its_authored_relative_path() {
+    fn a_multipart_dependency_is_published_as_the_bundle_its_import_names() {
         let selection = book_sourced(
             ". ./wombat.oracle.sh\nwombat sync a.conf\n",
             vec!["wombat.oracle.sh".to_owned()],
@@ -737,24 +884,66 @@ mod tests {
         .expect("a relative dependency is placeable");
         assert_eq!(selection.form(), ArtifactForm::Multipart);
         assert_eq!(selection.fallback(), None);
+        assert!(
+            matches!(
+                selection.imports(),
+                [ImportEdit::Repoint { path, .. }] if path == "./wombat.oracle.dorc-bundle.sh"
+            ),
+            "the plan's import names the published bundle: {:?}",
+            selection.imports()
+        );
         let set = selection.with_plan("#!/bin/sh\n".to_owned());
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
-        assert_eq!(paths, ["plan.sh", "wombat.oracle.sh"]);
+        assert_eq!(paths, ["plan.sh", "wombat.oracle.dorc-bundle.sh"]);
         let dependency = &set.dependencies()[0].bytes;
         assert!(
             dependency.contains("wombat__is_converged()") && !dependency.contains(" : sm.dorc.W"),
-            "the mirrored dependency is the STRIPPED body a stock shell can source:\n{dependency}"
+            "the published bundle is the STRIPPED body a stock shell can source:\n{dependency}"
         );
     }
 
-    /// The same world with stdout as the artifact stream: one stream cannot carry the tree, the
-    /// book has a load to inline, and inlining is not floor-measured — so `auto` lands on the
-    /// preserved tree and SAYS SO. This is the cell every `--pre-source`-free corpus case with a
-    /// book `.` sits in today.
+    /// The same world with stdout as the artifact stream: one stream carries no file beside the
+    /// plan, so the bundle stands where the `.` stood and the stream is a COMPLETE plan
+    /// (`30Ng:rul-piped-stdout-carries-a-full-plan` — what the reviewer approves is what executes).
+    ///
+    /// The substitution is exactly `floor30-inline-dot-boundary`'s measured cell, and the `.` here is
+    /// exactly its shape: a top-level command alone on its line.
     #[test]
-    fn the_same_world_on_one_stream_preserves_the_tree_and_explains() {
+    fn the_same_world_on_one_stream_carries_the_bundle_in_the_stream() {
         let selection = book_sourced(
             ". ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::SingleStream,
+        )
+        .expect("auto always lands somewhere");
+        assert_eq!(selection.form(), ArtifactForm::Flattened);
+        assert_eq!(selection.fallback(), None);
+        assert!(
+            selection.dependencies.is_empty(),
+            "one stream carries no file beside the plan"
+        );
+        assert!(
+            matches!(
+                selection.imports(),
+                [ImportEdit::Inline { sh, .. }] if sh.contains("wombat__is_converged()")
+            ),
+            "the bundle's own bytes stand where the load did: {:?}",
+            selection.imports()
+        );
+    }
+
+    /// …and a book `.` OUTSIDE that measured shape leaves the single stream unable to carry a
+    /// complete plan, so `auto` falls back and SAYS SO rather than substituting anyway.
+    ///
+    /// The `.` here is an `||` right operand, which is the cell the floor manifest measured a
+    /// difference at: a `.` is one command and the bytes it loads are N, so the operator covers
+    /// different things in the two shapes.
+    #[test]
+    fn a_load_outside_the_measured_shape_leaves_one_stream_incomplete() {
+        let selection = book_sourced(
+            "false || . ./wombat.oracle.sh\nwombat sync a.conf\n",
             vec!["wombat.oracle.sh".to_owned()],
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
             FormRequest::Auto,
@@ -766,6 +955,7 @@ mod tests {
             selection.fallback(),
             Some(FormFallback::InliningUnproven { loads: 1 })
         );
+        assert!(selection.imports().is_empty());
     }
 
     /// THE PRODUCTION CWD, which is the shape every real invocation has and no other test here had.
@@ -794,21 +984,21 @@ mod tests {
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
         assert_eq!(
             paths,
-            ["plan.sh", "wombat.oracle.sh"],
+            ["plan.sh", "wombat.oracle.dorc-bundle.sh"],
             "the destination is the operand's own spelling, recovered through the cwd"
         );
     }
 
-    /// THE DIAMOND, at the placement seat: two book load points reach one shared dependency through
-    /// separate roots, and it is placed ONCE.
+    /// THE DIAMOND, at the placement seat: two book load points reach one shared dependency, and
+    /// each bundle ABSORBS it — so the artifact carries two files, not four, and no file is a
+    /// dependency of another.
     ///
-    /// `rul-bundles-key-to-load-occurrences` keeps the two occurrences apart on purpose, so the
-    /// dedup has to happen where the DESTINATION is decided rather than by collapsing the account —
-    /// and it has to be a dedup rather than a second write, because two writes to one path is what
-    /// `artifact_store`'s exclusive create refuses outright. `load30-rooted-shared-dependency`
-    /// exercises the same shape end-to-end; this is the seat that owns the rule.
+    /// `rul-bundles-key-to-load-occurrences` keeps the two occurrences apart on purpose, which is
+    /// what lets each root compose its own subgraph; the shared file appearing inside both is not
+    /// duplication the artifact has to reconcile, because a dorc-lang top level is idempotent to load
+    /// and the authors' own include guards decide whether it runs twice.
     #[test]
-    fn a_shared_dependency_reached_twice_is_placed_once() {
+    fn two_roots_over_one_shared_dependency_compose_two_bundles() {
         let selection = book_sourced_at(
             &Cwd::at("/ops/case"),
             ". ./alpha.oracle.sh\n. ./beta.oracle.sh\nwombat sync a.conf\n",
@@ -833,11 +1023,16 @@ mod tests {
             paths,
             [
                 "plan.sh",
-                "alpha.oracle.sh",
-                "beta.oracle.sh",
-                "common.oracle.sh"
+                "alpha.oracle.dorc-bundle.sh",
+                "beta.oracle.dorc-bundle.sh"
             ],
-            "the shared dependency appears once, and every transitively reached file is placed"
+            "one bundle per book-sited root, and the shared file inside each rather than beside them"
+        );
+        assert!(
+            set.dependencies()
+                .iter()
+                .all(|file| file.bytes.contains("sm_common_query()")),
+            "each bundle absorbed the dependency it reached"
         );
     }
 

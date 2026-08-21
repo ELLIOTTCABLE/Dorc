@@ -513,10 +513,14 @@ impl WhyWorld {
         // This world is handed results somebody else already decided about, so the intake authority
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
+        // NO import edits, and the narrowing is disclosed at the module header beside the wrapped
+        // sites this world also does not model: a why world settles no artifact form, so it has no
+        // bundle for an import to name and answers about the run's DECISIONS rather than its files.
         let plan = dorc_plan::project_plan(
             &mut spine,
             book_src,
             &parsed.value,
+            &[],
             &dorc_plan::PlanAuthority::without_intake(),
             &spent,
         );
@@ -1268,6 +1272,7 @@ mod tests {
             spine,
             BOOK,
             &ast,
+            &[],
             &dorc_plan::PlanAuthority::without_intake(),
             spent,
         )
@@ -1309,6 +1314,7 @@ mod tests {
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             BOOK,
             &dorc_syntax::parse(BOOK).value,
         )

@@ -29,7 +29,7 @@ use crate::diag::{
     LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing, LintToolAbsent,
     LintToolFailedWithoutFindings, LintToolOutputUnparsable, MarkHashcolonMalformed,
     MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
-    MissingDialectMarker, MungeNameInvalid, OperandPosition, RecordsAlienLine,
+    MissingDialectMarker, MungeNameInvalid, OperandPosition, PlanImportRewritten, RecordsAlienLine,
     RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing,
     RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
     RecordsTornLine, RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites,
@@ -118,6 +118,13 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "artifact-publish-refused",
             DiagCode::ArtifactPublishRefused(ArtifactPublishRefused {
                 reason: "directory",
+            }),
+        ),
+        (
+            "plan-import-rewritten",
+            DiagCode::PlanImportRewritten(PlanImportRewritten {
+                verb: "repointed",
+                names: "./wombat.dorc-bundle.sh".to_owned(),
             }),
         ),
         (

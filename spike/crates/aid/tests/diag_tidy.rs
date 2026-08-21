@@ -62,6 +62,7 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "ArtifactFormRefused",
     "ArtifactFormFallback",
     "ArtifactPublishRefused",
+    "PlanImportRewritten",
     "CmdsubInnerNonleaf",
     "RedirTargetTop",
     "Depth2PositionalUnthreaded",

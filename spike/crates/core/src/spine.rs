@@ -695,6 +695,19 @@ pub enum RenderDecision {
     /// `dec-certifier-trip-cleanup` — a disposition demoted after construction because the solve
     /// certifier tripped (`302:rul-certifier-trip-guard-only`).
     CertifierTripDemote,
+    /// `dec-import-rewrite` — a GENERATED plan's import line now names the bundle this run composed,
+    /// or the bundle's own bytes stand where it did
+    /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`, human-typed).
+    ///
+    /// A recorded decision rather than an emission-time substitution for the same reason every other
+    /// arm here is one: it changes what the artifact does, and a change nothing wrote down cannot be
+    /// accounted for by a projection, a why report, or a second artifact form.
+    ImportRewritten {
+        /// The closed verb word: `repointed` or `inlined`.
+        verb: &'static str,
+        /// The artifact-relative path the import names, empty where nothing is named any more.
+        names: String,
+    },
 }
 
 /// Why a span render refused a licensed decision.

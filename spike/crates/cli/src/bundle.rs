@@ -169,6 +169,8 @@ pub struct BundleRoot {
     occurrence: usize,
     entry: BundleFileId,
     files: Vec<BundleFileId>,
+    bundled: String,
+    separate: Vec<BundleFileId>,
 }
 
 impl BundleRoot {
@@ -194,6 +196,25 @@ impl BundleRoot {
     #[must_use]
     pub fn files(&self) -> &[BundleFileId] {
         &self.files
+    }
+
+    /// This root's dorc-lang subgraph as ONE text: the entry's stripped bytes with every inlinable
+    /// nested `.` replaced, in place, by the bytes that `.` would have loaded
+    /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`).
+    #[must_use]
+    pub fn bundled(&self) -> &str {
+        &self.bundled
+    }
+
+    /// The nested files the bundle could NOT absorb, whose authored `.` therefore survives inside
+    /// [`bundled`](Self::bundled) and still names them.
+    ///
+    /// Non-empty is the conservative answer, never a failure: a shape outside the measured evidence
+    /// stays a separate generated file, exactly as `fnd-loader-function-errexit-diverges` left the
+    /// nested boundary alone.
+    #[must_use]
+    pub fn separate(&self) -> &[BundleFileId] {
+        &self.separate
     }
 }
 
@@ -441,6 +462,8 @@ pub fn project(
                 occurrence,
                 entry,
                 files: Vec::new(),
+                bundled: String::new(),
+                separate: Vec::new(),
             })
         })
         .collect::<Result<_, _>>()?;
@@ -452,6 +475,17 @@ pub fn project(
             .files
             .push(projected.file);
     }
+    for root in &mut roots {
+        let mut separate = Vec::new();
+        root.bundled = flatten_occurrence(
+            snapshot,
+            &occurrences,
+            &files,
+            root.occurrence,
+            &mut separate,
+        );
+        root.separate = separate;
+    }
     Ok(BundleProjectionOutput {
         projection: BundleProjection {
             occurrences,
@@ -460,6 +494,127 @@ pub fn project(
         },
         diagnostics,
     })
+}
+
+/// One occurrence's file, with every inlinable nested `.` replaced by the bytes it loads.
+///
+/// # Why the substitution is positional, and why only this shape
+///
+/// `floor30-inline-dot-boundary` MEASURED the one operation this performs: an inert child's bytes
+/// written where its `.` stood behave identically to the `.` under both floor binaries. It measured
+/// nothing about moving those bytes anywhere else, and it measured a DIVERGENCE at the `||` position
+/// — so this substitutes in place, at a `.` that stands alone on its own line, and leaves every
+/// other shape as a separate generated file (`rul-happy-path-is-a-closed-set`: the idiomatic answer
+/// is licensed by a shown enumeration, and the defensive one is what protects it).
+///
+/// A dorc-lang file's own load is a top-level `Simple` by construction — `load_inert` admits a `.`
+/// only as a whole top-level item or a guard-branch item, never as an `&&`/`||` operand — so the
+/// position check here is about the LINE, and about strip having left that line recognisable.
+///
+/// The guard around a nested `.` survives verbatim, which is what keeps an include guard meaning
+/// what its author wrote: the absorbed bytes run exactly when the `.` would have.
+fn flatten_occurrence(
+    snapshot: &StaticLoadSnapshot,
+    occurrences: &[ProjectedOccurrence],
+    files: &[BundleFile],
+    occurrence: usize,
+    separate: &mut Vec<BundleFileId>,
+) -> String {
+    let Some(file) = occurrences
+        .get(occurrence)
+        .and_then(|projected| files.get(projected.file.index()))
+    else {
+        return String::new();
+    };
+    let authored = snapshot
+        .source_srcs()
+        .get(file.copied.source.0 as usize)
+        .map_or("", String::as_str);
+    let mut lines: Vec<String> = file.copied.text.lines().map(ToOwned::to_owned).collect();
+
+    // Descending, so an earlier substitution's own line count cannot move a later index.
+    let mut nested: Vec<usize> = (0..occurrences.len())
+        .filter(|&child| {
+            occurrences
+                .get(child)
+                .is_some_and(|projected| projected.load.within == Some(occurrence))
+        })
+        .collect();
+    nested.sort_by_key(|&child| {
+        std::cmp::Reverse(
+            occurrences
+                .get(child)
+                .and_then(|projected| projected.load.locus)
+                .map_or(0, |locus| locus.lo.0),
+        )
+    });
+
+    for child in nested {
+        let Some(at) = absorbable_line(authored, &file.copied.line_map, &lines, occurrences, child)
+        else {
+            if let Some(projected) = occurrences.get(child) {
+                separate.push(projected.file);
+            }
+            continue;
+        };
+        let inner = flatten_occurrence(snapshot, occurrences, files, child, separate);
+        lines.splice(at..=at, inner.lines().map(ToOwned::to_owned));
+    }
+
+    let mut out = lines.join("\n");
+    if !out.is_empty() {
+        out.push('\n');
+    }
+    out
+}
+
+/// The index in the STRIPPED lines that a nested load's `.` occupies, when the substitution is
+/// inside the measured shape — else `None`, and the child stays a separate file.
+///
+/// Four conditions, each closing a way the substitution could be wrong rather than merely ugly: the
+/// child names a locus at all; that locus is the WHOLE of its authored line (so nothing sharing the
+/// line is swallowed, and no `&&`/`||` reaches across it); exactly one stripped line survives from
+/// that authored line (a strip that merged or erased it leaves nothing to identify); and the
+/// surviving line still reads as the load it came from.
+fn absorbable_line(
+    authored: &str,
+    line_map: &[u32],
+    stripped: &[String],
+    occurrences: &[ProjectedOccurrence],
+    child: usize,
+) -> Option<usize> {
+    let locus = occurrences.get(child)?.load.locus?;
+    let (lo, hi) = (locus.lo.0 as usize, locus.hi.0 as usize);
+    let spelled = authored.get(lo..hi)?.trim();
+    let line_start = authored
+        .get(..lo)
+        .and_then(|s| s.rfind('\n'))
+        .map_or(0, |i| i + 1);
+    let line_end = authored
+        .get(hi..)
+        .and_then(|s| s.find('\n'))
+        .map_or(authored.len(), |i| hi.saturating_add(i));
+    if authored.get(line_start..line_end)?.trim() != spelled {
+        return None;
+    }
+    let authored_line = u32::try_from(authored.get(..lo)?.bytes().filter(|&b| b == b'\n').count())
+        .ok()?
+        .saturating_add(1);
+    let mut hits = line_map
+        .iter()
+        .enumerate()
+        .filter(|(_, line)| **line == authored_line)
+        .map(|(index, _)| index);
+    let at = hits.next()?;
+    if hits.next().is_some() {
+        return None;
+    }
+    let surviving = stripped.get(at)?.trim();
+    let still_a_load = surviving
+        .strip_prefix('.')
+        .or_else(|| surviving.strip_prefix("source"))
+        .is_some_and(|tail| tail.starts_with(char::is_whitespace));
+    still_a_load.then_some(at)
 }
 
 fn root_of(occurrence: usize, loads: &[LoadOccurrence]) -> Result<usize, BundleProjectionError> {
@@ -665,6 +820,67 @@ mod tests {
         assert!(!archive.contains("\n# forged"));
         assert!(archive.contains("\\x0a# forged"));
         assert!(!archive.lines().any(|line| line.starts_with("dorc site ")));
+    }
+
+    /// THE BUNDLE (`30Ng:rul-bundle-at-dorc-lang-boundaries`, human-typed): a root and its own
+    /// dorc-lang load become ONE text, and the guard that decided whether the load ran survives
+    /// verbatim around the absorbed bytes.
+    ///
+    /// The guard is the half worth stating: an include guard is the healthy shared-library shape
+    /// (`30I:rul-include-guards-are-load-semantics`), so absorbing its `.` anywhere but IN it —
+    /// concatenating the dependency ahead of its sourcer, say — would load a package the author
+    /// asked to load only when it was absent, every time.
+    #[test]
+    fn a_root_and_its_dorc_lang_load_flatten_into_one_text() {
+        let bundle = projection(
+            ". ./entry.sh\n",
+            vec!["entry.sh".to_owned(), "shared.sh".to_owned()],
+            vec![
+                marked(
+                    "if [ \"${sm_shared-}\" != 'v1' ]; then\n   . ./shared.sh\nfi\nentry() { :; }\n",
+                ),
+                marked("shared() { :; }\nsm_shared='v1'\n"),
+            ],
+        );
+        let root = &bundle.roots()[0];
+        assert_eq!(
+            root.bundled(),
+            "if [ \"${sm_shared-}\" != 'v1' ]; then\nshared() { :; }\nsm_shared='v1'\nfi\nentry() { :; }\n",
+            "the dependency's stripped bytes stand where its `.` did, inside the author's guard"
+        );
+        assert!(
+            root.separate().is_empty(),
+            "nothing was left over for a sidecar"
+        );
+    }
+
+    /// …and a nested load whose `.` does NOT stand alone on its line is left where it is, named as a
+    /// file the artifact still has to carry.
+    ///
+    /// This is the conservative half of the same rule, and the corpus reaches it: a book's regional
+    /// `[ … ] || . ./fallback.sh` is exactly the shape `floor30-inline-dot-boundary`'s second cell
+    /// measured a difference at, so a bundle may not absorb it.
+    #[test]
+    fn a_load_sharing_its_line_stays_a_separate_file() {
+        let bundle = projection(
+            ". ./entry.sh\n",
+            vec!["entry.sh".to_owned(), "shared.sh".to_owned()],
+            vec![
+                marked("if [ \"${sm_shared-}\" != 'v1' ]; then . ./shared.sh; fi\n"),
+                marked("shared() { :; }\nsm_shared='v1'\n"),
+            ],
+        );
+        let root = &bundle.roots()[0];
+        assert!(
+            root.bundled().contains(". ./shared.sh"),
+            "the authored load survives verbatim:\n{}",
+            root.bundled()
+        );
+        assert_eq!(
+            root.separate().len(),
+            1,
+            "and the file it names is accounted for rather than dropped"
+        );
     }
 
     #[test]

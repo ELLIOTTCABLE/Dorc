@@ -139,6 +139,7 @@ pub fn project_plan(
     spine: &mut Spine,
     src: &str,
     ast: &dorc_syntax::ast::Ast,
+    imports: &[crate::ImportEdit],
     _authority: &PlanAuthority,
     _spent: &crate::certifier_trip::TripSpent,
 ) -> Plan {
@@ -167,6 +168,7 @@ pub fn project_plan(
         regions,
         project_survival_report(spine),
         projected_defensive_emission(spine),
+        imports,
         src,
         ast,
     );
@@ -262,6 +264,20 @@ pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
                         RefusalCause::BlockingRedirect
                     }
                 },
+            },
+            grade: None,
+        });
+    }
+    // SITE-LESS and REGION-LESS, on `DefensiveEmission`'s precedent: an import edit belongs to a
+    // book line rather than to an execution or an authored region, and a new identity gets a new
+    // axis rather than borrowing one that means something else (`a-second-key-axis-never-widens-siteid`).
+    for import in plan.import_edits() {
+        spine.push_render_decision(SpineRenderDecision {
+            site: None,
+            region: None,
+            decision: RenderDecision::ImportRewritten {
+                verb: import.verb(),
+                names: import.names().to_owned(),
             },
             grade: None,
         });
@@ -383,6 +399,7 @@ mod tests {
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &[],
             src,
             &ast,
         );

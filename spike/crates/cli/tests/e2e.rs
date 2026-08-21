@@ -826,6 +826,31 @@ fn published_generation(root: &Path) -> Result<PathBuf, String> {
     }
 }
 
+/// The world the COUNTERFACTUAL rails (gate-5's argv echo, gate-6's dual rail) run in when a case
+/// publishes an artifact set: the case's own authored top-level files, with the published generation
+/// laid over them.
+///
+/// Both halves are needed because those rails compare an ARTIFACT against the BOOK, and since
+/// `30Ng:rul-bundle-at-dorc-lang-boundaries` the two no longer resolve their imports in one place:
+/// the book names its author's files and the artifact names the bundles this run generated. Running
+/// the pair in the generation alone silently reduced the bare rail to "the shell exited at the first
+/// `.`", which reads as an apply that ran MORE than the book — a false finding about the engine.
+///
+/// It is NOT a relaxation of `an-artifact-set-runs-from-its-own-generation`: `exec_check` still runs
+/// the PUBLISHED plan from the generation alone, and that is where the self-containment question is
+/// asked. This world exists so a delta between two run-sets is a delta rather than a crash.
+fn counterfactual_root(dir: &Path, generation: &Path, into: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(into)?;
+    for source in [dir, generation] {
+        for entry in std::fs::read_dir(source).into_iter().flatten().flatten() {
+            if entry.file_type().is_ok_and(|kind| kind.is_file()) {
+                std::fs::copy(entry.path(), into.join(entry.file_name()))?;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Every LITERAL relative `.`/`source` operand in a published plan that the generation does not
 /// carry — the assertion that makes an artifact set observe its own tree
 /// (`an-artifact-set-runs-from-its-own-generation`, widened past "exactly one generation exists").
@@ -1756,6 +1781,15 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
 
     let mocks = dir.join("mocks");
     let run_root = published.as_deref();
+    // The counterfactual rails' own world (`counterfactual_root`), built only where a generation
+    // exists so every other case keeps the empty throwaway sandbox it has always had.
+    let counterfactual = published.as_deref().and_then(|generation| {
+        let into = scratch.path.join("counterfactual");
+        counterfactual_root(dir, generation, &into)
+            .ok()
+            .map(|()| into)
+    });
+    let counterfactual_run_root = counterfactual.as_deref().or(run_root);
     if run.failures.is_empty() && mocks.is_dir() {
         exec_check(
             harness,
@@ -1785,7 +1819,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
                 &shimset,
                 &args,
                 &framed_path,
-                run_root,
+                counterfactual_run_root,
                 &mut run.failures,
             );
             if !has_marker(dir, "PROBE_RESULTS=authored")
@@ -1800,7 +1834,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
                     &shimset,
                     &args,
                     &framed_path,
-                    run_root,
+                    counterfactual_run_root,
                     &mut run.failures,
                 );
             }

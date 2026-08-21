@@ -1073,7 +1073,7 @@ fn run(
     // ABOVE the probe emission on purpose: the planner's inputs are authored-before-contact, so an
     // unservable form refuses with nothing probed, contacted or written (`30I` §10).
     let form_selection =
-        match select_artifact_form(args, &snapshot, &cfg.value, &parsed.value, &env) {
+        match select_artifact_form(args, &snapshot, &cfg.value, &parsed.value, &book_src, &env) {
             Ok(selection) => selection,
             Err(refusal) => {
                 report_at(
@@ -1973,7 +1973,14 @@ fn run(
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
     // assembly, and it exists at all only because the intake handed this run an authority and the
     // certifier latch was spent. It also DECIDES and records the render (`30E` §3).
-    let plan = dorc_plan::project_plan(&mut spine, &book_src, &parsed.value, &authority, &spent);
+    let plan = dorc_plan::project_plan(
+        &mut spine,
+        &book_src,
+        &parsed.value,
+        form_selection.imports(),
+        &authority,
+        &spent,
+    );
     record_new_arm(
         &mut spine,
         &probe,
@@ -2107,6 +2114,17 @@ fn run(
     // must never silently ship an artifact whose render had to refuse a licensed elision.
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
+
+    // The generated plan's own imports, on the PLAN surface (`two-surfaces`): the artifact carries
+    // the bytes and this carries the account of which authored `.` now names something else. On
+    // `report_at`'s advisory route rather than `report`'s, because it is a Note about the emission
+    // this run chose, not a correctness give-up an `apply` must be told about.
+    report_at(
+        advisory,
+        "emission",
+        book_source,
+        &plan.import_diagnostics(&parsed.value),
+    );
 
     // `300:lane-sparing-rederivation`: a survival the wall walk minted that the independent
     // reference model would not confirm. Empty in a healthy engine; non-empty means OUR two
@@ -2565,6 +2583,7 @@ fn select_artifact_form(
     snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
     cfg: &dorc_analysis::cfg::Cfg,
     book: &dorc_syntax::Ast,
+    book_src: &str,
     env: &dorc_analysis::funcenv::FuncEnv,
 ) -> Result<dorc_cli::artifact::Selection, dorc_cli::artifact::FormRefusal> {
     use dorc_cli::artifact::{FormRequest, StreamPosture, book_loads, select};
@@ -2572,7 +2591,7 @@ fn select_artifact_form(
     let projection = dorc_cli::bundle::project(snapshot, env.loads())
         .map(dorc_cli::bundle::BundleProjectionOutput::into_projection)
         .unwrap_or_default();
-    let loads = book_loads(cfg, book, &projection);
+    let loads = book_loads(cfg, book, book_src, &projection);
     let posture = if args.artifact_dir.is_some() {
         StreamPosture::Materializable
     } else {

@@ -105,6 +105,11 @@ pub enum DiagCode {
     /// The artifact set could not be published, so NOTHING was published: publication is atomic
     /// and a partial artifact set is what it exists to prevent (`30I` §7.5).
     ArtifactPublishRefused(ArtifactPublishRefused),
+    /// A GENERATED plan's own import line names something other than what the book's `.` named:
+    /// the bundle this run composed, or the bundle's bytes in place
+    /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`, human-typed). The one rewrite Dorc reserves over
+    /// a plan it generated, and therefore one it must never make silently.
+    PlanImportRewritten(PlanImportRewritten),
 
     // ── B4 mechanical sweep: former `diag::legacy` survivors ────────────────
     /// A command runs inside a `$(…)` substitution body — effect-bearing but not independently
@@ -433,6 +438,7 @@ impl DiagCode {
             DiagCode::ArtifactFormRefused(_) => "artifact-form-refused",
             DiagCode::ArtifactFormFallback(_) => "artifact-form-fallback",
             DiagCode::ArtifactPublishRefused(_) => "artifact-publish-refused",
+            DiagCode::PlanImportRewritten(_) => "plan-import-rewritten",
             DiagCode::CmdsubInnerNonleaf(_) => "cmdsub-inner-nonleaf",
             DiagCode::RedirTargetTop(_) => "redir-target-top",
             DiagCode::Depth2PositionalUnthreaded(_) => "depth-2-positional-unthreaded",
@@ -723,6 +729,16 @@ pub struct ArtifactFormFallback {
 pub struct ArtifactPublishRefused {
     /// The closed reason word, from the publisher's own refusal enum.
     pub reason: &'static str,
+}
+
+/// Payload of [`DiagCode::PlanImportRewritten`]: what the generated plan's import now says.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanImportRewritten {
+    /// The closed verb word: `repointed` or `inlined`.
+    pub verb: &'static str,
+    /// The artifact-relative path the import now names; EMPTY where the import is gone because the
+    /// bytes it loaded stand in its place.
+    pub names: String,
 }
 
 // ===========================================================================
@@ -2457,7 +2473,9 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        DiagCode::ArtifactFormFallback(_) => CodeSpec {
+        // A disclosure, not a finding: the plan is exactly what the run intended, and what the
+        // reader is owed is knowing that this line's target moved.
+        DiagCode::ArtifactFormFallback(_) | DiagCode::PlanImportRewritten(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
             remediation: RemediationClass::Structural,
@@ -3174,6 +3192,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             loads: _,
         })
         | DiagCode::ArtifactPublishRefused(ArtifactPublishRefused { reason: _ }) => Vec::new(),
+        DiagCode::PlanImportRewritten(PlanImportRewritten { verb: _, names }) => {
+            vec![ours("names", names.clone())]
+        }
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
             vec![ours("inner", inner.clone())]
         }
