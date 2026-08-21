@@ -251,10 +251,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Seams — watch and report, don't resolve
 
-- **seam-interproc** — same-file eligible calls SPLICE (per-call-site body clone;
-  all-or-nothing CALL license); cross-file `. /path` sourcing stays ⊤; the
-  ineligible population stays Opaque. Watch: does the worklist scale, or beg for
-  IFDS realizable-path summaries?
+- **seam-interproc** — same-file eligible calls SPLICE (per-call-site body clone);
+  body regions take REGION-level decisions through `plan::region`'s universal meet
+  (`plans/30L` — the old all-or-nothing CALL license is retired; the call stays its
+  own leaf and elides only derived, per `pin-whole-helper-derived-only`); cross-file
+  `. /path` sourcing stays ⊤; the ineligible population stays Opaque. Watch: does
+  the worklist scale, or beg for IFDS realizable-path summaries?
 - **seam-prov** — the dependency graph is this crate's dataflow output; the
   hand-built derivation-DAG vs growing taint is the strongest later case for a
   relational layer.

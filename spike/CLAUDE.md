@@ -467,7 +467,11 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
 - **inv-leaf-seam** — executable work is a list of individually wrappable leaves
   with a stable LeafId→AstId back-map; never one opaque `sh -c "$bigscript"`.
   (Under function inlining the map is non-injective AstId-ward; the Step-level map
-  stays injective; the CALL leaf is the render unit.)
+  stays injective.) Execution leaves and ELISION REGIONS are distinct identities
+  (`30L:rul-two-identities-never-conflated`): a `LeafId` is one execution, one
+  probe record, one `Step`; an `ElisionRegion` is one authored EDIT that many
+  executions share, rendered at the definition. `inv-site-keyed-results` is
+  unweakened — a region owns no leaf and mints none.
 - **toctou-scope** — IDENTIFIED-CAUSE re-verification is in (a guard re-verifies a
   fact whose invalidation has a named, in-book cause — hork-catching);
   UNATTRIBUTED-drift machinery is out (no freshness windows, no systematic

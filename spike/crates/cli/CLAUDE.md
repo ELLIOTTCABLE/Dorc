@@ -55,6 +55,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   resolves to current source only on exact snapshot-byte agreement and stays aid-only either way.
   Static incoherence renders its located diagnostic but returns before archive stdout, preserving
   the existing refusal/exit. No locator value may enter loading, planning, or authority.
+- **region-openers-are-demanded-not-defaulted** (`30N:rul-census-inputs-are-non-optional`) — the
+  elision-region census is handed `region::CensusOpeners`, whose constructor requires EVERY
+  opener signal the census cannot see for itself: `funcenv::unresolvable_loads`, the definition
+  vectors, and the string-execution sites. An opener the census does not see is a population
+  wrongly CLOSED, which is a wrong-elision one abstraction level up, so the shape is a required
+  constructor rather than a defaulted parameter and a driver acquiring a new signal must visit
+  that seat to drop it. Both drivers build it — the binary and `WhyWorld` — from the same frozen
+  inputs, for the reason `one-definition-table-two-drivers` gives.
 - **only-invocation-roots-are-ambient** (`30Mc:required-root-occurrence-identity`) — acquisition
   retains the explicit ordered pre-source ROOTS separately from the files it opens for their load
   programs. Only the roots reach `push_ambient`; a dependency is `SourceRole::LoadDependency`,

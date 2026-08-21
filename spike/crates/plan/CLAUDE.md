@@ -187,6 +187,18 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 
 ## Law — render
 
+- **no-specialized-shell** (`30L:rul-edit-authored-definition-once` ·
+  `pin-no-generated-specialization`) — a shared region's edit lands ONCE, at the authored
+  function-body span; definitions stay in place and calls stay calls. Never a per-call
+  specialized body, a cloned or renamed helper, or generated argument dispatch — there must
+  always be one authored line, by one human, answerable for anything that runs. A shared GUARD
+  therefore carries the region's SOURCE-level argv (`install -y "$1"`), never a site's resolved
+  operands: positionals re-bind per invocation inside sh, and a per-call literal installed into
+  shared source is a check about the wrong operand at every other invocation. Whole-helper
+  elision stays DERIVED: when every invocation is itself neutralised the body executes on no
+  route, so `Plan::live_regions` drops the edit and the inert definition keeps its authored
+  bytes — conservatively, since a capped route account cannot answer "every invocation".
+
 - **ap-2-runnable** — `render_apply` must emit runnable, `sh -n`-clean POSIX;
   acceptance executes or `-n`-checks the artifact, never text-diffs alone (the
   historical trap: a non-runnable empty `then`-clause shipped green, twice).
@@ -228,7 +240,23 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   universally quantified, semantic (never tag-level) equivalence, biased to Run. Nothing
   branches on route-set cardinality; an `Open` population runs without consulting a proof; and
   a proof list that does not correspond exactly to the census's population runs. The decisions
-  are computed and consumed by nothing until the settlement stage lands.
+  are consumed by `plan::settle`, which is where the shared license mints. Guard economics ride
+  the POPULATION, never one route: candidates drop before the meet unless some route measured
+  Converged (a guard whose check fails at every invocation is pure check-tax — `KNOBS:kPROBING`),
+  and a route's guard admission demands a DEFINITE verdict — Unknown refuses as the unsure
+  direction.
+- **shared-edit-before-erasure** (`plans/30L` §6) — a region's per-instance no-execution proofs
+  are minted at ONE seat (`settle::lower_shared_decision`'s `Replace` arm) and only after the
+  universal meet agreed. Nothing may mint one per instance ahead of that: the ledger is
+  grow-only and has no retraction, so a later Run meet would have to re-introduce a wall it had
+  already retired for a mutation the artifact still executes. The witness the license carries is
+  the exact ORDERED union of every contributing instance's establish
+  (`pin-shared-witness-spans-instances`); a per-call witness never substitutes, and
+  `AllEstablishesVouched::mint`'s identity/cardinality match is what makes that unspellable.
+  Region freshness reads a SELF-SUPPRESSED solve over the whole population — the sibling
+  instances of one region wall each other, and the region's own atomic replacement is what
+  removes them (`effect::self_reach_holds`'s argument, one level up) — and that second answer is
+  read only beside its OWN certification.
 - **wire-records** — probe results move to the `262` §2 records lane at
   block-rebuild (partial deriv-family ⇒ wall-total; additive keys).
 
