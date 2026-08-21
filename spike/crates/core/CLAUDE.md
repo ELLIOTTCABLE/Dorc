@@ -110,6 +110,14 @@ new entries to the matching section.
 
 ## Law — vocabulary discipline
 
+- **a-record-says-what-its-population-holds** (the `30Nd` meaning-audit) — the census proves
+  every Spine species PROJECTS; it does not prove a field means what its name says. A Spine
+  field's doc states the population its writer actually produces: universally-`None` columns
+  say "not recorded" and never "absent", filtered accounts say what they filtered, unminted
+  species say so AT THE TYPE, and a field that cannot carry its documented claim is narrowed
+  rather than left aspirational. A silent widening of a doc is the same defect as a silent
+  widening of a field.
+
 - **inv-referent-agnostic** — never decode a token's/kind's text for meaning;
   compare for co-reference, resolve for display only.
 - **inv-superposition-here** — `Grade`/`Verdict`/`Phase` stay phase-/orientation-

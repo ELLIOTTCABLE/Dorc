@@ -136,9 +136,12 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   `certifier_trip::project_censusless`, and `every_plan_producer_spends_its_certifier_trip`
   is the two-way lexical roster that makes a FIFTH producer a diff rather than a silent
   omission (four had already forgotten — `30Md:fnd-discarded-trip-retains-elisions`).
-  The reification moved the cleanup's RESULT into the decision plane, never the ACT of
-  calling it; dissolving that surface by type is
-  `30M:rec-dissolve-trip-must-remember-structurally`, unbuilt. On a tripped run,
+  The must-remember surface is DISSOLVED: `project_plan` demands a
+  `certifier_trip::TripSpent`, whose one mint is `spend_certifier_trip`, which cannot be
+  reached without a `CertifierTrip` in hand — so a producer that never spent its latch has
+  no projection to call. The lexical roster stays as belt-and-braces, because it binds a
+  different thing: a producer that builds a walled plan and hands the Spine somewhere else
+  never reaches the projection seat. On a tripped run,
   Replace and Omit demote to run (`DemoteTag::CertifierTripped`, a reason-enum arm,
   never a sibling code); guards STAND only on the syntactic occupancy-1 census over
   `DefinitionTable` — the census consults NO solve, and that independence IS its
@@ -187,6 +190,17 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
 
 ## Law — render
 
+- **the-render-decides-nothing** (the `30E` render-decision audit, closed by `30Nd`) — every
+  render-time answer is taken ONCE, at `Plan::decided`, from the settled dispositions: which
+  body a guard invokes, which licensed edits the span render refuses, which `Omit`s have a
+  neutralised controller, which regions are still live, and the whole-artifact
+  defensive-emission regime. `Plan::decided` is the only constructor and `render` is private,
+  so a plan whose render is undecided is unrepresentable; `render_apply` and the three
+  disclosure surfaces READ the plane and decide nothing. A choice stays render-side only when
+  neither `dorc why` nor a second artifact form could ever need to account for it — the
+  elided line's commented-original wrapping is the exemplar (one `Replace`, two byte-shapes,
+  same observables). `project_plan` records what it decided in the same act, so a projection
+  whose render decisions nothing wrote down cannot exist.
 - **no-specialized-shell** (`30L:rul-edit-authored-definition-once` ·
   `pin-no-generated-specialization`) — a shared region's edit lands ONCE, at the authored
   function-body span; definitions stay in place and calls stay calls. Never a per-call
