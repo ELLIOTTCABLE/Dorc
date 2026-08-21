@@ -217,6 +217,12 @@ green at 109 cases with this defect live. That gap is the finding worth more tha
 
 ## §7. `fnd-classed-decline-unwalls-guard-tier` — what actually costs the guards
 
+<!-- superseded 2026-08-21: REPAIRED by `28Q:stage-effective-world-reach` (work order
+`notes/30K`) — the late wall walks are deleted, one certified effective-reach settlement
+restores the guard tier below modeled running walls, and both `guard26-*` cases are
+promoted goldens. Standing as the finding's historical record only. -->
+
+
 Bisected on the merged r26 tip, holding the records fixed at all-`holds`. Two `cp`-shaped drops
 below one upstream site, varying only what the upstream site is:
 

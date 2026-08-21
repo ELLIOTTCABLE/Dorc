@@ -700,7 +700,7 @@ ordinary shell, exact custody alone grants vouch composition, and the two
 non-exact cases differ only in narrative. The landed narrowing machinery remains
 useful as an aid classifier; it no longer participates in plan control flow.
 
-### `dev-the-probe-artifact-still-ships-under-a-refusal` (OPEN)
+### `dev-the-probe-artifact-still-ships-under-a-refusal` (CLOSED 2026-08-21 — ratified as-built; `30N`)
 
 `30Ib` §11 said "refuse the way the intake does — `report_at(...)` then return BEFORE any artifact".
 As built, a round-trip still emits its read-only probe before the refusal returns. Two reasons:

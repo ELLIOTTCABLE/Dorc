@@ -120,17 +120,6 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner
   factors helpers (walls, never corruption). CAPTURE: the `HelperIndex` extension —
   staged as an emission-stage rider. REVISIT: that stage's fold.
-- **forfeit-guard-tier-classed-decline** — RULE (as-built; design resolved by
-  `30K:target-effective-reach-replaces-walks`): classing an honest decline, or
-  measuring a modeled mutator diverged, yields a strictly WORSE plan than shipping no
-  oracle because the late wall walks demote Replace directly to Run. FORFEITS: the
-  guard tier below every modeled running wall — punishing exactly the author who
-  described it honestly and contradicting USER_STORY's drifted-day plan. CAPTURE:
-  `notes/30K` replaces origin-Query/wall-walk split with certified effective-world
-  reach, promotes both `guard26-*` XFAILs, and deletes the walks; no narrow mint or
-  compatibility path. BACK-OUT: low before `30I` artifact forms and
-  `28Q:stage-iii-world-scopes`,
-  high after either accretes on the split. REVISIT: the `30K` implementation fold.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)
