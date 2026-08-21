@@ -58,6 +58,14 @@ proceeds) is REVERSED. Typed substance:
   where a directory cannot be created) — and put it on that stream.
 - FAIL-FAST when that is incoherent with other options or derived limitations: "if we
   can't do what we're pretty sure the user asked for coherently at all, we stop."
+- **FRAMING (typed, follow-up):** the piped `plan` output is a REVIEW SURFACE. A
+  non-interactive stdout means the user is piping the plan out to review it some OTHER
+  way — pipe-to-less/editor/GUI are the design-centric examples; pipe-to-ssh is never
+  recorded as supported, exemplary, or design-centric (unpreventable, but not designed
+  for). The design-centric flow when relying on pipes: plan → review surface, then
+  reviewed-and-tuned plan → piped back to `apply`. (This strengthens the full-bundle
+  requirement rather than relaxing it: the reviewed stream must be the true, complete
+  artifact — what you approved is exactly what executes.)
 
 Consequences (conductor derivation, veto-eligible where marked):
 

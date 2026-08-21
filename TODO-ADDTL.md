@@ -12,6 +12,15 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 *(The 2026-07-27 trio — ssh executor, live-acceptance gate, CRLF gate — is BUILT and folded on `ai/r26-unify`; Dorc has now run for real against a VPS and a container. What stands now:)*
 
+* [ ] **the render↔spine feedback shape (`30Ng:attn-render-refusal-feeds-the-spine`)** —
+  human-flagged 2026-08-21, unruled: render-refusal ("won't elide: required syntax") is a
+  mutative-difference-causing decision and must feed BACK into the decision spine; the
+  flagged lean is a second rerun-to-fixpoint stage keeping the spine pure (render may
+  refuse, never change — it mints new decisions and the cycle repeats). As-built is
+  partway (refusals are settlement inputs; `Plan::decided` takes render answers once).
+  Hard to unbake once artifact forms accrete on the current shape; needs a sitting with a
+  termination argument.
+
 * [ ] **post-kernel predict-contract arc (`30D` + `30J`)** — after the current kernel/loading
   push quiesces, replace `return 2`-as-predict-decline atomically with exact Status plus
   authored DREP channel speech, then implement predict-qualified family vocabulary. This
