@@ -59,7 +59,7 @@ fn snapshot_of(
         dorc_core::loadpath::Cwd::default(),
         paths.to_vec(),
         srcs.to_vec(),
-        &BTreeSet::new(),
+        &dorc_cli::snapshot::LoadPositions::roots_only(),
         book_path,
         book_src,
     )

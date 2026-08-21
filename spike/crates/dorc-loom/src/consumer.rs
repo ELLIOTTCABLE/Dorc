@@ -1341,7 +1341,8 @@ fn case_snapshot(
         cwd,
         paths,
         srcs,
-        &book_sourced,
+        // A case lists its sources; every one of them is named, so none is an acquired dependency.
+        &dorc_cli::snapshot::LoadPositions::book_sourced(book_sourced),
         book_path,
         book_src,
     )

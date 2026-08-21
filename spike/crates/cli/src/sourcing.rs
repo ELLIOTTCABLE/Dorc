@@ -221,8 +221,14 @@ mod tests {
             Some(at) => (paths.remove(at), srcs.remove(at)),
             None => ("book.sh".to_owned(), String::new()),
         };
-        let snapshot =
-            StaticLoadSnapshot::over(Cwd::at(cwd), paths, srcs, reached, &book_path, &book_src);
+        let snapshot = StaticLoadSnapshot::over(
+            Cwd::at(cwd),
+            paths,
+            srcs,
+            &crate::snapshot::LoadPositions::book_sourced(reached.clone()),
+            &book_path,
+            &book_src,
+        );
         let mut interner = dorc_core::Interner::default();
         let ast = dorc_syntax::parse(&book_src).value;
         let cfg = dorc_analysis::cfg::build(&ast).value;

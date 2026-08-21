@@ -15,10 +15,12 @@
 //!
 //! # The ambient split is a load-POSITION fact, not a provenance one
 //!
-//! Sources the invocation named — and whatever their own top-level `.` reaches — load before the
-//! book's first line, so their definitions are ambient. A source reached ONLY from a book `.`
-//! loads at that line and nowhere else: making it ambient would let it license sites ABOVE its own
-//! load point, which is exactly what `visibility-is-full-positional` forbids.
+//! Sources the invocation NAMED load before the book's first line, so their definitions are
+//! ambient. Everything else loads at the `.` that reaches it: a source reached only from a book
+//! `.` binds at that line, and one acquired because a named root sources it binds inside that
+//! root's own load program. Making either ambient would let it license sites ABOVE its own load
+//! point, and would REPLAY its program a second time after the authored one finished — which can
+//! restore a definition the author removed (`30Mc:required-root-occurrence-identity`).
 //!
 //! # Role is CARRIED, never derived from position
 //!
@@ -42,12 +44,16 @@ pub enum SourceRole {
     /// A root the invocation named as a book: admin-authored, chaotic, and the surface the plan
     /// renders. Its own `.` acts change visibility and mint no speaker (`30I` §2.3).
     Book,
-    /// A root the invocation named to LOAD — an oracle, and whatever its own top level sources.
-    /// Its definitions are ambient: they load before the book's first line.
+    /// A root the invocation named to LOAD — an oracle. Its definitions are ambient: they load
+    /// before the book's first line, as the `.` prelude a pre-source is.
     NamedLoad,
     /// A root reached only from a book `.`. It loads AT that line and nowhere else, so its
     /// definitions license nothing above their own load point.
     BookSourced,
+    /// A source acquired only because a NAMED root's own top level sources it. It loads at that
+    /// `.`, inside its sourcer's load program — never before line 1 and never again as a root of
+    /// its own.
+    LoadDependency,
 }
 
 impl SourceRole {
@@ -55,6 +61,54 @@ impl SourceRole {
     #[must_use]
     pub const fn is_ambient(self) -> bool {
         matches!(self, SourceRole::NamedLoad)
+    }
+}
+
+/// Which acquired sources do NOT load before the book's first line, and why — the classification
+/// [`StaticLoadSnapshot::over`] turns into [`SourceRole`]s.
+///
+/// One value rather than two `BTreeSet<usize>` parameters side by side, because those are
+/// swappable without a type error and the constructor must DEMAND both answers: a dependency
+/// silently defaulting to root is `30Mc:finding-transitive-pre-source-replays-as-root` itself.
+#[derive(Debug, Default, Clone)]
+pub struct LoadPositions {
+    book_sourced: std::collections::BTreeSet<usize>,
+    dependencies: std::collections::BTreeSet<usize>,
+}
+
+impl LoadPositions {
+    /// Every named source is a prelude root and nothing loads positionally.
+    #[must_use]
+    pub fn roots_only() -> Self {
+        Self::default()
+    }
+
+    /// The sources a book `.` reaches, transitively ([`book_reached`]).
+    #[must_use]
+    pub fn book_sourced(files: std::collections::BTreeSet<usize>) -> Self {
+        Self {
+            book_sourced: files,
+            dependencies: std::collections::BTreeSet::new(),
+        }
+    }
+
+    /// The sources acquired for a named root's own load program, never named themselves.
+    #[must_use]
+    pub fn with_dependencies(mut self, files: std::collections::BTreeSet<usize>) -> Self {
+        self.dependencies = files;
+        self
+    }
+
+    /// Book-sourced wins where a source is both: it is the more specific act, and the two agree on
+    /// the only question any consumer asks — neither is ambient.
+    fn role_of(&self, file: usize) -> SourceRole {
+        if self.book_sourced.contains(&file) {
+            SourceRole::BookSourced
+        } else if self.dependencies.contains(&file) {
+            SourceRole::LoadDependency
+        } else {
+            SourceRole::NamedLoad
+        }
     }
 }
 
@@ -80,8 +134,9 @@ pub struct StaticLoadSnapshot {
 }
 
 impl StaticLoadSnapshot {
-    /// Build over sources the edge already read, in load order. `book_sourced` names the ones a
-    /// book `.` reaches; the rest of the named roots load before the book's first line.
+    /// Build over sources the edge already read, in load order. `positions` names the ones that
+    /// load at a `.` rather than before the book's first line; the rest are the invocation's own
+    /// prelude roots.
     ///
     /// The book is APPENDED here, and that ordering is load-bearing for the `SourceFileId` space
     /// (`28K` §2a): every id already minted keeps its value, and the book joining the space moves
@@ -93,18 +148,12 @@ impl StaticLoadSnapshot {
         cwd: Cwd,
         oracle_paths: Vec<String>,
         oracle_srcs: Vec<String>,
-        book_sourced: &std::collections::BTreeSet<usize>,
+        positions: &LoadPositions,
         book_path: &str,
         book_src: &str,
     ) -> Self {
         let mut roles: Vec<SourceRole> = (0..oracle_paths.len())
-            .map(|file| {
-                if book_sourced.contains(&file) {
-                    SourceRole::BookSourced
-                } else {
-                    SourceRole::NamedLoad
-                }
-            })
+            .map(|file| positions.role_of(file))
             .collect();
         let mut paths = oracle_paths;
         let mut srcs = oracle_srcs;
@@ -321,14 +370,20 @@ pub fn book_reached(
 
 #[cfg(test)]
 mod tests {
-    use super::{Cwd, StaticLoadSnapshot, book_reached};
+    use super::{Cwd, LoadPositions, SourceRole, StaticLoadSnapshot, book_reached};
 
     fn snapshot(book_sourced: &[usize]) -> StaticLoadSnapshot {
+        positioned(LoadPositions::book_sourced(
+            book_sourced.iter().copied().collect(),
+        ))
+    }
+
+    fn positioned(positions: LoadPositions) -> StaticLoadSnapshot {
         StaticLoadSnapshot::over(
             Cwd::at("/ops"),
             vec!["pkg/entry.sh".to_owned(), "pkg/dep.sh".to_owned()],
             vec!["# entry\n".to_owned(), "# dep\n".to_owned()],
-            &book_sourced.iter().copied().collect(),
+            &positions,
             "book.sh",
             "# book\n",
         )
@@ -360,6 +415,18 @@ mod tests {
         assert!(!snap.is_ambient(snap.book_index()));
     }
 
+    /// A source acquired for a named root's load program is NOT a root: it binds where its
+    /// sourcer's `.` runs it, and a second, ambient run of its program would replay acts the
+    /// author already wrote — restoring, among other things, a definition the root `unset -f`'d
+    /// (`30Mc:required-root-occurrence-identity`).
+    #[test]
+    fn a_load_dependency_is_never_a_prelude_root() {
+        let snap = positioned(LoadPositions::roots_only().with_dependencies([1].into()));
+        assert!(snap.is_ambient(0), "the invocation named this one");
+        assert!(!snap.is_ambient(1));
+        assert_eq!(snap.role_of(1), Some(SourceRole::LoadDependency));
+    }
+
     /// Resolution is the shell's, against the snapshot's own cwd, and it matches canonically — so
     /// a relatively-named source and an absolutely-spelled `.` of it are ONE entry.
     #[test]
@@ -381,7 +448,7 @@ mod tests {
             Cwd::default(),
             vec!["same.sh".to_owned(), "./same.sh".to_owned()],
             vec!["first".to_owned(), "second".to_owned()],
-            &std::collections::BTreeSet::new(),
+            &LoadPositions::roots_only(),
             "book.sh",
             "",
         );

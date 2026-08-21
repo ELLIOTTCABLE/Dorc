@@ -754,9 +754,10 @@ pub fn definition_table(
                 )
             },
         );
-        // Only the invocation-named prefix and its own sourcing closure load "before line 1". A
-        // source reached ONLY from a book `.` binds AT that line, and making it ambient would let
-        // it license sites above its own load point (`visibility-is-full-positional`).
+        // Only the invocation-named prefix loads "before line 1". Everything else binds at the `.`
+        // that reaches it — a book's, or a named root's own, whose program the prefix run above
+        // already evaluates. Making one ambient would license sites above its load point
+        // (`visibility-is-full-positional`) AND replay its program (`30Mc:required-root-occurrence-identity`).
         if snapshot.is_ambient(idx) {
             table.push_ambient(path, ids);
         }
@@ -1273,7 +1274,7 @@ mod tests {
             dorc_core::loadpath::Cwd::default(),
             paths,
             oracles.iter().map(|s| (*s).to_owned()).collect(),
-            &std::collections::BTreeSet::new(),
+            &crate::snapshot::LoadPositions::roots_only(),
             "book.sh",
             BOOK,
         );

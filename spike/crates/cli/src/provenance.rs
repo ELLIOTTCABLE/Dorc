@@ -339,7 +339,14 @@ mod tests {
     fn world(book: &str, paths: Vec<String>, srcs: Vec<String>) -> World {
         let cwd = dorc_core::loadpath::Cwd::default();
         let reached = book_reached(&cwd, &paths, &srcs, book);
-        let snapshot = StaticLoadSnapshot::over(cwd, paths, srcs, &reached, "book.sh", book);
+        let snapshot = StaticLoadSnapshot::over(
+            cwd,
+            paths,
+            srcs,
+            &crate::snapshot::LoadPositions::book_sourced(reached),
+            "book.sh",
+            book,
+        );
         let mut interner = Interner::default();
         let ast = dorc_syntax::parse(book).value;
         let cfg = dorc_analysis::cfg::build(&ast).value;

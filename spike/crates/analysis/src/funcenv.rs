@@ -4038,6 +4038,35 @@ mod tests {
         );
     }
 
+    /// THE PRELUDE FLOOR (conductor default at `30Mg` R1; human veto invited): an unresolvable act
+    /// inside a prelude's load program floors the WHOLE prelude from that point — the later root's
+    /// declarations do not bind, and neither does anything the book defines afterwards.
+    ///
+    /// `rul-unsure-falls-toward-sh-parity` is the argument: sh ran that `.`, and what it did to the
+    /// environment is unknowable from there on, so ⊤ is the honest reading rather than a
+    /// per-subtree suspension that would let the next root's bindings license sites.
+    #[test]
+    fn an_unresolvable_prelude_load_floors_the_rest_of_the_prelude() {
+        let book = "yum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let later = add_def(&mut table, 1, ROLE);
+        table.set_loadable(
+            "./entry.sh",
+            LoadProgram::of(vec![LoadStep::Control(loads(LoadTarget::literal(
+                "./never-loaded.sh",
+            )))]),
+        );
+        table.set_loadable("./later.sh", flat(vec![later]));
+        table.push_ambient("./entry.sh", Vec::new());
+        table.push_ambient("./later.sh", vec![later]);
+        let (env, cfg, _) = solve_positional(book, &table);
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Top,
+            "a root sequenced AFTER the unresolvable act binds nothing"
+        );
+    }
+
     // ── TABLE 8: the ONE load account and its three projections
     //    (`30I:rul-one-load-account-separate-projections`) ──
 

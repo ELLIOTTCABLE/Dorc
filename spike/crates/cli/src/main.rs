@@ -369,11 +369,18 @@ fn resolve_pre_sources(
 /// command line AND sourced by an entrypoint is loaded once, under the spelling that reached it
 /// first. The loop re-scans what it appends, which is what makes it transitive; it terminates
 /// because a path already present is never appended again.
+///
+/// The third return is exactly what this appended — the sources acquired for somebody's load
+/// program rather than named by the invocation. They are LOADABLE, never ambient roots: the
+/// invocation's own roots reach them at their authored `.` positions, and a synthetic second run
+/// of their programs would restore definitions the author removed
+/// (`30Mc:required-root-occurrence-identity`).
 fn read_sourced_oracles(
     cwd: &dorc_core::loadpath::Cwd,
     mut paths: Vec<String>,
     mut srcs: Vec<String>,
-) -> (Vec<String>, Vec<String>) {
+) -> (Vec<String>, Vec<String>, BTreeSet<usize>) {
+    let named = paths.len();
     let mut cursor = 0;
     while let Some(src) = srcs.get(cursor).cloned() {
         cursor = cursor.saturating_add(1);
@@ -400,7 +407,8 @@ fn read_sourced_oracles(
             srcs.push(text);
         }
     }
-    (paths, srcs)
+    let acquired = (named..paths.len()).collect();
+    (paths, srcs, acquired)
 }
 
 /// Read the sources a BOOK `.`-sources, transitively (`30I:rul-books-load-but-do-not-speak`).
@@ -417,12 +425,18 @@ fn read_sourced_oracles(
 /// it always has. That is what keeps a book's own non-dorc-lang material — top-level `return`,
 /// caller-loop control, anything a dumb inliner would miscompile — where its author put it
 /// (`30I` §7.2).
+///
+/// `load_dependencies` rides through because each round SOLVES: an include guard whose condition
+/// reads the environment decides differently when a dependency is wrongly a root, and a guard that
+/// decides "already loaded" wants nothing — so a stale world here loses a file rather than merely
+/// over-reading one.
 fn read_book_sourced(
     cwd: &dorc_core::loadpath::Cwd,
     book_path: &str,
     book_src: &str,
     mut paths: Vec<String>,
     mut srcs: Vec<String>,
+    load_dependencies: &BTreeSet<usize>,
 ) -> (Vec<String>, Vec<String>, BTreeSet<usize>) {
     let ambient = paths.len();
     let book_ast = dorc_syntax::parse(book_src).value;
@@ -432,7 +446,8 @@ fn read_book_sourced(
             cwd.clone(),
             paths.clone(),
             srcs.clone(),
-            &(ambient..paths.len()).collect(),
+            &dorc_cli::snapshot::LoadPositions::book_sourced((ambient..paths.len()).collect())
+                .with_dependencies(load_dependencies.clone()),
             book_path,
             book_src,
         );
@@ -859,7 +874,8 @@ fn run(
     // the definition table, the helper index, the whylog's record of what was loaded, and the why
     // driver reading that record back — consumes these two vectors, so widening them here widens
     // all of them at once and cannot leave two drivers looking at different worlds.
-    let (oracle_paths, oracle_srcs) = read_sourced_oracles(cwd, oracle_paths, oracle_srcs);
+    let (oracle_paths, oracle_srcs, load_dependencies) =
+        read_sourced_oracles(cwd, oracle_paths, oracle_srcs);
 
     // Acquired HERE, above the lifts, because `28K` §2a's in-book lift makes the book a definition
     // source like any other — and it sorts LAST, which is also its ambient-load position.
@@ -875,13 +891,20 @@ fn run(
     // THE SNAPSHOT (`30I` §3.1): the acquisition finishes here and nothing below re-reads a path.
     // What a book `.`-sources joins the loaded set exactly as what an oracle sources does, but
     // NOT ambiently — it binds at its own line.
-    let (oracle_paths, oracle_srcs, book_sourced) =
-        read_book_sourced(cwd, book_name, &book_src, oracle_paths, oracle_srcs);
+    let (oracle_paths, oracle_srcs, book_sourced) = read_book_sourced(
+        cwd,
+        book_name,
+        &book_src,
+        oracle_paths,
+        oracle_srcs,
+        &load_dependencies,
+    );
     let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
         cwd.clone(),
         oracle_paths,
         oracle_srcs,
-        &book_sourced,
+        &dorc_cli::snapshot::LoadPositions::book_sourced(book_sourced)
+            .with_dependencies(load_dependencies),
         book_name,
         &book_src,
     );
@@ -3712,6 +3735,7 @@ mod fixpoint_freezes_the_environment_tests {
 
 #[cfg(test)]
 mod acquisition_tests {
+    use dorc_core::LiveDefinition;
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
@@ -3783,8 +3807,14 @@ mod acquisition_tests {
             ],
         );
         let book = "OPS_LIB=.\n. \"$OPS_LIB/entry.dorc.sh\"\nstep first\n";
-        let (paths, srcs, reached) =
-            super::read_book_sourced(&package.cwd(), "book.sh", book, Vec::new(), Vec::new());
+        let (paths, srcs, reached) = super::read_book_sourced(
+            &package.cwd(),
+            "book.sh",
+            book,
+            Vec::new(),
+            Vec::new(),
+            &BTreeSet::new(),
+        );
 
         assert_eq!(
             names(&paths),
@@ -3816,6 +3846,7 @@ mod acquisition_tests {
             ". ./child.sh\n",
             Vec::new(),
             Vec::new(),
+            &BTreeSet::new(),
         );
         assert!(paths.is_empty() && reached.is_empty());
     }
@@ -3837,35 +3868,36 @@ mod acquisition_tests {
             "sm_q\n",
             vec![named],
             vec![format!("{MARKER}sm_q() {{ :; }}\n")],
+            &BTreeSet::new(),
         );
         assert_eq!(paths.len(), 1);
         assert!(reached.is_empty(), "named on the command line ⇒ ambient");
     }
 
-    #[test]
-    #[ignore = "round-30 review demonstration: acquired dependencies replay as ambient roots"]
-    fn a_pre_source_dependency_runs_only_at_its_authored_dot() {
-        let role = "wombat__is_converged";
-        let entry = format!("{MARKER}. ./verdict.dorc.sh\nunset -f {role}\n");
-        let verdict = format!("{MARKER}{role}() {{ :; }}\n");
-        let package = Package::new(
-            "pre-source-replay",
-            &[
-                ("entry.dorc.sh", entry.clone()),
-                ("verdict.dorc.sh", verdict),
-            ],
-        );
+    /// The whole acquisition, from one named pre-source to the environment a book site reads, so
+    /// the answer is the run's own rather than a hand-built cousin of it.
+    fn live_at_exit(files: &[(&str, String)], named: &str, role: &str) -> LiveDefinition {
+        let package = Package::new("pre-source-roots", files);
         let cwd = package.cwd();
-        let entry_path = package
-            .root
-            .join("entry.dorc.sh")
-            .to_string_lossy()
-            .into_owned();
-        let (paths, srcs) = super::read_sourced_oracles(&cwd, vec![entry_path], vec![entry]);
+        let named_path = package.root.join(named).to_string_lossy().into_owned();
+        let named_src = files
+            .iter()
+            .find(|(name, _)| *name == named)
+            .map(|(_, src)| src.clone())
+            .expect("the named root is one of the files");
+        let (paths, srcs, dependencies) =
+            super::read_sourced_oracles(&cwd, vec![named_path], vec![named_src]);
         let book = "wombat sync a.conf\n";
-        let (paths, srcs, reached) = super::read_book_sourced(&cwd, "book.sh", book, paths, srcs);
+        let (paths, srcs, reached) =
+            super::read_book_sourced(&cwd, "book.sh", book, paths, srcs, &dependencies);
         let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
-            cwd, paths, srcs, &reached, "book.sh", book,
+            cwd,
+            paths,
+            srcs,
+            &dorc_cli::snapshot::LoadPositions::book_sourced(reached)
+                .with_dependencies(dependencies),
+            "book.sh",
+            book,
         );
         let ast = dorc_syntax::parse(book).value;
         let cfg = dorc_analysis::cfg::build(&ast).value;
@@ -3874,12 +3906,59 @@ mod acquisition_tests {
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
         let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
-        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
-        let exit = cfg.exit();
+        dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions)
+            .definition_before(cfg.exit(), role)
+    }
 
+    /// THE REPLAY. A pre-source's dependency runs where its author `.`'d it and NOWHERE else, so
+    /// the `unset -f` after that `.` is the last word — as it is in sh. Promoted to a root, the
+    /// dependency's program ran a second time after the authored one finished and RESTORED the
+    /// verdict function, minting vouch authority no live judgment stands behind
+    /// (`30Mc:finding-transitive-pre-source-replays-as-root`).
+    #[test]
+    fn a_pre_source_dependency_runs_only_at_its_authored_dot() {
+        let role = "wombat__is_converged";
         assert_eq!(
-            live.definition_before(exit, role),
-            dorc_core::LiveDefinition::Withheld
+            live_at_exit(
+                &[
+                    (
+                        "entry.dorc.sh",
+                        format!("{MARKER}. ./verdict.dorc.sh\nunset -f {role}\n")
+                    ),
+                    ("verdict.dorc.sh", format!("{MARKER}{role}() {{ :; }}\n")),
+                ],
+                "entry.dorc.sh",
+                role,
+            ),
+            LiveDefinition::Withheld
+        );
+    }
+
+    /// THE REVERSE CELL, and the reason the repair is a positional fix rather than a suppression:
+    /// a definition the root makes AFTER its `.` still wins, because the dependency ran first and
+    /// the root's own later act is the later one. Were the dependency replayed as a root it would
+    /// run LAST and shadow this.
+    #[test]
+    fn a_definition_after_a_sourced_dependency_stays_positionally_later() {
+        let role = "wombat__is_converged";
+        let live = live_at_exit(
+            &[
+                (
+                    "entry.dorc.sh",
+                    format!("{MARKER}. ./verdict.dorc.sh\n{role}() {{ :; }}\n"),
+                ),
+                ("verdict.dorc.sh", format!("{MARKER}{role}() {{ :; }}\n")),
+            ],
+            "entry.dorc.sh",
+            role,
+        );
+        let LiveDefinition::Live(id) = live else {
+            panic!("the root's own definition is live at exit, not {live:?}");
+        };
+        assert_eq!(
+            id.file(),
+            dorc_core::SourceFileId(0),
+            "file 0 is the named root; file 1 is the dependency it sourced first"
         );
     }
 }
@@ -3897,7 +3976,7 @@ mod snapshot_id_space_tests {
             dorc_core::loadpath::Cwd::default(),
             vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
             vec!["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
-            &std::collections::BTreeSet::new(),
+            &dorc_cli::snapshot::LoadPositions::roots_only(),
             "webhost.sh",
             "# book\n",
         );

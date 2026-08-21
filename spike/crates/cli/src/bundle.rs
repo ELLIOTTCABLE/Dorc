@@ -496,7 +496,14 @@ mod tests {
     fn projection(book: &str, paths: Vec<String>, srcs: Vec<String>) -> BundleProjection {
         let cwd = Cwd::default();
         let reached = book_reached(&cwd, &paths, &srcs, book);
-        let snapshot = StaticLoadSnapshot::over(cwd, paths, srcs, &reached, "book.sh", book);
+        let snapshot = StaticLoadSnapshot::over(
+            cwd,
+            paths,
+            srcs,
+            &crate::snapshot::LoadPositions::book_sourced(reached),
+            "book.sh",
+            book,
+        );
         let ast = dorc_syntax::parse(book).value;
         let cfg = dorc_analysis::cfg::build(&ast).value;
         let mut interner = dorc_core::Interner::default();
