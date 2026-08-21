@@ -1,0 +1,8 @@
+dot mark=dotted
+dot-child
+inline mark=inlined
+inline-child
+dot caught
+dot continued
+inline caught
+inline continued
