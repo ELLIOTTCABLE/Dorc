@@ -658,6 +658,21 @@ impl<'a> Prep<'a> {
             // clobbered variable name. `-r` is read's one POSIX flag (value-irrelevant);
             // any OTHER flag or a dynamic operand ⇒ which var mutated is unknowable ⇒
             // havoc-all (sound, imprecise).
+            //
+            // `unset -f` is the one exception, and it is the BUILTIN'S SPECIFICATION rather than a
+            // heuristic: `-f` says the operands name FUNCTIONS, so this transfer touches no
+            // variable. Only a LEADING `-f` counts, because both floor shells stop option parsing
+            // at the first non-option word, so `unset x -f` really does name a variable called
+            // `-f` and must keep the conservative reading. A dynamic operand is refused one tier
+            // up either way (`syntax-unsupported-unset-dynamic-lvalue`), so nothing here widens it.
+            "unset"
+                if operands
+                    .first()
+                    .and_then(|&w| literal_text(self.ast, w))
+                    .is_some_and(|t| t == "-f") =>
+            {
+                return Some(env);
+            }
             "unset" | "read" => {
                 for &w in operands {
                     match literal_text(self.ast, w) {
@@ -2583,6 +2598,42 @@ mod tests {
             argv_of("a=1\nb=2\nunset -v a\ncmd \"$b\"", "cmd"),
             vec![lit("cmd"), Word::Top],
             "a flagged unset havocs all tracked vars (cannot prove which died)"
+        );
+    }
+
+    #[test]
+    fn unset_f_removes_a_function_and_touches_no_variable() {
+        // `-f` names FUNCTIONS, so the variable plane is untouched however the names are spelled.
+        // The over-approximation this replaces was measured, not hypothetical: it took the whole
+        // variable environment to ⊤, which cost the `.` operand below its resolution — and a `.`
+        // whose operand is ⊤ resolves to no file, so the package it names is never loaded at all
+        // (`30I` specimen 2's regional `unset -f` sits directly above such a load).
+        assert_eq!(
+            argv_of("root=/opt\nunset -f helper\ncmd \"$root\"", "cmd"),
+            vec![lit("cmd"), lit("/opt")],
+            "removing a function leaves every variable binding standing"
+        );
+        // A DYNAMIC operand stays ⊤ here, and not through this transfer at all: a dynamic lvalue
+        // operand to `unset` is refused one tier up, at syntax
+        // (`syntax-unsupported-unset-dynamic-lvalue`), and an unsupported region havocs whatever it
+        // encloses. `-f` narrows what this transfer models; it does not reach that refusal, and
+        // widening it there would be a syntax-tier decision rather than a builtin's spelling.
+        assert_eq!(
+            argv_of("root=/opt\nunset -f \"$which\"\ncmd \"$root\"", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "the syntax tier's dynamic-lvalue refusal still governs, `-f` or not"
+        );
+        // Both floor shells stop option parsing at the first non-option word, so a trailing `-f`
+        // is an ordinary variable NAME and the conservative reading has to survive there.
+        assert_eq!(
+            argv_of("root=/opt\nunset root -f\ncmd \"$root\"", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "`unset root -f` unsets the variable `root`; `-f` there is a name, not an option"
+        );
+        assert_eq!(
+            argv_of("a=1\nb=2\nunset -v -f a\ncmd \"$b\"", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "a leading flag that is not exactly `-f` keeps the havoc — we model one form, exactly"
         );
     }
 
