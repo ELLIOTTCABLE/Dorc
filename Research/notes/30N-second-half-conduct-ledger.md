@@ -381,8 +381,9 @@ not all conductor-re-read (marked):
     that cell should probably produce BOTH (tree to the directory, complete
     stream to stdout) rather than refuse — each channel's constant meaning is
     satisfied, the two outputs are one plan in two layouts rather than competing
-    claimants, and refusing serves no principle while biting ordinary CI. Left
-    as-built pending the human (one edge value either way).
+    claimants, and refusing serves no principle while biting ordinary CI. NACKED
+    by the human 2026-08-21: the refusal stands as built ("machinery's settled,
+    changeable later; I doubt it").
   - `adj-endorse-region-routes-carve` — ENDORSED (`dev-region-routes-uncapped`):
     directive-backed, transitory species, census-bounded; encoded in
     `core/CLAUDE.md`.

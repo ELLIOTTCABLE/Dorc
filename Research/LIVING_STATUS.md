@@ -85,8 +85,8 @@ contributor account is complete; `artifact-set: published` makes loom cases obse
 their published tree; a fourth form (`mirrored-tree`) keeps the no-flatten extreme
 reachable. OPEN from it: the single-stream FRONT-LIFT of bundles (a licence surface —
 joined to the render-feedback item in `TODO-ADDTL`) · the CI-shape bite of the
-conductor-derived refusal cell (`--artifact-dir` + piped stdout; conductor now leans
-BOTH-outputs, human's call) · book-code load acquisition · the kept-stream e2e lane ·
+conductor-derived refusal cell (`--artifact-dir` + piped stdout; the conductor's
+BOTH-outputs lean was NACKED by the human 2026-08-21 — the refusal stands as built) · book-code load acquisition · the kept-stream e2e lane ·
 `WhyWorld` not carrying import edits. Still open besides: the human queue (`30N`'s
 open-items / the burndown) · the loop-propagation lane (parallel-eligible) · the
 guarded-source implementation pin (`p-x-sentinel-value-conjunct`; design closed by

@@ -19,12 +19,9 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
   refuse, never change — it mints new decisions and the cycle repeats). As-built is
   partway (refusals are settlement inputs; `Plan::decided` takes render answers once).
   Hard to unbake once artifact forms accrete on the current shape; needs a sitting with a
-  termination argument. The FIRST CONSUMER is already waiting: front-lifting oracle bundles
-  ahead of the book in the single-stream plan (the human's two-section review-surface
-  layout, `30Ng` §6) is an emission decision that changes which definition is live at the
-  book lines it moves past — a licence surface, not a layout one — so it needs either a
-  closed enumeration (the `rul-happy-path-is-a-closed-set` shape) or the settlement
-  modelling the lifted position (`30Nh:tc-bundle-lift-needs-the-spine`).
+  termination argument. (The bundle front-lift is NOT a consumer of this: lifted only under
+  a proven closed set, it changes no resolution and needs no settlement re-modelling —
+  human-directed 2026-08-21, its own lane.)
 
 * [ ] **post-kernel predict-contract arc (`30D` + `30J`)** — after the current kernel/loading
   push quiesces, replace `return 2`-as-predict-decline atomically with exact Status plus
