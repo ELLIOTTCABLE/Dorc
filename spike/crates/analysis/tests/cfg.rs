@@ -23,7 +23,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use dorc_aid::Severity;
 use dorc_aid::diag::{CfgInlineRefusedReason, UnmodeledWriteRedirect};
-use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, build};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, ExecutionOwner, build};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
 use dorc_core::Channel;
@@ -1194,6 +1194,43 @@ fn consumed_errexit_marks_relaxable_status_c3() {
     assert!(
         !c.contains(&Channel::StatusIterated),
         "errexit is not a loop condition ⇒ never StatusIterated"
+    );
+}
+
+#[test]
+fn consumed_errexit_inside_a_spliced_body_matches_top_level() {
+    // `30L:pin-errexit-rides-status-law` + `ctx-errexit-is-authored-speech`: there is no separate
+    // errexit path in EITHER direction — no optimistic exemption inside a function body, and no
+    // special block beyond ordinary status consumption. So the mark a command carries inside a
+    // spliced body under `set -e` is the mark it carries at top level, and `|| true` releases it
+    // in the body exactly as it does outside one. Descent raises the wrapped book's ceiling to
+    // match top level; it exempts nobody from errexit's speech.
+    // The SPLICED copy, never the funcdef's own detached lowering — which `is_spliced_internal`
+    // ALSO flags, both meaning only "not a plan leaf". The discriminator is execution ownership: a
+    // spliced instance is governed by the CALL, a detached body command by itself. Only the
+    // spliced one is an execution, and the detached island's vacuous state is exactly what must
+    // never be read (`analysis/CLAUDE.md vacuous-entry-fold`).
+    let spliced_consumption = |src: &str| {
+        let cfg = cfg_of(src);
+        let node = require(
+            command_nodes_with_literal(&cfg, src, "apt-get")
+                .into_iter()
+                .find(|&id| matches!(cfg.execution_owner(id), ExecutionOwner::Leaf(call) if call != id)),
+            "the call splices the body",
+        );
+        cfg.consumed_observables(node).clone()
+    };
+    let top = consumed_of("set -e\napt-get install -y nginx\n", "apt-get");
+    let body = spliced_consumption("set -e\ntask() { apt-get install -y nginx; }\ntask\n");
+    assert_eq!(
+        top, body,
+        "an errexit-consumed status is the same fact inside a body as outside one"
+    );
+    let released =
+        spliced_consumption("set -e\ntask() { apt-get install -y nginx || true; }\ntask\n");
+    assert!(
+        released.contains(&Channel::StatusInvariant),
+        "the authored per-line consent reads the same inside a body: {released:?}"
     );
 }
 

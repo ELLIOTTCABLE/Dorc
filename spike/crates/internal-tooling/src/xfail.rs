@@ -224,6 +224,35 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
+        name: "p-x-loop-population-closes-over-literal-members",
+        trigger: "the LOOP-PROPAGATION lane (`30L` §7): a literal `for` list propagated into a \
+                  closed, ordered, non-deduplicated member population, so a syntactically singular \
+                  in-loop call censuses as one route per member. `30L` stages the representation \
+                  (the iteration axis exists and re-keys nothing) and defers the value-plane work \
+                  that fills it",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r30",
+            why: "the propagation lane is wanted soon but unscheduled; the round boundary is where \
+                  the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-divergent-routes-share-one-parametric-guard",
+        trigger: "`30L` §4.5's divergent-instances valve, which needs two things this stage does \
+                  not build: a route whose facts DIVERGED must be able to admit a guard at all \
+                  (today the guard tier is freshness-driven, so a diverged-but-vouched site \
+                  concludes Run), and the guard's argv must be the SOURCE-level expression rather \
+                  than each site's resolved operands — both land with the `30L` stage-4/5 \
+                  settlement-and-render lane",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r30",
+            why: "the stage-4/5 lane is the named greening trigger but is not itself scheduled; \
+                  the round boundary is where the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-blessed-toplevel-conditional",
         trigger: "the oracle-side blessing of read-only top-level commands \
                   (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \

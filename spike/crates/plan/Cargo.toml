@@ -60,5 +60,9 @@ path = "tests/render_corpus.rs"
 name = "sparing_differential"
 path = "tests/sparing_differential.rs"
 
+[[test]]
+name = "region"
+path = "tests/region.rs"
+
 [lints]
 workspace = true
