@@ -1798,10 +1798,7 @@ fn run(
         },
         None => dorc_plan::WallPolicy::Honest,
     };
-    // THE ELISION-REGION CENSUS (`plans/30L` §3), frozen with everything else here. The universe
-    // admits exactly the loaded files that are NOT dorc-lang: a dorc-lang file is contracted
-    // non-mutative, so its interior is not attention product and receives no elision work at any
-    // tier — an EXCLUSION, not a deferral (`30L:rul-region-universe-is-book-custody`).
+    // Book custody only: a dorc-lang interior is EXCLUDED, never deferred.
     let region_universe = dorc_core::region::RegionUniverse::of_book_custody_files(
         source_refs
             .iter()
@@ -1809,10 +1806,8 @@ fn run(
             .filter(|(_, src)| !dorc_oracle::marker::has_marker(src))
             .map(|(index, _)| dorc_analysis::funcenv::source_file_of_index(index)),
     );
-    // The opener signals the census cannot see for itself, all of them, through one constructor that
-    // demands each (`30N:rul-census-inputs-are-non-optional`). Two are the very signals defensive
-    // emission already reads below — a name-rebinding vector and an unresolvable load — because both
-    // questions are "can something outside the enumerated set change what this name means".
+    // Every opener the census cannot see for itself, through one constructor that demands each.
+    // Two are defensive emission's own signals below — the same question, one layer out.
     let string_execution = dorc_plan::region::StringExecutionSites::of_unit(&parsed.value);
     let definition_vectors = dorc_oracle::closure::definition_vectors(&source_refs);
     let regions = dorc_plan::region::census(
@@ -3333,13 +3328,6 @@ fn emit_debug_argv(
     // verdict body runs (`guardcmd dpkg-query`). The widened dual-rail judge allowlists these as
     // legitimate apply-only lines (the guard's live check runs at apply, absent from the bare
     // book) — never an unrelated one (cf-5). Deterministic (`BTreeSet`, `inv-determinism`).
-    // THE SECOND RAIL. A command inside a spliced function body owns no plan leaf, so the `argv`
-    // rail above cannot speak for it — yet its mutation IS licensed, by one of two different things:
-    // the enclosing CALL's aggregate license, or its own authored region's shared decision
-    // (`plans/30L` §5/§8). One line per body SITE rather than per region, carrying that instance's
-    // OWN resolved argv, because one authored region serves many operands and a single line could
-    // only name one of them. The leading field is the governing call's leaf, which is the identity a
-    // reader has to hand.
     let region_verb: BTreeMap<dorc_core::AstId, &str> = plan
         .regions
         .iter()
@@ -3354,8 +3342,7 @@ fn emit_debug_argv(
         };
         let call_verb = disposition_tag(&step.disposition);
         for &site in sites {
-            // A replaced or omitted CALL licenses its whole body at once; otherwise the body site
-            // answers to its own region, and to nothing if the census minted none.
+            // A replaced/omitted CALL licenses its whole body; otherwise the region answers.
             let verb = if matches!(call_verb, "replace" | "omit") {
                 call_verb
             } else {

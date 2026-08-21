@@ -419,9 +419,7 @@ impl WhyWorld {
             },
             _ => dorc_plan::WallPolicy::Honest,
         };
-        // The SAME census the run built, from the same frozen inputs — a why report answering from a
-        // different region population than the run would be a decoration, which is the failure
-        // `one-definition-table-two-drivers` exists to prevent.
+        // The SAME census the run builds (`one-definition-table-two-drivers`).
         let region_universe = dorc_core::region::RegionUniverse::of_book_custody_files(
             source_refs
                 .iter()

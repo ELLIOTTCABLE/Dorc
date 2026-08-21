@@ -284,11 +284,8 @@ pub fn effective_invalidators(
     invalidators
         .iter()
         .copied()
-        // TWO ways out of the effective world, and they are different claims: the render unit that
-        // GOVERNS this mutation disappeared, or the mutation was proven at its OWN node — which is
-        // what a shared elision region establishes (`plans/30L` §6). The authored bytes every
-        // instance would have run are replaced once at the definition, so each instance's mutation
-        // retires while the CALL that governs it still runs. Neither substitutes for the other.
+        // TWO ways out, different claims: the GOVERNING render unit disappeared, or the mutation
+        // was proven at its OWN node — a shared region edit (`30L` §6). Neither implies the other.
         .filter(|&node| {
             !ledger.proves_no_execution(node)
                 && match cfg.execution_owner(node) {

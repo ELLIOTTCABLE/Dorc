@@ -3948,9 +3948,7 @@ pub fn build_plan_walled(
         observe,
         trip,
     };
-    // No region census: this entry analyses one book without the driver's loaded-source set, so it
-    // holds no opener signals and no book-custody universe. An EMPTY census decides no region, which
-    // is why every censusless driver's output is exactly what it was before regions existed.
+    // No loaded-source set here, so no openers and no universe. An EMPTY census decides no region.
     let regions = region::RegionCensus::default();
     let inputs = SettleInputs {
         src,
@@ -5143,11 +5141,7 @@ impl Plan {
         };
 
         let mut edits: Vec<SpanEdit> = Vec::new();
-        // A region's edit lands ONCE, at the authored definition, and calls stay calls
-        // (`30L:rul-edit-authored-definition-once`). The spans are disjoint from every leaf's by
-        // construction — a leaf is a top-level execution and a region is inside a body — so the two
-        // edit sources compose without an ordering rule, and `normalise_edits` still holds the
-        // overlap invariant if that ever stops being true.
+        // A region's edit lands ONCE, at the authored definition; calls stay calls.
         for step in self.steps.iter().map(RenderedEdit::of_step).chain(
             self.live_regions(ast)
                 .into_iter()
@@ -9402,7 +9396,6 @@ apt_get__is_converged() {
             selector,
             context: dorc_core::Context::HostDefault,
         };
-        // ONE authored region, TWO instances: `install_pkg nginx` and `install_pkg curl`.
         let (nginx, curl) = (cell(i.intern("nginx")), cell(i.intern("curl")));
         let (first, second) = (CfgNodeId(11), CfgNodeId(12));
         let population = AggregateEstablishes::mint(vec![

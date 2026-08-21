@@ -1875,9 +1875,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                 None,
             ),
         };
-        // `30L` §9, the CALL-ward direction: this invocation executes the shared edits its body
-        // holds, and a reader asking about the call would otherwise see a bare `run` with the real
-        // decisions invisible one indent in.
+        // `30L` §9, CALL-ward: this invocation executes the shared edits its body holds.
         let mut reasons = reasons;
         let executed = region_lines_executed_by(plan, ast, book_src, step.ast);
         if !executed.is_empty() {
@@ -1898,11 +1896,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
             improvement,
         });
     }
-    // `30L` §9, the DEFINITION-ward direction: one row per authored region, at its own line, marked
-    // universal over the invocations that licensed it. The region is a real, addressable decision —
-    // `dorc why book.sh:<the body line>` has to answer for the edit a reader can SEE there — and it
-    // is a different identity from every leaf, so it is a site of its own rather than a note on one
-    // (`30L:rul-two-identities-never-conflated`).
+    // `30L` §9, DEFINITION-ward: an addressable decision of its own, never a note on a leaf.
     for region in &plan.regions {
         let span = ast.node(region.ast).span;
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);

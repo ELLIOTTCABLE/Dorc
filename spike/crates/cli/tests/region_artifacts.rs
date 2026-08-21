@@ -44,8 +44,6 @@ fn region_artifacts() -> Vec<(String, String)> {
                 .into_owned();
             let out = std::fs::read_to_string(dir.join("expected.out"))
                 .unwrap_or_else(|_| panic!("{name} has a committed transcript"));
-            // The transcript is probe-then-apply, split on the second shebang; the APPLY half is
-            // what ships to a host and the only half these pins are about.
             let apply = out
                 .rfind("#!/bin/sh")
                 .map_or_else(String::new, |at| out[at..].to_owned());
@@ -78,9 +76,6 @@ fn no_region_artifact_carries_a_cloned_or_renamed_helper() {
             "{name}: a name is defined twice in one artifact — a per-call clone is the shape this \
              forbids:\n{apply}"
         );
-        // A hash-munged emission is legal where a unit holds two DISTINCT bodies under one name
-        // (`rul-hash-munge-disambiguation`), and none of these cases does. Its presence here would
-        // mean the region lane started minting bodies of its own.
         assert!(
             !headers.iter().any(|header| header.contains("_h")),
             "{name}: a munged emission means two bodies under one name, which no region case \
@@ -157,8 +152,7 @@ fn a_why_report_walks_from_a_region_to_its_invocations_and_back() {
         "book.sh",
         &book,
     );
-    // The UNMEASURED world is enough: every region runs, and a running region is exactly the one a
-    // reader most needs the report to explain (`rul-attention-honesty`).
+    // The UNMEASURED world is enough: a running region is the one a reader most needs explained.
     let world = dorc_cli::world::WhyWorld::analyze(&snapshot);
     let framing = dorc_plan::records::Framing::spike(dorc_plan::invocation::book_digest(&book));
     let receipt = dorc_cli::Receipt {
@@ -177,12 +171,9 @@ fn a_why_report_walks_from_a_region_to_its_invocations_and_back() {
     let ctx = dorc_aid::RenderCtx::production();
     let line_of = |needle: &str| {
         let at = book.find(needle).expect("the fixture carries this line");
-        // Lines are 1-based, and the prefix holds every COMPLETED line before this one.
         format!("book.sh:{}", book[..at].lines().count() + 1)
     };
-    // ADDRESSED, not the aggregate: both rows are ordinary quiet decisions, and the aggregate
-    // curates toward surprises and improvements (`AID-NEEDS:law-selection-is-goal-derived`). What
-    // a reader does is ask about the line they are looking at, and both lines must answer.
+    // ADDRESSED: both rows are quiet, and the aggregate curates toward surprises.
     let asked = |address: String| {
         dorc_cli::why::why_report_parts(&ctx, &world.report(Some(&address), &receipt)).text()
     };

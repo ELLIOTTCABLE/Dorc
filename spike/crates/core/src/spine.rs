@@ -242,10 +242,7 @@ impl SpineSpecies {
             | Self::ValidityRound
             | Self::Survival
             | Self::RenderDecision
-            // In-memory, and the arm is the whole answer: a region decision names an authored span,
-            // a shared license, and route attribution, and putting any of that on operator disk
-            // would be entering the durable arm — the tripwire
-            // (`rul-durable-contents-reviewed-before-design`), not a field addition.
+            // Putting any of a region decision on operator disk ENTERS the durable arm.
             | Self::RegionDecision
             | Self::Outcome => CensusArm::New,
         }

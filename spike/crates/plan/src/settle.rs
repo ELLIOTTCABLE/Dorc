@@ -347,11 +347,7 @@ pub fn settle_effective_world(
     let mut ledger = NoExecutionLedger::new();
     let mut number = 1u32;
     let mut origin_validity: Option<BTreeMap<LeafId, bool>> = None;
-    // `30L:req-backings-freeze-at-probe-boundary` (`30Kb:required-backing-is-frozen-beside-policy`)
-    // — a fact's survival BACKING is a probe/model input, so it freezes WITH them and every round
-    // consumes the same account. Re-derived per round it would drift as the ledger erases, and the
-    // policy beside it is frozen: an authority that moves under a settlement is one the settlement
-    // is deciding while it decides what to trust it for.
+    // `30L:req-backings-freeze-at-probe-boundary` — every round consumes ONE backing account.
     let mut origin_backings: Option<BTreeMap<FactKey, FactBacking>> = None;
     let mut failures = 0u32;
     loop {
@@ -460,8 +456,7 @@ fn one_round(
         .map(|(leaf, node, _)| (*node, *leaf))
         .collect();
 
-    // The frozen backing account (`req-backings-freeze-at-probe-boundary`); round 1 IS the origin,
-    // so it supplies its own.
+    // Round 1 IS the origin, so it supplies its own frozen backings.
     let backings = frozen_backings.unwrap_or(&classification.fact_backings);
     // The one fact. Everything below reads it and nothing re-derives a second answer.
     let effective = effective_invalidators(cfg, &classification.invalidators, ledger);
@@ -586,13 +581,7 @@ fn one_round(
         // nothing consumes the record yet (`289:seam-narrative-render-unconsumed`), so widening it
         // to the honest path buys no account and costs every why-transcript an `[unnarrated: …]`
         // line. It widens with its consumer, not ahead of one.
-        // `30L:req-wall-narrative-gains-region-operand` — the OPERAND, and nothing else. The wall
-        // this record narrates stands at the act's own node, and where that node is a spliced body
-        // instance rather than a plan leaf, the truthful thing to name is the authored REGION it
-        // executes (`30Kb:finding-nonleaf-walls-have-no-account-seat`). The population and the
-        // policy gate above are exactly as they were: whether a wall narrates at all is the
-        // ratify-or-mint question `30M` §3 leaves to the human, and this rider must be correct under
-        // either answer.
+        // `30L:req-wall-narrative-gains-region-operand` — the OPERAND only; the gate is untouched.
         if accounts_survival && let EffectiveAct::MayMutate(wall) = decision.act {
             walls.push((*leaf, region_of_node(inputs.regions, wall.node())));
         }
@@ -673,10 +662,26 @@ struct RegionRound<'a> {
 /// Run for every region it may execute (`30L:pin-open-route-runs`), and a Run region is a region
 /// whose authored bytes ship untouched — which is exactly the artifact a region nobody decided
 /// produces. Nothing is hidden either way (`rul-attention-honesty`).
+///
+/// # The self-suppressed solve
+///
+/// Sibling instances of ONE region write to each other along the ordinary sequence, and the region's
+/// own ATOMIC replacement is what removes them — so its freshness is answered with the whole
+/// population silenced, the shape `effect::self_reach_holds` already takes one level down. Only for
+/// a plural population (a lone instance is never in its own in-state), and only ever read beside
+/// that solve's OWN certification.
+///
+/// # The shared guard's economics
+///
+/// `30L` §4.5 licenses the valve for DIVERGENT instances, and only those. Where some route measured
+/// converged and a sibling did not, one parametric check recovers the converged invocation at apply.
+/// Where NO route converged, the check is known to fall through at every invocation: it buys
+/// nothing and costs the tax at each of them, which is the site tier's own `jc-mint-policy m-a`
+/// reading and not something the region tier may undercut. So the candidates drop BEFORE the meet,
+/// and the decision Spine records is the decision the artifact carries.
 fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
     let (ast, cfg, src) = (round.inputs.ast, round.inputs.cfg, round.inputs.src);
-    // A spliced body site is not a plan leaf, so its classification lives inside its owning CALL's
-    // aggregate (`effect::classify`'s `InlineCall` arm) rather than in `classes`.
+    // A spliced body site is not a plan leaf, so its class lives inside its owning CALL's aggregate.
     let body_class: BTreeMap<CfgNodeId, &SkipClass> = round
         .classification
         .classes
@@ -699,11 +704,6 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
             continue;
         };
         let argv = crate::source_argv(src, ast, region_ast);
-        // THE SELF-SUPPRESSED SOLVE (`effect::self_reach_holds`'s shape, one level up): sibling
-        // instances of ONE region write to each other along the ordinary sequence, and the region's
-        // own ATOMIC replacement is what removes them, so its freshness is answered with the whole
-        // population silenced. Only for a plural population — a lone instance is never in its own
-        // in-state — and only ever read beside this solve's OWN certification.
         let suppress: BTreeSet<CfgNodeId> = routes.routes().map(|route| route.cfg_node()).collect();
         let solo =
             (routes.count() > 1).then(|| solve_reaching_walls(cfg, round.effective, &suppress));
@@ -717,14 +717,6 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
                 argv.as_deref(),
             ));
         }
-        // THE SHARED GUARD'S ECONOMICS, decided over the POPULATION (`30L` §4.5 — the
-        // divergent-instances valve, and only that). Where some route measured CONVERGED and a
-        // sibling did not, one parametric check recovers the converged invocation at apply, which is
-        // the whole value the valve exists for. Where NO route converged, the check is known to fall
-        // through at every invocation, so it buys nothing and costs the tax at each of them — the
-        // site tier's own `jc-mint-policy m-a` reading, which the region tier must not undercut.
-        // Dropped BEFORE the meet, so the decision the Spine records is the decision the artifact
-        // carries.
         if !answers
             .iter()
             .any(|answer| answer.verdict == dorc_core::Verdict::Converged)
@@ -778,8 +770,7 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
 fn ast_of_region(cfg: &Cfg, instances: impl Iterator<Item = CfgNodeId>) -> Option<AstId> {
     let mut ids = instances.map(|node| cfg.node(node).ast);
     let first = ids.next()?;
-    // Clones of one body lower the SAME AST subtree, so this holds by construction; a population
-    // that disagreed would have no single span to edit and must not be given one.
+    // Clones lower the SAME subtree; a disagreeing population has no single span to be given.
     ids.all(|id| id == first).then_some(first)
 }
 
@@ -796,9 +787,7 @@ fn decide_one_route(
 ) -> crate::RouteDecision {
     let node = route.cfg_node();
     let Some(class) = body_class.get(&node).copied() else {
-        // An instance whose owning call carries no aggregate classification (an expansion-internal
-        // command, a call the census enumerated and classify did not) admits nothing, so the whole
-        // region meets to Run — the population must be covered exactly or not at all.
+        // No aggregate class admits nothing, so the region meets to Run: covered exactly, or not.
         return crate::RouteDecision {
             conclusion: RouteConclusion::Run,
             guard: None,
@@ -826,8 +815,7 @@ fn decide_one_route(
         .inputs
         .policy
         .freshness(&walls, subject, round.backings, round.leaf_of);
-    // BOTH certifications floor the instance, for the reason the Members lane's do: the solo is a
-    // SECOND answer and the window's certification says nothing about it.
+    // BOTH certifications floor it, for the Members lane's reason: a solo is a SECOND answer.
     let freshness = floor_uncertified(round.window, answer);
     let freshness = match solo {
         Some((_, consistency)) => floor_uncertified(consistency, freshness),
@@ -863,6 +851,17 @@ fn decide_one_route(
 /// never from the public outcome (`pin-no-outcome-as-generator`). The proofs are all-or-nothing by
 /// construction: one license, then one death proof per instance, and an empty vector wherever the
 /// license did not mint.
+///
+/// The GUARD arm takes any instance's license, because the meet already proved every instance admits
+/// byte-identical guard bytes. Only the DISCLOSED probe word is re-stamped, to the population's
+/// join: no single word is true of a region whose invocations answered differently, and picking one
+/// route's would misattribute the others'.
+///
+/// The OMIT arm is NAMED RESIDUE, and a run floor rather than a gap. A region-tier omit needs a
+/// `DeadBranchProof` per instance and a controller the artifact really neutralises, and the fold
+/// cannot reach inside a spliced body today — its statuses key by the leaves it classified, and a
+/// body site is not one. So the arm is unreachable; if it ever fires the region renders and retires
+/// nothing, which is the safe direction rather than a silent `:`.
 fn lower_shared_decision(
     round: &RegionRound<'_>,
     decision: &SharedRegionDecision,
@@ -879,12 +878,6 @@ fn lower_shared_decision(
             }
         }
         SharedConclusion::Guard(_) => {
-            // The meet already proved every instance admits BYTE-IDENTICAL guard bytes, so any
-            // instance's license is the shared one. Only the DISCLOSED probe word is re-stamped, and
-            // it is the population's join: one word where every route agreed, and "cant-tell" where
-            // they did not — because no single word is true of a region whose invocations answered
-            // differently, and picking one route's would misattribute the others'. Display only; the
-            // guard re-decides live and never trusts it.
             match answers.iter().find_map(|answer| answer.guard.clone()) {
                 Some(license) => (
                     Disposition::Guard(license.with_probe_verdict(joined_verdict(answers))),
@@ -893,11 +886,6 @@ fn lower_shared_decision(
                 None => (Disposition::Run, Vec::new()),
             }
         }
-        // NAMED RESIDUE, and a run floor rather than a gap: a region-tier `Omit` needs a
-        // `DeadBranchProof` per instance and a controller the artifact really neutralises, and the
-        // fold cannot reach inside a spliced body today (its statuses are keyed by the leaves it
-        // classified, and a body site is not one). So the arm is unreachable, and if it ever fires
-        // the region renders and retires nothing — the safe direction, never a silent `:`.
         SharedConclusion::Omit { .. } | SharedConclusion::Run => (Disposition::Run, Vec::new()),
     }
 }
@@ -915,6 +903,10 @@ fn joined_verdict(answers: &[crate::RouteDecision]) -> dorc_core::Verdict {
 }
 
 /// The shared replacement's license and its per-instance death proofs, or nothing.
+///
+/// `consumed` is the UNION over every instance: one authored edit answers for every call context at
+/// once, and a union can only block. The status is ⊤ (`fork-mutator-rc`), which each instance's own
+/// license already proved its consumers can live with.
 fn shared_replacement(
     round: &RegionRound<'_>,
     answers: &[crate::RouteDecision],
@@ -930,8 +922,6 @@ fn shared_replacement(
         .collect();
     let establishes = AggregateEstablishes::mint(establishes?)?;
     let all_vouched = crate::AllEstablishesVouched::mint(&establishes, round.inputs.vouches)?;
-    // The UNION of every instance's consumed channels: one authored edit answers for every call
-    // context at once, and a union can only block.
     let mut consumed = dorc_analysis::lattice::Powerset::default();
     for establish in establishes.iter() {
         for channel in round
@@ -943,8 +933,6 @@ fn shared_replacement(
             consumed.insert(*channel);
         }
     }
-    // A mutator's own status is ⊤ (fork-mutator-rc), which is what every instance's own license
-    // already proved its consumers can live with.
     let license = crate::ReplaceLicense::prove_shared_region_replaceable(
         all_vouched,
         &dorc_analysis::lattice::May(consumed),
@@ -1248,8 +1236,7 @@ mod tests {
             region_of_node(&census, instance).is_some(),
             "a wall standing at a spliced body instance names its authored region"
         );
-        // The top-level `ufw` leaf: an ordinary wall, whose participant IS the mutator, so there is
-        // nothing further to name and the operand is honestly absent.
+        // An ordinary leaf wall: its participant IS the mutator, so the operand is honestly absent.
         let top_level = built
             .value
             .iter()
@@ -1284,8 +1271,7 @@ mod tests {
             .nth(1)
             .and_then(|tail| tail.split("\n/// What the world said").next())
             .expect("the shared lowering seat");
-        // Split on the conclusion vocabulary itself: a `|`-shared arm yields two pieces, so what is
-        // asserted is the LOCALITY of the mint rather than an arm count that reads as a shape rule.
+        // A `|`-shared arm splits in two, so what is asserted is the mint's LOCALITY, not a count.
         let arms: Vec<&str> = seat.split("SharedConclusion::").skip(1).collect();
         let minting: Vec<&&str> = arms
             .iter()
