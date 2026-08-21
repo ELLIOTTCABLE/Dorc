@@ -156,3 +156,54 @@ single-fully-reviewable-artifact request vs the attention-product's mutative/non
 mutative partition — a dial the admin sets per invocation by choosing the stream;
 Dorc's job on the single-artifact pole is partition-by-LAYOUT rather than
 partition-by-absence.
+
+## §7 — The bundle front-lift ladder (human-typed 2026-08-21; scheduling: SOON)
+
+Typed substance, correcting the conductor's two-tier reading ("definition table →
+decline"): the lifting/munging/arranging mechanisms are settled and prepped for exactly
+this; Dorc CAN recognize two same-named helpers, a call at a position where the
+definition is unknown, or dynamism-we-cannot-model that risks an injected definition —
+and decide per case between simple code motion (ideal) and munge (possible, less
+beautiful). Decline applies to SOME forms (dorc-lang load dynamism, for instance); most
+forms do not decline. Two fallbacks SHORT of decline must be used intelligently for
+bundle construction:
+
+1. **still-lift-but-also-munge** — where we can / are willing to edit names, AND our
+   knowledge is still total.
+2. **give-up-on-lift-but-still-build** — where book dynamism or other modeling issues we
+   DO allow mean we cannot comfortably hoist within book code: rewrite the load target to
+   the bundle, but keep it exactly where it was in the input book when rendering out.
+
+This is within the wheelhouse and should land sooner than later; the human does not want
+this debt floating. Separately typed the same day: the both-outputs lean for the
+`--artifact-dir` + piped-stdout cell is NACKED — the refusal stands as built.
+
+Conductor derivation of the full ladder for the lane (each tier's condition is computable
+from the definition table plus the census openers; none needs settlement re-modelling,
+because every tier is semantics-preserving by construction — the
+`30Nh:tc-bundle-lift-needs-the-spine` framing is RETIRED):
+
+- **T1 lift-as-is** (pure code motion, `rul-happy-path-is-a-closed-set`'s licence): the
+  `.` is absorbable (top-level, alone, redirect-free); no name the bundle BINDS is bound
+  by the book ABOVE the `.` (lifting would let the book's definition override permanently
+  where the original had the bundle's version win after the load); no book CALL above the
+  `.` names a bundle-bound name (resolution would flip from PATH/unknown to function);
+  the bundle's top level reads no variable the book sets before the `.`; no dynamism
+  opener above the `.`. The bundle joins the lifted section; the authored `.` position is
+  rewritten to its lifted resolution and DISCLOSED as an import edit (a lift reason arm).
+- **T2 lift-and-munge**: knowledge total (every reference to every bundle-bound name is
+  enumerable — no dynamism opener anywhere in the unit) but a collision exists (the book
+  binds or calls a bundle-bound name above the `.`): lift under MUNGED names and rewrite
+  every reference consistently in the GENERATED plan — the defensive-emission
+  munge-everything machinery is the precedent; the authored book FILE is never touched;
+  disclosed as an import edit with a munge reason arm. Conductor default for "willing":
+  munge whenever T1 fails only on collision grounds.
+- **T3 positional-with-rewrite** (today's as-built): enumeration fails on ALLOWED book
+  dynamism (hint-only `sh -c` rooms, unresolvable loads, trap strings, dynamic command
+  positions): the bundle is still built and the import is rewritten to it, kept exactly
+  positional.
+- **Decline**: the existing refusal classes (dorc-lang load dynamism and kin) — unchanged.
+
+Battery shape: one round-trip case per tier plus the decline cell, single-stream form,
+each asserting both the layout and `expected.ran` unmoved (the lift changes where
+definitions are written, never what runs).

@@ -14,7 +14,25 @@
 
 ---
 
-## CURRENT STATE (2026-08-21 — 30L IS BUILT; THE ARC IS AT CLOSE)
+## CURRENT STATE (2026-08-21 — SECOND-HALF CONDUCT HANDED OFF; THREE LANES OWED)
+
+**The r30 second-half conduct is CLOSED at the human's direction** (ledger `notes/30N`;
+its final section is the successor's handoff). Everything built is folded on
+`ai/r30-conduct`: the `30Mg` remit · all of `plans/30L` · the `309` boundary close ·
+`30I` artifact forms + promotion · the artifact-semantics rework (`30Ng`). The human
+then RULED (rebased onto this branch): influence carriage per semantic object
+(`306b` §10), the guarded-source projection split
+(`30I:rul-load-semantics-stay-full-fidelity` + `rul-guarded-source-speech-is-lossy`),
+the both-outputs NACK (the `--artifact-dir` + piped-stdout refusal stands), and the
+bundle front-lift LADDER (`30Ng` §7: lift-as-is → lift-and-munge →
+positional-with-rewrite → decline; land SOON). **OWED, in the conductor's recommended
+order (`30N`'s handoff section):** `lane-bundle-front-lift` first (parallel-eligible
+with) `lane-guarded-source-fidelity`, then `lane-influence-carriage` serially over the
+merged tip; then loop propagation, the `30Nh` residue, the prose queue, and the one
+remaining `30M` ruling (wall-narration). The human burndown holds only r30 blockers
+(the veto sweep); everything else lives in `30N`'s open-items and `TODO-ADDTL`.
+
+## STATE (2026-08-21 — 30L BUILT, ARC CLOSE; superseded above where they overlap)
 
 **`plans/30L` is COMPLETE on `ai/r30-conduct`** (stages 0–3: `notes/30Nb`; stages 4–5 +
 census openers: `notes/30Nc`; every fold adjudication and the stage-6 close: `notes/30N`

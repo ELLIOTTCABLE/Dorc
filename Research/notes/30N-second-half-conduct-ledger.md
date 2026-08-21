@@ -486,3 +486,48 @@ landed one-grade-per-Spine code is implementation debt owned by
     review): the self-suppressed suppression-set solve and the
     `effective_invalidators` node-check conjunct — both are new license-bearing
     reach surfaces minted this arc.
+
+## §5 — Handoff to the next conductor (2026-08-21; conduct closed at the human's direction)
+
+State: every lane of this conduct is folded; `ai/r30-conduct` is ahead of `ai/main` by
+doc commits only (the human ff's `ai/main` by their own hand). Worktree
+`.claude/worktrees/r30-conduct` is the live seat; no builder worktrees remain. The `-D`
+branch set is the human's (keep `worktree-sol-adversarial-30M` until test `176e0818` is
+recovered by the guarded-source lane below). The both-outputs lean in
+`adj-flag-incoherence-cell-for-reversal` above was NACKED by the human 2026-08-21: the
+refusal stands as built.
+
+OWED WORK, with the conductor's sequencing opinion (the human asked for it):
+
+1. **`lane-bundle-front-lift`** — charter `30Ng` §7 (the human-typed ladder). FIRST:
+   human-prioritized ("sooner than later"), mechanism-ready, independent of the other
+   two. Touches `plan/src/render*`, `cli::artifact`, the emission planner's munge seat.
+2. **`lane-guarded-source-fidelity`** — charter `30I:rul-load-semantics-stay-full-fidelity`
+   + `30I:rul-guarded-source-speech-is-lossy` (with `30I`'s rewritten
+   `step-4-recognize-exact-guarded-source` text and its cross-author case 2). Builds the
+   exact-value/branch load answer (greens `p-x-sentinel-value-conjunct`; recover
+   `176e0818` from the evidence branch) and the SEPARATE lossy speech projection custody
+   consumes. PARALLEL-ELIGIBLE with lane 1 (analysis/funcenv + oracle/custody + cli
+   sourcing versus render/artifact; `cli/main.rs` is the one shared file). Funcenv
+   precision is license-review-tier: minimal, reported.
+3. **`lane-influence-carriage`** — charter `306b` §10 (+ `309` §§1–2/5/7, `30L` §4.4's
+   amendment, ANALYZER-NEEDS `an-host-influence-carriage`). AFTER lanes 1 and 2 fold,
+   SERIALLY over the merged tip: it reshapes every stable semantic object's constructor
+   (artifact `Selection`/`ArtifactSet` and the region decisions included), so running it
+   beside the others is a conflict machine. Staged per the ruling: remove the
+   one-grade-per-Spine stamp, convert obvious semantic boundaries first, explicit
+   maximally-influenced `untracked` adapters elsewhere; deadline before any
+   influence-aware render work or durable-grade lift reads the current fields.
+4. Then, in any order: the loop-propagation lane (`30L` §7;
+   `p-x-loop-population-closes-over-literal-members`; prior-art digest `30N` §2) · the
+   `30Nh` residue (an expected-empty-stdout e2e lane for the kept-stream cell;
+   `WhyWorld` carrying import edits; book-code load acquisition — the human's worked
+   example needs it) · the prose queue · the one remaining `30M` ruling (wall-narration
+   mint).
+
+Standing corrections this conduct learned, for the successor's briefs: acceptance
+criteria for evidence tests state the CFG shape they exercise; budget inline `//` and
+`///` separately; a case minted to demonstrate a capability must observe it; after
+`mise run fmt`, reset or `git commit -- <pathspec>`; explicit scoped NEW-case bless is
+permitted with scope verification, existing goldens never; rulings are reported to the
+human with product-surface strawmen; never bare section numbers in durables.
