@@ -2613,11 +2613,8 @@ mod tests {
             vec![lit("cmd"), lit("/opt")],
             "removing a function leaves every variable binding standing"
         );
-        // A DYNAMIC operand stays ⊤ here, and not through this transfer at all: a dynamic lvalue
-        // operand to `unset` is refused one tier up, at syntax
-        // (`syntax-unsupported-unset-dynamic-lvalue`), and an unsupported region havocs whatever it
-        // encloses. `-f` narrows what this transfer models; it does not reach that refusal, and
-        // widening it there would be a syntax-tier decision rather than a builtin's spelling.
+        // A dynamic operand stays ⊤ through the SYNTAX tier's own refusal, which `-f` does not
+        // reach and which widening would be a syntax-tier decision, not a builtin's spelling.
         assert_eq!(
             argv_of("root=/opt\nunset -f \"$which\"\ncmd \"$root\"", "cmd"),
             vec![lit("cmd"), Word::Top],
