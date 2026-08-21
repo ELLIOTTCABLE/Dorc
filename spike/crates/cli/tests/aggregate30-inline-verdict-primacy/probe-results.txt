@@ -1,4 +1,3 @@
 # Each inlined establish is vouched by a verdict body that returns 1.
-# At HEAD the call aggregate runs `dpkg-query`, returns 0, and gate 1 catches the mismatch.
 site 0.0 effect=absent rc=1
 site 0.1 effect=absent rc=1

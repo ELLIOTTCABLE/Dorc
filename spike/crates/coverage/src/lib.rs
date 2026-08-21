@@ -551,6 +551,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
     let classes = classified.value;
+    // Scope cut: standalone guards remain unmodeled; only aggregate primacy is mirrored.
     let aggregate_establishes: std::collections::BTreeSet<_> = classes
         .iter()
         .flat_map(|(node, class)| match class {

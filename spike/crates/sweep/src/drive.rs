@@ -94,6 +94,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             ambient,
         );
     let classes = classified.value;
+    // Scope cut: standalone guards remain unmodeled; only aggregate primacy is mirrored.
     let aggregate_establishes: BTreeSet<_> = classes
         .iter()
         .flat_map(|(node, class)| match class {

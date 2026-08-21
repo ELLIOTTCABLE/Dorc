@@ -749,6 +749,7 @@ fn member_family(
     let members = value.member_argv(id)?;
     let mut family = Vec::with_capacity(members.len());
     let mut all_measured = true;
+    let no_verdict_topology = VerdictIndex::default();
     for argv in members {
         // Each member is a concrete-or-⊤ argv; resolve it through the oracle check. All-or-nothing:
         // ANY non-single-establish member kills the whole family. `site: None` is a LIVE dedup
@@ -764,11 +765,10 @@ fn member_family(
         // `plan`'s singleton `Backing::of_fact` fallback — no threaded widening is needed here.
         // A throwaway map keeps the resolution local (`277` §5: member-widening is deferred, safe).
         let mut member_backings = BTreeMap::new();
-        let mut member_measurement = None;
-        match command_effect(
+        let effects = command_effect(
             idx,
             checks,
-            verdicts,
+            &no_verdict_topology,
             argv,
             interner,
             diags,
@@ -778,13 +778,29 @@ fn member_family(
             // A member's degrade never reaches a surface: the whole family collapses to the
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
-            &mut member_measurement,
+            &mut None,
             id,
             live_defs,
-        )
-        .as_slice()
-        {
+        );
+        match effects.as_slice() {
             [CommandEffect::Establishes(fact)] => {
+                let mut member_measurement = None;
+                let mut measurement_backings = BTreeMap::new();
+                let _ = command_effect(
+                    idx,
+                    checks,
+                    verdicts,
+                    argv,
+                    interner,
+                    &mut Vec::new(),
+                    &mut Vec::new(),
+                    None,
+                    &mut measurement_backings,
+                    &mut None,
+                    &mut member_measurement,
+                    id,
+                    live_defs,
+                );
                 all_measured &= member_measurement
                     .as_ref()
                     .is_some_and(|measurement| measurement.subjects() == [*fact]);
@@ -4245,6 +4261,40 @@ command__predict() {
                 self_reached: true,
             }),
             "the in-loop Members install resolves a per-member fact-family in list order, self-reached: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn verdict_only_members_do_not_mint_static_topology() {
+        let mut i = Interner::default();
+        let src = r#"for pkg in nginx curl; do foobar "$pkg"; done"#;
+        let parsed = dorc_syntax::parse(src);
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut i);
+        let verdicts = VerdictIndex::of(&mut i, &["foobar__is_converged() { return 0; }"]);
+        let classes = classify(
+            &built.value,
+            &value,
+            &parsed.value,
+            &KindIndex::default(),
+            &[],
+            &verdicts,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+
+        assert!(
+            classes
+                .iter()
+                .any(|(_, class)| *class == SkipClass::MustRun),
+            "a verdict body cannot manufacture the predict-owned static cell"
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|(_, class)| matches!(class, SkipClass::EstablishMembers { .. })),
+            "verdict-only members must not become an aggregate"
         );
     }
 
