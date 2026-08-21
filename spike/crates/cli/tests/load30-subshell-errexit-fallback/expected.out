@@ -23,10 +23,10 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 set -e
 SM_ORACLE_ROOT=.
 
-. "$SM_ORACLE_ROOT/base.dorc.sh"
+. './base.dorc-bundle.sh'
 (
    unset -f sm_pick
-   [ "${sm_fallback_loaded-}" = 'sm.fallback/v1' ] || . "$SM_ORACLE_ROOT/fallback.dorc.sh"
+   [ "${sm_fallback_loaded-}" = 'sm.fallback/v1' ] || . './fallback.dorc-bundle.sh'
    sm_pick inside
 )
 sm_pick outside

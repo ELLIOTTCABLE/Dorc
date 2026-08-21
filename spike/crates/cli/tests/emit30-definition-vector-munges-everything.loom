@@ -85,6 +85,8 @@ apt_get__is_converged_hc12ec1b7() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # emit30-definition-vector-munges-everything (`28R:rul-defensive-mode-definition-vectors`) — the one
 # world where a BARE emitted name stops being a proof.

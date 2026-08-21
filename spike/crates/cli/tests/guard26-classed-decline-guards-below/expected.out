@@ -27,6 +27,8 @@ wombat__is_converged() {
    wombat cmp -- "$1" "$dst"
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # guard26-classed-decline-guards-below — an honestly declined `hork` still runs and walls.
 # Both converged, vouched drops retain the guard rung and re-check live below it.

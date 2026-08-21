@@ -2,23 +2,26 @@
 run: round-trip
 fixpoint: executed
 artifact-set: published
+expect-diagnostic: plan-import-rewritten
 ---
 -- book.sh --
 #!/bin/sh
-# emit30-multipart-publishes-its-dependency (`30I` §7.1 mode 2 · §7.5) — the whole-product half of
-# the emission planner: a book that SOURCES a contracted package, run with an artifact stream of its
-# own, takes the multipart form and publishes the package beside its plan.
+# emit30-multipart-publishes-its-dependency (`30Ng:rul-bundle-at-dorc-lang-boundaries` · `30I` §7.5)
+# — the whole-product half of the emission planner: a book that SOURCES a contracted package, run
+# with an artifact stream of its own, publishes that package as a BUNDLE and says so in its own
+# import line.
 #
-# WHAT MAKES THIS THE COMPOUND CASE rather than a unit test. The mirroring rule, the placement
+# WHAT MAKES THIS THE COMPOUND CASE rather than a unit test. The bundling rule, the placement
 # refusals and the selector are each pinned natively at their seat (`cli::artifact`); what only a
 # whole run can show is that the form reaches the REAL binary — the selector runs pre-network from
-# authored inputs, the plan projection is bound to the settled form, and the publication happens at
-# the edge, in that order, with the ordinary probe-then-apply stdout contract untouched.
+# authored inputs, the plan projection is bound to the settled form, the import edit lands as a
+# decided plan edit rather than a post-process, and the publication happens at the edge, in that
+# order, with the ordinary probe-then-apply stdout contract untouched.
 #
-# THE STDOUT BYTES ARE THE POINT OF COMPARISON: `--artifact-dir` moves the artifact SET off stdout,
-# and the plan projection still goes to stdout exactly as it always has (`stdout-contract`), so this
-# transcript is byte-for-byte what the same book emits without the flag. A form is about where the
-# generated files LIVE, never about what the plan says.
+# WHAT THE GATES SEE, and it is the whole point of the case: the published tree really holds
+# `wombat.dorc-bundle.sh`, and the apply block's `. './wombat.dorc-bundle.sh'` really names it. A
+# case that asserted stdout alone could not tell this form from any other, which is exactly how the
+# multipart form once shipped having never placed a file (`30Nf:fnd-multipart-never-placed-anything-in-production`).
 #
 # NO `mocks/`, for the reason `pin28-variable-resolved-source-loads` records: `.` is a special
 # builtin, so a non-interactive shell that cannot find what it sources EXITS, and the exec rail's
@@ -32,9 +35,10 @@ wombat sync a.conf
 
 -- wombat.dorc.sh --
 # dorc-lang/v0.2
-# The contracted package the book sources. Under the multipart form its STRIPPED bytes are
-# published at this same relative path, so the book's own `. ./wombat.dorc.sh` resolves on the
-# target with nothing rewritten (`30I` §7.4).
+# The contracted package the book sources. It is the point at which this book's dependencies become
+# dorc-lang, so it is where the default bundles: its STRIPPED bytes are published as a GENERATED
+# file under a generated name, and the plan's import is re-said to name that file rather than this
+# one (`30Ng:rul-bundle-at-dorc-lang-boundaries`). The authored file itself is never written.
 wombat__is_converged() {
    case "${1-}" in
    sync) wombat status --conf -- "${2-}" : sm.dorc.Conf:"$2"@synced ;;
@@ -57,7 +61,7 @@ $ dorc --book=book.sh --artifact-dir=$ARTIFACT_DIR --results - < probe-results.t
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=dc624cd3feac59ec1e048bf6dd12bb114296e3c8c1444b5e7389cf7ab74232db sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7dc6c2e43471a91a68d0b2a9ef4f941cfce70ba606ff30cebfd6bd9c4e74795a sites=1 @@dorc@@\n'
 # site 2: dorc-auto:wombat@converged
 wombat__is_converged() {
    case "${1-}" in
@@ -82,21 +86,25 @@ wombat__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
-# emit30-multipart-publishes-its-dependency (`30I` §7.1 mode 2 · §7.5) — the whole-product half of
-# the emission planner: a book that SOURCES a contracted package, run with an artifact stream of its
-# own, takes the multipart form and publishes the package beside its plan.
+# emit30-multipart-publishes-its-dependency (`30Ng:rul-bundle-at-dorc-lang-boundaries` · `30I` §7.5)
+# — the whole-product half of the emission planner: a book that SOURCES a contracted package, run
+# with an artifact stream of its own, publishes that package as a BUNDLE and says so in its own
+# import line.
 #
-# WHAT MAKES THIS THE COMPOUND CASE rather than a unit test. The mirroring rule, the placement
+# WHAT MAKES THIS THE COMPOUND CASE rather than a unit test. The bundling rule, the placement
 # refusals and the selector are each pinned natively at their seat (`cli::artifact`); what only a
 # whole run can show is that the form reaches the REAL binary — the selector runs pre-network from
-# authored inputs, the plan projection is bound to the settled form, and the publication happens at
-# the edge, in that order, with the ordinary probe-then-apply stdout contract untouched.
+# authored inputs, the plan projection is bound to the settled form, the import edit lands as a
+# decided plan edit rather than a post-process, and the publication happens at the edge, in that
+# order, with the ordinary probe-then-apply stdout contract untouched.
 #
-# THE STDOUT BYTES ARE THE POINT OF COMPARISON: `--artifact-dir` moves the artifact SET off stdout,
-# and the plan projection still goes to stdout exactly as it always has (`stdout-contract`), so this
-# transcript is byte-for-byte what the same book emits without the flag. A form is about where the
-# generated files LIVE, never about what the plan says.
+# WHAT THE GATES SEE, and it is the whole point of the case: the published tree really holds
+# `wombat.dorc-bundle.sh`, and the apply block's `. './wombat.dorc-bundle.sh'` really names it. A
+# case that asserted stdout alone could not tell this form from any other, which is exactly how the
+# multipart form once shipped having never placed a file (`30Nf:fnd-multipart-never-placed-anything-in-production`).
 #
 # NO `mocks/`, for the reason `pin28-variable-resolved-source-loads` records: `.` is a special
 # builtin, so a non-interactive shell that cannot find what it sources EXITS, and the exec rail's
@@ -104,6 +112,6 @@ wombat__is_converged() {
 #
 # `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts the
 # vouching body on the apply surface and makes the run non-vacuous.
-. ./wombat.dorc.sh
+. './wombat.dorc-bundle.sh'
 hork provision
 ( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

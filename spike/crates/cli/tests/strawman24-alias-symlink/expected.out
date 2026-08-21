@@ -37,6 +37,8 @@ writeconf__is_converged() {
    conf-exists "$1"
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # strawman24-alias-symlink (24F Stage 5 — the aliasing closure on the `fs` KIND, per-kind gradual
 writeconf /etc/app.conf
 ( writeconf__is_converged /etc/app.conf.lnk ) || writeconf /etc/app.conf.lnk   # dorc: guard [sm.dorc.Fs converged-vouch; probe: holds]

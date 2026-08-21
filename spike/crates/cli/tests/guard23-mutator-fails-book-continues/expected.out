@@ -34,6 +34,8 @@ apt_get__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # guard23-mutator-fails-book-continues (rul-divergence-proceed: the engine adds no second-
 hork wombat
 ( apt_get__is_converged install -y nginx ) || apt-get install -y nginx   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]

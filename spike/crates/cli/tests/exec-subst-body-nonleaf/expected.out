@@ -35,5 +35,7 @@ apt_get__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 echo "installed: $(apt-get install -y nginx)"
 ( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]

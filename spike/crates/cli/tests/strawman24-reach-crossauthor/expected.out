@@ -41,5 +41,7 @@ installfile__is_converged() {
    stat -- "$1" >/dev/null 2>&1
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 hork tune nginx
 ( installfile__is_converged /etc/nginx/nginx.conf ) || installfile /etc/nginx/nginx.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]

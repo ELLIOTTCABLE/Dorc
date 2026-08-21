@@ -156,6 +156,8 @@ installfile__is_converged() {
    stat -- "$1" >/dev/null 2>&1
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # pin28-reach-arm-death-walls-total — the B half of the reach lane's atomicity pair
 # (`28P:dec-reach-expansion-refuses-whole-footprint`). Byte-identical to
 # pin28-reach-arm-survey-complete-spares except for `body-rc` in one record, and the admin's

@@ -318,6 +318,8 @@ systemctl__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # whygallery-webhost-whole: the whole why-surface on one USER_STORY-shaped webhost book — a
 # famous-oracle elision, the admin's own hand-guard, a diverged modeled wall whose `disturbs`

@@ -126,6 +126,8 @@ wombat__is_converged() {
    _wombat_dest "$2"
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # pin28-contested-helper-resolves-by-last-wins (`28R:rul-resolution-matches-shell-loading` ·
 # `rul-vouch-reaches-own-custody-only`) — two loaded sources, one helper name, two different bodies.

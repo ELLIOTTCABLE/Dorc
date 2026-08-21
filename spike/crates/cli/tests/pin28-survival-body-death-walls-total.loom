@@ -209,6 +209,8 @@ apt_get__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # pin28-survival-body-death-walls-total (`28P:dec-whole-body-atomic-refusal`) — the SECOND
 # atomicity of an at-most claim, and the one a record count cannot see.
 #

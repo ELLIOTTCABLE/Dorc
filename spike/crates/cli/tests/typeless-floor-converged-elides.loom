@@ -115,6 +115,8 @@ foobar__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # typeless-floor-converged-elides (24L §2 — the floor exemplar). A MARKERLESS, pure-POSIX oracle
 # carrying ONLY a verdict function: its ambient converged site ELIDES; the same site past an

@@ -119,6 +119,8 @@ wombat__is_converged() {
    _wombat_dest "$2"
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # pin28-closure-travels-with-the-definition (`28K` §4 rul-pin-by-definition-bytes) — a verdict body
 # that is NOT self-contained, end to end.

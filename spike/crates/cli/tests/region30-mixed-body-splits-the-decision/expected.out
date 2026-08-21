@@ -36,6 +36,8 @@ apt_get__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # THE MOTIVATING SHAPE (`plans/30L` §1): the whole book wrapped in one function, with one live
 # command in the middle. Under the all-or-nothing CALL license a single unmodeled `hork` forfeited

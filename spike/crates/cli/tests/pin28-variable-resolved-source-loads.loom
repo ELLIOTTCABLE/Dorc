@@ -126,5 +126,12 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # executing corpus case has ever carried a top-level `.`, and it is `28K` §8
 # `res-book-ships-its-load-closure` — named there, unbuilt.
 PKG=foobar
-. "./$PKG.oracle.sh"
+# dorc bundle: the dorc-lang subgraph this line loaded, stripped and composed in place.
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
 foobar sync-certs /etc/nginx/certs

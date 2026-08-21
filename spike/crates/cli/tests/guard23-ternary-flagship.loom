@@ -151,6 +151,8 @@ apt_get__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # guard23-ternary-flagship (rul-ternary-verdict; the {elide, guard, run} verdict map on one
 # apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 hork wombat

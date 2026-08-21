@@ -112,6 +112,8 @@ foobar__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # contest28-polyfill-guard-defers-to-the-oracle (`28M` §9, the decidable-condition fold) — the
 # P1 cell of `28O:res-polyfill-binding-tops-pending-fold`, end to end.

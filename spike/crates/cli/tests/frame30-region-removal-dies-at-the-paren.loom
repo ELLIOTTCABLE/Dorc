@@ -107,6 +107,8 @@ foobar__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # frame30-region-removal-dies-at-the-paren (`28Q` §1) — the negative half of the frame lookup.
 #

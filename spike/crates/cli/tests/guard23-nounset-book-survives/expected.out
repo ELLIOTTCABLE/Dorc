@@ -40,6 +40,8 @@ apt_get__is_converged() {
    fi
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # guard23-nounset-book-survives (23C-fd2: a `set -u` book — the inserted guard must not kill
 set -u
 hork wombat

@@ -27,6 +27,8 @@ wombat__is_converged() {
    wombat cmp -- "$1" "$dst"
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # guard26-unmodeled-wall-guards-below — the control: an unmodeled `hork` is a total wall.
 # Both converged, vouched drops re-check live below it, matching the modeled-wall siblings.

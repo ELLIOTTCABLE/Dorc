@@ -36,6 +36,8 @@ apt_get__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # THE DIVERGENT-INSTANCES VALVE (`30L` §4.5). nginx is installed; curl is not. One authored region
 # serves both, so no universal Replace exists — and Guard absorbs exactly what Replace cannot,

@@ -153,6 +153,8 @@ wombat__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # pin30-swapped-entrypoints-source-the-helpers (`28M` §8's COMMISSIONED package shape, the second
 # half) — an admin who wants their own entrypoints over somebody else's helpers gets them, and gets

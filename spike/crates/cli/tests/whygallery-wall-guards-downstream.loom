@@ -172,6 +172,8 @@ systemctl__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # whygallery-wall-guards-downstream: what one unmodeled command costs. `hork` has no oracle, so
 # its effect is unknown — everything after it loses the elision license and drops to the guard

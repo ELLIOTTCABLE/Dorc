@@ -119,6 +119,8 @@ foobar__is_converged_h7a664f5a() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # emit30-two-live-verdicts-under-one-name — the MEASUREMENT cell for whether the hash-munge
 # emission tier (`plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding`, rule 3) is

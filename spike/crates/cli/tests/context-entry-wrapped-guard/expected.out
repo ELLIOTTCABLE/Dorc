@@ -37,6 +37,8 @@ hork__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # 27C §5 in-context GUARD (27O rider): the unmodeled horkwall wall poisons the wrapped establish to
 # EstablishWritten, so a reached wrapped vouch + converged probe mint the entry-composed guard shape

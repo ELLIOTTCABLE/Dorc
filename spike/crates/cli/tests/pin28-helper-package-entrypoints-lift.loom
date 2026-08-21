@@ -148,6 +148,8 @@ wombat__is_converged() {
    _wombat_same "$2"
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # pin28-helper-package-entrypoints-lift (`28M` §7 tune-explicit-composition-is-sanctioned, the
 # COMMISSIONED package shape) — half ONE of two: the split package lifts with its cross-file helper

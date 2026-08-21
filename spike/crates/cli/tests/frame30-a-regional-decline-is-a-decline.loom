@@ -109,6 +109,8 @@ foobar__is_converged() {
    esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 #!/bin/sh
 # frame30-a-regional-decline-is-a-decline (`28K` §6 rej-decline-fallthrough-cascade) — the
 # expedient's end-to-end grave.

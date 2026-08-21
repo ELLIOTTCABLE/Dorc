@@ -43,6 +43,8 @@ apt_get__is_converged() {
    case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
 }
 
+# dorc: end of lifted material; the book follows, in its authored order.
+
 # strawman24-alias-provides (24F Stage 5 — the aliasing-closure flagship). The wall and the victim
 apt-get install nginx
 ( apt_get__is_converged install nginx-full ) || apt-get install nginx-full   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]

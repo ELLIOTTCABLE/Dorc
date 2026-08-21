@@ -20,11 +20,11 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # one entrypoint at two positions and in two function frames (`30I` specimen 3)
 SM_ORACLE_ROOT=.
 
-. "$SM_ORACLE_ROOT/entry.dorc.sh"
+. './entry.dorc-bundle.sh'
 package_step ambient
 (
    sm_pick() { common high "$@"; }
-   . "$SM_ORACLE_ROOT/entry.dorc.sh"
+   . './entry.dorc-bundle.sh'
    package_step regional
 )
 package_step after
