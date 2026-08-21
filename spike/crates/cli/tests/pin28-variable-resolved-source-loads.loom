@@ -10,35 +10,41 @@ fixpoint: executed
 # variable-flow (`LIB=./oracles; . "$LIB/yum.sh"`) loads fine, exactly as `"$CERTS"` has always
 # resolved".
 #
-# WHAT THIS PINS, precisely: this book renders the SAME PLAN as the same book spelling its source
-# line as the literal `. foobar.oracle.sh` — measured both ways, identical apart from the book's own
-# bytes and the digest taken over them (`sites=0`, the same three sites unresolvable). Parity IS the
-# ruling — "exactly as a literal path does" — so a case showing the variable spelling doing
-# something SPECIAL would be pinning a bug. Nothing in `funcenv` knows about the variable form: the
-# target resolves through `SourceLiteralPlane`, the same one-word window every other operand
-# already used, so there is exactly one resolver and the two spellings cannot drift apart.
+# THE OPERAND CARRIES `./`, and that is the whole correction (`30Ib`'s own named fix, filed at
+# `30Mb` §4). This case used to spell `. "$PKG.oracle.sh"` — SLASH-LESS, which is a `PATH` search
+# under `30I:rul-dot-resolves-as-sh` and resolves nowhere at v0 whatever the variable holds. So the
+# case's parity claim was true of two NON-resolutions and could not have caught a variable-flow
+# regression: the literal twin it compared against was equally unresolved. With `./` the operand is
+# a real path, the target really resolves, and the comparison is between two spellings that both
+# reach the same file.
+#
+# WHAT THIS PINS, precisely: the target resolves through `SourceLiteralPlane` — the same one-word
+# window every other operand already used — so there is exactly ONE resolver and the variable form
+# cannot drift from the literal form. Nothing in `funcenv` knows about the variable spelling at all.
+#
+# AND IT IS OBSERVABLE, which is the point of the correction: the `.` resolves, so
+# `foobar__is_converged` really binds at that line and site 2 ships a real verdict-lane check. Under
+# the slash-less spelling the operand resolved nowhere, the load HAVOC'd the environment, and every
+# site read `unresolvable-no-probe` — the same output a broken resolver would have produced, which
+# is why the old shape could not have caught one.
 #
 # NON-VACUOUS, and gate-3 is what makes it so: before bitem9 the parser ⊤-rejected this line as
 # `DynamicExecution`, so the book carried TWO undeclared error-severity diagnostics
-# (`syntax-unsupported` + `cfg-top-node`) and gate-3 would have failed this case outright. The line
-# lowered to a `Top` CFG node and HAVOC'd the function environment with it. Clean stderr here is
-# the whole difference.
+# (`syntax-unsupported` + `cfg-top-node`) and gate-3 would have failed this case outright. Clean
+# stderr here is the whole difference.
 #
-# WHY NOTHING SHIPS, stated so the next reader does not misread the empty probe as this item
-# failing: a top-level `.` is an unmodeled command in book position, so it walls
-# (`opaque-poison-is-the-product`) and the site below it resolves nothing — for the LITERAL
-# spelling equally, today and before. That is `28O:res-book-sourcing-walls-at-the-site`, whose
-# blessing question (`.`-of-a-proven-load-inert-file) is already routed to the human alongside
-# `command -v`. Until it is answered, a book that sources an oracle walls its own remainder by
-# every spelling; bitem9 widened what RESOLVES, which is a different question, pinned at the
-# domain tier (`analysis::funcenv` TABLE 5).
+# THE APPLY STILL RUNS THE LINE, so nobody misreads a shipped probe as an elision: this case commits
+# no site records, so nothing is measured and the site runs (`kFAIL-perform`). What the sites ABOVE
+# it read is `28O:res-book-sourcing-walls-at-the-site` — a top-level `.` is an unmodeled command in
+# book position and walls (`opaque-poison-is-the-product`) — whose blessing question
+# (`.`-of-a-proven-load-inert-file) is routed to the human alongside `command -v`.
 #
 # NO `mocks/`, deliberately: `.` is a SPECIAL builtin, so a non-interactive shell that cannot find
 # what it sources EXITS, and the exec rail's cwd is an empty throwaway sandbox. That is why no
 # executing corpus case has ever carried a top-level `.`, and it is `28K` §8
 # `res-book-ships-its-load-closure` — named there, unbuilt.
 PKG=foobar
-. "$PKG.oracle.sh"
+. "./$PKG.oracle.sh"
 foobar sync-certs /etc/nginx/certs
 
 -- foobar.oracle.sh --
@@ -63,10 +69,18 @@ $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5aa3a53148d8492e75cc51f8941733f4bc18522b54029bfe1b3e285e922a9b4c sites=0 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=eef693c08d1513f3d0f1941b724cebbf4f50dcff87e6bd33a2a7282eda62c134 sites=1 @@dorc@@\n'
+# site 2: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
-# site:2 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
@@ -78,33 +92,39 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # variable-flow (`LIB=./oracles; . "$LIB/yum.sh"`) loads fine, exactly as `"$CERTS"` has always
 # resolved".
 #
-# WHAT THIS PINS, precisely: this book renders the SAME PLAN as the same book spelling its source
-# line as the literal `. foobar.oracle.sh` — measured both ways, identical apart from the book's own
-# bytes and the digest taken over them (`sites=0`, the same three sites unresolvable). Parity IS the
-# ruling — "exactly as a literal path does" — so a case showing the variable spelling doing
-# something SPECIAL would be pinning a bug. Nothing in `funcenv` knows about the variable form: the
-# target resolves through `SourceLiteralPlane`, the same one-word window every other operand
-# already used, so there is exactly one resolver and the two spellings cannot drift apart.
+# THE OPERAND CARRIES `./`, and that is the whole correction (`30Ib`'s own named fix, filed at
+# `30Mb` §4). This case used to spell `. "$PKG.oracle.sh"` — SLASH-LESS, which is a `PATH` search
+# under `30I:rul-dot-resolves-as-sh` and resolves nowhere at v0 whatever the variable holds. So the
+# case's parity claim was true of two NON-resolutions and could not have caught a variable-flow
+# regression: the literal twin it compared against was equally unresolved. With `./` the operand is
+# a real path, the target really resolves, and the comparison is between two spellings that both
+# reach the same file.
+#
+# WHAT THIS PINS, precisely: the target resolves through `SourceLiteralPlane` — the same one-word
+# window every other operand already used — so there is exactly ONE resolver and the variable form
+# cannot drift from the literal form. Nothing in `funcenv` knows about the variable spelling at all.
+#
+# AND IT IS OBSERVABLE, which is the point of the correction: the `.` resolves, so
+# `foobar__is_converged` really binds at that line and site 2 ships a real verdict-lane check. Under
+# the slash-less spelling the operand resolved nowhere, the load HAVOC'd the environment, and every
+# site read `unresolvable-no-probe` — the same output a broken resolver would have produced, which
+# is why the old shape could not have caught one.
 #
 # NON-VACUOUS, and gate-3 is what makes it so: before bitem9 the parser ⊤-rejected this line as
 # `DynamicExecution`, so the book carried TWO undeclared error-severity diagnostics
-# (`syntax-unsupported` + `cfg-top-node`) and gate-3 would have failed this case outright. The line
-# lowered to a `Top` CFG node and HAVOC'd the function environment with it. Clean stderr here is
-# the whole difference.
+# (`syntax-unsupported` + `cfg-top-node`) and gate-3 would have failed this case outright. Clean
+# stderr here is the whole difference.
 #
-# WHY NOTHING SHIPS, stated so the next reader does not misread the empty probe as this item
-# failing: a top-level `.` is an unmodeled command in book position, so it walls
-# (`opaque-poison-is-the-product`) and the site below it resolves nothing — for the LITERAL
-# spelling equally, today and before. That is `28O:res-book-sourcing-walls-at-the-site`, whose
-# blessing question (`.`-of-a-proven-load-inert-file) is already routed to the human alongside
-# `command -v`. Until it is answered, a book that sources an oracle walls its own remainder by
-# every spelling; bitem9 widened what RESOLVES, which is a different question, pinned at the
-# domain tier (`analysis::funcenv` TABLE 5).
+# THE APPLY STILL RUNS THE LINE, so nobody misreads a shipped probe as an elision: this case commits
+# no site records, so nothing is measured and the site runs (`kFAIL-perform`). What the sites ABOVE
+# it read is `28O:res-book-sourcing-walls-at-the-site` — a top-level `.` is an unmodeled command in
+# book position and walls (`opaque-poison-is-the-product`) — whose blessing question
+# (`.`-of-a-proven-load-inert-file) is routed to the human alongside `command -v`.
 #
 # NO `mocks/`, deliberately: `.` is a SPECIAL builtin, so a non-interactive shell that cannot find
 # what it sources EXITS, and the exec rail's cwd is an empty throwaway sandbox. That is why no
 # executing corpus case has ever carried a top-level `.`, and it is `28K` §8
 # `res-book-ships-its-load-closure` — named there, unbuilt.
 PKG=foobar
-. "$PKG.oracle.sh"
+. "./$PKG.oracle.sh"
 foobar sync-certs /etc/nginx/certs
