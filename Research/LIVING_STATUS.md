@@ -14,7 +14,25 @@
 
 ---
 
-## CURRENT STATE (2026-08-21 — FIRST-HALF CROSSCHECK ADJUDICATED)
+## CURRENT STATE (2026-08-21 — THE 30Mg REMIT IS FOLDED; 30L IS THE LIVE LANE)
+
+**The `30Mg` repair remit is BUILT and FOLDED into `ai/r30-conduct`** (lane report
+**`notes/30Na`**; conduct ledger **`notes/30N`**, whose §3 carries the fold
+adjudications and §4 the human queue). R1 (pre-source replay — the round's critical),
+R3 (trip cleanup in every producer, with a producer-roster fence), R4, R5's structural
+half, R6's two truthful fields, and five of six hygiene items are landed; both legs
+green; zero unexpected golden drift; the conductor executed §7.1's scoped bless by own
+hand (the `pin28` case now ships a real verdict-lane check — both legs verified).
+Held short, each with a durable home: R2's BOOK-level half (xfail
+`p-x-book-level-dot-locals`, design question `30N` §4.3) · R6.3
+(`SpineInvocation.mode` is durable-persisted; blocked on the durable-review flow) ·
+R5's payload/prose (waits on `tc-redirect-refusal-dead-or-owed` — the refusal path is
+measured UNREACHABLE today). **The human queue is `30N` §4** (the three `30M` rulings
+unchanged, plus R1's floor-posture veto and the two new tc- questions). NEXT: the
+`plans/30L` build (elision regions + loop staging), stages per its §12; the
+loop-propagation prior-art digest a 30L builder needs is `30N` §2.
+
+## STATE (2026-08-21 — FIRST-HALF CROSSCHECK ADJUDICATED; superseded above where they overlap)
 
 **The five-lane adversarial review of the landed r30 range (`68709783..3011daae`) is
 adjudicated: `notes/30M`** (kit: quarantine `30Ma`; raw reports `30Mb`–`30Mf`;
