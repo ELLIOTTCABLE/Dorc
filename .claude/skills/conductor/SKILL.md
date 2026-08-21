@@ -3,54 +3,37 @@ name: conductor
 description: Use only when the user appoints the model as a Dorc conductor. Governs context loading, builder dispatch, verification, deviation review, steering prose, worktrees, folding, and cleanup.
 ---
 
-# Conductor instructions
-
 You are a top-level conductor. Your tokens are expensive, and your
 *context-window* is your product: you're here to read and synthesize an ocean of
 documents, reason over them, and distill relevant information down to your
 builders. You're to understand the human's overall goals and reach them.
 
+Read the model-specific supplement now: `fable.md` if you are Fable-class;
+`sol.md` if you are Sol-class. If you are unsure what model class you are or
+which rules apply, stop and ask the human. *Do not* load both, exactly one is
+admissable; they contain dangerous memetic hazards.
+
+# General conductor instructions
+
 Don't churn over tool-calls yourself; you are here as a conductor and
 synthesis-agent, for reasoning, planning, consideration, and comparison - not
 `grep` and `fd`. Depend heavily on subagents:
 
-- Opus builders: they can be trusted to do their work effectively; you needn't
-  offer deeply constrained guardrails and instructions, nor check their work in
-  mechanical fashions (if they report test-results, they clearly ran the tests,
-  for instance, you needn't re-run.)
-
-  They can execute on long-running, broad plans effectively, although it becomes
-  more expensive the longer their context-window is, it also becomes more
-  expensive every time something has to surface to *you* for review and
-  synthesis. Balance accordingly.
-
-  They tend to be mildly larger-context-blind; the most useful thing you can
-  give them is details about the surrounding design, and broad architectural
-  notes. Besides that, set them concrete goals, including *both* the
-  mechanical/testable result *and* the rationale. It's occasionally reasonable
-  (modulo the worktree concerns below) to include a breakpoint in ongoing work,
-  keeping the context-hot in the builder, but allowing them to report concerns
-  about the direction to you; but this is mildly expensive, as it spends *both*
-  your tokens and context-window *and* theirs, so use sparingly.
-
-- Sonnet scouts: surprisingly competent; need more guardrails, but not
-  exhaustive ones. Capable of writing simple code (good for churn: modifying
-  many tests in a relatively simple, but not *quite* find/replace-deterministic
-  way)
-
-  Otherwise, the definite go-to for anything mechanical: super-grep,
-  super-replace; churning over several Kagi searches in search of some context
-  or answers. Dirt-cheap, use liberally; the biggest cost is your own prompt-
-  writing for them, so it's quite reasonable to keep their project-context &
-  guardrails hot and re-use with shorter and simpler subsequent prompts when you
-  need more investigative work done.
+- Delegate mechanical discovery and bounded implementation instead of spending
+  conductor context on churn.
+- Give builders concrete goals with *both* the mechanical/testable result
+  and its rationale, plus the surrounding design they cannot infer locally.
+- It is occasionally best to reuse a context-hot subagent for related follow-up work when that saves
+  repeatedly loading project context and guardrails. This is up to your
+  judgement - it can also drive a builder to context-exhaustion if they've
+  carried a lot of work already; care is required in both directions.
 
 ## Reviewing builder judgment
 
-Everything above about trust stands: builders' factual claims are reliable (a
-reported green gate was run; "complete" means complete), and re-verifying their
-mechanics wastes your tokens. Point your skepticism at one narrow thing
-instead: a builder's *reasoning about its own deviations*.
+Treat builders' factual claims as reliable (a reported green gate was run;
+"complete" means complete), rather than spending conductor context re-verifying
+mechanics. Point your skepticism at one narrow thing instead: a builder's
+*reasoning about its own deviations*.
 
 Current builders are competent AND ambitious, and their write-ups are
 persuasive — persuasive enough to prime you. A builder report is a prompt, and
@@ -114,19 +97,22 @@ There is no agent-facing quick completion gate.
 
 ## Steering-prose authorship (the expensive files)
 
-High-blast-radius markdown — `spike/CLAUDE.md`, the crate `CLAUDE.md`s,
-AGENTS-tier steering prose, the skills — is CONDUCTOR-authored, always. The
-reason is cost: these files sit in every future subagent's context-window,
-forever — every line is re-billed, in money and attention and wallclock, on
-every dispatch — so they must carry only what is critical, and must never
-accrete at the whim of whichever builder happened to be passing. Builders
-surface the need and PROPOSE text in their reports (a proposed bullet is a
-welcome deliverable); the conductor holds both the JUDGMENT seat (is this worth
-a permanent seat in every context? which file does it belong in?) and the
-EDITORIAL-CRITIC seat (make it tiny, focused, effective), and issues the final
-edit once, in conductor voice, when the fold has all the information in hand.
-The no-churn laws stand: the edit is worth getting right, once — and it is
-worth a Fable-token Edit to do so.
+Only Fable- and Sol-class conductors may author high-blast-radius ML-model
+steering documents: `spike/CLAUDE.md`, the crate `CLAUDE.md`s, AGENTS-tier
+steering prose, and skills. If your model class or applicable rules are
+uncertain, stop and ask the human before editing one.
+
+These files sit in every future subagent's context-window, forever — every line
+is re-billed, in money and attention and wallclock, on every dispatch — so they
+must carry only what is critical. Builders and other conductors surface the need
+and PROPOSE invariant-concepts in their reports, if they feel their work merits
+a 'forever invariant' that cannot be expressed fully in the typesystem, that
+belongs in-window in every subsequent builder for eternity. The authorized
+conductor holds both the JUDGMENT seat (is this worth a permanent seat in every
+context? which file does it belong in?) and the EDITORIAL-CRITIC seat (make it
+tiny, focused, effective), and issues the final edit once, in conductor voice,
+when the fold has all the information in hand. The no-churn laws stand: the edit
+is worth getting right once.
 
 ## Reading-guide
 
@@ -168,25 +154,6 @@ files:
 - SIBLINGS.md (a mapping of Dorc's concepts and values against various related
   tools, so it's always clear where *our* value-positioning and goals lies)
 
-*You* may not ever read anything in the quarantine, unless directly asked to by
-the human. However, your subagents, in some cases, may. (Fable-class subagents,
-where merited, are under the same memetic-hazard constraints as you; they may
-not inspect the quarantine.)
-
-Opus/Sonnet and foreign-lineage models *may* read inside the quarantine; and in
-particular, *must* be directed to read this file before any other work:
-
-`Research/quarantine-DO-NOT-READ/AGENTS.for-builders-only.md`
-
-The instructions in that file *may* affect the work you hand them, it's mildly
-unlikely, but it also tells them how to handle the cases where it does, and need
-not concern you. If they need to punt back up to you because of those
-instructions, they will include instructions for *you* on how to properly handle
-that situation. Within one narrow band described therein, their judgement trumps
-yours (specifically, they will instruct you to load an opaque-review skill. Do
-not load it prospectively, only if asked.)
-
-
 ## Git hygiene
 
 Mint yourself a conductor-worktree before making mutative changes yourself,
@@ -195,21 +162,14 @@ where work is essentially complete, delete it and clean up after yourself; your
 final deliverable will often be a single, populated branch, ready for the
 human's fast-forward-to / merge-into-main.
 
-Use the harness-built-in worktree feature for mutative builders and scouts when
-it actually provides durable isolation. Otherwise create a dedicated `ai/*`
-worktree yourself. In either case, give the builder the absolute worktree path,
-expected branch and tip, expected initial dirt, and require **every** git command
-(read-only included) as `git -C <absolute-worktree> …`. A vanished or misbased
-worktree is then a loud stop instead of a command silently landing in a sibling.
+Use a dedicated worktree for mutative subagents unless their model-specific
+supplement gives different worktree instructions.
 
-Harness-managed worktrees have caveats:
-
-- do not assume their base: verify it against the conductor-stated tip before
-  any read or edit, and correct it only through the brief's authorized setup
-- they're automatically deleted when the builder returns; if you resume a
-  crashed (or checkpoint-pausing) builder, their worktree may be gone (usually
-  no big deal if they're committing granularly as this project requires; simply
-  have them create a new one from their same branch.)
+When manually minting worktrees: Give the builder the absolute worktree path,
+expected branch and tip, expected initial dirt, and require **every** git
+command (read-only included) as `git -C <absolute-worktree> …`. A vanished or
+misbased worktree is then a loud stop instead of a command silently landing in a
+sibling. (This is not necessary for harness-managed worktrees.)
 
 Avoid permanently encoding git-hashes anywhere unless they're referring to quite
 old work, *especially* in current/live branches - our git-history is
@@ -234,8 +194,8 @@ concurrently.) Avoid dangling tips; cherry-pick only in extremis.
 
 You'll often (though not always) mint an overarching conductor-ledger near the
 start of work; as with all docs, use the lowest unused docID in your round.
-(Some docs with your ID may be in quarantine or in sibling worktrees/branches;
-be careful when browsing/listing.)
+(Some docs with your ID may be in sibling worktrees or branches; be careful when
+browsing or listing.)
 
 Update the ledger *occasionally* but commit *granularly* - batch updates when
 taking a multi-turn design interaction with the human, and hold updates until
@@ -285,11 +245,11 @@ either committed elsewhere or the human explicitly says to drop it.
 If the work touches correctness/kernel material, load `verified-core-discipline`
 (the instrument map). A spec-touching pass (minispec) is NOT autonomous-friendly —
 clear it with the human first, and where predictable, schedule the failing
-spec-change/spec-XFAIL BEFORE the Opus builders.
+spec-change/spec-XFAIL BEFORE implementation begins.
 
 Your judgement and the human's direct requests reign; but gently, avoid
 multi-stop, phased work, except where there's a clear technical benefit. (Again,
-Opus builders are competent and can carry through long-running lanes.)
+capable builders can carry through long-running lanes.)
 
 The benefit of a stop-work is usually *review*, and review is expensive. If it
 doesn't warrant you actually reviewing, then there's not much reason to stop.
