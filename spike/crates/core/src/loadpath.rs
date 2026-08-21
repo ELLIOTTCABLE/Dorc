@@ -88,6 +88,42 @@ impl Cwd {
         (target.contains('/') || target.contains('\\')).then(|| self.resolve_operand(target))?
     }
 
+    /// Where a resolved controller path stands RELATIVE to this working directory, or `None` when
+    /// it stands outside it.
+    ///
+    /// The inverse of [`Self::resolve_operand`], sited beside it for the reason the module header
+    /// gives: an emitter that re-derived the relation would be a second answer to where a
+    /// controller path stands, and the two would drift. Its consumer is artifact MIRRORING — the
+    /// artifact root stands in for the load cwd, so a dependency the run resolved under that
+    /// directory is placed at the same relative path and every authored `.` operand resolves on the
+    /// target unchanged.
+    ///
+    /// A path outside the working directory answers `None` rather than reaching for `..`: a
+    /// controller path that escapes cannot be materialized on a target at all
+    /// (`need-controller-paths-never-cross-hosts`), so "cannot be mirrored" is the honest answer.
+    /// An unknown cwd answers nothing either — no relative operand ever resolved under one, so no
+    /// loaded dependency can be standing beneath it.
+    ///
+    /// Comparison is EXACT and never case-folded: the cwd and the key were produced by one join in
+    /// one process, so they agree byte-for-byte, and folding case would be a guess about a
+    /// filesystem this seat may not ask.
+    #[must_use]
+    pub fn relativize(&self, path: &str) -> Option<String> {
+        let here = self.0.as_deref()?;
+        let path = normalize(path);
+        if !is_absolute(&path) {
+            return Some(path);
+        }
+        // The flat virtual directory contains no absolute region, so it can claim nothing rooted:
+        // an empty prefix would otherwise strip the leading separator off every absolute path.
+        if here.is_empty() {
+            return None;
+        }
+        path.strip_prefix(here)
+            .and_then(|rest| rest.strip_prefix('/'))
+            .map(str::to_owned)
+    }
+
     /// Where a path OPERAND lands: the same join, without the `.`-operand's slash-less refusal.
     ///
     /// A path the invocation names (`--book=x.sh`, `-o pkg.oracle.sh`) is a filesystem operand the
@@ -187,6 +223,62 @@ mod tests {
         assert_eq!(
             ops.resolve_dot("./helpers.sh").as_deref(),
             ops.resolve_dot("helpers/../helpers.sh").as_deref()
+        );
+    }
+
+    /// The inverse, in the cells that differ. The round-trip is what artifact mirroring rests on:
+    /// a dependency the run resolved UNDER the load cwd comes back as the same relative path it was
+    /// spelled with, so placing it under an artifact root leaves the authored operand correct.
+    #[test]
+    fn a_resolved_path_relativizes_back_to_its_spelling_under_the_working_directory() {
+        let ops = Cwd::at("/ops");
+        assert_eq!(
+            ops.relativize("/ops/oracles/alpha.sh").as_deref(),
+            Some("oracles/alpha.sh"),
+            "a path under the cwd comes back relative to it"
+        );
+        let resolved = ops.resolve_dot("./oracles/alpha.sh").expect("resolves");
+        assert_eq!(
+            ops.relativize(&resolved).as_deref(),
+            Some("oracles/alpha.sh"),
+            "resolve-then-relativize is the identity on the spelling, which is the mirroring rule"
+        );
+        assert_eq!(
+            ops.relativize("/etc/other.sh"),
+            None,
+            "a path OUTSIDE the cwd cannot be mirrored — never a `..` that escapes an artifact root"
+        );
+        assert_eq!(
+            ops.relativize("/ops"),
+            None,
+            "the directory is not a file in it"
+        );
+        assert_eq!(
+            ops.relativize("/opsi/alpha.sh"),
+            None,
+            "a sibling sharing a textual prefix is not inside"
+        );
+        assert_eq!(
+            Cwd::at("C:/work")
+                .relativize("C:/work/pkg/alpha.sh")
+                .as_deref(),
+            Some("pkg/alpha.sh"),
+            "the drive-lettered spelling of the same rule — the cwd this project's other leg has"
+        );
+        assert_eq!(
+            Cwd::at("").relativize("/etc/alpha.sh"),
+            None,
+            "the flat virtual directory holds no absolute region and claims none"
+        );
+        assert_eq!(
+            Cwd::at("").relativize("./alpha.sh").as_deref(),
+            Some("alpha.sh"),
+            "a relative path is already relative to whatever cwd it was resolved against"
+        );
+        assert_eq!(
+            Cwd::unknown().relativize("alpha.sh"),
+            None,
+            "nothing relative ever resolved under an unknown cwd, so nothing stands beneath it"
         );
     }
 

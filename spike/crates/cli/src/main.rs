@@ -2580,6 +2580,7 @@ fn select_artifact_form(
     };
     let request = args.form.map_or(FormRequest::Auto, FormRequest::Explicit);
     select(
+        snapshot.cwd(),
         snapshot.source_paths(),
         &projection,
         &loads,

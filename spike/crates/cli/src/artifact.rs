@@ -19,9 +19,16 @@
 //! relative layout under the artifact root makes every authored operand — the book's and every
 //! nested one inside a copied file — resolve exactly as it did controller-side, with no rewritten
 //! operand, no generated root variable, and no book byte moved. That is the cheapest correct
-//! placement, and the honest availability question becomes a path question: an absolute or
-//! escaping controller path cannot be mirrored, and the form is unavailable rather than fudged
-//! (`need-controller-paths-never-cross-hosts`).
+//! placement, and the honest availability question becomes a path question: a controller path
+//! outside the load working directory cannot be mirrored, and the form is unavailable rather than
+//! fudged (`need-controller-paths-never-cross-hosts`).
+//!
+//! The mirroring is therefore stated AGAINST THE LOAD CWD and never against a path's own spelling.
+//! Every source a book `.` reaches is filed under its CANONICAL key, which is absolute whenever the
+//! edge could answer where the run stands — so a seat that asked whether the stored spelling looked
+//! relative would answer "unplaceable" for every real invocation while every in-process test, whose
+//! modelled cwd is the flat virtual one, said otherwise. `Cwd::relativize` is the one rule both
+//! worlds go through.
 //!
 //! # Why flattening REFUSES rather than inlining
 //!
@@ -34,6 +41,7 @@
 //! available and byte-identical there — which is why the whole existing corpus is unaffected.
 
 use dorc_core::Span;
+use dorc_core::loadpath::Cwd;
 
 use crate::bundle::{BundleProjection, BundleRootId};
 
@@ -283,6 +291,19 @@ pub fn placeable(authored: &str) -> Option<String> {
     (!parts.is_empty()).then(|| parts.join("/"))
 }
 
+/// Where a dependency the run resolved to `authored` is MIRRORED under the artifact root, or `None`
+/// when it cannot be placed there.
+///
+/// Two refusals compose, and they refuse different things: [`Cwd::relativize`] refuses a path that
+/// stands OUTSIDE the load working directory (there is no relative spelling of it to mirror), and
+/// [`placeable`] refuses a shape that could not be a destination under a root. The second is
+/// belt-and-braces over the first — `relativize` already yields a normalized relative path — and
+/// refusing twice costs nothing on a write path.
+#[must_use]
+pub fn mirrored(cwd: &Cwd, authored: &str) -> Option<String> {
+    placeable(&cwd.relativize(authored)?)
+}
+
 /// The dependency files a multipart set would place, or the count that made it impossible.
 ///
 /// Deduplicated by DESTINATION: a diamond reaches one file through two occurrences, and both
@@ -290,6 +311,7 @@ pub fn placeable(authored: &str) -> Option<String> {
 /// destination is unplaceable rather than last-wins — an artifact whose dependency depends on
 /// which occurrence was walked last is not a projection of anything.
 fn dependency_files(
+    cwd: &Cwd,
     snapshot_paths: &[String],
     projection: &BundleProjection,
     loads: &[BookLoad],
@@ -312,7 +334,7 @@ fn dependency_files(
             let authored = snapshot_paths
                 .get(file.copied().source().0 as usize)
                 .map_or("", String::as_str);
-            let Some(destination) = placeable(authored) else {
+            let Some(destination) = mirrored(cwd, authored) else {
                 unplaceable = unplaceable.saturating_add(1);
                 continue;
             };
@@ -387,6 +409,7 @@ impl Selection {
 /// file is created — rather than returning a different form (`30I` §14: whether explicit
 /// single-stream intent may silently return multipart output is not builder latitude).
 pub fn select(
+    cwd: &Cwd,
     snapshot_paths: &[String],
     projection: &BundleProjection,
     loads: &[BookLoad],
@@ -399,7 +422,7 @@ pub fn select(
     let multipart = match posture {
         StreamPosture::SingleStream => Err(None),
         StreamPosture::Materializable => {
-            dependency_files(snapshot_paths, projection, loads).map_err(Some)
+            dependency_files(cwd, snapshot_paths, projection, loads).map_err(Some)
         }
     };
 
@@ -459,10 +482,11 @@ pub fn select(
 #[cfg(test)]
 mod tests {
     use super::{
-        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, StreamPosture,
+        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, StreamPosture, mirrored,
         placeable, select,
     };
     use crate::bundle::BundleProjection;
+    use dorc_core::loadpath::Cwd;
 
     fn empty() -> BundleProjection {
         BundleProjection::default()
@@ -474,7 +498,7 @@ mod tests {
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<ArtifactSet, FormRefusal> {
-        select(&[], &empty(), loads, request, posture)
+        select(&Cwd::default(), &[], &empty(), loads, request, posture)
             .map(|selection| selection.with_plan(plan_sh.to_owned()))
     }
 
@@ -569,7 +593,7 @@ mod tests {
         paths: Vec<String>,
         srcs: Vec<String>,
     ) -> dorc_analysis::load::LoadAccount {
-        let cwd = dorc_core::loadpath::Cwd::default();
+        let cwd = Cwd::default();
         let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd,
             paths,
@@ -647,10 +671,22 @@ mod tests {
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<super::Selection, FormRefusal> {
-        let cwd = dorc_core::loadpath::Cwd::default();
+        book_sourced_at(Cwd::default(), book, paths, srcs, request, posture)
+    }
+
+    /// The same, with the modelled working directory named — the axis production and the in-process
+    /// drivers differ on, and therefore the axis a placement rule must be measured across.
+    fn book_sourced_at(
+        cwd: Cwd,
+        book: &str,
+        paths: Vec<String>,
+        srcs: Vec<String>,
+        request: FormRequest,
+        posture: StreamPosture,
+    ) -> Result<super::Selection, FormRefusal> {
         let reached = crate::snapshot::book_reached(&cwd, &paths, &srcs, book);
         let snapshot = crate::snapshot::StaticLoadSnapshot::over(
-            cwd,
+            cwd.clone(),
             paths,
             srcs,
             &crate::snapshot::LoadPositions::book_sourced(reached),
@@ -669,6 +705,7 @@ mod tests {
             .expect("one closed occurrence forest");
         let loads = super::book_loads(&cfg, &ast, &projection);
         select(
+            &cwd,
             snapshot.source_paths(),
             &projection,
             &loads,
@@ -731,10 +768,81 @@ mod tests {
         );
     }
 
-    /// Placement is the availability question, so its refusals are load-bearing: an absolute or
-    /// escaping controller path cannot be mirrored under an artifact root, and a mirrored tree is
-    /// exactly what lets every authored operand — the book's and every nested one — resolve
-    /// unchanged (`30I` §7.4).
+    /// THE PRODUCTION CWD, which is the shape every real invocation has and no other test here had.
+    ///
+    /// `invocation_cwd()` answers an ABSOLUTE directory whenever the platform can say where the run
+    /// stands, and every book-sourced dependency is then filed under an absolute canonical key. A
+    /// placement rule keyed on the stored spelling therefore answered "unplaceable" for every real
+    /// book while every test above, whose modelled cwd is the flat virtual one, said the opposite —
+    /// so `dorc plan --artifact-dir out` on a book that sourced a package silently fell back to the
+    /// preserved tree and published its plan with no dependency beside it. Mirroring is stated
+    /// against the load cwd for exactly this reason, and this is the cell that measures it.
+    #[test]
+    fn a_dependency_under_an_absolute_load_cwd_still_mirrors() {
+        let selection = book_sourced_at(
+            Cwd::at("/ops/case"),
+            ". ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["/ops/case/wombat.oracle.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("a dependency inside the load cwd is placeable");
+        assert_eq!(selection.form(), ArtifactForm::Multipart);
+        assert_eq!(selection.fallback(), None);
+        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            ["plan.sh", "wombat.oracle.sh"],
+            "the destination is the operand's own spelling, recovered through the cwd"
+        );
+    }
+
+    /// A dependency the book reached OUTSIDE the load working directory has no relative spelling
+    /// under an artifact root, so the form is unavailable rather than fudged — the half of
+    /// `need-controller-paths-never-cross-hosts` that a cwd-relative rule must not lose.
+    #[test]
+    fn a_dependency_outside_the_load_cwd_is_unplaceable() {
+        let selection = book_sourced_at(
+            Cwd::at("/ops/case"),
+            ". /opt/shared/wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["/opt/shared/wombat.oracle.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("auto always lands somewhere");
+        assert_eq!(selection.form(), ArtifactForm::PreservedBookTree);
+        assert_eq!(
+            selection.fallback(),
+            Some(FormFallback::DependencyUnplaceable { loads: 1 })
+        );
+    }
+
+    /// Placement is the availability question, so its refusals are load-bearing: a path outside the
+    /// load working directory, or one whose shape could not be a destination, cannot be mirrored
+    /// under an artifact root — and a mirrored tree is exactly what lets every authored operand,
+    /// the book's and every nested one, resolve unchanged (`30I` §7.4).
+    #[test]
+    fn only_a_path_inside_the_load_cwd_can_be_mirrored() {
+        let case = Cwd::at("/ops/case");
+        assert_eq!(
+            mirrored(&case, "/ops/case/oracles/alpha.sh"),
+            Some("oracles/alpha.sh".into())
+        );
+        assert_eq!(mirrored(&case, "/opt/alpha.sh"), None);
+        assert_eq!(mirrored(&case, "/ops/alpha.sh"), None);
+        assert_eq!(mirrored(&case, "./alpha.sh"), Some("alpha.sh".into()));
+        assert_eq!(
+            mirrored(&Cwd::default(), "alpha.sh"),
+            Some("alpha.sh".into())
+        );
+        assert_eq!(mirrored(&Cwd::default(), "/etc/alpha.sh"), None);
+        assert_eq!(mirrored(&Cwd::unknown(), "alpha.sh"), None);
+    }
+
+    /// The path-SHAPE half, independent of any cwd: what could be a destination under a root at all.
     #[test]
     fn only_a_relative_traversal_free_path_can_be_mirrored() {
         assert_eq!(
