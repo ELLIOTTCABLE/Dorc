@@ -110,6 +110,12 @@ new entries to the matching section.
 
 ## Law — vocabulary discipline
 
+- **a-second-key-axis-never-widens-siteid** (`30N:rul-region-refusal-discloses-region-keyed`) —
+  `SpineRenderDecision` carries `site` AND `region`, at most one populated, on
+  `SpineRegionDecision`'s precedent. A region owns no execution, so keying its row by a
+  contributing invocation's `SiteId` would be the smear the ruling forbids, and widening
+  `SiteId` to hold a region would weaken `inv-site-keyed-results` for every other consumer.
+  A new identity gets a new axis.
 - **a-record-says-what-its-population-holds** (the `30Nd` meaning-audit) — the census proves
   every Spine species PROJECTS; it does not prove a field means what its name says. A Spine
   field's doc states the population its writer actually produces: universally-`None` columns

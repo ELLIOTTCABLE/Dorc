@@ -108,6 +108,12 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   definition vectors only (`oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`) —
   and per `spike/CLAUDE.md rul-happy-path-is-a-closed-set`, every idiomatic tier above the
   defensive floor is licensed only by PROVEN enumeration, never assumption.
+  `PinnedDefinitions` is SPLIT along the line a second artifact form forces: `invoked`
+  is the DECISION (which body a guard calls, under what name — what the Spine records,
+  and where a misalignment is pope-sin tier), `definitions()` is the ordered form-neutral
+  material, and `hoisted()` is one form's sh typesetting over it. A form that lays its
+  dependencies out differently re-typesets from the same bindings rather than
+  re-deriving them.
   Three rules in order: CONTENT-DEDUP (byte-identical bodies are one definition); ALREADY-IN-PLACE
   (a body the book's own text defines at top level with the same bytes is not copied — the
   EMITTED preamble never carries two same-named funcdefs, which is what dissolves the
@@ -200,7 +206,14 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   neither `dorc why` nor a second artifact form could ever need to account for it — the
   elided line's commented-original wrapping is the exemplar (one `Replace`, two byte-shapes,
   same observables). `project_plan` records what it decided in the same act, so a projection
-  whose render decisions nothing wrote down cannot exist.
+  whose render decisions nothing wrote down cannot exist. A refused edit carries BOTH
+  identities and exactly one is populated: `RefusedEdit.leaf` for an execution,
+  `RefusedEdit.region` for the one authored edit many executions share
+  (`30N:rul-region-refusal-discloses-region-keyed`). The disclosure surfaces read whichever
+  the refusal wears — `render-heredoc-refused` at a leaf, `render-region-refused` at a
+  region — and NEVER smear one region's refusal across its contributing invocations, which
+  would report N refusals for one edit and point N readers at calls that did nothing wrong
+  (`271:rul-sin-ordering`).
 - **no-specialized-shell** (`30L:rul-edit-authored-definition-once` ·
   `pin-no-generated-specialization`) — a shared region's edit lands ONCE, at the authored
   function-body span; definitions stay in place and calls stay calls. Never a per-call

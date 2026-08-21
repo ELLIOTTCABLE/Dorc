@@ -55,6 +55,21 @@ discipline: one rule per bullet, slugged; append to the matching section.
   resolves to current source only on exact snapshot-byte agreement and stays aid-only either way.
   Static incoherence renders its located diagnostic but returns before archive stdout, preserving
   the existing refusal/exit. No locator value may enter loading, planning, or authority.
+- **artifact-forms-derive-from-one-structure** (`30I:step-7-reify-plan-artifact-forms`) —
+  `cli::artifact` settles ONE `Selection` (form + fallback + dependency files) from
+  authored-before-contact inputs, and `Selection::with_plan` binds it to the plan
+  projection. The stdout stream and the published tree both READ that `ArtifactSet`;
+  there is deliberately no second assembly of the same bytes to fall back to. A form's
+  dependency LAYOUT is the authored relative one, mirrored under the artifact root,
+  because that is what makes every authored `.` operand — the book's and every nested
+  one — resolve on the target unchanged (the cwd-analysis answer): the availability
+  question is therefore a PATH question, and an absolute or escaping controller path
+  makes the form unavailable rather than fudged. `plan.sh` is byte-identical under all
+  three forms; a form is about where the generated files live, never about what the plan
+  says. FLATTENING REFUSES rather than inlining while textual inlining rests on the
+  `floor30-inline-dot-boundary` measurement alone, so an explicitly named form that
+  cannot be served refuses pre-network and `auto` falls back and SAYS SO — never a
+  silently different form.
 - **region-openers-are-demanded-not-defaulted** (`30N:rul-census-inputs-are-non-optional`) — the
   elision-region census is handed `region::CensusOpeners`, whose constructor requires EVERY
   opener signal the census cannot see for itself: `funcenv::unresolvable_loads`, the definition
