@@ -54,18 +54,34 @@ use crate::bundle::{BundleProjection, BundleRootId};
 /// a bound that is argued.
 const MAX_DEPENDENCIES: usize = 256;
 
-/// Which of the three semantic emission forms an artifact set is in (`30I` §7.1).
+/// Which semantic emission form an artifact set is in (`30I` §7.1, as widened by
+/// `30Ng:rul-bundle-at-dorc-lang-boundaries`).
 ///
-/// Ordered by FLATTENING, most first, because that is the order `auto` searches.
+/// Ordered by FLATTENING, most first, because that is the order `auto` searches. The BUNDLE-POINT
+/// axis is what the order is over, and both of its ends stay reachable by name: [`Flattened`] is one
+/// emission and [`MirroredTree`] is none at all, with the default sitting between them
+/// (`30Ng` §5, human-typed: both extremes fully supported, the default at neither).
+///
+/// Every spelling here is STRAWMAN and renames in place (`rul-strawman-formats-no-compat`); what is
+/// ruled is the axis and its ends, never the words.
+///
+/// [`Flattened`]: Self::Flattened
+/// [`MirroredTree`]: Self::MirroredTree
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ArtifactForm {
-    /// One `plan.sh` and nothing else — what a byte pipe and explicit single-stream intent take.
+    /// One `plan.sh` and nothing else: every book-reached dorc-lang subgraph stands in the stream
+    /// where its `.` stood. What a kept stdout takes, and what a byte-pipe transport needs.
     Flattened,
-    /// `plan.sh` plus its contracted dorc-lang dependencies, mirrored at their authored relative
-    /// paths under the artifact root. The intended attention-preserving default.
+    /// `plan.sh` plus ONE bundle per book-sited dorc-lang root, with the plan's own imports naming
+    /// them. The intended attention-preserving default.
     Multipart,
+    /// `plan.sh` plus EVERY reached source, each mirrored at its own authored relative path, and no
+    /// import re-said. The no-flatten end of the axis: the artifact is the author's own file tree,
+    /// so an admin who wants to read the dependencies as their authors wrote them can ask for that
+    /// and get exactly it.
+    MirroredTree,
     /// The authored source boundaries survive untouched and the artifact set carries no
-    /// dependencies: v0 could neither inline them nor place them, so it miscompiles nothing and
+    /// dependencies: v0 could neither absorb them nor place them, so it miscompiles nothing and
     /// says so.
     PreservedBookTree,
 }
@@ -78,6 +94,7 @@ impl ArtifactForm {
         match self {
             Self::Flattened => "flattened",
             Self::Multipart => "multipart",
+            Self::MirroredTree => "mirrored-tree",
             Self::PreservedBookTree => "preserved-book-tree",
         }
     }
@@ -523,6 +540,57 @@ fn bundle_files(
     ))
 }
 
+/// Every reached source at its OWN authored relative path — the no-flatten end of the bundle-point
+/// axis (`30Ng` §5), and the placement machinery this arc inherited, kept reachable by name.
+///
+/// No import is re-said, because none has to be: a file mirrored at the spelling its sourcer used
+/// resolves on the target exactly as it did controller-side, which is the cwd-analysis answer `30I`
+/// §7.4 asks for. That is the whole difference from the default — the artifact is the author's tree
+/// rather than the engine's composition of it.
+fn mirrored_files(
+    cwd: &Cwd,
+    snapshot_paths: &[String],
+    projection: &BundleProjection,
+    loads: &[BookLoad],
+) -> Result<Vec<ArtifactFile>, usize> {
+    let wanted: std::collections::BTreeSet<BundleRootId> =
+        loads.iter().map(|load| load.root).collect();
+    let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+    let mut unplaceable = 0_usize;
+    for id in &wanted {
+        let Some(root) = projection.roots().iter().find(|root| root.id() == *id) else {
+            unplaceable = unplaceable.saturating_add(1);
+            continue;
+        };
+        for &file in root.files() {
+            let Some(file) = projection.file(file) else {
+                continue;
+            };
+            let authored = snapshot_paths
+                .get(file.copied().source().0 as usize)
+                .map_or("", String::as_str);
+            let (Some(destination), bytes) = (mirrored(cwd, authored), file.copied().text()) else {
+                unplaceable = unplaceable.saturating_add(1);
+                continue;
+            };
+            match placed.get(&destination) {
+                Some(existing) if existing != bytes => {
+                    unplaceable = unplaceable.saturating_add(1);
+                }
+                Some(_) => {}
+                None => drop(placed.insert(destination, bytes.to_owned())),
+            }
+        }
+    }
+    if unplaceable > 0 || placed.len() > MAX_DEPENDENCIES {
+        return Err(unplaceable.max(placed.len().saturating_sub(MAX_DEPENDENCIES)));
+    }
+    Ok(placed
+        .into_iter()
+        .map(|(path, bytes)| ArtifactFile { path, bytes })
+        .collect())
+}
+
 /// The in-place substitutions a single-stream set needs, or `None` when one of its loads cannot be
 /// served by the measured shape.
 ///
@@ -664,6 +732,25 @@ pub fn select(
             Err(Some(unplaceable)) => Err(FormRefusal::Unavailable {
                 form: ArtifactForm::Multipart,
                 because: FormFallback::DependencyUnplaceable { loads: unplaceable },
+            }),
+        },
+        FormRequest::Explicit(ArtifactForm::MirroredTree) => match posture {
+            StreamPosture::Materializable => {
+                match mirrored_files(cwd, snapshot_paths, projection, loads) {
+                    Ok(dependencies) => Ok(Selection {
+                        form: ArtifactForm::MirroredTree,
+                        fallback: None,
+                        dependencies,
+                        imports: Vec::new(),
+                    }),
+                    Err(unplaceable) => Err(FormRefusal::Unavailable {
+                        form: ArtifactForm::MirroredTree,
+                        because: FormFallback::DependencyUnplaceable { loads: unplaceable },
+                    }),
+                }
+            }
+            _ => Err(FormRefusal::NoArtifactStream {
+                form: ArtifactForm::MirroredTree,
             }),
         },
         // A preserved tree is an artifact that needs files beside it, so naming it on a stream that
@@ -1149,6 +1236,68 @@ mod tests {
             paths,
             ["plan.sh", "wombat.oracle.dorc-bundle.sh"],
             "the destination is the operand's own spelling, recovered through the cwd"
+        );
+    }
+
+    /// BOTH ENDS of the bundle-point axis, over one world (`30Ng` §5, human-typed: both extremes
+    /// fully supported, and the default at neither).
+    ///
+    /// The pair is the axis made observable. Most-flattened is ONE emission with the subgraph in the
+    /// stream; no-flatten is the author's own tree, file for file, with no import re-said — and the
+    /// default sits between them, composing one bundle per root and saying where it points.
+    #[test]
+    fn both_ends_of_the_bundle_point_axis_are_reachable_by_name() {
+        let world = || {
+            (
+                ". ./alpha.oracle.sh\nwombat sync a.conf\n",
+                vec![
+                    "/ops/case/common.oracle.sh".to_owned(),
+                    "/ops/case/alpha.oracle.sh".to_owned(),
+                ],
+                vec![
+                    "# dorc-lang/v0.2\nsm_common_query() { :; }\n".to_owned(),
+                    "# dorc-lang/v0.2\n. ./common.oracle.sh\nalpha__is_converged() { :; }\n"
+                        .to_owned(),
+                ],
+            )
+        };
+        let at = Cwd::at("/ops/case");
+
+        let (book, paths, srcs) = world();
+        let flattened = book_sourced_at(
+            &at,
+            book,
+            paths,
+            srcs,
+            FormRequest::Explicit(ArtifactForm::Flattened),
+            StreamPosture::PipedArtifact,
+        )
+        .expect("the one load is absorbable");
+        assert!(
+            flattened.dependencies.is_empty() && flattened.imports().len() == 1,
+            "one emission, and the subgraph is IN it"
+        );
+
+        let (book, paths, srcs) = world();
+        let mirrored_tree = book_sourced_at(
+            &at,
+            book,
+            paths,
+            srcs,
+            FormRequest::Explicit(ArtifactForm::MirroredTree),
+            StreamPosture::Materializable,
+        )
+        .expect("every source is inside the load cwd");
+        assert!(
+            mirrored_tree.imports().is_empty(),
+            "nothing is re-said, because a mirrored file needs no re-pointing"
+        );
+        let set = mirrored_tree.with_plan("#!/bin/sh\n".to_owned());
+        let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            ["plan.sh", "alpha.oracle.sh", "common.oracle.sh"],
+            "no flattening at all: each source at the spelling its own sourcer used"
         );
     }
 

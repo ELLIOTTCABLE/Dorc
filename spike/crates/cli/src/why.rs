@@ -1902,15 +1902,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_aid::diag::line_col(book_src, lo).0;
         let raw = book_src.get(lo..hi).unwrap_or("<source unavailable>");
-        // EVERY contributing invocation, keyed or not (`30Ng` §2's entire-DAG directive): the line
-        // comes from the call's own source back-map, which an unkeyable route carries too — so a
-        // contributor with no plan site is still named rather than quietly absent from the list of
-        // calls this shared edit is universal over.
-        let invocations: Vec<usize> = region
-            .routes
-            .asts()
-            .map(|call| dorc_aid::diag::line_col(book_src, ast.node(call).span.lo.0 as usize).0)
-            .collect();
+        let invocations = region_invocation_lines(region, ast, book_src);
         sites.push(WhySite {
             line,
             word: raw.split_whitespace().next().unwrap_or("").to_owned(),
@@ -1944,12 +1936,33 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
     }
 }
 
+/// The book lines of EVERY invocation this shared edit is universal over (`30L` §9's
+/// definition-ward walk), keyed or not.
+///
+/// The line comes from the call's own source back-map, which a route the round could not key to a
+/// plan leaf carries too — so a contributor with no site identity is still NAMED rather than
+/// quietly absent (`30Ng` §2, human-typed: the entire DAG of causative contributors, never a
+/// sample). A reader told an edit is universal over twelve calls and shown eight goes looking for
+/// the four nobody mentioned.
+#[must_use]
+pub fn region_invocation_lines(
+    region: &dorc_plan::RegionStep,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+) -> Vec<usize> {
+    region
+        .routes
+        .asts()
+        .map(|call| dorc_aid::diag::line_col(book_src, ast.node(call).span.lo.0 as usize).0)
+        .collect()
+}
+
 /// The book lines of every authored region THIS call executes (`30L` §9's call-ward walk).
 ///
 /// Keyed by the call's own `AstId` through the region's route attribution, never by span
 /// containment: a region lives in a DEFINITION and a call lives wherever its author put it, so the
 /// two spans need not nest at all.
-fn region_lines_executed_by(
+pub fn region_lines_executed_by(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
@@ -2402,6 +2415,72 @@ mod brace_selector_tests {
                 "sm.dorc.Service:nginx@active".to_owned(),
             ]),
             "sm.dorc.Service:nginx@active"
+        );
+    }
+}
+
+#[cfg(test)]
+mod region_reach_tests {
+    //! The why plane's reach over a shared edit's contributors (`30Ng` §2, human-typed).
+    //!
+    //! Pinned at the VALUE seat rather than against rendered bytes, because the register these
+    //! values fill is `[unwritten:]` and legally stays that way (`prose-provenance-states`): a
+    //! render assertion would pass by measuring a placeholder. What must hold is that the seat is
+    //! handed EVERY contributor, which is what the arrangement will interpolate when it has words.
+
+    use dorc_core::spine::{RegionRoute, RegionRouteUnkeyed, RegionRoutes, UnkeyedRegionRoute};
+    use dorc_core::{AstId, SiteId, SourceFileId, Span};
+
+    /// A region step over `routes`, spanning nothing in particular: this seat reads the ROUTES.
+    fn region(routes: RegionRoutes) -> dorc_plan::RegionStep {
+        dorc_plan::RegionStep {
+            region: dorc_core::region::ElisionRegion::mint(
+                &dorc_core::region::RegionUniverse::of_book_custody_files([SourceFileId(0)]),
+                dorc_core::DefinitionId::at(
+                    SourceFileId(0),
+                    Span::new(dorc_core::BytePos(0), dorc_core::BytePos(40)),
+                ),
+                Span::new(dorc_core::BytePos(4), dorc_core::BytePos(24)),
+            )
+            .expect("the book surface admits the region"),
+            ast: AstId(0),
+            sh: "apt-get install -y \"$1\"".to_owned(),
+            disposition: dorc_plan::Disposition::Run,
+            routes,
+        }
+    }
+
+    /// EVERY contributing invocation reaches the surface, keyed or not.
+    ///
+    /// The unkeyable route is the half that used to vanish: it has no plan site, so a walk over
+    /// keyed routes alone dropped it silently and the reader was told the edit is shared by fewer
+    /// calls than share it.
+    #[test]
+    fn an_unkeyable_contributor_still_names_its_line() {
+        let book = "install_pkg nginx\ninstall_pkg curl\n";
+        let ast = dorc_syntax::parse(book).value;
+        // Two real command nodes, from the book's own tree: the seat resolves a LINE from each.
+        let calls: Vec<AstId> = ast
+            .iter()
+            .filter(|(_, node)| matches!(node.kind, dorc_syntax::ast::NodeKind::Simple { .. }))
+            .map(|(id, _)| id)
+            .collect();
+        let (first, second) = (calls[0], calls[1]);
+
+        let step = region(RegionRoutes::of(
+            vec![RegionRoute {
+                invocation: SiteId::leaf(dorc_plan::LeafId(0)),
+                ast: first,
+            }],
+            vec![UnkeyedRegionRoute {
+                ast: second,
+                reason: RegionRouteUnkeyed::NoPlanLeaf,
+            }],
+        ));
+        assert_eq!(
+            super::region_invocation_lines(&step, &ast, book),
+            vec![1, 2],
+            "both contributors reach the surface; the unkeyed one is not filtered away"
         );
     }
 }

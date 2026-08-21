@@ -664,12 +664,13 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             form = Some(match f.as_str() {
                 "flattened" => ArtifactForm::Flattened,
                 "multipart" => ArtifactForm::Multipart,
+                "mirrored-tree" => ArtifactForm::MirroredTree,
                 "preserved-book-tree" => ArtifactForm::PreservedBookTree,
                 other => {
                     return Err(value_not_recognized(
                         "--form",
                         other,
-                        "flattened|multipart|preserved-book-tree",
+                        "flattened|multipart|mirrored-tree|preserved-book-tree",
                     ));
                 }
             });
