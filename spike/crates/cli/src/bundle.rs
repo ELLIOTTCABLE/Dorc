@@ -20,7 +20,7 @@ pub struct BundleFileId(u32);
 
 impl BundleFileId {
     #[must_use]
-    const fn index(self) -> usize {
+    pub(crate) const fn index(self) -> usize {
         self.0 as usize
     }
 }
@@ -116,6 +116,16 @@ impl BundleFile {
         let _ = writeln!(out, "# dorc-bundle/v0: end source={}", self.origin_comment);
         out
     }
+
+    /// Byte offset where the exact copied segment begins in [`Self::render_sh`].
+    #[must_use]
+    pub(crate) fn copied_offset(&self, origin_comments: bool) -> usize {
+        if origin_comments {
+            format!("# dorc-bundle/v0: begin source={}\n", self.origin_comment).len()
+        } else {
+            0
+        }
+    }
 }
 
 /// One projected occurrence, retaining the loader's complete identity without flattening it.
@@ -192,11 +202,18 @@ pub struct BundleProjection {
 /// A strip diagnostic kept with the immutable source it describes.
 #[derive(Debug)]
 pub struct BundleDiagnostic {
+    file: BundleFileId,
     source: SourceFileId,
     diag: Diag,
 }
 
 impl BundleDiagnostic {
+    /// Generated occurrence file whose copy produced this diagnostic.
+    #[must_use]
+    pub const fn file(&self) -> BundleFileId {
+        self.file
+    }
+
     /// Snapshot source the diagnostic's span belongs to.
     #[must_use]
     pub const fn source(&self) -> SourceFileId {
@@ -366,10 +383,6 @@ pub fn project(
             .ok_or(BundleProjectionError::MissingSource { occurrence })?;
         let mapped = dorc_oracle::strip::strip_file_with_map(&mut Interner::default(), src);
         let source_id = dorc_analysis::funcenv::source_file_of_index(source);
-        diagnostics.extend(mapped.diags.into_iter().map(|diag| BundleDiagnostic {
-            source: source_id,
-            diag,
-        }));
         let root_occurrence = *root_occurrences
             .get(occurrence)
             .ok_or(BundleProjectionError::InvalidParent { occurrence })?;
@@ -379,6 +392,11 @@ pub fn project(
         let id = BundleFileId(
             u32::try_from(files.len()).map_err(|_| BundleProjectionError::IdentityOverflow)?,
         );
+        diagnostics.extend(mapped.diags.into_iter().map(|diag| BundleDiagnostic {
+            file: id,
+            source: source_id,
+            diag,
+        }));
         let storage_path = format!(
             "dorc-bundle/v0/root-{:08}/occurrence-{occurrence:08}.sh",
             root.index()

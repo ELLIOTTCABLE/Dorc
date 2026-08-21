@@ -3539,7 +3539,34 @@ pub fn render_cli_parts(
     filename: &str,
     interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
-    let document = diagnostic_document(None, ctx, diag, src, filename, interner);
+    let document = diagnostic_document(None, ctx, diag, src, filename, &[], interner);
+    crate::weave::to_render_parts(&weft::render_framed(&document, ctx.frame()))
+}
+
+/// Additional generated or intermediate locus beside a diagnostic's authored primary frame.
+/// Values remain sink-encoded by the ordinary frame renderer (`30I` section 9).
+#[derive(Debug, Clone, Copy)]
+pub struct DiagnosticFrame<'a> {
+    /// Display path or generated artifact label.
+    pub filename: &'a str,
+    /// Exact bytes whose line-number space the span uses.
+    pub source: &'a str,
+    /// Byte range in `source`.
+    pub span: Span,
+}
+
+/// The production staged diagnostic render with additional provenance frames.
+#[must_use]
+pub fn render_staged_cli_parts_with_frames(
+    stage: &str,
+    ctx: &RenderCtx<'_>,
+    diag: &Diag,
+    src: &str,
+    filename: &str,
+    frames: &[DiagnosticFrame<'_>],
+    interner: &dorc_core::Interner,
+) -> crate::tagged::RenderParts {
+    let document = diagnostic_document(Some(stage), ctx, diag, src, filename, frames, interner);
     crate::weave::to_render_parts(&weft::render_framed(&document, ctx.frame()))
 }
 
@@ -3554,7 +3581,7 @@ pub fn render_staged_cli_parts(
     filename: &str,
     interner: &dorc_core::Interner,
 ) -> crate::tagged::RenderParts {
-    let document = diagnostic_document(Some(stage), ctx, diag, src, filename, interner);
+    let document = diagnostic_document(Some(stage), ctx, diag, src, filename, &[], interner);
     crate::weave::to_render_parts(&weft::render_framed(&document, ctx.frame()))
 }
 
@@ -3570,6 +3597,7 @@ fn diagnostic_document(
     diag: &Diag,
     src: &str,
     filename: &str,
+    frames: &[DiagnosticFrame<'_>],
     interner: &dorc_core::Interner,
 ) -> weft::Document<crate::weave::Face> {
     use crate::weave::{mark, to_runs};
@@ -3605,6 +3633,15 @@ fn diagnostic_document(
                 false,
             ))));
         }
+    }
+    for frame in frames {
+        body.push(Node::new(NodeKind::Code(frame_block(
+            frame.span,
+            frame.source,
+            frame.filename,
+            None,
+            false,
+        ))));
     }
 
     let mut row = |lead: String, slug: &'static str, words: Vec<weft::Run<crate::weave::Face>>| {

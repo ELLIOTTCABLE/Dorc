@@ -898,11 +898,13 @@ fn run(
     // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
     let validation = dorc_oracle::validate::validate(&mut interner, &oracle_refs);
     let wrapper_incoherent = validation.wrapper_incoherent;
-    for stage in &validation.stages {
-        let source = stage
-            .file
-            .and_then(|i| Some((oracle_paths.get(i)?.as_str(), oracle_srcs.get(i)?.as_str())));
-        report_at(advisory, stage.stage, source, &stage.diags);
+    if mode != Mode::Bundle {
+        for stage in &validation.stages {
+            let source = stage
+                .file
+                .and_then(|i| Some((oracle_paths.get(i)?.as_str(), oracle_srcs.get(i)?.as_str())));
+            report_at(advisory, stage.stage, source, &stage.diags);
+        }
     }
 
     // The per-file PredictSets (the entity-resolution mechanism; shared interner — 204 seam #2). The
@@ -1002,18 +1004,33 @@ fn run(
         let Ok(projection) = dorc_cli::bundle::project(&snapshot, env.loads()) else {
             return Ok(RunOutcome::BookUnmodeled);
         };
+        let load_acts =
+            dorc_cli::provenance::LoadActs::of(&snapshot, &cfg.value, &parsed.value, env.loads());
+        for stage in &validation.stages {
+            for diagnostic in &stage.diags {
+                report_bundle_diagnostic(
+                    advisory,
+                    stage.stage,
+                    &snapshot,
+                    projection.projection(),
+                    &load_acts,
+                    stage.file.map_or(
+                        BundleDiagnosticSite::Unlocated,
+                        BundleDiagnosticSite::EveryOccurrence,
+                    ),
+                    diagnostic,
+                );
+            }
+        }
         for diagnostic in projection.diagnostics() {
-            let file = diagnostic.source().0 as usize;
-            let source = snapshot
-                .source_paths()
-                .get(file)
-                .zip(snapshot.source_srcs().get(file))
-                .map(|(path, src)| (path.as_str(), src.as_str()));
-            report_at(
+            report_bundle_diagnostic(
                 advisory,
                 "bundle",
-                source,
-                std::slice::from_ref(diagnostic.diag()),
+                &snapshot,
+                projection.projection(),
+                &load_acts,
+                BundleDiagnosticSite::Exact(diagnostic.file()),
+                diagnostic.diag(),
             );
         }
         print!("{}", projection.projection().render_archive());
@@ -4512,6 +4529,105 @@ fn detect_peel_present(p: &dorc_oracle::predict::Predict) -> bool {
     dorc_oracle::wrapper::detect_peel(p).is_some()
 }
 
+#[derive(Clone, Copy)]
+enum BundleDiagnosticSite {
+    Unlocated,
+    EveryOccurrence(usize),
+    Exact(dorc_cli::bundle::BundleFileId),
+}
+
+fn report_bundle_diagnostic(
+    advisory: bool,
+    stage: &str,
+    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
+    projection: &dorc_cli::bundle::BundleProjection,
+    load_acts: &dorc_cli::provenance::LoadActs,
+    site: BundleDiagnosticSite,
+    diag: &Diag,
+) {
+    if !advisory && diag.severity() != Severity::Error {
+        return;
+    }
+    let (source_file, exact_file) = match site {
+        BundleDiagnosticSite::Unlocated => {
+            report(stage, None, std::slice::from_ref(diag));
+            return;
+        }
+        BundleDiagnosticSite::EveryOccurrence(source) => (source, None),
+        BundleDiagnosticSite::Exact(file) => {
+            let Some(source) = projection
+                .file(file)
+                .map(|entry| entry.copied().source().0 as usize)
+            else {
+                report(stage, None, std::slice::from_ref(diag));
+                return;
+            };
+            (source, Some(file))
+        }
+    };
+    let source = snapshot
+        .source_paths()
+        .get(source_file)
+        .zip(snapshot.source_srcs().get(source_file));
+    let Some((filename, src)) = source else {
+        report(stage, None, std::slice::from_ref(diag));
+        return;
+    };
+    let Some(span) = diag.primary.span() else {
+        report(stage, Some((filename, src)), std::slice::from_ref(diag));
+        return;
+    };
+    let matching: Vec<_> = projection
+        .files()
+        .iter()
+        .filter(|file| file.copied().source().0 as usize == source_file)
+        .filter(|file| exact_file.is_none_or(|wanted| file.id() == wanted))
+        .collect();
+    if matching.is_empty() {
+        report(stage, Some((filename, src)), std::slice::from_ref(diag));
+        return;
+    }
+    for file in matching {
+        let Some((locator, head)) =
+            load_acts.locator_for_bundle(snapshot, projection, file.id(), span)
+        else {
+            report(stage, Some((filename, src)), std::slice::from_ref(diag));
+            continue;
+        };
+        let owned = dorc_cli::provenance::locator_frames(&locator, head, snapshot, projection);
+        report_located(stage, filename, src, diag, &owned);
+    }
+}
+
+fn report_located(
+    stage: &str,
+    filename: &str,
+    src: &str,
+    diag: &Diag,
+    frames: &[dorc_cli::provenance::LocatorFrame],
+) {
+    let interner = Interner::default();
+    let borrowed: Vec<_> = frames
+        .iter()
+        .map(|frame| dorc_aid::diag::DiagnosticFrame {
+            filename: &frame.filename,
+            source: &frame.source,
+            span: frame.span,
+        })
+        .collect();
+    let rendered = dorc_aid::diag::render_staged_cli_parts_with_frames(
+        stage,
+        &render_ctx(),
+        diag,
+        src,
+        filename,
+        &borrowed,
+        &interner,
+    )
+    .text();
+    write_rendered_diagnostic(stage, diag, &rendered);
+}
+
 fn report_at(advisory: bool, stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
     report(stage, source, &advisory_filter(advisory, diags));
 }
@@ -4574,12 +4690,9 @@ fn advisory_filter(advisory: bool, diags: &[Diag]) -> Vec<Diag> {
 /// piped is load-bearing: the e2e harness captures stderr to a FILE ⇒ non-tty ⇒ the color vanishes,
 /// so the gate-3/gate-7 needle-matching (and every golden) is byte-identical to the un-colored form.
 fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
-    use std::io::Write as _;
     // params_of resolves no interned handle at HEAD, so a default interner suffices (`27V`).
     let interner = Interner::default();
-    let mut w = anstream::stderr();
     for d in diags {
-        let (word, style) = severity_style(d.severity());
         let (filename, src) = source.unwrap_or(("", ""));
         let rendered = dorc_aid::diag::render_staged_cli_parts(
             stage,
@@ -4590,14 +4703,21 @@ fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
             &interner,
         )
         .text();
-        let prefix = format!("{stage}: {word}");
-        // ANSI decoration stays outside the typed render bytes.
-        let _ = match rendered.strip_prefix(&prefix) {
-            Some(rest) => write!(w, "{stage}: {style}{word}{style:#}{rest}"),
-            None => write!(w, "{rendered}"),
-        };
+        write_rendered_diagnostic(stage, d, &rendered);
     }
-    let _ = w.flush();
+}
+
+fn write_rendered_diagnostic(stage: &str, diag: &Diag, rendered: &str) {
+    use std::io::Write as _;
+    let (word, style) = severity_style(diag.severity());
+    let prefix = format!("{stage}: {word}");
+    let mut output = anstream::stderr();
+    // ANSI decoration stays outside the typed render bytes.
+    let _ = match rendered.strip_prefix(&prefix) {
+        Some(rest) => write!(output, "{stage}: {style}{word}{style:#}{rest}"),
+        None => write!(output, "{rendered}"),
+    };
+    let _ = output.flush();
 }
 
 /// The (severity word, [`anstyle::Style`]) for a diagnostic (ack-5 — color as the severity/tier
