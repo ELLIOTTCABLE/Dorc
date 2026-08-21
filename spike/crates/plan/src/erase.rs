@@ -412,6 +412,56 @@ apt_get__predict() {
         );
     }
 
+    /// `erasure-is-records-grounded-only`, the OTHER two static rc-0 shapes beside the bare
+    /// assignment above. The fold fixes each of these at 0 from the LANGUAGE, with nothing
+    /// measured behind it, so each proves its `||`-right dead and none of them may enter a ledger
+    /// whose name promises records. Red-first against a widening of `subtree_leaves_all` that
+    /// stopped asking what the controller IS.
+    /// Does the FOLD prove anything dead in this book at this guard rc? The non-vacuity half of
+    /// every negative pin below: an assertion that `prove_dead_branches` returns nothing is worth
+    /// something only where the fold really did fold.
+    fn fold_finds_a_dead_branch(m: &Model, rc: i32) -> bool {
+        let leaf_fact = leaf_facts(&m.cfg, &m.classes);
+        let observe = measured(m, rc);
+        let fold = crate::fold::fold(&m.ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
+        m.classes
+            .iter()
+            .any(|(node, _)| fold.dead_controller(m.cfg.node(*node).ast).is_some())
+    }
+
+    /// `erasure-is-records-grounded-only`, the funcdef shape beside the bare assignment above: the
+    /// fold fixes a funcdef statement at rc 0 from the LANGUAGE and really does prove the
+    /// `||`-right dead, and nothing measured stands behind that. Red-first against a widening of
+    /// `subtree_leaves_all` that stopped asking what the controller IS.
+    #[test]
+    fn a_funcdef_controller_proves_nothing_dead() {
+        let m = model("f() { :; } || apt-get install -y alpha\n");
+        assert!(fold_finds_a_dead_branch(&m, 0), "the fold must really fold");
+        assert!(
+            proofs_for(&m, 0).is_empty(),
+            "a language-fixed rc is not a measurement, so nothing enters the ledger"
+        );
+    }
+
+    /// `30Me` F2's residual cell, MEASURED rather than assumed: an `if` with no `else` whose
+    /// condition is measured FALSE is rc 0 by the language rule, and the fold does prove its
+    /// `||`-right dead on that.
+    ///
+    /// Nothing enters the ledger — but the fence that catches it is condition 4, not the rc's
+    /// provenance: the `then :` leaf is no substitutable Query, so the controller does not
+    /// substitute away. A world whose every branch leaf IS a measured Query is therefore NOT
+    /// covered by this pin, and that gap is the residual `30Me` F2 named. Stated here rather than
+    /// asserted, because the assertion would be about a book this test does not write.
+    #[test]
+    fn a_false_if_with_no_else_proves_nothing_dead_though_the_fold_folds_it() {
+        let m = model("if dpkg -s beta >/dev/null 2>&1; then :; fi || apt-get install -y alpha\n");
+        assert!(
+            fold_finds_a_dead_branch(&m, 1),
+            "a false condition with no else is rc 0, and the fold really does fold on it"
+        );
+        assert!(proofs_for(&m, 1).is_empty());
+    }
+
     #[test]
     fn an_in_loop_site_proves_nothing_dead() {
         let m = model(
