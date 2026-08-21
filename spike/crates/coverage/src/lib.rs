@@ -661,6 +661,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     );
     let plan = dorc_plan::certifier_trip::project_censusless(
         &mut spine,
+        inputs.book,
+        &parsed.value,
         &trip,
         &dorc_plan::PlanAuthority::without_intake(),
     );

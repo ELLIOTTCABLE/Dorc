@@ -239,6 +239,8 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     );
     dorc_plan::certifier_trip::project_censusless(
         &mut spine,
+        &declared.book_sh,
+        &parsed.value,
         &trip,
         &dorc_plan::PlanAuthority::without_intake(),
     )

@@ -196,11 +196,13 @@ pub fn spend_certifier_trip(
 #[must_use]
 pub fn project_censusless(
     spine: &mut Spine,
+    src: &str,
+    ast: &dorc_syntax::ast::Ast,
     trip: &CertifierTrip,
     authority: &PlanAuthority,
 ) -> Plan {
     let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false);
-    crate::project_plan(spine, authority, &spent)
+    crate::project_plan(spine, src, ast, authority, &spent)
 }
 
 #[cfg(test)]
@@ -214,7 +216,7 @@ mod tests {
     };
     use dorc_oracle::{KindIndex, ValueClaim};
 
-    use super::{TripCleanup, demote_on_trip};
+    use super::TripCleanup;
     use crate::{Disposition, Plan, Spine, Step, VerdictVouch, build_plan};
 
     /// One node with a self-loop — the smallest system that has an edge to fail.
@@ -419,11 +421,27 @@ apt_get__predict() {
         spine
     }
 
+    /// The book every fixture spine's dispositions were decided over — the render plane is decided
+    /// against the same tree, exactly as a real producer decides it against its own.
+    const FIXTURE_BOOK: &str = "apt-get install -y nginx\n";
+
     /// The projected plan, which is what every consumer of the cleanup actually reads. The latch
     /// is a parameter because it MUST be: there is no projection without one.
     fn projected(spine: &mut Spine, trip: &CertifierTrip) -> Plan {
         let (_, spent) = super::spend_certifier_trip(spine, trip, |_| true);
-        crate::project_plan(spine, &crate::PlanAuthority::without_intake(), &spent)
+        project(spine, &spent)
+    }
+
+    /// Project a spine whose latch the caller already spent itself.
+    fn project(spine: &mut Spine, spent: &super::TripSpent) -> Plan {
+        let ast = dorc_syntax::parse(FIXTURE_BOOK).value;
+        crate::project_plan(
+            spine,
+            FIXTURE_BOOK,
+            &ast,
+            &crate::PlanAuthority::without_intake(),
+            spent,
+        )
     }
 
     fn tags(cleanup: &TripCleanup) -> Vec<dorc_aid::narrative::CollapseKind> {
@@ -472,7 +490,7 @@ apt_get__predict() {
         });
 
         let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| true);
-        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
+        let plan = project(&mut spine, &spent);
 
         assert!(
             matches!(
@@ -509,7 +527,7 @@ apt_get__predict() {
         let mut spine = spine_of(steps);
 
         let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| true);
-        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
+        let plan = project(&mut spine, &spent);
 
         assert_eq!(
             plan.steps.len(),
@@ -550,8 +568,21 @@ apt_get__predict() {
         let mut clean_spine = spine_of(elided);
         let authority = crate::PlanAuthority::without_intake();
 
-        let tripped = super::project_censusless(&mut tripped_spine, &a_real_trip(), &authority);
-        let clean = super::project_censusless(&mut clean_spine, &a_real_clean_latch(), &authority);
+        let ast = dorc_syntax::parse(FIXTURE_BOOK).value;
+        let tripped = super::project_censusless(
+            &mut tripped_spine,
+            FIXTURE_BOOK,
+            &ast,
+            &a_real_trip(),
+            &authority,
+        );
+        let clean = super::project_censusless(
+            &mut clean_spine,
+            FIXTURE_BOOK,
+            &ast,
+            &a_real_clean_latch(),
+            &authority,
+        );
 
         assert!(
             tripped
@@ -659,7 +690,7 @@ apt_get__predict() {
         let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |fn_name| {
             fn_name == "apt_get__is_converged"
         });
-        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
+        let plan = project(&mut spine, &spent);
 
         assert!(
             matches!(plan.steps[0].disposition, Disposition::Guard(_)),
@@ -680,7 +711,7 @@ apt_get__predict() {
         let mut spine = spine_of(vec![guard_step(0, "apt_get__is_converged")]);
 
         let (_, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| false);
-        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
+        let plan = project(&mut spine, &spent);
 
         assert!(matches!(plan.steps[0].disposition, Disposition::Run));
     }

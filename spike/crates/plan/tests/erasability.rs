@@ -459,12 +459,14 @@ fn empty_probe_plan_default_is_inert() {
     let probe = ProbePlan::default();
     let ast = dorc_syntax::parse("").value;
     let i = Interner::default();
-    let plan = dorc_plan::Plan {
-        steps: vec![],
-        regions: Vec::new(),
-        survival_report: dorc_plan::SurvivalReport::default(),
-        defensive_emission: false,
-    };
+    let plan = dorc_plan::Plan::decided(
+        vec![],
+        Vec::new(),
+        dorc_plan::SurvivalReport::default(),
+        false,
+        "",
+        &ast,
+    );
     let canon = canonical_decision(&plan, &probe, "", &ast, &i, &[]);
     assert!(canon.contains("== plan =="), "well-formed empty canonical");
 }

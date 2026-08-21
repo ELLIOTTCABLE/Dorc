@@ -193,7 +193,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     );
     // The world's OWN interner: a `Symbol` resolves only against the one that minted it, and the
     // local interner above belongs to the intake, not to the analysis.
-    let (plan, ast, symbols) = built.plan_ast_and_interner();
+    let (plan, _ast, symbols) = built.plan_ast_and_interner();
 
     let _ = writeln!(out, "case {}", world.label);
     let _ = writeln!(out, "  digest {}", built.decision_digest());
@@ -210,7 +210,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
         }
     );
 
-    let pinned = plan.pinned_definitions(&world.book, ast);
+    let pinned = plan.pinned_definitions();
     // Read the DECISION PLANE, not the projection: byte-identity against the frozen baseline then
     // proves the reification itself, rather than proving one projection agrees with itself
     // (`309` §4). The Spine is `SiteId`-keyed, so the member index appears here the moment one

@@ -1145,7 +1145,7 @@ fn render_refusals_mint_paired_narratives_and_a_clean_render_mints_none() {
     let refused_src =
         "command -v nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx\npayload\nEOF\n";
     let (plan, ast) = plan_query_and_ast(refused_src, "nginx", 1, &[]);
-    let narratives = plan.render_refusal_narratives(&ast);
+    let narratives = plan.render_refusal_narratives();
     assert_eq!(
         narratives.len(),
         plan.render_refusal_diagnostics(&ast, &Interner::default())
@@ -1160,9 +1160,9 @@ fn render_refusals_mint_paired_narratives_and_a_clean_render_mints_none() {
     );
 
     let clean_src = "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n";
-    let (clean_plan, clean_ast) = plan_query_and_ast(clean_src, "nginx", 0, &[]);
+    let (clean_plan, _clean_ast) = plan_query_and_ast(clean_src, "nginx", 0, &[]);
     assert!(
-        clean_plan.render_refusal_narratives(&clean_ast).is_empty(),
+        clean_plan.render_refusal_narratives().is_empty(),
         "a render that refuses nothing mints nothing"
     );
 }

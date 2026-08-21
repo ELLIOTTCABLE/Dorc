@@ -512,9 +512,13 @@ impl WhyWorld {
         // This world is handed results somebody else already decided about, so the intake authority
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
-        let plan =
-            dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake(), &spent);
-        dorc_plan::spine::record_render_decisions(&mut spine, &plan, book_src, &parsed.value);
+        let plan = dorc_plan::project_plan(
+            &mut spine,
+            book_src,
+            &parsed.value,
+            &dorc_plan::PlanAuthority::without_intake(),
+            &spent,
+        );
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
             .into_iter()
@@ -522,7 +526,7 @@ impl WhyWorld {
             .chain(merge_narrative)
             .chain(plan.survival_report.collapse_narrative().iter().cloned())
             .chain(trip_narrative)
-            .chain(plan.render_refusal_narratives(&parsed.value))
+            .chain(plan.render_refusal_narratives())
             .collect();
         let wall_steps = collect_wall_steps(
             &plan,
@@ -1254,8 +1258,18 @@ mod tests {
         spine
     }
 
-    fn projected(spine: &dorc_plan::Spine, spent: &dorc_plan::certifier_trip::TripSpent) -> Plan {
-        dorc_plan::project_plan(spine, &dorc_plan::PlanAuthority::without_intake(), spent)
+    fn projected(
+        spine: &mut dorc_plan::Spine,
+        spent: &dorc_plan::certifier_trip::TripSpent,
+    ) -> Plan {
+        let ast = dorc_syntax::parse(BOOK).value;
+        dorc_plan::project_plan(
+            spine,
+            BOOK,
+            &ast,
+            &dorc_plan::PlanAuthority::without_intake(),
+            spent,
+        )
     }
 
     fn guarded_plan(fn_name: &str) -> Plan {
@@ -1276,8 +1290,8 @@ mod tests {
             ),
             Rung::Both,
         );
-        Plan {
-            steps: vec![Step {
+        Plan::decided(
+            vec![Step {
                 leaf: LeafId(0),
                 ast: AstId(0),
                 sh: "apt-get install -y nginx".to_string(),
@@ -1291,10 +1305,12 @@ mod tests {
                     .expect("a converged probe verdict mints a guard"),
                 ),
             }],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        }
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            BOOK,
+            &dorc_syntax::parse(BOOK).value,
+        )
     }
 
     const BOOK: &str = "apt-get install -y nginx
@@ -1332,7 +1348,7 @@ mod tests {
         );
         assert!(
             matches!(
-                projected(&sole, &sole_spent).steps[0].disposition,
+                projected(&mut sole, &sole_spent).steps[0].disposition,
                 Disposition::Guard(_)
             ),
             "a census-unique family keeps its runtime net"
@@ -1346,7 +1362,7 @@ mod tests {
         );
         assert!(
             matches!(
-                projected(&plural, &plural_spent).steps[0].disposition,
+                projected(&mut plural, &plural_spent).steps[0].disposition,
                 Disposition::Run
             ),
             "a plural family's guard could run somebody else's judgment — it demotes"
@@ -1402,7 +1418,7 @@ mod tests {
         assert!(narrative.is_empty());
         assert!(
             matches!(
-                projected(&plan, &spent).steps[0].disposition,
+                projected(&mut plan, &spent).steps[0].disposition,
                 Disposition::Guard(_)
             ),
             "the plural census demotes NOTHING without a trip — the trip is the whole trigger"

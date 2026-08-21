@@ -1332,8 +1332,8 @@ impl GuardInsert {
 }
 
 /// What the apply artifact hoists, and which name each guarded site's check invokes
-/// (`28K` §4 — see [`Plan::pinned_definitions`], which is the only constructor).
-#[derive(Debug, Default)]
+/// (`28K` §4 — see [`DecidedRender::decide`], which is the only constructor).
+#[derive(Debug, Default, Clone)]
 pub struct PinnedDefinitions {
     hoisted: String,
     invoked: BTreeMap<AstId, String>,
@@ -2226,6 +2226,210 @@ pub struct RegionStep {
     pub routes: dorc_core::spine::Account<dorc_core::spine::RegionRoute>,
 }
 
+/// One authored span the decision plane LICENSED to edit and the span render must REFUSE.
+///
+/// Keyed by the authored span's node, which is the EDIT unit a [`Step`] and a [`RegionStep`] both
+/// have. `leaf` is the EXECUTION identity, which only a step has
+/// (`30L:rul-two-identities-never-conflated`) — the three disclosure surfaces are leaf-keyed, so a
+/// refused REGION carries `None` and is presently undisclosed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RefusedEdit {
+    /// The authored span the edit would have landed on.
+    pub ast: AstId,
+    /// The execution the refusal belongs to, where the refused unit is one.
+    pub leaf: Option<LeafId>,
+    /// The disposition-aware verb the disclosure uses: a guard says "guard", an elision "elide".
+    pub verb: &'static str,
+    /// Why the span could not be edited.
+    pub cause: RenderRefusalTag,
+}
+
+/// The render-time decisions, DECIDED ONCE in the decision plane and merely PRINTED by the render
+/// (`30E` §3's hidden-decision audit; `30F` §4.4's disclosed deviation, closed).
+///
+/// Every answer here used to be a branch the render took for itself while a parallel walk recorded
+/// the same answer onto the Spine. Two walks agreeing is not one decision — it is two decisions held
+/// in step by review, and each of them is license-relevant: which body a guard invokes decides WHOSE
+/// judgment executes (pope-sin tier, `271:rul-sin-ordering`); a refusal decides whether a licensed
+/// elision actually happens; a neutralisation is the wrong-yes fence of
+/// `erasure-demands-a-proof-and-a-rendered-death`; a region's liveness decides whether a shared edit
+/// lands at all. The discriminator that keeps a choice render-side instead is whether `dorc why` or
+/// a second artifact form could ever need to account for it — the elided-line's
+/// commented-original WRAPPING cannot (it prints one `Replace` two ways, same stand-in, same
+/// observables), so it stays in [`Plan::collect_edits`].
+///
+/// Decided against ONE `(src, ast)` pair, and the render is handed the same pair: nothing here
+/// re-derives, so handing a render a plan decided against a different tree would print stale
+/// answers. Every producer holds exactly one.
+#[derive(Debug, Clone, Default)]
+pub struct DecidedRender {
+    pinned: PinnedDefinitions,
+    refused: Vec<RefusedEdit>,
+    neutralised: BTreeSet<AstId>,
+    live_regions: BTreeSet<AstId>,
+}
+
+impl DecidedRender {
+    /// What the artifact hoists, and which name each guarded site invokes (`dec-pinned-definitions`).
+    #[must_use]
+    pub fn pinned(&self) -> &PinnedDefinitions {
+        &self.pinned
+    }
+
+    /// Every licensed edit the span render refuses (`dec-render-refusal`), in edit order.
+    #[must_use]
+    pub fn refused(&self) -> &[RefusedEdit] {
+        &self.refused
+    }
+
+    /// Does the span render refuse the edit at this authored span?
+    #[must_use]
+    pub fn refuses(&self, ast: AstId) -> bool {
+        self.refused.iter().any(|refusal| refusal.ast == ast)
+    }
+
+    /// Is this `Omit` step's controlling guard neutralised (`dec-omit-neutralisation`)? `false` ⇒
+    /// the dead body renders VERBATIM and runs behind a live guard.
+    #[must_use]
+    pub fn omit_is_neutralised(&self, ast: AstId) -> bool {
+        self.neutralised.contains(&ast)
+    }
+
+    /// Every `Omit` step whose controller is neutralised, in span order.
+    #[must_use]
+    pub fn neutralised_omits(&self) -> &BTreeSet<AstId> {
+        &self.neutralised
+    }
+
+    /// Does this region's edit still land — i.e. can the artifact still REACH its body
+    /// (`30L:pin-whole-helper-derived-only`)?
+    #[must_use]
+    pub fn region_is_live(&self, ast: AstId) -> bool {
+        self.live_regions.contains(&ast)
+    }
+
+    /// Decide every render-time answer for one plan, ONCE (`30E` §3's audit).
+    ///
+    /// One function rather than four, because the order is load-bearing: the pinned bindings are
+    /// taken over the guards the render will actually EMIT, which needs the refusals; the refusals
+    /// need the omit neutralisations; and both need to know which regions are still live. Four
+    /// entry points would be four chances to ask them out of order.
+    #[must_use]
+    fn decide(
+        steps: &[Step],
+        regions: &[RegionStep],
+        defensive_emission: bool,
+        src: &str,
+        ast: &Ast,
+    ) -> Self {
+        let by_ast: BTreeMap<AstId, &Disposition> =
+            steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+
+        // Regions join the walk although no region carries `Omit` today
+        // (`30Nc:dev-shared-omit-lowers-to-nothing`): the render's arm is keyed by authored span,
+        // so leaving regions out would make an unreachable arm quietly answer `false` if it ever
+        // became reachable — the run-it direction, but by accident rather than by decision.
+        let mut neutralised = BTreeSet::new();
+        for (node, disposition) in steps
+            .iter()
+            .map(|step| (step.ast, &step.disposition))
+            .chain(regions.iter().map(|r| (r.ast, &r.disposition)))
+        {
+            if let Disposition::Omit { controller } = disposition
+                && is_neutralised(&by_ast, ast, *controller, 0)
+            {
+                neutralised.insert(node);
+            }
+        }
+
+        // Conservative in exactly one direction: a route account that was CAPPED cannot answer
+        // "every invocation", so a truncated one keeps its edit (`30L:pin-whole-helper-derived-only`).
+        let live_regions: BTreeSet<AstId> = regions
+            .iter()
+            .filter(|region| {
+                region.routes.dropped() > 0
+                    || region.routes.shown().is_empty()
+                    || region
+                        .routes
+                        .shown()
+                        .iter()
+                        .any(|route| !is_neutralised(&by_ast, ast, route.ast, 0))
+            })
+            .map(|region| region.ast)
+            .collect();
+
+        let live: Vec<&RegionStep> = regions
+            .iter()
+            .filter(|region| live_regions.contains(&region.ast))
+            .collect();
+        let edits = || {
+            steps
+                .iter()
+                .map(RenderedEdit::of_step)
+                .chain(live.iter().copied().map(RenderedEdit::of_region))
+        };
+
+        let mut refused = Vec::new();
+        for edit in edits() {
+            let would_edit = match edit.disposition {
+                Disposition::Replace(_, _) | Disposition::Guard(_) => true,
+                Disposition::Omit { controller } => is_neutralised(&by_ast, ast, *controller, 0),
+                Disposition::Run => false,
+            };
+            let is_guard = matches!(edit.disposition, Disposition::Guard(_));
+            if !would_edit {
+                continue;
+            }
+            let Some(cause) = refusal_cause(ast, edit.ast, is_guard) else {
+                continue;
+            };
+            refused.push(RefusedEdit {
+                ast: edit.ast,
+                leaf: edit.leaf,
+                verb: if is_guard { "guard" } else { "elide" },
+                cause,
+            });
+        }
+
+        let refused_asts: BTreeSet<AstId> = refused.iter().map(|refusal| refusal.ast).collect();
+        let pinned = pin_definitions(
+            edits().filter(|edit| !refused_asts.contains(&edit.ast)),
+            edits(),
+            defensive_emission,
+            src,
+            ast,
+        );
+        Self {
+            pinned,
+            refused,
+            neutralised,
+            live_regions,
+        }
+    }
+}
+
+/// Why the span render refuses the edit at `node`, if it does — THE one refusal definition.
+///
+/// A heredoc refuses under EVERY disposition (the AST span covers `<<EOF`, not the body lines, so
+/// substituting would strand them); a GUARD additionally refuses a non-devnull output redirect,
+/// whose pass-direction would suppress the admin-spelled side-effect (23C-fd10). Heredoc is checked
+/// first so a leaf carrying both reports the cause that would have refused it anyway.
+///
+/// OOB-safe (`inv-no-throw`): a synthetic plan's `AstId` may index no real node, and an id nothing
+/// can look at cannot carry a redirect.
+fn refusal_cause(ast: &Ast, node: AstId, is_guard: bool) -> Option<RenderRefusalTag> {
+    if node.0 as usize >= ast.len() {
+        return None;
+    }
+    if leaf_has_heredoc(ast, node) {
+        Some(RenderRefusalTag::Heredoc)
+    } else if is_guard && leaf_has_blocking_output_redirect(ast, node) {
+        Some(RenderRefusalTag::OutputRedirect)
+    } else {
+        None
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Plan {
     pub steps: Vec<Step>,
@@ -2235,11 +2439,15 @@ pub struct Plan {
     pub regions: Vec<RegionStep>,
     /// The survival-tier instrumentation (24F §3a). Empty on the flag-off / no-resolver path.
     pub survival_report: SurvivalReport,
-    /// DEFENSIVE emission (`28R:rul-defensive-mode-definition-vectors`): the unit carries an
-    /// unresolved in-process definition vector, so every emitted name munges rather than trusting
-    /// that a bare one still means what we emitted. Whole-artifact, hence a plan field rather than a
-    /// per-insert one; `false` is the overwhelming case and is what keeps the artifact bare.
-    pub defensive_emission: bool,
+    /// The render-time decisions, taken at [`Plan::decided`] and read — never re-taken — by every
+    /// render and disclosure surface below.
+    ///
+    /// PRIVATE, and that is the forcing function: DEFENSIVE emission
+    /// (`28R:rul-defensive-mode-definition-vectors`) used to be a `pub` field the driver poked after
+    /// construction and `pinned_definitions` read at render time, so flipping it late silently
+    /// changed the artifact. It is now an INPUT to the one decision act, and a plan cannot be
+    /// assembled with its render undecided.
+    render: DecidedRender,
 }
 
 /// The per-disposition tally that backs the CLI plan-summary surface (plans/240 Stage-1
@@ -3909,7 +4117,13 @@ pub fn build_plan(
         // The intakeless entry reads no host bytes, so its records are authored-before-contact.
         None,
     );
-    certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake())
+    certifier_trip::project_censusless(
+        &mut spine,
+        src,
+        ast,
+        &trip,
+        &PlanAuthority::without_intake(),
+    )
 }
 
 /// [`build_plan`] PLUS the run's wall POLICY.
@@ -4640,6 +4854,37 @@ pub(crate) fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
 }
 
 impl Plan {
+    /// Assemble a plan and DECIDE its render in one act (`30E` §3's audit, closed).
+    ///
+    /// There is no other constructor, and that is the point: every render-time answer is taken HERE,
+    /// once, from the settled dispositions — so a plan whose render is undecided, or decided against
+    /// a later disposition than the one it carries, is unrepresentable. `defensive_emission` is an
+    /// INPUT rather than a field for the same reason: it used to be a `pub` field the driver poked
+    /// after construction and the render read at emission time, so flipping it late silently changed
+    /// which names the artifact munged (`30E` §3 `dec-defensive-emission`).
+    ///
+    /// `src` and `ast` must be the pair every later render is handed. Nothing re-derives, so a plan
+    /// decided against one tree and rendered against another prints stale answers; every producer
+    /// holds exactly one pair, which is what makes that unrepresentable in practice rather than by
+    /// rule.
+    #[must_use]
+    pub fn decided(
+        steps: Vec<Step>,
+        regions: Vec<RegionStep>,
+        survival_report: SurvivalReport,
+        defensive_emission: bool,
+        src: &str,
+        ast: &Ast,
+    ) -> Self {
+        let render = DecidedRender::decide(&steps, &regions, defensive_emission, src, ast);
+        Self {
+            steps,
+            regions,
+            survival_report,
+            render,
+        }
+    }
+
     /// Tally the plan's leaves by disposition for the plan-summary UI (plans/240 Stage-1
     /// yardstick). Pure over [`steps`](Plan::steps) — `inv-determinism`: the yardstick's
     /// elision-frequency metric is a function of the Plan value alone, with no clock, env,
@@ -4718,172 +4963,147 @@ impl Plan {
         out
     }
 
-    /// The artifact's **pinned definitions** (`28K` §4 `rul-runtime-resolution-never-load-bearing`):
-    /// which body each guard invokes, and under what name.
-    ///
-    /// The property this exists to make STRUCTURAL: the name a guard calls is bound, at that point
-    /// in the artifact, to exactly the bytes the analysis resolved — by construction, not by three
-    /// unrelated mechanisms agreeing. A misalignment there could swap WHOSE judgment executes, which
-    /// is pope-sin tier (`271:rul-sin-ordering`), so the emission decides the binding rather than
-    /// leaving a shell to re-derive it.
-    ///
-    /// Three rules, in the order they apply:
-    ///
-    /// 1. **Content-dedup.** Byte-identical bodies are ONE definition however many sites reach them
-    ///    (vendored copies are the commonest real collision, `28K` §4).
-    /// 2. **Already-in-place wins.** A body the book's own text already defines at top level, under
-    ///    the same name and the same bytes, is not copied: the artifact would otherwise carry two
-    ///    same-named funcdefs, which is the shape `oracle/src/reserved.rs` refuses by another route
-    ///    and which `28K` §4 retires by ANY route. Nothing is re-derived — the definition is the
-    ///    pinned one, sitting where its author put it, and the positional regime already proved it
-    ///    live at every site that guards (`rul-visibility-is-full-positional`: a vouch exists only
-    ///    where the definition it comes from is the one live at the line, so a book-sited definition
-    ///    always PRECEDES its guards).
-    /// 3. **Hash-munge the rest.** Where one name still has two distinct bodies, each is emitted
-    ///    once under `<name>_h<digest>` and the call sites carry the disambiguated name
-    ///    (`rul-hash-munge-disambiguation`). Engine SCAFFOLDING around authored bytes — the same
-    ///    sanctioned category as the guard glue — never a second source of convergence-truth. The
-    ///    munged name cannot parse as a `__role` (the vocabulary is closed and suffix-keyed), so a
-    ///    re-ingested artifact reads the guard as an opaque call ⇒ conservative run, the
-    ///    `23A:P-reingest` floor.
-    ///
-    /// Deterministic throughout (`inv-determinism`): the digest is over the definition BYTES, never
-    /// a runtime source, and both the hoist order and the name assignment iterate sorted maps.
-    ///
-    /// The SNAPSHOT (`28R:rul-snapshot-transplant-emission`) precedes every body: each declaration
-    /// any pinned body reaches is emitted ONCE, keyed by the declaration site the resolution chose,
-    /// so two guards reaching one helper share it instead of each carrying a copy. Bodies own only
-    /// their own bytes, which is also what makes the munge rewrite a header-only edit by construction
-    /// rather than by a comment asking the reader to trust it.
+    /// The artifact's **pinned definitions** (`28K` §4 `rul-runtime-resolution-never-load-bearing`),
+    /// as the decision plane settled them.
     #[must_use]
-    pub fn pinned_definitions(&self, src: &str, ast: &Ast) -> PinnedDefinitions {
-        let mut snapshot: BTreeMap<(usize, u32), &str> = BTreeMap::new();
-        // Distinct bodies per funcname, first-seen order preserved within a name.
-        let mut bodies: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
-        for insert in self.rendered_guards(ast) {
-            for decl in insert.closure() {
-                snapshot.insert(decl.key(), decl.bytes());
-            }
-            let under = bodies.entry(insert.fn_name()).or_default();
-            if !under.contains(&insert.body()) {
-                under.push(insert.body());
-            }
+    pub fn pinned_definitions(&self) -> &PinnedDefinitions {
+        self.render.pinned()
+    }
+
+    /// Every render-time answer this plan was DECIDED with (`30E` §3). Read, never re-derived.
+    #[must_use]
+    pub fn render_plane(&self) -> &DecidedRender {
+        &self.render
+    }
+}
+
+/// Decide **which body each guard invokes, and under what name** (`28K` §4
+/// `rul-runtime-resolution-never-load-bearing`).
+///
+/// `emitting` is the guards whose line the render actually EMITS (a refused guard runs verbatim, so
+/// pinning its definition would hoist a dead one and take a guard-free book off its byte floor);
+/// `invoking` is every decided edit, because a refused guard still has no name to invoke and simply
+/// falls out of the map.
+///
+/// The property this exists to make STRUCTURAL: the name a guard calls is bound, at that point
+/// in the artifact, to exactly the bytes the analysis resolved — by construction, not by three
+/// unrelated mechanisms agreeing. A misalignment there could swap WHOSE judgment executes, which
+/// is pope-sin tier (`271:rul-sin-ordering`), so the emission decides the binding rather than
+/// leaving a shell to re-derive it.
+///
+/// Three rules, in the order they apply:
+///
+/// 1. **Content-dedup.** Byte-identical bodies are ONE definition however many sites reach them
+///    (vendored copies are the commonest real collision, `28K` §4).
+/// 2. **Already-in-place wins.** A body the book's own text already defines at top level, under
+///    the same name and the same bytes, is not copied: the artifact would otherwise carry two
+///    same-named funcdefs, which is the shape `oracle/src/reserved.rs` refuses by another route
+///    and which `28K` §4 retires by ANY route. Nothing is re-derived — the definition is the
+///    pinned one, sitting where its author put it, and the positional regime already proved it
+///    live at every site that guards (`rul-visibility-is-full-positional`: a vouch exists only
+///    where the definition it comes from is the one live at the line, so a book-sited definition
+///    always PRECEDES its guards).
+/// 3. **Hash-munge the rest.** Where one name still has two distinct bodies, each is emitted
+///    once under `<name>_h<digest>` and the call sites carry the disambiguated name
+///    (`rul-hash-munge-disambiguation`). Engine SCAFFOLDING around authored bytes — the same
+///    sanctioned category as the guard glue — never a second source of convergence-truth. The
+///    munged name cannot parse as a `__role` (the vocabulary is closed and suffix-keyed), so a
+///    re-ingested artifact reads the guard as an opaque call ⇒ conservative run, the
+///    `23A:P-reingest` floor.
+///
+/// Deterministic throughout (`inv-determinism`): the digest is over the definition BYTES, never
+/// a runtime source, and both the hoist order and the name assignment iterate sorted maps.
+///
+/// The SNAPSHOT (`28R:rul-snapshot-transplant-emission`) precedes every body: each declaration
+/// any pinned body reaches is emitted ONCE, keyed by the declaration site the resolution chose,
+/// so two guards reaching one helper share it instead of each carrying a copy. Bodies own only
+/// their own bytes, which is also what makes the munge rewrite a header-only edit by construction
+/// rather than by a comment asking the reader to trust it.
+fn pin_definitions<'a>(
+    emitting: impl Iterator<Item = RenderedEdit<'a>>,
+    invoking: impl Iterator<Item = RenderedEdit<'a>>,
+    defensive_emission: bool,
+    src: &str,
+    ast: &Ast,
+) -> PinnedDefinitions {
+    let mut snapshot: BTreeMap<(usize, u32), &str> = BTreeMap::new();
+    // Distinct bodies per funcname, first-seen order preserved within a name.
+    let mut bodies: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    for edit in emitting {
+        let Disposition::Guard(license) = edit.disposition else {
+            continue;
+        };
+        let insert = license.insert();
+        for decl in insert.closure() {
+            snapshot.insert(decl.key(), decl.bytes());
         }
-        let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
-        let mut hoisted = String::new();
-        for bytes in snapshot.into_values() {
-            hoisted.push_str(bytes);
-            hoisted.push('\n');
+        let under = bodies.entry(insert.fn_name()).or_default();
+        if !under.contains(&insert.body()) {
+            under.push(insert.body());
         }
-        for (name, distinct) in &bodies {
-            let book_claims = book_defines_at_top_level(ast, name);
-            for body in distinct {
-                if book_already_defines(src, ast, name, body) {
-                    emitted_names.insert((name, body), (*name).to_owned());
-                    continue;
-                }
-                let plural = distinct.len() > 1;
-                if !(plural || book_claims || self.defensive_emission) {
-                    hoisted.push_str(body);
-                    hoisted.push('\n');
-                    emitted_names.insert((name, body), (*name).to_owned());
-                    continue;
-                }
-                let emitted = format!("{name}_h{}", short_digest(body));
-                if plural {
-                    hoisted.push_str(&render::apply::pinned_provenance(name));
-                }
-                let header = format!("{name}()");
-                hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
+    }
+    let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
+    let mut hoisted = String::new();
+    for bytes in snapshot.into_values() {
+        hoisted.push_str(bytes);
+        hoisted.push('\n');
+    }
+    for (name, distinct) in &bodies {
+        let book_claims = book_defines_at_top_level(ast, name);
+        for body in distinct {
+            if book_already_defines(src, ast, name, body) {
+                emitted_names.insert((name, body), (*name).to_owned());
+                continue;
+            }
+            let plural = distinct.len() > 1;
+            if !(plural || book_claims || defensive_emission) {
+                hoisted.push_str(body);
                 hoisted.push('\n');
-                emitted_names.insert((name, body), emitted);
+                emitted_names.insert((name, body), (*name).to_owned());
+                continue;
             }
+            let emitted = format!("{name}_h{}", short_digest(body));
+            if plural {
+                hoisted.push_str(&render::apply::pinned_provenance(name));
+            }
+            let header = format!("{name}()");
+            hoisted.push_str(&body.replacen(&header, &format!("{emitted}()"), 1));
+            hoisted.push('\n');
+            emitted_names.insert((name, body), emitted);
         }
-        let invoked = self
+    }
+    let invoked = invoking
+        .filter_map(|edit| {
+            let Disposition::Guard(license) = edit.disposition else {
+                return None;
+            };
+            let insert = license.insert();
+            let emitted = emitted_names.get(&(insert.fn_name(), insert.body()))?;
+            Some((edit.ast, emitted.clone()))
+        })
+        .collect();
+    PinnedDefinitions { hoisted, invoked }
+}
+
+impl Plan {
+    /// The `AstId`s of `Guard` steps whose render is REFUSED (a heredoc or non-devnull
+    /// output-redirect leaf): the guard degrades to run-verbatim. The cli guard why-lane consults
+    /// this so a refused guard does NOT claim it "guarded" the site (rul-attention-honesty — the
+    /// mutator actually RUNS); it discloses the refusal instead (gate-7 `refus`). Read off the
+    /// decided plane, never re-derived. Deterministic (`BTreeSet`).
+    #[must_use]
+    pub fn guard_refused_asts(&self) -> BTreeSet<AstId> {
+        let guards: BTreeSet<AstId> = self
             .steps
             .iter()
-            .map(RenderedEdit::of_step)
-            .chain(
-                self.live_regions(ast)
-                    .into_iter()
-                    .map(RenderedEdit::of_region),
-            )
-            .filter_map(|step| {
-                let Disposition::Guard(license) = step.disposition else {
-                    return None;
-                };
-                let insert = license.insert();
-                let emitted = emitted_names.get(&(insert.fn_name(), insert.body()))?;
-                Some((step.ast, emitted.clone()))
-            })
-            .collect();
-        PinnedDefinitions { hoisted, invoked }
-    }
-
-    /// The regions whose edits the artifact still needs — those the artifact can still REACH.
-    ///
-    /// This is the other half of `30L:pin-whole-helper-derived-only`. When every invocation of a
-    /// definition is itself neutralised, its body executes on no route, and `30L` §8's ruling is that
-    /// the inert definition remains AUTHORED TEXT: editing it would put a stand-in where nothing
-    /// runs, and — worse for a guard — hoist a preamble definition for a body no route reaches,
-    /// taking an otherwise-untouched book off its byte floor.
-    ///
-    /// Conservative in exactly one direction. A route account that was CAPPED cannot answer "every
-    /// invocation", so a truncated one keeps its edit: over-editing an inert body is noise, while
-    /// dropping an edit whose region can still execute would leave the settlement's no-execution
-    /// proof resting on bytes the artifact still runs — a wrong elision, not a cosmetic one.
-    fn live_regions<'a>(&'a self, ast: &Ast) -> Vec<&'a RegionStep> {
-        let by_ast: BTreeMap<AstId, &Disposition> =
-            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
-        self.regions
-            .iter()
-            .filter(|region| {
-                region.routes.dropped() > 0
-                    || region.routes.shown().is_empty()
-                    || region
-                        .routes
-                        .shown()
-                        .iter()
-                        .any(|route| !is_neutralised(&by_ast, ast, route.ast, 0))
-            })
-            .collect()
-    }
-
-    /// The guard inserts whose line the render actually EMITS. A render-REFUSED guard (heredoc /
-    /// blocking redirect) runs verbatim, so pinning its definition would hoist a dead one and take
-    /// a guard-free book off its byte floor.
-    fn rendered_guards<'a>(&'a self, ast: &Ast) -> impl Iterator<Item = &'a GuardInsert> {
-        self.steps
-            .iter()
-            .map(RenderedEdit::of_step)
-            .chain(
-                self.live_regions(ast)
-                    .into_iter()
-                    .map(RenderedEdit::of_region),
-            )
-            .filter_map(move |step| {
-                let Disposition::Guard(license) = step.disposition else {
-                    return None;
-                };
-                // OOB-safe: a synthetic test Plan's `AstId`s may index no real node.
-                (!(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast)))
-                    .then(|| license.insert())
-            })
-    }
-
-    /// The `AstId`s of `Guard` steps whose render is REFUSED ([`guard_render_refused`] — a heredoc
-    /// or non-devnull output-redirect leaf): the guard degrades to run-verbatim. The cli guard
-    /// why-lane consults this so a refused guard does NOT claim it "guarded" the site
-    /// (rul-attention-honesty — the mutator actually RUNS); it discloses the refusal instead
-    /// (gate-7 `refus`). Deterministic (`BTreeSet`).
-    #[must_use]
-    pub fn guard_refused_asts(&self, ast: &Ast) -> BTreeSet<AstId> {
-        self.steps
-            .iter()
-            .filter(|s| {
-                matches!(s.disposition, Disposition::Guard(_)) && guard_render_refused(ast, s.ast)
-            })
+            .filter(|s| matches!(s.disposition, Disposition::Guard(_)))
             .map(|s| s.ast)
+            .collect();
+        self.render
+            .refused()
+            .iter()
+            .map(|refusal| refusal.ast)
+            .filter(|ast| guards.contains(ast))
             .collect()
     }
 
@@ -4922,8 +5142,8 @@ impl Plan {
     /// leaf is run verbatim.
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
-        let pinned = self.pinned_definitions(src, ast);
-        let edits = self.collect_edits(src, ast, &pinned);
+        let pinned = self.render.pinned();
+        let edits = self.collect_edits(src, ast, pinned);
         let artifact = emit_span_edits(src, &edits);
         // The GUARD PREAMBLE (24D §2 / rul-ternary-verdict): the pinned definitions the guarded
         // lines invoke, emitted ONCE between the apply header and the book (the defs must precede
@@ -4991,7 +5211,7 @@ impl Plan {
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
         use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
-        self.refused_render_steps(ast)
+        self.refused_render_steps()
             .into_iter()
             .map(|(step, verb, _cause)| {
                 // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
@@ -5023,8 +5243,8 @@ impl Plan {
     /// `render-heredoc-refused` diagnostic, and the narrative exists for the why-chain that does
     /// not yet read narratives (`289:seam-narrative-render-unconsumed`).
     #[must_use]
-    pub fn render_refusal_narratives(&self, ast: &Ast) -> Vec<CollapseNarrative> {
-        self.refused_render_steps(ast)
+    pub fn render_refusal_narratives(&self) -> Vec<CollapseNarrative> {
+        self.refused_render_steps()
             .into_iter()
             .map(|(step, _, cause)| {
                 // Spelled literally, not through `render_refusal_heredoc`: the mint census is a
@@ -5041,72 +5261,51 @@ impl Plan {
     }
 
     /// [`refused_render_steps`](Self::refused_render_steps) by leaf, for the decision-plane record
-    /// (`30E` §3 `dec-render-refusal`). Same seat, so a record and an artifact cannot disagree.
+    /// (`30E` §3 `dec-render-refusal`).
     #[must_use]
-    pub fn refused_render_leaves(&self, ast: &Ast) -> Vec<(LeafId, &'static str)> {
-        self.refused_render_steps(ast)
+    pub fn refused_render_leaves(&self) -> Vec<(LeafId, &'static str)> {
+        self.refused_render_steps()
             .into_iter()
             .map(|(step, verb, _)| (step.leaf, verb))
             .collect()
     }
 
-    /// Every `Omit` leaf with the render's neutralisation answer (`30E` §3
+    /// Every `Omit` leaf with the decided neutralisation answer (`30E` §3
     /// `dec-omit-neutralisation`): `false` ⇒ the controller was not neutralised, so the body renders
     /// VERBATIM and runs behind a live guard. That is the wrong-yes fence
-    /// (`erasure-demands-a-proof-and-a-rendered-death`) as a readable decision rather than a
-    /// render-time branch nothing records.
+    /// (`erasure-demands-a-proof-and-a-rendered-death`), read off the plane.
     #[must_use]
-    pub fn omit_neutralisations(&self, ast: &Ast) -> Vec<(LeafId, bool)> {
-        let by_ast: BTreeMap<AstId, &Disposition> =
-            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+    pub fn omit_neutralisations(&self) -> Vec<(LeafId, bool)> {
         self.steps
             .iter()
             .filter_map(|step| match &step.disposition {
-                Disposition::Omit { controller } => {
-                    Some((step.leaf, is_neutralised(&by_ast, ast, *controller, 0)))
+                Disposition::Omit { .. } => {
+                    Some((step.leaf, self.render.omit_is_neutralised(step.ast)))
                 }
                 Disposition::Run | Disposition::Replace(..) | Disposition::Guard(_) => None,
             })
             .collect()
     }
 
-    /// The leaves the disposition layer LICENSED to elide that the leaf-exact render must REFUSE,
-    /// each with its disposition-aware verb and the CAUSE. A GUARD refusal says "guard"
-    /// (X-heredoc's expected-diagnostics pins it), a Replace/Omit refusal says "elide".
+    /// The leaf-bearing half of the decided refusals, each with its disposition-aware verb and the
+    /// CAUSE. A GUARD refusal says "guard" (X-heredoc's expected-diagnostics pins it), a
+    /// Replace/Omit refusal says "elide".
     ///
-    /// The predicate matches [`collect_edits`](Self::collect_edits)'s drop exactly: every
-    /// disposition refuses a heredoc, and a GUARD additionally refuses a blocking output redirect
-    /// (`guard_render_refused`). Reading only the heredoc half left a redirect-refused guard
-    /// running verbatim with NO disclosure on any of the three surfaces (`30Mf` F2).
-    fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str, RenderRefusalTag)> {
-        let by_ast: BTreeMap<AstId, &Disposition> =
-            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
-        let mut refused = Vec::new();
-        for step in &self.steps {
-            let is_guard = matches!(step.disposition, Disposition::Guard(_));
-            let would_elide = match &step.disposition {
-                // A Replace value-substitutes the span; a Guard EDITS it to `( check ) || <orig>` —
-                // both strand a heredoc body, so a heredoc-bearing leaf of either must REFUSE and
-                // run verbatim (X-heredoc: a vouched heredoc site stays RUN, loudly).
-                Disposition::Replace(_, _) | Disposition::Guard(_) => true,
-                Disposition::Omit { controller } => is_neutralised(&by_ast, ast, *controller, 0),
-                Disposition::Run => false,
-            };
-            if !would_elide {
-                continue;
-            }
-            // Heredoc first: it refuses under EVERY disposition, so a leaf carrying both reports
-            // the cause that would have refused it anyway.
-            let cause = if leaf_has_heredoc(ast, step.ast) {
-                RenderRefusalTag::Heredoc
-            } else if is_guard && leaf_has_blocking_output_redirect(ast, step.ast) {
-                RenderRefusalTag::OutputRedirect
-            } else {
-                continue;
-            };
-            refused.push((step, if is_guard { "guard" } else { "elide" }, cause));
-        }
-        refused
+    /// The three disclosure surfaces are leaf-keyed, so a refused REGION — which has no leaf
+    /// (`30L:rul-two-identities-never-conflated`) — is filtered out here and stays undisclosed.
+    /// That gap is `30And:fnd-region-refusal-is-undisclosed`; the plane records it either way, which
+    /// is what makes it findable rather than invisible.
+    fn refused_render_steps(&self) -> Vec<(&Step, &'static str, RenderRefusalTag)> {
+        let by_leaf: BTreeMap<LeafId, &Step> =
+            self.steps.iter().map(|step| (step.leaf, step)).collect();
+        self.render
+            .refused()
+            .iter()
+            .filter_map(|refusal| {
+                let step = by_leaf.get(&refusal.leaf?)?;
+                Some((*step, refusal.verb, refusal.cause))
+            })
+            .collect()
     }
 
     /// Collect the span edits the leaf-exact render applies (arch-1) — one `(Span,
@@ -5124,9 +5323,6 @@ impl Plan {
     /// NOT refused (a span edit may cover multiple lines — the line-render's old refusal
     /// retired); they collapse cleanly to the single-line replacement.
     fn collect_edits(&self, src: &str, ast: &Ast, pinned: &PinnedDefinitions) -> Vec<SpanEdit> {
-        // Per-AstId disposition, so an `Omit`'s controller resolves for the omit-safety gate.
-        let by_ast: BTreeMap<AstId, &Disposition> =
-            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
         // The TOP-LEVEL Simple statements (`Script.items` that are simple commands) — the
         // provably-safe home of the commented-original elision render (below): a leaf here is
         // NEVER a `&&`/`||`/if/loop/case operand (those nest under AndOr/If/… nodes, not directly
@@ -5143,20 +5339,15 @@ impl Plan {
         let mut edits: Vec<SpanEdit> = Vec::new();
         // A region's edit lands ONCE, at the authored definition; calls stay calls.
         for step in self.steps.iter().map(RenderedEdit::of_step).chain(
-            self.live_regions(ast)
-                .into_iter()
+            self.regions
+                .iter()
+                .filter(|region| self.render.region_is_live(region.ast))
                 .map(RenderedEdit::of_region),
         ) {
             let span = ast.node(step.ast).span;
-            // d-6: a heredoc leaf refuses ANY neutralising edit (its span does not cover the body
-            // lines, so substituting would strand them). A GUARD ALSO refuses a non-devnull output
-            // redirect (`>>log`) — the guard's pass-direction would suppress the admin-spelled
-            // side-effect (23C-fd10). Both run VERBATIM (kFAIL-perform; disclosed by
-            // `render_refusal_diagnostics` + the cli guard why-lane).
-            let is_guard = matches!(step.disposition, Disposition::Guard(_));
-            if leaf_has_heredoc(ast, step.ast)
-                || (is_guard && leaf_has_blocking_output_redirect(ast, step.ast))
-            {
+            // The decided refusal (`dec-render-refusal`): a refused edit runs VERBATIM
+            // (kFAIL-perform; disclosed by `render_refusal_diagnostics` + the cli guard why-lane).
+            if self.render.refuses(step.ast) {
                 continue;
             }
             let original = command_text(src, ast, step.ast);
@@ -5189,9 +5380,7 @@ impl Plan {
                             (stand_in.sh(), false, false)
                         }
                     }
-                    Disposition::Omit { controller }
-                        if is_neutralised(&by_ast, ast, *controller, 0) =>
-                    {
+                    Disposition::Omit { .. } if self.render.omit_is_neutralised(step.ast) => {
                         // A neutralised-controller dead body: `:` (a pure structural placeholder
                         // — its status is unreachable, never observed).
                         (":".to_string(), false, false)
@@ -5232,11 +5421,13 @@ impl Plan {
 ///
 /// A `Step` and a `RegionStep` answer to different identities and cannot merge (`inv-leaf-seam`),
 /// but the RENDER's question is the same for both: which authored span, and what does the decision
-/// put there. This view is that question and nothing else — no leaf id, so nothing downstream can
-/// key on an identity the unit may not have.
+/// put there. `leaf` is `Option` rather than absent because a REFUSAL has to be disclosed against
+/// an execution and a region has none — the option is the honest shape of that asymmetry, and
+/// nothing may read it as an identity a region merely happens to lack.
 #[derive(Clone, Copy)]
 struct RenderedEdit<'a> {
     ast: AstId,
+    leaf: Option<LeafId>,
     disposition: &'a Disposition,
 }
 
@@ -5244,6 +5435,7 @@ impl<'a> RenderedEdit<'a> {
     fn of_step(step: &'a Step) -> Self {
         Self {
             ast: step.ast,
+            leaf: Some(step.leaf),
             disposition: &step.disposition,
         }
     }
@@ -5251,6 +5443,7 @@ impl<'a> RenderedEdit<'a> {
     fn of_region(region: &'a RegionStep) -> Self {
         Self {
             ast: region.ast,
+            leaf: None,
             disposition: &region.disposition,
         }
     }
@@ -5640,15 +5833,6 @@ fn leaf_has_blocking_output_redirect(ast: &Ast, leaf: AstId) -> bool {
     })
 }
 
-/// Is this leaf's GUARD render refused (run verbatim + disclosed)? A heredoc leaf (span can't cover
-/// the body) OR a non-devnull output-redirect leaf (guarding suppresses the side-effect). The ONE
-/// guard-refusal definition, kept in lockstep across [`Plan::collect_edits`] (drop the edit),
-/// [`Plan::render_refusal_diagnostics`] (disclose it), [`Plan::guard_refused_asts`] (the why-lens
-/// suppresses the "guarded" claim), and the cli's guard why-lane.
-fn guard_render_refused(ast: &Ast, leaf: AstId) -> bool {
-    leaf_has_heredoc(ast, leaf) || leaf_has_blocking_output_redirect(ast, leaf)
-}
-
 /// Is `node` neutralised (its rendered form reproduces its decision without running it)?
 /// Used by [`Plan::collect_edits`]'s omit-safety gate: an `Omit` body may only be edited to
 /// `:` if its controlling guard is neutralised — else a KEPT (`Run`) guard would re-decide
@@ -5684,6 +5868,11 @@ fn is_neutralised(
 ) -> bool {
     if depth > 64 {
         return false; // defensive: never loop; default to run-it
+    }
+    // OOB-safe (`inv-no-throw`): a synthetic plan's controller may index no node, and both arms
+    // below read one. Not-neutralised is the run-it direction.
+    if node.0 as usize >= ast.len() {
+        return false;
     }
     if let Some(disposition) = by_ast.get(&node) {
         return match disposition {
@@ -6076,16 +6265,18 @@ apt_get__is_converged() { return 0; }
                 ),
             }
         };
-        let plan = Plan {
-            steps: vec![mk(0), mk(1)],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
         // A throwaway (empty) Ast: the synthetic `AstId`s index no real node, and the OOB-safe
         // check treats an out-of-arena id as not-refused (so both guards pin).
         let ast = dorc_syntax::parse("").value;
-        let pinned = plan.pinned_definitions("", &ast);
+        let plan = Plan::decided(
+            vec![mk(0), mk(1)],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            "",
+            &ast,
+        );
+        let pinned = plan.pinned_definitions();
         assert_eq!(
             pinned.hoisted().matches("apt_get__is_converged()").count(),
             1,
@@ -6105,9 +6296,10 @@ apt_get__is_converged() { return 0; }
         assert_eq!(counts.sites, 2);
     }
 
-    /// Build a two-guard plan whose sites carry the given verdict BODIES under one funcname.
+    /// Build a two-guard plan whose sites carry the given verdict BODIES under one funcname,
+    /// decided against `src` (whose text is what the already-in-place rule reads).
     #[cfg(test)]
-    fn two_guard_plan(bodies: [&str; 2]) -> Plan {
+    fn two_guard_plan(bodies: [&str; 2], src: &str) -> Plan {
         use dorc_core::{ByVouch, Rung};
         let step = |leaf: u32, preamble: &str| {
             let vouch = VerdictVouch::new(
@@ -6133,12 +6325,14 @@ apt_get__is_converged() { return 0; }
                 ),
             }
         };
-        Plan {
-            steps: vec![step(0, bodies[0]), step(1, bodies[1])],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        }
+        Plan::decided(
+            vec![step(0, bodies[0]), step(1, bodies[1])],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            src,
+            &dorc_syntax::parse(src).value,
+        )
     }
 
     /// `28K` §4 `rul-hash-munge-disambiguation`, and the pope-sin it closes.
@@ -6152,9 +6346,8 @@ apt_get__is_converged() { return 0; }
     fn two_distinct_bodies_under_one_name_are_hash_munged_apart() {
         let a = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
         let b = "apt_get__is_converged() { dpkg-query -W --strict \"$1\" ; }";
-        let plan = two_guard_plan([a, b]);
-        let ast = dorc_syntax::parse("").value;
-        let pinned = plan.pinned_definitions("", &ast);
+        let plan = two_guard_plan([a, b], "");
+        let pinned = plan.pinned_definitions();
         let (first, second) = (
             pinned.invoked(AstId(0)).expect("site 0 guards"),
             pinned.invoked(AstId(1)).expect("site 1 guards"),
@@ -6204,9 +6397,8 @@ apt_get__is_converged() { return 0; }
     fn a_definition_the_book_already_carries_is_not_copied_above_it() {
         let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
         let src = format!("{body}\napt-get install curl\n");
-        let ast = dorc_syntax::parse(&src).value;
-        let plan = two_guard_plan([body, body]);
-        let pinned = plan.pinned_definitions(&src, &ast);
+        let plan = two_guard_plan([body, body], &src);
+        let pinned = plan.pinned_definitions();
         assert_eq!(
             pinned.hoisted(),
             "",
@@ -6248,8 +6440,8 @@ apt_get__is_converged() { return 0; }
             "the probe lane still reads one concatenated unit: {}",
             vouch.preamble
         );
-        let plan = Plan {
-            steps: vec![Step {
+        let plan = Plan::decided(
+            vec![Step {
                 leaf: LeafId(0),
                 ast: AstId(0),
                 sh: "apt-get install curl".to_string(),
@@ -6263,11 +6455,13 @@ apt_get__is_converged() { return 0; }
                     .unwrap(),
                 ),
             }],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
-        let pinned = plan.pinned_definitions(&src, &ast);
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            &src,
+            &ast,
+        );
+        let pinned = plan.pinned_definitions();
         assert_eq!(
             pinned.hoisted(),
             format!("{helper}\n"),
@@ -6311,14 +6505,15 @@ apt_get__is_converged() { return 0; }
                 .unwrap(),
             ),
         };
-        let plan = Plan {
-            steps: vec![step(0), step(1)],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
-        let ast = dorc_syntax::parse("").value;
-        let pinned = plan.pinned_definitions("", &ast);
+        let plan = Plan::decided(
+            vec![step(0), step(1)],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            "",
+            &dorc_syntax::parse("").value,
+        );
+        let pinned = plan.pinned_definitions();
         let hoisted = pinned.hoisted();
         assert_eq!(
             hoisted.matches("_apt_dest() {").count(),
@@ -6356,10 +6551,10 @@ apt_get__is_converged() { return 0; }
     fn a_book_funcdef_under_an_emitted_name_forces_the_engine_to_munge() {
         let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
         let book_body = "apt_get__is_converged() { printf 'always converged\\n' ; }";
-        let plan = two_guard_plan([body, body]); // content-dedup ⇒ ONE engine definition
-
-        let bare = dorc_syntax::parse("apt-get install curl\n").value;
-        let unclaimed = plan.pinned_definitions("apt-get install curl\n", &bare);
+        // content-dedup ⇒ ONE engine definition; the BOOK is what varies, so the plan is re-decided
+        // per cell rather than re-asked with a different tree.
+        let unclaimed = two_guard_plan([body, body], "apt-get install curl\n");
+        let unclaimed = unclaimed.pinned_definitions();
         assert_eq!(
             unclaimed.invoked(AstId(0)),
             Some("apt_get__is_converged"),
@@ -6376,8 +6571,8 @@ apt_get__is_converged() { return 0; }
                 format!("{book_body}\napt_get__is_converged install curl\napt-get install curl\n"),
             ),
         ] {
-            let ast = dorc_syntax::parse(&src).value;
-            let pinned = plan.pinned_definitions(&src, &ast);
+            let claimed = two_guard_plan([body, body], &src);
+            let pinned = claimed.pinned_definitions();
             let invoked = pinned
                 .invoked(AstId(0))
                 .expect("the site still guards, under a disambiguated name");
@@ -6419,16 +6614,22 @@ apt_get__is_converged() { return 0; }
     #[test]
     fn defensive_emission_munges_even_an_uncontested_singleton() {
         let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
-        let ast = dorc_syntax::parse("").value;
-        let mut plan = two_guard_plan([body, body]);
+        let plan = two_guard_plan([body, body], "");
         assert_eq!(
-            plan.pinned_definitions("", &ast).invoked(AstId(0)),
+            plan.pinned_definitions().invoked(AstId(0)),
             Some("apt_get__is_converged"),
             "control: one body, no collision, no vector ⇒ the authored name, bare"
         );
 
-        plan.defensive_emission = true;
-        let pinned = plan.pinned_definitions("", &ast);
+        let defensive = Plan::decided(
+            plan.steps.clone(),
+            Vec::new(),
+            SurvivalReport::default(),
+            true,
+            "",
+            &dorc_syntax::parse("").value,
+        );
+        let pinned = defensive.pinned_definitions();
         let invoked = pinned.invoked(AstId(0)).expect("the site still guards");
         assert!(
             invoked.starts_with("apt_get__is_converged_h"),
@@ -6448,11 +6649,22 @@ apt_get__is_converged() { return 0; }
     }
 
     /// A ONE-guard plan carrying `body` — the single-use half of the placement pair below.
+    ///
+    /// Decided AFTER the truncation, never before: the render plane is a function of the steps, so
+    /// deciding a two-step plan and then dropping a step would leave a plane describing a plan that
+    /// no longer exists.
     #[cfg(test)]
-    fn one_guard_plan(body: &str) -> Plan {
-        let mut plan = two_guard_plan([body, body]);
-        plan.steps.truncate(1);
-        plan
+    fn one_guard_plan(body: &str, src: &str) -> Plan {
+        let mut steps = two_guard_plan([body, body], src).steps;
+        steps.truncate(1);
+        Plan::decided(
+            steps,
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            src,
+            &dorc_syntax::parse(src).value,
+        )
     }
 
     /// `p-x-placement-tuning-pair` — THE TARGET: a colliding body used ONCE is colocated at its site
@@ -6480,11 +6692,11 @@ apt_get__is_converged() { return 0; }
         let body = "apt_get__is_converged() { dpkg-query -W \"$1\" ; }";
         let book_body = "apt_get__is_converged() { printf 'always converged\\n' ; }";
         let src = format!("{book_body}\napt-get install curl\n");
-        let ast = dorc_syntax::parse(&src).value;
 
         // Control (the many-use half): two sites reaching one body, colliding with the book's name.
         // Top-lift plus munge is the idiomatic answer here and must stay.
-        let many = two_guard_plan([body, body]).pinned_definitions(&src, &ast);
+        let many_plan = two_guard_plan([body, body], &src);
+        let many = many_plan.pinned_definitions();
         assert_eq!(
             many.hoisted().matches("apt_get__is_converged_h").count(),
             1,
@@ -6493,9 +6705,9 @@ apt_get__is_converged() { return 0; }
         );
 
         // Setup outside the closure: a panic in there would read as the target still failing.
-        let plan = one_guard_plan(body);
+        let plan = one_guard_plan(body, &src);
         let guards = plan.disposition_counts().guard;
-        let once = plan.pinned_definitions(&src, &ast);
+        let once = plan.pinned_definitions();
         let hoisted = once.hoisted().to_owned();
         internal_tooling::xfail::xfail_until("p-x-placement-tuning-pair", || {
             assert_eq!(guards, 1, "the single site still guards");
@@ -6680,8 +6892,9 @@ apt_get__is_converged() { return 0; }
             sh: String::new(),
             disposition,
         };
-        let plan = Plan {
-            steps: vec![
+        let empty_ast = dorc_syntax::parse("").value;
+        let plan = Plan::decided(
+            vec![
                 step(0, Disposition::Replace(license.clone(), StandIn::True)),
                 step(1, Disposition::Replace(license, StandIn::True)),
                 step(
@@ -6692,10 +6905,12 @@ apt_get__is_converged() { return 0; }
                 ),
                 step(3, Disposition::Run),
             ],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            "",
+            &empty_ast,
+        );
         let c = plan.disposition_counts();
         assert_eq!(c.sites, 4, "four leaves");
         assert_eq!(c.elide, 2, "two Replace ⇒ elide=2");
@@ -6711,12 +6926,14 @@ apt_get__is_converged() { return 0; }
         // The empty plan tallies to all-zero (the yardstick's honest floor for a probe-only
         // or no-command book).
         assert_eq!(
-            Plan {
-                steps: vec![],
-                regions: Vec::new(),
-                survival_report: SurvivalReport::default(),
-                defensive_emission: false,
-            }
+            Plan::decided(
+                vec![],
+                Vec::new(),
+                SurvivalReport::default(),
+                false,
+                "",
+                &empty_ast,
+            )
             .disposition_counts(),
             DispositionCounts::default()
         );
@@ -8156,8 +8373,13 @@ apt_get__is_converged() {
             &mut trip,
             None,
         );
-        let plan =
-            certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake());
+        let plan = certifier_trip::project_censusless(
+            &mut spine,
+            src,
+            &parsed.value,
+            &trip,
+            &PlanAuthority::without_intake(),
+        );
         (plan, i)
     }
 
@@ -8333,7 +8555,13 @@ apt_get__is_converged() {
             None,
         );
         (
-            certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake()),
+            certifier_trip::project_censusless(
+                &mut spine,
+                src,
+                &parsed.value,
+                &trip,
+                &PlanAuthority::without_intake(),
+            ),
             i,
         )
     }
@@ -8801,7 +9029,13 @@ apt_get__is_converged() {
             &mut trip,
             None,
         );
-        certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake())
+        certifier_trip::project_censusless(
+            &mut spine,
+            src,
+            &parsed.value,
+            &trip,
+            &PlanAuthority::without_intake(),
+        )
     }
 
     /// rul24-mode-gate BOTH-SIDES pin (the PRIMARY unflagged-equality guard, per the human's
@@ -8911,7 +9145,13 @@ apt_get__is_converged() {
             &mut trip,
             None,
         );
-        certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake())
+        certifier_trip::project_censusless(
+            &mut spine,
+            src,
+            &parsed.value,
+            &trip,
+            &PlanAuthority::without_intake(),
+        )
     }
 
     /// The FLAGGED survival path at the plan level: a converged install past a running DIVERGED

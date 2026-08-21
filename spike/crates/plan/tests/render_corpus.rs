@@ -1908,10 +1908,10 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
     // just below). The LICENSE is real — minted by the redirect-free twin against the same oracle
     // and fact, re-homed onto the redirect leaf.
     let src = "hork wombat\napt-get install -y nginx >>log\n";
-    let (_rendered, mut plan) = render_guard_for(src, &["nginx"]);
+    let (_rendered, planned) = render_guard_for(src, &["nginx"]);
     let ast = dorc_syntax::parse(src).value;
     assert!(
-        !is_guarded(&plan, ">>log"),
+        !is_guarded(&planned, ">>log"),
         "the mint absence is the disclosed premise; if this reddens, the seat became reachable \
          and the pairing below should become an ordinary book case"
     );
@@ -1926,16 +1926,26 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
             _ => None,
         })
         .expect("the redirect-free twin mints a REAL guard license");
-    let redirected = plan
-        .steps
+    // Re-DECIDED, not poked: the render-time answers are a function of the dispositions
+    // (`30E` §3), so re-homing the license means re-deciding the plan it belongs to.
+    let mut steps = planned.steps.clone();
+    let redirected = steps
         .iter_mut()
         .find(|step| step.sh.contains(">>log"))
         .expect("the redirect leaf is planned");
     redirected.disposition = Disposition::Guard(license);
+    let plan = dorc_plan::Plan::decided(
+        steps,
+        Vec::new(),
+        dorc_plan::SurvivalReport::default(),
+        false,
+        src,
+        &ast,
+    );
 
     let diags = plan.render_refusal_diagnostics(&ast, &Interner::default());
     assert_eq!(diags.len(), 1, "the refusal is disclosed once: {diags:?}");
-    let narratives = plan.render_refusal_narratives(&ast);
+    let narratives = plan.render_refusal_narratives();
     assert!(
         narratives.iter().any(|n| matches!(
             n.kind(),
@@ -1947,7 +1957,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         "and narrates its OWN cause, never the heredoc one: {narratives:?}"
     );
     assert_eq!(
-        plan.refused_render_leaves(&ast)
+        plan.refused_render_leaves()
             .iter()
             .map(|(_, verb)| *verb)
             .collect::<Vec<_>>(),
@@ -1955,7 +1965,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         "the decision-plane record carries the guard verb"
     );
     assert_eq!(
-        plan.guard_refused_asts(&ast).len(),
+        plan.guard_refused_asts().len(),
         1,
         "and the why-lens still suppresses the `guarded` claim — the fourth consumer of the one \
          predicate, and before this the only one that ever saw a redirect refusal"

@@ -130,9 +130,15 @@ impl PlanAuthority {
 /// ([`TripSpent`](crate::certifier_trip::TripSpent)) — a plan that still elided past a tripped
 /// certifier would be exactly the retained elision `30Md:fnd-discarded-trip-retains-elisions`
 /// demonstrated, so the walk is a precondition of projecting rather than a call to remember.
+///
+/// The RENDER-time decisions are taken here too, and recorded before the plan is handed back
+/// ([`record_render_decisions`]) — so a projection cannot exist whose render decisions nothing
+/// wrote down, which is what `30F` §4.4 disclosed as still open.
 #[must_use]
 pub fn project_plan(
-    spine: &Spine,
+    spine: &mut Spine,
+    src: &str,
+    ast: &dorc_syntax::ast::Ast,
     _authority: &PlanAuthority,
     _spent: &crate::certifier_trip::TripSpent,
 ) -> Plan {
@@ -156,12 +162,16 @@ pub fn project_plan(
             routes: record.routes.clone(),
         })
         .collect();
-    Plan {
+    let plan = Plan::decided(
         steps,
         regions,
-        survival_report: project_survival_report(spine),
-        defensive_emission: projected_defensive_emission(spine),
-    }
+        project_survival_report(spine),
+        projected_defensive_emission(spine),
+        src,
+        ast,
+    );
+    record_render_decisions(spine, &plan);
+    plan
 }
 
 /// Derive the survival-tier instrumentation from the Spine's survival records and the narration
@@ -202,31 +212,28 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
     report
 }
 
-/// Record the render-time decisions the audit found hiding (`30E` §3), onto the decision plane.
+/// TRANSCRIBE the decided render onto the decision plane (`30E` §3's audit).
 ///
-/// Three of the five audited decisions are made INSIDE the render, where only a diagnostic stands
-/// between them and the structured plane — and each is license-relevant. `dec-pinned-definitions`
-/// decides which body a guard invokes and under what name, where a misalignment swaps WHOSE
-/// judgment executes (pope-sin tier, `271:rul-sin-ordering`). `dec-render-refusal` is a leaf the
-/// disposition layer LICENSED that the span render refuses, so the record and the artifact disagree
-/// by design. `dec-omit-neutralisation` is the wrong-yes fence of
-/// `erasure-demands-a-proof-and-a-rendered-death`, evaluated at render time.
+/// Three of the five audited decisions used to be made INSIDE the render, where only a diagnostic
+/// stood between them and the structured plane — and each is license-relevant.
+/// `dec-pinned-definitions` decides which body a guard invokes and under what name, where a
+/// misalignment swaps WHOSE judgment executes (pope-sin tier, `271:rul-sin-ordering`).
+/// `dec-render-refusal` is a leaf the disposition layer LICENSED that the span render refuses, so
+/// the record and the artifact disagree by design. `dec-omit-neutralisation` is the wrong-yes fence
+/// of `erasure-demands-a-proof-and-a-rendered-death`.
 ///
-/// They are computed HERE from the render's own seats — `Plan::pinned_definitions` and
-/// `Plan::refused_render_steps` — rather than re-derived, so the record cannot drift from what the
-/// artifact does. RESIDUE, stated where it bites (`churn-avoidance-disclosure`): the render still
-/// computes them for itself rather than reading them back, so this makes the decisions VISIBLE and
-/// diffable without yet making the render a pure consumer. Closing that is the arrangement-home
-/// round's, and `render_decisions_agree_with_the_render` is what holds the two together meanwhile.
-pub fn record_render_decisions(
-    spine: &mut Spine,
-    plan: &Plan,
-    src: &str,
-    ast: &dorc_syntax::ast::Ast,
-) {
+/// This walk now RE-DERIVES NOTHING: `Plan::decided` took every one of them, the render prints
+/// them, and this copies the same values onto the Spine. That is the difference from the shape
+/// `30F` §4.4 disclosed — a record that cannot disagree with the artifact because it is not a
+/// second computation of the same question.
+///
+/// A refused REGION carries no leaf and so reaches no `SpineRenderDecision`
+/// (`30And:fnd-region-refusal-is-undisclosed`); it is decided and readable on the plane
+/// (`DecidedRender::refused`), and the record species would need a region key to hold it.
+pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
     use dorc_core::spine::{RefusalCause, RenderDecision, SpineRenderDecision};
 
-    let pinned = plan.pinned_definitions(src, ast);
+    let pinned = plan.pinned_definitions();
     for step in &plan.steps {
         if let Some(invoked) = pinned.invoked(step.ast) {
             spine.push_render_decision(SpineRenderDecision {
@@ -238,16 +245,24 @@ pub fn record_render_decisions(
             });
         }
     }
-    for (leaf, _verb) in plan.refused_render_leaves(ast) {
+    for refusal in plan.render_plane().refused() {
+        let Some(leaf) = refusal.leaf else { continue };
         spine.push_render_decision(SpineRenderDecision {
             site: Some(dorc_core::SiteId::leaf(leaf)),
+            // The REAL cause. Hard-coding `Heredoc` made the record state a falsehood for every
+            // redirect-refused guard — the class `30Mf` F2 had just made reachable.
             decision: RenderDecision::Refused {
-                cause: RefusalCause::Heredoc,
+                cause: match refusal.cause {
+                    dorc_aid::narrative::RenderRefusalTag::Heredoc => RefusalCause::Heredoc,
+                    dorc_aid::narrative::RenderRefusalTag::OutputRedirect => {
+                        RefusalCause::BlockingRedirect
+                    }
+                },
             },
             grade: None,
         });
     }
-    for (leaf, neutralised) in plan.omit_neutralisations(ast) {
+    for (leaf, neutralised) in plan.omit_neutralisations() {
         spine.push_render_decision(SpineRenderDecision {
             site: Some(dorc_core::SiteId::leaf(leaf)),
             decision: RenderDecision::OmitNeutralised { neutralised },
@@ -331,8 +346,8 @@ mod tests {
         );
         let src = "apt-get install curl\nsystemctl reload nginx\n";
         let ast = dorc_syntax::parse(src).value;
-        let plan = Plan {
-            steps: vec![
+        let plan = Plan::decided(
+            vec![
                 Step {
                     leaf: LeafId(0),
                     ast: AstId(0),
@@ -360,13 +375,15 @@ mod tests {
                     },
                 },
             ],
-            regions: Vec::new(),
-            survival_report: SurvivalReport::default(),
-            defensive_emission: false,
-        };
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            src,
+            &ast,
+        );
 
         let mut spine = Spine::new();
-        record_render_decisions(&mut spine, &plan, src, &ast);
+        record_render_decisions(&mut spine, &plan);
 
         let binding = spine.render_decisions().iter().find(|record| {
             matches!(record.decision, RenderDecision::PinnedBinding { .. })

@@ -1515,6 +1515,8 @@ grep__predict() {
         );
         dorc_plan::certifier_trip::project_censusless(
             &mut spine,
+            book,
+            ast,
             &trip,
             &dorc_plan::PlanAuthority::without_intake(),
         )

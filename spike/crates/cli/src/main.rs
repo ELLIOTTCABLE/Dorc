@@ -1936,11 +1936,9 @@ fn run(
     report("solve", book_source, &trip_diags);
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
     // assembly, and it exists at all only because the intake handed this run an authority and the
-    // certifier latch was spent.
-    let plan = dorc_plan::project_plan(&spine, &authority, &spent);
-    // The three render-time decisions `30E` §3 audited out of hiding now land in the decision plane,
-    // computed from the render's own seats.
-    dorc_plan::spine::record_render_decisions(&mut spine, &plan, &book_src, &parsed.value);
+    // certifier latch was spent. It also DECIDES the render (`30E` §3) and records what it decided,
+    // so no surface below re-takes a decision this seat already took.
+    let plan = dorc_plan::project_plan(&mut spine, &book_src, &parsed.value, &authority, &spent);
     record_new_arm(
         &mut spine,
         &probe,
@@ -2013,7 +2011,7 @@ fn run(
         .chain(merge_narrative.iter().cloned())
         .chain(plan.survival_report.collapse_narrative().iter().cloned())
         .chain(trip_narrative)
-        .chain(plan.render_refusal_narratives(&parsed.value))
+        .chain(plan.render_refusal_narratives())
         .collect();
     if advisory && mode != Mode::Why {
         emit_why_lens(&why_diags, &arena, &book_src, &collapse_narrative);
@@ -2039,7 +2037,7 @@ fn run(
         // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
-        emit_guard_attribution(&plan, &parsed.value, &interner, source_paths, source_srcs);
+        emit_guard_attribution(&plan, &interner, source_paths, source_srcs);
         // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
         // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
         // the read-set-closure proof). Empty when no site carried.
@@ -3656,7 +3654,6 @@ fn emit_reach_poisonings(plan: &dorc_plan::Plan, interner: &Interner) {
 /// Never `error[`, so the gate-3 floor ignores it; the `why: ` prefix lets gate-7 pin it.
 fn emit_guard_attribution(
     plan: &dorc_plan::Plan,
-    ast: &dorc_syntax::ast::Ast,
     interner: &Interner,
     oracle_paths: &[String],
     oracle_srcs: &[String],
@@ -3664,7 +3661,7 @@ fn emit_guard_attribution(
     // A render-REFUSED guard (heredoc / non-devnull output redirect) does NOT guard the site — the
     // mutator runs verbatim. rul-attention-honesty: never claim a skip that did not happen; disclose
     // the refusal (gate-7 `refus`) instead of the licensing line.
-    let refused = plan.guard_refused_asts(ast);
+    let refused = plan.guard_refused_asts();
     for step in &plan.steps {
         let dorc_plan::Disposition::Guard(license) = &step.disposition else {
             continue;
