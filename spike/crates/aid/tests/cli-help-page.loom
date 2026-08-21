@@ -10,6 +10,7 @@ dorc -- spec-mining static-analysis orchestrator (implementation spike)
 usage: dorc [<mode>] --book=<book.sh> [--pre-source <sh>]... [options]
 
 modes (an optional leading token; default is the probe-then-apply round-trip):
+  bundle       print loaded dorc-lang sources as a deterministic inert archive; contacts no host
   probe        emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
   plan         preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
   apply        emit the byte-floored, receipt-free shippable apply artifact to stdout

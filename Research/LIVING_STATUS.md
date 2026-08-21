@@ -30,8 +30,8 @@ segments.
 steps 7-8 are not.** The
 static loader, exact guarded-source speaker mint, CLI input surface, and
 multi-stage locator substrate are live; the complete load-occurrence account has
-separate possible-load / exact-speaker / narrative projections. No artifact forms,
-or final `load30-*` XFAIL promotion exists yet. The
+separate possible-load / exact-speaker / narrative projections. No artifact forms or
+final `load30-*` XFAIL promotion exists yet. The
 opt-in dash/posh floor cell refutes generated loader functions as a universal
 one-file lowering; nested source boundaries remain generated files until another
 lowering is floor-proven.
@@ -42,7 +42,8 @@ root/nested/speculative occurrence remains distinct, executable bytes and line m
 the existing strip seat, and no path is re-read or target re-resolved. `dorc bundle` renders
 the value as an inert heredoc-quoted archive. Its controller-owned storage paths are explicitly
 not runtime `.` targets: executable placement remains step-7 work, where runtime cwd and
-artifact-root relationships exist. The human-authored help page does not yet list the new mode.
+artifact-root relationships exist. The help page lists the mode and its no-host inert-archive
+contract.
 
 **`30I:step-6-compose-bundle-locators-into-diagnostics` IS BUILT AND BOTH-PLATFORM
 GREEN.** Bundle validation diagnostics now compose the loader's exact occurrence chain,
