@@ -3527,11 +3527,9 @@ fn literal_invocation(argv: &[ValueOf]) -> Option<(Symbol, Vec<Symbol>)> {
     Some((provider, operands))
 }
 
-/// Compile the per-member checks for an in-loop MEMBERS establish site (item-4): one
-/// [`ProbePredict`] per member, each carrying its `member` index and per-member cell. ALL
-/// An exact all-vouched population ships verdict bodies; otherwise replacement is unavailable and
-/// the population stays predict-sourced. Every selected body must ship or the WHOLE site is
-/// unresolvable. Records are sub-keyed `site <leafid>.<member-idx>` ([`ProbePredict::member`]).
+/// Compile one `site N.M` check per loop member and resolved cell.
+/// An exact all-vouched population uses verdict bodies; otherwise predictions cannot authorize
+/// replacement. Any unshippable selected body makes the whole site unresolvable.
 #[expect(
     clippy::too_many_arguments,
     reason = "aggregate probing keeps ordered facts, both body lanes, and exact vouch identity explicit"
@@ -3589,18 +3587,10 @@ fn push_member_checks(
     checks.extend(staged);
 }
 
-/// Compile the per-body-site checks for an inlined function-CALL (arch-2, brk-2, `i-4`): one
-/// [`ProbePredict`] per effect-bearing/probeable spliced body site, each carrying its body-site
-/// index as `member` (the `site N.M` sub-record, M = the index into the call's body-site list)
-/// and the body site's resolved cell (positionals bound at the call, `i-2`). An establish body site
-/// is an Establish-class record; a `QueryResolvable` body site is a Query-class record (its rc is
-/// fold-usable per its `valid` bit, the wrapper-pun's `dpkg -s "$1"`); a Pure/MustRun body site
-/// ships nothing (not elision-gating).
-///
-/// ALL-OR-NOTHING on mutation probe-ability: an exact all-vouched establish population ships
-/// verdict bodies; otherwise replacement is unavailable and establishes stay predict-sourced. If
-/// any selected establish body cannot ship, the WHOLE call is unresolvable. Query bodies remain
-/// independently predict-sourced and do not manufacture mutation vouches.
+/// Compile one `site N.M` check per probeable inlined body site.
+/// An exact all-vouched establish population uses verdict bodies; otherwise predictions cannot
+/// authorize replacement. Any unshippable selected establish rejects the whole call; queries stay
+/// predict-sourced and cannot mint mutation vouches.
 #[expect(
     clippy::too_many_arguments,
     reason = "aggregate probing keeps body sites, both body lanes, and exact vouch identity explicit"
