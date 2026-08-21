@@ -507,12 +507,13 @@ impl WhyWorld {
             },
             grade: None,
         });
-        let (_trip_banner, trip_narrative) =
-            demote_on_certifier_trip(&mut spine, trip, &definitions);
+        let (_trip_banner, trip_narrative, spent) =
+            demote_on_certifier_trip(&mut spine, &trip, &definitions);
         // This world is handed results somebody else already decided about, so the intake authority
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
-        let plan = dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake());
+        let plan =
+            dorc_plan::project_plan(&spine, &dorc_plan::PlanAuthority::without_intake(), &spent);
         dorc_plan::spine::record_render_decisions(&mut spine, &plan, book_src, &parsed.value);
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
@@ -681,25 +682,34 @@ pub fn record_pre_network_trip(
 /// argument: a lookup that itself depended on a solve would be no census at all.
 ///
 /// The narrative is per-demoted-site and stays pull-tier; the banner is one line for the run.
+///
+/// Returns the [`TripSpent`](dorc_plan::certifier_trip::TripSpent) witness both drivers then hand
+/// to the projection: the spend is a precondition of planning, not a call to remember
+/// (`30M:rec-dissolve-trip-must-remember-structurally`).
 pub fn demote_on_certifier_trip(
     spine: &mut dorc_plan::Spine,
-    trip: dorc_analysis::certify::CertifierTrip,
+    trip: &dorc_analysis::certify::CertifierTrip,
     definitions: &dorc_analysis::funcenv::DefinitionTable,
-) -> (Vec<Diag>, Vec<CollapseNarrative>) {
+) -> (
+    Vec<Diag>,
+    Vec<CollapseNarrative>,
+    dorc_plan::certifier_trip::TripSpent,
+) {
     use dorc_aid::diag::{DiagCode, SolverConsistencyPlanDemoted};
 
+    let (cleanup, spent) =
+        dorc_plan::certifier_trip::spend_certifier_trip(spine, trip, |fn_name| {
+            definitions.occupancy(fn_name) == 1
+        });
     if !trip.tripped() {
-        return (Vec::new(), Vec::new());
+        return (Vec::new(), Vec::new(), spent);
     }
-    let cleanup = dorc_plan::certifier_trip::demote_on_trip(spine, |fn_name| {
-        definitions.occupancy(fn_name) == 1
-    });
     let banner = Diag::new_spanless_site(DiagCode::SolverConsistencyPlanDemoted(
         SolverConsistencyPlanDemoted {
             demoted: cleanup.demoted().to_string(),
         },
     ));
-    (vec![banner], cleanup.narrative().to_vec())
+    (vec![banner], cleanup.narrative().to_vec(), spent)
 }
 
 /// The unit's function definitions, as DATA for the function-environment domain (`28K` §2).
@@ -1244,8 +1254,8 @@ mod tests {
         spine
     }
 
-    fn projected(spine: &dorc_plan::Spine) -> Plan {
-        dorc_plan::project_plan(spine, &dorc_plan::PlanAuthority::without_intake())
+    fn projected(spine: &dorc_plan::Spine, spent: &dorc_plan::certifier_trip::TripSpent) -> Plan {
+        dorc_plan::project_plan(spine, &dorc_plan::PlanAuthority::without_intake(), spent)
     }
 
     fn guarded_plan(fn_name: &str) -> Plan {
@@ -1315,24 +1325,30 @@ mod tests {
     #[test]
     fn the_body_occupancy_census_decides_whether_a_guard_stands() {
         let mut sole = guarded_spine("apt_get__is_converged");
-        demote_on_certifier_trip(
+        let (_, _, sole_spent) = demote_on_certifier_trip(
             &mut sole,
-            latch_from_a_real_certification(true),
+            &latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION]),
         );
         assert!(
-            matches!(projected(&sole).steps[0].disposition, Disposition::Guard(_)),
+            matches!(
+                projected(&sole, &sole_spent).steps[0].disposition,
+                Disposition::Guard(_)
+            ),
             "a census-unique family keeps its runtime net"
         );
 
         let mut plural = guarded_spine("apt_get__is_converged");
-        demote_on_certifier_trip(
+        let (_, _, plural_spent) = demote_on_certifier_trip(
             &mut plural,
-            latch_from_a_real_certification(true),
+            &latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
         );
         assert!(
-            matches!(projected(&plural).steps[0].disposition, Disposition::Run),
+            matches!(
+                projected(&plural, &plural_spent).steps[0].disposition,
+                Disposition::Run
+            ),
             "a plural family's guard could run somebody else's judgment — it demotes"
         );
     }
@@ -1344,9 +1360,9 @@ mod tests {
     fn a_trip_mints_one_spanless_banner_carrying_the_demoted_count() {
         let mut plan = guarded_spine("apt_get__is_converged");
 
-        let (diags, narrative) = demote_on_certifier_trip(
+        let (diags, narrative, _spent) = demote_on_certifier_trip(
             &mut plan,
-            latch_from_a_real_certification(true),
+            &latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
         );
 
@@ -1376,16 +1392,19 @@ mod tests {
     fn an_untripped_run_is_left_entirely_alone() {
         let mut plan = guarded_spine("apt_get__is_converged");
 
-        let (diags, narrative) = demote_on_certifier_trip(
+        let (diags, narrative, spent) = demote_on_certifier_trip(
             &mut plan,
-            latch_from_a_real_certification(false),
+            &latch_from_a_real_certification(false),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
         );
 
         assert!(diags.is_empty(), "no trip, no banner");
         assert!(narrative.is_empty());
         assert!(
-            matches!(projected(&plan).steps[0].disposition, Disposition::Guard(_)),
+            matches!(
+                projected(&plan, &spent).steps[0].disposition,
+                Disposition::Guard(_)
+            ),
             "the plural census demotes NOTHING without a trip — the trip is the whole trigger"
         );
     }

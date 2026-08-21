@@ -1931,11 +1931,13 @@ fn run(
     // summary and the artifact all describe the SAME decisions. Nothing between here and the
     // projection touches a disposition, so "immediately before plan-emission" and "immediately
     // after plan-construction" are the same seat, and only this one keeps every consumer honest.
-    let (trip_diags, trip_narrative) = demote_on_certifier_trip(&mut spine, trip, &definitions);
+    let (trip_diags, trip_narrative, spent) =
+        demote_on_certifier_trip(&mut spine, &trip, &definitions);
     report("solve", book_source, &trip_diags);
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
-    // assembly, and it exists at all only because the intake handed this run an authority.
-    let plan = dorc_plan::project_plan(&spine, &authority);
+    // assembly, and it exists at all only because the intake handed this run an authority and the
+    // certifier latch was spent.
+    let plan = dorc_plan::project_plan(&spine, &authority, &spent);
     // The three render-time decisions `30E` §3 audited out of hiding now land in the decision plane,
     // computed from the render's own seats.
     dorc_plan::spine::record_render_decisions(&mut spine, &plan, &book_src, &parsed.value);

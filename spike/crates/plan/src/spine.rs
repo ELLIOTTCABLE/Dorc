@@ -124,8 +124,18 @@ impl PlanAuthority {
 /// exactly one disposition exists per leaf, so the projection is currently injective, and the Spine
 /// keying is what makes a future per-member step a widening of the projection rather than a re-key
 /// of the whole engine (`30E:stop-siteid-digest-rekey`).
+///
+/// Two witnesses by reference, and neither is decoration: `authority` is the intake's
+/// (`306b:rul-report-only-output-cannot-plan`) and `_spent` is the certifier latch's
+/// ([`TripSpent`](crate::certifier_trip::TripSpent)) — a plan that still elided past a tripped
+/// certifier would be exactly the retained elision `30Md:fnd-discarded-trip-retains-elisions`
+/// demonstrated, so the walk is a precondition of projecting rather than a call to remember.
 #[must_use]
-pub fn project_plan(spine: &Spine, _authority: &PlanAuthority) -> Plan {
+pub fn project_plan(
+    spine: &Spine,
+    _authority: &PlanAuthority,
+    _spent: &crate::certifier_trip::TripSpent,
+) -> Plan {
     let steps: Vec<Step> = spine
         .dispositions()
         .map(|record| Step {

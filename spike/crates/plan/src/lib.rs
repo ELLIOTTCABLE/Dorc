@@ -8141,7 +8141,8 @@ apt_get__is_converged() {
             invalidators,
             fact_backings: BTreeMap::new(),
         };
-        let spine = build_plan_walled(
+        let mut trip = dorc_analysis::certify::CertifierTrip::default();
+        let mut spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -8152,10 +8153,11 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             None,
         );
-        let plan = project_plan(&spine, &PlanAuthority::without_intake());
+        let plan =
+            certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake());
         (plan, i)
     }
 
@@ -8315,7 +8317,8 @@ apt_get__is_converged() {
             invalidators,
             fact_backings: BTreeMap::new(),
         };
-        let spine = build_plan_walled(
+        let mut trip = dorc_analysis::certify::CertifierTrip::default();
+        let mut spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -8326,10 +8329,13 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             None,
         );
-        (project_plan(&spine, &PlanAuthority::without_intake()), i)
+        (
+            certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake()),
+            i,
+        )
     }
 
     /// A modeled mutator that RUNS walls exactly like an unmodeled one, and the sites below it
@@ -8780,7 +8786,8 @@ apt_get__is_converged() {
             },
             None => WallPolicy::Honest,
         };
-        let spine = build_plan_walled(
+        let mut trip = dorc_analysis::certify::CertifierTrip::default();
+        let mut spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -8791,10 +8798,10 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             None,
         );
-        project_plan(&spine, &PlanAuthority::without_intake())
+        certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake())
     }
 
     /// rul24-mode-gate BOTH-SIDES pin (the PRIMARY unflagged-equality guard, per the human's
@@ -8885,7 +8892,8 @@ apt_get__is_converged() {
         };
         let resolutions = Resolutions::none();
         let dialect = dorc_core::Dialect::empty();
-        let spine = build_plan_walled(
+        let mut trip = dorc_analysis::certify::CertifierTrip::default();
+        let mut spine = build_plan_walled(
             src,
             &parsed.value,
             &cfg,
@@ -8900,10 +8908,10 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             observe,
             &mut arena,
-            &mut dorc_analysis::certify::CertifierTrip::default(),
+            &mut trip,
             None,
         );
-        project_plan(&spine, &PlanAuthority::without_intake())
+        certifier_trip::project_censusless(&mut spine, &trip, &PlanAuthority::without_intake())
     }
 
     /// The FLAGGED survival path at the plan level: a converged install past a running DIVERGED

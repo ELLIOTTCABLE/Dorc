@@ -34,6 +34,35 @@ use dorc_analysis::certify::CertifierTrip;
 
 use crate::{Disposition, Plan, PlanAuthority, Spine};
 
+/// Proof that this run's [`CertifierTrip`] reached the terminal cleanup before anything projected
+/// (`30M:rec-dissolve-trip-must-remember-structurally`).
+///
+/// **A type, not a roster** — the same shape [`PlanAuthority`] wears, for the same reason. The
+/// cleanup used to be a must-remember-to-ask surface: `plan/CLAUDE.md` said "EVERY plan-producing
+/// driver", and four producers had already forgotten (`30Md:fnd-discarded-trip-retains-elisions`).
+/// The reification moved the cleanup's RESULT into the decision plane but left the ACT a call
+/// somebody had to remember; this dissolves the act. [`crate::project_plan`] demands one by value,
+/// the only mint is [`spend_certifier_trip`], and that mint cannot be reached without a
+/// [`CertifierTrip`] in hand — so a producer that never spent its latch has no projection to call.
+///
+/// There is deliberately no intakeless-style escape (contrast [`PlanAuthority::without_intake`]):
+/// every producer HAS a latch, even an untripped default one, so nothing legitimately needs a
+/// witness minted beside the walk rather than by it.
+///
+/// The two-way lexical roster (`every_plan_producer_spends_its_certifier_trip`) stays as
+/// belt-and-braces: it also covers the producers that reach the settlement without projecting here.
+///
+/// ```compile_fail
+/// # use dorc_plan::{PlanAuthority, Spine};
+/// let mut spine = Spine::new();
+/// // No witness in hand ⇒ no projection: this is the dissolution, spelled. Falsified by hand at
+/// // authoring time — threading a real `spend_certifier_trip` witness makes this block COMPILE and
+/// // reddens the assertion, so the refusal is the arity and not some unrelated error.
+/// let _ = dorc_plan::project_plan(&spine, &PlanAuthority::without_intake());
+/// ```
+#[derive(Debug)]
+pub struct TripSpent(());
+
 /// What the cleanup did (`302` §5): the count for the plan-prominent banner, and the per-site
 /// narrative records that stay pull-tier.
 #[derive(Debug, Clone, Default)]
@@ -122,11 +151,10 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
         }
     }
     // `dec-certifier-trip-cleanup` (`30E` §3) lands in the decision plane rather than staying a
-    // post-construction mutation nobody records. It does NOT dissolve the must-remember surface —
-    // it moved the RESULT into the plane, never the ACT of calling it, and four producers had
-    // already forgotten the act (`30Md:fnd-discarded-trip-retains-elisions`). Dissolving it is
-    // `30M:rec-dissolve-trip-must-remember-structurally`, unbuilt; until then the surface is held
-    // by `project_censusless` and the lexical producer fence beside it.
+    // post-construction mutation nobody records. The must-remember surface the reification left
+    // behind — the RESULT moved, the ACT did not — is now dissolved too: the only way to reach a
+    // projection is through `spend_certifier_trip`'s `TripSpent`
+    // (`30M:rec-dissolve-trip-must-remember-structurally`).
     for site in demoted_sites {
         spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
             site: Some(site),
@@ -135,6 +163,26 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
         });
     }
     out
+}
+
+/// SPEND a run's certifier latch — THE one mint of [`TripSpent`].
+///
+/// Total over both latch states, and that totality is what makes the witness unforgeable: an
+/// untripped run does no walk and still comes away with the proof, so nothing is ever tempted to
+/// mint one beside the walk. A tripped run demotes first
+/// (`302:rul-certifier-trip-guard-only`), and `census_unique` is the guard fork —
+/// `FORFEITS:forfeit-certifier-trip-demotes-guards` is what answering `false` costs.
+pub fn spend_certifier_trip(
+    spine: &mut Spine,
+    trip: &CertifierTrip,
+    census_unique: impl Fn(&str) -> bool,
+) -> (TripCleanup, TripSpent) {
+    let cleanup = if trip.tripped() {
+        demote_on_trip(spine, census_unique)
+    } else {
+        TripCleanup::default()
+    };
+    (cleanup, TripSpent(()))
 }
 
 /// The whole TAIL of a plan producer holding no body-occupancy census: spend the run's latch, then
@@ -151,10 +199,8 @@ pub fn project_censusless(
     trip: &CertifierTrip,
     authority: &PlanAuthority,
 ) -> Plan {
-    if trip.tripped() {
-        drop(demote_on_trip(spine, |_| false));
-    }
-    crate::project_plan(spine, authority)
+    let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false);
+    crate::project_plan(spine, authority, &spent)
 }
 
 #[cfg(test)]
@@ -373,9 +419,11 @@ apt_get__predict() {
         spine
     }
 
-    /// The projected plan, which is what every consumer of the cleanup actually reads.
-    fn projected(spine: &Spine) -> Plan {
-        crate::project_plan(spine, &crate::PlanAuthority::without_intake())
+    /// The projected plan, which is what every consumer of the cleanup actually reads. The latch
+    /// is a parameter because it MUST be: there is no projection without one.
+    fn projected(spine: &mut Spine, trip: &CertifierTrip) -> Plan {
+        let (_, spent) = super::spend_certifier_trip(spine, trip, |_| true);
+        crate::project_plan(spine, &crate::PlanAuthority::without_intake(), &spent)
     }
 
     fn tags(cleanup: &TripCleanup) -> Vec<dorc_aid::narrative::CollapseKind> {
@@ -423,11 +471,12 @@ apt_get__predict() {
             grade: None,
         });
 
-        let cleanup = demote_on_trip(&mut spine, |_| true);
+        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| true);
+        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
 
         assert!(
             matches!(
-                projected(&spine).regions.first().map(|r| &r.disposition),
+                plan.regions.first().map(|r| &r.disposition),
                 Some(Disposition::Run)
             ),
             "a shared replacement demotes to run exactly as a site's does"
@@ -459,8 +508,8 @@ apt_get__predict() {
         let before = steps.len();
         let mut spine = spine_of(steps);
 
-        let cleanup = demote_on_trip(&mut spine, |_| true);
-        let plan = projected(&spine);
+        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| true);
+        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
 
         assert_eq!(
             plan.steps.len(),
@@ -521,18 +570,21 @@ apt_get__predict() {
         );
     }
 
-    /// THE PRODUCER FENCE. Four producers projected without spending their latch, silently
+    /// THE PRODUCER FENCE — belt-and-braces since the typed witness landed.
+    ///
+    /// Four producers projected without spending their latch, silently
     /// (`30Md:fnd-discarded-trip-retains-elisions`), so the set of files that may build a walled
     /// plan is ENUMERATED here and checked both ways: one that stops spending fails, and a FIFTH
-    /// producer is a deliberate act with a diff. Lexical, like
-    /// `erase::licence_mint_has_exactly_one_caller`, because no type bound expresses it while
-    /// `30M:rec-dissolve-trip-must-remember-structurally` is unbuilt.
+    /// producer is a deliberate act with a diff. `TripSpent` now makes the omission uncompilable
+    /// at the PROJECTION, and this stays because it binds a different thing: a producer that builds
+    /// a walled plan and hands the Spine somewhere else entirely never reaches that seat.
     #[test]
     fn every_plan_producer_spends_its_certifier_trip() {
         // Split so this scan does not find ITSELF — the fence is about production call sites.
         let builds = concat!("build_plan", "_walled(");
         let spends = [
             concat!("project_", "censusless("),
+            concat!("spend_certifier_", "trip("),
             concat!("demote_on_", "trip("),
         ];
         let expected = [
@@ -604,8 +656,10 @@ apt_get__predict() {
             guard_step(1, "ufw__is_converged"),
         ]);
 
-        let cleanup = demote_on_trip(&mut spine, |fn_name| fn_name == "apt_get__is_converged");
-        let plan = projected(&spine);
+        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |fn_name| {
+            fn_name == "apt_get__is_converged"
+        });
+        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
 
         assert!(
             matches!(plan.steps[0].disposition, Disposition::Guard(_)),
@@ -625,12 +679,36 @@ apt_get__predict() {
     fn a_censusless_caller_demotes_guards_wholesale() {
         let mut spine = spine_of(vec![guard_step(0, "apt_get__is_converged")]);
 
-        demote_on_trip(&mut spine, |_| false);
+        let (_, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| false);
+        let plan = crate::project_plan(&spine, &crate::PlanAuthority::without_intake(), &spent);
 
-        assert!(matches!(
-            projected(&spine).steps[0].disposition,
-            Disposition::Run
-        ));
+        assert!(matches!(plan.steps[0].disposition, Disposition::Run));
+    }
+
+    /// THE STRUCTURAL DISSOLUTION (`30M:rec-dissolve-trip-must-remember-structurally`) — the
+    /// original adversarial shape, now green because the defect it demonstrated is unspellable.
+    ///
+    /// A real trip, a spine that really elides, and NOTHING between them but the projection. Filed
+    /// red (`1dbca1ab`) against a `project_plan` a producer could reach with its latch still in
+    /// hand; the reshaped `a_censusless_producer_spends_its_trip_before_projecting` proved the SEAT
+    /// spends, which is a weaker claim — it says the one tail that exists is correct, not that no
+    /// other tail can be written. This says the second thing: the witness `project_plan` demands is
+    /// minted only by the walk, so a plan cannot exist while a tripped run's elisions do. The
+    /// `compile_fail` doctest on `TripSpent` is the half no runtime assertion can carry.
+    #[test]
+    fn a_tripped_plan_cannot_be_projected_while_it_still_elides() {
+        let mut spine = spine_of(a_real_elide_plan().steps);
+        let trip = a_real_trip();
+        assert!(trip.tripped());
+
+        let plan = projected(&mut spine, &trip);
+
+        assert!(
+            plan.steps
+                .iter()
+                .all(|step| matches!(step.disposition, Disposition::Run)),
+            "a genuine certifier disagreement must reach the terminal demotion before projection"
+        );
     }
 
     /// THE LATCH'S OWN CONTROL: a certification that really PASSED leaves the latch shut, so the
