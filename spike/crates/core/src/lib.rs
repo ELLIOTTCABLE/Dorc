@@ -263,6 +263,9 @@ pub use custody::{CustodyClosures, custody_reaches};
 
 pub mod loadpath;
 
+pub mod region;
+pub use region::{ElisionRegion, IterationSlot, RegionUniverse};
+
 // ===========================================================================
 // String interning + the referent-agnostic opaque token (dn-4, W4)
 // ===========================================================================
