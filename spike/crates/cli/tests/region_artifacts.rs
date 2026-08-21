@@ -7,6 +7,12 @@
 //! re-blessed (`render-form-unwelded`); the shapes below must survive every such churn, so nothing
 //! here compares whole bytes.
 
+#![expect(
+    clippy::expect_used,
+    clippy::panic,
+    reason = "a fixture this battery cannot read is a broken corpus, not a case answer: the in-tests allowance the policy intends"
+)]
+
 use std::path::{Path, PathBuf};
 
 /// Every region case's committed apply artifact, by case name.

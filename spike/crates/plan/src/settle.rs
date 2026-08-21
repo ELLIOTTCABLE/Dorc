@@ -1210,6 +1210,62 @@ mod tests {
         );
     }
 
+    /// `30L:req-wall-narrative-gains-region-operand` — the wall account can now name a wall that
+    /// stands where no plan leaf does.
+    ///
+    /// The gap this closes (`30Kb:finding-nonleaf-walls-have-no-account-seat`): effective reach
+    /// holds handles for command-substitution internals, redirection writes, and spliced function
+    /// bodies, and a `LeafId` alone points at whatever GOVERNS one rather than at the line. A
+    /// spliced body instance now maps to the authored region a reader can actually find.
+    ///
+    /// OPERAND ONLY. Whether a wall narrates at all, and under which policy, is untouched — that is
+    /// the ratify-or-mint question `30M` §3 leaves to the human, and this rider has to be correct
+    /// under either answer.
+    #[test]
+    fn a_wall_names_the_authored_region_it_stands_in_and_nothing_else() {
+        let src = "p() { apt-get install -y nginx; }\np\nufw allow 443/tcp\n";
+        let parsed = dorc_syntax::parse(src);
+        let built = dorc_analysis::cfg::build(&parsed.value);
+        let universe =
+            dorc_core::region::RegionUniverse::of_book_custody_files([dorc_core::SourceFileId(0)]);
+        let string_execution = crate::region::StringExecutionSites::of_unit(&parsed.value);
+        let (loads, vectors) = (BTreeSet::new(), BTreeSet::new());
+        let census = crate::region::census(
+            &parsed.value,
+            &built.value,
+            &built.diags,
+            crate::region::CensusOpeners::of(&universe, &loads, &vectors, &string_execution),
+            dorc_core::SourceFileId(0),
+        );
+        let instance = census
+            .regions()
+            .find_map(|(_, population)| match population {
+                RoutePopulation::Closed(routes) => routes.routes().next().map(|r| r.cfg_node()),
+                RoutePopulation::Open => None,
+            })
+            .expect("the spliced body holds one region instance");
+        assert!(
+            region_of_node(&census, instance).is_some(),
+            "a wall standing at a spliced body instance names its authored region"
+        );
+        // The top-level `ufw` leaf: an ordinary wall, whose participant IS the mutator, so there is
+        // nothing further to name and the operand is honestly absent.
+        let top_level = built
+            .value
+            .iter()
+            .find(|(id, node)| {
+                node.kind == dorc_analysis::cfg::CfgNodeKind::Command
+                    && !built.value.is_spliced_internal(*id)
+                    && src[parsed.value.node(node.ast).span.lo.0 as usize..].starts_with("ufw")
+            })
+            .map(|(id, _)| id)
+            .expect("the book's own top-level leaf");
+        assert!(
+            region_of_node(&census, top_level).is_none(),
+            "and an ordinary leaf wall gains no operand it does not have"
+        );
+    }
+
     /// `30L:pin-shared-edit-before-erasure` / `inv-no-posthoc-shared-demotion` — no per-instance
     /// replacement enters the ledger before the shared agreement exists.
     ///
