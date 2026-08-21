@@ -93,8 +93,8 @@ $ dorc why book.sh:8 --book=book.sh --pre-source firewall.oracle.sh --pre-source
 
    8|open_https being skipped stood on all of the following, together:
 
-   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
-   * firewall.oracle.sh:5   reported  "sm.dorc.Firewall:80/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:13  reported  "sm.dorc.Firewall:443/tcp@allowed" (rc 0)
+   * firewall.oracle.sh:13  reported  "sm.dorc.Firewall:80/tcp@allowed" (rc 0)
    * firewall.oracle.sh:16  vouches   "re-establishing sm.dorc.Firewall:443/tcp@allowed
                                       sm.dorc.Firewall:80/tcp@allowed adds nothing worth
                                       running"

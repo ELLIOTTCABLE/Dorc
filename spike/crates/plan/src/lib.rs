@@ -3251,8 +3251,8 @@ pub fn compile_probe(
     wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
     ship_body: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
-    ship_auto: impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
-    is_vouched: impl Fn(CfgNodeId) -> bool,
+    ship_auto: impl Fn(CfgNodeId, &[FactKey], Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    is_vouched: impl Fn(CfgNodeId, FactKey) -> bool,
 ) -> ProbePlan {
     let mut checks = Vec::new();
     let mut unresolvable = Vec::new();
@@ -3329,7 +3329,7 @@ pub fn compile_probe(
         // queries every member regardless of `self_reached` — that bit gates the apply-side
         // license, not what the probe needs to learn.)
         if let SkipClass::EstablishMembers { members, .. } = class {
-            push_member_predicts(
+            push_member_checks(
                 &mut checks,
                 &mut unresolvable,
                 site,
@@ -3337,19 +3337,23 @@ pub fn compile_probe(
                 members,
                 value,
                 &ship_body,
+                &ship_auto,
+                &is_vouched,
             );
             continue;
         }
         // arch-2 (i-4): an inlined CALL ships one `site N.M` check per spliced body establish
-        // (see `push_inline_predicts` for the all-or-nothing probe-ability).
+        // (see `push_inline_checks` for the all-or-nothing probe-ability).
         if let SkipClass::InlineCall { sites } = class {
-            push_inline_predicts(
+            push_inline_checks(
                 &mut checks,
                 &mut unresolvable,
                 site,
                 sites,
                 value,
                 &ship_body,
+                &ship_auto,
+                &is_vouched,
             );
             continue;
         }
@@ -3365,7 +3369,7 @@ pub fn compile_probe(
             // strain-classify-coupling (24C): a vouched past-wall establish still probes (the
             // guard witness needs the verdict). Establish-class ⇒ its record-rc is the probe
             // command's, never fed to the fold (the firewall is unmoved).
-            SkipClass::EstablishProbeWritten(fact) if is_vouched(node) => {
+            SkipClass::EstablishProbeWritten(fact) if is_vouched(node, *fact) => {
                 Some((*fact, ProbeSiteKind::Establish))
             }
             SkipClass::QueryResolvable { fact, valid } => {
@@ -3417,9 +3421,9 @@ pub fn compile_probe(
         // Precedes the predict lane below and MUST: a verdict-lane site can also carry a
         // resolvable predict, which would measure a different cell than this record keys.
         if matches!(site_kind, ProbeSiteKind::Establish)
-            && is_vouched(node)
+            && is_vouched(node, fact)
             && let Some((provider, argv, shipped)) =
-                ship_auto_for_argv(&value.argv_values(node), node, &ship_auto)
+                ship_auto_for_argv(&value.argv_values(node), node, &[fact], &ship_auto)
         {
             checks.push(ProbePredict {
                 site,
@@ -3484,10 +3488,11 @@ pub fn compile_probe(
 fn ship_auto_for_argv(
     argv: &[ValueOf],
     node: CfgNodeId,
-    ship_auto: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    subjects: &[FactKey],
+    ship_auto: &impl Fn(CfgNodeId, &[FactKey], Symbol, &[Symbol]) -> Option<ShippedCheck>,
 ) -> Option<(Symbol, Vec<Symbol>, ShippedCheck)> {
     let (provider, operands) = literal_invocation(argv)?;
-    let shipped = ship_auto(node, provider, &operands)?;
+    let shipped = ship_auto(node, subjects, provider, &operands)?;
     Some((provider, operands, shipped))
 }
 
@@ -3524,11 +3529,14 @@ fn literal_invocation(argv: &[ValueOf]) -> Option<(Symbol, Vec<Symbol>)> {
 
 /// Compile the per-member checks for an in-loop MEMBERS establish site (item-4): one
 /// [`ProbePredict`] per member, each carrying its `member` index and per-member cell. ALL
-/// members must have a declared probe body, or the WHOLE site is unresolvable — the
-/// all-or-nothing in-loop license (item-3) cannot elide a partial-member set, so a
-/// missing probe on any member kills the site (`can't-probe ⇒ can't-elide`). The records
-/// these emit are sub-keyed `site <leafid>.<member-idx>` ([`ProbePredict::member`]).
-fn push_member_predicts(
+/// An exact all-vouched population ships verdict bodies; otherwise replacement is unavailable and
+/// the population stays predict-sourced. Every selected body must ship or the WHOLE site is
+/// unresolvable. Records are sub-keyed `site <leafid>.<member-idx>` ([`ProbePredict::member`]).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "aggregate probing keeps ordered facts, both body lanes, and exact vouch identity explicit"
+)]
+fn push_member_checks(
     checks: &mut Vec<ProbePredict>,
     unresolvable: &mut Vec<LeafId>,
     site: LeafId,
@@ -3536,6 +3544,8 @@ fn push_member_predicts(
     members: &[FactKey],
     value: &ValueFlow,
     ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_auto: &impl Fn(CfgNodeId, &[FactKey], Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    is_vouched: &impl Fn(CfgNodeId, FactKey) -> bool,
 ) {
     // R3: the per-member argvs (aligned with `members`, list order, dups kept —
     // [`ValueFlow::member_argv`]). Absent, or a length mismatch, means the Members
@@ -3549,10 +3559,15 @@ fn push_member_predicts(
         unresolvable.push(site);
         return;
     }
+    let all_vouched = members.iter().all(|fact| is_vouched(node, *fact));
     let mut staged = Vec::with_capacity(members.len());
     for (idx, (fact, argv)) in members.iter().zip(member_argvs).enumerate() {
-        let Some((provider, args, shipped)) = ship_for_argv(argv, node, ship_body) else {
-            // One member un-shippable ⇒ the whole site is unresolvable (all or none).
+        let shipped = if all_vouched {
+            ship_auto_for_argv(argv, node, members, ship_auto)
+        } else {
+            ship_for_argv(argv, node, ship_body)
+        };
+        let Some((provider, args, shipped)) = shipped else {
             unresolvable.push(site);
             return;
         };
@@ -3566,8 +3581,8 @@ fn push_member_predicts(
             sh: shipped.sh,
             defining_span: shipped.defining_span,
             connected: None,
-            verdict: false,
-            emits_report: false,
+            verdict: all_vouched,
+            emits_report: all_vouched && shipped.emits_report,
             entry: None,
         });
     }
@@ -3582,19 +3597,37 @@ fn push_member_predicts(
 /// fold-usable per its `valid` bit, the wrapper-pun's `dpkg -s "$1"`); a Pure/MustRun body site
 /// ships nothing (not elision-gating).
 ///
-/// ALL-OR-NOTHING on probe-ability (the call's all-or-nothing license cannot elide a partial
-/// body): if any ESTABLISH body site has no declared probe body, the WHOLE call is unresolvable
-/// (`can't-probe ⇒ can't-elide`). A Query body site with no probe body is NOT a blocker (it does
-/// not gate the call's elision — the call elides on the body's establishes), so it is simply
-/// omitted; the records are staged and committed only if no establish is un-probeable.
-fn push_inline_predicts(
+/// ALL-OR-NOTHING on mutation probe-ability: an exact all-vouched establish population ships
+/// verdict bodies; otherwise replacement is unavailable and establishes stay predict-sourced. If
+/// any selected establish body cannot ship, the WHOLE call is unresolvable. Query bodies remain
+/// independently predict-sourced and do not manufacture mutation vouches.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "aggregate probing keeps body sites, both body lanes, and exact vouch identity explicit"
+)]
+fn push_inline_checks(
     checks: &mut Vec<ProbePredict>,
     unresolvable: &mut Vec<LeafId>,
     site: LeafId,
     sites: &[InlineSite],
     value: &ValueFlow,
     ship_body: &impl Fn(CfgNodeId, Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    ship_auto: &impl Fn(CfgNodeId, &[FactKey], Symbol, &[Symbol]) -> Option<ShippedCheck>,
+    is_vouched: &impl Fn(CfgNodeId, FactKey) -> bool,
 ) {
+    let establishes: Vec<_> = sites
+        .iter()
+        .filter_map(|body| match body.class {
+            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+                Some((body.node, fact))
+            }
+            _ => None,
+        })
+        .collect();
+    let all_vouched = !establishes.is_empty()
+        && establishes
+            .iter()
+            .all(|(node, fact)| is_vouched(*node, *fact));
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
         let member = Some(u32::try_from(idx).unwrap_or(u32::MAX));
@@ -3603,9 +3636,12 @@ fn push_inline_predicts(
         let body_argv = value.argv_values(body.node);
         match &body.class {
             SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
-                let Some((provider, args, shipped)) =
+                let shipped = if all_vouched {
+                    ship_auto_for_argv(&body_argv, body.node, &[*fact], ship_auto)
+                } else {
                     ship_for_argv(&body_argv, body.node, ship_body)
-                else {
+                };
+                let Some((provider, args, shipped)) = shipped else {
                     // An un-shippable ESTABLISH ⇒ the whole call is unresolvable (all or none).
                     unresolvable.push(site);
                     return;
@@ -3620,8 +3656,8 @@ fn push_inline_predicts(
                     sh: shipped.sh,
                     defining_span: shipped.defining_span,
                     connected: None,
-                    verdict: false,
-                    emits_report: false,
+                    verdict: all_vouched,
+                    emits_report: all_vouched && shipped.emits_report,
                     entry: None,
                 });
             }
@@ -6154,8 +6190,8 @@ apt_get__is_converged() { return 0; }
                     None
                 }
             },
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         (probe, i)
     }
@@ -6197,14 +6233,14 @@ apt_get__is_converged() { return 0; }
             &BTreeMap::new(),
             &ConnectedPipes::default(),
             |_, _, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
-            |_, _, _| {
+            |_, _, _, _| {
                 Some(ShippedCheck::verdict(
                     "VERDICT_BODY".to_owned(),
                     None,
                     false,
                 ))
             },
-            |_| true,
+            |_, _| true,
         );
         let shipped = probe
             .checks
@@ -6249,8 +6285,8 @@ apt_get__is_converged() { return 0; }
             &BTreeMap::new(),
             &ConnectedPipes::default(),
             |_, _, _| Some(ShippedCheck::predict("PREDICT_BODY".to_owned(), None)),
-            |_, _, _| None,
-            |_| true,
+            |_, _, _, _| None,
+            |_, _| true,
         );
         let shipped = probe
             .checks
@@ -6400,8 +6436,8 @@ apt_get__is_converged() { return 0; }
             &BTreeMap::new(),
             &ConnectedPipes::default(),
             |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         let mut probe_leaves: Vec<u32> = probe.checks.iter().map(|c| c.site.0).collect();
         probe_leaves.sort_unstable();
@@ -6836,8 +6872,8 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             &ConnectedPipes::default(),
             |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         let plan = build_plan(
             src,

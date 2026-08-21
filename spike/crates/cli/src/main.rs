@@ -1265,10 +1265,14 @@ fn run(
     // `command_effect` reaches this lane from two fallbacks, and the second leaves a shippable
     // predict on a site whose cell the verdict body owns.
     let ship_auto = |node: dorc_analysis::cfg::CfgNodeId,
+                     subjects: &[dorc_core::FactKey],
                      p: Symbol,
                      _a: &[Symbol]|
      -> Option<dorc_plan::ShippedCheck> {
-        if !verdict_lane.contains_key(&node) {
+        if verdict_lane
+            .get(&node)
+            .is_none_or(|measurement| measurement.subjects() != subjects)
+        {
             return None;
         }
         ship_verdict_body(
@@ -1290,7 +1294,7 @@ fn run(
         &connected,
         ship,
         ship_auto,
-        |node| vouches.contains_site(node),
+        |node, fact| vouches.get(node, fact).is_some(),
     )
     .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
 
@@ -6122,8 +6126,8 @@ apt_get__is_converged() {
                 &BTreeMap::new(),
                 &dorc_plan::ConnectedPipes::default(),
                 ship,
-                |_, _, _| None,
-                |_| false,
+                |_, _, _, _| None,
+                |_, _| false,
             )
         };
         let results = parse_str(records, &mut interner);
@@ -6278,20 +6282,23 @@ apt_get__is_converged() {
                     live,
                 )
             },
-            |node, provider, _| {
-                verdict_lane.contains_key(&node).then(|| {
-                    ship_verdict_body(
-                        &oracle_srcs,
-                        &helpers,
-                        &verdict_sets,
-                        &interner,
-                        provider,
-                        node,
-                        live,
-                    )
-                })?
+            |node, subjects, provider, _| {
+                verdict_lane
+                    .get(&node)
+                    .is_some_and(|measurement| measurement.subjects() == subjects)
+                    .then(|| {
+                        ship_verdict_body(
+                            &oracle_srcs,
+                            &helpers,
+                            &verdict_sets,
+                            &interner,
+                            provider,
+                            node,
+                            live,
+                        )
+                    })?
             },
-            |_| false,
+            |_, _| false,
         );
         let results = parse_str(
             "site 0 effect=holds\nsite 1 effect=holds rc=0\nsite 2 effect=holds\n",
@@ -6624,8 +6631,8 @@ apt_get__is_converged() {
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_, _, _| None,
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         let plan = dorc_plan::build_plan(
             book,

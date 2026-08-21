@@ -421,6 +421,37 @@ fn ship_predict_body(
     None
 }
 
+fn ship_verdict_body(
+    oracle_srcs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    helpers: &dorc_oracle::closure::HelperIndex,
+    interner: &Interner,
+    provider: Symbol,
+) -> Option<dorc_plan::ShippedCheck> {
+    use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    let want = map_provider_name(interner.resolve(provider));
+    for (idx, (src, set)) in oracle_srcs.iter().zip(verdict_sets).enumerate() {
+        let Some(verdict) = set.providers().find_map(|candidate| {
+            (map_provider_name(interner.resolve(candidate)) == want)
+                .then(|| set.get(candidate))
+                .flatten()
+        }) else {
+            continue;
+        };
+        let body = strip_verdict(src, verdict, interner);
+        let closure = helpers.closure_for(idx, &body).ok()?;
+        return Some(dorc_plan::ShippedCheck::verdict(
+            format!("{}{body}", closure.sh()),
+            Some((
+                verdict.name_span,
+                dorc_core::SourceFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
+            )),
+            dorc_oracle::report::emits_report(verdict),
+        ));
+    }
+    None
+}
+
 /// Byte-mirror of the cli's `ship_predict_stage` (`271:rul-only-oracle-bytes-ship` rider 1): a
 /// connected pipe stage's stripped predict PLUS whether its selected arm produces REAL stdout
 /// bytes (the coverage a downstream byte-consumer requires). The dashboard corpus carries no
@@ -486,7 +517,12 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .collect();
     // Typeless-floor verdict-provider set (`24L` §7 — mirror the cli seam so the dashboard sees
     // the same auto-cell elisions the honest baseline does).
-    let verdicts = dorc_oracle::verdict::VerdictIndex::of(&mut interner, inputs.oracles);
+    let verdict_sets: Vec<_> = inputs
+        .oracles
+        .iter()
+        .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
+        .collect();
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
 
     let parsed = dorc_syntax::parse(inputs.book);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -495,6 +531,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // Kill-AWARE classify (24A §3): mirrors the cli so the dashboard sees the same kill-wall the
     // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
     // why-diags are cli-render-only; coverage discards them.
+    let mut verdict_lane = BTreeMap::new();
     let (classified, _why_diags, kills, _kill_coords, fact_backings, _narrative, invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
@@ -508,12 +545,30 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             &mut interner,
             &mut arena,
             &mut BTreeMap::new(),
-            &mut BTreeMap::new(),
+            &mut verdict_lane,
             &mut dorc_analysis::certify::CertifierTrip::default(),
             // An INSTRUMENT, never a gate: reach is measured ambiently (`28K` §2).
             dorc_analysis::funcenv::LiveDefinitions::unsolved(),
         );
     let classes = classified.value;
+    let aggregate_establishes: std::collections::BTreeSet<_> = classes
+        .iter()
+        .flat_map(|(node, class)| match class {
+            SkipClass::EstablishMembers { members, .. } => members
+                .iter()
+                .map(|fact| (*node, *fact))
+                .collect::<Vec<_>>(),
+            SkipClass::InlineCall { sites } => sites
+                .iter()
+                .filter_map(|site| match site.class {
+                    SkipClass::EstablishProbeAmbient(fact)
+                    | SkipClass::EstablishProbeWritten(fact) => Some((site.node, fact)),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        })
+        .collect();
 
     // c3 source: per-site Effect verdict (the dashboard reads the plan's own
     // dispositions, not a fact re-key, so it only needs the verdict off the wire).
@@ -532,6 +587,19 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &classes,
         |_n, p, a: &[Symbol]| ship_predict_stage(inputs.oracles, &checks, &interner, p, a),
     );
+    let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+    let helpers = dorc_oracle::closure::HelperIndex::build(inputs.oracles, None);
+    let vouches = dorc_plan::build_vouches(
+        inputs.oracles,
+        &[],
+        &helpers,
+        &classes,
+        &value,
+        &mut interner,
+        ambient,
+    )
+    .0
+    .value;
     // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
     // call — the probe ships each provider's stripped `<provider>__predict` funcdef invoked
     // per-site with its argv (`ship_predict_body` re-runs the analysis's own check resolution).
@@ -543,31 +611,23 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &BTreeMap::new(),
         &connected,
         |_n, provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
-        // The dashboard does not exercise the typeless-floor auto-cell probe (`24L` §2): its
-        // corpora carry marked effects, so no auto-cell mints; a real ship-verdict closure would be
-        // dead code here. The dedicated e2e + plan unit tests cover the floor.
-        |_, _, _| None,
-        // The dashboard carries no guard/vouch plumbing (Stage-3 minimal build-fix): no site is
-        // vouched, so no past-wall establish ships a probe here — dashboard parity is unaffected.
-        |_| false,
+        |node, subjects, provider, _| {
+            verdict_lane
+                .get(&node)
+                .is_some_and(|measurement| measurement.subjects() == subjects)
+                .then(|| {
+                    ship_verdict_body(inputs.oracles, &verdict_sets, &helpers, &interner, provider)
+                })?
+        },
+        |node, fact| {
+            aggregate_establishes.contains(&(node, fact)) && vouches.get(node, fact).is_some()
+        },
     );
     let observe = observe_from_sites(&probe, &probe_verdicts);
     // The elide-weld (24D §3): a converged ambient site elides ONLY with a reached vouch, so the
     // dashboard must build them (the SAME `dorc_plan::build_vouches` the cli drives) or it would
     // under-report elision vs the shipped tool. Lift diags are dropped (the dashboard is a readout,
     // not gate-3). Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline.
-    let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
-    let vouches = dorc_plan::build_vouches(
-        inputs.oracles,
-        &[],
-        &dorc_oracle::closure::HelperIndex::build(inputs.oracles, None),
-        &classes,
-        &value,
-        &mut interner,
-        ambient,
-    )
-    .0
-    .value;
     // The dashboard analyses the unmeasured world, so its authority is the intakeless one: there is
     // no channel here whose integrity could have been lost.
     let classification = dorc_plan::RoundClassification {

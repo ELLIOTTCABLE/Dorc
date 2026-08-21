@@ -1221,9 +1221,9 @@ apt_get__predict() {
                 // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
                 &dorc_plan::ConnectedPipes::default(),
                 |_, provider, argv| ship_corpus(&checks, &i, provider, argv),
-                |_, _, _| None,
+                |_, _, _, _| None,
                 // hostsim exercises elision soundness, not guards — no vouched past-wall probes.
-                |_| false,
+                |_, _| false,
             );
             assert!(
                 probe.checks_fact(nginx) && probe.checks_fact(curl),
@@ -1345,8 +1345,8 @@ apt_get__predict() {
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_, _provider, _argv| None,
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         assert!(
             probe.checks.is_empty(),
@@ -1561,8 +1561,8 @@ grep__predict() {
             &BTreeMap::new(),
             &connected,
             |_n, p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
 
         // The composed probe exists: the connected recognition + compose worked (ONLY oracle bytes).

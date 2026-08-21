@@ -3028,8 +3028,8 @@ mod not_ours_bytes_tests {
             &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_, _, _| None,
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         let plan = dorc_plan::build_plan(
             &book,

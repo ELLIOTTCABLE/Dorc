@@ -239,8 +239,8 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &std::collections::BTreeMap::new(),
         &ConnectedPipes::default(),
         |_, provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
-        |_, _, _| None,
-        |_| false,
+        |_, _, _, _| None,
+        |_, _| false,
     );
     // The host oracle: a fact is Converged iff in the fixed set; else Diverged. Identical for
     // both runs (the arena variation is the sole difference).
@@ -419,8 +419,8 @@ fn digest_is_receipt_invariant_across_runs() {
             &std::collections::BTreeMap::new(),
             &ConnectedPipes::default(),
             |_, provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
-            |_, _, _| None,
-            |_| false,
+            |_, _, _, _| None,
+            |_, _| false,
         );
         let observe = |f: FactKey| {
             if converged.contains(&f) {

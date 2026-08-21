@@ -239,9 +239,13 @@ impl WhyWorld {
                 live,
             )
         };
-        let ship_auto = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, _: &[Symbol]| {
+        let ship_auto = |node: dorc_analysis::cfg::CfgNodeId,
+                         subjects: &[dorc_core::FactKey],
+                         provider: Symbol,
+                         _: &[Symbol]| {
             verdict_lane
-                .contains_key(&node)
+                .get(&node)
+                .is_some_and(|measurement| measurement.subjects() == subjects)
                 .then(|| {
                     ship_verdict_body(
                         source_srcs,
@@ -264,7 +268,7 @@ impl WhyWorld {
             &dorc_plan::ConnectedPipes::default(),
             ship,
             ship_auto,
-            |node| vouches.contains_site(node),
+            |node, fact| vouches.get(node, fact).is_some(),
         )
         .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
 

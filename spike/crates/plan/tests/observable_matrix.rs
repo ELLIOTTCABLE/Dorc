@@ -1485,7 +1485,7 @@ fn inline_call_with_unoracled_body_command_blocks() {
 
 #[test]
 fn inline_call_emits_site_n_m_probe_records() {
-    // `i-4`: an inlined call ships ONE probe check per spliced body establish, keyed
+    // `i-4`: an inlined call ships ONE verdict check per spliced body establish, keyed
     // `site N.M` (N = the call's LeafId, M = the body-site index) with the entity bound at the
     // call. Two calls (`w nginx`/`w curl`) ⇒ records `site 0.0` (nginx) and `site 1.0` (curl).
     let mut i = Interner::default();
@@ -1495,13 +1495,16 @@ fn inline_call_emits_site_n_m_probe_records() {
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
     let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+    let verdict_sets =
+        vec![dorc_oracle::verdict::VerdictSet::lift(&mut i, CORPUS_VERDICT_SRC).value];
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut i, &verdict_sets);
     let classification = dorc_analysis::effect::classify(
         &cfg,
         &value,
         &parsed.value,
         &idx,
         &checks,
-        &dorc_oracle::verdict::VerdictIndex::default(),
+        &verdicts,
         &mut i,
         &mut dorc_core::ProvArena::new(),
     );
@@ -1514,8 +1517,14 @@ fn inline_call_emits_site_n_m_probe_records() {
         &std::collections::BTreeMap::new(),
         &dorc_plan::ConnectedPipes::default(),
         |_, p, a| ship_corpus(&checks, &i, p, a),
-        |_, _, _| None,
-        |_| false,
+        |_, _, _, _| {
+            Some(dorc_plan::ShippedCheck::verdict(
+                "VERDICT_BODY".to_owned(),
+                None,
+                false,
+            ))
+        },
+        |_, _| true,
     );
     // Each check carries (site, member); collect the (site.0, member) pairs.
     let mut keys: Vec<(u32, Option<u32>)> =
@@ -1542,6 +1551,10 @@ fn inline_call_emits_site_n_m_probe_records() {
     assert_ne!(
         entities[0], entities[1],
         "the two calls' body establishes resolve DISTINCT entities (nginx vs curl)"
+    );
+    assert!(
+        probe.checks.iter().all(|check| check.verdict),
+        "every mutation sub-record must be measured by the reached verdict body"
     );
 }
 
@@ -1575,13 +1588,63 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &std::collections::BTreeMap::new(),
         &dorc_plan::ConnectedPipes::default(),
         |_, _p, _a| None,
-        |_, _, _| None,
-        |_| false,
+        |_, _, _, _| None,
+        |_, _| false,
     );
     assert!(probe.checks.is_empty(), "no probe body ⇒ no checks");
     assert!(
         !probe.unresolvable.is_empty(),
         "the call is unresolvable when its body establish can't be probed"
+    );
+}
+
+#[test]
+fn inline_call_commits_no_records_when_one_verdict_cannot_ship() {
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let src = "w() { apt-get install -y nginx; apt-get install -y curl; }\nw\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+    let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+    let verdict_sets =
+        vec![dorc_oracle::verdict::VerdictSet::lift(&mut i, CORPUS_VERDICT_SRC).value];
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut i, &verdict_sets);
+    let classification = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &verdicts,
+        &mut i,
+        &mut dorc_core::ProvArena::new(),
+    );
+    let classes = classification.value;
+    let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+    let probe = dorc_plan::compile_probe(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        &std::collections::BTreeMap::new(),
+        &dorc_plan::ConnectedPipes::default(),
+        |_, _, _| None,
+        |_, subjects, _, _| {
+            (subjects.first().is_some_and(|fact| fact.entity == nginx))
+                .then(|| dorc_plan::ShippedCheck::verdict("VERDICT_BODY".to_owned(), None, false))
+        },
+        |_, _| true,
+    );
+
+    assert!(
+        probe.checks.is_empty(),
+        "a later unshippable verdict must discard every staged aggregate record"
+    );
+    assert_eq!(
+        probe.unresolvable.len(),
+        1,
+        "the whole call, rather than one body member, becomes unresolvable"
     );
 }
 

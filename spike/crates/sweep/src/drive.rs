@@ -66,11 +66,16 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         .collect();
     // Typeless-floor verdict-provider set (`24L` §7 — mirror the cli seam so the differential net
     // exercises any auto-cell the corpus oracle mints).
-    let verdicts = dorc_oracle::verdict::VerdictIndex::of(i, &oracle_refs);
+    let verdict_sets: Vec<_> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::verdict::VerdictSet::lift(i, src).value)
+        .collect();
+    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(i, &verdict_sets);
 
     let mut arena = ProvArena::new();
     // ONE inline oracle, so no unit spans two files and positional == ambient (`28K` §2).
     let ambient = dorc_analysis::funcenv::LiveDefinitions::unsolved();
+    let mut verdict_lane = std::collections::BTreeMap::new();
     let (classified, _why, kills, _kill_coords, fact_backings, _narrative, invalidators) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
@@ -84,11 +89,34 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             i,
             &mut arena,
             &mut std::collections::BTreeMap::new(),
-            &mut std::collections::BTreeMap::new(),
+            &mut verdict_lane,
             &mut dorc_analysis::certify::CertifierTrip::default(),
             ambient,
         );
     let classes = classified.value;
+    let aggregate_establishes: BTreeSet<_> = classes
+        .iter()
+        .flat_map(|(node, class)| match class {
+            SkipClass::EstablishMembers { members, .. } => members
+                .iter()
+                .map(|fact| (*node, *fact))
+                .collect::<Vec<_>>(),
+            SkipClass::InlineCall { sites } => sites
+                .iter()
+                .filter_map(|site| match site.class {
+                    SkipClass::EstablishProbeAmbient(fact)
+                    | SkipClass::EstablishProbeWritten(fact) => Some((site.node, fact)),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        })
+        .collect();
+    let helpers = dorc_oracle::closure::HelperIndex::build(&oracle_refs, None);
+    let vouches =
+        dorc_plan::build_vouches(&oracle_refs, &[], &helpers, &classes, &value, i, ambient)
+            .0
+            .value;
 
     // The probe: a site is elidable only if its fact is actually checked (can't-probe ⇒
     // can't-elide). `ship` reborrows the interner immutably; it is dropped when `compile_probe`
@@ -107,10 +135,6 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         let ship = |_n: CfgNodeId, provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
         };
-        // The sweep exercises the elision/survival soundness net, not the GUARD tier: no
-        // EstablishProbeWritten site ships a guard probe (`is_vouched: |_| false` — guard scenarios are a
-        // Stage-3 stretch, tc-flagged in the report). The ELIDE vouches (below) are separate — an
-        // ambient site always ships its probe, and the elide-weld demands its vouch.
         dorc_plan::compile_probe(
             &parsed.value,
             &cfg,
@@ -119,11 +143,15 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &std::collections::BTreeMap::new(),
             &connected,
             ship,
-            // The sweep corpus carries marked effects, so no typeless-floor auto-cell mints — the
-            // verdict-ship closure is inert here (a future typeless-oracle sweep scenario, `24L` §7,
-            // would supply a real one keyed on the auto-kind).
-            |_, _, _| None,
-            |_| false,
+            |node, subjects, provider, _| {
+                verdict_lane
+                    .get(&node)
+                    .is_some_and(|measurement| measurement.subjects() == subjects)
+                    .then(|| ship_verdict_body(ORACLE_SH, &verdict_sets, &helpers, i, provider))?
+            },
+            |node, fact| {
+                aggregate_establishes.contains(&(node, fact)) && vouches.get(node, fact).is_some()
+            },
         )
     };
 
@@ -157,16 +185,6 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     } else {
         None
     };
-
-    // The elide-weld (24D §3): a converged ambient site elides ONLY with a reached vouch. Thread
-    // them via the shared `dorc_plan::build_vouches` (the SAME composition the cli drives), or
-    // every `install` victim would run and the net's elision coverage would vanish. Always-on
-    // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped.
-    let helpers = dorc_oracle::closure::HelperIndex::build(&[ORACLE_SH], None);
-    let vouches =
-        dorc_plan::build_vouches(&[ORACLE_SH], &[], &helpers, &classes, &value, i, ambient)
-            .0
-            .value;
 
     // The identity-CANONICALIZATION map (24F §3/§7.1): built from the modeled host's DECLARED
     // resolver answers (`Host::resolve` — the sweep stand-in for shipping `package__resolve()` +
@@ -293,6 +311,30 @@ fn ship_predict_body(
         }
     }
     None
+}
+
+fn ship_verdict_body(
+    oracle_src: &str,
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    helpers: &dorc_oracle::closure::HelperIndex,
+    interner: &Interner,
+    provider: Symbol,
+) -> Option<dorc_plan::ShippedCheck> {
+    use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    let want = map_provider_name(interner.resolve(provider));
+    let set = verdict_sets.first()?;
+    let verdict = set.providers().find_map(|candidate| {
+        (map_provider_name(interner.resolve(candidate)) == want)
+            .then(|| set.get(candidate))
+            .flatten()
+    })?;
+    let body = strip_verdict(oracle_src, verdict, interner);
+    let closure = helpers.closure_for(0, &body).ok()?;
+    Some(dorc_plan::ShippedCheck::verdict(
+        format!("{}{body}", closure.sh()),
+        Some((verdict.name_span, dorc_core::SourceFileId(0))),
+        dorc_oracle::report::emits_report(verdict),
+    ))
 }
 
 /// Mirror of the cli's `ship_predict_stage` (`271:rul-only-oracle-bytes-ship` rider 1): a connected

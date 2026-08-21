@@ -710,6 +710,11 @@ fn record_backing(
     entry.observed.extend(observed.iter().copied());
 }
 
+struct MemberFamily {
+    facts: Vec<FactKey>,
+    measurement: Option<Measurement>,
+}
+
 /// Resolve an in-loop Members site to its establish-cell FAMILY (task-L2 item-2), or
 /// `None` if it is not a Members site OR any member fails to resolve to a single
 /// establish (ALL-OR-NOTHING — the family is never partial). For each per-member argv
@@ -724,8 +729,8 @@ fn record_backing(
 #[expect(
     clippy::too_many_arguments,
     reason = "the `28K` §2 positional oracle is one more distinct kernel input: a member resolves \
-              through the same site's environment as the single-cell path, and recovering that \
-              from the argv is exactly what the rule forbids"
+              through the same site's environment as the single-cell path, and verdict primacy \
+              adds the independently resolved measurement body"
 )]
 fn member_family(
     id: CfgNodeId,
@@ -733,18 +738,17 @@ fn member_family(
     value: &ValueFlow,
     idx: &KindIndex,
     checks: &[PredictSet],
+    verdicts: &VerdictIndex,
     interner: &mut Interner,
     diags: &mut Vec<Diag>,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
-) -> Option<Vec<FactKey>> {
+) -> Option<MemberFamily> {
     if cfg.node(id).kind != CfgNodeKind::Command {
         return None;
     }
     let members = value.member_argv(id)?;
     let mut family = Vec::with_capacity(members.len());
-    // A loop member NEVER forms a verdict-lane cell: the in-loop floor runs every member anyway
-    // (`disposition_for`), so an EMPTY index keeps them Opaque ⇒ MustRun ⇒ Run (safe direction).
-    let no_verdict_lane_in_members = VerdictIndex::default();
+    let mut all_measured = true;
     for argv in members {
         // Each member is a concrete-or-⊤ argv; resolve it through the oracle check. All-or-nothing:
         // ANY non-single-establish member kills the whole family. `site: None` is a LIVE dedup
@@ -760,10 +764,11 @@ fn member_family(
         // `plan`'s singleton `Backing::of_fact` fallback — no threaded widening is needed here.
         // A throwaway map keeps the resolution local (`277` §5: member-widening is deferred, safe).
         let mut member_backings = BTreeMap::new();
+        let mut member_measurement = None;
         match command_effect(
             idx,
             checks,
-            &no_verdict_lane_in_members,
+            verdicts,
             argv,
             interner,
             diags,
@@ -773,16 +778,18 @@ fn member_family(
             // A member's degrade never reaches a surface: the whole family collapses to the
             // single-cell path below, which re-runs `command_effect` and records the reason there.
             &mut None,
-            // The member lane still ships PREDICT bodies and elides on their measurements; this is
-            // the correctness defect pinned by `30La:rul-predict-measured-aggregates-are-a-bug`, so
-            // no verdict measurement is minted here and there is none to discard.
-            &mut None,
+            &mut member_measurement,
             id,
             live_defs,
         )
         .as_slice()
         {
-            [CommandEffect::Establishes(fact)] => family.push(*fact),
+            [CommandEffect::Establishes(fact)] => {
+                all_measured &= member_measurement
+                    .as_ref()
+                    .is_some_and(|measurement| measurement.subjects() == [*fact]);
+                family.push(*fact);
+            }
             _ => return None,
         }
     }
@@ -790,7 +797,18 @@ fn member_family(
     if family.is_empty() {
         return None;
     }
-    Some(family)
+    let measurement = all_measured.then(|| {
+        Measurement::of_the_sites_establishes(
+            &family
+                .iter()
+                .map(|fact| CommandEffect::Establishes(*fact))
+                .collect::<Vec<_>>(),
+        )
+    });
+    Some(MemberFamily {
+        facts: family,
+        measurement,
+    })
 }
 
 /// Build one [`CommandEffect`] from a declared [`EffectCell`] under the resolved
@@ -1188,7 +1206,7 @@ fn reach_transfer(
 )]
 fn node_effects(
     id: CfgNodeId,
-    member_family: Option<&Vec<FactKey>>,
+    member_family: Option<&MemberFamily>,
     cfg: &Cfg,
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
@@ -1204,7 +1222,11 @@ fn node_effects(
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
+        if let Some(measurement) = &family.measurement {
+            verdict_lane.insert(id, measurement.clone());
+        }
         return family
+            .facts
             .iter()
             .map(|f| CommandEffect::Establishes(*f))
             .collect();
@@ -1420,7 +1442,7 @@ fn consistency_narrative(
 fn classify_one_site(
     i: usize,
     effects: &[Vec<CommandEffect>],
-    member_families: &[Option<Vec<FactKey>>],
+    member_families: &[Option<MemberFamily>],
     reach: &[Reach],
     trust_reach: bool,
     reachable: &[bool],
@@ -1437,7 +1459,7 @@ fn classify_one_site(
         && site_reachable
     {
         return SkipClass::EstablishMembers {
-            members: family.clone(),
+            members: family.facts.clone(),
             // Answered by `self_reach_pass` above; absent ⇒ the conservative `false`.
             self_reached: self_reached.get(&i).copied().unwrap_or(false),
         };
@@ -1658,13 +1680,13 @@ fn resolve_node_effects(
     verdict_lane: &mut BTreeMap<CfgNodeId, Measurement>,
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
-    Vec<Option<Vec<FactKey>>>,
+    Vec<Option<MemberFamily>>,
     Vec<Vec<CommandEffect>>,
     Vec<CmdsubTop>,
     BTreeMap<FactKey, FactBacking>,
 ) {
     let n = cfg.node_count();
-    let member_families: Vec<Option<Vec<FactKey>>> = (0..n)
+    let member_families: Vec<Option<MemberFamily>> = (0..n)
         .map(|i| {
             member_family(
                 CfgNodeId(i as u32),
@@ -1672,6 +1694,7 @@ fn resolve_node_effects(
                 value,
                 idx,
                 checks,
+                verdicts,
                 interner,
                 diags,
                 live_defs,
@@ -2220,7 +2243,14 @@ mod tests {
             vec![CommandEffect::Queries(fact)],
             vec![CommandEffect::Establishes(fact)],
         ];
-        let member_families = vec![None, None, Some(vec![fact])];
+        let member_families = vec![
+            None,
+            None,
+            Some(MemberFamily {
+                facts: vec![fact],
+                measurement: None,
+            }),
+        ];
         let reach = vec![pristine.clone(), pristine.clone(), pristine];
         let reachable = vec![true, true, true];
         let mut self_reached = BTreeMap::new();
