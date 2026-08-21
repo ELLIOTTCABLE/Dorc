@@ -87,11 +87,21 @@ generation publication, the region-refusal disclosure; lane report `30Ne`) ·
 XFAILs promoted against their unmoved target run sets, the multipart placement defect
 repaired (mirroring stated against the LOAD cwd — it had never published a dependency
 in a real invocation), the leading `unset -f` variable-plane precision landed, and the
-e2e harness executes a declared artifact set from its own published generation. Not
-built, and owed: the textual-inlining LOWERING itself (its floor measurement
-`floor30-inline-dot-boundary` is minted; the flattened form still refuses a book-sited
-load, deliberately and unscheduled), and the arc-close residue in `30Nf`'s tail (the
-loom-form artifact-set frontmatter key; the prose queue).
+e2e harness executes a declared artifact set from its own published generation. Then
+`30Ng`'s artifact-semantics rework (lane report `notes/30Nh`): the default bundles
+book-reached dorc-lang subgraphs — positionally, only at the `floor30-inline-dot-boundary`
+measured shape — and RE-SAYS the generated plan's imports as first-class, disclosed,
+recorded edits; the stream posture derives from stdout interactivity with a pre-network
+refusal where two things claim one artifact; the artifact's lifted material is closed by
+a section boundary; the region contributor account is complete; both ends of the
+bundle-point axis are reachable by name (`flattened` · `mirrored-tree`, strawman names).
+The collapsed-resource stream rule of the loading design is SUPERSEDED by
+`30Ng:rul-piped-stdout-carries-a-full-plan`: the rule binds stdout's own posture, never
+whichever stream happens to carry the artifact. Not built, and owed: the front-LIFT of
+oracle bundles in the single stream (`30Nh:tc-bundle-lift-needs-the-spine` — a licence
+surface wanting the spine feedback `30Ng:attn-render-refusal-feeds-the-spine` names);
+book-code load acquisition (`pin-complex-book-source-render` — the charter's worked
+example needs it); the prose queue.
 
 ### Target outcome
 

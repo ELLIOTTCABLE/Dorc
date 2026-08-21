@@ -357,6 +357,53 @@ not all conductor-re-read (marked):
   bundles dorc-lang subgraphs at the dep-graph points where they become
   dorc-lang; both flatten extremes supported; bundle-points tunable; CLI
   malleable). The rework lane carries both.
+- **lane-artifact-semantics-rework** (`30Ng`'s four work items): FOLDED 2026-08-21
+  at `be6e1411` (conduct's two doc commits rebased on top → `f667d337`);
+  worktree/branch cleaned; report `notes/30Nh`; both legs green; 37 goldens moved,
+  every one enumerated and classified (34 = the lifted-section closing boundary, +2
+  comment lines each; 3 = re-pointed imports with `expected.ran` unmoved; 1 = an
+  inlined bundle at the measured shape); conductor by-eye review of one of each
+  edit species at fold: correct. Both mid-lane addenda applied (no pipe-to-ssh
+  example ever existed). Fold adjudications:
+  - `adj-endorse-bundle-lift-deferral` — ENDORSED
+    (`30Nh:tc-bundle-lift-needs-the-spine` / `dev-bundle-lift-not-built`):
+    front-lifting an oracle bundle above the book code preceding its `.` changes
+    which definition is live at the lines it moved past — `pinned-definitions-
+    are-the-artifact's-binding` names that misalignment pope-sin tier — and the
+    analysis froze its bindings against authored positions. A licence surface,
+    not layout; the closed-enumeration licence is the obvious mechanism and it
+    wants the settlement to model the lifted position: joined to the
+    render-feedback item in `TODO-ADDTL` as its first consumer. The section
+    boundary (the addendum's other half) landed.
+  - `adj-flag-incoherence-cell-for-reversal` — the CI-shape bite
+    (`dorc plan --artifact-dir out book.sh > log` now REFUSES) follows from MY
+    derived cell, built as briefed. Conductor's UPDATED lean, for the human:
+    that cell should probably produce BOTH (tree to the directory, complete
+    stream to stdout) rather than refuse — each channel's constant meaning is
+    satisfied, the two outputs are one plan in two layouts rather than competing
+    claimants, and refusing serves no principle while biting ordinary CI. Left
+    as-built pending the human (one edge value either way).
+  - `adj-endorse-region-routes-carve` — ENDORSED (`dev-region-routes-uncapped`):
+    directive-backed, transitory species, census-bounded; encoded in
+    `core/CLAUDE.md`.
+  - `adj-endorse-fourth-form` — ENDORSED (`dev-fourth-artifact-form-minted`,
+    `mirrored-tree`): the ruling demands both extremes reachable; the name is
+    strawman.
+  - Endorsed without ceremony: the env-pin posture injection (requestability via
+    a flag joins the prose/help queue) · the bundle-name suffix rule ·
+    the counterfactual rails' union world (the strict question stays at
+    `exec_check`) · the divider as artifact-plane hardcoded bytes (standing law)
+    · the import note's advisory routing.
+  - Residue recorded, none blocking: no e2e for the kept-stream cell (an
+    expected-empty-stdout harness lane) · `WhyWorld` carries no import edits
+    (`dev-why-world-carries-no-import-edits` — a why-plane completeness gap
+    against the entire-DAG directive; small follow-up owed) · book-code load
+    acquisition is not in the model (`tc-book-code-loads-are-not-in-the-model`:
+    the human's worked example needs it; `pin-complex-book-source-render`) · the
+    three `head-expected.ran` files the promotion lane renamed were EMPTY, so
+    those pre-promotion assertions had been vacuous (finding, closed by the
+    promotion) · `pin28-variable-resolved-source-loads`'s case header now
+    slightly misdescribes its inlined `.` (polish).
 - **`chk-loop-types-paper-review` — PASSED (conductor's own, 2026-08-21;
   `30L:pin-loop-types-need-no-rekey` §11/§12-stage-6).** The propagation lane
   can turn `Open` → `Closed(members)` without re-keying: (1) a member becomes a

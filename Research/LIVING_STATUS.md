@@ -64,13 +64,20 @@ single-stream bundled plan under every flag-form (fail-fast on incoherence); the
 default bundles dorc-lang subgraphs and rewrites generated-plan imports
 (imports-only; generated plans are not off-ramp durables); both flatten extremes
 supported, bundle-points tunable, CLI malleable. Two conductor endorsements REVERSED
-accordingly (`30N`'s sitting entry). The REWORK LANE is in flight, carrying also the
-loom-form artifact-set frontmatter key and the loud-and-complete region-routes
-account. Still open besides: the book-inlining half of the flatten extreme (floor
-evidence minted; gated on the rework's bundling base) · the human queue (`30N`'s
-open-items / the burndown, incl. the new `attn-render-refusal-feeds-the-spine`
-attention item) · the loop-propagation lane (parallel-eligible) · the sentinel red
-pin (`rule-sentinel-value-conjunct`).
+accordingly (`30N`'s sitting entry). **THE REWORK LANE IS FOLDED** (report
+`notes/30Nh`; 37 classified goldens; adjudications in `30N`'s lane list): the default
+bundles book-reached dorc-lang subgraphs positionally at the measured shape and
+re-says generated-plan imports as first-class disclosed edits; stdout interactivity
+(injected) decides the stream; the lifted section is closed by a boundary; the region
+contributor account is complete; `artifact-set: published` makes loom cases observe
+their published tree; a fourth form (`mirrored-tree`) keeps the no-flatten extreme
+reachable. OPEN from it: the single-stream FRONT-LIFT of bundles (a licence surface —
+joined to the render-feedback item in `TODO-ADDTL`) · the CI-shape bite of the
+conductor-derived refusal cell (`--artifact-dir` + piped stdout; conductor now leans
+BOTH-outputs, human's call) · book-code load acquisition · the kept-stream e2e lane ·
+`WhyWorld` not carrying import edits. Still open besides: the human queue (`30N`'s
+open-items / the burndown) · the loop-propagation lane (parallel-eligible) · the
+sentinel red pin (`rule-sentinel-value-conjunct`).
 
 ## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)
 
