@@ -154,6 +154,10 @@ use internal_tooling::{Posix, which};
 const FIXTURE_CLOCK_ENV: &str = "DORC_FIXTURE_CLOCK_MS";
 const FIXTURE_CLOCK_MS: u64 = 1_769_306_437_000;
 
+/// The engine's stdout-posture pin (`30Ng:rul-piped-stdout-carries-a-full-plan`), on the clock
+/// pin's own footing: a real, non-hermetic edge fact a subprocess battery has to be able to state.
+const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
+
 struct Harness {
     /// The `dorc` binary cargo just built for this test target.
     dorc: PathBuf,
@@ -272,6 +276,14 @@ impl Harness {
         // stays the throwaway sandbox `rail` supplies.
         command.current_dir(at);
         command.env(FIXTURE_CLOCK_ENV, FIXTURE_CLOCK_MS.to_string());
+        // THE STDOUT POSTURE, injected rather than inherited
+        // (`30Ng:rul-piped-stdout-carries-a-full-plan`: the real edge asks the terminal, every test
+        // says which cell it means). The battery reads a RENDER — it captures stdout to compare
+        // bytes and drives the artifact SET through `--artifact-dir` — which is the TERMINAL cell:
+        // a person looking at a plan while the artifact lives somewhere else. Left to the true
+        // answer it would be the KEPT-stream cell, where naming a directory claims the artifact
+        // twice and the run refuses before it renders anything to compare.
+        command.env(STDOUT_POSTURE_ENV, "interactive");
         for key in ["XDG_STATE_HOME", "LOCALAPPDATA"] {
             command.env(key, &self.state_root);
         }

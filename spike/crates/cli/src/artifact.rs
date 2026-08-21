@@ -93,14 +93,56 @@ pub enum FormRequest {
     Explicit(ArtifactForm),
 }
 
-/// Where this invocation's ARTIFACT goes — the injected, non-hermetic edge fact
-/// (`30I:rul-piped-stdout-implies-one-flat-plan`).
+/// Whether a person is watching this run's stdout — the injected, non-hermetic EDGE fact
+/// (`30Ng:rul-piped-stdout-carries-a-full-plan`, human-typed).
+///
+/// Injected rather than probed inward, so both cells are drivable deterministically and the kernel
+/// stays a pure function of its inputs (`inv-determinism`). The real edge asks the terminal; every
+/// test says which cell it means.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StdoutPosture {
+    /// A person is reading it: stdout carries the plan RENDER, and the artifact may live elsewhere.
+    Interactive,
+    /// It is going somewhere — a pager, an editor, a file kept for review. The user asked for a
+    /// plan and for a meaningful output stream, so stdout carries the ARTIFACT, complete.
+    NonInteractive,
+}
+
+/// Where this invocation's ARTIFACT goes, and what that obliges
+/// (`30Ng:rul-piped-stdout-carries-a-full-plan`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StreamPosture {
-    /// The artifact stream is stdout: one stream, so one flat plan or nothing.
-    SingleStream,
+    /// stdout IS the artifact and it is being kept: one stream, and a COMPLETE plan on it or a
+    /// pre-network refusal. What the reader approves is exactly what executes, so an artifact that
+    /// cannot run where it lands is not a smaller answer — it is the wrong one.
+    PipedArtifact,
+    /// stdout carries the plan render for a person at a terminal. `auto` may settle for a less
+    /// flattened form and say so, because nothing here is being kept to run later.
+    TerminalRender,
     /// The artifact stream is a directory the run may materialize.
     Materializable,
+}
+
+/// Which stream carries this run's artifact, or the pre-network refusal that says two things claimed
+/// it (`30Ng` §4; `30I` §2.5's collapsed-resource rule, applied to the artifact itself).
+///
+/// The claimants are the point. A non-interactive stdout is an IMPLICIT claim — the user asked for a
+/// plan and for a stream worth keeping — and `--artifact-dir` is an explicit one. Two claimants on
+/// one collapsed resource refuse before network and name both, rather than a silent precedence rule
+/// deciding which of two competing complete artifacts the user meant.
+///
+/// # Errors
+/// Refuses when stdout and a named artifact directory both claim the artifact.
+pub const fn artifact_stream(
+    stdout: StdoutPosture,
+    artifact_dir: bool,
+) -> Result<StreamPosture, FormRefusal> {
+    match (stdout, artifact_dir) {
+        (StdoutPosture::NonInteractive, true) => Err(FormRefusal::TwoArtifactClaimants),
+        (StdoutPosture::NonInteractive, false) => Ok(StreamPosture::PipedArtifact),
+        (StdoutPosture::Interactive, true) => Ok(StreamPosture::Materializable),
+        (StdoutPosture::Interactive, false) => Ok(StreamPosture::TerminalRender),
+    }
 }
 
 /// Why `auto` settled for a less flattened form than it aimed at.
@@ -138,7 +180,8 @@ impl FormFallback {
     }
 }
 
-/// Why an explicitly requested form cannot be served — always pre-network, never a silent swap.
+/// Why this run can produce no artifact of the shape it was asked for — always pre-network, never a
+/// silent swap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormRefusal {
     /// The named form is not available for this book.
@@ -154,14 +197,27 @@ pub enum FormRefusal {
         /// The form the invocation named.
         form: ArtifactForm,
     },
+    /// A kept stdout stream and a named artifact directory both claim this run's ONE artifact
+    /// (`30Ng` §4). Neither is wrong on its own; together they ask for two competing complete
+    /// artifacts, and ranking them silently is what the collapsed-resource rule forbids.
+    TwoArtifactClaimants,
+    /// stdout is being kept and no complete plan can be put on it: the book loads dorc-lang the
+    /// stream cannot carry in place. Distinct from [`Unavailable`](Self::Unavailable) because the
+    /// invocation named no form — what it asked for was a plan worth keeping
+    /// (`30Ng:rul-piped-stdout-carries-a-full-plan`).
+    IncompleteSingleStream {
+        /// How many book-sited loads could not be carried in the stream.
+        loads: usize,
+    },
 }
 
 impl FormRefusal {
-    /// The form the invocation named.
+    /// The form word the invocation asked for, or `auto` where it named none.
     #[must_use]
-    pub const fn form(self) -> ArtifactForm {
+    pub const fn form(self) -> &'static str {
         match self {
-            Self::Unavailable { form, .. } | Self::NoArtifactStream { form } => form,
+            Self::Unavailable { form, .. } | Self::NoArtifactStream { form } => form.name(),
+            Self::TwoArtifactClaimants | Self::IncompleteSingleStream { .. } => "auto",
         }
     }
 
@@ -171,6 +227,18 @@ impl FormRefusal {
         match self {
             Self::Unavailable { because, .. } => because.cause(),
             Self::NoArtifactStream { .. } => "no-artifact-stream",
+            Self::TwoArtifactClaimants => "two-artifact-claimants",
+            Self::IncompleteSingleStream { .. } => "incomplete-single-stream",
+        }
+    }
+
+    /// How many book-sited load occurrences the cause counted; zero where the cause counts none.
+    #[must_use]
+    pub const fn loads(self) -> usize {
+        match self {
+            Self::Unavailable { because, .. } => because.loads(),
+            Self::IncompleteSingleStream { loads } => loads,
+            Self::NoArtifactStream { .. } | Self::TwoArtifactClaimants => 0,
         }
     }
 }
@@ -309,7 +377,7 @@ fn alone_on_line(src: &str, span: Span) -> bool {
     let start = src
         .get(..lo)
         .and_then(|s| s.rfind('\n'))
-        .map_or(0, |i| i + 1);
+        .map_or(0, |i| i.saturating_add(1));
     let end = src
         .get(hi..)
         .and_then(|s| s.find('\n'))
@@ -557,7 +625,7 @@ pub fn select(
         .count()
         .max(usize::from(inlined.is_none()));
     let multipart = match posture {
-        StreamPosture::SingleStream => Err(None),
+        StreamPosture::PipedArtifact | StreamPosture::TerminalRender => Err(None),
         StreamPosture::Materializable => {
             bundle_files(cwd, snapshot_paths, projection, loads).map_err(Some)
         }
@@ -598,14 +666,26 @@ pub fn select(
                 because: FormFallback::DependencyUnplaceable { loads: unplaceable },
             }),
         },
-        FormRequest::Explicit(ArtifactForm::PreservedBookTree) => Ok(preserved(None)),
+        // A preserved tree is an artifact that needs files beside it, so naming it on a stream that
+        // is being KEPT asks for an artifact that cannot run where it lands.
+        FormRequest::Explicit(ArtifactForm::PreservedBookTree) => match posture {
+            StreamPosture::PipedArtifact if !loads.is_empty() => {
+                Err(FormRefusal::IncompleteSingleStream { loads: loads.len() })
+            }
+            _ => Ok(preserved(None)),
+        },
         // One stream holds only the flat form; a materializable one aims at mode 2 (`30I` §7.1).
-        FormRequest::Auto => Ok(match posture {
-            StreamPosture::SingleStream => match inlined {
+        FormRequest::Auto => match posture {
+            // The one cell with no fallback: a stream the user is keeping carries a COMPLETE plan
+            // or the run stops (`30Ng:rul-piped-stdout-carries-a-full-plan`, human-typed).
+            StreamPosture::PipedArtifact => inlined
+                .map(flattened)
+                .ok_or(FormRefusal::IncompleteSingleStream { loads: inline_debt }),
+            StreamPosture::TerminalRender => Ok(match inlined {
                 Some(imports) => flattened(imports),
                 None => preserved(Some(FormFallback::InliningUnproven { loads: inline_debt })),
-            },
-            StreamPosture::Materializable => match multipart {
+            }),
+            StreamPosture::Materializable => Ok(match multipart {
                 Ok((dependencies, imports)) => Selection {
                     form: ArtifactForm::Multipart,
                     fallback: None,
@@ -615,8 +695,8 @@ pub fn select(
                 Err(unplaceable) => preserved(Some(FormFallback::DependencyUnplaceable {
                     loads: unplaceable.unwrap_or(loads.len()),
                 })),
-            },
-        }),
+            }),
+        },
     }
 }
 
@@ -624,7 +704,7 @@ pub fn select(
 mod tests {
     use super::{
         ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, ImportEdit,
-        StreamPosture, mirrored, placeable, select,
+        StdoutPosture, StreamPosture, artifact_stream, mirrored, placeable, select,
     };
     use crate::bundle::BundleProjection;
     use dorc_core::loadpath::Cwd;
@@ -664,7 +744,7 @@ mod tests {
             "#!/bin/sh\napt-get install -y nginx\n",
             &[],
             FormRequest::Auto,
-            StreamPosture::SingleStream,
+            StreamPosture::TerminalRender,
         )
         .expect("nothing to place");
         assert_eq!(set.form(), ArtifactForm::Flattened);
@@ -683,10 +763,10 @@ mod tests {
             "",
             &[one_load()],
             FormRequest::Explicit(ArtifactForm::Flattened),
-            StreamPosture::SingleStream,
+            StreamPosture::TerminalRender,
         )
         .expect_err("v0 cannot inline a load-inert child safely yet");
-        assert_eq!(refusal.form(), ArtifactForm::Flattened);
+        assert_eq!(refusal.form(), "flattened");
         assert_eq!(refusal.cause(), "inlining-unproven");
         assert!(matches!(
             refusal,
@@ -706,7 +786,7 @@ mod tests {
             "",
             &[one_load()],
             FormRequest::Auto,
-            StreamPosture::SingleStream,
+            StreamPosture::TerminalRender,
         )
         .expect("auto always lands somewhere");
         assert_eq!(set.form(), ArtifactForm::PreservedBookTree);
@@ -726,10 +806,93 @@ mod tests {
             "",
             &[],
             FormRequest::Explicit(ArtifactForm::Multipart),
-            StreamPosture::SingleStream,
+            StreamPosture::TerminalRender,
         )
         .expect_err("a directory-shaped artifact cannot ride one pipe");
         assert_eq!(refusal.cause(), "no-artifact-stream");
+    }
+
+    /// THE WHOLE POSTURE TABLE (`30Ng:rul-piped-stdout-carries-a-full-plan`, human-typed), cell by
+    /// cell, because the ruling is about all four at once and any one of them read alone is a
+    /// plausible-looking mistake.
+    ///
+    /// The load-bearing cell is the first: a stdout the user is KEEPING and a named artifact
+    /// directory both claim this run's one artifact, and ranking them silently is what would decide
+    /// on the user's behalf which of two competing complete artifacts they meant.
+    #[test]
+    fn which_stream_carries_the_artifact_is_a_closed_table() {
+        assert_eq!(
+            artifact_stream(StdoutPosture::NonInteractive, true),
+            Err(FormRefusal::TwoArtifactClaimants)
+        );
+        assert_eq!(
+            artifact_stream(StdoutPosture::NonInteractive, false),
+            Ok(StreamPosture::PipedArtifact)
+        );
+        assert_eq!(
+            artifact_stream(StdoutPosture::Interactive, true),
+            Ok(StreamPosture::Materializable)
+        );
+        assert_eq!(
+            artifact_stream(StdoutPosture::Interactive, false),
+            Ok(StreamPosture::TerminalRender)
+        );
+    }
+
+    /// A KEPT stream that cannot be given a complete plan REFUSES, where the same book at a terminal
+    /// falls back and explains.
+    ///
+    /// The pair is the ruling's own shape: what the reviewer approves on a kept stream is exactly
+    /// what executes, so an artifact that cannot run where it lands is the wrong answer rather than
+    /// a smaller one — while a render nobody is keeping loses nothing by being less flattened.
+    #[test]
+    fn a_kept_stream_refuses_where_a_terminal_render_falls_back() {
+        let world = || {
+            (
+                "false || . ./wombat.oracle.sh\nwombat sync a.conf\n",
+                vec!["wombat.oracle.sh".to_owned()],
+                vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            )
+        };
+        let (book, paths, srcs) = world();
+        let refusal = book_sourced(
+            book,
+            paths,
+            srcs,
+            FormRequest::Auto,
+            StreamPosture::PipedArtifact,
+        )
+        .expect_err("a kept stream carries a complete plan or nothing");
+        assert_eq!(refusal.cause(), "incomplete-single-stream");
+        assert_eq!(refusal.form(), "auto", "the invocation named no form");
+        assert_eq!(refusal.loads(), 1);
+
+        let (book, paths, srcs) = world();
+        let rendered = book_sourced(
+            book,
+            paths,
+            srcs,
+            FormRequest::Auto,
+            StreamPosture::TerminalRender,
+        )
+        .expect("a render is allowed to be less flattened");
+        assert_eq!(rendered.form(), ArtifactForm::PreservedBookTree);
+    }
+
+    /// …and NAMING the incomplete form does not buy it either: the posture semantics are constant
+    /// across every flag-form, which is the half of the ruling that keeps them semantics rather than
+    /// a default.
+    #[test]
+    fn naming_the_preserved_tree_does_not_override_a_kept_stream() {
+        let refusal = book_sourced(
+            "false || . ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Explicit(ArtifactForm::PreservedBookTree),
+            StreamPosture::PipedArtifact,
+        )
+        .expect_err("an incomplete form on a kept stream is still incomplete");
+        assert_eq!(refusal.cause(), "incomplete-single-stream");
     }
 
     /// Build a whole world the way the corpus does, over CLI-named prelude roots, and hand back
@@ -915,7 +1078,7 @@ mod tests {
             vec!["wombat.oracle.sh".to_owned()],
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
             FormRequest::Auto,
-            StreamPosture::SingleStream,
+            StreamPosture::TerminalRender,
         )
         .expect("auto always lands somewhere");
         assert_eq!(selection.form(), ArtifactForm::Flattened);
@@ -947,7 +1110,7 @@ mod tests {
             vec!["wombat.oracle.sh".to_owned()],
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
             FormRequest::Auto,
-            StreamPosture::SingleStream,
+            StreamPosture::TerminalRender,
         )
         .expect("auto always lands somewhere");
         assert_eq!(selection.form(), ArtifactForm::PreservedBookTree);

@@ -382,20 +382,7 @@ pub fn project(
     account: &LoadAccount,
 ) -> Result<BundleProjectionOutput, BundleProjectionError> {
     let loads = account.occurrences();
-    let mut root_occurrences = Vec::with_capacity(loads.len());
-    for occurrence in 0..loads.len() {
-        root_occurrences.push(root_of(occurrence, loads)?);
-    }
-    let mut root_ids = std::collections::BTreeMap::new();
-    for &root in &root_occurrences {
-        if !root_ids.contains_key(&root) {
-            let next = BundleRootId(
-                u32::try_from(root_ids.len())
-                    .map_err(|_| BundleProjectionError::IdentityOverflow)?,
-            );
-            root_ids.insert(root, next);
-        }
-    }
+    let (root_occurrences, root_ids) = root_identities(loads)?;
 
     let mut diagnostics = Vec::new();
     let mut files = Vec::with_capacity(loads.len());
@@ -475,17 +462,7 @@ pub fn project(
             .files
             .push(projected.file);
     }
-    for root in &mut roots {
-        let mut separate = Vec::new();
-        root.bundled = flatten_occurrence(
-            snapshot,
-            &occurrences,
-            &files,
-            root.occurrence,
-            &mut separate,
-        );
-        root.separate = separate;
-    }
+    flatten_roots(snapshot, &occurrences, &files, &mut roots);
     Ok(BundleProjectionOutput {
         projection: BundleProjection {
             occurrences,
@@ -494,6 +471,42 @@ pub fn project(
         },
         diagnostics,
     })
+}
+
+/// Each occurrence's ROOT occurrence, and one dense id per distinct root, in walk order.
+fn root_identities(
+    loads: &[LoadOccurrence],
+) -> Result<(Vec<usize>, std::collections::BTreeMap<usize, BundleRootId>), BundleProjectionError> {
+    let mut root_occurrences = Vec::with_capacity(loads.len());
+    for occurrence in 0..loads.len() {
+        root_occurrences.push(root_of(occurrence, loads)?);
+    }
+    let mut root_ids = std::collections::BTreeMap::new();
+    for &root in &root_occurrences {
+        if !root_ids.contains_key(&root) {
+            let next = BundleRootId(
+                u32::try_from(root_ids.len())
+                    .map_err(|_| BundleProjectionError::IdentityOverflow)?,
+            );
+            root_ids.insert(root, next);
+        }
+    }
+    Ok((root_occurrences, root_ids))
+}
+
+/// Compose every root's dorc-lang subgraph into one text, and record what it could not absorb.
+fn flatten_roots(
+    snapshot: &StaticLoadSnapshot,
+    occurrences: &[ProjectedOccurrence],
+    files: &[BundleFile],
+    roots: &mut [BundleRoot],
+) {
+    for root in roots {
+        let mut separate = Vec::new();
+        root.bundled =
+            flatten_occurrence(snapshot, occurrences, files, root.occurrence, &mut separate);
+        root.separate = separate;
+    }
 }
 
 /// One occurrence's file, with every inlinable nested `.` replaced by the bytes it loads.
@@ -589,7 +602,7 @@ fn absorbable_line(
     let line_start = authored
         .get(..lo)
         .and_then(|s| s.rfind('\n'))
-        .map_or(0, |i| i + 1);
+        .map_or(0, |i| i.saturating_add(1));
     let line_end = authored
         .get(hi..)
         .and_then(|s| s.find('\n'))

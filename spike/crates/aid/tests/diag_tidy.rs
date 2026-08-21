@@ -182,6 +182,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "artifact-form-refused",
     "artifact-form-fallback",
     "artifact-publish-refused",
+    "plan-import-rewritten",
     "cmdsub-inner-nonleaf",
     "redir-target-top",
     "depth-2-positional-unthreaded",

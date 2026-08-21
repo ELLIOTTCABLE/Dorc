@@ -209,7 +209,12 @@ fn main() -> ExitCode {
         },
         Ok(Invocation::Lint(args)) => lint_command(&args),
         Ok(Invocation::Analyze(args)) => {
-            match run(&args, &invocation_cwd(), &mut clock_for_invocation()) {
+            match run(
+                &args,
+                &invocation_cwd(),
+                &mut clock_for_invocation(),
+                stdout_posture(),
+            ) {
                 Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
                 Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
                 Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
@@ -805,6 +810,31 @@ fn clock_for_invocation() -> RunClock {
     }
 }
 
+/// The harness's stdout-posture pin, on [`FIXTURE_CLOCK_ENV`]'s footing and for the same reason:
+/// the fact is real, non-hermetic, and read once at the process edge, and a battery that drives the
+/// binary as a subprocess has to be able to say which cell it means.
+///
+/// CLOSED vocabulary — `interactive` or `piped`. Anything else, including absence, asks the terminal
+/// itself, so a typo degrades to the truth rather than to a chosen answer.
+const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
+
+/// Is a person reading this run's stdout (`30Ng:rul-piped-stdout-carries-a-full-plan`)?
+///
+/// The ONE terminal read, at the edge. It decides which stream carries the ARTIFACT, and therefore
+/// whether the plan on stdout has to be complete — so it is an injected value from here inward,
+/// never a question anything below the edge asks (`io-at-edges-only` · `inv-determinism`).
+fn stdout_posture() -> dorc_cli::artifact::StdoutPosture {
+    use dorc_cli::artifact::StdoutPosture;
+    use std::io::IsTerminal as _;
+
+    match std::env::var(STDOUT_POSTURE_ENV).ok().as_deref() {
+        Some("interactive") => StdoutPosture::Interactive,
+        Some("piped") => StdoutPosture::NonInteractive,
+        _ if std::io::stdout().is_terminal() => StdoutPosture::Interactive,
+        _ => StdoutPosture::NonInteractive,
+    }
+}
+
 /// The ONE wall-clock read. A clock the platform cannot place after the epoch answers
 /// [`RunClock::Absent`] rather than saturating to a fabricated zero (`inv-no-throw`).
 fn system_clock() -> RunClock {
@@ -827,6 +857,7 @@ fn run(
     args: &Args,
     cwd: &dorc_core::loadpath::Cwd,
     clock: &mut RunClock,
+    stdout: dorc_cli::artifact::StdoutPosture,
 ) -> Result<RunOutcome, Diag> {
     if args.mode == Mode::Apply
         && let Some(host) = args.host.as_deref()
@@ -1072,30 +1103,32 @@ fn run(
     }
     // ABOVE the probe emission on purpose: the planner's inputs are authored-before-contact, so an
     // unservable form refuses with nothing probed, contacted or written (`30I` §10).
-    let form_selection =
-        match select_artifact_form(args, &snapshot, &cfg.value, &parsed.value, &book_src, &env) {
-            Ok(selection) => selection,
-            Err(refusal) => {
-                report_at(
-                    advisory,
-                    "emission",
-                    None,
-                    &[Diag::new_spanless_site(DiagCode::ArtifactFormRefused(
-                        dorc_aid::diag::ArtifactFormRefused {
-                            form: refusal.form().name(),
-                            cause: refusal.cause(),
-                            loads: match refusal {
-                                dorc_cli::artifact::FormRefusal::Unavailable {
-                                    because, ..
-                                } => because.loads(),
-                                dorc_cli::artifact::FormRefusal::NoArtifactStream { .. } => 0,
-                            },
-                        },
-                    ))],
-                );
-                return Ok(RunOutcome::ArtifactUnservable);
-            }
-        };
+    let form_selection = match select_artifact_form(
+        args,
+        stdout,
+        &snapshot,
+        &cfg.value,
+        &parsed.value,
+        &book_src,
+        &env,
+    ) {
+        Ok(selection) => selection,
+        Err(refusal) => {
+            report_at(
+                advisory,
+                "emission",
+                None,
+                &[Diag::new_spanless_site(DiagCode::ArtifactFormRefused(
+                    dorc_aid::diag::ArtifactFormRefused {
+                        form: refusal.form(),
+                        cause: refusal.cause(),
+                        loads: refusal.loads(),
+                    },
+                ))],
+            );
+            return Ok(RunOutcome::ArtifactUnservable);
+        }
+    };
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
     // The book is the LAST source, and naming it is what lets the custody predicate see what the
     // admin defines (`rul-vouch-reaches-own-custody-only`). Sited BELOW the environment because the
@@ -2571,32 +2604,31 @@ fn publish_artifact(
 /// seat take its bytes from the artifact SET with no second assembly to fall back to
 /// (`30I:step-7-reify-plan-artifact-forms`: one final structure, not two).
 ///
-/// The STREAM POSTURE is the injected, non-hermetic edge fact
-/// (`30I:rul-piped-stdout-implies-one-flat-plan`): naming `--artifact-dir` moves the ARTIFACT
-/// stream off stdout, which is what §2.5 says leaves the planner free to choose — with no
-/// directory the artifact IS stdout, and one stream means one flat plan.
+/// The STREAM POSTURE derives from the injected stdout fact
+/// (`30Ng:rul-piped-stdout-carries-a-full-plan`, human-typed): a stdout nobody is watching is one
+/// the user is KEEPING — piping it to a pager, an editor, a file they will read and then hand to
+/// `apply` — so it carries the artifact, complete, and naming a directory beside it claims that same
+/// artifact twice.
 ///
 /// # Errors
-/// Refuses when the invocation NAMED a form this book cannot be given.
+/// Refuses when two things claim this run's artifact, when the invocation NAMED a form this book
+/// cannot be given, or when a kept stream can carry no complete plan.
 fn select_artifact_form(
     args: &Args,
+    stdout: dorc_cli::artifact::StdoutPosture,
     snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
     cfg: &dorc_analysis::cfg::Cfg,
     book: &dorc_syntax::Ast,
     book_src: &str,
     env: &dorc_analysis::funcenv::FuncEnv,
 ) -> Result<dorc_cli::artifact::Selection, dorc_cli::artifact::FormRefusal> {
-    use dorc_cli::artifact::{FormRequest, StreamPosture, book_loads, select};
+    use dorc_cli::artifact::{FormRequest, artifact_stream, book_loads, select};
 
     let projection = dorc_cli::bundle::project(snapshot, env.loads())
         .map(dorc_cli::bundle::BundleProjectionOutput::into_projection)
         .unwrap_or_default();
     let loads = book_loads(cfg, book, book_src, &projection);
-    let posture = if args.artifact_dir.is_some() {
-        StreamPosture::Materializable
-    } else {
-        StreamPosture::SingleStream
-    };
+    let posture = artifact_stream(stdout, args.artifact_dir.is_some())?;
     let request = args.form.map_or(FormRequest::Auto, FormRequest::Explicit);
     select(
         snapshot.cwd(),
