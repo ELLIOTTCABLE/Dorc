@@ -23,8 +23,8 @@ They are built by one builder at a time, never by parallel owners: a second
 resolver or a decorative source map is a likelier product of splitting than saved
 wall-clock. Seams are placed at FIXED work-order boundaries and never on a
 builder's own read of its remaining context, which is not a thing a model can
-measure. Every handoff names its work-order boundary rather than an ordinal; the
-active one is `step-6-compose-bundle-locators-into-diagnostics`.
+measure. Every handoff names its work-order boundary rather than an ordinal. Steps 1-6
+are complete; `plans/30L` is the active external boundary before steps 7-8 resume.
 
 `impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
 correction (2026-08-19): `step-5a-complete-load-occurrence-account` first removes the
@@ -71,13 +71,14 @@ in `Research/notes/30Ib`):
   stdin claims;
 - aggregate verdict primacy across member-loop and inline-call replacement lanes;
 - one occurrence-keyed pure `BundleProjection`, exact stripped segments plus line maps,
-  an inert explicit `dorc bundle` archive, and the multipart storage-entry seam.
+  an inert explicit `dorc bundle` archive, and the multipart storage-entry seam;
+- one occurrence-composed locator chain consumed by production bundle diagnostics, preserving
+  generated, nested-load, book-load, and authored frames with exact-byte claim resolution.
 
-Not built, and owed below: the three artifact forms; locator consumption by a real
-diagnostic; final `load30-*` XFAIL promotion and e2e
+Not built, and owed below: the three artifact forms; final `load30-*` XFAIL promotion and e2e
 lowering. The complete load-occurrence account, the effective-world-reach interlude,
-aggregate verdict-primacy rider, and bundle projection are closed;
-`step-6-compose-bundle-locators-into-diagnostics` is the active boundary.
+aggregate verdict-primacy rider, bundle projection, and real locator consumer are closed;
+`plans/30L` interposes before steps 7-8.
 
 ### Target outcome
 

@@ -47,6 +47,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `.` targets or a materialization recipe. `dorc bundle` returns before records intake,
   planning, settlement, whylog writing, or host contact; executable placement and source-line
   replacement remain the post-`30L` artifact stage.
+- **bundle-diagnostics-compose-occurrences-not-paths** (`30I` step 6) — production bundle
+  validation diagnostics compose `LoadAccount` occurrence identity, `BundleFile` storage/copy
+  identity, and the existing strip line map onto `aid::locator`; they never reconstruct an origin
+  from path strings, comments, or source similarity. The ordinary authored diagnostic stays the
+  primary frame while generated and nested-load frames remain visible. Comment-origin readback
+  resolves to current source only on exact snapshot-byte agreement and stays aid-only either way.
+  Static incoherence renders its located diagnostic but returns before archive stdout, preserving
+  the existing refusal/exit. No locator value may enter loading, planning, or authority.
 - **probe-ships-oracle-bytes-only** — the compiled probe is synthesized
   scaffolding + oracle bodies, never book contents (it never inherits the
   book's `trap`s). The `24J` raw-ship debt is REPAIRED and machine-pinned

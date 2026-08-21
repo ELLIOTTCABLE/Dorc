@@ -21,6 +21,12 @@ crate's charter) · `notes/287` (errorloom as-built).
   single most important line in this crate) — the license plane fails toward unsureness;
   this plane fails toward narration with attributed confidence. License values flow INTO
   narrative freely, never back. Lint-clean licenses nothing.
+- **diagnostic-extra-frames-are-provenance-only** (`30I` step 6) —
+  `DiagnosticFrame` adds generated/intermediate code frames to the existing diagnostic document;
+  it never changes the primary diagnostic, code, params, or decision. Each frame carries the exact
+  bytes whose own line space its span uses, and the ordinary frame renderer performs sink encoding.
+  Strip maps license generated LINE identity only, never invented columns. Extra frames are
+  display/provenance values and have no conversion into definitions, custody, facts, or licenses.
 - **narrative-is-sealed-by-type-not-place** (`288` §2c) — the seal is private fields, no
   method yielding a license-plane input, and `ProvId` being `!Ord` — NOT co-location with
   `core`. The `compile_fail` doctest in `narrative.rs` pins it against a real license

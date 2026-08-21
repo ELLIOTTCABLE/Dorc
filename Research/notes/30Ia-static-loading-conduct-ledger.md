@@ -889,3 +889,17 @@ human-authored: the help page does not list `dorc bundle`. A fresh Sol builder t
 using `CopiedSegment::{source,line_map}`, occurrence identity, and storage-path loci to compose one
 real diagnostic chain. It must read every applicable directory-local `CLAUDE.md` explicitly; the
 harness does not inject them.
+
+## §23 — step-6-locator-consumer-fold
+
+A fresh Sol builder completed `30I:step-6-compose-bundle-locators-into-diagnostics` and stopped
+before `30L`. Production bundle-validation diagnostics now retain generated, nested-load,
+book-load, and authored frames from one occurrence-composed locator chain. Exact immutable-byte
+agreement gates later comment-origin resolution; the aid graph remains structurally unable to name
+authority types.
+
+Conductor review forced one follow-up before fold: bundle mode returned after printing, before the
+existing wrapper-incoherence refusal was consumed. The repair renders the located contradiction,
+preserves exit 11, and withholds archive stdout. The central e2e runner now proves both this refusal
+and that the actual binary path, not only a renderer unit test, emits generated plus original frames.
+Both-platform completion was green; zero golden/XFAIL drift and no direction-setting deviation.

@@ -964,3 +964,25 @@ No goldens or XFAILs moved. The human-authored help page does not yet list `dorc
 compose `BundleFile::occurrence`, storage path, copied source, and line map onto the existing
 locator DAG and carry one chain into a real diagnostic (`30I` step 6); do not rebuild source
 identity or alter placement.
+
+## §18 — Step 6: occurrence-composed production diagnostics
+
+`30I:step-6-compose-bundle-locators-into-diagnostics` is BUILT and both-platform green.
+`cli::provenance::LoadActs` now keys every load locus by the loader's occurrence index; bundle
+locators compose nested parent occurrences, generated `storage_path` loci, copied strip-map lines,
+and authored source into the existing `aid::locator` DAG. No path or comment reconstructs identity.
+Generated line frames use the existing line map and deliberately frame the whole line rather than
+invent a column the map does not prove.
+
+The real `dorc bundle` validation path consumes the chain via the ordinary diagnostic document:
+the authored source remains primary and generated/nested/book load frames remain visible. A central
+e2e trial drives the production binary and fails if it falls back to single-frame `report_at`.
+Incoherent wrapper declarations preserve their existing diagnostic and exit 11 but now return
+before archive stdout; the first integration review caught and closed the earlier output-before-
+refusal path.
+
+Later comment-origin resolution is aid-only and injected: current bytes must equal the immutable
+generating snapshot bytes, and their stripped result must equal the copied segment. Absent or
+mismatched candidates retain generated/claimed loci and never present current source as the origin.
+No durable, authority, placement, golden, or XFAIL surface moved. `30L` is now the active boundary;
+steps 7-8 remain untouched.

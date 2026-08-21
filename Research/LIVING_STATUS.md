@@ -14,7 +14,7 @@
 
 ---
 
-## CURRENT STATE (2026-08-20 - BUNDLE PROJECTION GREEN; LOCATOR CONSUMPTION NEXT)
+## CURRENT STATE (2026-08-21 - 30LA AND 30I STEPS 5B/6 GREEN; STOPPED BEFORE 30L)
 
 **`plans/30I` is the single authority for the newly-closed static-load/bundle
 arc.** The human ruled cwd-faithful sh loading from one authored-before-contact
@@ -26,12 +26,12 @@ comments read back as aid-only `BundleOriginClaim`; source-map representation is
 rich/multi-stage immediately even though v0 compilation aims at exact copied
 segments.
 
-**Steps 1-5b, the explicit-stdin rework, and the `30La` correctness rider are built;
-steps 6-8 are not.** The
+**Steps 1-6, the explicit-stdin rework, and the `30La` correctness rider are built;
+steps 7-8 are not.** The
 static loader, exact guarded-source speaker mint, CLI input surface, and
 multi-stage locator substrate are live; the complete load-occurrence account has
 separate possible-load / exact-speaker / narrative projections. No artifact forms,
-real diagnostic locator consumption, or final `load30-*` XFAIL promotion exists yet. The
+or final `load30-*` XFAIL promotion exists yet. The
 opt-in dash/posh floor cell refutes generated loader functions as a universal
 one-file lowering; nested source boundaries remain generated files until another
 lowering is floor-proven.
@@ -43,6 +43,15 @@ the existing strip seat, and no path is re-read or target re-resolved. `dorc bun
 the value as an inert heredoc-quoted archive. Its controller-owned storage paths are explicitly
 not runtime `.` targets: executable placement remains step-7 work, where runtime cwd and
 artifact-root relationships exist. The human-authored help page does not yet list the new mode.
+
+**`30I:step-6-compose-bundle-locators-into-diagnostics` IS BUILT AND BOTH-PLATFORM
+GREEN.** Bundle validation diagnostics now compose the loader's exact occurrence chain,
+generated storage and copied-segment loci, strip line map, nested load loci, and authored source
+into the existing locator DAG. The production `dorc bundle` path renders generated plus authored
+frames through the ordinary diagnostic document. Exact snapshot-byte agreement is required before
+a later comment-origin claim resolves to current source; absent/mismatched candidates retain the
+generated and claimed loci. Incoherent wrapper declarations report through this path but withhold
+the archive and preserve exit 11. No locator or render value reaches authority.
 
 **`30La` IS BUILT AND BOTH-PLATFORM GREEN.** Member-loop and inline-call aggregate
 topology remains predict-derived, while an exact all-vouched establish population ships
@@ -95,8 +104,7 @@ populations remain `Open` until the later propagation lane. `30L` consumes `30K`
 and `30I`'s bundle loci, and carries the frozen-backing and non-leaf narrative residues above.
 
 **Sequence is fixed:** `30I:step-5a-complete-load-occurrence-account`, `30K`, `30La`, and
-`30I:step-5b-build-bundle-projection` are done. Compose bundle locators into one real
-diagnostic (`30I` step 6); then build `30L`; only then
+`30I` steps 5b/6 are done. Build `30L` next; only then
 reify artifact forms and perform final XFAIL/golden promotion. This places effective-world
 reach and region identity before the new Plan/Spine artifact boundary and
 `28Q:stage-iii-world-scopes`, without reopening definition factoring, snapshot emission,
