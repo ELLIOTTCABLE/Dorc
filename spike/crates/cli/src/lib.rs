@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod bundle;
 pub mod fixpoint;
 pub mod kinds;
 pub mod provenance;
@@ -240,6 +241,9 @@ pub enum Invocation {
 /// (kept so the corpus stays green without a harness rewrite — the least-disruptive path).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
+    /// `dorc bundle …`: print the pure multipart oracle-bundle projection. It reads the same
+    /// authored snapshot as analysis and performs no host contact or plan edit.
+    Bundle,
     /// `dorc probe …`: emit ONLY the read-only probe artifact (round-trip phase 1). Reads no
     /// stdin (there are no results yet — this is what you ship to the host to GET them).
     Probe,
@@ -333,7 +337,8 @@ pub struct Args {
     /// Since `28E:lean-why-is-whylog-reconciliation` this is what `dorc why` does ANYWAY when no
     /// record source was named ([`Args::reads_the_receipt`]); the flag survives as a spelling
     /// rather than a switch, because it is printed in committed transcripts and typed in muscle
-    /// memory, and it still means something on the other modes.
+    /// memory, and it still means something on plan-producing modes. Bundle projection is the
+    /// deliberate exception: it consumes authored-before-contact inputs only.
     pub last: bool,
     /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
     /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
@@ -406,7 +411,7 @@ impl Args {
 /// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
 /// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
 const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
-    last || (matches!(mode, Mode::Why) && !has_results)
+    (last && !matches!(mode, Mode::Bundle)) || (matches!(mode, Mode::Why) && !has_results)
 }
 
 /// Every claimant this invocation puts on stdin, in argv order
@@ -514,6 +519,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             it.next();
             Mode::Probe
         }
+        Some("bundle") => {
+            it.next();
+            Mode::Bundle
+        }
         Some("plan") => {
             it.next();
             Mode::Plan
@@ -536,7 +545,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             // A leading bare word that is NOT a known mode: if it is a NEAR-MISS of one, suggest it
             // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
             // loop below picks it up).
-            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "strip"]) {
+            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "bundle", "strip"]) {
                 return Err(Diag::new_spanless_site(DiagCode::CliUnknownMode(
                     dorc_aid::diag::CliUnknownMode {
                         mode: w.to_owned(),
@@ -735,7 +744,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         )));
     }
     let book = books.into_iter().next();
-    if book.is_none() && !ships_a_rendered_plan && !reads_the_receipt(mode, last, results.is_some())
+    if book.is_none()
+        && mode != Mode::Bundle
+        && !ships_a_rendered_plan
+        && !reads_the_receipt(mode, last, results.is_some())
     {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
@@ -1557,9 +1569,8 @@ mod tests {
         );
     }
 
-    /// A book is required exactly when the invocation cannot learn one from a receipt. The
-    /// `--results`-without-a-book row is the one worth having: records describe a book, and
-    /// accepting them with none named would analyse the empty string and report on nothing.
+    /// Plan-producing and record-reading modes require a book unless a receipt supplies one.
+    /// Bundle mode may project invocation-named roots over an empty book.
     #[test]
     fn a_book_is_required_unless_a_receipt_supplies_one() {
         assert!(parse_args_from(vec!["why".to_owned()]).is_ok());
@@ -1575,6 +1586,21 @@ mod tests {
         assert!(
             parse_args_from(vec!["plan".to_owned()]).is_err(),
             "plan still demands its book"
+        );
+    }
+
+    #[test]
+    fn bundle_is_a_pure_analysis_mode_over_one_book() {
+        let args = analyzed(&["bundle", "book.sh", "--pre-source", "entry.sh"]);
+        assert_eq!(args.mode, Mode::Bundle);
+        assert_eq!(args.book.as_deref(), Some("book.sh"));
+        assert_eq!(args.pre_sources, ["entry.sh"]);
+        assert!(!args.reads_the_receipt());
+        assert!(!analyzed(&["bundle", "book.sh", "--last"]).reads_the_receipt());
+        assert!(
+            analyzed(&["bundle", "--pre-source", "entry.sh"])
+                .book
+                .is_none()
         );
     }
 

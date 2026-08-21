@@ -91,6 +91,20 @@ pub fn encode_line(text: &str, cap: usize) -> String {
 /// in every shell excerpt would be a worse lie about the source more often.
 #[must_use]
 pub fn encode_foreign(text: &str, cap: usize) -> String {
+    cap_to(&encode_ascii_bytes(text), cap)
+}
+
+/// Encode source-derived text inside a generated POSIX-shell comment.
+///
+/// This is a distinct sink from terminal display even though v0 uses the same byte spelling:
+/// printable ASCII survives, while every byte capable of ending or controlling the comment is
+/// rendered as `\xNN`. The result is capped and contains no newline or control byte.
+#[must_use]
+pub fn encode_shell_comment(text: &str, cap: usize) -> String {
+    cap_to(&encode_ascii_bytes(text), cap)
+}
+
+fn encode_ascii_bytes(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for byte in text.bytes() {
         if (0x20..=0x7e).contains(&byte) {
@@ -99,7 +113,7 @@ pub fn encode_foreign(text: &str, cap: usize) -> String {
             let _ = write!(out, "\\x{byte:02x}");
         }
     }
-    cap_to(&out, cap)
+    out
 }
 
 /// Truncate `text` so the RESULT is at most `cap` bytes, ending in [`ELLIPSIS`] when anything was
@@ -148,6 +162,13 @@ mod tests {
         assert_eq!(encode_line("a\tb\u{7}c\u{7f}d", 200), "a b c d");
         assert_eq!(encode_foreign("a\tb", 200), "a\\x09b");
         assert_eq!(encode_foreign("\u{1b}[31m", 200), "\\x1b[31m");
+    }
+
+    #[test]
+    fn shell_comment_encoding_cannot_open_another_line() {
+        let encoded = encode_shell_comment("path\n# forged\r\u{202e}", 200);
+        assert_eq!(encoded, "path\\x0a# forged\\x0d\\xe2\\x80\\xae");
+        assert!(!encoded.contains(['\n', '\r']));
     }
 
     /// Printable ASCII is the author's own text and is never touched — the escape is for bytes

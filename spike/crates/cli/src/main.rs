@@ -225,7 +225,7 @@ fn main() -> ExitCode {
 /// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `--help`
 /// and `--version` win unconditionally (a pre-scan — ack-1 help-is-success, so a help request
 /// beats a malformed flag) and return the stdout-and-exit-0 variants. Otherwise: an OPTIONAL
-/// leading mode token (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` /
+/// leading mode token (`bundle`/`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` /
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
 /// `--risk-faultless-skips`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
@@ -822,7 +822,7 @@ fn run(
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
-    let replay = if args.reads_the_receipt() {
+    let replay = if mode != Mode::Bundle && args.reads_the_receipt() {
         let loaded = load_whylog_replay(args)?;
         report_at(advisory, "whylog", None, &loaded.diags);
         match loaded.value {
@@ -927,12 +927,14 @@ fn run(
     // are exact source lines; a multi-book unit's line numbers are into the concatenation.
     //
     // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
-    report_at(
-        advisory,
-        "oracle",
-        None,
-        &unloaded_sibling_oracle_diagnostics(book_path, oracle_paths),
-    );
+    if mode != Mode::Bundle {
+        report_at(
+            advisory,
+            "oracle",
+            None,
+            &unloaded_sibling_oracle_diagnostics(book_path, oracle_paths),
+        );
+    }
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
@@ -996,6 +998,28 @@ fn run(
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
     };
+    if mode == Mode::Bundle {
+        let Ok(projection) = dorc_cli::bundle::project(&snapshot, env.loads()) else {
+            return Ok(RunOutcome::BookUnmodeled);
+        };
+        for diagnostic in projection.diagnostics() {
+            let file = diagnostic.source().0 as usize;
+            let source = snapshot
+                .source_paths()
+                .get(file)
+                .zip(snapshot.source_srcs().get(file))
+                .map(|(path, src)| (path.as_str(), src.as_str()));
+            report_at(
+                advisory,
+                "bundle",
+                source,
+                std::slice::from_ref(diagnostic.diag()),
+            );
+        }
+        print!("{}", projection.projection().render_archive());
+        std::io::stdout().flush().ok();
+        return Ok(book_outcome);
+    }
     // One non-role-declaration index per unit, consulted by every seat that emits a body (`28K` §4).
     // The book is the LAST source, and naming it is what lets the custody predicate see what the
     // admin defines (`rul-vouch-reaches-own-custody-only`). Sited BELOW the environment because the

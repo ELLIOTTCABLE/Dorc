@@ -217,12 +217,24 @@ impl StaticLoadSnapshot {
         self.cwd.resolve_operand(self.paths.get(file)?)
     }
 
+    /// Which source is filed under an already-resolved canonical key.
+    ///
+    /// Bundle projection consumes the loader's resolved target directly; resolving that target
+    /// again would create a second loader. Source operands are normalized through the existing
+    /// identity seat, and the last match wins exactly as [`crate::world::definition_table`] does.
+    #[must_use]
+    pub fn source_at_key(&self, key: &str) -> Option<usize> {
+        (0..self.paths.len())
+            .rev()
+            .find(|&file| self.key_of(file).as_deref() == Some(key))
+    }
+
     /// Which loaded source a `.` operand names — the RESOLUTION half of the load answer, with no
     /// contract check and no admission (those are `sourcing`'s and the edge's).
     #[must_use]
     pub fn source_at_dot_target(&self, target: &str) -> Option<usize> {
         let wanted = self.cwd.resolve_dot(target)?;
-        (0..self.paths.len()).find(|&file| self.key_of(file).as_deref() == Some(wanted.as_str()))
+        self.source_at_key(&wanted)
     }
 }
 
@@ -361,6 +373,19 @@ mod tests {
             "slash-less is a PATH search, outside v0"
         );
         assert_eq!(snap.source_at_dot_target("./pkg/missing.sh"), None);
+    }
+
+    #[test]
+    fn canonical_key_lookup_matches_the_definition_tables_last_wins_order() {
+        let snap = StaticLoadSnapshot::over(
+            Cwd::default(),
+            vec!["same.sh".to_owned(), "./same.sh".to_owned()],
+            vec!["first".to_owned(), "second".to_owned()],
+            &std::collections::BTreeSet::new(),
+            "book.sh",
+            "",
+        );
+        assert_eq!(snap.source_at_key("same.sh"), Some(1));
     }
 
     const MARKER: &str = "# dorc-lang/v0.2\n";
