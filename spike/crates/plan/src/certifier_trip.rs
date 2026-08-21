@@ -121,7 +121,7 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
             out.narrative.push(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::Demotion {
-                    site: dorc_aid::diag::SiteId::leaf(route.leaf),
+                    site: dorc_aid::diag::SiteId::leaf(route.invocation.leaf),
                     reason: DemoteTag::CertifierTripped,
                 },
             ));

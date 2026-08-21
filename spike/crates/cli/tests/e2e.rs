@@ -653,10 +653,17 @@ fn dual_rail_judge(
     guard_cmds: &str,
 ) -> Vec<String> {
     let mut violations = Vec::new();
+    // TWO ledger rails, because there are two decision identities and only one of them owns a leaf
+    // (`30L:rul-two-identities-never-conflated`). An `argv <leaf> <verb> …` line attributes a SITE's
+    // elision; a `region <routes> <verb> …` line attributes an AUTHORED REGION's, whose edit lands
+    // at the definition and covers every invocation. Both are licenses, so both answer the
+    // bare-only direction; the leading field differs only because a region has no leaf id to give.
     let ledger: Vec<&str> = lines_of(disp)
         .iter()
         .filter_map(|line| {
-            let rest = line.strip_prefix("argv ")?;
+            let rest = line
+                .strip_prefix("argv ")
+                .or_else(|| line.strip_prefix("region "))?;
             let (id, rest) = rest.split_once(' ')?;
             if id.is_empty() || !id.chars().all(|c| c.is_ascii_digit()) {
                 return None;
@@ -2261,9 +2268,12 @@ fn dual_rail_check(
     failures: &mut Vec<String>,
 ) {
     let debug = debug_argv(harness, dir, args, framed);
+    // BOTH ledger rails (`dual_rail_judge`): a leaf's `argv` line and an authored region's `region`
+    // line. A region's edit is a license exactly as a leaf's is; dropping the rail here would make
+    // every region elision read as an unattributed bare-only run.
     let disp = debug
         .lines()
-        .filter(|line| line.starts_with("argv "))
+        .filter(|line| line.starts_with("argv ") || line.starts_with("region "))
         .collect::<Vec<_>>()
         .join("\n");
     let guard_cmds = debug

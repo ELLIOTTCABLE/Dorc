@@ -3333,9 +3333,56 @@ fn emit_debug_argv(
     // verdict body runs (`guardcmd dpkg-query`). The widened dual-rail judge allowlists these as
     // legitimate apply-only lines (the guard's live check runs at apply, absent from the bare
     // book) — never an unrelated one (cf-5). Deterministic (`BTreeSet`, `inv-determinism`).
-    let mut guard_cmds: BTreeSet<&str> = BTreeSet::new();
+    // THE SECOND RAIL. A command inside a spliced function body owns no plan leaf, so the `argv`
+    // rail above cannot speak for it — yet its mutation IS licensed, by one of two different things:
+    // the enclosing CALL's aggregate license, or its own authored region's shared decision
+    // (`plans/30L` §5/§8). One line per body SITE rather than per region, carrying that instance's
+    // OWN resolved argv, because one authored region serves many operands and a single line could
+    // only name one of them. The leading field is the governing call's leaf, which is the identity a
+    // reader has to hand.
+    let region_verb: BTreeMap<dorc_core::AstId, &str> = plan
+        .regions
+        .iter()
+        .map(|region| (region.ast, disposition_tag(&region.disposition)))
+        .collect();
     for step in &plan.steps {
-        if let dorc_plan::Disposition::Guard(license) = &step.disposition {
+        let Some(&node) = node_of_ast.get(&step.ast) else {
+            continue;
+        };
+        let Some(sites) = cfg.call_body_sites(node) else {
+            continue;
+        };
+        let call_verb = disposition_tag(&step.disposition);
+        for &site in sites {
+            // A replaced or omitted CALL licenses its whole body at once; otherwise the body site
+            // answers to its own region, and to nothing if the census minted none.
+            let verb = if matches!(call_verb, "replace" | "omit") {
+                call_verb
+            } else {
+                region_verb
+                    .get(&cfg.node(site).ast)
+                    .copied()
+                    .unwrap_or("run")
+            };
+            let words: Vec<String> = value
+                .argv_values(site)
+                .into_iter()
+                .map(|w| match w {
+                    ValueOf::Literal(sym) => interner.resolve(sym).to_string(),
+                    ValueOf::Top(_) => "TOP".to_string(),
+                })
+                .collect();
+            eprintln!("region {} {verb} {}", step.leaf.0, words.join(" "));
+        }
+    }
+    let mut guard_cmds: BTreeSet<&str> = BTreeSet::new();
+    for disposition in plan
+        .steps
+        .iter()
+        .map(|step| &step.disposition)
+        .chain(plan.regions.iter().map(|region| &region.disposition))
+    {
+        if let dorc_plan::Disposition::Guard(license) = disposition {
             for c in license.insert().check_cmds() {
                 guard_cmds.insert(c.as_str());
             }

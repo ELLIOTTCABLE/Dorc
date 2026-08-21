@@ -1,0 +1,3 @@
+# nginx and curl are already installed; the unmodeled `hork` between them is the wall.
+site 0.0 effect=holds rc=0
+site 0.2 effect=holds rc=0

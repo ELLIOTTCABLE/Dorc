@@ -143,7 +143,7 @@ pub fn project_plan(spine: &Spine, _authority: &PlanAuthority) -> Plan {
             ast: record.ast,
             sh: record.sh.clone(),
             disposition: record.decision.clone(),
-            routes: record.routes.total(),
+            routes: record.routes.clone(),
         })
         .collect();
     Plan {

@@ -1,0 +1,3 @@
+# nginx is installed; the check could not answer for curl at all (a >=2 sink landing).
+site 0.0 effect=holds rc=0
+site 1.0 effect=cant-tell rc=2

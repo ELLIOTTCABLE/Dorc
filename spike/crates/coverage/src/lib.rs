@@ -1059,9 +1059,14 @@ fn attribute_door(
                 // converged-establish elision through a call — counted as
                 // replace-converged (a per-door column for inline elision is a future
                 // report decision, not a new door).
+                // `SharedRegion` joins them for the same reason `InlineCall` did: it is a
+                // converged-establish elision, reached at the authored-region grain rather than the
+                // leaf's (`plans/30L` §5). A per-door column for region elision is a future report
+                // decision, not a new door.
                 LicenseVia::ConvergedEstablish
                 | LicenseVia::MembersLoop
-                | LicenseVia::InlineCall => Door::ReplaceConverged,
+                | LicenseVia::InlineCall
+                | LicenseVia::SharedRegion => Door::ReplaceConverged,
                 LicenseVia::QueryGuard => Door::QuerySubstituted,
                 // A NEW LicenseVia variant: name it loudly, don't fold into a door.
                 other => Door::Unattributed(format!("Replace/LicenseVia::{other:?}")),

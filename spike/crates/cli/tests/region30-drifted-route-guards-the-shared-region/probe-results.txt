@@ -1,0 +1,4 @@
+# nginx is installed; curl is not. ONE authored region, two routes, and they disagree — so the
+# universal Replace fails and the parametric guard absorbs it (`30L` section 4.5).
+site 0.0 effect=holds rc=0
+site 1.0 effect=absent rc=1

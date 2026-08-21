@@ -1,0 +1,2 @@
+ran: aptcheck -q -- curl
+ran: apt-get install -y curl

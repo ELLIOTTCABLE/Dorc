@@ -1487,10 +1487,18 @@ impl GuardLicense {
     /// own argv passed the author's argparse when its vouch was reached, and the census is CLOSED —
     /// so every value `"$1"` can hold at runtime is one the author already accepted.
     ///
-    /// The `Converged` conjunct is ABSENT, and only that one. The vouch demand, the consumption gate
-    /// at ⊤, and the `|| <original bytes>` fall-through are untouched, so nothing about what may
-    /// execute changes; what changes is which region is worth paying a check for. See
-    /// [`crate::region_guard_candidate`] for why that reads differently at a region than at a site.
+    /// The `Converged` conjunct RELAXES to a DEFINITE measurement, and only that far. The vouch
+    /// demand, the consumption gate at ⊤, and the `|| <original bytes>` fall-through are untouched,
+    /// so nothing about what may execute changes; what changes is which region is worth paying a
+    /// check for. See [`crate::region_guard_candidate`] for why that reads differently at a region
+    /// than at a site.
+    ///
+    /// `Unknown` still refuses, and that boundary is where the widening stops. A DIVERGED fact is a
+    /// measurement — the world answered, and it answered "not yet" — so a sibling invocation that
+    /// answered "already" is real value the guard recovers. An UNKNOWN fact is the absence of an
+    /// answer, and paying a check to discover what the probe could not is the unsure direction
+    /// (`inv-kfail`). It is also what keeps the UNMEASURED world byte-identical: with no records
+    /// every cell is `Unknown`, so no region guards and no book acquires a preamble it did not have.
     #[must_use]
     pub(crate) fn mint_for_shared_region(
         fact: FactKey,
@@ -1499,6 +1507,9 @@ impl GuardLicense {
         consumed: &May<Powerset<Channel>>,
         source_argv: &str,
     ) -> Option<GuardLicense> {
+        if probe_verdict == Verdict::Unknown {
+            return None;
+        }
         if !consumption_ok(consumed, Predicted::Top) {
             return None;
         }
@@ -2209,9 +2220,10 @@ pub struct RegionStep {
     pub ast: AstId,
     pub sh: String,
     pub disposition: Disposition,
-    /// How many statically possible invocation instances this ONE edit is universal over — the
-    /// route count the pull and why surfaces show (`30L` §8).
-    pub routes: u32,
+    /// Every statically possible invocation instance this ONE edit is universal over — the route
+    /// count the pull and why surfaces show, and the call identities `dorc why` walks
+    /// (`30L` §8/§9).
+    pub routes: dorc_core::spine::Account<dorc_core::spine::RegionRoute>,
 }
 
 #[derive(Debug, Clone)]
@@ -4199,6 +4211,12 @@ pub(crate) struct RouteDecision {
     /// The `(site, cell)` this instance's replacement would erase — one member of the shared
     /// replacement's cross-instance witness.
     pub(crate) establish: Option<(CfgNodeId, FactKey)>,
+    /// What the world said about this instance's cell. Carried because the shared guard's ECONOMICS
+    /// are a property of the POPULATION, not of any one route: a region every one of whose routes
+    /// measured DIVERGED gains nothing from a check that is known to fail everywhere, which is the
+    /// site tier's own `jc-mint-policy m-a` reading one level up. The region seat drops the
+    /// candidates when no route converged.
+    pub(crate) verdict: Verdict,
 }
 
 /// Decide one region instance (`30L` §4) — the route's own conclusion, plus what it admits.
@@ -4209,15 +4227,17 @@ pub(crate) struct RouteDecision {
 /// serves another (`30L` §4.5).
 pub(crate) fn decide_route(p: &DecideSite<'_>, source_argv: Option<&str>) -> RouteDecision {
     let (conclusion, _) = site_conclusion(p);
+    let establish = match p.class {
+        SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+            Some((p.node, *fact))
+        }
+        _ => None,
+    };
     RouteDecision {
         conclusion: conclusion.as_route(),
         guard: source_argv.and_then(|argv| region_guard_candidate(p, argv)),
-        establish: match p.class {
-            SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
-                Some((p.node, *fact))
-            }
-            _ => None,
-        },
+        verdict: establish.map_or(Verdict::Unknown, |(_, fact)| (p.observe)(fact).effect),
+        establish,
     }
 }
 
@@ -4785,7 +4805,11 @@ impl Plan {
             .steps
             .iter()
             .map(RenderedEdit::of_step)
-            .chain(self.regions.iter().map(RenderedEdit::of_region))
+            .chain(
+                self.live_regions(ast)
+                    .into_iter()
+                    .map(RenderedEdit::of_region),
+            )
             .filter_map(|step| {
                 let Disposition::Guard(license) = step.disposition else {
                     return None;
@@ -4798,6 +4822,35 @@ impl Plan {
         PinnedDefinitions { hoisted, invoked }
     }
 
+    /// The regions whose edits the artifact still needs — those the artifact can still REACH.
+    ///
+    /// This is the other half of `30L:pin-whole-helper-derived-only`. When every invocation of a
+    /// definition is itself neutralised, its body executes on no route, and `30L` §8's ruling is that
+    /// the inert definition remains AUTHORED TEXT: editing it would put a stand-in where nothing
+    /// runs, and — worse for a guard — hoist a preamble definition for a body no route reaches,
+    /// taking an otherwise-untouched book off its byte floor.
+    ///
+    /// Conservative in exactly one direction. A route account that was CAPPED cannot answer "every
+    /// invocation", so a truncated one keeps its edit: over-editing an inert body is noise, while
+    /// dropping an edit whose region can still execute would leave the settlement's no-execution
+    /// proof resting on bytes the artifact still runs — a wrong elision, not a cosmetic one.
+    fn live_regions<'a>(&'a self, ast: &Ast) -> Vec<&'a RegionStep> {
+        let by_ast: BTreeMap<AstId, &Disposition> =
+            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+        self.regions
+            .iter()
+            .filter(|region| {
+                region.routes.dropped() > 0
+                    || region.routes.shown().is_empty()
+                    || region
+                        .routes
+                        .shown()
+                        .iter()
+                        .any(|route| !is_neutralised(&by_ast, ast, route.ast, 0))
+            })
+            .collect()
+    }
+
     /// The guard inserts whose line the render actually EMITS. A render-REFUSED guard (heredoc /
     /// blocking redirect) runs verbatim, so pinning its definition would hoist a dead one and take
     /// a guard-free book off its byte floor.
@@ -4805,7 +4858,11 @@ impl Plan {
         self.steps
             .iter()
             .map(RenderedEdit::of_step)
-            .chain(self.regions.iter().map(RenderedEdit::of_region))
+            .chain(
+                self.live_regions(ast)
+                    .into_iter()
+                    .map(RenderedEdit::of_region),
+            )
             .filter_map(move |step| {
                 let Disposition::Guard(license) = step.disposition else {
                     return None;
@@ -5091,12 +5148,11 @@ impl Plan {
         // construction — a leaf is a top-level execution and a region is inside a body — so the two
         // edit sources compose without an ordering rule, and `normalise_edits` still holds the
         // overlap invariant if that ever stops being true.
-        for step in self
-            .steps
-            .iter()
-            .map(RenderedEdit::of_step)
-            .chain(self.regions.iter().map(RenderedEdit::of_region))
-        {
+        for step in self.steps.iter().map(RenderedEdit::of_step).chain(
+            self.live_regions(ast)
+                .into_iter()
+                .map(RenderedEdit::of_region),
+        ) {
             let span = ast.node(step.ast).span;
             // d-6: a heredoc leaf refuses ANY neutralising edit (its span does not cover the body
             // lines, so substituting would strand them). A GUARD ALSO refuses a non-devnull output

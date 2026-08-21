@@ -224,8 +224,7 @@ fn same_named_definitions_never_share_a_population() {
     let census =
         census_of("p() { apt-get install -y nginx; }\np\np() { apt-get install -y curl; }\np\n");
     let all = regions(&census);
-    let distinct: std::collections::BTreeSet<_> =
-        all.iter().map(|(region, _)| region.definition()).collect();
+    let distinct: BTreeSet<_> = all.iter().map(|(region, _)| region.definition()).collect();
     assert_eq!(
         distinct.len(),
         all.len(),

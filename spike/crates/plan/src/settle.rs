@@ -172,7 +172,7 @@ struct ProvisionalRegionDecision {
     disposition: Disposition,
     /// Which invocation each contributing route executes under, in census order — the route
     /// attribution `30L` §9 records on Spine, and the half `dorc why` walks call-ward.
-    routes: Vec<LeafId>,
+    routes: Vec<dorc_core::spine::RegionRoute>,
     proofs: Vec<(CfgNodeId, NoMutationProof)>,
 }
 
@@ -265,9 +265,7 @@ impl SettledEffectiveAnalysis {
                 ast: region.ast,
                 sh: region.sh,
                 decision: region.disposition,
-                routes: dorc_core::spine::Account::capped(
-                    region.routes.into_iter().map(dorc_core::SiteId::leaf),
-                ),
+                routes: dorc_core::spine::Account::capped(region.routes),
                 grade: None,
             });
         }
@@ -696,9 +694,9 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
         let RoutePopulation::Closed(routes) = population else {
             continue;
         };
-        let region_ast = match ast_of_region(cfg, routes.routes().map(|route| route.cfg_node())) {
-            Some(id) => id,
-            None => continue,
+        let Some(region_ast) = ast_of_region(cfg, routes.routes().map(|route| route.cfg_node()))
+        else {
+            continue;
         };
         let argv = crate::source_argv(src, ast, region_ast);
         // THE SELF-SUPPRESSED SOLVE (`effect::self_reach_holds`'s shape, one level up): sibling
@@ -715,9 +713,25 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
                 round,
                 *route,
                 &body_class,
-                &solo,
+                solo.as_ref(),
                 argv.as_deref(),
             ));
+        }
+        // THE SHARED GUARD'S ECONOMICS, decided over the POPULATION (`30L` §4.5 — the
+        // divergent-instances valve, and only that). Where some route measured CONVERGED and a
+        // sibling did not, one parametric check recovers the converged invocation at apply, which is
+        // the whole value the valve exists for. Where NO route converged, the check is known to fall
+        // through at every invocation, so it buys nothing and costs the tax at each of them — the
+        // site tier's own `jc-mint-policy m-a` reading, which the region tier must not undercut.
+        // Dropped BEFORE the meet, so the decision the Spine records is the decision the artifact
+        // carries.
+        if !answers
+            .iter()
+            .any(|answer| answer.verdict == dorc_core::Verdict::Converged)
+        {
+            for answer in &mut answers {
+                answer.guard = None;
+            }
         }
         let proofs: Vec<RouteRegionProof> = routes
             .routes()
@@ -746,7 +760,13 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
             disposition,
             routes: routes
                 .routes()
-                .filter_map(|route| round.leaf_of.get(&route.invocation().node()).copied())
+                .filter_map(|route| {
+                    let call = route.invocation().node();
+                    Some(dorc_core::spine::RegionRoute {
+                        invocation: dorc_core::SiteId::leaf(round.leaf_of.get(&call).copied()?),
+                        ast: cfg.node(call).ast,
+                    })
+                })
                 .collect(),
             proofs,
         });
@@ -768,7 +788,7 @@ fn decide_one_route(
     round: &RegionRound<'_>,
     route: RouteInstance,
     body_class: &BTreeMap<CfgNodeId, &SkipClass>,
-    solo: &Option<(
+    solo: Option<&(
         dorc_analysis::solve::Solution<ReachingWalls>,
         SolveConsistency<ReachingWalls>,
     )>,
@@ -783,6 +803,7 @@ fn decide_one_route(
             conclusion: RouteConclusion::Run,
             guard: None,
             establish: None,
+            verdict: dorc_core::Verdict::Unknown,
         };
     };
     let at = |states: &dorc_analysis::solve::Solution<ReachingWalls>| {
@@ -808,7 +829,7 @@ fn decide_one_route(
     // BOTH certifications floor the instance, for the reason the Members lane's do: the solo is a
     // SECOND answer and the window's certification says nothing about it.
     let freshness = floor_uncertified(round.window, answer);
-    let freshness = match solo.as_ref() {
+    let freshness = match solo {
         Some((_, consistency)) => floor_uncertified(consistency, freshness),
         None => freshness,
     };
@@ -859,11 +880,14 @@ fn lower_shared_decision(
         }
         SharedConclusion::Guard(_) => {
             // The meet already proved every instance admits BYTE-IDENTICAL guard bytes, so any
-            // instance's license is the shared one. The probe word it discloses is re-stamped
-            // `Unknown`: instances can answer differently and no single word is true of all of them.
+            // instance's license is the shared one. Only the DISCLOSED probe word is re-stamped, and
+            // it is the population's join: one word where every route agreed, and "cant-tell" where
+            // they did not — because no single word is true of a region whose invocations answered
+            // differently, and picking one route's would misattribute the others'. Display only; the
+            // guard re-decides live and never trusts it.
             match answers.iter().find_map(|answer| answer.guard.clone()) {
                 Some(license) => (
-                    Disposition::Guard(license.with_probe_verdict(dorc_core::Verdict::Unknown)),
+                    Disposition::Guard(license.with_probe_verdict(joined_verdict(answers))),
                     Vec::new(),
                 ),
                 None => (Disposition::Run, Vec::new()),
@@ -875,6 +899,18 @@ fn lower_shared_decision(
         // classified, and a body site is not one). So the arm is unreachable, and if it ever fires
         // the region renders and retires nothing — the safe direction, never a silent `:`.
         SharedConclusion::Omit { .. } | SharedConclusion::Run => (Disposition::Run, Vec::new()),
+    }
+}
+
+/// What the world said about a whole region: the common answer, or `Unknown` where its routes
+/// answered differently.
+fn joined_verdict(answers: &[crate::RouteDecision]) -> dorc_core::Verdict {
+    let mut verdicts = answers.iter().map(|answer| answer.verdict);
+    let first = verdicts.next().unwrap_or(dorc_core::Verdict::Unknown);
+    if verdicts.all(|verdict| verdict == first) {
+        first
+    } else {
+        dorc_core::Verdict::Unknown
     }
 }
 

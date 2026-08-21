@@ -1,0 +1,3 @@
+# Every body establish already holds, so the CALL itself elides and the body never runs.
+site 0.0 effect=holds rc=0
+site 0.1 effect=holds rc=0

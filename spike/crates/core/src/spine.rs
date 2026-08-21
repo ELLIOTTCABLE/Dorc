@@ -635,6 +635,19 @@ pub enum RefusalCause {
     BlockingRedirect,
 }
 
+/// One contributing route of a shared region decision: which invocation it executes under, on both
+/// identities the two surfaces need.
+///
+/// `invocation` is the site key a why report walks call-ward; `ast` is the same call's source
+/// back-map, which is what the RENDER asks when it wants to know whether that call still executes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RegionRoute {
+    /// The invocation's plan site.
+    pub invocation: SiteId,
+    /// The invocation's source back-map.
+    pub ast: AstId,
+}
+
 /// One AUTHORED ELISION REGION's shared decision (`plans/30L` §9).
 ///
 /// Keyed by [`ElisionRegion`](crate::region::ElisionRegion) rather than by
@@ -657,7 +670,7 @@ pub struct SpineRegionDecision<P: DecidePlane> {
     /// The one shared, license-bearing decision.
     pub decision: P::RegionDecision,
     /// Which invocation each contributing route executes under, in census order.
-    pub routes: Account<SiteId>,
+    pub routes: Account<RegionRoute>,
     /// The grade at mint.
     pub grade: Grade,
 }
@@ -1167,7 +1180,10 @@ mod tests {
             excluded, 0,
             "`30E` §2's exclusions are content-tier; a species ruled non-durable would land here"
         );
-        assert_eq!(new, 11, "`30E` §2: eleven transitory species");
+        assert_eq!(
+            new, 12,
+            "`30E` §2's transitory species, plus `30L`'s region decision"
+        );
     }
 
     #[test]
