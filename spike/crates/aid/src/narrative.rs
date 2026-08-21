@@ -444,6 +444,12 @@ pub enum DemoteTag {
 pub enum RenderRefusalTag {
     /// The leaf's span covers a `<<` heredoc opener, so substituting it would strand the body.
     Heredoc,
+    /// A GUARD on a leaf carrying a non-`/dev/null` output redirect (`>>log`): the guard's
+    /// pass-direction would suppress the admin-spelled side-effect, so the line runs verbatim
+    /// (23C-fd10). A REASON ARM beside `Heredoc` rather than a sibling code — same world, same
+    /// license, same outcome, a different sentence about why
+    /// (`28L:rul-reason-enums-not-sibling-codes`).
+    OutputRedirect,
 }
 
 /// The RESERVED cancellation-narrative marker (`27V` Lane A: cancellation is an r26 narrative kind

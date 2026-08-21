@@ -68,7 +68,7 @@ use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::Diag;
-use dorc_aid::narrative::{AuthoredReason, MintSpan};
+use dorc_aid::narrative::{AuthoredReason, MintSpan, RenderRefusalTag};
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
@@ -4676,7 +4676,7 @@ impl Plan {
         use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
         self.refused_render_steps(ast)
             .into_iter()
-            .map(|(step, verb)| {
+            .map(|(step, verb, _cause)| {
                 // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
                 // most-improved case: an inline literal becomes a first-class typed variant the
                 // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
@@ -4709,14 +4709,14 @@ impl Plan {
     pub fn render_refusal_narratives(&self, ast: &Ast) -> Vec<CollapseNarrative> {
         self.refused_render_steps(ast)
             .into_iter()
-            .map(|(step, _)| {
+            .map(|(step, _, cause)| {
                 // Spelled literally, not through `render_refusal_heredoc`: the mint census is a
                 // lexical grep for `CollapseKind::<Variant>` and cannot see a named constructor.
                 CollapseNarrative::new(
                     SpeechAct::Derived,
                     CollapseKind::RenderRefusal {
                         site: dorc_core::SiteId::leaf(step.leaf),
-                        cause: dorc_aid::narrative::RenderRefusalTag::Heredoc,
+                        cause,
                     },
                 )
             })
@@ -4729,7 +4729,7 @@ impl Plan {
     pub fn refused_render_leaves(&self, ast: &Ast) -> Vec<(LeafId, &'static str)> {
         self.refused_render_steps(ast)
             .into_iter()
-            .map(|(step, verb)| (step.leaf, verb))
+            .map(|(step, verb, _)| (step.leaf, verb))
             .collect()
     }
 
@@ -4754,13 +4754,21 @@ impl Plan {
     }
 
     /// The leaves the disposition layer LICENSED to elide that the leaf-exact render must REFUSE,
-    /// each with its disposition-aware verb. A GUARD refusal says "guard" (X-heredoc's
-    /// expected-diagnostics pins it), a Replace/Omit refusal says "elide".
-    fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str)> {
+    /// each with its disposition-aware verb and the CAUSE. A GUARD refusal says "guard"
+    /// (X-heredoc's expected-diagnostics pins it), a Replace/Omit refusal says "elide".
+    ///
+    /// The predicate is disposition-keyed and matches [`collect_edits`](Self::collect_edits)'s drop
+    /// exactly: every disposition refuses a heredoc, and a GUARD additionally refuses a blocking
+    /// output redirect (`guard_render_refused`). Reading only the heredoc half here is what left a
+    /// redirect-refused guard running verbatim with NO disclosure on any of the three surfaces
+    /// (`30Mf` F2) while `guard_refused_asts` alone saw it — the drift the "ONE guard-refusal
+    /// definition" contract exists to prevent.
+    fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str, RenderRefusalTag)> {
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
         let mut refused = Vec::new();
         for step in &self.steps {
+            let is_guard = matches!(step.disposition, Disposition::Guard(_));
             let would_elide = match &step.disposition {
                 // A Replace value-substitutes the span; a Guard EDITS it to `( check ) || <orig>` —
                 // both strand a heredoc body, so a heredoc-bearing leaf of either must REFUSE and
@@ -4769,14 +4777,19 @@ impl Plan {
                 Disposition::Omit { controller } => is_neutralised(&by_ast, ast, *controller, 0),
                 Disposition::Run => false,
             };
-            if would_elide && leaf_has_heredoc(ast, step.ast) {
-                let verb = if matches!(step.disposition, Disposition::Guard(_)) {
-                    "guard"
-                } else {
-                    "elide"
-                };
-                refused.push((step, verb));
+            if !would_elide {
+                continue;
             }
+            // Heredoc first: it refuses under EVERY disposition, so a leaf carrying both reports the
+            // one that would have refused it anyway.
+            let cause = if leaf_has_heredoc(ast, step.ast) {
+                RenderRefusalTag::Heredoc
+            } else if is_guard && leaf_has_blocking_output_redirect(ast, step.ast) {
+                RenderRefusalTag::OutputRedirect
+            } else {
+                continue;
+            };
+            refused.push((step, if is_guard { "guard" } else { "elide" }, cause));
         }
         refused
     }

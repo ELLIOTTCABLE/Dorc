@@ -1876,11 +1876,14 @@ fn twin_guard23_no_vouch_runs() {
 #[test]
 fn twin_guard23_redirect_line_runs() {
     // né guard23-redirect-line-runs: `hork wombat; apt-get install -y nginx >>log`. The install is
-    // past the poison wall AND vouched, so a GuardLicense DOES mint (disposition Guard) — but a
-    // non-/dev/null output redirect is a ratified render REFUSE-HOME (`guard_render_refused`:
-    // leaf_has_blocking_output_redirect), so the render keeps the line VERBATIM and ships no
-    // preamble ⇒ the install runs at apply. (This one is a render-refusal, not a mint-absence — the
-    // faithful floor is "runs verbatim, not guarded in the artifact".)
+    // past the poison wall AND vouched, and a non-/dev/null output redirect is a ratified render
+    // REFUSE-HOME (`guard_render_refused`: leaf_has_blocking_output_redirect), so the line renders
+    // VERBATIM with no preamble ⇒ the install runs at apply.
+    //
+    // WHICH floor produces that is a question this test cannot answer and never could: measured
+    // 2026-08-21, the redirect gens a second `file:…@written` cell and the site does not mint a
+    // Guard at all, so the outcome here is mint-ABSENCE and the render refusal is unreached. The
+    // seat itself is pinned by `a_redirect_refused_guard_is_disclosed_on_every_surface`.
     let (rendered, _plan) =
         render_guard_for("hork wombat\napt-get install -y nginx >>log\n", &["nginx"]);
     assert!(
@@ -1891,6 +1894,73 @@ fn twin_guard23_redirect_line_runs() {
         !rendered.contains("( apt_get__is_converged")
             && !rendered.contains("apt_get__is_converged() {"),
         "no guard line and no guard preamble are emitted for the refused redirect:\n{rendered}"
+    );
+}
+
+#[test]
+fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
+    // `30Mf` F2: the redirect half of `guard_render_refused` reached `collect_edits` (drop the
+    // edit) and `guard_refused_asts` (suppress the why-lens claim) but NOT `refused_render_steps`,
+    // so the three disclosure surfaces below saw nothing at all — the drift the "ONE guard-refusal
+    // definition" contract exists to prevent.
+    //
+    // THE PAIRING IS SYNTHETIC, and deliberately disclosed: at this tip a leaf carrying `>>log`
+    // gens a second `file:…@written` cell and never mints a Guard at all, so no book reaches this
+    // seat (measured beside the assertion below). The LICENSE here is a real one, minted by the
+    // redirect-free twin against the same oracle and fact, re-homed onto the redirect leaf — the
+    // world the code is written for, which the classifier does not currently produce.
+    let src = "hork wombat\napt-get install -y nginx >>log\n";
+    let (_rendered, mut plan) = render_guard_for(src, &["nginx"]);
+    let ast = dorc_syntax::parse(src).value;
+    assert!(
+        !is_guarded(&plan, ">>log"),
+        "the mint absence is the disclosed premise; if this reddens, the seat became reachable \
+         and the pairing below should become an ordinary book case"
+    );
+
+    let (_bare_render, bare) =
+        render_guard_for("hork wombat\napt-get install -y nginx\n", &["nginx"]);
+    let license = bare
+        .steps
+        .iter()
+        .find_map(|step| match &step.disposition {
+            Disposition::Guard(license) => Some(license.clone()),
+            _ => None,
+        })
+        .expect("the redirect-free twin mints a REAL guard license");
+    let redirected = plan
+        .steps
+        .iter_mut()
+        .find(|step| step.sh.contains(">>log"))
+        .expect("the redirect leaf is planned");
+    redirected.disposition = Disposition::Guard(license);
+
+    let diags = plan.render_refusal_diagnostics(&ast, &Interner::default());
+    assert_eq!(diags.len(), 1, "the refusal is disclosed once: {diags:?}");
+    let narratives = plan.render_refusal_narratives(&ast);
+    assert!(
+        narratives.iter().any(|n| matches!(
+            n.kind(),
+            dorc_aid::CollapseKind::RenderRefusal {
+                cause: dorc_aid::narrative::RenderRefusalTag::OutputRedirect,
+                ..
+            }
+        )),
+        "and narrates its OWN cause, never the heredoc one: {narratives:?}"
+    );
+    assert_eq!(
+        plan.refused_render_leaves(&ast)
+            .iter()
+            .map(|(_, verb)| *verb)
+            .collect::<Vec<_>>(),
+        ["guard"],
+        "the decision-plane record carries the guard verb"
+    );
+    assert_eq!(
+        plan.guard_refused_asts(&ast).len(),
+        1,
+        "and the why-lens still suppresses the `guarded` claim — the fourth consumer of the one \
+         predicate, and before this the only one that ever saw a redirect refusal"
     );
 }
 
