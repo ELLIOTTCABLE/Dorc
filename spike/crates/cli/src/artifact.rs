@@ -671,20 +671,20 @@ mod tests {
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<super::Selection, FormRefusal> {
-        book_sourced_at(Cwd::default(), book, paths, srcs, request, posture)
+        book_sourced_at(&Cwd::default(), book, paths, srcs, request, posture)
     }
 
     /// The same, with the modelled working directory named — the axis production and the in-process
     /// drivers differ on, and therefore the axis a placement rule must be measured across.
     fn book_sourced_at(
-        cwd: Cwd,
+        cwd: &Cwd,
         book: &str,
         paths: Vec<String>,
         srcs: Vec<String>,
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<super::Selection, FormRefusal> {
-        let reached = crate::snapshot::book_reached(&cwd, &paths, &srcs, book);
+        let reached = crate::snapshot::book_reached(cwd, &paths, &srcs, book);
         let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd.clone(),
             paths,
@@ -705,7 +705,7 @@ mod tests {
             .expect("one closed occurrence forest");
         let loads = super::book_loads(&cfg, &ast, &projection);
         select(
-            &cwd,
+            cwd,
             snapshot.source_paths(),
             &projection,
             &loads,
@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn a_dependency_under_an_absolute_load_cwd_still_mirrors() {
         let selection = book_sourced_at(
-            Cwd::at("/ops/case"),
+            &Cwd::at("/ops/case"),
             ". ./wombat.oracle.sh\nwombat sync a.conf\n",
             vec!["/ops/case/wombat.oracle.sh".to_owned()],
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
@@ -805,7 +805,7 @@ mod tests {
     #[test]
     fn a_dependency_outside_the_load_cwd_is_unplaceable() {
         let selection = book_sourced_at(
-            Cwd::at("/ops/case"),
+            &Cwd::at("/ops/case"),
             ". /opt/shared/wombat.oracle.sh\nwombat sync a.conf\n",
             vec!["/opt/shared/wombat.oracle.sh".to_owned()],
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
