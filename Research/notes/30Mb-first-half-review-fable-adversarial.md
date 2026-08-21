@@ -277,7 +277,8 @@ it.)
   funcenv/load implementation of guarded-source recognition (`30I` §3.4 case 2) —
   flagging that as the highest-value target for any follow-up review hour, since a
   recognition false-positive there runs the wrong author's judgment under custody
-  (pope-sin tier).
+  (pope-sin tier). **That follow-up round was then commissioned and run — §9 below
+  carries it; the flag is discharged.**
 - Also not deeply audited: the oracle/syntax crates, the aid/loom lanes, intake
   parsing internals beyond the scout's chokepoint verification, and everything
   commission-fenced (verify instruments, security, WSL/Lean/Kani legs).
@@ -319,3 +320,125 @@ re-derives them:
 - *A `Refused` intake still emitting a plan* — `PlanAuthority` has no public
   constructor, `authorise` is the one gate, and the driver-side lexical pin forbids
   naming the test-only bypass.
+
+## §9 — Addendum: the focused guarded-source/custody round (second sitting, same day)
+
+The human spent the remaining wallclock on §7's flagged weak spot: a line audit of
+the `30I` §3.4 case-2 implementation — the exact-package-sentinel recognition, the
+speaker-edge mint, and the custody composition around them (`analysis/src/load.rs`
+whole-file; `funcenv.rs` `sentinel_decides`/`sentinel_arm`/`sole_populator`/
+`anything_removes`/`load_closure_of`; the `30Ib` §4/§5/§10/§12 ledgers; specimen and
+composition-seat checks).
+
+### Verdict: the recognition seat is clean
+
+**+SURE** The seat is built with the same defensiveness as the `30K` kernel, and
+the two a-priori attack cells I constructed before reading it are both already
+specimen-pinned in the committed corpus (`load30-speaker-minting-is-observable`:
+the `beta` wrong-unit sentinel-populator and `gamma` wrong-unit same-named-helper
+arms, plus a recorded mutation result proving the recognition's own mint is what
+the case observes). Specifics verified by eye:
+
+- `sole_populator` (funcenv.rs:372) answers BOTH `Must` halves non-vacuously: the
+  target closure must assign the tested name AND nothing else in the authored
+  world may (every loadable program's top level, the whole book AST via
+  `book_assigns` — ⊤-valued and below-the-load assignments included). The
+  name-census-not-value design (`30Ib` §10 "dissolved rather than solved") is
+  sound because uniqueness-of-possible-populator over-approximates
+  value-provenance, and I confirmed the one cell it cannot see (a literal
+  mismatch between the assignment and the guard's compared value) is inert: it
+  can only cause a runtime re-source of the same exact bytes.
+- `sentinel_arm` (funcenv.rs:1751) is the load-bearing repair: REUSE requires
+  every closure-declared name bound to a definition in a closure FILE; one
+  live-from-another-unit binding, any ⊤, any mixed state, or an empty declared
+  set declines the whole recognition. The negation/sense arithmetic
+  (`then_runs_when_equal`) is correct across all four spellings, and both
+  patterns require the reuse branch EMPTY.
+- The reuse-arm occurrence is route-demoted through the enclosing walk
+  (`ctx.route(...)`; the `an_undecided_guard_mints_no_edge` /
+  `a_recognized_sentinel_guard_mints_its_edge` pin pair), so a sentinel nested
+  under an undecided guard mints nothing.
+- Defense-in-depth is real, not asserted: every wrong-body route I constructed —
+  partial closure from an unresolvable nested dep; a rogue unit defining a
+  closure-declared name; the exact target loaded first by the book — dies
+  independently at the composition seat (`ResolvedOutsideCustody` ⇒ suspend ⇒
+  run), because the reached-helper `Must` half deliberately reuses
+  `HelperIndex::resolve`'s closure gating rather than new code (`30Ib` §10).
+- The test coverage here is the best of the round (tests-lens positive): every
+  one of the six withholding conditions has its own named negative test
+  (funcenv.rs:3783–4100 — wrong-arm polarity, book-assigned sentinel,
+  another-unit populator, never-populated vacuity, own-name removal,
+  outside-shadowed binding), the undecided-guard/no-speaker split is pinned at
+  both the funcenv and driver seats, and the composition seat carries a full
+  suspension battery (closure.rs:882–1166) including the ships/suspends contrast
+  pair and the sentence-not-disposition pin
+  (`selecting_a_dependency_changes_the_sentence_and_not_the_disposition`).
+
+### Two contained robustness cells (report, don't repair)
+
+**~SUSPECT contained, both.** The arm PREDICTION (condition 6) can diverge from
+the runtime arm in two ways the census cannot see: a sentinel assigned inside
+some loaded oracle's *function body* (`LoadProgram::assigns` is top-level-only,
+by construction), and a sentinel *exported in the host/process environment* at
+artifact runtime. I chased both to ground: in each, the mispredicted arm affects
+only which definitions the model thinks the book's own runtime has live — and
+since every Dorc-shipped surface (probe bodies, guard preambles) materializes its
+helper closure into the artifact rather than depending on the book's load having
+happened, the license plane never rests on the prediction; the failure lands as
+rc-127/unknown ⇒ run, or as stale narration. No pin exercises either cell; a
+cheap DST/e2e cell for the env-exported-sentinel shape would pin the containment
+argument rather than the happy path.
+
+### The lane's open ledger, inventoried (second-lens; all builder-recorded, none adjudicated)
+
+- **`30Ib:dev-ambient-include-guards-are-not-evaluated`** is live state at HEAD
+  (the ambient prefix survives the `--pre-source` rework; `main.rs:372/:862`): an
+  ambient package's `LoadProgram` never runs, so its include-guarded dependency
+  binds unconditionally. The builder's containment argument (winner shifts only
+  under an earlier same-name definer, where shadow refusal/reporting fires) plus
+  shipped-closures-are-the-model keeps this out of the license-hazard class, but
+  the named fix (run ambient programs at the `Entry` transfer) carries an open
+  licensure call — what an unresolvable ambient load does — and `30Ib` §5.2's
+  variable-rooted-custody work is BLOCKED behind it. This is the sharpest
+  unadjudicated item on the lane.
+- **`30Ib:dev-guard-false-direction-fenced-to-role-names`** — the `command -v`
+  guard decides FALSE only for role-shaped names, though the TYPED ruling's own
+  example guards an ordinary helper name. Withholding-direction, correctly
+  flagged up rather than settled; unowned since.
+- **`30Ib` §5.2/§5.3** — a dependency spelled through a variable root
+  (`. "$ROOT/dep.sh"`) suspends vouch composition (measured live), and a nested
+  `.` is not yet a locator edge. Value-loss on exactly the healthy-package idiom
+  `30I` §2.2 canonizes; conservative; queued behind the ambient-prefix fix.
+- **`30Ib` §5.4** — the `funcenv-reads-source-literal-plane-only` wall is
+  VACUOUSLY held today (`variable_before` has no per-variable `ValueGrade`);
+  the crate law discloses this, but when `core`'s `seam-re-bind` lands, that
+  accessor gaining the grade gate is load-bearing for plan reproducibility.
+  Worth a red-first pin *now* rather than a sentence in two places.
+- **`30Ib` §12.3 `dev-transcript-authored-by-hand`** — one committed golden
+  (`load30-speaker-minting-is-observable`) entered the corpus via a hand-driven
+  capture rather than `BLESS=1` (builders may not bless). The ordinary e2e run
+  proves it byte-exact, so this is disclosure-tier — but the conductor should
+  know it when the corpus-wide bless of `30I` step 8 happens.
+- The `pin28-variable-resolved-source-loads` re-spell (§4 above) is confirmed
+  *owed and unstarted*: the ledger's own "Owed" line names the exact fix
+  (`. "./$PKG.oracle.sh"` + re-bless).
+
+### Addendum's did-not-hold
+
+- *Name-level sentinel recognition admits a same-valued stranger* — no: the
+  census is uniqueness-of-populator over the whole authored world, and the
+  `beta` specimen pins the exact cell.
+- *Same-named helper from another unit rides a recognized edge* — no: file-grade
+  binding identity in `sentinel_arm` declines mixed worlds, and the `gamma`
+  specimen plus the composition seat both catch what slips past.
+- *A partial transitive closure (unresolvable dep) widens recognition into
+  licensing* — no: the invisible dep's material is equally invisible to
+  `by_path`, and every reach into it suspends at composition.
+- *The guard-literal/assignment value mismatch matters* — no: worst case is an
+  idempotent runtime re-source of the same bytes; custody and licenses are
+  unaffected, which is presumably why the value question could be dissolved.
+- *Lexical-only path identity (no digest/inode) lets one physical file wear two
+  canonical keys* — real, but checked: the double-load lands in the plurality
+  machinery, where byte-identical copies dedup
+  (`byte_identical_copies_across_sources_dedup_rather_than_refuse`) and
+  differing bytes suspend; both directions conservative.
