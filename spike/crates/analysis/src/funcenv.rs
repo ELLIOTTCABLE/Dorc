@@ -65,6 +65,25 @@ pub struct SourceLiteralPlane<'a> {
     interner: &'a Interner,
 }
 
+/// May a value of this provenance site a load (`funcenv-reads-source-literal-plane-only`)?
+///
+/// ONLY program text. The four value-prediction species are all refused, `Register` included: it is
+/// certain-by-construction and therefore the tempting one to admit, but which oracle answers a site
+/// would then depend on something outside the program text, and a plan would stop being
+/// reproducible from its own inputs. Widening this is a licensure change, never a convenience.
+const fn admits_a_load(grade: ValueGrade) -> bool {
+    matches!(grade, ValueGrade::ProgramText)
+}
+
+/// The provenance the VARIABLE plane carries, whole-hog.
+///
+/// `ValueEnv` records no per-variable grade, so the wall over variable-sited loads rests on a
+/// property of its writers: every value in it derives from source literals. Spelled as a constant
+/// rather than left in a doc-comment so it is not a sentence — the day `core`'s `seam-re-bind` folds
+/// a captured value into that environment, THIS line is what stops being true, and the gate above
+/// refuses everything until somebody replaces it with a real per-value grade.
+const VARIABLE_PLANE_GRADE: ValueGrade = ValueGrade::ProgramText;
+
 impl<'a> SourceLiteralPlane<'a> {
     #[must_use]
     pub fn new(value: &'a ValueFlow, interner: &'a Interner) -> Self {
@@ -76,7 +95,7 @@ impl<'a> SourceLiteralPlane<'a> {
     #[must_use]
     pub fn literal_word(&self, node: CfgNodeId, index: usize) -> Option<Symbol> {
         let grades = self.value.argv_word_grades(node);
-        if grades.get(index) != Some(&ValueGrade::ProgramText) {
+        if !grades.get(index).copied().is_some_and(admits_a_load) {
             return None;
         }
         match self.value.argv_values(node).get(index) {
@@ -106,6 +125,9 @@ impl<'a> SourceLiteralPlane<'a> {
     /// obligation this inherits when captured values land.
     #[must_use]
     pub fn variable_text(&self, node: CfgNodeId, name: &str) -> Option<String> {
+        if !admits_a_load(VARIABLE_PLANE_GRADE) {
+            return None;
+        }
         match self.value.variable_before(node, name) {
             Flat::Elem(text) => Some(text),
             Flat::Top | Flat::Bottom => None,
@@ -4102,6 +4124,34 @@ mod tests {
             env.binding_before(cfg.exit(), ROLE),
             Flat::Elem(Binding::Defined(dependency)),
             "and nothing the paren-scoped source reached can bind past it"
+        );
+    }
+
+    /// `funcenv-reads-source-literal-plane-only`, as a TABLE rather than a sentence. Exactly one of
+    /// the five provenances may site a load; the other four are the value-prediction species
+    /// (`275` §1), and admitting any of them would make which oracle answers a site depend on what
+    /// a HOST said. Vacuous in effect today — nothing yet mints a middle grade — and deliberately
+    /// not vacuous in FORM: this is what reddens when somebody widens the gate ahead of the
+    /// licensure review that widening needs.
+    #[test]
+    fn only_program_text_may_site_a_load() {
+        use dorc_core::ValueGrade;
+
+        let admitted: Vec<ValueGrade> = [
+            ValueGrade::Top,
+            ValueGrade::AuthorComposed,
+            ValueGrade::WorldSpoken,
+            ValueGrade::Register,
+            ValueGrade::ProgramText,
+        ]
+        .into_iter()
+        .filter(|grade| super::admits_a_load(*grade))
+        .collect();
+        assert_eq!(admitted, [ValueGrade::ProgramText]);
+        assert!(
+            super::admits_a_load(super::VARIABLE_PLANE_GRADE),
+            "and the variable plane's whole-hog grade is one the gate admits — the day it is not, \
+             variable-sited loads stop resolving rather than resolving off a host's answer"
         );
     }
 
