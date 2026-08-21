@@ -168,14 +168,67 @@ not all conductor-re-read (marked):
   - `tc-splice-budget-is-licensure-review-tier` — RULED yes at conductor tier;
     encoded in the applied steering bullet (budget changes carry the
     winner-shifting review posture).
-- **lane-30L-c** (stages 4–6): NEXT. Carries: the `30M` §3 rider
-  (`req-wall-narrative-gains-region-operand` implemented operand-only on the
-  EXISTING mint seats, preserving current policy-gating exactly — the
-  wall-narration ratify-or-mint ruling is the human's; neither widen nor
-  narrow the mint) · the two rulings above · the `30Nb` §11 handoff · golden
-  drift EXPECTED (behavior flips), prepared-not-blessed, scoped bless at fold ·
-  the `pin-loop-types-need-no-rekey` paper review against `30N` §2's `20S`-era
-  constraints.
+- **lane-30L-c** (stages 4–5 + openers + drift enumeration): FOLDED 2026-08-21
+  at `6799df01` (ff-only; worktree/branch cleaned). Lane report `notes/30Nc`;
+  both legs green (2468/2464); e2e 175/175; looms 279/279; EXISTING CORPUS
+  DRIFT ZERO (triangulated: e2e count · `bless:dry`+clean porcelain · looms) —
+  credible because the corpus never contained the factored-book shapes; five
+  new `region30-*` cases carry the behavior. Census openers completed per the
+  precondition (`CensusOpeners::of` non-optional; both driver edges;
+  per-opener battery cells with quiet controls). Fold adjudications:
+  - `adj-endorse-population-guard-economics` — ENDORSED
+    (`30Nc:fnd-region-guard-economics-are-a-population-property`): a region
+    guard when NO route converged is pure check-tax contradicting the per-site
+    `jc-mint-policy m-a` precedent; gating candidates on some-route-Converged
+    serves §4.5's actual license (divergent ⇒ at least one converged), Unknown
+    refuses independently as the unsure direction, and the one mid-lane drifted
+    case returned byte-identical. Now steering law (plan/CLAUDE.md).
+  - `adj-ratify-shared-guard-drops-the-cell` — RATIFIED
+    (`tc-shared-guard-cell-identity` / `dev-shared-guard-identity-drops-the-cell`):
+    the shared guard's identity is the canonical bytes alone; the cell stays
+    per-route truth. Safe: identical bytes cannot behave differently, every
+    route's own reached vouch over its own argv stands, the closed census
+    enumerates every operand, and the guard mints no values and fails toward
+    run. This is exactly §4.5's "positional parameters re-bind naturally".
+  - `adj-endorse-region-guard-mint`, `adj-endorse-two-input-admission`,
+    `adj-endorse-self-suppressed-solve`, `adj-endorse-live-regions-suppression`,
+    `adj-endorse-node-check-conjunct`, `adj-endorse-region-rail`,
+    `adj-endorse-arrangement-seeds` — ENDORSED per their §8 arguments; the
+    self-suppressed solve and the effective-invalidators node-check are FLAGGED
+    as first-priority surfaces for the round-close adversarial crosscheck.
+  - `adj-endorse-new-case-scoped-bless` — ENDORSED
+    (`dev-new-e2e-goldens-minted-by-scoped-bless`): scope was verified (only
+    `region30-*` moved; no prior bytes existed), and a mechanically-minted
+    golden beats a hand-framed one. MY apology: the brief simultaneously said
+    "goldens you write" and blanket "no bless" — ambiguous; recurrence-guard:
+    briefs explicitly permit scoped NEW-case-only minting with a
+    scope-verification requirement, and forbid touching any existing golden.
+    Conductor by-eye review of the two load-bearing goldens performed at fold
+    (parametric-guard and mixed-body): correct; one prose-polish note (a mixed
+    population's guard annotation reads `probe: cant-tell` — render-form
+    unwelded, parked).
+  - `dev-shared-omit-lowers-to-nothing` — ACCEPTED as named residue
+    (unreachable arm, floored to Run if reached); `tc-region-tier-omit` parked.
+- **`chk-loop-types-paper-review` — PASSED (conductor's own, 2026-08-21;
+  `30L:pin-loop-types-need-no-rekey` §11/§12-stage-6).** The propagation lane
+  can turn `Open` → `Closed(members)` without re-keying: (1) a member becomes a
+  `RouteInstance` with `iteration: Member(u32)` on the SAME lowered `cfg_node`
+  (the overlay axis; `ElisionRegion`'s authored span unmoved); (2) ordered
+  no-dedup member semantics hold by type (`Member(u32)`; `for x in a a` = two
+  instances — the `20S`/dash constraint); (3) `IterationSlot::member()` speaks
+  `SiteId.member`'s numbering, so `site N.M` records never re-key
+  (`pin-probe-site-identity-unchanged`); (4) `SpineRegionDecision.routes` keys
+  by invocation `SiteId`, which carries the member — no new witness key; the
+  cross-instance witness already unions ordered `(site, cell)` pairs, which the
+  aggregate machinery already produces member-wise; (5) per-member self-reach
+  is representable — the settlement's suppression-set solve takes a SET, so a
+  closed member population suppresses exactly as a closed invocation population
+  (`24A` §1e's "separate analysis" exists as a mechanism); (6) `StatusIterated`
+  blocks single-status substitution orthogonally, preserved. CAVEAT recorded
+  (from `30N` §2's `20S` precedent): the lane's TOTAL scope is census-mint +
+  value-plane (member argv) + their consumer seam — more than "value plane"
+  colloquially, but zero identity/witness/record re-keying, which is what the
+  staging promised.
 
 ## §4 — Open items riding this conduct (not mine to decide)
 
@@ -203,3 +256,21 @@ not all conductor-re-read (marked):
    replacement text sits in `30Nb` §9.4; parked for the human's prose pass
    rather than conductor-Slop-minted, per their standing prose sensitivity.
    Semantics unchanged; no live harm.
+9. The 30L prose queue: the two unwritten why-components
+   (`why-reason-region-universal-over` · `why-reason-call-executes-shared-regions`,
+   rendering `[unwritten:]`) · `tc-plan-summary-counts-regions` (should the push
+   summary's "sites=N" tally count region decisions — a semantic change to
+   written words) · the guard annotation's `probe: cant-tell` on mixed
+   populations (polish).
+10. Banked precision/residue items, none blocking: `tc-region-guard-economics-seat`
+    (only-still-executing-routes gate — the one most likely to move a golden
+    later) · `tc-region-tier-omit` (unreachable, Run-floored) ·
+    `tc-region-decision-influence-is-first-not-joined` (trivial under v0's
+    global flip; needs a real join if per-record gradation lands — rides the
+    `30M` §4.1 grade-boundary direction) · `tc-wall-region-operand-population`
+    (operand built, truthful, `None` today — the `30M` §3 ruling makes it
+    non-vacuous).
+11. Round-close crosscheck priorities (for the eventual second-half adversarial
+    review): the self-suppressed suppression-set solve and the
+    `effective_invalidators` node-check conjunct — both are new license-bearing
+    reach surfaces minted this arc.

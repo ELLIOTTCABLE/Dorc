@@ -14,7 +14,30 @@
 
 ---
 
-## CURRENT STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; STAGES 4–6 ARE THE LIVE LANE)
+## CURRENT STATE (2026-08-21 — 30L IS BUILT; THE ARC IS AT CLOSE)
+
+**`plans/30L` is COMPLETE on `ai/r30-conduct`** (stages 0–3: `notes/30Nb`; stages 4–5 +
+census openers: `notes/30Nc`; every fold adjudication and the stage-6 close: `notes/30N`
+§3). Function bodies now take REGION-level decisions: the definition-keyed
+`ElisionRegion` meets every closed invocation route universally at `Must` inside the ONE
+grow-only settlement; the shared license mints at settlement from the private conclusion
+plus the cross-instance ordered witness; the parametric guard (§4.5's valve) carries the
+SOURCE-level argv and ships one authored edit serving every operand; whole-helper elision
+stays derived; renders edit the authored definition once; `dorc why` is bidirectional.
+Census closedness demands every opener non-optionally (`region::CensusOpeners`). EXISTING
+CORPUS DRIFT: ZERO (the five new `region30-*` cases carry the behavior; the motivating
+`main() { whole book }` shape now splits Replace/Run/Guard per region). Loop populations
+stay `Open` with the identity/witness shapes propagation-ready — the
+`pin-loop-types-need-no-rekey` paper review PASSED (`30N` §3); the standing red pin
+`p-x-loop-population-closes-over-literal-members` names the propagation lane. Steering
+and registers are current (crate CLAUDE.mds · `spike/CLAUDE.md inv-leaf-seam` ·
+ANALYZER-NEEDS ×5 rows · FORFEITS loop-population row). **The human queue is `30N` §4**
+(three `30M` rulings · R1 floor veto · two tc- domain questions · the prose queue).
+REMAINING at arc-close: `mise run gate:arc` over the conduct tip, then the human's
+promotion. NEXT after that: `30I` steps 7/8 (artifact forms — which must CONSUME region
+identity) behind the `309` boundary-close assignment, and the loop-propagation lane.
+
+## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)
 
 **`plans/30L` stages 0–3 are BUILT and FOLDED** (lane report **`notes/30Nb`**; fold
 adjudications `notes/30N` §3). `core::region` + `plan::region` mint the definition-keyed
