@@ -34,9 +34,15 @@ and registers are current (crate CLAUDE.mds · `spike/CLAUDE.md inv-leaf-seam` �
 ANALYZER-NEEDS ×5 rows · FORFEITS loop-population row). **The human queue is `30N`'s
 open-items list, mirrored slug-by-slug at the top of root `_tmp-human-burndown.md`**
 (the three `30M` rulings · the prelude-floor veto · two tc- domain questions · the
-prose queue). `mise run gate:arc` ran by the HUMAN's own hand and `ai/main` is ff'd.
-NEXT: the `30M:rec-own-the-309-boundary-close` lane (IN FLIGHT), then
-`30I:step-7-reify-plan-artifact-forms` consuming region identity, then
+prose queue). `mise run gate:arc` ran by the HUMAN's own hand and `ai/main` is ff'd
+(now one arc behind conduct again). **The `30M:rec-own-the-309-boundary-close` lane is
+FOLDED** (report `notes/30Nd`; adjudications + the veto-eligible
+`30N:rul-region-refusal-discloses-region-keyed` in `30N`'s lane list): `TripSpent`
+makes an unspent certifier latch unprojectable by type; `Plan::decided` is the sole
+constructor and the render decides nothing; the species×field meaning-audit repaired
+two record falsehoods and narrowed six docs; `typos --write-changes` no longer corrupts
+corpus docIDs. NEXT: `30I:step-7-reify-plan-artifact-forms` consuming region identity
+and `DecidedRender` (handoffs: `30Nd` tail + `30Nc` tail), then
 `30I:step-8-promote-executable-specification`; the loop-propagation lane is
 parallel-eligible.
 

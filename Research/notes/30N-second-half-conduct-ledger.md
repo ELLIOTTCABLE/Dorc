@@ -209,6 +209,46 @@ not all conductor-re-read (marked):
     unwelded, parked).
   - `dev-shared-omit-lowers-to-nothing` — ACCEPTED as named residue
     (unreachable arm, floored to Run if reached); `tc-region-tier-omit` parked.
+- **lane-spine-boundary-close** (`30M:rec-own-the-309-boundary-close` +
+  `30M:rec-dissolve-trip-must-remember-structurally`): FOLDED 2026-08-21 at
+  `89b29bf7` (conduct's one doc commit rebased on top → `3b395900`;
+  worktree/branch cleaned). Lane report `notes/30Nd`; both legs green; zero
+  golden bytes. Fold adjudications:
+  - `adj-endorse-trip-witness` — ENDORSED: `TripSpent` total over both latch
+    states, no escape mint, the original Sol-adversarial test shape green, the
+    compile-refusal half hand-falsified. The roster fence stays for the
+    different thing it binds.
+  - `adj-endorse-decided-render` — ENDORSED, including the three
+    kept-render-side choices (commented-original wrapping · the hoisted
+    preamble bytes, split priced to the artifact-forms lane · span arithmetic)
+    — each re-derived against the could-why-or-a-second-form-need-it
+    discriminator and holding.
+  - `adj-endorse-audit-repairs` — ENDORSED, with a conductor mea culpa
+    recorded: the remit's `InlineCall` cells repair was INCOMPLETE (establish
+    arms only; query members dropped) and my remit-fold review verified its pin
+    without noticing the pin itself was too narrow — the meaning-audit's
+    label-vs-population framing is exactly the check my review lacked, and it
+    is now steering law (`core/CLAUDE.md a-record-says-what-its-population-holds`).
+    The hard-coded `Refused.cause` repair likewise endorsed.
+  - `adj-endorse-typos-docid-fence` — ENDORSED: `typos --write-changes` was
+    silently rewriting corpus docIDs (`30Nd`→`30And`); `spike/_typos.toml` now
+    ignores the docID shape, keyed on the uppercase letter so ordinal words
+    stay checked. Tooling fix, measured, surfaced to the human.
+  - **`rul-region-refusal-discloses-region-keyed` [CONDUCTOR, veto-eligible]**
+    (answering `30Nd:tc-region-refusal-disclosure-home`): a refused REGION edit
+    discloses through a region-keyed `SpineRenderDecision` axis and a
+    region-keyed diagnostic site — the same keying precedent
+    `SpineRegionDecision` set — NEVER by smearing the one edit across its
+    contributing invocations (that shape re-opens
+    `30L:rul-two-identities-never-conflated`, which is typed law). The
+    artifact-forms lane builds it where the gap bites
+    (`30Nd:fnd-region-refusal-is-undisclosed`).
+  - Parked with their owners: `tc-plan-owns-its-source` (design question owed a
+    sitting; the byte-floor, loom seam, and bundle identity all hold stakes) ·
+    `tc-certification-consistent-is-redundant` (rides
+    `rule-certification-row-shape`) · `fnd-plan-steps-stay-publicly-mutable` +
+    `fnd-the-canon-does-not-destructure-plan` (priced; land with the next lane
+    churning those files — the artifact-forms brief carries both).
 - **`chk-loop-types-paper-review` — PASSED (conductor's own, 2026-08-21;
   `30L:pin-loop-types-need-no-rekey` §11/§12-stage-6).** The propagation lane
   can turn `Open` → `Closed(members)` without re-keying: (1) a member becomes a
