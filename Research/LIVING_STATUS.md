@@ -31,11 +31,14 @@ stay `Open` with the identity/witness shapes propagation-ready — the
 `pin-loop-types-need-no-rekey` paper review PASSED (`30N` §3); the standing red pin
 `p-x-loop-population-closes-over-literal-members` names the propagation lane. Steering
 and registers are current (crate CLAUDE.mds · `spike/CLAUDE.md inv-leaf-seam` ·
-ANALYZER-NEEDS ×5 rows · FORFEITS loop-population row). **The human queue is `30N` §4**
-(three `30M` rulings · R1 floor veto · two tc- domain questions · the prose queue).
-REMAINING at arc-close: `mise run gate:arc` over the conduct tip, then the human's
-promotion. NEXT after that: `30I` steps 7/8 (artifact forms — which must CONSUME region
-identity) behind the `309` boundary-close assignment, and the loop-propagation lane.
+ANALYZER-NEEDS ×5 rows · FORFEITS loop-population row). **The human queue is `30N`'s
+open-items list, mirrored slug-by-slug at the top of root `_tmp-human-burndown.md`**
+(the three `30M` rulings · the prelude-floor veto · two tc- domain questions · the
+prose queue). `mise run gate:arc` ran by the HUMAN's own hand and `ai/main` is ff'd.
+NEXT: the `30M:rec-own-the-309-boundary-close` lane (IN FLIGHT), then
+`30I:step-7-reify-plan-artifact-forms` consuming region identity, then
+`30I:step-8-promote-executable-specification`; the loop-propagation lane is
+parallel-eligible.
 
 ## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)
 

@@ -24,8 +24,9 @@ resolver or a decorative source map is a likelier product of splitting than save
 wall-clock. Seams are placed at FIXED work-order boundaries and never on a
 builder's own read of its remaining context, which is not a thing a model can
 measure. Every handoff names its work-order boundary rather than an ordinal. Steps 1-6
-are complete and `plans/30L` is built (its ledger is `notes/30N`); steps 7-8 are the
-open remainder.
+are complete and `plans/30L` is built (its ledger is `notes/30N`);
+`step-7-reify-plan-artifact-forms` and `step-8-promote-executable-specification` are
+the open remainder.
 
 `impl-effective-reach-interposes-before-bundles` - HUMAN-DIRECTED sequencing
 correction (2026-08-19): `step-5a-complete-load-occurrence-account` first removes the
@@ -49,9 +50,10 @@ remains separate, and both product-facing
 `impl-elision-regions-precede-artifact-forms` - HUMAN-DIRECTED sequencing correction
 (2026-08-20); SATISFIED 2026-08-21: `plans/30L`'s definition-keyed elision regions and
 universal shared-route decisions are landed (`core::region` · `plan::region` ·
-`plan::settle`; reports `notes/30Nb`/`30Nc`). Steps 7/8 may now reify the Plan/Spine
-artifact boundary and bless its corpus, and they CONSUME region identity — the
-region render step edits the authored definition once — never a retrofit seat for it.
+`plan::settle`; reports `notes/30Nb`/`30Nc`). `step-7-reify-plan-artifact-forms` and
+`step-8-promote-executable-specification` may now reify the Plan/Spine artifact
+boundary and bless its corpus, and they CONSUME region identity — the region render
+step edits the authored definition once — never a retrofit seat for it.
 
 ### Where the build stands
 
@@ -80,9 +82,9 @@ in `Research/notes/30Ib`):
 Not built, and owed below: the three artifact forms; final `load30-*` XFAIL promotion and e2e
 lowering. The complete load-occurrence account, the effective-world-reach interlude,
 aggregate verdict-primacy rider, bundle projection, real locator consumer, and
-`plans/30L`'s region machinery are all closed; steps 7-8 are unblocked (the `309`
-boundary-close assignment, `30M` §4, is the recommended precursor before step 7
-freezes the Plan/Spine boundary).
+`plans/30L`'s region machinery are all closed; the two remaining steps are unblocked
+(`30M:rec-own-the-309-boundary-close` is the recommended precursor before
+`step-7-reify-plan-artifact-forms` freezes the Plan/Spine boundary).
 
 ### Target outcome
 
