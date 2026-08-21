@@ -839,39 +839,6 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   attribution lines. Push stays ruthlessly selected even under the spike's
   kWARN tune-high.
 
-## Where the build stands (dated 2026-08-13 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
-
-- THE AUTHORSHIP ARC (2026-08-12→13; ledger `notes/28S`): 71 catalog codes prose-authored
-  through the loom; prose provenance is TYPED (`aid::prose::ProseTier` {Migrated, Slop,
-  WrittenByHumanOnly} across both registries; loom edits mint Slop; `publish --human` is
-  the one env-guarded human mint; the commit-msg census gate refuses AI-labelled growth;
-  `mise run prose:census` is the burn-down instrument). Agent sessions now run pre-commit
-  check-only/stash-free (`HK_FIX=0`+`HK_STASH=none`). Chafe repairs: `test:looms` path
-  filtering, shim staging, squat-lint role gaps, the `dorc-loom` Windows stack fix.
-- THE LOOM-FINAL ARC (2026-07-29→31; conduct ledger `notes/28L`; accounting
-  `notes/28N`) COMPLETE on `ai/r28-loom-final`: the errorloom/dorc-loom pipeline is
-  the project's working prose-edit surface end-to-end. The boundary weld (diagnostic
-  renders compose weft documents; the two-render-chain split and its byte-shape
-  re-detection layer DELETED; `transcript_bytes_equal_production_bytes` is the
-  standing gate) · placeholder overtype + revision + `{{var}}` moves (attached
-  spellings legal) · the Rust-surface contract (a payload field is compile-forced
-  through `params_of_raw`; fixture worlds live beside payloads; loom internals
-  unreachable from the Rust persona's path) · ownership declarations + metadata
-  drift refusal + `edit-loop:` teaching lines · the records-admission seam
-  (`admit_fixture_records`, opaque-ACK'd 28-reviewA) · the foreign-text seal ·
-  reason-enum migrations (`detail: String` extinct) · ~176-case corpus with the
-  measured/survival why-worlds · six main.rs extractions behind the lib seam.
-- Catalog: 95 codes, 87 case-owned; ratchet = 8 `records-*` (no production emitter;
-  HUMAN DECISION pending: delete-under-no-compat vs the r26-revival wiring).
-  Components: ~181 transcript-faced; 31 lock-tier with the remedy priced
-  (per-fragment owners, declined); never-loom set law-cited in `28N`.
-- Blind-reviewer rounds (loom-naive Rust persona, tooling-only) are the standing
-  empirical gate on the flows; round 1 landed its chafe into the build.
-- HORIZON: `270:block-stdlib` under the human-led conductor (`27Q` on-ramp), the
-  field-trial revival, and the r26 records/reactive revival (which inherits the
-  records-8 decision). Post-arc loom residue is enumerated in `28N` §3 — nothing
-  loom-shaped is deferred anywhere else.
-
 ## Build / test / run
 
 No per-dir toolchain pin; the global mise config supplies stable. **Use the mise

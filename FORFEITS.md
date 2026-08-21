@@ -15,9 +15,13 @@ easy route without a row here is incomplete); a captured forfeit's row is rewrit
 removed, never annotated as history. SCOPE, sharpened [human-typed 2026-08-16]: a row
 is a DESIGN-DISCUSSION opt-out — an option talked through and explicitly declined
 ("no, not now; too expensive or out-of-scope"), forfeiting a whole CATEGORY of value —
-design-level, generally large. NOT a tracker of designed-and-planned work that simply
-is not built yet, and never implementation-level nits: those live in the ledgers, the
-law files, and the xfail census. Entries carry: the RULE (what conservatism, ruled
+design-level, generally large. Sharpened again [human-typed 2026-08-21]: the ONE
+category a row may hold is an ANALYSIS limitation — hard to implement, high-machinery —
+that would specifically yield better or more-correct ELISIONS if we bothered to write
+it. Not a grab bag of every punt, deferral, or someday: emission/placement/artifact
+limitations, harness gaps, and prose debt are never rows here. NOT a tracker of
+designed-and-planned work that simply is not built yet, and never implementation-level
+nits: those live in the ledgers, the law files, and the xfail census. Entries carry: the RULE (what conservatism, ruled
 where) · FORFEITS (who loses what, when) · CAPTURE (the known path to the value) ·
 BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
 

@@ -88,7 +88,13 @@ and carries the license-contamination map.
   explicit bundles, multipart plans, and full flattening; its §13 is the xfail
   specimen matrix) over the closure build record `notes/30G`; its current implementation
   completed the load-occurrence account, `notes/30K`, the `30La` repair, bundle projection,
-  and production locator consumption. `plans/30L` now interposes before artifact forms.
+  and production locator consumption; artifact forms and the promotion close are built
+  (lane reports `notes/30Ne`/`30Nf`/`30Nh`).
+- **Artifact forms, stream posture, and bundling semantics (what a piped `plan` carries;
+  where dorc-lang subgraphs bundle; the front-lift ladder)** — **`notes/30Ng`** (THE
+  human-ruled sitting record) over the rework report `notes/30Nh`; the r30 second-half
+  conduct ledger **`notes/30N`** (its handoff section is the successor conductor's
+  on-ramp).
 - **Function-body elision & loop staging** — **`plans/30L`** (THE design: definition-keyed
   elision regions meet every closed invocation route at `Must`; loop populations gain their
   final identity shape now and remain `Open` until propagation) over `30K`'s effective-world
