@@ -2210,51 +2210,46 @@ fn run(
         return Ok(book_outcome);
     }
 
-    // THE ARTIFACT SET: the settled form bound to the plan projection it describes. One structure,
-    // and both the stream below and the published tree derive from it rather than from two
-    // independent assemblies of the same bytes (`30I:step-7-reify-plan-artifact-forms`).
-    let artifact = form_selection
-        .map(|selection| selection.with_plan(plan.render_apply(&book_src, &parsed.value)));
-
+    // THE ARTIFACT SET: the settled form bound to the plan projection it describes. ONE structure,
+    // and both the stream below and the published tree READ it — there is deliberately no second
+    // assembly of the same bytes to fall back to (`30I:step-7-reify-plan-artifact-forms`).
+    //
     // rec-1 / ru-12 BYTE FLOOR: `plan` and `apply` emit BYTE-IDENTICAL apply bytes here — the
     // artifact is receipt-free in both; only the stderr disclosure above differed. The
     // round-trip emits the same bytes as its second shebang block.
-    match &artifact {
-        Some(set) => print!("{}", set.primary().bytes),
-        None => print!("{}", plan.render_apply(&book_src, &parsed.value)),
+    let artifact = form_selection.with_plan(plan.render_apply(&book_src, &parsed.value));
+    print!("{}", artifact.primary().bytes);
+
+    // The fallback is stated on the PLAN surface, never woven into the artifact bytes
+    // (`two-surfaces`): an admin whose plan is not self-contained learns it here rather than on
+    // the target.
+    if let Some(fallback) = artifact.fallback() {
+        report_at(
+            advisory,
+            "emission",
+            None,
+            &[Diag::new_spanless_site(DiagCode::ArtifactFormFallback(
+                dorc_aid::diag::ArtifactFormFallback {
+                    form: artifact.form().name(),
+                    cause: fallback.cause(),
+                    loads: fallback.loads(),
+                },
+            ))],
+        );
     }
-    if let Some(set) = &artifact {
-        // The fallback is stated on the PLAN surface, never woven into the artifact bytes
-        // (`two-surfaces`): an admin whose plan is not self-contained learns it here rather than
-        // on the target.
-        if let Some(fallback) = set.fallback() {
-            report_at(
-                advisory,
-                "emission",
-                None,
-                &[Diag::new_spanless_site(DiagCode::ArtifactFormFallback(
-                    dorc_aid::diag::ArtifactFormFallback {
-                        form: set.form().name(),
-                        cause: fallback.cause(),
-                        loads: fallback.loads(),
-                    },
-                ))],
-            );
-        }
-        if let Some(dir) = &args.artifact_dir
-            && let Err(refusal) = publish_artifact(dir, set)
-        {
-            report(
-                "emission",
-                None,
-                &[Diag::new_spanless_site(DiagCode::ArtifactPublishRefused(
-                    dorc_aid::diag::ArtifactPublishRefused {
-                        reason: refusal.reason(),
-                    },
-                ))],
-            );
-            return Ok(RunOutcome::ArtifactUnservable);
-        }
+    if let Some(dir) = &args.artifact_dir
+        && let Err(refusal) = publish_artifact(dir, &artifact)
+    {
+        report(
+            "emission",
+            None,
+            &[Diag::new_spanless_site(DiagCode::ArtifactPublishRefused(
+                dorc_aid::diag::ArtifactPublishRefused {
+                    reason: refusal.reason(),
+                },
+            ))],
+        );
+        return Ok(RunOutcome::ArtifactUnservable);
     }
 
     // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
@@ -2560,9 +2555,10 @@ fn publish_artifact(
 
 /// Decide this run's emission form from authored inputs alone (`30I` §7.1).
 ///
-/// `None` for a mode that emits no plan — `probe`, `why` and the bundle archive have their own
-/// stdout contracts and no artifact set to place (`stdout-contract`), and the parser already
-/// refuses the two flags there.
+/// Answered for every mode that reaches it, including the ones that return before an artifact is
+/// printed: the selector is pure and cheap, and computing it unconditionally is what lets the print
+/// seat take its bytes from the artifact SET with no second assembly to fall back to
+/// (`30I:step-7-reify-plan-artifact-forms`: one final structure, not two).
 ///
 /// The STREAM POSTURE is the injected, non-hermetic edge fact
 /// (`30I:rul-piped-stdout-implies-one-flat-plan`): naming `--artifact-dir` moves the ARTIFACT
@@ -2577,12 +2573,9 @@ fn select_artifact_form(
     cfg: &dorc_analysis::cfg::Cfg,
     book: &dorc_syntax::Ast,
     env: &dorc_analysis::funcenv::FuncEnv,
-) -> Result<Option<dorc_cli::artifact::Selection>, dorc_cli::artifact::FormRefusal> {
+) -> Result<dorc_cli::artifact::Selection, dorc_cli::artifact::FormRefusal> {
     use dorc_cli::artifact::{FormRequest, StreamPosture, book_loads, select};
 
-    if !matches!(args.mode, Mode::Plan | Mode::Apply | Mode::RoundTrip) {
-        return Ok(None);
-    }
     let projection = dorc_cli::bundle::project(snapshot, env.loads())
         .map(dorc_cli::bundle::BundleProjectionOutput::into_projection)
         .unwrap_or_default();
@@ -2600,7 +2593,6 @@ fn select_artifact_form(
         request,
         posture,
     )
-    .map(Some)
 }
 
 /// Where this run's receipt goes: the admin's `--whylog-dir`, else the per-user state directory.
