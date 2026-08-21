@@ -549,6 +549,12 @@ pub enum SurvivalDemote {
     /// A same-kind pair could not be canonicalized (`24F` §3a). A SWAMPED count is a finding to
     /// report about the resolvers, never a license to weaken the may-alias default.
     MayAlias,
+    /// A reach solve failed its own post-fixpoint check, so nothing rests on its answer
+    /// (`302:rul-whole-window-demotion`). Distinct from `TotalWall` because it is a finding about
+    /// OUR solver and not a claim about the book's mutators — narrating it as a wall tells an admin
+    /// their script caused a demotion we caused (`302` §5's admin-honesty, and `271:rul-sin-ordering`
+    /// mis-attribution).
+    SolveInconsistent,
 }
 
 /// A render-time decision, hoisted out of hiding (`30E` §3's audit).

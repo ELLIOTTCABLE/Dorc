@@ -1856,7 +1856,7 @@ pub struct Classification {
     /// threads it onward; a caller that only reads classes ignores it. Carried as a value because
     /// the latch has exactly one mutator and it takes a real `SolveConsistency` — merging two
     /// latches would need a second one, which is the fence, not a convenience.
-    pub trip: crate::certify::CertifierTrip,
+    pub trip: CertifierTrip,
 }
 
 /// [`classify_with_why_diags`]'s survival-backing product accessor (`277` §5): the fact →

@@ -161,10 +161,15 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
             SurvivalOutcome::RederivationDisagreed { wall } => {
                 report.rederivation_demotions.push((record.leaf, wall));
             }
+            // The report counts findings about the RESOLVERS and the reference model; a demotion
+            // taken because a solve failed its own check is already the certifier's to report, and
+            // counting it here would double-count one event under two instruments.
             SurvivalOutcome::Clean
             | SurvivalOutcome::SurvivedStandalone
             | SurvivalOutcome::SurvivedAggregate { .. }
-            | SurvivalOutcome::Demoted(SurvivalDemote::TotalWall) => {}
+            | SurvivalOutcome::Demoted(
+                SurvivalDemote::TotalWall | SurvivalDemote::SolveInconsistent,
+            ) => {}
         }
     }
     report

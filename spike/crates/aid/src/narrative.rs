@@ -429,6 +429,11 @@ pub enum DemoteTag {
     /// different world-reason. Also the arm a demoted GUARD wears, since a guard whose family is
     /// not census-unique loses its body identity to the same disqualification.
     CertifierTripped,
+    /// A reach solve failed its own post-fixpoint check, so no freshness rests on its answer
+    /// (`302:rul-whole-window-demotion`). Separate from [`Self::TotalWall`] deliberately: a wall is
+    /// something the BOOK contains, and this is something OUR solver did — reporting the second as
+    /// the first mis-attributes an engine defect to the admin's text (`271:rul-sin-ordering`).
+    SolveInconsistent,
 }
 
 /// Why the leaf-exact render refused to elide/guard a licensed leaf (c8). `render-heredoc-refused`
