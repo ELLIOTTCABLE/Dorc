@@ -120,11 +120,62 @@ not all conductor-re-read (marked):
   The builder's three proposed steering sentences applied with light edits
   (plan trip-bullet rewrite · cli `only-invocation-roots-are-ambient` ·
   analysis literal-plane-gate append).
-- **lane-30L** (stages per `plans/30L` §12): NEXT. Stage-4's brief carries the
-  `30M` §3 rider: implement `req-wall-narrative-gains-region-operand` as
-  operand-only on the EXISTING mint seats, preserving the current policy-gating
-  exactly (the wall-narration ratify-or-mint ruling is the human's; neither
-  widen nor narrow the mint).
+- **lane-30L-b** (stages 0–3): FOLDED 2026-08-21 at `dd03cf34` (ff-only; worktree
+  and branch cleaned). Lane report `notes/30Nb`; both legs green; 2452/2452; ZERO
+  golden drift (nothing consumes the meet yet). Budgets re-sized against
+  measurement (depth 4 / 1024 per-site / 4096 per-book; a real depth-≥3
+  double-count defect in the body-leaf flatten found and fixed en route). Fold
+  adjudications, each re-derived:
+  - `adj-endorse-clone-overlay-split` — ENDORSED: invocation instances stay
+    CLONES (per-instance CFG position is what effective reach reads; a shared
+    lowered body would need a context axis, priced-not-free per the demoted
+    `kCONTEXT` posture), iteration instances stay OVERLAYS on one lowered body
+    (the landed member machinery's own shape). `RouteInstance` carries both axes
+    separately by design. NB the builder cited the k-CFA redline as if live; the
+    redline is DEMOTED (`300` §5) — the conclusion stands on engineering cost
+    and on `pin-probe-site-identity-unchanged`, which re-keying would break.
+  - `adj-endorse-region-outcome-vocabulary` — ENDORSED
+    (`30Nb:dev-region-decision-is-not-plan-disposition` +
+    `dev-route-conclusion-is-a-shadow-vocabulary`): minting a real
+    `Disposition::Replace` at stage 3 would stuff one route's per-call license
+    into the shared decision — exactly the substitution
+    `pin-shared-witness-spans-instances` forbids. RULING for the next lane
+    (`rul-license-mints-at-settlement-from-shared-conclusion`, conductor-tier):
+    `SharedOutcome`/`SharedRegionAct` stay region-plane vocabulary; the real
+    `Disposition`/`ReplaceLicense` mint at the settlement seat FROM the shared
+    conclusion plus the stage-4 cross-instance witness, through the existing
+    fenced mints; no conversion from any public enum
+    (`pin-no-outcome-as-generator`). The `RouteConclusion` bridge is written as
+    the one total match at the site seat, as the handoff specifies.
+  - `adj-endorse-core-siting`, `adj-endorse-omit-equal-controllers`,
+    `adj-endorse-guard-canonical-bytes` — ENDORSED (the last is arguably
+    STRONGER than `DefinitionId` comparison: byte-identical canonical guards
+    cannot behave differently, and `defining_span` is display-tier).
+  - `adj-endorse-loom-fixture-refresh` — ENDORSED after verifying the diff
+    touches only the three `aid/tests` case files (no locks, no registers); the
+    green fixpoint gates prove the refreshed transcripts are production renders.
+  - `adj-census-openers-gap-is-lane-c-precondition` —
+    `30Nb:dev-census-openers-are-incomplete` is the lane's one wrong-direction
+    gap (a book with an unresolved load could census Closed), contained only by
+    non-consumption. HARD PRECONDITION on the next lane: the full
+    `30L:rul-call-census-must-be-closed` opener list wired and battery-covered
+    BEFORE any region decision reaches settlement. RULING
+    (`rul-census-inputs-are-non-optional`, conductor-tier, answering
+    `tc-census-driver-inputs`): the driver hands the census a typed opener-input
+    value whose constructor REQUIRES every opener signal (unresolvable loads,
+    alias vector, trap/string-execution sites) — a census that cannot be built
+    without its openers, never a silently-defaulted parameter.
+  - `tc-splice-budget-is-licensure-review-tier` — RULED yes at conductor tier;
+    encoded in the applied steering bullet (budget changes carry the
+    winner-shifting review posture).
+- **lane-30L-c** (stages 4–6): NEXT. Carries: the `30M` §3 rider
+  (`req-wall-narrative-gains-region-operand` implemented operand-only on the
+  EXISTING mint seats, preserving current policy-gating exactly — the
+  wall-narration ratify-or-mint ruling is the human's; neither widen nor
+  narrow the mint) · the two rulings above · the `30Nb` §11 handoff · golden
+  drift EXPECTED (behavior flips), prepared-not-blessed, scoped bless at fold ·
+  the `pin-loop-types-need-no-rekey` paper review against `30N` §2's `20S`-era
+  constraints.
 
 ## §4 — Open items riding this conduct (not mine to decide)
 
@@ -146,3 +197,9 @@ not all conductor-re-read (marked):
 6. `30M:rec-own-the-309-boundary-close` — assign before `30I` steps 7/8
    (post-30L); inherits the trip-witness redesign and the original Sol test.
 7. The `307` §5 veto sweep — round-close work.
+8. `30Nb:fnd-depth2-diagnostic-name-is-now-stale` — a prose act: the
+   `depth-2-positional-unthreaded` slug and message misstate the refusal
+   (nesting-keyed, not depth-keyed) now that the depth budget is 4. Proposed
+   replacement text sits in `30Nb` §9.4; parked for the human's prose pass
+   rather than conductor-Slop-minted, per their standing prose sensitivity.
+   Semantics unchanged; no live harm.

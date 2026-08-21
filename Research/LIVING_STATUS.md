@@ -14,7 +14,27 @@
 
 ---
 
-## CURRENT STATE (2026-08-21 — THE 30Mg REMIT IS FOLDED; 30L IS THE LIVE LANE)
+## CURRENT STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; STAGES 4–6 ARE THE LIVE LANE)
+
+**`plans/30L` stages 0–3 are BUILT and FOLDED** (lane report **`notes/30Nb`**; fold
+adjudications `notes/30N` §3). `core::region` + `plan::region` mint the definition-keyed
+`ElisionRegion`, `RouteInstance` (with the reserved `IterationSlot` loop axis),
+`Closed(NonEmpty)|Open` populations, the census, and the universal Run-biased meet —
+computed, unit/battery-pinned (29 trials + the §11 pin set), and CONSUMED BY NOTHING:
+the corpus is byte-identical. Splice budgets re-sized against measurement (depth 4 /
+1024 per-site / 4096 per-book — now documented licensure surface, review-posture
+ruled), a real depth-≥3 flatten double-count fixed, clone-vs-overlay decided as a
+SPLIT (invocation=clones, iteration=overlays; endorsed). Two red-first xfails at
+`end-of-r30` (parametric shared guard → the stages-4–6 lane; literal-loop closure →
+the propagation lane). THE ONE CONTAINED HAZARD: census openers are incomplete
+(unresolved loads / alias vector / trap-exec do not yet open a census) — hard
+precondition on the live lane before any decision reaches settlement
+(`30N:adj-census-openers-gap-is-lane-c-precondition`). The stages-4–6 lane
+(settlement projection, render/why, cross-platform close + golden flip) is NEXT,
+carrying the `30M` §3 wall-narration operand-only rider and the two conductor rulings
+in `30N` §3.
+
+## STATE (2026-08-21 — THE 30Mg REMIT IS FOLDED; superseded above where they overlap)
 
 **The `30Mg` repair remit is BUILT and FOLDED into `ai/r30-conduct`** (lane report
 **`notes/30Na`**; conduct ledger **`notes/30N`**, whose §3 carries the fold
