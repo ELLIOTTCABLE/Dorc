@@ -99,6 +99,14 @@ path = "tests/definition_frames.rs"
 name = "sh_parity"
 path = "tests/sh_parity.rs"
 
+# The shared-region ARTIFACT battery (`plans/30L` §8/§11). Ordinary-harness, like
+# `definition_frames`: it reads the committed round-trip goldens and asserts structure over the
+# emitted bytes, because "no cloned helper, no generated dispatch, no per-call specialization" is a
+# claim only the artifact can answer.
+[[test]]
+name = "region_artifacts"
+path = "tests/region_artifacts.rs"
+
 # MIGRATION SCAFFOLDING, BUILD-TO-KILL (`309` §4): the decision-state smoke-diff baseline. Its one
 # trial is `#[ignore]`d and driven by `mise run spine:baseline`, so it costs the suite nothing while
 # still compiling with it. DELETE this stanza and its file at the fold review.

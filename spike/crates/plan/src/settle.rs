@@ -1210,6 +1210,43 @@ mod tests {
         );
     }
 
+    /// `30L:pin-shared-edit-before-erasure` / `inv-no-posthoc-shared-demotion` — no per-instance
+    /// replacement enters the ledger before the shared agreement exists.
+    ///
+    /// The property is about WHERE a proof can be minted, which no value-level test reaches: the
+    /// lowering seat's `Replace` arm is the only arm that returns proofs at all, and it is reached
+    /// only from the universal meet's `SharedConclusion::Replace`. So this scans the seat, the way
+    /// `a_provisional_round_names_no_spine_setter` scans its own. What it protects is the grow-only
+    /// argument itself: a proof minted per instance would have to be RETRACTED when a later route
+    /// forced Run, and the ledger has no retraction — it would simply have retired a wall for a
+    /// mutation the artifact still executes.
+    #[test]
+    fn only_the_universally_agreed_arm_retires_anything() {
+        let source = include_str!("settle.rs");
+        let seat = source
+            .split("fn lower_shared_decision")
+            .nth(1)
+            .and_then(|tail| tail.split("\n/// What the world said").next())
+            .expect("the shared lowering seat");
+        // Split on the conclusion vocabulary itself: a `|`-shared arm yields two pieces, so what is
+        // asserted is the LOCALITY of the mint rather than an arm count that reads as a shape rule.
+        let arms: Vec<&str> = seat.split("SharedConclusion::").skip(1).collect();
+        let minting: Vec<&&str> = arms
+            .iter()
+            .filter(|arm| arm.contains("shared_replacement"))
+            .collect();
+        assert_eq!(
+            minting.len(),
+            1,
+            "exactly one conclusion may reach the proof mint: {arms:?}"
+        );
+        assert!(
+            minting[0].starts_with("Replace"),
+            "and it is the universally-agreed Replace: {}",
+            minting[0]
+        );
+    }
+
     /// A provisional round has no route to Spine (`309:law-spine-write-only-during-run`).
     ///
     /// The real enforcement is the type: `write_spine` lives on `SettledEffectiveAnalysis`, and

@@ -386,6 +386,66 @@ apt_get__predict() {
             .collect()
     }
 
+    /// `30L` §10's last exclusion, at the REGION grain: a run whose certifier tripped keeps no
+    /// shared elision either.
+    ///
+    /// The stakes are strictly higher than a site's. One region decision covers EVERY invocation of
+    /// its definition, so a tripped run that kept one would leave more mutations un-run than any
+    /// single site could — the `30Md:fnd-discarded-trip-retains-elisions` shape, one abstraction
+    /// level up. The demotion narrates against the region's contributing INVOCATIONS, because a
+    /// region owns no leaf of its own to be blamed at.
+    #[test]
+    fn a_real_trip_evicts_a_shared_region_elision_too() {
+        let elide = a_real_elide_plan();
+        let Some(Disposition::Replace(license, stand_in)) =
+            elide.steps.first().map(|step| step.disposition.clone())
+        else {
+            panic!("the fixture must really carry a licensed replacement");
+        };
+        let mut spine = Spine::new();
+        spine.push_region_decision(dorc_core::spine::SpineRegionDecision {
+            region: dorc_core::region::ElisionRegion::mint(
+                &dorc_core::region::RegionUniverse::of_book_custody_files([SourceFileId(0)]),
+                dorc_core::DefinitionId::at(
+                    SourceFileId(0),
+                    dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(40)),
+                ),
+                dorc_core::Span::new(dorc_core::BytePos(4), dorc_core::BytePos(24)),
+            )
+            .expect("the book surface admits the region"),
+            ast: AstId(1),
+            sh: "apt-get install -y nginx".to_string(),
+            decision: Disposition::Replace(license, stand_in),
+            routes: dorc_core::spine::Account::capped([dorc_core::spine::RegionRoute {
+                invocation: dorc_core::SiteId::leaf(LeafId(7)),
+                ast: AstId(9),
+            }]),
+            grade: None,
+        });
+
+        let cleanup = demote_on_trip(&mut spine, |_| true);
+
+        assert!(
+            matches!(
+                projected(&spine).regions.first().map(|r| &r.disposition),
+                Some(Disposition::Run)
+            ),
+            "a shared replacement demotes to run exactly as a site's does"
+        );
+        assert_eq!(cleanup.demoted(), 1, "and the demotion is accounted for");
+        assert!(
+            matches!(
+                tags(&cleanup).first(),
+                Some(dorc_aid::narrative::CollapseKind::Demotion {
+                    site,
+                    reason: dorc_aid::narrative::DemoteTag::CertifierTripped,
+                }) if site.leaf == LeafId(7)
+            ),
+            "and it narrates against the invocation that would have executed it: {:?}",
+            tags(&cleanup)
+        );
+    }
+
     /// `302:rul-certifier-trip-guard-only` — the eviction, over a REAL elision and a REAL trip.
     ///
     /// The elide comes from the actual predicate (a converged, vouched, ambient establish) and the

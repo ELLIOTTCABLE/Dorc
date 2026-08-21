@@ -545,6 +545,20 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         words: Some(ProseTier::Migrated(&["a guard's known status proves this branch never runs"])),
     },
     ArrangementEntry {
+        slug: "why-reason-region-universal-over",
+        occurrence: None,
+        when_used: "The ANALYSIS row for an authored region inside a function body. Values: how many invocation instances the one edit is universal over, and the lines those invocations sit on.",
+        why: "plans/30L section 8: a transformed region is marked universal over its contributing invocations, so a reader can see that one edit answers for every call rather than for the line they happened to ask about.",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "why-reason-call-executes-shared-regions",
+        occurrence: None,
+        when_used: "The ANALYSIS row for a call whose body holds regions the plan edited. Value: the lines those region edits sit on.",
+        why: "plans/30L section 9: the other direction of the same bidirectional walk -- from a call instance to the shared edits it executes.",
+        words: None,
+    },
+    ArrangementEntry {
         slug: "why-analysis-opener-plain",
         occurrence: None,
         when_used: "The ANALYSIS opener for a site with no survival chain. Value: the asked line's reference.",

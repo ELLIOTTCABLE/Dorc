@@ -9382,6 +9382,69 @@ apt_get__is_converged() {
         );
     }
 
+    /// `30L:pin-shared-witness-spans-instances` — a SHARED replacement's witness spans every
+    /// contributing instance, and a per-call one never stands in for it.
+    ///
+    /// The mistake-shape this forbids is the aggregate lane's own, one abstraction level up
+    /// (`30Kb` §1): two invocations of one authored region erase two DIFFERENT cells, each licensed
+    /// by its own reached vouch, so a license carrying only the first instance's establish would
+    /// retire the second's mutation on a vouch nobody gave for it. The identity- and
+    /// cardinality-match is what makes that unspellable, and the mint here is the same one the
+    /// settlement's shared-region seat uses.
+    #[test]
+    fn a_shared_region_license_spans_every_contributing_instance() {
+        let mut i = Interner::default();
+        let kind = KindId(i.intern("package"));
+        let selector = SelectorId(i.intern("installed"));
+        let cell = |entity| FactKey {
+            kind,
+            entity: EntityRef::Operand(OpaqueToken(entity)),
+            selector,
+            context: dorc_core::Context::HostDefault,
+        };
+        // ONE authored region, TWO instances: `install_pkg nginx` and `install_pkg curl`.
+        let (nginx, curl) = (cell(i.intern("nginx")), cell(i.intern("curl")));
+        let (first, second) = (CfgNodeId(11), CfgNodeId(12));
+        let population = AggregateEstablishes::mint(vec![
+            AggregateEstablish::new(first, nginx),
+            AggregateEstablish::new(second, curl),
+        ])
+        .expect("two instances of one region");
+
+        let mut per_call = Vouches::new();
+        per_call.insert(first, nginx, test_vouch());
+        assert!(
+            AllEstablishesVouched::mint(&population, &per_call).is_none(),
+            "one instance's vouch cannot license the edit the other instance also executes"
+        );
+
+        let mut spanning = Vouches::new();
+        spanning.insert(first, nginx, test_vouch());
+        spanning.insert(second, curl, test_vouch());
+        let all_vouched = AllEstablishesVouched::mint(&population, &spanning)
+            .expect("the cross-instance witness");
+        let license = ReplaceLicense::prove_shared_region_replaceable(
+            all_vouched,
+            &May(Powerset::default()),
+            Predicted::Top,
+        )
+        .expect("an all-vouched population with no consumed channel replaces");
+        assert_eq!(
+            license
+                .derivation()
+                .establish_vouches
+                .iter()
+                .map(|receipt| (receipt.site, receipt.fact))
+                .collect::<Vec<_>>(),
+            vec![(first, nginx), (second, curl)],
+            "the witness carries the exact ORDERED union across instances, not a representative"
+        );
+        assert!(
+            matches!(license.derivation().via, LicenseVia::SharedRegion),
+            "and it names the region path, so a reader can tell it from a per-call aggregate"
+        );
+    }
+
     #[test]
     fn substitution_internal_command_is_not_a_plan_leaf() {
         // find-cli-1: the `$(uname)` body command must NOT be a plan Step (it runs

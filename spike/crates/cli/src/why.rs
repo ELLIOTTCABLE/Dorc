@@ -1875,6 +1875,17 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
                 None,
             ),
         };
+        // `30L` §9, the CALL-ward direction: this invocation executes the shared edits its body
+        // holds, and a reader asking about the call would otherwise see a bare `run` with the real
+        // decisions invisible one indent in.
+        let mut reasons = reasons;
+        let executed = region_lines_executed_by(plan, ast, book_src, step.ast);
+        if !executed.is_empty() {
+            reasons.push(Said::words(
+                "why-reason-call-executes-shared-regions",
+                &[&join_lines(&executed)],
+            ));
+        }
         sites.push(WhySite {
             line,
             word,
@@ -1885,6 +1896,39 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
             reasons,
             class,
             improvement,
+        });
+    }
+    // `30L` §9, the DEFINITION-ward direction: one row per authored region, at its own line, marked
+    // universal over the invocations that licensed it. The region is a real, addressable decision —
+    // `dorc why book.sh:<the body line>` has to answer for the edit a reader can SEE there — and it
+    // is a different identity from every leaf, so it is a site of its own rather than a note on one
+    // (`30L:rul-two-identities-never-conflated`).
+    for region in &plan.regions {
+        let span = ast.node(region.ast).span;
+        let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
+        let line = dorc_aid::diag::line_col(book_src, lo).0;
+        let raw = book_src.get(lo..hi).unwrap_or("<source unavailable>");
+        let invocations: Vec<usize> = region
+            .routes
+            .shown()
+            .iter()
+            .filter_map(|route| lines_by_leaf.get(&route.invocation.leaf).copied())
+            .collect();
+        sites.push(WhySite {
+            line,
+            word: raw.split_whitespace().next().unwrap_or("").to_owned(),
+            command: flatten_ws(raw),
+            outcome: outcome_word(ctx, &region.disposition),
+            foil: foil_word(ctx, &region.disposition),
+            reasons: vec![Said::words(
+                "why-reason-region-universal-over",
+                &[
+                    &region.routes.total().to_string(),
+                    &join_lines(&invocations),
+                ],
+            )],
+            class: AggregateClass::Quiet,
+            improvement: None,
         });
     }
 
@@ -1901,6 +1945,34 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         ),
         None => why_aggregate_parts(ctx, &sites, &chains, filename, first_wall, receipt),
     }
+}
+
+/// The book lines of every authored region THIS call executes (`30L` §9's call-ward walk).
+///
+/// Keyed by the call's own `AstId` through the region's route attribution, never by span
+/// containment: a region lives in a DEFINITION and a call lives wherever its author put it, so the
+/// two spans need not nest at all.
+fn region_lines_executed_by(
+    plan: &dorc_plan::Plan,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+    call: dorc_core::AstId,
+) -> Vec<usize> {
+    plan.regions
+        .iter()
+        .filter(|region| region.routes.shown().iter().any(|route| route.ast == call))
+        .map(|region| dorc_aid::diag::line_col(book_src, ast.node(region.ast).span.lo.0 as usize).0)
+        .collect()
+}
+
+/// A line list as one value. EMPTY renders as nothing rather than as a stray separator — the
+/// caller only reaches this with a non-empty list, and a capped route account can still shorten one.
+fn join_lines(lines: &[usize]) -> String {
+    lines
+        .iter()
+        .map(usize::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 /// The ADDRESSED pull answer (`28G` Phase W1): the triptych for every site the address matched.
