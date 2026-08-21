@@ -355,12 +355,21 @@ impl Harness {
     /// Run a payload under the determinism rail and echo the shims' logged argvs, one per
     /// line, in execution order (`capture_run`). `payload` is either a script path or the
     /// artifact text; `mocks` becomes the child's ENTIRE `PATH`.
-    fn capture_run(&self, payload: Payload<'_>, mocks: &Path) -> String {
+    ///
+    /// `run_root` is the cwd the payload runs in. `None` is an EMPTY throwaway sandbox — the
+    /// flattened form's world, where the artifact is the whole product and nothing beside it
+    /// exists. A multipart case names its PUBLISHED generation instead, which is where `30I` §7.6
+    /// says a multipart artifact executes (`cd <artifact> && sh ./plan.sh`). Copying the case's own
+    /// authored sources into the sandbox would be the third option and is deliberately not offered:
+    /// it would green a case against controller-side files the target never receives, which proves
+    /// nothing about what the artifact ships.
+    fn capture_run(&self, payload: Payload<'_>, mocks: &Path, run_root: Option<&Path>) -> String {
         let scratch = Scratch::new("run");
         let log = scratch.path.join("dorc.log");
         std::fs::write(&log, "").expect("seed log");
-        let sandbox = scratch.path.join("sand");
-        std::fs::create_dir_all(&sandbox).expect("create sandbox");
+        let own = scratch.path.join("sand");
+        std::fs::create_dir_all(&own).expect("create sandbox");
+        let sandbox = run_root.unwrap_or(&own).to_path_buf();
 
         let piped = match payload {
             Payload::File(_) => None,
@@ -786,6 +795,35 @@ fn marker(dir: &Path, prefix: &str) -> Result<Option<String>, String> {
 /// Is a bare presence-marker file (`XFAIL`, `PROBE_RESULTS=authored`, …) present?
 fn has_marker(dir: &Path, name: &str) -> bool {
     dir.join(name).exists()
+}
+
+/// The one generation an `ARTIFACT_SET` case's run published under `root`.
+///
+/// EXACTLY one, and the exactness is the assertion: only the round-trip's own drive is given the
+/// artifact stream, so a second generation would mean a second publication nobody asked for, and
+/// none at all means the run took a form that materializes nothing — which is precisely the silent
+/// fallback a case declaring an artifact set must not be allowed to pass under.
+fn published_generation(root: &Path) -> Result<PathBuf, String> {
+    let mut found: Vec<PathBuf> = std::fs::read_dir(root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with("artifact-"))
+        })
+        .collect();
+    found.sort();
+    match found.len() {
+        1 => Ok(found.remove(0)),
+        0 => Err(String::from(
+            "the run published no artifact generation — it took a form that materializes nothing, so every exec gate below would have measured the plan alone",
+        )),
+        n => Err(format!(
+            "the run published {n} artifact generations; exactly one drive is given the artifact stream"
+        )),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1567,12 +1605,25 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     let shim_dir = scratch.path.join("shims");
     std::fs::create_dir_all(&shim_dir).expect("create shim dir");
 
+    // The artifact STREAM this case's product goes to. Absent, the artifact is stdout and the run
+    // sits in the single-stream cell every case has always sat in; present, the run may materialize
+    // a directory, and the artifact SET rather than the plan alone is what the exec gates measure.
+    let artifact_root = has_marker(dir, "ARTIFACT_SET").then(|| {
+        let root = scratch.path.join("artifacts");
+        std::fs::create_dir_all(&root).expect("create artifact root");
+        root
+    });
+
     let book = dir.join("book.sh");
+    let mut command = harness.dorc(dir);
+    command
+        .arg(format!("--shim-dir={}", shim_dir.display()))
+        .arg(format!("--book={}", book.display()));
+    if let Some(root) = &artifact_root {
+        command.arg(format!("--artifact-dir={}", root.display()));
+    }
     let out = capture(
-        harness
-            .dorc(dir)
-            .arg(format!("--shim-dir={}", shim_dir.display()))
-            .arg(format!("--book={}", book.display()))
+        command
             .args(args_reading_stdin_records(&args))
             .stdin(Stdio::from(std::fs::File::open(&framed_path).unwrap()))
             .stdout(Stdio::piped())
@@ -1593,6 +1644,29 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
         .map(|text| text.lines().next().unwrap_or_default().to_owned());
     let xfail_active = xfail_reason.is_some();
 
+    // Opt-in implies require: a case that declares an artifact SET and did not get one has measured
+    // the flattened world under a multipart name, which is exactly the false green this marker
+    // exists to close.
+    let published = match &artifact_root {
+        None => None,
+        Some(root) => match published_generation(root) {
+            Ok(generation) => Some(generation),
+            Err(why) => {
+                return Err(format!("FAIL  {name}  [ARTIFACT_SET: {why}]").into());
+            }
+        },
+    };
+    if let Some(generation) = &published {
+        let planned =
+            strip_trailing_newlines(&strip_cr(&read_or_empty(&generation.join("plan.sh"))));
+        if planned != apply_art {
+            run.failures.push(format!(
+                "FAIL  {name}  [ARTIFACT_SET: the published plan.sh and the apply block on stdout are not the same bytes — the two surfaces must READ one artifact set, never assemble it twice]\n{}",
+                divergence(&apply_art, &planned)
+            ));
+        }
+    }
+
     if let Some(error) = harness.syntax_error(&probe_art) {
         run.failures.push(format!(
             "FAIL  {name}  [ap-2: rendered probe is not {} -n clean]\n      {error}",
@@ -1607,8 +1681,17 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
     }
 
     let mocks = dir.join("mocks");
+    let run_root = published.as_deref();
     if run.failures.is_empty() && mocks.is_dir() {
-        exec_check(harness, name, dir, &mocks, &apply_art, &mut run.failures);
+        exec_check(
+            harness,
+            name,
+            dir,
+            &mocks,
+            &apply_art,
+            run_root,
+            &mut run.failures,
+        );
         probe_exec_check(
             harness,
             name,
@@ -1628,6 +1711,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
                 &shimset,
                 &args,
                 &framed_path,
+                run_root,
                 &mut run.failures,
             );
             if !has_marker(dir, "PROBE_RESULTS=authored")
@@ -1642,6 +1726,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
                     &shimset,
                     &args,
                     &framed_path,
+                    run_root,
                     &mut run.failures,
                 );
             }
@@ -1664,7 +1749,7 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
         ));
     }
 
-    if xfail_active && head_ran_drifted(harness, dir, &mocks, &apply_art) {
+    if xfail_active && head_ran_drifted(harness, dir, &mocks, &apply_art, run_root) {
         run.head_ran_drifted = true;
     }
 
@@ -1771,12 +1856,18 @@ fn divergence(want: &str, got: &str) -> String {
 
 /// The ap-2 EXECUTABLE acceptance: run the rendered apply under the inert shims and
 /// assert the exact set of commands that ran, plus the declared exit rc.
+///
+/// `run_root` names a PUBLISHED artifact generation for a case that declared one, and the gate then
+/// runs that generation's own `plan.sh` from inside it — the product an operator receives, at the
+/// cwd `30I` §7.6 gives it. Without one the rendered text runs alone in an empty sandbox, which is
+/// the flattened form's honest world and every existing case's.
 fn exec_check(
     harness: &Harness,
     name: &str,
     dir: &Path,
     mocks: &Path,
     artifact: &str,
+    run_root: Option<&Path>,
     failures: &mut Vec<String>,
 ) {
     let unsafe_lines = scan_redirects(artifact);
@@ -1809,17 +1900,24 @@ fn exec_check(
     let scratch = Scratch::new("exec");
     let log = scratch.path.join("dorc.log");
     std::fs::write(&log, "").expect("seed log");
-    let sandbox = scratch.path.join("sand");
-    std::fs::create_dir_all(&sandbox).expect("create sandbox");
+    let own = scratch.path.join("sand");
+    std::fs::create_dir_all(&own).expect("create sandbox");
+    let sandbox = run_root.unwrap_or(&own).to_path_buf();
     let payload = scratch.path.join("apply.sh");
     std::fs::write(&payload, format!("{artifact}\n")).expect("write apply");
-    let out = capture(
-        harness
-            .rail(&sandbox, &log, mocks.as_os_str(), None)
-            .stdin(Stdio::from(std::fs::File::open(&payload).unwrap()))
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped()),
-    );
+    let mut command = if run_root.is_some() {
+        harness.rail(
+            &sandbox,
+            &log,
+            mocks.as_os_str(),
+            Some(Path::new("plan.sh")),
+        )
+    } else {
+        let mut piped = harness.rail(&sandbox, &log, mocks.as_os_str(), None);
+        piped.stdin(Stdio::from(std::fs::File::open(&payload).unwrap()));
+        piped
+    };
+    let out = capture(command.stdout(Stdio::piped()).stderr(Stdio::piped()));
     if out.code != expected_rc {
         failures.push(format!(
             "FAIL  {name}  [ap-2-exec: rendered apply exited rc={}, expected {expected_rc}]\n      {}",
@@ -2066,6 +2164,7 @@ fn argv_echo_check(
     shims: &str,
     args: &[String],
     framed: &Path,
+    run_root: Option<&Path>,
     failures: &mut Vec<String>,
 ) {
     let debug = debug_argv(harness, dir, args, framed);
@@ -2073,7 +2172,7 @@ fn argv_echo_check(
         .lines()
         .filter(|line| line.starts_with("argv "))
         .collect();
-    let logged = harness.capture_run(Payload::File(&dir.join("book.sh")), mocks);
+    let logged = harness.capture_run(Payload::File(&dir.join("book.sh")), mocks, run_root);
     let logged_lines = lines_of(&logged);
     let mut bad = Vec::new();
     for line in engine {
@@ -2261,6 +2360,7 @@ fn dual_rail_check(
     shims: &str,
     args: &[String],
     framed: &Path,
+    run_root: Option<&Path>,
     failures: &mut Vec<String>,
 ) {
     let debug = debug_argv(harness, dir, args, framed);
@@ -2275,7 +2375,7 @@ fn dual_rail_check(
         .filter_map(|line| line.strip_prefix("guardcmd "))
         .collect::<Vec<_>>()
         .join("\n");
-    let bare = harness.capture_run(Payload::File(&dir.join("book.sh")), mocks);
+    let bare = harness.capture_run(Payload::File(&dir.join("book.sh")), mocks, run_root);
     let apply_out = capture(
         harness
             .dorc(dir)
@@ -2287,7 +2387,7 @@ fn dual_rail_check(
     )
     .stdout;
     let (_, apply_art) = split_artifacts(&apply_out);
-    let apply = harness.capture_run(Payload::Text(&apply_art), mocks);
+    let apply = harness.capture_run(Payload::Text(&apply_art), mocks, run_root);
     let violations = dual_rail_judge(&bare, &apply, &disp, shims, &guard_cmds);
     if !violations.is_empty() {
         failures.push(format!(
@@ -2513,14 +2613,20 @@ fn scan_why_chain(
 
 /// The two-sided XFAIL pin: has an XFAIL case's current apply run-set drifted from the
 /// `head-expected.ran` signature captured when the pin was authored?
-fn head_ran_drifted(harness: &Harness, dir: &Path, mocks: &Path, apply: &str) -> bool {
+fn head_ran_drifted(
+    harness: &Harness,
+    dir: &Path,
+    mocks: &Path,
+    apply: &str,
+    run_root: Option<&Path>,
+) -> bool {
     let pin = dir.join("head-expected.ran");
     if !pin.is_file() || !mocks.is_dir() {
         return false;
     }
     let tolerated = tolerances(dir).unwrap_or_default();
     let got = canonicalize(
-        &harness.capture_run(Payload::Text(apply), mocks),
+        &harness.capture_run(Payload::Text(apply), mocks, run_root),
         &tolerated,
     );
     let want = strip_trailing_newlines(
