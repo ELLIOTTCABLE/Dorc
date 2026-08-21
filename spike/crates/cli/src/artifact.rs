@@ -567,6 +567,175 @@ mod tests {
         assert_eq!(refusal.cause(), "no-artifact-stream");
     }
 
+    /// Build a whole world the way the corpus does, over CLI-named prelude roots, and hand back
+    /// the loader's complete occurrence account.
+    fn account_of(
+        book: &str,
+        paths: Vec<String>,
+        srcs: Vec<String>,
+    ) -> dorc_analysis::load::LoadAccount {
+        let cwd = dorc_core::loadpath::Cwd::default();
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
+            cwd,
+            paths,
+            srcs,
+            &crate::snapshot::LoadPositions::roots_only(),
+            "book.sh",
+            book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = crate::world::definition_table(&snapshot, &ast);
+        dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane)
+            .loads()
+            .clone()
+    }
+
+    /// THE VERSION-MISMATCH CELL, red-first (`30I` §2.2's guarded-source idiom, under the human's
+    /// pending `rule-sentinel-value-conjunct` ruling).
+    ///
+    /// The world: `common` assigns `sm_common_loaded='v1'`, and `alpha`'s include guard tests for
+    /// `'v2'`. A real shell compares the VALUES, finds them different, and takes the SOURCE arm —
+    /// so common is loaded a SECOND time. The recognition instead reads whether the target
+    /// closure's names are bound, and they are (common was pre-sourced first), so the engine
+    /// selects the REUSE arm and records a load that never runs where sh runs one.
+    ///
+    /// Why it belongs to the artifact forms: a form asks the account "what does this program load",
+    /// and an account that answers `Reused` where sh sources is an account a flattened artifact
+    /// could act on by omitting the re-source. The disposition is safe TODAY only because
+    /// flattening refuses to inline at all; the corner must not be golden-promoted while that is
+    /// the only thing holding it.
+    #[test]
+    fn a_version_mismatched_sentinel_takes_the_source_arm() {
+        const COMMON: &str = "# dorc-lang/v0.2\nsm_common_query() { :; }\nsm_common_loaded='v1'\n";
+        const ALPHA: &str = concat!(
+            "# dorc-lang/v0.2\n",
+            "if [ \"${sm_common_loaded-}\" = 'v2' ]; then\n",
+            "   :\n",
+            "else\n",
+            "   . ./common.oracle.sh\n",
+            "fi\n",
+            "alpha__is_converged() { sm_common_query \"$1\" ;}\n",
+        );
+        // Outside the closure: a panic HERE would read as the target still failing.
+        let account = account_of(
+            "alpha sync\n",
+            vec!["common.oracle.sh".to_owned(), "alpha.oracle.sh".to_owned()],
+            vec![COMMON.to_owned(), ALPHA.to_owned()],
+        );
+        let routes: Vec<dorc_analysis::load::LoadRoute> = account
+            .occurrences()
+            .iter()
+            .filter(|occurrence| {
+                occurrence.target.ends_with("common.oracle.sh") && occurrence.within.is_some()
+            })
+            .map(|occurrence| occurrence.route)
+            .collect();
+        internal_tooling::xfail::xfail_until("p-x-sentinel-value-conjunct", || {
+            assert_eq!(
+                routes,
+                vec![dorc_analysis::load::LoadRoute::Taken],
+                "sh compares 'v1' against 'v2' and takes the SOURCE arm, so the guarded `.` really \
+                 runs — whatever the environment's names say about the target's closure"
+            );
+        });
+    }
+
+    /// Build a whole world over a BOOK-sourced tree, and settle a form over it.
+    fn book_sourced(
+        book: &str,
+        paths: Vec<String>,
+        srcs: Vec<String>,
+        request: FormRequest,
+        posture: StreamPosture,
+    ) -> Result<super::Selection, FormRefusal> {
+        let cwd = dorc_core::loadpath::Cwd::default();
+        let reached = crate::snapshot::book_reached(&cwd, &paths, &srcs, book);
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
+            cwd,
+            paths,
+            srcs,
+            &crate::snapshot::LoadPositions::book_sourced(reached),
+            "book.sh",
+            book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = crate::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        let projection = crate::bundle::project(&snapshot, env.loads())
+            .map(crate::bundle::BundleProjectionOutput::into_projection)
+            .expect("one closed occurrence forest");
+        let loads = super::book_loads(&cfg, &ast, &projection);
+        select(
+            snapshot.source_paths(),
+            &projection,
+            &loads,
+            request,
+            posture,
+        )
+    }
+
+    /// THE MULTIPART PLACEMENT, end to end over a real load: the dependency lands at the SAME
+    /// relative path the book's own operand names, carrying STRIPPED bytes.
+    ///
+    /// Both halves matter. Mirroring is what lets the book's `. ./wombat.oracle.sh` — and every
+    /// nested operand inside a copied file — resolve on the target with no rewritten byte and no
+    /// generated root variable (`30I` §7.4). Stripping is what lets a stock shell source it at all
+    /// (`30Ib` §15: a bundle ships `dorc strip`'s output, which is still pure erasure, so the byte
+    /// floor holds).
+    #[test]
+    fn a_multipart_dependency_lands_at_its_authored_relative_path() {
+        let selection = book_sourced(
+            ". ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec![
+                "# dorc-lang/v0.2\nwombat__is_converged() { wombat status : sm.dorc.W:@ok ;}\n"
+                    .to_owned(),
+            ],
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("a relative dependency is placeable");
+        assert_eq!(selection.form(), ArtifactForm::Multipart);
+        assert_eq!(selection.fallback(), None);
+        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
+        assert_eq!(paths, ["plan.sh", "wombat.oracle.sh"]);
+        let dependency = &set.dependencies()[0].bytes;
+        assert!(
+            dependency.contains("wombat__is_converged()") && !dependency.contains(" : sm.dorc.W"),
+            "the mirrored dependency is the STRIPPED body a stock shell can source:\n{dependency}"
+        );
+    }
+
+    /// The same world with stdout as the artifact stream: one stream cannot carry the tree, the
+    /// book has a load to inline, and inlining is not floor-measured — so `auto` lands on the
+    /// preserved tree and SAYS SO. This is the cell every `--pre-source`-free corpus case with a
+    /// book `.` sits in today.
+    #[test]
+    fn the_same_world_on_one_stream_preserves_the_tree_and_explains() {
+        let selection = book_sourced(
+            ". ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::SingleStream,
+        )
+        .expect("auto always lands somewhere");
+        assert_eq!(selection.form(), ArtifactForm::PreservedBookTree);
+        assert_eq!(
+            selection.fallback(),
+            Some(FormFallback::InliningUnproven { loads: 1 })
+        );
+    }
+
     /// Placement is the availability question, so its refusals are load-bearing: an absolute or
     /// escaping controller path cannot be mirrored under an artifact root, and a mirrored tree is
     /// exactly what lets every authored operand — the book's and every nested one — resolve

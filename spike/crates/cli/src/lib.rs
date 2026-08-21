@@ -848,14 +848,23 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             },
         )));
     }
-    // The emission planner only exists where a plan is emitted; `probe`, `bundle` and `why` have
-    // their own stdout contracts and no artifact set to place (`stdout-contract`).
-    let emits_a_plan = matches!(mode, Mode::Plan | Mode::Apply | Mode::RoundTrip);
+    // The emission planner shapes a PLAN, so a mode whose product is something else entirely —
+    // `bundle`'s inert archive, `why`'s report — is told so rather than handed an inert flag.
+    //
+    // `probe` is deliberately NOT in that set. It is the same run's earlier PHASE (the round-trip's
+    // half one), analysing the same book from the same inputs and stopping before the plan exists;
+    // a form flag there shapes something the phase does not reach, which is inert rather than
+    // wrong. Refusing it would also mean an invocation could not carry one set of flags across both
+    // phases, which is exactly how the round-trip is driven.
+    let plans_or_probes = matches!(
+        mode,
+        Mode::Plan | Mode::Apply | Mode::RoundTrip | Mode::Probe
+    );
     for (named, flag) in [
         (artifact_dir.is_some(), "--artifact-dir"),
         (form.is_some(), "--form"),
     ] {
-        if named && !emits_a_plan {
+        if named && !plans_or_probes {
             return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
                 dorc_aid::diag::CliFlagRequiresMode {
                     flag,
