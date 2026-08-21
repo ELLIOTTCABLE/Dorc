@@ -249,6 +249,46 @@ not all conductor-re-read (marked):
     `rule-certification-row-shape`) · `fnd-plan-steps-stay-publicly-mutable` +
     `fnd-the-canon-does-not-destructure-plan` (priced; land with the next lane
     churning those files — the artifact-forms brief carries both).
+- **lane-artifact-forms** (`30I:step-7-reify-plan-artifact-forms`): FOLDED
+  2026-08-21 at `56069dc5`; worktree/branch cleaned; report `notes/30Ne`; both
+  legs green; existing-corpus drift ZERO (structural: no form rewrites book
+  bytes — `plan.sh` is byte-identical under all three forms). The floor mint
+  executed by conductor hand from WSL (`floor30-inline-dot-boundary` measured
+  under dash∩posh, both agreeing; committed). Fold adjudications:
+  - `adj-endorse-flattening-refusal-posture` — ENDORSED: the flattened form
+    refuses a book-sited load rather than shipping unmeasured inlining; the
+    spec's own fail-before-network sanction; goldens stay off the unproven
+    construct. The inlining LOWERING itself is now unblocked by the mint but
+    deliberately unscheduled — a value-add for the human to sequence.
+  - `adj-endorse-artifact-stream-reading` [veto-eligible] — ENDORSED
+    (`30Ne:tc-piped-stdout-vs-named-artifact-dir`): the typed
+    piped-stdout-implies-one-flat-plan rule binds whichever stream CARRIES the
+    artifact; `--artifact-dir` moves that stream off stdout, so a piped stdout
+    beside a named directory proceeds. Grounds: the rule's hazard (a multipart
+    tree through a pipe) is absent when the artifact goes to disk, and the
+    alternative demands a non-hermetic terminal probe at the edge. Quick-ack
+    on the burndown.
+  - `adj-endorse-multipart-mirroring` [veto-eligible] — ENDORSED
+    (`30Ne:dev-multipart-mirrors-rather-than-rewrites`): the mirrored file AT
+    the authored relative path IS the generated bundle, so the authored `.`
+    operand names it unchanged — zero book-byte rewrites, nested diamonds
+    resolve, strictly more aligned with the authorship law than the typed
+    sentence's replace-the-line reading. Quick-ack on the burndown.
+  - `adj-endorse-probe-accepts-form-flags` — ENDORSED as-built (accept-inert on
+    the probe phase; refusing would make form-flagged round-trips
+    unexpressible under the one-flag-set harness).
+  - `adj-decline-preamble-boundary-close` —
+    (`30Ne:tc-flattened-section-boundary`) DECLINED for now: the closing
+    boundary comment lands with the inlining lowering, where the fenced
+    section gains real content and the every-preamble-golden drift is paid
+    once.
+  - Endorsed without ceremony: the storage-vs-published path split · the
+    exit-16 reuse (pre-user) · generation-directory publication (a `latest`
+    entry point banked as a later want) · the `RenderRefusal` subject reshape
+    (one collapse, one class) · the region-refusal disclosure as-ruled.
+  - Banked: `tc-multipart-has-no-published-tree-assertion` (harness question) ·
+    `tc-form-flag-spelling` + four `[unwritten:]` registers + the undocumented
+    `--artifact-dir`/`--form` help rows → the prose queue.
 - **`chk-loop-types-paper-review` — PASSED (conductor's own, 2026-08-21;
   `30L:pin-loop-types-need-no-rekey` §11/§12-stage-6).** The propagation lane
   can turn `Open` → `Closed(members)` without re-keying: (1) a member becomes a

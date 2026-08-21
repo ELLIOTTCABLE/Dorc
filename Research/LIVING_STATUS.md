@@ -41,10 +41,19 @@ FOLDED** (report `notes/30Nd`; adjudications + the veto-eligible
 makes an unspent certifier latch unprojectable by type; `Plan::decided` is the sole
 constructor and the render decides nothing; the species×field meaning-audit repaired
 two record falsehoods and narrowed six docs; `typos --write-changes` no longer corrupts
-corpus docIDs. NEXT: `30I:step-7-reify-plan-artifact-forms` consuming region identity
-and `DecidedRender` (handoffs: `30Nd` tail + `30Nc` tail), then
-`30I:step-8-promote-executable-specification`; the loop-propagation lane is
-parallel-eligible.
+corpus docIDs. **`30I:step-7-reify-plan-artifact-forms` is FOLDED** (report
+`notes/30Ne`; adjudications incl. two veto-eligible typed-text readings in `30N`'s lane
+list, quick-acks on the burndown): all three semantic forms in `cli::artifact` from ONE
+`Selection`/`ArtifactSet` structure; multipart MIRRORS dependencies at authored relative
+paths (zero book-byte rewrites — `plan.sh` byte-identical under every form, hence ZERO
+corpus drift); flattening REFUSES a book-sited load pre-network rather than shipping
+unmeasured inlining; atomic generation publication; the region-refusal disclosure built
+region-keyed as ruled. The `floor30-inline-dot-boundary` manifest is MINTED (conductor
+hand, WSL, dash∩posh agreeing) — the inlining LOWERING is now measurable-against and
+deliberately unscheduled. NEXT: `30I:step-8-promote-executable-specification` (XFAIL
+promotion + e2e lowering + close); the loop-propagation lane is parallel-eligible; the
+sentinel red pin `p-x-sentinel-value-conjunct` greens only on the human's
+`rule-sentinel-value-conjunct`.
 
 ## STATE (2026-08-21 — 30L STAGES 0–3 FOLDED; superseded above where they overlap)
 

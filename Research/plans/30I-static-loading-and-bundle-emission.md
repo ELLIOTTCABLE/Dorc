@@ -79,12 +79,15 @@ in `Research/notes/30Ib`):
 - one occurrence-composed locator chain consumed by production bundle diagnostics, preserving
   generated, nested-load, book-load, and authored frames with exact-byte claim resolution.
 
-Not built, and owed below: the three artifact forms; final `load30-*` XFAIL promotion and e2e
-lowering. The complete load-occurrence account, the effective-world-reach interlude,
-aggregate verdict-primacy rider, bundle projection, real locator consumer, and
-`plans/30L`'s region machinery are all closed; the two remaining steps are unblocked
-(`30M:rec-own-the-309-boundary-close` is the recommended precursor before
-`step-7-reify-plan-artifact-forms` freezes the Plan/Spine boundary).
+Landed since: `30M:rec-own-the-309-boundary-close` (the render decides nothing; the
+certifier-trip witness is typed) and `step-7-reify-plan-artifact-forms` itself — all
+three semantic forms in `cli::artifact`, one `Selection`/`ArtifactSet` structure, the
+mirrored-relative-layout answer to the cwd-analysis directive, atomic generation
+publication, and the region-refusal disclosure (`30Ne` is the lane report). Not built,
+and owed below: the textual-inlining lowering itself (its floor MEASUREMENT is minted —
+`floor30-inline-dot-boundary` — but the flattened form still refuses rather than
+inlines a book-sited load), and `step-8-promote-executable-specification`'s `load30-*`
+XFAIL promotion and e2e lowering.
 
 ### Target outcome
 
