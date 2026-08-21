@@ -14,7 +14,25 @@
 
 ---
 
-## CURRENT STATE (2026-08-21 — SECOND-HALF CONDUCT HANDED OFF; THREE LANES OWED)
+## CURRENT STATE (2026-08-21 — THIRD CONDUCT OPEN; THE OWED-WORK ACCOUNTING IS MINTED, PRE-ACK)
+
+**The successor conductor's first product is `notes/30O`** — the complete accounting of
+still-owed r30 kernel work measured against every `28Q`/`309`/`30I`/`30L` stage, and its
+schedule: WAVE A in parallel (`lane-bundle-front-lift` + the `30Nh` why/harness residue ·
+`lane-load-plane-precision` = guarded-source fidelity MERGED with the three
+`r31:closure-custody` xfails, one license-review · `lane-loop-propagation`, the end-of-r30
+xfail · the non-kernel `26K` §0a fruit arc) → WAVE B serial and alone
+(`lane-influence-carriage`, `306b` §10) → round-close crosscheck → veto sweep → `gate:arc`
+→ `CURRENT_ROUND` bump. `fnd-handoff-undercounts-by-stage`: the `30N` handoff's three lanes
+were all stage-ii-bundle-close residue; the loop xfail, the closure-custody pins, `309`'s
+accounting remainder, the lapsed Flux pencil, and the unscheduled emission planner were
+outside it. NOTHING IS DISPATCHED: `30O` §4's questions (emission-planner scoping for the
+front-lift · the lane-2 merge · whether influence carriage is this round) gate Wave A's
+briefs, and the human sizes lanes to builders first. Six scout claims of open work were
+refuted by verification and are listed in `30O` §6 so they are not re-chased. The tracked
+SyncThing conflict file in `core/src` is gone (human's own `-` commit, ff'd both ways).
+
+## STATE (2026-08-21 — SECOND-HALF CONDUCT HANDED OFF; superseded above where they overlap)
 
 **The r30 second-half conduct is CLOSED at the human's direction** (ledger `notes/30N`;
 its final section is the successor's handoff). Everything built is folded on
