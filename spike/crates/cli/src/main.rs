@@ -1070,9 +1070,8 @@ fn run(
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
     }
-    // THE EMISSION PLANNER, sited here on purpose: everything it needs is authored-before-contact
-    // (`30I:rul-load-decisions-are-authored-before-contact`), so a form the run cannot serve is
-    // refused with no probe emitted, no host reached and no file created (`30I` §10).
+    // ABOVE the probe emission on purpose: the planner's inputs are authored-before-contact, so an
+    // unservable form refuses with nothing probed, contacted or written (`30I` §10).
     let form_selection =
         match select_artifact_form(args, &snapshot, &cfg.value, &parsed.value, &env) {
             Ok(selection) => selection,
@@ -2210,19 +2209,16 @@ fn run(
         return Ok(book_outcome);
     }
 
-    // THE ARTIFACT SET: the settled form bound to the plan projection it describes. ONE structure,
-    // and both the stream below and the published tree READ it — there is deliberately no second
-    // assembly of the same bytes to fall back to (`30I:step-7-reify-plan-artifact-forms`).
-    //
-    // rec-1 / ru-12 BYTE FLOOR: `plan` and `apply` emit BYTE-IDENTICAL apply bytes here — the
-    // artifact is receipt-free in both; only the stderr disclosure above differed. The
-    // round-trip emits the same bytes as its second shebang block.
+    // ONE structure: the stream below and the published tree both READ it, and there is
+    // deliberately no second assembly of the same bytes to fall back to
+    // (`30I:step-7-reify-plan-artifact-forms`). rec-1 / ru-12 BYTE FLOOR holds inside it — `plan`
+    // and `apply` emit BYTE-IDENTICAL, receipt-free apply bytes; only the stderr disclosure above
+    // differed, and the round-trip's second shebang block is these same bytes.
     let artifact = form_selection.with_plan(plan.render_apply(&book_src, &parsed.value));
     print!("{}", artifact.primary().bytes);
 
-    // The fallback is stated on the PLAN surface, never woven into the artifact bytes
-    // (`two-surfaces`): an admin whose plan is not self-contained learns it here rather than on
-    // the target.
+    // On the PLAN surface, never woven into the artifact bytes (`two-surfaces`): an admin whose
+    // plan is not self-contained learns it here rather than on the target.
     if let Some(fallback) = artifact.fallback() {
         report_at(
             advisory,

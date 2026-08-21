@@ -2449,32 +2449,18 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // Same give-up, same floor, at the region's identity: the licensed edit did not land and
-        // every invocation runs the authored bytes.
-        DiagCode::RenderRegionRefused(_) => CodeSpec {
+        // The three refusals produced NO artifact of the requested shape; the fallback produced a
+        // valid one and lost only flattening. Each row's own `why` carries the argument.
+        DiagCode::RenderRegionRefused(_)
+        | DiagCode::ArtifactFormRefused(_)
+        | DiagCode::ArtifactPublishRefused(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // The run produced NO artifact, so this can never be quieted into a run that looks like it
-        // worked.
-        DiagCode::ArtifactFormRefused(_) => CodeSpec {
-            severity: Severity::Error,
-            floor: Floor::WarnOrDeny,
-            remediation: RemediationClass::Structural,
-        },
-        // A fallback is a pure disclosure: the artifact is valid, and what the reader lost is
-        // flattening, not correctness.
         DiagCode::ArtifactFormFallback(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
-        // Nothing reached disk. Silencing that below a warning is how somebody applies yesterday's
-        // artifact believing it is today's.
-        DiagCode::ArtifactPublishRefused(_) => CodeSpec {
-            severity: Severity::Error,
-            floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
         // ── B4 sweep: former diag::legacy survivors ──────────────────────────
@@ -3171,16 +3157,14 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("verb", (*verb).to_owned()),
             ours("command", command.clone()),
         ],
-        // Its register is unwritten, so it has no holes to fill yet; the payload's fields are what
-        // the prose act will reach for when somebody writes the words.
+        // Registers still unwritten, so no holes to fill: the destructures are what the prose act
+        // will reach for when somebody writes the words.
         DiagCode::RenderRegionRefused(RenderRegionRefused {
             verb: _,
             command: _,
             routes: _,
-        }) => Vec::new(),
-        // Likewise unwritten: the emission-planner family's words are a prose act, and its payloads
-        // are what that act will reach for.
-        DiagCode::ArtifactFormRefused(ArtifactFormRefused {
+        })
+        | DiagCode::ArtifactFormRefused(ArtifactFormRefused {
             form: _,
             cause: _,
             loads: _,

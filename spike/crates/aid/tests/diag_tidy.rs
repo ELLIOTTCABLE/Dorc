@@ -59,7 +59,6 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "SiteUnresolvable",
     "RenderHeredocRefused",
     "RenderRegionRefused",
-    // cli/main.rs (the emission planner's edge)
     "ArtifactFormRefused",
     "ArtifactFormFallback",
     "ArtifactPublishRefused",
@@ -344,10 +343,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
-    // cli/main.rs — the emission planner's three. A FORM is a property of the whole run, not of
-    // any one line: a caret on a book command would blame the admin's text for a v0 emission
-    // limit or the operator's own filesystem, which is the mis-attribution direction
-    // (`271:rul-sin-ordering`).
+    // cli/main.rs — the emission planner's three: a FORM is a whole-run property, and a caret on a
+    // book command would blame the admin's text for a v0 limit (`271:rul-sin-ordering`).
     "ArtifactFormRefused",
     "ArtifactFormFallback",
     "ArtifactPublishRefused",

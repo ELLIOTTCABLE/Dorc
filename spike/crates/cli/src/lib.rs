@@ -848,14 +848,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             },
         )));
     }
-    // The emission planner shapes a PLAN, so a mode whose product is something else entirely —
-    // `bundle`'s inert archive, `why`'s report — is told so rather than handed an inert flag.
-    //
-    // `probe` is deliberately NOT in that set. It is the same run's earlier PHASE (the round-trip's
-    // half one), analysing the same book from the same inputs and stopping before the plan exists;
-    // a form flag there shapes something the phase does not reach, which is inert rather than
-    // wrong. Refusing it would also mean an invocation could not carry one set of flags across both
-    // phases, which is exactly how the round-trip is driven.
+    // `probe` is deliberately IN this set although it emits no plan: it is the round-trip's own
+    // first PHASE, so refusing there would stop one invocation carrying one set of flags across
+    // both halves — which is how the round-trip is driven. `bundle` and `why` produce something
+    // else entirely and are told so.
     let plans_or_probes = matches!(
         mode,
         Mode::Plan | Mode::Apply | Mode::RoundTrip | Mode::Probe

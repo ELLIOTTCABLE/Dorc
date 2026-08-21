@@ -105,20 +105,16 @@ pub fn canonical_decision(
     interner: &dorc_core::Interner,
     diags: &[Diag],
 ) -> String {
-    // EXHAUSTIVE destructure, exactly as [`canon_step`] takes a `Step` apart: a new `Plan` field
-    // stops this compiling until somebody classifies it identity-or-exempt. Field-by-field reads
-    // caught a new field only when it happened to move rendered bytes
-    // (`30Nd:fnd-the-canon-does-not-destructure-plan`).
+    // EXHAUSTIVE, as [`canon_step`] is: field-by-field reads caught a new `Plan` field only when it
+    // happened to move rendered bytes (`30Nd:fnd-the-canon-does-not-destructure-plan`).
     let Plan {
         steps,
         regions,
-        // EXEMPT (Exempt::Timing): the survival report is 24F §3a INSTRUMENTATION — fire-rates and
-        // demotion counts, never a decision. Its own doc already says digest-exempt.
+        // EXEMPT (Exempt::Timing): 24F §3a instrumentation, never a decision.
         survival_report: _,
-        // EXEMPT as DERIVED, not as unimportant: `DecidedRender` is a pure function of `steps`,
-        // `regions`, the defensive-emission input and `(src, ast)`, and every one of those reaches
-        // this canon — the first two structurally below, the last three through the byte-exact
-        // `render.apply` at (3), which is where a defensive munge or a refused edit shows up.
+        // EXEMPT as DERIVED: a pure function of the two fields above plus the defensive-emission
+        // input and `(src, ast)`, all of which reach this canon — the last three through the
+        // byte-exact `render.apply` at (3), where a munge or a refused edit shows up.
         render: _,
     } = plan;
     let mut out = String::new();
@@ -128,8 +124,8 @@ pub fn canonical_decision(
         out.push_str(&canon_step(step));
         out.push('\n');
     }
-    // (1a) the SHARED region decisions (`plans/30L`). Emitted only when the book has any, so a
-    // book with no eligible calls keeps the canon it had before regions existed
+    // (1a) the SHARED region decisions (`plans/30L`), emitted only when the book has any — so a
+    // book with no eligible calls keeps its pre-region canon
     // (`30L:pin-empty-function-world-parity`).
     if !regions.is_empty() {
         out.push_str("== regions ==\n");

@@ -91,8 +91,7 @@ pub(crate) fn publish<'a>(
     for _ in 0..NAME_ATTEMPTS {
         let staging = root.join(format!(".dorc-staging-{next:04}"));
         let published = root.join(generation_name(next));
-        // The staging directory is created EXCLUSIVELY, so a concurrent run cannot be writing into
-        // the same tree, and its published name is checked in the same breath.
+        // EXCLUSIVE, so a concurrent run cannot be writing into the same tree.
         match create_directory_exclusive(&staging) {
             Ok(()) if !published.exists() => {
                 return match write_set(&staging, &files).and_then(|()| {
@@ -100,8 +99,7 @@ pub(crate) fn publish<'a>(
                 }) {
                     Ok(()) => Ok(published),
                     Err(refusal) => {
-                        // Ours, created this call: removing it is the whole atomicity story, and it
-                        // can only ever reach files this call wrote.
+                        // Ours, created this call: the removal can only ever reach what it wrote.
                         let _ = std::fs::remove_dir_all(&staging);
                         Err(refusal)
                     }
@@ -124,8 +122,7 @@ pub(crate) fn publish<'a>(
 fn write_set(staging: &Path, files: &[(&str, &str)]) -> Result<(), PublishRefusal> {
     for (relative, bytes) in files {
         let path = staging.join(relative);
-        // Belt-and-braces over `crate::artifact::placeable`: a path that escapes cannot be one the
-        // selector produced, and refusing a second time costs nothing.
+        // Belt-and-braces over `crate::artifact::placeable`: refusing twice costs nothing.
         if !path.starts_with(staging)
             || path
                 .components()
@@ -340,8 +337,8 @@ mod tests {
     fn a_failed_mid_publication_leaves_no_partial_artifact() {
         let scratch = Scratch::new("failed-publication-leaves-nothing");
         let root = PathBuf::from(scratch.dir());
-        // The staging directory the first attempt will choose, with an occupied `oracles` name
-        // inside it: the plan writes, then the dependency's parent cannot be created.
+        // Occupy the `oracles` name inside the staging directory the first attempt will choose, so
+        // the plan writes and then the dependency's parent cannot be created.
         let staging = root.join(".dorc-staging-0001");
         std::fs::create_dir(&staging).expect("staging squat");
         std::fs::write(staging.join("oracles"), b"not a directory").expect("occupant");
@@ -353,8 +350,6 @@ mod tests {
             ]
             .into_iter(),
         );
-        // The squatted staging name is stepped over, and the attempt that runs fails on its own
-        // second file — either way NOTHING is published.
         assert!(refusal.is_ok() || refusal == Err(PublishRefusal::Write));
         if refusal.is_err() {
             assert!(
