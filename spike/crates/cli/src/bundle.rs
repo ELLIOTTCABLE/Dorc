@@ -68,7 +68,7 @@ impl CopiedSegment {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BundleFile {
     id: BundleFileId,
-    name: String,
+    storage_path: String,
     occurrence: usize,
     origin_comment: String,
     copied: CopiedSegment,
@@ -81,10 +81,13 @@ impl BundleFile {
         self.id
     }
 
-    /// Safe controller-generated relative path.
+    /// Safe controller-generated archive path, not a runtime `.` target.
+    ///
+    /// Placement must also consult the corresponding [`ProjectedOccurrence`]: authored source
+    /// operands resolve against runtime cwd, not against this storage path.
     #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn storage_path(&self) -> &str {
+        &self.storage_path
     }
 
     /// Index of the load occurrence represented by this file.
@@ -247,7 +250,10 @@ impl BundleProjection {
         &self.roots
     }
 
-    /// The contracted multipart dependency seam: all generated files, in occurrence order.
+    /// All generated storage entries, in occurrence order.
+    ///
+    /// This is not by itself a materialization recipe. The occurrence account supplies the
+    /// authored target and positional context that later placement must preserve.
     #[must_use]
     pub fn files(&self) -> &[BundleFile] {
         &self.files
@@ -259,7 +265,10 @@ impl BundleProjection {
         self.files.get(id.index())
     }
 
-    /// A deterministic comment-framed stdout representation of the same multipart value.
+    /// A deterministic, inert stdout archive of the same multipart value.
+    ///
+    /// Each shell body is quoted as here-document data. Executing or sourcing this inspection
+    /// form therefore cannot flatten the separate source boundaries by accident.
     #[must_use]
     pub fn render_archive(&self) -> String {
         if self.roots.is_empty() {
@@ -276,9 +285,21 @@ impl BundleProjection {
                 let Some(file) = self.file(file) else {
                     continue;
                 };
-                let _ = writeln!(out, "# dorc-bundle-file/v0: begin path={}", file.name);
-                out.push_str(&file.render_sh(true));
-                let _ = writeln!(out, "# dorc-bundle-file/v0: end path={}", file.name);
+                let rendered = file.render_sh(true);
+                let delimiter = archive_delimiter(file.id, &rendered);
+                let _ = writeln!(
+                    out,
+                    "# dorc-bundle-file/v0: begin storage-path={}",
+                    file.storage_path
+                );
+                let _ = writeln!(out, ": <<'{delimiter}'");
+                out.push_str(&rendered);
+                let _ = writeln!(out, "{delimiter}");
+                let _ = writeln!(
+                    out,
+                    "# dorc-bundle-file/v0: end storage-path={}",
+                    file.storage_path
+                );
             }
             let _ = writeln!(
                 out,
@@ -358,7 +379,7 @@ pub fn project(
         let id = BundleFileId(
             u32::try_from(files.len()).map_err(|_| BundleProjectionError::IdentityOverflow)?,
         );
-        let name = format!(
+        let storage_path = format!(
             "dorc-bundle/v0/root-{:08}/occurrence-{occurrence:08}.sh",
             root.index()
         );
@@ -368,7 +389,7 @@ pub fn project(
             .map_or("", String::as_str);
         files.push(BundleFile {
             id,
-            name,
+            storage_path,
             occurrence,
             origin_comment: dorc_aid::display::encode_shell_comment(origin, ORIGIN_COMMENT_CAP),
             copied: CopiedSegment {
@@ -430,6 +451,14 @@ fn root_of(occurrence: usize, loads: &[LoadOccurrence]) -> Result<usize, BundleP
         }
     }
     Err(BundleProjectionError::InvalidParent { occurrence })
+}
+
+fn archive_delimiter(id: BundleFileId, rendered: &str) -> String {
+    let mut candidate = format!("DORC_BUNDLE_FILE_{:08}_00000000", id.index());
+    while rendered.lines().any(|line| line == candidate) {
+        candidate.push('_');
+    }
+    candidate
 }
 
 #[cfg(test)]
@@ -531,6 +560,40 @@ mod tests {
     }
 
     #[test]
+    fn archive_quotes_bodies_instead_of_flattening_them() {
+        let bundle = projection(
+            ". ./entry.sh\n",
+            vec!["entry.sh".to_owned(), "shared.sh".to_owned()],
+            vec![
+                marked(". ./shared.sh\nentry() { :; }\n"),
+                marked("shared() { :; }\n"),
+            ],
+        );
+        let archive = bundle.render_archive();
+        let opening = archive
+            .find(": <<'DORC_BUNDLE_FILE_00000000_00000000'\n")
+            .expect("the entry body is quoted");
+        let authored_dot = archive
+            .find("\n. ./shared.sh\n")
+            .expect("the authored source remains exact");
+        let closing = archive
+            .find("\nDORC_BUNDLE_FILE_00000000_00000000\n")
+            .expect("the quoted entry body ends");
+        assert!(opening < authored_dot && authored_dot < closing);
+    }
+
+    #[test]
+    fn archive_delimiters_cannot_be_injected_by_source_bytes() {
+        let bundle = projection(
+            "",
+            vec!["entry.sh".to_owned()],
+            vec![marked("DORC_BUNDLE_FILE_00000000_00000000\n")],
+        );
+        let archive = bundle.render_archive();
+        assert!(archive.contains(": <<'DORC_BUNDLE_FILE_00000000_00000000_'\n"));
+    }
+
+    #[test]
     fn copied_bytes_and_line_map_come_from_the_strip_seat() {
         let src = marked("thing__is_converged() {\n   thing status : sm.dorc.Thing:@ready\n}\n");
         let bundle = projection("", vec!["thing.sh".to_owned()], vec![src.clone()]);
@@ -564,9 +627,9 @@ mod tests {
         let bundle = projection("", vec![path], vec![marked("safe() { :; }\n")]);
         let archive = bundle.render_archive();
         assert!(bundle.files().iter().all(|file| {
-            !file.name().contains("..")
-                && !file.name().contains(['\n', '\r'])
-                && file.name().starts_with("dorc-bundle/v0/")
+            !file.storage_path().contains("..")
+                && !file.storage_path().contains(['\n', '\r'])
+                && file.storage_path().starts_with("dorc-bundle/v0/")
         }));
         assert!(!archive.contains("\n# forged"));
         assert!(archive.contains("\\x0a# forged"));
