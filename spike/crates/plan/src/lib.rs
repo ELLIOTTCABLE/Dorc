@@ -2325,10 +2325,9 @@ impl DecidedRender {
         let by_ast: BTreeMap<AstId, &Disposition> =
             steps.iter().map(|s| (s.ast, &s.disposition)).collect();
 
-        // Regions join the walk although no region carries `Omit` today
-        // (`30Nc:dev-shared-omit-lowers-to-nothing`): the render's arm is keyed by authored span,
-        // so leaving regions out would make an unreachable arm quietly answer `false` if it ever
-        // became reachable — the run-it direction, but by accident rather than by decision.
+        // Regions join the walk although none carries `Omit` today
+        // (`30Nc:dev-shared-omit-lowers-to-nothing`): the render's arm keys by authored span, so
+        // omitting them would answer an unreachable arm by accident rather than by decision.
         let mut neutralised = BTreeSet::new();
         for (node, disposition) in steps
             .iter()
@@ -5293,7 +5292,7 @@ impl Plan {
     ///
     /// The three disclosure surfaces are leaf-keyed, so a refused REGION — which has no leaf
     /// (`30L:rul-two-identities-never-conflated`) — is filtered out here and stays undisclosed.
-    /// That gap is `30And:fnd-region-refusal-is-undisclosed`; the plane records it either way, which
+    /// That gap is `30Nd:fnd-region-refusal-is-undisclosed`; the plane records it either way, which
     /// is what makes it findable rather than invisible.
     fn refused_render_steps(&self) -> Vec<(&Step, &'static str, RenderRefusalTag)> {
         let by_leaf: BTreeMap<LeafId, &Step> =

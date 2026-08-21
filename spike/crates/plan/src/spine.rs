@@ -228,7 +228,7 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
 /// second computation of the same question.
 ///
 /// A refused REGION carries no leaf and so reaches no `SpineRenderDecision`
-/// (`30And:fnd-region-refusal-is-undisclosed`); it is decided and readable on the plane
+/// (`30Nd:fnd-region-refusal-is-undisclosed`); it is decided and readable on the plane
 /// (`DecidedRender::refused`), and the record species would need a region key to hold it.
 pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
     use dorc_core::spine::{RefusalCause, RenderDecision, SpineRenderDecision};

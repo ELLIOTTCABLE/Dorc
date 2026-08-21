@@ -46,4 +46,10 @@ extend-ignore-re = [
    # machine-generated-hex problem as `book=` above — a digest run spells `ba`. Dies with the
    # baseline at the fold review.
    "digest[= ][0-9a-f]+",
+   # Research-corpus docIDs: a round number plus a lane letter, optionally a sub-lane letter
+   # (`28Q`, `27C`, `30Mc`, `30Nd`). Machine identifiers into the corpus, not words — and typos
+   # WRITES over some of them in fix mode, which silently breaks a cross-reference the docid lint
+   # then reports as dangling (measured: `30Nd` -> `30And`, r30). Keyed on the UPPERCASE letter so
+   # ordinal words (`30th`) stay spell-checked.
+   "\\b[0-9]{2,3}[A-Z][a-z]?\\b",
 ]

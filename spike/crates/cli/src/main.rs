@@ -1936,8 +1936,7 @@ fn run(
     report("solve", book_source, &trip_diags);
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
     // assembly, and it exists at all only because the intake handed this run an authority and the
-    // certifier latch was spent. It also DECIDES the render (`30E` §3) and records what it decided,
-    // so no surface below re-takes a decision this seat already took.
+    // certifier latch was spent. It also DECIDES and records the render (`30E` §3).
     let plan = dorc_plan::project_plan(&mut spine, &book_src, &parsed.value, &authority, &spent);
     record_new_arm(
         &mut spine,
@@ -2521,7 +2520,7 @@ const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal
 /// are deliberately never-survives — `the-fixpoint-owns-the-rounds-and-builds-nothing-else` — so
 /// recording them means deciding what a round may leave behind, which is its own question), and
 /// `SpineOutcome` (the exit-code seat runs past every projection and holds no Spine there; found by
-/// the `30And` meaning-audit, where `30F` §4.5 had disclosed only the first three).
+/// the `30Nd` meaning-audit, where `30F` §4.5 had disclosed only the first three).
 #[expect(
     clippy::too_many_arguments,
     reason = "one recording pass over independent analysis products; a params struct would be this signature re-spelled"

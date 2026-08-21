@@ -1971,9 +1971,8 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
          predicate, and before this the only one that ever saw a redirect refusal"
     );
 
-    // The DECISION-PLANE record carries the real cause too. It used to hard-code `Heredoc`, which
-    // made the record state a falsehood for exactly the class `30Mf` F2 had just made reachable —
-    // and nothing read it, so nothing said so (`30And` meaning-audit).
+    // The DECISION-PLANE record carries the real cause too — it hard-coded `Heredoc`, so it stated
+    // a falsehood for exactly the class `30Mf` F2 made reachable (`30Nd` meaning-audit).
     let mut spine = dorc_plan::Spine::new();
     dorc_plan::spine::record_render_decisions(&mut spine, &plan);
     assert!(

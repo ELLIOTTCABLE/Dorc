@@ -375,7 +375,7 @@ pub struct SpineRecordStream<P: DecidePlane> {
 pub struct SpineDisposition<P: DecidePlane> {
     /// The fine site key (`inv-site-keyed-results`): `(leaf, member)`, never collapsed.
     ///
-    /// AS POPULATED (`30And` meaning-audit): the member axis is `None` on every row today — the
+    /// AS POPULATED (`30Nd` meaning-audit): the member axis is `None` on every row today — the
     /// settlement decides per LEAF, and a member population arrives with the loop-propagation lane
     /// (`30N` §3's `pin-loop-types-need-no-rekey`). The key is fine-grained so that arrival is a
     /// widening rather than a re-key; it is not evidence that members are being distinguished yet.
@@ -401,7 +401,7 @@ pub struct SpineDigest {
 
 /// A definition-plane decision: which body a role name binds to, and why a family was withheld.
 ///
-/// AS POPULATED, narrower than the species name suggests (`30And` meaning-audit): the only writer
+/// AS POPULATED, narrower than the species name suggests (`30Nd` meaning-audit): the only writer
 /// records WITHHOLDINGS, so an ordinary binding — the "which body a role name binds to" half —
 /// reaches no record at all, and [`withheld`](Self::withheld) is `Some` on every row that exists.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -461,7 +461,7 @@ pub struct SpineSiteClassification {
 
 /// One certification outcome (`plans/302`).
 ///
-/// AS POPULATED (`30And` meaning-audit): the sole production writer emits ONE `whole-window` row per
+/// AS POPULATED (`30Nd` meaning-audit): the sole production writer emits ONE `whole-window` row per
 /// run, derived from the run-wide latch — not one row per solve pass. Whether it should be per-pass
 /// is a pending human direction (`30M:ask-certification-row-shape`); the fields below say what the
 /// row means TODAY rather than what a per-pass row would.
@@ -530,7 +530,7 @@ pub enum ShipLane {
 
 /// The closed intake outcome (`rul-admission-is-a-closed-outcome`).
 ///
-/// AS POPULATED (`30And` meaning-audit): the recording seat runs AFTER the refusal path has already
+/// AS POPULATED (`30Nd` meaning-audit): the recording seat runs AFTER the refusal path has already
 /// returned (`rul-integrity-failure-withholds-mutation` — a refusal emits no plan and never reaches
 /// here), so only the two authority-carrying arms are ever written. A run that refused has no
 /// admission record at all rather than a `Refused` one.
@@ -748,7 +748,7 @@ pub struct SpineRegionDecision<P: DecidePlane> {
 /// The run's outcome — authority-adjacent, because `EXIT_BOOK_UNMODELED` exists precisely so a
 /// `dorc … && deploy` chain STOPS (`30E` §4).
 ///
-/// NOT MINTED (`30And` meaning-audit; the fifth unminted species, where `30F` §4.5 disclosed four):
+/// NOT MINTED (`30Nd` meaning-audit; the fifth unminted species, where `30F` §4.5 disclosed four):
 /// its seat is the cli driver's exit-code computation, which runs after every projection and owns
 /// no Spine at that point. Recording it means deciding what an outcome record means for a run that
 /// refused before planning — the same question the admission species answers by absence.
