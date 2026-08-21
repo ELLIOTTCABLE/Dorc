@@ -95,10 +95,9 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
         ));
     }
     // `dec-certifier-trip-cleanup` (`30E` §3) lands in the decision plane rather than staying a
-    // post-construction mutation nobody records. What the record does NOT do is dissolve the
-    // must-remember-to-ask surface: it moved the cleanup's RESULT into the plane, never the ACT of
-    // calling it, and four producers had already forgotten the act by the time this was written
-    // (`30Md:fnd-discarded-trip-retains-elisions`). Dissolving it structurally is
+    // post-construction mutation nobody records. It does NOT dissolve the must-remember surface —
+    // it moved the RESULT into the plane, never the ACT of calling it, and four producers had
+    // already forgotten the act (`30Md:fnd-discarded-trip-retains-elisions`). Dissolving it is
     // `30M:rec-dissolve-trip-must-remember-structurally`, unbuilt; until then the surface is held
     // by `project_censusless` and the lexical producer fence beside it.
     for site in demoted_sites {
@@ -111,19 +110,14 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
     out
 }
 
-/// The whole TAIL of a plan producer that holds no body-occupancy census: spend the run's latch,
-/// then project (`302:rul-certifier-trip-guard-only`).
+/// The whole TAIL of a plan producer holding no body-occupancy census: spend the run's latch, then
+/// project (`302:rul-certifier-trip-guard-only`).
 ///
-/// One seat rather than a spend-then-project pair at each producer, because the two are not
-/// independent acts. `build_plan_walled` hands back a Spine AND a latch its settlement may have
-/// raised, and projecting without spending it is exactly what four producers were doing
-/// (`30Md:fnd-discarded-trip-retains-elisions`): a cross-window trip is invisible to the
-/// mid-pipeline floors, so the terminal walk is the only thing that evicts it.
-///
-/// Censusless is the honest posture for every instrument here — none of them holds a
-/// `DefinitionTable` — so every guard demotes with everything else
-/// (`FORFEITS:forfeit-certifier-trip-demotes-guards`: always safe, merely poorer). The cli, which
-/// does hold one, keeps its own census-aware seat and its banner.
+/// ONE seat, because the two are not independent acts: `build_plan_walled` hands back a Spine AND a
+/// latch its settlement may have raised, and a cross-window trip is invisible to the mid-pipeline
+/// floors, so this walk is the only thing that evicts it (`30Md:fnd-discarded-trip-retains-elisions`).
+/// Censusless is honest for every instrument here — none holds a `DefinitionTable` — so every guard
+/// demotes too (`FORFEITS:forfeit-certifier-trip-demotes-guards`: safe, merely poorer).
 #[must_use]
 pub fn project_censusless(
     spine: &mut Spine,
@@ -409,14 +403,10 @@ apt_get__predict() {
         );
     }
 
-    /// The producer TAIL, over a REAL elision and a REAL trip: a censusless driver that spends its
-    /// latch through the shared seat cannot ship a tripped plan that still elides
-    /// (`30Md:fnd-discarded-trip-retains-elisions`, which four producers had).
-    ///
-    /// The latch is the genuine checker's, threaded into the seat as a producer threads it — never
-    /// a demotion hand-applied at the projection, which would assert the policy against itself
-    /// (`anti-masking-tests`). The clean-latch half is what makes it non-vacuous: the same spine,
-    /// the same seat, an untripped latch, and the elision SURVIVES.
+    /// The producer TAIL over a REAL elision and a REAL trip: a censusless driver spending its
+    /// latch through the shared seat cannot ship a tripped plan that still elides. The latch is the
+    /// genuine checker's, threaded as a producer threads it, never hand-applied at the projection
+    /// (`anti-masking-tests`); the clean-latch half is what makes it non-vacuous.
     #[test]
     fn a_censusless_producer_spends_its_trip_before_projecting() {
         let elided = a_real_elide_plan().steps;
@@ -444,17 +434,11 @@ apt_get__predict() {
         );
     }
 
-    /// THE PRODUCER FENCE. `build_plan_walled` hands its caller a Spine *and* a latch its own
-    /// settlement may have raised; a cross-window trip is invisible to the mid-pipeline floors, so
-    /// the terminal walk is the only thing that evicts it and projecting without one retains
-    /// elisions a tripped run may not keep. Four producers did exactly that, silently
-    /// (`30Md:fnd-discarded-trip-retains-elisions`).
-    ///
-    /// The set of files that may produce a plan is therefore ENUMERATED here and checked both ways:
-    /// a producer that stops spending its latch fails, and a FIFTH producer is a deliberate act
-    /// with a diff rather than a silent omission. Lexical, in the shape
-    /// `erase::licence_mint_has_exactly_one_caller` already uses, because "no file builds a walled
-    /// plan without spending its latch" is a property no type bound expresses while
+    /// THE PRODUCER FENCE. Four producers projected without spending their latch, silently
+    /// (`30Md:fnd-discarded-trip-retains-elisions`), so the set of files that may build a walled
+    /// plan is ENUMERATED here and checked both ways: one that stops spending fails, and a FIFTH
+    /// producer is a deliberate act with a diff. Lexical, like
+    /// `erase::licence_mint_has_exactly_one_caller`, because no type bound expresses it while
     /// `30M:rec-dissolve-trip-must-remember-structurally` is unbuilt.
     #[test]
     fn every_plan_producer_spends_its_certifier_trip() {

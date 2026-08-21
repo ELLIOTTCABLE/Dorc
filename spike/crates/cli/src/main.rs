@@ -370,11 +370,10 @@ fn resolve_pre_sources(
 /// first. The loop re-scans what it appends, which is what makes it transitive; it terminates
 /// because a path already present is never appended again.
 ///
-/// The third return is exactly what this appended — the sources acquired for somebody's load
-/// program rather than named by the invocation. They are LOADABLE, never ambient roots: the
-/// invocation's own roots reach them at their authored `.` positions, and a synthetic second run
-/// of their programs would restore definitions the author removed
-/// (`30Mc:required-root-occurrence-identity`).
+/// The third return is exactly what this appended: sources acquired for somebody's load program
+/// rather than named by the invocation. They are LOADABLE, never ambient roots — the roots reach
+/// them at their authored `.` positions, and a synthetic second run of their programs would restore
+/// definitions the author removed (`30Mc:required-root-occurrence-identity`).
 fn read_sourced_oracles(
     cwd: &dorc_core::loadpath::Cwd,
     mut paths: Vec<String>,
@@ -426,10 +425,9 @@ fn read_sourced_oracles(
 /// caller-loop control, anything a dumb inliner would miscompile — where its author put it
 /// (`30I` §7.2).
 ///
-/// `load_dependencies` rides through because each round SOLVES: an include guard whose condition
-/// reads the environment decides differently when a dependency is wrongly a root, and a guard that
-/// decides "already loaded" wants nothing — so a stale world here loses a file rather than merely
-/// over-reading one.
+/// `load_dependencies` rides through because each round SOLVES: an include guard decides
+/// differently when a dependency is wrongly a root, and one deciding "already loaded" wants
+/// nothing — so a stale world here LOSES a file rather than merely over-reading one.
 fn read_book_sourced(
     cwd: &dorc_core::loadpath::Cwd,
     book_path: &str,
@@ -2596,12 +2594,8 @@ fn record_new_arm(
             SkipClass::EstablishProbeWritten(fact) => ("EstablishProbeWritten", vec![*fact]),
             SkipClass::QueryResolvable { fact, .. } => ("QueryResolvable", vec![*fact]),
             SkipClass::EstablishMembers { members, .. } => ("EstablishMembers", members.clone()),
-            // The ordered member account, in its own order — an aggregate keys on every one of them
-            // (`aggregate-mints-carry-the-same-demand`), so an empty list said the site decided on
-            // nothing (`30Mc` F3).
-            // The ordered member account, in its own order — an aggregate keys on every one of them
-            // (`aggregate-mints-carry-the-same-demand`), so an empty list said the site decided on
-            // nothing (`30Mc` F3).
+            // The ordered member account: an aggregate keys on every one
+            // (`aggregate-mints-carry-the-same-demand`), so an empty list said it keyed on nothing.
             SkipClass::InlineCall { sites } => (
                 "InlineCall",
                 sites
@@ -2624,9 +2618,8 @@ fn record_new_arm(
             // The REAL invalidator set, which is what the field says it is. `kills` alone was false
             // for every ordinary establish and every opaque leaf — the majority of what gens into
             // reach (`30Mc` F3 · `classify-answers-with-its-invalidators`).
-            // The REAL invalidator set, which is what the field says it is. `kills` alone was false
-            // for every ordinary establish and every opaque leaf — the majority of what gens into
-            // reach (`30Mc` F3 · `classify-answers-with-its-invalidators`).
+            // The REAL invalidator set (`classify-answers-with-its-invalidators`): `kills` alone
+            // read false for every ordinary establish and every opaque leaf.
             invalidator: invalidators.contains(node),
             cells: dorc_core::spine::Account::capped(cells),
             grade: None,
@@ -3772,14 +3765,11 @@ mod spine_record_tests {
         )
     }
 
-    /// `30Mc` F3, both flat falsehoods at once. `invalidator` is documented "gens into reach" and
-    /// was written from `kills` alone — false for every ordinary establish, which is most of what
-    /// gens; and an `InlineCall` mapped its ORDERED member account to an empty cell list, saying the
-    /// site decided on nothing.
-    ///
-    /// Driven through `record_new_arm` rather than a hand-built record, because the defect was the
-    /// WIRING (which set the seat reads), and a pure per-record helper would have been just as wrong
-    /// while passing (`anti-masking-tests`).
+    /// `30Mc` F3, both flat falsehoods at once: `invalidator` is documented "gens into reach" and
+    /// was written from `kills` alone (false for every ordinary establish), and an `InlineCall`
+    /// mapped its ordered member account to an EMPTY cell list. Driven through `record_new_arm`
+    /// because the defect was the WIRING — which set the seat reads — and a pure per-record helper
+    /// would have been just as wrong while passing (`anti-masking-tests`).
     #[test]
     fn a_classification_record_states_what_its_fields_promise() {
         let src = "apt-get install -y nginx\napt-get install -y curl\n";
@@ -4022,11 +4012,10 @@ mod acquisition_tests {
             .definition_before(cfg.exit(), role)
     }
 
-    /// THE REPLAY. A pre-source's dependency runs where its author `.`'d it and NOWHERE else, so
-    /// the `unset -f` after that `.` is the last word — as it is in sh. Promoted to a root, the
-    /// dependency's program ran a second time after the authored one finished and RESTORED the
-    /// verdict function, minting vouch authority no live judgment stands behind
-    /// (`30Mc:finding-transitive-pre-source-replays-as-root`).
+    /// THE REPLAY. A pre-source's dependency runs where its author `.`'d it and nowhere else, so
+    /// the `unset -f` after that `.` is the last word, as in sh. Promoted to a root, its program
+    /// ran again after the authored one finished and RESTORED the verdict function — vouch
+    /// authority no live judgment stands behind (`30Mc:finding-transitive-pre-source-replays-as-root`).
     #[test]
     fn a_pre_source_dependency_runs_only_at_its_authored_dot() {
         let role = "wombat__is_converged";
@@ -4046,10 +4035,9 @@ mod acquisition_tests {
         );
     }
 
-    /// THE REVERSE CELL, and the reason the repair is a positional fix rather than a suppression:
-    /// a definition the root makes AFTER its `.` still wins, because the dependency ran first and
-    /// the root's own later act is the later one. Were the dependency replayed as a root it would
-    /// run LAST and shadow this.
+    /// THE REVERSE CELL — the repair is positional, not a suppression: a definition the root makes
+    /// AFTER its `.` still wins, because the dependency ran first. Replayed as a root it would run
+    /// LAST and shadow this.
     #[test]
     fn a_definition_after_a_sourced_dependency_stays_positionally_later() {
         let role = "wombat__is_converged";

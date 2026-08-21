@@ -16,11 +16,10 @@
 //! # The ambient split is a load-POSITION fact, not a provenance one
 //!
 //! Sources the invocation NAMED load before the book's first line, so their definitions are
-//! ambient. Everything else loads at the `.` that reaches it: a source reached only from a book
-//! `.` binds at that line, and one acquired because a named root sources it binds inside that
-//! root's own load program. Making either ambient would let it license sites ABOVE its own load
-//! point, and would REPLAY its program a second time after the authored one finished — which can
-//! restore a definition the author removed (`30Mc:required-root-occurrence-identity`).
+//! ambient. Everything else loads at the `.` that reaches it — a book's, or a named root's own.
+//! Making either ambient would let it license sites ABOVE its load point AND replay its program
+//! after the authored one finished, restoring definitions the author removed
+//! (`30Mc:required-root-occurrence-identity`).
 //!
 //! # Role is CARRIED, never derived from position
 //!
@@ -50,9 +49,8 @@ pub enum SourceRole {
     /// A root reached only from a book `.`. It loads AT that line and nowhere else, so its
     /// definitions license nothing above their own load point.
     BookSourced,
-    /// A source acquired only because a NAMED root's own top level sources it. It loads at that
-    /// `.`, inside its sourcer's load program — never before line 1 and never again as a root of
-    /// its own.
+    /// A source acquired only because a NAMED root's top level sources it: it loads at that `.`,
+    /// inside its sourcer's program, never before line 1 and never again as a root of its own.
     LoadDependency,
 }
 
@@ -64,12 +62,12 @@ impl SourceRole {
     }
 }
 
-/// Which acquired sources do NOT load before the book's first line, and why — the classification
+/// Which acquired sources do NOT load before the book's first line, and why — what
 /// [`StaticLoadSnapshot::over`] turns into [`SourceRole`]s.
 ///
-/// One value rather than two `BTreeSet<usize>` parameters side by side, because those are
-/// swappable without a type error and the constructor must DEMAND both answers: a dependency
-/// silently defaulting to root is `30Mc:finding-transitive-pre-source-replays-as-root` itself.
+/// One value rather than two `BTreeSet<usize>` parameters side by side: those are swappable without
+/// a type error, and the constructor must DEMAND both answers — a dependency silently defaulting to
+/// root is `30Mc:finding-transitive-pre-source-replays-as-root` itself.
 #[derive(Debug, Default, Clone)]
 pub struct LoadPositions {
     book_sourced: std::collections::BTreeSet<usize>,
@@ -416,8 +414,8 @@ mod tests {
     }
 
     /// A source acquired for a named root's load program is NOT a root: it binds where its
-    /// sourcer's `.` runs it, and a second, ambient run of its program would replay acts the
-    /// author already wrote — restoring, among other things, a definition the root `unset -f`'d
+    /// sourcer's `.` runs it, and a second ambient run would replay acts the author already wrote
+    /// — restoring, among other things, a definition the root `unset -f`'d
     /// (`30Mc:required-root-occurrence-identity`).
     #[test]
     fn a_load_dependency_is_never_a_prelude_root() {

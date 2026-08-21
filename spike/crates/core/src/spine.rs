@@ -395,13 +395,11 @@ pub struct SpineSiteClassification {
     pub class: &'static str,
     /// Whether the site is verdict-lane (`verdict-lane-is-site-keyed`).
     pub verdict_lane: bool,
-    /// Whether this LEAF gens into reach as an invalidator.
-    ///
-    /// Leaf-scoped, and the narrower truth on purpose: the effective invalidator set also holds
-    /// non-leaves — a `$( … )` body command, a write-shaped redirection, an unmodeled construct
-    /// (`classify-answers-with-its-invalidators`) — and those have no site to be keyed by, so this
-    /// record cannot speak for them. Reading a `false` here as "nothing gens at this position" is
-    /// therefore wrong; widening the record to carry them is a representation question, not a fix.
+    /// Whether this LEAF gens into reach as an invalidator — leaf-scoped, the narrower truth on
+    /// purpose. The effective set also holds non-leaves (a `$( … )` body command, a write-shaped
+    /// redirection, an unmodeled construct — `classify-answers-with-its-invalidators`) which have
+    /// no site to be keyed by, so a `false` here never means "nothing gens at this position".
+    /// Widening the record to carry them is a representation question, not a fix.
     pub invalidator: bool,
     /// The cells this site's decision keys on, capped. For an aggregate that is its ORDERED member
     /// account, not a representative (`aggregate-mints-carry-the-same-demand`).
@@ -556,11 +554,9 @@ pub enum SurvivalDemote {
     /// A same-kind pair could not be canonicalized (`24F` §3a). A SWAMPED count is a finding to
     /// report about the resolvers, never a license to weaken the may-alias default.
     MayAlias,
-    /// A reach solve failed its own post-fixpoint check, so nothing rests on its answer
-    /// (`302:rul-whole-window-demotion`). Distinct from `TotalWall` because it is a finding about
-    /// OUR solver and not a claim about the book's mutators — narrating it as a wall tells an admin
-    /// their script caused a demotion we caused (`302` §5's admin-honesty, and `271:rul-sin-ordering`
-    /// mis-attribution).
+    /// A reach solve failed its own post-fixpoint check (`302:rul-whole-window-demotion`). Distinct
+    /// from `TotalWall`: a finding about OUR solver, not a claim about the book's mutators
+    /// (`302` §5 admin-honesty · `271:rul-sin-ordering`).
     SolveInconsistent,
 }
 

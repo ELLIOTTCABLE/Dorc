@@ -244,9 +244,8 @@ fn record_survival(spine: &mut Spine, leaf: LeafId, account: SurvivalAccount) {
         SurvivalAccount::Demoted(cause) => SurvivalOutcome::Demoted(match cause {
             StaleCause::Poisoned { .. } => SurvivalDemote::Poisoned,
             StaleCause::MayAlias => SurvivalDemote::MayAlias,
-            // A solve nobody may trust takes the same FLOOR as a total wall and wears its own name:
-            // the demotion is ours, and calling it a wall points an admin at their own mutators for
-            // an engine defect (`302` §5 admin-honesty · `271:rul-sin-ordering`).
+            // Same FLOOR as a total wall, its own NAME: calling our defect a wall points an admin
+            // at their own mutators (`302` §5 admin-honesty · `271:rul-sin-ordering`).
             StaleCause::SolveInconsistent => SurvivalDemote::SolveInconsistent,
             StaleCause::TotalWall | StaleCause::RederivationDisagreed { .. } => {
                 SurvivalDemote::TotalWall
@@ -364,9 +363,8 @@ pub struct Settlement {
     pub effective_solve_failures: u32,
 }
 
-/// One members-site's SELF-SUPPRESSED reach answer, with the certification that decides whether it
-/// may be read at all — carried together because reading either alone is the defect
-/// (`30Mb:fnd-members-floor-is-a-sentinel`).
+/// One members-site's SELF-SUPPRESSED reach answer with the certification that decides whether it
+/// may be read at all — together, because reading either alone is the defect.
 struct MembersAnswer {
     walls: ReachingWalls,
     consistency: SolveConsistency<ReachingWalls>,
@@ -483,12 +481,8 @@ fn one_round(
             }
             _ => FreshnessSubject::None,
         };
-        // BOTH certifications floor this site, and the members one is the whole reason the seat is
-        // named: the self-suppressed solo solve is a SECOND answer, so a members site rests on a
-        // certification the window's own says nothing about (`30Mb:fnd-members-floor-is-a-sentinel`).
-        // The retired shape handed an uncertified solo a synthetic unresolvable wall, which reached
-        // the same run-or-guard outcome only because the current footprint lift cannot resolve one —
-        // an accident, and one that narrated our solver defect as the book's wall.
+        // BOTH certifications floor this site: the self-suppressed solo solve is a SECOND answer,
+        // and the window's certification says nothing about it (`30Mb:fnd-members-floor-is-a-sentinel`).
         let policy_answer = inputs.policy.freshness(
             &site_walls,
             subject,
@@ -584,11 +578,10 @@ pub(crate) fn floor_uncertified(
 /// THE MEMBERS FLOOR (`30Mb:fnd-members-floor-is-a-sentinel`): the policy's answer over a members
 /// site's SELF-SUPPRESSED walls, floored by that SOLO solve's own certification.
 ///
-/// A second seat because it is a second certification: the window's answer says nothing about the
-/// solo one, so a members site that read only the window's floor would rest on a check nobody ran.
-/// The retired shape handed an uncertified solo a synthetic unresolvable wall instead — which
-/// reached run-or-guard only because the current footprint lift cannot resolve one, an accident
-/// rather than a floor, and one that narrated OUR solver defect as a wall in the admin's book.
+/// A second seat because it is a second certification, and the window's says nothing about it. The
+/// retired shape substituted a synthetic unresolvable wall, which reached run-or-guard only because
+/// the current footprint lift cannot resolve one — an accident rather than a floor, and one that
+/// narrated OUR solver defect as a wall in the admin's book.
 fn members_freshness(answer: &MembersAnswer, policy_answer: Freshness) -> Freshness {
     floor_uncertified(&answer.consistency, policy_answer)
 }
@@ -718,12 +711,10 @@ mod tests {
         );
     }
 
-    /// THE MEMBERS FLOOR, on its own certification. A members site answers from a SECOND,
-    /// self-suppressed solve, and the window's check says nothing about it — so an uncertified solo
-    /// must floor the site whatever the policy answered over its walls, and the walls it answered
-    /// over are the solo's real ones rather than a synthetic sentinel
-    /// (`30Mb:fnd-members-floor-is-a-sentinel`). Unreachable from any book today, which is exactly
-    /// why the seat has to be pinned rather than trusted to a corpus that cannot exercise it.
+    /// THE MEMBERS FLOOR, on its own certification: an uncertified solo floors the site whatever
+    /// the policy answered over its walls, and those walls are the solo's real ones rather than a
+    /// synthetic sentinel (`30Mb:fnd-members-floor-is-a-sentinel`). Unreachable from any book
+    /// today, which is why the SEAT is pinned rather than trusted to a corpus that cannot reach it.
     #[test]
     fn an_uncertified_members_solo_floors_the_site_whatever_the_walls_say() {
         use dorc_analysis::certify::certify_solution;

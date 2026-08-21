@@ -33,10 +33,9 @@ use dorc_syntax::ast::{AndOrOp, Ast, NodeKind};
 /// join here (a node has one status), so ⊤ is the only non-concrete element.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AbstractRc {
-    /// A statically-known exit status. TWO sources, and the difference is load-bearing one layer
-    /// up: a probed observable replayed through the shell's own operator semantics, and the
-    /// STATIC rc-0 the language itself fixes (an empty list, a bare assignment, a funcdef
-    /// statement). Both are sound as fold inputs; only the first is a MEASUREMENT, which is why
+    /// A statically-known exit status, from TWO sources: a probed observable replayed through the
+    /// shell's operator semantics, and the rc-0 the LANGUAGE fixes (empty list, bare assignment,
+    /// funcdef). Both are sound fold inputs; only the first is a MEASUREMENT, which is why
     /// `erasure-is-records-grounded-only` keeps the second out of the no-execution ledger.
     Known(Rc),
     /// Unknown / not-probed / unmodeled ⇒ ⊤. No fold through this (`inv-kfail`).

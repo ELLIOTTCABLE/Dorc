@@ -65,23 +65,17 @@ pub struct SourceLiteralPlane<'a> {
     interner: &'a Interner,
 }
 
-/// May a value of this provenance site a load (`funcenv-reads-source-literal-plane-only`)?
-///
-/// ONLY program text. The four value-prediction species are all refused, `Register` included: it is
-/// certain-by-construction and therefore the tempting one to admit, but which oracle answers a site
-/// would then depend on something outside the program text, and a plan would stop being
-/// reproducible from its own inputs. Widening this is a licensure change, never a convenience.
+/// May a value of this provenance site a load (`funcenv-reads-source-literal-plane-only`)? ONLY
+/// program text — `Register` is the tempting one to admit and is refused with the rest, because
+/// which oracle answers a site would then rest on something outside the program text.
 const fn admits_a_load(grade: ValueGrade) -> bool {
     matches!(grade, ValueGrade::ProgramText)
 }
 
-/// The provenance the VARIABLE plane carries, whole-hog.
-///
-/// `ValueEnv` records no per-variable grade, so the wall over variable-sited loads rests on a
-/// property of its writers: every value in it derives from source literals. Spelled as a constant
-/// rather than left in a doc-comment so it is not a sentence — the day `core`'s `seam-re-bind` folds
-/// a captured value into that environment, THIS line is what stops being true, and the gate above
-/// refuses everything until somebody replaces it with a real per-value grade.
+/// The provenance the VARIABLE plane carries whole-hog: `ValueEnv` records no per-variable grade,
+/// so the wall rests on its writers being source literals. A constant rather than a sentence — when
+/// `seam-re-bind` folds a captured value in, this line is what stops being true and the gate above
+/// then refuses everything.
 const VARIABLE_PLANE_GRADE: ValueGrade = ValueGrade::ProgramText;
 
 impl<'a> SourceLiteralPlane<'a> {
@@ -4063,10 +4057,9 @@ mod tests {
         );
     }
 
-    /// A `.` RUNS IN ITS CALLER'S SHELL (`30I:rul-dot-resolves-as-sh`): what a nested load assigns
-    /// at its top level is live for everything its sourcer does afterwards, so one file can site
-    /// the next one's dependency. Handed a COPY of the caller's variables, the loaded file's
-    /// assignments died with the copy and the second load resolved nowhere
+    /// A `.` RUNS IN ITS CALLER'S SHELL (`30I:rul-dot-resolves-as-sh`): a nested load's top-level
+    /// assignments are live for everything its sourcer does afterwards, so one file can site the
+    /// next one's dependency. Handed a COPY, they died with it
     /// (`30Mc:finding-dot-locals-are-discarded`).
     #[test]
     fn a_nested_loads_assignment_sites_its_sourcers_next_load() {
@@ -4096,11 +4089,9 @@ mod tests {
         assert!(targets_of(&env, LoadRoute::Taken).contains(&"vendored/common.sh"));
     }
 
-    /// THE SCOPE FLOOR, stated positively so a later widening cannot quietly cross it: a `.` inside
-    /// a subshell assigns inside that subshell, and the variable is gone at the closing paren — so
-    /// a load AFTER the paren resolves nowhere. Held today for the broader reason that no book-level
-    /// `.` propagates variables at all (`30Na:fnd-book-level-dot-locals-need-a-domain`); it becomes
-    /// load-bearing the moment they do.
+    /// THE SCOPE FLOOR: a `.` inside a subshell assigns inside it, so a load after the closing
+    /// paren resolves nowhere. Held today for the broader reason that no book-level `.` propagates
+    /// variables at all (`30Na:fnd-book-level-dot-locals-need-a-domain`); load-bearing when they do.
     #[test]
     fn a_subshell_scoped_sources_assignment_dies_at_the_closing_paren() {
         let book = "(\n   . ./root.sh\n)\n. ./entry.sh\nyum install -y nginx\n";
@@ -4128,14 +4119,10 @@ mod tests {
     }
 
     /// CONTAINMENT (`30Mb` §9): a value only the HOST ENVIRONMENT could have supplied moves the
-    /// license plane nowhere, on either of the two doors it could reach.
-    ///
-    /// The engine models one program's own text. A variable no assignment in that text populates
-    /// reads ⊥ everywhere, so a load built from it resolves nowhere and the site havocs; and the
-    /// sentinel census counts ASSIGNMENTS, so a name the program never assigns has no populator at
-    /// all and the guard declines to decide. Both land on ⊤, which is the run direction, whatever
-    /// the host's environment actually holds — an exported `SM_COMMON_LOADED=sm.common/v1` cannot
-    /// buy a reuse arm, and an exported root cannot pick which file answers a site.
+    /// license plane nowhere, on either door. A variable no assignment in the program populates
+    /// reads ⊥, so a load built from it havocs; and the sentinel census counts ASSIGNMENTS, so an
+    /// unpopulated name decides no guard. Both land on ⊤ — the run direction — so an exported
+    /// `SM_COMMON_LOADED` cannot buy a reuse arm nor an exported root pick which file answers.
     #[test]
     fn a_host_environment_value_neither_sites_a_load_nor_decides_a_guard() {
         let mut sited = DefinitionTable::default();
@@ -4170,12 +4157,10 @@ mod tests {
         );
     }
 
-    /// `funcenv-reads-source-literal-plane-only`, as a TABLE rather than a sentence. Exactly one of
-    /// the five provenances may site a load; the other four are the value-prediction species
-    /// (`275` §1), and admitting any of them would make which oracle answers a site depend on what
-    /// a HOST said. Vacuous in effect today — nothing yet mints a middle grade — and deliberately
-    /// not vacuous in FORM: this is what reddens when somebody widens the gate ahead of the
-    /// licensure review that widening needs.
+    /// `funcenv-reads-source-literal-plane-only`, as a TABLE: exactly one of the five provenances
+    /// may site a load, the other four being the value-prediction species (`275` §1). Vacuous in
+    /// EFFECT today (nothing mints a middle grade) and deliberately not in FORM — this reddens when
+    /// somebody widens the gate ahead of the licensure review that widening needs.
     #[test]
     fn only_program_text_may_site_a_load() {
         use dorc_core::ValueGrade;
@@ -4199,12 +4184,9 @@ mod tests {
     }
 
     /// THE PRELUDE FLOOR (conductor default at `30Mg` R1; human veto invited): an unresolvable act
-    /// inside a prelude's load program floors the WHOLE prelude from that point — the later root's
-    /// declarations do not bind, and neither does anything the book defines afterwards.
-    ///
-    /// `rul-unsure-falls-toward-sh-parity` is the argument: sh ran that `.`, and what it did to the
-    /// environment is unknowable from there on, so ⊤ is the honest reading rather than a
-    /// per-subtree suspension that would let the next root's bindings license sites.
+    /// inside a prelude's load program floors the WHOLE prelude from that point. Sh ran that `.`
+    /// and what it did is unknowable from there on, so ⊤ beats a per-subtree suspension that would
+    /// let a later root's bindings license sites (`rul-unsure-falls-toward-sh-parity`).
     #[test]
     fn an_unresolvable_prelude_load_floors_the_rest_of_the_prelude() {
         let book = "yum install -y nginx\n";
@@ -4241,15 +4223,12 @@ mod tests {
             .collect()
     }
 
-    /// TARGET: two BOOK-level `.`s, where the first assigns the root the second's operand is built
-    /// from. Sh keeps that variable — a `.` is not a subshell — so the second load resolves.
-    ///
-    /// The engine does not: a book's `.` sites are separate CFG nodes and the load-time variable map
-    /// is minted fresh at each, so nothing crosses between them. Closing it means the variables
-    /// joining this domain (or the value plane learning what a `.` assigns), which is a
-    /// winner-shifting domain change with its own monotonicity question — hence a pin rather than a
-    /// patch (`30Na:fnd-book-level-dot-locals-need-a-domain`). The NESTED cell above is the half
-    /// that was design-free, and it is fixed.
+    /// TARGET: two BOOK-level `.`s, the first assigning the root the second's operand is built
+    /// from. Sh keeps that variable; the engine does not, because a book's `.` sites are separate
+    /// CFG nodes each minting a fresh variable map. Closing it needs variables in this domain (or
+    /// the value plane learning what a `.` assigns) — a winner-shifting change with its own
+    /// monotonicity question, hence a pin (`30Na:fnd-book-level-dot-locals-need-a-domain`). The
+    /// NESTED cell above was the design-free half and is fixed.
     #[test]
     fn a_sourced_assignment_sites_a_later_load() {
         let book = ". ./root.sh\n. ./entry.sh\nyum install -y nginx\n";

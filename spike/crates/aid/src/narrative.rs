@@ -429,10 +429,9 @@ pub enum DemoteTag {
     /// different world-reason. Also the arm a demoted GUARD wears, since a guard whose family is
     /// not census-unique loses its body identity to the same disqualification.
     CertifierTripped,
-    /// A reach solve failed its own post-fixpoint check, so no freshness rests on its answer
-    /// (`302:rul-whole-window-demotion`). Separate from [`Self::TotalWall`] deliberately: a wall is
-    /// something the BOOK contains, and this is something OUR solver did — reporting the second as
-    /// the first mis-attributes an engine defect to the admin's text (`271:rul-sin-ordering`).
+    /// A reach solve failed its own post-fixpoint check (`302:rul-whole-window-demotion`). Separate
+    /// from [`Self::TotalWall`] deliberately: a wall is something the BOOK contains, and this is
+    /// something OUR solver did (`271:rul-sin-ordering`).
     SolveInconsistent,
 }
 
@@ -444,11 +443,9 @@ pub enum DemoteTag {
 pub enum RenderRefusalTag {
     /// The leaf's span covers a `<<` heredoc opener, so substituting it would strand the body.
     Heredoc,
-    /// A GUARD on a leaf carrying a non-`/dev/null` output redirect (`>>log`): the guard's
-    /// pass-direction would suppress the admin-spelled side-effect, so the line runs verbatim
-    /// (23C-fd10). A REASON ARM beside `Heredoc` rather than a sibling code — same world, same
-    /// license, same outcome, a different sentence about why
-    /// (`28L:rul-reason-enums-not-sibling-codes`).
+    /// A GUARD on a leaf carrying a non-`/dev/null` output redirect (`>>log`): the pass-direction
+    /// would suppress the admin-spelled side-effect, so the line runs verbatim (23C-fd10). A REASON
+    /// ARM beside `Heredoc`, never a sibling code (`28L:rul-reason-enums-not-sibling-codes`).
     OutputRedirect,
 }
 

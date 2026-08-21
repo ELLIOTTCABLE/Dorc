@@ -417,9 +417,8 @@ apt_get__predict() {
     /// measured behind it, so each proves its `||`-right dead and none of them may enter a ledger
     /// whose name promises records. Red-first against a widening of `subtree_leaves_all` that
     /// stopped asking what the controller IS.
-    /// Does the FOLD prove anything dead in this book at this guard rc? The non-vacuity half of
-    /// every negative pin below: an assertion that `prove_dead_branches` returns nothing is worth
-    /// something only where the fold really did fold.
+    /// Does the FOLD prove anything dead here? The non-vacuity half of the negative pins below: an
+    /// empty `prove_dead_branches` is worth something only where the fold really did fold.
     fn fold_finds_a_dead_branch(m: &Model, rc: i32) -> bool {
         let leaf_fact = leaf_facts(&m.cfg, &m.classes);
         let observe = measured(m, rc);
@@ -430,9 +429,8 @@ apt_get__predict() {
     }
 
     /// `erasure-is-records-grounded-only`, the funcdef shape beside the bare assignment above: the
-    /// fold fixes a funcdef statement at rc 0 from the LANGUAGE and really does prove the
-    /// `||`-right dead, and nothing measured stands behind that. Red-first against a widening of
-    /// `subtree_leaves_all` that stopped asking what the controller IS.
+    /// LANGUAGE fixes a funcdef at rc 0, the fold really proves the `||`-right dead, and nothing
+    /// measured stands behind it. Red-first against a `subtree_leaves_all` widening.
     #[test]
     fn a_funcdef_controller_proves_nothing_dead() {
         let m = model("f() { :; } || apt-get install -y alpha\n");
@@ -444,14 +442,11 @@ apt_get__predict() {
     }
 
     /// `30Me` F2's residual cell, MEASURED rather than assumed: an `if` with no `else` whose
-    /// condition is measured FALSE is rc 0 by the language rule, and the fold does prove its
-    /// `||`-right dead on that.
+    /// condition is measured FALSE is rc 0 by the language rule, and the fold folds on it.
     ///
     /// Nothing enters the ledger — but the fence that catches it is condition 4, not the rc's
-    /// provenance: the `then :` leaf is no substitutable Query, so the controller does not
-    /// substitute away. A world whose every branch leaf IS a measured Query is therefore NOT
-    /// covered by this pin, and that gap is the residual `30Me` F2 named. Stated here rather than
-    /// asserted, because the assertion would be about a book this test does not write.
+    /// provenance: the `then :` leaf is no substitutable Query. A world whose every branch leaf IS
+    /// a measured Query is therefore NOT covered here, and that gap is the residual `30Me` named.
     #[test]
     fn a_false_if_with_no_else_proves_nothing_dead_though_the_fold_folds_it() {
         let m = model("if dpkg -s beta >/dev/null 2>&1; then :; fi || apt-get install -y alpha\n");

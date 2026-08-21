@@ -2002,13 +2002,9 @@ mod tests {
     }
 
     /// `top-identifies-with-nothing` at the transport gate: two equal CONCRETE selectors identify,
-    /// and a ⊤ selector identifies with nothing — so a selector-less coordinate never transports.
-    ///
-    /// This is what remains of a test that also re-asserted its own local closures
-    /// (`survival_spares` and a `transport_licensed_by_relation` that returned `false` outright).
-    /// Those proved the test's own arithmetic, not the engine's (`30Me` F3): the CONSUMER MAP they
-    /// modelled is `ternary-compare-consumer-map`, and it lives in `world.rs`'s freshness gate and
-    /// this module's `disjoint`, both of which have their own pins above.
+    /// a ⊤ selector identifies with nothing, so a selector-less coordinate never transports. What
+    /// remains after deleting two local closures that asserted the test's own arithmetic
+    /// (`30Me` F3); the consumer map they modelled is pinned at `disjoint` and `world.rs` above.
     #[test]
     fn a_top_selector_identifies_with_nothing_at_the_transport_gate() {
         let mut i = dorc_core::Interner::default();

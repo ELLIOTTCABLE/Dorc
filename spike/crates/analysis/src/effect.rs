@@ -1851,11 +1851,10 @@ pub struct Classification {
     pub diags: Vec<Diag>,
     /// Every node that gens into the effective world.
     pub invalidators: BTreeSet<CfgNodeId>,
-    /// The latch this classification's own solves raised, HANDED OUT rather than dropped
-    /// (`302:rul-certifier-trip-guard-only`). A producer starts the run's latch from this value and
-    /// threads it onward; a caller that only reads classes ignores it. Carried as a value because
-    /// the latch has exactly one mutator and it takes a real `SolveConsistency` — merging two
-    /// latches would need a second one, which is the fence, not a convenience.
+    /// The latch this classification's solves raised, HANDED OUT rather than dropped
+    /// (`302:rul-certifier-trip-guard-only`). A producer starts its run's latch from this value; a
+    /// caller that only reads classes ignores it. By VALUE, because merging two latches would need
+    /// a second mutator and the single `SolveConsistency`-taking one is the fence.
     pub trip: CertifierTrip,
 }
 

@@ -1880,10 +1880,10 @@ fn twin_guard23_redirect_line_runs() {
     // REFUSE-HOME (`guard_render_refused`: leaf_has_blocking_output_redirect), so the line renders
     // VERBATIM with no preamble ⇒ the install runs at apply.
     //
-    // WHICH floor produces that is a question this test cannot answer and never could: measured
-    // 2026-08-21, the redirect gens a second `file:…@written` cell and the site does not mint a
-    // Guard at all, so the outcome here is mint-ABSENCE and the render refusal is unreached. The
-    // seat itself is pinned by `a_redirect_refused_guard_is_disclosed_on_every_surface`.
+    // WHICH floor produces that, this test cannot say and never could: measured 2026-08-21 the
+    // redirect gens a second `file:…@written` cell and the site mints no Guard at all, so the
+    // outcome is mint-ABSENCE and the render refusal is unreached. The seat is pinned by
+    // `a_redirect_refused_guard_is_disclosed_on_every_surface`.
     let (rendered, _plan) =
         render_guard_for("hork wombat\napt-get install -y nginx >>log\n", &["nginx"]);
     assert!(
@@ -1899,16 +1899,14 @@ fn twin_guard23_redirect_line_runs() {
 
 #[test]
 fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
-    // `30Mf` F2: the redirect half of `guard_render_refused` reached `collect_edits` (drop the
-    // edit) and `guard_refused_asts` (suppress the why-lens claim) but NOT `refused_render_steps`,
-    // so the three disclosure surfaces below saw nothing at all — the drift the "ONE guard-refusal
-    // definition" contract exists to prevent.
+    // `30Mf` F2: the redirect half of `guard_render_refused` reached `collect_edits` and
+    // `guard_refused_asts` but NOT `refused_render_steps`, so the three disclosure surfaces below
+    // saw nothing at all.
     //
-    // THE PAIRING IS SYNTHETIC, and deliberately disclosed: at this tip a leaf carrying `>>log`
-    // gens a second `file:…@written` cell and never mints a Guard at all, so no book reaches this
-    // seat (measured beside the assertion below). The LICENSE here is a real one, minted by the
-    // redirect-free twin against the same oracle and fact, re-homed onto the redirect leaf — the
-    // world the code is written for, which the classifier does not currently produce.
+    // THE PAIRING IS SYNTHETIC, and disclosed: a leaf carrying `>>log` gens a second
+    // `file:…@written` cell and mints no Guard at all today, so no book reaches this seat (measured
+    // just below). The LICENSE is real — minted by the redirect-free twin against the same oracle
+    // and fact, re-homed onto the redirect leaf.
     let src = "hork wombat\napt-get install -y nginx >>log\n";
     let (_rendered, mut plan) = render_guard_for(src, &["nginx"]);
     let ast = dorc_syntax::parse(src).value;

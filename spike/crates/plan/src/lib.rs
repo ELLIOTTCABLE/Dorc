@@ -706,12 +706,10 @@ impl ReplaceLicense {
     /// effect-bearing body leaf licenses elision, every ambiguity ⇒ REFUSE:
     ///
     /// * every body ESTABLISH — `EstablishProbeAmbient` and `EstablishProbeWritten` alike — has a
-    ///   Converged fact (`observe`(fact) reports the Effect channel; a single non-Converged ⇒
-    ///   refuse — the whole call runs). The two origins are NOT distinguished here, and must not
-    ///   be: origin-reach answers which check may ship, never whether a resting measurement is
-    ///   still good (`origin-reach-is-probe-only`). Whether a mutation may have overtaken it is
-    ///   effective FRESHNESS, and that is the caller's conjunct — `settle`'s `freshness` gate,
-    ///   which this mint sits behind and cannot see;
+    ///   Converged fact (a single non-Converged ⇒ refuse; the whole call runs). The two origins are
+    ///   NOT distinguished here and must not be: origin-reach answers which check may ship, never
+    ///   whether a resting measurement is still good (`origin-reach-is-probe-only`). Staleness is
+    ///   effective FRESHNESS, the caller's conjunct in `settle`, which this mint cannot see;
     /// * NO body site is a blocker — a `MustRun` (a body Kill, an Opaque/⊤ command, a multi-cell
     ///   verb, an unreachable establish), an in-loop `EstablishMembers` (an in-loop call body —
     ///   out of slice), or a nested `InlineCall` (defensive — transitive inlines are flattened to
@@ -3745,10 +3743,9 @@ pub fn build_plan(
     // The intakeless entry: this world was never measured, so there is no channel whose integrity
     // could have been lost (`spine::PlanAuthority::without_intake`).
     //
-    // The latch is NAMED and spent below. The caller's own classification may have latched a trip
-    // this entry cannot see — it takes classes, not a `Classification` — so what is closed here is
-    // the settlement's own; a caller whose classification tripped threads that latch through
-    // `build_plan_walled` directly.
+    // The latch is NAMED and spent below. This entry takes classes, not a `Classification`, so what
+    // closes here is the SETTLEMENT's latch; a caller whose classification tripped threads its own
+    // through `build_plan_walled` directly.
     let mut trip = dorc_analysis::certify::CertifierTrip::default();
     let mut spine = build_plan_walled(
         src,
@@ -4761,12 +4758,10 @@ impl Plan {
     /// each with its disposition-aware verb and the CAUSE. A GUARD refusal says "guard"
     /// (X-heredoc's expected-diagnostics pins it), a Replace/Omit refusal says "elide".
     ///
-    /// The predicate is disposition-keyed and matches [`collect_edits`](Self::collect_edits)'s drop
-    /// exactly: every disposition refuses a heredoc, and a GUARD additionally refuses a blocking
-    /// output redirect (`guard_render_refused`). Reading only the heredoc half here is what left a
-    /// redirect-refused guard running verbatim with NO disclosure on any of the three surfaces
-    /// (`30Mf` F2) while `guard_refused_asts` alone saw it — the drift the "ONE guard-refusal
-    /// definition" contract exists to prevent.
+    /// The predicate matches [`collect_edits`](Self::collect_edits)'s drop exactly: every
+    /// disposition refuses a heredoc, and a GUARD additionally refuses a blocking output redirect
+    /// (`guard_render_refused`). Reading only the heredoc half left a redirect-refused guard
+    /// running verbatim with NO disclosure on any of the three surfaces (`30Mf` F2).
     fn refused_render_steps(&self, ast: &Ast) -> Vec<(&Step, &'static str, RenderRefusalTag)> {
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
@@ -4784,8 +4779,8 @@ impl Plan {
             if !would_elide {
                 continue;
             }
-            // Heredoc first: it refuses under EVERY disposition, so a leaf carrying both reports the
-            // one that would have refused it anyway.
+            // Heredoc first: it refuses under EVERY disposition, so a leaf carrying both reports
+            // the cause that would have refused it anyway.
             let cause = if leaf_has_heredoc(ast, step.ast) {
                 RenderRefusalTag::Heredoc
             } else if is_guard && leaf_has_blocking_output_redirect(ast, step.ast) {
