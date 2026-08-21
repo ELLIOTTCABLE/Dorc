@@ -120,6 +120,19 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner
   factors helpers (walls, never corruption). CAPTURE: the `HelperIndex` extension —
   staged as an emission-stage rider. REVISIT: that stage's fold.
+- **forfeit-loop-populations-open-until-propagation** — RULE (`30L` §7, staged by
+  design): loop-generated invocation populations are typed `Open` today — a
+  literal `for pkg in nginx curl; do install_pkg "$pkg"; done` contributes an
+  Open census and its regions Run — even though the member identity, the
+  `IterationSlot` axis, and the settlement's ordered member machinery are all
+  representation-ready. FORFEITS: every loop-member elision/guard until the
+  propagation lane lands; the r21 `20S` build proved the value real. CAPTURE:
+  the loop-propagation lane turns finite fully-enumerated literal populations
+  `Closed(members)` as a value-plane change (`p-x-loop-population-closes-over-
+  literal-members` is the standing red pin; identity/witness shapes may not be
+  re-keyed — `30L:pin-loop-types-need-no-rekey`). BACK-OUT: low by construction
+  (that immutability is what the staging bought). REVISIT: the propagation lane,
+  wanted soon per the `30L` charter.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)
