@@ -4116,13 +4116,7 @@ pub fn build_plan(
         // The intakeless entry reads no host bytes, so its records are authored-before-contact.
         None,
     );
-    certifier_trip::project_censusless(
-        &mut spine,
-        src,
-        ast,
-        &trip,
-        &PlanAuthority::without_intake(),
-    )
+    certifier_trip::project_censusless(&mut spine, src, ast, trip, &PlanAuthority::without_intake())
 }
 
 /// [`build_plan`] PLUS the run's wall POLICY.
@@ -8376,7 +8370,7 @@ apt_get__is_converged() {
             &mut spine,
             src,
             &parsed.value,
-            &trip,
+            trip,
             &PlanAuthority::without_intake(),
         );
         (plan, i)
@@ -8558,7 +8552,7 @@ apt_get__is_converged() {
                 &mut spine,
                 src,
                 &parsed.value,
-                &trip,
+                trip,
                 &PlanAuthority::without_intake(),
             ),
             i,
@@ -9032,7 +9026,7 @@ apt_get__is_converged() {
             &mut spine,
             src,
             &parsed.value,
-            &trip,
+            trip,
             &PlanAuthority::without_intake(),
         )
     }
@@ -9148,7 +9142,7 @@ apt_get__is_converged() {
             &mut spine,
             src,
             &parsed.value,
-            &trip,
+            trip,
             &PlanAuthority::without_intake(),
         )
     }

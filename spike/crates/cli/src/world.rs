@@ -508,7 +508,7 @@ impl WhyWorld {
             grade: None,
         });
         let (_trip_banner, trip_narrative, spent) =
-            demote_on_certifier_trip(&mut spine, &trip, &definitions);
+            demote_on_certifier_trip(&mut spine, trip, &definitions);
         // This world is handed results somebody else already decided about, so the intake authority
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
@@ -692,7 +692,7 @@ pub fn record_pre_network_trip(
 /// (`30M:rec-dissolve-trip-must-remember-structurally`).
 pub fn demote_on_certifier_trip(
     spine: &mut dorc_plan::Spine,
-    trip: &dorc_analysis::certify::CertifierTrip,
+    trip: dorc_analysis::certify::CertifierTrip,
     definitions: &dorc_analysis::funcenv::DefinitionTable,
 ) -> (
     Vec<Diag>,
@@ -1343,7 +1343,7 @@ mod tests {
         let mut sole = guarded_spine("apt_get__is_converged");
         let (_, _, sole_spent) = demote_on_certifier_trip(
             &mut sole,
-            &latch_from_a_real_certification(true),
+            latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION]),
         );
         assert!(
@@ -1357,7 +1357,7 @@ mod tests {
         let mut plural = guarded_spine("apt_get__is_converged");
         let (_, _, plural_spent) = demote_on_certifier_trip(
             &mut plural,
-            &latch_from_a_real_certification(true),
+            latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
         );
         assert!(
@@ -1378,7 +1378,7 @@ mod tests {
 
         let (diags, narrative, _spent) = demote_on_certifier_trip(
             &mut plan,
-            &latch_from_a_real_certification(true),
+            latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
         );
 
@@ -1410,7 +1410,7 @@ mod tests {
 
         let (diags, narrative, spent) = demote_on_certifier_trip(
             &mut plan,
-            &latch_from_a_real_certification(false),
+            latch_from_a_real_certification(false),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
         );
 

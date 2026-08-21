@@ -174,7 +174,7 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
 /// `FORFEITS:forfeit-certifier-trip-demotes-guards` is what answering `false` costs.
 pub fn spend_certifier_trip(
     spine: &mut Spine,
-    trip: &CertifierTrip,
+    trip: CertifierTrip,
     census_unique: impl Fn(&str) -> bool,
 ) -> (TripCleanup, TripSpent) {
     let cleanup = if trip.tripped() {
@@ -198,7 +198,7 @@ pub fn project_censusless(
     spine: &mut Spine,
     src: &str,
     ast: &dorc_syntax::ast::Ast,
-    trip: &CertifierTrip,
+    trip: CertifierTrip,
     authority: &PlanAuthority,
 ) -> Plan {
     let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false);
@@ -427,7 +427,7 @@ apt_get__predict() {
 
     /// The projected plan, which is what every consumer of the cleanup actually reads. The latch
     /// is a parameter because it MUST be: there is no projection without one.
-    fn projected(spine: &mut Spine, trip: &CertifierTrip) -> Plan {
+    fn projected(spine: &mut Spine, trip: CertifierTrip) -> Plan {
         let (_, spent) = super::spend_certifier_trip(spine, trip, |_| true);
         project(spine, &spent)
     }
@@ -489,7 +489,7 @@ apt_get__predict() {
             grade: None,
         });
 
-        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| true);
+        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| true);
         let plan = project(&mut spine, &spent);
 
         assert!(
@@ -526,7 +526,7 @@ apt_get__predict() {
         let before = steps.len();
         let mut spine = spine_of(steps);
 
-        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| true);
+        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| true);
         let plan = project(&mut spine, &spent);
 
         assert_eq!(
@@ -573,14 +573,14 @@ apt_get__predict() {
             &mut tripped_spine,
             FIXTURE_BOOK,
             &ast,
-            &a_real_trip(),
+            a_real_trip(),
             &authority,
         );
         let clean = super::project_censusless(
             &mut clean_spine,
             FIXTURE_BOOK,
             &ast,
-            &a_real_clean_latch(),
+            a_real_clean_latch(),
             &authority,
         );
 
@@ -687,7 +687,7 @@ apt_get__predict() {
             guard_step(1, "ufw__is_converged"),
         ]);
 
-        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |fn_name| {
+        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |fn_name| {
             fn_name == "apt_get__is_converged"
         });
         let plan = project(&mut spine, &spent);
@@ -710,7 +710,7 @@ apt_get__predict() {
     fn a_censusless_caller_demotes_guards_wholesale() {
         let mut spine = spine_of(vec![guard_step(0, "apt_get__is_converged")]);
 
-        let (_, spent) = super::spend_certifier_trip(&mut spine, &a_real_trip(), |_| false);
+        let (_, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| false);
         let plan = project(&mut spine, &spent);
 
         assert!(matches!(plan.steps[0].disposition, Disposition::Run));
@@ -732,7 +732,7 @@ apt_get__predict() {
         let trip = a_real_trip();
         assert!(trip.tripped());
 
-        let plan = projected(&mut spine, &trip);
+        let plan = projected(&mut spine, trip);
 
         assert!(
             plan.steps

@@ -1932,7 +1932,7 @@ fn run(
     // projection touches a disposition, so "immediately before plan-emission" and "immediately
     // after plan-construction" are the same seat, and only this one keeps every consumer honest.
     let (trip_diags, trip_narrative, spent) =
-        demote_on_certifier_trip(&mut spine, &trip, &definitions);
+        demote_on_certifier_trip(&mut spine, trip, &definitions);
     report("solve", book_source, &trip_diags);
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
     // assembly, and it exists at all only because the intake handed this run an authority and the
@@ -2541,7 +2541,6 @@ fn record_new_arm(
     spine_leaves: &[(dorc_core::AstId, dorc_core::LeafId)],
     admitted: bool,
 ) {
-    use dorc_analysis::effect::SkipClass;
     use dorc_core::spine::{
         AdmissionOutcome, ShipLane, SpineAdmission, SpineLoadDecision, SpineProbeShip,
         SpineSiteClassification, SpineSolveCertification, WithheldCause,

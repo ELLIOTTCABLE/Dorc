@@ -28,7 +28,7 @@ use dorc_core::{
     Verdict,
 };
 use dorc_oracle::{KindIndex, ValueClaim};
-use dorc_plan::{Disposition, Plan, build_plan};
+use dorc_plan::{Disposition, Plan, SurvivalReport, build_plan};
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -1934,10 +1934,10 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         .find(|step| step.sh.contains(">>log"))
         .expect("the redirect leaf is planned");
     redirected.disposition = Disposition::Guard(license);
-    let plan = dorc_plan::Plan::decided(
+    let plan = Plan::decided(
         steps,
         Vec::new(),
-        dorc_plan::SurvivalReport::default(),
+        SurvivalReport::default(),
         false,
         src,
         &ast,

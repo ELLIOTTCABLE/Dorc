@@ -241,7 +241,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &mut spine,
         &declared.book_sh,
         &parsed.value,
-        &trip,
+        trip,
         &dorc_plan::PlanAuthority::without_intake(),
     )
 }

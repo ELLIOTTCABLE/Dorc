@@ -1517,7 +1517,7 @@ grep__predict() {
             &mut spine,
             book,
             ast,
-            &trip,
+            trip,
             &dorc_plan::PlanAuthority::without_intake(),
         )
     }

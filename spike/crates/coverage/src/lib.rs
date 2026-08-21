@@ -663,7 +663,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &mut spine,
         inputs.book,
         &parsed.value,
-        &trip,
+        trip,
         &dorc_plan::PlanAuthority::without_intake(),
     );
 
