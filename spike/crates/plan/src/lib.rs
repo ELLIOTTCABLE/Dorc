@@ -705,13 +705,17 @@ impl ReplaceLicense {
     /// mints a [`LicenseVia::InlineCall`] `Replace` (the CALL span → `true`) iff EVERY
     /// effect-bearing body leaf licenses elision, every ambiguity ⇒ REFUSE:
     ///
-    /// * every body site that is an `EstablishProbeAmbient` has a Converged fact (`observe`(fact)
-    ///   reports the Effect channel; a single non-Converged ⇒ refuse — the whole call runs);
-    /// * NO body site is a blocker — an `EstablishProbeWritten` (stale resting probe), a `MustRun`
-    ///   (a body Kill, an Opaque/⊤ command, a multi-cell verb, an unreachable establish), an
-    ///   in-loop `EstablishMembers` (an in-loop call body — out of slice), or a nested
-    ///   `InlineCall` (defensive — transitive inlines are flattened to leaves, so one should
-    ///   never appear here);
+    /// * every body ESTABLISH — `EstablishProbeAmbient` and `EstablishProbeWritten` alike — has a
+    ///   Converged fact (`observe`(fact) reports the Effect channel; a single non-Converged ⇒
+    ///   refuse — the whole call runs). The two origins are NOT distinguished here, and must not
+    ///   be: origin-reach answers which check may ship, never whether a resting measurement is
+    ///   still good (`origin-reach-is-probe-only`). Whether a mutation may have overtaken it is
+    ///   effective FRESHNESS, and that is the caller's conjunct — `settle`'s `freshness` gate,
+    ///   which this mint sits behind and cannot see;
+    /// * NO body site is a blocker — a `MustRun` (a body Kill, an Opaque/⊤ command, a multi-cell
+    ///   verb, an unreachable establish), an in-loop `EstablishMembers` (an in-loop call body —
+    ///   out of slice), or a nested `InlineCall` (defensive — transitive inlines are flattened to
+    ///   leaves, so one should never appear here);
     /// * a body `QueryResolvable` does NOT block (it is read-only — the wrapper-pun's
     ///   `dpkg -s "$1"` guard); its convergence is irrelevant to the call's elision (the call
     ///   elides on the body's ESTABLISH facts, not the guard's rc);
