@@ -4052,6 +4052,37 @@ mod tests {
             .collect()
     }
 
+    #[test]
+    #[ignore = "round-30 review demonstration: sourced assignments do not reach their caller"]
+    fn a_sourced_assignment_sites_a_later_load() {
+        let book = ". ./root.sh\n. ./entry.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let dependency = add_def(&mut table, 1, ROLE);
+        table.set_loadable("./vendored/common.sh", flat(vec![dependency]));
+        table.set_loadable(
+            "./root.sh",
+            LoadProgram::of(vec![LoadStep::Assign {
+                name: "OPS_LIB".to_owned(),
+                value: LoadTarget::literal("./vendored"),
+            }]),
+        );
+        table.set_loadable(
+            "./entry.sh",
+            LoadProgram::of(vec![LoadStep::Control(loads(rooted("/common.sh")))]),
+        );
+
+        let (env, cfg, _) = solve_positional(book, &table);
+
+        assert_eq!(
+            targets_of(&env, LoadRoute::Taken),
+            ["root.sh", "entry.sh", "vendored/common.sh"]
+        );
+        assert_eq!(
+            env.binding_before(cfg.exit(), ROLE),
+            Flat::Elem(Binding::Defined(dependency))
+        );
+    }
+
     /// THE BLOCKER THIS TABLE DISCHARGES (`30Ib:fnd-the-loader-reports-no-unfiltered-edge-set`):
     /// an undecided guard's fallback target is ABSENT from the speaker projection and PRESENT in
     /// the possible-load one.

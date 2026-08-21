@@ -380,6 +380,23 @@ apt_get__predict() {
         );
     }
 
+    #[test]
+    #[ignore = "round-30 adversarial review: plan producers project before trip cleanup"]
+    fn a_tripped_plan_projected_without_cleanup_must_not_retain_elision() {
+        let spine = spine_of(a_real_elide_plan().steps);
+        let trip = a_real_trip();
+        assert!(trip.tripped());
+
+        let plan = projected(&spine);
+
+        assert!(
+            plan.steps
+                .iter()
+                .all(|step| matches!(step.disposition, Disposition::Run)),
+            "a genuine certifier disagreement must reach the terminal demotion before projection"
+        );
+    }
+
     /// THE CENSUS FORK. A guard whose verdict family is census-unique STANDS — its runtime net
     /// re-verifies live and the one analysis-chosen conjunct (which body the name resolves to) was
     /// never chosen. A guard whose family is plural demotes with everything else, because there a

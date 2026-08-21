@@ -3841,6 +3841,47 @@ mod acquisition_tests {
         assert_eq!(paths.len(), 1);
         assert!(reached.is_empty(), "named on the command line ⇒ ambient");
     }
+
+    #[test]
+    #[ignore = "round-30 review demonstration: acquired dependencies replay as ambient roots"]
+    fn a_pre_source_dependency_runs_only_at_its_authored_dot() {
+        let role = "wombat__is_converged";
+        let entry = format!("{MARKER}. ./verdict.dorc.sh\nunset -f {role}\n");
+        let verdict = format!("{MARKER}{role}() {{ :; }}\n");
+        let package = Package::new(
+            "pre-source-replay",
+            &[
+                ("entry.dorc.sh", entry.clone()),
+                ("verdict.dorc.sh", verdict),
+            ],
+        );
+        let cwd = package.cwd();
+        let entry_path = package
+            .root
+            .join("entry.dorc.sh")
+            .to_string_lossy()
+            .into_owned();
+        let (paths, srcs) = super::read_sourced_oracles(&cwd, vec![entry_path], vec![entry]);
+        let book = "wombat sync a.conf\n";
+        let (paths, srcs, reached) = super::read_book_sourced(&cwd, "book.sh", book, paths, srcs);
+        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            cwd, paths, srcs, &reached, "book.sh", book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+        let exit = cfg.exit();
+
+        assert_eq!(
+            live.definition_before(exit, role),
+            dorc_core::LiveDefinition::Withheld
+        );
+    }
 }
 
 #[cfg(test)]
