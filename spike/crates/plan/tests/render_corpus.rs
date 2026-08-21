@@ -1970,6 +1970,22 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         "and the why-lens still suppresses the `guarded` claim — the fourth consumer of the one \
          predicate, and before this the only one that ever saw a redirect refusal"
     );
+
+    // The DECISION-PLANE record carries the real cause too. It used to hard-code `Heredoc`, which
+    // made the record state a falsehood for exactly the class `30Mf` F2 had just made reachable —
+    // and nothing read it, so nothing said so (`30And` meaning-audit).
+    let mut spine = dorc_plan::Spine::new();
+    dorc_plan::spine::record_render_decisions(&mut spine, &plan);
+    assert!(
+        spine.render_decisions().iter().any(|record| matches!(
+            record.decision,
+            dorc_core::spine::RenderDecision::Refused {
+                cause: dorc_core::spine::RefusalCause::BlockingRedirect
+            }
+        )),
+        "the recorded cause is the redirect's own: {:?}",
+        spine.render_decisions()
+    );
 }
 
 #[test]

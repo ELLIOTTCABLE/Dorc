@@ -318,6 +318,12 @@ pub struct SourceClaim {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineInvocation {
     /// `plan` / `apply` / `roundtrip` / `probe` / `why`.
+    ///
+    /// FALSE AS POPULATED, and deliberately unrepaired: the sole writer hard-codes
+    /// `"whylog-replay"` from a seat unreachable on the replay branch, so the field describes
+    /// neither producing invocation (`30Mc` F3). The value is DURABLE-persisted and re-ingested on
+    /// replay, so correcting it is gated behind `rul-durable-contents-reviewed-before-design`
+    /// (`30N` §4's `stop-spine-mode-is-durable`) rather than being a local fix. Do not "tidy" it.
     pub mode: String,
     /// The full argv, one word per element.
     pub argv: Vec<String>,
@@ -333,7 +339,15 @@ pub struct SpineInvocation {
     pub host: String,
     /// When the controller started this run, from the edge's injected clock. `None` ⇒ no clock.
     pub started_at: Option<RunInstant>,
-    /// Authored-before-contact by construction: every field is controller-owned invocation context.
+    /// The grade at mint.
+    ///
+    /// EVERY FIELD ABOVE is controller-owned invocation context, which
+    /// `30I:rul-load-decisions-are-authored-before-contact` [TYPED] would have wear
+    /// `authored-before-contact` — but the record is written after intake and the Spine's grade is
+    /// object-global, so what it actually wears is the run's phase. The two typed directions are
+    /// jointly unrepresentable in the landed type and the reconciliation is a pending human
+    /// direction (`30M:ask-spine-grade-boundary`); this comment states the discrepancy rather than
+    /// choosing a pole.
     pub grade: Grade,
 }
 
@@ -342,8 +356,12 @@ pub struct SpineInvocation {
 pub struct SpineRecordStream<P: DecidePlane> {
     /// The as-received buffer, still wearing its admission.
     pub records: P::Records,
-    /// When the controller took each record in, by arrival ordinal, ascending
+    /// When the controller took a record in, by arrival ordinal, ascending
     /// (`28F:rul-probe-instants-host-says-no-times` — controller-minted, always).
+    ///
+    /// SPARSE, not one-per-record: a run with no clock (`RunClock::Absent`, every loom path) stamps
+    /// nothing, so this is EMPTY beside a full record buffer. An ordinal's absence means the
+    /// controller took no time, never that no record arrived.
     pub instants: Vec<(u64, RunInstant)>,
     /// Host-influenced by construction: these ARE the host-reported bytes.
     pub grade: Grade,
@@ -356,6 +374,11 @@ pub struct SpineRecordStream<P: DecidePlane> {
 #[derive(Debug, Clone)]
 pub struct SpineDisposition<P: DecidePlane> {
     /// The fine site key (`inv-site-keyed-results`): `(leaf, member)`, never collapsed.
+    ///
+    /// AS POPULATED (`30And` meaning-audit): the member axis is `None` on every row today — the
+    /// settlement decides per LEAF, and a member population arrives with the loop-propagation lane
+    /// (`30N` §3's `pin-loop-types-need-no-rekey`). The key is fine-grained so that arrival is a
+    /// widening rather than a re-key; it is not evidence that members are being distinguished yet.
     pub site: SiteId,
     /// The source back-map.
     pub ast: AstId,
@@ -377,14 +400,24 @@ pub struct SpineDigest {
 }
 
 /// A definition-plane decision: which body a role name binds to, and why a family was withheld.
+///
+/// AS POPULATED, narrower than the species name suggests (`30And` meaning-audit): the only writer
+/// records WITHHOLDINGS, so an ordinary binding — the "which body a role name binds to" half —
+/// reaches no record at all, and [`withheld`](Self::withheld) is `Some` on every row that exists.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineLoadDecision {
-    /// The munged role or family name.
+    /// What the withholding is keyed by, and it is NOT one kind of thing: the `Contested` arm
+    /// carries a munged role-family base, while the `Unprovable` arm carries a synthetic
+    /// `load@<ast-id>` locator for an unresolvable `.` — an unresolvable load has no name to blame.
+    /// Display and provenance only; nothing keys a decision off it.
     pub name: String,
     /// Whose utterance the binding rests on. Compared, never read for its file id
     /// (`custody-is-one-newtype-and-one-crossing`).
+    ///
+    /// UNIVERSALLY `None` today — the custody column is the unbuilt half of this species
+    /// (`30F` §4.5). Read it as "not recorded", never as "no custody".
     pub custody: Option<DefinitionCustody>,
-    /// Why the family's licenses are withheld, if they are.
+    /// Why the family's licenses are withheld. `Some` on every recorded row, per the type doc.
     pub withheld: Option<WithheldCause>,
     /// The grade at mint.
     pub grade: Grade,
@@ -398,6 +431,9 @@ pub enum WithheldCause {
     /// The name's exit binding is ⊤, so it licenses nothing (`top-licenses-nothing`).
     Unprovable,
     /// Two loaded sources declared the same helper name (`helper-conflicts-report-at-the-load-edge`).
+    ///
+    /// NO WRITER: helper conflicts are reported at the load edge as diagnostics and reach no Spine
+    /// record, so this arm is representation the population does not yet occupy.
     HelperConflict,
 }
 
@@ -423,12 +459,23 @@ pub struct SpineSiteClassification {
     pub grade: Grade,
 }
 
-/// One solve pass's certification outcome (`plans/302`).
+/// One certification outcome (`plans/302`).
+///
+/// AS POPULATED (`30And` meaning-audit): the sole production writer emits ONE `whole-window` row per
+/// run, derived from the run-wide latch — not one row per solve pass. Whether it should be per-pass
+/// is a pending human direction (`30M:ask-certification-row-shape`); the fields below say what the
+/// row means TODAY rather than what a per-pass row would.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineSolveCertification {
-    /// The pass label (value · funcenv · reach · self-reach).
+    /// What this row's answer is ABOUT. The one production value is `"whole-window"`; the per-pass
+    /// vocabulary (value · funcenv · reach · self-reach) is where the pending direction would take
+    /// it. Referent-agnostic: a label, never branched on.
     pub pass: &'static str,
     /// Whether the answer certified. `false` ⇒ the whole analysis window demoted to its floor.
+    ///
+    /// On a whole-window row this is exactly `!tripped` — one bit spelled twice. Under a per-pass
+    /// row the two separate (a pass may certify on a spine that already tripped), which is why both
+    /// fields exist rather than one.
     pub consistent: bool,
     /// Whether the monotone trip latch is set at this point.
     pub tripped: bool,
@@ -437,6 +484,10 @@ pub struct SpineSolveCertification {
 }
 
 /// A vouch's attachment or suspension at one site (`rul-vouch-is-verdict-authoring`).
+///
+/// NOT MINTED (`30F` §4.5): the `Vouches` map exposes no iteration, so every field below describes
+/// an empty population. The species is classified so the census is complete, not because anything
+/// has been recorded.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineVouch {
     /// The fine site key.
@@ -458,7 +509,9 @@ pub struct SpineProbeShip {
     pub site: SiteId,
     /// Which lane shipped.
     pub lane: ShipLane,
-    /// The defining file of the shipped body, for provenance and display only.
+    /// The defining file of the shipped body, for provenance and display only. `None` where the
+    /// ship seat resolved no defining span, and always `None` on an [`ShipLane::Unresolvable`] row
+    /// — nothing shipped, so there is no body to attribute.
     pub defining_file: Option<SourceFileId>,
     /// The grade at mint.
     pub grade: Grade,
@@ -476,11 +529,18 @@ pub enum ShipLane {
 }
 
 /// The closed intake outcome (`rul-admission-is-a-closed-outcome`).
+///
+/// AS POPULATED (`30And` meaning-audit): the recording seat runs AFTER the refusal path has already
+/// returned (`rul-integrity-failure-withholds-mutation` — a refusal emits no plan and never reaches
+/// here), so only the two authority-carrying arms are ever written. A run that refused has no
+/// admission record at all rather than a `Refused` one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineAdmission {
-    /// Which of the three the intake answered.
+    /// Which of the three the intake answered. `Refused` is representable and unreachable at the
+    /// only writer, per the type doc.
     pub outcome: AdmissionOutcome,
-    /// The named condition on a refusal, for attribution.
+    /// The named condition on a refusal, for attribution. UNIVERSALLY `None`, because the arm that
+    /// would carry one never reaches this record.
     pub fault: Option<String>,
     /// The grade at mint. Host-influenced once anything was read.
     pub grade: Grade,
@@ -498,6 +558,9 @@ pub enum AdmissionOutcome {
 }
 
 /// One site's observable as the fold saw it.
+///
+/// NOT MINTED (`30F` §4.5): the `by_fact` merge is consumed by closure rather than by collection,
+/// so every field below describes an empty population.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineObservation {
     /// The fine site key.
@@ -513,6 +576,10 @@ pub struct SpineObservation {
 }
 
 /// One round of the validity fixpoint (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`).
+///
+/// NOT MINTED (`30F` §4.5): intermediate rounds are never BUILT, so recording one means first
+/// deciding what a never-survives round may leave behind. Every field below describes an empty
+/// population.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineValidityRound {
     /// The round ordinal, from 1.
@@ -667,6 +734,12 @@ pub struct SpineRegionDecision<P: DecidePlane> {
     /// The one shared, license-bearing decision.
     pub decision: P::RegionDecision,
     /// Which invocation each contributing route executes under, in census order.
+    ///
+    /// Two ways this is NARROWER than the census population, and only the first is visible in the
+    /// value: the cap reports what it dropped, while a route whose invocation the round could not
+    /// key to a leaf is filtered out silently and leaves `dropped` at zero. Both narrowings run in
+    /// the safe direction at the one consumer (`Plan::live_regions` treats a capped or empty account
+    /// as still-live), but nothing may read this as the complete route set.
     pub routes: Account<RegionRoute>,
     /// The grade at mint.
     pub grade: Grade,
@@ -674,6 +747,11 @@ pub struct SpineRegionDecision<P: DecidePlane> {
 
 /// The run's outcome — authority-adjacent, because `EXIT_BOOK_UNMODELED` exists precisely so a
 /// `dorc … && deploy` chain STOPS (`30E` §4).
+///
+/// NOT MINTED (`30And` meaning-audit; the fifth unminted species, where `30F` §4.5 disclosed four):
+/// its seat is the cli driver's exit-code computation, which runs after every projection and owns
+/// no Spine at that point. Recording it means deciding what an outcome record means for a run that
+/// refused before planning — the same question the admission species answers by absence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineOutcome {
     /// The outcome discriminant's name.

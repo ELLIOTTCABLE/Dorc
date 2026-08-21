@@ -2517,9 +2517,11 @@ const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal
 ///
 /// NOT YET MINTED, with their seats named rather than left to be discovered: `SpineVouch` (the
 /// `Vouches` map exposes no iteration yet), `SpineObservation` (the `by_fact` merge, which the fold
-/// consumes by closure rather than by collection), and `SpineValidityRound` (the fixpoint's rounds
+/// consumes by closure rather than by collection), `SpineValidityRound` (the fixpoint's rounds
 /// are deliberately never-survives — `the-fixpoint-owns-the-rounds-and-builds-nothing-else` — so
-/// recording them means deciding what a round may leave behind, which is its own question).
+/// recording them means deciding what a round may leave behind, which is its own question), and
+/// `SpineOutcome` (the exit-code seat runs past every projection and holds no Spine there; found by
+/// the `30And` meaning-audit, where `30F` §4.5 had disclosed only the first three).
 #[expect(
     clippy::too_many_arguments,
     reason = "one recording pass over independent analysis products; a params struct would be this signature re-spelled"
@@ -2613,42 +2615,54 @@ fn record_new_arm(
     let leaf_of: BTreeMap<dorc_core::AstId, dorc_core::LeafId> =
         spine_leaves.iter().copied().collect();
     for (node, class) in classes {
-        let (label, cells) = match class {
-            SkipClass::MustRun => ("MustRun", Vec::new()),
-            SkipClass::EstablishProbeAmbient(fact) => ("EstablishProbeAmbient", vec![*fact]),
-            SkipClass::EstablishProbeWritten(fact) => ("EstablishProbeWritten", vec![*fact]),
-            SkipClass::QueryResolvable { fact, .. } => ("QueryResolvable", vec![*fact]),
-            SkipClass::EstablishMembers { members, .. } => ("EstablishMembers", members.clone()),
-            // The ordered member account: an aggregate keys on every one
-            // (`aggregate-mints-carry-the-same-demand`), so an empty list said it keyed on nothing.
-            SkipClass::InlineCall { sites } => (
-                "InlineCall",
-                sites
-                    .iter()
-                    .filter_map(|site| match site.class {
-                        SkipClass::EstablishProbeAmbient(fact)
-                        | SkipClass::EstablishProbeWritten(fact) => Some(fact),
-                        _ => None,
-                    })
-                    .collect(),
-            ),
-        };
         let Some(leaf) = leaf_of.get(&cfg.node(*node).ast).copied() else {
             continue;
         };
         spine.set_classification(SpineSiteClassification {
             site: dorc_core::SiteId::leaf(leaf),
-            class: label,
+            class: class_label(class),
             verdict_lane: verdict_lane.contains_key(node),
-            // The REAL invalidator set, which is what the field says it is. `kills` alone was false
-            // for every ordinary establish and every opaque leaf — the majority of what gens into
-            // reach (`30Mc` F3 · `classify-answers-with-its-invalidators`).
             // The REAL invalidator set (`classify-answers-with-its-invalidators`): `kills` alone
             // read false for every ordinary establish and every opaque leaf.
             invalidator: invalidators.contains(node),
-            cells: dorc_core::spine::Account::capped(cells),
+            cells: dorc_core::spine::Account::capped(class_cells(class)),
             grade: None,
         });
+    }
+}
+
+/// The `SkipClass` discriminant's greppable label — referent-agnostic, never branched on.
+const fn class_label(class: &dorc_analysis::effect::SkipClass) -> &'static str {
+    use dorc_analysis::effect::SkipClass;
+    match class {
+        SkipClass::MustRun => "MustRun",
+        SkipClass::EstablishProbeAmbient(_) => "EstablishProbeAmbient",
+        SkipClass::EstablishProbeWritten(_) => "EstablishProbeWritten",
+        SkipClass::QueryResolvable { .. } => "QueryResolvable",
+        SkipClass::EstablishMembers { .. } => "EstablishMembers",
+        SkipClass::InlineCall { .. } => "InlineCall",
+    }
+}
+
+/// Every cell one classification keys on, in member order (`aggregate-mints-carry-the-same-demand`).
+///
+/// RECURSIVE over aggregates, and that is the point: an `InlineCall`'s members are themselves
+/// classifications, so a member that resolves a QUERY cell keys the call exactly as an establish
+/// member does. The first cut of this matched only the two establish arms and dropped the rest —
+/// which made the account narrower than the decision it claims to describe, the same species of
+/// falsehood as the empty list it replaced (`30Mc` F3, completed).
+fn class_cells(class: &dorc_analysis::effect::SkipClass) -> Vec<dorc_core::FactKey> {
+    use dorc_analysis::effect::SkipClass;
+    match class {
+        SkipClass::MustRun => Vec::new(),
+        SkipClass::EstablishProbeAmbient(fact)
+        | SkipClass::EstablishProbeWritten(fact)
+        | SkipClass::QueryResolvable { fact, .. } => vec![*fact],
+        SkipClass::EstablishMembers { members, .. } => members.clone(),
+        SkipClass::InlineCall { sites } => sites
+            .iter()
+            .flat_map(|site| class_cells(&site.class))
+            .collect(),
     }
 }
 
@@ -3851,15 +3865,27 @@ mod spine_record_tests {
             .collect();
         let (standalone, aggregate) = (commands[0], commands[1]);
         let (nginx, curl) = (cell(&mut interner, "nginx"), cell(&mut interner, "curl"));
+        let query = cell(&mut interner, "wombat");
         let classes = vec![
             (standalone, SkipClass::EstablishProbeAmbient(nginx)),
             (
                 aggregate,
                 SkipClass::InlineCall {
-                    sites: vec![InlineSite {
-                        node: aggregate,
-                        class: SkipClass::EstablishProbeAmbient(curl),
-                    }],
+                    sites: vec![
+                        InlineSite {
+                            node: aggregate,
+                            class: SkipClass::EstablishProbeAmbient(curl),
+                        },
+                        // A QUERY member keys the call exactly as an establish member does; the
+                        // first repair matched only the establish arms and dropped this one.
+                        InlineSite {
+                            node: aggregate,
+                            class: SkipClass::QueryResolvable {
+                                fact: query,
+                                valid: true,
+                            },
+                        },
+                    ],
                 },
             ),
         ];
@@ -3892,8 +3918,9 @@ mod spine_record_tests {
             .collect();
         assert_eq!(
             recorded,
-            [("EstablishProbeAmbient", true, 1), ("InlineCall", true, 1)],
-            "both sites gen into reach, and the aggregate keys on its member — not on nothing"
+            [("EstablishProbeAmbient", true, 1), ("InlineCall", true, 2)],
+            "both sites gen into reach, and the aggregate keys on EVERY member — establish and \
+             query alike, not on nothing and not on a filtered subset"
         );
     }
 }
