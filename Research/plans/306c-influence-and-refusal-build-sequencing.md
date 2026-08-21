@@ -27,28 +27,27 @@ retrofits. The engine does nothing observably different at the end of it. If tha
 worth a builder right now, the honest minimum is **§3 (both halves) alone**; §2 and §4 can wait
 for the stage that needs them.
 
-## §2 — `item-influence-grade` — the type and its one seat
+## §2 — `item-influence-grade` — landed interim; replacement ruled
 
-Build `306b` §1's grade as a type in `core`, following the shape the codebase already uses
-twice (`Must`/`May` coercion; the `ByObservation`/`ByVouch`/`BySilence` claim tiers):
+The original item landed the three sealed source grades and the one host-ingress mint, with
+free widening and no lowering conversion. Those remain useful source seams. Its
+positional-global phase and one-grade-per-Spine carriage are an implementation interim,
+superseded in design by the HUMAN ruling at `306b` §10.
 
-- Three variants at v0 — `authored-before-contact`, `host-reported`, `host-influenced`.
-- **The lowering conversion does not exist.** Widening is free, narrowing does not compile.
-  `core::claim`'s `compile_fail` doctests are the precedent for sealing this, and are cheap to
-  mirror.
-- **One minting seat**, at the intake edge where host-produced bytes become anything else.
-  The seat should be singular and named, in the manner of the existing one-named-seat-per-
-  invariant discipline; a second minting site is the regression to guard against.
-- **The v0 flip is positional and global** — post-ingestion means influenced. This is coarse on
-  purpose. It requires no per-value dataflow, which is what keeps this item small: it is a
-  phase property carried by construction, not an analysis.
+Long-run carriage is per stable semantic object: private, immutable, non-optional influence
+joined by that object's own constructor from every contributing data/control input. A generic
+wrapper is temporary calculation plumbing only. Consequential consumers accept only
+influence-bearing semantic objects; unconverted seams are explicit maximally-influenced
+`untracked`, never absent-as-authored. Spine preserves already-established record influence
+and does not stamp it; views continue the same flow into projection and output decisions.
 
-Carriage at v0 is **in-memory only**, terminating at the decision plane.
+Full threading and §1c gradation remain deferred. The implementation replacement is owned by
+`30M:rec-own-the-309-boundary-close` before `30I` steps 7/8; do not opportunistically turn this
+plan into that build brief.
 
-> **Scope fence, and it is load-bearing:** persisting the grade into the durable is enrichment
-> of what the durable holds, which trips this material's own standing tripwire (§4). v0 stays
-> in-memory precisely so this arc does not have to fire it. `306b` §3a's rehydration rule is
-> therefore *not* built here and is not owed until the durable carries grades.
+Carriage remains **in-memory only** until the durable-content tripwire is deliberately fired.
+Persisting influence is enrichment of what the durable holds, so `306b` §3a's rehydration rule
+is not built here and is not owed until a reviewed durable projection carries it.
 
 **Why now rather than later** — and this is narrower than I first argued, so it is worth stating
 precisely. The *definition-factoring* work currently in flight is load-plane work, and the load

@@ -427,10 +427,20 @@ not all conductor-re-read (marked):
 
 ## §4 — Open items riding this conduct (not mine to decide)
 
-1. The three `30M` human rulings: wall-narration ratify-or-mint (§3) ·
+1. The two remaining `30M` human rulings: wall-narration ratify-or-mint (§3) ·
    guarded-source sentinel-value ratify-or-build (§5; test `176e0818` waits on
    `worktree-sol-adversarial-30M` — do NOT `-D` that branch before this ruling
-   lands or the test is cherry-picked) · the Spine grade boundary (§4.1).
+   lands or the test is cherry-picked).
+
+**`30N:closed-spine-influence-boundary` [HUMAN-RULED 2026-08-21]** — the former
+third item, `30M:ask-spine-grade-boundary`, is CLOSED in design. Durable authority:
+`306b` §10 (conductor-facing) mirrored by quarantined `306a` §11; current-plan
+correction: `309` §§1–2/5/7. Stable semantic objects carry private, immutable,
+non-optional influence joined at their own mints; Spine preserves records and never
+stamps one global grade; views continue influence carriage through projection/output
+decisions; unimplemented seams are explicit maximally-influenced `untracked`. The
+landed one-grade-per-Spine code is implementation debt owned by
+`30M:rec-own-the-309-boundary-close`, not an open design direction.
 2. R1's floor-posture default (unresolvable prelude act ⇒ whole-prelude floors;
    now pinned by name in `analysis/src/funcenv.rs`) — veto invited.
 3. `tc-book-level-dot-locals-domain` — which domain change closes book-level `.`
@@ -460,9 +470,9 @@ not all conductor-re-read (marked):
 10. Banked precision/residue items, none blocking: `tc-region-guard-economics-seat`
     (only-still-executing-routes gate — the one most likely to move a golden
     later) · `tc-region-tier-omit` (unreachable, Run-floored) ·
-    `tc-region-decision-influence-is-first-not-joined` (trivial under v0's
-    global flip; needs a real join if per-record gradation lands — rides the
-    `30M` §4.1 grade-boundary direction) · `tc-wall-region-operand-population`
+    `tc-region-decision-influence-is-first-not-joined` (trivial under the landed
+    global flip; the replacement must join every contributing semantic input per
+    `306b` §10 when the boundary-close implementation lands) · `tc-wall-region-operand-population`
     (operand built, truthful, `None` today — the `30M` §3 ruling makes it
     non-vacuous).
 11. Round-close crosscheck priorities (for the eventual second-half adversarial

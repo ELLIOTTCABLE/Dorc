@@ -33,7 +33,7 @@ stay `Open` with the identity/witness shapes propagation-ready — the
 and registers are current (crate CLAUDE.mds · `spike/CLAUDE.md inv-leaf-seam` ·
 ANALYZER-NEEDS ×5 rows · FORFEITS loop-population row). **The human queue is `30N`'s
 open-items list, mirrored slug-by-slug at the top of root `_tmp-human-burndown.md`**
-(the three `30M` rulings · the prelude-floor veto · two tc- domain questions · the
+(the two remaining `30M` rulings · the prelude-floor veto · two tc- domain questions · the
 prose queue). `mise run gate:arc` ran by the HUMAN's own hand and `ai/main` is ff'd
 (now one arc behind conduct again). **The `30M:rec-own-the-309-boundary-close` lane is
 FOLDED** (report `notes/30Nd`; adjudications + the veto-eligible
@@ -41,7 +41,13 @@ FOLDED** (report `notes/30Nd`; adjudications + the veto-eligible
 makes an unspent certifier latch unprojectable by type; `Plan::decided` is the sole
 constructor and the render decides nothing; the species×field meaning-audit repaired
 two record falsehoods and narrowed six docs; `typos --write-changes` no longer corrupts
-corpus docIDs. **`30I:step-7-reify-plan-artifact-forms` is FOLDED** (report
+corpus docIDs. The Spine influence boundary is HUMAN-RULED and closed in design
+(`306b` §10 mirrored by quarantined `306a` §11; closure ledger
+`30N:closed-spine-influence-boundary`): semantic objects carry influence joined at
+their own mints, Spine preserves rather than globally stamps it, and views continue
+carriage into projection/output decisions. The landed one-grade-per-Spine code remains
+implementation debt; `30Nd` deliberately left that grade slice read-only.
+**`30I:step-7-reify-plan-artifact-forms` is FOLDED** (report
 `notes/30Ne`; adjudications incl. two veto-eligible typed-text readings in `30N`'s lane
 list, quick-acks on the burndown): all three semantic forms in `cli::artifact` from ONE
 `Selection`/`ArtifactSet` structure; multipart MIRRORS dependencies at authored relative

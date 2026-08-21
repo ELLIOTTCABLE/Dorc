@@ -218,6 +218,14 @@ The inventory, adjudicated into two tiers:
      authored-provenance constructors demand the loader's typed witness. Continuing to
      add late recorders silently chooses wrongly. This should be ruled before any
      marking-frontier, influence-debug, or bundle-provenance work consumes grades.
+     **CLOSED [HUMAN-RULED 2026-08-21]:** `306b` §10 is the conductor-facing
+     authority and its quarantined mirror is `306a` §11. Influence is carried
+     privately and non-optionally by stable semantic objects; their own mints join
+     all influencing inputs. Spine preserves already-established record influence
+     and never stamps an object-global grade. Views continue the same carriage into
+     projection decisions and outputs; unimplemented seams are explicit untracked/
+     maximally-influenced, never implicitly authored. Implementation remains owed at
+     `30M:rec-own-the-309-boundary-close` before `30I` steps 7/8.
   2. **`30M:ask-certification-row-shape`** (`30Mc:finding-certification-window-replaces-
      passes`): the sole production writer emits one `whole-window` certification row
      derived from the run-wide latch, against a documented closed per-pass vocabulary and

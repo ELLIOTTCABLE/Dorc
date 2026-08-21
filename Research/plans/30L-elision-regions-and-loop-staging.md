@@ -353,6 +353,12 @@ the most-influenced grade among all contributing routes. One uninfluenced route 
 cleanses a host-influenced sibling. Every contributing route stays available to the
 narrative/locator plane even where the decision stores the joined grade.
 
+As amended by `306b` §10, the stable shared decision itself carries a private,
+non-optional influence account joined by its semantic constructor. Missing tracking is
+explicit maximally-influenced `untracked`, never an absent value interpreted as authored.
+The landed optional/global-phase representation is implementation interim owned by the
+`309` boundary close, not a premise this plan preserves.
+
 ### 4.5 Guards: the divergent-instances valve
 
 Where route facts DIVERGE but every route admits the same invocation-parametric guard

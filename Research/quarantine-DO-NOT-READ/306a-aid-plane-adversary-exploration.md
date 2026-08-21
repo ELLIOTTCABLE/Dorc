@@ -517,3 +517,64 @@ rather than by me, and in each case because I had reasoned fluently from an unte
 A future reader should therefore treat this document as a **map of the problem space and a
 record of which arguments were tried**, not as a source of rules. The rules, such as they
 are, are the human's, and are few.
+
+## §11 — Influence carriage across semantic entities [HUMAN, 2026-08-21]
+
+This sitting closes `30M:ask-spine-grade-boundary` in design, not implementation. It does
+not settle §1c's eventual gradation, require full end-to-end threading now, or make
+influence an authority policy. It rules the project-wide carriage shape that later work
+must refine rather than replace.
+
+- **`rul-influence-carried-by-entities`** [HUMAN] — a stable semantic object whose
+  meaning must inherit influence carries a private, immutable, non-optional influence
+  account itself. This applies across analyzer conclusions, decisions, licenses, Spine
+  events, projection selections, arrangements, routing choices, and rendered outputs.
+  A parallel side table that callers must remember to populate is rejected: the value and
+  its influence cannot be constructed independently at a consequential boundary.
+- **`rul-semantic-mints-join-influence`** [HUMAN] — the constructor that turns inputs
+  into a stable semantic object also computes that object's maximal inherited influence
+  from every contributing data and control input. Constructors take influencing objects
+  or restricted dependency accounts, never a caller-selected grade. No public field,
+  default, `None = clean`, generic downgrade, or deserialization path may manufacture
+  lesser influence. The eventual account may internally intern or graph derivations, but
+  that is representation only and never substitutes for carriage on the semantic type.
+- **`rul-transient-wrappers-are-plumbing-only`** [HUMAN] — a generic influenced-value
+  wrapper may carry influence through temporary generic calculations. It is not the
+  persistent domain model for objects whose invariant is "always influence-bearing";
+  their stable type owns the account directly. Any raw-payload escape is narrow and may
+  not reach a consequential sink without reminting an influence-bearing semantic object.
+- **`rul-consequential-sinks-require-influence`** [HUMAN] — authority mints, finalized
+  analysis decisions, Spine event construction, projection/filter decisions, sink
+  selection, and output construction accept only semantic objects whose type guarantees
+  influence carriage. A sealed common contract and exhaustive species/consumer censuses
+  make a newly-added consequential type fail until it joins the discipline.
+- **`rul-spine-preserves-never-stamps`** [HUMAN] — Spine is a relatively frozen output
+  product assembled from stabilized analyzer results. It neither originates nor computes
+  influence, never applies one object-global grade, and never fills an absent record field.
+  Each record arrives with the maximal influence its own semantic mint established; Spine
+  stores it unchanged. Spine and its views remain structurally unable to feed influence or
+  any other conclusion back into the analyzer.
+- **`rul-projections-continue-influence-flow`** [HUMAN] — Spine finalization does not end
+  influence propagation. Filters and views make further decisions about selection,
+  ordering, arrangement, routing, sinks, and rendered output; each such stable result is a
+  new influence-bearing semantic object whose constructor joins the Spine inputs and any
+  other influencing inputs. These decisions never mutate Spine. Where their own account is
+  owed for later explanation, it belongs to an explicit projection result/trace rather than
+  a hidden renderer branch or a retroactive Spine append.
+- **`rul-untracked-is-not-authored`** [HUMAN] — full threading is deliberately not owed
+  yet. Every unconverted seam is explicit `untracked`/unknown and reads maximally
+  influenced at consequential consumers; absence never means authored-before-contact.
+  This permits staged implementation without laundering the unimplemented region into the
+  lowest grade.
+
+Security purpose: influenced host material can shape not only analysis/elision outcomes but
+also what the operator is shown, what is hidden, what is emphasized, where it is routed, and
+which author or source appears causative. Encoding influence only on world facts, or ending
+it at Spine, leaves the aid/control surface unaccounted. Conversely, influence records causal
+reach; the separate authority map still decides what each knowledge species may license.
+Neither substitutes for the other.
+
+Implementation direction: remove the landed one-grade-per-Spine stamp rather than widening
+it. Convert obvious semantic boundaries first; require explicit maximally-influenced
+`untracked` adapters elsewhere. The deadline is before the `309` boundary close, influence-
+aware rendering/frontier work, or any durable-grade lift relies on the current record fields.

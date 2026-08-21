@@ -479,3 +479,54 @@ is probably an artifact of wanting one.
   `rul-admission-is-a-closed-outcome` · `rul-integrity-failure-withholds-mutation` ·
   `rul-attribution-is-controller-minted` · `two-plane-aid-law` · `rul-whylog-is-the-spine`
   (whose boundary-3 wording was narrowed during this sitting).
+
+## §10 — Influence carriage across semantic entities [HUMAN-RULED 2026-08-21]
+
+This closes `30M:ask-spine-grade-boundary` in design, not implementation. It does not
+settle §1c's eventual gradation, require complete project-wide threading now, or make
+influence an authority policy. It rules the carriage shape that later work refines.
+
+- **`rul-influence-carried-by-entities`** — a stable semantic object whose meaning must
+  inherit influence carries a private, immutable, non-optional influence account itself.
+  This includes analyzer conclusions, decisions, licenses, Spine events, projection
+  selections, arrangements, routing choices, and rendered outputs. A parallel side table
+  that callers must remember to populate is not an acceptable enforcement mechanism.
+- **`rul-semantic-mints-join-influence`** — the constructor that turns inputs into a
+  stable semantic object also computes that object's maximal inherited influence from
+  every contributing data and control input. Constructors accept influencing objects or
+  restricted dependency accounts, never a caller-selected grade. No public field,
+  default, `None = authored`, generic downgrade, or deserialization route may manufacture
+  lesser influence. An interned/graph representation may back the account later, but
+  never replaces type-carriage.
+- **`rul-transient-wrappers-are-plumbing-only`** — a generic influenced-value wrapper may
+  carry influence through temporary generic calculations. A stable domain object whose
+  invariant is "always influence-bearing" stores the account directly; the wrapper is
+  not its persistent model.
+- **`rul-consequential-sinks-require-influence`** — authority mints, finalized analysis
+  decisions, Spine event construction, projection/filter decisions, sink selection, and
+  output construction accept only semantic objects whose type guarantees influence
+  carriage. A sealed common contract plus exhaustive species/consumer censuses should
+  make a new consequential type fail until it joins the discipline.
+- **`rul-spine-preserves-never-stamps`** — Spine is a relatively frozen output product
+  assembled from stabilized analyzer results. It neither originates nor computes
+  influence, never applies an object-global grade, and never fills an absent record field.
+  Each record arrives with the maximal influence established by its own semantic mint;
+  Spine stores it unchanged. Spine and its views remain structurally unable to feed any
+  conclusion back into analysis.
+- **`rul-projections-continue-influence-flow`** — Spine finalization does not terminate
+  propagation. Filters/views make later selection, ordering, arrangement, routing, sink,
+  and output decisions; each stable result is another influence-bearing semantic object
+  joining its Spine inputs and other influencing inputs. Such decisions never mutate
+  Spine. Where their account is owed for explanation, it lives in an explicit projection
+  result/trace rather than a hidden renderer branch or retroactive Spine append.
+- **`rul-untracked-is-not-authored`** — full threading is deliberately not owed yet.
+  Every unconverted seam is explicit `untracked`/unknown and reads maximally influenced at
+  consequential consumers; absence never means authored-before-contact. This is how the
+  implementation may remain staged without laundering its missing region.
+
+Influence remains causal accounting, orthogonal to authority: it answers what affected a
+result, while claim tiers, vouches, admin policy, and authority-bearing projection types
+answer what that result may license. Implementation should remove the landed one-grade-per-
+Spine stamp, convert obvious semantic boundaries first, and leave explicit conservative
+adapters elsewhere. The deadline is before the `309` boundary close, influence-aware render
+work, or any durable-grade lift relies on the current record fields.

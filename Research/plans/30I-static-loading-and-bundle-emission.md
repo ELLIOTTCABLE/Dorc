@@ -852,7 +852,8 @@ evaluation.
 ### 5.1 No prospective dynamic seam
 
 `rul-load-decisions-are-authored-before-contact` [TYPED direction] - every v0
-load decision is stamped `authored-before-contact` by construction. The loader
+load decision carries `authored-before-contact` influence from its own semantic
+construction; Spine preserves and never stamps it (`306b` §10). The loader
 accepts no influenced value. It still records a complete `SpineLoadDecision`
 with operands, selected edge, definitions, and provenance.
 
@@ -1166,7 +1167,8 @@ real oracle packages representable, not finish every spelling:
 2. Thread known load-variable value flow through one guarded transitive dependency
    specimen.
 3. Make book source affect visibility while preserving book-no-speaker custody.
-4. Represent load decisions on Spine with fixed authored-before-contact influence.
+4. Represent load decisions on Spine with private, non-optional authored-before-contact
+   influence established by the load decision's own mint, never by Spine.
 5. Build one exact bundle projection shared by analysis/emission entrypoints.
 6. Exercise one-bundle-per-load-occurrence, preserving nested dot boundaries as
    files where required; keep one-file-per-root as an optimization pin.

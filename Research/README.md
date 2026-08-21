@@ -43,6 +43,10 @@ and carries the license-contamination map.
 - **How do errors / provenance / "why" flow?** — `plans/111` (one PROV-shaped
   derivation-DAG; `(result × diagnostics)` never-throw) + `plans/22A` (the round-22
   deepening) + `notes/22D` (the `why`-lens contract).
+- **How does managed-host influence flow through decisions and output?** —
+  **`notes/306b`** (THE conductor-facing vocabulary/law; §10 rules per-semantic-object
+  carriage, Spine preservation, continued projection/output propagation, and explicit
+  conservative staging) + `plans/309` (the Spine transfer/projection consumer).
 - **How do we test a network appliance without a network?** — `plans/128` (DST; the one
   all-nondeterminism seam is the controller↔host transport).
 - **Does it run on Windows / odd targets?** — `plans/139` (`kLANG` weld; sh-precondition

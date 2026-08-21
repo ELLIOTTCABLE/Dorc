@@ -40,13 +40,15 @@ builders aid-first, explain-first, plan-later. Exceptions (Spine content withhel
 from the whylog-rendering intent) are vanishingly few, each bought at great price
 through opaque-review; they are not conductor/builder concerns.
 
-**Spine×influence are one substrate** [ACKED; `307` §2b carries the argument]:
-`306b` §2a's "complete in-memory structure — every decision, its inputs, its
-grade, its narration" IS the Spine with the grade column drawn in. v0 influence
-(the positional flip; the seams lane's `core::influence`) is spine-independent
-and already in flight; every refinement past v0 — the contingency axis (a
-differential over decisions), the §3d four-state replay discipline, the §6c
-marking frontier, durable grades — is an operation over reified Spine records.
+**Spine records carry influence; Spine does not own its flow** [HUMAN-RULED
+2026-08-21; `306b` §10]: `306b` §2a's complete in-memory output contains each
+decision's already-established influence account, but Spine neither computes nor
+stamps it. Stable semantic objects carry private, immutable, non-optional influence
+from their own mint; Spine stores that account unchanged. Influence continues past
+Spine through selection, arrangement, routing, and output objects produced by views,
+without mutating Spine or feeding any result back into analysis. Eventual gradation,
+frontier rendering, and durable grades refine this carriage shape rather than add a
+parallel side table.
 
 ## §2 — The Spine type: position and laws
 
@@ -74,10 +76,12 @@ marking frontier, durable grades — is an operation over reified Spine records.
   unbounded (k exemplars + a count); never arena handles, never working lattice
   state (`operands-are-pure-and-capped` promoted from the durable-file rule to a
   construction law on the type).
-- Grade-stamping [ACKED]: every Spine record stamps the v0 influence phase marker
-  at mint (`authored-before-contact` pre-ingestion; `host-influenced` after).
-  Calibration: this is v0 fidelity — full `306b` §1b generality (passes-ran,
-  arrival timing as graded facts) rides the open gradation pin, not this plan.
+- **`rul-spine-preserves-never-stamps`** [HUMAN-RULED 2026-08-21]: every Spine
+  record arrives already carrying the maximal influence joined by its semantic
+  constructor. No Spine-global grade, setter overwrite, caller-selected grade,
+  optional-clean default, or posthoc side-table attachment is admissible. Full
+  propagation is staged: an unconverted record is explicitly untracked/unknown and
+  reads maximally influenced at consequential consumers (`306b` §10).
 - Crate home + arena/interning mechanics: [PROPOSED, undesigned] — decided
   against real code at the census stage; the `core::prov`/`DefinitionCustody`
   cross-crate patterns are the candidates.
@@ -192,8 +196,9 @@ sold as total.
    BYTES are inside the end-gate, so the tripwire is not fired by the
    transition itself). Gate: every golden byte-identical; both legs; checker
    gates green.
-3. **stage-306-accounting**: grade-stamp records from the phase marker; the
-   report-only Spine state + typed projection-absences for the enumerated
+3. **stage-306-accounting**: preserve influence-bearing semantic records across
+   the Spine transfer without Spine-owned stamping; leave unconverted seams
+   explicitly untracked/maximally-influenced; the report-only Spine state + typed projection-absences for the enumerated
    authority exits; re-home the forgiving parser onto the report-only consumer +
    its governed lexical fence (the `306c` §3b steps 2–3 that stopped); the
    projection-tier collapse classes + drop-accounting.
@@ -225,7 +230,8 @@ throughout. The snapshot-emission stage is unaffected and precedes this.
 4. `pin-authority-exit-list` — the enumerated authority-bearing projections and
    the §4c which-projections-vanish question (§3).
 5. `306b` §1c gradation axis · §6b enforcement · §6c marking discriminator —
-   inherited open, unmoved.
+   inherited open, unmoved. The carriage architecture and Spine boundary are
+   closed by `306b` §10; those refinements must preserve it.
 6. `pin-census-new-arm-hygiene` — whether the `new` arm needs an accretion
    instrument (a census count surfaced like the prose burn-down) so transitory
    never becomes permanent-by-neglect [PROPOSED, cheap, undecided].
