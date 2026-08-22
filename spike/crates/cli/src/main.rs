@@ -4104,6 +4104,12 @@ mod acquisition_tests {
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
+    /// Imported rather than spelled through its path at each call, so the call fits on one line.
+    /// The census finds a pin's call sites LEXICALLY, with the open paren and the opening quote
+    /// adjacent to the function name, so a call rustfmt wraps between them is one the census cannot
+    /// see — and an unseen Live pin reddens it.
+    use internal_tooling::xfail::xfail_until;
+
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
     /// A throwaway package tree, removed on drop. The acquisition's whole subject is which files
@@ -4223,10 +4229,119 @@ mod acquisition_tests {
         assert!(paths.is_empty() && reached.is_empty());
     }
 
-    /// Book libraries overwhelmingly locate sibling files from the authored script, commonly as
-    /// `$(dirname "$0")/helpers.sh`. This is dynamic syntax but not open-ended discovery: the book
-    /// path is controller-owned input, so the source-location expression must become a dedicated
-    /// analysis target rather than poisoning every later binding.
+    /// One acquisition-and-solve run over a package: which files the book's `.` lines REACHED, and
+    /// the environment the acquired snapshot binds.
+    ///
+    /// Every load pin below asks those two questions of a different book, and the answer is the
+    /// loader, the snapshot, the value plane and the environment driven in the ORDER the binary
+    /// drives them. Spelled out per pin, that order drifts silently and a pin starts measuring a
+    /// world the run never has (`30I:rul-one-loader-many-projections` is the same argument one
+    /// layer down).
+    struct Loaded {
+        found: Vec<String>,
+        reached: BTreeSet<usize>,
+        cfg: dorc_analysis::cfg::Cfg,
+        definitions: dorc_analysis::funcenv::DefinitionTable,
+        env: dorc_analysis::funcenv::FuncEnv,
+    }
+
+    impl Loaded {
+        fn of(cwd: dorc_core::loadpath::Cwd, book_path: &str, book: &str) -> Self {
+            let (paths, srcs, reached) = super::read_book_sourced(
+                &cwd,
+                book_path,
+                book,
+                Vec::new(),
+                Vec::new(),
+                &BTreeSet::new(),
+            );
+            let found = ordered_names(&paths);
+            let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+                cwd,
+                paths,
+                srcs,
+                &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
+                book_path,
+                book,
+            );
+            let ast = dorc_syntax::parse(book).value;
+            let cfg = dorc_analysis::cfg::build(&ast).value;
+            let mut interner = dorc_core::Interner::default();
+            let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+            let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+            let env = {
+                let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+                dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane)
+            };
+            Self {
+                found,
+                reached,
+                cfg,
+                definitions,
+                env,
+            }
+        }
+
+        /// What a shell would have live for `name` at the book's last line.
+        fn at_exit(&self, name: &str) -> LiveDefinition {
+            dorc_analysis::funcenv::LiveDefinitions::new(&self.env, &self.definitions)
+                .definition_before(self.cfg.exit(), name)
+        }
+
+        /// The files a BOOK `.` really loaded, in walk order — the ordering half of a set-valued
+        /// operand, which the acquired-path list alone cannot show.
+        fn book_loads(&self) -> Vec<String> {
+            self.env
+                .loads()
+                .occurrences()
+                .iter()
+                .filter(|occurrence| {
+                    matches!(occurrence.sourcer, dorc_analysis::load::LoadSourcer::Book)
+                })
+                .filter_map(|occurrence| occurrence.target.rsplit('/').next().map(str::to_owned))
+                .collect()
+        }
+    }
+
+    /// `p-x-load-operand-param-expansion-of-dollar-zero` — the script-relative load Dorc may
+    /// evaluate ENTIRELY ITSELF.
+    ///
+    /// `${0%/*}` is pure parameter expansion over `$0`, and `$0` is the authored book path, which
+    /// the controller owns. So the operand is a function of program text plus controller-known
+    /// inputs, evaluable through the closed allowlist of pure shell operations, with no command
+    /// run and no tool modelled — which is exactly what separates it from the two pins below.
+    #[test]
+    fn a_dollar_zero_parameter_expansion_sites_a_book_dependency() {
+        let package = Package::new(
+            "book-param-zero-load",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
+        let loaded = Loaded::of(
+            package.cwd(),
+            &book_path,
+            ". \"${0%/*}/helpers.dorc.sh\"\nbook_helper\n",
+        );
+        let helper = loaded.at_exit("book_helper");
+
+        xfail_until("p-x-load-operand-param-expansion-of-dollar-zero", || {
+            assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+            assert_eq!(loaded.reached, [0].into());
+            assert!(matches!(helper, LiveDefinition::Live(_)));
+        });
+    }
+
+    /// `p-x-load-operand-dirname-of-dollar-zero` — the same dependency, spelled through a COMMAND.
+    ///
+    /// Book libraries overwhelmingly locate sibling files as `$(dirname "$0")/helpers.sh`, and the
+    /// answer is the same directory the pin above resolves without help. What differs is the route:
+    /// predicting `dirname`'s output inside the engine is tool-modelling, which
+    /// `identity-declared-never-inferred` forbids the engine outright. So the target is real and
+    /// the ROUTE to it is open — `ask-dollar-zero-command-substitution-path`, an authored-model
+    /// path rather than one hard-coded utility.
     #[test]
     fn a_dirname_command_substitution_sites_a_book_dependency() {
         let package = Package::new(
@@ -4237,44 +4352,57 @@ mod acquisition_tests {
             )],
         );
         let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
-        let book = ". \"$(dirname \"$0\")/helpers.dorc.sh\"\nbook_helper\n";
-        let (paths, srcs, reached) = super::read_book_sourced(
-            &package.cwd(),
-            &book_path,
-            book,
-            Vec::new(),
-            Vec::new(),
-            &BTreeSet::new(),
-        );
-        let found = ordered_names(&paths);
-        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+        let loaded = Loaded::of(
             package.cwd(),
-            paths.clone(),
-            srcs,
-            &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
             &book_path,
-            book,
+            ". \"$(dirname \"$0\")/helpers.dorc.sh\"\nbook_helper\n",
         );
-        let ast = dorc_syntax::parse(book).value;
-        let cfg = dorc_analysis::cfg::build(&ast).value;
-        let mut interner = dorc_core::Interner::default();
-        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
-        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
-        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
-        let helper = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions)
-            .definition_before(cfg.exit(), "book_helper");
+        let helper = loaded.at_exit("book_helper");
 
-        internal_tooling::xfail::xfail_until("p-x-book-load-dirname-command-substitution", || {
-            assert_eq!(found, ["helpers.dorc.sh"]);
-            assert_eq!(reached, [0].into());
+        xfail_until("p-x-load-operand-dirname-of-dollar-zero", || {
+            assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+            assert_eq!(loaded.reached, [0].into());
             assert!(matches!(helper, LiveDefinition::Live(_)));
         });
     }
 
+    /// `p-x-load-operand-cd-pwd-of-dollar-zero` — the absolutizing spelling of the same question,
+    /// and the one that runs TWO commands to ask it.
+    ///
+    /// `SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)` is the idiom authors reach for when a relative
+    /// `$0` would break a later `cd`. It rides the same open ruling as the pin above and is pinned
+    /// separately because the value reaches the `.` through a VARIABLE: a lane that special-cases
+    /// the operand's syntax rather than its provenance would green one and not the other.
+    #[test]
+    fn a_cd_pwd_script_dir_sites_a_book_dependency() {
+        let package = Package::new(
+            "book-cd-pwd-load",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
+        let loaded = Loaded::of(
+            package.cwd(),
+            &book_path,
+            "SCRIPT_DIR=$(cd \"$(dirname \"$0\")\" && pwd)\n. \"$SCRIPT_DIR/helpers.dorc.sh\"\nbook_helper\n",
+        );
+        let helper = loaded.at_exit("book_helper");
+
+        xfail_until("p-x-load-operand-cd-pwd-of-dollar-zero", || {
+            assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+            assert_eq!(loaded.reached, [0].into());
+            assert!(matches!(helper, LiveDefinition::Live(_)));
+        });
+    }
+
+    /// `p-x-glob-load-acquires-members` — a source glob is a SET-valued operand.
+    ///
     /// A finite glob over authored book-local files is an ordered family of ordinary `.` acts, not
-    /// an excuse to reject the whole book. The future analysis owes shell pathname ordering and
-    /// no-match behavior; this pin fixes the common successful two-member case first.
+    /// an excuse to reject the whole book. It expands against the authored SNAPSHOT — the same
+    /// bytes every other consumer reads — so the population is closed, and it reuses the
+    /// loop-propagation lane's member machinery rather than minting a second one.
     #[test]
     fn a_book_load_glob_acquires_each_matching_dependency_in_order() {
         let package = Package::new(
@@ -4284,97 +4412,212 @@ mod acquisition_tests {
                 ("b.dorc.sh", format!("{MARKER}b_helper() {{ :; }}\n")),
             ],
         );
-        let book = "for plugin in ./*.dorc.sh; do\n   . \"$plugin\"\ndone\na_helper\nb_helper\n";
-        let (paths, srcs, reached) = super::read_book_sourced(
-            &package.cwd(),
-            "book.sh",
-            book,
-            Vec::new(),
-            Vec::new(),
-            &BTreeSet::new(),
-        );
-        let found = ordered_names(&paths);
-        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+        let loaded = Loaded::of(
             package.cwd(),
-            paths.clone(),
-            srcs,
-            &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
             "book.sh",
-            book,
+            "for plugin in ./*.dorc.sh; do\n   . \"$plugin\"\ndone\na_helper\nb_helper\n",
         );
-        let ast = dorc_syntax::parse(book).value;
-        let cfg = dorc_analysis::cfg::build(&ast).value;
-        let mut interner = dorc_core::Interner::default();
-        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
-        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
-        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
-        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
-        let loaded: Vec<String> = env
-            .loads()
-            .occurrences()
-            .iter()
-            .filter(|occurrence| {
-                matches!(occurrence.sourcer, dorc_analysis::load::LoadSourcer::Book)
-            })
-            .filter_map(|occurrence| occurrence.target.rsplit('/').next().map(str::to_owned))
-            .collect();
-        let a = live.definition_before(cfg.exit(), "a_helper");
-        let b = live.definition_before(cfg.exit(), "b_helper");
+        let book_loads = loaded.book_loads();
+        let (a, b) = (loaded.at_exit("a_helper"), loaded.at_exit("b_helper"));
 
-        internal_tooling::xfail::xfail_until("p-x-book-load-glob", || {
-            assert_eq!(found, ["a.dorc.sh", "b.dorc.sh"]);
-            assert_eq!(reached, [0, 1].into());
-            assert_eq!(loaded, ["a.dorc.sh", "b.dorc.sh"]);
+        xfail_until("p-x-glob-load-acquires-members", || {
+            assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
+            assert_eq!(loaded.reached, [0, 1].into());
+            assert_eq!(book_loads, ["a.dorc.sh", "b.dorc.sh"]);
             assert!(matches!(a, LiveDefinition::Live(_)));
             assert!(matches!(b, LiveDefinition::Live(_)));
         });
     }
 
-    /// Optional ordinary book code stays ordinary book code: the filesystem guard chooses whether
-    /// it loads, while Dorc conservatively analyzes both paths. Requiring the target to sign the
-    /// dorc-lang contract would turn near-universal book acceptance into oracle ceremony.
+    /// `p-x-glob-load-members-are-order-unknown` — the members are a SET, and the order the target
+    /// will source them in is not ours to know.
+    ///
+    /// Pathname expansion sorts by the TARGET's collation, which depends on its locale and on
+    /// bytes the controller never sees. So two members defining one name with DIFFERENT bytes
+    /// leave the winner genuinely undetermined and the name must WITHHOLD — picking either is a
+    /// wrong-elision under `visibility-is-full-positional`. A name only one member defines has no
+    /// such contest and stays live, which is what keeps the withholding narrow.
     #[test]
-    fn a_filesystem_guarded_ordinary_book_source_is_acquired() {
+    fn glob_members_defining_one_name_with_differing_bytes_withhold_it() {
         let package = Package::new(
+            "book-glob-collide",
+            &[
+                (
+                    "a.dorc.sh",
+                    format!(
+                        "{MARKER}shared_helper() {{ common a \"$@\" ;}}\nonly_in_a() {{ :; }}\n"
+                    ),
+                ),
+                (
+                    "b.dorc.sh",
+                    format!("{MARKER}shared_helper() {{ common b \"$@\" ;}}\n"),
+                ),
+            ],
+        );
+        let loaded = Loaded::of(
+            package.cwd(),
+            "book.sh",
+            "for plugin in ./*.dorc.sh; do\n   . \"$plugin\"\ndone\nshared_helper x\nonly_in_a\n",
+        );
+        let shared = loaded.at_exit("shared_helper");
+        let sole = loaded.at_exit("only_in_a");
+
+        xfail_until("p-x-glob-load-members-are-order-unknown", || {
+            assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
+            assert_eq!(
+                shared,
+                LiveDefinition::Withheld,
+                "no member may win a name two members spell differently"
+            );
+            assert!(
+                matches!(sole, LiveDefinition::Live(_)),
+                "and a name only one member defines is uncontested: {sole:?}"
+            );
+        });
+    }
+
+    /// `p-x-glob-load-no-match-aborts` — a glob that matches nothing sources the LITERAL PATTERN.
+    ///
+    /// Unmatched pathname expansion leaves the word alone, so the loop body runs once with
+    /// `plugin` holding `./*.dorc.sh` and `.` is handed a filename no directory entry answers.
+    /// Today's answer already walls — but for the WRONG reason (the operand was never evaluated),
+    /// so the discriminator this pin asserts is that the pattern reaches the load account as a
+    /// NAMED target: the engine read the operand, and what it named is unloadable.
+    ///
+    /// FLOOR QUESTION, not asserted here: `.` is a POSIX special builtin, so a failing one should
+    /// terminate a non-interactive shell outright — which would make everything after the loop
+    /// unreachable rather than merely unbound. That is a claim about `posh ∩ dash` and belongs to
+    /// the differential lane, not to a unit pin.
+    #[test]
+    fn a_glob_matching_nothing_sources_the_literal_pattern() {
+        let package = Package::new(
+            "book-glob-no-match",
+            &[("README", "no dorc-lang member lives here\n".to_owned())],
+        );
+        let loaded = Loaded::of(
+            package.cwd(),
+            "book.sh",
+            "for plugin in ./*.dorc.sh; do\n   . \"$plugin\"\ndone\n",
+        );
+        let wanted = loaded.env.loads().wanted().clone();
+
+        xfail_until("p-x-glob-load-no-match-aborts", || {
+            assert!(
+                loaded.found.is_empty(),
+                "nothing matched, so nothing is acquired: {:?}",
+                loaded.found
+            );
+            assert_eq!(
+                loaded.env.unresolvable_loads().len(),
+                1,
+                "the site still walls — the pattern names no loadable file"
+            );
+            assert!(
+                wanted.iter().any(|target| target.ends_with("*.dorc.sh")),
+                "and the operand was EVALUATED to the pattern itself, which is the fact that \
+                 separates this from an operand the engine could not read: {wanted:?}"
+            );
+        });
+    }
+
+    /// `p-x-book-code-source-is-inclusion` — a resolvable `.` of ORDINARY sh is textual inclusion.
+    ///
+    /// Two cells, and the unconditional one is the bigger hole. Cell (a): `. ./helpers.sh` of plain
+    /// sh splices those definitions in at the load site, so the helper is live below it and the
+    /// book's own later role definition is untouched — today the target signs no dorc-lang contract,
+    /// is never opened, and walls the rest of the book. Cell (b): the same inclusion under a
+    /// filesystem-existence guard, where the branch decides whether it happened, so the guarded
+    /// helper is `May` (withheld) while the unconditional role definition below the `fi` is live.
+    ///
+    /// Requiring the target to sign the dorc-lang contract is the refused alternative: it turns
+    /// near-universal book acceptance into oracle ceremony for the admin
+    /// (`two-users-never-conflated`).
+    #[test]
+    fn an_ordinary_sh_source_is_textual_inclusion() {
+        let plain = Package::new(
+            "book-plain-sh-load",
+            &[("helpers.sh", "helper_fn() { :; }\n".to_owned())],
+        );
+        let unconditional = Loaded::of(
+            plain.cwd(),
+            "book.sh",
+            ". ./helpers.sh\nhork__is_converged() { hork status \"$1\" ;}\nhelper_fn\nhork tune web\n",
+        );
+        let (helper, role) = (
+            unconditional.at_exit("helper_fn"),
+            unconditional.at_exit("hork__is_converged"),
+        );
+
+        let guarded_package = Package::new(
             "book-guarded-load",
             &[("optional.sh", "optional_helper() { :; }\n".to_owned())],
         );
-        let book = "if [ -r ./optional.sh ]; then\n   . ./optional.sh\n   optional_helper\nfi\nhork__is_converged() { :; }\nhork tune web\n";
-        let (paths, srcs, reached) = super::read_book_sourced(
-            &package.cwd(),
+        let guarded = Loaded::of(
+            guarded_package.cwd(),
             "book.sh",
-            book,
-            Vec::new(),
-            Vec::new(),
-            &BTreeSet::new(),
+            "if [ -r ./optional.sh ]; then\n   . ./optional.sh\n   optional_helper\nfi\nhork__is_converged() { :; }\nhork tune web\n",
         );
-        let found = ordered_names(&paths);
-        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
-            package.cwd(),
-            paths.clone(),
-            srcs,
-            &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
-            "book.sh",
-            book,
-        );
-        let ast = dorc_syntax::parse(book).value;
-        let cfg = dorc_analysis::cfg::build(&ast).value;
-        let mut interner = dorc_core::Interner::default();
-        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
-        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
-        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
-        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
-        let optional = live.definition_before(cfg.exit(), "optional_helper");
-        let hork = live.definition_before(cfg.exit(), "hork__is_converged");
+        let optional = guarded.at_exit("optional_helper");
+        let guarded_role = guarded.at_exit("hork__is_converged");
 
-        internal_tooling::xfail::xfail_until("p-x-book-load-filesystem-guard", || {
-            assert_eq!(found, ["optional.sh"]);
-            assert_eq!(reached, [0].into());
-            assert_eq!(optional, LiveDefinition::Withheld);
-            assert!(matches!(hork, LiveDefinition::Live(_)));
+        xfail_until("p-x-book-code-source-is-inclusion", || {
+            assert_eq!(unconditional.found, ["helpers.sh"]);
+            assert_eq!(unconditional.reached, [0].into());
+            assert!(
+                matches!(helper, LiveDefinition::Live(_)),
+                "cell (a): an unconditional inclusion binds its definitions: {helper:?}"
+            );
+            assert!(
+                matches!(role, LiveDefinition::Live(_)),
+                "cell (a): and leaves the book's own later definition alone: {role:?}"
+            );
+
+            assert_eq!(guarded.found, ["optional.sh"]);
+            assert_eq!(guarded.reached, [0].into());
+            assert_eq!(
+                optional,
+                LiveDefinition::Withheld,
+                "cell (b): the guard decides whether the inclusion happened, so its helper is May"
+            );
+            assert!(
+                matches!(guarded_role, LiveDefinition::Live(_)),
+                "cell (b): the definition below the `fi` is unconditional: {guarded_role:?}"
+            );
         });
+    }
+
+    /// TODAY's conservative answer for the unconditional cell above — an INTERIM pin, and the name
+    /// says so.
+    ///
+    /// Worth pinning because "walls" is a compound of two facts that a repair could deliver
+    /// separately: the file is never opened (so its names are outside the unit's universe
+    /// entirely, which is `NoOpinion` rather than a withholding), and the site is disclosed as an
+    /// unresolvable load (which is what walls it and arms defensive emission). A lane that opened
+    /// the file without binding it, or bound it without disclosing, would leave one half standing
+    /// and this pin says which.
+    #[test]
+    fn a_plain_sh_source_walls_today_interim() {
+        let package = Package::new(
+            "book-plain-sh-interim",
+            &[("helpers.sh", "helper_fn() { :; }\n".to_owned())],
+        );
+        let loaded = Loaded::of(package.cwd(), "book.sh", ". ./helpers.sh\nhelper_fn\n");
+
+        assert!(
+            loaded.found.is_empty(),
+            "the target signs no dorc-lang contract, so it is never opened: {:?}",
+            loaded.found
+        );
+        assert_eq!(
+            loaded.env.unresolvable_loads().len(),
+            1,
+            "and the site is disclosed as an unresolvable load, which is what walls it"
+        );
+        assert_eq!(
+            loaded.at_exit("helper_fn"),
+            LiveDefinition::NoOpinion,
+            "its names are outside the unit's universe, not withheld within it"
+        );
     }
 
     /// An invocation-named oracle stays AMBIENT even though the acquisition runs over it: only

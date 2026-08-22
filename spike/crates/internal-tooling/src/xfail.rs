@@ -239,34 +239,75 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-book-load-dirname-command-substitution",
-        trigger: "the BOOK-LOAD-ACCEPTANCE lane: treat `$(dirname \"$0\")` in a book `.` operand \
-                  as the script-location analysis target it is, resolve the dependency from the \
-                  authored book path, and preserve ordinary dot-sourcing semantics",
+        name: "p-x-unknown-source-is-a-point-havoc",
+        trigger: "`principle-unknown-source-is-a-point-havoc`: an unresolvable `.` sets every \
+                  function binding to unknown AT THAT LINE and no further, so a later \
+                  UNCONDITIONAL definition in the same frame re-binds by sh's last-wins — today \
+                  the ⊤ never recovers and the whole tail of the book is unbindable",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-load-operand-param-expansion-of-dollar-zero",
+        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`: a `.` operand \
+                  built by PURE parameter expansion over the authored book path — `${0%/*}` — is a \
+                  function of program text plus `$0` plus the modeled cwd, so it resolves through \
+                  the closed allowlist without evaluating any command",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-load-operand-dirname-of-dollar-zero",
+        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`, held by the \
+                  open ruling `ask-dollar-zero-command-substitution-path`: `$(dirname \"$0\")` \
+                  names a COMMAND, and predicting its output inside the engine is the \
+                  tool-modelling `identity-declared-never-inferred` forbids — so the shape waits \
+                  on an authored-model path rather than on an engine special case",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-book-load-filesystem-guard",
-        trigger: "the BOOK-LOAD-ACCEPTANCE lane: acquire ordinary unmarked book code behind a \
-                  filesystem-existence guard as a possible source, model both branches, and limit \
-                  binding uncertainty to names the sourced file can affect",
+        name: "p-x-load-operand-cd-pwd-of-dollar-zero",
+        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`, held by the \
+                  same open ruling `ask-dollar-zero-command-substitution-path`: \
+                  `$(cd \"$(dirname \"$0\")\" && pwd)` is the absolutizing spelling of the same \
+                  script-location question, and it evaluates two commands rather than one",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-book-load-glob",
-        trigger: "the BOOK-LOAD-ACCEPTANCE lane: expand a finite book-local source glob against \
-                  the authored snapshot with sh ordering and no-match semantics, then model each \
-                  loop iteration as an ordered load occurrence",
+        name: "p-x-glob-load-acquires-members",
+        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`: a source glob is \
+                  a SET-valued operand, expanded against the authored snapshot into an ordered \
+                  family of ordinary `.` acts — it reuses the loop-propagation lane's \
+                  member-population machinery, which is why it sits after that lane",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-book-load-host-state",
-        trigger: "the BOOK-LOAD-ACCEPTANCE lane: model standardized host-state source targets such \
-                  as `/etc/os-release` as data-bearing reads, rather than allowing them to havoc \
-                  unrelated function bindings",
+        name: "p-x-glob-load-members-are-order-unknown",
+        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`: the target's \
+                  collation order is unknowable from the controller, so two members defining one \
+                  name with DIFFERENT bytes must withhold that name — no member may win — while a \
+                  name only one member defines stays live",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-glob-load-no-match-aborts",
+        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`: a glob matching \
+                  nothing in the snapshot sources the LITERAL pattern, so the engine must model an \
+                  EVALUATED operand naming an unloadable file — which is a different fact from an \
+                  operand it could not evaluate, even though both wall",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-book-code-source-is-inclusion",
+        trigger: "`principle-book-code-source-is-inclusion`: a resolvable `.` of an ORDINARY \
+                  (non-dorc-lang) sh file is textual inclusion at the load site under whatever \
+                  branch it sits in — today such a target is never opened, so even the \
+                  unconditional `. ./helpers.sh` of plain sh walls the rest of the book",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },

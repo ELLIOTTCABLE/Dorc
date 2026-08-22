@@ -245,48 +245,176 @@ fn a_described_host_conditional_definition_is_may_bound() {
     });
 }
 
-/// A standardized host-state source is a data read, not an unknown function-definition vector.
-/// Books commonly source `/etc/os-release`; accepting that shell idiom while havocing every later
-/// function binding would preserve execution but discard unrelated oracle value across the tail.
-#[test]
-fn a_standardized_host_state_source_preserves_later_book_bindings() {
-    const ROLE: &str = "hork__is_converged";
-    let book = ". /etc/os-release\n\
-                hork__is_converged() { hork status \"$1\"; }\n\
-                hork tune web\n";
-    let mut interner = dorc_core::Interner::default();
-    let parsed = dorc_syntax::parse(book).value;
-    let cfg = dorc_analysis::cfg::build(&parsed).value;
-    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
-    let defs = dorc_cli::world::definition_table(&snapshot_of(&[], &[], "book.sh", book), &parsed);
-    let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-    let env = dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane);
-    let hork = interner.intern("hork");
-    let tune = interner.intern("tune");
-    let site = cfg
-        .iter()
-        .find_map(|(id, node)| {
+// ---------------------------------------------------------------------------
+// `principle-unknown-source-is-a-point-havoc` — the three claims an unresolvable `.` makes.
+
+/// The book every pin below reads: a name bound BEFORE an unresolvable `.`, the unresolvable `.`
+/// itself, an unconditional role definition AFTER it, and a site the role would answer.
+///
+/// The operand is deliberately an ANY-unresolvable one rather than a recognizable host path. The
+/// engine decodes no pathname (`inv-referent-agnostic`), so `/etc/os-release` and
+/// `"$SITE_PROFILE/rc"` are one cell wearing two spellings, and picking the recognizable one
+/// invites a special case where the general rule belongs.
+const HAVOC_BOOK: &str = "wombat__is_converged() { wombat status \"$1\"; }\n\
+                          . \"$SITE_PROFILE/rc\"\n\
+                          hork__is_converged() { hork status \"$1\"; }\n\
+                          hork tune web\n";
+
+/// One solved world over a book alone — no oracles, the book its own definition source
+/// (`the-book-is-a-definition-source`).
+struct BookWorld {
+    interner: dorc_core::Interner,
+    cfg: dorc_analysis::cfg::Cfg,
+    value: dorc_analysis::value::ValueFlow,
+    defs: dorc_analysis::funcenv::DefinitionTable,
+    env: dorc_analysis::funcenv::FuncEnv,
+}
+
+impl BookWorld {
+    fn of(book: &str) -> Self {
+        let mut interner = dorc_core::Interner::default();
+        let parsed = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&parsed).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+        let defs =
+            dorc_cli::world::definition_table(&snapshot_of(&[], &[], "book.sh", book), &parsed);
+        let env = {
+            let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+            dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
+        };
+        Self {
+            interner,
+            cfg,
+            value,
+            defs,
+            env,
+        }
+    }
+
+    /// The CFG node of the command whose first two argv words are these literals; `None` when the
+    /// book has no such site, which every caller turns into its own failure inside its `#[test]`
+    /// (the no-panic lint family reaches an integration test's plain `impl` blocks).
+    fn site(&mut self, head: &str, verb: &str) -> Option<dorc_analysis::cfg::CfgNodeId> {
+        let (head, verb) = (self.interner.intern(head), self.interner.intern(verb));
+        self.cfg.iter().find_map(|(id, node)| {
             if node.kind != dorc_analysis::cfg::CfgNodeKind::Command {
                 return None;
             }
-            let argv = value.argv_values(id);
             matches!(
-                argv.as_slice(),
+                self.value.argv_values(id).as_slice(),
                 [dorc_analysis::value::ValueOf::Literal(a), dorc_analysis::value::ValueOf::Literal(b), ..]
-                    if *a == hork && *b == tune
+                    if *a == head && *b == verb
             )
             .then_some(id)
         })
-        .expect("the book's hork tune site is present");
-    let live =
-        dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs).definition_before(site, ROLE);
+    }
 
-    internal_tooling::xfail::xfail_until("p-x-book-load-host-state", || {
+    fn live_before(
+        &self,
+        node: dorc_analysis::cfg::CfgNodeId,
+        name: &str,
+    ) -> dorc_core::LiveDefinition {
+        dorc_analysis::funcenv::LiveDefinitions::new(&self.env, &self.defs)
+            .definition_before(node, name)
+    }
+}
+
+/// `p-x-unknown-source-is-a-point-havoc` — THE TARGET: the havoc is a POINT, not a suffix.
+///
+/// The sh fact: `.` runs the named file in the caller's own shell, so at that line anything may
+/// have been defined and every name becomes unknown. What sh does NOT say is that the unknown
+/// survives a later definition — a top-level `f() { … }` in the same frame binds `f` to those
+/// bytes, last-wins, whatever ran before it. Today the environment's ⊤ absorbs the binding (⊤ has
+/// no frame to write into), so a book that sources one unreadable rc file loses every verdict,
+/// predict, and wrapper definition it writes afterwards.
+///
+/// This is the whole delta principle 1 asks for. Nothing about emission or execution moves with
+/// it — see the two companions below, which pin the halves that must NOT move.
+#[test]
+fn an_unknown_source_havocs_only_at_its_own_line() {
+    let mut world = BookWorld::of(HAVOC_BOOK);
+    let site = world
+        .site("hork", "tune")
+        .expect("the book's hork tune site is present");
+    let later = world.live_before(site, "hork__is_converged");
+
+    internal_tooling::xfail::xfail_until("p-x-unknown-source-is-a-point-havoc", || {
         assert!(
-            matches!(live, dorc_core::LiveDefinition::Live(_)),
-            "the os-release data read must not hide the later explicit verdict definition: {live:?}"
+            matches!(later, dorc_core::LiveDefinition::Live(_)),
+            "an unconditional definition BELOW the unknown source re-binds by last-wins: {later:?}"
         );
     });
+}
+
+/// The other half of sh's answer, and it is GREEN: a name bound only ABOVE the unresolvable `.` is
+/// NOT live below it.
+///
+/// Measured rather than assumed — this is what says the pin above asks for precision and not for a
+/// widening. The sourced file could have redefined `wombat__is_converged`, or `unset -f`'d it, and
+/// nothing in the program text can rule either out; so the name withholds, and any lane that
+/// greens the pin above while making this one Live has traded a wrong-elision for a lost one.
+#[test]
+fn a_name_bound_only_before_an_unknown_source_is_withheld_after_it() {
+    let mut world = BookWorld::of(HAVOC_BOOK);
+    let site = world
+        .site("hork", "tune")
+        .expect("the book's hork tune site is present");
+    let earlier = world.live_before(site, "wombat__is_converged");
+
+    assert_eq!(
+        earlier,
+        dorc_core::LiveDefinition::Withheld,
+        "the sourced file may have rebound or removed the earlier definition; sh cannot say it \
+         survived"
+    );
+    let control =
+        BookWorld::of("wombat__is_converged() { wombat status \"$1\"; }\nhork tune web\n");
+    let mut control = control;
+    let unhavoced = control
+        .site("hork", "tune")
+        .expect("the book's hork tune site is present");
+    assert!(
+        matches!(
+            control.live_before(unhavoced, "wombat__is_converged"),
+            dorc_core::LiveDefinition::Live(_)
+        ),
+        "control: without the unknown source the same definition IS live, so the withholding \
+         above is the load's doing"
+    );
+}
+
+/// The anti-regression that keeps principle 1 from reading as a lift licence: an unresolvable load
+/// stays a DEFINITION VECTOR and stays a WALL.
+///
+/// Two consequences ride on it, both of which a "the havoc is only a point" repair could plausibly
+/// be read as relaxing, and neither of which may move. The definition vector is what turns
+/// defensive emission on (`28R:rul-defensive-mode-definition-vectors` — every emitted name munges,
+/// because a bare name is no longer a proof that the artifact's own body answers it) and what
+/// opens every elision-region population (`region-openers-are-demanded-not-defaulted`). The wall
+/// is `opaque-poison-is-the-product`: a site whose description was bound above the load cannot
+/// license below it, which is the same fact the green pin above states, seen from the licence
+/// plane.
+#[test]
+fn an_unknown_source_keeps_defensive_emission_and_its_wall() {
+    let world = BookWorld::of(HAVOC_BOOK);
+    assert_eq!(
+        world.env.unresolvable_loads().len(),
+        1,
+        "the one `.` the value plane could not name is disclosed, which is what arms defensive \
+         emission and opens every region population"
+    );
+
+    let control = classes_of(&[HORK_PLAIN], "hork tune web\n");
+    assert!(
+        is_elidable_establish(&control),
+        "control: the described site elides when nothing walls it — {control:?}"
+    );
+    let walled = classes_of(&[HORK_PLAIN], ". \"$SITE_PROFILE/rc\"\nhork tune web\n");
+    assert!(
+        !is_elidable_establish(&walled),
+        "and stops eliding under an unresolvable load, whose ambient description it can no longer \
+         prove is the one that answers — {walled:?}"
+    );
 }
 
 // ---------------------------------------------------------------------------
