@@ -252,6 +252,15 @@ pub struct Cfg {
     /// mints a `Replace`/`Omit` license (`plan::disposition_for`). The recorded floor
     /// the member-elision slice (`209` brk-1 (b)) later lifts.
     in_loop: Vec<bool>,
+    /// Per-node: the INNERMOST enclosing loop's [`CfgNodeKind::LoopHead`], where one exists.
+    ///
+    /// Recorded by the lowering that wired the loop, for the reason [`Branch`] is: a loop body is
+    /// one contiguous arena range only as an implementation detail, and a consumer that recovered
+    /// the head by walking adjacency or by index arithmetic would be reading that detail. The
+    /// region census needs the head to reach the loop's `for`-list, and a SPLICED body site is
+    /// exactly the case AST containment cannot answer — its span lives in the definition, not
+    /// inside the loop.
+    enclosing_loop: Vec<Option<CfgNodeId>>,
     /// Per-node: lowered as part of a function-body SPLICE at a call site (arch-2, brk-2).
     /// Such a `Command` is effect-bearing (its mutations gen into reaching-defs exactly as
     /// inline code would — `i-5`), reachable from entry (un-detaching the body — the find-7
@@ -343,6 +352,18 @@ impl Cfg {
     #[must_use]
     pub fn in_loop_body(&self, id: CfgNodeId) -> bool {
         self.in_loop[id.index()]
+    }
+
+    /// The INNERMOST loop whose body or condition this node was lowered inside, or `None` when it
+    /// sits in no loop at all.
+    ///
+    /// Innermost, because that is the loop whose list decides how many times THIS node evaluates
+    /// per entry to it. The head carries the loop's own [`AstId`], which is how a consumer reaches
+    /// a `for`'s iteration variable and list words for a node whose own span is somewhere else
+    /// entirely (a spliced function body).
+    #[must_use]
+    pub fn enclosing_loop_head(&self, id: CfgNodeId) -> Option<CfgNodeId> {
+        self.enclosing_loop[id.index()]
     }
 
     /// Was this node lowered as part of a function-body SPLICE at a call site (arch-2,
@@ -565,6 +586,10 @@ struct Builder<'a> {
     /// arena-range pass in `lower_for`/`lower_while` (the same range trick
     /// `expansion_internal` uses); emitted on the [`Cfg`] for `plan`'s in-loop floor.
     in_loop: Vec<bool>,
+    /// Per-node: the innermost enclosing loop's head, marked by the same range pass. Innermost
+    /// wins because a nested loop's own pass runs FIRST (it lowers inside the outer body), and
+    /// the outer pass only fills what is still empty.
+    enclosing_loop: Vec<Option<CfgNodeId>>,
     /// Per-node: lowered as part of a function-body splice (arch-2). Set by an arena-range
     /// pass in [`splice_funcdef_body`](Builder::splice_funcdef_body); emitted on the [`Cfg`]
     /// so the leaf set excludes a spliced body command (the CALL is the render unit, `i-3`).
@@ -651,6 +676,7 @@ impl<'a> Builder<'a> {
             toggle: Vec::new(),
             expansion_internal: Vec::new(),
             in_loop: Vec::new(),
+            enclosing_loop: Vec::new(),
             spliced_internal: Vec::new(),
             execution_owner: Vec::new(),
             funcdefs: collect_funcdefs(ast),
@@ -678,6 +704,7 @@ impl<'a> Builder<'a> {
         self.toggle.push(None);
         self.expansion_internal.push(false);
         self.in_loop.push(false);
+        self.enclosing_loop.push(None);
         self.spliced_internal.push(false);
         self.execution_owner.push(ExecutionOwner::AlwaysAtNode);
         self.consumed.push(Powerset::default());
@@ -1472,7 +1499,7 @@ impl<'a> Builder<'a> {
         let body_start = self.nodes.len();
         let body_exit = self.lower_node(body, head);
         self.add_edge(body_exit, head); // the back-edge
-        self.mark_in_loop_range(body_start, self.nodes.len());
+        self.mark_in_loop_range(body_start, self.nodes.len(), head);
         let merge = self.fresh(id, CfgNodeKind::Merge);
         self.add_edge(head, merge); // exit edge (list exhausted, or ran zero times)
         merge
@@ -1523,7 +1550,7 @@ impl<'a> Builder<'a> {
         let cond_exit = self.lower_condition_region(cond, head, Some(Channel::StatusIterated));
         let body_exit = self.lower_node(body, cond_exit);
         self.add_edge(body_exit, head); // the back-edge
-        self.mark_in_loop_range(loop_start, self.nodes.len());
+        self.mark_in_loop_range(loop_start, self.nodes.len(), head);
         let merge = self.fresh(id, CfgNodeKind::Merge);
         self.add_edge(cond_exit, merge); // exit edge (condition ends the loop)
         // item-6a (20O find-6a): record this loop's body-exit against its exit `merge`, so
@@ -1539,9 +1566,13 @@ impl<'a> Builder<'a> {
     /// idiom (`inv-determinism` makes the range stable). A NESTED loop's nodes fall
     /// inside the outer range too — correct (they are in *a* loop), and a nested
     /// loop's own call marks them again (idempotent).
-    fn mark_in_loop_range(&mut self, from: usize, to: usize) {
+    ///
+    /// `head` records WHICH loop, innermost-wins: a nested loop's own call has already run (it
+    /// lowered inside this body), so `get_or_insert` leaves its answer standing.
+    fn mark_in_loop_range(&mut self, from: usize, to: usize, head: CfgNodeId) {
         for v in from..to {
             self.in_loop[v] = true;
+            let _ = self.enclosing_loop[v].get_or_insert(head);
         }
     }
 
@@ -2128,6 +2159,7 @@ impl<'a> Builder<'a> {
             pred: self.pred,
             expansion_internal: self.expansion_internal,
             in_loop: self.in_loop,
+            enclosing_loop: self.enclosing_loop,
             spliced_internal: self.spliced_internal,
             execution_owner: self.execution_owner,
             call_body_sites: self.call_body_sites,

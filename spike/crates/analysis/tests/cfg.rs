@@ -435,6 +435,67 @@ fn loop_body_commands_are_in_loop_post_loop_is_not() {
     assert_eq!(post_loop, 1, "exactly the post-loop install is not in-loop");
 }
 
+#[test]
+fn a_nested_body_command_names_its_innermost_loop() {
+    // `Cfg::enclosing_loop_head` answers INNERMOST, because that is the loop whose list decides
+    // how many times the node evaluates per entry to it. The outer head answers no node inside
+    // the inner loop; the outer body's own command answers the outer head. Both directions are
+    // asserted, since an outer-wins bug would still look right from one of them.
+    //
+    // CFG shape: two nested `for` heads, one command leaf in each body.
+    let src =
+        "for p in a b; do ufw allow 22; for q in c d; do apt-get install -y \"$q\"; done; done";
+    let cfg = cfg_of(src);
+    let heads: Vec<CfgNodeId> = cfg
+        .iter()
+        .filter(|(_, node)| node.kind == CfgNodeKind::LoopHead)
+        .map(|(id, _)| id)
+        .collect();
+    assert_eq!(heads.len(), 2, "two loop heads");
+    let (outer, inner) = (heads[0], heads[1]);
+    assert!(!cfg.in_loop_body(outer), "the outer head is in no loop");
+    assert!(
+        cfg.in_loop_body(inner),
+        "the inner head sits in the outer body"
+    );
+    assert_eq!(cfg.enclosing_loop_head(outer), None);
+    assert_eq!(cfg.enclosing_loop_head(inner), Some(outer));
+
+    let install = command_nodes_with_literal(&cfg, src, "apt-get");
+    let allow = command_nodes_with_literal(&cfg, src, "ufw");
+    assert_eq!(install.len(), 1);
+    assert_eq!(allow.len(), 1);
+    assert_eq!(cfg.enclosing_loop_head(install[0]), Some(inner));
+    assert_eq!(cfg.enclosing_loop_head(allow[0]), Some(outer));
+}
+
+#[test]
+fn a_spliced_body_command_names_the_loop_its_call_sits_in() {
+    // The case AST containment cannot answer: the command's own span lives in the definition,
+    // which is nowhere near the loop. The head is recorded by the lowering that wired the loop,
+    // so the splice inherits it from the arena range it was minted into.
+    //
+    // CFG shape: a `for` whose body holds one call, whose spliced body holds one command leaf.
+    let src = "install_pkg() { apt-get install -y nginx; }\nfor pkg in a b; do install_pkg; done";
+    let cfg = cfg_of(src);
+    let head = require(
+        cfg.iter()
+            .find(|(_, node)| node.kind == CfgNodeKind::LoopHead)
+            .map(|(id, _)| id),
+        "the loop head",
+    );
+    let spliced: Vec<CfgNodeId> = command_nodes_with_literal(&cfg, src, "apt-get")
+        .into_iter()
+        .filter(|&id| cfg.is_spliced_internal(id))
+        .collect();
+    assert!(
+        spliced
+            .iter()
+            .any(|&id| cfg.enclosing_loop_head(id) == Some(head)),
+        "the spliced body command names the loop its call sits in"
+    );
+}
+
 // ===========================================================================
 // Determinism (inv-determinism): identical inputs ⇒ identical graph.
 // ===========================================================================
