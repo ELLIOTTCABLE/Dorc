@@ -1,0 +1,9 @@
+XFAIL: `plan::pin_definitions` hoists every closure declaration into the preamble unconditionally,
+so the oracle's file-level `WOMBAT_ROOT=/etc/wombat` lands above the whole book and the book's own
+`hork stage "${WOMBAT_ROOT-unset}"` — which stands ABOVE the `.` that binds the name — reads
+`/etc/wombat` instead of `unset`. The artifact binds a name at a line the authored program does not.
+Greens with the emission planner's `in-place` placement value (`30P:the-emission-planner`): a
+book-sited root's bytes are already carried at the `.`, so its closure needs no hoist and the
+legality predicate refuses one whose name the book observes above that point
+(`30P:review-adjudication-inputs` `fnd-emission-legality-covers-all-shell-state`, the item left OPEN
+for this lane and confirmed here).

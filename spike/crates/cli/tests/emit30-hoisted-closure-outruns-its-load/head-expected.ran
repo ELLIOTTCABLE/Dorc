@@ -1,0 +1,3 @@
+ran: hork stage /etc/wombat
+ran: hork provision
+ran: wombat cmp -- a.conf /etc/wombat/a.conf

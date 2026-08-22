@@ -1,0 +1,5 @@
+# Site numbering today (leaves in book order): 0 the `hork stage` read, 1 the `.`, 2 the unmodeled
+# wall, 3 the described `wombat sync`. Only site 3 is described; it sits past `hork`'s wall, so a
+# `holds` cell mints a GUARD rather than an elision — which is what puts the pinned definition and
+# its closure on the apply surface, where the placement is readable.
+site 3 effect=holds

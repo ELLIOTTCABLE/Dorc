@@ -1,0 +1,5 @@
+_dorc_logged() {
+   _dl_out="ran: ${0##*/}"
+   for _dl_arg do _dl_out="$_dl_out $_dl_arg"; done
+   printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
