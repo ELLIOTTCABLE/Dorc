@@ -383,6 +383,92 @@ fn a_name_bound_only_before_an_unknown_source_is_withheld_after_it() {
     );
 }
 
+/// `p-x-unknown-source-havocs-shell-options` — the SHELL-OPTION domain of
+/// `30P:principle-unknown-source-is-a-point-havoc`.
+///
+/// `.` runs the named file in the caller's own shell, so `set -e` inside it persists to the caller
+/// (floor-measured, `floor30-atlas-errexit-set-inside-sourced-file`). An unresolvable one therefore
+/// leaves errexit at ⊤ below its line, and `cfg`'s failure-edge materialisation already has the
+/// vocabulary for that — `ErrExit::may_be_on()` covers `On` and `Top` alike, and `set "$dyn"`
+/// already lands there. What is missing is the toggle: the forward pass walks straight through a
+/// `.` and keeps whatever state the book last spelled, so in a book with NO `set -e` a fallible
+/// command below an unknown source gets no failure-edge and every path past it is modelled as
+/// reached.
+///
+/// The direction is the conservative one: a failure-edge is ADDED beside the fall-through, never in
+/// place of it, so the edge set is a superset of both worlds and nothing downstream gains reach.
+///
+/// CFG shape exercised: three straight-line top-level commands, the first an unresolvable `.` and
+/// the second a fallible unmodeled command that is NOT last — so an edge to `Exit` can only be the
+/// errexit failure-edge and never the ordinary fall-off-the-end successor.
+#[test]
+fn an_unknown_source_leaves_errexit_unknown_below_it() {
+    let mut world = BookWorld::of(". \"$SITE_PROFILE/rc\"\nhork tune web\nwombat sync cache\n");
+    let site = world
+        .site("hork", "tune")
+        .expect("the book's hork tune site is present");
+    let exit = world.cfg.exit();
+    let aborts = world.cfg.succ_ids(site).any(|succ| succ == exit);
+
+    internal_tooling::xfail::xfail_until("p-x-unknown-source-havocs-shell-options", || {
+        assert!(
+            aborts,
+            "the sourced file may have run `set -e`, so a fallible command below it owes its \
+             failure→exit edge even though the book never spelled one"
+        );
+    });
+}
+
+/// The POSITIONAL-PARAMETER domain of the same principle, and it is already ⊤ — pinned so a later
+/// precision pass cannot quietly hand it a value.
+///
+/// A sourced file's `set --`/`shift` edits the caller's positional parameters (floor-measured,
+/// `floor30-atlas-sourced-file-edits-positional-params`), so `$1` below an unresolvable `.` is
+/// unknowable. It is unreadable today for the duller reason that nothing binds a book's top-level
+/// positionals at all; the assertion is the same either way, and the point is that greening the
+/// point-havoc pin must not turn "we never modelled this" into "we know it did not change".
+///
+/// Asserted at the CONSUMER seat rather than on the raw lattice value, which is where the two
+/// causes are honestly indistinguishable: the variable plane answers ⊥ (nothing recorded) rather
+/// than ⊤ (recorded as unknowable) for a never-assigned name, and only `variable_text`'s equal
+/// treatment of the two makes that safe.
+#[test]
+fn a_positional_parameter_below_an_unknown_source_stays_unknown() {
+    let mut world = BookWorld::of(". \"$SITE_PROFILE/rc\"\nhork tune \"$1\"\n");
+    let site = world
+        .site("hork", "tune")
+        .expect("the book's hork tune site is present");
+
+    let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&world.value, &world.interner);
+    assert_eq!(
+        plane.variable_text(site, "1"),
+        None,
+        "the sourced file may have run `set --`, so no positional below it carries a value"
+    );
+}
+
+/// The TERMINATION domain of the same principle, and it is already May-reach — pinned for the same
+/// reason as its sibling above.
+///
+/// A sourced file may `exit`, so whether the line below an unresolvable `.` runs at all is
+/// unknowable. May-reach is the safe answer for BOTH consumers (an elision must assume the line
+/// runs; a guard must assume it may), and it is what the CFG gives today by simply not adding an
+/// exit edge. The assertion is that the site below the unknown source is still a real, walled site
+/// — not one a "it might have exited" refinement quietly dropped out of the plan.
+#[test]
+fn a_site_below_an_unknown_source_is_still_modelled_as_reached() {
+    let classes = classes_of(&[HORK_PLAIN], ". \"$SITE_PROFILE/rc\"\nhork tune web\n");
+    assert!(
+        !classes.is_empty(),
+        "the site below an unresolvable source is still classified — termination is May-reach, so \
+         the line is modelled as running: {classes:?}"
+    );
+    assert!(
+        !is_elidable_establish(&classes),
+        "and it runs: nothing about may-have-exited licenses removing it — {classes:?}"
+    );
+}
+
 /// The anti-regression that keeps principle 1 from reading as a lift licence: an unresolvable load
 /// stays a DEFINITION VECTOR and stays a WALL.
 ///

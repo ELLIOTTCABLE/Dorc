@@ -283,20 +283,22 @@ pub const PINS: &[Pin] = &[
     },
     Pin {
         name: "p-x-load-operand-dirname-of-dollar-zero",
-        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`, held by the \
-                  open ruling `ask-dollar-zero-command-substitution-path`: `$(dirname \"$0\")` \
-                  names a COMMAND, and predicting its output inside the engine is the \
-                  tool-modelling `identity-declared-never-inferred` forbids — so the shape waits \
-                  on an authored-model path rather than on an engine special case",
+        trigger: "`30P:rul-static-predict-sites-loads`: `$(dirname \"$0\")` names a COMMAND, and \
+                  predicting its output inside the engine is the tool-modelling \
+                  `identity-declared-never-inferred` forbids — so the route is an authored, \
+                  statically-evaluable `dirname__predict` whose stdout is positively claimed, and \
+                  the shape waits on the stdlib that carries one. Absent it the operand is ⊤ ⇒ a \
+                  point havoc with a hint (`p-x-computed-dot-parses-and-havocs` is that half)",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
     Pin {
         name: "p-x-load-operand-cd-pwd-of-dollar-zero",
-        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`, held by the \
-                  same open ruling `ask-dollar-zero-command-substitution-path`: \
-                  `$(cd \"$(dirname \"$0\")\" && pwd)` is the absolutizing spelling of the same \
-                  script-location question, and it evaluates two commands rather than one",
+        trigger: "`30P:rul-static-predict-sites-loads` again: `$(cd \"$(dirname \"$0\")\" && pwd)` \
+                  is the absolutizing spelling of the same script-location question, and it \
+                  evaluates two commands rather than one — so it additionally wants the \
+                  subshell-scoped cwd member of the decidable set, which grows BY NAME and \
+                  license-review-tier",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
@@ -311,10 +313,12 @@ pub const PINS: &[Pin] = &[
     },
     Pin {
         name: "p-x-glob-load-members-are-order-unknown",
-        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`: the target's \
-                  collation order is unknowable from the controller, so two members defining one \
-                  name with DIFFERENT bytes must withhold that name — no member may win — while a \
-                  name only one member defines stays live",
+        trigger: "`30Pb:fnd-glob-order-needs-whole-program-meet` (AGREED at `30P`): the target's \
+                  collation order is unknowable from the controller, so the answer is a UNIVERSAL \
+                  MEET over every order of the members' whole load PROGRAMS — not a same-name byte \
+                  collision alone. A member's `unset -f` reaches a name another member is the sole \
+                  definer of, and its assignments, `cd`, and `exit` are the same rule; a name no \
+                  member's program can disturb under any order stays live",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
@@ -334,6 +338,54 @@ pub const PINS: &[Pin] = &[
                   branch it sits in — today such a target is never opened, so even the \
                   unconditional `. ./helpers.sh` of plain sh walls the rest of the book",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-unknown-source-havocs-the-cwd",
+        trigger: "`30Pb:fnd-unknown-source-recovery-is-domain-specific`'s cwd domain, adopted at \
+                  `30P:principle-unknown-source-is-a-point-havoc`: an unresolvable `.` may `cd`, so \
+                  every RELATIVE operand below it names a file the controller cannot identify — \
+                  today the modeled cwd is one whole-unit constant and a later `. ./dep.dorc.sh` \
+                  resolves against it regardless of what ran above",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-unknown-source-havocs-shell-options",
+        trigger: "the same resolution's shell-option domain: an unresolvable `.` may `set -e` or \
+                  `set +e`, so errexit is ⊤ below it and every fallible command downstream owes its \
+                  failure→exit edge — today `cfg`'s forward errexit pass walks straight through a \
+                  `.` and keeps whatever state the book last spelled",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-dollar-zero-slashless-book-path-resolves",
+        trigger: "`30P:model-symbolic-dollar-zero`'s SLASHLESS spelling, which is the ORDINARY \
+                  invocation (`dorc plan book.sh` from the book's own directory): a slashless `$0` \
+                  has no directory component, so `${0%/*}` is the whole word and the engine must \
+                  normalise the spelling against the load cwd rather than trim a slash that is not \
+                  there — a model built only from an absolute book path answers `book.sh` and \
+                  resolves nothing",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-computed-dot-parses-and-havocs",
+        trigger: "`30P:rul-floor-valid-text-never-parse-fails`: `. \"$(dirname \"$0\")/dep.sh\"` is \
+                  floor-valid text, so the parser owes a rich AST for it and the LOAD plane owes the \
+                  havoc — today `parser.rs`'s `.` arm mints an Error-severity `Unsupported` node and \
+                  the whole invocation fast-fails at parse tier",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-plain-sh-inclusion-ships-beside-the-plan",
+        trigger: "`30P:mech-acquire-and-ship-plain-sh`: a resolvable `.` of ordinary sh enters the \
+                  load account as an occurrence and is mirrored beside the plan — analyzed NOT AT \
+                  ALL, the site still walls. Today acquisition is gated on the dorc-lang marker, so \
+                  nothing ships and the generated plan carries a `.` that is fatal on the host",
+        horizon: Horizon::Scheduled("end-of-r30"),
         state: PinState::Live,
     },
     Pin {

@@ -4333,6 +4333,153 @@ mod acquisition_tests {
         );
     }
 
+    /// `p-x-dollar-zero-slashless-book-path-resolves` — the SECOND live spelling of `$0`, and the
+    /// one the world actually types.
+    ///
+    /// `dorc plan book.sh` from the book's own directory hands the controller a slashless path, and
+    /// `sh book.sh` hands the shell the same. A slashless `$0` has no directory component at all, so
+    /// `${0%/*}` is the whole word — the trap `30P:model-symbolic-dollar-zero` measured — and the
+    /// engine has to normalise the spelling against the load cwd (the world's `dirname` answers `.`
+    /// here) instead of trimming a slash that is not there. The three sibling pins all build an
+    /// ABSOLUTE book path, so a model derived from one alone would green them and silently answer
+    /// `book.sh/helpers.dorc.sh` for this one.
+    ///
+    /// CFG shape exercised: one top-level `.` whose operand is a single double-quoted word made of
+    /// a parameter expansion plus a literal tail, with the call to the bound helper below it —
+    /// straight-line, so nothing but the operand's own evaluation can decide the binding.
+    #[test]
+    fn a_slashless_book_path_still_names_the_books_own_directory() {
+        let package = Package::new(
+            "book-slashless-zero-load",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let loaded = Loaded::of(
+            package.cwd(),
+            "book.sh",
+            ". \"${0%/*}/helpers.dorc.sh\"\nbook_helper\n",
+        );
+        let helper = loaded.at_exit("book_helper");
+
+        internal_tooling::xfail::xfail_until(
+            "p-x-dollar-zero-slashless-book-path-resolves",
+            || {
+                assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+                assert!(matches!(helper, LiveDefinition::Live(_)));
+            },
+        );
+    }
+
+    /// `p-x-computed-dot-parses-and-havocs` — floor-valid text is never a PARSE violation.
+    ///
+    /// `. "$(dirname "$0")/helpers.dorc.sh"` parses and runs under `posh ∩ dash`, so
+    /// `30P:rul-floor-valid-text-never-parse-fails` forbids the parser from refusing it. Today the
+    /// `.` arm mints an Error-severity `Unsupported` node, which takes the whole invocation's exit
+    /// code with it before any analysis happens. The owed shape is two-part and both halves are
+    /// asserted here: the parser hands back a rich AST with no Error, and the LOAD plane answers —
+    /// absent the static-predict tier the operand is ⊤, so the site is an ordinary point havoc.
+    ///
+    /// What is NOT asserted, deliberately: the operand RESOLVING. That is
+    /// `p-x-load-operand-dirname-of-dollar-zero`, which waits on an authored `dirname__predict`
+    /// (`30P:rul-static-predict-sites-loads`) and stays red past this lane.
+    ///
+    /// CFG shape exercised: one top-level `.` whose operand word carries a `CommandSubst` part —
+    /// the exact word class `word_has_expansion_effect` refuses today.
+    #[test]
+    fn a_computed_dot_operand_parses_and_havocs_instead_of_refusing_the_book() {
+        let package = Package::new(
+            "book-computed-dot-parses",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let book = ". \"$(dirname \"$0\")/helpers.dorc.sh\"\nbook_helper\n";
+        let parsed = dorc_syntax::parse(book);
+        let errors = parsed
+            .diags
+            .iter()
+            .filter(|d| d.severity() == dorc_aid::Severity::Error)
+            .count();
+        let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
+        let loaded = Loaded::of(package.cwd(), &book_path, book);
+
+        internal_tooling::xfail::xfail_until("p-x-computed-dot-parses-and-havocs", || {
+            assert_eq!(errors, 0, "floor-valid text is never a parse violation");
+            assert_eq!(
+                loaded.env.unresolvable_loads().len(),
+                1,
+                "and the load plane owns the answer: a `.` whose operand it cannot evaluate is a \
+                 point havoc, exactly like any other unresolvable source"
+            );
+        });
+    }
+
+    /// `p-x-unknown-source-havocs-the-cwd` — the cwd domain of
+    /// `30P:principle-unknown-source-is-a-point-havoc`.
+    ///
+    /// An unresolvable `.` runs arbitrary sh in the caller's own shell, and `cd` persists out of a
+    /// sourced file (floor-measured). So the modeled working directory is ⊤ below it, and a RELATIVE
+    /// operand there names a file the controller cannot identify — `30P:rul-load-head-is-exact-or-havoc`
+    /// then makes it a point havoc rather than a resolution. Today `DefinitionTable::cwd` is one
+    /// whole-unit constant with no program point, so `. ./helpers.dorc.sh` resolves and BINDS
+    /// regardless of what ran above it, and every vouch in that package licenses off a file the host
+    /// may never have loaded.
+    ///
+    /// The control below is what says this asks for precision and not for a blanket withdrawal: the
+    /// SAME relative load with nothing unknown above it resolves and binds today and must keep
+    /// doing so, so the withholding is the unknown source's doing and nothing else's.
+    ///
+    /// CFG shape exercised: two top-level `.` commands in sequence, the first with a ⊤ operand and
+    /// the second with a cwd-relative literal — a straight-line flow, so the only thing that can
+    /// carry the first's effect to the second is the domain this pin asks for.
+    #[test]
+    fn a_relative_source_below_an_unknown_one_cannot_be_identified() {
+        let package = Package::new(
+            "book-cwd-havoc",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let havoced = Loaded::of(
+            package.cwd(),
+            "book.sh",
+            ". \"$SITE_PROFILE/rc\"\n. ./helpers.dorc.sh\nbook_helper\n",
+        );
+        let control = Loaded::of(
+            package.cwd(),
+            "book.sh",
+            ". ./helpers.dorc.sh\nbook_helper\n",
+        );
+
+        internal_tooling::xfail::xfail_until("p-x-unknown-source-havocs-the-cwd", || {
+            assert!(
+                havoced.found.is_empty(),
+                "the unknown source may have cd'd, so the relative operand names no file the \
+                 controller can identify: {:?}",
+                havoced.found
+            );
+            assert_eq!(
+                havoced.env.unresolvable_loads().len(),
+                2,
+                "and both sites wall — the second for the cwd, not for its own operand"
+            );
+        });
+        assert_eq!(
+            control.found,
+            ["helpers.dorc.sh"],
+            "control: with nothing unknown above it the same operand resolves, so the withholding \
+             above is the load's doing and not a blanket refusal of relative operands"
+        );
+        assert!(
+            matches!(control.at_exit("book_helper"), LiveDefinition::Live(_)),
+            "control: and it binds"
+        );
+    }
+
     /// `p-x-load-operand-dirname-of-dollar-zero` — the same dependency, spelled through a COMMAND.
     ///
     /// Book libraries overwhelmingly locate sibling files as `$(dirname "$0")/helpers.sh`, and the
@@ -4428,16 +4575,27 @@ mod acquisition_tests {
         });
     }
 
-    /// `p-x-glob-load-members-are-order-unknown` — the members are a SET, and the order the target
-    /// will source them in is not ours to know.
+    /// `p-x-glob-load-members-are-order-unknown` — the members are a SET, and the answer is a
+    /// UNIVERSAL MEET over every order of their whole load PROGRAMS.
     ///
     /// Pathname expansion sorts by the TARGET's collation, which depends on its locale and on
-    /// bytes the controller never sees. So two members defining one name with DIFFERENT bytes
-    /// leave the winner genuinely undetermined and the name must WITHHOLD — picking either is a
-    /// wrong-elision under `visibility-is-full-positional`. A name only one member defines has no
-    /// such contest and stays live, which is what keeps the withholding narrow.
+    /// bytes the controller never sees. The collision cell is the obvious half: two members
+    /// defining one name with DIFFERENT bytes leave the winner genuinely undetermined, so the name
+    /// must WITHHOLD — picking either is a wrong-elision under `visibility-is-full-positional`.
+    ///
+    /// The RETARGET (`30Pb:fnd-glob-order-needs-whole-program-meet`, AGREED at `30P`): a
+    /// collision-only rule is too narrow, because a member's load program is not a list of
+    /// definitions. `b.dorc.sh` here `unset -f`s a name `a.dorc.sh` is the SOLE definer of, and the
+    /// two orders disagree — a,b removes it, b,a leaves it live — so the meet withholds a name no
+    /// member contests by bytes. Assignments, `cd`, and `exit` inside a member are the same rule
+    /// and the same meet; they are named rather than asserted because they want the deferred glob
+    /// lane's whole-program walk, not a third fixture here.
+    ///
+    /// CFG shape exercised: a `for`-loop over a glob word whose body is a single `.` of the
+    /// iteration variable — one lowered load site standing for an unordered member family, which
+    /// is exactly the shape a per-order meet has to answer at.
     #[test]
-    fn glob_members_defining_one_name_with_differing_bytes_withhold_it() {
+    fn glob_members_meet_over_every_order_of_their_load_programs() {
         let package = Package::new(
             "book-glob-collide",
             &[
@@ -4449,7 +4607,7 @@ mod acquisition_tests {
                 ),
                 (
                     "b.dorc.sh",
-                    format!("{MARKER}shared_helper() {{ common b \"$@\" ;}}\n"),
+                    format!("{MARKER}shared_helper() {{ common b \"$@\" ;}}\nunset -f only_in_a\n"),
                 ),
             ],
         );
@@ -4459,7 +4617,7 @@ mod acquisition_tests {
             "for plugin in ./*.dorc.sh; do\n   . \"$plugin\"\ndone\nshared_helper x\nonly_in_a\n",
         );
         let shared = loaded.at_exit("shared_helper");
-        let sole = loaded.at_exit("only_in_a");
+        let removed = loaded.at_exit("only_in_a");
 
         internal_tooling::xfail::xfail_until("p-x-glob-load-members-are-order-unknown", || {
             assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
@@ -4468,9 +4626,11 @@ mod acquisition_tests {
                 LiveDefinition::Withheld,
                 "no member may win a name two members spell differently"
             );
-            assert!(
-                matches!(sole, LiveDefinition::Live(_)),
-                "and a name only one member defines is uncontested: {sole:?}"
+            assert_eq!(
+                removed,
+                LiveDefinition::Withheld,
+                "and a name ONE member declares while another removes it is undetermined the same \
+                 way — the meet is over programs, not over declaration sets: {removed:?}"
             );
         });
     }
@@ -4616,6 +4776,64 @@ mod acquisition_tests {
             loaded.at_exit("helper_fn"),
             LiveDefinition::NoOpinion,
             "its names are outside the unit's universe, not withheld within it"
+        );
+    }
+
+    /// `p-x-plain-sh-inclusion-ships-beside-the-plan` — the r30 slice of
+    /// `30P:principle-book-code-source-is-inclusion`, and the twin of the interim pin above.
+    ///
+    /// `30P:ask-inclusion-in-r30` splits inclusion into three mechanics and takes exactly one:
+    /// ACQUIRE the plain-sh target and record it as a load occurrence, so the placement already in
+    /// `cli::artifact` mirrors it beside the plan — and analyze NOTHING in it. Today the file is not
+    /// read at all, so the generated plan carries a `.` naming a file the artifact never carried,
+    /// which the atlas measured FATAL on the host (`floor30-atlas-dot-missing-file-is-fatal`); the
+    /// most common multi-file book shape dies at that line on a real apply.
+    ///
+    /// The two halves that must NOT move with it are asserted beside the two that must: the site
+    /// still walls, and the file's names stay outside the unit's universe
+    /// (`FORFEITS:forfeit-plain-sh-inclusion-analysis` — no splice, no bindings, no sites). A lane
+    /// that acquired the file and let `definition_table` register its declarations would deliver
+    /// tier-1 inclusion by accident, which is forfeited and reddens
+    /// `p-x-book-code-source-is-inclusion`'s guarded cell as well.
+    ///
+    /// CFG shape exercised: one top-level `.` of a literal relative operand, straight-line, with a
+    /// call to the included file's helper below it.
+    #[test]
+    fn a_plain_sh_source_is_acquired_and_placed_without_being_analyzed() {
+        let package = Package::new(
+            "book-plain-sh-ships",
+            &[("helpers.sh", "helper_fn() { :; }\n".to_owned())],
+        );
+        let loaded = Loaded::of(package.cwd(), "book.sh", ". ./helpers.sh\nhelper_fn\n");
+        let occurrences = loaded.book_loads();
+        let helper = loaded.at_exit("helper_fn");
+
+        internal_tooling::xfail::xfail_until(
+            "p-x-plain-sh-inclusion-ships-beside-the-plan",
+            || {
+                assert_eq!(
+                    loaded.found,
+                    ["helpers.sh"],
+                    "the file is READ, which is what gives the artifact bytes to mirror"
+                );
+                assert_eq!(
+                    occurrences,
+                    ["helpers.sh"],
+                    "and it enters the load account as an occurrence, which is what the placement keys \
+                 to (`30I:rul-bundles-key-to-load-occurrences`)"
+                );
+                assert_eq!(
+                    loaded.env.unresolvable_loads().len(),
+                    1,
+                    "the site still WALLS: acquiring bytes is not modelling them"
+                );
+                assert_eq!(
+                    helper,
+                    LiveDefinition::NoOpinion,
+                    "and its names stay outside the unit's universe — the splice is forfeited, not \
+                 delivered by the back door: {helper:?}"
+                );
+            },
         );
     }
 
