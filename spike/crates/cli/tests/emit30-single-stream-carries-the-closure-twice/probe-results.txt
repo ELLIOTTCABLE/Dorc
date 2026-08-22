@@ -1,0 +1,4 @@
+# Site numbering today (leaves in book order): 0 the bare assignment, 1 the unmodeled wall,
+# 2 the `.`, 3 the described `wombat sync`. Only site 3 is described; it sits past the wall, so a
+# `holds` cell mints a GUARD, which is what puts the closure on the apply surface.
+site 3 effect=holds
