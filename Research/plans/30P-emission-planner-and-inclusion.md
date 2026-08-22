@@ -378,12 +378,15 @@ fence) · `ask-inclusion-in-r30` (acquire-and-ship in r30; splice + paste forfei
 **`rul-floor-valid-text-never-parse-fails`** [TYPED 2026-08-22] — no text valid under the
 floor (`posh` ∩ `dash`) is a PARSE violation, ever. Cross-shell semantic disagreement and
 outside-the-dialect constructs are POST-analysis, PRE-network outcomes — a single pass still
-yields diagnosis and aid that a parse crash-out throws away. Whether such a site walls-and-emits
-or fails fast is OPEN at the UX tier (punted; builder's choice, whatever is easiest), but the
-MACHINERY must handle the worst case regardless of the UX choice: "build the worst case". This
-rules `ask-computed-dot-degrades-to-a-wall` by subsumption (a computed `.` operand is
-floor-valid text; `fnd-computed-dot-is-a-whole-book-refusal` is a parse-tier defect to repair,
-the wall being the worst-case posture).
+yields diagnosis and aid that a parse crash-out throws away. The ruling is "build the necessary
+MACHINERY" (it handles the worst case whatever the UX does), with the UX direction
+CONSERVATIVE to start: the rejection/output stays NARROW — reject-but-stay-agile — so that a
+later softening of the reject is a UX change, never a kernel rebuild. The UX decision is the
+human's; only implementation details are the builder's. General truth, not specific to
+parsing: machinery lands in r30 where possible, rulings stay narrow. For the computed `.`
+(`fnd-computed-dot-is-a-whole-book-refusal`, a parse-tier defect to repair): fail-fast
+post-analysis pre-network for now, or whatever is easiest if that is hard [TYPED lean]. This
+subsumes `ask-computed-dot-degrades-to-a-wall`.
 
 ## review-adjudication-inputs — the conductor's stance on `notes/30Pb` (findings, not rulings; the human decides)
 
@@ -405,9 +408,32 @@ cannot see.
   the admin's side of the horizon (`rul-probe-mutation-ownership-split`; `an-host-as-adversary`
   — a hostile host can make any guard lie regardless). Adopting the clause would make
   nearly every verdict body unlicensable below any unknown source and hollow out
-  point-havoc's value for the shape real books have. If the reviewers' constraint is the
-  security one, the bounded alternative is to model it as the existing adversarial-host
-  cell, not as an analysis precondition. Human's call.
+  point-havoc's value for the shape real books have. **RESOLVED by a narrowed review pass
+  (human-relayed 2026-08-22, reviewer's own grade ~SUSPECT):** the reviewer acks the core
+  argument — static elision already stops at the wall, and an apply-time guard intentionally
+  remeasures in the post-source environment, so probe and apply resolution need not agree.
+  The narrower requirement, recorded for ratification as
+  **`rul-guard-resolves-like-its-mutation`** [PROPOSED, review-derived]: (a) Dorc preserves
+  the exact binding of its OWN generated guard and helper definitions (the existing
+  `pinned-definitions-are-the-artifact's-binding` law); and (b) a guard must judge the same
+  runtime command the immediately-following original mutation would execute — e.g. a check
+  spelled `command hork status` must never guard a book site whose bare `hork apply` may
+  resolve to a function; the check and the mutation resolve their command word the same
+  way, which verbatim-shipped oracle bodies already give and which no emission tier may
+  disturb. Ordinary unknown-source effects remain ANALYSIS uncertainty (unsure ⇒ run);
+  wrong-host, malformed, or lost-integrity evidence remains REFUSAL
+  (`rul-integrity-failure-withholds-mutation`).
+- **The controller-expectation / host-check pattern** [human-pointed 2026-08-22; a seed,
+  not a ruling; the machinery is wanted, the product decision is not] — where host state
+  enters a decision, Dorc already has one shape for it, and `30P`'s host-state questions
+  (target-runtime sources; unknown-source effects; the exact artifact set) should mirror it
+  for consistency: ESTABLISH a world and a set of expectations on the controller; CHECK on
+  the host that the expectations match; and let the host's influence be strictly a boolean
+  continue / do-not-continue — the host may make Dorc STOP ("mismatch, stop"), never change
+  what Dorc does if it continues. Built instances: the per-host capability handshake
+  (`an-host-capability-handshake`; the pipefail handshake, `276:rul-pipefail-emit-never`)
+  and the admission trichotomy (`rul-admission-is-a-closed-outcome`: Refused returns before
+  any plan carrying mutation authority). Needs its own UX-level and opaque review later.
 - **`30Pb:fnd-possible-singleton-is-not-exact-selection` — AGREE, and it corrects this plan.**
   A singleton suffix-match says what the snapshot holds, not what `$LIB` means; re-saying the
   import from a *possible* load can change the authored program. `rul-partly-dynamic-operand-is-a-set`
@@ -423,7 +449,11 @@ cannot see.
   today: a path relative to the load cwd is a controller-side candidate (acquired from the
   snapshot); an absolute path is target-runtime (never read from the controller — reading the
   controller's `/etc/os-release` as the target's would be the defect). That is spelling, not a
-  second language, and it is `30I`'s existing cwd-parity rule. Propose ruling it explicitly.
+  second language, and it is `30I`'s existing cwd-parity rule. ACKED as a lean/gloss
+  [human 2026-08-22, not a hard ruling]: each absolute-path cell is AUTHOR SPEECH — that is
+  what "absolute" means — and Dorc can neither fix nor meaningfully interpret one. The only
+  cells that matter now (pre-lint; a "shellcheck with more world-knowledge" scope-creep is
+  out of `30P`'s scope) are those where Dorc MUTATES.
 - **`30Pb:fnd-emission-legality-covers-all-shell-state` — AGREE; sharpens tier one.** The
   hoist condition "no book CALL above the `.` names a bound name" must read "no book
   OBSERVATION OR MUTATION" — `command -v helper`, `type`, `unset -f`, `alias`, and variable
