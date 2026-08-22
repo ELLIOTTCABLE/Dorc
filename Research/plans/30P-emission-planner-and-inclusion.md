@@ -197,41 +197,113 @@ command's output.
   book path it owns, never from a shell's `$0` (the rail measured `$0`'s shape is
   platform-bound; `gap-dollar-zero-shape-is-platform-bound`). Traps measured: `${0%/*}` of a
   no-slash word is the whole word; of a book at `/` it is the empty string, never "cwd".
-- **`rul-partly-dynamic-operand-is-a-set`** [ACKED 2026-08-22, with a fence: set/lattice
-  treatment of dynamic operands is a MUST for real-world shell analysis, and it must never
-  become a boondoggle — Dorc ekes analysis value out of static truth right up to where it
-  becomes intractable or dominates, and never turns that truth into fancy compilation output]
-  — an operand with an unknown head and a literal tail
-  (`"$(dirname "$0")/helpers.sh"`, `"$LIB/x.sh"` with `$LIB` unknown) is SET-valued over the
-  snapshot: every member whose path ends in the literal tail is a candidate; a singleton
-  resolves, with the generated plan's import re-said to it (edit class 1, caveat and all);
-  plural withholds; empty is unresolvable. This is the machinery the glob ruling already
-  builds, reached from the computed-operand side [A-webpack-dependency-management-2026]
-  [A-vite-features-glob-dynamic-import-2026]; it models no command, blesses no byte-shape,
-  and never invokes `rul-small-allowlists-are-high-cost-minimal-count`. ShellCheck's
-  strip-one-dynamic-segment is the same idea without the plurality guard — unsound in
-  general, which a linter can afford and Dorc cannot [A-shellcheck-checker-source-props-2026].
-  Soundness rests on the re-say: the runtime loads exactly what analysis chose. The
-  byte-shape recognition of `$(dirname "$0")` (GCC's include-guard recognition is the
-  template for pricing one: enumerated preconditions, off the moment the shape is not
-  literal source [A-gcc-cpp-guard-macros-2026]) stays the fallback if this is declined.
-  Closes `ask-dollar-zero-command-substitution-path` as a false dichotomy: four options
-  existed, not two.
+- **`rul-load-head-is-exact-or-havoc`** [TYPED 2026-08-22, soundness-first re-cut of the
+  earlier `rul-partly-dynamic-operand-is-a-set`] — the one criterion: Dorc derives authority
+  from a sourced file (lifted vouches; bindings below the line; edits rendered into a copy)
+  ONLY when it is certain the host's `.` loads exactly those bytes. Certainty has one source:
+  the operand is EXACT — a pure function of controller-held inputs under the
+  snapshot-is-the-program model — and emission (re-say or cwd-parity mirroring) makes the
+  host agree. The re-say is the emission half of EXACT, never a second source of certainty.
+  Every dynamic head (`$OPS_LIB`, `${LIB:-./lib}` — an env read, `$(find_config)`, an
+  absolute host path) is a point-havoc: host influence accepted AS UNKNOWN, no authority
+  claimed, hint toward an EXACT spelling. Two cells, no third: loaded-not-shipped files have
+  exactly two honest user stories — host-owned content (`/etc/os-release`, a secrets file;
+  host-specific BY DESIGN, never shipped, a controller digest meaningless) and a library
+  already on every host (if it must byte-match the controller copy, shipping it IS the
+  verification) — and neither wants verification machinery. STRUCK, by name: the
+  snapshot-suffix SET with a resolving singleton (an engine selection forcing the host to
+  load a file the author never named — `30Pb:fnd-possible-singleton-is-not-exact-selection`,
+  confirmed unsound); the POSSIBLE ship-and-wall state (sound, but the singleton does no work
+  that `mirrored-tree` does not); and the runtime-verified candidate (establish a digest on
+  the controller, check at the `.` line, stop on mismatch — sound in isolation, killed by the
+  other-phase cell: the probe has no book namespace so it cannot evaluate the operand as the
+  apply's `.` will, and evaluating at apply makes the match/stop a LATE decision, which
+  `rul-divergence-proceed`'s front-loading forbids). The set machinery survives only for
+  globs with an EXACT head. Boondoggle fence [ACKED]: Dorc ekes analysis value out of static
+  truth up to where it becomes intractable or dominates, never turning it into compilation
+  output.
+- **`model-symbolic-dollar-zero`** [ACKED 2026-08-22] — Dorc never reads `$0` from a shell.
+  In analysis `$0` is the AS-GIVEN book path (never realpath'd — sh-parity under symlinks)
+  with two live spellings: slash-bearing, and slashless with cwd = the load cwd (which is
+  what the world means by slashless invocation, and what `dirname` returns `.` for).
+  Authored expressions over it evaluate per spelling under ordinary POSIX expansion
+  semantics — parameter expansion IS shell, not tool modelling. A load is EXACT iff every
+  live spelling resolves to one snapshot file. **`rul-dead-spelling-is-not-unsound`**: a
+  spelling under which the `.` is fatal (`${0%/*}` of a slashless `$0` is the whole word ⇒
+  `book.sh/helpers.sh` ⇒ fatal) is DEAD, not unsound — nothing below it runs, so nothing
+  below it can under-execute; it earns an off-ramp lint ("dies under `sh book.sh`"), never a
+  refusal, and Dorc never TEACHES it (stewardship: no design route may push authors toward
+  off-ramp-destroying shell, `KNOBS:kLANG`). **`rul-dorc-invokes-in-a-modelled-live-spelling`**:
+  Dorc invokes what it ships in a spelling the analysis modelled as live (`sh ./plan.sh` from
+  the generation root); this asserts nothing about sh's `$0`, only how Dorc spells its own
+  invocations, and it is load-bearing because under cwd-parity the plan keeps the author's
+  `${0%/*}` verbatim. Single-stream (`$0` = `sh`) has no mirrored tree and its `.` lines are
+  pasted or refused, so it is outside this. Engineer-side caveat for every hint: `$0` inside a
+  SOURCED file is the main script's path, never the sourced file's (sh has no `__FILE__`) —
+  oracle files use a book-set root (`30I` §2.2), and the `$0` hints are admin-only.
+- **`rul-static-predict-sites-loads`** [ACKED 2026-08-22 "seems like a winner"; unparks
+  `ask-authored-pure-predict-may-site-loads` in its STATIC form] — the sanctioned path to a
+  command substitution in a load operand. The engine never learns what `dirname` does; a
+  stdlib author spells it in sh and declines the edges:
+
+  ```sh
+  dirname__predict() {
+     [ $# -eq 1 ] || { printf 'predicts none unmodeled-arity\n' >>"${DREP_V1:-/dev/null}"; return 1; }
+     case $1 in
+     */ | //*) printf 'predicts none unmodeled-shape\n' >>"${DREP_V1:-/dev/null}"; return 1 ;;
+     /[!/]*)  printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"; printf '/\n' ;;
+     */*)     printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"; printf '%s\n' "${1%/*}" ;;
+     *)       printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"; printf '.\n' ;;
+     esac
+  }
+  ```
+
+  (DREP spelling per `30D:rul-predict-status-keeps-every-value` /
+  `rul-predict-channel-defaults`: no status is a decline; Stdout is declined by default and
+  must be POSITIVELY claimed for the load plane to consume it — a predict with unclaimed
+  stdout yields ⊤ ⇒ havoc; edge arms STRAWMAN.) A predict is STATICALLY EVALUABLE when its
+  reached body lies wholly in the pure decidable set and its argv is controller-known (the
+  symbolic `$0` counts); the engine evaluates it at plan time per `$0` spelling — the static
+  half of the split the kind-owner roles already have (`disturbance_reaches_only`'s static
+  line vs its `dpkg -L` line), no host, no capture lane, no runtime `$0`. Obligations: (a)
+  NO runtime confirmation is owed — nothing executed, so `30D`'s
+  `reject-missing-expected-confirmation` does not apply to a statically-consumed record;
+  (b) this is a NAMED widening of `funcenv-reads-source-literal-plane-only`: the load plane
+  now reads a value-prediction (`value-predictions`), a new trust edge at vouch tier — a
+  wrong static predict resolves the wrong file and bites OTHER lines, attributed to the
+  stdlib author; priced acceptable because `dirname` is POSIX-specified and the oracle IS
+  the spec; (c) the `why`-chain cites the predict (claimed/derived); (d) a book function
+  shadowing the word resolves to the book (existing frame law), the stdlib predict does not
+  apply; (e) the decidable set grows BY NAME, license-review-tier each (`case`-over-known-
+  string; substitution of a static predict; later subshell-scoped cwd for `$(cd … && pwd)`)
+  — the fence is `dec-decidable-set-v0`'s, no slope; GNU-isms (`readlink -f`) decline ⇒ ⊤
+  ⇒ havoc + hint, the fence working through ordinary declines. Outcome on the three real
+  idioms: `. "$(dirname "$0")/helpers.sh"` ⇒ EXACT in every spelling (nobody pushed off the
+  idiom the world already considers best); the `case $0 in */*) … *) here=. ;; esac` form ⇒
+  EXACT; bare `${0%/*}` ⇒ EXACT-or-dead, accepted with the lint. This SUBSUMES the
+  byte-shape-recognition carve (which would have violated the typed
+  `rul-no-tool-modelling-in-the-load-plane` with an unattributed engine reading) and the
+  capture-lane form of the parked ask. OPEN, human's: `choice-verbatim-or-re-say` — keep the
+  author's `$(dirname "$0")` verbatim under cwd-parity (the host's real `dirname` runs;
+  soundness = POSIX conformance on inputs the oracle accepted; consistent with `30I`'s
+  no-root-variable posture — conductor lean) or re-say to the shipped path (structural; the
+  over-magic caveat). Sequencing: the computed-`.` parse-tier refusal is repaired to
+  post-analysis first (`rul-floor-valid-text-never-parse-fails`).
 - **Slashless operands** — `. helpers.sh` is a PATH search, not a cwd lookup; the cwd search
   was deliberately removed from the standard over trojan-horse concerns
   [A-posix-dot-builtin-2018], and the atlas measured it fatal with the cwd off PATH. PATH is a
   host read ⇒ unresolvable by the axis; a lint hint ("write `./helpers.sh`"). The same applies
   to a no-match glob's literal pattern when it carries no slash.
-- **Globs** — SET-valued over the snapshot, ORDER-UNKNOWN (collation is the target's; the rail
+- **Globs** (EXACT head only; a dynamic head is havoc like any other) — SET-valued over the
+  snapshot, ORDER-UNKNOWN (collation is the target's; the rail
   pins `LC_ALL=C` and measured ASCII order, which proves nothing about the host): members
   defining one name with different bytes WITHHOLD; a sole-member name is live. No-match
   sources the literal pattern, which the atlas measured as FATAL — a failed `.` ends the
   script even as the left operand of `||` (special-builtin semantics) — so everything
   downstream is unreachable, not merely unbound. Builds after `lane-loop-propagation`.
-- **`ask-authored-pure-predict-may-site-loads`** [OPEN, parked] — the only principled path to
-  evaluating a command's output for a load: an oracle's authored `predict`, through the
-  capture lane, under a purity vouch and a widening of `funcenv-reads-source-literal-plane-only`.
-  A human ruling; never a lane's. Probe-sourced loads: NACKED [TYPED; permanent law].
+- **`ask-authored-pure-predict-may-site-loads`** — UNPARKED in its static form as
+  `rul-static-predict-sites-loads` (above); the capture-lane (runtime) form stays declined.
+  Probe-sourced loads: NACKED [TYPED; permanent law].
 - **[SIDENOTE, human 2026-08-22 — not an ack, not a plan]** `kOOB` is mostly discharged. For
   BOOK code only, a world is imaginable where Dorc quietly honours ShellCheck's
   `# shellcheck source=` directive if present — never taught. Priced by the field: a
@@ -334,7 +406,7 @@ Lane `ai/r30-lane-load-xfails`, folded (pins `6785fada`; scanner fix `5148fe84`;
 |---|---|---|
 | `p-x-unknown-source-is-a-point-havoc` | end-of-r30 | later unconditional role definition is live below an unresolvable `.` |
 | `p-x-load-operand-param-expansion-of-dollar-zero` | end-of-r30 | `. "${0%/*}/helpers.dorc.sh"` acquires and binds |
-| `p-x-load-operand-dirname-of-dollar-zero` · `…-cd-pwd-of-dollar-zero` | r31:book-load-acceptance | trigger names `ask-dollar-zero-command-substitution-path` (now `rul-partly-dynamic-operand-is-a-set`'s) |
+| `p-x-load-operand-dirname-of-dollar-zero` · `…-cd-pwd-of-dollar-zero` | r31:book-load-acceptance | trigger names `ask-dollar-zero-command-substitution-path` (now `rul-static-predict-sites-loads`'s) |
 | `p-x-glob-load-acquires-members` · `…-members-are-order-unknown` · `…-no-match-aborts` | r31:book-load-acceptance | the set-valued operand, its withhold, its (fatal) failure |
 | `p-x-book-code-source-is-inclusion` | r31:book-load-acceptance | unconditional plain-sh `. ./helpers.sh` binds; the guarded cell holds `May` |
 
@@ -363,13 +435,18 @@ the end of r30) · `load31-punted-load-shapes`.
 
 ## open-rulings — complete list for this topic
 
-1. `ask-computed-dot-degrades-to-a-wall` — [PROPOSED yes; ShellCheck precedent]. Still open.
-2. `ask-authored-pure-predict-may-site-loads` — parked, unscheduled.
+1. `ask-computed-dot-degrades-to-a-wall` — subsumed by `rul-floor-valid-text-never-parse-fails`.
+2. `choice-verbatim-or-re-say` — under `rul-static-predict-sites-loads`: keep the author's
+   `$(dirname "$0")` verbatim (conductor lean) or re-say to the shipped path. Human's.
 3. The single-stream exclusion set's membership beyond `return` — deliberately unwelded;
    grows during the spike (not a ruling to wait for).
 
-Ruled 2026-08-22 and recorded above: `rul-partly-dynamic-operand-is-a-set` (acked, boondoggle
-fence) · `ask-inclusion-in-r30` (acquire-and-ship in r30; splice + paste forfeited with reds)
+Ruled 2026-08-22 and recorded above: `rul-load-head-is-exact-or-havoc` (supersedes
+`rul-partly-dynamic-operand-is-a-set`; singleton/POSSIBLE/verified-candidate struck) ·
+`model-symbolic-dollar-zero` + `rul-dead-spelling-is-not-unsound` +
+`rul-dorc-invokes-in-a-modelled-live-spelling` · `rul-static-predict-sites-loads` (the
+sanctioned `dirname` path; unparks the static half of `ask-authored-pure-predict-may-site-loads`)
+· `ask-inclusion-in-r30` (acquire-and-ship in r30; splice + paste forfeited with reds)
 · `rul-paste-excludes-non-subshell-return` (top-level `return` excluded; set unwelded) ·
 `rul-emission-is-the-umbrella-name` (emission ⊃ placement, layout) · `rul-forfeits-carry-reds`
 · `rul-guard-resolves-like-its-mutation` (Dorc's own bindings only; the `command`-pairing
@@ -460,16 +537,14 @@ cannot see.
   (`an-host-capability-handshake`; the pipefail handshake, `276:rul-pipefail-emit-never`)
   and the admission trichotomy (`rul-admission-is-a-closed-outcome`: Refused returns before
   any plan carrying mutation authority). Needs its own UX-level and opaque review later.
-- **`30Pb:fnd-possible-singleton-is-not-exact-selection` — AGREE, and it corrects this plan.**
-  A singleton suffix-match says what the snapshot holds, not what `$LIB` means; re-saying the
-  import from a *possible* load can change the authored program. `rul-partly-dynamic-operand-is-a-set`
-  is amended: three load states — POSSIBLE (a candidate set from the snapshot) · EXACT
-  (the head is controller-known: a literal, a known variable, `${0%/*}`) · ENGINE-SELECTED
-  (never silent). Only EXACT re-says an import or mints custody/speaker. A POSSIBLE
-  singleton is acquired and SHIPPED so the plan can run, narrated, and walls — which is
-  exactly `mech-acquire-and-ship-plain-sh`'s posture and keeps the boondoggle fence. The
-  only witness that promotes possible → exact is an authored act: a root variable the book
-  sets (`30I` §2.1's idiom) or `${0%/*}`; there is no static witness for an unknown head.
+- **`30Pb:fnd-possible-singleton-is-not-exact-selection` — AGREE; then SUPERSEDED by the
+  human's soundness-first re-cut.** The finding was right that a singleton suffix-match says
+  what the snapshot holds, not what `$LIB` means. The three-state amendment it prompted
+  (POSSIBLE / EXACT / ENGINE-SELECTED) is withdrawn: POSSIBLE did no work `mirrored-tree`
+  does not, and the model collapses to `rul-load-head-is-exact-or-havoc` — EXACT or havoc,
+  nothing between. The only witness for EXACT-ness is authored text the controller can
+  evaluate: a literal, a book-set root (`30I` §2.1), `$0` under `model-symbolic-dollar-zero`,
+  or a statically-evaluable stdlib predict (`rul-static-predict-sites-loads`).
 - **`30Pb:fnd-controller-source-and-target-source-are-distinct` — AGREE on the distinction;
   mild disagreement on "never by path syntax".** The class IS selected by an authored act
   today: a path relative to the load cwd is a controller-side candidate (acquired from the
@@ -519,7 +594,9 @@ cannot see.
 `notes/30O` re-cut (the planner lane absorbing the hoist ladder; the load slices;
 `mech-acquire-and-ship-plain-sh` placed; no "droppable" lanes) · `FORFEITS`: the header gains
 `rul-forfeits-carry-reds`; `forfeit-book-dynamic-load-analysis` rewritten from four idioms to
-the three principles (it cites four renamed pin slugs); a new
+the three principles (it cites four renamed pin slugs) and re-pointed at
+`rul-load-head-is-exact-or-havoc` + `rul-static-predict-sites-loads` (the dirname/cd-pwd
+pins' path is now the static-predict tier, not a set); a new
 `forfeit-plain-sh-inclusion-analysis` row naming its reds · `cli/CLAUDE.md` harness-contract lines (no-subdirectory
 fixtures; platform-bound `$0`; the floor lane IS routed) · `spike/CLAUDE.md
 floor-differential-lane-opt-in`'s "off in every default gate" sentence · the two
