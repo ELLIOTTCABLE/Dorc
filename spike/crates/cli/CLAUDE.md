@@ -82,9 +82,10 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `floor30-inline-dot-boundary` measured (a `.` that is the whole of its own line, and
   for a BOOK `.` also a top-level redirect-free command). Anything else stays a separate
   generated file and the authored `.` that names it survives — when in doubt, separate
-  files. Front-LIFTING a bundle ahead of the book is NOT layout: it changes which
-  definition is live at the lines it moves past, so it waits on a licence
-  (`30Nh:tc-bundle-lift-needs-the-spine`). Mirroring is stated against the LOAD CWD
+  files. Front-HOISTING a bundle ahead of the book is the emission planner's first
+  consumer (`plans/30P:the-emission-planner`): legal only under a PROVEN closed set — no
+  book observation or mutation of a bundle-bound name above the `.` — never a settlement
+  question; failing the set falls to in-place, never to a guess. Mirroring is stated against the LOAD CWD
   (`dorc_core::loadpath::Cwd::relativize`, the inverse of `resolve_operand`), never
   against a stored path's own spelling: every source a book `.` reaches is filed under
   its CANONICAL key, which is ABSOLUTE whenever the edge could answer where the run

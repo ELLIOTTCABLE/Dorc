@@ -1178,7 +1178,10 @@ no task covers, and consider adding the task instead.
   real-invocation lane, and the executable half of `two-binary-floor`. A case opts in by carrying an
   `expected.emitted` section: its book is a SENTINEL MANIFEST (a which-am-I emitter), and gate-9
   strips it, runs it under every binary named in `DORC_E2E_FLOOR_SHELLS` (default UNSET ⇒ the gate
-  does not fire), and requires them to agree with each other AND with the committed bytes.
+  does not fire), and requires them to agree with each other AND with the committed bytes. NB (measured
+  2026-08-22): `gate:full-quiet` ROUTES `test:floor` whenever floor-shaped paths are staged,
+  so a floor case must agree on BOTH platform legs — the Windows half-floor included — and
+  no manifest cell may observe a platform-bound value (the rail's `$0` spelling is one).
   Disagreement BETWEEN the binaries is itself the verdict: the construct is outside the base
   dialect. Resolution goes through `internal_tooling::Posix::floor` — `one-shell-answer`'s seat —
   which REFUSES rather than substituting, because a differential answered by the wrong shell is
