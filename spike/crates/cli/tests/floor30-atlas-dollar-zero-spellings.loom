@@ -1,0 +1,124 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-dollar-zero-spellings — QUESTION: what do the script-location suffix/prefix removals
+# produce when the value has NO slash at all, when it is `./name`, when it is absolute, and when it
+# sits at the root?
+#
+# Why the inclusion design needs it: `p-x-load-operand-param-expansion-of-dollar-zero` proposes to
+# resolve `${0%/*}/dep.sh` inside the engine. The trap is the no-slash case — `%` removes the
+# SMALLEST suffix matching the pattern, and a word with no `/` matches nothing, so `${0%/*}` is the
+# whole word rather than `.`, and `${0%/*}/dep.sh` becomes `book.sh/dep.sh`. An engine that models
+# the expansion as "take the dirname" would resolve a file a real shell never names.
+#
+# HARNESS LIMIT (`gap-stdin-invoked-book`): the floor rail always executes the manifest as a script
+# it names, so the no-slash case cannot be produced through `$0` at all, and `sh < book` — where
+# `$0` is the shell's own name — is not expressible by this lane. The pattern semantics below are
+# measured on ordinary variables, which is the half that decides the engine's arithmetic.
+#
+# AND A MEASURED REASON NOT TO ASK ABOUT `$0` ITSELF (`gap-dollar-zero-shape-is-platform-bound`):
+# this case once carried a `case $0 in */*)` cell. It was minted under WSL as `[yes]` and then went
+# RED on the Windows leg as `[no]` — the rail passes the script path with the platform's own
+# separator, so `$0`'s SHAPE is a property of the harness and the OS, not of the dialect. A manifest
+# is measure-once ground truth re-checked on every platform, so a platform-bound cell cannot live in
+# one. The finding itself is the useful part, and it belongs to
+# `p-x-load-operand-param-expansion-of-dollar-zero`: the engine must resolve `${0%/*}` from the
+# AUTHORED BOOK PATH it owns, never from whatever spelling a shell would have put in `$0`.
+v=book.sh
+printf 'noslash: pct-slash-star=[%s]\n' "${v%/*}"
+printf 'noslash: pctpct-slash-star=[%s]\n' "${v%%/*}"
+printf 'noslash: hashhash-star-slash=[%s]\n' "${v##*/}"
+printf 'noslash: joined=[%s]\n' "${v%/*}/dep.sh"
+w=./book.sh
+printf 'dotslash: pct-slash-star=[%s]\n' "${w%/*}"
+printf 'dotslash: joined=[%s]\n' "${w%/*}/dep.sh"
+u=/a/b/book.sh
+printf 'abs: pct-slash-star=[%s]\n' "${u%/*}"
+printf 'abs: joined=[%s]\n' "${u%/*}/dep.sh"
+r=/book.sh
+printf 'root: pct-slash-star=[%s]\n' "${r%/*}"
+printf 'root: joined=[%s]\n' "${r%/*}/dep.sh"
+
+-- expected.emitted --
+noslash: pct-slash-star=[book.sh]
+noslash: pctpct-slash-star=[book.sh]
+noslash: hashhash-star-slash=[book.sh]
+noslash: joined=[book.sh/dep.sh]
+dotslash: pct-slash-star=[.]
+dotslash: joined=[./dep.sh]
+abs: pct-slash-star=[/a/b]
+abs: joined=[/a/b/dep.sh]
+root: pct-slash-star=[]
+root: joined=[/dep.sh]
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ca0839ccb323fcc10fce0aef079e1a7178fded4355d5039d1c7376980ac92196 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+# site:9 unresolvable-no-probe
+# site:10 unresolvable-no-probe
+# site:11 unresolvable-no-probe
+# site:12 unresolvable-no-probe
+# site:13 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-dollar-zero-spellings — QUESTION: what do the script-location suffix/prefix removals
+# produce when the value has NO slash at all, when it is `./name`, when it is absolute, and when it
+# sits at the root?
+#
+# Why the inclusion design needs it: `p-x-load-operand-param-expansion-of-dollar-zero` proposes to
+# resolve `${0%/*}/dep.sh` inside the engine. The trap is the no-slash case — `%` removes the
+# SMALLEST suffix matching the pattern, and a word with no `/` matches nothing, so `${0%/*}` is the
+# whole word rather than `.`, and `${0%/*}/dep.sh` becomes `book.sh/dep.sh`. An engine that models
+# the expansion as "take the dirname" would resolve a file a real shell never names.
+#
+# HARNESS LIMIT (`gap-stdin-invoked-book`): the floor rail always executes the manifest as a script
+# it names, so the no-slash case cannot be produced through `$0` at all, and `sh < book` — where
+# `$0` is the shell's own name — is not expressible by this lane. The pattern semantics below are
+# measured on ordinary variables, which is the half that decides the engine's arithmetic.
+#
+# AND A MEASURED REASON NOT TO ASK ABOUT `$0` ITSELF (`gap-dollar-zero-shape-is-platform-bound`):
+# this case once carried a `case $0 in */*)` cell. It was minted under WSL as `[yes]` and then went
+# RED on the Windows leg as `[no]` — the rail passes the script path with the platform's own
+# separator, so `$0`'s SHAPE is a property of the harness and the OS, not of the dialect. A manifest
+# is measure-once ground truth re-checked on every platform, so a platform-bound cell cannot live in
+# one. The finding itself is the useful part, and it belongs to
+# `p-x-load-operand-param-expansion-of-dollar-zero`: the engine must resolve `${0%/*}` from the
+# AUTHORED BOOK PATH it owns, never from whatever spelling a shell would have put in `$0`.
+v=book.sh
+printf 'noslash: pct-slash-star=[%s]\n' "${v%/*}"
+printf 'noslash: pctpct-slash-star=[%s]\n' "${v%%/*}"
+printf 'noslash: hashhash-star-slash=[%s]\n' "${v##*/}"
+printf 'noslash: joined=[%s]\n' "${v%/*}/dep.sh"
+w=./book.sh
+printf 'dotslash: pct-slash-star=[%s]\n' "${w%/*}"
+printf 'dotslash: joined=[%s]\n' "${w%/*}/dep.sh"
+u=/a/b/book.sh
+printf 'abs: pct-slash-star=[%s]\n' "${u%/*}"
+printf 'abs: joined=[%s]\n' "${u%/*}/dep.sh"
+r=/book.sh
+printf 'root: pct-slash-star=[%s]\n' "${r%/*}"
+printf 'root: joined=[%s]\n' "${r%/*}/dep.sh"

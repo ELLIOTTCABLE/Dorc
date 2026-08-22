@@ -1,0 +1,90 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-dot-with-operands — QUESTION: given `. ./seer.sh x y`, does the sourced file see `x`
+# as its own `$1`, or the caller's `$1`? And are the caller's positionals restored afterwards?
+#
+# Why the inclusion design needs it: operands on `.` are an XSI/common extension, NOT base POSIX, so
+# this is exactly the shape `two-binary-floor` exists to adjudicate.
+#
+# ANSWERED — and the answer is a DISAGREEMENT, which gate-9 has nowhere to commit: an
+# `expected.emitted` is by construction what the binaries AGREED on. So the measurement lives here,
+# in prose, and this case carries NO `expected.emitted` section — it does not opt into the
+# differential, and `mise run test:floor` stays green while the answer stays durable. RE-ARMING is
+# one line: add an empty `-- expected.emitted --` section back and the lane re-measures (and goes
+# red again, which is the trade this shape makes).
+#
+# measured-divergence: (mise run test:floor -- floor30-atlas, dash 0.5.12 ∩ posh 0.14.1, WSL)
+#   dash: file-entry: 1=[caller1] 2=[caller2] count=[2]
+#         book-after: 1=[caller1] 2=[caller2] count=[2]
+#   posh: file-entry: 1=[x] 2=[y] count=[3]
+#         book-after: 1=[caller1] 2=[caller2] count=[2]
+#   MEANING: dash IGNORES the operands outright — the sourced file simply keeps reading the caller's
+#   own positionals — while posh HONOURS them and restores the caller's afterwards. The two do not
+#   merely differ in a status; they give one authored line two different meanings, so `. file args`
+#   is OUTSIDE the base dialect. No inclusion lowering may emit it, and a book that writes it means
+#   different things on different hosts, which is a correctness question and not a portability
+#   nicety.
+#   SURPRISE this case cannot explain: posh reports `count=[3]` for TWO operands, so a third
+#   positional exists that nothing here names. Whatever it is, it is one more reason the shape is
+#   not dialect material.
+set -- caller1 caller2
+. ./seer.sh x y
+printf 'book-after: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+
+-- seer.sh --
+printf 'file-entry: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e0dcf1c0771a1d61d82e0dfa819ef2f8e499274a315ddab519001bf80b129cce sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-dot-with-operands — QUESTION: given `. ./seer.sh x y`, does the sourced file see `x`
+# as its own `$1`, or the caller's `$1`? And are the caller's positionals restored afterwards?
+#
+# Why the inclusion design needs it: operands on `.` are an XSI/common extension, NOT base POSIX, so
+# this is exactly the shape `two-binary-floor` exists to adjudicate.
+#
+# ANSWERED — and the answer is a DISAGREEMENT, which gate-9 has nowhere to commit: an
+# `expected.emitted` is by construction what the binaries AGREED on. So the measurement lives here,
+# in prose, and this case carries NO `expected.emitted` section — it does not opt into the
+# differential, and `mise run test:floor` stays green while the answer stays durable. RE-ARMING is
+# one line: add an empty `-- expected.emitted --` section back and the lane re-measures (and goes
+# red again, which is the trade this shape makes).
+#
+# measured-divergence: (mise run test:floor -- floor30-atlas, dash 0.5.12 ∩ posh 0.14.1, WSL)
+#   dash: file-entry: 1=[caller1] 2=[caller2] count=[2]
+#         book-after: 1=[caller1] 2=[caller2] count=[2]
+#   posh: file-entry: 1=[x] 2=[y] count=[3]
+#         book-after: 1=[caller1] 2=[caller2] count=[2]
+#   MEANING: dash IGNORES the operands outright — the sourced file simply keeps reading the caller's
+#   own positionals — while posh HONOURS them and restores the caller's afterwards. The two do not
+#   merely differ in a status; they give one authored line two different meanings, so `. file args`
+#   is OUTSIDE the base dialect. No inclusion lowering may emit it, and a book that writes it means
+#   different things on different hosts, which is a correctness question and not a portability
+#   nicety.
+#   SURPRISE this case cannot explain: posh reports `count=[3]` for TWO operands, so a third
+#   positional exists that nothing here names. Whatever it is, it is one more reason the shape is
+#   not dialect material.
+set -- caller1 caller2
+. ./seer.sh x y
+printf 'book-after: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"

@@ -1,0 +1,119 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-readonly-set-in-sourced-file — QUESTION: a sourced file marks a variable `readonly`.
+# Does the attribute reach the caller, and what does the caller's later assignment to it do — fail
+# quietly, or end the script?
+#
+# Why the inclusion design needs it, and why it is its own case rather than a cell of
+# `floor30-atlas-sourced-file-state-persists`: assigning to a readonly variable is a
+# variable-assignment error, which POSIX allows a non-interactive shell to EXIT on. A dependency
+# that freezes a name an admin's book later writes would end the run at a line the admin wrote in
+# good faith.
+#
+# ANSWERED, and the shells AGREE on everything that answers the question — they differ only in the
+# status of a construct they both rejected, which `fence-rejection-rc` says no dialect rule may
+# depend on. Gate-9 cannot tell that apart from a real divergence, so this case carries NO
+# `expected.emitted` section; re-arming it is one line, and would go red on a status nothing is
+# entitled to read.
+#
+# measured-divergence: (mise run test:floor -- floor30-atlas, dash 0.5.12 ∩ posh 0.14.1, WSL)
+#   dash: file-freezing
+#         file-frozen
+#         book: after-dot value=[start]
+#         book: contained status=[2]
+#         book-between
+#   posh: file-freezing
+#         file-frozen
+#         book: after-dot value=[start]
+#         book: contained status=[1]
+#         book-between
+#   MEANING: the ONLY differing byte is the rejected assignment's status (2 vs 1). Both shells agree
+#   that the `readonly` attribute REACHES the caller, that the value stays `start`, that an
+#   assignment to it ends the enclosing shell — the subshell cell dies and is caught, the bare cell
+#   takes the script with it, which is why `book: bare-assign-survived` and `book-tail` appear in
+#   neither. So the mechanic is settled and the divergence is `fence-rejection-rc` material.
+ro_probe=start
+. ./freezer.sh
+printf 'book: after-dot value=[%s]\n' "$ro_probe"
+( ro_probe=changed-in-sub; printf 'sub: assign-survived value=[%s]\n' "$ro_probe" ) || printf 'book: contained status=[%s]\n' "$?"
+printf 'book-between\n'
+ro_probe=changed
+printf 'book: bare-assign-survived value=[%s]\n' "$ro_probe"
+printf 'book-tail\n'
+
+-- freezer.sh --
+printf 'file-freezing\n'
+readonly ro_probe
+printf 'file-frozen\n'
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=6a56e0e3b93b28f6ad053c49c2ea1621411e8aad66954301dbfea905d075ff2f sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+# site:9 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-readonly-set-in-sourced-file — QUESTION: a sourced file marks a variable `readonly`.
+# Does the attribute reach the caller, and what does the caller's later assignment to it do — fail
+# quietly, or end the script?
+#
+# Why the inclusion design needs it, and why it is its own case rather than a cell of
+# `floor30-atlas-sourced-file-state-persists`: assigning to a readonly variable is a
+# variable-assignment error, which POSIX allows a non-interactive shell to EXIT on. A dependency
+# that freezes a name an admin's book later writes would end the run at a line the admin wrote in
+# good faith.
+#
+# ANSWERED, and the shells AGREE on everything that answers the question — they differ only in the
+# status of a construct they both rejected, which `fence-rejection-rc` says no dialect rule may
+# depend on. Gate-9 cannot tell that apart from a real divergence, so this case carries NO
+# `expected.emitted` section; re-arming it is one line, and would go red on a status nothing is
+# entitled to read.
+#
+# measured-divergence: (mise run test:floor -- floor30-atlas, dash 0.5.12 ∩ posh 0.14.1, WSL)
+#   dash: file-freezing
+#         file-frozen
+#         book: after-dot value=[start]
+#         book: contained status=[2]
+#         book-between
+#   posh: file-freezing
+#         file-frozen
+#         book: after-dot value=[start]
+#         book: contained status=[1]
+#         book-between
+#   MEANING: the ONLY differing byte is the rejected assignment's status (2 vs 1). Both shells agree
+#   that the `readonly` attribute REACHES the caller, that the value stays `start`, that an
+#   assignment to it ends the enclosing shell — the subshell cell dies and is caught, the bare cell
+#   takes the script with it, which is why `book: bare-assign-survived` and `book-tail` appear in
+#   neither. So the mechanic is settled and the divergence is `fence-rejection-rc` material.
+ro_probe=start
+. ./freezer.sh
+printf 'book: after-dot value=[%s]\n' "$ro_probe"
+( ro_probe=changed-in-sub; printf 'sub: assign-survived value=[%s]\n' "$ro_probe" ) || printf 'book: contained status=[%s]\n' "$?"
+printf 'book-between\n'
+ro_probe=changed
+printf 'book: bare-assign-survived value=[%s]\n' "$ro_probe"
+printf 'book-tail\n'
