@@ -44,6 +44,10 @@
 - **`dec-thirty-pc-routing`** — the conductor may not read `30Pc`; a Sonnet produced routing
   metadata only (one finding; names only planner-lane files); the planner MAP builder lands it
   first. No unowned items.
+- **`fnd-thirty-o-riders-were-stale`** (human-caught 2026-08-22) — `30O:lane-load-plane-precision`'s
+  rider list predated the `30P` re-cut (three-state load identity; `dirname` beyond POSSIBLE;
+  `rul-guard-resolves-like-its-mutation` as PROPOSED). Rewritten in `30O` to current truth; the
+  load MAP builder told directly. The brief itself was drafted from `30P` and did not inherit them.
 - **Human advice carried into every brief (typed 2026-08-22):** naming argued only for overloads
   and cross-domain glosses (a 10% lean; two-to-three-word names acceptable as the fix);
   whole-product unrepresentability statements for new/reshaped types; parser work is cheap and

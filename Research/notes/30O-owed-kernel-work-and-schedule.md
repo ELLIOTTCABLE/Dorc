@@ -70,12 +70,12 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
   closure-custody xfails `p-x-definition-grade-keying` · `p-x-helper-unset-f-across-files` ·
   `p-x-regional-helper` (`30O:dec-merge-guarded-source-with-closure-pins`, ACKED). Riders:
   funcenv precision is license-review-tier, forever — checkpoint after the seat map; the
-  slashless-operand lint hint (`. helpers.sh` is a PATH search); `30Pb`'s three-state load
-  identity (POSSIBLE / EXACT / ENGINE-SELECTED — only EXACT re-says or mints custody);
-  `rul-guard-resolves-like-its-mutation` [PROPOSED, pending ratification] must not be
+  slashless-operand lint hint (`. helpers.sh` is a PATH search); `30P:rul-load-head-is-exact-or-havoc` (EXACT or point
+  havoc, nothing between — the three-state POSSIBLE/ENGINE-SELECTED model is STRUCK);
+  `30P:rul-guard-resolves-like-its-mutation` [TYPED 2026-08-22] must not be
   violated by any seat touched. NOT included: `p-x-blessed-toplevel-conditional` (waits on
-  `28Q:res-dot-blessing-is-engine-side`); `dirname`-headed operands beyond POSSIBLE (ship +
-  wall). Touch: `analysis/src/funcenv.rs` · `analysis/src/value.rs` · `analysis/src/load.rs` ·
+  `28Q:res-dot-blessing-is-engine-side`); `dirname`-headed operands beyond point havoc
+  (the static-predict tier, `30P:rul-static-predict-sites-loads`, waits on a stdlib). Touch: `analysis/src/funcenv.rs` · `analysis/src/value.rs` · `analysis/src/load.rs` ·
   `oracle/src/closure.rs` · `cli/src/sourcing.rs` · `cli/src/main.rs` (shared with the planner
   lane). Size -GUESS L.
 - **`lane-loop-propagation`** — charter `30L:loop-propagation-staged-now (née §7)` +
