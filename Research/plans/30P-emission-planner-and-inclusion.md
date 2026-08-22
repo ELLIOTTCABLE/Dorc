@@ -371,7 +371,10 @@ the end of r30) · `load31-punted-load-shapes`.
 Ruled 2026-08-22 and recorded above: `rul-partly-dynamic-operand-is-a-set` (acked, boondoggle
 fence) · `ask-inclusion-in-r30` (acquire-and-ship in r30; splice + paste forfeited with reds)
 · `rul-paste-excludes-non-subshell-return` (top-level `return` excluded; set unwelded) ·
-`rul-emission-is-the-umbrella-name` (emission ⊃ placement, layout) · `rul-forfeits-carry-reds`.
+`rul-emission-is-the-umbrella-name` (emission ⊃ placement, layout) · `rul-forfeits-carry-reds`
+· `rul-guard-resolves-like-its-mutation` (Dorc's own bindings only; the `command`-pairing
+clause nacked) · `rul-munged-name-lifts-over-opaque-load` (the squat hole acked, narrowly) ·
+`option-strict-defensive-emission` (lean; machinery stays general).
 
 ## parse-never-fails-on-floor-text
 
@@ -409,20 +412,43 @@ cannot see.
   — a hostile host can make any guard lie regardless). Adopting the clause would make
   nearly every verdict body unlicensable below any unknown source and hollow out
   point-havoc's value for the shape real books have. **RESOLVED by a narrowed review pass
-  (human-relayed 2026-08-22, reviewer's own grade ~SUSPECT):** the reviewer acks the core
-  argument — static elision already stops at the wall, and an apply-time guard intentionally
-  remeasures in the post-source environment, so probe and apply resolution need not agree.
-  The narrower requirement, recorded for ratification as
-  **`rul-guard-resolves-like-its-mutation`** [PROPOSED, review-derived]: (a) Dorc preserves
-  the exact binding of its OWN generated guard and helper definitions (the existing
-  `pinned-definitions-are-the-artifact's-binding` law); and (b) a guard must judge the same
-  runtime command the immediately-following original mutation would execute — e.g. a check
-  spelled `command hork status` must never guard a book site whose bare `hork apply` may
-  resolve to a function; the check and the mutation resolve their command word the same
-  way, which verbatim-shipped oracle bodies already give and which no emission tier may
-  disturb. Ordinary unknown-source effects remain ANALYSIS uncertainty (unsure ⇒ run);
-  wrong-host, malformed, or lost-integrity evidence remains REFUSAL
-  (`rul-integrity-failure-withholds-mutation`).
+  (human-relayed 2026-08-22):** the reviewer acks the core argument — static elision already
+  stops at the wall, and an apply-time guard intentionally remeasures in the post-source
+  environment, so probe and apply resolution need not agree. The review's first narrowing
+  (pair-and-refuse a check spelled `command hork` against a site whose bare `hork` may be a
+  function) was NACKED by the human: a verdict body may check through `command hork`,
+  `not_hork`, or a file test — one class, referent-agnostic — and special-casing one spelling
+  of it is surprising, uneven-floor behaviour. The ruling as it stands:
+  **`rul-guard-resolves-like-its-mutation`** [TYPED 2026-08-22; reviewer's sentence,
+  human-adopted] — *Dorc never interprets or compares what a convergence vouch checks. It must
+  only ensure that its own movement or renaming does not create a combination of bindings that
+  ordinary shell resolution would never have produced.* Concretely: (a) Dorc's own emitted
+  definitions bind as pinned (`pinned-definitions-are-the-artifact's-binding`) — structurally
+  above any definition vector, digest-defended below one (next bullet); (b) a guard runs in
+  exactly the environment its mutation would — same frame, immediately preceding, body
+  verbatim, no emission tier relocating the glue or rewriting any command word inside a body.
+  What the body resolves *within* that environment is the author's judgment, and the engine
+  never pairs, refuses, or constrains by the spelling of a command word. Footguns that exist
+  in ordinary shell are not Dorc's to fix where fixing them would surprise or unlevel the
+  floor (a lint may name them; lints do not drive design). Ordinary unknown-source effects
+  remain ANALYSIS uncertainty (unsure ⇒ run); wrong-host, malformed, or lost-integrity
+  evidence remains REFUSAL (`rul-integrity-failure-withholds-mutation`).
+- **`rul-munged-name-lifts-over-opaque-load`** [TYPED 2026-08-22] — the acked hole
+  (`gap-book-shadows-dorc-role-name`): Dorc's preamble hoists above the book, so a Dorc-munged
+  name (`<name>_h<digest>`) lifted across an unresolvable `.` can be overridden by an explicit,
+  intentional squatter of that digest name in the opaque file — sh is last-wins, and the digest
+  is a probabilistic defence, not a structural one. It IS explicitly a danger. Ruled: Dorc still
+  lifts over in exactly that case. Scope is exactly "Dorc-munged name, lifted across an opaque
+  load" and no further — adjacent or non-matching mechanisms get their own examination sitting;
+  the human's grounds are unenumerated here. Tripwire for re-examination: any eventual
+  intra-host-influence-vector (human's spelling), thus far explicitly excluded.
+- **`option-strict-defensive-emission`** [TYPED lean 2026-08-22; TBD, not built] — the
+  engine already holds the machinery to emit perfectly per site (the probe lane re-emits per
+  site; the planner enumerates `in-place`); choosing idiomatic, hoisted, attention-preserving
+  emission by default is a product-level taste-and-UX ruling, not a capability limit. At
+  explicit admin request — probably a broader 'strict'-flavoured mode toggling several options
+  of this flavour — Dorc may emit maximally-defensively and close even the gap above. Keep the
+  machinery general; never bake the default into it.
 - **The controller-expectation / host-check pattern** [human-pointed 2026-08-22; a seed,
   not a ruling; the machinery is wanted, the product decision is not] — where host state
   enters a decision, Dorc already has one shape for it, and `30P`'s host-state questions
