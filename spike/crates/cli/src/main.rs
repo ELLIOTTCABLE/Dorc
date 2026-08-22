@@ -4104,12 +4104,6 @@ mod acquisition_tests {
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
-    /// Imported rather than spelled through its path at each call, so the call fits on one line.
-    /// The census finds a pin's call sites LEXICALLY, with the open paren and the opening quote
-    /// adjacent to the function name, so a call rustfmt wraps between them is one the census cannot
-    /// see — and an unseen Live pin reddens it.
-    use internal_tooling::xfail::xfail_until;
-
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
     /// A throwaway package tree, removed on drop. The acquisition's whole subject is which files
@@ -4327,11 +4321,14 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        xfail_until("p-x-load-operand-param-expansion-of-dollar-zero", || {
-            assert_eq!(loaded.found, ["helpers.dorc.sh"]);
-            assert_eq!(loaded.reached, [0].into());
-            assert!(matches!(helper, LiveDefinition::Live(_)));
-        });
+        internal_tooling::xfail::xfail_until(
+            "p-x-load-operand-param-expansion-of-dollar-zero",
+            || {
+                assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+                assert_eq!(loaded.reached, [0].into());
+                assert!(matches!(helper, LiveDefinition::Live(_)));
+            },
+        );
     }
 
     /// `p-x-load-operand-dirname-of-dollar-zero` — the same dependency, spelled through a COMMAND.
@@ -4359,7 +4356,7 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        xfail_until("p-x-load-operand-dirname-of-dollar-zero", || {
+        internal_tooling::xfail::xfail_until("p-x-load-operand-dirname-of-dollar-zero", || {
             assert_eq!(loaded.found, ["helpers.dorc.sh"]);
             assert_eq!(loaded.reached, [0].into());
             assert!(matches!(helper, LiveDefinition::Live(_)));
@@ -4390,7 +4387,7 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        xfail_until("p-x-load-operand-cd-pwd-of-dollar-zero", || {
+        internal_tooling::xfail::xfail_until("p-x-load-operand-cd-pwd-of-dollar-zero", || {
             assert_eq!(loaded.found, ["helpers.dorc.sh"]);
             assert_eq!(loaded.reached, [0].into());
             assert!(matches!(helper, LiveDefinition::Live(_)));
@@ -4420,7 +4417,7 @@ mod acquisition_tests {
         let book_loads = loaded.book_loads();
         let (a, b) = (loaded.at_exit("a_helper"), loaded.at_exit("b_helper"));
 
-        xfail_until("p-x-glob-load-acquires-members", || {
+        internal_tooling::xfail::xfail_until("p-x-glob-load-acquires-members", || {
             assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
             assert_eq!(loaded.reached, [0, 1].into());
             assert_eq!(book_loads, ["a.dorc.sh", "b.dorc.sh"]);
@@ -4462,7 +4459,7 @@ mod acquisition_tests {
         let shared = loaded.at_exit("shared_helper");
         let sole = loaded.at_exit("only_in_a");
 
-        xfail_until("p-x-glob-load-members-are-order-unknown", || {
+        internal_tooling::xfail::xfail_until("p-x-glob-load-members-are-order-unknown", || {
             assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
             assert_eq!(
                 shared,
@@ -4501,7 +4498,7 @@ mod acquisition_tests {
         );
         let wanted = loaded.env.loads().wanted().clone();
 
-        xfail_until("p-x-glob-load-no-match-aborts", || {
+        internal_tooling::xfail::xfail_until("p-x-glob-load-no-match-aborts", || {
             assert!(
                 loaded.found.is_empty(),
                 "nothing matched, so nothing is acquired: {:?}",
@@ -4560,7 +4557,7 @@ mod acquisition_tests {
         let optional = guarded.at_exit("optional_helper");
         let guarded_role = guarded.at_exit("hork__is_converged");
 
-        xfail_until("p-x-book-code-source-is-inclusion", || {
+        internal_tooling::xfail::xfail_until("p-x-book-code-source-is-inclusion", || {
             assert_eq!(unconditional.found, ["helpers.sh"]);
             assert_eq!(unconditional.reached, [0].into());
             assert!(

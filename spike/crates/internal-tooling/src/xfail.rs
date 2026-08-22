@@ -511,29 +511,83 @@ pub fn workspace_sources() -> Vec<(String, String)> {
 pub fn call_sites() -> Vec<(String, String)> {
     let mut out = Vec::new();
     for (path, text) in workspace_sources() {
-        let mut rest = text.as_str();
-        while let Some(at) = rest.find("xfail_until(\"") {
-            let after = rest
-                .get(at.saturating_add("xfail_until(\"".len())..)
-                .unwrap_or_default();
-            if let Some(end) = after.find('"')
-                && let Some(slug) = after.get(..end)
-            {
-                out.push((slug.to_owned(), path.clone()));
-            }
-            rest = after;
+        for slug in call_sites_in(&text) {
+            out.push((slug, path.clone()));
         }
     }
     out.sort();
     out
 }
 
+/// The pin slugs `text` calls, in occurrence order — the pure half of [`call_sites`].
+///
+/// Separate from the file walk so the two shapes it MUST survive are testable without a tree, and
+/// both are shapes it once did not survive. rustfmt WRAPS a call whose slug does not fit on the
+/// line, leaving the open paren and the string literal on different lines, so the needle cannot be
+/// the contiguous spelling: a wrapped call then reads as a registered pin nothing calls, and the
+/// census reports a debt that is actually discharged. And a COMMENT naming the seat is not a call
+/// site — this module's own doc text was once read as a call to a pin slugged with the rest of the
+/// sentence.
+///
+/// Whole comment LINES are dropped; a trailing comment after code on the same line is not, so a
+/// `// … xfail_until("…")` written to the right of real code would still be seen. Splitting that
+/// case needs string-literal awareness, which is a parser, and the census is a lexical fence
+/// (`licence_mint_has_exactly_one_caller` is the same shape).
+#[must_use]
+pub fn call_sites_in(text: &str) -> Vec<String> {
+    const NEEDLE: &str = "xfail_until(";
+    let code: String = text
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut out = Vec::new();
+    let mut rest = code.as_str();
+    while let Some(at) = rest.find(NEEDLE) {
+        let after = rest
+            .get(at.saturating_add(NEEDLE.len())..)
+            .unwrap_or_default();
+        if let Some(quoted) = after.trim_start().strip_prefix('"')
+            && let Some(end) = quoted.find('"')
+            && let Some(slug) = quoted.get(..end)
+        {
+            out.push(slug.to_owned());
+        }
+        rest = after;
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        CURRENT_ROUND, Horizon, Outcome, PINS, Pin, PinState, call_sites, census_report, round_of,
-        xfail_outcome,
+        CURRENT_ROUND, Horizon, Outcome, PINS, Pin, PinState, call_sites, call_sites_in,
+        census_report, round_of, xfail_outcome,
     };
+
+    /// The scan survives the two shapes that made it lie, and the census's whole authority rests on
+    /// it: a missed call site is a discharged debt reported as owed, and a phantom one is a call to
+    /// a pin that does not exist. Both were live — the wrapped call reddened a real lane, and the
+    /// decoy is this module's own prose.
+    #[test]
+    fn the_call_site_scan_survives_a_wrapped_call_and_a_doc_comment_decoy() {
+        let wrapped = "        xfail_until(\n            \"p-x-a-very-long-slug-rustfmt-will-wrap\",\n            || {},\n        );\n";
+        assert_eq!(
+            call_sites_in(wrapped),
+            ["p-x-a-very-long-slug-rustfmt-will-wrap"],
+            "rustfmt puts the paren and the slug on different lines; the scan must still see it"
+        );
+
+        let decoy = "/// prose about xfail_until(\"not-a-real-pin\") and how it works\n//! and xfail_until(\"nor-this-one\")\n// xfail_until(\"nor-this\")\n";
+        assert!(
+            call_sites_in(decoy).is_empty(),
+            "a comment naming the seat is not a call site: {:?}",
+            call_sites_in(decoy)
+        );
+
+        let ordinary = "    xfail_until(\"p-x-plain\", || {});\n";
+        assert_eq!(call_sites_in(ordinary), ["p-x-plain"]);
+    }
 
     /// The mechanism, falsifiably, in BOTH directions. Without the second half every pin in the tree
     /// could be vacuous and nothing would say so.
