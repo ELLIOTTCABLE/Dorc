@@ -1,0 +1,6 @@
+XFAIL: none of the three operands resolve today, so no package is acquired, nothing is described,
+and every site runs. The INLINE `$(dirname "$0")` operand is a plan-time PARSE refusal
+(`syntax-unsupported`, exit 10) rather than an unresolved value, so this book carries the
+`SCRIPT_DIR=$(cd ... && pwd)` spelling and the inline one stays a unit pin. Greens with
+`p-x-load-operand-cd-pwd-of-dollar-zero`, `p-x-glob-load-acquires-members` and
+`p-x-book-code-source-is-inclusion` (all r31:book-load-acceptance).

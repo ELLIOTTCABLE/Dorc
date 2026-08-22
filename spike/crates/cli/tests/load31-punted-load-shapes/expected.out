@@ -1,0 +1,2 @@
+# placeholder: this case is XFAIL, so the content golden is never compared (the XFAIL lens is
+# golden-text-blind by design). Re-bless it at promotion, when the case XPASSes.

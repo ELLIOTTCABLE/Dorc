@@ -1,0 +1,7 @@
+# The three described cells, reported converged: the target is that all three sites ELIDE.
+# Site numbering today (leaves in book order): 0 the SCRIPT_DIR assignment, 1 the script-relative
+# load, 2 the in-loop load, 3 the plain-sh load, 4/5/6 the three tool sites, 7 plain_helper_step.
+# A numbering that moves under the acquisition work is re-blessed with the transcript at promotion.
+site 4 effect=holds
+site 5 effect=holds
+site 6 effect=holds
