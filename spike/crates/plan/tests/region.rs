@@ -352,45 +352,166 @@ fn a_trap_opens_every_census_and_the_region_runs() {
     );
 }
 
-/// `30L:pin-loop-population-open-until-proven` — the EXPECTED-OPEN literal-loop cell. A call inside
-/// an authored `for` over a LITERAL list is many evaluations, and today the census cannot enumerate
-/// them, so the population is Open and the region runs. That is the CURRENT truth; the target is
-/// the next test.
+/// The literal-loop cell, promoted from its red-first pin (`30L` §7): a call inside an authored
+/// `for` over a LITERAL list is many evaluations, and propagation closes the population into one
+/// route per ordered member. The members share ONE lowered `cfg_node` — a loop body is lowered
+/// once, with a real back-edge — so the iteration axis is the only thing telling them apart
+/// (`30L:rul-one-call-site-is-not-one-evaluation`).
+///
+/// CFG shape: a top-level `for` over two literal words whose body holds one spliced call, whose own
+/// body holds one command leaf. One region, two routes, one node, one invocation.
 #[test]
-fn a_literal_loop_population_is_open_today() {
+fn a_literal_loop_population_closes_over_its_ordered_members() {
     let census = census_of(
         "install_pkg() { apt-get install -y nginx; }\nfor pkg in nginx curl; do install_pkg; done\n",
     );
     let (_, population) = sole_region(&census);
+    let routes = closed_routes(&population);
+    assert_eq!(routes.len(), 2, "one route per ordered loop member");
     assert_eq!(
-        population,
-        RoutePopulation::Open,
-        "no loop-specific optimistic default exists anywhere"
+        routes[0].cfg_node(),
+        routes[1].cfg_node(),
+        "iterations are overlays on ONE lowered body, never clones"
+    );
+    assert_ne!(
+        routes[0].iteration(),
+        routes[1].iteration(),
+        "the members are told apart by the iteration axis, not by CFG node"
+    );
+    assert_eq!(
+        routes
+            .iter()
+            .map(|route| route.iteration().member())
+            .collect::<Vec<_>>(),
+        vec![Some(0), Some(1)],
+        "member indices are the list's own positions, in order"
     );
 }
 
-/// The TARGET for the literal-loop cell, red-first: propagation closes the population into one
-/// route per ordered member, and the universal meet then runs over both. The greening trigger is
-/// the loop-propagation lane, NOT this stage — `30L` §7 stages the representation and defers the
-/// value-plane work that fills it.
+/// Duplicates are KEPT: dash iterates `for x in a a` twice, so the population is two members and
+/// not one (`30N` §2, the `20S` member commitments). A deduplicating census would model one
+/// evaluation of a body the shell runs twice — an under-count, which is the unsound direction.
+///
+/// CFG shape: the same one-region shape as above, with a repeated list word.
 #[test]
-fn p_x_loop_population_closes_over_literal_members() {
+fn a_repeated_literal_member_is_two_routes_not_one() {
     let census = census_of(
-        "install_pkg() { apt-get install -y nginx; }\nfor pkg in nginx curl; do install_pkg; done\n",
+        "install_pkg() { apt-get install -y nginx; }\nfor pkg in a a; do install_pkg; done\n",
     );
     let (_, population) = sole_region(&census);
-    internal_tooling::xfail::xfail_until("p-x-loop-population-closes-over-literal-members", || {
-        let routes = match &population {
-            RoutePopulation::Closed(routes) => routes.routes().copied().collect::<Vec<_>>(),
-            RoutePopulation::Open => Vec::new(),
-        };
-        assert_eq!(routes.len(), 2, "one route per ordered loop member");
-        assert_ne!(
-            routes[0].iteration(),
-            routes[1].iteration(),
-            "the members are told apart by the iteration axis, not by CFG node"
+    assert_eq!(
+        closed_routes(&population).len(),
+        2,
+        "two members, because dash iterates the list and not a set"
+    );
+}
+
+/// The count comes from the LIST, never from whether the body's argv mentions the loop variable.
+/// The r21 per-member argv side-channel records only var-referencing sites, and the pin's own book
+/// is the commonest shape there is — a call that ignores the variable. Tying the census to that
+/// gate would count zero members for it.
+///
+/// CFG shape: two books differing only in whether the call threads `"$pkg"`; both are one region
+/// (the definition's body command) with one invocation inside a two-member loop.
+#[test]
+fn the_member_count_is_independent_of_whether_the_body_reads_the_loop_var() {
+    let ignoring = census_of(
+        "install_pkg() { apt-get install -y nginx; }\nfor pkg in nginx curl; do install_pkg; done\n",
+    );
+    let threading = census_of(
+        "install_pkg() { apt-get install -y \"$1\"; }\nfor pkg in nginx curl; do install_pkg \"$pkg\"; done\n",
+    );
+    assert_eq!(closed_routes(&sole_region(&ignoring).1).len(), 2);
+    assert_eq!(closed_routes(&sole_region(&threading).1).len(), 2);
+}
+
+/// A `while` loop has no list to enumerate, so its population opens exactly as before. Its
+/// condition's `StatusIterated` blocks single-status substitution on a separate axis entirely; this
+/// is the census refusing to count, not the status law.
+///
+/// CFG shape: a `while` whose body holds one spliced call.
+#[test]
+fn a_while_loop_population_stays_open() {
+    let census = census_of(
+        "install_pkg() { apt-get install -y nginx; }\nwhile dpkg -s nginx; do install_pkg; done\n",
+    );
+    let (region, population) = sole_region(&census);
+    assert_eq!(population, RoutePopulation::Open);
+    assert_eq!(
+        *decide_region(region, &population, &[]).outcome(),
+        SharedOutcome::Run
+    );
+}
+
+/// A non-literal list word opens the population: the census reads the list SYNTACTICALLY and an
+/// expansion is not a member it can name. `"$@"` is the same refusal — a positional's value is
+/// runtime input.
+///
+/// CFG shape: three `for` bodies each holding one spliced call, over a parameter, a positional, and
+/// an unquoted glob.
+#[test]
+fn a_non_literal_for_list_opens_the_population() {
+    for list in ["$PKGS", "\"$@\"", "*.conf"] {
+        let census = census_of(&format!(
+            "install_pkg() {{ apt-get install -y nginx; }}\nfor pkg in {list}; do install_pkg; done\n"
+        ));
+        let (_, population) = sole_region(&census);
+        assert_eq!(
+            population,
+            RoutePopulation::Open,
+            "a {list} list names no enumerable members"
         );
-    });
+    }
+}
+
+/// A NESTED loop opens: one region's evaluations would multiply across two lists, and no consumer
+/// downstream models that population shape. Both directions of the pair refuse, because the test is
+/// whether the innermost head is itself inside a loop.
+///
+/// CFG shape: two `for` heads, the inner one's body holding the spliced call.
+#[test]
+fn a_nested_loop_population_stays_open() {
+    let census = census_of(
+        "install_pkg() { apt-get install -y nginx; }\nfor p in a b; do for q in c d; do install_pkg; done; done\n",
+    );
+    let (_, population) = sole_region(&census);
+    assert_eq!(population, RoutePopulation::Open);
+}
+
+/// Quoting does not hide a literal: `"nginx"` and `'curl'` are one field each, exactly as bare
+/// words are, because field splitting applies to the results of expansions and never to literal
+/// text.
+///
+/// CFG shape: one `for` over three quoted-and-bare literal words, body holding one spliced call.
+#[test]
+fn quoted_literal_list_words_are_members() {
+    let census = census_of(
+        "install_pkg() { apt-get install -y nginx; }\nfor pkg in \"nginx\" 'curl' ufw; do install_pkg; done\n",
+    );
+    let (_, population) = sole_region(&census);
+    assert_eq!(closed_routes(&sole_region(&census).1).len(), 3);
+    assert!(matches!(population, RoutePopulation::Closed(_)));
+}
+
+/// A loop's members multiply the INVOCATION clones rather than replacing them: two calls to one
+/// definition inside a two-member loop are four routes over one region, told apart by node AND
+/// iteration together.
+///
+/// CFG shape: one `for` over two literal words whose body holds TWO spliced calls to one
+/// definition.
+#[test]
+fn members_and_invocations_are_independent_axes() {
+    let census = census_of(
+        "install_pkg() { apt-get install -y nginx; }\nfor pkg in a b; do install_pkg; install_pkg; done\n",
+    );
+    let (_, population) = sole_region(&census);
+    let routes = closed_routes(&population);
+    assert_eq!(routes.len(), 4, "two invocations times two members");
+    let distinct: BTreeSet<_> = routes
+        .iter()
+        .map(|route| (route.cfg_node(), route.iteration()))
+        .collect();
+    assert_eq!(distinct.len(), 4, "no two routes share both axes");
 }
 
 /// `30L:pin-census-is-execution-not-scope`. The census quantifies over what may EXECUTE, so a book

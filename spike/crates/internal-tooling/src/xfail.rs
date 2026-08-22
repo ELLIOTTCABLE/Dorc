@@ -312,20 +312,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-loop-population-closes-over-literal-members",
-        trigger: "the LOOP-PROPAGATION lane (`30L` §7): a literal `for` list propagated into a \
-                  closed, ordered, non-deduplicated member population, so a syntactically singular \
-                  in-loop call censuses as one route per member. `30L` stages the representation \
-                  (the iteration axis exists and re-keys nothing) and defers the value-plane work \
-                  that fills it",
-        horizon: Horizon::Unscheduled {
-            marker: "end-of-r30",
-            why: "the propagation lane is wanted soon but unscheduled; the round boundary is where \
-                  the census should force the question",
-        },
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-blessed-toplevel-conditional",
         trigger: "the oracle-side blessing of read-only top-level commands \
                   (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \
