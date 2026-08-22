@@ -43,20 +43,25 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
   socially (published claims calibrate against whichever floor ships). REVISIT:
   the mini-model's formalization; first field evidence of plural-idiom books.
-- **forfeit-book-dynamic-load-analysis** — RULE (`plans/30P:the-load-principles`, three
-  principles, no idioms): a `.` operand resolves only over controller-known inputs
-  through shell semantics (`principle-load-operands-evaluate-over-controller-known-inputs`;
-  `rul-no-tool-modelling-in-the-load-plane`); a partly-dynamic operand is a SET over the
-  snapshot whose singleton is a POSSIBLE load (shipped and walled), never an EXACT one
-  (`rul-partly-dynamic-operand-is-a-set`, as amended by `30Pb`); an unknown source is a
-  point havoc (r30). FORFEITS: elision below any `$(dirname "$0")`-headed or otherwise
-  unknown-headed load until an authored root makes it EXACT; glob loads (order-unknown,
-  universal meet over member effects) until after `lane-loop-propagation`; slashless
-  operands (a PATH search) permanently. CAPTURE: the EXACT witness is authored only (a
-  root variable, `${0%/*}`); `ask-authored-pure-predict-may-site-loads` is the one
-  principled path beyond that, parked. BACK-OUT: low (every rule is additive; the
-  three-state load identity keeps POSSIBLE from laundering into EXACT). REVISIT: the
-  `r31:book-load-acceptance` attention-call. REDS: `p-x-load-operand-dirname-of-dollar-zero`
+- **forfeit-book-dynamic-load-analysis** — RULE (`plans/30P:the-load-principles`,
+  soundness-first re-cut 2026-08-22): a `.` operand resolves only over controller-known
+  inputs through shell semantics (`principle-load-operands-evaluate-over-controller-known-inputs`;
+  `rul-no-tool-modelling-in-the-load-plane`); a load head is EXACT or a point havoc, nothing
+  between (`30P:rul-load-head-is-exact-or-havoc` — the snapshot-suffix set, its POSSIBLE
+  singleton, and the runtime-verified candidate are all struck); `$0` is symbolic with two
+  live spellings, a dead spelling is not unsound (`30P:model-symbolic-dollar-zero`); a
+  command substitution in a load operand resolves only through a statically-evaluable
+  stdlib predict whose stdout is claimed (`30P:rul-static-predict-sites-loads`); an unknown
+  source is a point havoc (r30). FORFEITS: elision below any dynamic-headed load
+  (`$OPS_LIB`, `${LIB:-./lib}`, `$(find_config)`) until an authored EXACT spelling replaces
+  it; `$(dirname "$0")`- and `$(cd … && pwd)`-headed loads until the static-predict tier and
+  the `dirname`/`cd`/`pwd` stdlib predicts exist; glob loads (order-unknown, universal meet
+  over member effects) until after `lane-loop-propagation`; slashless operands (a PATH
+  search) permanently. CAPTURE: EXACT witnesses are authored text only (a literal, a
+  book-set root, `$0` under the symbolic model, a static predict's claimed stdout); the
+  decidable set grows by name, license-review-tier. BACK-OUT: low (every rule is additive;
+  no engine selection can launder into EXACT). REVISIT: the `r31:book-load-acceptance`
+  attention-call. REDS: `p-x-load-operand-dirname-of-dollar-zero`
   · `p-x-load-operand-cd-pwd-of-dollar-zero` · `p-x-glob-load-acquires-members` ·
   `p-x-glob-load-members-are-order-unknown` · `p-x-glob-load-no-match-aborts` ·
   `load31-punted-load-shapes`.
