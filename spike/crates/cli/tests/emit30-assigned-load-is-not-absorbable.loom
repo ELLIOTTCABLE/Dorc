@@ -1,0 +1,103 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic: artifact-form-fallback
+---
+-- book.sh --
+#!/bin/sh
+# emit30-assigned-load-is-not-absorbable (`30Pc:bug-assignment-bearing-dot-is-inlineable`) — the
+# whole-product half of the assignment repair: a `.` carrying a LEADING ASSIGNMENT is outside
+# `floor30-inline-dot-boundary`'s measured shape, so the single stream is unavailable and `auto`
+# falls back and SAYS SO rather than substituting bundle bytes for the whole command node.
+#
+# CFG SHAPE: one top-level `Simple` whose `assigns` is non-empty and whose word 1 is the load
+# operand. `ImportEdit::Inline` replaces the COMMAND node, and `MODE=prod` is part of that node —
+# so an inlining engine drops it and the absorbed top level reads an environment the authored `.`
+# would never have had. What this case observes is the apply block still carrying `MODE=prod`
+# ahead of an UNREWRITTEN `.`: with the gate removed, the assignment disappears from these bytes
+# and the bundle's own text stands in its place.
+#
+# NO `mocks/`, for the reason `emit30-multipart-publishes-its-dependency` records: `.` is a
+# special builtin, so a non-interactive shell that cannot find what it sources EXITS, and the exec
+# rail's cwd is an empty throwaway sandbox.
+#
+# `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts the
+# vouching body on the apply surface and keeps the run non-vacuous.
+MODE=prod . ./wombat.dorc.sh
+hork provision
+wombat sync a.conf
+
+-- wombat.dorc.sh --
+# dorc-lang/v0.2
+# The contracted package the book sources under an assignment. Its bytes are a bundle candidate
+# like any other; what the assignment costs is the FORM, not the bundling.
+wombat__is_converged() {
+   case "${1-}" in
+   sync) wombat status --conf -- "${2-}" : sm.dorc.Conf:"$2"@synced ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The one measured site: the vouched `wombat sync`. It sits PAST `hork`'s wall, so it GUARDS
+# rather than elides, which is what puts the vouching body in the artifact's preamble.
+site 2 effect=holds
+
+-- replay --
+$ dorc --book=book.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=cca91cab391cfbb684d0c7a2b45fd0a2286b67ac7c4fe8cea96cd4caed3fa8d5 sites=1 @@dorc@@\n'
+# site 2: dorc-auto:wombat@converged
+wombat__is_converged() {
+   case "${1-}" in
+   sync) wombat status --conf -- "${2-}" ;;
+   *) return 2 ;;
+   esac
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+wombat__is_converged() {
+   case "${1-}" in
+   sync) wombat status --conf -- "${2-}" ;;
+   *) return 2 ;;
+   esac
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+# emit30-assigned-load-is-not-absorbable (`30Pc:bug-assignment-bearing-dot-is-inlineable`) — the
+# whole-product half of the assignment repair: a `.` carrying a LEADING ASSIGNMENT is outside
+# `floor30-inline-dot-boundary`'s measured shape, so the single stream is unavailable and `auto`
+# falls back and SAYS SO rather than substituting bundle bytes for the whole command node.
+#
+# CFG SHAPE: one top-level `Simple` whose `assigns` is non-empty and whose word 1 is the load
+# operand. `ImportEdit::Inline` replaces the COMMAND node, and `MODE=prod` is part of that node —
+# so an inlining engine drops it and the absorbed top level reads an environment the authored `.`
+# would never have had. What this case observes is the apply block still carrying `MODE=prod`
+# ahead of an UNREWRITTEN `.`: with the gate removed, the assignment disappears from these bytes
+# and the bundle's own text stands in its place.
+#
+# NO `mocks/`, for the reason `emit30-multipart-publishes-its-dependency` records: `.` is a
+# special builtin, so a non-interactive shell that cannot find what it sources EXITS, and the exec
+# rail's cwd is an empty throwaway sandbox.
+#
+# `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts the
+# vouching body on the apply surface and keeps the run non-vacuous.
+MODE=prod . ./wombat.dorc.sh
+hork provision
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

@@ -325,8 +325,14 @@ pub struct BookLoad {
     pub operand: Option<AstId>,
     /// The root bundle the occurrence opened.
     pub root: BundleRootId,
-    /// Is this `.` a top-level simple command standing alone on its own line — the ONE shape
-    /// `floor30-inline-dot-boundary` measured a bundle may stand in for?
+    /// Is this `.` a top-level simple command standing alone on its own line, with neither a
+    /// redirect nor a leading assignment — the ONE shape `floor30-inline-dot-boundary` measured
+    /// a bundle may stand in for?
+    ///
+    /// The assignment clause is load-bearing: an `Inline` replaces the WHOLE command node, so
+    /// `MODE=prod . ./entry.oracle.sh` would lose `MODE=prod` and the absorbed bytes would read a
+    /// different environment than the `.` they stand for. `Repoint` moves only the operand and
+    /// stays eligible for that shape.
     pub absorbable: bool,
 }
 
@@ -365,20 +371,23 @@ pub fn book_loads(
         .map(|occurrence| {
             let command = cfg.node(occurrence.load().at).ast;
             let span = book.node(command).span;
-            let (operand, redirected) = match &book.node(command).kind {
-                NodeKind::Simple { words, redirs, .. } => {
-                    (words.get(1).copied(), !redirs.is_empty())
-                }
-                _ => (None, true),
+            let (operand, bare) = match &book.node(command).kind {
+                NodeKind::Simple {
+                    assigns,
+                    words,
+                    redirs,
+                } => (
+                    words.get(1).copied(),
+                    redirs.is_empty() && assigns.is_empty(),
+                ),
+                _ => (None, false),
             };
             BookLoad {
                 command,
                 span,
                 operand,
                 root: occurrence.root(),
-                absorbable: top_level.contains(&command)
-                    && !redirected
-                    && alone_on_line(book_src, span),
+                absorbable: top_level.contains(&command) && bare && alone_on_line(book_src, span),
             }
         })
         .collect()
@@ -1206,6 +1215,64 @@ mod tests {
             Some(FormFallback::InliningUnproven { loads: 1 })
         );
         assert!(selection.imports().is_empty());
+    }
+
+    /// …and so does a `.` carrying a LEADING ASSIGNMENT, for a different reason than the operator
+    /// cell above: `Inline` replaces the whole command node, and the assignment is part of that node.
+    ///
+    /// CFG shape: one top-level `Simple` whose `assigns` is non-empty and whose word 1 is the load
+    /// operand — `MODE=prod . ./wombat.oracle.sh`. Substituting the bundle's bytes for that node
+    /// drops `MODE=prod`, so the absorbed top level reads an environment the authored `.` would have
+    /// had. The multipart half is the acceptance's other end: `Repoint` moves the OPERAND only, so
+    /// the assignment survives byte-for-byte and that form stays available.
+    #[test]
+    fn a_load_carrying_a_leading_assignment_is_not_absorbable() {
+        let world = || {
+            (
+                "MODE=prod . ./wombat.oracle.sh\nwombat sync a.conf\n",
+                vec!["wombat.oracle.sh".to_owned()],
+                vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            )
+        };
+
+        let (book, paths, srcs) = world();
+        let one_stream = book_sourced(
+            book,
+            paths,
+            srcs,
+            FormRequest::Auto,
+            StreamPosture::TerminalRender,
+        )
+        .expect("auto always lands somewhere");
+        assert_eq!(one_stream.form(), ArtifactForm::PreservedBookTree);
+        assert_eq!(
+            one_stream.fallback(),
+            Some(FormFallback::InliningUnproven { loads: 1 })
+        );
+        assert!(
+            one_stream.imports().is_empty(),
+            "no edit at all beats an edit that drops the assignment: {:?}",
+            one_stream.imports()
+        );
+
+        let (book, paths, srcs) = world();
+        let multipart = book_sourced(
+            book,
+            paths,
+            srcs,
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("a relative dependency is placeable");
+        assert_eq!(multipart.form(), ArtifactForm::Multipart);
+        assert!(
+            matches!(
+                multipart.imports(),
+                [ImportEdit::Repoint { path, .. }] if path == "./wombat.oracle.dorc-bundle.sh"
+            ),
+            "the operand still re-points, so the assignment ahead of it is untouched: {:?}",
+            multipart.imports()
+        );
     }
 
     /// THE PRODUCTION CWD, which is the shape every real invocation has and no other test here had.
