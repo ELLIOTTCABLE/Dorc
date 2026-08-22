@@ -373,6 +373,91 @@ fence) · `ask-inclusion-in-r30` (acquire-and-ship in r30; splice + paste forfei
 · `rul-paste-excludes-non-subshell-return` (top-level `return` excluded; set unwelded) ·
 `rul-emission-is-the-umbrella-name` (emission ⊃ placement, layout) · `rul-forfeits-carry-reds`.
 
+## parse-never-fails-on-floor-text
+
+**`rul-floor-valid-text-never-parse-fails`** [TYPED 2026-08-22] — no text valid under the
+floor (`posh` ∩ `dash`) is a PARSE violation, ever. Cross-shell semantic disagreement and
+outside-the-dialect constructs are POST-analysis, PRE-network outcomes — a single pass still
+yields diagnosis and aid that a parse crash-out throws away. Whether such a site walls-and-emits
+or fails fast is OPEN at the UX tier (punted; builder's choice, whatever is easiest), but the
+MACHINERY must handle the worst case regardless of the UX choice: "build the worst case". This
+rules `ask-computed-dot-degrades-to-a-wall` by subsumption (a computed `.` operand is
+floor-valid text; `fnd-computed-dot-is-a-whole-book-refusal` is a parse-tier defect to repair,
+the wall being the worst-case posture).
+
+## review-adjudication-inputs — the conductor's stance on `notes/30Pb` (findings, not rulings; the human decides)
+
+The opaque review (`30Pb`, nine findings; its quarantined half `30Pa` unread by the
+conductor by law) weighed by the conductor's own estimation. DISAGREEMENTS first — those are
+the human's highest-priority items, because the reviewers hold constraints the conductor
+cannot see.
+
+- **`30Pb:fnd-unknown-source-recovery-is-domain-specific` — PARTIAL DISAGREEMENT, the one
+  that matters.** Agree that an unknown `.` havocs more than function bindings, and that the
+  cheap domains should be modelled at v0: variables (⊤ already) · cwd (⊤ after ⇒ every later
+  relative `.` is unresolvable) · shell options/errexit (⊤ ⇒ the CFG's exit edges go
+  conservative) · positional parameters (⊤) · termination (May-reach, which is the safe
+  direction for both elision and guards) · aliases and traps (the unenumerable tier, as
+  today). DISAGREE with the last clause — "a vouch or guard is available only when the
+  body's complete resolution environment is known to agree between measurement and
+  execution": an unknown file that redefines a tool as a function is the same cell as the
+  host's PATH resolving the tool to anything, which the oracle contract already places on
+  the admin's side of the horizon (`rul-probe-mutation-ownership-split`; `an-host-as-adversary`
+  — a hostile host can make any guard lie regardless). Adopting the clause would make
+  nearly every verdict body unlicensable below any unknown source and hollow out
+  point-havoc's value for the shape real books have. If the reviewers' constraint is the
+  security one, the bounded alternative is to model it as the existing adversarial-host
+  cell, not as an analysis precondition. Human's call.
+- **`30Pb:fnd-possible-singleton-is-not-exact-selection` — AGREE, and it corrects this plan.**
+  A singleton suffix-match says what the snapshot holds, not what `$LIB` means; re-saying the
+  import from a *possible* load can change the authored program. `rul-partly-dynamic-operand-is-a-set`
+  is amended: three load states — POSSIBLE (a candidate set from the snapshot) · EXACT
+  (the head is controller-known: a literal, a known variable, `${0%/*}`) · ENGINE-SELECTED
+  (never silent). Only EXACT re-says an import or mints custody/speaker. A POSSIBLE
+  singleton is acquired and SHIPPED so the plan can run, narrated, and walls — which is
+  exactly `mech-acquire-and-ship-plain-sh`'s posture and keeps the boondoggle fence. The
+  only witness that promotes possible → exact is an authored act: a root variable the book
+  sets (`30I` §2.1's idiom) or `${0%/*}`; there is no static witness for an unknown head.
+- **`30Pb:fnd-controller-source-and-target-source-are-distinct` — AGREE on the distinction;
+  mild disagreement on "never by path syntax".** The class IS selected by an authored act
+  today: a path relative to the load cwd is a controller-side candidate (acquired from the
+  snapshot); an absolute path is target-runtime (never read from the controller — reading the
+  controller's `/etc/os-release` as the target's would be the defect). That is spelling, not a
+  second language, and it is `30I`'s existing cwd-parity rule. Propose ruling it explicitly.
+- **`30Pb:fnd-emission-legality-covers-all-shell-state` — AGREE; sharpens tier one.** The
+  hoist condition "no book CALL above the `.` names a bound name" must read "no book
+  OBSERVATION OR MUTATION" — `command -v helper`, `type`, `unset -f`, `alias`, and variable
+  reads count. The decidable-set machinery already sees `command -v <unit-defined-fn>`; the
+  value plane enumerates variable reads. File-level assignments hoist only when no book
+  statement observes the name; otherwise the whole closure stays in place. OPEN, for the
+  planner lane to confirm: whether today's preamble hoist of oracle constants can already
+  shadow a same-named book variable (a latent hole if so).
+- **`30Pb:fnd-emitted-names-need-freshness-and-hygiene` — AGREE; mostly already law.** The
+  BARE-IF-SINGLETON census over emitted ∪ book top-level names is the injectivity proof for
+  functions; add detect-and-lengthen for digest collisions (cheap). The header-only boundary
+  is exactly `rul-munge-oracle-names-only`'s as-built scope: definitions whose every reference
+  is engine-emitted (role functions invoked by guard/probe scaffolding); helpers referenced
+  from authored bodies need alpha-rename (reserved) or stay in place / withhold — which is
+  what `forfeit-helper-plurality-withhold` does today. State the boundary in the plan.
+- **`30Pb:fnd-reviewed-artifact-is-one-exact-set` — AGREE; 30P RESERVES, does not own.** One
+  immutable artifact-set identity (paths, bytes, provenance, policy, target cwd, generation)
+  that apply consumes and rejects on mismatch is the approval/apply design's
+  (`rul-attribution-is-controller-minted`'s "saved approval" re-entry trigger). 30P reserves
+  a mandatory identity projection on `ArtifactSet`.
+- **`30Pb:fnd-path-spelling-resolution-and-content-identity-differ` — AGREE; largely typed
+  already** (`LoadAccount` occurrences keep spelling + locus; canonical keys; snapshot sha).
+  Builder check owed: `core::loadpath`'s lexical `..` handling versus the real open under
+  symlinks/case-folding.
+- **`30Pb:fnd-glob-order-needs-whole-program-meet` — AGREE; my collision-only rule was too
+  narrow.** Order-unknown means a universal meet over every order of the members' load
+  programs (members can `unset -f`, assign, `cd`, `exit`); closed for dorc-lang members
+  (the load-program vocabulary), opaque for plain-sh members ⇒ wall. A constraint on the
+  deferred glob work.
+- **`30Pb:fnd-dot-source-remains-an-execution-frame` — AGREE.** The splice-as-body-called-once
+  is an implementation technique; a first-class source frame keeps `return`, errexit context,
+  positionals, traps, and termination observable. `30L`'s execution/region identity split has
+  room for a `SourceFrame` identity.
+
 ## ledger-updates-owed (held until the human's rulings above)
 
 `notes/30O` re-cut (the planner lane absorbing the hoist ladder; the load slices;
