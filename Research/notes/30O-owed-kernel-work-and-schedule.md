@@ -1,297 +1,184 @@
 # 30O — r30 owed kernel work: the complete accounting, and its schedule
 
-> Tier: conductor synthesis (Fable, third r30 conductor, session opened 2026-08-21; worktree
-> `.claude/worktrees/r30-conduct`, branch `ai/r30-conduct`). Remit from the human: the `30N`
-> handoff names three owed lanes; produce a MORE COMPLETE accounting of still-not-done kernel
-> work measured against every r30 stage, and map it to parallel/serial build steps for the
-> human to size to builders before dispatch. Nothing here is acked; `ask-dispatch-gating-questions`
-> lists what blocks dispatch. Grades: +SURE / ~SUSPECT / -GUESS per the house rule. Method: the
-> reading-guide set + `28Q`/`309`/`306b`/`30I`/`30L`/`30J`/`30D`/`30N`/`30Ng` read in full by
-> the conductor; the remaining r30 ledgers and the two needs-registers swept by three read-only
-> scouts whose open-item claims were then VERIFIED against code/text (six were stale —
-> `refuted-scout-claims` lists them so no successor re-chases them).
->
-> Naming: every referent below carries a slug; where the source only had a section number
-> the slug is minted here retroactively, `née §N`, so the original stays greppable.
+> Tier: conductor synthesis (Fable, third r30 conductor; worktree
+> `.claude/worktrees/r30-conduct`, branch `ai/r30-conduct`). Minted 2026-08-21 as the
+> owed-work accounting; re-cut 2026-08-22 after the emission/inclusion sitting (`plans/30P`)
+> settled the lane shapes. Grades: +SURE / ~SUSPECT / -GUESS. Naming: every referent carries a
+> slug; where the source only had a section number the slug is minted here, `née §N`.
+> `plans/30P` outranks this note wherever they overlap: this note SCHEDULES, `30P` DESIGNS.
 
 ## the-measuring-stick — every r30 stage, and where it stands
 
 r30 had two halves: `300:wave-one-tooling-standup (née §2)` stood up the correctness
 tooling; the second half is the `28Q:staging-ladder (née §8)` plus the `309`/`30I`/`30L`
-artifact close. Status per stage, +SURE unless marked:
+artifact close. End-of-r30 is kernel quiescence; everything not scheduled here is
+unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless marked:
 
-| stage (charter) | status | residue this note schedules |
+| stage (charter) | status | residue scheduled here |
 |---|---|---|
-| `300:wave-one-tooling-standup` (facades · derived-defs · minispec · Kani · certifier · sparing re-derivation) | LANDED; the 2026-08-17 push repaired the `30B`/`30H` review residue (root module now import-free, drift alarm mechanized, `dorc-verify promote` exists) | none kernel-tier. `300:lane-flux-engine-hardening` (the penciled refinement-type instrument) is PUNTED to `TODO-ADDTL` by the human 2026-08-21 — unscheduled, not an r30 item |
-| `28Q:stage-0-ship-seam` (verdict primacy) | LANDED 2026-08-16; `30La` closed the aggregate residue | `FORFEITS:forfeit-wrapped-case-bodied-book-verdict` (pin30; two seats, cheap chase — named, not scheduled) |
-| `28Q:stage-i-definition-factoring` (P1) | LANDED + crosschecked (`308`) | the three closure-custody precision xfails (`lane-load-plane-precision`) |
-| `28Q:stage-emission-snapshot-transplant` | LANDED | `28Q:pin-emission-planner-universal` direction-ruled, build unscheduled (`ask-planner-scope-for-front-lift`) |
-| `28Q:stage-ii-closure-custody` (P2) | infrastructure LANDED; the `30I` runtime projection LANDED through `30I:step-8-promote-executable-specification` | the policy half is HUMAN: `ratify-committee-sparing-fence` (burndown) · `28M:keep-lift-and-registration-verdicts (née §11)` · `28Q:pin-closure-membership-and-diamond` |
-| `28Q:stage-effective-world-reach` (`30K`) | BUILT, reviewed (`30Kb`), repairs landed | `30Kb` non-blocking residue (`register-and-steering-debt`) |
-| `28Q:stage-ii-bundle-and-artifact-close` (`30I` steps 5b–8 · `30L` · the `30Ng` rework) | BUILT; corpus promoted | the `30N` handoff's three lanes + loop propagation + the `30Nh` residue (`the-build-backlog`) |
-| `309:stage-spine-census` · `309:stage-spine-transition` | BUILT (`30E`/`30F`) | — |
-| `309:stage-306-accounting` | PARTIAL: typed authority-absences built; influence carriage DESIGN-closed (`306b:influence-carriage-across-entities (née §10)`) but the one-grade-per-Spine stamp is still the code; the forgiving-parser re-home + full report-only rendering NOT built | `lane-influence-carriage`; report-only rendering is HUMAN-gated (`design-report-only-refusal-scope`, burndown) |
-| `28Q:stage-iii-world-scopes` (P3) | NOT STARTED | fully human-gated: `28Q:authored-world-scope-surface (née §10)` (`design-world-scope-surface`) · `28Q:res-incarnation-correlation-door` (`rule-incarnation-continuity-semantics`) · the ssh oracle ⇐ stdlib ⇐ `unblock-starter-oracle-library` |
+| `300:wave-one-tooling-standup` | LANDED; the `30B`/`30H` review residue repaired 2026-08-17 | none; `300:lane-flux-engine-hardening` punted to `TODO-ADDTL` |
+| `28Q:stage-0-ship-seam` | LANDED; `30La` closed the aggregate residue | `FORFEITS:forfeit-wrapped-case-bodied-book-verdict` (named, not scheduled) |
+| `28Q:stage-i-definition-factoring` | LANDED + crosschecked (`308`) | the three closure-custody precision xfails (`lane-load-plane-precision`) |
+| `28Q:stage-emission-snapshot-transplant` | LANDED | the emission planner build (`lane-emission-planner`) |
+| `28Q:stage-ii-closure-custody` | infrastructure LANDED; `30I` runtime projection LANDED through step 8 | policy half HUMAN (`ratify-committee-sparing-fence` · `28M:keep-lift-and-registration-verdicts (née §11)` · `28Q:pin-closure-membership-and-diamond`) |
+| `28Q:stage-effective-world-reach` (`30K`) | BUILT, reviewed, repaired | `30Kb` non-blocking residue (`register-and-steering-debt`) |
+| `28Q:stage-ii-bundle-and-artifact-close` (`30I` 5b–8 · `30L` · `30Ng`) | BUILT; corpus promoted | the handoff's lanes, re-shaped by `30P` (`the-build-backlog`) |
+| `309:stage-spine-census` · `stage-spine-transition` | BUILT | — |
+| `309:stage-306-accounting` | PARTIAL: typed authority-absences built; influence carriage design-closed, code still one-grade-per-Spine; report-only rendering unbuilt | `lane-influence-carriage`; report-only rendering HUMAN (`design-report-only-refusal-scope`) |
+| `28Q:stage-iii-world-scopes` | NOT STARTED; human-gated at every edge | — |
 
-**`fnd-handoff-undercounts-by-stage`** (+SURE): the `30N` handoff's three lanes are all
-`28Q:stage-ii-bundle-and-artifact-close` residue. Against the ladder, r30 also owes the
-end-of-r30 xfail (loop propagation), the three closure-custody precision pins that share
-`lane-guarded-source-fidelity`'s file surface, `309:stage-306-accounting`'s influence
-remainder, and the unscheduled emission-planner build. `28Q:stage-iii-world-scopes` is not a
-gap in the handoff — it is correctly absent, being human-gated at every edge.
+**`fnd-handoff-undercounts-by-stage`** (+SURE): the `30N` handoff's three lanes were all
+`28Q:stage-ii-bundle-and-artifact-close` residue; the loop xfail, the closure-custody pins,
+`309:stage-306-accounting`'s remainder, and the unscheduled emission planner were outside it.
 
 ## the-build-backlog — designed, buildable now, no human gate
 
-- **`lane-bundle-front-lift`** — charter `30Ng:bundle-front-lift-ladder (née §7)` (human-typed:
-  `tier-lift-as-is` · `tier-lift-and-munge` · `tier-positional-with-rewrite` · decline). What
-  it greens: no xfail; the battery is four new single-stream round-trip cases (one per tier +
-  decline) asserting layout AND `expected.ran` unmoved. Folded in as the same artifact-plane
-  surface (small; a separate lane would re-load the same context): the `30Nh` residue
-  `30Nh:dev-why-world-carries-no-import-edits` (a why-plane completeness gap against the
-  human's entire-DAG directive, `30Ng:directive-narrative-carries-the-whole-dag (née §2)`)
-  and `30Nh:dev-piped-cell-has-no-e2e` (an expected-empty-stdout harness lane,
-  `cli/CLAUDE.md an-artifact-set-runs-from-its-own-generation`). Touch surface:
-  `plan/src/render.rs` · `plan/src/lib.rs` (the preamble/hoist + hash-munge seat,
-  `plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding`) · `cli/src/artifact.rs` ·
-  `cli/src/why.rs` + `world.rs` · `cli/tests/e2e.rs`. Size -GUESS M. Licence-relevant: the
-  lift-as-is tier's condition list IS a `rul-happy-path-is-a-closed-set` enumeration proof,
-  so the tier predicates are license-review material — map-then-execute (predicates + red
-  cells, checkpoint, then munge). Steering lag to fix at fold: `cli/CLAUDE.md
-  artifact-forms-derive-from-one-structure` still says front-lifting "waits on a licence
-  (`30Nh:tc-bundle-lift-needs-the-spine`)" — RETIRED by `30Ng:bundle-front-lift-ladder`.
-- **`lane-load-plane-precision`** — ONE lane, not two (**`dec-merge-guarded-source-with-closure-pins`**,
-  conductor, veto-eligible): the handoff's `lane-guarded-source-fidelity` (charter
-  `30I:rul-load-semantics-stay-full-fidelity` + `30I:rul-guarded-source-speech-is-lossy` +
-  the rewritten `30I:step-4-recognize-exact-guarded-source`; greens `p-x-sentinel-value-conjunct`;
-  recovers evidence test `176e0818` from `worktree-sol-adversarial-30M`, a 29-line funcenv
-  test) PLUS the three closure-custody precision xfails the census already carries under the
-  horizon label `r31:closure-custody` — GLOSS: that label is a census EXPIRY marker
-  (`internal_tooling::xfail::PINS` keys horizons by round-marker, never by date), not a lane
-  and not a round that exists; it means "redden at the closure-custody work of the round
-  after this one". The three: `p-x-definition-grade-keying` (`PredictSet`/`VerdictSet` keep
-  one row per `(file, role)`, so the earlier of two within-file definitions produces no row),
-  `p-x-helper-unset-f-across-files` (`HelperIndex` resolves last-declaration-wins over
-  load-inert sources and asks the environment nothing — `30Ib:helper-unset-f-is-one-filter-drop
-  (née §5.7)` prices it), `p-x-regional-helper` (`closure_for` takes no site; the book census
-  is depth-blind). Ground for merging: all four are funcenv/`HelperIndex` precision, all four
-  are WINNER-SHIFTING and therefore license-review-tier forever
-  (`28Q:syn-definition-factored-indices`; `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat`),
-  and the review the tier demands is cheaper once than four times. Touch surface:
-  `analysis/src/funcenv.rs` · `analysis/src/value.rs` (sentinel value flow) ·
-  `oracle/src/closure.rs` · `cli/src/sourcing.rs` · `cli/src/main.rs` (shared with
-  `lane-bundle-front-lift` — the one conflict file `30N` named). Size -GUESS M–L. Checkpoint
-  mandatory after the map (which seats move, which cells go red) — funcenv precision is never
-  ordinary value-add. NOT included (`ask-blessed-toplevel-direction-suffices`):
-  `p-x-blessed-toplevel-conditional`.
+- **`lane-emission-planner`** (absorbs the handoff's `lane-bundle-front-lift`) — charter
+  `30P:the-emission-planner`: ONE component, apply-side now, probe seam reserved; placement
+  `hoist | in-place | sink` × naming `authored | munged`; first consumer the
+  `30Ng:bundle-front-lift-ladder` (`tier-hoist-as-is` · `tier-hoist-munged` ·
+  `tier-in-place-rewritten` · decline) with a `dorc why` reason arm per tier; second consumer
+  `p-x-placement-tuning-pair` (the `sink` value). Riders from `30Pb`, ratified-in-stance: the
+  hoist legality predicate covers every book OBSERVATION or MUTATION of a bound name above the
+  `.` (`command -v`, `type`, `unset`, `alias`, variable reads — not calls only); emitted-name
+  injectivity over the full emitted ∪ book namespace with detect-and-lengthen on digest
+  collision; header-only renames only for definitions whose every reference is
+  engine-emitted (helpers referenced from authored bodies stay in place or withhold —
+  alpha-rename stays reserved); confirm whether today's preamble hoist of oracle constants
+  can shadow a same-named book variable (a latent hole if so). The `30Nh` why/harness residue
+  rides here (`dev-why-world-carries-no-import-edits`; the kept-stream expected-empty-stdout
+  e2e). Touch: `plan/src/render.rs` · `plan/src/lib.rs` (preamble/hoist, hash-munge) ·
+  `cli/src/artifact.rs` · `cli/src/why.rs` + `world.rs`. Size -GUESS L. Map-then-execute:
+  tier predicates + red cells, checkpoint, then munge. Steering at fold: retire
+  `cli/CLAUDE.md`'s "front-lifting waits on a licence" sentence (done in this re-cut).
+- **`lane-load-plane-precision`** — charter `30P:the-load-principles` + the handoff's
+  guarded-source charter (`30I:rul-load-semantics-stay-full-fidelity` ·
+  `rul-guarded-source-speech-is-lossy`; greens `p-x-sentinel-value-conjunct`; recovers test
+  `176e0818` from `worktree-sol-adversarial-30M`). Commit-series, in order: (1) point-havoc
+  (`p-x-unknown-source-is-a-point-havoc`) over the v0 domains — function bindings (havoc at
+  the line, last-wins re-binds), cwd ⊤ (later relative `.` unresolvable), shell options ⊤,
+  positionals ⊤, termination May-reach; the unknown `.` stays an emission opener and an
+  execution wall; (2) `${0%/*}` resolved from the AUTHORED book path, never a shell's `$0`
+  (`p-x-load-operand-param-expansion-of-dollar-zero`; the no-slash and root-`/` traps
+  measured); (3) `mech-acquire-and-ship-plain-sh`: a resolvable plain-sh `.` enters the load
+  account as an occurrence, is mirrored beside the plan by the existing placement, and is
+  analyzed NOT AT ALL (the site walls) — first confirm the ~SUSPECT that today the file is
+  not shipped and the plan dies at that line on the host (a failed `.` is fatal, atlas-measured);
+  mirror touch on `cli::artifact` expected minimal, coordinate with the planner lane if not;
+  (4) the computed-`.` parse-tier refusal becomes a post-analysis pre-network fail-fast
+  (`30P:rul-floor-valid-text-never-parse-fails`; easiest spelling); (5) the three
+  closure-custody xfails `p-x-definition-grade-keying` · `p-x-helper-unset-f-across-files` ·
+  `p-x-regional-helper` (`30O:dec-merge-guarded-source-with-closure-pins`, ACKED). Riders:
+  funcenv precision is license-review-tier, forever — checkpoint after the seat map; the
+  slashless-operand lint hint (`. helpers.sh` is a PATH search); `30Pb`'s three-state load
+  identity (POSSIBLE / EXACT / ENGINE-SELECTED — only EXACT re-says or mints custody);
+  `rul-guard-resolves-like-its-mutation` [PROPOSED, pending ratification] must not be
+  violated by any seat touched. NOT included: `p-x-blessed-toplevel-conditional` (waits on
+  `28Q:res-dot-blessing-is-engine-side`); `dirname`-headed operands beyond POSSIBLE (ship +
+  wall). Touch: `analysis/src/funcenv.rs` · `analysis/src/value.rs` · `analysis/src/load.rs` ·
+  `oracle/src/closure.rs` · `cli/src/sourcing.rs` · `cli/src/main.rs` (shared with the planner
+  lane). Size -GUESS L.
 - **`lane-loop-propagation`** — charter `30L:loop-propagation-staged-now (née §7)` +
-  `30N:loop-propagation-prior-art (née §2)` (the `20S` digest) + `30N:chk-loop-types-paper-review`
-  PASSED (six points: member = `RouteInstance` with `iteration: Member(u32)` on the same
-  lowered node; ordered no-dedup; `site N.M` numbering kept; witness keys already carry the
-  member; per-member self-reach via the suppression-set solve; `StatusIterated` untouched).
-  Greens `p-x-loop-population-closes-over-literal-members` — THE end-of-r30 horizon: at
-  round-close the conductor bumps `CURRENT_ROUND` and this pin reddens `xfail_census` unless
-  landed or re-horizoned with a written `why`. Scope (the `30N` caveat, endorsed): census-mint
-  for finite fully-enumerated literal lists + the value plane (`ValueFlow::member_argv` already
-  exists from r21 — `effect.rs` consumes it for `EstablishMembers`; the lane extends it to
-  close the population) + the consumer seam into `plan::region`/`plan::settle`. It may NEVER
-  re-key `ElisionRegion`, witness, or record identity, never drop members from a closed set,
-  and never weaken `StatusIterated`. Touch surface: `analysis/src/value.rs` ·
-  `analysis/src/effect.rs` · `plan/src/region.rs` · `plan/src/settle.rs` · `core/src/region.rs`
-  (read-only by intent). Size -GUESS M. Round-close crosscheck priority (the lane mints a new
-  license-bearing population).
+  `30N:loop-propagation-prior-art (née §2)` + `30N:chk-loop-types-paper-review` PASSED. Greens
+  `p-x-loop-population-closes-over-literal-members` (the end-of-r30 attention-call). Scope:
+  census-mint for finite literal lists + the value plane (`ValueFlow::member_argv` exists from
+  r21) + the consumer seam into `plan::region`/`plan::settle`; never re-key `ElisionRegion`,
+  witness, or record identity; never drop members; `StatusIterated` untouched. IF room remains
+  after it folds: globs as the second population source (`30P`: set-valued, order-unknown, a
+  UNIVERSAL meet over every member order — members may `unset -f`, assign, `cd`, `exit`;
+  no-match is fatal) — otherwise honestly unscheduled. Touch: `analysis/src/value.rs` ·
+  `analysis/src/effect.rs` · `plan/src/region.rs` · `plan/src/settle.rs`. Size -GUESS M.
 - **`lane-influence-carriage`** — charter `306b:influence-carriage-across-entities (née §10)`
-  (seven rulings, `306b:rul-influence-carried-by-entities` through
-  `306b:rul-untracked-is-not-authored`) + `309:rul-spine-preserves-never-stamps` +
-  `30L:rul-shared-influence-never-launders` + ANALYZER-NEEDS `an-host-influence-carriage`.
-  Removes the landed one-grade-per-Spine stamp; every stable semantic object (analyzer
-  conclusions, decisions, licenses, Spine events, `Selection`/`ArtifactSet`, region decisions,
-  routing/output choices) gains a private, immutable, non-optional influence account joined
-  at its own mint; unconverted seams become explicit maximally-influenced `untracked`. Closes
-  `30N:tc-region-decision-influence-is-first-not-joined`. Deadline per the charter: before
-  influence-aware render work or any durable-grade lift reads the current fields — neither is
-  scheduled, so this COULD slip a round without breaking a typed deadline
-  (`ask-influence-carriage-this-round`). Touch surface: `core/src/influence.rs` ·
-  `core/src/spine.rs` · `plan/src/settle.rs` · `plan/src/region.rs` · `plan/src/lib.rs`
-  (`Plan::decided`) · `cli/src/artifact.rs` · `cli/src/world.rs` — today 15 files reference
-  influence across core/analysis/plan/cli/lint; the conversion touches every constructor of a
-  stable object, which is why it is SERIAL and alone. Gate: goldens AND `.whylog`
-  byte-identical (the grade is excluded from the durable by `DurableView`, and
-  `306b:rul-influenced-values-never-gate-engine-control-flow` means a byte-move is a finding).
-  Size -GUESS L; map-then-execute (a census of stable-object constructors first; checkpoint;
-  then conversion).
-- **`lane-fruit-arc`** (`26K:fruit-arc (née §0a)` — NOT kernel; listed because it has been
-  "parallel-anytime, zero code" since 2026-07-28 and keeps being deferred): four render/lint-plane
-  items under the human-typed boundary law ("the moral equivalent of adding a printf").
-  Sonnet-tier, any time, zero conflict with the kernel lanes. Size S.
+  + `309:rul-spine-preserves-never-stamps` + `30L:rul-shared-influence-never-launders` +
+  `an-host-influence-carriage`. Removes the one-grade-per-Spine stamp; every stable semantic
+  object carries a private, immutable, non-optional influence account joined at its mint;
+  unconverted seams are explicit maximally-influenced `untracked`. STAYS IN r30 [TYPED
+  2026-08-22: critical for reasons outside the conductor's horizon; never a droppable lane].
+  Touch: every constructor of a stable object (`core/src/influence.rs` · `core/src/spine.rs` ·
+  `plan/src/settle.rs` · `plan/src/region.rs` · `plan/src/lib.rs` · `cli/src/artifact.rs` ·
+  `cli/src/world.rs`) — SERIAL and alone. Gate: goldens AND `.whylog` byte-identical. Size
+  -GUESS L; map-then-execute (constructor census first).
+- **`lane-fruit-arc`** (`26K:fruit-arc (née §0a)`; non-kernel; Sonnet; anytime; S).
 
-## deferred-by-ruling — design-closed, build deadline-triggered (not r30 unless a trigger fires)
+## deferred-by-ruling — design-closed, build deadline-triggered (not r30)
 
-- `30D` + `30J` — the predict-contract arc: replace `return 2`-as-predict-decline atomically
-  with exact Status + authored DREP channel speech (`30D`, fifteen acceptance obligations, ten
-  builder-tier deferred decisions in `30D:deferred-implementation-decisions (née §10)`), then
-  predict-qualified family vocabulary (`30J`, twelve acceptance worlds). Deadline: the earliest
-  of the stdlib revival, a real survival-authoring trial, or third-party publication
-  (`30J:rul-family-vocabulary-build-is-not-an-r30-blocker`). Rider: `30D`'s Spine projection
-  of prediction-control records is behind `rul-durable-contents-reviewed-before-design`.
-- `28Q:pin-emission-planner-universal` — GLOSS: the human-ruled DIRECTION (2026-08-16) for ONE
-  abstract planner that decides, for every shipped definition, its PLACEMENT (top-lifted ·
-  adjacent · colocated inside the paren) and its NAME (authored · munged), shared by probe and
-  apply behind a policy toggle (probe: verbose-tolerant, no book namespace; apply:
-  idiomatic-first, attention-priced), licensed above by `rul-happy-path-is-a-closed-set`.
-  Today that logic is scattered: the preamble hoist + hash-munge in `plan/src/lib.rs`, the
-  snapshot transplant, the defensive-emission regime. Build unscheduled; its census pins are
-  `p-x-intra-compound-plurality` · `p-x-placement-tuning-pair` (horizon end-of-r31) and
-  `d-alpha-rename-equivalence` (reserved). See `ask-planner-scope-for-front-lift`.
-- `FORFEITS:forfeit-certifier-trip-evicts-elisions` capture (the second, super-dumb
-  mini-analyzer) — REVISIT trigger is trips observed in the field; not r30.
+- `30D` + `30J`, the predict-contract arc (deadline: the stdlib revival, a survival-authoring
+  trial, or third-party publication — `30J:rul-family-vocabulary-build-is-not-an-r30-blocker`).
+- The planner's probe mode (`p-x-intra-compound-plurality`) and alpha-rename
+  (`d-alpha-rename-equivalence`, reserved).
+- `FORFEITS:forfeit-certifier-trip-evicts-elisions` capture (trips observed in the field).
+- `FORFEITS:forfeit-plain-sh-inclusion-analysis` (`30P` tiers 1 and 3: the splice and the
+  single-stream paste) — the obvious entry point of the next language-surface round.
 
 ## human-gated-rulings — what each unblocks
 
-Already on the burndown (unchanged; listed for completeness of the map):
-`unblock-starter-oracle-library` (dialect-reach; gates stdlib ⇒ ssh oracle ⇒
-`28Q:stage-iii-world-scopes`) · `ratify-committee-sparing-fence` (`28Q:stage-ii-closure-custody`'s
-policy half) · `design-report-only-refusal-scope` (`306b:refusal-whole-target-or-narrower
-(née §4c)`; unblocks the forgiving-parser re-home + full report-only rendering —
-`309:stage-306-accounting`'s last third) · `design-atmost-completion-speech`
-(`an-atmost-completion-signal`) · `design-world-scope-surface`
-(`28Q:authored-world-scope-surface`) · `rule-incarnation-continuity-semantics`
-(`28Q:res-incarnation-correlation-door`) · `sweep-conductor-veto-pile` (round-close).
+On the burndown (unchanged): `unblock-starter-oracle-library` · `ratify-committee-sparing-fence`
+· `design-report-only-refusal-scope` · `design-atmost-completion-speech` ·
+`design-world-scope-surface` · `rule-incarnation-continuity-semantics` ·
+`sweep-conductor-veto-pile`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
+ratify `rul-guard-resolves-like-its-mutation` · ack the POSSIBLE/EXACT amendment of
+`rul-partly-dynamic-operand-is-a-set` · rule the relative=controller / absolute=target class
+selector (acked as a lean) · the controller-expectation/host-check pattern's UX and opaque
+review · `ask-authored-pure-predict-may-site-loads` (parked). Non-blocking, from `30N`:
+`30M:ask-wall-narration-ratify-or-mint (née §3)` · `30Ng:attn-render-refusal-feeds-the-spine`
+· `30Nd:tc-plan-owns-its-source` · `30Na:tc-book-level-dot-locals-domain` ·
+`30Na:tc-redirect-refusal-dead-or-owed` · `30Na:stop-spine-mode-is-durable` ·
+`30M:ask-certification-row-shape` · the prelude-floor veto · the prose queue. Prose findings
+for the human: `30P:fnd-squat-warning-contradicts-in-book-lift` (stale warning on the stage-3
+path; the lint wants re-scoping to "a loaded oracle also defines this name").
 
-In `30N:open-items-riding-this-conduct (née §4)` / `TODO-ADDTL`, not on the burndown
-(non-blocking for the build backlog): `30M:ask-wall-narration-ratify-or-mint (née §3)`
-(unblocks `WallFormation` narrative in honest mode; makes
-`30Nc:tc-wall-region-operand-population` non-vacuous; small) ·
-`30Ng:attn-render-refusal-feeds-the-spine` (a sitting with a termination argument; hard to
-unbake; `lane-bundle-front-lift` is explicitly NOT a consumer) · `30Nd:tc-plan-owns-its-source` ·
-`30Na:tc-book-level-dot-locals-domain` (end-of-r31 xfail) · `30Na:tc-redirect-refusal-dead-or-owed` ·
-`30Na:stop-spine-mode-is-durable` (opaque-review gate first) · `30M:ask-certification-row-shape`
-· the prelude-floor veto (`an_unresolvable_prelude_load_floors_the_rest_of_the_prelude`) ·
-the prose queue.
+## out-of-round — nothing here is r30-owed
 
-NEW from this accounting (`ask-dispatch-gating-questions` carries them): the emission-planner
-scoping for the front-lift · whether the typed INERTNESS-IS-DYING direction suffices to build
-`p-x-blessed-toplevel-conditional` · whether `lane-influence-carriage` is this round.
+`28Q:stage-iii-world-scopes` · the r26 reactive/capture + multi-host revival · the
+ANALYZER-NEEDS transport cluster gated on `22H` · book-code splice + paste (forfeited, with
+reds) · globs if the loop lane leaves no room · `notes/30Pc` (the opaque review's
+BUILDER-lane half, unread by the conductor by law: hand it to the lane it names when its
+builder reads `AGENTS.for-builders-only.md`).
 
-## out-of-round — next-round candidates; nothing here is r30-owed
+## register-and-steering-debt — state after this re-cut
 
-`28Q:stage-iii-world-scopes` (after its three human gates) · the r26 reactive/capture +
-multi-host revival (`26B`/`26C`, `260`–`262`; waits behind the `28Q` push — which is now
-essentially this note's build backlog) · the ANALYZER-NEEDS transport/scheduling cluster
-gated on `22H` (`an-dorc-exec` · `an-marker-protocol` · `an-comms-pole` ·
-`an-async-vs-statemachine` · `an-narrowed-plan` cite it verbatim) · book-code load acquisition
-(`30Nh:tc-book-code-loads-are-not-in-the-model`, `30I:pin-complex-book-source-render` — the
-human's worked example needs it; design-shaped, not ruled) · `300:lane-flux-engine-hardening`
-(punted to `TODO-ADDTL`).
-
-## register-and-steering-debt — conductor-owed, non-kernel, cheap
-
-- ANALYZER-NEEDS `an-backing-selfframing` still says "explicit freezing remains owed" —
-  `30Nc:req-backings-freeze-at-probe-boundary` landed it. Rewrite the row.
-- `oracle/CLAUDE.md only-load-inert-sources-contribute` cites
-  `FORFEITS:forfeit-whole-file-inertness-refusal`, which no longer exists in FORFEITS (removed
-  under the 2026-08-21 scope sharpening, ~SUSPECT). Either re-point the cite at
-  `p-x-blessed-toplevel-conditional` or restore a row; dangling cites are the
-  `lint:docids`-invisible class.
-- `cli/CLAUDE.md artifact-forms-derive-from-one-structure`: the front-lift "waits on a
-  licence" sentence — retire at `lane-bundle-front-lift`'s fold.
-- `30Kb` residue unchanged and unscheduled: the honest/non-leaf wall narrative operand (rides
-  `30M:ask-wall-narration-ratify-or-mint`) · `WorldRoundModel::classify_origin`'s
-  impossible-state fallback pending final-round typestate · the effective-reach prose
-  defining case (prose queue).
-- The branch set: `ai/r30-loom-surface-build2` (5 ahead), `review-verify-adv` (3),
-  `review-verify-neutral` (4) are NOT contained in conduct — not mine to `-D`, listed for the
-  human's sweep; `worktree-sol-adversarial-30M` must survive until `lane-load-plane-precision`
-  recovers `176e0818`.
+Done in this re-cut: FORFEITS header (`30P:rul-forfeits-carry-reds`) · the
+`forfeit-book-dynamic-load-analysis` rewrite · `forfeit-plain-sh-inclusion-analysis` ·
+`cli/CLAUDE.md`'s front-lift sentence · `spike/CLAUDE.md`'s floor-routing correction ·
+`Research/README.md`'s r30 pointers. Still owed: ANALYZER-NEEDS `an-backing-selfframing`
+("freezing remains owed" is false since `30Nc:req-backings-freeze-at-probe-boundary`) ·
+`oracle/CLAUDE.md`'s dangling cite `FORFEITS:forfeit-whole-file-inertness-refusal` ·
+`cli/CLAUDE.md`'s harness-contract lines (floor cases: top-level files only; `$0` shape is
+platform-bound) — conductor-tier, at the next CLAUDE.md edit · the `30Kb` residue (wall
+narrative operand · final-round typestate · the effective-reach prose case).
 
 ## the-schedule
 
 ```
-sched-parallel-disjoint-lanes   (three builder worktrees; cli/src/main.rs is the one shared file)
-   lane-bundle-front-lift        [M; checkpoint after the tier-predicate map]
-   lane-load-plane-precision     [M–L; checkpoint after the seat map — license-review-tier]
-   lane-loop-propagation         [M; no checkpoint; any re-keying = hard stop]
-   lane-fruit-arc                [S; Sonnet; anytime; non-kernel]
-   fold order: loop-propagation → front-lift → load-plane-precision (the last because its
-   review is the expensive one and its conflict surface with front-lift is one file; the
-   first because it touches nothing front-lift edits)
+sched-parallel-disjoint-lanes   (cli/src/main.rs is the one shared file)
+   lane-loop-propagation         [M; no checkpoint; re-keying = hard stop]
+   lane-emission-planner         [L; checkpoint after the tier-predicate map]
+   lane-load-plane-precision     [L; checkpoint after the seat map — license-review-tier]
+   lane-fruit-arc                [S; Sonnet; anytime]
+   fold order: loop-propagation → emission-planner → load-plane-precision
 sched-serial-constructor-reshape (alone, over the merged tip)
-   lane-influence-carriage       [L; map-then-execute; byte-identical gate on goldens + whylog]
-sched-round-close-ceremony       (conductor + human)
-   second-half adversarial crosscheck over both tiers (priorities: the self-suppressed solve ·
-   the effective_invalidators node-check · the front-lift tier predicates · the closed loop
-   populations · the influence constructor census) → `307:veto-sweep-pile (née §5)` (human)
-   → `gate:arc` → `CURRENT_ROUND` bump (loop propagation landed or re-horizoned first)
-   → the prose queue → fold to ai/main.
-human-gated, unschedulable from here: `28Q:stage-iii-world-scopes` · report-only rendering ·
-   at-most speech · fence ratification · the predict-contract arc (deadline-triggered).
+   lane-influence-carriage       [L; map-then-execute; byte-identical goldens + whylog]
+sched-round-close-ceremony
+   second-half adversarial crosscheck (priorities: the self-suppressed solve · the
+   effective_invalidators node-check · the hoist predicates · the closed loop populations ·
+   point-havoc's domains · the influence constructor census) → `307:veto-sweep-pile (née §5)`
+   (human) → `gate:arc` → `CURRENT_ROUND` bump → the prose queue → fold to ai/main.
 ```
 
-Why this shape: the three kernel lanes are disjoint in files (the touch-surface map above)
-and disjoint in what they license (artifact layout · load-plane resolution · loop
-populations), so a wrong fold in one cannot masquerade as another's breakage.
-`lane-influence-carriage` reshapes constructors across all of them, so running it beside
-any of them is the conflict machine `30N` named. The crosscheck goes AFTER it so it reviews
-the constructors that lane produced rather than the interim it replaced.
-
-Sizing hints for the human's dispatch: Opus builders for the four kernel lanes;
-`lane-fruit-arc` Sonnet with the no-subagent clamp; every brief carries the Safety block,
-step-zero worktree verify, the `AGENTS.for-builders-only.md` pointer, the comment budget
-split (`//` vs `///`), the scoped-new-case-bless permission, and "reset or
-`git commit -- <pathspec>` after `mise run fmt`" (the `30N` standing corrections).
-
-## ask-dispatch-gating-questions — answer in chat or the burndown
-
-- **`ask-planner-scope-for-front-lift`** (blocks the front-lift brief; recommendation
-  inline): build the `30Ng:bundle-front-lift-ladder` on the EXISTING
-  defensive-emission/hash-munge machinery (lift-and-munge = "munge everything the lifted
-  bundle binds, consistently, in the generated plan"), and leave
-  `28Q:pin-emission-planner-universal` as the named follow-on that absorbs the lane's
-  placement code when it is built. Reason: the human said "sooner than later"; every tier's
-  condition is computable from the definition table + census openers today; the universal
-  planner is a separate direction-ruled refactor whose other consumers are end-of-r31 pins.
-  The RISK flagged, not hidden: this is piecemeal on `28Q` territory, against the standing
-  NO-MORE-PIECEMEAL order — if the human would rather the front-lift BE the planner's first
-  consumer, the lane grows to L and runs serial after the other two.
-- **`ask-merge-closure-pins-into-load-plane-lane`** (blocks that brief): ack or veto
-  `dec-merge-guarded-source-with-closure-pins`. Veto ⇒ the three pins wait for a separate
-  later lane and the lane shrinks to the handoff's `lane-guarded-source-fidelity` charter.
-- **`ask-blessed-toplevel-direction-suffices`** (non-blocking; scopes the load-plane lane):
-  does the typed INERTNESS-IS-DYING direction (`oracle/CLAUDE.md only-load-inert-sources-contribute`,
-  2026-08-16) suffice to build the MAY-grade binding `p-x-blessed-toplevel-conditional`
-  demands, or does it wait on `28Q:res-dot-blessing-is-engine-side`? Conductor read: it
-  waits — "the blessing must supply a real MAY-grade binding, never widen the allow-list" is
-  a funcenv DOMAIN change, winner-shifting, and that pin is the human's. Excluded unless
-  the human says otherwise.
-- **`ask-influence-carriage-this-round`** (blocks the serial tier): no typed deadline fires
-  in r30. Recommendation: this round, because every lane since `30L` has been accreting
-  "interim" grade shapes (`30L:rul-shared-influence-never-launders`'s amendment paragraph;
-  `30Nd` left the slice read-only; the parallel lanes will mint more stable objects under
-  the old shape), and the round-close crosscheck is the cheapest place to review the
-  constructor discipline once. If r30 is to close sooner, this is the lane to drop, not the
-  parallel three.
-
-## what-this-note-does-not-do
-
-It schedules nothing human-gated, re-litigates no ruling, and sizes nothing to a builder
-count — that is the next sitting's product. It does not re-enumerate the ~150 `S`-status
-ANALYZER-NEEDS rows: they are the product backlog, not r30 stages (the scout report that
-lists them sits in the session scratchpad and is deliberately not a durable).
+Brief riders, all lanes (the `30N` standing corrections plus today's): acceptance criteria
+for evidence tests state the CFG shape they exercise · budget inline `//` and `///`
+separately · a case minted to demonstrate a capability must observe it · `mise run fmt`
+stages what it rewrites (reset or `git commit -- <pathspec>`) · scoped NEW-case bless is
+permitted with scope verification, existing goldens never · `gate:full-quiet` ROUTES
+`test:floor` when floor paths are staged, so a floor case must agree on both platforms ·
+`rul-forfeits-carry-reds` · no floor-valid text is a parse violation · builders read
+`AGENTS.for-builders-only.md` first and `notes/30Pc` where it names their lane. Opus for the
+kernel lanes; Sonnet with the no-subagent clamp for the fruit arc.
 
 ## refuted-scout-claims — verified stale, so nobody re-chases them
 
-- "certifier replay mechanism unbuilt" — `analysis/src/certify.rs` carries `SolveReplay`,
-  `ReplayUpdate`, `replay_solve`, `REPLAY_UPDATE_CAP`. Built.
-- "`308:cr-carry-proof-answers-from-the-wrong-definition` unaddressed" — the wrapper/entry/
-  carry lane joined the stage-i conversion at the `308` burndown; `try_carry` takes the
-  resolved body and cannot reach a second definition (`28Q:syn-definition-factored-indices`;
-  `cli/CLAUDE.md rul-wrapper-members-resolve-independently`). Closed.
-- "`30Kb:finding-aggregate-backing-underchecks` routed around, not repaired" — the `30Kb`
-  repair set built per-establish effective freshness (`spike/CLAUDE.md
-  rul-every-erased-establish-is-vouched`, second paragraph; `30N:dec-skip-30Ka-forfeit-row`;
-  `30M:repair-verification (née §8)` verified it). Closed.
-- "minispec root imports a nonexistent module" — `minispec/Minispec.lean` is now deliberately
-  import-free; the lakefile glob builds every unit. Closed.
-- "`dorc-verify promote` missing" — `spike/CLAUDE.md verify-lane-family`: it exists and is the
-  only sanctioned lock-writer. Closed.
-- "`.`-resolves-against-the-sourcing-file deviation awaiting veto" — superseded by the
-  human-ruled cwd parity (`30I:rul-dot-resolves-as-sh`). Closed.
+Certifier replay "unbuilt" (`SolveReplay` exists) · `308:cr-carry-proof-answers-from-the-wrong-definition`
+"unaddressed" (closed at the `308` burndown) · `30Kb:finding-aggregate-backing-underchecks`
+"routed around" (repaired; `30M:repair-verification (née §8)`) · minispec root-import break
+(repaired; the root is import-free by design) · `dorc-verify promote` "missing" (exists) ·
+the `.`-resolves-against-sourcing-file veto (superseded by `30I:rul-dot-resolves-as-sh`).
