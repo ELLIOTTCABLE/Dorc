@@ -591,15 +591,9 @@ cannot see.
   positionals, traps, and termination observable. `30L`'s execution/region identity split has
   room for a `SourceFrame` identity.
 
-## ledger-updates-owed (held until the human's rulings above)
+## ledger-updates-owed
 
-`notes/30O` re-cut (the planner lane absorbing the hoist ladder; the load slices;
-`mech-acquire-and-ship-plain-sh` placed; no "droppable" lanes) · `FORFEITS`: the header gains
-`rul-forfeits-carry-reds`; `forfeit-book-dynamic-load-analysis` rewritten from four idioms to
-the three principles (it cites four renamed pin slugs) and re-pointed at
-`rul-load-head-is-exact-or-havoc` + `rul-static-predict-sites-loads` (the dirname/cd-pwd
-pins' path is now the static-predict tier, not a set); a new
-`forfeit-plain-sh-inclusion-analysis` row naming its reds · `cli/CLAUDE.md` harness-contract lines (no-subdirectory
-fixtures; platform-bound `$0`; the floor lane IS routed) · `spike/CLAUDE.md
-floor-differential-lane-opt-in`'s "off in every default gate" sentence · the two
-stale-prose findings onto the human queue · the prose queue gains the two refusal texts.
+None held by this plan. Register and steering state is `30O:register-and-steering-debt`
+(authoritative). The two refusal texts this plan names (`30Ng:rul-piped-stdout-carries-a-full-plan`;
+the single-stream refusal) reach the prose queue through the ordinary `[unwritten:]` path
+when their codes are minted; `mise run prose:census` is the instrument.

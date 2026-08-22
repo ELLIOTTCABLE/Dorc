@@ -39,9 +39,9 @@ builders before dispatch. Every brief: the Safety block, step-zero worktree veri
 half — unread by Fable-class conductors by law) where it names the lane.
 
 **Human-gated (nothing dispatchable):** the root `_tmp-human-burndown.md` items; the
-`30P:open-rulings` residue (ratify `rul-guard-resolves-like-its-mutation`; ack the
-POSSIBLE/EXACT amendment of `rul-partly-dynamic-operand-is-a-set`; the
-controller-expectation/host-check pattern's UX + opaque review); the prose queue; the
+`30P:open-rulings` residue (`choice-verbatim-or-re-say` under
+`rul-static-predict-sites-loads`; the controller-expectation/host-check pattern's UX + opaque
+review); the prose queue; the
 non-blocking `30N:open-items-riding-this-conduct (née §4)` set (wall-narration mint · the
 render↔spine feedback sitting · `tc-plan-owns-its-source` · book-level dot-locals domain ·
 redirect dead-or-owed · `stop-spine-mode-is-durable` · certification row shape · the
@@ -52,7 +52,13 @@ completion dates — never re-horizon them as if "r31" were a plan; end-of-r30 i
 quiescence and unscheduled means unscheduled. `KNOBS:kBACKFLIPS` is welded: verbatim
 relocation or refuse; the floor is uneven across emission forms. No floor-valid text is a
 parse violation (`30P:rul-floor-valid-text-never-parse-fails`). Every FORFEITS row carries
-reds (`30P:rul-forfeits-carry-reds`). `gate:full-quiet` routes `test:floor` when floor paths
+reds (`30P:rul-forfeits-carry-reds`). A book-load head is EXACT or a point havoc, nothing
+between — no snapshot-suffix sets, no singleton, no runtime-verified candidate
+(`30P:rul-load-head-is-exact-or-havoc`); a command substitution in a load operand resolves
+only through a statically-evaluable stdlib predict (`30P:rul-static-predict-sites-loads`).
+Dorc never interprets what a convergence vouch checks; it only keeps its own movement and
+renaming from producing bindings ordinary sh would not (`30P:rul-guard-resolves-like-its-mutation`).
+`gate:full-quiet` routes `test:floor` when floor paths
 are staged (a floor case must agree on both platform legs). The opaque-review gate is
 builder-initiated (`AGENTS.for-builders-only.md`); no builder triggered it this sitting.
 

@@ -116,10 +116,9 @@ On the burndown (unchanged): `unblock-starter-oracle-library` · `ratify-committ
 · `design-report-only-refusal-scope` · `design-atmost-completion-speech` ·
 `design-world-scope-surface` · `rule-incarnation-continuity-semantics` ·
 `sweep-conductor-veto-pile`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
-ratify `rul-guard-resolves-like-its-mutation` · ack the POSSIBLE/EXACT amendment of
-`rul-partly-dynamic-operand-is-a-set` · rule the relative=controller / absolute=target class
-selector (acked as a lean) · the controller-expectation/host-check pattern's UX and opaque
-review · `ask-authored-pure-predict-may-site-loads` (parked). Non-blocking, from `30N`:
+`choice-verbatim-or-re-say` (under `rul-static-predict-sites-loads`) · rule the
+relative=controller / absolute=target class selector (acked as a lean) · the
+controller-expectation/host-check pattern's UX and opaque review. Non-blocking, from `30N`:
 `30M:ask-wall-narration-ratify-or-mint (née §3)` · `30Ng:attn-render-refusal-feeds-the-spine`
 · `30Nd:tc-plan-owns-its-source` · `30Na:tc-book-level-dot-locals-domain` ·
 `30Na:tc-redirect-refusal-dead-or-owed` · `30Na:stop-spine-mode-is-durable` ·
