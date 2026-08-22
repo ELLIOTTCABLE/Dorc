@@ -14,7 +14,45 @@
 
 ---
 
-## CURRENT STATE (2026-08-21 — THIRD CONDUCT OPEN; THE OWED-WORK ACCOUNTING IS MINTED, PRE-ACK)
+## CURRENT STATE (2026-08-22 — THE EMISSION/INCLUSION SITTING; `plans/30P` MINTED; ONE LANE FOLDED; RESEARCH IN FLIGHT)
+
+**Today's design sitting produced `plans/30P`** (emission planner · stream forms ·
+book-load principles; second pass at `599c1692`, a THIRD pass owed once the prior-art
+round lands) and `KNOBS:kBACKFLIPS` (welded: verbatim-or-refuse; the floor is uneven across
+emission forms — a construct may cost its author single-stream, never support). Human
+rulings this sitting, durable in `30P`: `rul-planner-apply-side-first` ·
+`rul-front-lift-is-the-planners-first-consumer` (the ladder is the planner's first
+consumer; the handoff's `lane-bundle-front-lift` becomes `lane-emission-planner`) ·
+`rul-legality-is-code-motions-objective-is-ours` · the three load principles
+(point-havoc in r30; `${0%/*}` in r30; no tool-modelling — `dirname` stays an OPEN
+count-of-two exception, `ask-dollar-zero-command-substitution-path`) · probe-sourced loads
+NACKED · placement vocabulary `hoist | in-place | sink` (`hoist` is kFLATTEN's own word,
+same behaviour) · `layout` is NOT the planner's name (weft owns layout; it is a subconcern
+of emission) · influence carriage STAYS in r30 (critical, reasons outside the conductor's
+horizon) · loop-propagation is r30 · xfail horizons are ATTENTION-CALLS, not completion
+dates — never re-horizon them as if "r31" were a plan, and spend no LLM effort on them ·
+no harness/tooling work for now (the atlas-divergence resting place is a `30P` footnote).
+**Pending the researcher's return:** `ask-inclusion-in-r30` — human lean: punt book-code
+inclusion behind one major FORFEITS row UNLESS parts are local to lanes already touching
+those files; conductor's split: `mech-acquire-and-ship-plain-sh` (small; load-plane +
+planner regions; ~SUSPECT a plain-sh `.` today ships nothing and the plan dies at that
+line on the host — confirm before deciding) vs `mech-splice-plain-sh-for-analysis` +
+`mech-paste-plain-sh-single-stream` (disjoint; punt). **FOLDED:** lane
+`ai/r30-lane-load-xfails` (xfail re-cut around the three principles · the `xfail`
+call-site scanner fix · 24 `floor30-atlas-*` floor manifests, 18 minted + 4 measured
+DIVERGENCES recorded as header prose + 2 re-minted; findings in `30P:the-atlas`); the
+lane branch is contained and may be `-d`'d once its harness worktree
+(`agent-a5aff50f562a53775`) is gone. **IN FLIGHT:** the graded prior-art round
+(`interactive-research`, Opus, clean context) writing to
+`.claude/research/emission-and-inclusion-prior-art/` in THIS worktree, UNTRACKED until
+folded — do not discard. **HELD EDITS** (all in `30P:ledger-updates-owed`): `30O` re-cut ·
+FORFEITS row rewrite (four renamed pin slugs; the three principles) · `cli/CLAUDE.md`
+harness-contract lines (no-subdirectory fixtures; platform-bound `$0`; the floor lane IS
+routed by `gate:full-quiet` when floor paths are staged — `spike/CLAUDE.md` says
+otherwise) · two stale-prose findings for the human
+(`fnd-squat-warning-contradicts-in-book-lift` · `fnd-computed-dot-is-a-whole-book-refusal`).
+
+## STATE (2026-08-21 — THIRD CONDUCT OPEN; THE OWED-WORK ACCOUNTING IS MINTED, PRE-ACK; superseded above where they overlap)
 
 **The successor conductor's first product is `notes/30O`** — the complete accounting of
 still-owed r30 kernel work measured against every `28Q`/`309`/`30I`/`30L` stage
