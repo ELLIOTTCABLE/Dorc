@@ -23,7 +23,9 @@ limitations, harness gaps, and prose debt are never rows here. NOT a tracker of
 designed-and-planned work that simply is not built yet, and never implementation-level
 nits: those live in the ledgers, the law files, and the xfail census. Entries carry: the RULE (what conservatism, ruled
 where) · FORFEITS (who loses what, when) · CAPTURE (the known path to the value) ·
-BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
+BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger) · REDS (the xfail pins
+and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captured —
+`30P:rul-forfeits-carry-reds`, human-typed 2026-08-22: a row without reds is incomplete).
 
 - **forfeit-two-position-sparing-collide** — RULE (as-built through stage-i;
   `307c:dec-dialect-keeps-a-whole-unit-fold`): the sparing dialect stays ONE
@@ -41,21 +43,36 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
   socially (published claims calibrate against whichever floor ships). REVISIT:
   the mini-model's formalization; first field evidence of plural-idiom books.
-- **forfeit-book-dynamic-load-analysis** — RULE (as-built through r30): book loads
-  outside the static known-value dorc-lang path collapse to an unresolved load or are
-  not acquired; the function environment may therefore wall the whole tail even when
-  sh gives the construct a finite, analyzable meaning. FORFEITS: near-universal book
-  acceptance and downstream elision for four common families: script-relative
-  `$(dirname "$0")` imports, finite source globs, filesystem-existence-guarded ordinary
-  book files, and standardized host-state sources such as `/etc/os-release`. CAPTURE:
-  the r31 book-load-acceptance lane, pinned by
-  `p-x-book-load-{dirname-command-substitution,glob,filesystem-guard,host-state}`:
-  dedicated script-location and host-state analysis targets, snapshot-bounded glob
-  expansion with sh ordering/no-match semantics, and branch-sensitive acquisition of
-  ordinary book code. These widen BOOK analysis only; none grants a new dorc-lang
-  oracle spelling. BACK-OUT: med-high — acquisition, value/CFG propagation, artifact
-  closure, and function-environment recovery must agree before precision can license.
-  REVISIT: r31, before claiming near-universal book acceptance; high priority.
+- **forfeit-book-dynamic-load-analysis** — RULE (`plans/30P:the-load-principles`, three
+  principles, no idioms): a `.` operand resolves only over controller-known inputs
+  through shell semantics (`principle-load-operands-evaluate-over-controller-known-inputs`;
+  `rul-no-tool-modelling-in-the-load-plane`); a partly-dynamic operand is a SET over the
+  snapshot whose singleton is a POSSIBLE load (shipped and walled), never an EXACT one
+  (`rul-partly-dynamic-operand-is-a-set`, as amended by `30Pb`); an unknown source is a
+  point havoc (r30). FORFEITS: elision below any `$(dirname "$0")`-headed or otherwise
+  unknown-headed load until an authored root makes it EXACT; glob loads (order-unknown,
+  universal meet over member effects) until after `lane-loop-propagation`; slashless
+  operands (a PATH search) permanently. CAPTURE: the EXACT witness is authored only (a
+  root variable, `${0%/*}`); `ask-authored-pure-predict-may-site-loads` is the one
+  principled path beyond that, parked. BACK-OUT: low (every rule is additive; the
+  three-state load identity keeps POSSIBLE from laundering into EXACT). REVISIT: the
+  `r31:book-load-acceptance` attention-call. REDS: `p-x-load-operand-dirname-of-dollar-zero`
+  · `p-x-load-operand-cd-pwd-of-dollar-zero` · `p-x-glob-load-acquires-members` ·
+  `p-x-glob-load-members-are-order-unknown` · `p-x-glob-load-no-match-aborts` ·
+  `load31-punted-load-shapes`.
+- **forfeit-plain-sh-inclusion-analysis** — RULE (`30P:principle-book-code-source-is-inclusion`,
+  tiers 1 and 3 punted by human ruling 2026-08-22): a resolvable `.` of an ORDINARY sh file
+  is acquired and shipped beside the plan (`mech-acquire-and-ship-plain-sh`, r30) but its
+  contents are NOT analyzed — no splice, its definitions unknown, its sites unplanned, the
+  `.` site walls — and it is never pasted into a single-stream plan. FORFEITS: every
+  elision and guard inside plain-sh helper files (the most common multi-file book shape),
+  and the single-stream form for such books. CAPTURE: the splice-as-body-called-once with a
+  first-class source frame (`30Pb:fnd-dot-source-remains-an-execution-frame`), then the
+  byte-verbatim paste under the unwelded exclusion set (top-level `return` excluded by
+  ruling; the `floor30-atlas-*` manifests are the evidence base). BACK-OUT: med — the
+  splice touches the CFG and the frame model; nothing in r30 forecloses it. REVISIT: the
+  next language-surface round; this is its obvious entry point. REDS:
+  `p-x-book-code-source-is-inclusion` · `load31-punted-load-shapes`.
 - **forfeit-helper-plurality-withhold** — RULE (as-built under
   `rul-vouch-reaches-own-custody-only`): resolution stays sh's last-wins, and custody is
   now the closure — a file plus everything its top-level `.` lines pull in, transitively

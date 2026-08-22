@@ -283,7 +283,10 @@ and carries the license-contamination map.
 - **r30 (OPEN)** — correctness tooling and Spine landed (`notes/300`–`309`); current
   product work is the static-load/artifact sequence `plans/30I` → `notes/30K` →
   `plans/30L`, with the deferred prediction-contract designs in `notes/30D` and
-  `plans/30J`. Current state and exact next boundary: `LIVING_STATUS.md`.
+  `plans/30J`. The r30 close-out is scheduled in **`notes/30O`** (the owed-work accounting) and designed in
+  **`plans/30P`** (emission planner · stream forms · load principles; its review record
+  `notes/30Pb`, its prior art `.claude/research/emission-and-inclusion-prior-art/`); the
+  second-half conduct ledger is `notes/30N`. Current state: `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the
