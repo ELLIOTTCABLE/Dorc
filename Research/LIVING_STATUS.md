@@ -14,14 +14,14 @@
 
 ---
 
-## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT SCHEDULED, PRE-DISPATCH)
+## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT IN FLIGHT; conduct ledger `notes/30Q`)
 
 **Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
 fold order, the brief riders) and `plans/30P` (THE design for the emission planner, the
 stream forms, and book-load principles — including its review stance on `notes/30Pb` and
 the rulings of the 2026-08-22 sitting). Read both in full before dispatching anything.
 
-**Branch state:** everything is folded on `ai/r30-conduct` (worktree
+**Branch state:** four wave-one lanes are OPEN on harness worktrees (`ai/r30-lane-{loop,planner,load,fruit}`, all branched from `ai/main` at `aabcc2d9`; lane table, sizing rulings, and the fold order in `notes/30Q` §2); everything else is folded on `ai/r30-conduct` (worktree
 `.claude/worktrees/r30-conduct`); `ai/main` is the human's to fast-forward. No builder
 lane is open. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may be
 `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; keep
