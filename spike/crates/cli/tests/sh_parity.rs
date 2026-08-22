@@ -668,9 +668,11 @@ fn the_composed_stage_seat_consults_the_closure() {
 /// SUBSHELL is its own environment, and a pipeline stage already runs in one. That is what makes the
 /// capture available at all rather than a wish; `floor28-subshell-scoped-re-source` measured the
 /// scoping under `posh ∩ dash`, and `floor28-load-order-last-definition-wins` measured the binding
-/// rule the plurality collides with. Whether the planner spells it as explicit per-segment subshells
-/// or as alpha-rename is `28Q:pin-emission-planner-universal`'s call; either satisfies this pin,
-/// which is why the assertion is on the OUTCOME (both stages ship) and not on the emitted shape.
+/// rule the plurality collides with. The planner spells it as ONE placement value (a per-segment
+/// environment), never as a mechanism (`30P:rul-planner-apply-side-first`); alpha-rename is RESERVED
+/// (`d-alpha-rename-equivalence`) and is not a candidate here. The assertion stays on the OUTCOME
+/// (both stages ship) rather than the emitted shape, because the placement value's spelling rides
+/// `27V:rul-output-form-unwelded`.
 ///
 /// FAILS TODAY on stage A, measured by [`a_cross_custody_plural_helper_ships_no_composed_stage`]
 /// above: A's helper resolves by last-wins into B's custody with differing bytes, so its license

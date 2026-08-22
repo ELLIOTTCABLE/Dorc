@@ -182,7 +182,9 @@ pub const PINS: &[Pin] = &[
     Pin {
         name: "p-x-intra-compound-plurality",
         trigger: "`28Q:pin-emission-planner-universal` — per-segment environments for a composed \
-                  compound (explicit per-segment subshells or alpha-rename, whichever it lands)",
+                  compound. `30P:rul-planner-apply-side-first`: this is the planner's PROBE mode, \
+                  and it adds one placement value, never a mechanism; alpha-rename is RESERVED \
+                  (`d-alpha-rename-equivalence`) and is not a candidate spelling here",
         horizon: Horizon::Unscheduled {
             marker: "end-of-r31",
             why: "the emission planner is direction-ruled but unscheduled; this boundary is where \
@@ -192,8 +194,9 @@ pub const PINS: &[Pin] = &[
     },
     Pin {
         name: "p-x-placement-tuning-pair",
-        trigger: "`28Q:pin-emission-planner-universal` — placement chosen per body (top-lift for \
-                  the many-use helper, in-paren colocation for the once-used collider)",
+        trigger: "`28Q:pin-emission-planner-universal` — placement chosen per body \
+                  (`30P:rul-emission-is-the-umbrella-name`'s vocabulary: `hoist` for the many-use \
+                  helper, `sink` for the once-used collider)",
         horizon: Horizon::Unscheduled {
             marker: "end-of-r31",
             why: "the emission planner is direction-ruled but unscheduled; this boundary is where \
