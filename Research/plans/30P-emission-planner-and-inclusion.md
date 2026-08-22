@@ -36,8 +36,14 @@ before touching the network, names the line, and names the form that works
 every shipped compile-to-fit success bought it by constraining its *input* — a codebase
 written for the amalgamation [A-sqlite-mksqlite3c-2026], a closed world with declared externs
 [A-closure-advanced-compilation-2025], an ES-module-only subset with an enumerated bailout
-list [A-webpack-module-concatenation-2026] — and Dorc cannot constrain its input: the book is
-whatever the admin already wrote.
+list [A-webpack-module-concatenation-2026]. Dorc *could* constrain its input — it is merely
+expensive — and the human's posture note [TYPED 2026-08-22] is the one to hold: the loader
+edge is the SOFTEST place in the whole posture, the rock-bottom origin of the
+gradual-enhancement curve, where input admission should be maximal and output value is at its
+minimum — so it is the best place to trade power for acceptance, bounded by two rules: no
+slippery slope, and every carve-out must teach the user where to head next. Many `KNOBS`
+welds are soft barriers of osmosis exactly here; each is relitigable, carefully and
+boundedly, and HUMAN-ONLY.
 
 Book `.` lines decide which definitions exist where, so the planner is only as good as the
 load model. Three principles replace the idiom-by-idiom approach: an unknown source is a
@@ -102,15 +108,16 @@ word: "the lift" is the static lift of oracle text into the engine.)
   `ImportEdit`; never re-derived at render time, never fed back into analysis
   (`the-render-decides-nothing`; `30Ng:attn-render-refusal-feeds-the-spine` is not a
   prerequisite — a hoist under a proven closed set changes no resolution).
-- **`ask-planner-is-the-right-name`** [OPEN, human's] — the field has three words at
-  different joints: linkers say **layout / placement / mapping** for deciding where units go,
-  parameterised by the user's script [B-gnu-ld-linker-scripts-2026] [A-lld-linker-script-2026];
-  **emission** names writing the bytes out, downstream; bundlers say **concatenation / scope
-  hoisting / chunking** with **bailout** for a named refusal. `layout` is reserved here (weft
-  owns text layout, and emission may *apply* layout — the README's `# because:` commentary
-  mode — so layout is a subconcern of emission). Conductor's candidate: **placement planner**
-  (the component owns the decision; "emission" is its output). No linker word covers the
-  naming half; that is mangling plus resolution.
+- **`rul-emission-is-the-umbrella-name`** [TYPED 2026-08-22] — the field has three words at
+  different joints: linkers say **layout / placement / mapping** for deciding where units go
+  [B-gnu-ld-linker-scripts-2026] [A-lld-linker-script-2026]; **emission** names writing the
+  bytes out; bundlers say **concatenation / scope hoisting / chunking** with **bailout** for a
+  named refusal. Dorc's vocabulary, ruled: **`emission`** is the umbrella (the planner, the
+  forms, and the attendant miscellany — "emission planner" stands); **`placement`** is reserved
+  for SEMANTIC arrangement, the sh-parity engine concerns (where a definition may go and under
+  what name); **`layout`** is reserved for textual-emission generics and their engine (weft —
+  e.g. the README's `# because:` commentary mode). No linker word covers the naming half;
+  that is mangling plus resolution.
 
 ## the-stream-forms — verbatim-or-refuse, and the uneven floor
 
@@ -190,8 +197,11 @@ command's output.
   book path it owns, never from a shell's `$0` (the rail measured `$0`'s shape is
   platform-bound; `gap-dollar-zero-shape-is-platform-bound`). Traps measured: `${0%/*}` of a
   no-slash word is the whole word; of a book at `/` it is the empty string, never "cwd".
-- **`rul-partly-dynamic-operand-is-a-set`** [PROPOSED — the prior-art round's finding; a
-  human ruling] — an operand with an unknown head and a literal tail
+- **`rul-partly-dynamic-operand-is-a-set`** [ACKED 2026-08-22, with a fence: set/lattice
+  treatment of dynamic operands is a MUST for real-world shell analysis, and it must never
+  become a boondoggle — Dorc ekes analysis value out of static truth right up to where it
+  becomes intractable or dominates, and never turns that truth into fancy compilation output]
+  — an operand with an unknown head and a literal tail
   (`"$(dirname "$0")/helpers.sh"`, `"$LIB/x.sh"` with `$LIB` unknown) is SET-valued over the
   snapshot: every member whose path ends in the literal tail is a candidate; a singleton
   resolves, with the generated plan's import re-said to it (edit class 1, caveat and all);
@@ -248,8 +258,11 @@ behaves like a function's. Three tiers, one rule, no rewriting:
    deciding `[ -f ./optional.sh ]` TRUE because Dorc ships it — is the four-seat agreement and
    comes after.
 3. **Single-stream emission** — byte-verbatim paste under a closed exclusion set; otherwise
-   refuse with the form named. The set, now RULABLE rather than merely measurable
-   (**`rul-paste-excludes-non-subshell-return`** [PROPOSED; the standard settles it]): the `.`
+   refuse with the form named. **The set's membership is deliberately UNWELDED** [TYPED
+   2026-08-22]: it stays variable and may grow as the spike discovers new scary exceptions in
+   the modelling; what is ruled is that a set exists, that paste happens only inside it, and
+   that top-level `return` is in it (**`rul-paste-excludes-non-subshell-return`** [TYPED "fine
+   by me"; the standard settles it]). As currently understood: the `.`
    is whole-line/top-level/redirect-free (measured — and this condition is doing errexit work
    too: under `set -e` the `||` exemption does not reach inside a sourced file, while a pasted
    `{ …; } || x` WOULD exempt it, so the `||`-operand form must never paste); and the file
@@ -280,8 +293,15 @@ effort on them. What IS r30 (kernel quiescence at its close): point-havoc and `$
 `lane-load-plane-precision` (havoc first; the alias cell read — it did not materialise for
 the sourced-alias-then-book-funcdef shape); `lane-loop-propagation`; the planner lane;
 `lane-influence-carriage` (stays; critical for reasons outside the conductor's horizon).
-Pending the human (`ask-inclusion-in-r30`): the inclusion mechanics above — the human's lean
-is punt-behind-one-FORFEITS-row unless a part is local to lanes already touching those files.
+Inclusion, RULED (`ask-inclusion-in-r30` [ACKED 2026-08-22, "ack on your scheduling and
+plan"]): `mech-acquire-and-ship-plain-sh` is r30, a small slice across the two lanes already
+touching those files, after the runtime-dead suspicion is confirmed; `mech-splice-plain-sh-for-analysis`
+and `mech-paste-plain-sh-single-stream` are punted behind one FORFEITS row
+(`forfeit-plain-sh-inclusion-analysis`). **`rul-forfeits-carry-reds`** [TYPED 2026-08-22]:
+from here on every FORFEITS row carries attendant xfails and/or e2e cases, so what is being
+forfeited is encoded in sh and stays RED — this row already has them
+(`p-x-book-code-source-is-inclusion` · `load31-punted-load-shapes`); the rule goes into
+FORFEITS's header at its next edit.
 
 ## the-atlas — durable floor measurements
 
@@ -343,24 +363,23 @@ the end of r30) · `load31-punted-load-shapes`.
 
 ## open-rulings — complete list for this topic
 
-1. `rul-partly-dynamic-operand-is-a-set` — ratify or decline (the `$0` question's resolution;
-   [PROPOSED ratify: no allowlist, no tool-modelling, sound under the re-say, withholds on
-   plurality; the re-say caveat applies]).
-2. `ask-computed-dot-degrades-to-a-wall` — [PROPOSED yes; ShellCheck precedent].
-3. `ask-inclusion-in-r30` — [PROPOSED: `mech-acquire-and-ship-plain-sh` in r30 as a small
-   slice across the two lanes already touching those files, after confirming the
-   runtime-dead suspicion; the splice and the paste punted behind one FORFEITS row,
-   `forfeit-plain-sh-inclusion-analysis`].
-4. `rul-paste-excludes-non-subshell-return` — [PROPOSED ratify now; the standard decides it].
-5. `ask-planner-is-the-right-name` — [PROPOSED `placement planner`].
-6. `ask-authored-pure-predict-may-site-loads` — parked, unscheduled.
+1. `ask-computed-dot-degrades-to-a-wall` — [PROPOSED yes; ShellCheck precedent]. Still open.
+2. `ask-authored-pure-predict-may-site-loads` — parked, unscheduled.
+3. The single-stream exclusion set's membership beyond `return` — deliberately unwelded;
+   grows during the spike (not a ruling to wait for).
+
+Ruled 2026-08-22 and recorded above: `rul-partly-dynamic-operand-is-a-set` (acked, boondoggle
+fence) · `ask-inclusion-in-r30` (acquire-and-ship in r30; splice + paste forfeited with reds)
+· `rul-paste-excludes-non-subshell-return` (top-level `return` excluded; set unwelded) ·
+`rul-emission-is-the-umbrella-name` (emission ⊃ placement, layout) · `rul-forfeits-carry-reds`.
 
 ## ledger-updates-owed (held until the human's rulings above)
 
-`notes/30O` re-cut (the planner lane absorbing the hoist ladder; the load slices; inclusion
-per item 3; no "droppable" lanes) · `FORFEITS:forfeit-book-dynamic-load-analysis` rewritten
-from four idioms to the three principles (it cites four renamed pin slugs) + the
-inclusion row if item 3 punts · `cli/CLAUDE.md` harness-contract lines (no-subdirectory
+`notes/30O` re-cut (the planner lane absorbing the hoist ladder; the load slices;
+`mech-acquire-and-ship-plain-sh` placed; no "droppable" lanes) · `FORFEITS`: the header gains
+`rul-forfeits-carry-reds`; `forfeit-book-dynamic-load-analysis` rewritten from four idioms to
+the three principles (it cites four renamed pin slugs); a new
+`forfeit-plain-sh-inclusion-analysis` row naming its reds · `cli/CLAUDE.md` harness-contract lines (no-subdirectory
 fixtures; platform-bound `$0`; the floor lane IS routed) · `spike/CLAUDE.md
 floor-differential-lane-opt-in`'s "off in every default gate" sentence · the two
 stale-prose findings onto the human queue · the prose queue gains the two refusal texts.
