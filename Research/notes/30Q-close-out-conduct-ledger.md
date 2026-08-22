@@ -57,7 +57,7 @@
 
 | lane | branch | note | builder shape | status |
 |---|---|---|---|---|
-| `lane-loop-propagation` | `ai/r30-lane-loop` | loop lane report | Opus; checkpoint after census-mint | DISPATCHED 2026-08-22 |
+| `lane-loop-propagation` | `ai/r30-lane-loop` | loop lane report | Opus; checkpoint after census-mint | CHECKPOINT RULED 2026-08-22 (census landed `f095ad43`, pin promoted; seam approved member-major; reds owed first) |
 | `lane-emission-planner` | `ai/r30-lane-planner` | planner lane report | Opus MAP → ruling → EXECUTE | MAP DISPATCHED 2026-08-22 |
 | `lane-load-plane-precision` | `ai/r30-lane-load` | load lane report | Opus MAP → ruling → EXECUTE-A → EXECUTE-B | MAP DISPATCHED 2026-08-22 |
 | `lane-influence-carriage` | — | influence lane report | Opus EXECUTE over the merged tip (scout census banked) | WAITING on the fold |
@@ -70,7 +70,7 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
 
 ## §3 — Rulings owed at checkpoints (open)
 
-- loop seam plan (how member facts reach `decide_one_route` + the suppression solve without re-keying).
+- loop seam: RULED — member-major ordering everywhere observable (record index AND witness); `IterationSlot` keeps the member ordinal; duplicate `(site, fact)` keeps refusing; the count>1 trigger keys on closure; licence reds minted before the seam (`rul-forfeits-carry-reds`).
 - planner map: component shape · tier table · the oracle-constant fallback (in-place vs withhold) · injectivity incl. variables · disclosure enum · the `sink` value.
 - load map: the funcenv domain shape + monotonicity argument · AST decoding boundary · the
   `tc-computed-dot-complaint-shape` UX (human's) · the EXECUTE-A/B commit orders.
