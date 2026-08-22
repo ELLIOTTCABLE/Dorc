@@ -46,6 +46,62 @@ use dorc_syntax::sem;
 use crate::{LeafId, StandIn};
 
 // ===========================================================================
+// Paste/splice-floor damage watch (`30Qe:fruit-emit-hygiene-paste-rules`; `KNOBS:kBOOT`)
+// ===========================================================================
+
+/// The canonical-tty line-discipline's input-line cap, in bytes (Linux `N_TTY_BUF_SIZE` is 4096;
+/// the usable payload one line of pending canonical-mode input holds is 4095 — the terminating
+/// newline the driver itself accounts for takes the last slot). `KNOBS:kBOOT` names literal
+/// human-mediated PASTE into a live tty/ssh session a permanently-supported floor rung (never
+/// probed, inherently outside the attention product); a physical line at or beyond this cap is
+/// silently dropped or split by the tty driver mid-paste, corrupting the artifact the user thinks
+/// they sent — on the driver's terms, never ours.
+pub const CANONICAL_TTY_LINE_CAP_BYTES: usize = 4095;
+
+/// One paste/splice-floor hazard a rendered artifact's physical line can carry (both durable/
+/// paste-facing surfaces, never a source-text property — the hazard is in what a human pastes,
+/// so it is checked on RENDERED bytes).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PasteHygieneHazard {
+    /// The line's byte length reaches [`CANONICAL_TTY_LINE_CAP_BYTES`] (1-indexed `line`, the
+    /// byte length in `len`).
+    LineTooLong { line: usize, len: usize },
+    /// The line begins with `~` — ssh's client-side escape character fires only at
+    /// start-of-line during an interactive paste (`~.` disconnects, `~C` opens a command line,
+    /// …), so a pasted line beginning `~` is consumed by the ssh client and never reaches the
+    /// remote shell (1-indexed `line`).
+    LeadingTilde { line: usize },
+}
+
+/// Scan a fully-rendered artifact for [`PasteHygieneHazard`]s, one entry per offending physical
+/// line, in line order.
+///
+/// Detection ONLY: `two-surfaces` forbids rewriting authored bytes to dodge either hazard (a
+/// too-long or tilde-leading line may be the user's own; splitting or prefixing it would change
+/// what runs), so a non-empty result is a refusal/diagnostic for the CALLER to raise — this
+/// function never rewrites a byte.
+#[must_use]
+pub fn paste_hygiene_hazards(rendered: &str) -> Vec<PasteHygieneHazard> {
+    rendered
+        .split('\n')
+        .enumerate()
+        .filter_map(|(idx, line)| {
+            let line_no = idx + 1;
+            if line.len() >= CANONICAL_TTY_LINE_CAP_BYTES {
+                Some(PasteHygieneHazard::LineTooLong {
+                    line: line_no,
+                    len: line.len(),
+                })
+            } else if line.starts_with('~') {
+                Some(PasteHygieneHazard::LeadingTilde { line: line_no })
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+// ===========================================================================
 // Stand-in rendering — the value-preserving substitution bytes (`19A §5`)
 // ===========================================================================
 

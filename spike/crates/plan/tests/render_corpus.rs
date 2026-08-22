@@ -2211,3 +2211,57 @@ fn twin_guard23_cross_oracle_vouch_scoped() {
         "the wall and the unvouched service site run verbatim:\n{rendered}"
     );
 }
+
+// ===========================================================================
+// `30Qe:fruit-emit-hygiene-paste-rules` — the first splice-floor damage-watch pin (`KNOBS:kBOOT`):
+// a rendered artifact's physical lines carry no canonical-tty-cap or leading-`~` paste hazard.
+// ===========================================================================
+
+/// CFG shape: a single top-level `Simple` leaf with no matching provider (unmodeled) ⇒ no edit,
+/// no oracle, so the leaf ships byte-identical from book to artifact — the shape that proves
+/// `paste_hygiene_hazards` inspects RENDERED bytes, not source text, since here the two coincide.
+/// A single authored physical line at [`dorc_plan::render::CANONICAL_TTY_LINE_CAP_BYTES`] must be
+/// DETECTED, never silently shipped.
+#[test]
+fn paste_hygiene_flags_a_line_at_the_canonical_tty_cap() {
+    let src = format!(
+        "printf '%s' {}\n",
+        "a".repeat(dorc_plan::render::CANONICAL_TTY_LINE_CAP_BYTES)
+    );
+    let (rendered, _plan) = render_for(&src, &[]);
+    let hazards = dorc_plan::render::paste_hygiene_hazards(&rendered);
+    assert!(
+        hazards
+            .iter()
+            .any(|h| matches!(h, dorc_plan::render::PasteHygieneHazard::LineTooLong { .. })),
+        "a line at the canonical-tty cap must be flagged, not silently shipped: {rendered}"
+    );
+}
+
+/// CFG shape: a single top-level `Simple` leaf whose command word is a bare `~`-prefixed word
+/// (POSIX tilde-expansion parses it; no matching login name leaves it unmodified) — unmodeled, no
+/// edit, ships byte-identical. `paste_hygiene_hazards` must DETECT the leading `~` (the
+/// SOL/ssh-serial escape a live paste would hand to the ssh client, never the remote shell).
+#[test]
+fn paste_hygiene_flags_a_line_beginning_with_tilde() {
+    let (rendered, _plan) = render_for("~doesnotexist arg\n", &[]);
+    let hazards = dorc_plan::render::paste_hygiene_hazards(&rendered);
+    assert!(
+        hazards.iter().any(|h| matches!(
+            h,
+            dorc_plan::render::PasteHygieneHazard::LeadingTilde { .. }
+        )),
+        "a line beginning `~` must be flagged: {rendered}"
+    );
+}
+
+/// Negative control (feature-off): an ordinary short, non-tilde render carries NO paste-hygiene
+/// hazard — without this, the two tests above could pass on a detector that fires on everything.
+#[test]
+fn paste_hygiene_is_silent_on_an_ordinary_render() {
+    let (rendered, _plan) = render_for("apt-get install -y nginx\n", &[]);
+    assert!(
+        dorc_plan::render::paste_hygiene_hazards(&rendered).is_empty(),
+        "an ordinary short render must carry no paste-hygiene hazard: {rendered}"
+    );
+}
