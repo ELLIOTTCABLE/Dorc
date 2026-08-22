@@ -1,0 +1,4 @@
+# The cell `hork tune web` names, reported as converged: the target is that the site ELIDES.
+# site 2 is the third book leaf (the two loads are 0 and 1); if a future numbering moves it, the
+# promotion re-blesses this file along with the transcript.
+site 2 effect=holds

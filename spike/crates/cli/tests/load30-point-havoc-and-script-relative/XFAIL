@@ -1,0 +1,3 @@
+XFAIL: the unknown source havocs the whole tail, and `${0%/*}` does not resolve, so nothing is
+described and nothing elides. Greens with `p-x-unknown-source-is-a-point-havoc` +
+`p-x-load-operand-param-expansion-of-dollar-zero` (both end-of-r30).
