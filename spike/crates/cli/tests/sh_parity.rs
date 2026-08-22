@@ -245,6 +245,50 @@ fn a_described_host_conditional_definition_is_may_bound() {
     });
 }
 
+/// A standardized host-state source is a data read, not an unknown function-definition vector.
+/// Books commonly source `/etc/os-release`; accepting that shell idiom while havocing every later
+/// function binding would preserve execution but discard unrelated oracle value across the tail.
+#[test]
+fn a_standardized_host_state_source_preserves_later_book_bindings() {
+    const ROLE: &str = "hork__is_converged";
+    let book = ". /etc/os-release\n\
+                hork__is_converged() { hork status \"$1\"; }\n\
+                hork tune web\n";
+    let mut interner = dorc_core::Interner::default();
+    let parsed = dorc_syntax::parse(book).value;
+    let cfg = dorc_analysis::cfg::build(&parsed).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+    let defs = dorc_cli::world::definition_table(&snapshot_of(&[], &[], "book.sh", book), &parsed);
+    let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+    let env = dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane);
+    let hork = interner.intern("hork");
+    let tune = interner.intern("tune");
+    let site = cfg
+        .iter()
+        .find_map(|(id, node)| {
+            if node.kind != dorc_analysis::cfg::CfgNodeKind::Command {
+                return None;
+            }
+            let argv = value.argv_values(id);
+            matches!(
+                argv.as_slice(),
+                [dorc_analysis::value::ValueOf::Literal(a), dorc_analysis::value::ValueOf::Literal(b), ..]
+                    if *a == hork && *b == tune
+            )
+            .then_some(id)
+        })
+        .expect("the book's hork tune site is present");
+    let live =
+        dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs).definition_before(site, ROLE);
+
+    internal_tooling::xfail::xfail_until("p-x-book-load-host-state", || {
+        assert!(
+            matches!(live, dorc_core::LiveDefinition::Live(_)),
+            "the os-release data read must not hide the later explicit verdict definition: {live:?}"
+        );
+    });
+}
+
 // ---------------------------------------------------------------------------
 // The intra-compound plurality measurement (`30A` §2 `p-x-intra-compound-plurality`, first half).
 

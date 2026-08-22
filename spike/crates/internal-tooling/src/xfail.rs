@@ -239,6 +239,38 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
+        name: "p-x-book-load-dirname-command-substitution",
+        trigger: "the BOOK-LOAD-ACCEPTANCE lane: treat `$(dirname \"$0\")` in a book `.` operand \
+                  as the script-location analysis target it is, resolve the dependency from the \
+                  authored book path, and preserve ordinary dot-sourcing semantics",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-book-load-filesystem-guard",
+        trigger: "the BOOK-LOAD-ACCEPTANCE lane: acquire ordinary unmarked book code behind a \
+                  filesystem-existence guard as a possible source, model both branches, and limit \
+                  binding uncertainty to names the sourced file can affect",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-book-load-glob",
+        trigger: "the BOOK-LOAD-ACCEPTANCE lane: expand a finite book-local source glob against \
+                  the authored snapshot with sh ordering and no-match semantics, then model each \
+                  loop iteration as an ordered load occurrence",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-book-load-host-state",
+        trigger: "the BOOK-LOAD-ACCEPTANCE lane: model standardized host-state source targets such \
+                  as `/etc/os-release` as data-bearing reads, rather than allowing them to havoc \
+                  unrelated function bindings",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-loop-population-closes-over-literal-members",
         trigger: "the LOOP-PROPAGATION lane (`30L` §7): a literal `for` list propagated into a \
                   closed, ordered, non-deduplicated member population, so a syntactically singular \

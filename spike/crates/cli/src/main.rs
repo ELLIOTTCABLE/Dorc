@@ -4141,6 +4141,13 @@ mod acquisition_tests {
             .collect()
     }
 
+    fn ordered_names(paths: &[String]) -> Vec<String> {
+        paths
+            .iter()
+            .filter_map(|path| path.rsplit('/').next().map(str::to_owned))
+            .collect()
+    }
+
     /// THE ACQUISITION, end to end (`30I:force-root-value-flow` · `30I:force-guarded-fallback`):
     /// a book sets an ordinary root, sources one entrypoint through it, and the entrypoint's
     /// include guard names a dependency through that same root — which nothing could have resolved
@@ -4214,6 +4221,160 @@ mod acquisition_tests {
             &BTreeSet::new(),
         );
         assert!(paths.is_empty() && reached.is_empty());
+    }
+
+    /// Book libraries overwhelmingly locate sibling files from the authored script, commonly as
+    /// `$(dirname "$0")/helpers.sh`. This is dynamic syntax but not open-ended discovery: the book
+    /// path is controller-owned input, so the source-location expression must become a dedicated
+    /// analysis target rather than poisoning every later binding.
+    #[test]
+    fn a_dirname_command_substitution_sites_a_book_dependency() {
+        let package = Package::new(
+            "book-dirname-load",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
+        let book = ". \"$(dirname \"$0\")/helpers.dorc.sh\"\nbook_helper\n";
+        let (paths, srcs, reached) = super::read_book_sourced(
+            &package.cwd(),
+            &book_path,
+            book,
+            Vec::new(),
+            Vec::new(),
+            &BTreeSet::new(),
+        );
+        let found = ordered_names(&paths);
+        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            package.cwd(),
+            paths.clone(),
+            srcs,
+            &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
+            &book_path,
+            book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        let helper = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions)
+            .definition_before(cfg.exit(), "book_helper");
+
+        internal_tooling::xfail::xfail_until("p-x-book-load-dirname-command-substitution", || {
+            assert_eq!(found, ["helpers.dorc.sh"]);
+            assert_eq!(reached, [0].into());
+            assert!(matches!(helper, LiveDefinition::Live(_)));
+        });
+    }
+
+    /// A finite glob over authored book-local files is an ordered family of ordinary `.` acts, not
+    /// an excuse to reject the whole book. The future analysis owes shell pathname ordering and
+    /// no-match behavior; this pin fixes the common successful two-member case first.
+    #[test]
+    fn a_book_load_glob_acquires_each_matching_dependency_in_order() {
+        let package = Package::new(
+            "book-glob-load",
+            &[
+                ("a.dorc.sh", format!("{MARKER}a_helper() {{ :; }}\n")),
+                ("b.dorc.sh", format!("{MARKER}b_helper() {{ :; }}\n")),
+            ],
+        );
+        let book = "for plugin in ./*.dorc.sh; do\n   . \"$plugin\"\ndone\na_helper\nb_helper\n";
+        let (paths, srcs, reached) = super::read_book_sourced(
+            &package.cwd(),
+            "book.sh",
+            book,
+            Vec::new(),
+            Vec::new(),
+            &BTreeSet::new(),
+        );
+        let found = ordered_names(&paths);
+        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            package.cwd(),
+            paths.clone(),
+            srcs,
+            &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
+            "book.sh",
+            book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+        let loaded: Vec<String> = env
+            .loads()
+            .occurrences()
+            .iter()
+            .filter(|occurrence| {
+                matches!(occurrence.sourcer, dorc_analysis::load::LoadSourcer::Book)
+            })
+            .filter_map(|occurrence| occurrence.target.rsplit('/').next().map(str::to_owned))
+            .collect();
+        let a = live.definition_before(cfg.exit(), "a_helper");
+        let b = live.definition_before(cfg.exit(), "b_helper");
+
+        internal_tooling::xfail::xfail_until("p-x-book-load-glob", || {
+            assert_eq!(found, ["a.dorc.sh", "b.dorc.sh"]);
+            assert_eq!(reached, [0, 1].into());
+            assert_eq!(loaded, ["a.dorc.sh", "b.dorc.sh"]);
+            assert!(matches!(a, LiveDefinition::Live(_)));
+            assert!(matches!(b, LiveDefinition::Live(_)));
+        });
+    }
+
+    /// Optional ordinary book code stays ordinary book code: the filesystem guard chooses whether
+    /// it loads, while Dorc conservatively analyzes both paths. Requiring the target to sign the
+    /// dorc-lang contract would turn near-universal book acceptance into oracle ceremony.
+    #[test]
+    fn a_filesystem_guarded_ordinary_book_source_is_acquired() {
+        let package = Package::new(
+            "book-guarded-load",
+            &[("optional.sh", "optional_helper() { :; }\n".to_owned())],
+        );
+        let book = "if [ -r ./optional.sh ]; then\n   . ./optional.sh\n   optional_helper\nfi\nhork__is_converged() { :; }\nhork tune web\n";
+        let (paths, srcs, reached) = super::read_book_sourced(
+            &package.cwd(),
+            "book.sh",
+            book,
+            Vec::new(),
+            Vec::new(),
+            &BTreeSet::new(),
+        );
+        let found = ordered_names(&paths);
+        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            package.cwd(),
+            paths.clone(),
+            srcs,
+            &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
+            "book.sh",
+            book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+        let optional = live.definition_before(cfg.exit(), "optional_helper");
+        let hork = live.definition_before(cfg.exit(), "hork__is_converged");
+
+        internal_tooling::xfail::xfail_until("p-x-book-load-filesystem-guard", || {
+            assert_eq!(found, ["optional.sh"]);
+            assert_eq!(reached, [0].into());
+            assert_eq!(optional, LiveDefinition::Withheld);
+            assert!(matches!(hork, LiveDefinition::Live(_)));
+        });
     }
 
     /// An invocation-named oracle stays AMBIENT even though the acquisition runs over it: only

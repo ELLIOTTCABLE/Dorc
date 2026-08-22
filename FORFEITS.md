@@ -41,6 +41,21 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger).
   plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
   socially (published claims calibrate against whichever floor ships). REVISIT:
   the mini-model's formalization; first field evidence of plural-idiom books.
+- **forfeit-book-dynamic-load-analysis** — RULE (as-built through r30): book loads
+  outside the static known-value dorc-lang path collapse to an unresolved load or are
+  not acquired; the function environment may therefore wall the whole tail even when
+  sh gives the construct a finite, analyzable meaning. FORFEITS: near-universal book
+  acceptance and downstream elision for four common families: script-relative
+  `$(dirname "$0")` imports, finite source globs, filesystem-existence-guarded ordinary
+  book files, and standardized host-state sources such as `/etc/os-release`. CAPTURE:
+  the r31 book-load-acceptance lane, pinned by
+  `p-x-book-load-{dirname-command-substitution,glob,filesystem-guard,host-state}`:
+  dedicated script-location and host-state analysis targets, snapshot-bounded glob
+  expansion with sh ordering/no-match semantics, and branch-sensitive acquisition of
+  ordinary book code. These widen BOOK analysis only; none grants a new dorc-lang
+  oracle spelling. BACK-OUT: med-high — acquisition, value/CFG propagation, artifact
+  closure, and function-environment recovery must agree before precision can license.
+  REVISIT: r31, before claiming near-universal book acceptance; high priority.
 - **forfeit-helper-plurality-withhold** — RULE (as-built under
   `rul-vouch-reaches-own-custody-only`): resolution stays sh's last-wins, and custody is
   now the closure — a file plus everything its top-level `.` lines pull in, transitively
