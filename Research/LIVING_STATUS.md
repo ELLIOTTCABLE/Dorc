@@ -22,8 +22,7 @@ stream forms, and book-load principles — including its review stance on `notes
 the rulings of the 2026-08-22 sitting). Read both in full before dispatching anything.
 
 **Branch state:** four wave-one lanes are OPEN on harness worktrees (`ai/r30-lane-{loop,planner,load,fruit}`, all branched from `ai/main` at `aabcc2d9`; lane table, sizing rulings, and the fold order in `notes/30Q` §2); everything else is folded on `ai/r30-conduct` (worktree
-`.claude/worktrees/r30-conduct`); `ai/main` is the human's to fast-forward. No builder
-lane is open. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may be
+`.claude/worktrees/r30-conduct`); `ai/main` is the human's to fast-forward. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may be
 `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; keep
 `worktree-sol-adversarial-30M` until `lane-load-plane-precision` recovers test `176e0818`.
 Three stale review branches (`ai/r30-loom-surface-build2`, `review-verify-adv`,
