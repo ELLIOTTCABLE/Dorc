@@ -251,9 +251,9 @@ command's output.
      [ $# -eq 1 ] || { printf 'predicts none unmodeled-arity\n' >>"${DREP_V1:-/dev/null}"; return 1; }
      case $1 in
      */ | //*) printf 'predicts none unmodeled-shape\n' >>"${DREP_V1:-/dev/null}"; return 1 ;;
-     /[!/]*)  printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"; printf '/\n' ;;
-     */*)     printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"; printf '%s\n' "${1%/*}" ;;
-     *)       printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"; printf '.\n' ;;
+     /[!/]*)  printf '/\n';             printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}" ;;
+     */*)     printf '%s\n' "${1%/*}";  printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}" ;;
+     *)       printf '.\n';             printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}" ;;
      esac
   }
   ```
@@ -261,7 +261,9 @@ command's output.
   (DREP spelling per `30D:rul-predict-status-keeps-every-value` /
   `rul-predict-channel-defaults`: no status is a decline; Stdout is declined by default and
   must be POSITIVELY claimed for the load plane to consume it — a predict with unclaimed
-  stdout yields ⊤ ⇒ havoc; edge arms STRAWMAN.) A predict is STATICALLY EVALUABLE when its
+  stdout yields ⊤ ⇒ havoc; the positive stream record is the COMPLETION witness and
+  therefore TRAILS the modelled bytes, `30D:reject-partial-stream-without-completion`; edge
+  arms STRAWMAN.) A predict is STATICALLY EVALUABLE when its
   reached body lies wholly in the pure decidable set and its argv is controller-known (the
   symbolic `$0` counts); the engine evaluates it at plan time per `$0` spelling — the static
   half of the split the kind-owner roles already have (`disturbance_reaches_only`'s static
