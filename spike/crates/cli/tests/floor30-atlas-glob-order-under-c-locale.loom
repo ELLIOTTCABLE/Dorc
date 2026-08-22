@@ -1,0 +1,93 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-glob-order-under-c-locale — QUESTION: in what order does `for f in ./g_*.sh` visit
+# uppercase, lowercase, underscore and digit names, and do the two floor binaries agree?
+#
+# Why the inclusion design needs it: `p-x-glob-load-acquires-members` treats a source glob as an
+# ORDERED family of `.` acts, and `p-x-glob-load-members-are-order-unknown` says the controller may
+# not pick a winner when two members define one name. Both rest on what pathname expansion really
+# sorts by. This measures the deterministic half.
+#
+# HARNESS LIMIT (`gap-locale-dependent-glob-order`): POSIX sorts by the CURRENT LOCALE's collating
+# sequence, and the floor rail pins `LC_ALL=C` for determinism. A second locale is not portably
+# obtainable from inside a case — a manifest measured under whatever UTF-8 locale the minting
+# machine happened to have installed would not be reproducible ground truth, which is the one thing
+# `expected.emitted` exists to be. So this case measures C collation only, and the cross-locale half
+# of the question stays open. That is not a reason to weaken the order-unknown pin: it is the reason
+# for it.
+#
+# The member names avoid differing only by case: this corpus is authored on a case-insensitive
+# filesystem, where `A.sh` and `a.sh` cannot both exist.
+for f in ./g_*.sh; do
+   printf 'member=[%s]\n' "$f"
+done
+printf 'book-tail\n'
+
+-- g_Az.sh --
+: uppercase-early
+
+-- g_aq.sh --
+: lowercase
+
+-- g_Bz.sh --
+: uppercase-late
+
+-- g__c.sh --
+: underscore
+
+-- g_1.sh --
+: digit
+
+-- expected.emitted --
+member=[./g_1.sh]
+member=[./g_Az.sh]
+member=[./g_Bz.sh]
+member=[./g__c.sh]
+member=[./g_aq.sh]
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=50766b52cca124bbcf031885b1e0fd8f8c70b5606d577924168c4bd52fceae8f sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-glob-order-under-c-locale — QUESTION: in what order does `for f in ./g_*.sh` visit
+# uppercase, lowercase, underscore and digit names, and do the two floor binaries agree?
+#
+# Why the inclusion design needs it: `p-x-glob-load-acquires-members` treats a source glob as an
+# ORDERED family of `.` acts, and `p-x-glob-load-members-are-order-unknown` says the controller may
+# not pick a winner when two members define one name. Both rest on what pathname expansion really
+# sorts by. This measures the deterministic half.
+#
+# HARNESS LIMIT (`gap-locale-dependent-glob-order`): POSIX sorts by the CURRENT LOCALE's collating
+# sequence, and the floor rail pins `LC_ALL=C` for determinism. A second locale is not portably
+# obtainable from inside a case — a manifest measured under whatever UTF-8 locale the minting
+# machine happened to have installed would not be reproducible ground truth, which is the one thing
+# `expected.emitted` exists to be. So this case measures C collation only, and the cross-locale half
+# of the question stays open. That is not a reason to weaken the order-unknown pin: it is the reason
+# for it.
+#
+# The member names avoid differing only by case: this corpus is authored on a case-insensitive
+# filesystem, where `A.sh` and `a.sh` cannot both exist.
+for f in ./g_*.sh; do
+   printf 'member=[%s]\n' "$f"
+done
+printf 'book-tail\n'

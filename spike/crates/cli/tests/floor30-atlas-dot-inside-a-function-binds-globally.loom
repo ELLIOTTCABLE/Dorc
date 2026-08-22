@@ -1,0 +1,108 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-dot-inside-a-function-binds-globally — QUESTION (added mechanic): a `.` performed
+# INSIDE a function body — are the sourced file's function definitions and variable assignments
+# still live after that function returns?
+#
+# Why the inclusion design needs it, and why it is not on the conductor's list:
+# `principle-book-code-source-is-inclusion` says a resolvable `.` is spliced in "at the load site
+# under whatever branch it sits in", and a function body is the branch shape the model has least to
+# say about. `floor30-deep-stack-binds-at-invocation` measures late BINDING through a chain of
+# already-loaded functions; nothing measures whether the LOAD ITSELF, performed a frame down, reaches
+# the caller. If it does not, an artifact that moved a load into a generated loader function would
+# install nothing — which is the same trap `fnd-loader-function-errexit-diverges` caught from the
+# errexit side, asked from the binding side.
+loader() {
+   printf 'loader-before-dot\n'
+   . ./payload.sh
+   printf 'loader-after-dot: fn=[%s]\n' "$(command -v payload_say >/dev/null 2>&1 && printf known || printf unknown)"
+}
+if command -v payload_say >/dev/null 2>&1; then
+   printf 'book: before-loader fn=[known]\n'
+else
+   printf 'book: before-loader fn=[unknown]\n'
+fi
+loader
+if command -v payload_say >/dev/null 2>&1; then
+   printf 'book: after-loader fn=[known]\n'
+else
+   printf 'book: after-loader fn=[unknown]\n'
+fi
+printf 'book: after-loader var=[%s]\n' "${payload_mark-unset}"
+payload_say
+printf 'book-tail\n'
+
+-- payload.sh --
+payload_mark=installed
+payload_say() { printf 'payload-ran\n' ;}
+
+-- expected.emitted --
+book: before-loader fn=[unknown]
+loader-before-dot
+loader-after-dot: fn=[known]
+book: after-loader fn=[known]
+book: after-loader var=[installed]
+payload-ran
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e317c5d9e4040bf6d94c4d8b8c3d2b135f0213dac6466cad7aba824ebfbd30f4 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+# site:7 unresolvable-no-probe
+# site:8 unresolvable-no-probe
+# site:9 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-dot-inside-a-function-binds-globally — QUESTION (added mechanic): a `.` performed
+# INSIDE a function body — are the sourced file's function definitions and variable assignments
+# still live after that function returns?
+#
+# Why the inclusion design needs it, and why it is not on the conductor's list:
+# `principle-book-code-source-is-inclusion` says a resolvable `.` is spliced in "at the load site
+# under whatever branch it sits in", and a function body is the branch shape the model has least to
+# say about. `floor30-deep-stack-binds-at-invocation` measures late BINDING through a chain of
+# already-loaded functions; nothing measures whether the LOAD ITSELF, performed a frame down, reaches
+# the caller. If it does not, an artifact that moved a load into a generated loader function would
+# install nothing — which is the same trap `fnd-loader-function-errexit-diverges` caught from the
+# errexit side, asked from the binding side.
+loader() {
+   printf 'loader-before-dot\n'
+   . ./payload.sh
+   printf 'loader-after-dot: fn=[%s]\n' "$(command -v payload_say >/dev/null 2>&1 && printf known || printf unknown)"
+}
+if command -v payload_say >/dev/null 2>&1; then
+   printf 'book: before-loader fn=[known]\n'
+else
+   printf 'book: before-loader fn=[unknown]\n'
+fi
+loader
+if command -v payload_say >/dev/null 2>&1; then
+   printf 'book: after-loader fn=[known]\n'
+else
+   printf 'book: after-loader fn=[unknown]\n'
+fi
+printf 'book: after-loader var=[%s]\n' "${payload_mark-unset}"
+payload_say
+printf 'book-tail\n'

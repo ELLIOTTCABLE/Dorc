@@ -1,0 +1,71 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-alias-then-funcdef-name — QUESTION: a sourced file does `alias hork__is_converged=true`;
+# the caller then DEFINES `hork__is_converged` as a function and calls it. Does alias expansion even
+# occur in a non-interactive shell? If it does, does the alias eat the function's own definition
+# line, or does the definition win at the call?
+#
+# Why the inclusion design needs it: `alias` is already a recognized definition VECTOR
+# (`28R:rul-defensive-mode-definition-vectors`), which is a statement that Dorc cannot enumerate what
+# it binds — but the engine has never measured what a real shell does when the alias and a funcdef
+# of the same name meet. Alias expansion happens at PARSE time and a funcdef's name sits in command
+# position, so the hazard is that `hork__is_converged() { … }` is parsed as `true() { … }` and the
+# author's verdict body binds a name nobody calls. That is a wrong-elision route, and it is the one
+# hazard the inclusion design deliberately does not split into cases — so it gets measured.
+. ./aliaser.sh
+printf 'book: after-alias-file\n'
+hork__is_converged() { printf 'function-body-ran\n' ;}
+hork__is_converged
+printf 'book-tail\n'
+
+-- aliaser.sh --
+printf 'file-defining-alias\n'
+alias hork__is_converged=true
+
+-- expected.emitted --
+file-defining-alias
+book: after-alias-file
+function-body-ran
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=fbf036e228372790cfca938725d5b5747c343b90dc59a30beff1c752dd49200e sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-alias-then-funcdef-name — QUESTION: a sourced file does `alias hork__is_converged=true`;
+# the caller then DEFINES `hork__is_converged` as a function and calls it. Does alias expansion even
+# occur in a non-interactive shell? If it does, does the alias eat the function's own definition
+# line, or does the definition win at the call?
+#
+# Why the inclusion design needs it: `alias` is already a recognized definition VECTOR
+# (`28R:rul-defensive-mode-definition-vectors`), which is a statement that Dorc cannot enumerate what
+# it binds — but the engine has never measured what a real shell does when the alias and a funcdef
+# of the same name meet. Alias expansion happens at PARSE time and a funcdef's name sits in command
+# position, so the hazard is that `hork__is_converged() { … }` is parsed as `true() { … }` and the
+# author's verdict body binds a name nobody calls. That is a wrong-elision route, and it is the one
+# hazard the inclusion design deliberately does not split into cases — so it gets measured.
+. ./aliaser.sh
+printf 'book: after-alias-file\n'
+hork__is_converged() { printf 'function-body-ran\n' ;}
+hork__is_converged
+printf 'book-tail\n'

@@ -1,0 +1,57 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-toplevel-return-in-sourced-file — QUESTION: a `return 3` at the top level of a
+# sourced file — what status does the `.` carry, does the rest of the FILE run, and does the caller
+# continue?
+#
+# Why the inclusion design needs it: a top-level `return` is the one construct that makes textual
+# inlining unsound outright (`30I` §7.2 already excludes it from the paste set on those grounds).
+# The exclusion is currently ARGUED; this measures the behaviour it rests on.
+. ./returner.sh
+printf 'book: dot-status=[%s]\n' "$?"
+printf 'book-tail\n'
+
+-- returner.sh --
+printf 'file-before-return\n'
+return 3
+printf 'file-after-return\n'
+
+-- expected.emitted --
+file-before-return
+book: dot-status=[3]
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ec0373cac694d115ef92bb95a9154b88fb8c7682cd27d159a83a2aff09bef8ed sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-toplevel-return-in-sourced-file — QUESTION: a `return 3` at the top level of a
+# sourced file — what status does the `.` carry, does the rest of the FILE run, and does the caller
+# continue?
+#
+# Why the inclusion design needs it: a top-level `return` is the one construct that makes textual
+# inlining unsound outright (`30I` §7.2 already excludes it from the paste set on those grounds).
+# The exclusion is currently ARGUED; this measures the behaviour it rests on.
+. ./returner.sh
+printf 'book: dot-status=[%s]\n' "$?"
+printf 'book-tail\n'

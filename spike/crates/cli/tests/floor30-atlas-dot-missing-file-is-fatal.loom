@@ -1,0 +1,69 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-dot-missing-file-is-fatal — QUESTION: with errexit OFF, `. ./nope.sh` naming a file
+# that does not exist. `.` is a POSIX SPECIAL builtin, whose failure is specified to end a
+# non-interactive shell — so does the script continue? And is `. ./nope.sh || true` catchable, or
+# still fatal?
+#
+# Why the inclusion design needs it: this is the runtime consequence of an unmatched source glob
+# (`p-x-glob-load-no-match-aborts`), of a dependency the artifact failed to place, and of any load
+# whose operand resolved to a name the target does not have. If a failed `.` is unconditionally
+# fatal, then everything after such a load is unreachable rather than merely unbound, and the
+# engine's model of the tail is wrong in the more dangerous direction.
+#
+# Cells in rising order of destructiveness: guarded first, so its answer survives whatever the bare
+# one does. Neither operand names a file this case ships.
+printf 'book-before\n'
+. ./nope.sh || printf 'book: guarded caught status=[%s]\n' "$?"
+printf 'book-after-guarded\n'
+. ./alsonope.sh
+printf 'book-after-bare\n'
+
+-- expected.emitted --
+book-before
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=aad30a70eb95573a4029fb91b749368304d970c6c3fe8d9e08a9125a6ff0ebda sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-dot-missing-file-is-fatal — QUESTION: with errexit OFF, `. ./nope.sh` naming a file
+# that does not exist. `.` is a POSIX SPECIAL builtin, whose failure is specified to end a
+# non-interactive shell — so does the script continue? And is `. ./nope.sh || true` catchable, or
+# still fatal?
+#
+# Why the inclusion design needs it: this is the runtime consequence of an unmatched source glob
+# (`p-x-glob-load-no-match-aborts`), of a dependency the artifact failed to place, and of any load
+# whose operand resolved to a name the target does not have. If a failed `.` is unconditionally
+# fatal, then everything after such a load is unreachable rather than merely unbound, and the
+# engine's model of the tail is wrong in the more dangerous direction.
+#
+# Cells in rising order of destructiveness: guarded first, so its answer survives whatever the bare
+# one does. Neither operand names a file this case ships.
+printf 'book-before\n'
+. ./nope.sh || printf 'book: guarded caught status=[%s]\n' "$?"
+printf 'book-after-guarded\n'
+. ./alsonope.sh
+printf 'book-after-bare\n'

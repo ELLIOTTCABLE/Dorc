@@ -1,0 +1,56 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-toplevel-return-in-main-script — QUESTION: `return 3` at the top level of the BOOK
+# itself, with no `.` anywhere — is it an error, does the shell exit, and does anything after it run?
+#
+# Why the inclusion design needs it: this is the other side of the paste-exclusion set. A book may be
+# `. `-sourced by something else or run directly, and `rul-main-book-is-not-a-pre-source` says Dorc
+# does not give the book dot-file scope. What a real shell does with a stray top-level `return` in a
+# directly-run script decides whether that construct can be tolerated or must refuse.
+#
+# HARNESS LIMIT: gate-9 captures stdout only — the exit STATUS and the shell's stderr message are not
+# recorded. What the manifest can say is whether the tail line survives.
+printf 'book-before-return\n'
+return 3
+printf 'book-after-return: status=[%s]\n' "$?"
+
+-- expected.emitted --
+book-before-return
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=60df7e03dabfa4810c25d18f022f8328229b6c0b2b39811d9d9c2d0839230372 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-toplevel-return-in-main-script — QUESTION: `return 3` at the top level of the BOOK
+# itself, with no `.` anywhere — is it an error, does the shell exit, and does anything after it run?
+#
+# Why the inclusion design needs it: this is the other side of the paste-exclusion set. A book may be
+# `. `-sourced by something else or run directly, and `rul-main-book-is-not-a-pre-source` says Dorc
+# does not give the book dot-file scope. What a real shell does with a stray top-level `return` in a
+# directly-run script decides whether that construct can be tolerated or must refuse.
+#
+# HARNESS LIMIT: gate-9 captures stdout only — the exit STATUS and the shell's stderr message are not
+# recorded. What the manifest can say is whether the tail line survives.
+printf 'book-before-return\n'
+return 3
+printf 'book-after-return: status=[%s]\n' "$?"

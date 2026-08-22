@@ -1,0 +1,71 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-exit-in-sourced-file — QUESTION: does `exit 4` at the top level of a sourced file end
+# the WHOLE script, and is that status recoverable by whoever sourced it?
+#
+# Why the inclusion design needs it: an `exit` inside an absorbed dependency ends the generated plan
+# mid-way, which is the loudest possible divergence between "the book ran" and "the artifact ran".
+# Two cells, and the order is deliberate: a CONTAINED one first, where the `.` sits inside
+# `( … ) || …` so the subshell's death is catchable and its status printable — the technique
+# `floor30-dot-loader-function-errexit` uses — then an UNCONTAINED one, whose whole answer is
+# whether `book-tail` survives.
+printf 'book-before\n'
+( . ./exiter.sh; printf 'sub-after-dot\n' ) || printf 'book: contained-exit status=[%s]\n' "$?"
+printf 'book-between\n'
+. ./exiter.sh
+printf 'book-tail\n'
+
+-- exiter.sh --
+printf 'file-before-exit\n'
+exit 4
+printf 'file-after-exit\n'
+
+-- expected.emitted --
+book-before
+file-before-exit
+book: contained-exit status=[4]
+book-between
+file-before-exit
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=cf86623361bd83f3cda56087ea630f7118564e20d20ebd0689e8460e5a83b1ab sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-exit-in-sourced-file — QUESTION: does `exit 4` at the top level of a sourced file end
+# the WHOLE script, and is that status recoverable by whoever sourced it?
+#
+# Why the inclusion design needs it: an `exit` inside an absorbed dependency ends the generated plan
+# mid-way, which is the loudest possible divergence between "the book ran" and "the artifact ran".
+# Two cells, and the order is deliberate: a CONTAINED one first, where the `.` sits inside
+# `( … ) || …` so the subshell's death is catchable and its status printable — the technique
+# `floor30-dot-loader-function-errexit` uses — then an UNCONTAINED one, whose whole answer is
+# whether `book-tail` survives.
+printf 'book-before\n'
+( . ./exiter.sh; printf 'sub-after-dot\n' ) || printf 'book: contained-exit status=[%s]\n' "$?"
+printf 'book-between\n'
+. ./exiter.sh
+printf 'book-tail\n'

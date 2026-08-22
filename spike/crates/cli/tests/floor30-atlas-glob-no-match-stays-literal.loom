@@ -1,0 +1,66 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-glob-no-match-stays-literal — QUESTION: a `for` list whose glob matches nothing. Does
+# the loop run once with the PATTERN as the value, or not at all?
+#
+# Why the inclusion design needs it: `p-x-glob-load-no-match-aborts` asserts that an unmatched source
+# glob makes the shell source the literal pattern — a filename no directory entry answers — and that
+# the engine must model an EVALUATED operand naming an unloadable file rather than an operand it
+# could not read. That target is only correct if the word really does survive unexpanded, which is
+# what this measures. What happens NEXT, when `.` is handed that name, is
+# `floor30-atlas-dot-missing-file-is-fatal`.
+count=0
+for f in ./nomatch_*.sh; do
+   count=$((count + 1))
+   printf 'member=[%s]\n' "$f"
+done
+printf 'iterations=[%s]\n' "$count"
+printf 'book-tail\n'
+
+-- expected.emitted --
+member=[./nomatch_*.sh]
+iterations=[1]
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=21d111d4f8469a5690dba02b1c271405dd210726dfb80f669b82d07a2aee1b7e sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-glob-no-match-stays-literal — QUESTION: a `for` list whose glob matches nothing. Does
+# the loop run once with the PATTERN as the value, or not at all?
+#
+# Why the inclusion design needs it: `p-x-glob-load-no-match-aborts` asserts that an unmatched source
+# glob makes the shell source the literal pattern — a filename no directory entry answers — and that
+# the engine must model an EVALUATED operand naming an unloadable file rather than an operand it
+# could not read. That target is only correct if the word really does survive unexpanded, which is
+# what this measures. What happens NEXT, when `.` is handed that name, is
+# `floor30-atlas-dot-missing-file-is-fatal`.
+count=0
+for f in ./nomatch_*.sh; do
+   count=$((count + 1))
+   printf 'member=[%s]\n' "$f"
+done
+printf 'iterations=[%s]\n' "$count"
+printf 'book-tail\n'

@@ -1,0 +1,72 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-return-from-sourced-file-inside-function — QUESTION: a function body does
+# `. ./inner.sh`, and inner.sh does a top-level `return 1`. Does the `return` end the FILE (leaving
+# the function to carry on) or end the FUNCTION? What status does the function's caller see?
+#
+# Why the inclusion design needs it: `.` inside a function is the shape a bundled dependency takes
+# the moment a load sits anywhere but the book's own top level, and `return` is ambiguous exactly
+# there — POSIX gives it one meaning inside a function and another inside a dot-script, and this is
+# where the two are nested.
+outer() {
+   printf 'fn-before-dot\n'
+   . ./inner.sh
+   printf 'fn-after-dot status=[%s]\n' "$?"
+   return 7
+}
+outer
+printf 'book: outer status=[%s]\n' "$?"
+printf 'book-tail\n'
+
+-- inner.sh --
+printf 'inner-before-return\n'
+return 1
+printf 'inner-after-return\n'
+
+-- expected.emitted --
+fn-before-dot
+inner-before-return
+fn-after-dot status=[1]
+book: outer status=[7]
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9d09fb39ae6243580f461a5cfb4c86c5b2dc3d83d4d019cfb349e656f5e82575 sites=0 @@dorc@@\n'
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-return-from-sourced-file-inside-function — QUESTION: a function body does
+# `. ./inner.sh`, and inner.sh does a top-level `return 1`. Does the `return` end the FILE (leaving
+# the function to carry on) or end the FUNCTION? What status does the function's caller see?
+#
+# Why the inclusion design needs it: `.` inside a function is the shape a bundled dependency takes
+# the moment a load sits anywhere but the book's own top level, and `return` is ambiguous exactly
+# there — POSIX gives it one meaning inside a function and another inside a dot-script, and this is
+# where the two are nested.
+outer() {
+   printf 'fn-before-dot\n'
+   . ./inner.sh
+   printf 'fn-after-dot status=[%s]\n' "$?"
+   return 7
+}
+outer
+printf 'book: outer status=[%s]\n' "$?"
+printf 'book-tail\n'

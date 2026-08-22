@@ -1,0 +1,80 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-function-defined-inside-function-is-global — QUESTION: `outer` defines `inner` in its
+# body. Is `inner` callable after `outer` has RUN — and is it known before that?
+#
+# Why the inclusion design needs it: the function environment is positional
+# (`visibility-is-full-positional`), and a nested definition is the one shape whose binding POINT is
+# not where its text sits. A dependency whose entrypoint installs its helpers from inside a loader
+# function binds nothing until that function is CALLED, so an engine that reads a nested funcdef as
+# a definition at its own line would license a body no execution has installed yet.
+known() {
+   if command -v inner >/dev/null 2>&1; then
+      printf '%s: inner-known\n' "$1"
+   else
+      printf '%s: inner-unknown\n' "$1"
+   fi
+}
+outer() {
+   inner() { printf 'inner-ran\n' ;}
+   printf 'outer-ran\n'
+}
+known before-outer
+outer
+known after-outer
+inner
+printf 'book-tail\n'
+
+-- expected.emitted --
+before-outer: inner-unknown
+outer-ran
+after-outer: inner-known
+inner-ran
+book-tail
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=553074f2ba6d7686eccdf6dc9d45df378d3b09099d65bfe882e6d210d7075799 sites=0 @@dorc@@\n'
+# site:4 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-function-defined-inside-function-is-global — QUESTION: `outer` defines `inner` in its
+# body. Is `inner` callable after `outer` has RUN — and is it known before that?
+#
+# Why the inclusion design needs it: the function environment is positional
+# (`visibility-is-full-positional`), and a nested definition is the one shape whose binding POINT is
+# not where its text sits. A dependency whose entrypoint installs its helpers from inside a loader
+# function binds nothing until that function is CALLED, so an engine that reads a nested funcdef as
+# a definition at its own line would license a body no execution has installed yet.
+known() {
+   if command -v inner >/dev/null 2>&1; then
+      printf '%s: inner-known\n' "$1"
+   else
+      printf '%s: inner-unknown\n' "$1"
+   fi
+}
+outer() {
+   inner() { printf 'inner-ran\n' ;}
+   printf 'outer-ran\n'
+}
+known before-outer
+outer
+known after-outer
+inner
+printf 'book-tail\n'

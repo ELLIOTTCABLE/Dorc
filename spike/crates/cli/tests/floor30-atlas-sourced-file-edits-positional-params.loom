@@ -1,0 +1,66 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- book.sh --
+#!/bin/sh
+# floor30-atlas-sourced-file-edits-positional-params — QUESTION: does a `shift` or a `set --`
+# performed at the top level of a sourced file survive the `.` and change the CALLER's `$1`/`$#`?
+#
+# Why the inclusion design needs it: `principle-book-code-source-is-inclusion` says a resolvable `.`
+# of ordinary sh is textual inclusion at the load site. If the shells really do share one positional
+# list across the `.`, then inclusion is EXACT on this axis and a spliced paste behaves identically —
+# and if they do not, an inlining lowering silently changes what every later `"$@"` in the book means.
+# The manifest is the answer; nothing here predicts it.
+set -- alpha beta gamma
+printf 'book-before: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+. ./shifter.sh
+printf 'book-after: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+
+-- shifter.sh --
+printf 'file-entry: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+shift
+printf 'file-after-shift: 1=[%s] count=[%s]\n' "$1" "$#"
+set -- x y
+printf 'file-after-set: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+
+-- expected.emitted --
+book-before: 1=[alpha] 2=[beta] count=[3]
+file-entry: 1=[alpha] 2=[beta] count=[3]
+file-after-shift: 1=[beta] count=[2]
+file-after-set: 1=[x] 2=[y] count=[2]
+book-after: 1=[x] 2=[y] count=[2]
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5dc7e0ea76ac6ee2a86e82d8e05607cd8efaa1cd296e5694b5d696d739ac4d13 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# floor30-atlas-sourced-file-edits-positional-params — QUESTION: does a `shift` or a `set --`
+# performed at the top level of a sourced file survive the `.` and change the CALLER's `$1`/`$#`?
+#
+# Why the inclusion design needs it: `principle-book-code-source-is-inclusion` says a resolvable `.`
+# of ordinary sh is textual inclusion at the load site. If the shells really do share one positional
+# list across the `.`, then inclusion is EXACT on this axis and a spliced paste behaves identically —
+# and if they do not, an inlining lowering silently changes what every later `"$@"` in the book means.
+# The manifest is the answer; nothing here predicts it.
+set -- alpha beta gamma
+printf 'book-before: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
+. ./shifter.sh
+printf 'book-after: 1=[%s] 2=[%s] count=[%s]\n' "$1" "$2" "$#"
