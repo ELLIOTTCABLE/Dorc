@@ -212,17 +212,17 @@ Re-keyed seats:
 - **`core::DefinitionCustody` internals** — bitem3 designed this seam explicitly
   ("the re-key is a change to this type's internals and nothing else"): custody becomes
   closure-membership; consumers still only compare. One type, zero consumer churn.
-- **The committee fence** (`28M` §4, ruled): live ROLE members *at a frame* spanning more
-  than one closure ⇒ sparing-inert. Note the fence becomes frame-relative under P1 — a
-  family can be single-closure inside a subshell region and plural at ambient — which is
-  the correct reading of "live members". Helpers never create plurality (custody flows to
-  the closure; they are not role members).
+- **The sparing dialect** is per closure and read at the backing's frame
+  (`30J:rul-dialect-is-the-live-speakers-at-the-backing-frame`); no family is ever
+  plural at a frame, so no committee fence exists. Helpers never create plurality
+  (custody flows to the closure; they are not role members).
 - **Kind-owner single-occupancy**: one CLOSURE mints a kind's vocabulary members;
-  `28M` §11's registration lean ("registration-by-owner-use over the owner's closure")
-  gets its substrate for free if ruled. `price-multi-file-package` softens to nothing —
-  one entry sourcing its parts is one speaker; the bitem6-proven two-file helper-package
-  shape becomes the canonical packaging story. `price-patch-author` is UNCHANGED
-  (member-granular patching across closures is still committee; honesty preserved).
+  `30J` §6.5's registration question ("registration-by-owner-use over the owner's
+  closure") gets its substrate for free if ruled. `price-multi-file-package` softens
+  to nothing — one entry sourcing its parts is one speaker; the bitem6-proven two-file
+  helper-package shape becomes the canonical packaging story. A patch-author's
+  member-granular additions across closures read in the stdlib speaker's vocabulary
+  like any stranger's (`30J` §6.5).
 - **Diamond loading**: byte-identical files dedup (built) — sound TODAY only because
   every closure is a singleton (no oracle-side `.` exists); once sourcing lands, dedup
   re-keys to RESOLUTION-identity (bytes × what the file's own sourcing resolved to —
@@ -470,11 +470,10 @@ eventual hook; nothing more).
 ## §6 — What does not change (the preserved-invariant wall)
 
 All license-plane law: `silence-licenses-nothing` · `inv-top-reject` · the
-monologue/custody discipline (`28P` bitem3's types are consumed, not altered — until the
-fence sitting rules the two-author composite) · `kFAIL` phase-keying · the sparing
-algebra (its set-meet SUBSTRATE — universal meet, non-emptiness, ⊤-discipline; the
-dialect-resolution rule is §9 `pin-two-position-sparing` territory, deliberately
-soft), ternary compare, set-lifting-universal-meet · `never-derive-separation` ·
+monologue/custody discipline (`28P` bitem3's types are consumed, not altered) · `kFAIL`
+phase-keying · the sparing algebra (its set-meet SUBSTRATE — universal meet,
+non-emptiness, ⊤-discipline; the dialect-resolution rule is `30J` §12), ternary
+compare, set-lifting-universal-meet · `never-derive-separation` ·
 `rul-only-oracle-bytes-ship` / `rul-argv-flows-bytes-do-not` · the `27C` consent
 machinery (dial, vouches, entry-siting, composition algebra) · `two-plane-aid-law` ·
 hermeticity-precondition · `rul-strawman-formats-no-compat` (every identity type minted
@@ -528,7 +527,8 @@ conservatively remains a possible mutator downstream.
   ones; a certification `Refused` on the new shapes is a finding, never churn. New core
   state structures follow the owned-facade law (the `300` facade lane) so the strict
   core stays checkable and translatable; minispec (`notes/301`) tracks any stage that
-  moves compare/dialect/backing semantics (the two-position rule lands there first).
+  moves compare/dialect/backing semantics (the per-speaker dialect, `30J` §12, lands
+  there first).
 
 ## §8 — Staging (each stage independently green; gates named)
 
@@ -608,9 +608,9 @@ own byte-identity gate.
   removes the superseded ambient-dependency refusal and completes ONE
   load-occurrence account with separate
   possible-load / exact-speaker / narrative projections. Then the loading lane STOPS
-  for `stage-effective-world-reach`; no bundle code begins first. The closure-keyed
-  fence permanence and committee policy remain their separately-ruled consumers — green
-  infrastructure never asserts policy.
+  for `stage-effective-world-reach`; no bundle code begins first. The per-speaker
+  dialect (`30J` §12) is a separately-scheduled consumer — green infrastructure never
+  asserts policy.
 - **stage-effective-world-reach** (r30, work order **`notes/30K`**, as-built record
   **`notes/30Ka`**, architectural review **`notes/30Kb`**; HUMAN-DIRECTED, BUILT and
   both-platform green): the split
@@ -684,10 +684,9 @@ longer parked (implementation target `30K`) · `tc-inert-mocks-rail-is-dash-shap
    converge downstream? Human head-state: sometimes yes (equivalent-by-construction),
    sometimes the hard divorce is exactly right; wants its own sitting; nothing here
    builds toward either pole.
-5. The fence's permanence and the sparing-tier composite questions — the
-   committee-corner sitting, parallel, unscheduled. (The license-tier half,
-   `tc-split-family-elides-on-two-authors`, is RESOLVED by §4's verdict-primacy ruling.)
-6. `28M` §11's keep/lift + registration verdicts — parallel, human's.
+6. Cross-family registration (`30J` §6.5) — whether two families may deliberately
+   co-refer; kind-owner design, unscheduled. (Keep/lift and the committee corner are
+   `30J`; the license-tier half was RESOLVED by §4's verdict-primacy ruling.)
 8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
    unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
    it.
@@ -706,13 +705,6 @@ longer parked (implementation target `30K`) · `tc-inert-mocks-rail-is-dash-shap
 11. `pin-ssh-entry-shape` — `"$@"`-verbatim-only vs a carved ssh shape (`27C`'s
     punted in-guest-preamble decision reopened, or ssh carved out; `24T` is the
     prior) — rides the §10 dig's agenda (§3).
-12. `pin-two-position-sparing` — which position's closure/dialect governs the
-    claim@p × backing@q meet once liveness goes frame-relative. PROPOSED conservative
-    line on file (`28R`): collide unless both positions agree on the backing family's
-    closure and dialect. ACKED [extremely soft, human 2026-08-13] as the build FLOOR —
-    a deliberate value-forfeit, logged
-    (`FORFEITS.md:forfeit-two-position-sparing-collide`); the capture path stays live
-    and the wariness is the point. Lands first in `28T`'s sparing mini-model.
 14. `pin-emission-planner-universal` [human-ruled DIRECTION, 2026-08-16; build
     unscheduled] — ONE abstract emission planner representing the sh truths
     (definition visibility · death-at-paren · errexit-exemption of the `||`-left),
