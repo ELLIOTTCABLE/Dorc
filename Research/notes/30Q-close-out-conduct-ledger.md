@@ -188,10 +188,22 @@ legs were REFUSED by preflight (`1.9 GiB free … needs 4.0/14.0 GiB`), WSL legs
 Inventory: 161.6 GiB in eighteen worktrees on this leg, fourteen of them folded `agent-*`
 lanes at 7–10 GiB each. The conductor reclaimed ONLY its own worktree's cache (`mise run clean`
 in `r30-conduct`, 16.3 GiB) and re-resumed both builders for their Windows legs; everything
-else is the human's sweep (`doctor-inventories-never-reaps`). Steering correction owed:
-`spike/CLAUDE.md preflight-bounds-before-spend` says "run the Windows leg first"; two builders
-measured the opposite (the WSL leg's cache release is what let Windows recover) — re-say at
-the next steering edit.
+else is the human's sweep (`doctor-inventories-never-reaps`). ROOT CAUSE
+(`fnd-wsl-preflight-reads-the-vhdx-not-the-host`, measured): the WSL leg's preflight reads
+the sparse `ext4.vhdx`'s ADVERTISED capacity (`/dev/sdd` 1007G, "789G free") while that file
+sits on `C:` at 182 GB and grows with every cold WSL build and never shrinks on its own; it
+holds ~24 `dorc-wsl-target-*` caches at ~6 GB (nine orphans from reaped worktrees, ten more
+from folded r30 lanes). Fix owed (a Sonnet, on the human's word): under `WSL_DISTRO_NAME`
+bound on the MIN of the cache volume and the host volume holding the vhdx; `doctor` reports
+the vhdx's on-host size. Recovery is the human's: delete the orphan caches inside WSL, then
+`wsl --shutdown` + compact the vhdx. CONDUCTOR MISTAKE, recorded: the two briefs' "WSL leg
+first" rider was BACKWARDS — `preflight-bounds-before-spend`'s Windows-first law stands (the
+RAM refusal a builder then hit was its own WSL build's `vmmemWSL`); the rider was written off
+one builder's anecdote against a measured law. Recurrence guard: a steering law is overridden
+only by a measurement that names the law, never by a report that happens to contradict it.
+The law's parenthetical "(no `.wslconfig`, no auto-reclaim)" IS stale — `~/.wslconfig`
+(2026-08-18) sets `memory=20GB` + `autoMemoryReclaim=gradual`, which is why the refusal
+drained in ~5 min; re-say as "gradual reclaim, minutes" at the next steering edit.
 
 **`lane-loop-residue`** — `ai/r30-lane-loop-residue` @ `c5f63a72`, six commits: the XFAIL case
 `loop30-cell-disjoint-siblings-would-replace` (target-tense `expected.ran`/`expected.out`
@@ -255,6 +267,9 @@ re-derived:
   cross-crate pointer, ANALYZER-NEEDS `S`→`B` with the residue stated, NO FORFEITS row, the
   `rul-rc-reaches-genkill-only-through-decisions` "expected out of the influence round" sentence
   to re-say) — APPLIED AT THE EXECUTE FOLD, when the design has firmed.
+- Gate: `ai/r30-lane-influence-map` @ `ba0feb05` GREEN on both legs (the red cells' xfail
+  semantics measured on both platforms); its worktree cache returned. `lane-loop-residue`
+  @ `c5f63a72` GREEN on both legs, cache returned.
 - EXECUTE shape: ONE Opus builder over the green merged tip, rows R1–R9 in the MAP's order
   (R2 before R3 is load-bearing), R10 only with the ruling; gate = goldens + the nine
   loom-embedded `.whylog` transcripts byte-identical + `bless:dry` clean + `spine:baseline`
