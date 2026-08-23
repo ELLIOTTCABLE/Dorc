@@ -1853,9 +1853,13 @@ pub fn build_vouches_from_sets(
                 .iter()
                 .filter_map(|site| match site.class {
                     SkipClass::EstablishProbeAmbient(fact)
-                    | SkipClass::EstablishProbeWritten(fact) => {
-                        Some((leaf_idx, site.node, fact, false, member_argv(value, site)))
-                    }
+                    | SkipClass::EstablishProbeWritten(fact) => Some((
+                        leaf_idx,
+                        site.node,
+                        fact,
+                        false,
+                        argv_of_inline_site(value, site),
+                    )),
                     _ => None,
                 })
                 .collect(),
@@ -4095,7 +4099,7 @@ fn push_member_checks(
 /// single argv for a member would resolve ⊤ and withhold — silently, and differently at each. The
 /// node's single entry binds `$1` from the loop variable's JOIN, so it is ⊤ at exactly the operands
 /// the call varies, which is the whole population the region licence needs.
-fn member_argv(value: &ValueFlow, site: &InlineSite) -> Vec<ValueOf> {
+fn argv_of_inline_site(value: &ValueFlow, site: &InlineSite) -> Vec<ValueOf> {
     site.member
         .and_then(|member| value.spliced_member_argv(site.node)?.get(member as usize))
         .cloned()
@@ -4151,7 +4155,7 @@ fn push_inline_checks(
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
         let member = Some(u32::try_from(idx).unwrap_or(u32::MAX));
-        let body_argv = member_argv(value, body);
+        let body_argv = argv_of_inline_site(value, body);
         match &body.class {
             SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
                 let shipped = if all_vouched {
