@@ -5,7 +5,6 @@ why: 27R section 8 delta-named-sources-selectable: each source describes itself 
 owns:
   - lint-source-unmodeled-inventory
   - lint-source-verdict-body
-  - lint-source-loop-brace-range
   - lint-source-oracle-validate
   - lint-source-oracle-declined-inventory
   - lint-source-shellcheck

@@ -3,23 +3,23 @@ code: for-loop-brace-range-runs-once
 when-fires: a `for` loop's entire in-list is one bash/zsh brace-RANGE word (`{start..end}`, optionally `{start..end..step}`) -- POSIX sh (dash, posh) never expands braces, so the word stays one literal string and the loop body runs exactly ONCE, with the loop variable bound to that literal text, never to each number in the range. lint/source_portability.rs LoopBraceRange, rung-file, pure syntax over the parsed AST.
 why: 30Qe:fruit-loop-does-not-loop-lint. A real, repeated corpus footgun (k3s and the Kubernetes install docs both ship this exact shape) -- silent under `sh script.sh`: the loop still runs, exactly once, with no error at all. `{range}` carries the offending word verbatim.
 ---
--- book.sh --
+-- script.sh --
 for i in {1..10}; do
    echo "$i"
 done
 
 -- replay --
-$ dorc lint book.sh
+$ dorc lint script.sh
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 (run):
   - info [checkbashisms:lint-tool-absent] Dorc did not find `checkbashisms` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
   - info [shellcheck:lint-tool-absent] Dorc did not find `shellcheck` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
 
-book.sh:
+script.sh:
   1:10 warn [loop-brace-range:for-loop-brace-range-runs-once] [unwritten: for-loop-brace-range-runs-once]
   error[predict-out-of-dialect]: empty command
-        [ book.sh:1:7
+        [ script.sh:1:7
      1 | for i in {1..10}; do
        |       \/
 
