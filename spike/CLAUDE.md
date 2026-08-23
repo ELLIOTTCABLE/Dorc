@@ -411,6 +411,16 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   "run". Malformed, truncated, ambiguous, or stale authority material must never
   round up to either verdict. Type the distinction; test it in every
   phase × user × oracle-reliability cell.
+- **rul-refusal-takes-the-whole-target-down** (`309` §3; human-typed 2026-08-23) — a
+  `Refused` intake takes the WHOLE target down for this invocation: once its planned
+  collection has finished, no apply-able plan and no further on-host activity until a
+  user pull. The intake floor is STOP, never Guard — a hard rule; what is malleable is only
+  which conditions sit at the floor (`306c` §3b). Analysis still runs to completion (every
+  fact ⊤) into REPORT projections. The invariant that carries the weight: every OPERATION
+  endpoint — each plan mode, any future non-debugging Spine consumer — takes the one
+  license-to-plan witness (`plan::PlanAuthority`, minted only from a non-refused admission
+  or an intakeless run); debug/explain/aid are the only bypass. Never route refusal through
+  the certifier trip (its floor is a guard-only PLAN).
 - **rul-fixture-identity-never-production** — fixed identifiers, fixed nonces, and
   FNV-style digests are deterministic spike drift-detectors and satisfy fixture and
   harness surfaces ONLY. They must be structurally unable to reach a production

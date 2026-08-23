@@ -552,6 +552,25 @@ dropped) · ANALYZER-NEEDS `an-selector-dialect` · `spike/CLAUDE.md sparing-alg
 `analysis/CLAUDE.md` · `oracle/CLAUDE.md` · `30O` · `Research/README` · the root burndown item
 removed.
 
+## §5i — `design-report-only-refusal-scope` ruled (2026-08-23; same sitting; direct on `ai/main`)
+
+**TYPED:** `309:rul-refusal-takes-the-whole-target-down` — scope of refusal = scope of
+destruction: the target's planned collection finishes, then no apply-able plan and no further
+on-host activity this invocation until a user pull; analysis continues to completion into report
+projections; every OPERATION endpoint (each plan mode; any future non-debugging Spine consumer)
+takes the one `PlanAuthority` witness, debug/explain/aid the only bypass. HARD RULE: the intake
+floor is STOP, never raised to Guard — the malleable part is only which conditions sit at the
+floor vs below it (`306c` §3b); identity/framing failures build first, most defensively.
+Refused targets WILL write whylogs (a degrading host may leave the durable as the only record;
+"push little, pull more" needs something to pull) — can-they-today UNVERIFIED; contents ride the
+round's pending opaque-review whylog question (`rul-durable-contents-reviewed-before-design`).
+**PUNTED, not ruled:** continued multi-round probing of a refused target (`306b` §5b) vs
+stop-poking — the leans cancel; least work wins; not revisited soon. Conductor finding encoded:
+`306c` §3a's certifier-trip siting was wrong (that floor is a guard-only plan); re-sited on the
+`Refused` arm. As-built gap named for the builder: the cli's `Refused` arm still prints one
+diagnostic and returns `IngressRefused` (exit 12); the forgiving-parser re-home and its
+allow-list entry (`307a:flg-allow-list-entry-not-added`) stay owed, unscheduled.
+
 ## §5 — Handoff pointers (for a successor, if the ceremony rolls over)
 
 `30O:sched-round-close-ceremony` priorities stand; add: the loop lane's iteration-aware route

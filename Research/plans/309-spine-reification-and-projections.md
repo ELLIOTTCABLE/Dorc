@@ -128,9 +128,22 @@ parallel side table.
 - **Authority-exit enumeration** [ACKED]: `306b` §4b closes not one variant but a
   LIST — every projection carrying mutation authority (the plan render's apply
   artifact first; the orchestrator's connections; any future executor feed) gets
-  the refused-target typed absence, and the census proves the list closed. The
-  open `306b` §4c question (whole-target or narrower) becomes "which projections
-  vanish under refusal" — deferred, both directions still live.
+  the refused-target typed absence, and the census proves the list closed.
+- **`rul-refusal-takes-the-whole-target-down`** [TYPED 2026-08-23, answers `306b`
+  §4c]: the scope of a refusal is the scope of destruction — once the target's
+  already-planned collection has finished, Dorc touches that target in no further
+  way this invocation: no apply-able plan, no additional on-host activity until a
+  user pull. Every OPERATION endpoint — each plan mode, and any future
+  non-debugging consumer that does anything with the Spine beyond debug, explain,
+  or aid — takes the one license-to-plan type (`plan::PlanAuthority`); only those
+  three bypass it. Analysis itself continues to completion (§4b) into report
+  projections: the `Refused` arm runs the intakeless analysis (every fact ⊤) into a
+  Spine with no `PlanAuthority`, carrying the refusal observation and the forgiving
+  parser's partial records as decision-inert narrative. Not the solve-certifier's
+  whole-window demotion: that floor is a guard-only PLAN, and the intake floor is
+  STOP, never raised to Guard [hard rule, human-typed]. What is malleable is only
+  which conditions sit at the floor and which below it (`306c` §3b's table);
+  identity and framing failures are built first and most defensively.
 - Rehydration (`306b` §3a/§3b) stays UNBUILT: nothing new reaches disk this
   round, so nothing new rehydrates. Fences untouched: rec-5 (never a cache;
   re-ingestion aid-plane only) · two-plane law · `306b` §6b (influenced values
@@ -227,8 +240,19 @@ throughout. The snapshot-emission stage is unaffected and precedes this.
    exact shape undesigned).
 3. `watch-firewall-is-default-not-dogma` — §2's watch-item; re-read at any
    proposal to feed a finalized decision back into analysis.
-4. `pin-authority-exit-list` — the enumerated authority-bearing projections and
-   the §4c which-projections-vanish question (§3).
+4. `pin-authority-exit-list` — the enumerated authority-bearing projections (§3;
+   the scope question is ruled there). Two riders, frontloaded:
+   `open-refused-targets-write-whylogs` — a refused target WILL write a whylog
+   [human-typed 2026-08-23: a degrading host may never be reachable again, and the
+   durable is then the only record; "push little, pull more" needs something to
+   pull from] — whether it CAN today is unverified, and the contents are a
+   durable change, so it rides the round's pending opaque-review whylog question
+   under `rul-durable-contents-reviewed-before-design`. ·
+   `punt-continued-probing-under-refusal` — whether an already-dispatched
+   multi-round collection continues for a refused target (`306b` §5b's reading)
+   or stops at the planned collection ("stop poking the broken thing") is
+   EXPLICITLY PUNTED, not ruled: the two leans cancel; build whichever is least
+   work; not revisited soon. Width-one single-shot makes them coincide today.
 5. `306b` §1c gradation axis · §6b enforcement · §6c marking discriminator —
    inherited open, unmoved. The carriage architecture and Spine boundary are
    closed by `306b` §10; those refinements must preserve it.

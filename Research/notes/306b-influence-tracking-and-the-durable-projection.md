@@ -278,6 +278,9 @@ structurally incapable of yielding a plan step. Implementation notes [SOFT]:
 
 ### §4c — Whole-target or narrower? [OPEN]
 
+<!-- /* RULED 2026-08-23: whole-target — `plans/309` §3 `rul-refusal-takes-the-whole-target-down`;
+the intake floor is STOP, never Guard. */ -->
+
 Whether refusal is always whole-target, or admits a narrower scope, is **unresolved**. It was
 raised and not settled. A reviewer should treat both as live.
 

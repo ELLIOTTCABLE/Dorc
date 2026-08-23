@@ -24,7 +24,7 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 | `28Q:stage-effective-world-reach` (`30K`) | BUILT, reviewed, repaired | `30Kb` non-blocking residue (`register-and-steering-debt`) |
 | `28Q:stage-ii-bundle-and-artifact-close` (`30I` 5b–8 · `30L` · `30Ng`) | BUILT; corpus promoted | the handoff's lanes, re-shaped by `30P` (`the-build-backlog`) |
 | `309:stage-spine-census` · `stage-spine-transition` | BUILT | — |
-| `309:stage-306-accounting` | PARTIAL: typed authority-absences built; influence carriage design-closed, code still one-grade-per-Spine; report-only rendering unbuilt | `lane-influence-carriage`; report-only rendering HUMAN (`design-report-only-refusal-scope`) |
+| `309:stage-306-accounting` | PARTIAL: typed authority-absences built; influence carriage design-closed, code still one-grade-per-Spine; report-only rendering unbuilt | `lane-influence-carriage`; report-only rendering RULED (`309:rul-refusal-takes-the-whole-target-down`; build = the `306c` Â§3a/Â§3b consumer + the forgiving-parser re-home, unscheduled) |
 | `28Q:stage-iii-world-scopes` | NOT STARTED; human-gated at every edge | — |
 
 **`fnd-handoff-undercounts-by-stage`** (+SURE): the `30N` handoff's three lanes were all
@@ -120,8 +120,7 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 
 ## human-gated-rulings — what each unblocks
 
-On the burndown: `design-report-only-refusal-scope` · `design-atmost-completion-speech` ·
-`design-world-scope-surface` · `rule-incarnation-continuity-semantics`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
+On the burndown: `design-atmost-completion-speech` · `design-world-scope-surface` · `rule-incarnation-continuity-semantics`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
 rule the relative=controller / absolute=target class selector (acked as a lean) · the
 controller-expectation/host-check pattern's UX and opaque review (`choice-verbatim-or-re-say`
 is RULED: verbatim, `30P:the-load-plane-stays-correct`). From the r30 close-out conduct

@@ -74,12 +74,13 @@ Build `306b:rul-report-only-output-cannot-plan`: an analysis output that is stru
 incapable of yielding a plan step, so that a target whose intake integrity is lost still gets a
 complete analysis and a full report, and cannot get mutation authority.
 
-**Site it as an extension of the solve-certifier's existing consumer floors** rather than as a
-new mechanism. `plans/302` already built the shape — a closed outcome whose consumers each
-supply a named floor, and a whole-window demotion when the outcome is bad. Intake-integrity loss
-wants the same treatment reached for a different reason, and framing it as "a second trigger
-into machinery that exists" is both cheaper and more likely to stay coherent than a parallel
-path.
+**Site it on the `Refused` admission arm, NOT on the solve-certifier's demotion machinery**
+(`309:rul-refusal-takes-the-whole-target-down`). The certifier's whole-window floor is a
+guard-only PLAN — mutation authority intact — and the intake floor is STOP: no plan
+projection at all, a hard rule. The arm runs the same intakeless analysis `NoObservation`
+runs (every fact ⊤) into a Spine that holds no `PlanAuthority`; report projections consume
+it, and the refusal observation plus the forgiving parser's partial records ride as
+decision-inert narrative. Whole-target: nothing further touches that target this invocation.
 
 Two implementation notes from `306b` §4b, both worth holding:
 
