@@ -690,7 +690,12 @@ mod tests {
     #[test]
     fn every_untracked_adapter_is_enumerated() {
         /// Every seat that deliberately carries an explicit `untracked`, and what it stages.
-        const INVENTORY: &[&str] = &[];
+        ///
+        /// * `plan/src/region.rs` — a region whose route population the census could not close, or
+        ///   whose proofs do not correspond to it: the routes nobody enumerated may have been
+        ///   decided from host-reported material (`30L:pin-open-route-runs`).
+        /// * `plan/tests/region.rs` — that arm's own assertion.
+        const INVENTORY: &[&str] = &["plan/src/region.rs", "plan/tests/region.rs"];
 
         let (adapters, walked) = sources_naming(concat!("InfluenceAccount", "::untracked("));
         assert!(

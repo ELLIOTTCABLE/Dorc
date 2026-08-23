@@ -309,17 +309,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-unenumerated-population-is-not-authored",
-        trigger: "`306b:rul-untracked-is-not-authored`: an OPEN region population has routes the \
-                  census could not enumerate, so their influence is unknown rather than absent — \
-                  but the landed two-point representation spells absence as `None`, which reads \
-                  authored-before-contact. Greens when the account carries an explicit \
-                  `untracked` member that reads maximally influenced at every consequential \
-                  consumer",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-test-literal-narrows-a-variable",
         trigger: "`FORFEITS:forfeit-value-narrowing-by-test` (`30Pd` §5, pencilled by the human \
                   2026-08-22 as the lifted target): per-path refinement of a ⊤ value by \

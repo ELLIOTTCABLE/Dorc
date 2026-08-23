@@ -920,20 +920,19 @@ fn the_shared_account_does_not_depend_on_which_route_carries_influence() {
     );
 }
 
-/// RED CELL (`306b:rul-untracked-is-not-authored`): an UNENUMERATED route population's shared
-/// decision must not read authored-before-contact.
+/// `306b:rul-untracked-is-not-authored`: an UNENUMERATED route population's shared decision does
+/// not read authored-before-contact.
 ///
 /// The shape exercised: a region whose census could not close its population
 /// (`RoutePopulation::Open` — `30L:pin-open-route-runs`), every enumerated proof of which answered
 /// before host contact. The routes nobody enumerated may have been decided from host-reported
 /// material, and absence of an answer is not an answer.
 ///
-/// What it observes: feature-off, the landed two-point representation spells "no contributing route
-/// was influenced" and "we do not know what the missing contributors were" with the same `None`, so
-/// an open population is indistinguishable from a genuinely pre-contact one. Feature-on, the
-/// unenumerated half wears an explicit untracked account that reads maximally influenced at every
-/// consequential consumer, and the two worlds separate. Promotion rewrites the assertion into the
-/// account vocabulary that replaces `influence()`.
+/// The two-point representation this replaces spelled "no contributing route was influenced" and
+/// "we do not know what the missing contributors were" with the same `None`, so an open population
+/// was indistinguishable from a genuinely pre-contact one. The unenumerated half now wears an
+/// explicit untracked account that reads maximally influenced at every consequential consumer.
+/// Promoted from `p-x-unenumerated-population-is-not-authored`.
 #[test]
 fn an_open_population_does_not_read_as_authored_before_contact() {
     let census =
@@ -948,12 +947,22 @@ fn an_open_population_does_not_read_as_authored_before_contact() {
         ],
     );
     let account = decide_region(region, &RoutePopulation::Open, &proofs).account();
-    internal_tooling::xfail::xfail_until("p-x-unenumerated-population-is-not-authored", || {
-        assert!(
-            account.is_influenced(),
-            "an unenumerated population's influence is unknown, never absent"
-        );
-    });
+    assert!(
+        account.is_influenced(),
+        "an unenumerated population's influence is unknown, never absent"
+    );
+    assert_eq!(
+        account,
+        InfluenceAccount::untracked(),
+        "and it says WHICH — untracked, not merely influenced: nobody computed those routes"
+    );
+    let closed = decide_region(region, &population, &proofs).account();
+    assert_eq!(
+        closed,
+        InfluenceAccount::authored_before_contact(),
+        "the SAME proofs over a population the census closed stay authored — the untracked arm \
+         answers the census's failure, never the routes' own derivation"
+    );
 }
 
 /// The meet quantifies over the population the CENSUS proved, never over whatever a caller handed

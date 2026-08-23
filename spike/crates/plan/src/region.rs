@@ -730,18 +730,28 @@ impl SharedConclusion {
 /// meet must quantify over the population the census proved, never over whatever a caller supplied.
 ///
 /// Influence JOINS toward the most influenced (`30L:pin-influence-joins-most`): one uninfluenced
-/// route never cleanses a host-influenced sibling, and the grade is carried, never lowered, because
-/// `core::influence` has no lowering conversion at all.
+/// route never cleanses a host-influenced sibling, and the account is carried, never lowered,
+/// because `core::influence` has no lowering conversion at all. Where the population is OPEN or the
+/// proofs do not correspond, the routes nobody enumerated may have been decided from host-reported
+/// material, so the join takes an explicit [`InfluenceAccount::untracked`]: absence of an answer is
+/// not an answer (`306b:rul-untracked-is-not-authored`).
+///
+/// SCOPE CUT, disclosed here because this is where it bites (`churn-avoidance-disclosure`): the
+/// PER-CELL conjunct that would let two routes of one region carry DIFFERENT accounts is
+/// deliberately not built. The only per-route discriminator available is which cells an admitted
+/// record spoke about, and a route's answer also consumes freshness, which reads `ReachingWalls`
+/// over the decision-fed effective set and is influenced the moment ANY site in the window read a
+/// record. Deriving a route's account from its cell alone would therefore report a decision as less
+/// influenced than its own inputs were — which is exactly the laundering
+/// `30L:rul-shared-influence-never-launders` forbids. So at v0 every route of a run carries that
+/// run's account, the join is a no-op between siblings, and the capability is pinned red rather
+/// than approximated. What DOES vary today is the untracked arm below.
 #[must_use]
 pub fn decide_region(
     region: ElisionRegion,
     population: &RoutePopulation,
     proofs: &[RouteRegionProof],
 ) -> SharedRegionDecision {
-    let account = proofs.iter().fold(
-        InfluenceAccount::authored_before_contact(),
-        |joined, proof| joined.join(proof.account),
-    );
     let contributing: Vec<RouteInstance> = proofs.iter().map(|proof| proof.instance).collect();
     let corresponds = match population {
         RoutePopulation::Open => false,
@@ -752,6 +762,15 @@ pub fn decide_region(
                     .zip(proofs.iter())
                     .all(|(route, proof)| *route == proof.instance)
         }
+    };
+    let enumerated = proofs.iter().fold(
+        InfluenceAccount::authored_before_contact(),
+        |joined, proof| joined.join(proof.account),
+    );
+    let account = if corresponds {
+        enumerated
+    } else {
+        enumerated.join(InfluenceAccount::untracked())
     };
     let conclusion = if corresponds {
         meet(proofs)
