@@ -18,87 +18,32 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 |---|---|---|
 | `300:wave-one-tooling-standup` | LANDED; the `30B`/`30H` review residue repaired 2026-08-17 | none; `300:lane-flux-engine-hardening` punted to `TODO-ADDTL` |
 | `28Q:stage-0-ship-seam` | LANDED; `30La` closed the aggregate residue | `FORFEITS:forfeit-wrapped-case-bodied-book-verdict` (named, not scheduled) |
-| `28Q:stage-i-definition-factoring` | LANDED + crosschecked (`308`) | the three closure-custody precision xfails (`lane-load-plane-precision`) |
-| `28Q:stage-emission-snapshot-transplant` | LANDED | the emission planner build (`lane-emission-planner`) |
+| `28Q:stage-i-definition-factoring` | LANDED + crosschecked (`308`) | the three closure-custody xfails — BUILT (`30Qc` execute-B) |
+| `28Q:stage-emission-snapshot-transplant` | LANDED | the emission planner — BUILT (`30Qb`); its hoist ACTION red behind two human calls |
 | `28Q:stage-ii-closure-custody` | infrastructure LANDED; `30I` runtime projection LANDED through step 8 | policy half: the sparing dialect is RULED (`30J` §12; build on `30J` §10's trigger); HUMAN: cross-family registration (`30J` §6.5) · `28Q:pin-closure-membership-and-diamond` |
 | `28Q:stage-effective-world-reach` (`30K`) | BUILT, reviewed, repaired | `30Kb` non-blocking residue (`register-and-steering-debt`) |
-| `28Q:stage-ii-bundle-and-artifact-close` (`30I` 5b–8 · `30L` · `30Ng`) | BUILT; corpus promoted | the handoff's lanes, re-shaped by `30P` (`the-build-backlog`) |
+| `28Q:stage-ii-bundle-and-artifact-close` (`30I` 5b–8 · `30L` · `30Ng`) | BUILT; corpus promoted | the lanes — BUILT (`the-build-backlog`) |
 | `309:stage-spine-census` · `stage-spine-transition` | BUILT | — |
-| `309:stage-306-accounting` | PARTIAL: typed authority-absences built; influence carriage design-closed, code still one-grade-per-Spine; report-only rendering unbuilt | `lane-influence-carriage`; report-only rendering RULED (`309:rul-refusal-takes-the-whole-target-down`; build = the `306c` Â§3a/Â§3b consumer + the forgiving-parser re-home, unscheduled) |
+| `309:stage-306-accounting` | typed authority-absences BUILT; influence carriage BUILT (`30Qd`); report-only rendering unbuilt | report-only rendering RULED (`309:rul-refusal-takes-the-whole-target-down`; build = the `306c` Â§3a/Â§3b consumer + the forgiving-parser re-home, unscheduled) |
 | `28Q:stage-iii-world-scopes` | NOT STARTED; human-gated at every edge | — |
 
 **`fnd-handoff-undercounts-by-stage`** (+SURE): the `30N` handoff's three lanes were all
 `28Q:stage-ii-bundle-and-artifact-close` residue; the loop xfail, the closure-custody pins,
 `309:stage-306-accounting`'s remainder, and the unscheduled emission planner were outside it.
 
-## the-build-backlog — designed, buildable now, no human gate
+## the-build-backlog — BUILT; every lane folded on `ai/r30-conduct`
 
-- **`lane-emission-planner`** (absorbs the handoff's `lane-bundle-front-lift`) — charter
-  `30P:the-emission-planner`: ONE component, apply-side now, probe seam reserved; placement
-  `hoist | in-place | sink` × naming `authored | munged`; first consumer the
-  `30Ng:bundle-front-lift-ladder` (`tier-hoist-as-is` · `tier-hoist-munged` ·
-  `tier-in-place-rewritten` · decline) with a `dorc why` reason arm per tier; second consumer
-  `p-x-placement-tuning-pair` (the `sink` value). Riders from `30Pb`, ratified-in-stance: the
-  hoist legality predicate covers every book OBSERVATION or MUTATION of a bound name above the
-  `.` (`command -v`, `type`, `unset`, `alias`, variable reads — not calls only); emitted-name
-  injectivity over the full emitted ∪ book namespace with detect-and-lengthen on digest
-  collision; header-only renames only for definitions whose every reference is
-  engine-emitted (helpers referenced from authored bodies stay in place or withhold —
-  alpha-rename stays reserved); confirm whether today's preamble hoist of oracle constants
-  can shadow a same-named book variable (a latent hole if so). The `30Nh` why/harness residue
-  rides here (`dev-why-world-carries-no-import-edits`; the kept-stream expected-empty-stdout
-  e2e). Touch: `plan/src/render.rs` · `plan/src/lib.rs` (preamble/hoist, hash-munge) ·
-  `cli/src/artifact.rs` · `cli/src/why.rs` + `world.rs`. Size -GUESS L. Map-then-execute:
-  tier predicates + red cells, checkpoint, then munge. Steering at fold: retire
-  `cli/CLAUDE.md`'s "front-lifting waits on a licence" sentence (done in this re-cut).
-- **`lane-load-plane-precision`** — charter `30P:the-load-principles` + the handoff's
-  guarded-source charter (`30I:rul-load-semantics-stay-full-fidelity` ·
-  `rul-guarded-source-speech-is-lossy`; greens `p-x-sentinel-value-conjunct`; recovers test
-  `176e0818` from `worktree-sol-adversarial-30M`). Commit-series, in order: (1) point-havoc
-  (`p-x-unknown-source-is-a-point-havoc`) over the v0 domains — function bindings (havoc at
-  the line, last-wins re-binds), cwd ⊤ (later relative `.` unresolvable), shell options ⊤,
-  positionals ⊤, termination May-reach; the unknown `.` stays an emission opener and an
-  execution wall; (2) `${0%/*}` resolved from the AUTHORED book path, never a shell's `$0`
-  (`p-x-load-operand-param-expansion-of-dollar-zero`; the no-slash and root-`/` traps
-  measured); (3) `mech-acquire-and-ship-plain-sh`: a resolvable plain-sh `.` enters the load
-  account as an occurrence, is mirrored beside the plan by the existing placement, and is
-  analyzed NOT AT ALL (the site walls) — first confirm the ~SUSPECT that today the file is
-  not shipped and the plan dies at that line on the host (a failed `.` is fatal, atlas-measured);
-  mirror touch on `cli::artifact` expected minimal, coordinate with the planner lane if not;
-  (4) the computed-`.` parse-tier refusal becomes a post-analysis pre-network fail-fast
-  (`30P:rul-floor-valid-text-never-parse-fails`; easiest spelling); (5) the three
-  closure-custody xfails `p-x-definition-grade-keying` · `p-x-helper-unset-f-across-files` ·
-  `p-x-regional-helper` (`30O:dec-merge-guarded-source-with-closure-pins`, ACKED). Riders:
-  funcenv precision is license-review-tier, forever — checkpoint after the seat map; the
-  slashless-operand lint hint (`. helpers.sh` is a PATH search); `30P:rul-load-head-is-exact-or-havoc` (EXACT or point
-  havoc, nothing between — the three-state POSSIBLE/ENGINE-SELECTED model is STRUCK);
-  `30P:rul-guard-resolves-like-its-mutation` [TYPED 2026-08-22] must not be
-  violated by any seat touched. NOT included: `p-x-blessed-toplevel-conditional` (waits on
-  `28Q:res-dot-blessing-is-engine-side`); `dirname`-headed operands beyond point havoc
-  (the static-predict tier, `30P:rul-static-predict-sites-loads`, waits on a stdlib). Touch: `analysis/src/funcenv.rs` · `analysis/src/value.rs` · `analysis/src/load.rs` ·
-  `oracle/src/closure.rs` · `cli/src/sourcing.rs` · `cli/src/main.rs` (shared with the planner
-  lane). Size -GUESS L.
-- **`lane-loop-propagation`** — charter `30L:loop-propagation-staged-now (née §7)` +
-  `30N:loop-propagation-prior-art (née §2)` + `30N:chk-loop-types-paper-review` PASSED. Greens
-  `p-x-loop-population-closes-over-literal-members` (the end-of-r30 attention-call). Scope:
-  census-mint for finite literal lists + the value plane (`ValueFlow::member_argv` exists from
-  r21) + the consumer seam into `plan::region`/`plan::settle`; never re-key `ElisionRegion`,
-  witness, or record identity; never drop members; `StatusIterated` untouched. IF room remains
-  after it folds: globs as the second population source (`30P`: set-valued, order-unknown, a
-  UNIVERSAL meet over every member order — members may `unset -f`, assign, `cd`, `exit`;
-  no-match is fatal) — otherwise honestly unscheduled. Touch: `analysis/src/value.rs` ·
-  `analysis/src/effect.rs` · `plan/src/region.rs` · `plan/src/settle.rs`. Size -GUESS M.
-- **`lane-influence-carriage`** — charter `306b:influence-carriage-across-entities (née §10)`
-  + `309:rul-spine-preserves-never-stamps` + `30L:rul-shared-influence-never-launders` +
-  `an-host-influence-carriage`. Removes the one-grade-per-Spine stamp; every stable semantic
-  object carries a private, immutable, non-optional influence account joined at its mint;
-  unconverted seams are explicit maximally-influenced `untracked`. STAYS IN r30 [TYPED
-  2026-08-22: critical for reasons outside the conductor's horizon; never a droppable lane].
-  Touch: every constructor of a stable object (`core/src/influence.rs` · `core/src/spine.rs` ·
-  `plan/src/settle.rs` · `plan/src/region.rs` · `plan/src/lib.rs` · `cli/src/artifact.rs` ·
-  `cli/src/world.rs`) — SERIAL and alone. Gate: goldens AND `.whylog` byte-identical. Size
-  -GUESS L; map-then-execute (constructor census first).
-- **`lane-fruit-arc`** (`26K:fruit-arc (née §0a)`; non-kernel; Sonnet; anytime; S).
+`lane-emission-planner` (`30Qb`; the hoist ACTION, T1/T2a, stays red behind the human's
+`tc-hoisted-dot-line-spelling` and `tc-t2-is-narrower-than-the-ladder-says`) ·
+`lane-load-plane-precision` (`30Qc`, both executes; then re-cut under
+`30P:law-no-unsoundness-below-a-blind-act` by `30Qf`: the rewrite gate is EXACT ∧ explicit,
+nothing is shipped below a blind act, the `[ -f ]` entry refuses under cwd-⊤, and the CFG's
+refusal set seeds the clobber) · `lane-loop-propagation` (`30Qa`) · `lane-influence-carriage`
+(`30Qd`: the object-global stamp gone, sixteen species sealed, eight licence mints joined, the
+durable export built and DISABLED behind `plan::whylog::ACCOUNT_EXPORT`) · `lane-fruit-arc`
+(`30Qe`) · the tooling lane (docids staged-scope + `NO_LINT_DOCIDS`; the WSL preflight bounds on
+the host volume; `doctor` lists the vhdx). Every end-of-r30 pin is green; the census is all
+`r31:*` (19 live / 1 reserved).
 
 ## deferred-by-ruling — design-closed, build deadline-triggered (not r30)
 
@@ -120,35 +65,30 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 
 ## human-gated-rulings — what each unblocks
 
-On the burndown: `design-world-scope-surface` · `rule-incarnation-continuity-semantics`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
-rule the relative=controller / absolute=target class selector (acked as a lean) · the
-controller-expectation/host-check pattern's UX and opaque review (`choice-verbatim-or-re-say`
-is RULED: verbatim, `30P:the-load-plane-stays-correct`). From the r30 close-out conduct
-(`30Q`): `tc-dollar-zero-is-script-anchored` (invoke the shipped plan by absolute path so a
-`$0`-derived `.` is cwd-immune on the host; gates the flagship `load30-point-havoc-and-script-relative`)
-· `ask-ship-explicit-targets-below-a-clobber` (whether a literal relative `.` below a `cd`/havoc
-`.` — non-EXACT by `an-load-exactness-reads-binding-state` — is still MIRRORED at its authored
-path while claiming nothing, as the in-flight lanes build it, or ships nothing per the per-form
-paragraph's "havoc ⇒ nothing shipped") · `tc-t2-is-narrower-than-the-ladder-says` (the typed T2
-needs alpha-rename for helper/constant collisions; built narrowed). Non-blocking, from `30N`:
-`30M:ask-wall-narration-ratify-or-mint (née §3)` · `30Ng:attn-render-refusal-feeds-the-spine`
-· `30Nd:tc-plan-owns-its-source` · `30Na:tc-book-level-dot-locals-domain` ·
-`30Na:tc-redirect-refusal-dead-or-owed` · `30Na:stop-spine-mode-is-durable` ·
-`30M:ask-certification-row-shape` · the prelude-floor veto · the prose queue. Prose findings
-for the human: `30P:fnd-squat-warning-contradicts-in-book-lift` (stale warning on the stage-3
-path; the lint wants re-scoping to "a loaded oracle also defines this name").
+Standing: `ratify-committee-sparing-fence` · `design-world-scope-surface` ·
+`rule-incarnation-continuity-semantics` (the burndown's remaining headers; they gate
+`28Q:stage-iii-world-scopes`, not r30) · `tc-dollar-zero-is-script-anchored` (the flagship red
+`load30-point-havoc-and-script-relative` stays red; an `r31` attention-call) ·
+`tc-hoisted-dot-line-spelling` + `tc-t2-is-narrower-than-the-ladder-says` (the hoist ACTION's
+two reds) · the review that must clear BEFORE `plan::whylog::ACCOUNT_EXPORT` flips
+(`rul-durable-contents-reviewed-before-design`) · the prose queue (`mise run prose:census`).
+Ruled 2026-08-22/23 and gating nothing: the clobber sentence (ship-nothing, `30Q` §4) ·
+`30P:open-rulings` · `stop-spine-mode-is-durable` (R10, format-only) · the stdlib
+dialect-reach (`30Q` §5g) · report-only refusal scope and the at-most completion sentinel (the
+sibling's `309`/`30J` ruling commits) · the `307` §6 veto register (closed with a sibling).
 
 ## out-of-round — nothing here is r30-owed
 
 `28Q:stage-iii-world-scopes` · the r26 reactive/capture + multi-host revival · the
 ANALYZER-NEEDS transport cluster gated on `22H` · book-code splice + paste (forfeited, with
-reds) · globs if the loop lane leaves no room · `notes/30Pc` (the opaque review's
+reds) · glob loads (unscheduled, `30Q` §1 `dec-globs-unscheduled-this-round`; reds in
+`FORFEITS:forfeit-book-dynamic-load-analysis`) · `notes/30Pc` (the opaque review's
 BUILDER-lane half, unread by the conductor by law: hand it to the lane it names when its
 builder reads `AGENTS.for-builders-only.md`).
 
 ## register-and-steering-debt — state after this re-cut
 
-Applied (the `30Qb`/`30Qc`/`30Qf` proposals, the `30Nc` freeze, the dangling oracle cite,
+Applied (the `30Qb`/`30Qc`/`30Qd`/`30Qf` proposals, the `30Nc` freeze, the dangling oracle cite,
 the task list, the harness-contract lines, the blind-act re-says). Still owed: the `30Kb`
 residue (wall narrative operand · final-round typestate · the effective-reach prose case) ·
 ONE predicate at TWO seats — `cli::artifact::operand_is_explicit` reads the AST word while
@@ -162,23 +102,14 @@ per-worktree `git` calls across drvfs (3–36 s each) — a design call, not a o
 ## the-schedule
 
 ```
-sched-parallel-disjoint-lanes   (cli/src/main.rs is the one shared file)
-   lane-loop-propagation         [M; no checkpoint; re-keying = hard stop]
-   lane-emission-planner         [L; checkpoint after the tier-predicate map]
-   lane-load-plane-precision     [L; checkpoint after the seat map — license-review-tier]
-   lane-fruit-arc                [S; Sonnet; anytime]
-   fold order: loop-propagation → emission-planner → load-plane-precision
-sched-serial-constructor-reshape (alone, over the merged tip)
-   lane-influence-carriage       [L; map-then-execute; byte-identical goldens + whylog]
-sched-round-close-ceremony
-   second-half adversarial crosscheck (priorities: the self-suppressed solve · the
-   effective_invalidators node-check · the hoist predicates · the closed loop populations ·
-   point-havoc's domains · the influence constructor census) → `307:veto-sweep-pile (née §5)`
-   (human) → `gate:arc` → `CURRENT_ROUND` bump → the prose queue → fold to ai/main.
+sched-parallel-disjoint-lanes    DONE (folded 2026-08-22/23)
+sched-serial-constructor-reshape DONE (`30Qd`; plus the blind-act retrofit and the third blind
+                                 act, `30Qf`, sequenced ahead of it)
+sched-round-close-ceremony       OWED, the human's: the gate (human-run) → `gate:arc` →
+                                 `CURRENT_ROUND` bump → the prose queue → ff `ai/main`. No
+                                 crosscheck this window (human-typed 2026-08-23); the `307` §6
+                                 veto register is closed.
 ```
-<!-- /* correction 2026-08-22 (the close-out veto sweep): `307:veto-sweep-pile (née §5)` named
-no list — §5 is an ack-ledger whose last entry defers to a fold summary. The enumerated pile is
-`307` §6; the sweep reads that register. */ -->
 
 Brief riders, all lanes (the `30N` standing corrections plus today's): acceptance criteria
 for evidence tests state the CFG shape they exercise · budget inline `//` and `///`

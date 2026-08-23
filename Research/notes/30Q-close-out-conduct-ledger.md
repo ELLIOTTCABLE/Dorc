@@ -234,7 +234,12 @@ window), the gate (the human's), `gate:arc`, the veto sweep, the `CURRENT_ROUND`
 prose queue, the `ai/main` ff, worktree/branch reaping (every lane branch is contained in
 `ai/r30-conduct`; their harness worktrees are the human's sweep). Open: R11's review before
 `ACCOUNT_EXPORT` flips; `tc-dollar-zero-is-script-anchored` (the flagship red stays red, an
-`r31` attention-call); the `30O` register debt list.
+`r31` attention-call); the `30O` register debt list. Later the same day: the `307` §6 veto
+register was closed with a sibling; a Sonnet SWEEP (contained-and-clean only, `worktree remove`
++ `branch -d`, never `-D`) reaped 14 worktrees, 43 branches, ~26 GB of WSL caches; what it
+left and why is in LIVING_STATUS's branch state. The living documents (LIVING_STATUS · `30O`
+· `Research/README.md` · TODO-ADDTL · the registers) were brought to this state, discharged
+content removed rather than annotated.
 
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 

@@ -14,7 +14,7 @@
 
 ---
 
-## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT IN FLIGHT; resume from `notes/30Q` §5c)
+## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
 
 **Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
 fold order, the brief riders) and `plans/30P` (THE design for the emission planner, the
@@ -30,11 +30,15 @@ as a clobber seed), the tooling lane, the influence EXECUTE (`30Qd`), the siblin
 rulings, and this session's steering/ledger commits. NO lane is open. Every end-of-r30 pin is
 green (census: all `r31:*`). `ai/main` is the human's to fast-forward; the primary checkout
 carries the human's uncommitted ruling work — radioactive. Lane table and the fold order:
-`notes/30Q` §2/§5c. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may
-be `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; test `176e0818` is
-recovered, so `worktree-sol-adversarial-30M` is deletable. Three stale review branches
-(`ai/r30-loom-surface-build2`, `review-verify-adv`, `review-verify-neutral`) are not contained
-— the human's sweep; the four folded lane branches and their harness worktrees likewise.
+`notes/30Q` §2/§5c–§5e. Swept 2026-08-23 (contained-and-clean only): 14 finished worktrees and
+43 branches reaped, ~26 GB of WSL caches returned. Left for the human: six CONTAINED lane
+branches that `-d` refuses because of their configured upstream
+(`ai/r30-lane-{influence-map,load-b,loop-2,load-a,fruit-3,planner-exec}`); five early-stage
+lane worktrees whose history was folded as REBASED copies, so the containment proof fails
+(`ai/r30-lane-{loop,planner,load,fruit,fruit-2}`); the dirty `r30-loading`
+(`ai/r30-static-loading`); and the uncontained review branches (`review-verify-adv`,
+`review-verify-neutral`, `ai/r30-loom-surface-build2`, `worktree-sol-adversarial-30M` — the
+last sits on `review-verify-adv`'s tip).
 
 **Dispatch state, per `30O:the-schedule`:** `sched-parallel-disjoint-lanes` and
 `sched-serial-constructor-reshape` are BUILT and folded (`30Q` §5c–§5e; influence in `30Qd`) →
@@ -46,13 +50,12 @@ the switch is `plan::whylog::ACCOUNT_EXPORT`). Every brief: the Safety block, st
 `AGENTS.for-builders-only.md` first, and `notes/30Pc` (the opaque review's builder-lane
 half — unread by Fable-class conductors by law) where it names the lane.
 
-**Human-gated (nothing dispatchable):** the root `_tmp-human-burndown.md` items; the
-`30P:open-rulings` residue (the controller-expectation/host-check pattern's UX + opaque
-review); the prose queue; the
-non-blocking `30N:open-items-riding-this-conduct (née §4)` set (wall-narration mint · the
-render↔spine feedback sitting · `tc-plan-owns-its-source` · book-level dot-locals domain ·
-redirect dead-or-owed · `stop-spine-mode-is-durable` · certification row shape · the
-prelude-floor veto).
+**Human-gated (nothing dispatchable):** `30O:human-gated-rulings` is the current list — the
+burndown's remaining headers (the committee fence · world-scope surface · incarnation
+continuity; all stage-iii) · `tc-dollar-zero-is-script-anchored` · the hoist ACTION's two calls
+(`tc-hoisted-dot-line-spelling`, `tc-t2-is-narrower-than-the-ladder-says`) · the review before
+`plan::whylog::ACCOUNT_EXPORT` flips · the prose queue (`mise run prose:census`) · the parked
+`tc-plan-owns-its-source` and `tc-book-level-dot-locals-domain` sittings.
 
 **Standing truths a successor must not re-derive:** xfail horizons are ATTENTION-CALLS, not
 completion dates — never re-horizon them as if "r31" were a plan; end-of-r30 is kernel
@@ -70,14 +73,19 @@ a book's `.` line is rewritten only under derived permission (explicit reference
 target — literal operands); EXACT-via-`$0` lines stay verbatim and are mirrored so they land;
 controller-evaluated predicts are verified at probe standup, artifact integrity at apply standup,
 and no per-line load verifier exists — the standups are tunnel negotiation, never plan lines.
+Below a BLIND ACT Dorc claims nothing (`30P:law-no-unsoundness-below-a-blind-act`, human-typed
+2026-08-22/23): no cwd-dependent decision, no authority from definitions loaded below it, no
+rewrite, nothing shipped, no elision, no engine-side recovery — guards survive and the
+remedies are admin-sourced (`notes/30Pd`); built in `30Qf`. Influence is causal accounting
+carried by every stable object (`30Qd`; `core/CLAUDE.md the-influence-account-is-carried-never-stamped`),
+licenses nothing at v0, and its durable export is built but DISABLED.
 `gate:full-quiet` routes `test:floor` when floor paths
 are staged (a floor case must agree on both platform legs). The opaque-review gate is
 builder-initiated (`AGENTS.for-builders-only.md`); no builder triggered it this sitting.
 
-**Register debt still owed (conductor-tier, small):** ANALYZER-NEEDS `an-backing-selfframing`
-("freezing remains owed" is stale) · `oracle/CLAUDE.md`'s dangling cite
-`FORFEITS:forfeit-whole-file-inertness-refusal` · `cli/CLAUDE.md` harness-contract lines
-(floor cases: top-level files only; `$0` shape platform-bound) · the `30Kb` residue.
+**Register debt:** `30O:register-and-steering-debt` is current (the `30Kb` residue · the
+two-seat explicitness predicate · the frameless acquisition exposure · `doctor` over drvfs);
+the conductor-closed residue rows live in `TODO-ADDTL` (`r30-close-out-residue`).
 
 ## GENTLY HELD (deliberately waiting on the human)
 
