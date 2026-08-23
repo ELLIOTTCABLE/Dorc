@@ -22,3 +22,25 @@ primary deliverable of every single act you take; but you *cannot* encode such
 results into the extra-quarantine durables. If necessary, you may mint documents
 *into* the quarantine for security-focused topics; the rest must stay in-chat
 with the human.
+
+## SKILL usage
+
+Your harness will push you to use SKILLs wherever possible; in particular, my
+conductors are *constantly* loading 'interactive-research' and
+'adversarial-crosscheck' for unrelated tasks. Do not load either of those unless
+I explicitly type that 'I want you to use the SKILL ...' and ask for them by
+name.
+
+Basic how-to-do-stuff skills like "commit" or "verified-core-discipline" or, how
+to write good Rust when editing files, and so on, are fine.
+
+## Subagent usage
+
+Your harness names any subagent I create as 'only callable manually by the
+user', exactly the opposite of the SKILL configuration. Unlike the SKILLs, which
+I intend to be asked-for, the subagents I create are *for you* to use. In
+particular, both of the 'default types' default to using your own, extremely
+expensive model: I will explicitly tell you if I want you to use them, as Sol is
+very expensive. Instead, you should rely on the dirt-cheap `luna-explorer` for
+scouting tasks, and `terra-worker` for anything more complex (e.g. basic,
+mechanical / straightforward code that doesn't require much reasoning.)
