@@ -23,9 +23,11 @@ the rulings of the 2026-08-22 sitting). Read both in full before dispatching any
 
 **Branch state:** `ai/r30-conduct` (worktree `.claude/worktrees/r30-conduct`) carries, linearly:
 the four kernel lanes, the fold repair, the loop-residue lane, the influence MAP (red cells
-only), and this session's steering/ledger commits. ONE lane is still folding: the fruit lane,
-via `ai/r30-lane-fruit-3` (a Sonnet regenerating the conflicting catalog locks; its gate is the
-merged tip's first whole-gate). `ai/main` is the human's to fast-forward; the primary checkout
+only), the fruit lane, the human's blind-act law (`30P:law-no-unsoundness-below-a-blind-act`),
+and this session's steering/ledger commits. ONE lane is OPEN: `ai/r30-lane-blind-act-retrofit`
+(Opus; the load plane brought under that law — rewrite gate EXACT ∧ explicit, nothing shipped
+below a clobber, the `[ -f ]` cwd gate, the four FORFEITS rows' reds minted; checkpoint after
+its map). The influence EXECUTE follows it serially. `ai/main` is the human's to fast-forward; the primary checkout
 carries the human's uncommitted ruling work — radioactive. Lane table and the fold order:
 `notes/30Q` §2/§5c. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may
 be `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; test `176e0818` is
