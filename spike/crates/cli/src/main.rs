@@ -4689,8 +4689,12 @@ mod acquisition_tests {
         assert_eq!(
             havoced.found,
             ["helpers.dorc.sh"],
-            "the file is still READ, and still mirrored at its authored relative path — cwd-⊤ \
-             costs authority, never the shipped tree"
+            "the file is still READ — acquisition is kept because the acquisition fixpoint reads \
+             a transient round-1 clobber, and a withheld name is the safe direction. What it \
+             loses is its CARRIAGE as well as its authority: nothing is shipped for a load whose \
+             operand may resolve elsewhere (`30P:law-no-unsoundness-below-a-blind-act`), which \
+             `artifact::tests::a_load_below_a_blind_act_ships_no_copy` is where that half is \
+             measured"
         );
         assert_eq!(
             havoced.env.unresolvable_loads().len(),
