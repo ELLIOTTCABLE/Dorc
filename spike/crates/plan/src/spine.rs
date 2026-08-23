@@ -624,9 +624,7 @@ mod tests {
         assert_eq!(
             files,
             [
-                // The one PRODUCTION seat, carrying both ruled driver transitions.
                 "cli/src/results.rs",
-                // Test seats.
                 "core/src/spine.rs",
                 "plan/src/spine.rs",
                 "plan/tests/region.rs",

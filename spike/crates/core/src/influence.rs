@@ -449,9 +449,8 @@ mod tests {
 
     #[test]
     fn the_account_chain_climbs_and_never_descends() {
-        // `306b` §1a at the ACCOUNT tier. Every pair in the chain joins to the higher point, in
-        // both argument orders — which is the whole of "no operation lowers a grade" once the
-        // combinator is `max` over a total order.
+        // `306b` §1a at the ACCOUNT tier: every pair joins to the higher point in both argument
+        // orders, which is the whole of "no operation lowers a grade" once the combinator is `max`.
         let points = [
             InfluenceAccount::authored_before_contact(),
             InfluenceAccount::of_phase(phase()),

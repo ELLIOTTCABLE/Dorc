@@ -1483,8 +1483,6 @@ impl SpineOutcome {
 // The sealed carriage contract, one impl per species
 // ===========================================================================
 
-// Sixteen hand-written blocks rather than a macro (authored macros are banned): a new species is
-// covered by nothing generic, so it must be written here, beside the census that refuses it.
 impl sealed::Sealed for SpineInvocation {}
 impl InfluenceBearing for SpineInvocation {
     fn account(&self) -> InfluenceAccount {
@@ -2152,14 +2150,10 @@ mod tests {
 
     #[test]
     fn the_spine_stores_the_account_a_mint_supplied_and_computes_none() {
-        // `309:rul-spine-preserves-never-stamps`. This test is the REWRITE of the one that pinned
-        // the opposite: the Spine used to hold a run-wide grade and every setter assigned it over
-        // whatever a mint supplied, which is what made a per-object account unobservable at the
-        // reader. There is no stamp to hand in any more — the two records below differ only in what
-        // their own constructors joined, and the Spine hands both back unchanged.
-        // WIDENED, never MINTED: the influence mint has exactly one caller in the workspace
-        // (`the_influence_grade_has_exactly_one_mint`), so a test that wants a phase marker builds
-        // one the free, one-way way rather than opening a second intake seat.
+        // `309:rul-spine-preserves-never-stamps`, and the REWRITE of the test that pinned the
+        // opposite: the two records below differ only in what their own constructors joined, which
+        // a run-wide stamp made unobservable at the reader. The phase is WIDENED, never minted —
+        // the intake mint has exactly one caller (`the_influence_grade_has_exactly_one_mint`).
         let phase = crate::influence::Influenced::authored_before_contact(()).widen();
         let mut spine = Spine::<TestPlane>::new();
         spine.set_disposition(SpineDisposition::minted(
@@ -2194,11 +2188,9 @@ mod tests {
 
     #[test]
     fn every_species_declares_how_its_writer_reaches_an_account() {
-        // `306b:rul-consequential-sinks-require-influence`'s consumer half. Carrying an account and
-        // having DERIVED one are different properties: the sealed trait forces the first, and this
-        // census is what forces a new species to answer the second. The counts are the tripwire —
-        // a species sliding from `Joined` to `UntrackedAdapter` is a staged hole somebody chose,
-        // and it shows up here as a diff rather than as silence.
+        // `306b:rul-consequential-sinks-require-influence`'s consumer half: carrying an account and
+        // having DERIVED one are different properties, and a species sliding from `Joined` to
+        // `UntrackedAdapter` is a staged hole somebody chose rather than a silence.
         let mut counts = [0usize; 3];
         for species in SpineSpecies::ALL {
             let index = AccountCarriage::ALL

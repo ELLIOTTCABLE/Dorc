@@ -1819,8 +1819,8 @@ fn run(
         };
     let _scope = scoped_results.scope();
     // The run's own account, read ONCE at the driver seat that holds the carrier: everything below
-    // this line is downstream of the intake, so every record it mints joins from here rather than
-    // re-deriving where the run stands (`fnd-two-drivers-compute-one-fact-twice`).
+    // is downstream of intake, so every record joins from here rather than re-deriving where the
+    // run stands (`30Qd:fnd-two-drivers-compute-one-fact-twice`).
     let world_account = scoped_results.account();
     let results = scoped_results.results();
 
