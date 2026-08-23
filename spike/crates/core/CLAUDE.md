@@ -149,6 +149,36 @@ new entries to the matching section.
   sites must not collapse across (`inv-site-keyed-results`), shared by the probe-records
   lane, the apply plan's steps, and every diagnostic. `aid` re-exports it; it is never
   re-minted.
+- **the-influence-account-is-carried-never-stamped** (`306b` §10 ·
+  `309:rul-spine-preserves-never-stamps`; built r30, `30Qd`) — every stable semantic object
+  carries a private, immutable, non-optional `core::influence::InfluenceAccount` joined at its
+  OWN mint from every contributing data and control input; `Spine` STORES it and never
+  computes, overwrites, or fills one (the sixteen species are sealed: private fields, one
+  `minted(<inputs>, account)` each, the sealed `InfluenceBearing` trait, the no-wildcard
+  `account_carriage` census — `Joined` / `UntrackedAdapter` / `Unminted`). The account is a
+  three-point TOTAL CHAIN `AuthoredBeforeContact ⊏ HostInfluenced(InfluencePhase) ⊏ Untracked`,
+  `join = max`, so order-independence is a property of the shape; an unconverted seam is an
+  explicit `untracked` and reads maximally influenced, and every such seat is named in the
+  `every_untracked_adapter_is_enumerated` INVENTORY (an inventory, never a ban). ONE
+  phase→account transition exists, `InfluenceAccount::of_phase`, caller-count fenced; every
+  other seat only joins; `authored_before_contact()` is a NAMED POSTURE a seat spells, lexically
+  fenced, never a default. The two post-construction rewrites are named `Spine` methods that
+  JOIN a witness into the record's own account (the certifier-trip demotion; probe-provenance
+  attachment touches no account and says so) — no `&mut` record access exists. The account is
+  EXEMPT from the decision digest and carries NO authority: "influence never decides whether a
+  line elides" is a v0 FACT (no consumer exists), never law — a future decision consumer is a
+  typed human act (human-typed 2026-08-23); never write "decision-inert by type".
+  `HostInfluenced` keeps carrying the phase, whose `()` payload is the reserved host-scope
+  slot (a set of hosts, join = union, at width two) — never simplify it to a unit variant.
+- **the-account-never-enters-compared-state** — the conversion boundary is the decision plane
+  and OUTWARD; a kernel or load-plane value that participates in lattice `Eq` or fixpoint
+  comparison never gains an account (`inv-determinism`'s semantic-`Eq` precondition; the
+  `CollapseNarrative` Eq-exclusion is the failure this positioning AVOIDS, not a technique to
+  copy). Post-reingest, influence is REPORT/WHY-plane only: the durable transition is a
+  FLATTENING (`plan::whylog::DurableAccount`, no accessor back to a live account; absent or
+  unrecognised reads HIGHEST), no durable ingestion rehydrates an account into a decision, and
+  the why-world driver's widen-to-influenced is the DEFINITION, not an approximation
+  (human-typed 2026-08-23).
 
 ## Law — the verified-core substrate (r30; `notes/300` §2/§2a, `28T` heritage)
 

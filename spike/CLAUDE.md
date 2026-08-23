@@ -457,6 +457,17 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   design in and expensive to retrofit, and it acquires them across the intake boundary
   this section governs (`Research/notes/306b` §1b/§8). Again: nothing here asks for the
   work to start.
+- **influence-is-carried-by-the-object** (cross-crate pointer; the law lives in
+  `core/CLAUDE.md the-influence-account-is-carried-never-stamped` +
+  `the-account-never-enters-compared-state`, the mint rider in `plan/CLAUDE.md
+  sole-mint-witnesses`) — host influence is causal ACCOUNTING, orthogonal to AUTHORITY: every
+  stable semantic object carries its own immutable `InfluenceAccount`; nothing stamps, fills,
+  or lowers one; no consumer reads it for a decision at v0 (a future one is a typed human
+  act). The account has a durable EXPORT, built whole and switched OFF at
+  `plan::whylog::ACCOUNT_EXPORT` (`ExcludedContent::InfluenceGrade` is held by that switch,
+  not by absence; the round-trip is pinned `p-x-durable-account-export-is-enabled`); flipping
+  it is a durable-content change and clears `rul-durable-contents-reviewed-before-design`
+  FIRST — the human enables it post-review. Read back, an account is report/why-plane only.
 
 ## Invariants — analysis boundaries
 

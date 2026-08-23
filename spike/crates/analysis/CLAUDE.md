@@ -221,10 +221,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
   2026-08-23: `. /etc/os-release; . ./relative.sh` is inherently unsound and the remedies are
   admin-sourced, `notes/30Pd`). Acquisition is KEPT — dropping it stalls the acquisition
   fixpoint, and `Withheld`-over-`NoOpinion` is the safe direction. The law names THREE blind
-  acts; `eval` is closed by refusal and the unheld `.` is modelled; a call Dorc cannot SPLICE
-  (over-budget · recursive · out-of-slice) is minted only as the `CFG_INLINE_REFUSED`
-  diagnostic and is pinned red until the CFG's refusal set is queryable
-  (`p-x-an-unspliceable-call-havocs-the-cwd`). The tempting wrong seed — `call_body_sites`
+  acts and the engine models all three: `eval` is closed by refusal, the unheld `.` seeds the
+  clobber, and a call Dorc cannot SPLICE seeds it through `Cfg::splice_refused` — recorded at
+  the ONE seat that mints the refusal diagnostic (`Builder::refuse_splice`; EIGHT arms — seven
+  `CFG_INLINE_REFUSED` plus the depth-2 positional Note; the silent `?`-returns stay ordinary
+  `Opaque`, which is what keeps a call into a HELD oracle body from counting as blind). The
+  tempting wrong seed — `call_body_sites`
   answering `None` — is one line away and WRONG: the splicer inlines same-file funcdefs only,
   so `None` also covers every call into an oracle body Dorc holds and models, and reading it
   as blind clobbers the cwd below every helper call (measured: two goldens). Built carve, owed

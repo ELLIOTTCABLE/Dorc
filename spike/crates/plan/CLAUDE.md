@@ -15,7 +15,16 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   your build, you likely lack the real vouch: obtain it (author the
   `is_converged()`) or let the command run — NEVER fabricate or convert a claim
   to satisfy the type. That conversion is the vouchless-elide hole the weld
-  closes.
+  closes. Since the influence-carriage fold (r30, `30Qd`): all EIGHT licence mints
+  (`prove_replaceable` · `prove_query_replaceable` · `prove_members_replaceable` ·
+  `prove_shared_region_replaceable` · `prove_inline_replaceable` ·
+  `prove_inline_query_replaceable` · `GuardLicense::mint` · `mint_for_shared_region`) take an
+  `InfluenceAccount` beside the vouch and join it into the licence; `Plan::decided` carries
+  the join of every record `project_plan` read; `certifier_trip`'s demotion is a RE-MINT that
+  joins the trip witness into the record's own account, never a field poke
+  (`core/CLAUDE.md the-influence-account-is-carried-never-stamped`). `SpineLoadDecision` is
+  minted at the PRE-INTAKE seat (`mint_load_decisions`; `record_new_arm` only transcribes), so
+  its authored account is a fact about where the seat stands, never an asserted label.
 - **aggregate-mints-carry-the-same-demand** — the demand follows the MUTATION,
   not the node shape: an establish erased inside a member-loop or inline-call
   aggregate consumes its own reached vouch exactly as a standalone one does.
