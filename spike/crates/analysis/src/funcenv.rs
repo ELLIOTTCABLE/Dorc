@@ -167,6 +167,80 @@ pub struct Definition {
     pub name_span: Span,
 }
 
+/// The authored book path `$0` names, and the invocation spellings the analysis must hold for
+/// (`30P:model-symbolic-dollar-zero`).
+///
+/// NEVER realpath'd — sh-parity under symlinks — and never read from a shell. `$0` is a fact about
+/// how Dorc was invoked and how Dorc will invoke what it ships
+/// (`30P:rul-dorc-invokes-in-a-modelled-live-spelling`), so no host answer has a route into one.
+///
+/// It rides [`DefinitionTable`] beside its cwd for that type's own reason: the load answer and the
+/// definitions it binds must be ONE fact. Both spellings evaluate against the SAME modelled cwd —
+/// the spelling varies `$0`'s string and nothing else.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ScriptSpellings {
+    slash_bearing: Option<String>,
+    slashless: Option<String>,
+}
+
+/// Which invocation named the book (`30P:model-symbolic-dollar-zero`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Spelling {
+    /// `sh /srv/book.sh` / `sh ./plan.sh` — the spelling Dorc itself invokes.
+    SlashBearing,
+    /// `sh book.sh`. Live ONLY when the book's own directory is the modelled load cwd: elsewhere
+    /// that command could not have found the book at all, so it is not a possible invocation.
+    Slashless,
+}
+
+impl ScriptSpellings {
+    /// The spellings a book at `path` has under `cwd`.
+    ///
+    /// The path is put through [`dorc_core::loadpath::normalize`] first, so the two development
+    /// platforms' spellings of one path answer alike — a `\`-bearing controller path has no `/` to
+    /// trim and would otherwise make `${0%/*}` the whole word on one leg only.
+    #[must_use]
+    pub fn of(path: &str, cwd: &dorc_core::loadpath::Cwd) -> Self {
+        let normalized = dorc_core::loadpath::normalize(path);
+        if normalized.is_empty() {
+            return Self::default();
+        }
+        let base = normalized
+            .rsplit('/')
+            .next()
+            .unwrap_or(&normalized)
+            .to_owned();
+        let here = cwd.resolve_operand(&base);
+        let slashless =
+            (here.is_some() && here == cwd.resolve_operand(&normalized)).then_some(base);
+        let slash_bearing = if normalized.contains('/') {
+            normalized
+        } else {
+            format!("./{normalized}")
+        };
+        Self {
+            slash_bearing: Some(slash_bearing),
+            slashless,
+        }
+    }
+
+    /// What `$0` holds under `spelling`, or `None` when that spelling is not live here.
+    #[must_use]
+    pub fn text(&self, spelling: Spelling) -> Option<&str> {
+        match spelling {
+            Spelling::SlashBearing => self.slash_bearing.as_deref(),
+            Spelling::Slashless => self.slashless.as_deref(),
+        }
+    }
+
+    /// Every live spelling, deterministically ordered, invoking-spelling first.
+    pub fn live(&self) -> impl Iterator<Item = Spelling> {
+        [Spelling::SlashBearing, Spelling::Slashless]
+            .into_iter()
+            .filter(|&s| self.text(s).is_some())
+    }
+}
+
 /// One source the invocation named to load: a pre-source, whose whole top-level program runs
 /// before the book's first line.
 #[derive(Debug, Clone)]
@@ -190,6 +264,10 @@ pub struct DefinitionTable {
     /// the load answer and the definitions it binds must be one fact: a caller that could supply a
     /// different cwd to the resolver than to the loader is a caller that can make them disagree.
     cwd: dorc_core::loadpath::Cwd,
+    /// What `$0` names in this unit, per live invocation spelling — carried here for the same
+    /// reason as [`Self::cwd`], and beside it because an operand built from `$0` resolves through
+    /// that cwd.
+    spellings: ScriptSpellings,
     /// Per loadable path — in CANONICAL form, keyed through [`Self::cwd`] — that file's own top
     /// level, as the closed program the loader interprets at each load site
     /// (`crate::load::LoadProgram`). A file whose top level is a flat list of declarations is the
@@ -212,11 +290,16 @@ pub struct DefinitionTable {
 }
 
 impl DefinitionTable {
-    /// An empty table whose loads resolve against `cwd`.
+    /// An empty table whose loads resolve against `cwd`, in a unit whose `$0` is `spellings`.
+    ///
+    /// The parameter is DEMANDED rather than defaulted so a table carrying a cwd but no `$0` is
+    /// unrepresentable: the two are one fact, and a caller free to supply only the first could make
+    /// an operand's directory and its file disagree.
     #[must_use]
-    pub fn rooted_at(cwd: dorc_core::loadpath::Cwd) -> Self {
+    pub fn rooted_at(cwd: dorc_core::loadpath::Cwd, spellings: ScriptSpellings) -> Self {
         Self {
             cwd,
+            spellings,
             ..Self::default()
         }
     }
@@ -225,6 +308,12 @@ impl DefinitionTable {
     #[must_use]
     pub const fn cwd(&self) -> &dorc_core::loadpath::Cwd {
         &self.cwd
+    }
+
+    /// What `$0` names in this unit, per live invocation spelling.
+    #[must_use]
+    pub const fn spellings(&self) -> &ScriptSpellings {
+        &self.spellings
     }
 
     /// Record a definition and return its id.
@@ -3364,7 +3453,10 @@ mod tests {
             ("/ops", "/ops/pkg/lib.sh", false),
             ("/ops/pkg", "/ops/pkg/lib.sh", true),
         ] {
-            let mut table = DefinitionTable::rooted_at(dorc_core::loadpath::Cwd::at(cwd));
+            let mut table = DefinitionTable::rooted_at(
+                dorc_core::loadpath::Cwd::at(cwd),
+                super::ScriptSpellings::default(),
+            );
             let lib = add_def(&mut table, 0, ROLE);
             table.set_loadable(loaded, flat(vec![lib]));
             let (env, cfg, _) = solve_positional(book, &table);
@@ -3378,6 +3470,42 @@ mod tests {
                 want,
                 "standing in {cwd}, `. ./lib.sh` names {}",
                 if bound { loaded } else { "nothing loaded" }
+            );
+        }
+    }
+
+    /// The two live spellings of `$0`, derived from the authored book path and the modeled cwd
+    /// alone (`30P:model-symbolic-dollar-zero`) — never realpath'd, never asked of a shell.
+    ///
+    /// The slashless spelling is live only where `sh <basename>` could have FOUND the book, which
+    /// is the only place that invocation is possible; and the `\`-spelled row is why the derivation
+    /// normalizes first, since a `\`-bearing path has no `/` for `${0%/*}` to trim and would answer
+    /// differently on this project's two development platforms
+    /// (`one-platform-green-is-not-cross-platform-green`).
+    #[test]
+    fn the_dollar_zero_spellings_come_from_the_book_path_and_the_cwd() {
+        for (cwd, book, bearing, slashless) in [
+            ("/ops", "/ops/book.sh", "/ops/book.sh", Some("book.sh")),
+            ("/ops", "book.sh", "./book.sh", Some("book.sh")),
+            ("/ops", "/srv/book.sh", "/srv/book.sh", None),
+            ("/ops", "pkg/book.sh", "pkg/book.sh", None),
+            (
+                "C:/ops",
+                "C:\\ops\\book.sh",
+                "C:/ops/book.sh",
+                Some("book.sh"),
+            ),
+        ] {
+            let spellings = super::ScriptSpellings::of(book, &dorc_core::loadpath::Cwd::at(cwd));
+            assert_eq!(
+                spellings.text(super::Spelling::SlashBearing),
+                Some(bearing),
+                "standing in {cwd}, `{book}`"
+            );
+            assert_eq!(
+                spellings.text(super::Spelling::Slashless),
+                slashless,
+                "standing in {cwd}, `sh {book}` is reachable by bare name only from its own dir"
             );
         }
     }

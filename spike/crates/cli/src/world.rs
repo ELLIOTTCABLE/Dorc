@@ -781,7 +781,10 @@ pub fn definition_table(
     use dorc_syntax::ast::NodeKind;
 
     let book_file = snapshot.book_file();
-    let mut table = DefinitionTable::rooted_at(snapshot.cwd().clone());
+    let mut table = DefinitionTable::rooted_at(
+        snapshot.cwd().clone(),
+        dorc_analysis::funcenv::ScriptSpellings::of(snapshot.book_path(), snapshot.cwd()),
+    );
     for (idx, path) in snapshot.oracle_paths().iter().enumerate() {
         let Some(src) = snapshot.oracle_srcs().get(idx) else {
             continue;
