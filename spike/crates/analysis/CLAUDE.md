@@ -174,9 +174,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   dead define-if-absent body would otherwise answer by being last to DECLARE. The pairs travel to
   `lift_from_sets` as `binds_somewhere` data rather than as missing rows. Still EXACT, not
   conservative: it SHIFTS the minting winner rather than withholding, and a bigger or different
-  dialect SPARES MORE (`28Q` §9 `pin-two-position-sparing`), so it must be right — and it is,
-  because a definition no program point binds is one no execution can call. Never widen it to
-  "probably dead", and never let a seat read it for anything but the dialect.
+  dialect SPARES MORE, so it must be right — and it is, because a definition no program point
+  binds is one no execution can call. Never widen it to "probably dead", and never let a seat
+  read it for anything but the dialect. The scan itself is scheduled to go: the ruled dialect is
+  per speaker closure, read at the backing's FRAME (`30J` §12), at which point `never_live` has
+  no consumer left.
 - **translation-fence-binds-lattice-too** (`304`) — `lattice.rs` is inside the TRANSLATED
   algebra tier (`spike/verify/aeneas/src/lib.rs` `#[path]`-includes this very file), so
   `core/CLAUDE.md`'s `keep-borrows-out-of-closure-returns` binds it verbatim: no

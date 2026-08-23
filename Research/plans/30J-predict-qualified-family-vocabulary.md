@@ -610,7 +610,8 @@ What remains open elsewhere: cross-family registration (section 6.5), the
 kind-owner question of whether two families may deliberately co-refer.
 
 Build: with the rest of this plan (section 10); the `28T` sparing mini-model is
-the proof home. As-built until then, `oracle::build_dialect` mints one
+the proof home, and it gates promoting plural-idiom books beyond the census's
+enumerated blessed idioms. As-built until then, `oracle::build_dialect` mints one
 `(family, kind)` set per unit from a last-wins file, which can pool two
 closures' words below an admin bless — a too-large dialect spares more. The
 shadow refusal (`core::ContestedFamilies`) keeps two live minting members out of

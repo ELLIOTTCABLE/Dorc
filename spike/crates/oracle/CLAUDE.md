@@ -66,7 +66,9 @@ discipline: one rule per bullet, slugged; append to the matching section.
   is what that cost the last time). TWO named non-resolution folds survive, both consuming
   withdrawn inputs: `dialect_minting_source`,
   vocabulary-AGGREGATION only — it preserves the sparing dialect's minting SET and answers nothing
-  about which definition speaks (`28Q` §9 `pin-two-position-sparing`) — and
+  about which definition speaks; it is the fold `30J` §12 retires (the ruled dialect is per
+  speaker closure, keyed at the backing's frame through the same positional environment every
+  other seat reads — build on `30J` §10's trigger, never opportunistically) — and
   `escalation_policy_diagnostics`, a frameless whole-unit POLICY disclosure over the
   loaded-and-withdrawn set (aid-plane; licenses nothing; a frame would invent a site the question
   does not have).

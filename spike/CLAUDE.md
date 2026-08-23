@@ -219,12 +219,16 @@ prompt you write:
   never keyed to claim-types. Keying never feeds survival; hint-lane values never
   feed survival; the flag permits acting on separation claims, never manufactures
   them.
-- **sparing-algebra** (`277` §3, as amended by `279f`) — same-entity, a claim SPARES
-  a backing iff BOTH sides carry minted selectors AND claim-token ∈ dialect(the
-  backing's minting family, kind) AND claim ≠ backing. Everything else COLLIDES: a
-  selector-less/⊤ coordinate on EITHER side, unminted tokens, cross-dialect tokens.
-  Marked runnable lines mint (verdict `:`/`:!` and observe `:?`); claim/disturbs
-  emissions never mint.
+- **sparing-algebra** (`277` §3, as amended by `279f`; dialect keying `30J` §12) —
+  same-entity, a claim SPARES a backing iff BOTH sides carry minted selectors AND
+  claim-token ∈ dialect(the speaker closure whose definition is live at the backing's
+  frame, family, kind) AND claim ≠ backing. Everything else COLLIDES: a
+  selector-less/⊤ coordinate on EITHER side, unminted tokens, another speaker's
+  tokens. A dialect belongs to ONE closure and follows the live definition; two
+  closures' words never pool (no committee at a frame). Marked runnable lines in a
+  predict-qualified closure mint (verdict `:`/`:!` and observe `:?`); claim/disturbs
+  emissions never mint. As-built the mint is still one whole-unit last-wins set per
+  family (`oracle::build_dialect`) — the build rides `30J` §10's trigger.
 - **set-lifting-universal-meet** (`277` §5) — consumers quantify UNIVERSALLY over
   backing-SETS: sparing requires EVERY footprint×backing pair provably-disjoint (any
   unknown member ⇒ collide); transport requires every member to transport. Pins:
