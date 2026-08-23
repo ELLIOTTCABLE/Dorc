@@ -891,13 +891,19 @@ impl Selection {
 /// refusal path it could never take (`one-definition-table-two-drivers`), and [`select`]'s own
 /// `auto`-at-a-terminal arm calls it, so the two cannot drift.
 #[must_use]
-pub fn select_for_terminal_render(projection: &BundleProjection, loads: &[BookLoad]) -> Selection {
+pub fn select_for_terminal_render(
+    snapshot: &crate::snapshot::StaticLoadSnapshot,
+    projection: &BundleProjection,
+    loads: &[BookLoad],
+) -> Selection {
     let inline_debt = loads
         .iter()
         .filter(|load| !(load.absorbable && load.explicit))
         .count()
-        .max(usize::from(inline_imports(projection, loads).is_none()));
-    match inline_imports(projection, loads) {
+        .max(usize::from(
+            inline_imports(snapshot, projection, loads).is_none(),
+        ));
+    match inline_imports(snapshot, projection, loads) {
         Some(imports) => Selection {
             form: ArtifactForm::Flattened,
             fallback: None,
@@ -981,21 +987,19 @@ pub fn select(
             }),
         },
         FormRequest::Explicit(ArtifactForm::MirroredTree) => match posture {
-            StreamPosture::Materializable => {
-                match mirrored_files(snapshot, projection, loads) {
-                    Ok(dependencies) => Ok(Selection {
-                        form: ArtifactForm::MirroredTree,
-                        fallback: None,
-                        dependencies,
-                        imports: Vec::new(),
-                        placements: whole_root(),
-                    }),
-                    Err(unplaceable) => Err(FormRefusal::Unavailable {
-                        form: ArtifactForm::MirroredTree,
-                        because: FormFallback::DependencyUnplaceable { loads: unplaceable },
-                    }),
-                }
-            }
+            StreamPosture::Materializable => match mirrored_files(snapshot, projection, loads) {
+                Ok(dependencies) => Ok(Selection {
+                    form: ArtifactForm::MirroredTree,
+                    fallback: None,
+                    dependencies,
+                    imports: Vec::new(),
+                    placements: whole_root(),
+                }),
+                Err(unplaceable) => Err(FormRefusal::Unavailable {
+                    form: ArtifactForm::MirroredTree,
+                    because: FormFallback::DependencyUnplaceable { loads: unplaceable },
+                }),
+            },
             _ => Err(FormRefusal::NoArtifactStream {
                 form: ArtifactForm::MirroredTree,
             }),
@@ -1015,7 +1019,9 @@ pub fn select(
             StreamPosture::PipedArtifact => inlined
                 .map(flattened)
                 .ok_or(FormRefusal::IncompleteSingleStream { loads: inline_debt }),
-            StreamPosture::TerminalRender => Ok(select_for_terminal_render(projection, loads)),
+            StreamPosture::TerminalRender => {
+                Ok(select_for_terminal_render(snapshot, projection, loads))
+            }
             StreamPosture::Materializable => Ok(match multipart {
                 Ok((dependencies, imports)) => Selection {
                     form: ArtifactForm::Multipart,

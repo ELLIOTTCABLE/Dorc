@@ -82,7 +82,7 @@ fn select_terminal_form(
         .map(crate::bundle::BundleProjectionOutput::into_projection)
         .unwrap_or_default();
     let loads = crate::artifact::book_loads(cfg, book, snapshot.book_src(), &projection);
-    crate::artifact::select_for_terminal_render(&projection, &loads)
+    crate::artifact::select_for_terminal_render(snapshot, &projection, &loads)
 }
 
 impl WhyWorld {
