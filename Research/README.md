@@ -286,7 +286,9 @@ and carries the license-contamination map.
   `plans/30J`. The r30 close-out is scheduled in **`notes/30O`** (the owed-work accounting) and designed in
   **`plans/30P`** (emission planner · stream forms · load principles; its review record
   `notes/30Pb`, its prior art `.claude/research/emission-and-inclusion-prior-art/`); the
-  second-half conduct ledger is `notes/30N`. Current state: `LIVING_STATUS.md`.
+  second-half conduct ledger is `notes/30N`; the 2026-08-23 burndown sitting's typed rulings
+  (influence lane · ship-nothing · the stdlib dialect-reach) are `notes/30Q` §5g. Current state:
+  `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the

@@ -79,8 +79,10 @@ builder-initiated (`AGENTS.for-builders-only.md`); no builder triggered it this 
 
 ## GENTLY HELD (deliberately waiting on the human)
 
-- **block-stdlib** — zero non-fixture oracles; gated on `unblock-starter-oracle-library`
-  (the dialect-reach decision) and on the `30D`+`30J` predict-contract arc landing first.
+- **block-stdlib** — zero non-fixture oracles; the dialect-reach human gate is RULED (`30Q` §5g:
+  POSIX `test` grammar + `$(…)`-as-⊤ in predict bodies, carry safe-list split, tracer continues
+  past an unevaluable gate); remaining gates are engineering — that dialect-widening lane, the
+  `30D`+`30J` predict-contract arc, the `27Q` preconditions.
   On-ramp: `notes/27Q`.
 - **`28Q:stage-iii-world-scopes`** — gated on `design-world-scope-surface`,
   `rule-incarnation-continuity-semantics`, and the ssh oracle (⇐ stdlib).

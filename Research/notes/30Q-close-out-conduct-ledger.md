@@ -388,6 +388,65 @@ root burndown (`rule-ship-nothing-below-a-blind-act`); E2 is two seats in both d
   before/after handed to the conductor. Size -GUESS L; one return-and-resume checkpoint after
   R3 (the stamp gone, species sealed) is worth its cost.
 
+## §5g — the burndown sitting (2026-08-23; sibling session `r30-sit-blind-loads-unsoundness`; typed rulings, handed across to the running conductor)
+
+Ack-ledger — TYPED unless marked LEAN. Rubber-duck sitting over the root burndown; no dispatch
+from that session (one read-only Sonnet scout, `scout-predict-undecidable-test`).
+
+- **`lane-influence-carriage`** (binds the EXECUTE brief; the EXECUTE ack itself must be typed to
+  the RUNNING conductor's session — the sitting's "proceed" does not discharge it): R10
+  (`stop-spine-mode-is-durable`) → fix at the conductor's choice; format-only, NOT opaque-review
+  · durable grade: build to a FUNCTIONING export + e2es, then DISABLE it and swap those e2es to
+  xfails before lane-close; the human enables post-review · NACK as welded law: "influence never
+  decides whether a line elides" — a v0 FACT (no consumer exists), never law; a future decision
+  consumer (e.g. per-host contamination gating revived cross-host planning) is a typed human act;
+  the proposed steering must not say "decision-inert by type" · `306b` §6b exemption: the
+  conductor's reading stands but stays a NARROW window — single seat, single transition
+  (`InfluenceAccount::of_phase`), a caller-count fence, builder latitude, never spread · no
+  gradation (ACK; purpose: force the threading and the type-discipline, then WATCH for holes over
+  the next rounds — the fold report enumerates every seat that needed an `untracked` adapter) ·
+  no render change (ACK) · per-host NOT built; RESERVE the slot: `HostInfluenced` keeps carrying
+  the `InfluencePhase`, whose `()` payload is the future host-scope identity (account becomes
+  set-of-hosts, join = union, at width two); never simplify to a unit variant · the affine
+  "clean-of-host" witness for the Authored mint: NOT built ("not just yet"); this lane a lexical
+  fence on `authored_before_contact()` callers · `tc-load-decisions-read-authored`: LEAN (not
+  ruling) — move the `SpineLoadDecision` Spine write to the pre-intake seat if cheap, else
+  Authored DERIVED from funcenv's inputs, never an asserted label; report as lean-applied ·
+  `rul-rc-reaches-genkill-only-through-decisions`'s "expected out of the influence round": never
+  strike → `TODO-ADDTL:rc-vs-genkill-permanent-law`; re-home the sentence at the fold ·
+  flattening: post-reingest influence is why/report-plane ONLY; no durable ingestion rehydrates
+  influence into a decision; whylog ingestion never drives decision — the why-driver's
+  widen-to-influenced is the DEFINITION, not an approximation.
+- **`rule-ship-nothing-below-a-blind-act`** — (A), confirmed in both sessions: a pre-network
+  refusal (B) and mirror-claim-nothing (C) are BOTH unsound — Dorc cannot know the host lacks the
+  file at the runtime cwd, so either is a guess in some direction; "not within our remit to make
+  guesses, or to ship files around hosts speculatively." No further churn.
+- **`unblock-starter-oracle-library` — RULED; the human gate is CLOSED.** Three parts, one
+  lane: (1) the predict dialect admits the POSIX `test` grammar (unary string/file, numeric;
+  `-a`/`-o` stay out per `276`), WITH the carry safe-list split riding — string/numeric ops stay
+  on `carry.rs`'s pure list, file ops (`-f -x …`) become unmarked external reads that the carry
+  pass default-disqualifies (`-x` is the EACCES identity case) — acked "as long as it doesn't
+  invalidate the carry"; (2) `$(…)` admitted as an opaque ⊤ word (parser-tier — the lexer already
+  passes it; `27Q:teach-marked-command-not-cmdsub` unchanged: still not carry-closable); (3) the
+  argparse tracer CONTINUES past an unevaluable GATE in the closed `[ COND ] || return N` shape
+  (`eval.rs` `run_and_or` / `recognize_gate`) instead of Topping — both outcomes name the same
+  entity and the host declines at probe time; `if`/`while` on host-dependent conditions stay
+  fail-to-Top. Scout-measured (+SURE): today `run_if`/`run_while`/`run_and_or` short-circuit every
+  `Err(TopReason)` to `Flow::Top` and `run_block` stops, so (1)+(2) without (3) leave every
+  R2-SHADOW-clean oracle un-probeable by construction; no `for` exists in the dialect. Ground:
+  `rul-unsure-falls-toward-sh-parity` · `native-sh-or-break-loudly`; a user-surface/dialect
+  decision, never an engine blessing of `command -v`. The stdlib `command` oracle answers the
+  WORLD question (an executable on PATH; bare-name floors ⇒ can't-say ⇒ run, `30Ic`), never the
+  LOAD question (`30I:pin-command-v-load-model`). Residue, trivial, at authoring time: the
+  executable kind's name (bootstrap `sm.dorc.*`) and `-v`-only (lean yes). Any durable strawman
+  body must honour the nix-`return 2`/DREP decline ruling (`27W`); none was written to disk.
+  Remaining stdlib gates are ENGINEERING: the dialect-widening lane · `30D`/`30J` · the `27Q`
+  preconditions. `FORFEITS:forfeit-command-v-poison-wall`'s CAPTURE re-said accordingly.
+- **Burndown housekeeping**: the wave-one/veto-sweep block dropped (discharged/triaged);
+  `_tmp-r30-conduct-collapse.md` deleted; the three conductor questions and item 1 closed; items
+  2–6 untouched. Tooling-Sonnet queue += (7) `lint:docids` is under rework in another lane —
+  the human authorized `--no-verify` for doc-only commits while it fights.
+
 ## §5b — CONTEXT COLLAPSE (2026-08-22, after the restart; supersedes §5a's order)
 
 The conductor spent its remaining window folding planner → load-A → load-B by hand (three
