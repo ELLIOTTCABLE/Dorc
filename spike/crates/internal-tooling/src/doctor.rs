@@ -79,7 +79,17 @@ fn sizes() -> ExitCode {
 
     println!("== lane caches ==");
     match user_cache_dir() {
-        None => println!("  (no XDG_CACHE_HOME or HOME — Windows keeps none of these)"),
+        None => {
+            println!("  (no XDG_CACHE_HOME or HOME — Windows keeps none of these)");
+            #[cfg(windows)]
+            for (label, bytes) in wsl_vhdxs() {
+                println!(
+                    "  {:>10}  {label}  — WSL distro disk; grows with WSL builds, never \
+                     auto-shrinks",
+                    gib(bytes)
+                );
+            }
+        }
         Some(cache) => {
             let mut rows = children_with_sizes(&cache);
             rows.retain(|(path, _)| is_lane_cache(&file_name(path)));
@@ -442,6 +452,42 @@ fn user_cache_dir() -> Option<PathBuf> {
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
 }
 
+/// Every WSL distro's disk under `packages` — a UWP package folder name paired with the size of
+/// its `LocalState/ext4.vhdx`, if it has one. Split from [`wsl_vhdxs`] so the walk itself is
+/// unit-testable without `%LOCALAPPDATA%`.
+///
+/// Provenance (`300` §2): this is the SAME store `preflight`'s WSL host-volume check exists for
+/// — a sparse vhdx that grows into whichever host drive holds it and never shrinks back. Windows
+/// cannot see WSL's own `~/.cache` lane caches (hence the branch this sits in), but it can always
+/// see this file, so it is the one WSL-side hint the Windows leg of `doctor` can offer.
+#[cfg(windows)]
+fn vhdxs_under(packages: &Path) -> Vec<(String, u64)> {
+    let Ok(entries) = std::fs::read_dir(packages) else {
+        return Vec::new();
+    };
+    let mut found: Vec<(String, u64)> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let vhdx = entry.path().join("LocalState").join("ext4.vhdx");
+            let bytes = std::fs::symlink_metadata(&vhdx).ok()?.len();
+            Some((
+                format!("{}/LocalState/ext4.vhdx", file_name(&entry.path())),
+                bytes,
+            ))
+        })
+        .collect();
+    found.sort();
+    found
+}
+
+#[cfg(windows)]
+fn wsl_vhdxs() -> Vec<(String, u64)> {
+    let Some(local_appdata) = std::env::var_os("LOCALAPPDATA") else {
+        return Vec::new();
+    };
+    vhdxs_under(&PathBuf::from(local_appdata).join("Packages"))
+}
+
 /// The last two path components — enough to tell two worktrees apart without a column of
 /// identical prefixes drowning the numbers.
 fn short(path: &Path) -> String {
@@ -457,12 +503,42 @@ fn short(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(windows)]
+    use super::vhdxs_under;
     use super::{
         cache_state, children_with_sizes, parse_worktree_list, short, tree_size,
         tree_size_excluding,
     };
     use std::collections::BTreeSet;
     use std::path::Path;
+
+    #[cfg(windows)]
+    #[test]
+    fn a_vhdx_is_found_and_sized_under_its_packages_entry() {
+        let root =
+            std::env::temp_dir().join(format!("dorc-doctor-vhdx-test-{}", std::process::id()));
+        let local_state = root
+            .join("Packages")
+            .join("SomeDistro_abc123")
+            .join("LocalState");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&local_state).expect("scratch dir");
+        std::fs::write(local_state.join("ext4.vhdx"), [0_u8; 4096]).expect("scratch vhdx");
+
+        let found = vhdxs_under(&root.join("Packages"));
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(found.len(), 1);
+        assert!(found[0].0.contains("SomeDistro_abc123"));
+        assert_eq!(found[0].1, 4096);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn an_absent_packages_directory_finds_nothing() {
+        let absent = internal_tooling::repo_root().join("no-such-packages-dir");
+        assert!(vhdxs_under(&absent).is_empty());
+    }
 
     /// Real `git worktree list --porcelain` output, trimmed to the shapes that matter: a
     /// detached checkout, a branch, and a lock.
