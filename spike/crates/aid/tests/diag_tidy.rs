@@ -209,6 +209,8 @@ const MIGRATED_SLUGS: &[&str] = &[
     "in-book-vocabulary-role",
     "helper-declaration-contested",
     "vouched-composition-not-present",
+    "script-relative-load-dies-slashless",
+    "slashless-source-searches-path",
     "missing-dialect-marker",
     "marker-version-unrecognized",
     "tolerates-unknown-dimension",

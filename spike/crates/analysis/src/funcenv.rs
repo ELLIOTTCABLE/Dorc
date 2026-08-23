@@ -710,6 +710,10 @@ pub struct FuncEnv {
     /// (`28K` §1 rul-unloadable-is-unlicensed). Reported by the caller; recorded here as data so
     /// the kernel mints no diagnostics of its own.
     unresolvable_loads: BTreeSet<CfgNodeId>,
+    /// The two load-head LINT populations, recorded as data for the same reason: sites whose head
+    /// is dead under a slashless invocation, and sites whose operand is a `PATH` search.
+    dies_slashless: BTreeSet<CfgNodeId>,
+    searches_path: BTreeSet<CfgNodeId>,
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
     sourced_paths: BTreeMap<CfgNodeId, String>,
@@ -769,6 +773,20 @@ impl FuncEnv {
     #[must_use]
     pub fn unresolvable_loads(&self) -> &BTreeSet<CfgNodeId> {
         &self.unresolvable_loads
+    }
+
+    /// Sites whose head names its file under the spelling Dorc invokes and provably cannot succeed
+    /// under a slashless one — an OFF-RAMP lint (`30P:rul-dead-spelling-is-not-unsound`): nothing
+    /// this run does is wrong, and `sh book.sh` would die at that line.
+    #[must_use]
+    pub fn dies_slashless(&self) -> &BTreeSet<CfgNodeId> {
+        &self.dies_slashless
+    }
+
+    /// Sites whose operand carries no `/`, which POSIX makes a `PATH` search.
+    #[must_use]
+    pub fn searches_path(&self) -> &BTreeSet<CfgNodeId> {
+        &self.searches_path
     }
 
     /// The ONE load account every projection is derived from.
@@ -985,6 +1003,8 @@ pub fn analyze(
                 states,
                 floor: None,
                 unresolvable_loads,
+                dies_slashless: sites.dies_slashless.clone(),
+                searches_path: sites.searches_path.clone(),
                 sourced_paths,
                 folded_edges,
                 loads,
@@ -1049,6 +1069,8 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         states: vec![EnvStack::Top; graph.node_count()],
         floor: Some(floor),
         unresolvable_loads: BTreeSet::new(),
+        dies_slashless: BTreeSet::new(),
+        searches_path: BTreeSet::new(),
         sourced_paths: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
         loads: LoadAccount::default(),
@@ -2379,6 +2401,12 @@ fn load_sites(
         if !matches!(literals.literal_text(id, 0), Some("." | "source")) {
             continue;
         }
+        if literals
+            .literal_text(id, 1)
+            .is_some_and(|text| !text.contains('/') && !text.contains('\\'))
+        {
+            sites.searches_path.insert(id);
+        }
         let head = load_head(ast, defs, literals, id, cfg_node.ast, 1);
         if head.dies_slashless {
             sites.dies_slashless.insert(id);
@@ -2418,6 +2446,9 @@ struct LoadSites {
     /// Sites whose head is EXACT for the spelling Dorc invokes and provably fatal for the other
     /// (`30P:rul-dead-spelling-is-not-unsound`) — an off-ramp lint, never a refusal.
     dies_slashless: BTreeSet<CfgNodeId>,
+    /// Sites whose operand is a plain slash-less literal, which POSIX makes a `PATH` search rather
+    /// than a cwd lookup — a host read, so the controller names no file.
+    searches_path: BTreeSet<CfgNodeId>,
 }
 
 /// The per-node transfer.
@@ -2743,6 +2774,8 @@ mod tests {
             states: vec![EnvStack::Frames(vec![frame])],
             floor: Some(super::EnvFloor::ValuePlaneUntrusted),
             unresolvable_loads: BTreeSet::new(),
+            dies_slashless: BTreeSet::new(),
+            searches_path: BTreeSet::new(),
             sourced_paths: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
             loads: crate::load::LoadAccount::default(),

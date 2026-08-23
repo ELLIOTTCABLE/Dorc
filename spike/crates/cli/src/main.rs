@@ -1185,6 +1185,12 @@ fn run(
         book_source,
         &positional_loading_notices(&parsed.value, &cfg.value, &value, &interner, live_defs),
     );
+    report_at(
+        advisory,
+        "loading",
+        book_source,
+        &load_head_notices(&parsed.value, &cfg.value, &env),
+    );
     for (file, diags) in helper_conflict_diagnostics(&helpers, source_paths, &source_refs) {
         let source = source_paths
             .get(file)
@@ -2965,6 +2971,35 @@ fn positional_loading_notices(
         }
     }
     diags
+}
+
+/// The two LOAD-HEAD lints (`30P:the-load-principles`), spanned at their own `.` line.
+///
+/// The environment records both populations as data and mints nothing of its own (the
+/// `funcenv::unresolvable_loads` precedent); this driver is where they become diagnostics. Neither
+/// changes a verdict: one names an OFF-RAMP hazard on a load that resolves fine here, the other
+/// names why a load the controller could not follow was unfollowable.
+fn load_head_notices(
+    book: &dorc_syntax::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) -> Vec<Diag> {
+    let at = |node: &dorc_analysis::cfg::CfgNodeId| book.node(cfg.node(*node).ast).span;
+    let dies = env.dies_slashless().iter().map(|node| {
+        Diag::new(
+            DiagCode::ScriptRelativeLoadDiesSlashless(
+                dorc_aid::diag::ScriptRelativeLoadDiesSlashless,
+            ),
+            at(node),
+        )
+    });
+    let searches = env.searches_path().iter().map(|node| {
+        Diag::new(
+            DiagCode::SlashlessSourceSearchesPath(dorc_aid::diag::SlashlessSourceSearchesPath),
+            at(node),
+        )
+    });
+    dies.chain(searches).collect()
 }
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier

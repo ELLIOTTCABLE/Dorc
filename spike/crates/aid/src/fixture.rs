@@ -33,10 +33,11 @@ use crate::diag::{
     RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing,
     RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
     RecordsTornLine, RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites,
-    RoleFamilyContested, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable, SolvePass,
-    SolverConsistencyFailure, SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement,
-    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed,
-    TransportCrlfRefused, TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
+    RoleFamilyContested, ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId,
+    SiteUnresolvable, SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure,
+    SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement, SyntaxUnsupported,
+    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
+    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
     VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
     WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
     WrapperPeelIncoherent,
@@ -254,6 +255,17 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 name: "_yum_installed".to_owned(),
                 prior: "vendor/yum.oracle.sh:4".to_owned(),
             }),
+        ),
+        // Same necessity, one seat further BACK: both load-head lints are minted by the binary's
+        // own load-edge driver, past everything the in-process book pipeline composes. Their
+        // end-to-end firing is a whole-product case's.
+        (
+            "script-relative-load-dies-slashless",
+            DiagCode::ScriptRelativeLoadDiesSlashless(ScriptRelativeLoadDiesSlashless),
+        ),
+        (
+            "slashless-source-searches-path",
+            DiagCode::SlashlessSourceSearchesPath(SlashlessSourceSearchesPath),
         ),
         // Same necessity, one seat further in: the suspension is decided inside the vouch lift and
         // reported at the binary's own load-edge seat, which no in-process consumer reaches.

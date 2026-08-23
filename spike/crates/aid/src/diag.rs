@@ -218,6 +218,13 @@ pub enum DiagCode {
     /// refuse rather than dedup). Spanned at the later declaration.
     HelperDeclarationContested(HelperDeclarationContested),
     VouchedCompositionNotPresent(VouchedCompositionNotPresent),
+    /// A book's `.` operand is computed from `$0` in a way that cannot succeed under a slashless
+    /// invocation, so the load is EXACT for the spelling Dorc invokes and DEAD for the other
+    /// (`30P:rul-dead-spelling-is-not-unsound`). Spanned at the `.` line.
+    ScriptRelativeLoadDiesSlashless(ScriptRelativeLoadDiesSlashless),
+    /// A book's `.` operand carries no `/`, so POSIX makes it a `PATH` search rather than a cwd
+    /// lookup (`30I:rul-dot-resolves-as-sh`). Spanned at the `.` line.
+    SlashlessSourceSearchesPath(SlashlessSourceSearchesPath),
     // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
     /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
     ToleratesUnknownDimension(ToleratesUnknownDimension),
@@ -465,6 +472,8 @@ impl DiagCode {
             DiagCode::InBookVocabularyRole(_) => "in-book-vocabulary-role",
             DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
             DiagCode::VouchedCompositionNotPresent(_) => "vouched-composition-not-present",
+            DiagCode::ScriptRelativeLoadDiesSlashless(_) => "script-relative-load-dies-slashless",
+            DiagCode::SlashlessSourceSearchesPath(_) => "slashless-source-searches-path",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
             DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
@@ -1274,6 +1283,17 @@ pub struct ReservedNamespaceSquat {
 /// claim is about the file, so per-item mints would be a correlated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OracleFileNotLoadInert;
+
+/// Payload of [`DiagCode::ScriptRelativeLoadDiesSlashless`] (static): none. The SPAN is the whole
+/// remediation — it lands on the `.` whose operand is the off-ramp hazard, and the reader needs
+/// the LINE, not a restatement of the operand the caret already underlines.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScriptRelativeLoadDiesSlashless;
+
+/// Payload of [`DiagCode::SlashlessSourceSearchesPath`] (static): none, for the same reason —
+/// the operand is what the caret points at, and the repair (`./x.sh`) does not vary with it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SlashlessSourceSearchesPath;
 
 /// Payload of [`DiagCode::RoleFamilyContested`] (TEMPLATIZED): the shadowed FAMILY, the role member
 /// whose two definitions collided, and where the overridden one lives. Spanned at the shadowing
@@ -2656,6 +2676,20 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // WARNING: the off-ramp is the product's own promise, and a book that dies under
+        // `sh book.sh` has lost it — silently, since Dorc's own invocation works fine.
+        DiagCode::ScriptRelativeLoadDiesSlashless(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
+        // WARNING: the load genuinely walls — a `PATH` search is a host read the controller may
+        // not make — and the repair is one `./`.
+        DiagCode::SlashlessSourceSearchesPath(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3581,6 +3615,8 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         // Static-message codes (no interpolation): no params. Their payload fields are still named
         // here, so adding one is a compile error at this seat too.
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })
+        | DiagCode::ScriptRelativeLoadDiesSlashless(ScriptRelativeLoadDiesSlashless)
+        | DiagCode::SlashlessSourceSearchesPath(SlashlessSourceSearchesPath)
         | DiagCode::OracleFileNotLoadInert(OracleFileNotLoadInert)
         | DiagCode::MissingDialectMarker(MissingDialectMarker)
         | DiagCode::ToleratesOverIdentityDependence(ToleratesOverIdentityDependence)
