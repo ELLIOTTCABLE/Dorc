@@ -180,6 +180,87 @@ opposite and is owed a one-line correction at the next steering edit).
 rebase on top of the repair tip) · (2) the adjudication register above, banked here · (3) rule
 the MAP, then EXECUTE on the human's typed ack · (4) the ceremony per `30O`.
 
+## §5d — the two lanes back; the MAP adjudicated (2026-08-22, conductor rulings, veto-eligible)
+
+**`fnd-windows-disk-crisis-mid-lanes`** — `C:` hit 0 bytes free during both lanes (a
+`mise run test` died in `rustc`'s LLVM and the harness temp fs `ENOSPC`'d); both Windows gate
+legs were REFUSED by preflight (`1.9 GiB free … needs 4.0/14.0 GiB`), WSL legs green.
+Inventory: 161.6 GiB in eighteen worktrees on this leg, fourteen of them folded `agent-*`
+lanes at 7–10 GiB each. The conductor reclaimed ONLY its own worktree's cache (`mise run clean`
+in `r30-conduct`, 16.3 GiB) and re-resumed both builders for their Windows legs; everything
+else is the human's sweep (`doctor-inventories-never-reaps`). Steering correction owed:
+`spike/CLAUDE.md preflight-bounds-before-spend` says "run the Windows leg first"; two builders
+measured the opposite (the WSL leg's cache release is what let Windows recover) — re-say at
+the next steering edit.
+
+**`lane-loop-residue`** — `ai/r30-lane-loop-residue` @ `c5f63a72`, six commits: the XFAIL case
+`loop30-cell-disjoint-siblings-would-replace` (target-tense `expected.ran`/`expected.out`
+hand-authored from the green sibling; registers as expected-XFAIL) · `argv_of_inline_site` ·
+the dangling pin cite · the fixture header · **`HK_STATE_DIR` per worktree in `mise.toml`
+`[env]`, both legs** (a real hk knob, measured to relocate `hk.log` + `output.log`; needed a
+`\`→`/` replace because `config_root` is backslashed on Windows and the existing
+`CARGO_TARGET_DIR` `split('/')` silently no-ops there) · the `closure.rs` header. Deviations:
+none. FORFEITS row `forfeit-cell-blind-self-reach-walls-loop-siblings` REDS → that case, at the
+fold. Windows leg pending re-run.
+
+**`lane-influence-carriage` MAP** — `ai/r30-lane-influence-map` @ `ba0feb05`; its report is
+on the lane branch under the next free `30Q` letter (cited here once it folds). Rulings, each
+re-derived:
+- `fnd-the-conversion-changes-no-answers-at-v0` ACCEPTED — both drivers feed the phase
+  unconditionally and every Spine record is minted downstream of intake, so the lane is
+  plumbing + sealing + `untracked` + spelled joins. That is the SHAPE `306b` §10 asked for;
+  byte-identity is near-trivial. `fnd-per-route-difference-is-unreachable-at-v0` ACCEPTED (the
+  `by_fact` key-set derivation would LAUNDER through `freshness`; pinned red, not claimed).
+- `lean-account-is-non-optional-with-a-typed-untracked` CONFIRMED as sharpened: `InfluenceAccount`
+  + the paired `core::spine::Account<T>` → `OperandAccount<T>`; `Untracked` is an ARM of the
+  account, never the reserved fourth `Grade` (`dec-untracked-is-not-gradation` ENDORSED);
+  total chain `Authored ⊏ HostInfluenced ⊏ Untracked`, `join = max` — ENDORSED chain-now
+  (`tc-untracked-sits-above-influenced` → chain; a product only if `306b` §1c lands).
+- `lean-render-sinks-are-untracked-adapters-this-lane` REFUTED, REPLACEMENT ENDORSED: `Plan`
+  CONVERTS (`project_plan` joins the accounts it reads), so `render_sh`/`render_apply` accept an
+  accounted object with no adapter and no influence-aware render; the four probe-side plans
+  RESTRICT; `Selection` RESTRICTS, `with_plan` JOINS. Conductor's mistake: the lean named the
+  sinks without tracing that their input is the accounted `Plan` — a scouting gap the MAP
+  checkpoint exists to catch; no recurrence guard beyond "trace the sink's input type".
+- `lean-certifier-trip-demotion-joins` CONFIRMED; `tc-spine-record-mut-accessors-survive`
+  RULED: the `&mut` accessors go; the demotion becomes a named Spine method taking the joined
+  account (R8).
+- `tc-accounting-reads-are-not-gating` RULED (conductor-tier): accounting is the ONE exempt
+  consumer of influence reads — the account is decision-inert by TYPE (no conversion into any
+  license-plane input compiles; the `two-plane-aid-law` posture), so reading which inputs were
+  influenced selects no code path about the plan. Steering sentence at the fold.
+- `tc-load-decisions-read-authored` — conductor LEAN, raised to the HUMAN (a typed `30I` rule
+  against the human-ruled `306b` §10): the account joins at the SEMANTIC mint, and a load
+  decision's semantic mint is `funcenv`, pre-contact — recording it onto the Spine inside
+  `record_new_arm` is transcription, not a mint, so the intake-gated control path does not
+  join. Lean: AUTHORED. One typed line settles it; EXECUTE's R4/R9 carry the ruling.
+- `dec-horizon-is-scheduled-not-deferred` — the builder's reading of `Horizon` is right and the
+  brief's was wrong (`Deferred` records a slip that has not happened); ENDORSED, conductor's
+  brief error.
+- RED-cell (a) lexical (ACCEPTED — the seat is private; the value pin waits on a settlement
+  fixture) · RED-cell (b) sited in `plan` (ACCEPTED — `core` stays dependency-free) ·
+  `fnd-two-drivers-compute-one-fact-twice` → the two-seat split in `results` ENDORSED ·
+  `fnd-one-mint-fence-misses-a-qualified-spelling` → R3 rider: widen the needle ·
+  `fnd-provenance-attach-raises-nothing` ACCEPTED as a doc-stated property.
+- **`stop-spine-mode-is-durable` (R10) — GATED on the human.** The MAP found `mode` is an
+  EQUALITY-CHECKED replay conjunct (`matches_claims` requires `whylog-replay`), so writing the
+  truthful value un-replays every production durable unless the check moves in lockstep.
+  Option (c) — narrow `SpineInvocation.mode` to a closed enum whose one inhabitant spells
+  `whylog-replay`; zero durable bytes move, `mode_valid` and `matches_claims` untouched; the
+  truthful value becomes a later reviewed one-arm widening — is the conductor's lean too
+  (~SUSPECT it does not fire `rul-durable-contents-reviewed-before-design`, since neither what
+  is persisted nor what re-ingestion consumes moves). Per the rule, the HUMAN rules by
+  preference; `/opaque-review` only if they defer it. R1–R9 do not depend on it.
+- Steering/register proposals 1–7 (two `core/CLAUDE.md` bullets, the `plan` mint rider, the
+  cross-crate pointer, ANALYZER-NEEDS `S`→`B` with the residue stated, NO FORFEITS row, the
+  `rul-rc-reaches-genkill-only-through-decisions` "expected out of the influence round" sentence
+  to re-say) — APPLIED AT THE EXECUTE FOLD, when the design has firmed.
+- EXECUTE shape: ONE Opus builder over the green merged tip, rows R1–R9 in the MAP's order
+  (R2 before R3 is load-bearing), R10 only with the ruling; gate = goldens + the nine
+  loom-embedded `.whylog` transcripts byte-identical + `bless:dry` clean + `spine:baseline`
+  before/after handed to the conductor. Size -GUESS L; one return-and-resume checkpoint after
+  R3 (the stamp gone, species sealed) is worth its cost.
+
 ## §5b — CONTEXT COLLAPSE (2026-08-22, after the restart; supersedes §5a's order)
 
 The conductor spent its remaining window folding planner → load-A → load-B by hand (three
