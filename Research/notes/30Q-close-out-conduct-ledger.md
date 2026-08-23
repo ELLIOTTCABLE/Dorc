@@ -193,6 +193,35 @@ never emptiness forever). RED-cell (b) promoted at R3. R11's durable review: the
 flow (build all the way → disable → reviewers chew on it → human enables) is the review
 ordering for that row; built last on that basis. Resumed for R4–R11.
 
+**`lane-influence-carriage` FOLDED (2026-08-23; `08027756` rebased over the sibling's four
+ruling commits, ff'd; conduct `1d4ba081`; report `30Qd` §execute).** R4–R11 one commit each;
+`spine-baseline-{before,after}.txt` byte-identical over 291 cases — `fnd-the-conversion-changes-no-answers-at-v0`
+measured; nothing blessed; `bless:dry` clean; both legs green; census 19 live / 1 reserved.
+Adjudications: `fnd-the-licence-census-undercounted-by-two` (EIGHT licence seats, not six —
+`prove_inline_replaceable`/`prove_inline_query_replaceable`; the private field found them) —
+the `plan/CLAUDE.md` rider says eight · the `untracked` INVENTORY = three seats
+(`decide_region`'s open/non-corresponding population; `DurableAccount::rehydrated`'s
+absent/unknown floor, ruled; that floor's test) — the discipline test's product, for the human
+· `tc-load-decisions-read-authored`: the STRUCTURAL half landed (`mint_load_decisions` runs
+pre-intake; `record_new_arm` only transcribes) — lean-applied, ENDORSED · R10 built as (c) ·
+R11 built whole and shipped OFF (`ACCOUNT_EXPORT: bool = false`; `DurableAccount` is the
+flattening as a type with no accessor back to a live account; the round-trip pinned
+`p-x-durable-account-export-is-enabled` at `r31:kernel-punt-glance`; absent/unrecognised read
+HIGHEST) — deviation `native test, not a loom` ACCEPTED (a loom would bless switch-ON bytes
+production never emits) · `fnd-the-lint-tier-that-check-does-not-cover` (seven whole-workspace
+clippy errors surfaced only at `bless:dry`; one a genuinely dead field) → a brief rider for
+long conversion lanes: `mise run clippy` per row. **OWED TO THE SUCCESSOR/HUMAN** (conductor
+under a no-substantial-edits hold): the eight steering deltas in `30Qd` §execute (the two
+`core/CLAUDE.md` bullets with "no consumer at v0; a future one is a typed human act" — never
+"decision-inert by type"; the `plan` mint rider at eight seats; the `spike/CLAUDE.md` pointer;
+ANALYZER-NEEDS `an-host-influence-carriage` `S`→`B` with the per-route residue stated; the
+rc/genkill re-home is done) · the one-line `analysis/CLAUDE.md` third-blind-act correction ·
+R11's review must clear BEFORE `ACCOUNT_EXPORT` flips (the pin holds the door) · the ceremony
+(`30O:sched-round-close-ceremony`: crosscheck with the priorities in `30O` + the hoist
+predicates + the loop lane's iteration-aware route + the influence constructor census + the
+blind-act seed; the `307` §6 veto register; `gate:arc` from the populated branch; the
+`CURRENT_ROUND` bump; the prose queue; the human's ff of `ai/main`).
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
