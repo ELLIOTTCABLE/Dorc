@@ -1288,6 +1288,10 @@ fn dead_edges(
 
 /// Whether `branch`'s condition provably succeeds (`Some(true)`) or provably fails
 /// (`Some(false)`) at its own position. `None` is every other case, which is most of them.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the whole input a branch decision is a pure function OF: its two programs, its loaded set, its value window, its pre-pass load answers (which is where cwd determinacy lives), the solved states with their trust flag, and the branch. Bundling them would hide which of them a given DecidableTest arm reads, and the cwd gate is exactly the input a reader must be able to see arriving"
+)]
 fn decide(
     ast: &Ast,
     cfg: &Cfg,
