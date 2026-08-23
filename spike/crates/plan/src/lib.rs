@@ -1947,7 +1947,12 @@ pub fn build_vouches_from_sets(
         // `28K` §4: the guard runs the definition's bytes PLUS its closure. A contested closure
         // withholds the VOUCH — no guard, no elide, the site runs (`inv-kfail`).
         let stripped = strip_verdict(src, verdict, interner);
-        let closure = match helpers.closure_for(file_idx, &stripped) {
+        let live_source = |name: &str| live.source_index_before(node, name);
+        let closure = match helpers.closure_for(
+            file_idx,
+            &stripped,
+            dorc_oracle::closure::SiteFrame::at(&live_source),
+        ) {
             Ok(closure) => closure,
             // The composition that will RUN is not the one this author vouched
             // (`28R:rul-mixed-custody-suspends-vouch`): no elide, no guard, the site runs. Narrated at
@@ -6826,7 +6831,7 @@ apt_get__is_converged() { return 0; }
         let ast = dorc_syntax::parse(&src).value;
         let helpers = dorc_oracle::closure::HelperIndex::build(&[helper], None);
         let closure = helpers
-            .closure_for(0, body)
+            .closure_for(0, body, dorc_oracle::closure::SiteFrame::unsolved())
             .expect("one source declares one helper");
         let vouch = VerdictVouch::new(
             "apt_get__is_converged".to_string(),
@@ -7012,7 +7017,9 @@ apt_get__is_converged() { return 0; }
         let helper = "_apt_dest() { printf '%s\\n' \"$1\" ; }";
         let body = "apt_get__is_converged() { dpkg-query -W \"$(_apt_dest \"$1\")\" ; }";
         let helpers = dorc_oracle::closure::HelperIndex::build(&[helper], None);
-        let closure = helpers.closure_for(0, body).expect("one source");
+        let closure = helpers
+            .closure_for(0, body, dorc_oracle::closure::SiteFrame::unsolved())
+            .expect("one source");
         let step = |leaf: u32| Step {
             leaf: LeafId(leaf),
             ast: AstId(leaf),

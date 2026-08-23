@@ -789,8 +789,11 @@ fn the_composed_stage_seat_consults_the_closure() {
         .find("\n}\n")
         .expect("a top-level fn closes at column zero under rustfmt");
     let seat = body.get(..end).unwrap_or_default();
+    // Two needles rather than one glued spelling: rustfmt breaks the receiver onto its own line
+    // once the call takes its site frame, and a fence that reddens on formatting is a fence people
+    // learn to edit.
     assert!(
-        seat.contains("helpers.closure_for("),
+        seat.contains("helpers") && seat.contains(".closure_for("),
         "the composed-stage seat must consult the closure, or a contested composition ships"
     );
     assert!(
@@ -831,6 +834,114 @@ fn both_participants_of_a_plural_compound_ship() {
              environments are what make that spellable — otelcol ships: {a}, grep ships: {b}"
         );
     });
+}
+
+// ---------------------------------------------------------------------------
+// `p-x-regional-helper` (`30A` §2) — a book helper sh confines to a region it shares with no site.
+
+/// An oracle that factors its predict body into a helper it DECLARES, so what the shipped body
+/// carries is unambiguous and a suspended composition is visible as a refusal to ship at all.
+const REGIONAL_ORACLE: &str = "# dorc-lang/v0.2
+_dest() {
+   printf '%s\\n' \"$1\"
+}
+wombat__predict() {
+   case $1 in
+      sync)
+         dest : sm.dorc.Wombat = \"$2\"
+         _dest \"$2\"
+         wombat cmp -- \"$2\" :? sm.dorc.Wombat:\"$2\"@synced
+         ;;
+   esac
+}
+";
+
+/// Whether the oracle's predict SHIPS at the book's `wombat sync b` site.
+///
+/// Drives the production seat (`dorc_cli::world::ship_predict_body`), which is where the site
+/// frame reaches the helper lane — a hand-fed frame would assert the answer this measures.
+fn regional_ships(book_src: &str) -> bool {
+    let mut interner = dorc_core::Interner::default();
+    let checks: Vec<dorc_oracle::predict::PredictSet> =
+        vec![dorc_oracle::predict::lift_predicts(&mut interner, REGIONAL_ORACLE).value];
+    let parsed = dorc_syntax::parse(book_src).value;
+    let cfg = dorc_analysis::cfg::build(&parsed).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed, &mut interner);
+    let snapshot = snapshot_of(
+        &["o0.oracle.sh".to_owned()],
+        &[REGIONAL_ORACLE.to_owned()],
+        "book.sh",
+        book_src,
+    );
+    let srcs: Vec<String> = vec![REGIONAL_ORACLE.to_owned()];
+    let defs = dorc_cli::world::definition_table(&snapshot, &parsed);
+    let env = {
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        dorc_analysis::funcenv::analyze(&parsed, &cfg, &defs, &plane)
+    };
+    let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
+    let helpers = dorc_oracle::closure::HelperIndex::build(&snapshot.source_refs(), Some(1));
+
+    let wombat = interner.intern("wombat");
+    let sync = interner.intern("sync");
+    let site = cfg
+        .iter()
+        .filter(|(_, node)| node.kind == dorc_analysis::cfg::CfgNodeKind::Command)
+        .find_map(|(id, _)| {
+            let argv = value.argv_values(id);
+            let literal = |slot: usize| match argv.get(slot) {
+                Some(dorc_analysis::value::ValueOf::Literal(word)) => Some(*word),
+                _ => None,
+            };
+            (literal(0) == Some(wombat) && literal(1) == Some(sync)).then_some(id)
+        });
+    let node = site.expect("the book calls `wombat sync b` at top level");
+    let operands: Vec<dorc_core::Symbol> = value
+        .argv_values(node)
+        .get(1..)
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|value| match value {
+            dorc_analysis::value::ValueOf::Literal(sym) => Some(*sym),
+            dorc_analysis::value::ValueOf::Top(_) => None,
+        })
+        .collect();
+    dorc_cli::world::ship_predict_body(
+        &srcs, &helpers, &checks, &interner, wombat, &operands, node, live,
+    )
+    .is_some()
+}
+
+/// A book helper confined to a region it shares with NO site reaching this description leaves the
+/// description alone; the oracle's own helper still travels (promoted from `p-x-regional-helper`).
+///
+/// The sh fact: a definition made inside `( … )` dies at the `)`. Measured under `posh ∩ dash` by
+/// `floor28-subshell-scoped-re-source` and `floor30-subshell-nesting-and-removal-scope`. It is also
+/// the mechanism Dorc SELLS as its answer to "I want a different oracle for this region"
+/// (`28K` §1's re-source idiom), so reading it as an ambient rebinding contradicts a documented
+/// feature and costs the whole book its guard tier for a definition no site can reach.
+///
+/// Why an engine choice depends on it, and why the pin could only ever green HERE: the book census
+/// in `dorc_oracle::closure` is depth-blind by construction, so nothing inside that crate can tell
+/// a regional definition from an ambient one. The frame can, and the frame is a solved
+/// function-environment — which is what `SiteFrame` carries across the seam
+/// (`oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat`).
+#[test]
+fn a_regional_book_helper_leaves_an_unreachable_description_alone() {
+    assert!(
+        regional_ships("wombat sync b\n"),
+        "control: with no book definition at all the oracle's helper travels and the body ships"
+    );
+    assert!(
+        !regional_ships("_dest() { printf 'ambient\\n' ;}\nwombat sync b\n"),
+        "control: an AMBIENT book redefinition does rebind the name at this site, so the vouching \
+         composition suspends and nothing ships"
+    );
+    assert!(
+        regional_ships("( _dest() { printf 'regional\\n' ;} )\nwombat sync b\n"),
+        "and a definition sh confines to a region containing no reaching site rebinds nothing, so \
+         the oracle's own body must still travel"
+    );
 }
 
 // ---------------------------------------------------------------------------

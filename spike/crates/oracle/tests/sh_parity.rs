@@ -12,7 +12,7 @@
 //!
 //! The pipeline tier (does a site keep its LICENSE?) is `crates/cli/tests/sh_parity.rs`.
 
-use dorc_oracle::closure::{DenialReason, HelperIndex};
+use dorc_oracle::closure::{DenialReason, HelperIndex, SiteFrame};
 
 const MARKER: &str = "# dorc-lang/v0.2\n";
 
@@ -51,7 +51,7 @@ fn a_helper_unset_at_oracle_top_level_resolves_to_nothing() {
     );
     let index = HelperIndex::build(&[&unset_beside_it], None);
     let closure = index
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .expect("nothing is contested — the name simply resolves to no declaration")
         .sh();
     assert_eq!(
@@ -62,7 +62,7 @@ fn a_helper_unset_at_oracle_top_level_resolves_to_nothing() {
 
     let control = format!("{MARKER}_dest() {{\n   wombat cmp -- \"$1\"\n}}\n{VOUCHER_BODY}\n");
     let control_closure = HelperIndex::build(&[&control], None)
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .expect("one source")
         .sh();
     assert!(
@@ -89,10 +89,10 @@ fn a_later_unset_f_removes_an_earlier_helper_declaration() {
     let entry = voucher_owning_dest("plain");
     let removal = format!("{MARKER}unset -f _dest\n");
     let control = HelperIndex::build(&[&entry], None)
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .map(|closure| closure.sh());
     let after_removal = HelperIndex::build(&[&entry, &removal], None)
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .map(|closure| closure.sh());
     assert_eq!(
         control.as_deref().map(str::trim),
@@ -115,7 +115,7 @@ fn a_later_unset_f_removes_an_earlier_helper_declaration() {
          _dest() {{\n   wombat cmp --late -- \"$1\"\n}}\n{VOUCHER_BODY}\n"
     );
     let after_redefinition = HelperIndex::build(&[&redefined], None)
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .map(|closure| closure.sh());
     assert!(
         after_redefinition
@@ -138,10 +138,15 @@ fn a_later_unset_f_removes_an_earlier_helper_declaration() {
 /// subshell-scoped book helper "never enters the index at all". It does enter: `HelperIndex::build`
 /// censuses the book's funcdefs at ANY depth, deliberately, because what the book defines decides
 /// whether somebody else's vouch survives at apply. Being depth-blind, it cannot tell a regional
-/// definition from an ambient one, so it suspends for BOTH — the same `BookRedefinesHelper` denial,
-/// the same site running. That is the safe direction (a suspended vouch loses a license, never
-/// licenses wrongly) and it is a real forfeit: the regional idiom the shells support costs the whole
-/// book its guard tier. The target is `p-x-regional-helper`.
+/// definition from an ambient one, so WITHOUT A FRAME it suspends for BOTH — the same
+/// `BookRedefinesHelper` denial, the same site running. That is the safe direction (a suspended
+/// vouch loses a license, never licenses wrongly).
+///
+/// This is now the FRAMELESS answer specifically, and it is still the production answer for every
+/// index built without an environment (the instrument, hint, survival-snapshot and hand-built
+/// seats). What tells the two worlds apart is `closure::SiteFrame`, which only a solved function
+/// environment can supply — so the distinguishing cell lives one tier up, at
+/// `cli/tests/sh_parity.rs`'s `a_regional_book_helper_leaves_an_unreachable_description_alone`.
 #[test]
 fn a_book_subshell_helper_suspends_like_an_ambient_one() {
     let entry = voucher_owning_dest("plain");
@@ -150,7 +155,7 @@ fn a_book_subshell_helper_suspends_like_an_ambient_one() {
 
     let denied = |book: &str| {
         HelperIndex::build(&[&entry, book], Some(1))
-            .closure_for(0, VOUCHER_BODY)
+            .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
             .err()
             .map(|denial| denial.reason)
     };
@@ -162,12 +167,12 @@ fn a_book_subshell_helper_suspends_like_an_ambient_one() {
     assert_eq!(
         denied(ambient),
         denied(regional),
-        "and it is INDISTINGUISHABLE from the ambient redefinition — the census is depth-blind, \
-         which is what `p-x-regional-helper` targets"
+        "and with no frame to ask it is INDISTINGUISHABLE from the ambient redefinition — the \
+         census is depth-blind, which is exactly what a site frame is for"
     );
 
     let unshadowed = HelperIndex::build(&[&entry, "wombat sync b\n"], Some(1))
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .map(|closure| closure.sh());
     assert!(
         unshadowed
@@ -176,47 +181,6 @@ fn a_book_subshell_helper_suspends_like_an_ambient_one() {
         "control: with no book definition the vouch keeps its closure, so the suspensions above are \
          a real loss — {unshadowed:?}"
     );
-}
-
-/// `p-x-regional-helper` — THE TARGET: a book helper confined to a region it shares with NO site
-/// reaching this vouch leaves the vouch alone; the ambient body still travels.
-///
-/// The sh fact: a definition made inside `( … )` dies at the `)`. Measured under `posh ∩ dash` by
-/// `floor28-subshell-scoped-re-source` (ambient, then regional, then ambient again) and by
-/// `floor30-subshell-nesting-and-removal-scope`. It is also the mechanism Dorc SELLS as its answer to
-/// "I want a different oracle for this region" (`28K` §1's re-source idiom), so the engine reading it
-/// as an ambient rebinding contradicts a documented feature.
-///
-/// WHAT THIS PIN CAN AND CANNOT SAY. The full target is per-site: in-region sites get the regional
-/// body, post-region sites the ambient one. `closure_for` takes no site, so today's API cannot even
-/// SPELL that half — the site-keyed closure question is the table-widening's own deliverable. What is
-/// expressible, and what this asserts, is the unambiguous world: a region containing no site at all,
-/// where every site is post-region and sh binds the ambient body everywhere. Getting that world right
-/// is necessary for the per-site answer and is where the value being forfeited actually sits.
-///
-/// FAILS TODAY, measured 2026-08-16: the book census is depth-blind (see the pin above), so the
-/// regional definition suspends the vouch exactly as an ambient one would, and the whole book loses
-/// its guard tier for a definition no site can reach.
-#[test]
-fn a_regional_book_helper_leaves_an_unreachable_vouch_alone() {
-    // Setup outside the closure: a panic in there would read as the target still failing.
-    let entry = voucher_owning_dest("plain");
-    // The region holds the definition and NOTHING else — so no site is in-region, and sh binds the
-    // ambient `_dest` at every site in the book.
-    let region_only = "( _dest() { printf 'regional\\n' ;} )\nwombat sync b\n";
-    let regional = HelperIndex::build(&[&entry, region_only], Some(1))
-        .closure_for(0, VOUCHER_BODY)
-        .map(|closure| closure.sh());
-
-    internal_tooling::xfail::xfail_until("p-x-regional-helper", || {
-        assert!(
-            regional
-                .as_deref()
-                .is_ok_and(|closure| closure.contains("_dest() {")),
-            "a definition sh confines to a region containing no reaching site rebinds nothing, so \
-             the ambient body must still travel — {regional:?}"
-        );
-    });
 }
 
 /// An oracle whose top level `.`-sources is legal text, and its OWN declarations contribute
@@ -248,13 +212,13 @@ fn an_oracle_that_sources_at_top_level_keeps_its_own_declarations() {
         .map(|diag| diag.code.slug())
         .collect();
     let closure = HelperIndex::build(&[&sourcing], None)
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .map(|closure| closure.sh());
 
     let without_the_source =
         format!("{MARKER}_dest() {{\n   wombat cmp -- \"$1\"\n}}\n{VOUCHER_BODY}\n");
     let control = HelperIndex::build(&[&without_the_source], None)
-        .closure_for(0, VOUCHER_BODY)
+        .closure_for(0, VOUCHER_BODY, SiteFrame::unsolved())
         .map(|closure| closure.sh());
     assert!(
         control

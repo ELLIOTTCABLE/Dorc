@@ -219,14 +219,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-regional-helper",
-        trigger: "a SITE-KEYED `closure_for` plus book-region indexing — the table widening landed, \
-                  so the environment can tell a regional definition from an ambient one, but the \
-                  closure API takes no site and the book census is still depth-blind",
-        horizon: Horizon::Scheduled("r31:closure-custody"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-sentinel-value-conjunct",
         trigger: "the human's `rule-sentinel-value-conjunct` ruling (on their burndown, `30N` §4): \
                   whether recognized guarded-source must consult the sentinel's VALUE and not only \

@@ -439,7 +439,9 @@ fn ship_verdict_body(
             continue;
         };
         let body = strip_verdict(src, verdict, interner);
-        let closure = helpers.closure_for(idx, &body).ok()?;
+        let closure = helpers
+            .closure_for(idx, &body, dorc_oracle::closure::SiteFrame::unsolved())
+            .ok()?;
         return Some(dorc_plan::ShippedCheck::verdict(
             format!("{}{body}", closure.sh()),
             Some((

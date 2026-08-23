@@ -1162,7 +1162,14 @@ pub fn ship_predict_body(
     }
     let src = oracle_srcs.get(idx)?;
     let body = strip_predict(src, &check, interner);
-    let closure = helpers.closure_for(idx, &body).ok()?;
+    let live_source = |name: &str| live.source_index_before(node, name);
+    let closure = helpers
+        .closure_for(
+            idx,
+            &body,
+            dorc_oracle::closure::SiteFrame::at(&live_source),
+        )
+        .ok()?;
     Some(dorc_plan::ShippedCheck::predict(
         format!("{}{body}", closure.sh()),
         Some((check.name_span, source_file_id(idx))),
@@ -1183,7 +1190,15 @@ pub fn ship_verdict_body(
     live: dorc_analysis::funcenv::LiveDefinitions<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
     let (idx, verdict) = verdict_answering_at(verdict_sets, interner, provider, node, live)?;
-    ship_resolved_verdict(oracle_srcs, helpers, interner, idx, &verdict)
+    let live_source = |name: &str| live.source_index_before(node, name);
+    ship_resolved_verdict(
+        oracle_srcs,
+        helpers,
+        interner,
+        idx,
+        &verdict,
+        dorc_oracle::closure::SiteFrame::at(&live_source),
+    )
 }
 
 /// The emit half of [`ship_verdict_body`], over a definition the caller ALREADY resolved.
@@ -1198,12 +1213,13 @@ pub fn ship_resolved_verdict(
     interner: &Interner,
     idx: usize,
     verdict: &dorc_oracle::predict::Predict,
+    at: dorc_oracle::closure::SiteFrame<'_>,
 ) -> Option<dorc_plan::ShippedCheck> {
     use dorc_oracle::predict::strip_verdict;
     let src = oracle_srcs.get(idx)?;
     let emits_report = dorc_oracle::report::emits_report(verdict);
     let body = strip_verdict(src, verdict, interner);
-    let closure = helpers.closure_for(idx, &body).ok()?;
+    let closure = helpers.closure_for(idx, &body, at).ok()?;
     Some(dorc_plan::ShippedCheck::verdict(
         format!("{}{body}", closure.sh()),
         Some((verdict.name_span, source_file_id(idx))),

@@ -207,6 +207,53 @@ pub struct ClosureRefusal {
     pub sites: Vec<(usize, Span)>,
 }
 
+/// The function environment's answer AT THE SITE a closure is being emitted for
+/// (`28Q` §1.3's frame lookup, reaching the helper lane).
+///
+/// A lookup rather than a value because `oracle` cannot name a CFG node — the driver holds the
+/// frame and answers per name, in the source-INDEX space this index already keys on
+/// (`28O:dec-load-order-is-the-id-order`), which is what keeps the `SourceFileId` vocabulary on the
+/// analysis side of the seam.
+///
+/// [`unsolved`](Self::unsolved) is the posture of every index built without an environment — the
+/// instrument, hint, survival-snapshot, and hand-built seats — and answers exactly as the pre-frame
+/// seat did: the book census stays depth-blind and suspends for a regional definition too.
+#[derive(Clone, Copy, Default)]
+pub struct SiteFrame<'a> {
+    live_source: Option<&'a dyn Fn(&str) -> Option<usize>>,
+}
+
+impl std::fmt::Debug for SiteFrame<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SiteFrame")
+            .field("solved", &self.live_source.is_some())
+            .finish()
+    }
+}
+
+impl<'a> SiteFrame<'a> {
+    /// No environment: the frame names nothing anywhere, which is the conservative reading.
+    #[must_use]
+    pub const fn unsolved() -> Self {
+        Self { live_source: None }
+    }
+
+    /// The frame at one site. `lookup` answers the loaded source whose definition of the name is
+    /// live HERE, and `None` wherever the environment names none — `Undefined`, ⊤, and unreached
+    /// alike, since none of the three proves anything (`silence-licenses-nothing`).
+    #[must_use]
+    pub const fn at(lookup: &'a dyn Fn(&str) -> Option<usize>) -> Self {
+        Self {
+            live_source: Some(lookup),
+        }
+    }
+
+    /// The source the frame names live for `name` at this site.
+    fn live_source(self, name: &str) -> Option<usize> {
+        self.live_source.and_then(|lookup| lookup(name))
+    }
+}
+
 /// Every non-role top-level declaration in the loaded source set, indexed by name.
 ///
 /// Built ONCE per unit and shared by every seat that pins a definition (the guard preamble's vouch
@@ -228,6 +275,10 @@ pub struct HelperIndex {
     /// not load-inert), but what it defines still decides whether somebody else's vouch survives at
     /// apply, so it is carried separately rather than not at all.
     book_defines: BTreeSet<String>,
+    /// Which source index the book is, when the caller named one — what a [`SiteFrame`] answer is
+    /// compared against to tell "the admin rebound this here" from "somebody else's definition is
+    /// live here". `None` for the oracle-only lanes, which see no book census either.
+    book: Option<usize>,
     /// Whose utterance each source may rest on (`core::CustodyClosures`). Defaults to SINGLETONS,
     /// which is what makes every lane holding no include-tree keep its pre-sourcing answers and the
     /// no-oracle-sourcing world byte-identical.
@@ -266,6 +317,7 @@ impl HelperIndex {
     pub fn build(srcs: &[&str], book: Option<usize>) -> Self {
         let mut index = Self {
             closures: dorc_core::CustodyClosures::singletons(srcs.len()),
+            book,
             ..Self::default()
         };
         for (file, src) in srcs.iter().enumerate() {
@@ -440,7 +492,12 @@ impl HelperIndex {
     /// [`ClosureDenial`] when the composition carries no license: the book redefines a reached name,
     /// the resolution left the voucher's custody, or a call cannot be enumerated. Each withholds the
     /// pin, hence the vouch, hence the ship — the site runs.
-    pub fn closure_for(&self, file: usize, body: &str) -> Result<Closure, ClosureDenial> {
+    pub fn closure_for(
+        &self,
+        file: usize,
+        body: &str,
+        at: SiteFrame<'_>,
+    ) -> Result<Closure, ClosureDenial> {
         // The unresolved-load suspension precedes the empty-index shortcut, and that ORDER is the
         // whole of it: a file that sourced something the driver could not load contributes no
         // declarations, so the index it produces is empty — and an empty index taking the shortcut
@@ -468,7 +525,7 @@ impl HelperIndex {
                 continue;
             }
             let declarations = self.helpers.get(&name).map_or(&[][..], Vec::as_slice);
-            let Some(chosen) = self.resolve(&name, declarations, file)? else {
+            let Some(chosen) = self.resolve(&name, declarations, file, at)? else {
                 continue; // An external tool, not a helper — the ordinary case.
             };
             contributing.insert(chosen.file);
@@ -486,7 +543,7 @@ impl HelperIndex {
             {
                 for name in self.names_declared_by(declaration) {
                     let declarations = self.constants.get(&name).map_or(&[][..], Vec::as_slice);
-                    self.resolve(&name, declarations, file)?;
+                    self.resolve(&name, declarations, file, at)?;
                 }
                 constants.insert(
                     (declaration.file, declaration.span.lo.0),
@@ -538,6 +595,7 @@ impl HelperIndex {
         name: &str,
         declarations: &'a [Declaration],
         asker: usize,
+        at: SiteFrame<'_>,
     ) -> Result<Option<&'a Declaration>, ClosureDenial> {
         let sites =
             || -> Vec<(usize, Span)> { declarations.iter().map(|d| (d.file, d.span)).collect() };
@@ -546,7 +604,15 @@ impl HelperIndex {
             reason,
             sites: sites(),
         };
-        if self.book_defines.contains(name) {
+        // The book census is depth-blind by construction, so on its own it cannot tell a definition
+        // sh confines to a region from one that rebinds the name for every site below it. The FRAME
+        // can, and it is the only thing allowed to: the book's definition stands unless the
+        // environment NAMES a live one elsewhere at this very site, which is the regional idiom
+        // (`28K` §1's re-source) coming out right instead of costing the whole book its guard tier.
+        let elsewhere = at
+            .live_source(name)
+            .is_some_and(|live| Some(live) != self.book);
+        if self.book_defines.contains(name) && !elsewhere {
             return Err(deny(if declarations.is_empty() {
                 DenialReason::BookShadowsCommand
             } else {
@@ -806,7 +872,7 @@ fn literal_word(ast: &Ast, id: dorc_core::AstId) -> Option<String> {
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::HelperIndex;
+    use super::{HelperIndex, SiteFrame};
 
     const MARKER: &str = "# dorc-lang/v0.2\n";
 
@@ -823,7 +889,11 @@ mod tests {
         assert!(index.is_empty());
         assert_eq!(
             index
-                .closure_for(0, "wombat__is_converged() { wombat cmp -- \"$1\"; }")
+                .closure_for(
+                    0,
+                    "wombat__is_converged() { wombat cmp -- \"$1\"; }",
+                    SiteFrame::unsolved()
+                )
                 .map(|c| c.sh()),
             Ok(String::new())
         );
@@ -840,7 +910,11 @@ mod tests {
         );
         let index = index(&[&src]);
         let closure = index
-            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect("one source cannot disagree with itself")
             .sh();
         assert!(
@@ -867,6 +941,7 @@ mod tests {
             .closure_for(
                 1,
                 "wombat__is_converged() {\n   command _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
             )
             .expect("a command-routed utility is not a cross-custody reach");
         assert!(
@@ -885,7 +960,11 @@ mod tests {
         let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
         let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
         let denied = index(&[&helpers, &entry])
-            .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                1,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("co-loading composes no custody");
         assert_eq!(denied.name, "_wombat_check");
         assert_eq!(
@@ -909,7 +988,11 @@ mod tests {
                 dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]),
                 BTreeSet::new(),
             )
-            .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                1,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect("the `.` takes custody of the helpers file")
             .sh();
         assert!(closure.contains("_wombat_check() {"), "{closure}");
@@ -927,7 +1010,11 @@ mod tests {
                 dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]),
                 BTreeSet::new(),
             )
-            .closure_for(0, "wombat__is_converged() {\n   _entry_only \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _entry_only \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("custody flows down the include-tree, never up");
         assert_eq!(
             denied.reason,
@@ -951,7 +1038,11 @@ mod tests {
                 dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]),
                 BTreeSet::new(),
             )
-            .closure_for(1, "wombat__is_converged() {\n   _check \"$1\"\n}")
+            .closure_for(
+                1,
+                "wombat__is_converged() {\n   _check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("one custody, two bodies, no order the engine can promise is sh's");
         assert_eq!(denied.reason, super::DenialReason::ContestedWithinCustody);
     }
@@ -971,7 +1062,11 @@ mod tests {
                 dorc_core::CustodyClosures::singletons(1),
                 BTreeSet::from([0]),
             )
-            .closure_for(0, "wombat__is_converged() {\n   _check \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("an unreconstructible environment vouches for nothing");
         assert_eq!(denied.reason, super::DenialReason::UnresolvedLoad);
     }
@@ -986,7 +1081,11 @@ mod tests {
              wombat__is_converged() {{\n   _outer \"$1\"\n}}\n"
         );
         let closure = index(&[&src])
-            .closure_for(0, "wombat__is_converged() {\n   _outer \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _outer \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect("one source")
             .sh();
         assert!(closure.contains("_outer() {"), "{closure}");
@@ -1004,6 +1103,7 @@ mod tests {
             .closure_for(
                 0,
                 "wombat__is_converged() {\n   wombat cmp -- \"$(_dest \"$1\")\"\n}",
+                SiteFrame::unsolved(),
             )
             .expect("one source")
             .sh();
@@ -1018,7 +1118,11 @@ mod tests {
         let a = format!("{MARKER}{body}");
         let b = format!("{MARKER}{body}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
         let closure = index(&[&a, &b])
-            .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                1,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect("identical copies agree")
             .sh();
         assert_eq!(
@@ -1041,7 +1145,11 @@ mod tests {
         );
         let index = index(&[&a, &b]);
         let closure = index
-            .closure_for(1, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                1,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect("last-wins lands in the voucher's own custody")
             .sh();
         assert!(
@@ -1071,7 +1179,11 @@ mod tests {
         let a = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
         let b = format!("{MARKER}_wombat_check() {{\n   wombat cmp --strict -- \"$1\"\n}}\n");
         let denied = index(&[&entry, &a, &b])
-            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("the resolved body is somebody else's");
         assert_eq!(denied.name, "_wombat_check");
         assert_eq!(
@@ -1093,7 +1205,11 @@ mod tests {
         let entry = format!("{MARKER}wombat__is_converged() {{\n   _wombat_check \"$1\"\n}}\n");
         let helpers = format!("{MARKER}_wombat_check() {{\n   wombat cmp -- \"$1\"\n}}\n");
         let denied = index(&[&entry, &helpers])
-            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("one declaration in another custody is still another custody");
         assert_eq!(denied.name, "_wombat_check");
         assert_eq!(
@@ -1124,7 +1240,7 @@ mod tests {
         };
 
         let ambient = index()
-            .closure_for(1, body)
+            .closure_for(1, body, SiteFrame::unsolved())
             .expect_err("co-loading composes no custody, selection or not");
         assert_eq!(
             ambient.reason,
@@ -1133,7 +1249,7 @@ mod tests {
 
         let unaligned = index()
             .with_selection(dorc_core::CustodyClosures::from_edges(2, &[(1, 0)]))
-            .closure_for(1, body)
+            .closure_for(1, body, SiteFrame::unsolved())
             .expect_err("selecting a dependency never mints custody");
         assert_eq!(
             unaligned.reason,
@@ -1154,7 +1270,11 @@ mod tests {
         );
         let book = "_wombat_check() {\n   printf 'always converged\\n'\n}\nwombat sync a\n";
         let denied = HelperIndex::build(&[&oracle, book], Some(1))
-            .closure_for(0, "wombat__is_converged() {\n   _wombat_check \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   _wombat_check \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("the admin replaced the body the vouch rests on");
         assert_eq!(denied.name, "_wombat_check");
         assert_eq!(denied.reason, super::DenialReason::BookRedefinesHelper);
@@ -1169,7 +1289,11 @@ mod tests {
         let oracle = format!("{MARKER}wombat__is_converged() {{\n   wombat cmp -- \"$1\"\n}}\n");
         let book = "wombat() {\n   hork tune\n}\nwombat sync a\n";
         let denied = HelperIndex::build(&[&oracle, book], Some(1))
-            .closure_for(0, "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect_err("the referent of `wombat` is now two humans' question");
         assert_eq!(denied.name, "wombat");
         assert_eq!(denied.reason, super::DenialReason::BookShadowsCommand);
@@ -1184,7 +1308,11 @@ mod tests {
         let book = "wombat() {\n   hork tune\n}\nwombat sync a\n";
         assert!(
             HelperIndex::build(&[&oracle, book], None)
-                .closure_for(0, "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}")
+                .closure_for(
+                    0,
+                    "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}",
+                    SiteFrame::unsolved()
+                )
                 .is_ok()
         );
     }
@@ -1201,6 +1329,7 @@ mod tests {
             .closure_for(
                 0,
                 "wombat__is_converged() {\n   alias wombat=hork\n   _helper\n}",
+                SiteFrame::unsolved(),
             )
             .expect_err("a body that can rebind a name at parse time has no closable snapshot");
         assert_eq!(denied.reason, super::DenialReason::UnenumerableCall);
@@ -1239,7 +1368,11 @@ mod tests {
              wombat__is_converged() {{\n   other__predict \"$1\"\n}}\n"
         );
         let closure = index(&[&src])
-            .closure_for(0, "wombat__is_converged() {\n   other__predict \"$1\"\n}")
+            .closure_for(
+                0,
+                "wombat__is_converged() {\n   other__predict \"$1\"\n}",
+                SiteFrame::unsolved(),
+            )
             .expect("one source")
             .sh();
         assert!(
@@ -1258,8 +1391,17 @@ mod tests {
         );
         let index = index(&[&src]);
         let body = "wombat__is_converged() {\n   _b; _a\n}";
-        let once = index.closure_for(0, body).expect("one source").sh();
-        assert_eq!(once, index.closure_for(0, body).expect("one source").sh());
+        let once = index
+            .closure_for(0, body, SiteFrame::unsolved())
+            .expect("one source")
+            .sh();
+        assert_eq!(
+            once,
+            index
+                .closure_for(0, body, SiteFrame::unsolved())
+                .expect("one source")
+                .sh()
+        );
         assert!(
             once.find("_b() {") < once.find("_a() {"),
             "source order, not discovery order:\n{once}"

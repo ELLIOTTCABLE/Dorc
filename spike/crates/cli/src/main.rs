@@ -3315,7 +3315,14 @@ fn ship_predict_stage(
         return None;
     }
     let body = strip_predict(oracle_srcs.get(idx)?, &check, interner);
-    let closure = helpers.closure_for(idx, &body).ok()?;
+    let live_source = |name: &str| live.source_index_before(node, name);
+    let closure = helpers
+        .closure_for(
+            idx,
+            &body,
+            dorc_oracle::closure::SiteFrame::at(&live_source),
+        )
+        .ok()?;
     Some(dorc_plan::StageShip {
         sh: format!("{}{body}", closure.sh()),
         produces_real_stdout: predict_stage_stdout(&check, &arg_refs) == StageStdout::RealBytes,
@@ -3352,7 +3359,12 @@ fn compile_resolvers(
         // The kind-owner lanes ship their snapshot too (`FORFEITS:forfeit-survival-lanes-closure-less`,
         // captured): a resolver calling a helper shipped alone 127s and canonicalizes nothing, which
         // degrades to may-alias — safe, and a silent loss of every aliasing closure the author wrote.
-        let Ok(closure) = helpers.closure_for(idx, &body) else {
+        // Frameless: a resolver is a VOCABULARY act, loaded from the ambient prefix and
+        // deliberately not routed through the positional oracle (`vocabulary-acts-stay-ambient`),
+        // so there is no site whose frame could answer for it.
+        let Ok(closure) =
+            helpers.closure_for(idx, &body, dorc_oracle::closure::SiteFrame::unsolved())
+        else {
             continue;
         };
         probes.push(dorc_plan::ResolverProbe {
@@ -3450,7 +3462,11 @@ fn collect_reach_probes(
                 // The arm's own snapshot precedes the engine-synthesized wrapper (the same capture as
                 // the resolver lane). A denial drops the arm, which walls the footprint total — the
                 // at-most claim's conservative direction (`an-at-most-claim-has-two-atomicities`).
-                let Ok(closure) = helpers.closure_for(idx, bytes) else {
+                // Frameless for the same reason the resolver lane is: a `reaches` arm is a
+                // vocabulary act, ambient by design (`vocabulary-acts-stay-ambient`).
+                let Ok(closure) =
+                    helpers.closure_for(idx, bytes, dorc_oracle::closure::SiteFrame::unsolved())
+                else {
                     continue;
                 };
                 let arm_sh = format!("{}{arm_fn}() {{ {bytes} ; }}", closure.sh());

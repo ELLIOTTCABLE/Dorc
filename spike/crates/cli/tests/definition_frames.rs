@@ -853,7 +853,9 @@ fn a_contested_helper_closure_withholds_the_role_body() {
         );
         let body = &cell.inputs[role_file].1;
         assert!(
-            helpers.closure_for(role_file, body).is_err(),
+            helpers
+                .closure_for(role_file, body, dorc_oracle::closure::SiteFrame::unsolved())
+                .is_err(),
             "{}: the role body reaches the contested helper, so pinning its closure must refuse — \
              shipping it would carry ONE frame's helper into every frame",
             cell.name

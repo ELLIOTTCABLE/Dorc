@@ -950,6 +950,18 @@ impl<'a> LiveDefinitions<'a> {
         }
     }
 
+    /// The loaded-source INDEX whose definition of `name` is live immediately before `node`
+    /// (`28O:dec-load-order-is-the-id-order`), or `None` where the environment names none.
+    ///
+    /// The index-space twin of [`source_before`](Self::source_before), for a seat that keys on the
+    /// ordered source vector rather than on `SourceFileId` — `dorc_oracle::closure::SiteFrame` is
+    /// the one consumer, and doing the crossing here is what keeps `oracle` free of the id
+    /// vocabulary it would otherwise have to re-spell.
+    #[must_use]
+    pub fn source_index_before(&self, node: CfgNodeId, name: &str) -> Option<usize> {
+        self.source_before(node, name).map(|file| file.0 as usize)
+    }
+
     /// The CUSTODY of `name`'s live definition immediately before `node` — whose utterance an act
     /// answering here would be resting on (`28M` §8; [`dorc_core::DefinitionCustody`]).
     #[must_use]

@@ -388,7 +388,14 @@ pub fn ship_touches_body(
             // mid-survey, and a NARROW at-most claim SPARES MORE — the measured wrong-elision
             // `an-at-most-claim-has-two-atomicities` exists for. A denial ships no derivation, so the
             // site walls total.
-            let closure = helpers.closure_for(idx, &body).ok()?;
+            let live_source = |name: &str| live.source_index_before(node, name);
+            let closure = helpers
+                .closure_for(
+                    idx,
+                    &body,
+                    dorc_oracle::closure::SiteFrame::at(&live_source),
+                )
+                .ok()?;
             Some(dorc_plan::DerivationShip {
                 // Display the BOOK command word (`apt-get`), not the munged funcdef segment
                 // (`apt_get`, the forward-munge key) — the why-lens reads better with the word
@@ -1139,7 +1146,12 @@ fn site_wrapper_index(
             // three it does. An entry form whose helper never shipped 127s, which refuses entry and
             // lands can't-say ⇒ guard/run (`27C`: every entry failure lands there), so the loss is
             // value rather than safety. A denial supplies no entry form and the wrapper enters nothing.
-            if let Ok(closure) = helpers.closure_for(*file, &stripped) {
+            let live_source = |name: &str| live.source_index_before(node, name);
+            if let Ok(closure) = helpers.closure_for(
+                *file,
+                &stripped,
+                dorc_oracle::closure::SiteFrame::at(&live_source),
+            ) {
                 enter_defs.insert(*provider, (fname, format!("{}{stripped}", closure.sh())));
             }
         }
@@ -1260,9 +1272,17 @@ fn resolve_inner_check(
     let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
     // Entry-composition is out of both the tier-3 drain scope and the span-threading scope this
     // round: the composed body has no single defining funcdef to name, so its site stays span-less.
+    let live_source = |name: &str| live.source_index_before(node, name);
     let verdict_ship = |file: usize, verdict: &dorc_oracle::predict::Predict| {
-        crate::world::ship_resolved_verdict(oracle_srcs, helpers, interner, file, verdict)
-            .map(|shipped| (format!("{seg}__is_converged"), shipped.sh))
+        crate::world::ship_resolved_verdict(
+            oracle_srcs,
+            helpers,
+            interner,
+            file,
+            verdict,
+            dorc_oracle::closure::SiteFrame::at(&live_source),
+        )
+        .map(|shipped| (format!("{seg}__is_converged"), shipped.sh))
     };
     if let Some((file, verdict)) = inner_verdict
         && matches!(
