@@ -716,7 +716,7 @@ pub struct FuncEnv {
     searches_path: BTreeSet<CfgNodeId>,
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
-    sourced_paths: BTreeMap<CfgNodeId, String>,
+    resolved_loads: BTreeMap<CfgNodeId, ResolvedHead>,
     /// THE ONE LOAD ACCOUNT (`30I:rul-one-load-account-separate-projections`): every statically
     /// possible resolved load occurrence the settled walk followed, with its locus and positional
     /// context, from which every consumer derives its own projection.
@@ -795,12 +795,13 @@ impl FuncEnv {
         &self.loads
     }
 
-    /// Per RESOLVED `.`/`source` site, the canonical path it named — the load ACT, which is what a
+    /// Per RESOLVED `.`/`source` site, the head it named — the load ACT, which is what a
     /// locator points at when it says which line brought a file into the unit
-    /// (`30I:rul-source-maps-are-rich-and-early`).
+    /// (`30I:rul-source-maps-are-rich-and-early`), plus whether the AUTHOR named it, which is what
+    /// decides whether an emitter may rewrite that line (`30P:rul-rewrite-permission-is-derived`).
     #[must_use]
-    pub fn sourced_paths(&self) -> &BTreeMap<CfgNodeId, String> {
-        &self.sourced_paths
+    pub fn resolved_loads(&self) -> &BTreeMap<CfgNodeId, ResolvedHead> {
+        &self.resolved_loads
     }
 
     /// The control-flow edges the decidable-condition fold proved dead (`28M` §9), in
@@ -979,7 +980,7 @@ pub fn analyze(
     // Its own pass: independent of the environment, so threading it would buy only interior
     // mutability in a kernel.
     let sites = load_sites(ast, cfg, defs, literals);
-    let (unresolvable_loads, sourced_paths) = (sites.unresolvable.clone(), sites.resolved.clone());
+    let (unresolvable_loads, resolved_loads) = (sites.unresolvable.clone(), sites.resolved.clone());
     let solve_pruned = |folded: &BTreeSet<(CfgNodeId, CfgNodeId)>| {
         let graph = PrunedCfg::new(cfg, folded);
         solve_certified(&graph, Direction::Forward, |node, incoming: &EnvStack| {
@@ -996,7 +997,7 @@ pub fn analyze(
                 literals,
                 cfg.entry(),
                 &states,
-                &sourced_paths,
+                &resolved_loads,
                 &sites.named,
             );
             FuncEnv {
@@ -1005,7 +1006,7 @@ pub fn analyze(
                 unresolvable_loads,
                 dies_slashless: sites.dies_slashless.clone(),
                 searches_path: sites.searches_path.clone(),
-                sourced_paths,
+                resolved_loads,
                 folded_edges,
                 loads,
             }
@@ -1071,7 +1072,7 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         unresolvable_loads: BTreeSet::new(),
         dies_slashless: BTreeSet::new(),
         searches_path: BTreeSet::new(),
-        sourced_paths: BTreeMap::new(),
+        resolved_loads: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
         loads: LoadAccount::default(),
     }
@@ -1942,11 +1943,11 @@ fn settled_account(
     literals: &SourceLiteralPlane<'_>,
     entry: CfgNodeId,
     states: &[EnvStack],
-    sourced_paths: &BTreeMap<CfgNodeId, String>,
-    unresolved_targets: &BTreeMap<CfgNodeId, String>,
+    resolved_loads: &BTreeMap<CfgNodeId, ResolvedHead>,
+    unresolved_targets: &BTreeMap<CfgNodeId, ResolvedHead>,
 ) -> LoadAccount {
     let mut account = LoadAccount::default();
-    account.want_all(unresolved_targets.values().cloned());
+    account.want_all(unresolved_targets.values().map(|head| head.key.clone()));
     let mut universe = Frame::default();
     for name in defs.names() {
         universe.insert(name, Flat::Elem(Binding::Undefined));
@@ -1958,7 +1959,8 @@ fn settled_account(
         EnvStack::Frames(vec![universe]),
         &mut account,
     ));
-    for (&node, key) in sourced_paths {
+    for (&node, head) in resolved_loads {
+        let key = head.key();
         let Some(program) = defs.program_at_key(key) else {
             continue;
         };
@@ -1971,7 +1973,7 @@ fn settled_account(
         // filter downstream having to remember it.
         let root = account.record(crate::load::LoadOccurrence {
             sourcer: crate::load::LoadSourcer::Book,
-            target: key.clone(),
+            target: head.key.clone(),
             locus: None,
             at: node,
             within: None,
@@ -1990,7 +1992,7 @@ fn settled_account(
             program,
             incoming,
             &mut BTreeMap::new(),
-            &mut BTreeSet::from([key.clone()]),
+            &mut BTreeSet::from([head.key.clone()]),
             &mut account,
         ));
     }
@@ -2001,9 +2003,9 @@ fn settled_account(
 /// An unresolvable target contributes nothing HERE (it havocs the environment instead, so every
 /// name reads ⊤ afterwards and nothing downstream is provable).
 fn sourced_definitions(defs: &DefinitionTable, env: &FuncEnv, node: CfgNodeId) -> Vec<DefId> {
-    env.sourced_paths
+    env.resolved_loads
         .get(&node)
-        .and_then(|key| defs.by_path.get(key))
+        .and_then(|head| defs.by_path.get(head.key()))
         .map_or_else(Vec::new, crate::load::LoadProgram::declarations)
 }
 
@@ -2051,8 +2053,8 @@ fn record(
 /// launder into one (`30Pb:fnd-possible-singleton-is-not-exact-selection`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OperandAnswer {
-    /// Names this canonical key in the snapshot's key space.
-    Resolves(String),
+    /// Names this canonical key in the snapshot's key space, and says whether the AUTHOR named it.
+    Resolves(ResolvedHead),
     /// Provably fatal: a NON-FINAL component of the resolved key is a file this unit holds
     /// (`${0%/*}` of a slashless `$0` gives `book.sh/helpers.sh`). Narrow on purpose — a `.` that
     /// cannot succeed runs nothing below it, so it is DEAD rather than unsound
@@ -2063,6 +2065,45 @@ pub enum OperandAnswer {
     HostChosen,
     /// The word could not be evaluated over controller-known inputs.
     Unevaluable(HavocCause),
+}
+
+/// A load head that names a file, and whether the AUTHOR named it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedHead {
+    key: String,
+    explicitness: Explicitness,
+}
+
+impl ResolvedHead {
+    /// The canonical key the head names.
+    #[must_use]
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Whether an emitter may REWRITE the `.` line that names it.
+    #[must_use]
+    pub const fn explicitness(&self) -> Explicitness {
+        self.explicitness
+    }
+}
+
+/// Whether the author NAMED a load's target or Dorc COMPUTED it
+/// (`30P:rul-rewrite-permission-is-derived`, human-typed 2026-08-22).
+///
+/// Two different permissions ride two different questions, and merging them is the hazard this
+/// type exists to stop. EXACT governs AUTHORITY — bindings below the line, vouch lift, shipping —
+/// and an evaluated head can be perfectly EXACT. EXPLICITNESS governs REWRITING: re-pointing a `.`
+/// at a bundle, or pasting one, edits a line the author wrote, and Dorc may only do that where the
+/// author spelled the target it is replacing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Explicitness {
+    /// The operand is a plain literal word, or a root the value plane folded from literals: the
+    /// author spelled the target, so an emitter may re-point or paste this line.
+    Literal,
+    /// The operand went through the head evaluator — any `$0`, any parameter expansion. Dorc knows
+    /// WHICH file it names; the author did not write that name, so no emitter may rewrite it.
+    Evaluated,
 }
 
 /// Why a load head could not be named — an AID type, minted where the reason is KNOWN rather than
@@ -2089,8 +2130,8 @@ pub enum HavocCause {
 /// One `.` site's head, as the settled answer every consumer reads.
 #[derive(Debug, Clone)]
 struct LoadHead {
-    /// The canonical key this site EXACTLY names, or why no key could be named.
-    exact: Result<String, HavocCause>,
+    /// The head this site EXACTLY names, or why no file could be named.
+    exact: Result<ResolvedHead, HavocCause>,
     /// The SLASHLESS spelling proved fatal — the off-ramp lint's whole trigger. It never denies
     /// EXACT: Dorc invokes the slash-bearing spelling and bakes the decision into the bytes it
     /// ships (`30P:rul-dorc-invokes-in-a-modelled-live-spelling`).
@@ -2118,9 +2159,11 @@ fn load_head(
         exact: Err(HavocCause::DynamicValue),
         dies_slashless: false,
     };
+    // The author's own bytes named this (a literal word, or a root the value plane folded from
+    // literals), so an emitter may rewrite the line: `Explicitness::Literal`.
     if let Some(text) = literals.literal_text(node, index) {
         return LoadHead {
-            exact: named_key(key_of(defs, text)),
+            exact: named_key(key_of(defs, text, Explicitness::Literal)),
             dies_slashless: false,
         };
     }
@@ -2133,9 +2176,11 @@ fn load_head(
     let NodeKind::Word { parts } = &ast.node(word).kind else {
         return dead;
     };
+    // Everything below went through the evaluator, so Dorc computed the name the author did not
+    // write: `Explicitness::Evaluated`, whatever EXACT answers.
     let answer = |spelling| match evaluate_word(defs, literals, node, parts, spelling) {
         Err(cause) => OperandAnswer::Unevaluable(cause),
-        Ok(text) => key_of(defs, &text),
+        Ok(text) => key_of(defs, &text, Explicitness::Evaluated),
     };
     let invoked = defs
         .spellings
@@ -2148,11 +2193,11 @@ fn load_head(
         .text(Spelling::Slashless)
         .map(|_| answer(Spelling::Slashless));
     let exact = match named_key(invoked) {
-        Ok(key) => match other.as_ref() {
-            Some(OperandAnswer::Resolves(elsewhere)) if *elsewhere != key => {
+        Ok(head) => match other.as_ref() {
+            Some(OperandAnswer::Resolves(elsewhere)) if elsewhere.key != head.key => {
                 Err(HavocCause::SpellingsDisagree)
             }
-            _ => Ok(key),
+            _ => Ok(head),
         },
         denied => denied,
     };
@@ -2162,10 +2207,10 @@ fn load_head(
     }
 }
 
-/// The key an answer names, or the cause that denies one.
-fn named_key(answer: OperandAnswer) -> Result<String, HavocCause> {
+/// The head an answer names, or the cause that denies one.
+fn named_key(answer: OperandAnswer) -> Result<ResolvedHead, HavocCause> {
     match answer {
-        OperandAnswer::Resolves(key) => Ok(key),
+        OperandAnswer::Resolves(head) => Ok(head),
         OperandAnswer::Unevaluable(cause) => Err(cause),
         OperandAnswer::Dead | OperandAnswer::HostChosen => Err(HavocCause::NotInSnapshot),
     }
@@ -2178,14 +2223,14 @@ fn named_key(answer: OperandAnswer) -> Result<String, HavocCause> {
 /// question about the unit's own files rather than about the path rule. Membership in the loaded
 /// set is deliberately NOT asked — a key nothing is loaded under is what the acquisition loop goes
 /// and reads (`30I:rul-one-loader-many-projections`).
-fn key_of(defs: &DefinitionTable, text: &str) -> OperandAnswer {
+fn key_of(defs: &DefinitionTable, text: &str, explicitness: Explicitness) -> OperandAnswer {
     let Some(key) = defs.cwd.resolve_dot(text) else {
         return OperandAnswer::HostChosen;
     };
     if defs.a_non_final_component_is_a_file(&key) {
         return OperandAnswer::Dead;
     }
-    OperandAnswer::Resolves(key)
+    OperandAnswer::Resolves(ResolvedHead { key, explicitness })
 }
 
 /// Evaluate a `.` operand's word over controller-known inputs alone
@@ -2415,11 +2460,11 @@ fn load_sites(
             // A target the operand NAMES but the controller never read is still a name: the
             // acquisition reads exactly these and re-solves, which is how a book-sourced package
             // joins the loaded set at all.
-            Ok(key) => {
-                if defs.program_at_key(&key).is_some() {
-                    sites.resolved.insert(id, key);
+            Ok(head) => {
+                if defs.program_at_key(head.key()).is_some() {
+                    sites.resolved.insert(id, head);
                 } else {
-                    sites.named.insert(id, key);
+                    sites.named.insert(id, head);
                     sites.unresolvable.insert(id);
                 }
             }
@@ -2437,10 +2482,10 @@ fn load_sites(
 struct LoadSites {
     /// Sites whose load the environment could not follow — they havoc.
     unresolvable: BTreeSet<CfgNodeId>,
-    /// Sites whose target the loaded set holds, by canonical key.
-    resolved: BTreeMap<CfgNodeId, String>,
+    /// Sites whose target the loaded set holds.
+    resolved: BTreeMap<CfgNodeId, ResolvedHead>,
     /// Sites whose target the operand NAMED but the loaded set does not hold.
-    named: BTreeMap<CfgNodeId, String>,
+    named: BTreeMap<CfgNodeId, ResolvedHead>,
     /// Why an unresolvable site could not be named — the hint's operand.
     causes: BTreeMap<CfgNodeId, HavocCause>,
     /// Sites whose head is EXACT for the spelling Dorc invokes and provably fatal for the other
@@ -2597,10 +2642,10 @@ fn command_transfer(
     match head {
         "." | "source" => {
             // `28K` §1: we cannot know WHICH names an unloaded file defines, so all of it is ⊤.
-            let Some(key) = sites.resolved.get(&node) else {
+            let Some(head) = sites.resolved.get(&node) else {
                 return EnvStack::Top;
             };
-            let Some(program) = defs.program_at_key(key) else {
+            let Some(program) = defs.program_at_key(head.key()) else {
                 return EnvStack::Top;
             };
             run_program(
@@ -2608,7 +2653,7 @@ fn command_transfer(
                     defs,
                     literals,
                     node,
-                    sourcer: Some(key),
+                    sourcer: Some(head.key()),
                     certain: true,
                     within: None,
                     depth: LOAD_DEPTH_CAP,
@@ -2616,7 +2661,7 @@ fn command_transfer(
                 program,
                 incoming,
                 &mut BTreeMap::new(),
-                &mut BTreeSet::from([key.clone()]),
+                &mut BTreeSet::from([head.key.clone()]),
                 // The transfer discards the account: it is asked once per worklist iteration, and
                 // the settled answer is what a caller may act on ([`settled_account`]).
                 &mut LoadAccount::default(),
@@ -2776,7 +2821,7 @@ mod tests {
             unresolvable_loads: BTreeSet::new(),
             dies_slashless: BTreeSet::new(),
             searches_path: BTreeSet::new(),
-            sourced_paths: BTreeMap::new(),
+            resolved_loads: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
             loads: crate::load::LoadAccount::default(),
         };
@@ -3932,6 +3977,42 @@ mod tests {
                 Flat::Elem(Binding::Defined(lib)),
                 "`{operand}` from a book at {book_path} names {loaded}"
             );
+        }
+    }
+
+    /// EXACT and EXPLICIT are DIFFERENT questions (`30P:rul-rewrite-permission-is-derived`,
+    /// human-typed 2026-08-22), and this is the cell where they part.
+    ///
+    /// `${0%/*}/lib.sh` and `./lib.sh` name the same file with the same authority — bindings below
+    /// the line, vouch lift, shipping. They differ in whether the AUTHOR wrote that name, which is
+    /// what decides whether an emitter may re-point or paste the `.` line. Without the marker an
+    /// artifact lane cannot tell them apart and starts rewriting a line nobody spelled.
+    #[test]
+    fn an_evaluated_head_is_exact_and_still_not_the_authors_own_name() {
+        let cwd = dorc_core::loadpath::Cwd::at("/ops");
+        for (operand, want) in [
+            ("./lib.sh", super::Explicitness::Literal),
+            ("${0%/*}/lib.sh", super::Explicitness::Evaluated),
+        ] {
+            let mut table = DefinitionTable::rooted_at(
+                cwd.clone(),
+                super::ScriptSpellings::of("/ops/book.sh", &cwd),
+            );
+            let lib = add_def(&mut table, 0, ROLE);
+            table.set_loadable("/ops/lib.sh", flat(vec![lib]));
+            let (env, cfg, _) =
+                solve_positional(&format!(". \"{operand}\"\nyum install\n"), &table);
+            assert_eq!(
+                env.binding_before(cfg.exit(), ROLE),
+                Flat::Elem(Binding::Defined(lib)),
+                "`{operand}` is EXACT either way"
+            );
+            let heads: Vec<super::Explicitness> = env
+                .resolved_loads()
+                .values()
+                .map(super::ResolvedHead::explicitness)
+                .collect();
+            assert_eq!(heads, vec![want], "`{operand}`");
         }
     }
 
