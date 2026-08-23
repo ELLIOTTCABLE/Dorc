@@ -1,0 +1,35 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=200b7a685bd6035e46863184f660c037348de457d72d8fb5a8169edce6fedb81 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# THE MEMBER BINDING'S REFUSAL (`30L` section 7). The member pass answers a spliced body site by
+# OVERRIDING the iteration variable in that site's incoming state, so a book that REBINDS it makes
+# the override a lie — and the lie is a wrong-elision, not a lost one.
+#
+# CFG shape: a top-level `for` over two literal words; its body assigns the iteration variable and
+# then holds one call; the spliced body holds one command leaf reading that variable.
+#
+# What this observes: the plan RUNS `apt-get install -y wombat`, once per iteration. Without the
+# refusal the member pass answers this site with `nginx` and `curl`, the probe measures those two
+# cells, both come back converged, and the region replaces a command that installs something else
+# entirely. The run-set is the whole assertion: the operand it names is the one the shell binds,
+# and it is neither member.
+install_pkg() {
+   apt-get install -y "$pkg"
+}
+
+for pkg in nginx curl; do
+   pkg=wombat
+   install_pkg
+done

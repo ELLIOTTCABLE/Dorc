@@ -1210,6 +1210,12 @@ impl<'a> Prep<'a> {
             let Some(var) = self.loop_var_of(call) else {
                 continue;
             };
+            let Some(head) = self.cfg.enclosing_loop_head(call) else {
+                continue;
+            };
+            if self.loop_extent_rebinds(head, &var) {
+                continue;
+            }
             let NodeKind::Simple {
                 words: call_words, ..
             } = &self.ast.node(self.cfg.node(call).ast).kind
@@ -1262,6 +1268,53 @@ impl<'a> Prep<'a> {
             }
         }
         out
+    }
+
+    /// Does anything the loop headed at `head` may execute WRITE its iteration variable?
+    ///
+    /// The member pass OVERRIDES that variable in each site's incoming state, so a write anywhere
+    /// in the loop's extent makes the override a lie: the site would be answered with the head's
+    /// member where the shell will read what was assigned, and a measurement of a cell the command
+    /// never touches is a wrong-elision one consumer up. Refusing is r21's own rule
+    /// (`eligible_members`' `body_reassigns_var`), and the whole-extent scope is conservative in
+    /// the one safe direction.
+    ///
+    /// Driven over the CFG, not over the loop's AST subtree, and that is the load-bearing part: a
+    /// SPLICED funcdef body is marked in-loop but its span lives in the definition, so a subtree
+    /// walk sees a call and nothing inside it. The enclosing-loop chain is what reaches a nested
+    /// loop's nodes too — those evaluate under this head as well, whatever their own head says.
+    fn loop_extent_rebinds(&self, head: CfgNodeId, var: &str) -> bool {
+        self.cfg
+            .iter()
+            .filter(|(id, _)| self.encloses(head, *id))
+            .any(|(_, node)| self.subtree_writes_var(node.ast, var))
+    }
+
+    /// Is `head` one of the loops `id` sits inside, at any depth?
+    fn encloses(&self, head: CfgNodeId, id: CfgNodeId) -> bool {
+        let mut at = id;
+        while let Some(enclosing) = self.cfg.enclosing_loop_head(at) {
+            if enclosing == head {
+                return true;
+            }
+            at = enclosing;
+        }
+        false
+    }
+
+    /// Does this AST node, or anything within it, write `var`? The
+    /// [`body_reassigns_var`](Self::body_reassigns_var) predicate, rooted at one node.
+    fn subtree_writes_var(&self, root: AstId, var: &str) -> bool {
+        self.ast.iter().any(|(id, n)| {
+            (id == root || node_within(self.ast, id, root))
+                && match &n.kind {
+                    NodeKind::Assign { name, .. } => name == var,
+                    NodeKind::Simple { words, .. } => self.simple_writes_var(words, var),
+                    // A ⊤ (unsupported) region may rebind anything.
+                    NodeKind::Unsupported { .. } => true,
+                    _ => false,
+                }
+        })
     }
 
     /// The iteration variable of the `for` loop enclosing `node`, where one is enclosing it.
@@ -2243,6 +2296,41 @@ mod tests {
             spliced_member_argv_of(
                 "install_pkg() { apt-get install -y \"$1\"; }\n\
                  while dpkg -s nginx; do install_pkg \"$x\"; done",
+                "apt-get"
+            ),
+            None
+        );
+    }
+
+    /// A REBINDING of the iteration variable anywhere the loop may execute voids the member
+    /// binding, exactly as it voids r21's (`eligible_members`' `body_reassigns_var`).
+    ///
+    /// The member pass OVERRIDES the variable in the incoming state, so a body that assigned it
+    /// would be answered with the head's member instead of what it assigned — a measurement of a
+    /// cell the command never touches, which is a wrong-elision one consumer up. Two shapes,
+    /// because the write can sit on either side of the splice and only the CFG sees both: in the
+    /// loop's own body here, and inside the called body below.
+    #[test]
+    fn a_loop_body_rebinding_the_iteration_variable_records_no_member_argv() {
+        assert_eq!(
+            spliced_member_argv_of(
+                "install_pkg() { apt-get install -y \"$pkg\"; }\n\
+                 for pkg in nginx curl; do pkg=wombat; install_pkg; done",
+                "apt-get"
+            ),
+            None
+        );
+    }
+
+    /// The SPLICED half of the rebinding refusal: the write lives in the funcdef body, whose AST
+    /// span is outside the loop entirely — an AST-subtree walk over the loop's own body sees
+    /// nothing, and only the CFG's in-loop extent covers it.
+    #[test]
+    fn a_called_body_rebinding_the_iteration_variable_records_no_member_argv() {
+        assert_eq!(
+            spliced_member_argv_of(
+                "install_pkg() { pkg=wombat; apt-get install -y \"$pkg\"; }\n\
+                 for pkg in nginx curl; do install_pkg; done",
                 "apt-get"
             ),
             None
