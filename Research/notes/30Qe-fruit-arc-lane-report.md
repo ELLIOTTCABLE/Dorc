@@ -221,3 +221,26 @@ verified against both real-binary manual tests and the automated corpus before c
 plausible but unconfirmed.
 -GUESS: item 4's recommended siting is the RIGHT one among the two candidates named; a doc-tree
 specialist might prefer the teaching-tier page instead.
+
+## §close
+
+Branch `ai/r30-lane-fruit-2` (from `306a7a00`). +SURE unless marked.
+Item 1: `DiagCode::EmittedLineUnsafeForPaste` (`line` + typed `PasteHygieneHazardReason`
+{`LineTooLong`,`LeadingTilde`}), called in `cli/src/main.rs` right after `with_plan`, scanning
+`artifact.primary().bytes` (the finalized emitted artifact, not the raw `render_apply` string).
+Catalog case is FIXTURE-tier (`aid::fixture::canonical_payload`) -- same gap as
+`OracleMatchedZeroSites`: the emit site lives in `main.rs`'s `run()`, unreachable from the
+in-process consumer (empirically confirmed: a genuine `book.sh` case rendered nothing). Round-trip
+case proves the real route via a plain unmodeled `~doesnotexist` line -- simpler than the brief's
+oracle+mocks sketch, same call site, no exec needed (DEVIATION, judged equivalent). Reason
+components hand-seeded `words: None` in `arrangement_lock.rs`, matching the
+`solver-consistency-failure-*` precedent.
+Item 2: `RemediationClass` is a plain hand-authored enum, not a `@generated` lock -- widening it
+costs one compiler-forced arm plus one more unwritten arrangement row, judged NOT
+lock/registry-governed. Minted `RemediationClass::RepairAuthorship` ("the author's own sh is wrong,
+independent of Dorc"); re-pointed `ForLoopBraceRangeRunsOnce`. Render-invisible for that code
+(`HelpRegister::Absent`), confirmed via its unchanged e2e golden and defining-case fixpoint.
+Commits: `461b220a` wire detector, `47c553ea` publish catalog, `a5e9cba3` round-trip case,
+`5843df8c` RepairAuthorship + repoint.
+Gate: `gate:full-quiet` GREEN both legs (Windows then WSL, foreground). `xfail:census` unchanged
+(17 live pins). `check-quiet` clean. Item 4 (doc paragraph) from the prior report untouched.
