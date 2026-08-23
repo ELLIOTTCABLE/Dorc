@@ -539,4 +539,125 @@ mod tests {
             );
         });
     }
+
+    /// Every workspace source naming `needle`, as `crate/dir/file.rs x<count>`, sorted, EXCLUDING
+    /// the module that defines all three needles — plus how many files were walked, so a fence
+    /// aimed at a wrong root cannot pass by finding nothing (the discovery-floor lesson).
+    fn sources_naming(needle: &str) -> (Vec<String>, usize) {
+        let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("crates/");
+        let mut hits: Vec<String> = Vec::new();
+        let mut walked = 0usize;
+        let mut stack = vec![crates.to_path_buf()];
+        while let Some(dir) = stack.pop() {
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    if path.file_name().is_some_and(|name| name == "target") {
+                        continue;
+                    }
+                    stack.push(path);
+                    continue;
+                }
+                if !path.extension().is_some_and(|ext| ext == "rs") {
+                    continue;
+                }
+                walked += 1;
+                let text = std::fs::read_to_string(&path).unwrap_or_default();
+                let count = text.matches(needle).count();
+                if count > 0 {
+                    let full = path.display().to_string().replace('\\', "/");
+                    let short = full
+                        .rsplit_once("/crates/")
+                        .map_or(full.clone(), |(_, tail)| tail.to_owned());
+                    if short != "core/src/influence.rs" {
+                        hits.push(format!("{short} x{count}"));
+                    }
+                }
+            }
+        }
+        hits.sort();
+        (hits, walked)
+    }
+
+    /// `tc-accounting-reads-are-not-gating`'s NARROW WINDOW, mechanized.
+    ///
+    /// Accounting is the one exempt consumer of `306b` §6b (influenced values never gate engine
+    /// control flow), and the exemption is affordable only because it is one transition wide: the
+    /// phase marker becomes an account at exactly the two driver seats `results.rs` owns
+    /// (`fnd-two-drivers-compute-one-fact-twice` ruled them two seats, one vocabulary), and every
+    /// other seat in the engine only joins accounts it was handed. A third caller is not a
+    /// refactor; it is the window widening.
+    #[test]
+    fn the_phase_to_account_transition_lives_at_one_seat() {
+        let (callers, walked) = sources_naming(concat!("InfluenceAccount", "::of_phase("));
+        assert!(
+            walked > 0,
+            "the walk found no sources, so it proves nothing"
+        );
+        assert_eq!(
+            callers,
+            Vec::<String>::new(),
+            "the phase→account transition must stay at the ruled driver seats"
+        );
+    }
+
+    /// The authored posture is an ASSERTION, so every seat that spells one is enumerated.
+    ///
+    /// No affine clean-of-host witness is built this round (human-typed), which means nothing
+    /// structurally stops a seat claiming authored while reading influenced material. This census
+    /// is the whole of what does: the list is two-way, so both a new claimant and a stale entry are
+    /// a diff somebody looks at.
+    ///
+    /// The needle deliberately covers BOTH `Influenced::authored_before_contact` (the value
+    /// wrapper) and `InfluenceAccount::authored_before_contact` (the account) — they are the same
+    /// hazard wearing two types, and a needle that split them would repeat
+    /// `fnd-one-mint-fence-misses-a-qualified-spelling`. Counts are shown but not asserted: they
+    /// move with ordinary test churn inside an already-listed file, and a fence people re-bless
+    /// every commit stops being read.
+    #[test]
+    fn every_authored_before_contact_posture_is_enumerated() {
+        let (claimants, walked) = sources_naming(concat!("authored_before", "_contact("));
+        assert!(
+            walked > 0,
+            "the walk found no sources, so it proves nothing"
+        );
+        let files: Vec<&str> = claimants
+            .iter()
+            .filter_map(|hit| hit.split_once(" x").map(|(file, _)| file))
+            .collect();
+        assert_eq!(
+            files,
+            [
+                "cli/src/results.rs",
+                "plan/src/spine.rs",
+                "plan/tests/region.rs",
+            ],
+            "a new authored claim is a design act; found {claimants:?}"
+        );
+    }
+
+    /// The staging census (`306b:rul-untracked-is-not-authored`).
+    ///
+    /// Gradation is deliberately not built, and the stated purpose of the threading is to force the
+    /// type discipline and then WATCH whether unconverted seams accumulate over later churn. That
+    /// watch needs an instrument: this is it, and the COUNT is asserted here precisely because
+    /// growth is the signal.
+    #[test]
+    fn every_untracked_adapter_is_enumerated() {
+        let (adapters, walked) = sources_naming(concat!("InfluenceAccount", "::untracked("));
+        assert!(
+            walked > 0,
+            "the walk found no sources, so it proves nothing"
+        );
+        assert_eq!(
+            adapters,
+            Vec::<String>::new(),
+            "an untracked seam is a staged hole; growth here is the thing to look at"
+        );
+    }
 }

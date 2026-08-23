@@ -2875,7 +2875,7 @@ fn record_new_arm(
             // The REAL invalidator set (`classify-answers-with-its-invalidators`): `kills` alone
             // read false for every ordinary establish and every opaque leaf.
             invalidator: invalidators.contains(node),
-            cells: dorc_core::spine::Account::capped(class_cells(class)),
+            cells: dorc_core::spine::OperandAccount::capped(class_cells(class)),
             grade: None,
         });
     }

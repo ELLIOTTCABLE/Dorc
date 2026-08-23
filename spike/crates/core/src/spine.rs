@@ -89,13 +89,18 @@ pub const SPINE_OPERAND_CAP: usize = 8;
 /// The truncation count is PART OF THE TYPE rather than a silently-lossy `Vec::truncate`: a reader
 /// can always tell a short list from a clipped one, which is the property that makes an account
 /// admissible where the evidence itself is not.
+///
+/// Named `Operand` rather than bare `Account` so it can never read as a sibling of
+/// [`InfluenceAccount`](crate::influence::InfluenceAccount), which every record also carries and
+/// which answers an unrelated question. This one is WHAT a record's inputs were; that one is where
+/// they stand relative to host contact.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Account<T> {
+pub struct OperandAccount<T> {
     shown: Vec<T>,
     dropped: u32,
 }
 
-impl<T> Account<T> {
+impl<T> OperandAccount<T> {
     /// Keep at most [`SPINE_OPERAND_CAP`] exemplars, counting the rest.
     pub fn capped(items: impl IntoIterator<Item = T>) -> Self {
         let mut shown = Vec::new();
@@ -454,7 +459,7 @@ pub struct SpineSiteClassification {
     pub invalidator: bool,
     /// The cells this site's decision keys on, capped. For an aggregate that is its ORDERED member
     /// account, not a representative (`aggregate-mints-carry-the-same-demand`).
-    pub cells: Account<FactKey>,
+    pub cells: OperandAccount<FactKey>,
     /// The grade at mint.
     pub grade: Grade,
 }
@@ -585,7 +590,7 @@ pub struct SpineValidityRound {
     /// The round ordinal, from 1.
     pub round: u32,
     /// The sites this round proved dead and erased, capped.
-    pub erased: Account<SiteId>,
+    pub erased: OperandAccount<SiteId>,
     /// The grade at mint.
     pub grade: Grade,
 }
@@ -757,7 +762,7 @@ pub struct UnkeyedRegionRoute {
 /// Every contributing route of one shared region decision, COMPLETE (`30Ng` §2, human-typed: the
 /// narrative must carry the entire DAG of causative contributors, not a sample).
 ///
-/// Deliberately NOT an [`Account`], and the carve is narrow and reasoned. The cap
+/// Deliberately NOT an [`OperandAccount`], and the carve is narrow and reasoned. The cap
 /// (`309:law-spine-operands-capped`) bounds an operand list whose length is a property of the WORLD;
 /// a region's contributor population is a property of the analysed unit — bounded by the census,
 /// which is bounded by `cfg::inline_budget`'s per-book node budget — and it is the answer two pull
@@ -1378,7 +1383,7 @@ mod tests {
         // `law-spine-operands-capped`: the count is part of the type, so a reader can always tell a
         // short list from a clipped one.
         let cap = u32::try_from(SPINE_OPERAND_CAP).expect("the cap is a small constant");
-        let account = Account::capped(0..20u32);
+        let account = OperandAccount::capped(0..20u32);
         assert_eq!(account.shown().len(), SPINE_OPERAND_CAP);
         assert_eq!(account.dropped(), 20 - cap);
         assert_eq!(account.total(), 20);
