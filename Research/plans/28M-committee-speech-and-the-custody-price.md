@@ -1,16 +1,16 @@
-# 28M — Committee speech: the multi-author-family corner, its fence, and its price
+# 28M — Committee speech: the multi-author-family corner and its price
 
 > Tier: LLM-authored, conductor-synthesized from a human design dialogue (2026-07-28/29,
 > session `r28-name-resolution-and-conflicts-impl`), the sitting that scope-crept out of the
 > 28K build's E→F checkpoint. Grades as in `28K`: **[TYPED]** human typed it · **[ACKED]**
 > substance confirmed in dialogue · **[PROPOSED]** conductor-derived, awaiting ratification.
 >
-> **This note is the authoritative home for the multi-author-family / committee-speech /
-> vocabulary-keying corner of the design** (human direction, typed). Supersession markers
-> into `28K` (§3 polyfill wording, §7 premise), `28O` (the collide-on-plural framing, the
-> res-polyfill item), and the E→F checkpoint asks will be added HERE AND THERE only once the
-> human ratifies — not before; the corner is still settling. Until then, on conflict, this
-> note records the latest thinking and `28K` remains the ruled plan.
+> Scope today: the method (§1), the hole (§2), the walls (§3), the custody model's
+> price (§6), the composition/custody rulings (§8–§9), and the transitive-inclusion
+> direction (§10) that `28Q` §2 and `plans/30I` built on. The selector-vocabulary
+> corner — which marks mint a family's dialect and whose dialect a comparison reads —
+> is `plans/30J`; it answers the fence this note once proposed (§4) and the keep/lift
+> verdict (§11) without either.
 
 ## §1. Banked method (four tools; human-directed banking, 2026-07-29)
 
@@ -120,22 +120,17 @@ Residue — the license-bearing committee surfaces, both feeding ONE consumer:
 Both live entirely inside the survival tier (`--risk-faultless-skips`) — the corner already
 concentrated, bounded, and explicitly bought.
 
-## §4. The fence [PROPOSED — the one new rule]
+## §4. How the residue closes
 
-**rul-committee-never-spares (proposed):** a family whose live members span source units
-contributes no sparing input — its footprints spare nothing and its tokens collide,
-unconditionally. Closed-form, provable, mechanically checkable (`SourceFileId`), fails
-only toward value-loss (lost survivals ⇒ guards/runs), sits INSIDE the already-bought
-tier, and preserves the flag's pricing sentence ("named authors' at-most claims") by
-revoking eligibility exactly where a claim no longer means what its author meant.
-Explicitly NOT the set-aside unit-custody-general rule: unit-boundary is a narrow
-DISQUALIFIER in an opt-in tier, never a trust mechanism. Escape is native and
-speech-shaped: fork-the-file = taking custody of the whole utterance (vendoring-with-
-custody, already §3-sanctioned in `28K`), which converts the committee back into an
-author. Supersedes-when-ratified: `28O`'s collide-on-plural framing (this is its
-generalization to members) and the DefId-by-content lean (rejected: bytes are the wrong
-proxy — a one-arm fork severs a genuinely shared language; names too coarse, bytes too
-fine, positions orthogonal; only custody and, eventually, kind-registration speak).
+Both §3 residues are closed by keying the sparing dialect to ONE speaker closure and
+reading it at the backing's frame (`30J:rul-dialect-is-the-live-speakers-at-the-backing-frame`):
+one definition is live per frame, so one speaker's vocabulary is consulted and the
+composite "A's word ≠ B's word" is never minted. No fence over the family is needed.
+Rejected on the way there: the DefId-by-content lean (bytes are the wrong proxy — a
+one-arm fork severs a genuinely shared language; names too coarse, bytes too fine;
+only custody speaks). Escape from any cross-speaker shape stays native and
+speech-shaped: fork-the-file = taking custody of the whole utterance
+(vendoring-with-custody, `28K` §3).
 
 **Standing review law [PROPOSED]:** every future tier that consumes cross-member
 composition passes §1's decomposition at design time — the walls above inventory TODAY'S
@@ -174,8 +169,9 @@ weld, never licensure.
 5. Emission: licensure never rides runtime name-resolution; pin-by-definition-bytes;
    content-dedup; hash-munge plurality; provenance blocks; the reingest floor (munged
    names opaque; plain-name relicensing eyes-open and pinned).
-6. The committee fence (§4) at the survival tier; everything else per the walls (§3).
-7. Named futures: kind-level token registration · MH2 target-identity · the
+6. The per-speaker dialect at the survival tier (§4, `30J` §12); everything else per
+   the walls (§3).
+7. Named futures: kind-level token registration (`30J` §6.5) · MH2 target-identity · the
    duplicated-claims-coherence tool · chimera-incoherence narration.
 
 ## §6. The price (human-demanded honest pricing; general ops terms)
@@ -187,32 +183,30 @@ weld, never licensure.
   overlay user, the Chef wrapper-cookbook user). The state they want — "upstream's family
   + my one arm, as one mutually-trusting first-class description, without my owning the
   whole file" — cannot exist: its soundness would require a sentence nobody can be made
-  to have said. Their options change the ask: fork-with-custody (own the whole utterance
-  and its rot), or partial override (verdict-tier value only; family sparing-inert).
-  This is the largest and most sympathetic screwed population; entire ops cultures are
-  built on exactly this workflow.
+  to have said. What they get instead: a member added in their own closure speaks as a
+  stranger — its claims are read in the upstream speaker's vocabulary (`30J` §6.5), its
+  own marks spare nothing until their closure qualifies — or fork-with-custody (own the
+  whole utterance and its rot). Entire ops cultures are built on the refused workflow.
 - **price-union-of-strangers** — the admin with two half-coverage community oracles for
   one tool who expects the union (plugin-ecosystem intuition; pre-28K first-match gave an
   ACCIDENTAL partial union). Deliberately unrepresentable (`rej-argparse-fusion-forever`,
   `rej-decline-fallthrough-cascade`): one body answers per site; union requires a human
   hand-merge, i.e. custody.
-- **price-multi-file-package** — one author/team publishing one family across several
-  files (multi-file modules are normal packaging everywhere else) loses the sharp tier
-  under the §4 fence's unit proxy. Softener: one-family-per-file is already the natural
-  stdlib convention; concatenation is the workaround. Residual real loss: code
-  organization for large families. (A future same-speaker declaration or signing story —
-  MH2-adjacent — could unscrew this; none exists today.)
 - **price-forbidden-to-fork** — orgs whose policy forbids forking vendored third-party
   code (consume-verbatim-only): custody is their only extension path and it is closed to
   them. Niche; subsumes into price-patch-author.
+
+Multi-file packages pay nothing: one entry file sourcing its parts is one speaker
+(`28Q:syn-closure-is-the-speaker`).
 
 **Rent climbed — representable, now cruftier/more annoying:**
 
 - bottom-appenders [if positional ratified]: the stage-3 appended oracle licenses nothing
   above itself; move-it-up hint carries the recovery; USER_STORY's "append" wording is a
   human edit someday.
-- regional-preference admins: the sanctioned subshell re-source now makes the family
-  plural ⇒ sparing-inert; extra guards on drifted days, why-chains explaining why.
+- regional-preference admins: inside the sanctioned subshell re-source the region's
+  live definition's dialect governs (`30J` §12); a claim spelled in the ambient
+  speaker's word collides there — extra guards on drifted days, why-chains explaining why.
 - whole-file forkers: full value, plus the universal fork-maintenance rent (tracking
   upstream by hand).
 - deliberate overriders: one `unset -f` ceremony line per replaced member, plus the
@@ -221,8 +215,8 @@ weld, never licensure.
   (refuse-with-notice).
 - plan reviewers: fatter artifacts (hoisted pinned definitions, provenance blocks,
   contest complaints) — mitigated by attention-honesty defaults.
-- stdlib maintainers: single-file families as a de-facto packaging constraint; support
-  noise from partial-override users discovering the sparing tax.
+- stdlib maintainers: support noise from partial-override users discovering that their
+  own marks spare nothing until their closure qualifies (`30J` §5).
 
 **Who pays nothing:** the 20-line-book, stdlib-only, never-blessing admin — the
 overwhelming majority — every wall in §3 is ∅ for them.
@@ -245,17 +239,8 @@ composites nobody's fault.
   revisit. `28K` §2's two-regime wording is superseded-in-direction; the in-doc rewrite
   of `28K` waits for the sitting's close (the `rat-two-regime-wording` explainer is
   still owed and may sharpen the residual wording).
-- **§4 rul-committee-never-spares — DELIBERATELY UNRESOLVED [head-state TYPED
-  2026-07-31]; motion authorized anyway.** Neither ack nor nack. The human's lean:
-  "try it that way for the spike, and see how much it sucks" — flagged by them as
-  dangerous precisely because this corner is multi-user/community and will NOT be
-  naturally tested by spiking. Conductor concurrence recorded: the fence is the
-  conservative pole (fails toward lost sparing, never wrong licensure), so building it
-  spike-tier forecloses nothing — softening later is additive, and pre-publication
-  `rul-strawman-formats-no-compat` keeps the change cheap until real users exist. The
-  design-sitting this corner is arguably owed is explicitly UNSCHEDULED under the
-  current arc. Builder status: implement the fence as spiked behavior when the lane
-  reaches its surfaces, marked unratified.
+- **The sparing-tier residue — RULED (`30J` §12, 2026-08-23)**: no fence; the
+  dialect is per speaker closure and read at the backing's frame.
 - **tune-explicit-composition-is-sanctioned [TYPED substance 2026-07-31]** — the "no
   cross-author merging" phrasing in this note and `28K` §6/§7 is one word too strong:
   what is refused is *automatic/implicit/engine-owned* merging. Explicitly-spelled
@@ -620,16 +605,16 @@ here is a verdict)
     conservative TIGHTENING (dialect = gen-minted tokens only, both lanes' reads
     out) — cheap, collide-more direction, candidate rider for the stage-F lane.
 
-## §11. The vocabulary corner, condensed for ruling (2026-08-01 — the human is on the
-fence and moving on; THIS section is the re-entry point; §§7–10 hold the full record)
+## §11. Cross-family registration (the one vocabulary question not in `30J`)
 
-**The problem.** Selector-granular sparing is the survival tier's value: without any
-token vocabulary, every same-kind-same-entity comparison collides and drifted days
-re-check everything (safe, less attention saved). With a vocabulary, the engine must
-judge, from two STRINGS, whether a wall's at-most claim `@a` touches a protected
-fact `@b` — and strings cannot distinguish "two aspects of one thing" (spare is
-right) from "two names for one state" (spare silently under-executes). Broken
-example, post-fence, two honest authors:
+Selector-granular sparing is the survival tier's value: without any token vocabulary,
+every same-kind-same-entity comparison collides and drifted days re-check everything
+(safe, less attention saved). With a vocabulary, the engine must judge, from two
+STRINGS, whether a wall's at-most claim `@a` touches a protected fact `@b` — and strings
+cannot distinguish "two aspects of one thing" (spare is right) from "two names for one
+state" (spare silently under-executes). Within one speaker the per-speaker dialect
+(`30J` §12) makes that the speaker's own lexical discipline. ACROSS families it is
+nobody's:
 
 ```sh
 # the postgres family DESCRIBES two aspects:
@@ -639,68 +624,15 @@ example, post-fence, two honest authors:
 #   reload) printf '%s\n' postgres    : disturbs sm.dorc.Service:postgres@running
 ```
 
-Claim `@running` vs backing `@accepting`: both words in the postgres family's
-dialect, distinct ⇒ spare — while the reload genuinely bounced
-connection-acceptance. The stranger never surveyed the family's word-meanings;
-nobody lied; the elision that needed to fall, stood.
+Claim `@running` vs backing `@accepting`: both words in the postgres speaker's dialect,
+distinct ⇒ spare — while the reload genuinely bounced connection-acceptance. The
+stranger never surveyed the family's word-meanings; nobody lied; the elision that
+needed to fall, stood. Today this rests on `fence-divergent-meaning`'s documented cap.
 
-**The standing mechanic (rules in force after this sitting):**
-1. One fact plane: a fact is a cell `(kind, entity, selector[, context])`;
-   `FactKey` is lane-erased; distinct selectors are distinct cells by construction.
-   Verdict-body and predict-body gen-marks mint the same trust class (at-least).
-   The `is_converged` function-rc is the judgment/license and never becomes a fact.
-2. Sparing: claim-token spares a backing iff BOTH tokens ∈ dialect(the backing's
-   family, kind) AND they differ; everything else collides. Membership is a
-   DISTINCTNESS WARRANT resting on single-author lexical discipline ("one author
-   does not keep two words for one state").
-3. The dialect is the family's DESCRIPTION vocabulary: gen-marks from predict
-   bodies enroll; verdict-body gen-marks mint facts but their words do NOT enroll —
-   THE EXCLUSION UNDER JUDGMENT (a logged conservative fallback, not doctrine).
-   Single-token dialects can never spare (both-and-distinct), so the exclusion
-   costs verdict-only single-word authors nothing; its cost lands on multi-arm
-   authors (the stage-4½ hill).
-4. `:?` reads are INPUT confessions: they widen the declarer's own backing
-   (conservative-only, forever — prn-vocabulary-is-output-side) and never enroll.
-5. Cross-author walls, standing whatever is ruled: the committee fence
-   (inclusion-closure-keyed) makes multi-speaker families sparing-inert;
-   unregistered stranger words (the cve_clean tier) collide with everything —
-   blanket-wipe is derived from rule 2's backing-side keying, preserved under
-   every option below.
-6. The perimeter, settled/owed regardless: conflict-to-⊤ on disagreeing
-   measurements of one cell (trace + pin owed) · merge/collapse narratives ·
-   closure/shared-bytes permission (dialect permission infects the sourcing
-   closure) · transport-by-identity stays fenced (`selector_identifies` unwired) ·
-   the attribution render debt (`DisjointnessProof::family()` unconsumed).
-
-**The open verdicts (independent):**
-- **keep-vs-lift the verdict-word exclusion** (within-family: whose gen-acts
-  enroll). KEEP = the exclusion stands; multi-arm authors enroll by describing in
-  predict (one delegating line per aspect when factored); softened by the
-  counterfactual hint (prop-collided-for-vocabulary-hint) + closure-permission;
-  value-loss thin. LIFT = uniform gen-mark semantics; value concentrated in
-  multi-arm verdict-only families; risk concentrated in undeclared-read proxy
-  checks (the two-grades cell, Example-walk act 3 in-chat 2026-07-31/08-01);
-  pre-lift checklist = rule 6's perimeter. Human lean at close: keep-for-now;
-  re-open at spike end on the fires-often × bites-rarely instrument.
-- **registration** (cross-family: whether deliberate co-reference can exist at
-  all). Kind-owner curates the kind's words; co-reference iff BOTH words
-  registered; unregistered keeps the wipe tier. The ONLY fix for the broken
-  example above — keep and lift both leave it to fence-divergent-meaning's
-  documented cap. Spelling lean: registration-by-owner-use over the owner's
-  closure (no new construct); mark-verb fallback. Design-shaped, UNRULED, build
-  unscheduled.
-- **the KNOBS commons-axis name** — the human's to mint or decline
-  (`28K:res-knobs-entry-owed` + this corner, one axis: collision-as-success
-  commons ↔ owned adjudicated speech).
-  - **prop-collided-for-vocabulary-hint [PROPOSED, aid-plane]** — the noise-killer:
-    mint the counterfactual detection "this comparison collided SOLELY because token
-    T is outside family F's descriptive vocabulary; a `:?` observation (or predict
-    line) minting T would have spared this re-check" — fires only when the
-    counterfactual flips the outcome (precise-or-silent satisfied even outside the
-    kWARN spike-era weld); renders in `dorc why` and the hint lane.
-  - **re-open-at-spike-end** [human]: the lift question joins the see-how-it-feels
-    ledger — same instrument as `kSURVIVAL` (`252` B4 fires-often × bites-rarely);
-    the flip evidence named in-chat: multi-arm delegation-style verdict-only oracles
-    dominating real authoring with forfeited spares carrying the bulk of drifted-day
-    attention value.
-
+**registration** — whether deliberate cross-family co-reference can exist at all:
+the kind-owner curates the kind's words; co-reference iff BOTH words are registered;
+unregistered keeps the collide tier. Spelling lean: registration-by-owner-use over the
+owner's closure (no new construct); mark-verb fallback. Design-shaped, UNRULED, build
+unscheduled; `30J` §6.5 is its pointer. Sibling item, the human's to mint or decline:
+the KNOBS commons-axis name (`28K:res-knobs-entry-owed` — collision-as-success commons
+↔ owned adjudicated speech).

@@ -14,8 +14,8 @@
 > for its §0a fruit arc
 > and §5 sittings queue). It does NOT supersede `plans/27C` (still THE
 > wrapper/context-entry spec — §3 here generalizes its availability behavior, touching
-> none of its consent machinery) nor `28M` (still the committee-corner authority; §2 here
-> consumes its §10 direction).
+> none of its consent machinery) nor `30J` (the selector-vocabulary authority; §2 here
+> consumes `28M` §10's custody direction).
 >
 > Vocabulary, fixed for this territory [ACKED]: an **incarnation** is the lifetime
 > marker of a re-creatable context (nearest precedent: TCP's connection incarnations,
