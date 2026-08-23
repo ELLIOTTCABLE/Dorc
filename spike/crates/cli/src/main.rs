@@ -4149,9 +4149,18 @@ mod acquisition_tests {
         root: PathBuf,
     }
 
+    /// Distinguishes two live packages that share a tag. Two `#[test]`s calling one helper run
+    /// CONCURRENTLY, so a pid+tag path let each one's `Drop` delete the other's tree mid-run — a
+    /// flake that surfaced as a missing dependency (`NoOpinion` where the case wanted `Withheld`)
+    /// and as a `PermissionDenied` on Windows, where a pending directory delete blocks the
+    /// re-create.
+    static PACKAGES: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
     impl Package {
         fn new(tag: &str, files: &[(&str, String)]) -> Self {
-            let root = std::env::temp_dir().join(format!("dorc-acq-{}-{tag}", std::process::id()));
+            let serial = PACKAGES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let root = std::env::temp_dir()
+                .join(format!("dorc-acq-{}-{tag}-{serial}", std::process::id()));
             let _ = std::fs::remove_dir_all(&root);
             std::fs::create_dir_all(&root).expect("create package root");
             for (name, body) in files {

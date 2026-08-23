@@ -309,8 +309,13 @@ mod tests {
     struct Scratch(PathBuf);
 
     impl Scratch {
+        /// Per-PROCESS, because the name alone is not unique across runs: two `cargo test`
+        /// invocations (or one overlapping its predecessor's cleanup) shared a path, and on
+        /// Windows a directory with a delete still pending refuses the re-create — measured as a
+        /// `durable: Write` flake, 2026-08-22.
         fn new(name: &str) -> Self {
-            let path = std::env::temp_dir().join(format!("dorc-whylog-store-{name}"));
+            let path = std::env::temp_dir()
+                .join(format!("dorc-whylog-store-{}-{name}", std::process::id()));
             let _ = std::fs::remove_dir_all(&path);
             std::fs::create_dir_all(&path).expect("scratch root");
             Self(path)
