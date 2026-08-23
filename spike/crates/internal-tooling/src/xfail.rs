@@ -264,6 +264,19 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
+        name: "p-x-load-operand-case-over-dollar-zero",
+        trigger: "`30P:model-symbolic-dollar-zero`, the spelling that is EXACT under BOTH \
+                  invocations: `case $0 in */*) here=${0%/*} ;; *) here=. ;; esac` moves the \
+                  computation out of the word and into CONTROL FLOW, so answering it needs two \
+                  things this lane's word evaluator does not have — a `case`-pattern test over a \
+                  controller-known scrutinee joining `dec-decidable-set-v0` (license-review-tier, \
+                  by NAME), and a PER-SPELLING solve whose results meet, which is a structural \
+                  change to `funcenv::analyze`'s round model. Until then the two arms join to ⊤ at \
+                  the load and the site is an ordinary point havoc",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-load-operand-dirname-of-dollar-zero",
         trigger: "`30P:rul-static-predict-sites-loads`: `$(dirname \"$0\")` names a COMMAND, and \
                   predicting its output inside the engine is the tool-modelling \

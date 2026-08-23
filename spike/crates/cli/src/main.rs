@@ -4613,6 +4613,42 @@ mod acquisition_tests {
         );
     }
 
+    /// `p-x-load-operand-case-over-dollar-zero` — the script-relative spelling that is EXACT under
+    /// BOTH invocations, and the one this lane's evaluator cannot reach.
+    ///
+    /// `${0%/*}` is exact for the spelling Dorc invokes and DEAD for the slashless one; the `case`
+    /// fold is what an author writes to be correct under both, so it is the form Dorc should be
+    /// steering toward (`KNOBS:kLANG` stewardship: never teach the spelling that breaks). It is
+    /// also strictly harder: the computation left the WORD and became CONTROL FLOW, so answering
+    /// it needs a `case`-pattern member of `dec-decidable-set-v0` AND a per-spelling solve whose
+    /// results meet — two license-review-tier changes, one of them structural.
+    ///
+    /// CFG shape exercised: a two-armed `case` over `$0` assigning one variable, then a top-level
+    /// `.` of a word built from that variable — the value plane joins the arms to ⊤ at the load,
+    /// which is why the site havocs today for exactly the right reason.
+    #[test]
+    fn a_case_over_dollar_zero_sites_a_book_dependency() {
+        let package = Package::new(
+            "book-case-zero-load",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
+        let loaded = Loaded::of(
+            package.cwd(),
+            &book_path,
+            "case $0 in\n*/*) here=${0%/*} ;;\n*) here=. ;;\nesac\n. \"$here/helpers.dorc.sh\"\nbook_helper\n",
+        );
+        let helper = loaded.at_exit("book_helper");
+
+        internal_tooling::xfail::xfail_until("p-x-load-operand-case-over-dollar-zero", || {
+            assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+            assert!(matches!(helper, LiveDefinition::Live(_)));
+        });
+    }
+
     /// `p-x-load-operand-dirname-of-dollar-zero` — the same dependency, spelled through a COMMAND.
     ///
     /// Book libraries overwhelmingly locate sibling files as `$(dirname "$0")/helpers.sh`, and the
