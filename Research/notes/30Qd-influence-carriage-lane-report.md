@@ -651,20 +651,37 @@ Deviations from the brief, each an OPEN item for the conductor:
 5. **The note ID the brief expected to be occupied was not.** Only `30Qa`–`30Qc` existed when
    this was minted; `30Qd` was free and is taken.
 
-**BLOCKER — the machine, not the work.** `C:` reached 100% (0 bytes free) partway through
-verification. `mise run check-quiet` was GREEN at the lineage tip before any edit; after the
-edits, `mise run test -- influence` compiled every crate and passed all four `core::influence`
-doctests, then died in the nextest link phase with `LNK1318 … LIMIT/FILE_SYSTEM` and
-`rustc-LLVM ERROR: IO failure on output stream: no space on device`. The harness's own temp
-filesystem then began failing writes with `ENOSPC` as well. **The completion contract
-(`mise run both gate:full-quiet` foreground, then `mise run xfail:census`) COULD NOT BE RUN.**
-Nothing was reaped: `doctor-inventories-never-reaps` says a reap needs a containment proof this
-lane has no business making, and worktree/branch/cache sweeps are the human's
-(`30Q` §5 already names stale worktrees as their sweep). This worktree's own `spike/target` is
-6.0 GB and is the only disk this lane created.
+**What was verified.** `mise run check-quiet` GREEN at the lineage tip before any edit. All four
+new cells measured GREEN as pins (a pin PASSES while its target assertion fails):
+`settle::tests::the_region_record_carries_the_account_its_meet_joined` ·
+`spine::tests::a_spine_record_keeps_the_account_its_mint_supplied` ·
+`region an_open_population_does_not_read_as_authored_before_contact` ·
+`region the_shared_account_does_not_depend_on_which_route_carries_influence` (the green
+companion). `internal-tooling xfail::tests::xfail_census_is_coherent` PASSES, so the two-way
+registry↔call-site check accepts all three new rows. Comment budget: **0 net new inline `//`**
+(budget 10), 54 net new `///` (counted separately; every pin's doc plus the two report-bearing
+tests' acceptance criteria).
 
-The three red cells and their `PINS` rows are therefore **UNVERIFIED**: they compiled, and their
-`xfail` semantics are argued rather than measured. EXECUTE (or the conductor, once the disk is
-recovered) must run `mise run both gate:full-quiet` and `mise run xfail:census` over this branch
-before treating them as landed — and must expect at least the possibility that one of them XPASSes
-for a reason I could not observe.
+**BLOCKER — the machine, not the work.** `C:` hit 100% (0 bytes free) mid-verification: a
+`mise run test` died with `LNK1318 … LIMIT/FILE_SYSTEM` and
+`rustc-LLVM ERROR: IO failure on output stream: no space on device`, and the harness's own temp
+filesystem began failing writes with `ENOSPC`. Space partially recovered (to ~2 GiB) as the
+failed build released its own artifacts, which is what let the targeted runs above complete.
+**The completion contract could not be met**: `mise run preflight gate` REFUSES —
+"1.9 GiB free … needs 4.0 GiB (warm cache)" — so `mise run both gate:full-quiet` never ran on
+either leg, and `DORC_PREFLIGHT=skip` is forbidden by this lane's brief. `mise run xfail:census`
+was likewise not rendered (its GATE, `xfail_census`, did run and passed).
+
+Nothing was reaped. `doctor-inventories-never-reaps` says a reap needs a containment proof this
+lane has no business making, and `30Q` §5 already names stale worktrees as the human's sweep.
+The read-only inventory, for whoever does sweep: **161.6 GiB at risk in worktrees on this leg**,
+across eighteen — `Code/Dorc [ai/main]` 23.6 GiB DIRTY · `worktrees/r30-conduct` 16.3 GiB ·
+`r30-loading` 9.1 GiB DIRTY · and fourteen `agent-*` lane trees at 7–10 GiB each, all CLEAN, most
+of them lanes `30Q` §2 records as already FOLDED (loop, planner, load-a, load-b, fruit). This
+worktree's own `spike/target` is 7.4 GiB and is the only disk this lane created.
+
+**What that leaves owed**: a both-leg `mise run both gate:full-quiet` over this branch once the
+disk is recovered, before the red cells are treated as landed. The risk it covers is narrow — the
+four cells are unit-tier and were measured directly, and no production code changed — but the
+WSL leg has caught a Linux-only failure in this project before, and the whole-workspace clippy
+that rides `gate:full-quiet` has not seen these files.
