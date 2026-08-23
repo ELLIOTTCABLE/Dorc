@@ -220,6 +220,16 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   dialect-membership conjunct is adapter-computed, not model-re-derived
   (`sparing_differential.rs` header).
 
+## Law — durable replay
+
+- **inv-reingested-material-never-authorizes-action** — every durable read-back value is a
+  `Recorded*`/report value with no conversion to live claims, influence accounts, vouches,
+  licenses, `PlanAuthority`, probing, artifacts, or apply. Re-ingestion describes a past
+  world-moment and never drives action (`30R:standing-invariants`).
+- **inv-recorded-and-rederived-remain-distinct** — durable consumers preserve four states:
+  recorded-only, rederived-only, both-agreeing, and both-disagreeing. Never substitute one for
+  the other or silently resolve disagreement (`30R:recorded-versus-rederived`).
+
 ## Law — render
 
 - **the-render-decides-nothing** (the `30E` render-decision audit, closed by `30Nd`) — every

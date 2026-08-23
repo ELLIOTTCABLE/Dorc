@@ -160,6 +160,14 @@ discipline: one rule per bullet, slugged; append to the matching section.
   real transport, concurrency, retry, cross-host reuse, saved approval — carrying
   the scope has to become checking it, and this is the choke point where that
   lands.
+- **inv-whylog-collection-never-expands-observation** — receipt writing persists only data the
+  invocation already holds; it performs no additional host call, environment sweep, unrelated
+  controller read, or debug probe. Later pull is a separate invocation about the later world
+  (`30R:standing-invariants`).
+- **inv-unaccounted-output-stays-remote-by-default** — stdout/stderr outside the
+  oracle-accounted channels is not transported or persisted by default. Explicit collection is
+  selected before transport; later debugging pull is temporally distinct
+  (`30R:accounted-and-unaccounted-output`).
 - **the-fixpoint-owns-the-rounds-and-builds-nothing-else** (`26H` §4/§4¾, generalized by `30K`) —
   `plan::settle_effective_world`, driven by `fixpoint::WorldRoundModel`, re-derives classify,
   certified effective reach, decisions, and the records fold against the residual model until a

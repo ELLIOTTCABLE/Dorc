@@ -440,6 +440,11 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   workspace-wide rename must be module-driven, never grep-driven, and the intake
   family is out of its scope. Sanitizing or encoding intake bytes for display never
   makes them trusted.
+- **inv-debugging-detail-has-no-sensitivity-guarantee** — Dorc cannot classify arbitrary
+  argv, paths, entity values, report tails, errors, or source as sensitive or not. Encryption,
+  omission, and sink encoding narrow exposure but never license "scrubbed", "secret-free", or
+  safe-to-share claims; a whylog projection promises only which field classes it contains
+  (`30R:standing-invariants`).
 - **rul-durable-contents-reviewed-before-design** — Surface: what the whylog durable
   persists, and what re-ingestion consumes. Changing either — new fields, new record
   species, timings, decision detail, anything read back — STOPS for `/opaque-review`
