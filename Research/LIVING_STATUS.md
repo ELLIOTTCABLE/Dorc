@@ -14,26 +14,31 @@
 
 ---
 
-## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT IN FLIGHT, DISPATCH HELD for a harness restart; resume from `notes/30Q` §5a)
+## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT IN FLIGHT; resume from `notes/30Q` §5c)
 
 **Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
 fold order, the brief riders) and `plans/30P` (THE design for the emission planner, the
 stream forms, and book-load principles — including its review stance on `notes/30Pb` and
 the rulings of the 2026-08-22 sitting). Read both in full before dispatching anything.
 
-**Branch state:** four wave-one lanes are OPEN on harness worktrees (`ai/r30-lane-{loop,planner,load,fruit}`, all branched from `ai/main` at `aabcc2d9`; lane table, sizing rulings, and the fold order in `notes/30Q` §2); everything else is folded on `ai/r30-conduct` (worktree
-`.claude/worktrees/r30-conduct`); `ai/main` is the human's to fast-forward. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may be
-`-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; keep
-`worktree-sol-adversarial-30M` until `lane-load-plane-precision` recovers test `176e0818`.
-Three stale review branches (`ai/r30-loom-surface-build2`, `review-verify-adv`,
-`review-verify-neutral`) are not contained — the human's sweep.
+**Branch state:** the four kernel lanes are FOLDED on `ai/r30-conduct` (worktree
+`.claude/worktrees/r30-conduct`); the gate-green tip is the fold-repair branch
+`ai/r30-conduct-repair` @ `eae684b1` (its ff into `ai/r30-conduct` is HELD on the human's
+ack, as is the fruit lane `ai/r30-lane-fruit-2`); two lanes are OPEN on harness worktrees,
+both based on `eae684b1`: `ai/r30-lane-influence-map` (the MAP half only) and
+`ai/r30-lane-loop-residue`. `ai/main` is the human's to fast-forward; the primary checkout
+carries the human's uncommitted ruling work — radioactive. Lane table and the fold order:
+`notes/30Q` §2/§5c. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may
+be `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; test `176e0818` is
+recovered, so `worktree-sol-adversarial-30M` is deletable. Three stale review branches
+(`ai/r30-loom-surface-build2`, `review-verify-adv`, `review-verify-neutral`) are not contained
+— the human's sweep; the four folded lane branches and their harness worktrees likewise.
 
-**Dispatch-ready (no human gate), per `30O:the-schedule`:** `sched-parallel-disjoint-lanes`
-= `lane-loop-propagation` · `lane-emission-planner` · `lane-load-plane-precision` ·
-`lane-fruit-arc` → `sched-serial-constructor-reshape` = `lane-influence-carriage` (stays in
-r30; never droppable) → `sched-round-close-ceremony` (crosscheck · `307:veto-sweep-pile
-(née §5)` · `gate:arc` · `CURRENT_ROUND` bump · prose queue). The human sizes lanes to
-builders before dispatch. Every brief: the Safety block, step-zero worktree verify,
+**Dispatch state, per `30O:the-schedule`:** `sched-parallel-disjoint-lanes` is BUILT and
+folded (gate-green at the repair tip) → `sched-serial-constructor-reshape` =
+`lane-influence-carriage` MAP IN FLIGHT, EXECUTE waits on a typed human ack →
+`sched-round-close-ceremony` (crosscheck · the `307` §6 veto register · `gate:arc` ·
+`CURRENT_ROUND` bump · prose queue) held. Every brief: the Safety block, step-zero worktree verify,
 `AGENTS.for-builders-only.md` first, and `notes/30Pc` (the opaque review's builder-lane
 half — unread by Fable-class conductors by law) where it names the lane.
 

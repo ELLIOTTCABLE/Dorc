@@ -105,6 +105,81 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
 roll-over lean + the `30Pc` routing method (no objection raised). Naming/typing advice and the
 parser lean as recorded in §1.
 
+2026-08-22 (successor session, on the §5c plan): the root checkout's seven dirty files are the
+HUMAN's in-flight ruling work — no touch · item 4 (steering/register edits) PROCEED, tooling
+steer "fix, don't document … only if a Sonnet can fix it" · item 5 (loop residue) DISPATCH ·
+item 6 (`lane-influence-carriage`) DISPATCH THE MAP ONLY; EXECUTE waits on a typed ack ·
+everything unmentioned (the two folds, the execute-deviation adjudication, the ceremony) is a
+do-nothing HOLD. Basing the two new lanes on the green repair tip was the conductor's read of
+"dispatch", not a typed instruction.
+
+## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
+
+**Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
+(4 commits over `0c073fd2`; the three hand-merged hunks verified correct; the two diagnosed
+reds plus two fold-mechanics reds the lib build hid — stale test seats for `select`/`closure_for`,
+a full-profile-only `collapsible_if` — fixed; `both gate:full-quiet` green, `both test`
+2642/2638, xfail census 13 live / 1 reserved, no expired group; the `load30-script-relative-lints`
+golden moved exactly the ruled 9-out/1-in) · fruit closer `ai/r30-lane-fruit-2` @ `9b97c30d`
+(green both legs foreground; its lane report's `§close` is on the lane branch; ONE deviation: a plain `~`-leading unmodeled line as
+the paste-hygiene round-trip witness instead of the sketched oracle+mocks shape).
+
+**Open adjudication register — the execute-lane deviations the collapse folded mechanically,
+each still OPEN (the `30Q` §2 table's "endorsed" marks for load-B's two stand; nothing else is
+ruled):** planner `30Qb:dev-four-goldens-moved-not-one` · `dev-residual-withholds-placement-not-the-vouch`
+(= `tc-uncarried-source-still-guards`; conductor lean: as built) · `dev-hoist-action-not-built`
+(T1/T2a red; the hoisted `.`-line spelling is `tc-hoisted-dot-line-spelling`, human) ·
+`dev-a-tier-pins-not-in-the-type-commit` · `dev-tier-needles-are-not-expressible` ·
+`dev-two-mise-tasks-added` · `fnd-book-set-roots-resolve-and-must-stay-explicit` (the `30P`
+per-form gloss wants the definition's words) · load-A `30Qc:dev-prelude-floor-keeps-the-absorbing-top`
+(rides the human's clobber sentence) · `dev-errexit-is-a-lexical-operand-test` ·
+`dev-cwd-cell-re-pointed-to-the-ruling` · `dev-lint-severity-follows-the-map` (builder lean:
+`script-relative-load-dies-slashless` at NOTE) · `dev-source-of-dynamic-target-is-retired` ·
+`dev-parser-span-residue-not-taken` · load-B `dev-lift-arity-lands-but-the-seats-still-enumerate-per-file`
+(a licensure act — the six per-FILE seats; wants a ruling or a red) ·
+`dev-inclusion-role-is-derived-from-the-marker` · `dev-select-takes-the-snapshot` ·
+`dev-book-reached-admits-marker-free-targets` · repair-lane: the header nit and the dangling pin
+cite (both routed to `lane-loop-residue`) · fruit: the witness-shape deviation.
+
+**Dispatched from `eae684b1` (not a fold — basing):** `lane-influence-carriage` MAP on
+`ai/r30-lane-influence-map` (Opus; its lane report takes the next free `30Q` letter, `§map`; red cells only; the three conductor leans
+it must confirm or refute: `lean-account-is-non-optional-with-a-typed-untracked` ·
+`lean-render-sinks-are-untracked-adapters-this-lane` · `lean-certifier-trip-demotion-joins`;
+`stop-spine-mode-is-durable` rides it and may trigger the quarantine file's review at MAP time)
+· `lane-loop-residue` on `ai/r30-lane-loop-residue` (Sonnet; six tasks: the Replace-asserting
+red for `forfeit-cell-blind-self-reach-walls-loop-siblings` · `plan::member_argv` →
+`argv_of_inline_site` · the dangling `p-x-computed-dot-parses-and-havocs` cite · the
+`load30-script-relative-lints` oracle header · the shared `~/.local/state/hk/output.log`
+(per-worktree via `mise.toml` env iff one-line) · `oracle/src/closure.rs`'s stale `ParamComplex`
+header sentence). Briefs: session scratchpad `brief-influence-map.md` · `brief-loop-residue.md`.
+
+**Steering and registers applied on `ai/r30-conduct` (item 4):** `syntax/CLAUDE.md`
+(`syntactic-top-triggers` source clause retired; `tn-coarse-subst-provenance` consumer) ·
+`analysis/CLAUDE.md` (`funcenv-reads-source-literal-plane-only` rider ·
+`rul-havoc-is-pointwise-never-the-stack` · `rul-exact-is-not-explicit` ·
+`rul-acquiring-bytes-is-not-modelling-them` · `rul-guarded-source-compares-the-sentinel-value`) ·
+`oracle/CLAUDE.md` (the closure rationale restated + `SiteFrame` rider · the dangling FORFEITS
+cite dropped · `rul-a-removal-clears-what-is-indexed`) · `cli/CLAUDE.md` (`PlainInclusion`
+rider · the two rewrite gates · `floor-cases-see-a-modelled-dollar-zero`) · `plan/CLAUDE.md`
+(placement inheritance appended to `pinned-definitions-are-the-artifact's-binding`) ·
+`spike/CLAUDE.md` task list (`bless:case`, `loom`) · ANALYZER-NEEDS (`an-backing-selfframing`
+freeze; `an-name-observation-census`) · FORFEITS (the `case-over-dollar-zero` red; the plain-sh
+row's landing evidence) · `30O:register-and-steering-debt`.
+
+**Findings this session:** `fnd-one-explicitness-predicate-two-seats` — `cli::artifact::operand_is_explicit`
+(AST word) and `funcenv::ResolvedHead::explicitness()` (resolution) both answer the rewrite
+question after the fold; the cli seat should read the marker (`30O` debt) · the harness
+auto-loads every `CLAUDE.md` under a tree on a conductor's first edit there (~40k tokens this
+session) — edit steering in one sitting, never piecemeal · the Windows preflight reads
+`vmmemWSL`'s unreturned page cache as pressure, so `both` runs the WSL leg FIRST on this box
+(the repair builder measured it; `spike/CLAUDE.md preflight-bounds-before-spend` says the
+opposite and is owed a one-line correction at the next steering edit).
+
+**Held, in order, once the human acks:** (1) ff `ai/r30-conduct-repair` then rebase+ff
+`ai/r30-lane-fruit-2` and the residue lane onto `ai/r30-conduct` (this session's doc commits
+rebase on top of the repair tip) · (2) the adjudication register above, banked here · (3) rule
+the MAP, then EXECUTE on the human's typed ack · (4) the ceremony per `30O`.
+
 ## §5b — CONTEXT COLLAPSE (2026-08-22, after the restart; supersedes §5a's order)
 
 The conductor spent its remaining window folding planner → load-A → load-B by hand (three
