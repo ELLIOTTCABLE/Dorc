@@ -236,18 +236,30 @@ mod tests {
         assert!(!census.uses_above("wombat", BytePos(1)));
     }
 
-    /// The ⊤ arm: a command word the lexer could not resolve to a literal, and an operator-bearing
-    /// expansion whose parameter name it discarded, are each a use of EVERY name — including names
-    /// the book never spells.
+    /// The ⊤ arm: a command word the lexer could not resolve to a literal, and an arithmetic
+    /// expansion, whose text the lexer never captures, are each a use of EVERY name — including
+    /// names the book never spells.
     #[test]
     fn an_undecodable_construct_is_a_use_of_every_name() {
-        for src in ["\"$CMD\" arg\n", "printf '%s' \"${ROOT%/}\"\n"] {
+        for src in ["\"$CMD\" arg\n", "printf '%s' \"$((1 + 1))\"\n"] {
             let census = census(src);
             assert!(
                 census.uses_above("a_name_this_book_never_spells", BytePos(u32::MAX)),
                 "{src:?} decodes to nothing, so it may touch anything"
             );
         }
+    }
+
+    /// A TRIM names its base and whatever its pattern reads, and NOTHING else. The `${0%/*}`
+    /// script-relative idiom is spelled this way, so a ⊤ here would close the hoist question for
+    /// every book that uses it.
+    #[test]
+    fn a_trim_expansion_names_its_base_and_its_pattern_only() {
+        let census = census("printf '%s' \"${ROOT%/$SUFFIX}\"\n");
+        assert_eq!(census.first_universal_use(), None);
+        assert!(census.uses_above("ROOT", BytePos(u32::MAX)));
+        assert!(census.uses_above("SUFFIX", BytePos(u32::MAX)));
+        assert!(!census.uses_above("a_name_this_book_never_spells", BytePos(u32::MAX)));
     }
 
     /// …and a `${name-}` DOES decode, because that one spelling keeps its name — the narrowing the
