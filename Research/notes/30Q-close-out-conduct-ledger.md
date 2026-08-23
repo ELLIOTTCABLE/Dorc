@@ -59,7 +59,7 @@
 |---|---|---|---|---|
 | `lane-loop-propagation` | `ai/r30-lane-loop` | loop lane report | Opus; checkpoint after census-mint | CHECKPOINT RULED 2026-08-22 (census landed `f095ad43`, pin promoted; seam approved member-major; reds owed first) |
 | `lane-emission-planner` | `ai/r30-lane-planner` → `-exec` | planner lane report | Opus MAP → ruling → EXECUTE | MAP FOLDED-IN-BRANCH `0c38045d` (30Pc repair + 2 evidence cells landed); RULED; EXECUTE DISPATCHED 2026-08-22 |
-| `lane-load-plane-precision` | `ai/r30-lane-load` | load lane report | Opus MAP → ruling → EXECUTE-A → EXECUTE-B | MAP DISPATCHED 2026-08-22 |
+| `lane-load-plane-precision` | `ai/r30-lane-load` → `-a`, `-b` (parallel) | load lane report | Opus MAP → ruling → EXECUTE-A ∥ EXECUTE-B | MAP FOLDED-IN-BRANCH `d2b47654` (5 red pins, glob retarget, plain-sh e2e red); RULED; A and B DISPATCHED 2026-08-22 |
 | `lane-influence-carriage` | — | influence lane report | Opus EXECUTE over the merged tip (scout census banked) | WAITING on the fold |
 | `lane-fruit-arc` | `ai/r30-lane-fruit` | fruit lane report | Sonnet, one shot | DISPATCHED 2026-08-22 |
 
@@ -72,8 +72,17 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
 
 - loop seam: RULED — member-major ordering everywhere observable (record index AND witness); `IterationSlot` keeps the member ordinal; duplicate `(site, fact)` keeps refusing; the count>1 trigger keys on closure; licence reds minted before the seam (`rul-forfeits-carry-reds`).
 - planner map: RULED 2026-08-22 — `rul-a-loaded-definitions-placement-is-its-load-position` endorsed (book-loaded closure defaults in-place; no second hoist; residual withholds); T2 narrowed (T2a role-munge; T2b → T3 with the collider named) pending the HUMAN on the typed ladder vs reserved alpha-rename; `sink`-inside-the-paren ruled admissible (veto-eligible); tier cells = unit pins + disclosure needles; squat cell roster entry GRANTED; why-world re-derives the Selection, never a new durable field. FINDING for the human: the artifact already carries a book-loaded bundle at the `.`, so the preamble hoist was a SECOND copy — the hole is live (gate-6 dual-rail failure), fixed by step 3 of the execute order.
-- load map: the funcenv domain shape + monotonicity argument · AST decoding boundary · the
-  `tc-computed-dot-complaint-shape` UX (human's) · the EXECUTE-A/B commit orders.
+- load map: RULED 2026-08-22 — D1 pointwise havoc endorsed (frames = subshell scopes to confirm;
+  a function-body `.` havocs the global frame); D2 cwd clobbers endorsed as machinery but RE-CUT:
+  cwd-⊤ never costs acquisition or mirroring, only binding authority (the cwd-⊤ domain is a
+  conductor-tier lean in `30P`'s review section, not typed law, and as mapped it would regress
+  `. /etc/os-release` books to dying at their relative oracle `.` on the host); a subshell `cd`
+  clobbers nothing outside; `$0`-headed operands get ONE cwd-sensitivity switch with the
+  conservative default (the flagship `load30-point-havoc-and-script-relative` stays red) pending
+  the HUMAN on `tc-dollar-zero-is-script-anchored` (invoke the shipped plan by absolute path so
+  the host's `${0%/*}` is cwd-immune); the slashless `$0` spelling is a LINT spelling; the
+  computed `.` keeps today's outcome at exit 17 with only the tier moved; the `case $0` form gets
+  a new r31 red; the `30Pc` repair is skipped in EXECUTE-B (it landed on the planner lane).
 - influence (before dispatch): rename the influence `Grade` (collides with claim-tier `core::Grade`) ·
   render/output sinks as explicit `untracked` adapters this lane (conductor lean) ·
   `certifier_trip` demotion path's influence meaning.
