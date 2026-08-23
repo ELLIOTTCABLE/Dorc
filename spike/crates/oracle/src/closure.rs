@@ -33,15 +33,20 @@
 //! else does. Suspension withholds the pin, which withholds the vouch and the ship, which runs the
 //! site — the safe direction, and attributed.
 //!
-//! **Constants ride per CONTRIBUTING FILE, not per reference.** The lexer collapses every
-//! parameter-expansion operator form to one opaque `ParamComplex` and discards the name
-//! (`28O:res-load-inert-conservatism`), so a reference-driven constant capture could not prove
-//! itself complete: `${ROOT%/}` names a constant this pass cannot see. Emitting every top-level
-//! constant of every file that contributes code sidesteps that hole entirely — the constants are
-//! proven inert to evaluate (`rul-marked-file-is-load-inert`) and a file's constants are the
-//! natural unit to travel with that file's code. The residue it accepts is named in the ledger: a
-//! body reading a constant from a file that contributes NO code is not captured, because nothing
-//! ties that file to this definition.
+//! **Constants ride per CONTRIBUTING FILE, not per reference.** A file's constant set is a CLOSED
+//! population a body can only read FROM, so emitting it needs no completeness proof — there is
+//! nothing outside it left to miss. A reference-driven capture is the opposite shape: it would
+//! have to prove it found every READ, and `eval`, a non-literal command word, and value-plane
+//! indirection stay genuinely undecodable at this pass — `28O:res-load-inert-conservatism`'s
+//! residual, not the whole parameter-expansion surface: the base name and the operator's own
+//! pattern (`${ROOT%/}`'s `ROOT` and its trim pattern) are BOTH decoded ahead of this crate
+//! (`dorc_syntax::ast::ParamOp`), so only an `Unmodelled` operator or an unnamed base still hides
+//! a reference from a would-be per-reference capture. Emitting every top-level constant of every
+//! file that contributes code sidesteps the remaining hole entirely — the constants are proven
+//! inert to evaluate (`rul-marked-file-is-load-inert`) and a file's constants are the natural unit
+//! to travel with that file's code. The residue it accepts is named in the ledger: a body reading
+//! a constant from a file that contributes NO code is not captured, because nothing ties that
+//! file to this definition.
 
 use std::collections::{BTreeMap, BTreeSet};
 
