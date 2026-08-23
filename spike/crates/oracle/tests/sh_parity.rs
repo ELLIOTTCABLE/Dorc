@@ -36,12 +36,10 @@ fn voucher_owning_dest(tag: &str) -> String {
 /// `floor28-unset-f-and-redefinition` — which is also why this is a genuine parity assertion and not
 /// an engine preference.
 ///
-/// HOW the engine gets there is worth stating, because it is not by modelling `unset -f`: a top-level
-/// `unset -f` is a COMMAND, so the file is not load-inert
-/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`) and contributes NO declarations at all.
-/// The outcome is right and the reasoning is blunter than the rule — which is why the cross-file
-/// cousin below does NOT come out right, and why the coming blessing of read-only top-level commands
-/// has to arrive with a real model rather than a widened allow-list.
+/// HOW the engine gets there: `unset -f` is admitted at a marked top level
+/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL"), and
+/// `HelperIndex::record` MODELS the removal rather than merely tolerating it — which is what lets
+/// the cross-file cousin below come out right too.
 ///
 /// Why an engine choice depends on it: a borrowed-back helper would put a body the shell had unbound
 /// into a shipped check, so the check's answer would come from a judgment no execution would have
@@ -74,27 +72,20 @@ fn a_helper_unset_at_oracle_top_level_resolves_to_nothing() {
     );
 }
 
-/// `p-x-helper-unset-f-across-files` — THE TARGET: an `unset -f` in a LATER loaded source removes the
-/// earlier declaration from resolution, exactly as it removes it from a shell.
+/// An `unset -f` in a LATER loaded source removes the earlier declaration from resolution, exactly
+/// as it removes it from a shell (promoted from the pin `p-x-helper-unset-f-across-files`).
 ///
 /// The sh fact is the same one the pin above rests on, one file over: load `a.sh` then `b.sh` where
 /// `b.sh` unsets what `a.sh` defined, and the name is unbound afterwards.
 /// `floor28-unset-f-and-redefinition` measured the removal under both floor binaries; nothing about
 /// crossing a file boundary changes it, because `.`-sourcing applies definitions into ONE environment.
 ///
-/// FAILS TODAY, measured 2026-08-16: the later file is not load-inert, so it contributes nothing —
-/// including its removal — and `_dest` still resolves to the earlier declaration, which then TRAVELS
-/// into the shipped closure. The definition table models `unset -f` for ROLE names
-/// (`analysis::funcenv`'s `Undefined`, the blessing behind `contest28-unset-f-blesses-elision`), but
-/// helpers are not role funcdefs and are not in it, so the helper lane has no model of removal at all.
-///
-/// Why an engine choice depends on it: the same blessing of read-only top-level commands that makes
-/// `p-x-blessed-toplevel-conditional` live makes THIS shape legal oracle text — `unset -f` reads and
-/// writes nothing on the host, so it is a natural candidate for the blessed set — and the moment it
-/// is legal, a shipped check can carry a helper body the author explicitly removed.
+/// Why an engine choice depends on it: `unset -f` reads and writes nothing on the host, so it is
+/// legal marked top level — and while the index modelled the removal per FILE, a shipped check could
+/// carry a helper body a later source explicitly removed, which is a judgment no execution could
+/// have reached (`271:rul-sin-ordering`'s mis-attribution tier).
 #[test]
 fn a_later_unset_f_removes_an_earlier_helper_declaration() {
-    // Setup outside the closure: a panic in there would read as the target still failing.
     let entry = voucher_owning_dest("plain");
     let removal = format!("{MARKER}unset -f _dest\n");
     let control = HelperIndex::build(&[&entry], None)
@@ -108,16 +99,30 @@ fn a_later_unset_f_removes_an_earlier_helper_declaration() {
         Ok("_dest() {\n   wombat cmp --plain -- \"$1\"\n}"),
         "control: with no removal the voucher's own declaration ships"
     );
+    assert!(
+        !after_removal
+            .as_deref()
+            .is_ok_and(|closure| closure.contains("_dest() {")),
+        "a declaration the loaded set later UNSET must not travel into a shipped check — got \
+         {after_removal:?}"
+    );
 
-    internal_tooling::xfail::xfail_until("p-x-helper-unset-f-across-files", || {
-        assert!(
-            !after_removal
-                .as_deref()
-                .is_ok_and(|closure| closure.contains("_dest() {")),
-            "a declaration the loaded set later UNSET must not travel into a shipped check — got \
-             {after_removal:?}"
-        );
-    });
+    // A declaration BELOW the removal binds again — the removal is positional, never a per-name
+    // blacklist. Same file, because a cross-file redeclaration would leave the voucher's custody
+    // and measure `rul-vouch-reaches-own-custody-only` instead of this.
+    let redefined = format!(
+        "{MARKER}_dest() {{\n   wombat cmp --early -- \"$1\"\n}}\nunset -f _dest\n\
+         _dest() {{\n   wombat cmp --late -- \"$1\"\n}}\n{VOUCHER_BODY}\n"
+    );
+    let after_redefinition = HelperIndex::build(&[&redefined], None)
+        .closure_for(0, VOUCHER_BODY)
+        .map(|closure| closure.sh());
+    assert!(
+        after_redefinition
+            .as_deref()
+            .is_ok_and(|closure| closure.contains("--late") && !closure.contains("--early")),
+        "the declaration below the removal is the one that travels — {after_redefinition:?}"
+    );
 }
 
 /// `p-subshell-helper-death` (`30A` §2 P-green) — a helper the BOOK defines inside `( … )` suspends a

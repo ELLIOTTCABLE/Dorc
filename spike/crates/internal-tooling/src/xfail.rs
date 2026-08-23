@@ -172,14 +172,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-helper-unset-f-across-files",
-        trigger: "the HELPER LANE consuming the frame: the definition table now records non-role \
-                  funcdefs, so the environment can see the removal, but `HelperIndex` still \
-                  resolves by last-declaration-wins over the load-inert sources and asks it nothing",
-        horizon: Horizon::Scheduled("r31:closure-custody"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-intra-compound-plurality",
         trigger: "`28Q:pin-emission-planner-universal` — per-segment environments for a composed \
                   compound. `30P:rul-planner-apply-side-first`: this is the planner's PROBE mode, \

@@ -317,15 +317,17 @@ impl HelperIndex {
             // `271:rul-sin-ordering`'s mis-attribution tier. Shipping nothing declines at rc 127
             // on the host, which is the safe direction.
             //
-            // Per FILE, because that is what this seat indexes: a removal in one file says nothing
-            // about another's declaration, and cross-file order is `HelperIndex::resolve`'s
-            // last-wins question.
+            // It removes EVERY declaration indexed above it, not merely this file's. `.`-sourcing
+            // applies definitions into ONE environment, so a removal cannot see a file boundary —
+            // and this walk runs in load order over the indexable population, which is the same
+            // argument `28R:rul-resolution-matches-shell-loading` rests last-wins on: what is
+            // indexed so far IS what a shell would have bound here.
             NodeKind::Simple { words, .. }
                 if crate::load_inert::unset_functions(ast, words).is_some() =>
             {
                 for name in crate::load_inert::unset_functions(ast, words).unwrap_or_default() {
                     if let Some(declarations) = self.helpers.get_mut(&name) {
-                        declarations.retain(|declaration| declaration.file != file);
+                        declarations.clear();
                     }
                 }
             }
