@@ -1,0 +1,32 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - oracle-matched-zero-sites
+---
+-- book.sh --
+#!/bin/sh
+echo hello
+
+-- hork.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+hork__is_converged() { hork --check "$@"; }
+
+-- replay --
+$ dorc --book=book.sh --pre-source hork.oracle.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=bfdeaeb08cffb6a36438bcd12dda25417e3cdd36f1e7e482a2849d539225288b sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+echo hello
