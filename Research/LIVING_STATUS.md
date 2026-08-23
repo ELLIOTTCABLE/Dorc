@@ -14,7 +14,7 @@
 
 ---
 
-## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT IN FLIGHT; conduct ledger `notes/30Q`)
+## CURRENT STATE (2026-08-22 — r30 CLOSE-OUT IN FLIGHT, DISPATCH HELD for a harness restart; resume from `notes/30Q` §5a)
 
 **Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
 fold order, the brief riders) and `plans/30P` (THE design for the emission planner, the

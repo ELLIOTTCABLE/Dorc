@@ -105,6 +105,29 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
 roll-over lean + the `30Pc` routing method (no objection raised). Naming/typing advice and the
 parser lean as recorded in §1.
 
+## §5a — RESTART STATE (human hold, 2026-08-22: no further subagent wakes; harness restart pending)
+
+In-flight lanes run to completion and are adjudicated as they land; NOTHING is dispatched or
+resumed until the human restarts the harness. Dispatch-ready afterwards, in this order:
+
+1. **fruit closer STRANDED** — `ai/r30-lane-fruit-2` (2 commits over `306a7a00`: the
+   paste-hygiene diagnostic wired + its catalog entry) ended its turn awaiting its OWN
+   backgrounded bless/gate (the `foreground-final-verification` failure mode). Its round-trip
+   case `emitted-line-unsafe-for-paste-round-trip.loom` was UNTRACKED in a reapable harness
+   worktree; a copy is banked in the session scratchpad (`fruit2-uncommitted-…loom`). A fresh
+   Sonnet, branched from `ai/r30-lane-fruit-2`, commits that case (scoped bless), runs
+   `mise run both gate:full-quiet` FOREGROUND, appends `# §close` to the fruit lane report (on the lane branch). Then the lane folds.
+2. Fold whichever of loop-2 / planner-exec / load-a / load-b have reported green (order: loop →
+   planner → load-a → load-b, each rebased onto `ai/r30-conduct`; load-b reconciles the
+   `Explicitness` marker seam with load-a and the planner at fold).
+3. `lane-influence-carriage` EXECUTE over the merged tip (scout census in the scratchpad
+   `scout-influence-census.md`; rulings owed first: rename the influence `Grade`; renders as
+   explicit `untracked` adapters; the certifier-trip demotion path).
+4. The ceremony (`30O:sched-round-close-ceremony`) — likely a successor's.
+
+Human-owned, unchanged: `tc-dollar-zero-is-script-anchored` · `ask-ship-explicit-targets-below-a-clobber`
+· `tc-t2-is-narrower-than-the-ladder-says` · the prose queue (incl. the fruit lane's item-4 paragraph).
+
 ## §5 — Handoff pointers (for a successor, if the ceremony rolls over)
 
 `30O:sched-round-close-ceremony` priorities stand; add: the loop lane's iteration-aware route
