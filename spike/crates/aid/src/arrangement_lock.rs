@@ -1741,4 +1741,11 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "As emitted-line-unsafe-for-paste-line-too-long.",
         words: None,
     },
+    ArrangementEntry {
+        slug: "why-remediation-repair-authorship",
+        occurrence: None,
+        when_used: "Closes every why-lens reason whose remediation class is RepairAuthorship.",
+        why: "As why-remediation-declare-identity, for the class cleared by editing the author's own shell text -- a portability mistake independent of any Dorc model. Seeded unwritten (builders author zero user-facing prose).",
+        words: None,
+    },
 ];

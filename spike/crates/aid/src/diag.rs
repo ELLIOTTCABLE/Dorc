@@ -2510,6 +2510,10 @@ pub enum RemediationClass {
     /// No user action clears it — a Dorc-modeling limitation (an honest "it's ours", never a false
     /// "you can fix this").
     Structural,
+    /// The authored sh is wrong on its OWN terms, independent of any Dorc model: a POSIX-vs-bashism
+    /// portability mistake (the fix is a shell edit, not an oracle or a declaration). Two words over
+    /// a squatting single one (`Fix`/`Author` alone would read as either broader or as blame).
+    RepairAuthorship,
 }
 
 // ===========================================================================
@@ -3007,12 +3011,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
-        // No remediation class names "fix a shell-portability mistake"; ResolveDynamism is the
-        // closest fit (flagged in the r30 fruit-arc report as imperfect).
+        // The fix is a shell edit independent of any Dorc model (`RemediationClass::RepairAuthorship`
+        // -- minted for exactly this class of finding; flagged in the r30 fruit-arc report as a gap
+        // under the prior closest-fit `ResolveDynamism`).
         DiagCode::ForLoopBraceRangeRunsOnce(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
-            remediation: RemediationClass::ResolveDynamism,
+            remediation: RemediationClass::RepairAuthorship,
         },
         DiagCode::AuthoredDeclineClass(_) => CodeSpec {
             severity: Severity::Note,
@@ -4335,6 +4340,7 @@ fn remediation_hint_slug(class: RemediationClass) -> &'static str {
         RemediationClass::DeclareIdentity => "why-remediation-declare-identity",
         RemediationClass::ResolveDynamism => "why-remediation-resolve-dynamism",
         RemediationClass::Structural => "why-remediation-structural",
+        RemediationClass::RepairAuthorship => "why-remediation-repair-authorship",
     }
 }
 
@@ -4810,6 +4816,7 @@ fn remediation_tag(class: RemediationClass) -> &'static str {
         RemediationClass::DeclareIdentity => "declare-identity",
         RemediationClass::ProvideModel => "provide-model",
         RemediationClass::Structural => "structural",
+        RemediationClass::RepairAuthorship => "repair-authorship",
     }
 }
 
