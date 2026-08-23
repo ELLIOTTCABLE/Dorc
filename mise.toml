@@ -95,6 +95,15 @@ _.path = ["{{xdg_data_home}}/elan/bin"]
 # for a contributor who has never activated mise in their shell).
 HK_MISE = "1"
 
+# hk's own log/state directory (`hk.log`, and `output.log` — the file a `check-quiet` failure
+# points readers at). hk's default, `~/.local/state/hk`, is HOME-scoped rather than
+# worktree-scoped, so concurrent lanes in sibling worktrees write the SAME output.log and a
+# failure in one lane's gate text can be another lane's leftover diagnostic (r30 finding).
+# Per-worktree suffixed on BOTH legs — unlike CARGO_TARGET_DIR below, this one isn't WSL-only:
+# the Windows default is ALSO HOME-scoped, not worktree-scoped, so it needs the same redirect
+# there too.
+HK_STATE_DIR = '{{ xdg_state_home }}/dorc-hk-state-{{ config_root | replace(from="\\", to="/") | split(pat="/") | last }}'
+
 # Cargo's target dir, spelled ONCE and resolved per-leg. On Windows and on a real *nix host
 # this is exactly cargo's own default, so nothing moves. Inside WSL it moves off drvfs, which
 # is `wsl-unix-leg-at-fold`'s standing requirement made automatic: a native-Linux cargo and a
