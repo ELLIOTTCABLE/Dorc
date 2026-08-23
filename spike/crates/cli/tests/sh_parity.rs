@@ -1034,34 +1034,39 @@ fn the_environment_names_a_definition_per_frame_within_one_file() {
     );
 }
 
-/// `p-x-definition-grade-keying` — THE TARGET: at each of those two frames, the derived row that
-/// ANSWERS is the one the named definition produced.
+/// At each of those two frames, the derived row that ANSWERS is the one the named definition
+/// produced (promoted from `p-x-definition-grade-keying`).
 ///
 /// Why an engine choice depends on it: the environment already names the right definition (pinned
-/// above), so everything downstream turns on how derived rows are KEYED — and the forfeit is the
+/// above), so everything downstream turns on how derived rows are KEYED — and the forfeit was the
 /// whole authored-in-book override idiom, where an admin who overrides a verdict mid-book in the
-/// blessed spelling gets nothing from either body.
+/// blessed spelling got nothing from either body.
 ///
-/// HALF LANDED, and the surviving half is a different question from the one this pin was minted
-/// against. The KEYING is definition-grade now: a row carries the id of the definition its own lift
-/// read, `answering_row` compares ids, and the `(file, role name)` join — with the "ambiguous"
-/// state that made a within-file pair withhold at BOTH frames — is gone (`28Q` §1.1's repair).
-/// What still withholds at the FIRST site is lift ARITY: `PredictSet`/`VerdictSet` keep one row per
-/// `(file, role)`, so the earlier definition produces no row for any frame to find. Withholding is
-/// the safe direction, and the second site now answers where it previously did not.
+/// TWO HALVES, both landed. The KEYING is definition-grade: a row carries the id of the definition
+/// its own lift read, `answering_row` compares ids, and the `(file, role name)` join — with the
+/// "ambiguous" state that made a within-file pair withhold at BOTH frames — is gone (`28Q` §1.1's
+/// repair). The ARITY is now per-definition too: `PredictSet` keeps every declaration of a provider
+/// in source order, so the earlier definition produces a row for its own frame to find, while
+/// `PredictSet::get` still answers the last of them — the file's exit binding, which is what every
+/// whole-file consumer means.
 ///
-/// So this greens on a per-DEFINITION lift, not on any further keying work.
+/// WHAT THIS DOES NOT YET SAY, and it is why the pin's value is not yet reachable end-to-end: the
+/// production resolution seats still enumerate ONE candidate per FILE
+/// (`cli::world::shipping_source`, `analysis::effect`'s `VisibleRole::answering`,
+/// `plan::build_vouches`, `plan::build_wrapped_vouches`, and the two `touches_answering_source`
+/// twins), so a within-file plural role reaches them as its LAST definition alone. Widening those
+/// candidate lists to `(file, definition)` is a licensure act in its own right (`28Q` §1's
+/// winner-shifting rider) and is not this change.
 #[test]
 fn a_within_file_plural_role_answers_per_definition() {
-    // Setup outside the closure: a panic in there would read as the target still failing.
     let (sites, env, defs) = rekey_world();
     let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &defs);
     let mut interner = dorc_core::Interner::default();
-    // The REAL lift, so the arity gap is measured rather than modelled.
+    // The REAL lift, so the arity is measured rather than modelled.
     let verdicts = dorc_oracle::verdict::VerdictSet::lift(&mut interner, REKEY_BOOK).value;
     let rows: Vec<dorc_core::Span> = verdicts
         .providers()
-        .filter_map(|p| verdicts.get(p).map(|v| v.span))
+        .flat_map(|p| verdicts.all(p).iter().map(|v| v.span).collect::<Vec<_>>())
         .collect();
     let answers: Vec<Option<usize>> = sites
         .iter()
@@ -1072,14 +1077,12 @@ fn a_within_file_plural_role_answers_per_definition() {
             })
         })
         .collect();
-    internal_tooling::xfail::xfail_until("p-x-definition-grade-keying", || {
-        assert_eq!(
-            answers,
-            vec![Some(0), Some(1)],
-            "each frame must find ITS OWN definition's row — the lift owes one row per definition, \
-             and today it keeps one per (file, role), so the earlier body produced none: {answers:?}"
-        );
-    });
+    assert_eq!(
+        answers,
+        vec![Some(0), Some(1)],
+        "each frame must find ITS OWN definition's row — the lift owes one row per definition, and \
+         a lift keeping one per (file, role) leaves the earlier body producing none: {answers:?}"
+    );
 }
 
 // ---------------------------------------------------------------------------

@@ -163,15 +163,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Reserved,
     },
     Pin {
-        name: "p-x-definition-grade-keying",
-        trigger: "a per-DEFINITION lift: the KEYING half landed (rows carry their own \
-                  `DefinitionId` and the `(file, role)` join is gone), so what remains is that \
-                  `PredictSet`/`VerdictSet` keep one row per `(file, role)` and the earlier of two \
-                  within-file definitions produces no row for its frame to find",
-        horizon: Horizon::Scheduled("r31:closure-custody"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-intra-compound-plurality",
         trigger: "`28Q:pin-emission-planner-universal` — per-segment environments for a composed \
                   compound. `30P:rul-planner-apply-side-first`: this is the planner's PROBE mode, \

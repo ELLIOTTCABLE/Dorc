@@ -198,10 +198,18 @@ impl VerdictSet {
         lift_verdicts_converged(interner, src).map(|converged| Self { converged })
     }
 
-    /// The verdict funcdef for a provider, if the file authored one.
+    /// The verdict funcdef a shell would have bound at the END of this file
+    /// ([`PredictSet::get`](crate::predict::PredictSet::get)).
     #[must_use]
     pub fn get(&self, provider: Symbol) -> Option<&Predict> {
         self.converged.get(provider)
+    }
+
+    /// EVERY verdict funcdef this file declares for a provider, in source order — the candidate
+    /// list a per-frame resolution seat enumerates (`28Q` §1.1).
+    #[must_use]
+    pub fn all(&self, provider: Symbol) -> &[Predict] {
+        self.converged.all(provider)
     }
 
     /// Providers with a lifted verdict funcdef, in deterministic order.

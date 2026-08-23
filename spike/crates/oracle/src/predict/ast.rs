@@ -9,9 +9,16 @@ use dorc_core::{ContestedFamilies, Interner, Span, Symbol};
 /// The set of `<provider>__predict` functions lifted from one oracle file. Keyed by
 /// the **provider** (the name before `__predict`, with the underscore↔hyphen mapping
 /// applied — see [`Predict::provider`]). `BTreeMap`-ordered (`inv-determinism`).
+///
+/// One row per DEFINITION, not per provider (`28Q` §1.1): a file may declare a role twice — the
+/// `unset -f`-then-redefine shape is BLESSED, not contested — and each definition binds at every
+/// site between it and its successor, so keeping only one leaves the earlier frame with no row to
+/// find. The map's VALUE is therefore the definitions in source order; [`get`](Self::get) answers
+/// the last of them, which is the file's exit binding and what every whole-file consumer asks for,
+/// and [`all`](Self::all) is what a per-FRAME consumer enumerates.
 #[derive(Debug, Clone, Default)]
 pub struct PredictSet {
-    pub(super) checks: std::collections::BTreeMap<Symbol, Predict>,
+    pub(super) checks: std::collections::BTreeMap<Symbol, Vec<Predict>>,
     pub(super) detected: Vec<DetectedFn>,
 }
 
@@ -30,10 +37,20 @@ pub struct DetectedFn {
 }
 
 impl PredictSet {
-    /// The check for a provider, if the file declared one.
+    /// The check a shell would have bound at the END of this file — the LAST declaration, which is
+    /// what a whole-file consumer (the marks backstop, the dialect scan, a hand-built index) means
+    /// by "the file's check".
     #[must_use]
     pub fn get(&self, provider: Symbol) -> Option<&Predict> {
-        self.checks.get(&provider)
+        self.checks.get(&provider).and_then(|rows| rows.last())
+    }
+
+    /// EVERY definition of a provider this file declares, in source order — the candidate list a
+    /// per-frame resolution seat enumerates (`28Q` §1.3; the rule itself is
+    /// [`dorc_core::answering_row`]'s, never this accessor's).
+    #[must_use]
+    pub fn all(&self, provider: Symbol) -> &[Predict] {
+        self.checks.get(&provider).map_or(&[][..], Vec::as_slice)
     }
 
     /// The role-funcdefs the file DECLARED whose bodies never reached [`checks`](PredictSet::get)

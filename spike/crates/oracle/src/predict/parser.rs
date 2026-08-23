@@ -430,7 +430,12 @@ impl Parser<'_> {
                 self.out
                     .diags
                     .extend(validate_mark_subset(&check.body, self.toks));
-                self.out.value.checks.insert(header.provider, check);
+                self.out
+                    .value
+                    .checks
+                    .entry(header.provider)
+                    .or_default()
+                    .push(check);
             }
             Err(diag_emitted) => {
                 if !diag_emitted {
