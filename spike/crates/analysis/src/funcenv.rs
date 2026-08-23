@@ -2718,19 +2718,16 @@ fn pattern_matches(pattern: &[PatternAtom], text: &[char]) -> bool {
 ///
 /// # The cwd pass, and what it costs
 ///
-/// The clobber SEED is a `.` whose head could not be evaluated (it may `cd` in the caller's own
-/// shell) plus every `cd`. EXECUTE-B's `Included` plain-sh target arrives through that same door
-/// with no edit here (`30Qc:rul-included-is-as-opaque-as-unresolvable`): once `program_at_key`
-/// stops answering for it, it is an unevaluated head like any other. NOT the merely-unread bucket
-/// — a book-sourced dorc-lang dependency is named-but-unloaded in acquisition round 1 and
-/// resolvable in round 2, so seeding clobbers from it would stop the acquisition fixpoint growing.
+/// A clobber is an act that may have moved the working directory unseen, and there are three
+/// species — every `cd`; a `.` whose target the controller does not HOLD (the seed below argues
+/// itself); and a call whose body the CFG refused to splice ([`Cfg::splice_refused`]), the third
+/// of the blind acts `30P:law-no-unsoundness-below-a-blind-act` names. Each runs arbitrary sh in
+/// the caller's own shell, and a `cd` persists out of a sourced file (floor-measured).
 ///
-/// Below a clobber a relative head costs BINDING AUTHORITY and NOTHING else (`30P`, ruled
-/// 2026-08-22). The file is still acquired and still mirrored at its authored relative path,
-/// because cwd-parity is what keeps the shipped tree faithful to the author's and a plan that dies
-/// at the `.` on the host is a worse answer than one that runs the line. What it loses is the
-/// vouch: the site havocs and takes no custody, exactly as an unresolvable one does — which is why
-/// such a site sits in BOTH `resolved` and `unresolvable`.
+/// Below a clobber a relative head names no file: it carries no BINDING AUTHORITY and its target
+/// is placed by no form (the law's nothing-shipped clause, read at `cli::artifact`'s carriage
+/// gate). Controller-side ACQUISITION is kept, which is what lets the fixpoint grow — so such a
+/// site sits in BOTH `resolved` and `unresolvable`.
 fn load_sites(
     ast: &Ast,
     cfg: &Cfg,
@@ -2745,6 +2742,11 @@ fn load_sites(
         let cfg_node = cfg.node(id);
         if cfg_node.kind != CfgNodeKind::Command {
             continue;
+        }
+        // The law's THIRD blind act: a call whose body the CFG refused to splice runs arbitrary sh
+        // in this very shell, so its own `cd` and its own `.` are invisible here.
+        if cfg.splice_refused(id) {
+            clobbering.insert(id);
         }
         if literals.literal_text(id, 0) == Some("cd") {
             clobbering.insert(id);
@@ -5614,17 +5616,20 @@ mod tests {
         assert_eq!(binding, Flat::Top);
     }
 
-    /// THE LAW'S THIRD BLIND ACT: a call into a body Dorc cannot splice.
+    /// THE LAW'S THIRD BLIND ACT: a call into a body Dorc cannot splice (né
+    /// `p-x-an-unspliceable-call-havocs-the-cwd`, promoted).
     ///
     /// `30P:law-no-unsoundness-below-a-blind-act` names three — an unresolvable `.`, an `eval` of
     /// ⊤, and a call into a body Dorc cannot splice. The `eval` cell is closed by REFUSAL (the
     /// parser mints `Unsupported` at Error severity and the cli folds any parse error into a
     /// whole-run exit), but an over-budget, recursive or out-of-slice call stays an ordinary
     /// `Command` node: `command_transfer` matches only `.`/`source`/`unset`, so the body's `cd`
-    /// and its `.` are invisible and the cwd below the call reads determinate.
+    /// and its `.` would otherwise be invisible and the cwd below the call would read determinate.
     ///
-    /// The discriminator is the CFG's own: `call_body_sites` answers `Some` exactly where a body
-    /// was spliced, and a spliced body's own acts are already ordinary nodes on the caller's route.
+    /// The discriminator is the CFG's own REFUSAL set, [`Cfg::splice_refused`] — never
+    /// `call_body_sites` answering `None`, which also covers every call into an oracle body the
+    /// controller holds and models (`30Qf:fnd-a-loaded-body-is-never-spliced`); the control below
+    /// is what keeps that misreading out.
     ///
     /// CFG SHAPE: a top-level funcdef whose body uses `shift` (out of the splice slice, so the
     /// call is refused), the call to it, and then each consumer in turn — a `[ -f <loadable> ]`
@@ -5635,24 +5640,53 @@ mod tests {
         let decides = format!("{DEFINE}[ -f lib.sh ] && yum__is_converged() {{ :; }}\n");
         let binds = format!("{DEFINE}. ./lib.sh\n");
         let (decide_table, _) = sourceable(&decides);
-        let (bind_table, lib) = sourceable(&binds);
+        let (bind_table, _lib) = sourceable(&binds);
         let (binding, folds) = folded(&decides, &decide_table);
         let (solved, exit) = solve_book(&binds, &bind_table);
-        assert_eq!(folds, 1, "interim: the unspliced call clobbers nothing");
+        assert_eq!(folds, 0, "the body may have cd'd, so no file test decides");
+        assert_eq!(
+            binding,
+            Flat::Top,
+            "so both arms live and the definition is a maybe"
+        );
         assert_eq!(
             solved.binding_before(exit, ROLE),
-            Flat::Elem(Binding::Defined(lib)),
-            "interim: and the relative load below it still binds"
+            Flat::Top,
+            "and the relative load below it names no file"
         );
-        internal_tooling::xfail::xfail_until("p-x-an-unspliceable-call-havocs-the-cwd", || {
-            assert_eq!(folds, 0, "the body may have cd'd, so no file test decides");
-            assert_eq!(binding, Flat::Top);
-            assert_eq!(
-                solved.binding_before(exit, ROLE),
-                Flat::Top,
-                "and the relative load below it names no file"
-            );
-        });
+    }
+
+    /// The CONTROL for the cell above, and the reason the seed is the refusal set rather than the
+    /// splice map: a call Dorc spliced, and a call whose body lives in another file, both leave the
+    /// working directory determinate.
+    ///
+    /// Seeded from `call_body_sites` answering `None` the cell above would pass just the same —
+    /// while every relative `.` below every oracle-helper call in every book lost its authority and
+    /// its carriage (measured: two goldens, `30Qf` §retrofit-execute).
+    ///
+    /// CFG SHAPE: a spliceable funcdef and its call; then a call to a word the unit declares no
+    /// funcdef for, which is the shape every call into a sourced oracle body takes. Each above a
+    /// `[ -f <loadable> ]` the fold must still decide.
+    #[test]
+    fn a_call_that_was_not_refused_leaves_the_cwd_determinate() {
+        let decides = "[ -f lib.sh ] && yum__is_converged() { :; }\n";
+
+        let spliced = format!("deploy() {{ :; }}\ndeploy\n{decides}");
+        let (table, _) = sourceable(&spliced);
+        let (_, folds) = folded(&spliced, &table);
+        assert_eq!(
+            folds, 1,
+            "a spliced body's own acts are ordinary nodes on this route, so nothing is blind"
+        );
+
+        let elsewhere = format!(". ./lib.sh\nhelper\n{decides}");
+        let (table, _) = sourceable(&elsewhere);
+        let (_, folds) = folded(&elsewhere, &table);
+        assert_eq!(
+            folds, 1,
+            "and a body the controller holds and models is not one Dorc cannot splice: the splicer \
+             inlines same-file funcdefs only, so its absence from the splice map means nothing"
+        );
     }
 
     // ── TABLE 9: the kernel punts `30Pd` §5 pencilled, encoded in sh and RED

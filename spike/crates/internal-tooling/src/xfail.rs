@@ -344,18 +344,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-an-unspliceable-call-havocs-the-cwd",
-        trigger: "`30P:law-no-unsoundness-below-a-blind-act` names THREE blind acts, and this is \
-                  the third: a call into a body Dorc cannot splice (over-budget, recursive, or \
-                  out of the splice slice). The `eval` cell is closed by refusal and the `.` cell \
-                  by the clobber seed; an unspliced call stays an ordinary `Command`, so its `cd` \
-                  and its `.` are invisible to `command_transfer` and the cwd below it reads \
-                  determinate. Greens when the seed takes `cfg::call_body_sites` answering `None` \
-                  at a word the unit DEFINES",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-test-literal-narrows-a-variable",
         trigger: "`FORFEITS:forfeit-value-narrowing-by-test` (`30Pd` §5, pencilled by the human \
                   2026-08-22 as the lifted target): per-path refinement of a ⊤ value by \
