@@ -222,6 +222,20 @@ predicates + the loop lane's iteration-aware route + the influence constructor c
 blind-act seed; the `307` §6 veto register; `gate:arc` from the populated branch; the
 `CURRENT_ROUND` bump; the prose queue; the human's ff of `ai/main`).
 
+**Close of this conduct (2026-08-23; human-typed: room for "the fold and minor edits", no
+crosscheck in this window, the human runs the gate).** Applied: the `30Qd` §execute steering
+deltas (`core/CLAUDE.md` `the-influence-account-is-carried-never-stamped` +
+`the-account-never-enters-compared-state` · `plan/CLAUDE.md` `sole-mint-witnesses` rider at
+eight mints · `spike/CLAUDE.md` `influence-is-carried-by-the-object` with the disabled export
+· ANALYZER-NEEDS `an-host-influence-carriage` `S`→`B` with the residue) · the third-blind-act
+correction in `analysis/CLAUDE.md` (all three blind acts modelled) · the clippy-per-row and
+Windows-first riders in `30O`. Not done here, by the human's terms: the crosscheck (none this
+window), the gate (the human's), `gate:arc`, the veto sweep, the `CURRENT_ROUND` bump, the
+prose queue, the `ai/main` ff, worktree/branch reaping (every lane branch is contained in
+`ai/r30-conduct`; their harness worktrees are the human's sweep). Open: R11's review before
+`ACCOUNT_EXPORT` flips; `tc-dollar-zero-is-script-anchored` (the flagship red stays red, an
+`r31` attention-call); the `30O` register debt list.
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`

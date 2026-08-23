@@ -24,10 +24,11 @@ the rulings of the 2026-08-22 sitting). Read both in full before dispatching any
 **Branch state:** `ai/r30-conduct` (worktree `.claude/worktrees/r30-conduct`) carries, linearly:
 the four kernel lanes, the fold repair, the loop-residue lane, the influence MAP (red cells
 only), the fruit lane, the human's blind-act law (`30P:law-no-unsoundness-below-a-blind-act`),
-and this session's steering/ledger commits. ONE lane is OPEN: `ai/r30-lane-blind-act-retrofit`
-(Opus; the load plane brought under that law — rewrite gate EXACT ∧ explicit, nothing shipped
-below a clobber, the `[ -f ]` cwd gate, the four FORFEITS rows' reds minted; checkpoint after
-its map). The influence EXECUTE follows it serially. `ai/main` is the human's to fast-forward; the primary checkout
+the blind-act retrofit and the third blind act (the load plane under that law: rewrite gate
+EXACT ∧ explicit, nothing shipped below a clobber, the `[ -f ]` cwd gate, the CFG refusal set
+as a clobber seed), the tooling lane, the influence EXECUTE (`30Qd`), the sibling sitting's
+rulings, and this session's steering/ledger commits. NO lane is open. Every end-of-r30 pin is
+green (census: all `r31:*`). `ai/main` is the human's to fast-forward; the primary checkout
 carries the human's uncommitted ruling work — radioactive. Lane table and the fold order:
 `notes/30Q` §2/§5c. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may
 be `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; test `176e0818` is
@@ -35,12 +36,13 @@ recovered, so `worktree-sol-adversarial-30M` is deletable. Three stale review br
 (`ai/r30-loom-surface-build2`, `review-verify-adv`, `review-verify-neutral`) are not contained
 — the human's sweep; the four folded lane branches and their harness worktrees likewise.
 
-**Dispatch state, per `30O:the-schedule`:** `sched-parallel-disjoint-lanes` is BUILT and
-folded (gate-green at the repair tip) → `sched-serial-constructor-reshape` =
-`lane-influence-carriage` MAP FOLDED (rulings in `notes/30Q` §5d; two questions on the root
-burndown), EXECUTE waits on a typed human ack →
-`sched-round-close-ceremony` (crosscheck · the `307` §6 veto register · `gate:arc` ·
-`CURRENT_ROUND` bump · prose queue) held. Every brief: the Safety block, step-zero worktree verify,
+**Dispatch state, per `30O:the-schedule`:** `sched-parallel-disjoint-lanes` and
+`sched-serial-constructor-reshape` are BUILT and folded (`30Q` §5c–§5e; influence in `30Qd`) →
+`sched-round-close-ceremony` is NEXT and is the human's/successor's: the human runs the gate
+themselves; no crosscheck in the closing window (human-typed 2026-08-23); then the `307` §6
+veto register · `gate:arc` · `CURRENT_ROUND` bump · the prose queue · the ff of `ai/main`.
+Open before the durable account export is ENABLED: its review (`rul-durable-contents-reviewed-before-design`;
+the switch is `plan::whylog::ACCOUNT_EXPORT`). Every brief: the Safety block, step-zero worktree verify,
 `AGENTS.for-builders-only.md` first, and `notes/30Pc` (the opaque review's builder-lane
 half — unread by Fable-class conductors by law) where it names the lane.
 

@@ -187,7 +187,10 @@ stages what it rewrites (reset or `git commit -- <pathspec>`) · scoped NEW-case
 permitted with scope verification, existing goldens never · `gate:full-quiet` ROUTES
 `test:floor` when floor paths are staged, so a floor case must agree on both platforms ·
 `rul-forfeits-carry-reds` · no floor-valid text is a parse violation · builders read
-`AGENTS.for-builders-only.md` first and `notes/30Pc` where it names their lane. Opus for the
+`AGENTS.for-builders-only.md` first and `notes/30Pc` where it names their lane · a long
+conversion lane runs `mise run clippy` per row — `check-quiet` cannot see the whole-workspace
+clippy tier (`30Qd:fnd-the-lint-tier-that-check-does-not-cover`) · the WINDOWS gate leg runs
+first; a RAM refusal right after a WSL build is `vmmemWSL` draining (minutes) — wait, retry once. Opus for the
 kernel lanes; Sonnet with the no-subagent clamp for the fruit arc.
 
 ## refuted-scout-claims — verified stale, so nobody re-chases them
