@@ -11,13 +11,9 @@
 //! survives; a citation this wrongly flags costs a human's attention every run. Every filter below
 //! was derived from a hand-triaged full-corpus run, and each one names the shape that motivated it.
 //!
-//! Two callers, two scopes. The bare `mise run lint:docids` passes no paths and always sees the
-//! whole tree. The `hk` step passes `{{files}}` — whatever it staged/changed/`--all`-selected — and
-//! citations are scanned from THAT set alone, resolved against whatever the tree holds right now.
-//! Scoping this way is what stops an unrelated, already-existing citation to a not-yet-landed
-//! sibling lane's report from refusing a commit that never touched it. `NO_LINT_DOCIDS` (any
-//! non-empty value) is the escape hatch, honored inside `run` so it works under the hook without
-//! `--no-verify`.
+//! Two callers, two scopes: the bare `mise run lint:docids` always sees the whole tree, while the
+//! `hk` step scopes citations to `{{files}}` alone — an already-landed citation elsewhere cannot
+//! then refuse an unrelated commit. `NO_LINT_DOCIDS` (any non-empty value) is the escape hatch.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -371,6 +367,14 @@ fn scope_to(all: &[PathBuf], root: &Path, wanted: &[String]) -> Vec<PathBuf> {
         .collect()
 }
 
+/// Whether `files` is every citing surface the whole-tree walk would have found — true for the
+/// bare invocation and for `hk check --all`'s full glob match, false for a genuine subset (a
+/// staged/changed run). Only then can the RETIRED-unused check below trust an absence from
+/// `cited` as evidence an entry has gone unused, rather than as a file this run never saw.
+fn covers_the_corpus(files: &[PathBuf], all_files: &[PathBuf]) -> bool {
+    files.len() == all_files.len()
+}
+
 pub(crate) fn run(args: &[String]) -> ExitCode {
     if hatch_open(std::env::var("NO_LINT_DOCIDS").ok().as_deref()) {
         println!("docids: NO_LINT_DOCIDS is set — skipping (escape hatch)");
@@ -388,12 +392,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let mut quarantined = Vec::new();
     let all_files = scanned(root, &mut quarantined);
     let files = scope_to(&all_files, root, args);
-    // Whole-tree coverage even when `args` is non-empty: `hk check --all` hands every matching
-    // path, which is the same set `scanned()` would have walked. Only a genuine subset (a
-    // staged/changed run) narrows below this, and that is exactly the case the RETIRED-unused
-    // check below cannot judge — a citation living in a file this run never saw is not evidence
-    // the entry is unused.
-    let whole_tree = files.len() == all_files.len();
+    let whole_tree = covers_the_corpus(&files, &all_files);
 
     let pairs: Vec<(String, String)> = files
         .iter()
