@@ -127,7 +127,24 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   first body and let both sites invoke it. A munged name cannot parse as a `__role`, so a
   re-ingested artifact reads the guard as an opaque call ⇒ conservative run (`23A:P-reingest`).
   `Plan::render_sh` is the flat DST render and emits no preamble at all — never wire a second
-  binding authority there.
+  binding authority there. A definition's PLACEMENT is INHERITED from the source it was
+  authored in, never assumed (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`):
+  `Plan::decided` demands an `ArtifactEmission` — the settled form's carriage account
+  (`PlacedSources`) plus its import edits, as ONE value — and `pin_definitions` files each
+  closure declaration by its `ClosureDecl` key's source and each role body by its vouch's
+  defining file. A `--pre-source` root is AMBIENT and hoisting it is faithful; a source a book
+  `.` reaches is already carried at that `.` since the bundling
+  (`30Ng:rul-bundle-at-dorc-lang-boundaries`), so the preamble adds nothing and a second copy
+  would bind names at lines the authored program does not — for VARIABLES as much as funcdefs,
+  since the closure track carries file-level constants (the landed double-carry defect). A
+  source the form carries NOWHERE places nothing — placement, not the vouch: the guard, if
+  any, resolves through the author's own `.`, which is `30P:rul-guard-resolves-like-its-mutation`
+  exactly. `PinnedDefinitions::hoisted()` is retired for `typeset(&Placement)`: a form asks for
+  the material AT a placement rather than assuming one. Every emitted name is minted through
+  `placement::EmittedNames`, which holds every name the book names and lengthens the digest
+  until the candidate is free — `<name>_h<digest>` is computable from the artifact, so it is
+  squattable in plain sight rather than colliding by accident
+  (`30P:rul-munged-name-lifts-over-opaque-load`).
 - **the-pinned-unit-includes-the-closure** — what a guard's preamble ships is the stripped definition
   PLUS `dorc_oracle::closure`'s prefix (helpers + file-level constants). Two riders: a CONTESTED
   closure withholds the VOUCH (no guard, no elide, the site runs), and the vouch's `check_cmds` —

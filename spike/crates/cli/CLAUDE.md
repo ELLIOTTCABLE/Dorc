@@ -46,7 +46,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
   `strip_file_with_map`. Generated `storage_path`s name inert archive entries, never runtime
   `.` targets or a materialization recipe. `dorc bundle` returns before records intake,
   planning, settlement, whylog writing, or host contact; executable placement and source-line
-  replacement remain the post-`30L` artifact stage.
+  replacement remain the post-`30L` artifact stage. Rider (r30): a `PlainInclusion` source
+  (book-sourced, no dorc-lang marker) is mirrored BYTE-VERBATIM at its authored relative path
+  — never stripped, never bundled, never renamed, never inlined into a single stream (the
+  flattened form refuses by name), and its authored `.` is never re-said.
+  `StaticLoadSnapshot::modelled_refs` is the ONE seat deciding which sources a lift sees; a
+  new lift or index consumer takes it, a new PLACEMENT consumer takes the real bytes.
 - **bundle-diagnostics-compose-occurrences-not-paths** (`30I` step 6) — production bundle
   validation diagnostics compose `LoadAccount` occurrence identity, `BundleFile` storage/copy
   identity, and the existing strip line map onto `aid::locator`; they never reconstruct an origin
@@ -85,7 +90,18 @@ discipline: one rule per bullet, slugged; append to the matching section.
   files. Front-HOISTING a bundle ahead of the book is the emission planner's first
   consumer (`plans/30P:the-emission-planner`): legal only under a PROVEN closed set — no
   book observation or mutation of a bundle-bound name above the `.` — never a settlement
-  question; failing the set falls to in-place, never to a guess. Mirroring is stated against the LOAD CWD
+  question; failing the set falls to in-place, never to a guess. Two gates sit under every
+  rewrite (r30): permission to rewrite a `.` line at all is DERIVED from the operand naming
+  its target EXPLICITLY (`30P:rul-rewrite-permission-is-derived` — `artifact::operand_is_explicit`
+  is the cli seat, answering the same question as `funcenv::ResolvedHead::explicitness()`; no
+  tier re-points, inlines or hoists a line either answers `false` for, and multipart MIRRORS
+  such a target at its authored relative path so the author's own operand finds it; EXACT is a
+  different axis and grants nothing here), and a book `.` carrying a LEADING ASSIGNMENT is not
+  absorbable (`ImportEdit::Inline` replaces the whole command node, so `MODE=prod . ./entry.oracle.sh`
+  would lose the assignment; `Repoint` moves only the operand and stays eligible — the
+  assignment costs the FORM, not the bundling). `Selection::emission()` is what reaches the
+  plan: the carriage account and the import edits as ONE value, because they are one answer
+  about one form. Mirroring is stated against the LOAD CWD
   (`dorc_core::loadpath::Cwd::relativize`, the inverse of `resolve_operand`), never
   against a stored path's own spelling: every source a book `.` reaches is filed under
   its CANONICAL key, which is ABSOLUTE whenever the edge could answer where the run
@@ -374,6 +390,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
   RESIDUAL, unchanged from the sh harness: deleting ONE case dir shrinks the suite
   silently. That deletion is visible in the diff; a broken root is not, which is why the
   floor guards the root and nothing guards the count.
+- **floor-cases-see-a-modelled-dollar-zero** (r30) — a floor case's manifest is a top-level
+  file (the rail has no subdirectory fixtures: `30P:gap-no-subdirectory-fixtures`), and no
+  manifest cell may observe `$0`: the rail's `$0` SPELLING is platform-bound
+  (`30P:gap-dollar-zero-shape-is-platform-bound`), which is exactly why the engine never reads
+  a shell's `$0` — it models both live spellings from the authored book path
+  (`30P:model-symbolic-dollar-zero`, `ScriptSpellings`) and invokes what it ships in a spelling
+  it modelled as live (`30P:rul-dorc-invokes-in-a-modelled-live-spelling`). A case that
+  wants the resolution observed does it through a diagnostic or a ship, never through the
+  shell's own `$0` bytes.
 
 ## Direction
 

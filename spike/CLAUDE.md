@@ -866,6 +866,10 @@ mise run bless            # ORCHESTRATOR-ONLY golden re-bless (see below)
 mise run bless:dry        # ... acceptance summary, zero golden writes
 mise run bless:floor      # ORCHESTRATOR-ONLY: the one path that may write an `expected.emitted`
                           #   (*nix/WSL only — it needs BOTH floor binaries)
+mise run bless:case -- X  # the SCOPED re-bless of one case (`bless` verifies the whole suite first
+                          #   and cannot write while the case it would fix is the red one)
+mise run loom -- ARGS     # the loom CLI on this workspace's toolchain (a bare `cargo run -p
+                          #   dorc-loom` resolves the wrong rustc)
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 mise run lint:docids      # docID dangling-reference lint (rides check)

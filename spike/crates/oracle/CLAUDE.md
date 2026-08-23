@@ -92,8 +92,15 @@ discipline: one rule per bullet, slugged; append to the matching section.
   sound because the index admits only whole-top-level-load-inert sources, so over the indexable
   population the last indexed declaration IS what a shell binds), while the LICENSE is what custody
   gates (`rul-vouch-reaches-own-custody-only`, below); and constants ride per CONTRIBUTING FILE
-  rather than per reference, because `ParamComplex` discards the name so a reference-driven capture
-  could not prove itself complete.
+  rather than per reference: a file's constant set is a closed population a body can only read
+  FROM, whereas a reference-driven capture would have to prove it found every read — operator-bearing
+  expansions are decoded now (`ParamOp`), but `eval`, non-literal command words and value-plane
+  indirection are not, so only the file-level capture proves itself complete. Rider (r30): the
+  book census is DEPTH-BLIND, so `closure_for` takes a `SiteFrame` — a book definition suspends a
+  reaching vouch unless the environment NAMES a live definition elsewhere at that very site; only a
+  NAMED live definition exonerates (`Withheld` collapses `Undefined`, ⊤ and unreached and proves
+  nothing), and `SiteFrame::unsolved()` is every frameless index's posture, byte-identical to the
+  pre-frame answer.
 - **rul-vouch-reaches-own-custody-only** (human-ruled 2026-08-17, superseding
   `307:rul-emission-custody-composite`, ruled a minor mistake): a vouched composition ships only
   definitions whose custody is the voucher's own; ANY cross-custody resolved reach
@@ -150,8 +157,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   blessing must supply a real MAY-grade binding, never merely widen the
   allow-list (pinned both ways:
   `a_host_conditional_oracle_definition_licenses_nothing` /
-  `a_described_host_conditional_definition_is_may_bound`;
-  `FORFEITS:forfeit-whole-file-inertness-refusal`). Last-wins-over-the-index is
+  `a_described_host_conditional_definition_is_may_bound`). Last-wins-over-the-index is
   an interim that dies with the funcenv table-widening
   (`rul-unsure-falls-toward-sh-parity`).
 - **a-definitions-file-is-not-a-mark-fragment** — `validate` runs `lint_mark_subset` only for a
@@ -165,6 +171,16 @@ discipline: one rule per bullet, slugged; append to the matching section.
   context-shifted execution under the escalation dial (both-sides consent).
   Wrapper entry forms are the ONE licensed seat for real context entry; predict
   closure bodies never escalate (real `sudo` is never a blessed closure idiom).
+- **rul-a-removal-clears-what-is-indexed** (r30) — a top-level `unset -f` removes every
+  declaration `HelperIndex` has recorded ABOVE it, not only the current file's: `.`-sourcing
+  applies into one environment, and the index is built in load order over a population whose
+  whole top level is load-inert — the same premise `28R:rul-resolution-matches-shell-loading`
+  rests last-wins on. Repaired in `record` rather than the frame so the FRAMELESS lanes
+  (survival snapshots, `coverage`, `sweep`, hand-built indexes) see it too. `PredictSet`
+  keeps EVERY within-file declaration of a role (`all(provider)` enumerates; `get` answers the
+  file's exit binding), but the six production resolution seats still enumerate ONE candidate
+  per FILE — widening them is a licensure act, owed its own ruling
+  (`30Qc:dev-lift-arity-lands-but-the-seats-still-enumerate-per-file`).
 
 ## The authored surface — worked minimum (the one syntax anchor; semantics live in `spike/CLAUDE.md`)
 

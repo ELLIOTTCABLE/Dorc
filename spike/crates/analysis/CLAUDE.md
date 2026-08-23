@@ -82,7 +82,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
   seat, and `variable_text` consults it through `VARIABLE_PLANE_GRADE` — the whole-hog
   grade the variable plane carries, since `ValueEnv` records none per value. When
   `seam-re-bind` lands, that constant is what stops being true and the gate then
-  refuses rather than resolving off a host answer.
+  refuses rather than resolving off a host answer. Rider (r30 load lane): the
+  load-head evaluator reads the AST for STRUCTURE only (`ParamOp` decoded) and routes
+  every variable read through the plane; `$0` is a controller-held constant on
+  `DefinitionTable` (`ScriptSpellings`, both live spellings), never a variable —
+  fence `the_load_head_evaluator_names_no_value_plane_accessor`.
 - **funcenv-is-a-pre-pass-not-a-round** (`28K` §2; `cli/CLAUDE.md`
   the-fixpoint-owns-the-rounds-and-builds-nothing-else) — env resolution is computed
   ONCE from the ORIGIN model and joins the frozen set; the validity fixpoint's ratchet
@@ -186,6 +190,45 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (`30I:rul-bundles-key-to-load-occurrences`) and locator composition both need kept
   apart. The sourcer SPECIES keeps a book `.` and a CLI pre-source out of both edge
   relations by type, never by a filter each consumer must remember.
+- **rul-havoc-is-pointwise-never-the-stack** (`30P:principle-unknown-source-is-a-point-havoc`;
+  built r30) — an unresolvable book `.` havocs every binding AT THAT LINE in the frame it
+  sits in, and a later unconditional definition re-binds its own name by last-wins; never
+  the old absorbing stack-wide ⊤. Frames are SUBSHELL scopes (`cfg::lower_scoped` is the
+  only `ScopeEnter`/`ScopeExit` producer): a `.` inside a spliced function body binds the
+  CALLER's frame and survives the return; one inside `( )` dies at the paren — sh, for
+  free. The cwd domain rides it: after a `cd` whose operand is not `/…`/`./…`/`../…`, or
+  an unknown `.`, cwd is ⊤ for the frame (`HavocCause::CwdUnknown { clobbered_at }`), which
+  costs a later relative `.` its AUTHORITY only — acquisition and mirroring are untouched
+  (`30Q` §3 D2) — and forbids the decidable set's `[ -f ]` entry from deciding. Built
+  carve, owed a ruling before it moves: a `.` inside a LOAD PROGRAM (`run_control`'s
+  nested-load arm) keeps the absorbing ⊤ — the `30Mg` R1 prelude floor; only the book
+  plane's own `.` is pointwise (`30Qc:dev-prelude-floor-keeps-the-absorbing-top`, rides
+  `30Q:ask-ship-explicit-targets-below-a-clobber`).
+- **rul-exact-is-not-explicit** (`30P:rul-rewrite-permission-is-derived`) — EXACT governs
+  AUTHORITY (bindings below the line, vouches, shipping); EXPLICITNESS governs REWRITING.
+  `funcenv::ResolvedHead::explicitness()` is the analysis seat; an emitter that re-points,
+  inlines, hoists, or pastes an `Evaluated` head rewrites a line nobody spelled. `Literal`
+  is decided through `SourceLiteralPlane::literal_text`, which constant-folds — so a
+  literal-assigned book-set root (`OPS_LIB=.; . "$OPS_LIB/x.oracle.sh"`) IS explicit, and an
+  AST-literal test would be WRONG, not merely early. Residue: a positional the value plane
+  overlaid under splicing (`. "$1"` in an inlined body) reads `Literal` too — the ruling's
+  own literal-assigned-root clause, not a widening to defend.
+- **rul-acquiring-bytes-is-not-modelling-them** (`30P:principle-book-code-source-is-inclusion`,
+  tier 2 only) — `load::Loadable::Included` is a file the controller READ (a book-sourced
+  source carrying no dorc-lang marker) and models not at all: `program_at_key` answers
+  `None`, so its `.` site havocs and walls exactly as an unread one does; the only thing
+  acquisition buys is an occurrence for the artifact to mirror. Its declarations never
+  enter `DefinitionTable::names()`, which is why its names answer `NoOpinion` rather than
+  `Withheld`. The ONE selection seat deciding what a lift sees is
+  `cli::snapshot::StaticLoadSnapshot::modelled_refs`, which reads an inclusion as the EMPTY
+  source (positional, never filtered — the index IS the `SourceFileId`).
+- **rul-guarded-source-compares-the-sentinel-value** (`30I:rul-load-semantics-stay-full-fidelity`)
+  — recognized guarded-source compares the sentinel's VALUE against the guard's literal,
+  not only whose names are bound: the structural arm alone modelled a package assigning
+  `v1` under a guard testing `v2` as reused where a real shell sources it again
+  (`SentinelArm::Reuse` with a mismatched value answers `Source`). The lossy speech
+  projection (`30I:rul-guarded-source-speech-is-lossy`) still asks the NAME question and
+  must never gain the value one.
 
 ## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 

@@ -18,12 +18,14 @@ bullet, slugged; append to the matching section.
   elision). The parser is the engine's highest-risk surface: bias every ambiguity
   to ⊤-reject-with-diagnostic.
 - **syntactic-top-triggers** (fixed; shrinking one is a deliberate design act) —
-  `eval` · dynamic command name · NO-FLOW-COULD-HOLD-IT source target (literal
-  `. /etc/x` kept; parameter-expansion targets like `. "$LIB/x.sh"` route to the
-  analyzer's value plane — the r28 bitem9 shrink, licensed by the human-acked
-  `28K` §1 `rul-unloadable-is-unlicensed` richness half, keyed on
-  `word_has_expansion_effect` exactly as the for-list trigger; command-substitution
-  and arithmetic targets stay parse-⊤) · `$(( ))` in command position ·
+  `eval` · dynamic command name · (a `.`/`source` operand is NOT a trigger: it
+  parses whatever it carries — literal, parameter expansion incl. `${0%/*}`, command
+  substitution, arithmetic — and routes to the analyzer's load plane, which resolves
+  the head over controller-known inputs or answers ⊤ ⇒ point havoc; the pre-network
+  complaint for a computed operand is the cli's, never the parser's —
+  `30P:rul-floor-valid-text-never-parse-fails`; the r28 `rul-unloadable-is-unlicensed`
+  shrink and the r30 load lane retired the old parse-⊤ clause in both halves) ·
+  `$(( ))` in command position ·
   lvalue-taking builtins (`unset "$x"`,
   `printf -v`, `test -v`) · background `&` · over-deep nesting · the residual
   loop shapes (no-`in` `for`; `break`/`continue`; command-subst/arithmetic in a
@@ -112,4 +114,7 @@ bullet, slugged; append to the matching section.
   massaged inputs `sh -n`-clean.
 - **tn-coarse-subst-provenance** — command-substitution bodies re-lex with
   inner-relative spans; accepted for the spike; will fight the locator-DAG when
-  provenance fidelity matters.
+  provenance fidelity matters. First real consumer (r30): the load-head evaluator over
+  a `CommandSubst` operand — a diagnostic sited INSIDE one needs the locator-DAG, so the
+  inner spans were deliberately left coarse (`30Qc:dev-parser-span-residue-not-taken`);
+  `WordPart::Arithmetic` carries no body at all.
