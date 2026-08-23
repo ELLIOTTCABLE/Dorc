@@ -151,15 +151,13 @@ builder reads `AGENTS.for-builders-only.md`).
 
 ## register-and-steering-debt — state after this re-cut
 
-Done in this re-cut: FORFEITS header (`30P:rul-forfeits-carry-reds`) · the
-`forfeit-book-dynamic-load-analysis` rewrite · `forfeit-plain-sh-inclusion-analysis` ·
-`cli/CLAUDE.md`'s front-lift sentence · `spike/CLAUDE.md`'s floor-routing correction ·
-`Research/README.md`'s r30 pointers. Still owed: ANALYZER-NEEDS `an-backing-selfframing`
-("freezing remains owed" is false since `30Nc:req-backings-freeze-at-probe-boundary`) ·
-`oracle/CLAUDE.md`'s dangling cite `FORFEITS:forfeit-whole-file-inertness-refusal` ·
-`cli/CLAUDE.md`'s harness-contract lines (floor cases: top-level files only; `$0` shape is
-platform-bound) — conductor-tier, at the next CLAUDE.md edit · the `30Kb` residue (wall
-narrative operand · final-round typestate · the effective-reach prose case).
+Applied (the `30Qb`/`30Qc` proposals, the `30Nc` freeze, the dangling oracle cite, the task
+list, the harness-contract lines). Still owed: the `30Kb` residue (wall narrative operand ·
+final-round typestate · the effective-reach prose case) · ONE predicate at TWO seats —
+`cli::artifact::operand_is_explicit` reads the AST word while `funcenv::ResolvedHead::explicitness()`
+reads the resolution (the fold left both; the cli seat should read the marker — a small lane,
+any time) · the FORFEITS row `forfeit-cell-blind-self-reach-walls-loop-siblings` gains its
+REDS when `lane-loop-residue` reports the minted case.
 
 ## the-schedule
 

@@ -61,13 +61,15 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   book-set root, `$0` under the symbolic model, a static predict's claimed stdout); the
   decidable set grows by name, license-review-tier. BACK-OUT: low (every rule is additive;
   no engine selection can launder into EXACT). REVISIT: the `r31:book-load-acceptance`
-  attention-call. REDS: `p-x-load-operand-dirname-of-dollar-zero`
+  attention-call. REDS: `p-x-load-operand-case-over-dollar-zero` ·
+  `p-x-load-operand-dirname-of-dollar-zero`
   · `p-x-load-operand-cd-pwd-of-dollar-zero` · `p-x-glob-load-acquires-members` ·
   `p-x-glob-load-members-are-order-unknown` · `p-x-glob-load-no-match-aborts` ·
   `load31-punted-load-shapes`.
 - **forfeit-plain-sh-inclusion-analysis** — RULE (`30P:principle-book-code-source-is-inclusion`,
   tiers 1 and 3 punted by human ruling 2026-08-22): a resolvable `.` of an ORDINARY sh file
-  is acquired and shipped beside the plan (`mech-acquire-and-ship-plain-sh`, r30) but its
+  is acquired and shipped beside the plan (`mech-acquire-and-ship-plain-sh`; landing evidence
+  `load30-plain-sh-inclusion-ships`, which is NOT a red of this row) but its
   contents are NOT analyzed — no splice, its definitions unknown, its sites unplanned, the
   `.` site walls — and it is never pasted into a single-stream plan. FORFEITS: every
   elision and guard inside plain-sh helper files (the most common multi-file book shape),
