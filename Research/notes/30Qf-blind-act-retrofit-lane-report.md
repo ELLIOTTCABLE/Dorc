@@ -809,22 +809,31 @@ needed; its interim assertions are deleted, as the greening commit owes.
 
 ### proposed-steering-and-register-edits (conductor applies; builders edit no `CLAUDE.md`)
 
-- `analysis/CLAUDE.md rul-havoc-is-pointwise-never-the-stack` — its cwd clause names two seed
-  species. Proposed rider: *"…and the THIRD blind act joins the same seed: a call whose body the
-  CFG refused to splice (`Cfg::splice_refused`) clobbers the cwd from its own line down, because it
-  runs arbitrary sh in this shell and `command_transfer` matches only `.`/`source`/`unset`. Never
-  `call_body_sites` answering `None` — the splicer inlines same-file funcdefs only, so that absence
-  also covers every call into an oracle body the controller holds, and reading it as unmodelled
-  costs a licence at every helper call (measured: two goldens, `30Qf`)."*
-- `analysis/CLAUDE.md` — `§retrofit-execute`'s proposed NEW rider ("the law names THREE blind acts
-  and the engine models TWO") is DISCHARGED, and should land as the replacement above rather than
-  as written: all three are modelled now, and what still needs saying in steering is the wrong-seed
-  tripwire, which that rider carries.
+**Base note.** This lane branched at `c228113d`; the conductor's `9ba6a9dc` re-say of the load-plane
+steering landed after, and it is READ here — the deltas below are stated against ITS text, not
+against the older bullet, and the lane is unrebased (docs-only upstream; no code interaction).
+
+- `analysis/CLAUDE.md rul-havoc-is-pointwise-never-the-stack` — its last-but-one sentence is now
+  false at the tip. Replace *"The law names THREE blind acts; `eval` is closed by refusal and the
+  unheld `.` is modelled; a call Dorc cannot SPLICE (over-budget · recursive · out-of-slice) is
+  minted only as the `CFG_INLINE_REFUSED` diagnostic and is pinned red until the CFG's refusal set
+  is queryable (`p-x-an-unspliceable-call-havocs-the-cwd`)"* with: *"The law names THREE blind acts
+  and all three are modelled: `eval` is closed by refusal, the unheld `.` seeds directly, and a
+  call Dorc cannot SPLICE is queryable as `Cfg::splice_refused` — one node set recorded at the
+  refusal arms themselves by `Builder::refuse_splice`, which is the ONE seat that both announces a
+  refusal and records it, so an arm cannot tell the author Dorc did not look inside a call while
+  leaving the binding plane believing it had."*
+- `analysis/CLAUDE.md rul-havoc-is-pointwise-never-the-stack`, the wrong-seed paragraph — KEEP
+  VERBATIM; it is exactly right and it is now also mechanically guarded. Worth appending only the
+  guard's name: *"`a_call_that_was_not_refused_leaves_the_cwd_determinate` is where that misreading
+  reddens at the unit tier, so it can no longer reach a golden."*
 - `analysis/CLAUDE.md splice-budgets-are-licensure-not-perf` — proposed rider: *"since the third
   blind act, a budget also decides CARRIAGE: an over-budget call is a cwd clobber, so a relative
-  `.` below it is non-EXACT and its target is shipped by no form."*
+  `.` below it is non-EXACT and its target is shipped by no form
+  (`30Qf:tc-an-over-budget-wrapper-now-costs-later-loads-their-carriage`)."*
 - `analysis/CLAUDE.md opaque-poison-is-the-product` — its "keep every refusal arm (splice
   ineligibility, over-budget, recursion) poison-preserving" gains a second obligation worth naming:
   a new refusal arm must also RECORD, and `Builder::refuse_splice` is the only seat that does both.
-- `internal_tooling::xfail::PINS` — `p-x-an-unspliceable-call-havocs-the-cwd` is removed; nothing
-  else referenced it (`FORFEITS.md` and `ANALYZER-NEEDS.md` never named it).
+  Its parenthetical also under-counts: there are EIGHT arms, not three.
+- `FORFEITS.md` / `ANALYZER-NEEDS.md` — no edit owed; neither ever named this pin.
+  `internal_tooling::xfail::PINS` is the only register that moved.
