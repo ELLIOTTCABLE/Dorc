@@ -351,6 +351,10 @@ pub enum DiagCode {
     /// A verdict body answers with a PIPELINE's tail status, so the rc may not be the described
     /// tool's (`rul-rc-partition`).
     VerdictTerminalPipeline(VerdictTerminalPipeline),
+    /// A `for` loop's entire word-list is one bash/zsh brace-RANGE (`{1..10}`) — POSIX sh never
+    /// expands it, so the loop body runs exactly ONCE, over the literal text
+    /// (`30Qe:fruit-loop-does-not-loop-lint`).
+    ForLoopBraceRangeRunsOnce(ForLoopBraceRangeRunsOnce),
     /// A verdict arm authors a deliberate decline whose class was read statically; the site runs
     /// and the class routes the nags.
     AuthoredDeclineClass(AuthoredDeclineClass),
@@ -523,6 +527,7 @@ impl DiagCode {
             DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
             DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
             DiagCode::VerdictTerminalPipeline(_) => "verdict-terminal-pipeline",
+            DiagCode::ForLoopBraceRangeRunsOnce(_) => "for-loop-brace-range-runs-once",
             DiagCode::AuthoredDeclineClass(_) => "authored-decline-class",
             DiagCode::AuthoredDeclineClassUnreadable(_) => "authored-decline-class-unreadable",
             DiagCode::LintToolAbsent(_) => "lint-tool-absent",
@@ -1873,6 +1878,14 @@ pub struct UnmodeledWallInventory {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerdictTerminalPipeline;
 
+/// Payload of [`DiagCode::ForLoopBraceRangeRunsOnce`] (`30Qe:fruit-loop-does-not-loop-lint`): the
+/// offending brace-range word (`{1..10}`), verbatim, for the `{range}` hole.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ForLoopBraceRangeRunsOnce {
+    /// The single for-list word, as authored (`{range}`).
+    pub range: String,
+}
+
 /// Payload of [`DiagCode::AuthoredDeclineClass`] (`288` §5): one per-arm decline inventory entry
 /// whose `<verb> <class>` header WAS statically readable.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2931,6 +2944,16 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
+        // A portability bug in the admin's OWN sh, independent of any oracle or model Dorc
+        // holds — none of the four remediation classes name "fix a shell-portability mistake";
+        // ResolveDynamism is the closest available (the fix widens a word Dorc reads as one
+        // fixed value into the genuinely-many-word list the author meant), flagged in the r30
+        // fruit-arc report as an imperfect fit.
+        DiagCode::ForLoopBraceRangeRunsOnce(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
         DiagCode::AuthoredDeclineClass(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
@@ -3378,6 +3401,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("downstream", downstream.to_string()),
         ],
         DiagCode::VerdictTerminalPipeline(VerdictTerminalPipeline) => vec![],
+        DiagCode::ForLoopBraceRangeRunsOnce(ForLoopBraceRangeRunsOnce { range }) => {
+            vec![ours("range", range.clone())]
+        }
         DiagCode::AuthoredDeclineClass(AuthoredDeclineClass { class }) => {
             vec![ours("class", class.clone())]
         }

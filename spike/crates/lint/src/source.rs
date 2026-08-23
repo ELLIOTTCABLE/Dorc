@@ -120,6 +120,7 @@ pub fn registry() -> Vec<Box<dyn LintSource>> {
         Box::new(crate::source_analysis::AnalysisDiagnostics),
         Box::new(crate::source_unmodeled::UnmodeledInventory),
         Box::new(crate::source_verdict::VerdictBodyFlattening),
+        Box::new(crate::source_portability::LoopBraceRange),
         Box::new(crate::source_oracle_solo::OracleValidate),
         Box::new(crate::source_oracle_solo::OracleDeclinedInventory),
         Box::new(crate::source_external::Shellcheck),

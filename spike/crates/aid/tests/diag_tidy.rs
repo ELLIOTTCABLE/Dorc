@@ -256,6 +256,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "aid-unloaded-sibling-oracle",
     "unmodeled-wall-inventory",
     "verdict-terminal-pipeline",
+    "for-loop-brace-range-runs-once",
     "authored-decline-class",
     "authored-decline-class-unreadable",
     "lint-tool-absent",

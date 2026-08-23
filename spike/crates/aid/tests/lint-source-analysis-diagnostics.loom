@@ -5,6 +5,7 @@ why: 27R section 8 delta-named-sources-selectable: each source describes itself 
 owns:
   - lint-source-unmodeled-inventory
   - lint-source-verdict-body
+  - lint-source-loop-brace-range
   - lint-source-oracle-validate
   - lint-source-oracle-declined-inventory
   - lint-source-shellcheck
@@ -18,6 +19,7 @@ unmodeled-inventory [book]               per-book ⊤-wall inventory (first wall
                                          downstream degradation)
 verdict-body [file]                      status-flattening in __is_converged bodies
                                          (terminal pipeline)
+loop-brace-range [file]                  [unwritten: lint-source-loop-brace-range]
 oracle-validate [oracle-solo]            book-free oracle-side validation
                                          (lift/check/coherence/reserved/marker)
 oracle-declined-inventory [oracle-solo]  authored decline classes per verdict arm (tier-1,

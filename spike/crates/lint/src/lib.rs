@@ -25,6 +25,7 @@ pub mod source;
 mod source_analysis;
 mod source_external;
 mod source_oracle_solo;
+mod source_portability;
 mod source_unmodeled;
 mod source_verdict;
 
