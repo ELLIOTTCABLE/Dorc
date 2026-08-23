@@ -459,8 +459,8 @@ pub mod view {
     /// The `SpineInvocation` View: everything the durable keeps of the run's identity.
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Invocation {
-        /// The invocation mode.
-        pub mode: String,
+        /// What mode a reader should REPLAY under — never the producing invocation's mode.
+        pub mode: dorc_core::spine::InvocationMode,
         /// The full argv, one word per element.
         pub argv: Vec<String>,
         /// Book path and content digest.
@@ -485,7 +485,7 @@ pub mod view {
         pub fn of(record: &SpineInvocation) -> Self {
             let identity = record.identity();
             Self {
-                mode: record.mode().to_owned(),
+                mode: record.mode(),
                 argv: record.argv().to_vec(),
                 book: (record.book().path.clone(), record.book().digest.clone()),
                 oracles: record
@@ -584,7 +584,7 @@ impl<'a> DurableProjection<'a> {
             .collect();
         Some(Self {
             metadata: WhylogV2Metadata {
-                mode: invocation.mode,
+                mode: invocation.mode.token().to_owned(),
                 argv: invocation.argv,
                 book: invocation.book,
                 oracles: invocation.oracles,

@@ -2981,7 +2981,7 @@ fn record_durable_arm(
     world_account: dorc_core::influence::InfluenceAccount,
 ) {
     spine.set_invocation(dorc_core::spine::SpineInvocation::minted(
-        "whylog-replay".to_owned(),
+        dorc_core::spine::InvocationMode::WhylogReplay,
         std::env::args().collect(),
         dorc_core::spine::SourceClaim {
             path: book_name.to_owned(),

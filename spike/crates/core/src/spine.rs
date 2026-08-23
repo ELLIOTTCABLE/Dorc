@@ -374,6 +374,36 @@ pub struct SourceClaim {
     pub digest: String,
 }
 
+/// What mode a reader should REPLAY a durable under — deliberately NOT a claim about the
+/// invocation that produced it (`30N` §4's `stop-spine-mode-is-durable`, ruled human-typed).
+///
+/// The field this replaces was a `String` whose sole writer hard-coded `"whylog-replay"` on the
+/// LIVE plan/apply path, so it described neither producing invocation (`30Mc` F3) — and its own doc
+/// had to say so, because the type let it look like a mode report. Narrowing to a closed enum with
+/// ONE inhabitant makes the false claim unspellable instead: there is no `Plan` or `Apply` arm to
+/// mis-write, so nothing can assert a producing mode it does not know.
+///
+/// Zero durable bytes move. [`token`](Self::token) is exactly what the writer wrote before, the
+/// durable's own grammar check still accepts the four historical words on the READ side, and the
+/// replay claims check is untouched. Writing the truthful producing mode becomes a later, reviewed,
+/// one-arm widening — which is the point of narrowing rather than "fixing" it here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum InvocationMode {
+    /// The durable is to be replayed through `dorc why --last`.
+    WhylogReplay,
+}
+
+impl InvocationMode {
+    /// The durable's word for this mode. Referent-agnostic: for the wire and for display, never
+    /// branched on.
+    #[must_use]
+    pub const fn token(self) -> &'static str {
+        match self {
+            Self::WhylogReplay => "whylog-replay",
+        }
+    }
+}
+
 /// The controller-minted per-attempt identity of one run.
 ///
 /// Grouped rather than spread across [`SpineInvocation::minted`]'s parameters because it is one
@@ -395,7 +425,7 @@ pub struct RunIdentity {
 /// The invocation: controller-minted run identity plus what it was pointed at (`30E` §2).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineInvocation {
-    mode: String,
+    mode: InvocationMode,
     argv: Vec<String>,
     book: SourceClaim,
     oracles: Vec<SourceClaim>,
@@ -407,7 +437,7 @@ impl SpineInvocation {
     /// Mint the invocation record.
     #[must_use]
     pub fn minted(
-        mode: String,
+        mode: InvocationMode,
         argv: Vec<String>,
         book: SourceClaim,
         oracles: Vec<SourceClaim>,
@@ -424,16 +454,11 @@ impl SpineInvocation {
         }
     }
 
-    /// `plan` / `apply` / `roundtrip` / `probe` / `why`.
-    ///
-    /// FALSE AS POPULATED, and deliberately unrepaired here: the sole writer hard-codes
-    /// `"whylog-replay"` from a seat unreachable on the replay branch, so the field describes
-    /// neither producing invocation (`30Mc` F3). The value is DURABLE-persisted and re-ingested on
-    /// replay, so correcting it is gated behind `rul-durable-contents-reviewed-before-design`
-    /// (`30N` §4's `stop-spine-mode-is-durable`) rather than being a local fix. Do not "tidy" it.
+    /// What mode a reader should REPLAY this record under — never a claim about the invocation
+    /// that produced it. The type is the whole of that guarantee; see [`InvocationMode`].
     #[must_use]
-    pub fn mode(&self) -> &str {
-        &self.mode
+    pub const fn mode(&self) -> InvocationMode {
+        self.mode
     }
 
     /// The full argv, one word per element.
