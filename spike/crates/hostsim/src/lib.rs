@@ -1511,7 +1511,7 @@ grep__predict() {
             &mut dorc_core::ProvArena::new(),
             &mut trip,
             // No intake: DST analyses the unmeasured world.
-            None,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         dorc_plan::certifier_trip::project_censusless(
             &mut spine,
@@ -1519,6 +1519,7 @@ grep__predict() {
             ast,
             trip,
             &dorc_plan::PlanAuthority::without_intake(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 

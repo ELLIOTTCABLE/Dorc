@@ -4305,9 +4305,16 @@ pub fn build_plan(
         arena,
         &mut trip,
         // The intakeless entry reads no host bytes, so its records are authored-before-contact.
-        None,
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
-    certifier_trip::project_censusless(&mut spine, src, ast, trip, &PlanAuthority::without_intake())
+    certifier_trip::project_censusless(
+        &mut spine,
+        src,
+        ast,
+        trip,
+        &PlanAuthority::without_intake(),
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
+    )
 }
 
 /// [`build_plan`] PLUS the run's wall POLICY.
@@ -4339,7 +4346,7 @@ pub fn build_plan_walled(
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
     trip: &mut dorc_analysis::certify::CertifierTrip,
-    minted_at: dorc_core::spine::Grade,
+    minted_at: dorc_core::influence::InfluenceAccount,
 ) -> Spine {
     let mut model = FrozenRoundModel {
         classification,
@@ -4421,11 +4428,10 @@ pub fn attach_spine_probe_provenance(
     probe_origins: &BTreeMap<FactKey, ProbeAttribution>,
     arena: &mut dorc_core::ProvArena,
 ) {
-    for record in spine.dispositions_mut() {
-        let span = ast.node(record.ast).span;
-        let decision = std::mem::replace(&mut record.decision, Disposition::Run);
-        record.decision = attach_probe_provenance(decision, span, probe_origins, arena);
-    }
+    spine.reattach_dispositions(|ast_id, decision| {
+        let span = ast.node(ast_id).span;
+        attach_probe_provenance(decision, span, probe_origins, arena)
+    });
 }
 
 pub(crate) fn attach_probe_provenance(
@@ -9036,7 +9042,7 @@ apt_get__is_converged() {
             observe,
             &mut arena,
             &mut trip,
-            None,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let plan = certifier_trip::project_censusless(
             &mut spine,
@@ -9044,6 +9050,7 @@ apt_get__is_converged() {
             &parsed.value,
             trip,
             &PlanAuthority::without_intake(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         (plan, i)
     }
@@ -9217,7 +9224,7 @@ apt_get__is_converged() {
             observe,
             &mut arena,
             &mut trip,
-            None,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         (
             certifier_trip::project_censusless(
@@ -9226,6 +9233,7 @@ apt_get__is_converged() {
                 &parsed.value,
                 trip,
                 &PlanAuthority::without_intake(),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             ),
             i,
         )
@@ -9692,7 +9700,7 @@ apt_get__is_converged() {
             observe,
             &mut arena,
             &mut trip,
-            None,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         certifier_trip::project_censusless(
             &mut spine,
@@ -9700,6 +9708,7 @@ apt_get__is_converged() {
             &parsed.value,
             trip,
             &PlanAuthority::without_intake(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 
@@ -9808,7 +9817,7 @@ apt_get__is_converged() {
             observe,
             &mut arena,
             &mut trip,
-            None,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         certifier_trip::project_censusless(
             &mut spine,
@@ -9816,6 +9825,7 @@ apt_get__is_converged() {
             &parsed.value,
             trip,
             &PlanAuthority::without_intake(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 

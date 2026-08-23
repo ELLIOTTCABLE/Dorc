@@ -1978,7 +1978,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
     dorc_plan::spine::record_render_decisions(&mut spine, &plan);
     assert!(
         spine.render_decisions().iter().any(|record| matches!(
-            record.decision,
+            record.decision(),
             dorc_core::spine::RenderDecision::Refused {
                 cause: dorc_core::spine::RefusalCause::BlockingRedirect
             }
@@ -2044,7 +2044,7 @@ fn a_rewritten_import_reaches_the_bytes_the_surface_and_the_plane() {
     dorc_plan::spine::record_render_decisions(&mut spine, &plan);
     assert!(
         spine.render_decisions().iter().any(|record| matches!(
-            &record.decision,
+            record.decision(),
             dorc_core::spine::RenderDecision::ImportRewritten { verb, names }
                 if *verb == "repointed" && names == "./pkg.dorc-bundle.sh"
         )),

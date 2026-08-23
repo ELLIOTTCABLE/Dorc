@@ -483,19 +483,20 @@ pub mod view {
         /// its structural form.
         #[must_use]
         pub fn of(record: &SpineInvocation) -> Self {
+            let identity = record.identity();
             Self {
-                mode: record.mode.clone(),
-                argv: record.argv.clone(),
-                book: (record.book.path.clone(), record.book.digest.clone()),
+                mode: record.mode().to_owned(),
+                argv: record.argv().to_vec(),
+                book: (record.book().path.clone(), record.book().digest.clone()),
                 oracles: record
-                    .oracles
+                    .oracles()
                     .iter()
                     .map(|claim| (claim.path.clone(), claim.digest.clone()))
                     .collect(),
-                nonce: record.nonce.clone(),
-                attempt: record.attempt,
-                host: record.host.clone(),
-                started_at: record.started_at,
+                nonce: identity.nonce.clone(),
+                attempt: identity.attempt,
+                host: identity.host.clone(),
+                started_at: identity.started_at,
             }
         }
     }
@@ -512,7 +513,7 @@ pub mod view {
         #[must_use]
         pub fn of(record: &SpineDigest) -> Self {
             Self {
-                digest: record.digest.clone(),
+                digest: record.digest().to_owned(),
             }
         }
     }
@@ -579,7 +580,7 @@ impl<'a> DurableProjection<'a> {
         let stream = spine.record_stream()?;
         let apply = spine
             .dispositions()
-            .map(|record| view::disposition(record.site, &record.decision))
+            .map(|record| view::disposition(record.site(), record.decision()))
             .collect();
         Some(Self {
             metadata: WhylogV2Metadata {
@@ -592,10 +593,10 @@ impl<'a> DurableProjection<'a> {
                 host: invocation.host,
                 decision_digest: digest.digest,
                 started_at: invocation.started_at,
-                instants: stream.instants.clone(),
+                instants: stream.instants().to_vec(),
                 apply,
             },
-            records: &stream.records,
+            records: stream.records(),
             drops: drop_account(spine),
         })
     }

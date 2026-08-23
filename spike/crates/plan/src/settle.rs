@@ -34,7 +34,8 @@ use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_analysis::certify::{CertifierTrip, SolveConsistency};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, ExecutionOwner};
 use dorc_analysis::effect::SkipClass;
-use dorc_core::spine::{Grade, SpineSurvival, SurvivalDemote, SurvivalOutcome};
+use dorc_core::influence::InfluenceAccount;
+use dorc_core::spine::{SpineSurvival, SurvivalDemote, SurvivalOutcome};
 use dorc_core::{AstId, Channel, FactBacking, FactKey, KindId, LeafId, Observable};
 use dorc_syntax::ast::Ast;
 
@@ -122,7 +123,7 @@ pub struct SettleInputs<'a> {
     /// what it was before regions existed.
     pub regions: &'a RegionCensus,
     /// The influence grade every Spine record this settlement writes carries.
-    pub minted_at: Grade,
+    pub minted_at: InfluenceAccount,
 }
 
 /// What one site's decision established, before anything is written anywhere (`30K` §3.4).
@@ -187,7 +188,7 @@ pub struct SettledEffectiveAnalysis {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
-    minted_at: Grade,
+    minted_at: InfluenceAccount,
 }
 
 /// One round's decisions, before quiescence is known. Deliberately without a Spine, Plan, render,
@@ -197,7 +198,7 @@ pub struct ProvisionalEffectiveRound {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
-    minted_at: Grade,
+    minted_at: InfluenceAccount,
 }
 
 /// The cap path intentionally discards every no-execution proof and seals the maximal-effects
@@ -248,7 +249,8 @@ impl SettledEffectiveAnalysis {
     /// (`309:law-spine-write-only-during-run`).
     #[must_use]
     pub fn write_spine(self) -> Spine {
-        let mut spine = Spine::minted_at(self.minted_at);
+        let world = self.minted_at;
+        let mut spine = Spine::minted_at(world);
         for (leaf, region) in self.walls {
             spine.push_narrative(CollapseNarrative::new(
                 SpeechAct::Derived,
@@ -262,31 +264,37 @@ impl SettledEffectiveAnalysis {
             ));
         }
         for region in self.regions {
-            spine.push_region_decision(dorc_core::spine::SpineRegionDecision {
-                region: region.region,
-                ast: region.ast,
-                sh: region.sh,
-                decision: region.disposition,
-                routes: region.routes,
-                grade: None,
-            });
+            spine.push_region_decision(dorc_core::spine::SpineRegionDecision::minted(
+                region.region,
+                region.ast,
+                region.sh,
+                region.disposition,
+                region.routes,
+                world,
+            ));
         }
         for decision in self.decisions {
-            record_survival(&mut spine, decision.leaf, decision.survival);
-            spine.set_disposition(dorc_core::spine::SpineDisposition {
-                site: dorc_core::SiteId::leaf(decision.leaf),
-                ast: decision.ast,
-                sh: decision.sh,
-                decision: decision.disposition,
-                grade: None,
-            });
+            record_survival(&mut spine, decision.leaf, decision.survival, world);
+            spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+                dorc_core::SiteId::leaf(decision.leaf),
+                decision.ast,
+                decision.sh,
+                decision.disposition,
+                world,
+            ));
         }
         spine
     }
 }
 
 /// Record one site's survival outcome on both planes — the decision record, and its narration.
-fn record_survival(spine: &mut Spine, leaf: LeafId, account: SurvivalAccount) {
+fn record_survival(
+    spine: &mut Spine,
+    leaf: LeafId,
+    survival: SurvivalAccount,
+    world: InfluenceAccount,
+) {
+    let account = survival;
     let outcome = match account {
         SurvivalAccount::Silent => return,
         SurvivalAccount::Clean => SurvivalOutcome::Clean,
@@ -312,12 +320,7 @@ fn record_survival(spine: &mut Spine, leaf: LeafId, account: SurvivalAccount) {
         SurvivalAccount::Demoted(StaleCause::Poisoned { via_reach }) => via_reach,
         _ => None,
     };
-    spine.push_survival(SpineSurvival {
-        leaf,
-        outcome,
-        poisoned_by,
-        grade: None,
-    });
+    spine.push_survival(SpineSurvival::minted(leaf, outcome, poisoned_by, world));
     if let SurvivalAccount::Demoted(cause) = account {
         spine.push_narrative(CollapseNarrative::new(
             SpeechAct::Derived,

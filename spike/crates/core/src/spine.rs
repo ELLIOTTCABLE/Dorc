@@ -43,7 +43,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::influence::InfluencePhase;
+use crate::influence::InfluenceAccount;
 use crate::{AstId, DefinitionCustody, FactKey, KindId, LeafId, RunInstant, SiteId, SourceFileId};
 
 /// The payload types a Spine carries that `core` cannot name (`309` §2 crate-home).
@@ -136,18 +136,24 @@ impl<T> OperandAccount<T> {
     }
 }
 
-/// The influence grade a record was minted at (`309` §2; `306b` §1a via [`InfluencePhase`]).
+/// The sealing module: [`InfluenceBearing`]'s supertrait is private, so the contract can be
+/// implemented only inside this module — which is where the discipline is visible.
+mod sealed {
+    pub trait Sealed {}
+}
+
+/// The contract `306b:rul-consequential-sinks-require-influence` asks for: every stable Spine
+/// record answers where it stands relative to host contact, and answers it from the account its
+/// OWN semantic mint joined.
 ///
-/// `None` ⇒ `authored-before-contact`: everything behind this decision existed before the first
-/// host exchange. `Some` ⇒ `host-influenced`, and the marker can only be obtained by having READ
-/// host-reported material (`core::influence`'s pairing), so the stamp is evidence rather than an
-/// assertion a mint site could get wrong.
-///
-/// v0 is positional and global (`306c` §2): the flip is a phase property carried by construction,
-/// not a per-value dataflow analysis. That is why a mint site does not fill this in —
-/// [`Spine::minted_at`] does, on every record, so a new mint site cannot forget and a future
-/// per-record gradation (`306b` §1c, OPEN) has its room without being pre-committed here.
-pub type Grade = Option<InfluencePhase>;
+/// **Sealed.** A new species cannot land carrying no account, because it cannot be constructed
+/// (private fields), cannot be stored (the setters take sealed records), and cannot be classified
+/// (the no-wildcard [`SpineSpecies::account_carriage`] census stops compiling until it is).
+pub trait InfluenceBearing: sealed::Sealed {
+    /// Where this record stands. Immutable: there is no setter and no `&mut` route, here or on
+    /// [`Spine`] (`309:rul-spine-preserves-never-stamps`).
+    fn account(&self) -> InfluenceAccount;
+}
 
 /// Every Spine record species (`30E` §2). A no-wildcard `match` in [`SpineSpecies::census_arm`]
 /// forces a new species to be classified before it can land.
@@ -205,6 +211,28 @@ pub enum CensusArm {
     New,
 }
 
+/// How a species' writer arrives at the account its records carry
+/// (`306b:rul-semantic-mints-join-influence`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum AccountCarriage {
+    /// The writer JOINS the accounts of the inputs the record was derived from. The target state
+    /// for every species that has a writer at all.
+    Joined,
+    /// The writer carries an explicit [`InfluenceAccount::untracked`] because some contributor is
+    /// unconverted or unenumerable — a STAGED SEAM (`306b:rul-untracked-is-not-authored`), never an
+    /// absence. Empty today, and growth here is the signal the discipline exists to watch.
+    UntrackedAdapter,
+    /// The species has no writer, so there is no population whose account could have been joined
+    /// (`core/CLAUDE.md a-record-says-what-its-population-holds`: an unminted species says so at
+    /// the type). Classifying these `Joined` would be a claim about a mint that does not exist.
+    Unminted,
+}
+
+impl AccountCarriage {
+    /// Every carriage class, for the census instrument.
+    pub const ALL: [Self; 3] = [Self::Joined, Self::UntrackedAdapter, Self::Unminted];
+}
+
 impl SpineSpecies {
     /// Every species, in declaration order. The array is what makes the census walkable; the
     /// no-wildcard match in [`census_arm`](Self::census_arm) is what makes it complete.
@@ -250,6 +278,33 @@ impl SpineSpecies {
             // Putting any of a region decision on operator disk ENTERS the durable arm.
             | Self::RegionDecision
             | Self::Outcome => CensusArm::New,
+        }
+    }
+
+    /// How the species' WRITER arrives at its account — the second no-wildcard census, and the
+    /// consumer half `306b:rul-consequential-sinks-require-influence` asks for.
+    ///
+    /// [`InfluenceBearing`] makes a new species carry an account; this makes it say WHERE that
+    /// account came from. The two are different failures: a species can carry an account and still
+    /// have been handed a constant nobody derived.
+    #[must_use]
+    pub const fn account_carriage(self) -> AccountCarriage {
+        match self {
+            Self::Invocation
+            | Self::RecordStream
+            | Self::Disposition
+            | Self::Digest
+            | Self::LoadDecision
+            | Self::SiteClassification
+            | Self::SolveCertification
+            | Self::ProbeShip
+            | Self::Admission
+            | Self::Survival
+            | Self::RenderDecision
+            | Self::RegionDecision => AccountCarriage::Joined,
+            Self::Vouch | Self::Observation | Self::ValidityRound | Self::Outcome => {
+                AccountCarriage::Unminted
+            }
         }
     }
 
@@ -319,23 +374,14 @@ pub struct SourceClaim {
     pub digest: String,
 }
 
-/// The invocation: controller-minted run identity plus what it was pointed at (`30E` §2).
+/// The controller-minted per-attempt identity of one run.
+///
+/// Grouped rather than spread across [`SpineInvocation::minted`]'s parameters because it is one
+/// thing — the identity the controller owns and a payload frame may only be CHECKED against
+/// (`rul-attribution-is-controller-minted`) — and because four more positional parameters of
+/// mostly-`String` type is exactly the signature a caller mis-orders.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SpineInvocation {
-    /// `plan` / `apply` / `roundtrip` / `probe` / `why`.
-    ///
-    /// FALSE AS POPULATED, and deliberately unrepaired: the sole writer hard-codes
-    /// `"whylog-replay"` from a seat unreachable on the replay branch, so the field describes
-    /// neither producing invocation (`30Mc` F3). The value is DURABLE-persisted and re-ingested on
-    /// replay, so correcting it is gated behind `rul-durable-contents-reviewed-before-design`
-    /// (`30N` §4's `stop-spine-mode-is-durable`) rather than being a local fix. Do not "tidy" it.
-    pub mode: String,
-    /// The full argv, one word per element.
-    pub argv: Vec<String>,
-    /// The book path and its content digest.
-    pub book: SourceClaim,
-    /// Each oracle path and digest, in load order.
-    pub oracles: Vec<SourceClaim>,
+pub struct RunIdentity {
     /// The controller-minted per-attempt nonce.
     pub nonce: String,
     /// The controller-minted attempt serial.
@@ -344,32 +390,117 @@ pub struct SpineInvocation {
     pub host: String,
     /// When the controller started this run, from the edge's injected clock. `None` ⇒ no clock.
     pub started_at: Option<RunInstant>,
-    /// The grade at mint.
+}
+
+/// The invocation: controller-minted run identity plus what it was pointed at (`30E` §2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpineInvocation {
+    mode: String,
+    argv: Vec<String>,
+    book: SourceClaim,
+    oracles: Vec<SourceClaim>,
+    identity: RunIdentity,
+    account: InfluenceAccount,
+}
+
+impl SpineInvocation {
+    /// Mint the invocation record.
+    #[must_use]
+    pub fn minted(
+        mode: String,
+        argv: Vec<String>,
+        book: SourceClaim,
+        oracles: Vec<SourceClaim>,
+        identity: RunIdentity,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            mode,
+            argv,
+            book,
+            oracles,
+            identity,
+            account,
+        }
+    }
+
+    /// `plan` / `apply` / `roundtrip` / `probe` / `why`.
     ///
-    /// EVERY FIELD ABOVE is controller-owned invocation context, which
-    /// `30I:rul-load-decisions-are-authored-before-contact` [TYPED] would have wear
-    /// `authored-before-contact` — but the record is written after intake and the Spine's grade is
-    /// object-global, so what it actually wears is the run's phase. The two typed directions are
-    /// jointly unrepresentable in the landed type and the reconciliation is a pending human
-    /// direction (`30M:ask-spine-grade-boundary`); this comment states the discrepancy rather than
-    /// choosing a pole.
-    pub grade: Grade,
+    /// FALSE AS POPULATED, and deliberately unrepaired here: the sole writer hard-codes
+    /// `"whylog-replay"` from a seat unreachable on the replay branch, so the field describes
+    /// neither producing invocation (`30Mc` F3). The value is DURABLE-persisted and re-ingested on
+    /// replay, so correcting it is gated behind `rul-durable-contents-reviewed-before-design`
+    /// (`30N` §4's `stop-spine-mode-is-durable`) rather than being a local fix. Do not "tidy" it.
+    #[must_use]
+    pub fn mode(&self) -> &str {
+        &self.mode
+    }
+
+    /// The full argv, one word per element.
+    #[must_use]
+    pub fn argv(&self) -> &[String] {
+        &self.argv
+    }
+
+    /// The book path and its content digest.
+    #[must_use]
+    pub const fn book(&self) -> &SourceClaim {
+        &self.book
+    }
+
+    /// Each oracle path and digest, in load order.
+    #[must_use]
+    pub fn oracles(&self) -> &[SourceClaim] {
+        &self.oracles
+    }
+
+    /// The controller-minted run identity.
+    #[must_use]
+    pub const fn identity(&self) -> &RunIdentity {
+        &self.identity
+    }
 }
 
 /// The admitted host-record stream, held as the plane's own admitted-bytes handle (`30E` §2).
 #[derive(Debug, Clone)]
 pub struct SpineRecordStream<P: DecidePlane> {
+    records: P::Records,
+    instants: Vec<(u64, RunInstant)>,
+    account: InfluenceAccount,
+}
+
+impl<P: DecidePlane> SpineRecordStream<P> {
+    /// Mint the record-stream record. Host-influenced by construction: these ARE the host-reported
+    /// bytes, so the account its caller joins can only be the intake's own.
+    #[must_use]
+    pub const fn minted(
+        records: P::Records,
+        instants: Vec<(u64, RunInstant)>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            records,
+            instants,
+            account,
+        }
+    }
+
     /// The as-received buffer, still wearing its admission.
-    pub records: P::Records,
+    #[must_use]
+    pub const fn records(&self) -> &P::Records {
+        &self.records
+    }
+
     /// When the controller took a record in, by arrival ordinal, ascending
     /// (`28F:rul-probe-instants-host-says-no-times` — controller-minted, always).
     ///
     /// SPARSE, not one-per-record: a run with no clock (`RunClock::Absent`, every loom path) stamps
     /// nothing, so this is EMPTY beside a full record buffer. An ordinal's absence means the
     /// controller took no time, never that no record arrived.
-    pub instants: Vec<(u64, RunInstant)>,
-    /// Host-influenced by construction: these ARE the host-reported bytes.
-    pub grade: Grade,
+    #[must_use]
+    pub fn instants(&self) -> &[(u64, RunInstant)] {
+        &self.instants
+    }
 }
 
 /// One site's licensed decision — the license-bearing record (`30E` §2).
@@ -378,30 +509,90 @@ pub struct SpineRecordStream<P: DecidePlane> {
 /// the RECORD is `SiteId`-keyed and carries the license, while the VIEW emits a leaf plus a tag.
 #[derive(Debug, Clone)]
 pub struct SpineDisposition<P: DecidePlane> {
+    site: SiteId,
+    ast: AstId,
+    sh: String,
+    decision: P::Decision,
+    account: InfluenceAccount,
+}
+
+impl<P: DecidePlane> SpineDisposition<P> {
+    /// Mint one site's decision record.
+    #[must_use]
+    pub const fn minted(
+        site: SiteId,
+        ast: AstId,
+        sh: String,
+        decision: P::Decision,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            site,
+            ast,
+            sh,
+            decision,
+            account,
+        }
+    }
+
     /// The fine site key (`inv-site-keyed-results`): `(leaf, member)`, never collapsed.
     ///
     /// AS POPULATED (`30Nd` meaning-audit): the member axis is `None` on every row today — the
     /// settlement decides per LEAF, and a member population arrives with the loop-propagation lane
     /// (`30N` §3's `pin-loop-types-need-no-rekey`). The key is fine-grained so that arrival is a
     /// widening rather than a re-key; it is not evidence that members are being distinguished yet.
-    pub site: SiteId,
+    #[must_use]
+    pub const fn site(&self) -> SiteId {
+        self.site
+    }
+
     /// The source back-map.
-    pub ast: AstId,
+    #[must_use]
+    pub const fn ast(&self) -> AstId {
+        self.ast
+    }
+
     /// The verbatim leaf bytes.
-    pub sh: String,
+    #[must_use]
+    pub fn sh(&self) -> &str {
+        &self.sh
+    }
+
     /// The license-bearing decision.
-    pub decision: P::Decision,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn decision(&self) -> &P::Decision {
+        &self.decision
+    }
+
+    fn demote(&mut self, decision: P::Decision, witness: InfluenceAccount) {
+        self.decision = decision;
+        self.account = self.account.join(witness);
+    }
+
+    fn reattach(&mut self, decision: P::Decision) {
+        self.decision = decision;
+    }
 }
 
 /// The decision digest over the identity plane (`22A` concl-3).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineDigest {
+    digest: String,
+    account: InfluenceAccount,
+}
+
+impl SpineDigest {
+    /// Mint the decision digest record.
+    #[must_use]
+    pub const fn minted(digest: String, account: InfluenceAccount) -> Self {
+        Self { digest, account }
+    }
+
     /// The 16-hex-char FNV-1a digest.
-    pub digest: String,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub fn digest(&self) -> &str {
+        &self.digest
+    }
 }
 
 /// A definition-plane decision: which body a role name binds to, and why a family was withheld.
@@ -411,21 +602,53 @@ pub struct SpineDigest {
 /// reaches no record at all, and [`withheld`](Self::withheld) is `Some` on every row that exists.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineLoadDecision {
+    name: String,
+    custody: Option<DefinitionCustody>,
+    withheld: Option<WithheldCause>,
+    account: InfluenceAccount,
+}
+
+impl SpineLoadDecision {
+    /// Mint one definition-plane decision.
+    #[must_use]
+    pub const fn minted(
+        name: String,
+        custody: Option<DefinitionCustody>,
+        withheld: Option<WithheldCause>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            name,
+            custody,
+            withheld,
+            account,
+        }
+    }
+
     /// What the withholding is keyed by, and it is NOT one kind of thing: the `Contested` arm
     /// carries a munged role-family base, while the `Unprovable` arm carries a synthetic
     /// `load@<ast-id>` locator for an unresolvable `.` — an unresolvable load has no name to blame.
     /// Display and provenance only; nothing keys a decision off it.
-    pub name: String,
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     /// Whose utterance the binding rests on. Compared, never read for its file id
     /// (`custody-is-one-newtype-and-one-crossing`).
     ///
     /// UNIVERSALLY `None` today — the custody column is the unbuilt half of this species
     /// (`30F` §4.5). Read it as "not recorded", never as "no custody".
-    pub custody: Option<DefinitionCustody>,
+    #[must_use]
+    pub const fn custody(&self) -> Option<DefinitionCustody> {
+        self.custody
+    }
+
     /// Why the family's licenses are withheld. `Some` on every recorded row, per the type doc.
-    pub withheld: Option<WithheldCause>,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn withheld(&self) -> Option<WithheldCause> {
+        self.withheld
+    }
 }
 
 /// Why a role family's licenses are withheld for a run.
@@ -445,23 +668,69 @@ pub enum WithheldCause {
 /// One site's classification outcome — the analysis tuple, as an account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineSiteClassification {
+    site: SiteId,
+    class: &'static str,
+    verdict_lane: bool,
+    invalidator: bool,
+    cells: OperandAccount<FactKey>,
+    account: InfluenceAccount,
+}
+
+impl SpineSiteClassification {
+    /// Mint one site's classification record.
+    #[must_use]
+    pub const fn minted(
+        site: SiteId,
+        class: &'static str,
+        verdict_lane: bool,
+        invalidator: bool,
+        cells: OperandAccount<FactKey>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            site,
+            class,
+            verdict_lane,
+            invalidator,
+            cells,
+            account,
+        }
+    }
+
     /// The fine site key.
-    pub site: SiteId,
+    #[must_use]
+    pub const fn site(&self) -> SiteId {
+        self.site
+    }
+
     /// The `SkipClass` discriminant name (referent-agnostic: a label, never branched on here).
-    pub class: &'static str,
+    #[must_use]
+    pub const fn class(&self) -> &'static str {
+        self.class
+    }
+
     /// Whether the site is verdict-lane (`verdict-lane-is-site-keyed`).
-    pub verdict_lane: bool,
+    #[must_use]
+    pub const fn verdict_lane(&self) -> bool {
+        self.verdict_lane
+    }
+
     /// Whether this LEAF gens into reach as an invalidator — leaf-scoped, the narrower truth on
     /// purpose. The effective set also holds non-leaves (a `$( … )` body command, a write-shaped
     /// redirection, an unmodeled construct — `classify-answers-with-its-invalidators`) which have
     /// no site to be keyed by, so a `false` here never means "nothing gens at this position".
     /// Widening the record to carry them is a representation question, not a fix.
-    pub invalidator: bool,
+    #[must_use]
+    pub const fn invalidator(&self) -> bool {
+        self.invalidator
+    }
+
     /// The cells this site's decision keys on, capped. For an aggregate that is its ORDERED member
     /// account, not a representative (`aggregate-mints-carry-the-same-demand`).
-    pub cells: OperandAccount<FactKey>,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn cells(&self) -> &OperandAccount<FactKey> {
+        &self.cells
+    }
 }
 
 /// One certification outcome (`plans/302`).
@@ -472,20 +741,52 @@ pub struct SpineSiteClassification {
 /// row means TODAY rather than what a per-pass row would.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineSolveCertification {
+    pass: &'static str,
+    consistent: bool,
+    tripped: bool,
+    account: InfluenceAccount,
+}
+
+impl SpineSolveCertification {
+    /// Mint one certification record.
+    #[must_use]
+    pub const fn minted(
+        pass: &'static str,
+        consistent: bool,
+        tripped: bool,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            pass,
+            consistent,
+            tripped,
+            account,
+        }
+    }
+
     /// What this row's answer is ABOUT. The one production value is `"whole-window"`; the per-pass
     /// vocabulary (value · funcenv · reach · self-reach) is where the pending direction would take
     /// it. Referent-agnostic: a label, never branched on.
-    pub pass: &'static str,
+    #[must_use]
+    pub const fn pass(&self) -> &'static str {
+        self.pass
+    }
+
     /// Whether the answer certified. `false` ⇒ the whole analysis window demoted to its floor.
     ///
     /// On a whole-window row this is exactly `!tripped` — one bit spelled twice. Under a per-pass
     /// row the two separate (a pass may certify on a spine that already tripped), which is why both
     /// fields exist rather than one.
-    pub consistent: bool,
+    #[must_use]
+    pub const fn consistent(&self) -> bool {
+        self.consistent
+    }
+
     /// Whether the monotone trip latch is set at this point.
-    pub tripped: bool,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn tripped(&self) -> bool {
+        self.tripped
+    }
 }
 
 /// A vouch's attachment or suspension at one site (`rul-vouch-is-verdict-authoring`).
@@ -495,31 +796,102 @@ pub struct SpineSolveCertification {
 /// has been recorded.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineVouch {
+    site: SiteId,
+    fact: FactKey,
+    custody: Option<DefinitionCustody>,
+    attached: bool,
+    account: InfluenceAccount,
+}
+
+impl SpineVouch {
+    /// Mint one vouch record.
+    #[must_use]
+    pub const fn minted(
+        site: SiteId,
+        fact: FactKey,
+        custody: Option<DefinitionCustody>,
+        attached: bool,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            site,
+            fact,
+            custody,
+            attached,
+            account,
+        }
+    }
+
     /// The fine site key.
-    pub site: SiteId,
+    #[must_use]
+    pub const fn site(&self) -> SiteId {
+        self.site
+    }
+
     /// The cell the vouch answers about.
-    pub fact: FactKey,
+    #[must_use]
+    pub const fn fact(&self) -> FactKey {
+        self.fact
+    }
+
     /// Whose utterance it is.
-    pub custody: Option<DefinitionCustody>,
+    #[must_use]
+    pub const fn custody(&self) -> Option<DefinitionCustody> {
+        self.custody
+    }
+
     /// `false` ⇒ suspended: the composition that will run is not the region its author vouched.
-    pub attached: bool,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn attached(&self) -> bool {
+        self.attached
+    }
 }
 
 /// Which body a probe site shipped, or why none could be (`ship-seam-reads-the-lane-not-the-kind`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineProbeShip {
+    site: SiteId,
+    lane: ShipLane,
+    defining_file: Option<SourceFileId>,
+    account: InfluenceAccount,
+}
+
+impl SpineProbeShip {
+    /// Mint one site's ship record.
+    #[must_use]
+    pub const fn minted(
+        site: SiteId,
+        lane: ShipLane,
+        defining_file: Option<SourceFileId>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            site,
+            lane,
+            defining_file,
+            account,
+        }
+    }
+
     /// The fine site key.
-    pub site: SiteId,
+    #[must_use]
+    pub const fn site(&self) -> SiteId {
+        self.site
+    }
+
     /// Which lane shipped.
-    pub lane: ShipLane,
+    #[must_use]
+    pub const fn lane(&self) -> ShipLane {
+        self.lane
+    }
+
     /// The defining file of the shipped body, for provenance and display only. `None` where the
     /// ship seat resolved no defining span, and always `None` on an [`ShipLane::Unresolvable`] row
     /// — nothing shipped, so there is no body to attribute.
-    pub defining_file: Option<SourceFileId>,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn defining_file(&self) -> Option<SourceFileId> {
+        self.defining_file
+    }
 }
 
 /// Which body a probe site shipped.
@@ -541,14 +913,39 @@ pub enum ShipLane {
 /// admission record at all rather than a `Refused` one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineAdmission {
+    outcome: AdmissionOutcome,
+    fault: Option<String>,
+    account: InfluenceAccount,
+}
+
+impl SpineAdmission {
+    /// Mint the intake-outcome record. Host-influenced once anything was read.
+    #[must_use]
+    pub const fn minted(
+        outcome: AdmissionOutcome,
+        fault: Option<String>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            outcome,
+            fault,
+            account,
+        }
+    }
+
     /// Which of the three the intake answered. `Refused` is representable and unreachable at the
     /// only writer, per the type doc.
-    pub outcome: AdmissionOutcome,
+    #[must_use]
+    pub const fn outcome(&self) -> AdmissionOutcome {
+        self.outcome
+    }
+
     /// The named condition on a refusal, for attribution. UNIVERSALLY `None`, because the arm that
     /// would carry one never reaches this record.
-    pub fault: Option<String>,
-    /// The grade at mint. Host-influenced once anything was read.
-    pub grade: Grade,
+    #[must_use]
+    pub fn fault(&self) -> Option<&str> {
+        self.fault.as_deref()
+    }
 }
 
 /// The three intake answers, which are never interchangeable.
@@ -568,16 +965,55 @@ pub enum AdmissionOutcome {
 /// so every field below describes an empty population.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineObservation {
+    site: SiteId,
+    fact: FactKey,
+    verdict: &'static str,
+    collapsed: bool,
+    account: InfluenceAccount,
+}
+
+impl SpineObservation {
+    /// Mint one site's observation record.
+    #[must_use]
+    pub const fn minted(
+        site: SiteId,
+        fact: FactKey,
+        verdict: &'static str,
+        collapsed: bool,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            site,
+            fact,
+            verdict,
+            collapsed,
+            account,
+        }
+    }
+
     /// The fine site key.
-    pub site: SiteId,
+    #[must_use]
+    pub const fn site(&self) -> SiteId {
+        self.site
+    }
+
     /// The cell measured.
-    pub fact: FactKey,
+    #[must_use]
+    pub const fn fact(&self) -> FactKey {
+        self.fact
+    }
+
     /// The Effect-channel verdict label (converged / diverged / unknown).
-    pub verdict: &'static str,
+    #[must_use]
+    pub const fn verdict(&self) -> &'static str {
+        self.verdict
+    }
+
     /// Whether the merge over same-cell measurements collapsed to ⊤.
-    pub collapsed: bool,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn collapsed(&self) -> bool {
+        self.collapsed
+    }
 }
 
 /// One round of the validity fixpoint (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`).
@@ -587,25 +1023,82 @@ pub struct SpineObservation {
 /// population.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineValidityRound {
+    round: u32,
+    erased: OperandAccount<SiteId>,
+    account: InfluenceAccount,
+}
+
+impl SpineValidityRound {
+    /// Mint one validity-round record.
+    #[must_use]
+    pub const fn minted(
+        round: u32,
+        erased: OperandAccount<SiteId>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            round,
+            erased,
+            account,
+        }
+    }
+
     /// The round ordinal, from 1.
-    pub round: u32,
+    #[must_use]
+    pub const fn round(&self) -> u32 {
+        self.round
+    }
+
     /// The sites this round proved dead and erased, capped.
-    pub erased: OperandAccount<SiteId>,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn erased(&self) -> &OperandAccount<SiteId> {
+        &self.erased
+    }
 }
 
 /// A survival-tier outcome at one site (`survive-license`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineSurvival {
+    leaf: LeafId,
+    outcome: SurvivalOutcome,
+    poisoned_by: Option<KindId>,
+    account: InfluenceAccount,
+}
+
+impl SpineSurvival {
+    /// Mint one survival-tier record.
+    #[must_use]
+    pub const fn minted(
+        leaf: LeafId,
+        outcome: SurvivalOutcome,
+        poisoned_by: Option<KindId>,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            leaf,
+            outcome,
+            poisoned_by,
+            account,
+        }
+    }
+
     /// The leaf whose elision was tested.
-    pub leaf: LeafId,
+    #[must_use]
+    pub const fn leaf(&self) -> LeafId {
+        self.leaf
+    }
+
     /// What the wall walk answered.
-    pub outcome: SurvivalOutcome,
+    #[must_use]
+    pub const fn outcome(&self) -> SurvivalOutcome {
+        self.outcome
+    }
+
     /// The reach-function kind that poisoned it, where one did.
-    pub poisoned_by: Option<KindId>,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn poisoned_by(&self) -> Option<KindId> {
+        self.poisoned_by
+    }
 }
 
 /// What the survival walk decided about one elision.
@@ -654,19 +1147,51 @@ pub enum SurvivalDemote {
 /// lets a projection be compared against what was actually decided.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineRenderDecision {
+    site: Option<SiteId>,
+    region: Option<crate::region::ElisionRegion>,
+    decision: RenderDecision,
+    account: InfluenceAccount,
+}
+
+impl SpineRenderDecision {
+    /// Mint one render-time decision record.
+    #[must_use]
+    pub const fn minted(
+        site: Option<SiteId>,
+        region: Option<crate::region::ElisionRegion>,
+        decision: RenderDecision,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            site,
+            region,
+            decision,
+            account,
+        }
+    }
+
     /// The site the decision belongs to, where it has one.
-    pub site: Option<SiteId>,
+    #[must_use]
+    pub const fn site(&self) -> Option<SiteId> {
+        self.site
+    }
+
     /// The authored REGION the decision belongs to, where it has one
     /// (`30N:rul-region-refusal-discloses-region-keyed`).
     ///
     /// A SECOND key axis rather than a widening of `site`, on `SpineRegionDecision`'s precedent: a
     /// region owns no execution, so a row that keyed it by a contributing invocation's `SiteId`
     /// would be the smearing the ruling forbids. At most one axis is populated on any row.
-    pub region: Option<crate::region::ElisionRegion>,
+    #[must_use]
+    pub const fn region(&self) -> Option<crate::region::ElisionRegion> {
+        self.region
+    }
+
     /// Which render-time decision this is.
-    pub decision: RenderDecision,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn decision(&self) -> &RenderDecision {
+        &self.decision
+    }
 }
 
 /// The audited render-time decisions (`30E` §3).
@@ -837,19 +1362,70 @@ impl RegionRoutes {
 /// executes.
 #[derive(Debug, Clone)]
 pub struct SpineRegionDecision<P: DecidePlane> {
+    region: crate::region::ElisionRegion,
+    ast: AstId,
+    sh: String,
+    decision: P::RegionDecision,
+    routes: RegionRoutes,
+    account: InfluenceAccount,
+}
+
+impl<P: DecidePlane> SpineRegionDecision<P> {
+    /// Mint one authored region's shared-decision record.
+    #[must_use]
+    pub const fn minted(
+        region: crate::region::ElisionRegion,
+        ast: AstId,
+        sh: String,
+        decision: P::RegionDecision,
+        routes: RegionRoutes,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            region,
+            ast,
+            sh,
+            decision,
+            routes,
+            account,
+        }
+    }
+
     /// The authored span all instances would edit.
-    pub region: crate::region::ElisionRegion,
+    #[must_use]
+    pub const fn region(&self) -> crate::region::ElisionRegion {
+        self.region
+    }
+
     /// The source back-map for that span.
-    pub ast: AstId,
+    #[must_use]
+    pub const fn ast(&self) -> AstId {
+        self.ast
+    }
+
     /// The verbatim region bytes.
-    pub sh: String,
+    #[must_use]
+    pub fn sh(&self) -> &str {
+        &self.sh
+    }
+
     /// The one shared, license-bearing decision.
-    pub decision: P::RegionDecision,
+    #[must_use]
+    pub const fn decision(&self) -> &P::RegionDecision {
+        &self.decision
+    }
+
     /// Which invocation each contributing route executes under, in census order — COMPLETE, with an
     /// unkeyable one retained under its typed reason rather than filtered away.
-    pub routes: RegionRoutes,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn routes(&self) -> &RegionRoutes {
+        &self.routes
+    }
+
+    fn demote(&mut self, decision: P::RegionDecision, witness: InfluenceAccount) {
+        self.decision = decision;
+        self.account = self.account.join(witness);
+    }
 }
 
 /// The run's outcome — authority-adjacent, because `EXIT_BOOK_UNMODELED` exists precisely so a
@@ -861,14 +1437,164 @@ pub struct SpineRegionDecision<P: DecidePlane> {
 /// refused before planning — the same question the admission species answers by absence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineOutcome {
+    outcome: &'static str,
+    advisory: bool,
+    durable_eligible: bool,
+    account: InfluenceAccount,
+}
+
+impl SpineOutcome {
+    /// Mint the run-outcome record.
+    #[must_use]
+    pub const fn minted(
+        outcome: &'static str,
+        advisory: bool,
+        durable_eligible: bool,
+        account: InfluenceAccount,
+    ) -> Self {
+        Self {
+            outcome,
+            advisory,
+            durable_eligible,
+            account,
+        }
+    }
+
     /// The outcome discriminant's name.
-    pub outcome: &'static str,
+    #[must_use]
+    pub const fn outcome(&self) -> &'static str {
+        self.outcome
+    }
+
     /// Whether advisory (render-plane) disclosure was routed for this run.
-    pub advisory: bool,
+    #[must_use]
+    pub const fn advisory(&self) -> bool {
+        self.advisory
+    }
+
     /// Whether the run was eligible to write a durable.
-    pub durable_eligible: bool,
-    /// The grade at mint.
-    pub grade: Grade,
+    #[must_use]
+    pub const fn durable_eligible(&self) -> bool {
+        self.durable_eligible
+    }
+}
+
+// ===========================================================================
+// The sealed carriage contract, one impl per species
+// ===========================================================================
+
+// Sixteen hand-written blocks rather than a macro (authored macros are banned): a new species is
+// covered by nothing generic, so it must be written here, beside the census that refuses it.
+impl sealed::Sealed for SpineInvocation {}
+impl InfluenceBearing for SpineInvocation {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl<P: DecidePlane> sealed::Sealed for SpineRecordStream<P> {}
+impl<P: DecidePlane> InfluenceBearing for SpineRecordStream<P> {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl<P: DecidePlane> sealed::Sealed for SpineDisposition<P> {}
+impl<P: DecidePlane> InfluenceBearing for SpineDisposition<P> {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineDigest {}
+impl InfluenceBearing for SpineDigest {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineLoadDecision {}
+impl InfluenceBearing for SpineLoadDecision {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineSiteClassification {}
+impl InfluenceBearing for SpineSiteClassification {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineSolveCertification {}
+impl InfluenceBearing for SpineSolveCertification {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineVouch {}
+impl InfluenceBearing for SpineVouch {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineProbeShip {}
+impl InfluenceBearing for SpineProbeShip {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineAdmission {}
+impl InfluenceBearing for SpineAdmission {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineObservation {}
+impl InfluenceBearing for SpineObservation {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineValidityRound {}
+impl InfluenceBearing for SpineValidityRound {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineSurvival {}
+impl InfluenceBearing for SpineSurvival {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineRenderDecision {}
+impl InfluenceBearing for SpineRenderDecision {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl<P: DecidePlane> sealed::Sealed for SpineRegionDecision<P> {}
+impl<P: DecidePlane> InfluenceBearing for SpineRegionDecision<P> {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
+}
+
+impl sealed::Sealed for SpineOutcome {}
+impl InfluenceBearing for SpineOutcome {
+    fn account(&self) -> InfluenceAccount {
+        self.account
+    }
 }
 
 // ===========================================================================
@@ -898,7 +1624,7 @@ pub struct Spine<P: DecidePlane> {
     region_decisions: Vec<SpineRegionDecision<P>>,
     outcome: Option<SpineOutcome>,
     narratives: Vec<P::Narrative>,
-    grade: Grade,
+    stamp: InfluenceAccount,
 }
 
 impl<P: DecidePlane> Default for Spine<P> {
@@ -921,7 +1647,7 @@ impl<P: DecidePlane> Default for Spine<P> {
             region_decisions: Vec::new(),
             outcome: None,
             narratives: Vec::new(),
-            grade: None,
+            stamp: InfluenceAccount::authored_before_contact(),
         }
     }
 }
@@ -933,30 +1659,31 @@ impl<P: DecidePlane> Spine<P> {
         Self::default()
     }
 
-    /// An empty Spine whose records are all minted at `grade` (`309` §2 grade-stamping).
+    /// An empty Spine whose records are all STAMPED with `account` (`309` §2 grade-stamping).
     ///
-    /// v0's flip is POSITIONAL and GLOBAL (`306c` §2): once host bytes are read, every code path
-    /// invoked after that point is within its scope, so the grade belongs to the Spine a run builds
-    /// rather than to the discipline of each mint site. Handing it in at construction is what makes
-    /// it unforgettable — there is no per-record decision to get wrong, and no widening a later mint
-    /// site could omit.
+    /// INTERIM, and being removed: `309:rul-spine-preserves-never-stamps` rules that Spine stores
+    /// the account each record's own semantic mint joined and never applies an object-global one.
+    /// This still overwrites, so the sealing lands with today's answers unchanged; the overwrite is
+    /// what goes next, and the two red cells
+    /// (`p-x-spine-record-keeps-its-mints-account`, `p-x-region-account-reaches-the-spine-record`)
+    /// are what say so.
     #[must_use]
-    pub fn minted_at(grade: Grade) -> Self {
+    pub fn minted_at(account: InfluenceAccount) -> Self {
         Self {
-            grade,
+            stamp: account,
             ..Self::default()
         }
     }
 
-    /// The grade every record on this Spine carries.
+    /// The account this Spine stamps over every record it stores. INTERIM, with `minted_at`.
     #[must_use]
-    pub const fn grade(&self) -> Grade {
-        self.grade
+    pub const fn stamp(&self) -> InfluenceAccount {
+        self.stamp
     }
 
     /// Write the invocation record.
     pub fn set_invocation(&mut self, mut record: SpineInvocation) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.invocation = Some(record);
     }
 
@@ -968,7 +1695,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write the admitted record stream.
     pub fn set_record_stream(&mut self, mut record: SpineRecordStream<P>) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.record_stream = Some(record);
     }
 
@@ -980,7 +1707,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write one site's licensed decision.
     pub fn set_disposition(&mut self, mut record: SpineDisposition<P>) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.dispositions.insert(record.site, record);
     }
 
@@ -995,20 +1722,54 @@ impl<P: DecidePlane> Spine<P> {
         self.dispositions.get(&site)
     }
 
-    /// Mutable access to one site's decision — for the post-construction demotions the render and
-    /// the certifier-trip cleanup perform, which are Spine writes like any other.
-    pub fn disposition_mut(&mut self, site: SiteId) -> Option<&mut SpineDisposition<P>> {
-        self.dispositions.get_mut(&site)
+    /// DEMOTE every site decision `stands` refuses, re-minting each demoted record's account as
+    /// the join of the demotion's `witness` and what the record already carried. Answers the
+    /// demoted sites, in site order.
+    ///
+    /// A named act rather than a `&mut` accessor (`tc-spine-record-mut-accessors-survive`, ruled):
+    /// a post-construction rewrite IS a new semantic mint, whose inputs are the witness and the
+    /// original record, so its account is the JOIN of both — never a reset, and never a
+    /// pass-through that ignores the witness. Handing out `&mut` made "join, don't reset" a rule a
+    /// caller had to remember; this makes the join the only thing a caller CAN do. At v0 both
+    /// operands carry the same value and the join is a no-op — the SHAPE is what lands.
+    pub fn demote_dispositions(
+        &mut self,
+        witness: InfluenceAccount,
+        stands: impl Fn(&P::Decision) -> bool,
+        demoted: &P::Decision,
+    ) -> Vec<SiteId> {
+        let mut sites = Vec::new();
+        for record in self.dispositions.values_mut() {
+            if stands(&record.decision) {
+                continue;
+            }
+            record.demote(demoted.clone(), witness);
+            sites.push(record.site);
+        }
+        sites
     }
 
-    /// Every site decision, mutably, in site order — for a whole-plan demotion sweep.
-    pub fn dispositions_mut(&mut self) -> impl Iterator<Item = &mut SpineDisposition<P>> {
-        self.dispositions.values_mut()
+    /// Rewrite every site decision through `attach`, leaving every account UNTOUCHED.
+    ///
+    /// `fnd-provenance-attach-raises-nothing`: the one caller attaches EXEMPT output-only probe
+    /// provenance for the very fact the license already decided on, so a `Replace`/`Guard` record's
+    /// account absorbed that measurement at its own mint and the `Run`/`Omit` arms are no-ops.
+    /// Stated as a property rather than defended by a re-join — a join here would claim a new input
+    /// where there is none, which is its own kind of dishonesty about what a record read.
+    pub fn reattach_dispositions(
+        &mut self,
+        mut attach: impl FnMut(AstId, P::Decision) -> P::Decision,
+    ) {
+        for record in self.dispositions.values_mut() {
+            let ast = record.ast;
+            let decision = attach(ast, record.decision.clone());
+            record.reattach(decision);
+        }
     }
 
     /// Write the decision digest.
     pub fn set_digest(&mut self, mut record: SpineDigest) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.digest = Some(record);
     }
 
@@ -1020,7 +1781,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write the intake outcome.
     pub fn set_admission(&mut self, mut record: SpineAdmission) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.admission = Some(record);
     }
 
@@ -1032,7 +1793,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write the run outcome.
     pub fn set_outcome(&mut self, mut record: SpineOutcome) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.outcome = Some(record);
     }
 
@@ -1044,7 +1805,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Append a load-plane decision.
     pub fn push_load_decision(&mut self, mut record: SpineLoadDecision) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.load_decisions.push(record);
     }
 
@@ -1056,7 +1817,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write one site's classification.
     pub fn set_classification(&mut self, mut record: SpineSiteClassification) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.classifications.insert(record.site, record);
     }
 
@@ -1067,7 +1828,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Append a solve certification.
     pub fn push_certification(&mut self, mut record: SpineSolveCertification) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.certifications.push(record);
     }
 
@@ -1079,7 +1840,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Append a vouch record.
     pub fn push_vouch(&mut self, mut record: SpineVouch) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.vouches.push(record);
     }
 
@@ -1091,7 +1852,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write one site's ship decision.
     pub fn set_ship(&mut self, mut record: SpineProbeShip) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.ships.insert(record.site, record);
     }
 
@@ -1102,7 +1863,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Write one site's observation.
     pub fn set_observation(&mut self, mut record: SpineObservation) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.observations.insert(record.site, record);
     }
 
@@ -1113,7 +1874,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Append a validity round.
     pub fn push_round(&mut self, mut record: SpineValidityRound) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.rounds.push(record);
     }
 
@@ -1125,7 +1886,7 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Append a survival outcome.
     pub fn push_survival(&mut self, mut record: SpineSurvival) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.survivals.push(record);
     }
 
@@ -1137,13 +1898,13 @@ impl<P: DecidePlane> Spine<P> {
 
     /// Append a render-time decision.
     pub fn push_render_decision(&mut self, mut record: SpineRenderDecision) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.render_decisions.push(record);
     }
 
     /// Append one authored region's shared decision.
     pub fn push_region_decision(&mut self, mut record: SpineRegionDecision<P>) {
-        record.grade = self.grade;
+        record.account = self.stamp;
         self.region_decisions.push(record);
     }
 
@@ -1153,10 +1914,25 @@ impl<P: DecidePlane> Spine<P> {
         &self.region_decisions
     }
 
-    /// One region's shared decision, mutably — for the post-construction demotions the
-    /// certifier-trip cleanup performs, which are Spine writes like any other.
-    pub fn region_decisions_mut(&mut self) -> impl Iterator<Item = &mut SpineRegionDecision<P>> {
-        self.region_decisions.iter_mut()
+    /// DEMOTE every shared region decision `stands` refuses, on exactly
+    /// [`demote_dispositions`](Self::demote_dispositions)'s terms. Answers the demoted regions'
+    /// contributing routes, in census order — the identity their narration keys by, since a region
+    /// owns no leaf of its own.
+    pub fn demote_region_decisions(
+        &mut self,
+        witness: InfluenceAccount,
+        stands: impl Fn(&P::RegionDecision) -> bool,
+        demoted: &P::RegionDecision,
+    ) -> Vec<RegionRoutes> {
+        let mut routes = Vec::new();
+        for record in &mut self.region_decisions {
+            if stands(&record.decision) {
+                continue;
+            }
+            record.demote(demoted.clone(), witness);
+            routes.push(record.routes.clone());
+        }
+        routes
     }
 
     /// The render-time decisions, in mint order.
@@ -1205,15 +1981,7 @@ impl<P: DecidePlane> Spine<P> {
         use std::fmt::Write as _;
 
         let mut out = String::new();
-        let _ = writeln!(
-            out,
-            "dorc-spine-new-arm grade={}",
-            if self.grade.is_some() {
-                "host-influenced"
-            } else {
-                "authored-before-contact"
-            }
-        );
+        let _ = writeln!(out, "dorc-spine-new-arm stamp={}", self.stamp.label());
         for species in SpineSpecies::ALL {
             if species.census_arm() != CensusArm::New {
                 continue;
@@ -1396,13 +2164,13 @@ mod tests {
         let mut spine = Spine::<TestPlane>::new();
         let leaf = LeafId(3);
         for member in [None, Some(0), Some(1)] {
-            spine.set_disposition(SpineDisposition {
-                site: SiteId { leaf, member },
-                ast: AstId(9),
-                sh: String::from("apt-get install nginx"),
-                decision: "Run",
-                grade: None,
-            });
+            spine.set_disposition(SpineDisposition::minted(
+                SiteId { leaf, member },
+                AstId(9),
+                String::from("apt-get install nginx"),
+                "Run",
+                InfluenceAccount::authored_before_contact(),
+            ));
         }
         assert_eq!(spine.population(SpineSpecies::Disposition), 3);
         assert!(
@@ -1417,32 +2185,62 @@ mod tests {
 
     #[test]
     fn the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it() {
-        // `309` §2 / `306c` §2: v0's flip is positional and global, so the grade belongs to the
-        // Spine a run builds. A mint site passing `None` — which every one of them does — still
-        // lands host-influenced on an influenced Spine, which is the property that makes a NEW mint
-        // site correct by construction rather than by review.
+        // `309` §2 / `306c` §2, INTERIM: v0's flip is positional and global, so today the account
+        // belongs to the Spine a run builds and the setter overwrites whatever a mint supplied.
+        // That is exactly the behaviour `309:rul-spine-preserves-never-stamps` forbids and
+        // `p-x-spine-record-keeps-its-mints-account` pins red; this test records what the sealing
+        // step deliberately did NOT move, and is rewritten into its opposite when the stamp goes.
         let phase =
             crate::influence::Influenced::<crate::influence::HostReported, ()>::host_reported(())
                 .widen();
-        let mut spine = Spine::<TestPlane>::minted_at(Some(phase));
-        spine.set_disposition(SpineDisposition {
-            site: SiteId::leaf(LeafId(0)),
-            ast: AstId(0),
-            sh: String::new(),
-            decision: "Run",
-            grade: None,
-        });
+        let mut spine = Spine::<TestPlane>::minted_at(InfluenceAccount::of_phase(phase));
+        spine.set_disposition(SpineDisposition::minted(
+            SiteId::leaf(LeafId(0)),
+            AstId(0),
+            String::new(),
+            "Run",
+            InfluenceAccount::authored_before_contact(),
+        ));
         assert_eq!(
             spine
                 .disposition(SiteId::leaf(LeafId(0)))
-                .and_then(|record| record.grade),
-            Some(phase),
+                .map(InfluenceBearing::account),
+            Some(InfluenceAccount::of_phase(phase)),
             "the record wears the Spine's grade, not the one its mint site typed"
         );
         assert_eq!(
-            Spine::<TestPlane>::new().grade(),
-            None,
+            Spine::<TestPlane>::new().stamp(),
+            InfluenceAccount::authored_before_contact(),
             "an intakeless Spine stays authored-before-contact"
+        );
+    }
+
+    #[test]
+    fn every_species_declares_how_its_writer_reaches_an_account() {
+        // `306b:rul-consequential-sinks-require-influence`'s consumer half. Carrying an account and
+        // having DERIVED one are different properties: the sealed trait forces the first, and this
+        // census is what forces a new species to answer the second. The counts are the tripwire —
+        // a species sliding from `Joined` to `UntrackedAdapter` is a staged hole somebody chose,
+        // and it shows up here as a diff rather than as silence.
+        let mut counts = [0usize; 3];
+        for species in SpineSpecies::ALL {
+            let index = AccountCarriage::ALL
+                .iter()
+                .position(|arm| *arm == species.account_carriage())
+                .expect("the carriage census is closed over `AccountCarriage::ALL`");
+            counts[index] += 1;
+        }
+        assert_eq!(
+            counts[0], 12,
+            "every species with a writer joins its inputs' accounts"
+        );
+        assert_eq!(
+            counts[1], 0,
+            "no writer carries an untracked adapter; growth here is the staging debt"
+        );
+        assert_eq!(
+            counts[2], 4,
+            "`30F` §4.5 + `30Nd`: vouch, observation, validity-round and outcome have no writer"
         );
     }
 

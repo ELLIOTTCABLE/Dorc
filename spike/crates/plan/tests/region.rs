@@ -17,7 +17,7 @@
 use std::collections::BTreeSet;
 
 use dorc_analysis::cfg::build;
-use dorc_core::influence::Influenced;
+use dorc_core::influence::{InfluenceAccount, Influenced};
 use dorc_core::region::{ElisionRegion, RegionUniverse};
 use dorc_core::{AstId, EntityRef, FactKey, Interner, KindId, SelectorId, SourceFileId};
 use dorc_plan::StandIn;
@@ -136,7 +136,7 @@ fn proofs_of(
             RouteRegionProof::new(
                 *route,
                 RouteAdmission::project(conclusion, guard.clone()),
-                None,
+                InfluenceAccount::authored_before_contact(),
             )
         })
         .collect()
@@ -780,7 +780,7 @@ fn divergent_routes_share_one_parametric_guard() {
                 &RouteConclusion::Replace(StandIn::True),
                 Some(SharedGuard::of(parametric.to_owned())),
             ),
-            None,
+            InfluenceAccount::authored_before_contact(),
         ),
         RouteRegionProof::new(
             routes[1],
@@ -788,7 +788,7 @@ fn divergent_routes_share_one_parametric_guard() {
                 &RouteConclusion::Run,
                 Some(SharedGuard::of(parametric.to_owned())),
             ),
-            None,
+            InfluenceAccount::authored_before_contact(),
         ),
     ];
     assert!(
@@ -858,18 +858,18 @@ fn one_influenced_route_influences_the_shared_decision() {
         RouteRegionProof::new(
             routes[0],
             RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
-            None,
+            InfluenceAccount::authored_before_contact(),
         ),
         RouteRegionProof::new(
             routes[1],
             RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
-            Some(influenced),
+            InfluenceAccount::of_phase(influenced),
         ),
     ];
     assert!(
         decide_region(region, &population, &proofs)
-            .influence()
-            .is_some(),
+            .account()
+            .is_influenced(),
         "the uninfluenced route did not cleanse its influenced sibling"
     );
 }
@@ -895,15 +895,23 @@ fn the_shared_account_does_not_depend_on_which_route_carries_influence() {
             RouteRegionProof::new(
                 routes[0],
                 RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
-                head.then_some(influenced),
+                if head {
+                    InfluenceAccount::of_phase(influenced)
+                } else {
+                    InfluenceAccount::authored_before_contact()
+                },
             ),
             RouteRegionProof::new(
                 routes[1],
                 RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
-                (!head).then_some(influenced),
+                if head {
+                    InfluenceAccount::authored_before_contact()
+                } else {
+                    InfluenceAccount::of_phase(influenced)
+                },
             ),
         ];
-        decide_region(region, &population, &proofs).influence()
+        decide_region(region, &population, &proofs).account()
     };
     assert_eq!(
         decided(true),
@@ -939,10 +947,10 @@ fn an_open_population_does_not_read_as_authored_before_contact() {
             alone(RouteConclusion::Replace(StandIn::True)),
         ],
     );
-    let account = decide_region(region, &RoutePopulation::Open, &proofs).influence();
+    let account = decide_region(region, &RoutePopulation::Open, &proofs).account();
     internal_tooling::xfail::xfail_until("p-x-unenumerated-population-is-not-authored", || {
         assert!(
-            account.is_some(),
+            account.is_influenced(),
             "an unenumerated population's influence is unknown, never absent"
         );
     });

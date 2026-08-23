@@ -235,7 +235,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &mut arena,
         &mut trip,
         // No intake: the net drives a modeled host.
-        None,
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
     dorc_plan::certifier_trip::project_censusless(
         &mut spine,
@@ -243,6 +243,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &parsed.value,
         trip,
         &dorc_plan::PlanAuthority::without_intake(),
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     )
 }
 

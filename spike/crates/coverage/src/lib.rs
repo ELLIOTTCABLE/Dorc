@@ -659,7 +659,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &mut arena,
         &mut trip,
         // No intake: the dashboard analyses the unmeasured world.
-        None,
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
     let plan = dorc_plan::certifier_trip::project_censusless(
         &mut spine,
@@ -667,6 +667,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &parsed.value,
         trip,
         &dorc_plan::PlanAuthority::without_intake(),
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
 
     // classify yields CfgNodeId→SkipClass; the plan keys by AstId. Bridge via AstId.

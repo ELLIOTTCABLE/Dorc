@@ -106,41 +106,31 @@ impl TripCleanup {
 /// mutations un-run than any single site could (`30Md:fnd-discarded-trip-retains-elisions`, at the
 /// region grain). Its narration keys by the contributing routes' invocation leaves, since a region
 /// owns no leaf of its own.
-pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -> TripCleanup {
+pub fn demote_on_trip(
+    spine: &mut Spine,
+    census_unique: impl Fn(&str) -> bool,
+    witness: dorc_core::influence::InfluenceAccount,
+) -> TripCleanup {
     let mut out = TripCleanup::default();
-    let mut demoted_sites = Vec::new();
-    for record in spine.dispositions_mut() {
-        let stands = match &record.decision {
-            Disposition::Run => true,
-            Disposition::Guard(license) => census_unique(license.insert().fn_name()),
-            Disposition::Replace(..) | Disposition::Omit { .. } => false,
-        };
-        if stands {
-            continue;
-        }
-        record.decision = Disposition::Run;
+    let stands = |decision: &Disposition| match decision {
+        Disposition::Run => true,
+        Disposition::Guard(license) => census_unique(license.insert().fn_name()),
+        Disposition::Replace(..) | Disposition::Omit { .. } => false,
+    };
+    let demoted_sites = spine.demote_dispositions(witness, &stands, &Disposition::Run);
+    for site in &demoted_sites {
         out.demoted = out.demoted.saturating_add(1);
-        demoted_sites.push(record.site);
         out.narrative.push(CollapseNarrative::new(
             SpeechAct::Derived,
             CollapseKind::Demotion {
-                site: dorc_aid::diag::SiteId::leaf(record.site.leaf),
+                site: dorc_aid::diag::SiteId::leaf(site.leaf),
                 reason: DemoteTag::CertifierTripped,
             },
         ));
     }
-    for record in spine.region_decisions_mut() {
-        let stands = match &record.decision {
-            Disposition::Run => true,
-            Disposition::Guard(license) => census_unique(license.insert().fn_name()),
-            Disposition::Replace(..) | Disposition::Omit { .. } => false,
-        };
-        if stands {
-            continue;
-        }
-        record.decision = Disposition::Run;
+    for routes in spine.demote_region_decisions(witness, &stands, &Disposition::Run) {
         out.demoted = out.demoted.saturating_add(1);
-        for route in record.routes.keyed() {
+        for route in routes.keyed() {
             out.narrative.push(CollapseNarrative::new(
                 SpeechAct::Derived,
                 CollapseKind::Demotion {
@@ -156,12 +146,12 @@ pub fn demote_on_trip(spine: &mut Spine, census_unique: impl Fn(&str) -> bool) -
     // projection is through `spend_certifier_trip`'s `TripSpent`
     // (`30M:rec-dissolve-trip-must-remember-structurally`).
     for site in demoted_sites {
-        spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
-            site: Some(site),
-            region: None,
-            decision: dorc_core::spine::RenderDecision::CertifierTripDemote,
-            grade: None,
-        });
+        spine.push_render_decision(dorc_core::spine::SpineRenderDecision::minted(
+            Some(site),
+            None,
+            dorc_core::spine::RenderDecision::CertifierTripDemote,
+            witness,
+        ));
     }
     out
 }
@@ -177,9 +167,10 @@ pub fn spend_certifier_trip(
     spine: &mut Spine,
     trip: CertifierTrip,
     census_unique: impl Fn(&str) -> bool,
+    witness: dorc_core::influence::InfluenceAccount,
 ) -> (TripCleanup, TripSpent) {
     let cleanup = if trip.tripped() {
-        demote_on_trip(spine, census_unique)
+        demote_on_trip(spine, census_unique, witness)
     } else {
         TripCleanup::default()
     };
@@ -206,8 +197,9 @@ pub fn project_censusless(
     ast: &dorc_syntax::ast::Ast,
     trip: CertifierTrip,
     authority: &PlanAuthority,
+    witness: dorc_core::influence::InfluenceAccount,
 ) -> Plan {
-    let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false);
+    let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false, witness);
     crate::project_plan(spine, src, ast, crate::NO_ARTIFACT_FORM, authority, &spent)
 }
 
@@ -216,6 +208,7 @@ mod tests {
     use dorc_analysis::certify::{CertifierTrip, certify_solution};
     use dorc_analysis::lattice::Flat;
     use dorc_analysis::solve::{Direction, Graph, Solution};
+    use dorc_core::influence::InfluenceAccount;
     use dorc_core::{
         AstId, ByVouch, EntityRef, FactKey, Interner, KindId, LeafId, Observable, OpaqueToken,
         ProviderId, Rung, SelectorId, SourceFileId, Verdict,
@@ -416,13 +409,13 @@ apt_get__predict() {
     fn spine_of(steps: Vec<Step>) -> Spine {
         let mut spine = Spine::new();
         for step in steps {
-            spine.set_disposition(dorc_core::spine::SpineDisposition {
-                site: dorc_core::SiteId::leaf(step.leaf),
-                ast: step.ast,
-                sh: step.sh,
-                decision: step.disposition,
-                grade: None,
-            });
+            spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+                dorc_core::SiteId::leaf(step.leaf),
+                step.ast,
+                step.sh,
+                step.disposition,
+                InfluenceAccount::authored_before_contact(),
+            ));
         }
         spine
     }
@@ -434,7 +427,12 @@ apt_get__predict() {
     /// The projected plan, which is what every consumer of the cleanup actually reads. The latch
     /// is a parameter because it MUST be: there is no projection without one.
     fn projected(spine: &mut Spine, trip: CertifierTrip) -> Plan {
-        let (_, spent) = super::spend_certifier_trip(spine, trip, |_| true);
+        let (_, spent) = super::spend_certifier_trip(
+            spine,
+            trip,
+            |_| true,
+            InfluenceAccount::authored_before_contact(),
+        );
         project(spine, &spent)
     }
 
@@ -476,8 +474,8 @@ apt_get__predict() {
             panic!("the fixture must really carry a licensed replacement");
         };
         let mut spine = Spine::new();
-        spine.push_region_decision(dorc_core::spine::SpineRegionDecision {
-            region: dorc_core::region::ElisionRegion::mint(
+        spine.push_region_decision(dorc_core::spine::SpineRegionDecision::minted(
+            dorc_core::region::ElisionRegion::mint(
                 &dorc_core::region::RegionUniverse::of_book_custody_files([SourceFileId(0)]),
                 dorc_core::DefinitionId::at(
                     SourceFileId(0),
@@ -486,20 +484,25 @@ apt_get__predict() {
                 dorc_core::Span::new(dorc_core::BytePos(4), dorc_core::BytePos(24)),
             )
             .expect("the book surface admits the region"),
-            ast: AstId(1),
-            sh: "apt-get install -y nginx".to_string(),
-            decision: Disposition::Replace(license, stand_in),
-            routes: dorc_core::spine::RegionRoutes::of(
+            AstId(1),
+            "apt-get install -y nginx".to_string(),
+            Disposition::Replace(license, stand_in),
+            dorc_core::spine::RegionRoutes::of(
                 vec![dorc_core::spine::RegionRoute {
                     invocation: dorc_core::SiteId::leaf(LeafId(7)),
                     ast: AstId(9),
                 }],
                 Vec::new(),
             ),
-            grade: None,
-        });
+            InfluenceAccount::authored_before_contact(),
+        ));
 
-        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| true);
+        let (cleanup, spent) = super::spend_certifier_trip(
+            &mut spine,
+            a_real_trip(),
+            |_| true,
+            InfluenceAccount::authored_before_contact(),
+        );
         let plan = project(&mut spine, &spent);
 
         assert!(
@@ -536,7 +539,12 @@ apt_get__predict() {
         let before = steps.len();
         let mut spine = spine_of(steps);
 
-        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| true);
+        let (cleanup, spent) = super::spend_certifier_trip(
+            &mut spine,
+            a_real_trip(),
+            |_| true,
+            InfluenceAccount::authored_before_contact(),
+        );
         let plan = project(&mut spine, &spent);
 
         assert_eq!(
@@ -585,6 +593,7 @@ apt_get__predict() {
             &ast,
             a_real_trip(),
             &authority,
+            InfluenceAccount::authored_before_contact(),
         );
         let clean = super::project_censusless(
             &mut clean_spine,
@@ -592,6 +601,7 @@ apt_get__predict() {
             &ast,
             a_real_clean_latch(),
             &authority,
+            InfluenceAccount::authored_before_contact(),
         );
 
         assert!(
@@ -697,9 +707,12 @@ apt_get__predict() {
             guard_step(1, "ufw__is_converged"),
         ]);
 
-        let (cleanup, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |fn_name| {
-            fn_name == "apt_get__is_converged"
-        });
+        let (cleanup, spent) = super::spend_certifier_trip(
+            &mut spine,
+            a_real_trip(),
+            |fn_name| fn_name == "apt_get__is_converged",
+            InfluenceAccount::authored_before_contact(),
+        );
         let plan = project(&mut spine, &spent);
 
         assert!(
@@ -720,7 +733,12 @@ apt_get__predict() {
     fn a_censusless_caller_demotes_guards_wholesale() {
         let mut spine = spine_of(vec![guard_step(0, "apt_get__is_converged")]);
 
-        let (_, spent) = super::spend_certifier_trip(&mut spine, a_real_trip(), |_| false);
+        let (_, spent) = super::spend_certifier_trip(
+            &mut spine,
+            a_real_trip(),
+            |_| false,
+            InfluenceAccount::authored_before_contact(),
+        );
         let plan = project(&mut spine, &spent);
 
         assert!(matches!(plan.steps()[0].disposition, Disposition::Run));

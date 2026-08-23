@@ -1818,6 +1818,10 @@ fn run(
             }
         };
     let _scope = scoped_results.scope();
+    // The run's own account, read ONCE at the driver seat that holds the carrier: everything below
+    // this line is downstream of the intake, so every record it mints joins from here rather than
+    // re-deriving where the run stands (`fnd-two-drivers-compute-one-fact-twice`).
+    let world_account = scoped_results.account();
     let results = scoped_results.results();
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
@@ -1973,7 +1977,7 @@ fn run(
         regions: &regions,
         // `309` §2 grade-stamping: this settlement is downstream of the intake, so every record it
         // writes is host-influenced. Carried by construction, not by each mint site remembering.
-        minted_at: Some(scoped_results.influence()),
+        minted_at: world_account,
     };
     // The ledger holds CFG SITES (leaves and non-leaves alike) and grows by at least one per
     // non-quiescent round, so the bound is the node count plus the settling round. The leaf count
@@ -2059,22 +2063,22 @@ fn run(
     // asymmetry is the point — a lexical scan for the vectors that bind a name in THIS shell
     // (`eval` · `alias` · a computed command word), plus the environment's own unresolvable loads.
     // Never any-⊤: an unmodeled command is an external binary and cannot define a function here.
-    spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
-        site: None,
-        region: None,
-        decision: dorc_core::spine::RenderDecision::DefensiveEmission {
+    spine.push_render_decision(dorc_core::spine::SpineRenderDecision::minted(
+        None,
+        None,
+        dorc_core::spine::RenderDecision::DefensiveEmission {
             defensive: !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
                 || !env.unresolvable_loads().is_empty(),
         },
-        grade: None,
-    });
+        world_account,
+    ));
     // `302:rul-certifier-trip-guard-only` — THE TERMINAL CLEANUP. Sited here, at the one moment
     // the whole Spine exists and before anything projects it, so the digest, the why report, the
     // summary and the artifact all describe the SAME decisions. Nothing between here and the
     // projection touches a disposition, so "immediately before plan-emission" and "immediately
     // after plan-construction" are the same seat, and only this one keeps every consumer honest.
     let (trip_diags, trip_narrative, spent) =
-        demote_on_certifier_trip(&mut spine, trip, &definitions);
+        demote_on_certifier_trip(&mut spine, trip, &definitions, world_account);
     report("solve", book_source, &trip_diags);
     // THE projection (`309` §0): every product below reads this derived `Plan`, never a second
     // assembly, and it exists at all only because the intake handed this run an authority and the
@@ -2103,6 +2107,7 @@ fn run(
             .map(|step| (step.ast, step.leaf))
             .collect::<Vec<_>>(),
         admitted_records.is_some(),
+        world_account,
     );
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `unresolvable-no-probe` comment lands
@@ -2402,6 +2407,7 @@ fn run(
             clock.now(),
             results,
             records,
+            world_account,
         );
         // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
         // decided at one seat, per species, and what it drops is countable there too.
@@ -2792,70 +2798,71 @@ fn record_new_arm(
     verdict_lane: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::Measurement>,
     spine_leaves: &[(dorc_core::AstId, dorc_core::LeafId)],
     admitted: bool,
+    world_account: dorc_core::influence::InfluenceAccount,
 ) {
     use dorc_core::spine::{
         AdmissionOutcome, ShipLane, SpineAdmission, SpineLoadDecision, SpineProbeShip,
         SpineSiteClassification, SpineSolveCertification, WithheldCause,
     };
 
-    spine.set_admission(SpineAdmission {
+    spine.set_admission(SpineAdmission::minted(
         // The refusal arm returned long before here, so the only two states this seat can be in are
         // the two that carry authority (`Authorised`).
-        outcome: if admitted {
+        if admitted {
             AdmissionOutcome::Admitted
         } else {
             AdmissionOutcome::NoObservation
         },
-        fault: None,
-        grade: None,
-    });
+        None,
+        world_account,
+    ));
     // ONE whole-window row, not four per-pass ones: the trip latch is monotone across every pass
     // (`certifier-trip-is-a-monotone-latch`), so what this run can honestly state is the window's
     // verdict. Per-pass consistency lives in the in-memory `SolveConsistency` and is a later record.
-    spine.push_certification(SpineSolveCertification {
-        pass: "whole-window",
-        consistent: !trip.tripped(),
-        tripped: trip.tripped(),
-        grade: None,
-    });
+    spine.push_certification(SpineSolveCertification::minted(
+        "whole-window",
+        !trip.tripped(),
+        trip.tripped(),
+        world_account,
+    ));
     for name in contested.families() {
-        spine.push_load_decision(SpineLoadDecision {
-            name: name.to_owned(),
-            custody: None,
-            withheld: Some(WithheldCause::Contested),
-            grade: None,
-        });
+        spine.push_load_decision(SpineLoadDecision::minted(
+            name.to_owned(),
+            None,
+            Some(WithheldCause::Contested),
+            world_account,
+        ));
     }
     for node in env.unresolvable_loads() {
-        spine.push_load_decision(SpineLoadDecision {
-            name: format!("load@{}", cfg.node(*node).ast.0),
-            custody: None,
-            withheld: Some(WithheldCause::Unprovable),
-            grade: None,
-        });
+        spine.push_load_decision(SpineLoadDecision::minted(
+            format!("load@{}", cfg.node(*node).ast.0),
+            None,
+            Some(WithheldCause::Unprovable),
+            world_account,
+        ));
     }
     for check in &probe.checks {
-        spine.set_ship(SpineProbeShip {
-            site: dorc_core::SiteId {
+        spine.set_ship(SpineProbeShip::minted(
+            dorc_core::SiteId {
                 leaf: check.site,
                 member: check.member,
             },
-            lane: if check.verdict {
+            if check.verdict {
                 ShipLane::Verdict
             } else {
                 ShipLane::Predict
             },
-            defining_file: check.defining_span.map(|(_, file)| file),
-            grade: None,
-        });
+            check.defining_span.map(|(_, file)| file),
+            world_account,
+        ));
     }
     for leaf in &probe.unresolvable {
-        spine.set_ship(SpineProbeShip {
-            site: dorc_core::SiteId::leaf(*leaf),
-            lane: ShipLane::Unresolvable,
-            defining_file: None,
-            grade: None,
-        });
+        spine.set_ship(SpineProbeShip::minted(
+            dorc_core::SiteId::leaf(*leaf),
+            ShipLane::Unresolvable,
+            None,
+            world_account,
+        ));
     }
     // A classification is CFG-node-keyed while the decision plane is SITE-keyed, and the two spaces
     // are unrelated integers — reading one as the other would key a record to somebody else's site,
@@ -2868,16 +2875,16 @@ fn record_new_arm(
         let Some(leaf) = leaf_of.get(&cfg.node(*node).ast).copied() else {
             continue;
         };
-        spine.set_classification(SpineSiteClassification {
-            site: dorc_core::SiteId::leaf(leaf),
-            class: class_label(class),
-            verdict_lane: verdict_lane.contains_key(node),
+        spine.set_classification(SpineSiteClassification::minted(
+            dorc_core::SiteId::leaf(leaf),
+            class_label(class),
+            verdict_lane.contains_key(node),
             // The REAL invalidator set (`classify-answers-with-its-invalidators`): `kills` alone
             // read false for every ordinary establish and every opaque leaf.
-            invalidator: invalidators.contains(node),
-            cells: dorc_core::spine::OperandAccount::capped(class_cells(class)),
-            grade: None,
-        });
+            invalidators.contains(node),
+            dorc_core::spine::OperandAccount::capped(class_cells(class)),
+            world_account,
+        ));
     }
 }
 
@@ -2936,15 +2943,16 @@ fn record_durable_arm(
     started_at: Option<dorc_core::RunInstant>,
     results: &SiteResults,
     records: dorc_plan::records::AdmittedUnscopedHostRecords,
+    world_account: dorc_core::influence::InfluenceAccount,
 ) {
-    spine.set_invocation(dorc_core::spine::SpineInvocation {
-        mode: "whylog-replay".to_owned(),
-        argv: std::env::args().collect(),
-        book: dorc_core::spine::SourceClaim {
+    spine.set_invocation(dorc_core::spine::SpineInvocation::minted(
+        "whylog-replay".to_owned(),
+        std::env::args().collect(),
+        dorc_core::spine::SourceClaim {
             path: book_name.to_owned(),
             digest: book_digest(book_src),
         },
-        oracles: oracle_paths
+        oracle_paths
             .iter()
             .zip(oracle_srcs)
             .map(|(path, src)| dorc_core::spine::SourceClaim {
@@ -2952,28 +2960,29 @@ fn record_durable_arm(
                 digest: book_digest(src),
             })
             .collect(),
-        nonce: framing.nonce().0.clone(),
-        attempt: framing.attempt(),
-        host: framing.host().to_owned(),
-        started_at,
-        // Filled by the Spine, never here (`309` §2 grade-stamping).
-        grade: None,
-    });
-    spine.set_digest(dorc_core::spine::SpineDigest {
-        digest: decision_digest.to_owned(),
-        grade: None,
-    });
-    spine.set_record_stream(dorc_core::spine::SpineRecordStream {
+        dorc_core::spine::RunIdentity {
+            nonce: framing.nonce().0.clone(),
+            attempt: framing.attempt(),
+            host: framing.host().to_owned(),
+            started_at,
+        },
+        world_account,
+    ));
+    spine.set_digest(dorc_core::spine::SpineDigest::minted(
+        decision_digest.to_owned(),
+        world_account,
+    ));
+    spine.set_record_stream(dorc_core::spine::SpineRecordStream::minted(
         records,
-        instants: results
+        results
             .records
             .values()
             .filter_map(|record| Some((record.stamp.ordinal, record.stamp.received_at?)))
             .collect::<BTreeMap<_, _>>()
             .into_iter()
             .collect(),
-        grade: None,
-    });
+        world_account,
+    ));
 }
 
 /// The two notices the full-positional regime owes a book author (`28K` §2
@@ -4259,11 +4268,18 @@ mod spine_record_tests {
             &BTreeMap::new(),
             &spine_leaves,
             true,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
 
         let recorded: Vec<(&str, bool, usize)> = spine
             .classifications()
-            .map(|record| (record.class, record.invalidator, record.cells.shown().len()))
+            .map(|record| {
+                (
+                    record.class(),
+                    record.invalidator(),
+                    record.cells().shown().len(),
+                )
+            })
             .collect();
         assert_eq!(
             recorded,
@@ -7782,7 +7798,7 @@ apt_get__is_converged() {
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
             regions: &dorc_plan::region::RegionCensus::default(),
-            minted_at: None,
+            minted_at: dorc_core::influence::InfluenceAccount::authored_before_contact(),
         };
         let _ = origin;
         settle_world(
@@ -7955,7 +7971,7 @@ apt_get__is_converged() {
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
             regions: &dorc_plan::region::RegionCensus::default(),
-            minted_at: None,
+            minted_at: dorc_core::influence::InfluenceAccount::authored_before_contact(),
         };
         let settled = settle_world(
             &frozen,

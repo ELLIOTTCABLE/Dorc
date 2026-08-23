@@ -13,7 +13,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
-use dorc_core::influence::{InfluencePhase, Influenced};
+use dorc_core::influence::{InfluenceAccount, InfluencePhase, Influenced};
 use dorc_core::{Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Verdict};
 use dorc_plan::invocation::book_digest;
 use dorc_plan::records::{
@@ -194,6 +194,17 @@ impl<T> ScopedHostEvidence<T> {
     pub fn influence(&self) -> InfluencePhase {
         self.influence
     }
+
+    /// This attempt's evidence as an INFLUENCE ACCOUNT — the driver seat that HOLDS the carrier
+    /// (`fnd-two-drivers-compute-one-fact-twice`).
+    ///
+    /// One of exactly two phase→account transitions in the engine, and deliberately not unified
+    /// with [`account_after_reaching_for_host_bytes`]: that one exists for the paths holding no
+    /// carrier, and its widening argument is different in kind from this one's evidence.
+    #[must_use]
+    pub fn account(&self) -> InfluenceAccount {
+        InfluenceAccount::of_phase(self.influence)
+    }
 }
 
 /// The phase every attempt that reached for host bytes stands at, for the paths that hold no
@@ -205,6 +216,19 @@ impl<T> ScopedHostEvidence<T> {
 /// contents are host-shaped by construction.
 pub(crate) fn influence_after_reaching_for_host_bytes() -> InfluencePhase {
     Influenced::authored_before_contact(()).widen()
+}
+
+/// [`influence_after_reaching_for_host_bytes`] as an INFLUENCE ACCOUNT — the driver seat for the
+/// paths that hold no graded carrier (`fnd-two-drivers-compute-one-fact-twice`).
+///
+/// The second of the engine's two phase→account transitions. It stays its own seat because the
+/// why-driver genuinely holds no carrier and its widening is the DEFINITION of where a replay
+/// stands, not a conservative approximation of one (`rul-influence-flattens-at-the-durable`): a
+/// durable's contents are host-shaped by construction, and whether bytes arrived at all is
+/// host-determined.
+#[must_use]
+pub(crate) fn account_after_reaching_for_host_bytes() -> InfluenceAccount {
+    InfluenceAccount::of_phase(influence_after_reaching_for_host_bytes())
 }
 
 /// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —

@@ -481,7 +481,7 @@ impl WhyWorld {
             // A why world reads results somebody already admitted, and reaching for host bytes at
             // all is what makes what follows influenced — so it widens through the one named seat
             // rather than holding a carrier (`307a:dis-phase-by-free-widening`).
-            minted_at: Some(crate::results::influence_after_reaching_for_host_bytes()),
+            minted_at: crate::results::account_after_reaching_for_host_bytes(),
         };
         // The settlement, to quiescence, over the frozen origin — the binary's own rounds
         // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
@@ -528,17 +528,21 @@ impl WhyWorld {
         // The same whole-artifact emission decision the binary makes, by the same rule: a why report
         // that explained an artifact with different bindings than the run's would be a decoration
         // (`one-definition-table-two-drivers`).
-        spine.push_render_decision(dorc_core::spine::SpineRenderDecision {
-            site: None,
-            region: None,
-            decision: dorc_core::spine::RenderDecision::DefensiveEmission {
+        spine.push_render_decision(dorc_core::spine::SpineRenderDecision::minted(
+            None,
+            None,
+            dorc_core::spine::RenderDecision::DefensiveEmission {
                 defensive: !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
                     || !env.unresolvable_loads().is_empty(),
             },
-            grade: None,
-        });
-        let (_trip_banner, trip_narrative, spent) =
-            demote_on_certifier_trip(&mut spine, trip, &definitions);
+            crate::results::account_after_reaching_for_host_bytes(),
+        ));
+        let (_trip_banner, trip_narrative, spent) = demote_on_certifier_trip(
+            &mut spine,
+            trip,
+            &definitions,
+            crate::results::account_after_reaching_for_host_bytes(),
+        );
         // This world is handed results somebody else already decided about, so the intake authority
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
@@ -721,10 +725,17 @@ pub fn record_pre_network_trip(
 /// Returns the [`TripSpent`](dorc_plan::certifier_trip::TripSpent) witness both drivers then hand
 /// to the projection: the spend is a precondition of planning, not a call to remember
 /// (`30M:rec-dissolve-trip-must-remember-structurally`).
+///
+/// `witness` is the trip's OWN account — the certifier answered over solver state that is
+/// decision-fed, so it stands wherever the run does — and every demoted record re-mints as the join
+/// of it and what the record already carried (lean-3, `30Q` §5d). It is the CALLER's to supply
+/// because the two drivers reach their account differently
+/// (`fnd-two-drivers-compute-one-fact-twice`).
 pub fn demote_on_certifier_trip(
     spine: &mut dorc_plan::Spine,
     trip: dorc_analysis::certify::CertifierTrip,
     definitions: &dorc_analysis::funcenv::DefinitionTable,
+    witness: dorc_core::influence::InfluenceAccount,
 ) -> (
     Vec<Diag>,
     Vec<CollapseNarrative>,
@@ -732,10 +743,12 @@ pub fn demote_on_certifier_trip(
 ) {
     use dorc_aid::diag::{DiagCode, SolverConsistencyPlanDemoted};
 
-    let (cleanup, spent) =
-        dorc_plan::certifier_trip::spend_certifier_trip(spine, trip, |fn_name| {
-            definitions.occupancy(fn_name) == 1
-        });
+    let (cleanup, spent) = dorc_plan::certifier_trip::spend_certifier_trip(
+        spine,
+        trip,
+        |fn_name| definitions.occupancy(fn_name) == 1,
+        witness,
+    );
     if !trip.tripped() {
         return (Vec::new(), Vec::new(), spent);
     }
@@ -1307,13 +1320,13 @@ mod tests {
         let plan = guarded_plan(fn_name);
         let mut spine = dorc_plan::Spine::new();
         for step in plan.steps() {
-            spine.set_disposition(dorc_core::spine::SpineDisposition {
-                site: dorc_core::SiteId::leaf(step.leaf),
-                ast: step.ast,
-                sh: step.sh.clone(),
-                decision: step.disposition.clone(),
-                grade: None,
-            });
+            spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+                dorc_core::SiteId::leaf(step.leaf),
+                step.ast,
+                step.sh.clone(),
+                step.disposition.clone(),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            ));
         }
         spine
     }
@@ -1407,6 +1420,7 @@ mod tests {
             &mut sole,
             latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION]),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         assert!(
             matches!(
@@ -1421,6 +1435,7 @@ mod tests {
             &mut plural,
             latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         assert!(
             matches!(
@@ -1442,6 +1457,7 @@ mod tests {
             &mut plan,
             latch_from_a_real_certification(true),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
 
         assert_eq!(diags.len(), 1, "ONE banner for the run, not one per pass");
@@ -1474,6 +1490,7 @@ mod tests {
             &mut plan,
             latch_from_a_real_certification(false),
             &table_over(&[ONE_DECLARATION, ANOTHER_DECLARATION]),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
 
         assert!(diags.is_empty(), "no trip, no banner");

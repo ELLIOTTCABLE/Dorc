@@ -40,7 +40,7 @@ use dorc_aid::diag::{Diag, DiagCode};
 use dorc_analysis::cfg::{
     Cfg, CfgNodeId, CfgNodeKind, ExecutionOwner, LoopEvaluations, loop_evaluations,
 };
-use dorc_core::influence::InfluencePhase;
+use dorc_core::influence::InfluenceAccount;
 use dorc_core::region::{ElisionRegion, IterationSlot, RegionUniverse};
 use dorc_core::{AstId, DefinitionId, FactKey, SourceFileId, Span};
 use dorc_syntax::ast::{Ast, NodeKind, UnsupportedReason, WordPart};
@@ -542,21 +542,17 @@ pub enum RouteConclusion {
 pub struct RouteRegionProof {
     instance: RouteInstance,
     admits: RouteAdmission,
-    influence: Option<InfluencePhase>,
+    account: InfluenceAccount,
 }
 
 impl RouteRegionProof {
     /// Assemble a route's proof from its instance and its projected admission.
     #[must_use]
-    pub fn new(
-        instance: RouteInstance,
-        admits: RouteAdmission,
-        influence: Option<InfluencePhase>,
-    ) -> Self {
+    pub fn new(instance: RouteInstance, admits: RouteAdmission, account: InfluenceAccount) -> Self {
         Self {
             instance,
             admits,
-            influence,
+            account,
         }
     }
 
@@ -618,7 +614,7 @@ pub struct SharedRegionDecision {
     outcome: SharedOutcome,
     act: SharedRegionAct,
     contributing: Vec<RouteInstance>,
-    influence: Option<InfluencePhase>,
+    account: InfluenceAccount,
 }
 
 impl SharedRegionDecision {
@@ -652,10 +648,11 @@ impl SharedRegionDecision {
         &self.contributing
     }
 
-    /// Present when any contributing route's answer was host-influenced.
+    /// Where this shared decision stands: the JOIN over every contributing route's account
+    /// (`30L:rul-shared-influence-never-launders`).
     #[must_use]
-    pub fn influence(&self) -> Option<InfluencePhase> {
-        self.influence
+    pub fn account(&self) -> InfluenceAccount {
+        self.account
     }
 }
 
@@ -741,7 +738,10 @@ pub fn decide_region(
     population: &RoutePopulation,
     proofs: &[RouteRegionProof],
 ) -> SharedRegionDecision {
-    let influence = proofs.iter().find_map(|proof| proof.influence);
+    let account = proofs.iter().fold(
+        InfluenceAccount::authored_before_contact(),
+        |joined, proof| joined.join(proof.account),
+    );
     let contributing: Vec<RouteInstance> = proofs.iter().map(|proof| proof.instance).collect();
     let corresponds = match population {
         RoutePopulation::Open => false,
@@ -765,7 +765,7 @@ pub fn decide_region(
         outcome,
         act,
         contributing,
-        influence,
+        account,
     }
 }
 
