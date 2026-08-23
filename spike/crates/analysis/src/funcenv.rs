@@ -739,6 +739,9 @@ pub struct FuncEnv {
     /// is dead under a slashless invocation, and sites whose operand is a `PATH` search.
     dies_slashless: BTreeSet<CfgNodeId>,
     searches_path: BTreeSet<CfgNodeId>,
+    /// Per havoc'd site, WHY — minted where the reason is known rather than reconstructed at a
+    /// diagnostic seat, which is the whole point of [`HavocCause`] carrying its operands.
+    havoc_causes: BTreeMap<CfgNodeId, HavocCause>,
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
     resolved_loads: BTreeMap<CfgNodeId, ResolvedHead>,
@@ -812,6 +815,13 @@ impl FuncEnv {
     #[must_use]
     pub fn searches_path(&self) -> &BTreeSet<CfgNodeId> {
         &self.searches_path
+    }
+
+    /// Why each havoc'd site havoc'd — the operand a specific hint is built from, rather than a
+    /// reason reconstructed at the diagnostic seat.
+    #[must_use]
+    pub fn havoc_causes(&self) -> &BTreeMap<CfgNodeId, HavocCause> {
+        &self.havoc_causes
     }
 
     /// The ONE load account every projection is derived from.
@@ -1031,6 +1041,7 @@ pub fn analyze(
                 unresolvable_loads,
                 dies_slashless: sites.dies_slashless.clone(),
                 searches_path: sites.searches_path.clone(),
+                havoc_causes: sites.causes.clone(),
                 resolved_loads,
                 folded_edges,
                 loads,
@@ -1097,6 +1108,7 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         unresolvable_loads: BTreeSet::new(),
         dies_slashless: BTreeSet::new(),
         searches_path: BTreeSet::new(),
+        havoc_causes: BTreeMap::new(),
         resolved_loads: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
         loads: LoadAccount::default(),
@@ -2036,6 +2048,14 @@ fn settled_account(
 /// An unresolvable target contributes nothing HERE (it havocs the environment instead, so every
 /// name reads ⊤ afterwards and nothing downstream is provable).
 fn sourced_definitions(defs: &DefinitionTable, env: &FuncEnv, node: CfgNodeId) -> Vec<DefId> {
+    // A cwd-havoc'd site names its file for the artifact and binds NOTHING, so it contributes no
+    // declarations either — a contest reported off it would rest on a binding that does not hold.
+    if matches!(
+        env.havoc_causes.get(&node),
+        Some(HavocCause::CwdUnknown { .. })
+    ) {
+        return Vec::new();
+    }
     env.resolved_loads
         .get(&node)
         .and_then(|head| defs.by_path.get(head.key()))
@@ -2165,6 +2185,9 @@ pub enum HavocCause {
 struct LoadHead {
     /// The head this site EXACTLY names, or why no file could be named.
     exact: Result<ResolvedHead, HavocCause>,
+    /// The operand is RELATIVE, so which file it names depends on where the run stands — the
+    /// question the cwd-clobber closure answers.
+    cwd_relative: bool,
     /// The SLASHLESS spelling proved fatal — the off-ramp lint's whole trigger. It never denies
     /// EXACT: Dorc invokes the slash-bearing spelling and bakes the decision into the bytes it
     /// ships (`30P:rul-dorc-invokes-in-a-modelled-live-spelling`).
@@ -2190,6 +2213,7 @@ fn load_head(
 ) -> LoadHead {
     let dead = LoadHead {
         exact: Err(HavocCause::DynamicValue),
+        cwd_relative: false,
         dies_slashless: false,
     };
     // The author's own bytes named this (a literal word, or a root the value plane folded from
@@ -2197,6 +2221,7 @@ fn load_head(
     if let Some(text) = literals.literal_text(node, index) {
         return LoadHead {
             exact: named_key(key_of(defs, text, Explicitness::Literal)),
+            cwd_relative: !dorc_core::loadpath::is_absolute(text),
             dies_slashless: false,
         };
     }
@@ -2211,20 +2236,21 @@ fn load_head(
     };
     // Everything below went through the evaluator, so Dorc computed the name the author did not
     // write: `Explicitness::Evaluated`, whatever EXACT answers.
-    let answer = |spelling| match evaluate_word(defs, literals, node, parts, spelling) {
-        Err(cause) => OperandAnswer::Unevaluable(cause),
-        Ok(text) => key_of(defs, &text, Explicitness::Evaluated),
+    let evaluated = |spelling| match evaluate_word(defs, literals, node, parts, spelling) {
+        Err(cause) => (OperandAnswer::Unevaluable(cause), false),
+        Ok(text) => (
+            key_of(defs, &text, Explicitness::Evaluated),
+            !dorc_core::loadpath::is_absolute(&text),
+        ),
     };
-    let invoked = defs
-        .spellings
-        .text(Spelling::SlashBearing)
-        .map_or(OperandAnswer::Unevaluable(HavocCause::DynamicValue), |_| {
-            answer(Spelling::SlashBearing)
-        });
+    let (invoked, cwd_relative) = defs.spellings.text(Spelling::SlashBearing).map_or(
+        (OperandAnswer::Unevaluable(HavocCause::DynamicValue), false),
+        |_| evaluated(Spelling::SlashBearing),
+    );
     let other = defs
         .spellings
         .text(Spelling::Slashless)
-        .map(|_| answer(Spelling::Slashless));
+        .map(|_| evaluated(Spelling::Slashless).0);
     let exact = match named_key(invoked) {
         Ok(head) => match other.as_ref() {
             Some(OperandAnswer::Resolves(elsewhere)) if elsewhere.key != head.key => {
@@ -2236,8 +2262,76 @@ fn load_head(
     };
     LoadHead {
         exact,
+        cwd_relative,
         dies_slashless: other == Some(OperandAnswer::Dead),
     }
+}
+
+/// The forward CWD-CLOBBER closure: per node, the line above it that may have moved the working
+/// directory, when one may have (`30P`'s cwd domain of the point havoc).
+///
+/// A `.` the loader cannot follow runs arbitrary sh in the caller's own shell, and a `cd` persists
+/// out of a sourced file (floor-measured) — so below either, a RELATIVE operand names a file the
+/// controller cannot identify. This says WHERE that is true, and which line to blame.
+///
+/// A `cd` inside `( … )` clobbers NOTHING outside the paren, which is the idiom books are full of.
+/// The state is therefore the SCOPE DEPTH a live clobber sits at, and a `ScopeExit` discards
+/// everything deeper than the scope it leaves; keeping only the SHALLOWEST live clobber is exact
+/// for that test (the shallowest is the one that survives) and is what the blame names.
+///
+/// Direction: strictly withholding — a clobber makes fewer operands identify, never more. So both
+/// approximations here fail safe: joining "a clobber on ANY incoming path" and taking the MINIMUM
+/// depth each keep clobbers alive longer than a path-exact answer would.
+fn cwd_clobbers(cfg: &Cfg, clobbering: &BTreeSet<CfgNodeId>) -> BTreeMap<CfgNodeId, CfgNodeId> {
+    let count = cfg.node_count();
+    // `u32::MAX` = not yet reached. Both vectors move monotonically DOWN (a depth only shrinks, a
+    // clobber only appears or shallows), and both are bounded, so the worklist settles.
+    let mut depth = vec![u32::MAX; count];
+    let mut live: Vec<Option<(u32, CfgNodeId)>> = vec![None; count];
+    depth[cfg.entry().index()] = 0;
+    let mut work: Vec<usize> = (0..count).collect();
+    let mut queued = vec![true; count];
+    while let Some(index) = work.pop() {
+        queued[index] = false;
+        let here = depth[index];
+        if here == u32::MAX {
+            continue;
+        }
+        let id = CfgNodeId(u32::try_from(index).unwrap_or(u32::MAX));
+        let below = match cfg.node(id).kind {
+            CfgNodeKind::ScopeEnter => here.saturating_add(1),
+            CfgNodeKind::ScopeExit => here.saturating_sub(1),
+            _ => here,
+        };
+        let mut after = live[index].filter(|&(at_depth, _)| at_depth <= below);
+        if clobbering.contains(&id) {
+            let mine = (below, id);
+            after = Some(after.map_or(mine, |current| current.min(mine)));
+        }
+        for successor in cfg.succ_ids(id).map(CfgNodeId::index) {
+            let mut moved = below < depth[successor];
+            depth[successor] = depth[successor].min(below);
+            let joined = match (live[successor], after) {
+                (None, other) | (other, None) => other,
+                (Some(a), Some(b)) => Some(a.min(b)),
+            };
+            if joined != live[successor] {
+                live[successor] = joined;
+                moved = true;
+            }
+            if moved && !queued[successor] {
+                queued[successor] = true;
+                work.push(successor);
+            }
+        }
+    }
+    live.into_iter()
+        .enumerate()
+        .filter_map(|(index, at)| {
+            let (_, blame) = at?;
+            Some((CfgNodeId(u32::try_from(index).unwrap_or(u32::MAX)), blame))
+        })
+        .collect()
 }
 
 /// The head an answer names, or the cause that denies one.
@@ -2470,10 +2564,24 @@ fn load_sites(
     literals: &SourceLiteralPlane<'_>,
 ) -> LoadSites {
     let mut sites = LoadSites::default();
+    let mut heads = Vec::new();
+    // A `.` whose OPERAND could not be evaluated may `cd`; so may a `cd`. The third member is
+    // EXECUTE-B's: a plain-sh `Included` target is exactly as opaque as an unresolvable one
+    // (`30Qc:rul-included-is-as-opaque-as-unresolvable`), and lands here through the same door
+    // once `program_at_key` stops answering for it.
+    //
+    // NOT the merely-unread bucket: a book-sourced dorc-lang dependency is named-but-unloaded in
+    // acquisition round 1 and resolvable in round 2, so seeding clobbers from it would stop the
+    // acquisition fixpoint growing.
+    let mut clobbering = BTreeSet::new();
     for node in 0..cfg.node_count() {
         let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
         let cfg_node = cfg.node(id);
         if cfg_node.kind != CfgNodeKind::Command {
+            continue;
+        }
+        if literals.literal_text(id, 0) == Some("cd") {
+            clobbering.insert(id);
             continue;
         }
         if !matches!(literals.literal_text(id, 0), Some("." | "source")) {
@@ -2489,15 +2597,38 @@ fn load_sites(
         if head.dies_slashless {
             sites.dies_slashless.insert(id);
         }
+        if head.exact.is_err() {
+            clobbering.insert(id);
+        }
+        heads.push((id, head));
+    }
+    let clobbers = cwd_clobbers(cfg, &clobbering);
+    for (id, head) in heads {
+        // The cwd costs BINDING AUTHORITY and nothing else (`30P`, ruled 2026-08-22): the file is
+        // still acquired and still mirrored at its authored relative path, because cwd-parity is
+        // what keeps the shipped tree faithful and a plan that dies at the `.` on the host is a
+        // worse answer than one that runs the line. What it loses is the vouch — the site havocs
+        // and takes no custody, exactly as an unresolvable one does.
+        let clobbered = head
+            .cwd_relative
+            .then(|| clobbers.get(&id).copied())
+            .flatten();
         match head.exact {
             // A target the operand NAMES but the controller never read is still a name: the
             // acquisition reads exactly these and re-solves, which is how a book-sourced package
             // joins the loaded set at all.
-            Ok(head) => {
-                if defs.program_at_key(head.key()).is_some() {
-                    sites.resolved.insert(id, head);
+            Ok(resolved) => {
+                if let Some(clobbered_at) = clobbered {
+                    sites
+                        .causes
+                        .insert(id, HavocCause::CwdUnknown { clobbered_at });
+                    sites.cwd_havoc.insert(id);
+                    sites.unresolvable.insert(id);
+                }
+                if defs.program_at_key(resolved.key()).is_some() {
+                    sites.resolved.insert(id, resolved);
                 } else {
-                    sites.named.insert(id, head);
+                    sites.named.insert(id, resolved);
                     sites.unresolvable.insert(id);
                 }
             }
@@ -2521,6 +2652,9 @@ struct LoadSites {
     named: BTreeMap<CfgNodeId, ResolvedHead>,
     /// Why an unresolvable site could not be named — the hint's operand.
     causes: BTreeMap<CfgNodeId, HavocCause>,
+    /// Sites that name their file but bind NOTHING, because a line above may have moved the
+    /// working directory. They stay in `resolved` so the file is still acquired and mirrored.
+    cwd_havoc: BTreeSet<CfgNodeId>,
     /// Sites whose head is EXACT for the spelling Dorc invokes and provably fatal for the other
     /// (`30P:rul-dead-spelling-is-not-unsound`) — an off-ramp lint, never a refusal.
     dies_slashless: BTreeSet<CfgNodeId>,
@@ -2682,6 +2816,11 @@ fn command_transfer(
     };
     match word {
         "." | "source" => {
+            // The cwd domain: this line names its file for acquisition and mirroring, and binds
+            // nothing, because a line above may have moved the working directory out from under it.
+            if sites.cwd_havoc.contains(&node) {
+                return havoc();
+            }
             let Some(head) = sites.resolved.get(&node) else {
                 return havoc();
             };
@@ -2861,6 +3000,7 @@ mod tests {
             unresolvable_loads: BTreeSet::new(),
             dies_slashless: BTreeSet::new(),
             searches_path: BTreeSet::new(),
+            havoc_causes: BTreeMap::new(),
             resolved_loads: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
             loads: crate::load::LoadAccount::default(),

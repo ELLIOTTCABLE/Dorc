@@ -4451,16 +4451,19 @@ mod acquisition_tests {
         });
     }
 
-    /// `p-x-unknown-source-havocs-the-cwd` — the cwd domain of
-    /// `30P:principle-unknown-source-is-a-point-havoc`.
+    /// The cwd domain of `30P:principle-unknown-source-is-a-point-havoc` (né
+    /// `p-x-unknown-source-havocs-the-cwd`, promoted), and what it does and does NOT cost.
     ///
     /// An unresolvable `.` runs arbitrary sh in the caller's own shell, and `cd` persists out of a
-    /// sourced file (floor-measured). So the modeled working directory is ⊤ below it, and a RELATIVE
-    /// operand there names a file the controller cannot identify — `30P:rul-load-head-is-exact-or-havoc`
-    /// then makes it a point havoc rather than a resolution. Today `DefinitionTable::cwd` is one
-    /// whole-unit constant with no program point, so `. ./helpers.dorc.sh` resolves and BINDS
-    /// regardless of what ran above it, and every vouch in that package licenses off a file the host
-    /// may never have loaded.
+    /// sourced file (floor-measured). So the modeled working directory is ⊤ below it, and a
+    /// RELATIVE operand there names a file the controller cannot IDENTIFY.
+    ///
+    /// What that costs is BINDING AUTHORITY and nothing else (ruled 2026-08-22): the file is still
+    /// acquired and still mirrored at its authored relative path, because cwd-parity is what keeps
+    /// the shipped tree faithful to the author's, and a generated plan that dies at the `.` on the
+    /// host would be a regression on today's poisoned books. So the site behaves exactly like an
+    /// unresolvable one — it walls, it takes no custody, it lifts no vouch — while the artifact
+    /// still carries the bytes.
     ///
     /// The control below is what says this asks for precision and not for a blanket withdrawal: the
     /// SAME relative load with nothing unknown above it resolves and binds today and must keep
@@ -4468,7 +4471,7 @@ mod acquisition_tests {
     ///
     /// CFG shape exercised: two top-level `.` commands in sequence, the first with a ⊤ operand and
     /// the second with a cwd-relative literal — a straight-line flow, so the only thing that can
-    /// carry the first's effect to the second is the domain this pin asks for.
+    /// carry the first's effect to the second is the domain this cell asks for.
     #[test]
     fn a_relative_source_below_an_unknown_one_cannot_be_identified() {
         let package = Package::new(
@@ -4489,19 +4492,24 @@ mod acquisition_tests {
             ". ./helpers.dorc.sh\nbook_helper\n",
         );
 
-        internal_tooling::xfail::xfail_until("p-x-unknown-source-havocs-the-cwd", || {
-            assert!(
-                havoced.found.is_empty(),
-                "the unknown source may have cd'd, so the relative operand names no file the \
-                 controller can identify: {:?}",
-                havoced.found
-            );
-            assert_eq!(
-                havoced.env.unresolvable_loads().len(),
-                2,
-                "and both sites wall — the second for the cwd, not for its own operand"
-            );
-        });
+        assert_eq!(
+            havoced.found,
+            ["helpers.dorc.sh"],
+            "the file is still READ, and still mirrored at its authored relative path — cwd-⊤ \
+             costs authority, never the shipped tree"
+        );
+        assert_eq!(
+            havoced.env.unresolvable_loads().len(),
+            2,
+            "and both sites wall — the second for the cwd, not for its own operand"
+        );
+        assert_eq!(
+            havoced.at_exit("book_helper"),
+            LiveDefinition::Withheld,
+            "the unknown source may have cd'd, so nothing the second load declares can be said to \
+             bind: {:?}",
+            havoced.at_exit("book_helper")
+        );
         assert_eq!(
             control.found,
             ["helpers.dorc.sh"],
@@ -4511,6 +4519,53 @@ mod acquisition_tests {
         assert!(
             matches!(control.at_exit("book_helper"), LiveDefinition::Live(_)),
             "control: and it binds"
+        );
+    }
+
+    /// A `cd` clobbers the working directory for every relative load BELOW it — and a `cd` inside
+    /// `( … )` clobbers nothing outside the paren.
+    ///
+    /// `( cd "$dir" && … )` is the idiom books are full of, and the whole reason the cwd closure is
+    /// a scope-aware walk rather than a suffix: without the paren rule this cell would lose its
+    /// package to a subshell that provably cannot move the caller's directory. The CFG already
+    /// says which is which — `cfg::lower_scoped` pushes a scope for `( )` and `$( )` and for
+    /// nothing else — so the answer is sh's, not a special case.
+    ///
+    /// CFG shape exercised: one subshell (a real `ScopeEnter`/`ScopeExit` pair) whose body `cd`s,
+    /// against a top-level `cd`, each followed by the SAME relative `.` and a call to what it
+    /// declares.
+    #[test]
+    fn a_cd_inside_a_subshell_clobbers_nothing_outside_it() {
+        let package = Package::new(
+            "book-cd-scope",
+            &[(
+                "helpers.dorc.sh",
+                format!("{MARKER}book_helper() {{ :; }}\n"),
+            )],
+        );
+        let tail = ". ./helpers.dorc.sh\nbook_helper\n";
+        let scoped = Loaded::of(
+            package.cwd(),
+            "book.sh",
+            &format!("( cd nested && wombat sync )\n{tail}"),
+        );
+        let bare = Loaded::of(package.cwd(), "book.sh", &format!("cd nested\n{tail}"));
+
+        assert!(
+            matches!(scoped.at_exit("book_helper"), LiveDefinition::Live(_)),
+            "a subshell's `cd` dies at the paren, so the load below it binds: {:?}",
+            scoped.at_exit("book_helper")
+        );
+        assert_eq!(
+            bare.at_exit("book_helper"),
+            LiveDefinition::Withheld,
+            "a top-level `cd` really does move the coordinate the next relative `.` resolves \
+             against, so that load names a file the controller cannot identify"
+        );
+        assert_eq!(
+            bare.found,
+            ["helpers.dorc.sh"],
+            "and it is still acquired and mirrored — cwd-⊤ costs authority, never the shipped tree"
         );
     }
 

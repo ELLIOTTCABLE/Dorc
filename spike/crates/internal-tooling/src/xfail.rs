@@ -323,16 +323,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-unknown-source-havocs-the-cwd",
-        trigger: "`30Pb:fnd-unknown-source-recovery-is-domain-specific`'s cwd domain, adopted at \
-                  `30P:principle-unknown-source-is-a-point-havoc`: an unresolvable `.` may `cd`, so \
-                  every RELATIVE operand below it names a file the controller cannot identify — \
-                  today the modeled cwd is one whole-unit constant and a later `. ./dep.dorc.sh` \
-                  resolves against it regardless of what ran above",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-unknown-source-havocs-shell-options",
         trigger: "the same resolution's shell-option domain: an unresolvable `.` may `set -e` or \
                   `set +e`, so errexit is ⊤ below it and every fallible command downstream owes its \
