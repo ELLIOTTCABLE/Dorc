@@ -21,12 +21,11 @@ fold order, the brief riders) and `plans/30P` (THE design for the emission plann
 stream forms, and book-load principles — including its review stance on `notes/30Pb` and
 the rulings of the 2026-08-22 sitting). Read both in full before dispatching anything.
 
-**Branch state:** the four kernel lanes are FOLDED on `ai/r30-conduct` (worktree
-`.claude/worktrees/r30-conduct`); the gate-green tip is the fold-repair branch
-`ai/r30-conduct-repair` @ `eae684b1` (its ff into `ai/r30-conduct` is HELD on the human's
-ack, as is the fruit lane `ai/r30-lane-fruit-2`); two lanes are OPEN on harness worktrees,
-both based on `eae684b1`: `ai/r30-lane-influence-map` (the MAP half only) and
-`ai/r30-lane-loop-residue`. `ai/main` is the human's to fast-forward; the primary checkout
+**Branch state:** `ai/r30-conduct` (worktree `.claude/worktrees/r30-conduct`) carries, linearly:
+the four kernel lanes, the fold repair, the loop-residue lane, the influence MAP (red cells
+only), and this session's steering/ledger commits. ONE lane is still folding: the fruit lane,
+via `ai/r30-lane-fruit-3` (a Sonnet regenerating the conflicting catalog locks; its gate is the
+merged tip's first whole-gate). `ai/main` is the human's to fast-forward; the primary checkout
 carries the human's uncommitted ruling work — radioactive. Lane table and the fold order:
 `notes/30Q` §2/§5c. The xfail/atlas lane branch `ai/r30-lane-load-xfails` is CONTAINED and may
 be `-d`'d once its harness worktree (`agent-a5aff50f562a53775`) is reaped; test `176e0818` is
@@ -36,7 +35,8 @@ recovered, so `worktree-sol-adversarial-30M` is deletable. Three stale review br
 
 **Dispatch state, per `30O:the-schedule`:** `sched-parallel-disjoint-lanes` is BUILT and
 folded (gate-green at the repair tip) → `sched-serial-constructor-reshape` =
-`lane-influence-carriage` MAP IN FLIGHT, EXECUTE waits on a typed human ack →
+`lane-influence-carriage` MAP FOLDED (rulings in `notes/30Q` §5d; two questions on the root
+burndown), EXECUTE waits on a typed human ack →
 `sched-round-close-ceremony` (crosscheck · the `307` §6 veto register · `gate:arc` ·
 `CURRENT_ROUND` bump · prose queue) held. Every brief: the Safety block, step-zero worktree verify,
 `AGENTS.for-builders-only.md` first, and `notes/30Pc` (the opaque review's builder-lane

@@ -173,9 +173,10 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   called one); `loop30-direct-and-called-mutators-share-a-loop-body` greens as Guard.
   CAPTURE: widen `is_pristine` to cell-aware self-reach — a licence widening, its own
   lane (`tc-self-reach-cell-blind-widening`, loop lane report). BACK-OUT: low
-  (additive). REVISIT: the next settlement touch. REDS: OWED — a Replace-asserting
-  variant of that case, to mint at the next dispatch (the loop lane landed under a
-  dispatch hold). Residue that is NOT row-shaped, recorded in `30Q`: nested calls under a
+  (additive). REVISIT: the next settlement touch. REDS:
+  `loop30-cell-disjoint-siblings-would-replace` (XFAIL; the Replace-asserting twin of the
+  green Guard case — same book, oracles, mocks and probe results, target-tense goldens).
+  Residue that is NOT row-shaped, recorded in `30Q`: nested calls under a
   member loop stay unbound (⊤ ⇒ run); duplicate `(site, fact)` establishes refuse (ruled);
   a loop extent that rebinds its iteration variable refuses the member binding wholesale.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3

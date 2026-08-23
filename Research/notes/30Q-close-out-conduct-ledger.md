@@ -113,6 +113,14 @@ everything unmentioned (the two folds, the execute-deviation adjudication, the c
 do-nothing HOLD. Basing the two new lanes on the green repair tip was the conductor's read of
 "dispatch", not a typed instruction.
 
+2026-08-22 (later, both lanes green): NACK on `wsl --shutdown` (the human cycles WSL on their
+own time; the suggested compaction invocation was also wrong for Windows Home) — the old WSL
+caches MAY be cleared, by a Sonnet · tooling fixes are SAVED UP for ONE tooling Sonnet later
+(cross-platform — the human also builds on macOS; Windows/WSL magic capability-detected, mildly
+dumb, minimal upfront effort; scheduling is the conductor's) · design-level questions go to the
+root `_tmp-human-burndown.md`, not ruled in chat · the FOLDS are ACKED (the human swept ~90 GB
+on `C:`) · the influence EXECUTE ack is still pending.
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
@@ -270,6 +278,23 @@ re-derived:
 - Gate: `ai/r30-lane-influence-map` @ `ba0feb05` GREEN on both legs (the red cells' xfail
   semantics measured on both platforms); its worktree cache returned. `lane-loop-residue`
   @ `c5f63a72` GREEN on both legs, cache returned.
+**Folds (acked 2026-08-22):** conduct's doc commits rebased onto the repair tip; residue and
+MAP rebased and ff'd (linear; tip `e30910e6` before this commit). Fruit CONFLICTED on the
+generated `catalog_lock.rs` (both sides published codes): aborted, handed to a Sonnet fold
+builder on `ai/r30-lane-fruit-3` — regenerate both locks from the committed cases, scoped
+re-bless of drifted FRUIT cases only, then `both gate:full-quiet`, which is the merged tip's
+first whole-gate. The two design questions are in the root `_tmp-human-burndown.md`.
+
+**Tooling-Sonnet queue (saved up per the human; ONE lane, later; cross-platform, macOS-safe,
+capability-detected, mildly dumb):** (1) the WSL preflight bounds on MIN(cache volume, the host
+volume holding the vhdx — `/mnt/<drive>` of the worktree) · (2) `doctor` reports the vhdx's
+on-host size instead of "Windows keeps none of these" · (3) clear the orphaned
+`dorc-wsl-target-*` caches (worktree gone) and the folded-lane caches, with a containment check
+per cache, never `wsl --shutdown` · (4) `wsl --cd X -- mise …` misses PATH (builders needed
+`bash -lc`; `sh -lc` dies on the zsh profile) — settle the one agent spelling and say it in
+`spike/CLAUDE.md wsl-cd-not-bash-lc-cd` · (5) the WSL-leg `doctor:unused` took >2 min on a
+warm-cached worktree — measure, fix if cheap.
+
 - EXECUTE shape: ONE Opus builder over the green merged tip, rows R1–R9 in the MAP's order
   (R2 before R3 is load-bearing), R10 only with the ruling; gate = goldens + the nine
   loom-embedded `.whylog` transcripts byte-identical + `bless:dry` clean + `spine:baseline`
