@@ -4444,21 +4444,22 @@ mod acquisition_tests {
         assert!(matches!(helper, LiveDefinition::Live(_)));
     }
 
-    /// `p-x-computed-dot-parses-and-havocs` — floor-valid text is never a PARSE violation.
+    /// Floor-valid text is never a PARSE violation (né `p-x-computed-dot-parses-and-havocs`,
+    /// promoted).
     ///
     /// `. "$(dirname "$0")/helpers.dorc.sh"` parses and runs under `posh ∩ dash`, so
-    /// `30P:rul-floor-valid-text-never-parse-fails` forbids the parser from refusing it. Today the
-    /// `.` arm mints an Error-severity `Unsupported` node, which takes the whole invocation's exit
-    /// code with it before any analysis happens. The owed shape is two-part and both halves are
-    /// asserted here: the parser hands back a rich AST with no Error, and the LOAD plane answers —
-    /// absent the static-predict tier the operand is ⊤, so the site is an ordinary point havoc.
+    /// `30P:rul-floor-valid-text-never-parse-fails` forbids the parser refusing it — which it did
+    /// until now, taking the whole invocation's exit code with it before any analysis happened.
+    /// The shape is three-part: the parser hands back a rich AST with no Error, the LOAD plane
+    /// answers (absent the static-predict tier the operand is ⊤, so the site is an ordinary point
+    /// havoc), and the CAUSE is named, which is what the cli's `EXIT_LOAD_UNRESOLVABLE` keys on —
+    /// the outcome kept, only its tier moved.
     ///
     /// What is NOT asserted, deliberately: the operand RESOLVING. That is
     /// `p-x-load-operand-dirname-of-dollar-zero`, which waits on an authored `dirname__predict`
     /// (`30P:rul-static-predict-sites-loads`) and stays red past this lane.
     ///
-    /// CFG shape exercised: one top-level `.` whose operand word carries a `CommandSubst` part —
-    /// the exact word class `word_has_expansion_effect` refuses today.
+    /// CFG shape exercised: one top-level `.` whose operand word carries a `CommandSubst` part.
     #[test]
     fn a_computed_dot_operand_parses_and_havocs_instead_of_refusing_the_book() {
         let package = Package::new(
@@ -4478,15 +4479,20 @@ mod acquisition_tests {
         let book_path = package.root.join("book.sh").to_string_lossy().into_owned();
         let loaded = Loaded::of(package.cwd(), &book_path, book);
 
-        internal_tooling::xfail::xfail_until("p-x-computed-dot-parses-and-havocs", || {
-            assert_eq!(errors, 0, "floor-valid text is never a parse violation");
-            assert_eq!(
-                loaded.env.unresolvable_loads().len(),
-                1,
-                "and the load plane owns the answer: a `.` whose operand it cannot evaluate is a \
-                 point havoc, exactly like any other unresolvable source"
-            );
-        });
+        assert_eq!(errors, 0, "floor-valid text is never a parse violation");
+        assert_eq!(
+            loaded.env.unresolvable_loads().len(),
+            1,
+            "and the load plane owns the answer: a `.` whose operand it cannot evaluate is a \
+             point havoc, exactly like any other unresolvable source"
+        );
+        assert!(
+            loaded.env.havoc_causes().values().any(|cause| matches!(
+                cause,
+                dorc_analysis::funcenv::HavocCause::ComputedSubstitution
+            )),
+            "and it names the CAUSE, which is what the cli's pre-network outcome keys on"
+        );
     }
 
     /// The cwd domain of `30P:principle-unknown-source-is-a-point-havoc` (né

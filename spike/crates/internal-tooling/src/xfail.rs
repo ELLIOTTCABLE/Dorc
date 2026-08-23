@@ -323,15 +323,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-computed-dot-parses-and-havocs",
-        trigger: "`30P:rul-floor-valid-text-never-parse-fails`: `. \"$(dirname \"$0\")/dep.sh\"` is \
-                  floor-valid text, so the parser owes a rich AST for it and the LOAD plane owes the \
-                  havoc — today `parser.rs`'s `.` arm mints an Error-severity `Unsupported` node and \
-                  the whole invocation fast-fails at parse tier",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-plain-sh-inclusion-ships-beside-the-plan",
         trigger: "`30P:mech-acquire-and-ship-plain-sh`: a resolvable `.` of ordinary sh enters the \
                   load account as an occurrence and is mirrored beside the plan — analyzed NOT AT \
