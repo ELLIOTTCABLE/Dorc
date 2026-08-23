@@ -137,8 +137,9 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
 - **forfeit-command-v-poison-wall** — RULE (as-built; `28P`): a polyfill guard's own
   `command -v` line is an unmodeled running command ⇒ walls; the delivered polyfill
   cell guards instead of eliding. FORFEITS: elision in every polyfilled book.
-  CAPTURE: a blessed target-state-pure builtin table in book position — a licensure
-  widening, routed to the human. REVISIT: the stdlib revival (polyfills become
+  CAPTURE: the stdlib `command` oracle under the widened predict dialect (`30Q` §5g — RULED
+  2026-08-23: POSIX `test` grammar, `$(…)`-as-⊤, tracer continues past an unevaluable gate); the
+  admin's guard then lifts through the oracle's own argparse, never an engine builtin table. REVISIT: the stdlib revival (polyfills become
   common).
 - **forfeit-wrapped-case-bodied-book-verdict** — RULE (as-built, measured through
   stage-i AND the crosscheck burndown; `28P` · `307c:fnd-pin30-did-not-flip`): the

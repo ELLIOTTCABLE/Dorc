@@ -56,6 +56,8 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 * veto-sweep-routed-residue (conductor-closed 2026-08-22, `307` §6c) — mint wall narratives for non-leaf walls per `kWARN` (nothing renders until `289:seam-narrative-render-unconsumed` closes) · delete the unreachable `render-heredoc-refused` path and bank guards-at-redirected-sites as the value item it implied (those sites run today, the safe direction) → both ride the next lane touching `plan::world`'s wall seat / the guard-mint seat.
 * seams-grab-bag — streaming/TUI (rides weft) · retries/until · serial non-preclusion · escape-hatches + veto polarity · secrets timing (`26B:need-scrub-before-freeze`) · `24R` cheap-adds → each pointer is the live re-entry.
 
+* rc-vs-genkill-permanent-law (human-directed 2026-08-23: revisit, not now; never strike) — `spike/CLAUDE.md rul-rc-reaches-genkill-only-through-decisions` still says the permanent law "is expected out of the influence implementation round"; `30Qd` §map-10 item 7 established that `lane-influence-carriage` carries accounting only and will NOT produce it. The clarifier stands; the wider law is unowned. Re-home the expectation at the next steering edit (point here), then revisit once the influence threading has survived a few rounds of churn.
+
 ## Deferred arcs (pointers only)
 
 MH2 version layer → `.claude/research/versioning-mh2/`, `270` §4 · r26 reactive/capture + multi-host revival → `26B`/`26C`, `270` §5 · r25 field-trial ceremony → superseded by the informal live run; tooling salvage at `Research/trial/` · DST rung ladder → `128` §3/§7 · r11/r12 research banks → `111` §4, `128` §8.
