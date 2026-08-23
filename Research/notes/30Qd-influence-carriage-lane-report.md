@@ -817,3 +817,236 @@ Flagged because it is a public shape change the MAP did not price.
   still live and still red, as they should be until R5.
 - NOT yet run at this checkpoint: `bless:dry`, `mise run both gate:full-quiet`, and the AFTER
   `spine:baseline`. All three are end-of-lane obligations.
+
+## §execute — the lane, landed
+
+> Tier: LLM-authored EXECUTE report (Opus builder; seat
+> `.claude/worktrees/agent-ab4cb8131f42ba75b`, branch `ai/r30-lane-influence-exec`, lineage
+> `ai/r30-conduct` @ `66954cc2`, tip `f4e98ff4`). Continues `§execute-checkpoint`, whose rulings
+> the conductor accepted; only what happened AFTER it is re-stated here.
+
+### Commits
+
+| commit | row | what |
+|---|---|---|
+| `9f77ef43` | gate | the BEFORE `spine:baseline` (291 cases) |
+| `de18560a` | R1 | `InfluenceAccount`; `Account<T>` → `OperandAccount<T>`; three lexical fences |
+| `fd65b15b` | R2 | the sixteen species SEALED (+ R8's named methods, R9's driver seats, R4's type change) |
+| `09cc0cfd` | R3 | the object-global stamp REMOVED; the stamp test rewritten; the mint fence widened |
+| `9a3463ca` | — | comment trim |
+| `4d802e94` | — | the checkpoint report |
+| `8761fca4` | R4 | per-object accounts on `SiteDecision`/`RouteDecision` and both provisional records |
+| `9bc70d70` | R5 | the region join's `Untracked` arms |
+| `2dd1ccd6` | R6 | the licence mints + `Plan::decided`'s joined account + `project_plan`'s fold |
+| `c879fa26` | R7 | the RESTRICT side; `with_plan` joins |
+| `5f067eae` | R9 | `tc-load-decisions-read-authored`, lean applied |
+| `c89fa3bf` | R10 | `SpineInvocation.mode` narrowed to a closed enum |
+| `8c301cea` | R11 | the durable account export, built whole and switched off |
+| `790a2b40` | — | the workspace-clippy tier the conversion left behind |
+| `83fac14b` | — | comment trim |
+| `f4e98ff4` | gate | the AFTER `spine:baseline` |
+
+### The headline, measured rather than argued
+
+**`fnd-the-conversion-changes-no-answers-at-v0` CONFIRMED EMPIRICALLY.** The MAP asserted it from
+the two drivers' unconditional feed; the decision-state smoke-diff now proves it over the whole
+corpus. `Research/notes/30Qd-spine-baseline-{before,after}.txt` are **byte-identical over 291
+cases** — dispositions, guard bindings, custody, survival witnesses and digests all unmoved, across
+the sealing, the stamp's removal, the per-object threading, the region join, the licence mints, the
+RESTRICT side, the load-decision carve and the mode narrowing. Nothing was blessed at any point.
+
+### What SHIPPED makes unrepresentable, product-wide
+
+Against `§map-2`'s statement. UNREPRESENTABLE now:
+
+- a Spine record with no influence answer — sixteen private-field species, one
+  `minted(<inputs>, InfluenceAccount)` each, no `Default` on the account;
+- "absent account = authored" — there is no `Option`, and `Untracked` is a distinct inhabitant that
+  reads influenced;
+- a caller choosing a grade word — the mints take contributing accounts or an `InfluencePhase`
+  witness; there is no `from_grade`, no `From`, no `Default`, no meet, and no way to read one
+  account's point in order to build a lesser one (four `compile_fail` doctests);
+- a Spine setter overwriting a record's account — `Spine::minted_at`, `Spine.grade` and the sixteen
+  overwrites are gone;
+- a post-construction rewrite that RESETS rather than joins — the three `&mut` accessors are gone
+  and the two named methods join the witness in;
+- a NEW species landing unaccounted — the sealed `InfluenceBearing` plus the no-wildcard
+  `account_carriage` census (12 `Joined` / 0 `UntrackedAdapter` / 4 `Unminted`);
+- hand-building any Spine record from outside `core::spine`;
+- **a licence with no account** — all seven `ReplaceLicense`/`GuardLicense` mints demand one
+  (the MAP said six; see the finding below);
+- **a `Plan` with no account** — `Plan::decided` demands one and `render_sh`/`render_apply` accept
+  it with no adapter, exactly as lean-2's replacement ruled;
+- **a caller supplying an account to a RESTRICTED object** — `PlacementDecision`, `PlacedSources`,
+  `ArtifactEmission`, `ImportEdit`, `Selection` and the four probe-side plans take no account
+  parameter at all; the restriction is a property of the type, not a claim each caller re-asserts;
+- **a replayed account reaching a decision** — `whylog::DurableAccount` has no accessor yielding an
+  `InfluenceAccount`, no `From`, no join; it can be displayed and nothing else;
+- **an invocation record claiming a producing mode it does not know** — `InvocationMode` has one
+  inhabitant and no `Plan`/`Apply` arm to mis-write.
+
+STILL ADMITTED, deliberately, and unchanged from `§map-2`: an EXPLICIT `untracked` seam (now
+inventoried); a WRONG `authored_before_contact()` claim at a seat that does read influenced material
+(no affine witness this round — the lexical census is the whole of what stands against it); v0's
+coarse positional flip; gradation. ONE line of `§map-2` no longer holds: "durable rehydration —
+nothing persists an account, so nothing rehydrates" is superseded by R11, which builds both
+directions and switches them off.
+
+### The `untracked` adapter enumeration (the discipline test's product)
+
+The human's stated purpose was to force the threading and then WATCH for holes. Three seats spell
+`untracked`, and `every_untracked_adapter_is_enumerated` is now the standing instrument:
+
+1. **`plan::region::decide_region`** — an `Open` route population, or a proof list that does not
+   correspond to the census's. The routes nobody enumerated may have been decided from
+   host-reported material, and absence of an answer is not an answer. This is the ONE place the
+   lane delivers a better answer than the stamp did.
+2. **`plan::whylog::DurableAccount::rehydrated`** — an account read back ABSENT, unrecognised, or
+   malformed. Not a staged hole in the same sense: it is the ruled rehydration floor
+   (`306b:rul-missing-influence-grade-reads-highest`) and it stays after the export is enabled.
+   `host-influenced` also rehydrates here, deliberately — the phase marker is minted by READING
+   host bytes and a word in a file is not that act, so reconstructing one would launder.
+3. **`plan/tests/region.rs`** — (1)'s own assertion.
+
+**Nothing else needed one.** Every other seat either joins accounts it was handed or is
+structurally pre-contact. That is the discipline test's actual result and it is the number worth
+watching: if it grows, the threading is leaking.
+
+### Findings
+
+- **`fnd-the-licence-census-undercounted-by-two`** (+SURE). `§map-1` listed six `prove_*`/`mint*`
+  seats. There are EIGHT: `prove_inline_replaceable` and `prove_inline_query_replaceable` are
+  separate mints the census missed, both minting a real `ReplaceLicense` for an inlined call. They
+  were not found by re-reading — the private field made them a compile error. That is the sealing
+  paying for itself, and it is the reason a census is a starting point rather than a spec.
+- **`fnd-the-digest-had-to-classify-the-account`** (+SURE). `canon_disposition`'s exhaustive
+  destructure refused to compile until the account was classified, exactly as designed. It is
+  EXEMPT: influence is causal accounting orthogonal to authority (`306b` §10), it is ruled
+  non-durable at `ExcludedContent::InfluenceGrade`, and two runs that decided identically from
+  differently-standing inputs DO reproduce identically — which is the only question the digest
+  asks. Folding it in would have moved the durable's bytes for a field the durable may not keep.
+- **`fnd-the-lint-tier-that-check-does-not-cover`** (+SURE, process). `mise run check-quiet` was
+  green at every row tip and `bless:dry` then found SEVEN whole-workspace clippy errors, including
+  a genuinely dead field the threading had orphaned. Whole-workspace clippy is builder-completion
+  tier by design (`four-rung-gate-ladder`), so a row-by-row loop on `check-quiet` + `test` cannot
+  see it. Worth a rider somewhere: a long conversion lane should run `mise run clippy` per row, not
+  only at the end.
+
+### `tc-*` flags
+
+No NEW `tc-*`-shaped call arose. The four the MAP raised are all discharged as ruled:
+`tc-accounting-reads-are-not-gating` (the narrow window is mechanized by
+`the_phase_to_account_transition_lives_at_one_seat`; nothing anywhere says "decision-inert by type",
+and `core::influence`'s type doc says in the ruled words that no consumer exists at v0 and a future
+one is a typed human act) · `tc-untracked-sits-above-influenced` (chain) ·
+`tc-spine-record-mut-accessors-survive` (the accessors are gone) ·
+`tc-load-decisions-read-authored` (below).
+
+### `tc-load-decisions-read-authored` — LEAN APPLIED, the structural half
+
+The human's lean was "not tagging it with influence? good sign you should structurally carve it out
+so you can't accidentally influence it later", with a fallback to a derived-authored mint.
+
+**The structural carve was available and is what landed.** `funcenv` settles at `main.rs` L1107 and
+the contested families at L1214; the intake edge is L1743. So `mint_load_decisions(cfg, contested,
+env)` is called ABOVE the intake and returns finished `SpineLoadDecision` values; `record_new_arm`
+now only transcribes them and no longer takes `contested`/`env` at all. Nothing influenced is in
+scope where the records are built, so the authored answer is a fact about where the seat stands
+rather than a label it asserts — which is precisely the difference the lean asked for. The fallback
+(derive the account from `funcenv`'s `ProgramText`-only inputs) was not needed.
+
+### R11, and what the conductor must do
+
+Built under the human's typed flow (`30Q` §5g): build the export whole, disable it, let the
+reviewers chew on it post-hoc, human enables. Stated here as instructed.
+
+- **The View** — `whylog::ApplyLine` gains `account`, which IS the lift of
+  `ExcludedContent::InfluenceGrade`. That arm now says the exclusion is held by a SWITCH rather than
+  by absence, and `core::spine`'s module doc says the same; the arm is deleted in the commit that
+  flips the switch.
+- **The switch** — `plan::whylog::ACCOUNT_EXPORT: bool = false`. ONE const, gating both ends. No
+  flag, no env var, no policy reads it: a switch a run could turn on is not a switch that has been
+  reviewed.
+- **The writer** — one `account=<token>` field per `apply` row, emitted only under the switch.
+- **The reader** — optional on the read side WHATEVER the writer's switch says, because a durable
+  written with the export off is ordinary input and must not refuse. Absent, unrecognised, or
+  malformed all rehydrate at `untracked`, the most-influenced point.
+- **The flattening, typed** — `DurableAccount` is the one way in (`of_decision`) and offers only
+  `label()`/`was_influenced()` on the way out. A replayed account cannot be joined into a live one,
+  cannot reach a licence mint, cannot reach a Spine record.
+- **The proof + the pin** — three tests: the round-trip (pinned
+  `p-x-durable-account-export-is-enabled`, `Horizon::Scheduled("r31:kernel-punt-glance")`, trigger
+  "the human enables the durable account export"), and two that stay GREEN — the absent-reads-highest
+  floor, which also asserts the wire carries no `account=` at all with the switch off, and the
+  unrecognised-token floor.
+- **DEVIATION**: the round-trip proof is a native test rather than an `.loom`/e2e case. A loom case
+  would have to commit a transcript blessed against switch-ON bytes that production never emits,
+  putting un-emitted bytes in the corpus; and the named pin mechanism (`xfail::PINS`) is only
+  reachable from Rust. The native test observes the same round trip through the real writer, the
+  real wire and the real admission path.
+- **WHAT YOU MUST DO**: `spike/CLAUDE.md rul-durable-contents-reviewed-before-design` binds this
+  row — it says the review clears BEFORE the design settles, human by preference and
+  `/opaque-review` when they are away. The human's typed flow puts the review AFTER the build and
+  BEFORE the enable, which is the ordering you relayed; so what is owed is that the review happens
+  before that const is flipped, and the pin is what holds the door. R10 does not trigger it (the
+  record's FORMAT changed, not what is recorded) — human-typed, and the byte-identity gate agrees.
+
+### Gate and evidence
+
+- **Byte-identity**: every existing golden byte-identical; all nine loom-embedded `.whylog` cases
+  byte-identical; **nothing blessed at any point in the lane**. `mise run bless:dry` →
+  `bless: gates ok | e2e not blessed (dry)`.
+- **`mise run both gate:full-quiet` at `f4e98ff4`, FOREGROUND, Windows leg first** — both green:
+  - Windows: `preflight gate: ok — disk 204.5 GiB free (needs 4.0 GiB, warm), ram 6.8 GiB free
+    (needs 4.0 GiB)` then the three `hk check … --quiet` steps, rc 0.
+  - WSL: `preflight gate: ok — disk 864.2 GiB free, 204.2 GiB free on /mnt/c (WSL host volume)
+    (needs 4.0 GiB, warm)` then the three steps, rc 0.
+- **`mise run test`**: 2690 trials, 2690 passed, 2 skipped (2686 at the lineage tip; +3 R11 tests,
+  +1 net from promotions).
+- **`mise run xfail:census`**: 19 live pins, 1 reserved. The three lane pins are GONE (promoted —
+  registry rows dropped, assertions kept as ordinary tests): `p-x-spine-record-keeps-its-mints-account`,
+  `p-x-region-account-reaches-the-spine-record`, `p-x-unenumerated-population-is-not-authored`. ONE
+  added: `p-x-durable-account-export-is-enabled`. No other row moved.
+- **Comment budget**: inline `//` **+35 / −5 = 30 net**, of which 3 are the structural banner around
+  the sealed-contract block (noted separately per the rider) ⇒ **27 billable against 30**. `///`
+  **+511**, counted separately.
+
+### Steering / register deltas (yours to place; the MAP's seven, re-checked against what was built)
+
+1. **`core/CLAUDE.md` — `the-influence-account-is-carried-never-stamped`**: as the MAP drafted, and
+   now true. Add that the two post-construction rewrites are named Spine methods that JOIN a
+   witness, and that the account is EXEMPT from the decision digest.
+2. **`core/CLAUDE.md` — `the-account-never-enters-compared-state`**: unchanged; the conversion
+   boundary is the decision plane and outward, and the kernel/load-plane values took no account.
+3. **`plan/CLAUDE.md` — the `sole-mint-witnesses` rider**: say EIGHT mints, not six
+   (`fnd-the-licence-census-undercounted-by-two`).
+4. **`spike/CLAUDE.md`, host-evidence section** — the cross-crate pointer, plus: the influence
+   account now has a durable EXPORT, built and switched off at `plan::whylog::ACCOUNT_EXPORT`, and
+   `ExcludedContent::InfluenceGrade` is held by that switch rather than by absence.
+5. **`ANALYZER-NEEDS:an-host-influence-carriage`**: `st` `S` → `B`, and the residue clause should
+   now read that per-route difference is unexpressible at v0's positional flip (unchanged) AND that
+   the durable export exists but is disabled pending review.
+6. **`FORFEITS.md`**: still no row owed, for the MAP's reason.
+7. **`rul-rc-reaches-genkill-only-through-decisions`**: the conductor's §5g note stands — never
+   strike, re-home to `TODO-ADDTL:rc-vs-genkill-permanent-law`. This lane did not produce that law.
+8. **NEW**: `30Qd:fnd-the-lint-tier-that-check-does-not-cover` — a rider somewhere that a long
+   conversion lane runs `mise run clippy` per row, since `check-quiet` cannot see that tier.
+
+### Context other lanes must maintain
+
+- **`plan/src/spine.rs`'s test module now holds three lexical censuses** over a shared workspace
+  walk: `of_phase` callers (the ruled narrow window), `authored_before_contact` claimants (17 files),
+  and the `untracked` INVENTORY. They enumerate TEST files beside production ones — a lexical walk
+  cannot tell them apart, and filtering by guess would be the fence's own blind spot. **Any lane
+  that adds a file spelling one of those three grows a list here in the same commit.** That is the
+  fence working, not churn.
+- **`the_influence_grade_has_exactly_one_mint`'s needle is now the bare `host_reported(`.** A test
+  that wants a phase marker WIDENS an authored one (`Influenced::authored_before_contact(()).widen()`)
+  rather than minting; minting anywhere else reddens the fence.
+- **`SettleInputs.minted_at` is `world_account: InfluenceAccount`**, and `DecideSite` carries one.
+  A new settlement input reads it rather than re-deriving where the run stands.
+- **`decide_region`'s `///` carries the `churn-avoidance-disclosure`** for the per-cell conjunct
+  that is deliberately not built, and says why deriving it from `by_fact` alone would launder.
+  Whoever builds per-route difference edits that paragraph, not around it.
+- **`plan/src/settle.rs` gained a fourth seat-scan dependency**: `the_region_record_carries_the_account_its_meet_joined`
+  scans `write_spine` for `region.account`. Renaming `fn write_spine` or that binding moves a fence.
