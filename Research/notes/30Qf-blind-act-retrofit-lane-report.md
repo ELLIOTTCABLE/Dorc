@@ -505,3 +505,167 @@ inline `//` **5** net new (two section banners plus three), `///` **91**.
 - **`dev-e2s-carriage-gate-is-unmeasured`** — the same treatment was NOT given to E2, because the
   carriage gate is a real change to two functions rather than a predicate, and building it would be
   EXECUTE. §(f)'s second table is therefore ~SUSPECT rather than measured.
+
+## §retrofit-execute
+
+> Tier: builder lane report (Opus, EXECUTE half; same branch and worktree, base `60f3955b`).
+> §retrofit-map is not edited; this appends what was BUILT against the conductor's rulings.
+> Every "measured" below is the whole 2672-test suite unless it names a filter.
+
+### what-landed — eight commits, each independently green
+
+| commit | row | what |
+|---|---|---|
+| `4990f276` | E1 | `FuncEnv::load_certainty`; `BookLoad::permits: LoadPermission`; six rewrite seats read `may_rewrite()` |
+| `fdbbe6ea` | E2a | the `load-carriage-withheld-under-unknown-cwd` code, `message: None`, and its defining case |
+| `34382894` | E2b | the carriage gate at both placement seats, the lock, and the whole-product case that observes it |
+| `bbafc1cf` | E3a | the clobber seed asks whether the controller HOLDS the target; three pins promoted |
+| `ce51d88e` | E3b | the `[ -f ]` entry refuses under an unknown cwd; two pins promoted |
+| `33b6e477` | E3c | the red cell for the third blind act, committed before the seed |
+| `e36b75ab` | E4 | the one prose re-say `§retrofit-map` (f) enumerated |
+| `554b7992` | — | the clippy arity allowance the cwd input forced on `decide` |
+
+FIVE pins promoted and removed from `internal_tooling::xfail::PINS`:
+`p-x-non-exact-load-is-never-re-pointed` · `p-x-non-exact-load-ships-no-copy` ·
+`p-x-file-test-refuses-under-unknown-cwd` · `p-x-file-test-refuses-below-a-blind-load` ·
+`p-x-an-unheld-literal-load-havocs-the-cwd`. ONE minted: `p-x-an-unspliceable-call-havocs-the-cwd`
+(`end-of-r30`). The five `r31:kernel-punt-glance` pins are untouched and red. Census at the tip:
+22 live, 1 reserved, no expired group.
+
+### E3C IS HALTED — it moves two goldens beyond prose
+
+The seed was built exactly as ruled — `cfg::call_body_sites(node)` answering `None` at a command
+word the unit DEFINES — measured, and REVERTED. The red cell stays committed (`33b6e477`) and the
+pin stays live. What it moved, enumerated:
+
+1. `cli/tests/definition_frames.rs the_engine_names_the_definition_the_shells_ran`, over
+   `floor30-blessed-override-above-and-below.loom`: *"the shells ran `./override.sh`'s body here
+   (it emitted `override`), but the environment names None"* — `left: None`,
+   `right: Some(SourceFileId(1))`.
+2. `cli/tests/load30-two-point-frames` — `ap-2-exec: apply ran the wrong commands or wrong order`.
+
+**Why, and it is a finding rather than a tuning.** `call_body_sites` answers `Some` only where a
+body was SPLICED, and the splicer inlines SAME-FILE funcdefs only — so `None` covers two
+populations the ruling does not distinguish: a call Dorc could not see into, and a call into a
+body it holds and models but did not clone onto this route. A book that sources `base.sh` and then
+calls the `hork__is_converged` that file defines hits the second, and under the ruled seed every
+such call would clobber the working directory from its own line down — so every relative `.`
+below any oracle-helper call in any book would lose its authority and its carriage.
+
+A call into a body the controller HOLDS AND MODELS is not "a body Dorc cannot see". The law's third
+species is the CFG's own REFUSAL set (over-budget · recursive · out of the splice slice), which
+`cfg.rs` records today as a `CFG_INLINE_REFUSED` diagnostic and NOT as queryable state. So the seat
+the ruling wants does not exist yet: `Cfg` must expose the refused-call set (a node set beside
+`call_body_sites`, populated at the same four refusal arms), and only then can the seed take it.
+
++SURE the correction is a widening of the CFG's own bookkeeping and not a re-reading of the law.
+~SUSPECT it is small — four arms, one set, one accessor — but it is a `cfg.rs` change in a lane
+whose charter is `funcenv`/`cli`, and `splice-budgets-are-licensure-not-perf` puts anything near
+those arms on the same winner-shifting review footing. NOT taken; conductor's.
+
+Note the direction the reverted version failed in: it WITHHELD more, so nothing unsound shipped in
+the interim — the two reds are lost licences, which is why they surfaced as an apply running MORE
+commands rather than fewer.
+
+### deviations — every one OPEN
+
+1. **`dev-e1-and-e2-are-observable-only-through-the-dynamic-spelling`** — the conductor ordered
+   E1 → E2 → E3a, and E1/E2's own pins assert over a LITERAL blind act, which is not non-EXACT
+   until E3a. Rather than reorder, both cells gained a DIRECT assertion over the DYNAMIC spelling
+   (a `.` of a ⊤ operand, already a clobber before this lane), so E1 and E2 are each independently
+   observable in their own commit and the pins discharge at E3a. The two spellings ride one
+   parameterised world helper and both are asserted at the promoted cells, with a null-command
+   control proving the refusals are the act's doing.
+2. **`dev-load-certainty-needed-the-named-map-too`** — `§retrofit-map` had `load_certainty` read
+   `havoc_causes` then `resolved_loads`. That is not total: an acquired plain-sh INCLUSION resolves
+   its head but files no `LoadProgram`, so it sits in `sites.named` and would have answered
+   `Err(NotInSnapshot)` — non-EXACT, so its bytes would have stopped being mirrored and
+   `mech-acquire-and-ship-plain-sh` would have silently regressed. `FuncEnv` gained `named_loads`
+   and the accessor falls through to it: EXACT-ness asks whether the head names ONE file, which
+   both maps answer, and carrying a program is the separate question
+   (`rul-acquiring-bytes-is-not-modelling-them`). Conductor re-derives.
+3. **`dev-the-new-code-has-an-honest-firing-route`** — the brief asked only for the code. It also
+   gained a whole-product case, `load30-blind-act-withholds-its-carriage`, because
+   `an-artifact-set-runs-from-its-own-generation`'s general law binds it: a case minted to
+   demonstrate a capability must OBSERVE it, and the carriage gate had no end-to-end witness. The
+   case moves the working directory to a ⊤ operand above a literal relative `.` of a package the
+   controller holds; its blessed artifact is the book VERBATIM — no re-point, no paste, no bundle —
+   and its `expected-diagnostics` asserts the code fires. Blessed SCOPED (`mise run bless:case`),
+   porcelain-verified: only that case's own files, plus the two generated locks.
+4. **`dev-no-artifact-set-on-that-case`** — it deliberately does NOT declare `ARTIFACT_SET`. With
+   the carriage gate on, a published generation would carry no dependency, so
+   `unresolved_generated_imports` would fire — which is
+   `tc-nothing-shipped-costs-the-common-book-its-plan` arriving as a harness failure rather than a
+   product decision. The harness is RIGHT and the case is not the place to adjudicate it.
+5. **`dev-clippy-forced-an-arity-allowance`** — threading the cwd answer put `decide` at 8/7
+   arguments. `#[expect(clippy::too_many_arguments)]` with the reason `transfer`'s own allowance
+   already gives, one seat over. `check-quiet` does not carry clippy (it is a builder-completion
+   check, `four-rung-gate-ladder`), so this surfaced at the Windows completion leg, not at commit.
+6. **`dev-e4-was-prose-only-as-measured`** — E4 moved exactly what (f) predicted and nothing else:
+   `a_relative_source_below_an_unknown_one_cannot_be_identified`'s message, whose "still mirrored
+   at its authored relative path — cwd-⊤ costs authority, never the shipped tree" states the
+   `30Q` §3 D2 re-cut the law reverses. Its three assertions are unmoved. No golden was re-blessed
+   in E4 at all.
+
+### findings
+
+- **`fnd-the-splice-refusal-set-is-not-queryable`** (+SURE, measured) — the E3C halt's root cause,
+  above. `cfg.rs`'s four refusal arms mint a diagnostic and record nothing, so "Dorc could not see
+  into this call" is not a question any consumer can ask. Every OTHER consumer of that fact today
+  reads it as `Opaque ⇒ Reach::Top` at the EFFECT plane, which is why the gap survived: the effect
+  plane walls correctly and the BINDING plane never had to ask.
+- **`fnd-a-loaded-body-is-never-spliced`** (+SURE, measured) — the splicer inlines same-file
+  funcdefs only, so `call_body_sites` answers `None` for every call into an oracle's body. Any
+  future consumer reading that absence as "unmodelled" inherits the E3C bug.
+- **`fnd-acquisition-is-what-keeps-the-fixpoint-growing`** (+SURE, measured across E3a) — the
+  widened seed makes a book-sourced dependency clobber in acquisition round 1, when nothing is held
+  yet. Nothing breaks because the site stays in `sites.named`, so `settled_account` still WANTS it,
+  it is still read, and round 2 clears the clobber. Had E2 also filtered `wanted`, the fixpoint
+  would have stalled and the dependency would never have been acquired at all — the concrete reason
+  acquisition is kept (`tc-acquisition-outlives-the-clobber`, ruled).
+
+### tc-flags
+
+- **`tc-nothing-shipped-costs-the-common-book-its-plan`** — unchanged from `§retrofit-map`, now with
+  one measurement behind it: an `ARTIFACT_SET` case over this shape would fail
+  `unresolved_generated_imports`, because the published plan's own literal relative import names a
+  file the generation no longer contains. That gate is the harness saying, mechanically, what the
+  flag says in prose. Going to the human as ruled.
+- **`tc-the-third-blind-act-wants-a-cfg-widening`** — NEW, and it is the E3C halt in flag form: the
+  seat the law's third species needs is a refused-call set on `Cfg`, which is `cfg.rs` bookkeeping
+  in a lane chartered for `funcenv`/`cli`, on `splice-budgets-are-licensure-not-perf`'s
+  winner-shifting footing. Lean: build it, narrowly, in whatever lane next touches `cfg.rs`'s
+  inline arms — the pin and its red cell are already committed and will green from that one seat.
+
+### touch-ranges — for the fold
+
+The conduct branch advanced while this lane ran; the lane is based on `60f3955b` and needs a
+rebase before it folds.
+
+| file | what moved (at `554b7992`) |
+|---|---|
+| `analysis/src/funcenv.rs` | `named_loads` field + its three constructors · `load_certainty` (beside `folded_edges`) · `LoadSites::clobbers` · `load_sites`' seed · `dead_edges`/`decide`/`decidable_test`/`file_test` signatures + the gate · the test module's TABLE 8/9 |
+| `cli/src/artifact.rs` | `BookLoad::permits` + `LoadPermission` · `book_loads` · `bundle_files`' carriage and rewrite gates · `mirrored_files`' wanted set · `inline_imports` · `kept_in_place_reason` · `placements`' reach test · both `select` entry points' debt counts · the test module's tail |
+| `cli/src/main.rs` | `select_artifact_form` (one argument) · `load_head_notices` + `line_of` + its one call site · one message in `acquisition_tests` |
+| `cli/src/world.rs` | `select_terminal_form` (one argument) |
+| `aid/src/{diag,fixture,catalog_lock}.rs`, `aid/tests/diag_tidy.rs` | the new code's five registration seats |
+| `internal-tooling/src/xfail.rs` | six pins added over the lane, five promoted away |
+
+**`Selection`, `with_plan`, and `main.rs`'s driver seat are untouched**, as the influence lane
+needs.
+
+### proposed-steering-and-register-edits — DELTA on `§retrofit-map`'s list
+
+Those proposals stand as written, with three corrections the build forced:
+
+- `analysis/CLAUDE.md rul-havoc-is-pointwise-never-the-stack` — the proposed replacement should
+  ALSO say the seed is `LoadSites`' one answer and that the `[ -f ]` gate reads it, since that is
+  what makes "one seat answers cwd determinacy" true rather than aspirational.
+- `analysis/CLAUDE.md the-fold-decides-conditions-never-shapes` — its `[ -f ]` clause's
+  parenthetical is now discharged; the replacement drafted in `§retrofit-map` is accurate.
+- NEW: `analysis/CLAUDE.md`, a rider on the same bullet or its own — the law names THREE blind acts
+  and the engine models TWO. `eval` is closed by refusal; an unspliceable call is NOT
+  (`fnd-the-splice-refusal-set-is-not-queryable`, pinned by
+  `p-x-an-unspliceable-call-havocs-the-cwd`). Worth saying in steering rather than only in a pin
+  trigger, because the tempting wrong fix — reading `call_body_sites`' absence as unmodelled — is
+  one line away and reddens two goldens.
