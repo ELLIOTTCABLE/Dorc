@@ -58,7 +58,7 @@
 | lane | branch | note | builder shape | status |
 |---|---|---|---|---|
 | `lane-loop-propagation` | `ai/r30-lane-loop` | loop lane report | Opus; checkpoint after census-mint | CHECKPOINT RULED 2026-08-22 (census landed `f095ad43`, pin promoted; seam approved member-major; reds owed first) |
-| `lane-emission-planner` | `ai/r30-lane-planner` | planner lane report | Opus MAP → ruling → EXECUTE | MAP DISPATCHED 2026-08-22 |
+| `lane-emission-planner` | `ai/r30-lane-planner` → `-exec` | planner lane report | Opus MAP → ruling → EXECUTE | MAP FOLDED-IN-BRANCH `0c38045d` (30Pc repair + 2 evidence cells landed); RULED; EXECUTE DISPATCHED 2026-08-22 |
 | `lane-load-plane-precision` | `ai/r30-lane-load` | load lane report | Opus MAP → ruling → EXECUTE-A → EXECUTE-B | MAP DISPATCHED 2026-08-22 |
 | `lane-influence-carriage` | — | influence lane report | Opus EXECUTE over the merged tip (scout census banked) | WAITING on the fold |
 | `lane-fruit-arc` | `ai/r30-lane-fruit` | fruit lane report | Sonnet, one shot | DISPATCHED 2026-08-22 |
@@ -71,7 +71,7 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
 ## §3 — Rulings owed at checkpoints (open)
 
 - loop seam: RULED — member-major ordering everywhere observable (record index AND witness); `IterationSlot` keeps the member ordinal; duplicate `(site, fact)` keeps refusing; the count>1 trigger keys on closure; licence reds minted before the seam (`rul-forfeits-carry-reds`).
-- planner map: component shape · tier table · the oracle-constant fallback (in-place vs withhold) · injectivity incl. variables · disclosure enum · the `sink` value.
+- planner map: RULED 2026-08-22 — `rul-a-loaded-definitions-placement-is-its-load-position` endorsed (book-loaded closure defaults in-place; no second hoist; residual withholds); T2 narrowed (T2a role-munge; T2b → T3 with the collider named) pending the HUMAN on the typed ladder vs reserved alpha-rename; `sink`-inside-the-paren ruled admissible (veto-eligible); tier cells = unit pins + disclosure needles; squat cell roster entry GRANTED; why-world re-derives the Selection, never a new durable field. FINDING for the human: the artifact already carries a book-loaded bundle at the `.`, so the preamble hoist was a SECOND copy — the hole is live (gate-6 dual-rail failure), fixed by step 3 of the execute order.
 - load map: the funcenv domain shape + monotonicity argument · AST decoding boundary · the
   `tc-computed-dot-complaint-shape` UX (human's) · the EXECUTE-A/B commit orders.
 - influence (before dispatch): rename the influence `Grade` (collides with claim-tier `core::Grade`) ·
