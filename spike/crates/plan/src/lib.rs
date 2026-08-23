@@ -6991,7 +6991,7 @@ apt_get__is_converged() { return 0; }
     fn loaded_vouch(helper: &str, body: &str) -> VerdictVouch {
         let helpers = dorc_oracle::closure::HelperIndex::build(&[helper], None);
         let closure = helpers
-            .closure_for(0, body)
+            .closure_for(0, body, dorc_oracle::closure::SiteFrame::unsolved())
             .expect("one source declares one helper");
         VerdictVouch::new(
             "apt_get__is_converged".to_string(),

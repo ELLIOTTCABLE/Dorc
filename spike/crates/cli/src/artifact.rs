@@ -1302,16 +1302,7 @@ mod tests {
         );
         assert_eq!(loads.len(), 1, "one book-sited load");
         loads[0].explicit = false;
-        let settled = |request, posture| {
-            select(
-                &cwd,
-                snapshot.source_paths(),
-                &projection,
-                &loads,
-                request,
-                posture,
-            )
-        };
+        let settled = |request, posture| select(&snapshot, &projection, &loads, request, posture);
         let multipart = settled(FormRequest::Auto, StreamPosture::Materializable)
             .expect("the dependency is placeable at its authored path");
         assert_eq!(multipart.form(), ArtifactForm::Multipart);
@@ -1559,14 +1550,7 @@ mod tests {
         posture: StreamPosture,
     ) -> Result<super::Selection, FormRefusal> {
         let (snapshot, projection, loads) = world_at(cwd, book, paths, srcs);
-        select(
-            cwd,
-            snapshot.source_paths(),
-            &projection,
-            &loads,
-            request,
-            posture,
-        )
+        select(&snapshot, &projection, &loads, request, posture)
     }
 
     /// The analysed world a form is settled over, handed back whole so a test can perturb the loads
