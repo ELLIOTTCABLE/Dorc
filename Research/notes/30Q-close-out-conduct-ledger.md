@@ -105,6 +105,17 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
 roll-over lean + the `30Pc` routing method (no objection raised). Naming/typing advice and the
 parser lean as recorded in §1.
 
+## §5b — CONTEXT COLLAPSE (2026-08-22, after the restart; supersedes §5a's order)
+
+The conductor spent its remaining window folding planner → load-A → load-B by hand (three
+real conflicts; `nameuse`/`artifact`/`funcenv` repairs) and cannot conduct further. All four
+kernel lanes are FOLDED on `ai/r30-conduct`; the merged tip is not yet gate-green (two
+diagnosed fold reds). A fold-repair builder and the fruit closer are running; their reports go
+to the SUCCESSOR. Everything the successor needs that is not here is in the root
+`_tmp-r30-conduct-collapse.md` (builder IDs, the reds, the hand-merged hunks, the owed
+steering list). Lesson for the record: a dispatch hold must not become "do the builders'
+work yourself" — fold conflicts are builder work; a conductor's context is for adjudication.
+
 ## §5a — RESTART STATE (human hold, 2026-08-22: no further subagent wakes; harness restart pending)
 
 In-flight lanes run to completion and are adjudicated as they land; NOTHING is dispatched or
