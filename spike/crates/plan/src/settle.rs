@@ -1426,4 +1426,37 @@ mod tests {
             );
         }
     }
+
+    /// RED CELL (`306b:rul-influence-carried-by-entities`): the account a region's meet JOINED must
+    /// be the one its Spine record carries.
+    ///
+    /// The shape exercised: `write_spine`'s region arm, the one seat between
+    /// `region::decide_region`'s universal join and `SpineRegionDecision`. What it observes is
+    /// feature-off versus feature-on — today the arm writes a literal and the Spine's
+    /// object-global stamp decides every record's grade, so the meet's answer is computed and
+    /// discarded (`SharedRegionDecision::influence` has no reader, and `ProvisionalRegionDecision`
+    /// has no field); with the carriage threaded, the arm reads the decision's own account and a
+    /// route-level difference can reach the record at all.
+    ///
+    /// Scanned rather than valued, on `only_the_universally_agreed_arm_retires_anything`'s
+    /// footing: the seat is private, its inputs are a whole `RegionRound`, and what is owed is
+    /// WHERE the account comes from, which no value-level assertion over a public API reaches. It
+    /// is the coarse half deliberately — the value half is
+    /// `p-x-spine-record-keeps-its-mints-account`, one level down, and the two green together.
+    #[test]
+    fn the_region_record_carries_the_account_its_meet_joined() {
+        let source = include_str!("settle.rs");
+        let arm = source
+            .split("fn write_spine")
+            .nth(1)
+            .and_then(|tail| tail.split("for decision in self.decisions").next())
+            .expect("the region-writing arm of the settled Spine write")
+            .to_owned();
+        internal_tooling::xfail::xfail_until("p-x-region-account-reaches-the-spine-record", || {
+            assert!(
+                arm.contains("region.account"),
+                "the region arm must write the account its own decision joined; found:\n{arm}"
+            );
+        });
+    }
 }

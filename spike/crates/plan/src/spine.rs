@@ -498,4 +498,45 @@ mod tests {
             "the driver must take its authority from its admission, never from the intakeless mint"
         );
     }
+
+    /// RED CELL (`309:rul-spine-preserves-never-stamps`): a Spine STORES the account a record's own
+    /// semantic mint joined — it never computes one, never applies an object-global grade, and
+    /// never fills an absent field.
+    ///
+    /// The shape exercised: one record whose mint answered authored-before-contact, stored on a
+    /// Spine belonging to a run that read host bytes. Feature-off, every setter assigns the
+    /// run-wide scalar over whatever the mint supplied, so a per-object join is not merely absent
+    /// but unobservable — the two inputs are indistinguishable at the reader. Feature-on, the
+    /// record answers what its own constructor joined, which is what lets a pre-contact decision
+    /// stop wearing a post-contact run's phase
+    /// (`30I:rul-load-decisions-are-authored-before-contact`).
+    ///
+    /// `core::spine`'s `the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it` pins the
+    /// FORBIDDEN behaviour and is this cell's direct contradiction: it is rewritten when this
+    /// greens, never left passing beside it.
+    #[test]
+    fn a_spine_record_keeps_the_account_its_mint_supplied() {
+        use dorc_core::influence::Influenced;
+        use dorc_core::{AstId, LeafId, SiteId};
+
+        let phase = Influenced::authored_before_contact(()).widen();
+        let mut spine = Spine::minted_at(Some(phase));
+        spine.set_disposition(dorc_core::spine::SpineDisposition {
+            site: SiteId::leaf(LeafId(0)),
+            ast: AstId(0),
+            sh: String::new(),
+            decision: Disposition::Run,
+            grade: None,
+        });
+        let stored = spine
+            .disposition(SiteId::leaf(LeafId(0)))
+            .expect("the record was stored")
+            .grade;
+        internal_tooling::xfail::xfail_until("p-x-spine-record-keeps-its-mints-account", || {
+            assert_eq!(
+                stored, None,
+                "the record must answer what its own mint joined, not the run's global phase"
+            );
+        });
+    }
 }

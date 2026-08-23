@@ -874,6 +874,80 @@ fn one_influenced_route_influences_the_shared_decision() {
     );
 }
 
+/// The joined account does not depend on WHICH route carried the influence — the
+/// order-independence half of `30L:pin-influence-joins-most`, and what
+/// `core/CLAUDE.md pin-set-meet-order-independence` asks of every universal meet.
+///
+/// The shape: one closed two-route population, decided twice, with the influenced route moved from
+/// the tail to the head. A join that answered from its FIRST contributor alone would give two
+/// answers for one world — a decision that moves when nothing about the world did. Green today
+/// because the landed representation has two points; it is committed now so the fold that replaces
+/// it cannot regress the property while widening it.
+#[test]
+fn the_shared_account_does_not_depend_on_which_route_carries_influence() {
+    let census =
+        census_of("install_pkg() { apt-get install -y nginx; }\ninstall_pkg\ninstall_pkg\n");
+    let (region, population) = sole_region(&census);
+    let routes = closed_routes(&population);
+    let influenced = Influenced::authored_before_contact(()).widen();
+    let decided = |head: bool| {
+        let proofs = vec![
+            RouteRegionProof::new(
+                routes[0],
+                RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
+                head.then_some(influenced),
+            ),
+            RouteRegionProof::new(
+                routes[1],
+                RouteAdmission::project(&RouteConclusion::Replace(StandIn::True), None),
+                (!head).then_some(influenced),
+            ),
+        ];
+        decide_region(region, &population, &proofs).influence()
+    };
+    assert_eq!(
+        decided(true),
+        decided(false),
+        "the join answered differently depending on which contributor came first"
+    );
+}
+
+/// RED CELL (`306b:rul-untracked-is-not-authored`): an UNENUMERATED route population's shared
+/// decision must not read authored-before-contact.
+///
+/// The shape exercised: a region whose census could not close its population
+/// (`RoutePopulation::Open` — `30L:pin-open-route-runs`), every enumerated proof of which answered
+/// before host contact. The routes nobody enumerated may have been decided from host-reported
+/// material, and absence of an answer is not an answer.
+///
+/// What it observes: feature-off, the landed two-point representation spells "no contributing route
+/// was influenced" and "we do not know what the missing contributors were" with the same `None`, so
+/// an open population is indistinguishable from a genuinely pre-contact one. Feature-on, the
+/// unenumerated half wears an explicit untracked account that reads maximally influenced at every
+/// consequential consumer, and the two worlds separate. Promotion rewrites the assertion into the
+/// account vocabulary that replaces `influence()`.
+#[test]
+fn an_open_population_does_not_read_as_authored_before_contact() {
+    let census =
+        census_of("install_pkg() { apt-get install -y nginx; }\ninstall_pkg\ninstall_pkg\n");
+    let (region, population) = sole_region(&census);
+    let routes = closed_routes(&population);
+    let proofs = proofs_of(
+        &routes,
+        &[
+            alone(RouteConclusion::Replace(StandIn::True)),
+            alone(RouteConclusion::Replace(StandIn::True)),
+        ],
+    );
+    let account = decide_region(region, &RoutePopulation::Open, &proofs).influence();
+    internal_tooling::xfail::xfail_until("p-x-unenumerated-population-is-not-authored", || {
+        assert!(
+            account.is_some(),
+            "an unenumerated population's influence is unknown, never absent"
+        );
+    });
+}
+
 /// The meet quantifies over the population the CENSUS proved, never over whatever a caller handed
 /// it. A short proof list — one route's answer standing in for two — is Run, which is the same
 /// mistake-shape `pin-shared-witness-spans-instances` forbids one level up.
