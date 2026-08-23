@@ -404,13 +404,6 @@ impl DefinitionTable {
         self.defs.iter().filter(|d| d.name == name).count()
     }
 
-    /// What a `.` operand binds: the operand resolved by sh's own rule, then looked up canonically
-    /// (`30I:rul-dot-resolves-as-sh`). `None` for a slash-less operand (a `PATH` search), an
-    /// unknown cwd, or a path the controller never loaded.
-    fn program_of_dot_target(&self, target: &str) -> Option<&crate::load::LoadProgram> {
-        self.by_path.get(&self.cwd.resolve_dot(target)?)
-    }
-
     /// The program a canonical key names, for a nested load already resolved to one.
     fn program_at_key(&self, key: &str) -> Option<&crate::load::LoadProgram> {
         self.by_path.get(key)
@@ -422,10 +415,29 @@ impl DefinitionTable {
         self.by_path.get(&self.cwd.resolve_operand(path)?)
     }
 
-    /// The canonical key a `.` operand names, whether or not anything is loaded there — what a
-    /// load site records so a later pass can replay the binding without re-resolving.
-    fn dot_target_key(&self, target: &str) -> Option<String> {
-        self.cwd.resolve_dot(target)
+    /// Is a NON-FINAL component of `key` a file this unit holds — the DEAD reading
+    /// (`30P:rul-dead-spelling-is-not-unsound`)?
+    ///
+    /// `${0%/*}` of a slashless `$0` is the whole word, so the operand becomes
+    /// `book.sh/helpers.sh`, and a `.` under a path whose directory is a FILE cannot succeed. The
+    /// book's own path counts as much as any loadable does — it is the one the trap is spelled
+    /// over.
+    fn a_non_final_component_is_a_file(&self, key: &str) -> bool {
+        let book = self
+            .spellings
+            .text(Spelling::SlashBearing)
+            .and_then(|path| self.cwd.resolve_operand(path));
+        let mut probe = key;
+        while let Some((parent, _)) = probe.rsplit_once('/') {
+            if parent.is_empty() {
+                return false;
+            }
+            if self.by_path.contains_key(parent) || book.as_deref() == Some(parent) {
+                return true;
+            }
+            probe = parent;
+        }
+        false
     }
 
     /// The EXACT TARGET CLOSURE of `key`: that program plus everything it transitively loads,
@@ -948,12 +960,12 @@ pub fn analyze(
     }
     // Its own pass: independent of the environment, so threading it would buy only interior
     // mutability in a kernel.
-    let sites = load_sites(cfg, defs, literals);
-    let (unresolvable_loads, sourced_paths) = (sites.unresolvable, sites.resolved);
+    let sites = load_sites(ast, cfg, defs, literals);
+    let (unresolvable_loads, sourced_paths) = (sites.unresolvable.clone(), sites.resolved.clone());
     let solve_pruned = |folded: &BTreeSet<(CfgNodeId, CfgNodeId)>| {
         let graph = PrunedCfg::new(cfg, folded);
         solve_certified(&graph, Direction::Forward, |node, incoming: &EnvStack| {
-            transfer(ast, cfg, defs, literals, &universe, node, incoming)
+            transfer(ast, cfg, defs, literals, &sites, &universe, node, incoming)
         })
     };
 
@@ -2008,50 +2020,392 @@ fn record(
     });
 }
 
+// ── The load-head evaluator (`30P:rul-load-head-is-exact-or-havoc`) ──
+
+/// What a `.` operand answers under ONE invocation spelling.
+///
+/// There is no state between [`Resolves`](OperandAnswer::Resolves) and a havoc: a head Dorc cannot
+/// evaluate over controller-held inputs claims no authority at all, and no engine SELECTION may
+/// launder into one (`30Pb:fnd-possible-singleton-is-not-exact-selection`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OperandAnswer {
+    /// Names this canonical key in the snapshot's key space.
+    Resolves(String),
+    /// Provably fatal: a NON-FINAL component of the resolved key is a file this unit holds
+    /// (`${0%/*}` of a slashless `$0` gives `book.sh/helpers.sh`). Narrow on purpose — a `.` that
+    /// cannot succeed runs nothing below it, so it is DEAD rather than unsound
+    /// (`30P:rul-dead-spelling-is-not-unsound`).
+    Dead,
+    /// The HOST picks: a slashless operand (a `PATH` search) or a relative one with no cwd to
+    /// stand in.
+    HostChosen,
+    /// The word could not be evaluated over controller-known inputs.
+    Unevaluable(HavocCause),
+}
+
+/// Why a load head could not be named — an AID type, minted where the reason is KNOWN rather than
+/// reconstructed at a diagnostic seat.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum HavocCause {
+    /// Two live spellings of `$0` resolve to DIFFERENT files, so no one file is the target.
+    SpellingsDisagree,
+    /// A variable read the source-literal plane cannot answer (an env read, a captured value).
+    DynamicValue,
+    /// A command substitution or arithmetic expansion — a value only the host can produce
+    /// (`30P:rul-static-predict-sites-loads` is the sanctioned route, and needs a stdlib).
+    ComputedSubstitution,
+    /// A parameter-expansion operator this evaluator does not model.
+    UnmodelledOperator,
+    /// The operand evaluated, and named no file the controller can identify: a `PATH` search, a
+    /// relative operand with no cwd, or a provably fatal one.
+    NotInSnapshot,
+    /// A relative operand below a line that may have moved the working directory. The clobbering
+    /// node is carried so the hint can name the CAUSE rather than the symptom.
+    CwdUnknown { clobbered_at: CfgNodeId },
+}
+
+/// One `.` site's head, as the settled answer every consumer reads.
+#[derive(Debug, Clone)]
+struct LoadHead {
+    /// The canonical key this site EXACTLY names, or why no key could be named.
+    exact: Result<String, HavocCause>,
+    /// The SLASHLESS spelling proved fatal — the off-ramp lint's whole trigger. It never denies
+    /// EXACT: Dorc invokes the slash-bearing spelling and bakes the decision into the bytes it
+    /// ships (`30P:rul-dorc-invokes-in-a-modelled-live-spelling`).
+    dies_slashless: bool,
+}
+
+/// Evaluate one `.` site's operand into the key it names.
+///
+/// Delegating to [`SourceLiteralPlane::literal_text`] FIRST is what preserves the positional
+/// overlay and constant folding the value plane already performs, so a spliced body and a `$1` in
+/// an operand behave exactly as before this evaluator existed.
+///
+/// EXACT is decided by the spelling Dorc INVOKES; a second live spelling contributes exactly two
+/// things — a `Dead` answer, which mints an off-ramp lint, and a `Resolves` to a DIFFERENT key,
+/// which denies EXACT (a genuine authorship hazard, cheap to catch).
+fn load_head(
+    ast: &Ast,
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    site: AstId,
+    index: usize,
+) -> LoadHead {
+    let dead = LoadHead {
+        exact: Err(HavocCause::DynamicValue),
+        dies_slashless: false,
+    };
+    if let Some(text) = literals.literal_text(node, index) {
+        return LoadHead {
+            exact: named_key(key_of(defs, text)),
+            dies_slashless: false,
+        };
+    }
+    let NodeKind::Simple { words, .. } = &ast.node(site).kind else {
+        return dead;
+    };
+    let Some(&word) = words.get(index) else {
+        return dead;
+    };
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return dead;
+    };
+    let answer = |spelling| match evaluate_word(defs, literals, node, parts, spelling) {
+        Err(cause) => OperandAnswer::Unevaluable(cause),
+        Ok(text) => key_of(defs, &text),
+    };
+    let invoked = defs
+        .spellings
+        .text(Spelling::SlashBearing)
+        .map_or(OperandAnswer::Unevaluable(HavocCause::DynamicValue), |_| {
+            answer(Spelling::SlashBearing)
+        });
+    let other = defs
+        .spellings
+        .text(Spelling::Slashless)
+        .map(|_| answer(Spelling::Slashless));
+    let exact = match named_key(invoked) {
+        Ok(key) => match other.as_ref() {
+            Some(OperandAnswer::Resolves(elsewhere)) if *elsewhere != key => {
+                Err(HavocCause::SpellingsDisagree)
+            }
+            _ => Ok(key),
+        },
+        denied => denied,
+    };
+    LoadHead {
+        exact,
+        dies_slashless: other == Some(OperandAnswer::Dead),
+    }
+}
+
+/// The key an answer names, or the cause that denies one.
+fn named_key(answer: OperandAnswer) -> Result<String, HavocCause> {
+    match answer {
+        OperandAnswer::Resolves(key) => Ok(key),
+        OperandAnswer::Unevaluable(cause) => Err(cause),
+        OperandAnswer::Dead | OperandAnswer::HostChosen => Err(HavocCause::NotInSnapshot),
+    }
+}
+
+/// Which canonical key an already-evaluated operand names.
+///
+/// The slashless refusal and the unknown-cwd refusal are sh's own and belong to
+/// [`dorc_core::loadpath::Cwd::resolve_dot`]; what is added here is the DEAD reading, which is a
+/// question about the unit's own files rather than about the path rule. Membership in the loaded
+/// set is deliberately NOT asked — a key nothing is loaded under is what the acquisition loop goes
+/// and reads (`30I:rul-one-loader-many-projections`).
+fn key_of(defs: &DefinitionTable, text: &str) -> OperandAnswer {
+    let Some(key) = defs.cwd.resolve_dot(text) else {
+        return OperandAnswer::HostChosen;
+    };
+    if defs.a_non_final_component_is_a_file(&key) {
+        return OperandAnswer::Dead;
+    }
+    OperandAnswer::Resolves(key)
+}
+
+/// Evaluate a `.` operand's word over controller-known inputs alone
+/// (`30P:principle-load-operands-evaluate-over-controller-known-inputs`).
+///
+/// Structure comes from the AST; every VARIABLE read routes through
+/// [`SourceLiteralPlane::variable_text`], so `funcenv-reads-source-literal-plane-only` still holds.
+/// `$0` is not a variable read at all — it is a controller-held constant on the definition table.
+fn evaluate_word(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    parts: &[WordPart],
+    spelling: Spelling,
+) -> Result<String, HavocCause> {
+    let mut out = String::new();
+    for part in parts {
+        match part {
+            WordPart::Literal(text) | WordPart::SingleQuoted(text) => out.push_str(text),
+            WordPart::DoubleQuoted(inner) => {
+                out.push_str(&evaluate_word(defs, literals, node, inner, spelling)?);
+            }
+            WordPart::Param { name } => {
+                out.push_str(&read_parameter(defs, literals, node, name, spelling)?);
+            }
+            WordPart::ParamExpansion { base, op } => {
+                out.push_str(&apply_operator(defs, literals, node, base, op, spelling)?);
+            }
+            WordPart::CommandSubst(_) | WordPart::Arithmetic => {
+                return Err(HavocCause::ComputedSubstitution);
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// One parameter's value: `$0` from the table's spellings, everything else through the plane.
+fn read_parameter(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    name: &str,
+    spelling: Spelling,
+) -> Result<String, HavocCause> {
+    if name == "0" {
+        return defs
+            .spellings
+            .text(spelling)
+            .map(str::to_owned)
+            .ok_or(HavocCause::DynamicValue);
+    }
+    literals
+        .variable_text(node, name)
+        .ok_or(HavocCause::DynamicValue)
+}
+
+/// Apply one decoded parameter-expansion operator to its base's value.
+///
+/// Every arm requires the base's value to be KNOWN: a substitution over a base the plane cannot
+/// read is undecidable in BOTH directions (set-and-empty and unset are different answers), so it
+/// is a havoc rather than a guess.
+fn apply_operator(
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+    node: CfgNodeId,
+    base: &str,
+    op: &dorc_syntax::ast::ParamOp,
+    spelling: Spelling,
+) -> Result<String, HavocCause> {
+    use dorc_syntax::ast::{ParamOp, SubstituteKind};
+
+    let value = read_parameter(defs, literals, node, base, spelling)?;
+    match op {
+        ParamOp::EmptyDefault { colon } => Ok(if *colon && value.is_empty() {
+            String::new()
+        } else {
+            value
+        }),
+        ParamOp::Substitute { kind, colon, word } => {
+            let absent = *colon && value.is_empty();
+            let word = || evaluate_word(defs, literals, node, word, spelling);
+            match kind {
+                // The plane answered, so the parameter is SET: `-`/`=`/`?` all yield its value
+                // unless the colon form additionally rejects the empty one.
+                SubstituteKind::Default | SubstituteKind::Assign | SubstituteKind::Error => {
+                    if absent {
+                        word()
+                    } else {
+                        Ok(value)
+                    }
+                }
+                SubstituteKind::Alternate => {
+                    if absent {
+                        Ok(String::new())
+                    } else {
+                        word()
+                    }
+                }
+            }
+        }
+        ParamOp::Trim {
+            end,
+            greedy,
+            pattern,
+        } => trim(&value, &pattern_of(pattern)?, *end, *greedy),
+        ParamOp::Length | ParamOp::Unmodelled => Err(HavocCause::UnmodelledOperator),
+    }
+}
+
+/// One atom of a trim pattern — the sh globbing subset this evaluator models.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PatternAtom {
+    Char(char),
+    AnyOne,
+    AnyRun,
+}
+
+/// A trim pattern's atoms, or ⊤ when a fragment is not source-literal or uses a bracket class.
+///
+/// Bracket expressions are refused rather than modelled: their collating and equivalence classes
+/// are the target's business, and `posix-in-spirit-default` says a character granted here could
+/// never be clawed back.
+fn pattern_of(parts: &[WordPart]) -> Result<Vec<PatternAtom>, HavocCause> {
+    let mut out = Vec::new();
+    for part in parts {
+        match part {
+            WordPart::Literal(text) => {
+                for ch in text.chars() {
+                    out.push(match ch {
+                        '*' => PatternAtom::AnyRun,
+                        '?' => PatternAtom::AnyOne,
+                        '[' => return Err(HavocCause::UnmodelledOperator),
+                        other => PatternAtom::Char(other),
+                    });
+                }
+            }
+            WordPart::SingleQuoted(text) => out.extend(text.chars().map(PatternAtom::Char)),
+            WordPart::DoubleQuoted(inner) => out.extend(pattern_of(inner)?),
+            _ => return Err(HavocCause::UnmodelledOperator),
+        }
+    }
+    Ok(out)
+}
+
+/// `${x%p}` / `${x%%p}` / `${x#p}` / `${x##p}` over a known value and a modelled pattern.
+///
+/// Shortest-match scans the candidate lengths in increasing order and longest in decreasing, which
+/// is the definition rather than an optimisation — the two differ exactly on which candidate the
+/// scan meets first.
+fn trim(
+    value: &str,
+    pattern: &[PatternAtom],
+    end: dorc_syntax::ast::TrimEnd,
+    greedy: bool,
+) -> Result<String, HavocCause> {
+    use dorc_syntax::ast::TrimEnd;
+
+    let chars: Vec<char> = value.chars().collect();
+    let mut lengths: Vec<usize> = (0..=chars.len()).collect();
+    if greedy {
+        lengths.reverse();
+    }
+    for len in lengths {
+        let (kept, candidate) = match end {
+            TrimEnd::Suffix => (&chars[..chars.len() - len], &chars[chars.len() - len..]),
+            TrimEnd::Prefix => (&chars[len..], &chars[..len]),
+        };
+        if pattern_matches(pattern, candidate) {
+            return Ok(kept.iter().collect());
+        }
+    }
+    Ok(value.to_owned())
+}
+
+/// Does `pattern` match the whole of `text`? A plain backtracking walk — patterns and paths are
+/// both tiny, and `perf-doctrine` puts every network round-trip above this.
+fn pattern_matches(pattern: &[PatternAtom], text: &[char]) -> bool {
+    match pattern.split_first() {
+        None => text.is_empty(),
+        Some((PatternAtom::AnyRun, rest)) => {
+            (0..=text.len()).any(|split| pattern_matches(rest, &text[split..]))
+        }
+        Some((PatternAtom::AnyOne, rest)) => !text.is_empty() && pattern_matches(rest, &text[1..]),
+        Some((PatternAtom::Char(want), rest)) => {
+            text.first() == Some(want) && pattern_matches(rest, &text[1..])
+        }
+    }
+}
+
 /// Split every `.`/`source` site into the resolvable and the unresolvable.
 ///
-/// Unresolvable — a dynamic path, a path the driver never read, or a target word carrying anything
-/// weaker than source-literal provenance — havocs the environment (`28K` §1
+/// Unresolvable — a head no live spelling names, a path the driver never read, or a target word
+/// carrying anything weaker than source-literal provenance — havocs the environment (`28K` §1
 /// rul-unloadable-is-unlicensed); the caller discloses them, since silence licenses nothing. The
 /// resolvable half is kept so the shadow pass can replay each statement's bindings.
-fn load_sites(cfg: &Cfg, defs: &DefinitionTable, literals: &SourceLiteralPlane<'_>) -> LoadSites {
-    let mut unresolvable = BTreeSet::new();
-    let mut resolved = BTreeMap::new();
-    let mut named = BTreeMap::new();
+///
+/// THE ONE RESOLVER: the transfer reads this map rather than re-evaluating a head per worklist
+/// iteration, so no second answer to "which file is this" exists to drift from it
+/// (`30I:rul-one-loader-many-projections`).
+fn load_sites(
+    ast: &Ast,
+    cfg: &Cfg,
+    defs: &DefinitionTable,
+    literals: &SourceLiteralPlane<'_>,
+) -> LoadSites {
+    let mut sites = LoadSites::default();
     for node in 0..cfg.node_count() {
         let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
-        if cfg.node(id).kind != CfgNodeKind::Command {
+        let cfg_node = cfg.node(id);
+        if cfg_node.kind != CfgNodeKind::Command {
             continue;
         }
         if !matches!(literals.literal_text(id, 0), Some("." | "source")) {
             continue;
         }
-        let Some(target) = literals.literal_text(id, 1) else {
-            unresolvable.insert(id);
-            continue;
-        };
-        // A target the operand NAMES but the controller never read is still a name: the
-        // acquisition reads exactly these and re-solves, which is how a book-sourced package
-        // joins the loaded set at all.
-        let Some(key) = defs.dot_target_key(target) else {
-            unresolvable.insert(id);
-            continue;
-        };
-        if defs.program_at_key(&key).is_some() {
-            resolved.insert(id, key);
-        } else {
-            named.insert(id, key);
-            unresolvable.insert(id);
+        let head = load_head(ast, defs, literals, id, cfg_node.ast, 1);
+        if head.dies_slashless {
+            sites.dies_slashless.insert(id);
+        }
+        match head.exact {
+            // A target the operand NAMES but the controller never read is still a name: the
+            // acquisition reads exactly these and re-solves, which is how a book-sourced package
+            // joins the loaded set at all.
+            Ok(key) => {
+                if defs.program_at_key(&key).is_some() {
+                    sites.resolved.insert(id, key);
+                } else {
+                    sites.named.insert(id, key);
+                    sites.unresolvable.insert(id);
+                }
+            }
+            Err(cause) => {
+                sites.causes.insert(id, cause);
+                sites.unresolvable.insert(id);
+            }
         }
     }
-    LoadSites {
-        unresolvable,
-        resolved,
-        named,
-    }
+    sites
 }
 
 /// What one pass over the `.`/`source` sites found.
+#[derive(Debug, Default, Clone)]
 struct LoadSites {
     /// Sites whose load the environment could not follow — they havoc.
     unresolvable: BTreeSet<CfgNodeId>,
@@ -2059,6 +2413,11 @@ struct LoadSites {
     resolved: BTreeMap<CfgNodeId, String>,
     /// Sites whose target the operand NAMED but the loaded set does not hold.
     named: BTreeMap<CfgNodeId, String>,
+    /// Why an unresolvable site could not be named — the hint's operand.
+    causes: BTreeMap<CfgNodeId, HavocCause>,
+    /// Sites whose head is EXACT for the spelling Dorc invokes and provably fatal for the other
+    /// (`30P:rul-dead-spelling-is-not-unsound`) — an off-ramp lint, never a refusal.
+    dies_slashless: BTreeSet<CfgNodeId>,
 }
 
 /// The per-node transfer.
@@ -2072,6 +2431,7 @@ fn transfer(
     cfg: &Cfg,
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    sites: &LoadSites,
     universe: &BTreeSet<String>,
     node: usize,
     incoming: &EnvStack,
@@ -2111,7 +2471,7 @@ fn transfer(
             }
             _ => incoming.clone(),
         },
-        CfgNodeKind::Command => command_transfer(defs, literals, id, incoming),
+        CfgNodeKind::Command => command_transfer(defs, literals, sites, id, incoming),
         _ => incoming.clone(),
     }
 }
@@ -2196,6 +2556,7 @@ fn definition_at(defs: &DefinitionTable, ast: AstId) -> Flat<Binding> {
 fn command_transfer(
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    sites: &LoadSites,
     node: CfgNodeId,
     incoming: &EnvStack,
 ) -> EnvStack {
@@ -2204,20 +2565,19 @@ fn command_transfer(
     };
     match head {
         "." | "source" => {
-            let Some(target) = literals.literal_text(node, 1) else {
-                return EnvStack::Top;
-            };
             // `28K` §1: we cannot know WHICH names an unloaded file defines, so all of it is ⊤.
-            let Some(program) = defs.program_of_dot_target(target) else {
+            let Some(key) = sites.resolved.get(&node) else {
                 return EnvStack::Top;
             };
-            let key = defs.cwd.resolve_dot(target);
+            let Some(program) = defs.program_at_key(key) else {
+                return EnvStack::Top;
+            };
             run_program(
                 Loading {
                     defs,
                     literals,
                     node,
-                    sourcer: key.as_deref(),
+                    sourcer: Some(key),
                     certain: true,
                     within: None,
                     depth: LOAD_DEPTH_CAP,
@@ -2225,7 +2585,7 @@ fn command_transfer(
                 program,
                 incoming,
                 &mut BTreeMap::new(),
-                &mut key.iter().cloned().collect(),
+                &mut BTreeSet::from([key.clone()]),
                 // The transfer discards the account: it is asked once per worklist iteration, and
                 // the settled answer is what a caller may act on ([`settled_account`]).
                 &mut LoadAccount::default(),
@@ -2623,6 +2983,41 @@ mod tests {
                 !imports.contains(forbidden),
                 "`{forbidden}` is reachable from funcenv's imports — the environment would stop \
                  being a pre-pass, and a later round could re-decide which definition was live"
+            );
+        }
+    }
+
+    /// SIGNATURE ENFORCEMENT, the load-head evaluator's half of
+    /// `funcenv-reads-source-literal-plane-only`: the evaluator reads the AST for STRUCTURE and
+    /// routes every VARIABLE read through the grade-gated plane, never through the value plane
+    /// directly. `$0` is not a variable read at all — it is a controller-held constant on the
+    /// definition table, which is why it may site a load when a host-answered value may not.
+    ///
+    /// Lexical, over the evaluator's own region, because the module as a whole legitimately imports
+    /// the plane's backing type — the property is "this code cannot spell it", which no signature
+    /// expresses.
+    #[test]
+    fn the_load_head_evaluator_names_no_value_plane_accessor() {
+        let src = include_str!("funcenv.rs");
+        let start = src
+            .find("// \u{2500}\u{2500} The load-head evaluator")
+            .expect("the evaluator's section header");
+        let end = start
+            + src[start..]
+                .find("/// Split every")
+                .expect("the section ends where load_sites begins");
+        let region = &src[start..end];
+        assert!(region.contains("fn evaluate_word"), "a non-empty walk");
+        for forbidden in [
+            "ValueFlow",
+            "variable_before",
+            "argv_values",
+            "argv_word_grades",
+        ] {
+            assert!(
+                !region.contains(forbidden),
+                "`{forbidden}` appears in the load-head evaluator — which oracle answers a site \
+                 would then rest on something outside the program text"
             );
         }
     }
@@ -3472,6 +3867,76 @@ mod tests {
                 if bound { loaded } else { "nothing loaded" }
             );
         }
+    }
+
+    /// A `.` operand built by pure parameter expansion over `$0` names its file with no command
+    /// run (`30P:model-symbolic-dollar-zero`), including at the two traps the atlas measured: a
+    /// book at `/` trims to the EMPTY string rather than to "cwd", and a slashless `$0` has no
+    /// slash to trim so `${0%/*}` is the whole word — which makes the operand name a path UNDER a
+    /// file, dead rather than resolving, so the invoking spelling is what answers.
+    ///
+    /// CFG shape exercised: one top-level `.` of a single double-quoted word (expansion plus
+    /// literal tail), straight-line, with the bound name read at the unit's exit.
+    #[test]
+    fn a_dollar_zero_trim_names_a_file_with_no_command_run() {
+        for (book_path, cwd, loaded, operand) in [
+            ("/ops/book.sh", "/ops", "/ops/lib.sh", "${0%/*}/lib.sh"),
+            ("/book.sh", "/", "/lib.sh", "${0%/*}/lib.sh"),
+            ("book.sh", "/ops", "/ops/lib.sh", "${0%/*}/lib.sh"),
+            ("/ops/pkg/book.sh", "/ops", "/lib.sh", "${0%%/*}/lib.sh"),
+        ] {
+            let cwd = dorc_core::loadpath::Cwd::at(cwd);
+            let mut table = DefinitionTable::rooted_at(
+                cwd.clone(),
+                super::ScriptSpellings::of(book_path, &cwd),
+            );
+            let lib = add_def(&mut table, 0, ROLE);
+            table.set_loadable(loaded, flat(vec![lib]));
+            let (env, cfg, _) =
+                solve_positional(&format!(". \"{operand}\"\nyum install\n"), &table);
+            assert_eq!(
+                env.binding_before(cfg.exit(), ROLE),
+                Flat::Elem(Binding::Defined(lib)),
+                "`{operand}` from a book at {book_path} names {loaded}"
+            );
+        }
+    }
+
+    /// The four trims, over the pattern subset the evaluator models. Shortest-vs-longest is the
+    /// whole reason `%` and `%%` are different operators, and a pattern that matches NOTHING
+    /// leaves the value alone rather than answering empty.
+    #[test]
+    fn the_trims_match_shortest_and_longest_and_leave_a_miss_alone() {
+        use dorc_syntax::ast::{TrimEnd, WordPart};
+
+        let pattern = |text: &str| {
+            super::pattern_of(&[WordPart::Literal(text.to_owned())]).expect("a modelled pattern")
+        };
+        let trim = |value: &str, pat: &str, end, greedy| {
+            super::trim(value, &pattern(pat), end, greedy).expect("a modelled trim")
+        };
+        assert_eq!(
+            trim("/ops/pkg/book.sh", "/*", TrimEnd::Suffix, false),
+            "/ops/pkg"
+        );
+        assert_eq!(trim("/ops/pkg/book.sh", "/*", TrimEnd::Suffix, true), "");
+        assert_eq!(
+            trim("/ops/pkg/book.sh", "*/", TrimEnd::Prefix, false),
+            "ops/pkg/book.sh"
+        );
+        assert_eq!(
+            trim("/ops/pkg/book.sh", "*/", TrimEnd::Prefix, true),
+            "book.sh"
+        );
+        assert_eq!(
+            trim("book.sh", "/*", TrimEnd::Suffix, false),
+            "book.sh",
+            "no suffix matches, so the whole word survives — the slashless `$0` trap"
+        );
+        assert!(
+            super::pattern_of(&[WordPart::Literal("[a-z]*".to_owned())]).is_err(),
+            "a bracket expression is the TARGET's collation to answer, so it is ⊤ here"
+        );
     }
 
     /// The two live spellings of `$0`, derived from the authored book path and the modeled cwd

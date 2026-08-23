@@ -4299,8 +4299,8 @@ mod acquisition_tests {
         }
     }
 
-    /// `p-x-load-operand-param-expansion-of-dollar-zero` — the script-relative load Dorc may
-    /// evaluate ENTIRELY ITSELF.
+    /// The script-relative load Dorc may evaluate ENTIRELY ITSELF (né
+    /// `p-x-load-operand-param-expansion-of-dollar-zero`, promoted).
     ///
     /// `${0%/*}` is pure parameter expansion over `$0`, and `$0` is the authored book path, which
     /// the controller owns. So the operand is a function of program text plus controller-known
@@ -4323,18 +4323,13 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        internal_tooling::xfail::xfail_until(
-            "p-x-load-operand-param-expansion-of-dollar-zero",
-            || {
-                assert_eq!(loaded.found, ["helpers.dorc.sh"]);
-                assert_eq!(loaded.reached, [0].into());
-                assert!(matches!(helper, LiveDefinition::Live(_)));
-            },
-        );
+        assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+        assert_eq!(loaded.reached, [0].into());
+        assert!(matches!(helper, LiveDefinition::Live(_)));
     }
 
-    /// `p-x-dollar-zero-slashless-book-path-resolves` — the SECOND live spelling of `$0`, and the
-    /// one the world actually types.
+    /// The SECOND live spelling of `$0`, and the one the world actually types (né
+    /// `p-x-dollar-zero-slashless-book-path-resolves`, promoted).
     ///
     /// `dorc plan book.sh` from the book's own directory hands the controller a slashless path, and
     /// `sh book.sh` hands the shell the same. A slashless `$0` has no directory component at all, so
@@ -4363,13 +4358,8 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        internal_tooling::xfail::xfail_until(
-            "p-x-dollar-zero-slashless-book-path-resolves",
-            || {
-                assert_eq!(loaded.found, ["helpers.dorc.sh"]);
-                assert!(matches!(helper, LiveDefinition::Live(_)));
-            },
-        );
+        assert_eq!(loaded.found, ["helpers.dorc.sh"]);
+        assert!(matches!(helper, LiveDefinition::Live(_)));
     }
 
     /// `p-x-computed-dot-parses-and-havocs` — floor-valid text is never a PARSE violation.

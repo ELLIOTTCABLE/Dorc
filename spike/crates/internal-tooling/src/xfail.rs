@@ -273,15 +273,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-load-operand-param-expansion-of-dollar-zero",
-        trigger: "`principle-load-operands-evaluate-over-controller-known-inputs`: a `.` operand \
-                  built by PURE parameter expansion over the authored book path — `${0%/*}` — is a \
-                  function of program text plus `$0` plus the modeled cwd, so it resolves through \
-                  the closed allowlist without evaluating any command",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-load-operand-dirname-of-dollar-zero",
         trigger: "`30P:rul-static-predict-sites-loads`: `$(dirname \"$0\")` names a COMMAND, and \
                   predicting its output inside the engine is the tool-modelling \
@@ -356,17 +347,6 @@ pub const PINS: &[Pin] = &[
                   `set +e`, so errexit is ⊤ below it and every fallible command downstream owes its \
                   failure→exit edge — today `cfg`'s forward errexit pass walks straight through a \
                   `.` and keeps whatever state the book last spelled",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
-        name: "p-x-dollar-zero-slashless-book-path-resolves",
-        trigger: "`30P:model-symbolic-dollar-zero`'s SLASHLESS spelling, which is the ORDINARY \
-                  invocation (`dorc plan book.sh` from the book's own directory): a slashless `$0` \
-                  has no directory component, so `${0%/*}` is the whole word and the engine must \
-                  normalise the spelling against the load cwd rather than trim a slash that is not \
-                  there — a model built only from an absolute book path answers `book.sh` and \
-                  resolves nothing",
         horizon: Horizon::Scheduled("end-of-r30"),
         state: PinState::Live,
     },
