@@ -370,7 +370,7 @@ fn operand_is_explicit(book: &dorc_syntax::Ast, operand: AstId) -> bool {
             WordPart::Literal(_) | WordPart::SingleQuoted(_) => true,
             WordPart::DoubleQuoted(inner) => parts_are_explicit(inner),
             WordPart::Param { name } => name != "0",
-            WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex { .. } => {
+            WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamExpansion { .. } => {
                 false
             }
         })

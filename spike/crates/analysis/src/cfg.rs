@@ -245,7 +245,7 @@ fn literal_parts_text(parts: &[WordPart], out: &mut String) -> bool {
         WordPart::DoubleQuoted(inner) => literal_parts_text(inner, out),
         WordPart::Param { .. }
         | WordPart::CommandSubst(_)
-        | WordPart::ParamComplex { .. }
+        | WordPart::ParamExpansion { .. }
         | WordPart::Arithmetic => false,
     })
 }

@@ -13,8 +13,8 @@
 //! `silence-licenses-nothing`: what counts is enumerated below, and anything the walk cannot decide
 //! is a use of EVERY name rather than of none. Two constructs land there today and both are the
 //! lexer's own loss rather than a modelling choice — a command word that is not a literal, and a
-//! `ParamComplex` whose parameter name the lexer discarded (`28O:res-load-inert-conservatism`).
-//! When the load lane's `ParamComplex` decoding lands, this census narrows MECHANICALLY at the one
+//! `ParamExpansion` whose base the lexer could not name, or whose operator it does not model
+//! (`28O:res-load-inert-conservatism`). The decoded base and operand word narrow it at the one
 //! seat below and nowhere else.
 //!
 //! Not this module's question: whether the unit carries a DYNAMISM OPENER (an unresolvable load, a
@@ -24,7 +24,7 @@
 use std::collections::BTreeMap;
 
 use dorc_core::{AstId, BytePos};
-use dorc_syntax::ast::{Ast, NodeKind, WordPart};
+use dorc_syntax::ast::{Ast, NodeKind, ParamOp, WordPart};
 
 /// Every name the book observes or mutates, at the earliest position it does so.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -154,15 +154,23 @@ impl NameUseCensus {
             match part {
                 WordPart::Literal(_) | WordPart::SingleQuoted(_) => {}
                 WordPart::DoubleQuoted(inner) => self.word(inner, at),
-                WordPart::Param { name }
-                | WordPart::ParamComplex {
-                    empty_defaulted: Some(name),
-                } => self.uses(name, at),
-                WordPart::ParamComplex {
-                    empty_defaulted: None,
+                WordPart::Param { name } => self.uses(name, at),
+                // The decoded base is the read; the operand word carries its own reads. An
+                // operator the syntax does not model, or a base it could not name, is ⊤.
+                WordPart::ParamExpansion { base, op } => {
+                    if base.is_empty() {
+                        self.uses_everything(at);
+                    } else {
+                        self.uses(base, at);
+                    }
+                    match op {
+                        ParamOp::EmptyDefault { .. } | ParamOp::Length => {}
+                        ParamOp::Substitute { word, .. } => self.word(word, at),
+                        ParamOp::Trim { pattern, .. } => self.word(pattern, at),
+                        ParamOp::Unmodelled => self.uses_everything(at),
+                    }
                 }
-                | WordPart::Arithmetic
-                | WordPart::CommandSubst(_) => self.uses_everything(at),
+                WordPart::Arithmetic | WordPart::CommandSubst(_) => self.uses_everything(at),
             }
         }
     }
@@ -243,7 +251,7 @@ mod tests {
     }
 
     /// …and a `${name-}` DOES decode, because that one spelling keeps its name — the narrowing the
-    /// load lane's own `ParamComplex` work widens further, at this one seat.
+    /// load lane's `ParamExpansion` decode carries through, at this one seat.
     #[test]
     fn the_nounset_safe_expansion_names_the_one_variable_it_reads() {
         let census = census("printf '%s' \"${WOMBAT_ROOT-}\"\n");
