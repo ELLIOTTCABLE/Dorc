@@ -1248,7 +1248,7 @@ fn run(
         advisory,
         "loading",
         book_source,
-        &load_head_notices(&parsed.value, &cfg.value, &env),
+        &load_head_notices(&parsed.value, &cfg.value, &env, &book_src),
     );
     for (file, diags) in helper_conflict_diagnostics(&helpers, source_paths, &source_refs) {
         let source = source_paths
@@ -3055,6 +3055,7 @@ fn load_head_notices(
     book: &dorc_syntax::Ast,
     cfg: &dorc_analysis::cfg::Cfg,
     env: &dorc_analysis::funcenv::FuncEnv,
+    src: &str,
 ) -> Vec<Diag> {
     use dorc_analysis::funcenv::HavocCause;
 
@@ -3083,7 +3084,45 @@ fn load_head_notices(
                 at(node),
             )
         });
-    dies.chain(searches).chain(computed).collect()
+    // The one notice whose SUBJECT is a line other than the one it is spanned at: the reader can
+    // see the `.` that lost its carriage and cannot see what moved the ground under it.
+    let withheld = env
+        .havoc_causes()
+        .iter()
+        .filter_map(|(node, cause)| match cause {
+            HavocCause::CwdUnknown { clobbered_at } => Some((node, clobbered_at)),
+            _ => None,
+        })
+        .map(|(node, clobbered_at)| {
+            Diag::new(
+                DiagCode::LoadCarriageWithheldUnderUnknownCwd(
+                    dorc_aid::diag::LoadCarriageWithheldUnderUnknownCwd {
+                        line: line_of(book, cfg, *clobbered_at, src),
+                    },
+                ),
+                at(node),
+            )
+        });
+    dies.chain(searches)
+        .chain(computed)
+        .chain(withheld)
+        .collect()
+}
+
+/// The 1-based line a CFG node's own bytes start on.
+///
+/// Counted from the book source rather than carried, because a span is all the analysis holds and
+/// the reader wants a line. Zero-length or out-of-range spans answer line 1, which is the same
+/// conservative floor the locator takes.
+fn line_of(
+    book: &dorc_syntax::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    node: dorc_analysis::cfg::CfgNodeId,
+    src: &str,
+) -> usize {
+    let span = book.node(cfg.node(node).ast).span;
+    src.get(..span.lo.0 as usize)
+        .map_or(1, |before| before.matches('\n').count().saturating_add(1))
 }
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier

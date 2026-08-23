@@ -28,13 +28,13 @@ use crate::diag::{
     EscalationPolicy, HelperDeclarationContested, HostEvidenceAdmissionRefused,
     HostEvidenceRefusalKind, InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles,
     LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, MarkHashcolonMalformed, MarkRcArityExceeded,
-    MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
-    MungeNameInvalid, OperandPosition, OracleMatchedZeroSites, PasteHygieneHazardReason,
-    PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine,
-    RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused,
-    RecordsLateLine, RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused,
-    RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
+    LintToolOutputUnparsable, LoadCarriageWithheldUnderUnknownCwd, MarkHashcolonMalformed,
+    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
+    MissingDialectMarker, MungeNameInvalid, OperandPosition, OracleMatchedZeroSites,
+    PasteHygieneHazardReason, PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated,
+    RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused,
+    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
+    RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
     SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
     SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
@@ -281,6 +281,12 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "slashless-source-searches-path",
             DiagCode::SlashlessSourceSearchesPath(SlashlessSourceSearchesPath),
+        ),
+        (
+            "load-carriage-withheld-under-unknown-cwd",
+            DiagCode::LoadCarriageWithheldUnderUnknownCwd(LoadCarriageWithheldUnderUnknownCwd {
+                line: 1,
+            }),
         ),
         (
             "computed-source-operand",

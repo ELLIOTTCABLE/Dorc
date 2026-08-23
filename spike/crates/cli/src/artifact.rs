@@ -598,6 +598,13 @@ fn bundle_files(
             .map_or("", String::as_str)
     };
     for load in loads {
+        // NOTHING IS SHIPPED FOR A NON-EXACT LOAD (`30P:law-no-unsoundness-below-a-blind-act`): a
+        // copy of a file Dorc cannot prove the author's own line will read is engine selection.
+        // Not `unplaceable` — the form is available and this dependency is deliberately absent
+        // from it, which is a different answer from one the form could not carry.
+        if !load.permits.may_ship() {
+            continue;
+        }
         // Unplaceable, never silently skipped: omitting a file the runtime `.` will look for is
         // what the possible-load projection exists to prevent (`30I` §6.1).
         let Some(root) = projection
@@ -699,8 +706,13 @@ fn mirrored_files(
 ) -> Result<Vec<ArtifactFile>, usize> {
     let cwd = snapshot.cwd();
     let snapshot_paths = snapshot.source_paths();
-    let wanted: std::collections::BTreeSet<BundleRootId> =
-        loads.iter().map(|load| load.root).collect();
+    // A non-EXACT load carries nothing here either — the mirror is a shipped copy like any other
+    // (`30P:law-no-unsoundness-below-a-blind-act`).
+    let wanted: std::collections::BTreeSet<BundleRootId> = loads
+        .iter()
+        .filter(|load| load.permits.may_ship())
+        .map(|load| load.root)
+        .collect();
     let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
     let mut unplaceable = 0_usize;
     for id in &wanted {
@@ -836,11 +848,12 @@ fn placements(
                 continue;
             };
             let source = file.copied().source();
-            let reaches = match carriage {
-                Carriage::WholeRoot => true,
-                Carriage::AbsorbedOnly => !separate.contains(&id),
-                Carriage::Nothing => false,
-            };
+            let reaches = load.permits.may_ship()
+                && match carriage {
+                    Carriage::WholeRoot => true,
+                    Carriage::AbsorbedOnly => !separate.contains(&id),
+                    Carriage::Nothing => false,
+                };
             if reaches {
                 placed.carried(
                     source,
@@ -2214,20 +2227,26 @@ mod tests {
         };
         let dynamic = placed(DYNAMIC_BLIND_ACT);
         let literal = placed(LITERAL_BLIND_ACT);
-        assert_eq!(dynamic.dependencies.len(), 1, "interim: mirrored anyway");
+        assert!(
+            dynamic.dependencies.is_empty(),
+            "a dynamic blind act already denies the carriage: {:?}",
+            dynamic
+                .dependencies
+                .iter()
+                .map(|file| file.path.as_str())
+                .collect::<Vec<_>>()
+        );
         assert_eq!(literal.dependencies.len(), 1, "interim: the bundle ships");
         internal_tooling::xfail::xfail_until("p-x-non-exact-load-ships-no-copy", || {
-            for settled in [&dynamic, &literal] {
-                assert!(
-                    settled.dependencies.is_empty(),
-                    "nothing is shipped on a guess about where the run stands: {:?}",
-                    settled
-                        .dependencies
-                        .iter()
-                        .map(|file| file.path.as_str())
-                        .collect::<Vec<_>>()
-                );
-            }
+            assert!(
+                literal.dependencies.is_empty(),
+                "nothing is shipped on a guess about where the run stands: {:?}",
+                literal
+                    .dependencies
+                    .iter()
+                    .map(|file| file.path.as_str())
+                    .collect::<Vec<_>>()
+            );
         });
     }
 }

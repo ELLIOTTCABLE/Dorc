@@ -232,6 +232,10 @@ pub enum DiagCode {
     /// over controller-known inputs (`30P:rul-static-predict-sites-loads` names the sanctioned
     /// route, and it needs a stdlib). Spanned at the `.` line.
     ComputedSourceOperand(ComputedSourceOperand),
+    /// A book's `.` names a file the controller holds, but a line above it may have moved the
+    /// working directory, so nothing is shipped for it
+    /// (`30P:law-no-unsoundness-below-a-blind-act`). Spanned at the `.` line.
+    LoadCarriageWithheldUnderUnknownCwd(LoadCarriageWithheldUnderUnknownCwd),
     /// A book's `.` operand carries no `/`, so POSIX makes it a `PATH` search rather than a cwd
     /// lookup (`30I:rul-dot-resolves-as-sh`). Spanned at the `.` line.
     SlashlessSourceSearchesPath(SlashlessSourceSearchesPath),
@@ -493,6 +497,9 @@ impl DiagCode {
             DiagCode::VouchedCompositionNotPresent(_) => "vouched-composition-not-present",
             DiagCode::ScriptRelativeLoadDiesSlashless(_) => "script-relative-load-dies-slashless",
             DiagCode::ComputedSourceOperand(_) => "computed-source-operand",
+            DiagCode::LoadCarriageWithheldUnderUnknownCwd(_) => {
+                "load-carriage-withheld-under-unknown-cwd"
+            }
             DiagCode::SlashlessSourceSearchesPath(_) => "slashless-source-searches-path",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
@@ -1334,6 +1341,19 @@ pub struct OracleFileNotLoadInert;
 /// the LINE, not a restatement of the operand the caret already underlines.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScriptRelativeLoadDiesSlashless;
+
+/// Payload of [`DiagCode::LoadCarriageWithheldUnderUnknownCwd`]: the 1-based line of the act that
+/// made the working directory unknowable.
+///
+/// One field, and it is the CAUSE rather than the symptom: the caret already underlines the `.`
+/// that lost its carriage, and what the reader cannot see from there is which line above it moved
+/// the ground under that operand. Minted from `funcenv::HavocCause::CwdUnknown`'s own
+/// `clobbered_at`, so the blame is the analysis's answer rather than a reconstruction at this seat.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoadCarriageWithheldUnderUnknownCwd {
+    /// 1-based line of the clobbering act (`{line}`).
+    pub line: usize,
+}
 
 /// Payload of [`DiagCode::SlashlessSourceSearchesPath`] (static): none, for the same reason —
 /// the operand is what the caret points at, and the repair (`./x.sh`) does not vary with it.
@@ -2763,6 +2783,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ResolveDynamism,
         },
+        // WARNING: the run is unaffected and the plan is honest, but the SHIPPED TREE has a hole
+        // the author cannot see from the `.` line alone, and the repair is theirs.
+        DiagCode::LoadCarriageWithheldUnderUnknownCwd(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
+        },
         // WARNING: a `PATH` search is a host read, so the load walls; the repair is one `./`.
         DiagCode::SlashlessSourceSearchesPath(_) => CodeSpec {
             severity: Severity::Warning,
@@ -3340,6 +3367,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("line", line.to_string()),
             component("reason", paste_hygiene_hazard_reason_text(ctx, *reason)),
         ],
+        DiagCode::LoadCarriageWithheldUnderUnknownCwd(LoadCarriageWithheldUnderUnknownCwd {
+            line,
+        }) => vec![ours("line", line.to_string())],
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
             vec![ours("inner", inner.clone())]
         }
