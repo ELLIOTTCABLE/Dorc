@@ -210,21 +210,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-sentinel-value-conjunct",
-        trigger: "the human's `rule-sentinel-value-conjunct` ruling (on their burndown, `30N` §4): \
-                  whether recognized guarded-source must consult the sentinel's VALUE and not only \
-                  whether the target closure's names are bound. Until it lands, a package that \
-                  assigns `v1` under a guard testing `v2` is modelled as reused where a real shell \
-                  sources it again, and the artifact forms read that as a book with nothing to \
-                  place",
-        horizon: Horizon::Unscheduled {
-            marker: "end-of-r31",
-            why: "the ruling is queued on the human's burndown rather than scheduled into a lane, \
-                  so the boundary is where the census should force the question",
-        },
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-book-level-dot-locals",
         trigger: "load-time VARIABLES joining the function-environment domain (or the value plane \
                   learning what a `.` assigns): the nested-load half of POSIX `.` parity landed, so \

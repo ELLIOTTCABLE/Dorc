@@ -233,6 +233,30 @@ impl LoadProgram {
         })
     }
 
+    /// The LAST wholly-literal value this file's top level assigns to `name`, or `None` when there
+    /// is none or the winning assignment reads a variable.
+    ///
+    /// The VALUE half of the sentinel comparison, which [`assigns`](Self::assigns) deliberately
+    /// does not answer: `30I:rul-load-semantics-stay-full-fidelity` keeps the live constant and the
+    /// compared literal in the FULL load model because a package assigning `v1` under a guard
+    /// testing `v2` is sourced again by a real shell. The lossy speech projection
+    /// (`rul-guarded-source-speech-is-lossy`) still asks the NAME question and must never gain this
+    /// one.
+    ///
+    /// Wholly literal, because a value that reads the loading context is a value this seat cannot
+    /// read without becoming a second load interpreter — and a value the loader cannot read decides
+    /// nothing.
+    #[must_use]
+    pub fn last_literal_assignment(&self, name: &str) -> Option<String> {
+        self.steps.iter().rev().find_map(|step| match step {
+            LoadStep::Assign {
+                name: assigned,
+                value,
+            } if assigned == name => Some(value.expand(&BTreeMap::new(), &|_| None)),
+            LoadStep::Assign { .. } | LoadStep::Define(_) | LoadStep::Control(_) => None,
+        })?
+    }
+
     /// Does this file's top level `unset -f` any of `names`, in a guard branch or out of one?
     #[must_use]
     pub fn removes_any(&self, names: &BTreeSet<&str>) -> bool {

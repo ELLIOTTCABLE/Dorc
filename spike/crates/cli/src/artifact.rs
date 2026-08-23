@@ -1430,20 +1430,20 @@ mod tests {
             .clone()
     }
 
-    /// THE VERSION-MISMATCH CELL, red-first (`30I` §2.2's guarded-source idiom, under the human's
-    /// pending `rule-sentinel-value-conjunct` ruling).
+    /// THE VERSION-MISMATCH CELL (`30I` §2.2's guarded-source idiom; promoted from the pin
+    /// `p-x-sentinel-value-conjunct`).
     ///
     /// The world: `common` assigns `sm_common_loaded='v1'`, and `alpha`'s include guard tests for
     /// `'v2'`. A real shell compares the VALUES, finds them different, and takes the SOURCE arm —
-    /// so common is loaded a SECOND time. The recognition instead reads whether the target
-    /// closure's names are bound, and they are (common was pre-sourced first), so the engine
-    /// selects the REUSE arm and records a load that never runs where sh runs one.
+    /// so common is loaded a SECOND time. The recognition reads the target closure's own assigned
+    /// value against the compared literal to say so (`30I:rul-load-semantics-stay-full-fidelity`);
+    /// reading only whether the closure's NAMES are bound answered `Reused`, because common really
+    /// was pre-sourced first, and recorded a load that never runs where sh runs one.
     ///
     /// Why it belongs to the artifact forms: a form asks the account "what does this program load",
     /// and an account that answers `Reused` where sh sources is an account a flattened artifact
-    /// could act on by omitting the re-source. The disposition is safe TODAY only because
-    /// flattening refuses to inline at all; the corner must not be golden-promoted while that is
-    /// the only thing holding it.
+    /// could act on by omitting the re-source. The disposition was safe only because flattening
+    /// refuses to inline at all, and that is not a thing to leave holding a corner.
     #[test]
     fn a_version_mismatched_sentinel_takes_the_source_arm() {
         const COMMON: &str = "# dorc-lang/v0.2\nsm_common_query() { :; }\nsm_common_loaded='v1'\n";
@@ -1456,7 +1456,6 @@ mod tests {
             "fi\n",
             "alpha__is_converged() { sm_common_query \"$1\" ;}\n",
         );
-        // Outside the closure: a panic HERE would read as the target still failing.
         let account = account_of(
             "alpha sync\n",
             vec!["common.oracle.sh".to_owned(), "alpha.oracle.sh".to_owned()],
@@ -1470,14 +1469,12 @@ mod tests {
             })
             .map(|occurrence| occurrence.route)
             .collect();
-        internal_tooling::xfail::xfail_until("p-x-sentinel-value-conjunct", || {
-            assert_eq!(
-                routes,
-                vec![dorc_analysis::load::LoadRoute::Taken],
-                "sh compares 'v1' against 'v2' and takes the SOURCE arm, so the guarded `.` really \
-                 runs — whatever the environment's names say about the target's closure"
-            );
-        });
+        assert_eq!(
+            routes,
+            vec![dorc_analysis::load::LoadRoute::Taken],
+            "sh compares 'v1' against 'v2' and takes the SOURCE arm, so the guarded `.` really \
+             runs — whatever the environment's names say about the target's closure"
+        );
     }
 
     /// Build a whole world over a BOOK-sourced tree, and settle a form over it.

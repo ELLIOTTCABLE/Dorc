@@ -504,6 +504,26 @@ impl DefinitionTable {
         inside
     }
 
+    /// The value `closure` assigns to `name` — the live constant a sentinel guard's comparison
+    /// really reads (`30I:rul-load-semantics-stay-full-fidelity`).
+    ///
+    /// Asked only where [`Self::sole_populator`] already proved this closure is the world's only
+    /// writer of `name`, so "what the closure assigns" IS what a shell would hold once it ran.
+    /// Withholds where two files INSIDE the closure both write it: which one wins is a load-order
+    /// question this seat may not answer (`28K` §6), and the value is exactly what the guard
+    /// compares.
+    fn sentinel_value(&self, name: &str, closure: &BTreeSet<String>) -> Option<String> {
+        let mut writers = closure
+            .iter()
+            .filter_map(|key| self.program_at_key(key))
+            .filter(|program| program.assigns(name));
+        let program = writers.next()?;
+        if writers.next().is_some() {
+            return None;
+        }
+        program.last_literal_assignment(name)
+    }
+
     /// Does any loadable program `unset -f` a name `closure` declares?
     ///
     /// One of the named ways the sentinel shape can mislead (`30I` §3.4's dynamism list): a removal
@@ -1790,8 +1810,12 @@ fn decide_guard<'a>(
         LoadCondition::CommandV { function } => {
             command_v_decides(env, function).map(|held| if held == negated { else_ } else { then_ })
         }
-        LoadCondition::Value { name, equals, .. } => sentinel_decides(
-            ctx, name, *equals, negated, then_, else_, env, locals, account,
+        LoadCondition::Value {
+            name,
+            literal,
+            equals,
+        } => sentinel_decides(
+            ctx, name, literal, *equals, negated, then_, else_, env, locals, account,
         ),
     }
 }
@@ -1868,6 +1892,7 @@ fn command_v_decides(env: &EnvStack, function: &str) -> Option<bool> {
 fn sentinel_decides<'a>(
     ctx: Loading<'_, '_>,
     name: &str,
+    literal: &str,
     equals: bool,
     negated: bool,
     then_: &'a [crate::load::LoadControl],
@@ -1877,6 +1902,13 @@ fn sentinel_decides<'a>(
     account: &mut LoadAccount,
 ) -> Option<&'a [crate::load::LoadControl]> {
     use crate::load::LoadControl;
+
+    // An EMPTY compared literal cannot tell "the package never loaded" from "it loaded and set the
+    // value to nothing": `"${name-}"` is the empty string in both worlds, so the comparison the
+    // shell makes is not the one the arm below reads. Withhold rather than pick.
+    if literal.is_empty() {
+        return None;
+    }
 
     // Conditions 1 and 2, together: which branch loads, and does the branch NOT taken mean the
     // sentinel matched? `then_` runs when the comparison's own sense agrees with the `!`.
@@ -1907,6 +1939,16 @@ fn sentinel_decides<'a>(
         SentinelArm::Source => return Some(source),
         SentinelArm::Reuse => reuse,
     };
+    // Condition 7, and it is a COMPARISON rather than a census: the arm above says only that the
+    // target's names are bound to the target's own definitions. Whether the guard MATCHES is what
+    // the shell actually tests, so a package that assigns `v1` under a guard testing `v2` is
+    // SOURCED AGAIN — modelling it as reused is a load-semantic the full model must keep
+    // (`30I:rul-load-semantics-stay-full-fidelity`). Nothing here reaches the lossy speech
+    // projection, which asks the NAME question and must never gain this one
+    // (`30I:rul-guarded-source-speech-is-lossy`).
+    if ctx.defs.sentinel_value(name, &closure)? != literal {
+        return Some(source);
+    }
     // THE REUSE-ARM OCCURRENCE, and it is the whole ruling: the guard mints the same speaker edge
     // as a direct source even where no `.` runs at all (`30I` §3.4 case 2 — "even when another
     // package loaded the exact target first"). It is recorded HERE because the reuse arm has no
@@ -4694,8 +4736,9 @@ mod tests {
     ///
     /// Under `command -v` over this same ordinary helper name neither guard decides, both branches
     /// join, and the helper binds ⊤ — which is why the sentinel is the exact-package guard and
-    /// `command -v` is not (`notes/30Ic`). Nothing here reads the sentinel's VALUE: recognition is
-    /// the engine SEEING that both arms land on the same speech, not evaluating the test.
+    /// `command -v` is not (`notes/30Ic`). Recognition is still the engine SEEING that both arms
+    /// land on the same speech; the VALUE it reads decides only WHICH arm, and it may read it
+    /// because the two `Must`s above already proved the package is the world's only writer.
     #[test]
     fn a_recognized_sentinel_resolves_the_shared_dependency() {
         let book =
@@ -4717,6 +4760,70 @@ mod tests {
             env.binding_before(cfg.exit(), HELPER),
             Flat::Elem(Binding::Defined(helper)),
             "both arms land on the same body, so there is no analysis-time choice to drive to ⊤"
+        );
+    }
+
+    /// A package whose live value is not the one its consumer's guard compares against is SOURCED
+    /// AGAIN (promoted from the pin `p-x-sentinel-value-conjunct`).
+    ///
+    /// The sh fact: `[ "${sm_common_loaded-}" = 'sm.common/v2' ]` is FALSE while the live value is
+    /// `sm.common/v1`, so the fallback `.` runs and `common.sh` executes twice. Modelling it as
+    /// reused is a lost load-semantic, and `30I:rul-load-semantics-stay-full-fidelity` keeps the
+    /// live constant and the compared literal in the full model for exactly this.
+    ///
+    /// Why an engine choice depends on it: a reuse the engine believes and the shell does not is a
+    /// load OCCURRENCE the account never records, so every projection over it — bundle keying,
+    /// artifact placement, custody edges — is short one file the run really loads.
+    #[test]
+    fn a_mismatched_sentinel_literal_takes_the_source_arm() {
+        let book = ". ./common.sh\n. ./alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable("./common.sh", package(vec![helper], SENTINEL, VERSION));
+        table.set_loadable(
+            "./alpha.sh",
+            sentinel_guarded(SENTINEL, "sm.common/v2", LoadTarget::literal("./common.sh")),
+        );
+
+        let (env, _, _) = solve_positional(book, &table);
+
+        assert_eq!(
+            targets_of(&env, LoadRoute::Reused),
+            Vec::<&str>::new(),
+            "the live v1 assignment cannot satisfy alpha's v2 comparison"
+        );
+        assert_eq!(
+            targets_of(&env, LoadRoute::Taken),
+            ["common.sh", "alpha.sh", "common.sh"],
+            "POSIX sh executes both source operations — the book's own `. ./alpha.sh` sits between \
+             them, and alpha's fallback is the second"
+        );
+    }
+
+    /// The control for the cell above: the SAME shape with agreeing literals really does reuse, so
+    /// the difference measured there is the comparison and nothing else.
+    #[test]
+    fn a_matching_sentinel_literal_takes_the_reuse_arm() {
+        let book = ". ./common.sh\n. ./alpha.sh\nyum install -y nginx\n";
+        let mut table = DefinitionTable::default();
+        let helper = add_def(&mut table, 1, HELPER);
+        table.set_loadable("./common.sh", package(vec![helper], SENTINEL, VERSION));
+        table.set_loadable(
+            "./alpha.sh",
+            sentinel_guarded(SENTINEL, VERSION, LoadTarget::literal("./common.sh")),
+        );
+
+        let (env, _, _) = solve_positional(book, &table);
+
+        assert_eq!(
+            targets_of(&env, LoadRoute::Reused),
+            ["common.sh"],
+            "the live value IS the one the guard compares, so nothing re-sources"
+        );
+        assert_eq!(
+            targets_of(&env, LoadRoute::Taken),
+            ["common.sh", "alpha.sh"],
+            "and the only executions are the book's own two"
         );
     }
 
