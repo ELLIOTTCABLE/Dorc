@@ -2946,10 +2946,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
-        // The silent-decline value-evaporation hint: a Warning (`KNOBS:kWARN` rich, tune-high) —
-        // nothing broke, but a loaded oracle that never earned a vouch is exactly the kind of
-        // detection this era wants kept loud. ProvideModel: the honest repair, when the book DOES
-        // invoke the family, is widening the oracle's own argparse/verdict coverage.
+        // Warning (`KNOBS:kWARN` tune-high): nothing broke, but the detection is wanted loud.
         DiagCode::OracleMatchedZeroSites(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
@@ -2967,11 +2964,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
-        // A portability bug in the admin's OWN sh, independent of any oracle or model Dorc
-        // holds — none of the four remediation classes name "fix a shell-portability mistake";
-        // ResolveDynamism is the closest available (the fix widens a word Dorc reads as one
-        // fixed value into the genuinely-many-word list the author meant), flagged in the r30
-        // fruit-arc report as an imperfect fit.
+        // No remediation class names "fix a shell-portability mistake"; ResolveDynamism is the
+        // closest fit (flagged in the r30 fruit-arc report as imperfect).
         DiagCode::ForLoopBraceRangeRunsOnce(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,

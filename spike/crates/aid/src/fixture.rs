@@ -217,11 +217,8 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 oracles: "`redis.oracle.sh`".to_owned(),
             }),
         ),
-        // World-as-payload by necessity, same reason as its cli/main.rs sibling above: the
-        // aggregation reads the run's WHOLE final `Vouches` set (`30Qe:fruit-oracle-matched-zero-
-        // sites`), which a single-file loom's in-process consumer has no seat to reconstruct; the
-        // real firing route is proven separately by the whole-product round-trip case
-        // `crates/cli/tests/oracle-matched-zero-sites.loom`.
+        // World-as-payload: reads the run's WHOLE final `Vouches` set, unreachable to a
+        // single-file consumer; real firing route: `cli/tests/oracle-matched-zero-sites-round-trip.loom`.
         (
             "oracle-matched-zero-sites",
             DiagCode::OracleMatchedZeroSites(OracleMatchedZeroSites {

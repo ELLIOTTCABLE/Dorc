@@ -1416,10 +1416,7 @@ fn run(
         live_defs,
     ));
 
-    // `30Qe:fruit-oracle-matched-zero-sites` — the silent-decline value-evaporation detector
-    // (`KNOBS:kWARN` rich, tune-high): a loaded oracle whose verdict never actually vouched a site
-    // this run. Aggregated purely from the run's OWN final `vouches` (`the-fixpoint-owns-the-rounds`:
-    // vouches are frozen before the fixpoint loop, never rebuilt per round) — never a second lift.
+    // `30Qe:fruit-oracle-matched-zero-sites` — aggregated from the run's own final, frozen `vouches`.
     report_at(
         advisory,
         "oracle",
