@@ -222,6 +222,10 @@ pub enum DiagCode {
     /// invocation, so the load is EXACT for the spelling Dorc invokes and DEAD for the other
     /// (`30P:rul-dead-spelling-is-not-unsound`). Spanned at the `.` line.
     ScriptRelativeLoadDiesSlashless(ScriptRelativeLoadDiesSlashless),
+    /// A book's `.` operand is built by RUNNING something, which the load plane cannot evaluate
+    /// over controller-known inputs (`30P:rul-static-predict-sites-loads` names the sanctioned
+    /// route, and it needs a stdlib). Spanned at the `.` line.
+    ComputedSourceOperand(ComputedSourceOperand),
     /// A book's `.` operand carries no `/`, so POSIX makes it a `PATH` search rather than a cwd
     /// lookup (`30I:rul-dot-resolves-as-sh`). Spanned at the `.` line.
     SlashlessSourceSearchesPath(SlashlessSourceSearchesPath),
@@ -473,6 +477,7 @@ impl DiagCode {
             DiagCode::HelperDeclarationContested(_) => "helper-declaration-contested",
             DiagCode::VouchedCompositionNotPresent(_) => "vouched-composition-not-present",
             DiagCode::ScriptRelativeLoadDiesSlashless(_) => "script-relative-load-dies-slashless",
+            DiagCode::ComputedSourceOperand(_) => "computed-source-operand",
             DiagCode::SlashlessSourceSearchesPath(_) => "slashless-source-searches-path",
             DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
             DiagCode::MarkerVersionUnrecognized(_) => "marker-version-unrecognized",
@@ -843,10 +848,6 @@ pub enum SyntaxUnsupportedReason {
     DynamicCommandName,
     /// `eval`.
     EvalConstructedCode,
-    /// `.`/`source` of a target built by running something (a command substitution or
-    /// arithmetic expansion). A parameter-expansion target is NOT this: its value is
-    /// ordinary value-flow, resolved in `funcenv` and walled there when unresolvable.
-    SourceOfDynamicTarget,
     /// `unset` of a dynamic lvalue.
     UnsetDynamicLvalue,
     /// `printf -v`, which writes to a variable lvalue.
@@ -1294,6 +1295,12 @@ pub struct ScriptRelativeLoadDiesSlashless;
 /// the operand is what the caret points at, and the repair (`./x.sh`) does not vary with it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlashlessSourceSearchesPath;
+
+/// Payload of [`DiagCode::ComputedSourceOperand`] (static): none. The caret is on the `.` line and
+/// the operand is right there; what varies is which COMMAND was run, and naming it would be the
+/// engine reading tool semantics it does not hold (`identity-declared-never-inferred`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ComputedSourceOperand;
 
 /// Payload of [`DiagCode::RoleFamilyContested`] (TEMPLATIZED): the shadowed FAMILY, the role member
 /// whose two definitions collided, and where the overridden one lives. Spanned at the shadowing
@@ -2690,6 +2697,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ResolveDynamism,
         },
+        // ERROR with a WarnOrDeny floor: the whole run fast-fails pre-network on this, so the line
+        // that says why must never be silenceable below Warning.
+        DiagCode::ComputedSourceOperand(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ResolveDynamism,
+        },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3617,6 +3631,7 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::RedirTargetTop(RedirTargetTop { site: _ })
         | DiagCode::ScriptRelativeLoadDiesSlashless(ScriptRelativeLoadDiesSlashless)
         | DiagCode::SlashlessSourceSearchesPath(SlashlessSourceSearchesPath)
+        | DiagCode::ComputedSourceOperand(ComputedSourceOperand)
         | DiagCode::OracleFileNotLoadInert(OracleFileNotLoadInert)
         | DiagCode::MissingDialectMarker(MissingDialectMarker)
         | DiagCode::ToleratesOverIdentityDependence(ToleratesOverIdentityDependence)
@@ -4365,9 +4380,6 @@ fn syntax_unsupported_text(ctx: &RenderCtx<'_>, reason: SyntaxUnsupportedReason)
         }
         SyntaxUnsupportedReason::EvalConstructedCode => {
             ("syntax-unsupported-eval-constructed-code", none)
-        }
-        SyntaxUnsupportedReason::SourceOfDynamicTarget => {
-            ("syntax-unsupported-source-of-dynamic-target", none)
         }
         SyntaxUnsupportedReason::UnsetDynamicLvalue => {
             ("syntax-unsupported-unset-dynamic-lvalue", none)

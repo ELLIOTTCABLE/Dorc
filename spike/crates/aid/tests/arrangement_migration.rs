@@ -226,7 +226,6 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         SyntaxUnsupportedReason::ArithmeticAsCommand,
         SyntaxUnsupportedReason::DynamicCommandName,
         SyntaxUnsupportedReason::EvalConstructedCode,
-        SyntaxUnsupportedReason::SourceOfDynamicTarget,
         SyntaxUnsupportedReason::UnsetDynamicLvalue,
         SyntaxUnsupportedReason::PrintfWritesLvalue,
         SyntaxUnsupportedReason::TestReferencesLvalue,

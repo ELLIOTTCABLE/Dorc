@@ -146,6 +146,13 @@ const EXIT_APPLY_FAILED: u8 = 15;
 /// be published (`30I` §7.1 / §7.5). Sixth of the reserved 10..=19 dorc-semantic range, and
 /// pre-network on the refusal arm: nothing was probed, nothing was contacted, nothing was written.
 const EXIT_ARTIFACT_UNSERVABLE: u8 = 16;
+/// A book's `.` operand is built by RUNNING something, so the load plane cannot name the file it
+/// loads (`30P:rul-static-predict-sites-loads` is the sanctioned route and needs a stdlib). The
+/// artifact still ships and the site havocs like any other unknown source; the exit is what stops
+/// a `dorc … && deploy` chain. Seventh of the reserved 10..=19 dorc-semantic range, and the TIER
+/// this outcome moved to: it used to be a whole-book PARSE refusal, which
+/// `30P:rul-floor-valid-text-never-parse-fails` forbids over floor-valid text.
+const EXIT_LOAD_UNRESOLVABLE: u8 = 17;
 
 /// `dorc lint`: findings AT OR ABOVE the `--fail-on` threshold were reported (`27R` §5 exit
 /// trichotomy). Distinct from clean (0) and from operational (below); shares linter convention.
@@ -187,6 +194,9 @@ enum RunOutcome {
     /// The emission form the invocation named cannot be served, or its artifact set could not be
     /// published — either way no artifact of the requested shape exists.
     ArtifactUnservable,
+    /// A `.` operand is built by running something ⇒ the artifact shipped and the site havocs, but
+    /// exit [`EXIT_LOAD_UNRESOLVABLE`] (fail-fast).
+    LoadUnresolvable,
 }
 
 fn main() -> ExitCode {
@@ -223,6 +233,7 @@ fn main() -> ExitCode {
                 Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
                 Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
                 Ok(RunOutcome::ArtifactUnservable) => ExitCode::from(EXIT_ARTIFACT_UNSERVABLE),
+                Ok(RunOutcome::LoadUnresolvable) => ExitCode::from(EXIT_LOAD_UNRESOLVABLE),
                 Err(diag) => {
                     report_invocation_error(&diag);
                     ExitCode::from(EXIT_USAGE)
@@ -1039,7 +1050,7 @@ fn run(
         .iter()
         .chain(cfg.diags.iter())
         .any(|d| d.severity() == Severity::Error);
-    let book_outcome = if book_unmodeled {
+    let mut book_outcome = if book_unmodeled {
         RunOutcome::BookUnmodeled
     } else if wrapper_incoherent {
         // Dual-peel incoherence is pre-network fail-fast (`273` §5), independent of the book;
@@ -1061,6 +1072,20 @@ fn run(
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
     };
+    // The computed `.`, at its ruled TIER: post-analysis, pre-network, whole-run
+    // (`30P:rul-floor-valid-text-never-parse-fails` moved it off the parse tier and kept the
+    // outcome). Ranked last of the three because a book that is unmodeled or whose wrapper
+    // contradicts itself has a louder story to tell first.
+    if matches!(book_outcome, RunOutcome::Complete)
+        && env.havoc_causes().values().any(|cause| {
+            matches!(
+                cause,
+                dorc_analysis::funcenv::HavocCause::ComputedSubstitution
+            )
+        })
+    {
+        book_outcome = RunOutcome::LoadUnresolvable;
+    }
     if mode == Mode::Bundle {
         let Ok(projection) = dorc_cli::bundle::project(&snapshot, env.loads()) else {
             return Ok(RunOutcome::BookUnmodeled);
@@ -2973,17 +2998,20 @@ fn positional_loading_notices(
     diags
 }
 
-/// The two LOAD-HEAD lints (`30P:the-load-principles`), spanned at their own `.` line.
+/// The LOAD-HEAD diagnostics (`30P:the-load-principles`), each spanned at its own `.` line.
 ///
-/// The environment records both populations as data and mints nothing of its own (the
-/// `funcenv::unresolvable_loads` precedent); this driver is where they become diagnostics. Neither
-/// changes a verdict: one names an OFF-RAMP hazard on a load that resolves fine here, the other
-/// names why a load the controller could not follow was unfollowable.
+/// The environment records every population as data and mints nothing of its own (the
+/// `funcenv::unresolvable_loads` precedent); this driver is where they become diagnostics. Two are
+/// lints that change no verdict — an OFF-RAMP hazard on a load that resolves fine here, and why a
+/// load the controller could not follow was unfollowable. The third is the computed `.`, whose
+/// whole-run outcome is decided beside `wrapper_incoherent` at the caller.
 fn load_head_notices(
     book: &dorc_syntax::Ast,
     cfg: &dorc_analysis::cfg::Cfg,
     env: &dorc_analysis::funcenv::FuncEnv,
 ) -> Vec<Diag> {
+    use dorc_analysis::funcenv::HavocCause;
+
     let at = |node: &dorc_analysis::cfg::CfgNodeId| book.node(cfg.node(*node).ast).span;
     let dies = env.dies_slashless().iter().map(|node| {
         Diag::new(
@@ -2999,7 +3027,17 @@ fn load_head_notices(
             at(node),
         )
     });
-    dies.chain(searches).collect()
+    let computed = env
+        .havoc_causes()
+        .iter()
+        .filter(|(_, cause)| matches!(cause, HavocCause::ComputedSubstitution))
+        .map(|(node, _)| {
+            Diag::new(
+                DiagCode::ComputedSourceOperand(dorc_aid::diag::ComputedSourceOperand),
+                at(node),
+            )
+        });
+    dies.chain(searches).chain(computed).collect()
 }
 
 /// The decision-inert narrative each proven shadow mints (`collapse-mints-narrative`). Tier

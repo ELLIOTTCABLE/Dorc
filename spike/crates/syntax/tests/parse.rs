@@ -728,20 +728,20 @@ fn reject_dynamic_command_name_is_dynamic_execution() {
 }
 
 #[test]
-fn reject_source_target_built_by_running_something_but_allow_expansion() {
-    // Why: the trigger asks whether any value-flow could ever hold the target — the for-list
-    // word's question, sharing its predicate. Running something answers no always, so it stays
-    // a parse-tier ⊤; a parameter expansion is ordinary value-flow, so `funcenv` resolves it or
-    // walls (`28K` §1 rul-unloadable-is-unlicensed: `LIB=./oracles; . "$LIB/y.sh"` loads).
-    assert_rejects(". \"$(pick)\"", UnsupportedReason::DynamicExecution);
-    assert_rejects("source $(pick).sh", UnsupportedReason::DynamicExecution);
-    assert_rejects(". \"$((n)).sh\"", UnsupportedReason::DynamicExecution);
-
+fn a_source_operand_parses_whatever_it_carries() {
+    // Why: every one of these parses and runs under `posh ∩ dash`, and
+    // `30P:rul-floor-valid-text-never-parse-fails` forbids the parser refusing floor-valid text.
+    // Which FILE the operand names is the load plane's question — it resolves the head over
+    // controller-known inputs or havocs — and the pre-network complaint about one it cannot
+    // evaluate is the cli's. This test's own subject is only that the AST survives.
     for accepted in [
         ". /etc/profile",
         ". \"$x\"",
         "source $f",
         ". \"$LIB/yum.sh\"",
+        ". \"$(pick)\"",
+        "source $(pick).sh",
+        ". \"$((n)).sh\"",
     ] {
         let ok = parse(accepted);
         assert!(!ok.has_errors(), "{accepted} must parse clean");

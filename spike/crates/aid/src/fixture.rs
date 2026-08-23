@@ -23,24 +23,24 @@ use crate::ForeignBytes;
 use crate::diag::{
     AidUnloadedSiblingOracle, ArtifactFormFallback, ArtifactFormRefused, ArtifactPublishRefused,
     CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable,
-    CliShimDirUnwritable, CmdsubOperandTop, CommandName, DanglingReference, DiagCode,
-    DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy, HelperDeclarationContested,
-    HostEvidenceAdmissionRefused, HostEvidenceRefusalKind, InBookVocabularyRole,
-    LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing, LintToolAbsent,
-    LintToolFailedWithoutFindings, LintToolOutputUnparsable, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
-    MissingDialectMarker, MungeNameInvalid, OperandPosition, PlanImportRewritten, RecordsAlienLine,
-    RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing,
-    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
-    RecordsTornLine, RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites,
-    RoleFamilyContested, ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId,
-    SiteUnresolvable, SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure,
-    SolverConsistencyPlanDemoted, SurvivalRederivationDisagreement, SyntaxUnsupported,
-    SyntaxUnsupportedReason, ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused,
-    TransportMarkerUnusable, TransportSessionLost, TransportSpawnRefused,
-    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogCorruptReason, WhylogUnwritten, WhylogVersionRefused,
-    WrapperPeelIncoherent,
+    CliShimDirUnwritable, CmdsubOperandTop, CommandName, ComputedSourceOperand, DanglingReference,
+    DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EscalationPolicy,
+    HelperDeclarationContested, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind,
+    InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
+    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
+    MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
+    MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
+    PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine,
+    RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused,
+    RecordsLateLine, RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused,
+    RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
+    ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
+    SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
+    SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
+    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
+    TransportSessionLost, TransportSpawnRefused, VouchedCompositionNotPresent,
+    VouchedCompositionReason, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
+    WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 
 /// The canonical stand-in payload for `slug`, if one is registered.
@@ -266,6 +266,10 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "slashless-source-searches-path",
             DiagCode::SlashlessSourceSearchesPath(SlashlessSourceSearchesPath),
+        ),
+        (
+            "computed-source-operand",
+            DiagCode::ComputedSourceOperand(ComputedSourceOperand),
         ),
         // Same necessity, one seat further in: the suspension is decided inside the vouch lift and
         // reported at the binary's own load-edge seat, which no in-process consumer reaches.
