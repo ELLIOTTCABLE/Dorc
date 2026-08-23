@@ -64,6 +64,92 @@ pub struct ApplyLine {
     pub disposition: String,
     /// `true` ⇒ a PREDICTED disposition, not a measured apply outcome (spike: always `true`).
     pub predicted: bool,
+    /// Where the decision this row projects stood relative to host contact — the DURABLE ACCOUNT
+    /// EXPORT, gated by [`ACCOUNT_EXPORT`].
+    ///
+    /// Naming it here is the lift of `ExcludedContent::InfluenceGrade`: field-level exclusion was
+    /// structural precisely because no View named the account, and this View now does. What keeps
+    /// production bytes unchanged is no longer the absence of this field but the switch, and that
+    /// substitution is deliberate and is the reviewable act.
+    pub account: DurableAccount,
+}
+
+/// THE SWITCH for the durable account export (`30Q` §5g, human-typed flow: build it, disable it,
+/// review it, then enable it).
+///
+/// ONE `const`, and it gates BOTH ends. `false` ⇒ the writer emits no `account=` field and the
+/// reader is never handed one, so every production durable byte is exactly what it was before this
+/// row existed — the byte-identity gate still binds, and it is what proves that. `true` ⇒ each
+/// `apply` row carries its decision's account and replay reads it back through
+/// [`DurableAccount`].
+///
+/// A human flips this after the review the growth of a durable's contents owes
+/// (`rul-durable-contents-reviewed-before-design`). Nothing in the engine reads it as policy, no
+/// flag sets it, and no environment variable reaches it: a switch a run could turn on is not a
+/// switch that has been reviewed.
+pub const ACCOUNT_EXPORT: bool = false;
+
+/// An account AS THE DURABLE CARRIES IT — the flattening, at the type level
+/// (`rul-influence-flattens-at-the-durable`, human-typed).
+///
+/// The durable transition is one-way. A live account goes IN through
+/// [`of_decision`](Self::of_decision) at the View, and what comes back out on replay is this and
+/// only this: there is no accessor yielding an
+/// [`InfluenceAccount`](dorc_core::influence::InfluenceAccount), no `From`, and no join. So a
+/// replayed account cannot be joined into a live decision's, cannot reach a license mint, and
+/// cannot reach a Spine record — post-reingest, influence is REPORT/WHY-plane only, and that stops
+/// being a rule somebody has to remember. It can be DISPLAYED, and that is all it can do.
+///
+/// `306b:rul-reingestion-drives-no-action` is why that is not redundant with rehydrating at the
+/// right grade: not all persisted material is influenced, and uninfluenced persisted material
+/// describes a world-moment that has passed just as surely.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DurableAccount(dorc_core::influence::InfluenceAccount);
+
+impl DurableAccount {
+    /// Project a live decision's account into the durable plane — the ONE way in, taken at the
+    /// View. One-way by construction: nothing converts back.
+    #[must_use]
+    pub const fn of_decision(account: dorc_core::influence::InfluenceAccount) -> Self {
+        Self(account)
+    }
+
+    /// The word this account renders as, for the report and why planes, and the token the writer
+    /// emits. Referent-agnostic: never branched on.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        self.0.label()
+    }
+
+    /// Did host-reported material reach the decision this row projects — or do we not know?
+    ///
+    /// A REPORT question, answered for a reader. A `bool` rather than the account itself, so that
+    /// nothing a caller gets back can be joined into anything.
+    #[must_use]
+    pub const fn was_influenced(self) -> bool {
+        self.0.is_influenced()
+    }
+
+    /// Rehydrate one `apply` row's account from the durable's closed vocabulary.
+    ///
+    /// ABSENT, unrecognised, or malformed all read `untracked` — the TOP of the chain, the MOST
+    /// influenced point (`306b:rul-missing-influence-grade-reads-highest`). That direction is the
+    /// whole safety property: removing account metadata from a durable can then only make a reader
+    /// more careful, never less, so metadata loss degrades conservatively rather than permissively.
+    ///
+    /// `host-influenced` rehydrates at `untracked` rather than at itself, and deliberately: the
+    /// phase marker inside a live host-influenced account is minted by the act of READING host
+    /// bytes, and a word in a file is not that act. Reconstructing one from a token would be the
+    /// laundering `306b` §3a forbids, so the read lands one point above instead.
+    #[must_use]
+    fn rehydrated(token: Option<&str>) -> Self {
+        match token {
+            Some("authored-before-contact") => {
+                Self(dorc_core::influence::InfluenceAccount::authored_before_contact())
+            }
+            _ => Self(dorc_core::influence::InfluenceAccount::untracked()),
+        }
+    }
 }
 
 /// Inspect one exact durable and name why it cannot be replayed.
@@ -534,11 +620,16 @@ pub mod view {
     /// apply executor, so every row is a PREDICTION and must never wear a measurement's clothes
     /// (`tc-apply-report-is-prediction`).
     #[must_use]
-    pub fn disposition(site: dorc_core::SiteId, decision: &Disposition) -> ApplyLine {
+    pub fn disposition(
+        site: dorc_core::SiteId,
+        decision: &Disposition,
+        account: dorc_core::influence::InfluenceAccount,
+    ) -> ApplyLine {
         ApplyLine {
             leaf: site.leaf.0,
             disposition: tag(decision).to_owned(),
             predicted: true,
+            account: super::DurableAccount::of_decision(account),
         }
     }
 
@@ -580,7 +671,10 @@ impl<'a> DurableProjection<'a> {
         let stream = spine.record_stream()?;
         let apply = spine
             .dispositions()
-            .map(|record| view::disposition(record.site(), record.decision()))
+            .map(|record| {
+                use dorc_core::spine::InfluenceBearing as _;
+                view::disposition(record.site(), record.decision(), record.account())
+            })
             .collect();
         Some(Self {
             metadata: WhylogV2Metadata {
@@ -904,10 +998,17 @@ pub fn try_serialize_v2(
     write_instants(&mut out, &doc.instants, limits)?;
     for apply in &doc.apply {
         retain_metadata(&mut retained, &apply.disposition, limits)?;
+        // The gate, spelled once on the WRITE side: switched off, the row's bytes are exactly what
+        // they were before the account existed.
+        let account = if ACCOUNT_EXPORT {
+            format!(" account={}", apply.account.label())
+        } else {
+            String::new()
+        };
         write_v2_line(
             &mut out,
             format!(
-                "apply leaf={} disposition={} predicted={} {TERMINAL_TOKEN}",
+                "apply leaf={} disposition={} predicted={}{account} {TERMINAL_TOKEN}",
                 apply.leaf,
                 apply.disposition,
                 u8::from(apply.predicted)
@@ -1053,7 +1154,8 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
                 continue;
             }
             if line.starts_with("apply ") {
-                let Some((leaf, disposition, predicted)) = parse_v2_apply(line, limits) else {
+                let Some((leaf, disposition, predicted, account)) = parse_v2_apply(line, limits)
+                else {
                     return Admission::Refused(AdmissionRefusal::Grammar);
                 };
                 if apply.len() >= limits.apply_entries
@@ -1068,6 +1170,7 @@ fn parse_v2(backing: Vec<u8>, limits: WhylogLimits) -> Admission<UnscopedWhylogE
                     leaf,
                     disposition: disposition.to_owned(),
                     predicted,
+                    account,
                 });
                 last_apply_leaf = Some(leaf);
                 continue;
@@ -1231,10 +1334,17 @@ fn parse_oracle(line: &str, limits: WhylogLimits) -> Option<(usize, &str, &str)>
     (digest_valid(digest, limits) && free_valid(path, limits)).then_some((ordinal, digest, path))
 }
 
-fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool)> {
+fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool, DurableAccount)> {
     let body = line.strip_prefix("apply leaf=")?;
     let (leaf, rest) = body.split_once(" disposition=")?;
-    let (disposition, predicted) = rest.split_once(" predicted=")?;
+    let (disposition, tail) = rest.split_once(" predicted=")?;
+    // CLOSED grammar, and the field is OPTIONAL on the read side whatever the writer's switch says:
+    // a durable written before the export existed, or by a build with it off, is ordinary input and
+    // must not refuse. An absent or unrecognised token rehydrates at the most-influenced point.
+    let (predicted, account) = match tail.split_once(" account=") {
+        Some((predicted, account)) => (predicted, DurableAccount::rehydrated(Some(account))),
+        None => (tail, DurableAccount::rehydrated(None)),
+    };
     let predicted = match predicted {
         "0" => false,
         "1" => true,
@@ -1244,6 +1354,7 @@ fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool)>
         u32::try_from(bounded_number(leaf, limits).ok()?).ok()?,
         disposition_valid(disposition).then_some(disposition)?,
         predicted,
+        account,
     ))
 }
 
@@ -1556,6 +1667,9 @@ mod tests {
                 leaf: 0,
                 disposition: "replace".to_owned(),
                 predicted: true,
+                account: DurableAccount::of_decision(
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
+                ),
             }],
         }
     }
@@ -1678,6 +1792,92 @@ mod tests {
             try_serialize_fixture_v2(&overwide, narrow, inner_limits(8 * 1024 * 1024)),
             Err(WhylogWriteRefusal::Numeric),
         );
+    }
+
+    /// One row's account through the write, the wire, and the read — the DURABLE ACCOUNT EXPORT,
+    /// built whole and then switched off (`30Q` §5g, the human's typed flow).
+    ///
+    /// Pinned red because [`ACCOUNT_EXPORT`] is `false`: with the switch off the writer emits no
+    /// `account=` field, so the reader rehydrates every row at `untracked` and an authored row
+    /// cannot come back authored. That is not a defect — it is the export being off, and this pin
+    /// is what stops "off" from being indistinguishable from "unbuilt". A human flipping the
+    /// switch after the review greens it.
+    #[test]
+    fn an_exported_account_survives_the_durable_round_trip() {
+        let limits = WhylogLimits::spike_default();
+        let mut doc = v2_doc();
+        doc.apply = vec![ApplyLine {
+            leaf: 0,
+            disposition: "replace".to_owned(),
+            predicted: true,
+            account: DurableAccount::of_decision(
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            ),
+        }];
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(&v2_wire(&doc)[..], limits)
+        else {
+            panic!("clean v2 durable must admit")
+        };
+        let read_back = envelope.apply[0].account;
+        internal_tooling::xfail::xfail_until("p-x-durable-account-export-is-enabled", || {
+            assert_eq!(
+                read_back.label(),
+                "authored-before-contact",
+                "an exported authored account must come back authored, not as the absent-reads-highest floor"
+            );
+            assert!(
+                !read_back.was_influenced(),
+                "and the report plane must be able to say so"
+            );
+        });
+    }
+
+    /// The SWITCH-OFF half, green and staying green: an absent `account=` field rehydrates at the
+    /// MOST-influenced point, never the least (`306b:rul-missing-influence-grade-reads-highest`).
+    ///
+    /// This is the property that makes the export safe to ship disabled, and safe to lose: a
+    /// durable with no account metadata — one written before the export existed, one written by a
+    /// build with the switch off, one truncated — reads as `untracked`, so metadata loss can only
+    /// make a reader more careful.
+    #[test]
+    fn an_absent_exported_account_reads_at_the_most_influenced_point() {
+        let limits = WhylogLimits::spike_default();
+        let doc = v2_doc();
+        let wire = v2_wire(&doc);
+        assert!(
+            !String::from_utf8_lossy(&wire).contains("account="),
+            "with the export switched off the wire carries no account field at all"
+        );
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(&wire[..], limits) else {
+            panic!("clean v2 durable must admit")
+        };
+        assert_eq!(envelope.apply[0].account.label(), "untracked");
+        assert!(
+            envelope.apply[0].account.was_influenced(),
+            "absent is never authored: an unreadable account is not an absent constraint"
+        );
+    }
+
+    /// An UNRECOGNISED account token is bounded inert material, not a refusal and not a lower
+    /// grade: it reads at the same most-influenced point an absent one does.
+    ///
+    /// A refusal would be the wrong answer for a field a future version may widen; a lower grade
+    /// would be the laundering `306b` §3a forbids. The closed vocabulary decides what a reader
+    /// BELIEVES, never whether the document is admissible.
+    #[test]
+    fn an_unrecognised_account_token_reads_at_the_most_influenced_point() {
+        let limits = WhylogLimits::spike_default();
+        let wire = String::from_utf8(v2_wire(&v2_doc())).expect("the v2 wire is utf-8");
+        let doctored = wire.replace(
+            &format!("predicted=1 {TERMINAL_TOKEN}"),
+            &format!("predicted=1 account=from-the-future {TERMINAL_TOKEN}"),
+        );
+        assert_ne!(doctored, wire, "the doctoring must actually land");
+        let Admission::Admitted(envelope) = admit_unscoped_whylog(doctored.as_bytes(), limits)
+        else {
+            panic!("an unknown account token is inert material, never a framing refusal")
+        };
+        assert_eq!(envelope.apply[0].account.label(), "untracked");
     }
 
     #[test]
@@ -1826,6 +2026,9 @@ mod tests {
             leaf: 0,
             disposition: "run".to_owned(),
             predicted: true,
+            account: DurableAccount::of_decision(
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            ),
         });
         let mut non_increasing = v2_doc();
         non_increasing.apply = vec![
@@ -1833,11 +2036,17 @@ mod tests {
                 leaf: 1,
                 disposition: "replace".to_owned(),
                 predicted: true,
+                account: DurableAccount::of_decision(
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
+                ),
             },
             ApplyLine {
                 leaf: 0,
                 disposition: "run".to_owned(),
                 predicted: true,
+                account: DurableAccount::of_decision(
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
+                ),
             },
         ];
         for doc in [duplicate, non_increasing] {
@@ -1889,6 +2098,9 @@ mod tests {
             leaf: 1,
             disposition: "run".to_owned(),
             predicted: true,
+            account: DurableAccount::of_decision(
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            ),
         });
         assert_eq!(
             try_serialize_fixture_v2(&doc, exact, inner_limits(8 * 1024 * 1024)),
@@ -2093,6 +2305,9 @@ mod tests {
             leaf: 1,
             disposition: "run".to_owned(),
             predicted: true,
+            account: DurableAccount::of_decision(
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            ),
         });
         let cardinality_cases = [
             (

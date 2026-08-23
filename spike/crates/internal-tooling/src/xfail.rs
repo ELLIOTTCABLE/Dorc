@@ -309,6 +309,19 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
+        name: "p-x-durable-account-export-is-enabled",
+        trigger: "the human enables the durable account export. `306b` §10's carriage now reaches \
+                  the durable: a `DurableView` names each apply row's account, the writer emits it \
+                  and the reader rehydrates it through a type that can only be displayed \
+                  (`rul-influence-flattens-at-the-durable`). It ships DISABLED behind one const, \
+                  `plan::whylog::ACCOUNT_EXPORT`, so every production durable byte is unchanged \
+                  and the byte-identity gate still binds — a durable's contents grow only after \
+                  the review `rul-durable-contents-reviewed-before-design` owes. Greens when that \
+                  const is flipped",
+        horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-test-literal-narrows-a-variable",
         trigger: "`FORFEITS:forfeit-value-narrowing-by-test` (`30Pd` §5, pencilled by the human \
                   2026-08-22 as the lifted target): per-path refinement of a ⊤ value by \

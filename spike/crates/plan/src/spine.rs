@@ -695,6 +695,7 @@ mod tests {
                 "plan/src/placement.rs",
                 "plan/src/region.rs",
                 "plan/src/spine.rs",
+                "plan/src/whylog.rs",
                 "plan/tests/erasability.rs",
                 "plan/tests/region.rs",
                 "plan/tests/render_corpus.rs",
@@ -721,7 +722,15 @@ mod tests {
         ///   whose proofs do not correspond to it: the routes nobody enumerated may have been
         ///   decided from host-reported material (`30L:pin-open-route-runs`).
         /// * `plan/tests/region.rs` — that arm's own assertion.
-        const INVENTORY: &[&str] = &["plan/src/region.rs", "plan/tests/region.rs"];
+        /// * `plan/src/whylog.rs` — a durable's account read back ABSENT, unrecognised, or
+        ///   malformed (`306b:rul-missing-influence-grade-reads-highest`). Not a staged hole in the
+        ///   same sense: it is the ruled REHYDRATION floor, and it stays after the export is
+        ///   enabled.
+        const INVENTORY: &[&str] = &[
+            "plan/src/region.rs",
+            "plan/src/whylog.rs",
+            "plan/tests/region.rs",
+        ];
 
         let (adapters, walked) = sources_naming(concat!("InfluenceAccount", "::untracked("));
         assert!(

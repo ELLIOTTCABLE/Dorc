@@ -6920,6 +6920,9 @@ mod tests {
             leaf,
             disposition: disposition.to_owned(),
             predicted: true,
+            account: dorc_plan::whylog::DurableAccount::of_decision(
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            ),
         };
         let tally = dorc_cli::recorded_tally(&[
             line(0, "run"),

@@ -33,6 +33,10 @@
 //! disk, and lifting one exclusion is one field added to one View — a diff that IS the tripwire's
 //! mechanical form. [`ExcludedContent`] enumerates what is ruled non-durable at the CONTENT tier.
 //!
+//! ONE exclusion is now held by a SWITCH rather than by absence, and it says so at its own arm:
+//! the influence account's View field exists and its export const is `false`. Every other content
+//! exclusion is still enforced by no View naming it.
+//!
 //! # Generic over the decide plane, so `core` stays dependency-clean
 //!
 //! A [`SpineDisposition`] is license-bearing and a [`SpineRecordStream`] holds admitted host bytes,
@@ -334,14 +338,20 @@ impl SpineSpecies {
 
 /// What is ruled non-durable at the CONTENT tier (`30E` §2's `excluded` arm).
 ///
-/// These are not species; they are content classes that no `DurableView` may ever name. Keeping
-/// them enumerated rather than merely absent is what makes `rul-durable-by-exclusion` an exclusion
-/// SET one can read, and what turns a future lift into a visible deletion from this list.
+/// These are content classes rather than species. Keeping them enumerated rather than merely
+/// absent is what makes `rul-durable-by-exclusion` an exclusion SET one can read, and what turns a
+/// lift into a visible deletion from this list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ExcludedContent {
-    /// The influence grade. `306c` §2's load-bearing scope fence: v0 is in-memory precisely so this
-    /// arc does not fire the durable tripwire, which is also why `306b` §3a's rehydration rules are
-    /// not owed yet.
+    /// The influence account. STILL EXCLUDED from every production durable — but by a SWITCH now,
+    /// not by absence: `plan::whylog`'s `ApplyLine` names the account, its writer and reader are
+    /// built whole, and `plan::whylog::ACCOUNT_EXPORT` is `false`, so no byte moves.
+    ///
+    /// That substitution is the reviewable act and is stated rather than hidden: field-level
+    /// exclusion used to be structural because no View named this, and it is now a const a human
+    /// flips after the review a durable's growth owes
+    /// (`rul-durable-contents-reviewed-before-design`). This row is deleted in the same commit that
+    /// flips it.
     InfluenceGrade,
     /// Narrative operands, `ProvId`s, and arena handles (`operands-are-pure-and-capped`).
     NarrativeOperands,
