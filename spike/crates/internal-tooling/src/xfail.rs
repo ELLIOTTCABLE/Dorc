@@ -323,15 +323,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-unknown-source-havocs-shell-options",
-        trigger: "the same resolution's shell-option domain: an unresolvable `.` may `set -e` or \
-                  `set +e`, so errexit is ⊤ below it and every fallible command downstream owes its \
-                  failure→exit edge — today `cfg`'s forward errexit pass walks straight through a \
-                  `.` and keeps whatever state the book last spelled",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-computed-dot-parses-and-havocs",
         trigger: "`30P:rul-floor-valid-text-never-parse-fails`: `. \"$(dirname \"$0\")/dep.sh\"` is \
                   floor-valid text, so the parser owes a rich AST for it and the LOAD plane owes the \

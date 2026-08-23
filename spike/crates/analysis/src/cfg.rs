@@ -1005,7 +1005,10 @@ impl<'a> Builder<'a> {
         self.mark_consumed_range(cmd.index(), cmd.index() + 1, &own);
 
         // Record errexit-relevant facts for phase 2 (single source of truth).
-        if let Some(t) = self.errexit_toggle(words) {
+        if let Some(t) = self
+            .errexit_toggle(words)
+            .or_else(|| self.sources_a_file(words))
+        {
             self.toggle[cmd.index()] = Some(t);
         }
         // A command is "fallible" (a candidate for the errexit failure-edge) unless
@@ -1982,6 +1985,35 @@ impl<'a> Builder<'a> {
             }
         }
         result
+    }
+
+    /// Is this a `.`/`source` of a target this walk cannot see, whose file may `set -e` or `set
+    /// +e` in the CALLER's own shell (floor-measured,
+    /// `floor30-atlas-errexit-set-inside-sourced-file`)?
+    ///
+    /// Errexit is ⊤ below one, so every fallible command downstream owes its failure→exit edge
+    /// even where the book never spelled `set -e`. The direction is safe by construction: a
+    /// failure-edge is ADDED beside the fall-through, never in place of it, so the edge set is a
+    /// superset of both worlds and nothing downstream gains reach.
+    ///
+    /// **The operand test is the LEXICAL one, deliberately** (`churn-avoidance-disclosure`, so the
+    /// cut never reads as a model). The rule this stands in for is "not a closed load-inert
+    /// program", which the LOADER answers — and this walk runs before anything is loaded, because
+    /// the acquisition that loads is driven by this very graph. So a fixed-literal operand is left
+    /// alone (the shape a resolvable dorc-lang package takes, whose load-inertness gate proves it
+    /// toggles nothing) and every other operand is ⊤. The residue is a literal operand naming a
+    /// file the controller never read: its bindings havoc through the load plane either way, and
+    /// what it does not get is the failure-edge, which is a precision loss confined to the state
+    /// AT the unit's exit — a site-keyed act resolves on its own path and is unaffected.
+    fn sources_a_file(&self, words: &[AstId]) -> Option<ErrExit> {
+        let sources = matches!(
+            words.first().and_then(|&w| self.word_literal(w)),
+            Some("." | "source")
+        );
+        let visible = words
+            .get(1)
+            .is_some_and(|&w| self.word_literal(w).is_some());
+        (sources && !visible).then_some(ErrExit::Top)
     }
 
     /// Is this a path-terminating command (`exit`/`return`)? Such a command routes

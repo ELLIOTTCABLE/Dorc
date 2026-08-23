@@ -432,8 +432,8 @@ fn a_name_bound_only_before_an_unknown_source_is_withheld_after_it() {
     );
 }
 
-/// `p-x-unknown-source-havocs-shell-options` — the SHELL-OPTION domain of
-/// `30P:principle-unknown-source-is-a-point-havoc`.
+/// The SHELL-OPTION domain of `30P:principle-unknown-source-is-a-point-havoc` (né
+/// `p-x-unknown-source-havocs-shell-options`, promoted).
 ///
 /// `.` runs the named file in the caller's own shell, so `set -e` inside it persists to the caller
 /// (floor-measured, `floor30-atlas-errexit-set-inside-sourced-file`). An unresolvable one therefore
@@ -447,25 +447,29 @@ fn a_name_bound_only_before_an_unknown_source_is_withheld_after_it() {
 /// The direction is the conservative one: a failure-edge is ADDED beside the fall-through, never in
 /// place of it, so the edge set is a superset of both worlds and nothing downstream gains reach.
 ///
-/// CFG shape exercised: three straight-line top-level commands, the first an unresolvable `.` and
-/// the second a fallible unmodeled command that is NOT last — so an edge to `Exit` can only be the
-/// errexit failure-edge and never the ordinary fall-off-the-end successor.
+/// The CONTROL is what keeps the toggle from being a blanket one: the operand test is lexical
+/// (`cfg::sources_a_file`), because the CFG is built before anything is loaded, so a fixed-literal
+/// operand — the shape a resolvable dorc-lang package takes, and whose load-inertness gate proves
+/// it toggles nothing — is left alone.
+///
+/// CFG shape exercised: three straight-line top-level commands, the first a `.` and the second a
+/// fallible unmodeled command that is NOT last — so an edge to `Exit` can only be the errexit
+/// failure-edge and never the ordinary fall-off-the-end successor.
 #[test]
 fn an_unknown_source_leaves_errexit_unknown_below_it() {
-    let mut world = BookWorld::of(". \"$SITE_PROFILE/rc\"\nhork tune web\nwombat sync cache\n");
-    let site = world
-        .site("hork", "tune")
-        .expect("the book's hork tune site is present");
-    let exit = world.cfg.exit();
-    let aborts = world.cfg.succ_ids(site).any(|succ| succ == exit);
-
-    internal_tooling::xfail::xfail_until("p-x-unknown-source-havocs-shell-options", || {
-        assert!(
+    for (operand, aborts) in [("\"$SITE_PROFILE/rc\"", true), ("./pkg.dorc.sh", false)] {
+        let mut world = BookWorld::of(&format!(". {operand}\nhork tune web\nwombat sync cache\n"));
+        let site = world
+            .site("hork", "tune")
+            .expect("the book's hork tune site is present");
+        let exit = world.cfg.exit();
+        assert_eq!(
+            world.cfg.succ_ids(site).any(|succ| succ == exit),
             aborts,
-            "the sourced file may have run `set -e`, so a fallible command below it owes its \
-             failure→exit edge even though the book never spelled one"
+            "`. {operand}`: a file this walk cannot see may have run `set -e`, so a fallible \
+             command below it owes its failure→exit edge — and a literal one may not"
         );
-    });
+    }
 }
 
 /// The POSITIONAL-PARAMETER domain of the same principle, and it is already ⊤ — pinned so a later

@@ -4602,6 +4602,12 @@ mod tests {
 
     /// `unset -f` inside a package removes a binding exactly as it does in a book — the removal
     /// half of `30I:rul-oracle-loading-stays-load-safe`'s positive surface.
+    ///
+    /// Asked at the SITE below the two loads rather than at the unit's exit, which is where
+    /// `visibility-is-full-positional` puts every consuming act anyway. The exit node also joins
+    /// the errexit failure-edges a `.` now owes (its file may `set -e` in the caller's own shell),
+    /// so it answers ⊤ — honestly, since a shell that aborted at the FIRST load really does end
+    /// with the earlier binding live.
     #[test]
     fn a_package_may_remove_a_binding() {
         let book = ". ./base.sh\n. ./strip.sh\nyum install -y nginx\n";
@@ -4614,9 +4620,9 @@ mod tests {
                 ROLE.to_owned(),
             ]))]),
         );
-        let (env, cfg, _) = solve_positional(book, &table);
+        let (env, cfg, ast) = solve_positional(book, &table);
         assert_eq!(
-            env.binding_before(cfg.exit(), ROLE),
+            env.binding_before(command_at(&cfg, &ast, book, "yum install -y nginx"), ROLE),
             Flat::Elem(Binding::Undefined)
         );
     }
