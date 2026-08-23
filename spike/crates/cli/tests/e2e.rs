@@ -3638,6 +3638,51 @@ fn run_bundle_integration(harness: &Harness) -> Result<(), Failed> {
     Ok(())
 }
 
+/// The KEPT-STREAM refusal, driven for real: a stdout the user is keeping carries a COMPLETE plan
+/// or the run stops before the network, with NOTHING on stdout
+/// (`30Ng:rul-piped-stdout-carries-a-full-plan`, human-typed).
+///
+/// Native rather than declarative, and that is the point (`30Nh`, the named harness gap): the
+/// round-trip battery hard-fails empty output before any lens, so a case whose whole behaviour is a
+/// pre-network refusal with no artifact, no run-set and no transcript has no axis for it to compare.
+/// Every key that battery owns would be absent, and what is left is a marker plus a negation.
+///
+/// CFG SHAPE: one top-level `.` of a dorc-lang package standing as an `||` RIGHT operand — outside
+/// `floor30-inline-dot-boundary`'s measured cell, so the single stream cannot carry the bundle where
+/// the load stands and no complete plan exists for a kept stream to hold.
+fn run_kept_stream_refusal(harness: &Harness) -> Result<(), Failed> {
+    let kept = Scratch::new("kept-stream-refusal");
+    std::fs::write(
+        kept.path.join("book.sh"),
+        "false || . ./wombat.dorc.sh\nwombat sync a.conf\n",
+    )
+    .expect("write kept-stream book");
+    std::fs::write(
+        kept.path.join("wombat.dorc.sh"),
+        "# dorc-lang/v0.2\nwombat__is_converged() { :; }\n",
+    )
+    .expect("write kept-stream package");
+    let output = capture(
+        harness
+            .dorc(&kept.path)
+            .args(["plan", "book.sh"])
+            .env(STDOUT_POSTURE_ENV, "non-interactive")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped()),
+    );
+    if output.code == 0
+        || !output.stdout.is_empty()
+        || !output.stderr.contains("artifact-form-refused")
+    {
+        return Err(format!(
+            "kept-stream refusal failed (rc={}):\nstdout:\n{}\nstderr:\n{}",
+            output.code, output.stdout, output.stderr
+        )
+        .into());
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 
 /// The case a repo path belongs to, or `None` for an argument that is not a case path.
@@ -3670,6 +3715,12 @@ fn main() {
         let harness = Arc::clone(&harness);
         trials.push(Trial::test("bundle-integration".to_owned(), move || {
             run_bundle_integration(&harness)
+        }));
+    }
+    {
+        let harness = Arc::clone(&harness);
+        trials.push(Trial::test("kept-stream-refusal".to_owned(), move || {
+            run_kept_stream_refusal(&harness)
         }));
     }
     for loom in looms {
