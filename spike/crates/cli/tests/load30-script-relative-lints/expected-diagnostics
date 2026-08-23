@@ -1,0 +1,3 @@
+# A declaration is an ASSERTION: each of these must fire, or the case is red.
+script-relative-load-dies-slashless
+slashless-source-searches-path

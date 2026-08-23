@@ -1,0 +1,39 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f6069b6b4689c0f233e511602bb7218cc57abba7fffd4a384a83cb222b39ae40 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# TARGET (`30P:model-symbolic-dollar-zero` + the slashless paragraph): both load-head lints, on
+# one book, end to end through the real binary — the honest firing route their defining cases
+# cannot reach, since both mints sit in the binary's own load-edge driver.
+#
+# The first `.` RESOLVES under the spelling Dorc invokes (`$0` = `./book.sh`, so `${0%/*}` is `.`)
+# and is provably fatal under `sh book.sh` (`$0` has no `/`, so `${0%/*}` is the whole word and the
+# operand becomes `book.sh/hork.dorc.sh` — a path under a FILE). EXACT holds; the off-ramp does not.
+# dorc bundle: the dorc-lang subgraph this line loaded, stripped and composed in place.
+# The sibling the book locates from `$0`. It binds only if the `${0%/*}` head really resolved, so
+# the case observes the RESOLUTION as well as the lint.
+hork__is_converged() {
+   case ${1-} in
+   tune) hork status --tuned -- "${2-}" ;;
+   *) return 2 ;;
+   esac
+}
+
+# The second carries no `/` at all, which POSIX makes a PATH search rather than a cwd lookup — so
+# no file beside the book answers it and the site walls. It sits BELOW the first deliberately: the
+# cwd it makes unknowable must not reach back up and cost the resolution above it.
+. wombat-helpers.sh
+
+hork tune web
