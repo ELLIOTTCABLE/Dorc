@@ -435,10 +435,9 @@ rc firewall (pin only what the trace finds missing); pin vouch-covers-the-stand-
 The small meet-direction registry over properties (typed lean, machinery-high) rides
 here; flag to the conductor if it snowballs past "small".
 
-**bitem4-committee-fence-at-sparing-tier** (`28M` §4; build-as-spiked, marked
-UNRATIFIED in code comment and ledger): live ROLE members spanning source units ⇒
-footprints spare nothing, tokens collide. Role members only — helpers ride under the
-calling entrypoint's custody (`28M` §7 tune).
+**bitem4-committee-fence-at-sparing-tier** — retired unbuilt: no fence; the sparing
+dialect is per speaker closure, read at the backing's frame, and builds with `plans/30J`
+(`30J` §12).
 
 **bitem5-split-family-coherence-aid** (`28M` §7 lean-demotion-is-not-deletion — this is
 strictly MORE machinery than the fail-fast form it replaces, never less): collate the
@@ -480,7 +479,7 @@ function-environment domain, plus the whole-unit resolution's never-live subtrac
 carries the cure past the agreement gate. §3's as-built paragraph is the semantics; the
 ledger is `28P`. Widening `dec-decidable-set-v0` is NOT part of it and stays closed.
 
-**Explicitly NOT this lane's** (deferred by name, do not scope-creep): the committee-fence
-design sitting · kind-level token registration · MH2 target-identity · richer blessing
+**Explicitly NOT this lane's** (deferred by name, do not scope-creep): the per-speaker
+dialect build (`30J`) · kind-level token registration · MH2 target-identity · richer blessing
 vocabulary (field-evidence-gated) · `res-host-conditional-loading` ·
 the dialect-reach widening for unary file-tests (gates stdlib revival, not this lane).

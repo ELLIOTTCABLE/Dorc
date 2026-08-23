@@ -136,8 +136,7 @@ than the user explicitly requested.
 ### Neighboring work that stays out
 
 `28Q:stage-iii-world-scopes` and `28Q` section 10's authored lifecycle surface;
-blessing-reach elevation and verdict-word enrollment; committee-fence permanence
-and broader sparing composites; the
+the per-speaker dialect and verdict-word enrollment (`30J`); the
 starter stdlib and its dialect-reach decision; at-most completion speech;
 callback/bare dependency-injection VOUCH COMPOSITION beyond the conservative
 v0 floor; the parked
