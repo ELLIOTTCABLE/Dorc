@@ -6,23 +6,23 @@
 > implementation remains builder latitude. Root human documents and
 > `spike/CLAUDE.md` outrank this plan.
 >
-> This is the authoritative home for the question formerly recorded as
-> `28Q:pin-blessing-reach-elevation` and
-> `FORFEITS:forfeit-verdict-word-exclusion`: when selector marks authored in
-> `__is_converged` and family helpers may participate in selector-granular
-> survival. It preserves `28M`'s family-keyed dialect and committee fence, but
-> supersedes its keep-for-now verdict-word exclusion. Design is RULED;
-> implementation is deliberately DEFERRED under section 10.
+> This is the authoritative home for the selector-vocabulary ("dialect")
+> corner: which authored marks mint a family's survival vocabulary (sections
+> 0–9) and whose vocabulary a comparison consults (section 12). It supersedes
+> `28M`'s keep-for-now verdict-word exclusion and its committee fence
+> (`28M` §4, never built). Design is RULED; implementation is deliberately
+> DEFERRED under section 10.
 
 ## 0. The ruling in one screen
 
 `rul-predict-authorship-qualifies-family-vocabulary` **[TYPED/ACKED]** - For
-each family under one speaker closure, an admitted, somewhere-live
-`family__predict` that genuinely models at least one invocation shape qualifies
-that family's selector vocabulary for survival. Once qualified, every valid
-assertion, refutation, and observation selector attributed to the family's role
-members or custody-valid helpers participates in the family's selector dialect.
-Qualification is family-wide, never branch-relative.
+each family under one speaker closure, an admitted `family__predict` that
+genuinely models at least one invocation shape qualifies that family's selector
+vocabulary for survival. Once qualified, every valid assertion, refutation, and
+observation selector attributed to the family's role members or custody-valid
+helpers participates in that closure's dialect for the family. Qualification is
+family-wide, never branch-relative; which closure's dialect a comparison reads
+is decided per frame (section 12).
 
 Without qualification, selector marks in `family__is_converged` still name
 facts, key judgments, and widen read backings. They do not warrant
@@ -147,9 +147,9 @@ quickly authored branch a year later. That is the residual price of choosing a
 simple speaker heuristic over a branch-sensitive attention analysis.
 
 The residual risk remains heavily bounded: survival still requires a reached
-vouch, a measured fact, a running wall, an at-most footprint, the committee and
-custody fences, the universal backing meet, and the admin's explicit risk flag.
-P2 reduces neither of those independent gates.
+vouch, a measured fact, a running wall, an at-most footprint, custody, the
+per-speaker dialect (section 12), the universal backing meet, and the admin's
+explicit risk flag. P2 reduces none of those independent gates.
 
 ## 3. Precise semantics
 
@@ -168,9 +168,8 @@ Qualification is keyed by `(speaker closure, family)`.
   (`30I:rul-cross-custody-distinction-is-narrative`).
 - Another family's predict never qualifies this family, even when both call the
   same helper or use the same kind and selector spelling.
-- If live role members span speakers, the standing committee fence remains the
-  conservative authority for whether the family can spare at all. P2 does not
-  ratify or weaken that fence.
+- Two speakers never pool: a comparison consults exactly one closure's
+  vocabulary, the one live at the backing's frame (section 12).
 
 ### 3.2 Genuine predict seed
 
@@ -421,8 +420,8 @@ only when their dormant vocabulary would recover a real survival.
 For a careful oracle, P2 makes normal factoring and genuine read backing useful.
 For an unreliable oracle, P2 can activate poorly considered selectors outside the
 modeled predict branch. This is the accepted residual. The family/speaker key,
-committee fence, risk flag, attribution chain, and next-run remeasurement bound it;
-they do not remove it.
+the per-speaker dialect, risk flag, attribution chain, and next-run remeasurement
+bound it; they do not remove it.
 
 ### 6.4 Reverse consumer direction
 
@@ -454,28 +453,32 @@ participate in the current dialect version before that version is public.
 
 ## 8. Implementation shape, without committing architecture
 
-P2 deliberately preserves the existing core shape:
+The dialect gains one key and loses one fold:
 
 ```text
-Dialect: (family, kind) -> set(selector)
+Dialect: (speaker closure, family, kind) -> set(selector)
 ```
 
-No branch key, invocation-region identity, or site-local dialect is needed. The
-eventual change is chiefly at the dialect producer:
+No branch key or invocation-region identity is needed; the closure is the
+speaker the positional function environment already resolves per frame. The
+change is at the producer and at the lookup's key:
 
 1. Derive one qualification result per `(speaker closure, family)`.
 2. Collect valid selector marks attributable to that family's role members and
-   custody-valid helpers.
-3. Mint those selectors only when the family is qualified.
+   custody-valid helpers, per closure.
+3. Mint those selectors only when the closure is qualified for the family.
 4. Preserve predict-derived selectors as part of the same qualified set.
-5. Expose dormant-versus-active sets to the aid plane.
-6. Add the counterfactual denial at the survival comparison.
+5. Retire `oracle::build_dialect`'s whole-unit last-wins minting source; the
+   comparison looks the dialect up by the closure live at the backing's frame
+   (section 12).
+6. Expose dormant-versus-active sets to the aid plane.
+7. Add the counterfactual denial at the survival comparison.
 
-The core comparison, universal backing meet, resolver, reference model, and
-survival witness need no semantic redesign. They consume the resulting dialect as
-before. Any implementation that changes those consumers must justify why the
-producer-only shape was insufficient rather than treating this ruling as license
-for adjacent algebra work.
+The ternary comparison, universal backing meet, resolver, reference model, and
+survival witness need no semantic redesign; the comparison's dialect argument
+changes key, nothing else. Any implementation that changes those consumers
+further must justify why that was insufficient rather than treating this ruling
+as license for adjacent algebra work.
 
 No qualification state is durable. It is re-derived from the authored source
 snapshot on every run. It neither touches `kSTATE` nor expands whylog contents.
@@ -496,7 +499,10 @@ The build must pin at least these worlds:
 6. Another family's predict does not qualify this family.
 7. External `disturbs` claims may reuse active backing-family tokens but cannot
    insert novel tokens.
-8. Multi-speaker families remain subject to the committee fence.
+8. An admin-blessed replacement (`unset -f family__predict; . ./local/…`) with
+   its own genuine predict: a claim spelled in the replaced closure's word
+   collides against the replacement's fact below the bless, and vice versa — two
+   closures' words never pool at one frame.
 9. Flag-off plans are byte-identical.
 10. Qualification changes no probe artifact, vouch, fact identity, transport, or
     context-carry answer.
@@ -520,8 +526,8 @@ Grounds:
 - P0, the current behavior, fails conservatively toward collision and guard/run.
 - `30I` explicitly excludes blessing reach and verdict-word enrollment from its
   lane.
-- P2 retains the existing dialect representation and changes its authored-input
-  producer rather than the load, bundle, artifact, or locator models.
+- P2 changes the dialect's producer and lookup key, not the load, bundle,
+  artifact, or locator models.
 - speaker/custody closures already exist; no queued r30 mechanic needs a
   qualification witness.
 - `plans/30L` edits book-custody regions and consumes the existing dialect/survival
@@ -575,3 +581,38 @@ Implementation latitude:
 
 None of those may weaken the family-wide semantics into branch qualification or
 widen the family/speaker key into closure-global or cross-family permission.
+
+## 12. Whose dialect a comparison reads
+
+`rul-dialect-is-the-live-speakers-at-the-backing-frame` **[ACKED 2026-08-23]** -
+A dialect is a property of one speaker closure, per family. A survival comparison
+consults exactly one: the dialect of the closure whose `family__` definition is
+live at the protected fact's frame, as the positional function environment
+resolves it. The wall's claim contributes only a token; it is interpreted in that
+one vocabulary or it collides. Two closures' words never pool into one set, at
+any frame; swapping the live definition (a bless, a subshell re-source, an
+`unset -f`) swaps the dialect with it.
+
+This dissolves two earlier questions rather than answering them:
+
+- A committee fence (`28M` §4: "role members spanning speakers ⇒ the family spares
+  nothing") is unnecessary: one definition is live per frame, so one speaker's
+  vocabulary is consulted, and the composite "A's word ≠ B's word" cannot be
+  minted. Co-speakerhood — a stranger's `disturbs` spelling the backing family's
+  token — stays what it was: the token is read in the backing speaker's
+  vocabulary (section 6.5).
+- Which position governs `claim@p × backing@q` (`28Q:pin-two-position-sparing`):
+  the backing's frame. A token minted by any closure other than the one live
+  there is not in the dialect, so it collides by construction; no separate
+  agreement rule is needed.
+
+What remains open elsewhere: cross-family registration (section 6.5), the
+kind-owner question of whether two families may deliberately co-refer.
+
+Build: with the rest of this plan (section 10); the `28T` sparing mini-model is
+the proof home. As-built until then, `oracle::build_dialect` mints one
+`(family, kind)` set per unit from a last-wins file, which can pool two
+closures' words below an admin bless — a too-large dialect spares more. The
+shadow refusal (`core::ContestedFamilies`) keeps two live minting members out of
+one frame except by that explicit bless, which bounds the exposure to
+admin-consented plurality.
