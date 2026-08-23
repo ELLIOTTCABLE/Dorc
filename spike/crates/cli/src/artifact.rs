@@ -563,16 +563,16 @@ fn bundle_files(
         // has nothing to re-say, so the file lands at the author's own relative path and the
         // author's own `.` finds it there — no generated name, no import edit, `two-surfaces`'
         // byte floor intact.
-        if let Some(entry) = projection.file(root.entry()) {
-            if is_included(snapshot, entry) {
-                match mirrored(cwd, authored_of(entry)) {
-                    Some(beside) => {
-                        place(beside, entry.copied().text().to_owned(), &mut unplaceable);
-                    }
-                    None => unplaceable = unplaceable.saturating_add(1),
+        if let Some(entry) = projection.file(root.entry())
+            && is_included(snapshot, entry)
+        {
+            match mirrored(cwd, authored_of(entry)) {
+                Some(beside) => {
+                    place(beside, entry.copied().text().to_owned(), &mut unplaceable);
                 }
-                continue;
+                None => unplaceable = unplaceable.saturating_add(1),
             }
+            continue;
         }
         // A computed operand is not ours to re-say (`30P:rul-rewrite-permission-is-derived`): the
         // line stays verbatim, so every file under it is mirrored at the authored relative path the
