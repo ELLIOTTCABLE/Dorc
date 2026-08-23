@@ -27,22 +27,6 @@ BACK-OUT (how retrofit-hostile waiting is) · REVISIT (the trigger) · REDS (the
 and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captured —
 `30P:rul-forfeits-carry-reds`, human-typed 2026-08-22: a row without reds is incomplete).
 
-- **forfeit-two-position-sparing-collide** — RULE (as-built through stage-i;
-  `307c:dec-dialect-keeps-a-whole-unit-fold`): the sparing dialect stays ONE
-  whole-unit minting fold per family (`dialect_minting_source`) — NO
-  position-aware collide exists in code, and a frame-dead regional mint can
-  therefore still sit in the global dialect a flag-gated meet consults
-  (`308c` find-2's construction; census-invisible today). The ACKED floor
-  (extremely-soft, human 2026-08-13: collide unless both positions agree on the
-  backing family's closure and dialect) is CAPTURE-tier, not yet rule. FORFEITS:
-  drifted-day survivals in plural-definition worlds under the risk flag once the
-  floor lands — and until it lands, the exposure runs the OTHER way (a too-large
-  dialect spares more), bounded by the census's enumerated blessed idioms.
-  CAPTURE: position-aware dialect resolution with a per-token agreement proof;
-  the `28T` sparing mini-model is the proof home, and it GATES promoting
-  plural-idiom books beyond the census set. BACK-OUT: low mechanically; med
-  socially (published claims calibrate against whichever floor ships). REVISIT:
-  the mini-model's formalization; first field evidence of plural-idiom books.
 - **forfeit-book-dynamic-load-analysis** — RULE (`plans/30P:the-load-principles`,
   soundness-first re-cut 2026-08-22): a `.` operand resolves only over controller-known
   inputs through shell semantics (`principle-load-operands-evaluate-over-controller-known-inputs`;
@@ -127,13 +111,6 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   — wall-clock and auth-log noise only, never correctness. CAPTURE:
   controller-authenticated host identity (never resolver-tier — the failure direction
   inverts for hosts). BACK-OUT: low. REVISIT: the multi-host revival.
-- **forfeit-committee-fence-sparing-inert** — RULE (`28M` §4, built-as-spiked,
-  UNRATIFIED): a family whose live role members span source units spares nothing.
-  FORFEITS: all survival value for multi-unit families — the overlay/patch-author
-  archetype, the largest sympathetic screwed population (`28M` §6). CAPTURE: the
-  composite-license admissibility ruling (the fence sitting, unscheduled). BACK-OUT:
-  low pre-publication (`rul-strawman-formats-no-compat`); med after real oracles
-  publish. REVISIT: the fence sitting; field evidence.
 - **forfeit-command-v-poison-wall** — RULE (as-built; `28P`): a polyfill guard's own
   `command -v` line is an unmodeled running command ⇒ walls; the delivered polyfill
   cell guards instead of eliding. FORFEITS: elision in every polyfilled book.
