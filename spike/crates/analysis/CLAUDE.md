@@ -148,8 +148,9 @@ discipline: one rule per bullet, slugged; append to the matching section.
   which decides TRUE only — and ONLY where the cwd at that line is determinate (no `cd` of a
   shape other than `/…`/`./…`/`../…` above it in the frame, no unknown `.`, no spliced body
   carrying either): the decision asserts a HOST fact from controller state and is sound solely
-  under cwd-parity with the file in the shipped manifest (human-acked 2026-08-22; the load
-  lane's cwd model is the gate — until it lands, a `[ -f ]` below any such act must not decide).
+  under cwd-parity with the file in the shipped manifest (human-acked 2026-08-22; BUILT: the
+  entry reads `LoadSites::clobbers` through `load_certainty` and refuses to decide under cwd-⊤ —
+  `p-x-file-test-refuses-under-unknown-cwd` / `…-below-a-blind-load` promoted).
   Load-bearing because NOTHING ELSE catches it: `cd` is a blessed target-state-pure builtin
   (`value.rs`; `notes/199`) and forms no wall, so a wrong TRUE here masks the arm dead, can
   ERASE its bytes (`plan::erase`), and can hide a mutator or an unknown `.` from the wall
@@ -199,29 +200,48 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (`30I:rul-bundles-key-to-load-occurrences`) and locator composition both need kept
   apart. The sourcer SPECIES keeps a book `.` and a CLI pre-source out of both edge
   relations by type, never by a filter each consumer must remember.
-- **rul-havoc-is-pointwise-never-the-stack** (`30P:principle-unknown-source-is-a-point-havoc`;
-  built r30) — an unresolvable book `.` havocs every binding AT THAT LINE in the frame it
-  sits in, and a later unconditional definition re-binds its own name by last-wins; never
-  the old absorbing stack-wide ⊤. Frames are SUBSHELL scopes (`cfg::lower_scoped` is the
-  only `ScopeEnter`/`ScopeExit` producer): a `.` inside a spliced function body binds the
-  CALLER's frame and survives the return; one inside `( )` dies at the paren — sh, for
-  free. The cwd domain rides it: after a `cd` whose operand is not `/…`/`./…`/`../…`, or
-  an unknown `.`, cwd is ⊤ for the frame (`HavocCause::CwdUnknown { clobbered_at }`), which
-  costs a later relative `.` its AUTHORITY only — acquisition and mirroring are untouched
-  (`30Q` §3 D2) — and forbids the decidable set's `[ -f ]` entry from deciding. Built
-  carve, owed a ruling before it moves: a `.` inside a LOAD PROGRAM (`run_control`'s
-  nested-load arm) keeps the absorbing ⊤ — the `30Mg` R1 prelude floor; only the book
-  plane's own `.` is pointwise (`30Qc:dev-prelude-floor-keeps-the-absorbing-top`, rides
-  `30Q:ask-ship-explicit-targets-below-a-clobber`).
-- **rul-exact-is-not-explicit** (`30P:rul-rewrite-permission-is-derived`) — EXACT governs
-  AUTHORITY (bindings below the line, vouches, shipping); EXPLICITNESS governs REWRITING.
-  `funcenv::ResolvedHead::explicitness()` is the analysis seat; an emitter that re-points,
-  inlines, hoists, or pastes an `Evaluated` head rewrites a line nobody spelled. `Literal`
-  is decided through `SourceLiteralPlane::literal_text`, which constant-folds — so a
-  literal-assigned book-set root (`OPS_LIB=.; . "$OPS_LIB/x.oracle.sh"`) IS explicit, and an
-  AST-literal test would be WRONG, not merely early. Residue: a positional the value plane
-  overlaid under splicing (`. "$1"` in an inlined body) reads `Literal` too — the ruling's
-  own literal-assigned-root clause, not a widening to defend.
+- **rul-havoc-is-pointwise-never-the-stack** (`30P:law-no-unsoundness-below-a-blind-act` +
+  `30P:principle-unknown-source-is-a-point-havoc`; built r30) — a BLIND ACT (a `.` whose
+  target the controller does not HOLD: an unheld file, a dynamic operand, an acquired
+  plain-sh inclusion alike) havocs every binding AT THAT LINE in the frame it sits in; a
+  later unconditional definition re-binds its own NAME by last-wins — which names the BYTES
+  Dorc pins, never a runtime binding it trusts. Never the old absorbing stack-wide ⊤. Frames
+  are SUBSHELL scopes (`cfg::lower_scoped` is the only `ScopeEnter`/`ScopeExit` producer): a
+  `.` inside a spliced function body binds the CALLER's frame and survives the return; one
+  inside `( )` dies at the paren. The cwd domain has ONE seat: `LoadSites::clobbers` seeds
+  cwd-⊤ from every blind act and every `cd` whose operand is not `/…`/`./…`/`../…`
+  (`HavocCause::CwdUnknown { clobbered_at }`); `FuncEnv::load_certainty(node)` is the one
+  composed answer (a cwd-havoc'd site sits in `havoc_causes` AND `resolved_loads`/`named_loads`;
+  a reader of one map alone calls it exact); the decidable set's `[ -f ]` entry READS it and
+  refuses to decide under cwd-⊤. Below a blind act the load plane CLAIMS NOTHING: a relative
+  `.` is not EXACT ⇒ no authority, no rewrite, NOTHING SHIPPED for it (the
+  `load-carriage-withheld-under-unknown-cwd` code names the clobbering line; human-typed
+  2026-08-23: `. /etc/os-release; . ./relative.sh` is inherently unsound and the remedies are
+  admin-sourced, `notes/30Pd`). Acquisition is KEPT — dropping it stalls the acquisition
+  fixpoint, and `Withheld`-over-`NoOpinion` is the safe direction. The law names THREE blind
+  acts; `eval` is closed by refusal and the unheld `.` is modelled; a call Dorc cannot SPLICE
+  (over-budget · recursive · out-of-slice) is minted only as the `CFG_INLINE_REFUSED`
+  diagnostic and is pinned red until the CFG's refusal set is queryable
+  (`p-x-an-unspliceable-call-havocs-the-cwd`). The tempting wrong seed — `call_body_sites`
+  answering `None` — is one line away and WRONG: the splicer inlines same-file funcdefs only,
+  so `None` also covers every call into an oracle body Dorc holds and models, and reading it
+  as blind clobbers the cwd below every helper call (measured: two goldens). Built carve, owed
+  a ruling before it moves: a `.` inside a LOAD PROGRAM (`run_control`'s nested-load arm)
+  keeps the absorbing ⊤ — the `30Mg` R1 prelude floor.
+- **rul-rewrite-needs-exact-and-explicit** (née rul-exact-is-not-explicit;
+  `30P:rul-rewrite-permission-is-derived` + the blind-act law) — EXACT governs AUTHORITY and
+  CARRIAGE (bindings below the line, vouches, shipping); EXPLICITNESS governs whether Dorc may
+  touch the LINE at all. A rewrite needs BOTH: `cli::artifact::BookLoad::permits`
+  (`LoadPermission`: `may_rewrite()` = explicit ∧ exact, `may_ship()` = exact) is the one seat
+  every rewrite seat and both placement seats read; three cells and no fourth — EXACT∧explicit
+  ⇒ re-point/paste + bundle · EXACT∧inexplicit ⇒ verbatim, mirrored at the authored path ·
+  ¬EXACT ⇒ verbatim, nothing shipped. `Literal` is decided through
+  `SourceLiteralPlane::literal_text`, which constant-folds — a literal-assigned book-set root
+  (`OPS_LIB=.; . "$OPS_LIB/x.oracle.sh"`) IS explicit; an AST-literal test would be WRONG.
+  `kept_in_place_reason` never answers "operand not explicit" for an explicit-but-non-EXACT
+  line — a wrong repair is `271:rul-sin-ordering`'s top. Residue: a positional the value plane
+  overlaid under splicing (`. "$1"` in an inlined body) reads `Literal` too — the ruling's own
+  literal-assigned-root clause, not a widening to defend.
 - **rul-acquiring-bytes-is-not-modelling-them** (`30P:principle-book-code-source-is-inclusion`,
   tier 2 only) — `load::Loadable::Included` is a file the controller READ (a book-sourced
   source carrying no dorc-lang marker) and models not at all: `program_at_key` answers

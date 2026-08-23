@@ -151,13 +151,16 @@ builder reads `AGENTS.for-builders-only.md`).
 
 ## register-and-steering-debt — state after this re-cut
 
-Applied (the `30Qb`/`30Qc` proposals, the `30Nc` freeze, the dangling oracle cite, the task
-list, the harness-contract lines). Still owed: the `30Kb` residue (wall narrative operand ·
-final-round typestate · the effective-reach prose case) · ONE predicate at TWO seats —
-`cli::artifact::operand_is_explicit` reads the AST word while `funcenv::ResolvedHead::explicitness()`
-reads the resolution (the fold left both; the cli seat should read the marker — a small lane,
-any time) · the FORFEITS row `forfeit-cell-blind-self-reach-walls-loop-siblings` gains its
-REDS when `lane-loop-residue` reports the minted case.
+Applied (the `30Qb`/`30Qc`/`30Qf` proposals, the `30Nc` freeze, the dangling oracle cite,
+the task list, the harness-contract lines, the blind-act re-says). Still owed: the `30Kb`
+residue (wall narrative operand · final-round typestate · the effective-reach prose case) ·
+ONE predicate at TWO seats — `cli::artifact::operand_is_explicit` reads the AST word while
+`funcenv::ResolvedHead::explicitness()` reads the resolution (the cli seat should read the
+marker — a small lane, any time) · `30Qf:tc-acquisition-outlives-the-clobber`'s frameless
+exposure (a file acquired in an early round reaches `build_dialect`'s whole-unit minting scan
+and `HelperIndex` custody with no positional question asked — flag-bounded; routed to the next
+lane touching `build_dialect`) · `doctor`/`doctor:unused` from WSL walk every worktree with
+per-worktree `git` calls across drvfs (3–36 s each) — a design call, not a one-liner.
 
 ## the-schedule
 

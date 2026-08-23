@@ -90,13 +90,17 @@ discipline: one rule per bullet, slugged; append to the matching section.
   files. Front-HOISTING a bundle ahead of the book is the emission planner's first
   consumer (`plans/30P:the-emission-planner`): legal only under a PROVEN closed set — no
   book observation or mutation of a bundle-bound name above the `.` — never a settlement
-  question; failing the set falls to in-place, never to a guess. Two gates sit under every
-  rewrite (r30): permission to rewrite a `.` line at all is DERIVED from the operand naming
-  its target EXPLICITLY (`30P:rul-rewrite-permission-is-derived` — `artifact::operand_is_explicit`
-  is the cli seat, answering the same question as `funcenv::ResolvedHead::explicitness()`; no
-  tier re-points, inlines or hoists a line either answers `false` for, and multipart MIRRORS
-  such a target at its authored relative path so the author's own operand finds it; EXACT is a
-  different axis and grants nothing here), and a book `.` carrying a LEADING ASSIGNMENT is not
+  question; failing the set falls to in-place, never to a guess. Three cells sit under every
+  book load line (r30; `30P:law-no-unsoundness-below-a-blind-act` +
+  `30P:rul-rewrite-permission-is-derived`): `BookLoad::permits` (`LoadPermission`, minted from
+  the analysis's own `FuncEnv::load_certainty` answer and `artifact::operand_is_explicit` — the
+  cli explicitness seat, answering the same question as `funcenv::ResolvedHead::explicitness()`;
+  unification owed) answers `may_rewrite()` = explicit ∧ EXACT and `may_ship()` = EXACT.
+  EXACT∧explicit ⇒ re-point/paste + bundle · EXACT∧inexplicit ⇒ verbatim, MIRRORED at its
+  authored relative path so the author's own operand finds it · ¬EXACT (below a `cd` of a
+  non-`/…`/`./…`/`../…` operand or any blind act) ⇒ verbatim and NOTHING shipped for it, the
+  `load-carriage-withheld-under-unknown-cwd` code naming the clobbering line; both placement
+  seats (`bundle_files`, `mirrored_files`) read it. Separately, a book `.` carrying a LEADING ASSIGNMENT is not
   absorbable (`ImportEdit::Inline` replaces the whole command node, so `MODE=prod . ./entry.oracle.sh`
   would lose the assignment; `Repoint` moves only the operand and stays eligible — the
   assignment costs the FORM, not the bundling). `Selection::emission()` is what reaches the

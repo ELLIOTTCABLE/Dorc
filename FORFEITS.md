@@ -230,13 +230,14 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   . /vendor/blind.sh
   . "${0%/*}/oracles/x.sh"          # immune: immutable $0, pure expansion — today havoc
   \unset -f cd; \unalias -a         # sound reset — today unrecognised
-  ( . /vendor/blind.sh )            # contained — today the havoc escapes the paren
+  ( . /vendor/blind.sh )            # contained — BUILT: the havoc dies at the paren
   ```
   FORFEITS: authority below any blind act for every immune or reset dimension. CAPTURE: parity
   modelling in `funcenv` (alias-table domain; named-function unset; quoted command words;
-  `$0`-relative loads immune to cwd ⊤ under `tc-dollar-zero-is-script-anchored`; subshell
-  scoping of the havoc). BACK-OUT: low. REVISIT: `r31:kernel-punt-glance`. REDS:
-  `p-x-dollar-zero-expansion-survives-a-blind-load` · `p-x-subshell-contains-a-blind-load`.
+  `$0`-relative loads immune to cwd ⊤ under `tc-dollar-zero-is-script-anchored`). Subshell
+  containment is NOT forfeited (`cli/tests/sh_parity.rs the_havoc_dies_at_a_paren_and_survives_a_return`).
+  BACK-OUT: low. REVISIT: `r31:kernel-punt-glance`. REDS:
+  `p-x-dollar-zero-expansion-survives-a-blind-load`.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)

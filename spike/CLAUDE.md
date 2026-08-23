@@ -347,8 +347,10 @@ prompt you write:
   divergence-of-world facts, never raw sink-landings; hostsim injects the race.
 - **rul-rc-reaches-genkill-only-through-decisions** (human-typed 2026-08-16) — a
   CLARIFIER for the current rounds, not a standalone forever-invariant: the
-  wider permanent law is expected out of the influence implementation round and
-  supersedes this in place. Verdict-rc and gen/kill are different species
+  wider permanent law is OWED — tracked as `TODO-ADDTL` `rc-vs-genkill-permanent-law`, and
+  NOT produced by the influence-carriage lane (which carries causal accounting only; the
+  rc-vs-gen/kill species separation is orthogonal to it) — and supersedes this in place
+  when it lands. Verdict-rc and gen/kill are different species
   (rc = measurement, influence-bearing per se; gen/kill = description-derived
   topology, influence-free); rc reaches gen/kill only through minted,
   Spine-recorded per-site decisions — decide run/elide/guard, then walk the
@@ -969,7 +971,10 @@ no task covers, and consider adding the task instead.
   `wsl -- bash -lc 'cd X && …'` silently runs in the PRIMARY checkout when the `cd`
   fails or resolves somewhere else, so the command greens against the wrong tree: a
   false green for any hand-rolled WSL invocation. Spell it `wsl --cd <path>`, and
-  assert the branch or the toplevel explicitly before trusting what comes back.
+  assert the branch or the toplevel explicitly before trusting what comes back. The bare
+  `wsl --cd <path> -- mise run <task>` WORKS (WSL dispatches through the login shell, so
+  `mise` has its PATH; verified three ways r30) — `bash -lc` is unnecessary and `sh -lc`
+  dies on the zsh profile.
 - **background-wsl-children-outlive-taskstop** (post-mortem 2026-08-15) — stopping a
   backgrounded harness task does NOT kill its WSL-side children: an orphaned CBMC
   once climbed to ~15GB and OOM'd the whole WSL VM (which killed the harness and the
@@ -1103,7 +1108,11 @@ no task covers, and consider adding the task instead.
   that fires spuriously is a bound people learn to skip. Two disk figures per profile
   (cold cache vs warm) selected by an O(1) existence check, never a directory walk.
   Each leg checks its OWN environment — the WSL VM's ~15 GiB cap is invisible to a
-  Windows-side reading — so `mise run both preflight <p>` is the paired form. The
+  Windows-side reading — so `mise run both preflight <p>` is the paired form. Under WSL the
+  cache volume is a sparse `ext4.vhdx` that ADVERTISES its maximum (~1 TB) as free while it
+  grows into the host volume and never shrinks on its own (measured r30: "789 GiB free" with
+  `C:` at 2 GiB, twice to 0 bytes mid-build), so the WSL leg bounds on MIN(cache volume, the
+  host volume holding the vhdx) and prints both; `doctor` on Windows lists the vhdx. The
   `kani` RAM bound is pinned ABOVE `verify/src/kani.rs`'s own per-harness
   `ADDRESS_SPACE_CAP_KB`, by a test, because a bound under the cap passes a machine the
   first harness cannot fit on. `DORC_PREFLIGHT=skip` is the escape hatch and says so in
@@ -1112,9 +1121,10 @@ no task covers, and consider adding the task instead.
   `cargo run -p internal-tooling` creates the directory before preflight executes,
   which made the cold branch unreachable; a witness the probe can create for itself is
   not a witness. And `mise run both <heavy>` is ORDER-DEPENDENT on this box: the WSL
-  leg's build cache inflates `vmmemWSL` (no `.wslconfig`, no auto-reclaim), and the
-  Windows leg's RAM probe then reads that unreturned cache as pressure — run the
-  Windows leg first, or expect a genuine refusal naming the wrong culprit.
+  leg's build cache inflates `vmmemWSL` (`~/.wslconfig` sets `autoMemoryReclaim=gradual`: it
+  drains in minutes, never instantly), and the Windows leg's RAM probe then reads that
+  unreturned cache as pressure — run the Windows leg first (measured again r30: a WSL-first
+  brief produced exactly this refusal), or wait a few minutes and retry once.
 - **doctor-inventories-never-reaps** — `mise run doctor` is the read-only answer to
   "what is eating the disk": every registered worktree with size and clean/dirty/locked
   state, this leg's target dir broken down, and the `dorc-*` lane caches. It DELETES
