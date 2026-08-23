@@ -69,7 +69,7 @@
 
 | lane | branch | note | builder shape | status |
 |---|---|---|---|---|
-| `lane-loop-propagation` | `ai/r30-lane-loop` → `-2` | loop lane report | Opus ×2 (census+value plane; then the licence) | FIRST BUILDER STOPPED GREEN at `69977343` (census, member value plane, member-keyed routes, four `loop30-*` reds; licence unbuilt — stop ENDORSED: the floor may move only after per-member facts exist); LICENCE BUILDER DISPATCHED 2026-08-22 |
+| `lane-loop-propagation` | `ai/r30-lane-loop` → `-2` | loop lane report | Opus ×2 (census+value plane; then the licence) | FOLDED 2026-08-22 (rebased, ff; conduct tip `2ab9ba89`; steering + FORFEITS re-cut `cff47b42`). Licence built; five `loop30-*` goldens minted; zero existing drift. Two genuine holes found by the second builder: member binding under a rebinding loop extent (under-execution; fixed with `loop_extent_rebinds`) and `ship_auto`'s subject gate refusing every member ship (fixed with `node_subjects`). Deviations all ENDORSED (real backings map threaded — region facts reach survival; per-candidate argv on the vouch lift; XFAIL fixtures that were silently wrong, repaired). Both lane branches contained; their harness worktrees are the human's sweep. |
 | `lane-emission-planner` | `ai/r30-lane-planner` → `-exec` | planner lane report | Opus MAP → ruling → EXECUTE | MAP FOLDED-IN-BRANCH `0c38045d` (30Pc repair + 2 evidence cells landed); RULED; EXECUTE DISPATCHED 2026-08-22 |
 | `lane-load-plane-precision` | `ai/r30-lane-load` → `-a`, `-b` (parallel) | load lane report | Opus MAP → ruling → EXECUTE-A ∥ EXECUTE-B | MAP FOLDED-IN-BRANCH `d2b47654` (5 red pins, glob retarget, plain-sh e2e red); RULED; A and B DISPATCHED 2026-08-22 |
 | `lane-influence-carriage` | — | influence lane report | Opus EXECUTE over the merged tip (scout census banked) | WAITING on the fold |
@@ -117,9 +117,14 @@ resumed until the human restarts the harness. Dispatch-ready afterwards, in this
    worktree; a copy is banked in the session scratchpad (`fruit2-uncommitted-…loom`). A fresh
    Sonnet, branched from `ai/r30-lane-fruit-2`, commits that case (scoped bless), runs
    `mise run both gate:full-quiet` FOREGROUND, appends `# §close` to the fruit lane report (on the lane branch). Then the lane folds.
-2. Fold whichever of loop-2 / planner-exec / load-a / load-b have reported green (order: loop →
+2. Fold whichever of planner-exec / load-a / load-b have reported green (loop is FOLDED; order:
    planner → load-a → load-b, each rebased onto `ai/r30-conduct`; load-b reconciles the
-   `Explicitness` marker seam with load-a and the planner at fold).
+   `Explicitness` marker seam with load-a and the planner at fold). Small post-restart items
+   banked from the loop fold: mint the Replace-asserting red for
+   `forfeit-cell-blind-self-reach-walls-loop-siblings`; rename `plan::member_argv` →
+   `argv_of_inline_site` (near-collision with `ValueFlow::member_argv`, flagged by the builder);
+   `tc-disagreeing-region-renders-cant-tell` (a region whose routes disagreed renders
+   `probe: cant-tell` — aid polish) → the prose queue.
 3. `lane-influence-carriage` EXECUTE over the merged tip (scout census in the scratchpad
    `scout-influence-census.md`; rulings owed first: rename the influence `Grade`; renders as
    explicit `untracked` adapters; the certifier-trip demotion path).
