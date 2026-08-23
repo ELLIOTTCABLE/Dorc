@@ -1013,4 +1013,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "script-relative-load-dies-slashless",
+        when_fires: "a BOOK's `.` operand is computed from `$0` by parameter expansion in a way that cannot succeed under a slashless invocation — `${0%/*}` of a `$0` with no `/` is the WHOLE word (the atlas-measured trap), so the operand names a path UNDER the book file itself and the `.` is fatal. analysis/funcenv.rs `load_head` records the site, cli/main.rs `load_head_notices` mints it, one per `.` line, spanned there. Fires only where the SLASHLESS spelling is live at all — the book's own directory is the modelled load cwd — and only where the invoking spelling DOES resolve, so the load itself is EXACT and this run is unaffected. World-as-payload: the mint sits in the binary's own load-edge driver, past everything the in-process book pipeline composes; the end-to-end firing is pinned by the whole-product case `load30-script-relative-lints`.",
+        why: "`30P:model-symbolic-dollar-zero` + `rul-dead-spelling-is-not-unsound`. A spelling under which the `.` cannot succeed is DEAD, not unsound: nothing below a failed `.` runs, so nothing below it can under-execute, and EXACT is decided by the spelling Dorc invokes (`rul-dorc-invokes-in-a-modelled-live-spelling`: `sh ./plan.sh` from the generation root). So this can only ever be a lint, never a refusal and never a withholding. It is worth a WARNING rather than a note because what it costs is the OFF-RAMP — DESIGN.md's \"the off-ramp is absolutely trivial\" is a product promise, and a book that dies under `sh book.sh` has quietly lost it while Dorc's own runs keep working, which is exactly the failure a user discovers at the worst moment. Stewardship rider (`KNOBS:kLANG`): Dorc must never TEACH the spelling that breaks, so the remediation belongs in the register — the `$(dirname \"$0\")` and `case $0 in */*)` forms are live under both spellings. Remediation register (help) wanted: name the one edit, and say plainly that this run is unaffected.",
+        params: &[],
+        example: "[unwritten: script-relative-load-dies-slashless]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
+    CatalogEntry {
+        slug: "slashless-source-searches-path",
+        when_fires: "a `.`/`source` operand is a plain literal carrying no `/`, which POSIX makes a `PATH` search rather than a lookup in the working directory. analysis/funcenv.rs `load_sites` records the site, cli/main.rs `load_head_notices` mints it, one per `.` line, spanned there. Keyed on the operand's own bytes, so it fires whether or not a file of that name sits beside the book — the point is that the shell would not look there. World-as-payload: the mint sits in the binary's own load-edge driver, past everything the in-process book pipeline composes; the end-to-end firing is pinned by the whole-product case `load30-script-relative-lints`.",
+        why: "`30P`'s slashless paragraph, over `30I:rul-dot-resolves-as-sh`. The cwd search was deliberately removed from the standard over trojan-horse concerns, and the atlas measured a slashless `.` fatal with the cwd off `PATH` — so the operand's referent is a HOST read the controller may not make, the load is unresolvable by the controller-known axis, and the site havocs like any other unknown source. WARNING rather than note because value is genuinely lost here (the file walls, every binding below it is withheld, and the plan is poorer for it), and because the repair is two characters: `./helpers.sh`. Never an error — the book is legal sh that may well work on the target, and refusing it would punish an admin for a spelling the standard still accepts. Remediation register (help) wanted: the `./` edit, and why the shell does not look in the current directory.",
+        params: &[],
+        example: "[unwritten: slashless-source-searches-path]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
