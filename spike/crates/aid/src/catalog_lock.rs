@@ -1049,4 +1049,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "emitted-line-unsafe-for-paste",
+        when_fires: "a finalized apply artifact's physical RENDERED line reaches the canonical-tty line-discipline cap, or begins `~` -- either way a live human-mediated paste into a tty/ssh session could corrupt or truncate it. `plan::render::paste_hygiene_hazards`, called on the artifact's finalized bytes at the cli emission edge, spanless (the claim is about a RENDERED PHYSICAL LINE, which has no book-AST span).",
+        why: "30Qe:fruit-emit-hygiene-paste-rules. `KNOBS:kBOOT` names literal human-mediated paste into a live session a permanently-supported floor rung, never probed, inherently outside the attention product -- so the engine's one obligation is to say so rather than ship a line the driver silently drops or splits. `{line}` carries the 1-indexed physical line; `{reason}` carries which rule fired (a typed PasteHygieneHazardReason, `28L:rul-reason-enums-not-sibling-codes`). Detection only (`two-surfaces`): a hazard is a diagnostic, never a rewrite of authored bytes. World-as-payload (`aid/CLAUDE.md` fixture tier): the trigger is minted at cli/main.rs's own `run()`, which the single-file in-process consumer has no seat to drive; the real firing route is proven separately by the whole-product round-trip case `crates/cli/tests/emitted-line-unsafe-for-paste-round-trip.loom`.",
+        params: &[],
+        example: "[unwritten: emitted-line-unsafe-for-paste]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
