@@ -61,7 +61,26 @@ local linters = new Mapping<String, Step> {
     }
     ["cargo_clippy"] {
         glob = "spike/**/*.rs"
-        profiles = List("full")
+        // A step's `profiles` list is a REQUIRES-ALL set (measured 2026-08-23: `List("medium",
+        // "slow")` needed BOTH `--profile medium --profile slow` on the invocation, not either —
+        // hk has no OR-of-profiles spelling), so "runs under medium OR slow" is expressed the
+        // other way around: this step requires only "medium", and every `slow`-tier task
+        // (`gate:full*`/`gate:step`) passes `--profile medium --profile slow` together, making
+        // slow a strict superset. Never pre-commit: that hook's steps are the bare `linters`
+        // mapping with no profile passed, so a step needs exactly this opt-in to stay out of its
+        // staged-path budget. (hk-side tier names only — `medium`/`slow`/the implicit untagged
+        // "fast" floor are independent of the `:quick`/`:full` mise TASK names that select them.)
+        //
+        // Shares the ordinary, WARM `spike/target` — deliberately NOT `clippy:clean`'s wiped,
+        // isolated dir. Verified 2026-08-23 (a planted clippy-only lint, `needless_return`, in a
+        // freshly-populated cache): a plain `cargo build --workspace --all-targets` immediately
+        // followed by this exact `cargo clippy` command still re-lints and catches it, in
+        // 1-2.5s — cargo's fingerprint keys on the clippy driver wrapper, so a prior non-clippy
+        // build never masks a clippy warning. The historical "clobbered by build-target-dir"
+        // failure this crate's dedicated clean dir was built to defend against does not reproduce
+        // on this toolchain (clippy 0.1.95 / rustc 1.96.0); `clippy:clean` stays as a manual
+        // escape hatch, not because this step needs it.
+        profiles = List("medium")
         check = "cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings"
     }
     ["cargo_deny"] {
@@ -137,37 +156,37 @@ local corpora = new Mapping<String, Step> {
 
 local gates = new Mapping<String, Step> {
     ["test-floor"] {
-        profiles = List("full")
+        profiles = List("slow")
         glob = List("spike/crates/**", "spike/e2e/**", "spike/Cargo.toml", "spike/Cargo.lock", "mise.toml", "hk.pkl")
         check = "mise run test:floor"
         output_summary = "combined"
     }
     ["test-real-tools"] {
-        profiles = List("full")
+        profiles = List("slow")
         glob = List("spike/crates/lint/**", "spike/crates/cli/tests/**", "spike/e2e/**", "mise.toml", "hk.pkl")
         check = "mise run test:real-tools"
         output_summary = "combined"
     }
     ["test-hooks"] {
-        profiles = List("full")
+        profiles = List("slow")
         glob = List("hk.pkl", "mise.toml", ".githooks/**", "spike/crates/internal-tooling/**")
         check = "mise run test:hooks"
         output_summary = "combined"
     }
     ["test-floor-suite"] {
-        profiles = List("full")
+        profiles = List("slow")
         glob = List("spike/**", "minispec/Generated/**", "mise.toml", "hk.pkl")
         check = "mise run test"
         output_summary = "combined"
     }
     ["verify-check"] {
-        profiles = List("full")
+        profiles = List("slow")
         glob = List("minispec/**", "spike/verify/**", "spike/crates/analysis/**", "spike/crates/core/**", "mise.toml", "hk.pkl")
         check = "mise run verify:check"
         output_summary = "combined"
     }
     ["verify-kani-check"] {
-        profiles = List("full")
+        profiles = List("slow")
         glob = List("spike/verify/kani/**", "spike/crates/analysis/**", "spike/crates/core/**", "spike/Cargo.toml", "spike/Cargo.lock", "mise.toml", "hk.pkl")
         check = "mise run verify:kani-check"
         output_summary = "combined"

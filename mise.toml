@@ -274,9 +274,9 @@ dir = "spike"
 # calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
 run = [
    "mise run preflight gate",
-   "hk check --pr --profile full --no-fail-fast --quiet",
-   "hk check --staged --profile full --no-fail-fast --quiet",
-   "hk check --unstaged --profile full --no-fail-fast --quiet",
+   "hk check --pr --profile medium --profile slow --no-fail-fast --quiet",
+   "hk check --staged --profile medium --profile slow --no-fail-fast --quiet",
+   "hk check --unstaged --profile medium --profile slow --no-fail-fast --quiet",
 ]
 
 [tasks."test:e2e"]
@@ -367,14 +367,14 @@ run = ["cargo clean", "cargo clippy --workspace --all-targets --quiet -- -D warn
 CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 
 [tasks.check]
-description = "All lint gates; pre-commit uses the bounded subset."
+description = "All lint gates including whole-workspace clippy (`--profile quick`); pre-commit uses the bounded, clippy-less subset."
 raw = true
-run = "hk check --all"
+run = "hk check --all --profile medium"
 
 [tasks."check-quiet"]
 description = "check, agent-facing: `-q` (never `-n` — measured 2026-08-15, --no-progress does not touch hk's per-step-transition text at all when piped, only `--quiet` does). Silent on success (0 bytes); on failure, every diagnostic hk would otherwise show survives — same ERROR block, same diff, same fix command, same exit code — with the step-transition churn (`files - Fetching...`, per-step `❯` pending lines) gone. Never used to swallow a failure, only to drop lines that carried no information a human or an agent transcript needed."
 raw = true
-run = "hk check --all --quiet"
+run = "hk check --all --profile medium --quiet"
 
 [tasks.fmt]
 description = "Apply the fixers to the spike via hk (cargo fmt, and typos --write-changes). Works in an agent session too: the task re-enables hk's fix mode for itself, since a session-wide HK_FIX=0 would otherwise degrade this to a check that only PRINTS the diff."
@@ -398,16 +398,16 @@ raw = true
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
 run = [
   "mise run preflight gate",
-  "hk check --pr --profile full --no-fail-fast",
-  "hk check --staged --profile full --no-fail-fast",
-  "hk check --unstaged --profile full --no-fail-fast",
+  "hk check --pr --profile medium --profile slow --no-fail-fast",
+  "hk check --staged --profile medium --profile slow --no-fail-fast",
+  "hk check --unstaged --profile medium --profile slow --no-fail-fast",
 ]
 
 [tasks."gate:step"]
 description = "Run one hk gate step over all matching paths."
 raw = true
 usage = 'arg "step" help="hk step name from the failed gate output"'
-run = "hk check --all --profile full --profile arc --step {{ usage.step }} --no-fail-fast"
+run = "hk check --all --profile medium --profile slow --profile arc --step {{ usage.step }} --no-fail-fast"
 
 [tasks."gate:arc"]
 description = "CONDUCTOR-ONLY: run completion, arc checks, and RustSec audit."
