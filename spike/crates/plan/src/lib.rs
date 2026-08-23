@@ -1408,20 +1408,6 @@ impl PinnedDefinitions {
     }
 }
 
-/// The short, deterministic disambiguator a hash-munged name carries (`28K` §4
-/// `rul-hash-munge-disambiguation`).
-///
-/// SHA-256 of the definition BYTES, first 8 hex digits — the same digest `book_digest` uses, not an
-/// FNV drift-detector, because this reaches the shipped artifact
-/// (`rul-fixture-identity-never-production`). It answers "are these the same bytes" and nothing
-/// else; uniqueness WITHIN one artifact is what matters and is checked at the emission seat.
-fn short_digest(body: &str) -> String {
-    invocation::book_digest(body)
-        .get(..8)
-        .unwrap_or_default()
-        .to_owned()
-}
-
 /// Does the book's own text define `name` at top level at all, whatever the bytes?
 ///
 /// Tier-2's collision rule (`28R:rul-instantiation-hash-dedup`): on a static collision with a book
@@ -5341,6 +5327,11 @@ fn pin_definitions<'a>(
         }
     }
     let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
+    let mut names = placement::EmittedNames::over(
+        dorc_analysis::nameuse::NameUseCensus::of(ast)
+            .names()
+            .map(str::to_owned),
+    );
     let mut definitions = PlacedDefinitions::default();
     for ((file, offset), bytes) in snapshot {
         definitions.place(
@@ -5353,7 +5344,7 @@ fn pin_definitions<'a>(
     for (name, distinct) in &bodies {
         let book_claims = book_defines_at_top_level(ast, name);
         for body in distinct {
-            let digest = short_digest(body);
+            let digest = invocation::book_digest(body);
             let key = placement::DefinitionKey::Body((*name).to_owned(), digest.clone());
             let at = placed.of_definition(body_source.get(&(name, body)).copied());
             if book_already_defines(src, ast, name, body) {
@@ -5362,11 +5353,12 @@ fn pin_definitions<'a>(
             }
             let plural = distinct.len() > 1;
             if !(plural || book_claims || defensive_emission) {
+                names.claim(name);
                 definitions.place(key, at, (*body).to_owned(), None);
                 emitted_names.insert((name, body), (*name).to_owned());
                 continue;
             }
-            let emitted = format!("{name}_h{digest}");
+            let emitted = names.mint(name, &digest);
             let header = format!("{name}()");
             definitions.place(
                 key,

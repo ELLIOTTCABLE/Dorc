@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0. `hork` is a non-functional stub name —
+# under the harness's mocks-only PATH this file is the only thing an executed artifact can reach.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

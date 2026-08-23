@@ -845,6 +845,7 @@ fn a_within_file_plural_role_answers_per_definition() {
 /// Two-way, like every allow-list in this tree: a listed case that stopped munging has stopped
 /// witnessing what it was listed for.
 const MUNGE_WITNESS_CASES: &[&str] = &[
+    "emit30-book-squats-the-munged-name",
     "emit30-definition-vector-munges-everything.loom",
     "emit30-two-live-verdicts-under-one-name.loom",
 ];

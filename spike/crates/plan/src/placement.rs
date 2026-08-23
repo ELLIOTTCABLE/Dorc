@@ -26,7 +26,7 @@
 //! `emission` stays the umbrella, `layout` stays weft's textual-emission word, and `lift` is never a
 //! placement word here — "the lift" is the static lift of oracle text into the engine.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, SourceFileId};
 
@@ -263,6 +263,74 @@ impl PlacedSources {
     }
 }
 
+/// The shortest digest a munged emission carries, and the longest.
+///
+/// Eight hex is `28K` §4's own width and what every committed golden spells; sixty-four is the whole
+/// SHA-256, past which two DIFFERENT bodies could not still be colliding.
+const DIGEST_FLOOR: usize = 8;
+
+/// The one mint for an emitted name (`30Pb:fnd-emitted-names-need-freshness-and-hygiene`).
+///
+/// Freshness stops being a property of the call order and becomes a property of the mint: the
+/// allocator holds every name the unit already claims — the book's own top-level bindings, plus
+/// everything it has already emitted — and lengthens the digest one hex at a time until the
+/// candidate is free. What that closes is not a hash accident but a SQUAT: `<name>_h<digest>` is
+/// computable by anyone reading the artifact, so a book may define that exact name and win by sh's
+/// last-wins, and the guard would then invoke the ADMIN's body under the ORACLE's judgment —
+/// pope-sin tier (`271:rul-sin-ordering`).
+///
+/// The reserved set includes the book's top-level VARIABLES as well as its functions, and that half
+/// is belt-and-braces rather than load-bearing: sh keeps the two namespaces apart, so a variable
+/// could not shadow an emitted funcdef. It costs a longer digest in a case that will never arise and
+/// removes the question.
+#[derive(Debug, Clone, Default)]
+pub struct EmittedNames {
+    reserved: BTreeSet<String>,
+}
+
+impl EmittedNames {
+    /// The names the unit already claims.
+    #[must_use]
+    pub fn over(reserved: impl IntoIterator<Item = String>) -> Self {
+        Self {
+            reserved: reserved.into_iter().collect(),
+        }
+    }
+
+    /// Record that the artifact emits `name` as its author wrote it.
+    pub fn claim(&mut self, name: &str) {
+        self.reserved.insert(name.to_owned());
+    }
+
+    /// Mint a fresh munged emission for `authored`, disambiguated by `digest` (the full hash of the
+    /// definition's own bytes).
+    ///
+    /// Deterministic and total: the digest lengthens to its full width first, and a candidate still
+    /// taken then carries a decimal ordinal — which no hash can exhaust.
+    pub fn mint(&mut self, authored: &str, digest: &str) -> String {
+        for width in DIGEST_FLOOR..=digest.len() {
+            let Some(prefix) = digest.get(..width) else {
+                continue;
+            };
+            let candidate = format!("{authored}_h{prefix}");
+            if self.reserved.insert(candidate.clone()) {
+                return candidate;
+            }
+        }
+        // Pigeonhole, so the walk is bounded and needs no panic arm (`inv-no-throw`): among
+        // `reserved.len() + 1` distinct ordinals, one is free.
+        let mut minted = format!("{authored}_h{digest}_0");
+        for ordinal in 0..=self.reserved.len() {
+            minted = format!("{authored}_h{digest}_{ordinal}");
+            if !self.reserved.contains(&minted) {
+                break;
+            }
+        }
+        self.reserved.insert(minted.clone());
+        minted
+    }
+}
+
 /// Everything a settled artifact form answers before the plan exists: where each book-reached
 /// source stands, and what each book-sited import says.
 ///
@@ -315,6 +383,40 @@ mod tests {
         EmittedName, PlacedSources, Placement, PlacementDecision, PlacementReason, SourcePlacement,
     };
     use dorc_core::SourceFileId;
+
+    /// The mint's own shape: eight hex where nothing claims it, and a LENGTHENED digest where the
+    /// book squats the name the emission was about to bind.
+    #[test]
+    fn a_squatted_emitted_name_lengthens_rather_than_colliding() {
+        const DIGEST: &str = "0123456789abcdef0123456789abcdef";
+        let mut fresh = super::EmittedNames::default();
+        assert_eq!(
+            fresh.mint("wombat__is_converged", DIGEST),
+            "wombat__is_converged_h01234567"
+        );
+
+        let squatted = "wombat__is_converged_h01234567".to_owned();
+        let mut contested = super::EmittedNames::over([squatted.clone()]);
+        let minted = contested.mint("wombat__is_converged", DIGEST);
+        assert_ne!(
+            minted, squatted,
+            "the book's own name is never re-bound by us"
+        );
+        assert_eq!(minted, "wombat__is_converged_h012345678");
+    }
+
+    /// Two distinct bodies under one name cannot mint one emission, however the digests fall: the
+    /// second mint sees the first as taken.
+    #[test]
+    fn one_allocator_never_mints_the_same_name_twice() {
+        let mut names = super::EmittedNames::default();
+        let first = names.mint("hork__is_converged", "aaaaaaaaaaaaaaaa");
+        let second = names.mint("hork__is_converged", "aaaaaaaaaaaaaaaa");
+        assert_ne!(
+            first, second,
+            "injectivity is the mint's property, not the caller's"
+        );
+    }
 
     #[test]
     fn a_source_no_book_dot_reaches_is_ambient_and_hoists() {

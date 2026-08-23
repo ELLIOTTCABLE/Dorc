@@ -78,6 +78,16 @@ impl NameUseCensus {
         self.first_use_of(name).is_some_and(|at| at < before)
     }
 
+    /// Every name the book names at all, in a deterministic order — the RESERVED set an emitted-name
+    /// allocator must stay clear of (`30Pb:fnd-emitted-names-need-freshness-and-hygiene`).
+    ///
+    /// Deliberately every USE rather than every top-level BINDING: over-broad here costs a longer
+    /// digest in a book that merely mentions the name, and the thing it must not miss is a book that
+    /// DEFINES a name the emission was about to mint.
+    pub fn names(&self) -> impl Iterator<Item = &str> {
+        self.earliest.keys().map(String::as_str)
+    }
+
     /// The earliest construct that is a use of EVERY name, where the book carries one — the ⊤ arm,
     /// exposed so a disclosure can say which line closed the question.
     #[must_use]

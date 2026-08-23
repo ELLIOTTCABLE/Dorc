@@ -1,0 +1,5 @@
+# Site numbering (leaves in book order; a funcdef is not one): 0 the `alias`, 1 the unmodeled wall,
+# 2 the described `wombat sync`. Only site 2 is measured, and it sits PAST `hork`'s wall, so a
+# `holds` cell mints a GUARD rather than an elision — which is what puts an emitted name on the apply
+# surface at all.
+site 2 effect=holds
