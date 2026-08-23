@@ -500,7 +500,7 @@ dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless --floor"
 
 [tasks."lint:docids"]
-description = "READ-ONLY: every docID cross-reference in the corpus, the steering files and the root docs, checked against the document it names. Silent when every target resolves. Matches only the three unambiguous spellings — letter-bearing IDs (28Q, 30Ba), explicit notes//plans/ paths, and colon-slug forms (271:rul-sin-ordering) — because a bare three-digit run is a line number far more often than a docID. Quarantined targets resolve by FILENAME alone; nothing there is opened. Writes nothing, ever."
+description = "READ-ONLY, WHOLE-TREE: every docID cross-reference in the corpus, the steering files and the root docs, checked against the document it names, with no path scoping (the `docids` hk step is the scoped sibling — it checks only the files hk hands it). Silent when every target resolves. Matches only the three unambiguous spellings — letter-bearing IDs (28Q, 30Ba), explicit notes//plans/ paths, and colon-slug forms (271:rul-sin-ordering) — because a bare three-digit run is a line number far more often than a docID. Quarantined targets resolve by FILENAME alone; nothing there is opened. Writes nothing, ever."
 raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- docids"

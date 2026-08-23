@@ -71,13 +71,15 @@ local linters = new Mapping<String, Step> {
         // advisories pass on demand.
         check = "cargo deny --manifest-path spike/Cargo.toml check licenses bans sources"
     }
-    // The prose corpus's own cross-references. Read-only, ~0.7s, and it always checks EVERY
-    // citation whatever is staged — the glob decides only whether a commit is one that could have
-    // moved a target. The one gate here that reaches outside `spike/**`, alongside `minispec`,
-    // because a renumber lands entirely in `Research/`.
+    // The prose corpus's own cross-references. Read-only, ~0.7s, and `{{files}}` scopes the
+    // citations it checks to what THIS run was handed (staged, changed, or `--all`'s whole
+    // match) — an already-existing citation in a file this run never touched cannot refuse it.
+    // The glob decides only whether a commit is one that could have moved a target. The one gate
+    // here that reaches outside `spike/**`, alongside `minispec`, because a renumber lands
+    // entirely in `Research/`. `NO_LINT_DOCIDS=1` is the escape hatch, honored by the tool itself.
     ["docids"] {
         glob = List("Research/**/*.md", "spike/**/CLAUDE.md", "*.md")
-        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- docids"
+        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- docids {{files}}"
     }
     ["typos"] {
         glob = "spike/**"

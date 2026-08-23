@@ -10,6 +10,14 @@
 //! that cries wolf is one people stop reading. A citation this misses is a citation the corpus
 //! survives; a citation this wrongly flags costs a human's attention every run. Every filter below
 //! was derived from a hand-triaged full-corpus run, and each one names the shape that motivated it.
+//!
+//! Two callers, two scopes. The bare `mise run lint:docids` passes no paths and always sees the
+//! whole tree. The `hk` step passes `{{files}}` — whatever it staged/changed/`--all`-selected — and
+//! citations are scanned from THAT set alone, resolved against whatever the tree holds right now.
+//! Scoping this way is what stops an unrelated, already-existing citation to a not-yet-landed
+//! sibling lane's report from refusing a commit that never touched it. `NO_LINT_DOCIDS` (any
+//! non-empty value) is the escape hatch, honored inside `run` so it works under the hook without
+//! `--no-verify`.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -294,35 +302,25 @@ fn scanned(root: &Path, quarantined: &mut Vec<String>) -> Vec<PathBuf> {
     files
 }
 
-pub(crate) fn run() -> ExitCode {
-    let root = internal_tooling::repo_root();
-    let mut known = BTreeSet::new();
-    for dir in DOC_DIRS {
-        doc_ids(&root.join(dir), &mut known);
-    }
-    if known.is_empty() {
-        eprintln!("docids: found no corpus documents under {}", root.display());
-        return ExitCode::from(2);
-    }
-    let mut quarantined = Vec::new();
-    let files = scanned(root, &mut quarantined);
+/// Every citation found in one `(display-path, contents)` pair, resolved against the corpus's
+/// known/quarantined/retired backdrop. Pure and disk-free — the shape that makes staged-scoping
+/// unit-testable without a real corpus, since scoping is entirely a matter of which pairs get
+/// handed in.
+struct Scan {
+    dangling: BTreeMap<String, Vec<String>>,
+    cited: BTreeSet<String>,
+    checked: u32,
+}
 
+fn scan(files: &[(String, String)], known: &BTreeSet<String>, quarantined: &[String]) -> Scan {
     let mut dangling: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut cited: BTreeSet<String> = BTreeSet::new();
     let mut checked = 0_u32;
-    for path in files {
-        let Ok(text) = std::fs::read_to_string(&path) else {
-            continue;
-        };
-        let shown = path
-            .strip_prefix(root)
-            .unwrap_or(&path)
-            .display()
-            .to_string();
+    for (shown, text) in files {
         for (number, line) in text.lines().enumerate() {
             for (id, shape) in references(line) {
                 // `notes/06x-*` is the corpus's own glob for a whole series, not a document.
-                if id.ends_with('x') || (shape == Shape::Bare && !series_exists(&id, &known)) {
+                if id.ends_with('x') || (shape == Shape::Bare && !series_exists(&id, known)) {
                     continue;
                 }
                 checked = checked.saturating_add(1);
@@ -338,12 +336,91 @@ pub(crate) fn run() -> ExitCode {
             }
         }
     }
+    Scan {
+        dangling,
+        cited,
+        checked,
+    }
+}
 
-    let unused: Vec<&&str> = RETIRED.iter().filter(|id| !cited.contains(**id)).collect();
-    if dangling.is_empty() && unused.is_empty() {
+/// Whether the escape hatch fires: any NON-EMPTY value, so a bare `export NO_LINT_DOCIDS=`
+/// (empty, easy to leave behind by accident) does not silently arm it.
+fn hatch_open(value: Option<&str>) -> bool {
+    value.is_some_and(|v| !v.is_empty())
+}
+
+/// Narrow `all` to the entries named in `wanted` (backslash-normalized — `{{files}}` may arrive
+/// either way on Windows), matched by path relative to `root`. An empty `wanted` means no
+/// scope: every file is kept, which is how the standalone whole-tree caller falls out of the
+/// same code path as the hk step.
+fn scope_to(all: &[PathBuf], root: &Path, wanted: &[String]) -> Vec<PathBuf> {
+    if wanted.is_empty() {
+        return all.to_vec();
+    }
+    let wanted: BTreeSet<String> = wanted.iter().map(|w| w.replace('\\', "/")).collect();
+    all.iter()
+        .filter(|path| {
+            let rel = path
+                .strip_prefix(root)
+                .unwrap_or(path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            wanted.contains(&rel)
+        })
+        .cloned()
+        .collect()
+}
+
+pub(crate) fn run(args: &[String]) -> ExitCode {
+    if hatch_open(std::env::var("NO_LINT_DOCIDS").ok().as_deref()) {
+        println!("docids: NO_LINT_DOCIDS is set — skipping (escape hatch)");
         return ExitCode::SUCCESS;
     }
-    for (id, sites) in &dangling {
+    let root = internal_tooling::repo_root();
+    let mut known = BTreeSet::new();
+    for dir in DOC_DIRS {
+        doc_ids(&root.join(dir), &mut known);
+    }
+    if known.is_empty() {
+        eprintln!("docids: found no corpus documents under {}", root.display());
+        return ExitCode::from(2);
+    }
+    let mut quarantined = Vec::new();
+    let all_files = scanned(root, &mut quarantined);
+    let files = scope_to(&all_files, root, args);
+    // Whole-tree coverage even when `args` is non-empty: `hk check --all` hands every matching
+    // path, which is the same set `scanned()` would have walked. Only a genuine subset (a
+    // staged/changed run) narrows below this, and that is exactly the case the RETIRED-unused
+    // check below cannot judge — a citation living in a file this run never saw is not evidence
+    // the entry is unused.
+    let whole_tree = files.len() == all_files.len();
+
+    let pairs: Vec<(String, String)> = files
+        .iter()
+        .filter_map(|path| {
+            let text = std::fs::read_to_string(path).ok()?;
+            let shown = path
+                .strip_prefix(root)
+                .unwrap_or(path)
+                .display()
+                .to_string();
+            Some((shown, text))
+        })
+        .collect();
+    let found = scan(&pairs, &known, &quarantined);
+
+    let unused: Vec<&&str> = if whole_tree {
+        RETIRED
+            .iter()
+            .filter(|id| !found.cited.contains(**id))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    if found.dangling.is_empty() && unused.is_empty() {
+        return ExitCode::SUCCESS;
+    }
+    for (id, sites) in &found.dangling {
         println!("{id} — no document, {} citation(s)", sites.len());
         for site in sites {
             println!("    {site}");
@@ -353,20 +430,68 @@ pub(crate) fn run() -> ExitCode {
         println!("{id} — allowlisted in RETIRED but no longer cited; drop the entry");
     }
     println!(
-        "docids: {} unresolved of {checked} citations — fix the reference, or add the ID to \
+        "docids: {} unresolved of {} citations — fix the reference, or add the ID to \
          RETIRED in docids.rs with its reason",
-        dangling.len()
+        found.dangling.len(),
+        found.checked
     );
     ExitCode::from(1)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Shape, references, series_exists};
+    use super::{Shape, hatch_open, references, scan, scope_to, series_exists};
     use std::collections::BTreeSet;
+    use std::path::{Path, PathBuf};
 
     fn ids(line: &str) -> Vec<String> {
         references(line).into_iter().map(|(id, _)| id).collect()
+    }
+
+    /// The behavior the hk step exists to fix: a citation that lives in a file this run was not
+    /// handed cannot fail it, even though the same target is genuinely dangling on the whole tree.
+    #[test]
+    fn a_scoped_run_ignores_a_dangling_reference_outside_its_named_files() {
+        let known: BTreeSet<String> = ["300".to_owned()].into_iter().collect();
+        let staged = ("staged.md".to_owned(), "see 300 for context".to_owned());
+        let elsewhere = (
+            "elsewhere.md".to_owned(),
+            "see notes/999, never minted".to_owned(),
+        );
+
+        let whole = scan(&[staged.clone(), elsewhere.clone()], &known, &[]);
+        assert!(whole.dangling.contains_key("999"));
+
+        let scoped = scan(&[staged], &known, &[]);
+        assert!(scoped.dangling.is_empty());
+    }
+
+    /// `scope_to` is what turns `{{files}}` into that narrowed set — matched by path relative to
+    /// `root`, backslash-normalized, and passing everything through when nothing was named.
+    #[test]
+    fn scope_to_keeps_only_the_named_paths() {
+        let root = Path::new("/repo");
+        let all = vec![
+            PathBuf::from("/repo/Research/notes/300-a.md"),
+            PathBuf::from("/repo/Research/notes/301-b.md"),
+        ];
+        assert_eq!(
+            scope_to(&all, root, &["Research/notes/300-a.md".to_owned()]),
+            vec![PathBuf::from("/repo/Research/notes/300-a.md")]
+        );
+        assert_eq!(
+            scope_to(&all, root, &["Research\\notes\\301-b.md".to_owned()]),
+            vec![PathBuf::from("/repo/Research/notes/301-b.md")],
+            "a backslash-separated path (Windows `{{files}}`) must still match"
+        );
+        assert_eq!(scope_to(&all, root, &[]), all, "no names given, no scope");
+    }
+
+    #[test]
+    fn the_escape_hatch_requires_a_non_empty_value() {
+        assert!(!hatch_open(None));
+        assert!(!hatch_open(Some("")));
+        assert!(hatch_open(Some("1")));
     }
 
     /// The three sanctioned spellings, each in the punctuation the corpus actually wraps them in.
