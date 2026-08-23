@@ -2173,37 +2173,33 @@ mod tests {
                     .expect("auto always lands somewhere"),
             )
         };
-        let (dynamic_multipart, dynamic_one_stream) = settled(DYNAMIC_BLIND_ACT);
-        assert!(
-            dynamic_multipart.imports().is_empty(),
-            "a dynamic blind act already denies the rewrite: {:?}",
-            dynamic_multipart.imports()
-        );
-        assert_eq!(
-            dynamic_one_stream.form(),
-            ArtifactForm::PreservedBookTree,
-            "and one stream cannot absorb a line it may not replace"
-        );
-
-        let (multipart, one_stream) = settled(LITERAL_BLIND_ACT);
-        assert_eq!(multipart.imports().len(), 1, "interim: re-pointed");
-        assert_eq!(
-            one_stream.form(),
-            ArtifactForm::Flattened,
-            "interim: pasted"
-        );
-        internal_tooling::xfail::xfail_until("p-x-non-exact-load-is-never-re-pointed", || {
+        for blind in [DYNAMIC_BLIND_ACT, LITERAL_BLIND_ACT] {
+            let (multipart, one_stream) = settled(blind);
             assert!(
                 multipart.imports().is_empty(),
-                "multipart: the author's own operand is what finds the file: {:?}",
+                "multipart below `{blind}`: the author's own operand is what finds the file: {:?}",
                 multipart.imports()
             );
             assert_eq!(
                 one_stream.form(),
                 ArtifactForm::PreservedBookTree,
-                "one stream: absorbing the bundle would replace the line outright"
+                "one stream below `{blind}`: absorbing the bundle would replace the line outright"
             );
-        });
+        }
+
+        let (control, control_stream) = settled(":");
+        assert_eq!(
+            control.imports().len(),
+            1,
+            "control: with nothing blind above it the same line IS re-pointed, so the refusals \
+             above are the act's doing: {:?}",
+            control.imports()
+        );
+        assert_eq!(
+            control_stream.form(),
+            ArtifactForm::Flattened,
+            "control: and one stream absorbs it"
+        );
     }
 
     /// TARGET: and nothing is SHIPPED for it — no bundle, no mirror
@@ -2225,28 +2221,22 @@ mod tests {
             below_a_blind_act(blind, FormRequest::Auto, StreamPosture::Materializable)
                 .expect("a relative dependency is placeable")
         };
-        let dynamic = placed(DYNAMIC_BLIND_ACT);
-        let literal = placed(LITERAL_BLIND_ACT);
-        assert!(
-            dynamic.dependencies.is_empty(),
-            "a dynamic blind act already denies the carriage: {:?}",
-            dynamic
-                .dependencies
-                .iter()
-                .map(|file| file.path.as_str())
-                .collect::<Vec<_>>()
-        );
-        assert_eq!(literal.dependencies.len(), 1, "interim: the bundle ships");
-        internal_tooling::xfail::xfail_until("p-x-non-exact-load-ships-no-copy", || {
+        for blind in [DYNAMIC_BLIND_ACT, LITERAL_BLIND_ACT] {
+            let settled = placed(blind);
             assert!(
-                literal.dependencies.is_empty(),
-                "nothing is shipped on a guess about where the run stands: {:?}",
-                literal
+                settled.dependencies.is_empty(),
+                "below `{blind}` nothing is shipped on a guess about where the run stands: {:?}",
+                settled
                     .dependencies
                     .iter()
                     .map(|file| file.path.as_str())
                     .collect::<Vec<_>>()
             );
-        });
+        }
+        assert_eq!(
+            placed(":").dependencies.len(),
+            1,
+            "control: with nothing blind above it the same package IS published"
+        );
     }
 }

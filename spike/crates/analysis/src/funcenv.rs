@@ -2735,7 +2735,20 @@ fn load_sites(
         if head.dies_slashless {
             sites.dies_slashless.insert(id);
         }
-        if head.exact.is_err() {
+        // THE SEED IS UNRESOLVABILITY, never operand-evaluability. A blind act is "a `.` of a file
+        // the controller does not hold" (`30P:law-no-unsoundness-below-a-blind-act`), and the law's
+        // own example — `. /etc/os-release` — evaluates PERFECTLY: keyed on the operand alone it
+        // seeded nothing, and a relative `.` below it still bound. An acquired plain-sh inclusion
+        // arrives through this same door (`30Qc:rul-included-is-as-opaque-as-unresolvable`).
+        //
+        // It shrinks across acquisition rounds rather than growing — a target unread in round 1 is
+        // held in round 2 — which is the safe direction: the site stays in `named`, so it is still
+        // WANTED and still read, and the transient clobber clears itself.
+        let holds_a_program = head
+            .exact
+            .as_ref()
+            .is_ok_and(|head| defs.program_at_key(head.key()).is_some());
+        if !holds_a_program {
             clobbering.insert(id);
         }
         heads.push((id, head));
@@ -5496,15 +5509,15 @@ mod tests {
     // ── TABLE 8: no unsoundness below a blind act
     //    (`30P:law-no-unsoundness-below-a-blind-act`) ──
 
-    /// THE SEED IS KEYED ON THE WRONG QUESTION — the law's own example, measured.
+    /// THE SEED IS UNRESOLVABILITY, not operand-evaluability — the law's own example, measured
+    /// (né `p-x-an-unheld-literal-load-havocs-the-cwd`, promoted).
     ///
-    /// `. /etc/os-release` is a BLIND ACT: it runs arbitrary sh in this shell. Its operand
-    /// evaluates perfectly, so [`load_head`] answers `Ok`, and the cwd-clobber seed in
-    /// [`load_sites`] takes only heads that answer `Err` — so the line clobbers nothing and a
-    /// relative `.` below it still resolves and still BINDS. Under the law nothing below a blind
-    /// act carries authority, and the seed belongs on the site being UNRESOLVABLE (which is the
-    /// same door an acquired plain-sh inclusion arrives at —
-    /// `30Qc:rul-included-is-as-opaque-as-unresolvable`).
+    /// `. /etc/os-release` is a BLIND ACT: it runs arbitrary sh in this shell, and it may `cd`
+    /// inside it. Its operand evaluates perfectly, so [`load_head`] answers `Ok` — which is why a
+    /// seed keyed on the OPERAND missed it entirely and a relative `.` below it still bound. The
+    /// question the seed must ask is whether the controller HOLDS the target, which is the same
+    /// door an acquired plain-sh inclusion arrives at
+    /// (`30Qc:rul-included-is-as-opaque-as-unresolvable`).
     ///
     /// CFG SHAPE: two straight-line top-level `.`s — first a literal ABSOLUTE operand naming a
     /// file the unit holds no bytes for, then a literal RELATIVE operand naming one it does — with
@@ -5512,20 +5525,23 @@ mod tests {
     #[test]
     fn a_load_the_controller_does_not_hold_havocs_the_cwd_below_it() {
         let book = ". /etc/os-release\n. ./lib.sh\n";
-        let (table, lib) = sourceable(book);
+        let (table, _lib) = sourceable(book);
         let (solved, exit) = solve_book(book, &table);
         assert_eq!(
             solved.binding_before(exit, ROLE),
-            Flat::Elem(Binding::Defined(lib)),
-            "interim: the second load binds, because the first seeded no clobber"
+            Flat::Top,
+            "the blind act may have cd'd, so the relative load below it names no file"
         );
-        internal_tooling::xfail::xfail_until("p-x-an-unheld-literal-load-havocs-the-cwd", || {
-            assert_eq!(
-                solved.binding_before(exit, ROLE),
-                Flat::Top,
-                "the blind act may have cd'd, so the relative load below it names no file"
-            );
-        });
+
+        let control = ". ./lib.sh\n";
+        let (table, lib) = sourceable(control);
+        let (solved, exit) = solve_book(control, &table);
+        assert_eq!(
+            solved.binding_before(exit, ROLE),
+            Flat::Elem(Binding::Defined(lib)),
+            "control: with nothing blind above it the same operand resolves and binds, so the \
+             withholding above is the act's doing and not a blanket refusal"
+        );
     }
 
     /// The decidable set's `[ -f <loadable> ]` entry asserts a HOST fact from CONTROLLER state,

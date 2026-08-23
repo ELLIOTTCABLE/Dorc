@@ -344,26 +344,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-non-exact-load-is-never-re-pointed",
-        trigger: "`30P:law-no-unsoundness-below-a-blind-act` + `rul-load-head-is-exact-or-havoc`: \
-                  re-pointing or pasting a `.` whose RESOLUTION is unknown changes which file the \
-                  host loads, so a rewrite needs EXACT as well as explicit. The emitter gates on \
-                  `BookLoad::explicit` alone today (`artifact::operand_is_explicit`), and \
-                  explicitness answers a different question — did the AUTHOR name the target",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
-        name: "p-x-non-exact-load-ships-no-copy",
-        trigger: "`30P:law-no-unsoundness-below-a-blind-act`, the nothing-shipped clause \
-                  [human LEAN 2026-08-22, veto-eligible]: a copy of a file Dorc cannot prove the \
-                  author referenced is engine selection. A non-EXACT target is mirrored beside the \
-                  plan today, under the `30Q` §3 D2 re-cut that cwd-⊤ costs authority alone; the \
-                  law reverses that re-cut",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-file-test-refuses-under-unknown-cwd",
         trigger: "`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`, the clause the \
                   code does not yet honour: `dec-decidable-set-v0`'s `[ -f <loadable> ]` entry \
@@ -381,17 +361,6 @@ pub const PINS: &[Pin] = &[
                   line whose effect on the shell Dorc cannot see). Its own pin because the two \
                   reach the gate by different seeds — a `cd` is recognized by its command word, a \
                   blind `.` by its head being unheld",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
-        name: "p-x-an-unheld-literal-load-havocs-the-cwd",
-        trigger: "`30P:law-no-unsoundness-below-a-blind-act` + `30Qc:rul-included-is-as-opaque-as-\
-                  unresolvable`: the cwd-clobber seed is keyed on OPERAND EVALUABILITY, so the \
-                  law's own example — `. /etc/os-release`, a literal the controller resolves \
-                  perfectly and holds no bytes for — seeds nothing, and a relative `.` below it \
-                  still binds. The seed belongs on the site being UNRESOLVABLE, which is the same \
-                  door an acquired plain-sh inclusion arrives at",
         horizon: Horizon::Scheduled("end-of-r30"),
         state: PinState::Live,
     },
