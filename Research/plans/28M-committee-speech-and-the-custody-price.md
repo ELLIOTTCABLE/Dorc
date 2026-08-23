@@ -65,7 +65,7 @@ unchanged at-most claim, calibrated against its author's own declines, liberaliz
 someone else's blessed override flips the decline), and whose failures every participant
 can truthfully repudiate. The bought-unsoundness contract cannot price a sentence with no
 author; the kind hatch cannot cover a slot that cannot refuse occupancy without severing
-name-binding. Sound multi-author families do not exist; only fences do.
+name-binding. Sound multi-author families do not exist; only one speaker per frame does (Â§4).
 
 Why the kind hatch works where this fails [ACKED framing]: reverse-DNS buys rare +
 attributable + repairable-at-one-site, by SINGLE OCCUPANCY (one resolver, duplicates
@@ -82,8 +82,7 @@ descriptions refer to different actual tools" (platform variants, versions). MH2
 its re-entry trigger sharpened to "the first real stdlib fork" (`28O` banked the same
 direction). And **sub-unit-custody-general** [TYPED set-aside] — whole-file-as-speaker as
 a GENERAL mechanism: majority-language solution, gradual-enhancement-hostile in a world of
-unevenly-attended third-party descriptors; not adopted as a rule (but see the narrow
-disqualifier in §4).
+unevenly-attended third-party descriptors; not adopted as a rule.
 
 Walls — provably not subject, each with its existing mechanism:
 
@@ -251,10 +250,9 @@ composites nobody's fault.
   merits such overengineering); the admin selects ONE composite whole via `28K` §3's
   native mechanisms (sourcing, subshell, `unset -f`) — and the selected item may be
   explicitly composite. The point is that shared meaning is *explicit*, never
-  implicit/engine-owned. Sharpening of §4's fence this implies: the unit-span
-  disqualifier keys on the ROLE members' source units only; helpers reached from a
-  single live role body ride under that body's author's custody (the entrypoint author
-  owns the composite utterance). **COMMISSIONED (suite-tier, human-typed):** the test
+  implicit/engine-owned. Custody consequence: helpers reached from a single live role
+  body ride under that body's author's custody (the entrypoint author owns the
+  composite utterance). **COMMISSIONED (suite-tier, human-typed):** the test
   suite must prove that argparse / interprocedural analysis genuinely COMPOSE across
   cross-file helper calls inside role bodies — this shape is critical to community
   ownership and must not silently ⊤. (Conductor ~SUSPECTs the current check-dialect /
@@ -388,9 +386,9 @@ and one author.
   different units with no shadowed name triggers nothing — zero corpus coverage.
   Member-complementary strangers therefore union with zero ceremony
   (price-union-of-strangers at member granularity), and `28K` §8-monotonicity
-  holds letter-wise only (no judgment reassigned; the composite is new). §4's
-  fence catches the span at the sparing tier; the monologue above is the only
-  license-tier fence. The `role_family` map is the seat for member-granular
+  holds letter-wise only (no judgment reassigned; the composite is new). The
+  per-speaker dialect (§4) keeps the span from pooling vocabulary at the sparing
+  tier; the monologue above is the only license-tier fence. The `role_family` map is the seat for member-granular
   withdrawal, if ever wanted (additive).
 - **fnd-verdict-resolution-duplicates-live-source** — `VerdictIndex::from_sets`
   (`oracle/src/verdict.rs:106-127`) re-implements last-definition-wins rather
@@ -413,7 +411,7 @@ stays custody-free — the ecosystem's on-ramp.
 **Totalism and the kind members** — kind-member contest-immunity comes from
 single-occupancy in an owned namespace (§3), not from completeness; `only` is an
 authoring-completeness contract (born-total vs arm-incremental), orthogonal to
-plurality — `cmd__disturbs`, the member §4 targets, is arm-incremental and
+plurality — `cmd__disturbs` is arm-incremental and
 decline-calibrated. Within the `only` pair: a wrong `reaches_only` fails soft
 (over-walls); a wrong `state_stored_only_in`/invariance mark fails sharp (grants
 carry). Totals rot, and pre-MH2 contest-or-custody are the only displacement
@@ -518,12 +516,10 @@ here is a verdict)
   merely found `. ./some_other.sh`, sourcing is a PROMISE — "I treated this as if I
   wrote it" — and the closure analyzes as ONE unit. Prefer
   "inclusion-checkedness"/closure vocabulary over "ownership" throughout. The
-  not-co-author machinery (the committee fence, registration, custody) binds only
+  not-co-author machinery (registration, custody) binds only
   SIBLING/COUSIN edges in the include-tree — where the authorized minting-site's entry
-  is below/adjacent to another usage, never above it. To re-examine at ruling: the
-  fence's `SourceFileId` span proxy re-keys to entry-closure identity
-  (`28K:bitem4-committee-fence-at-sparing-tier` spec note); `price-multi-file-package`
-  likely SOFTENS (one entry file sourcing its parts = one speaker by
+  is below/adjacent to another usage, never above it. Consequences, since ruled (`28Q` Â§2): `price-multi-file-package`
+  SOFTENS to nothing (one entry file sourcing its parts = one speaker by
   inclusion-promise); registration-by-owner-use reads "the owner's CLOSURE mints it".
   Without this, the extract-helpers-to-shared-files capability of any real oracle
   package is quietly excluded.
