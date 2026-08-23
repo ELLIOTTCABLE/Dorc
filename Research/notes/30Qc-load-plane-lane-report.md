@@ -961,3 +961,261 @@ and got the pid. Both are `#[cfg(test)]`-only.
 - `SyntaxUnsupportedReason::SourceOfDynamicTarget` is gone; anything matching it will not compile.
 - `cfg::build` now records an errexit toggle at a non-literal-operand `.`. A lane that adds book
   fixtures with such a `.` should expect failure-edges it did not have.
+
+# §execute-b
+
+> Tier: builder lane report (Opus, EXECUTE-B half — custody and inclusion; branch
+> `ai/r30-lane-load-b`, worktree `.claude/worktrees/agent-a54b9a1dd3668049e`, base `d2b47654`).
+> Grades: +SURE / ~SUSPECT / -GUESS / --WONDER. §map is not edited; this section is appended.
+> Six commits, each independently green under `mise run test` + `mise run check-quiet`.
+
+## §b-what-landed
+
+| commit | item | what |
+|---|---|---|
+| `a8dd03d5` | 5a | a top-level `unset -f` removes every helper declaration indexed above it |
+| `6e5241be` | 5b | `closure_for` takes a site frame; a solved frame exonerates a regional book helper |
+| `e1021f05` | 5c | `PredictSet` keeps every within-file declaration of a role, not just the last |
+| `939432bc` | 6 | guarded-source compares the sentinel VALUE, not only whose names are bound |
+| `59d1bd38` | 7 | `mech-acquire-and-ship-plain-sh` |
+| `59e57631` | — | comment-budget trim |
+
+FIVE pins promoted and removed from `internal_tooling::xfail::PINS`:
+`p-x-helper-unset-f-across-files` · `p-x-regional-helper` · `p-x-definition-grade-keying` ·
+`p-x-sentinel-value-conjunct` · `p-x-plain-sh-inclusion-ships-beside-the-plan`. The e2e case
+`load30-plain-sh-inclusion-ships` lost its `XFAIL` and was blessed SCOPED (porcelain showed only
+that case's `expected.out` moving). Every other golden is byte-identical.
+
+Still RED and untouched, correctly: `p-x-book-code-source-is-inclusion` (the splice — tier 1 of
+`30P:principle-book-code-source-is-inclusion` stays forfeited) and `load31-punted-load-shapes`.
+
+## §b-deviations — OPEN for the conductor
+
+- **`dev-unset-f-repaired-in-the-index-not-the-frame`** (item 5a). The endorsed seat was
+  "`HelperIndex::resolve` consults the frame (`definition_before`)". I repaired
+  `HelperIndex::record` instead: a top-level `unset -f` now clears every declaration indexed ABOVE
+  it rather than only the current file's. Reasoning: (a) it is the minimal change that greens the
+  pin, and `28Q` §1's winner-shifting rider asks for minimal in this lane specifically; (b) it is
+  the same argument `28R:rul-resolution-matches-shell-loading` already rests last-wins on — the
+  index admits only whole-top-level-load-inert sources, walked in load order, so "what is indexed
+  so far" IS what a shell would have bound at that point; (c) it fixes the FRAMELESS lanes too
+  (survival snapshots, `coverage`, `sweep`, `plan`'s own tests, every hand-built index), which a
+  frame-consulting repair could never reach because those hold no environment. The frame DID land,
+  for item 5b, and `resolve` consults it — just for the book-census arm rather than for
+  last-wins. Conductor re-derives.
+- **`dev-regional-pin-moves-to-the-cli-tier`** (item 5b). `p-x-regional-helper`'s cell could not
+  green where it sat: `dorc_oracle` cannot depend on `dorc_analysis`, so the oracle-tier test has
+  no solved environment, and hand-feeding one would be `anti-masking-tests`. The cell is re-authored
+  at `cli/tests/sh_parity.rs` as `a_regional_book_helper_leaves_an_unreachable_description_alone`,
+  driving the production seat `dorc_cli::world::ship_predict_body` over a real
+  `funcenv::analyze`. Its oracle-tier sibling `a_book_subshell_helper_suspends_like_an_ambient_one`
+  was RE-POINTED, never deleted: it now states the FRAMELESS answer explicitly and names where the
+  distinguishing cell lives.
+- **`dev-lift-arity-lands-but-the-seats-still-enumerate-per-file`** (item 5c). The ruling named
+  `oracle/src/{predict,verdict}.rs`, and that is exactly what moved: `PredictSet::checks` is
+  `Symbol -> Vec<Predict>`, `get` answers the LAST (the file's exit binding — every whole-file
+  consumer is byte-identical), and a new `all(provider)` enumerates them. The pin greens. But the
+  six production resolution seats still build ONE candidate per FILE, so a within-file plural role
+  reaches them as its last definition alone and the pin's product VALUE is not yet reachable
+  end-to-end. The seats: `cli::world::shipping_source` · `analysis::effect`'s
+  `VisibleRole::answering` · `plan::build_vouches` · `plan::build_wrapped_vouches` ·
+  `cli::survival::touches_answering_source` · `sweep::drive::touches_answering_source`. Widening
+  their candidate lists to `(file, definition)` is a licensure act in its own right (it is a
+  WIDENING under `Live`, and a withholding under `NoOpinion`-plural), so I did not take it
+  unruled. The test's own doc names the six. +SURE it is the remaining half.
+- **`dev-inclusion-role-is-derived-from-the-marker`** (item 7). §map specified
+  `SourceRole::PlainInclusion` carried as a fourth demanded index set on `LoadPositions`. I derived
+  it instead: a book-sourced source is a `PlainInclusion` iff it carries no `# dorc-lang` marker.
+  Reasoning: the marker is the AUTHOR'S OWN CLAIM and is already the discriminator everywhere else
+  (`marker-gates-syntax-only`); deriving removes a second index set that could disagree with the
+  bytes, and removes the acquisition-side threading entirely. `LoadPositions::with_inclusions` does
+  not exist. Cost: an in-process caller that hands in a marker-free source it never acquired gets
+  the inclusion role for it, which is the withholding direction.
+- **`dev-select-takes-the-snapshot`** (item 7). `artifact::select`, `bundle_files`,
+  `mirrored_files` and `inline_imports` take `&StaticLoadSnapshot` in place of
+  `(cwd, snapshot_paths)`. Not additive, and `cli/src/artifact.rs` is shared with the planner lane —
+  see §b-touch-ranges. The role is needed at three placement decisions and passing the snapshot is
+  strictly less plumbing than paths-plus-roles.
+- **`dev-book-reached-admits-marker-free-targets`** (item 7). `snapshot::book_reached`'s filter was
+  `satisfies_the_contract`; it is now `satisfies_the_contract || !has_marker`. Without this the
+  in-process drivers (`WhyWorld`, the loom consumer's `case_snapshot`) would classify a case's
+  plain-sh helper as an ambient `NamedLoad` and LIFT it, while the binary — whose `reached` is a
+  positional range over what acquisition appended — treats it as an inclusion: exactly the
+  two-drivers divergence `one-definition-table-two-drivers` exists to prevent. A MARKED file failing
+  its own load-inert lint still stays out, because acquisition refuses to hold one.
+
+## §b-the-rewrite-permission-fence (the conductor's mid-lane rider)
+
+`30P:rul-rewrite-permission-is-derived` reached me after `d2b47654`, so nothing here reads a typed
+explicitness marker. What landed:
+
+- The SEAM comment sits at `cli/src/artifact.rs`'s `ImportEdit::Repoint` mint inside `bundle_files`,
+  and names `inline_imports` as the second reader. Both mints are in those two functions and
+  nowhere else, so the future gate has exactly two call sites.
+- The fence is VACUOUS today and I did not implement it as an AST-literal test. That would have been
+  WRONG rather than merely early: resolution runs through `SourceLiteralPlane::literal_text`, which
+  constant-folds, so `OPS_LIB=.; . "$OPS_LIB/x.oracle.sh"` resolves from a non-literal WORD and is
+  nonetheless explicit. An AST-literal gate would have refused to re-point it and broken the
+  existing root-relative corpus.
+- The cell is committed as the pair `a_book_set_root_is_explicit_enough_to_re_point` (a
+  literal-assigned book-set root RE-POINTS) and
+  `a_plain_sh_inclusion_is_mirrored_verbatim_and_never_re_said` (an inclusion mirrors at its
+  authored path, no `ImportEdit` at all). CFG shape: one top-level `.` of a whole-line
+  redirect-free `Simple` command, straight-line, with a call to the loaded file's helper below it.
+- Single-stream: `a_plain_sh_inclusion_refuses_the_flattened_form_by_name` pins both cells — an
+  explicit `--form=flattened` refuses `inlining-unproven` naming the form, and a kept stream
+  refuses `incomplete-single-stream`. No paste was built.
+
+## §b-consumer-audit — `source_srcs` / `oracle_srcs` / `source_refs`
+
+The riskiest step of item 7, per §map. ONE selection seat exists,
+`StaticLoadSnapshot::modelled_refs` (and its book-free prefix `modelled_oracle_refs`), which reads
+a `PlainInclusion` as the EMPTY string. Positional rather than filtered, because the index IS the
+`SourceFileId` and dropping an entry would renumber every source after it. An empty file lifts
+nothing, declares nothing and indexes nothing, so a lift seat is right by construction rather than
+by remembering a role check. Every consumer, and its selection:
+
+| consumer | takes | why |
+|---|---|---|
+| `main.rs` `checks` / `verdict_sets` lifts | MODELLED | an inclusion describes nothing |
+| `main.rs` `oracle_refs` → `validate`, `dorc_oracle::lift` | MODELLED | ditto; also keeps its lint diags off a file that made no dialect claim |
+| `main.rs` `HelperIndex::build` | MODELLED | its declarations must not become closure material |
+| `world.rs` `WhyWorld`'s two vectors | MODELLED | the why driver must explain the run's own world |
+| `world.rs` `definition_table` | ROLE-BRANCHED | `set_included(path)`, no `table.add` — this is the seat that would have cancelled the forfeit |
+| `bundle.rs` `project` | REAL bytes, role-branched strip | book-class bytes are mirrored VERBATIM |
+| `artifact.rs` `bundle_files`/`mirrored_files` | REAL paths + role | placement, not modelling |
+| `provenance.rs` (3 seats) | REAL bytes/paths | diagnostics frame the author's own text |
+| `sourcing.rs` `include_tree` | REAL bytes | it asks the contract question itself, at both ends |
+| `main.rs` whylog record of what loaded | REAL paths | the durable records what was READ |
+
++SURE this is exhaustive: it is every hit of those four accessors outside `snapshot.rs` itself.
+
+## §b-types-make-unrepresentable — product-wide
+
+- **`load::Loadable::{Program, Included}`** makes unrepresentable, PRODUCT-WIDE: a source whose
+  bytes the artifact ships but whose definitions also bind (only `Program` carries steps, and
+  `program()` is the ONE crossing every consumer goes through); and a non-contract target silently
+  acquiring a flat declaration list. Still ADMITS: a `Program` filed for a file whose contract the
+  caller never checked — the check is at the cli edge, not in the type.
+- **`SourceRole::PlainInclusion` + `is_modelled`** makes unrepresentable: a lift seat reading text
+  the engine does not model, provided it takes `modelled_refs`. Still ADMITS: a seat that takes
+  `source_refs` and lifts from it — the audit above is what stands there, not a type. -GUESS a
+  newtype over the modelled vector would close it, and it would cost every lift signature.
+- **`closure::SiteFrame`** makes unrepresentable: nothing new. It is a lookup, and `unsolved()`
+  answers exactly as the pre-frame seat did. What it deliberately does NOT admit is a frame that
+  says "withheld" — the frame can only EXONERATE the book census, never withhold beyond it, so the
+  worst a wrong frame answer can do is lose a license.
+- **`PredictSet::checks: Symbol -> Vec<Predict>`** makes unrepresentable: a file's earlier
+  declaration of a role being silently discarded at lift. Still ADMITS: a seat that enumerates per
+  FILE and therefore never sees it (`dev-lift-arity-lands-but-the-seats-still-enumerate-per-file`).
+
+## §b-names-argued
+
+- **`SiteFrame`** (not `Frame`, not `LiveDefinitions`) — three words would be better and none read
+  well; `frame` is already this corpus's word for the function-environment answer at a program
+  point (`the-frame-lookup-is-the-only-resolution-seat`), and `Site` is the disambiguator that says
+  WHICH frame. It is a CROSS-DOMAIN GLOSS risk (compilers say "frame" of a call stack) and the
+  containment is that its doc names the rule slug. Conductor may overrule.
+- **`Loadable`** — endorsed as argued. It names the KEY's occupant, which is what `by_path` maps.
+- **`SourceRole::PlainInclusion`** — endorsed as argued.
+- **`modelled_refs`** — argued against `source_refs`/`lift_refs`: `lift` is reserved for the static
+  lift of oracle text and would squat it; `modelled` says the engine's own relation to the bytes,
+  which is exactly the cut. Two words would be `modelled_source_refs`; it sits beside
+  `source_refs` and the parallel is what makes the pair legible.
+- **`PredictSet::all`** — a bare single word, and the 90% rule applies: it enumerates, beside `get`
+  which selects. `definitions()` was the alternative and reads as "the whole set's", not
+  "this provider's".
+- NOT used, deliberately: `placement`, `layout`, `lift`, `Grade`, `provenance`.
+
+## §b-touch-ranges — for the fold
+
+Line numbers are at `59e57631`. The planner lane (`ai/r30-lane-planner-exec`) shares
+`cli/src/artifact.rs` and `cli/src/world.rs`.
+
+| file | ranges |
+|---|---|
+| `cli/src/artifact.rs` | `:474-478` (`bundle_files` signature) · `:507-525` (the inclusion branch + the rewrite SEAM) · `:563-567` (`mirrored_files` signature) · `:614-641` (`inline_imports` + `is_included`) · `:715-731` (`select` signature) · `:770` · `:839` (settle call sites) · `:1050-1138` (test helpers) · `:1270-1374` (three new cells) |
+| `cli/src/world.rs` | `:105` · `:113` (modelled vectors) · `:765-770` (`definition_table`'s inclusion branch) · `:1144-1201` (the three ship seats take/thread `SiteFrame`) |
+| `cli/src/snapshot.rs` | `:55-80` (`PlainInclusion` + `is_modelled`) · `:107-133` (`role_of`) · `:182` · `:231-266` (`modelled_refs`/`modelled_oracle_refs`) · `:402` (`book_reached`) · `:542-576` (tests) |
+| `cli/src/bundle.rs` | `:398-404` ONLY (the verbatim branch) |
+| `cli/src/main.rs` | `:436-527` (`read_book_sourced` + `BookSourced`) · `:949-955` (modelled vectors) · `:3247`/`:3284`/`:3382` (the three ship closures take a frame) · `:4250-4300` · `:4700-4930` (acquisition tests) |
+| `analysis/src/funcenv.rs` | `:190-250` (`by_path`, `set_included`) · `:315-345` (`program_*`, `included_at_key`) · `:385-450` (`sole_populator`, `sentinel_value`, `anything_removes`) · `:790-805` (`source_index_before`) · `:1600-1810` (the sentinel arm — MY carve) · `:1871-1900` (`settled_account`) · the test module's Table-7 additions |
+| `analysis/src/load.rs` | `:188-225` (`Loadable`) · `:236-260` (`last_literal_assignment`) |
+| `oracle/src/closure.rs` | `:200-265` (`SiteFrame`) · `:311-331` (the `unset -f` arm) · `:495-505` (`closure_for` signature) · `:594-625` (`resolve`) |
+| `oracle/src/{predict/ast,predict/parser,verdict}.rs` | the arity change only |
+| `oracle/src/strip.rs` | `StripMapped::verbatim` only |
+| `plan/src/lib.rs` `:1946` · `cli/src/survival.rs` `:391`,`:1142`,`:1272` · `coverage` `:442` · `sweep` `:343` | `closure_for`'s third argument |
+
+## §b-dispositions-changed — expect none, and none observed
+
+Items 5 and 6 are `28Q` §1 winner-shifting surfaces, so the obligation is to say which corpus sites
+changed disposition. NONE did: every existing golden is byte-identical across all six commits, and
+the only golden that moved is the newly-promoted case's own. Item 5b's licensure WIDENING (a
+regional book helper no longer suspends a reaching vouch) reaches no corpus book — the shape exists
+only in the two minted cells. Item 6's change is a WITHHOLDING plus one re-route
+(`SentinelArm::Reuse` with a mismatched value now answers `Source`), and the corpus's only sentinel
+guards agree on their literals.
+
+## §b-proposed-steering-and-register-edits (conductor applies)
+
+- `oracle/CLAUDE.md`, under "Law — the lift", proposed slug `rul-a-removal-clears-what-is-indexed`:
+  *"a top-level `unset -f` removes every declaration `HelperIndex` has recorded ABOVE it, not only
+  the current file's: `.`-sourcing applies into one environment, and the index is built in load
+  order over a population whose whole top level is load-inert — the same premise
+  `28R:rul-resolution-matches-shell-loading` rests last-wins on."*
+- `oracle/CLAUDE.md` `closure-travels-with-the-definition` — a rider: *"the book census is
+  DEPTH-BLIND, so `closure_for` takes a `SiteFrame`: a book definition suspends a reaching vouch
+  unless the environment NAMES a live definition elsewhere at that very site. Only a NAMED live
+  definition exonerates — `Withheld` collapses `Undefined`, ⊤ and unreached and proves nothing.
+  `SiteFrame::unsolved()` is every frameless index's posture and is byte-identical to the
+  pre-frame answer."*
+- `cli/CLAUDE.md`, rider under `bundle-projection-is-pre-contact-and-not-placement`: *"a
+  `PlainInclusion` source is mirrored BYTE-VERBATIM at its authored relative path — never stripped,
+  never bundled, never renamed, never inlined into a single stream, and its authored `.` is never
+  re-said. `StaticLoadSnapshot::modelled_refs` is the ONE seat that decides which sources a lift
+  sees; a new lift or index consumer takes it, and a new PLACEMENT consumer takes the real bytes."*
+- `analysis/CLAUDE.md`, under "Law — the dangers", proposed slug
+  `rul-acquiring-bytes-is-not-modelling-them`: *"`load::Loadable::Included` is a file the controller
+  READ and models not at all: `program_at_key` answers `None` for it, so its `.` site havocs and
+  walls exactly as an unread one does, and the only thing acquisition buys is an occurrence for the
+  artifact to mirror. Its declarations never enter `DefinitionTable::names()`, which is why its
+  names answer `NoOpinion` rather than `Withheld`."*
+- `analysis/CLAUDE.md`, a second bullet or a rider on the guarded-source cluster:
+  *"recognized guarded-source compares the sentinel's VALUE against the guard's literal
+  (`30I:rul-load-semantics-stay-full-fidelity`); the structural arm alone modelled a package
+  assigning `v1` under a guard testing `v2` as reused where a real shell sources it again. The
+  lossy speech projection (`rul-guarded-source-speech-is-lossy`) still asks the NAME question and
+  must never gain the value one."*
+- `FORFEITS.md` `forfeit-plain-sh-inclusion-analysis` — its RULE line's parenthetical
+  "(`mech-acquire-and-ship-plain-sh`, r30)" is now LANDED rather than pending. Its REDS row should
+  read `p-x-book-code-source-is-inclusion` · `load31-punted-load-shapes` and NOT gain
+  `p-x-plain-sh-inclusion-ships-beside-the-plan` or `load30-plain-sh-inclusion-ships`: both are
+  green, and a discharged red is landing evidence, not a forfeit-red. §map flagged the choice; my
+  lean is to name them as landing evidence in the CAPTURE clause instead.
+- `30O:register-and-steering-debt` — `fnd-sentinel-pin-horizon-is-stale` is DISCHARGED: the pin is
+  gone.
+
+## §b-tc-flags
+
+None minted. Item 7's rewrite question was pre-ruled by the conductor's rider, and I resolved
+nothing cross-cutting. The nearest thing to one is
+`dev-lift-arity-lands-but-the-seats-still-enumerate-per-file`, which is a scheduling question rather
+than a judgment call: the seats' widening is a licensure act and wants its own ruling.
+
+## §b-context-other-lanes-must-maintain
+
+- EXECUTE-A: `analysis/src/funcenv.rs`'s `by_path` is now `BTreeMap<String, Loadable>` and
+  `program_at_key`/`program_of_dot_target`/`program_of_path_operand` unwrap `Loadable::program()`.
+  `command_transfer`'s havoc arm needed NO change and still does not — an `Included` target answers
+  `None` to every program question, which is the wall. `load_sites` is untouched: an inclusion lands
+  in `named` + `unresolvable`, exactly where an unread target does. If A adds an `included` bucket
+  there, `settled_account`'s occurrence loop should move to read it rather than re-deriving.
+- EXECUTE-A: acquisition and mirroring read the RESOLUTION, per the conductor's D2 rider. The seam
+  where the binding verdict will be read is `read_book_sourced`'s `env.loads().wanted()` loop —
+  a relative `.` below a cwd clobber must still appear there for the file to be acquired at all.
+- Planner lane: `cli/src/artifact.rs`'s `select`/`bundle_files`/`mirrored_files`/`inline_imports`
+  changed signature (`&StaticLoadSnapshot` for `(cwd, snapshot_paths)`) and `bundle_files` grew an
+  early-continue branch before its `ImportEdit::Repoint` mint. The hoist/munge work sits below
+  those in `Selection`, so a rebase conflict should be confined to the four signatures.
+- Everyone: `snapshot::book_reached` now admits marker-free targets. Any code reading it as
+  "the dorc-lang files a book reached" must ask `role_of` instead.
