@@ -28,10 +28,10 @@ use dorc_aid::diag::{
 use dorc_core::{BytePos, Span};
 
 use crate::ast::{
-    AndOrOp, Ast, AstBuilder, CaseArm, ElseIf, Node, NodeKind, RedirOp, RedirTarget,
+    AndOrOp, Ast, AstBuilder, CaseArm, ElseIf, Node, NodeKind, ParamOp, RedirOp, RedirTarget,
     UnsupportedReason, WordPart,
 };
-use crate::lexer::{LexPart, RedirToken, TokKind, Token, lex};
+use crate::lexer::{LexParamOp, LexPart, RedirToken, TokKind, Token, lex};
 
 /// Parse sh `src` into an arena AST + diagnostics. The single public entry of the
 /// crate's parser (see [`crate::parse`]).
@@ -1327,12 +1327,37 @@ impl Parser {
             LexPart::SingleQuoted(s) => WordPart::SingleQuoted(s),
             LexPart::DoubleQuoted(inner) => WordPart::DoubleQuoted(self.lower_parts(inner)),
             LexPart::Param { name } => WordPart::Param { name },
-            LexPart::ParamComplex { empty_defaulted } => WordPart::ParamComplex { empty_defaulted },
+            LexPart::ParamExpansion { base, op } => WordPart::ParamExpansion {
+                base,
+                op: self.lower_param_op(op),
+            },
             LexPart::Arithmetic => WordPart::Arithmetic,
             LexPart::CommandSubst(inner) => {
                 let id = self.parse_subst_body(&inner);
                 WordPart::CommandSubst(id)
             }
+        }
+    }
+
+    fn lower_param_op(&mut self, op: LexParamOp) -> ParamOp {
+        match op {
+            LexParamOp::EmptyDefault { colon } => ParamOp::EmptyDefault { colon },
+            LexParamOp::Substitute { kind, colon, word } => ParamOp::Substitute {
+                kind,
+                colon,
+                word: self.lower_parts(word),
+            },
+            LexParamOp::Trim {
+                end,
+                greedy,
+                pattern,
+            } => ParamOp::Trim {
+                end,
+                greedy,
+                pattern: self.lower_parts(pattern),
+            },
+            LexParamOp::Length => ParamOp::Length,
+            LexParamOp::Unmodelled => ParamOp::Unmodelled,
         }
     }
 

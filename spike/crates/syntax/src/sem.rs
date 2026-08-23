@@ -179,7 +179,7 @@ pub fn classify_frag(part: &WordPart, quoted: bool) -> Option<FragClass<'_>> {
         }
         // Command-substitution, arithmetic, and operator-expansions are runtime or
         // unmodeled. Unquoted they also split; quoted they are arity-safe but ⊤.
-        WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex { .. } => {
+        WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamExpansion { .. } => {
             if quoted {
                 Some(FragClass::OpaqueValue)
             } else {
@@ -316,7 +316,7 @@ pub fn const_literal_text(parts: &[WordPart]) -> Option<String> {
                 WordPart::Param { .. }
                 | WordPart::CommandSubst(_)
                 | WordPart::Arithmetic
-                | WordPart::ParamComplex { .. } => return false,
+                | WordPart::ParamExpansion { .. } => return false,
             }
         }
         true
@@ -551,7 +551,7 @@ pub fn word_has_unquoted_glob(parts: &[WordPart]) -> bool {
         | WordPart::Param { .. }
         | WordPart::CommandSubst(_)
         | WordPart::Arithmetic
-        | WordPart::ParamComplex { .. } => false,
+        | WordPart::ParamExpansion { .. } => false,
     })
 }
 
@@ -736,8 +736,9 @@ mod tests {
         for part in [
             WordPart::CommandSubst(dorc_core::AstId(0)),
             WordPart::Arithmetic,
-            WordPart::ParamComplex {
-                empty_defaulted: None,
+            WordPart::ParamExpansion {
+                base: "x".to_owned(),
+                op: crate::ast::ParamOp::Unmodelled,
             },
         ] {
             assert_eq!(classify_frag(&part, false), Some(FragClass::SplitRisk));

@@ -1050,3 +1050,115 @@ fn background_amp_emits_syntax_unsupported() {
         p.diags
     );
 }
+
+// ===========================================================================
+// Parameter-expansion decode (`30Qc` item 2). The lexer used to collapse every
+// operator form to one opaque part and throw the body away; these pin that the
+// base, the operator, and the operand word all survive — and that deciding what
+// any of it MEANS stays the analyzer's (`semantic-top-not-here`: no diagnostic).
+// ===========================================================================
+
+/// The parts of word `index` of a top-level simple command.
+fn nth_word_parts(ast: &Ast, index: usize) -> &[WordPart] {
+    let item = script_items(ast)[0];
+    match kind(ast, item) {
+        NodeKind::Simple { words, .. } => match kind(ast, words[index]) {
+            NodeKind::Word { parts } => parts,
+            other => panic!("word {index} is not a Word: {other:?}"),
+        },
+        other => panic!("item is not Simple: {other:?}"),
+    }
+}
+
+#[test]
+fn a_trim_expansion_carries_its_base_operator_and_pattern() {
+    // The flagship load head. `${0%/*}` is one non-greedy suffix trim over `$0`, and the pattern
+    // `/*` is a real lexed word rather than discarded bytes — without it the evaluator cannot tell
+    // `${0%/*}` from `${0%%/*}` and would resolve a different directory.
+    let p = parse(". \"${0%/*}/helpers.sh\"\n");
+    assert!(
+        p.diags.is_empty(),
+        "decoding mints no diagnostic: {:?}",
+        p.diags
+    );
+    let [WordPart::DoubleQuoted(inner)] = nth_word_parts(&p.value, 1) else {
+        panic!(
+            "operand is one double-quoted word: {:?}",
+            nth_word_parts(&p.value, 1)
+        );
+    };
+    match inner.as_slice() {
+        [
+            WordPart::ParamExpansion {
+                base,
+                op:
+                    dorc_syntax::ast::ParamOp::Trim {
+                        end,
+                        greedy,
+                        pattern,
+                    },
+            },
+            WordPart::Literal(tail),
+        ] => {
+            assert_eq!(base, "0");
+            assert_eq!(*end, dorc_syntax::ast::TrimEnd::Suffix);
+            assert!(!greedy, "`%` is the shortest match; `%%` is the longest");
+            assert!(matches!(pattern.as_slice(), [WordPart::Literal(p)] if p == "/*"));
+            assert_eq!(tail, "/helpers.sh");
+        }
+        other => panic!("expansion did not decode: {other:?}"),
+    }
+}
+
+#[test]
+fn a_quoted_brace_inside_a_pattern_does_not_close_the_expansion() {
+    // The `{}`-only balancing bug: a `}` inside a quoted pattern used to end the expansion early,
+    // leaving the rest of the word to lex as garbage. The word here is ONE part or the scan is
+    // still counting braces without looking at quotes.
+    let p = parse("hork ${v%'}'}\n");
+    match nth_word_parts(&p.value, 1) {
+        [
+            WordPart::ParamExpansion {
+                base,
+                op: dorc_syntax::ast::ParamOp::Trim { pattern, .. },
+            },
+        ] => {
+            assert_eq!(base, "v");
+            assert!(matches!(pattern.as_slice(), [WordPart::SingleQuoted(p)] if p == "}"));
+        }
+        other => panic!("the quoted brace closed the expansion early: {other:?}"),
+    }
+}
+
+#[test]
+fn the_empty_default_form_keeps_its_own_variant() {
+    // `${x-}` / `${x:-}` is the ONE closed form — its default can hide nothing — and the package
+    // sentinel reads exactly that projection (`30I` §2.2).
+    for (src, colon) in [("hork ${SM_PKG-}\n", false), ("hork ${SM_PKG:-}\n", true)] {
+        match nth_word_parts(&parse(src).value, 1) {
+            [WordPart::ParamExpansion { base, op }] => {
+                assert_eq!(base, "SM_PKG");
+                assert!(op.default_word_is_empty(), "{src}: {op:?}");
+                assert!(
+                    matches!(op, dorc_syntax::ast::ParamOp::EmptyDefault { colon: c } if *c == colon)
+                );
+            }
+            other => panic!("{src}: {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn an_unmodelled_operator_is_a_variant_a_consumer_must_match() {
+    // `${x/y/z}` is a bash-family form the dialect bans. Decoding it as `Unmodelled` rather than
+    // silently as identity is what stops a consumer treating it as `$x`.
+    match nth_word_parts(&parse("hork ${v/a/b}\n").value, 1) {
+        [
+            WordPart::ParamExpansion {
+                op: dorc_syntax::ast::ParamOp::Unmodelled,
+                ..
+            },
+        ] => {}
+        other => panic!("{other:?}"),
+    }
+}

@@ -2407,7 +2407,7 @@ fn word_parts_reference_positional(parts: &[WordPart]) -> bool {
 
 /// Does this list of word parts contain the `$?` special parameter (the lexer keeps
 /// it as `Param { name: "?" }`)? Recurses into double-quoted nesting (`"$?"` reads it).
-/// `ParamComplex` (`${...}` operator-forms) is opaque ⇒ conservatively NOT matched as
+/// `ParamExpansion` (`${...}` operator-forms) is conservatively NOT matched as
 /// `$?` (such a form is already ⊤-ward; this pass need not over-reach into it).
 fn parts_read_dollar_question(parts: &[WordPart]) -> bool {
     parts.iter().any(|p| match p {

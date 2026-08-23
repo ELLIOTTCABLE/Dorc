@@ -275,7 +275,7 @@ fn sentinel_name(ast: &Ast, word: AstId) -> Option<String> {
         other => other,
     };
     match inner {
-        [WordPart::ParamComplex { empty_defaulted }] => empty_defaulted.clone(),
+        [WordPart::ParamExpansion { base, op }] if op.default_word_is_empty() => Some(base.clone()),
         _ => None,
     }
 }
@@ -421,15 +421,16 @@ fn assign_value_is_static(ast: &Ast, assign: AstId) -> bool {
     parts.iter().all(word_part_is_static)
 }
 
-/// A word fragment that cannot run a command. `ParamComplex` is refused alongside the obvious
-/// two because the lexer collapses EVERY operator form to that one opaque part and discards the
-/// body, so `${x:-$(hostname)}` is indistinguishable from `${x:-literal}` here — accepting it
-/// would accept a hidden command substitution, which is exactly the claim this gate makes.
+/// A word fragment that cannot run a command. `ParamExpansion` is refused alongside the obvious
+/// two: the lexer now decodes the body, so `${x:-$(hostname)}` and `${x:-literal}` ARE
+/// distinguishable here — but admitting the inert half widens what becomes a load program, which
+/// is a licensure act (`28Q` §1's winner-shifting rider) rather than a mechanical consequence of
+/// the decode.
 fn word_part_is_static(part: &WordPart) -> bool {
     match part {
         WordPart::Literal(_) | WordPart::SingleQuoted(_) | WordPart::Param { .. } => true,
         WordPart::DoubleQuoted(inner) => inner.iter().all(word_part_is_static),
-        WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex { .. } => false,
+        WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamExpansion { .. } => false,
     }
 }
 

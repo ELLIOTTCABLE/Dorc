@@ -976,7 +976,7 @@ fn load_target(ast: &dorc_syntax::Ast, word: dorc_core::AstId) -> LoadTarget {
                 }
                 WordPart::CommandSubst(_)
                 | WordPart::Arithmetic
-                | WordPart::ParamComplex { .. } => {
+                | WordPart::ParamExpansion { .. } => {
                     return false;
                 }
             }

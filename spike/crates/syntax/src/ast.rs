@@ -227,21 +227,78 @@ pub enum WordPart {
     Param { name: String },
     /// `$( … )` / `` `…` `` — command substitution; body is a `List`/`Script` node.
     CommandSubst(AstId),
-    /// A parameter expansion with operators (`${x:-y}`, `${#x}`, `${x%…}`) — kept
-    /// opaque for now (treated ⊤-ward by the analyzer), not decoded.
+    /// A parameter expansion carrying an operator (`${x:-y}`, `${0%/*}`, `${#x}`). The BASE and
+    /// the OPERATOR are decoded; the operand word is lexed with the ordinary word machinery, so
+    /// quoting inside it is honest.
     ///
-    /// `empty_defaulted` is the ONE thing recovered from the discarded body, and it is recovered
-    /// for exactly two spellings: `${name-}` and `${name:-}`, the nounset-safe "its value, or
-    /// empty" form. Their bodies cannot hold a command substitution, an arithmetic expansion, or
-    /// another expansion, so carrying the NAME decodes nothing and licenses nothing — a reader
-    /// still learns no VALUE, and every other operator form answers `None`
-    /// (`30I` §2.2: the package sentinel is spelled this way, and its name is the author's own).
-    ParamComplex {
-        /// The parameter name, for `${name-}` / `${name:-}` alone.
-        empty_defaulted: Option<String>,
+    /// Decoding is a SYNTAX act and decides nothing: the load-plane evaluator is where ⊤ lives
+    /// (`semantic-top-not-here`), and [`ParamOp::Unmodelled`] is a variant every consumer must
+    /// match rather than a silent identity.
+    ParamExpansion {
+        /// The parameter the expansion reads — a POSIX name, a positional digit run, or one
+        /// special parameter. Empty when the body opened with something else.
+        base: String,
+        /// What the operator does to it.
+        op: ParamOp,
     },
     /// `$(( … ))` — arithmetic expansion. A ⊤-trigger (dynamic); flagged, not eval'd.
     Arithmetic,
+}
+
+/// What a [`WordPart::ParamExpansion`]'s operator does.
+#[derive(Debug, Clone)]
+pub enum ParamOp {
+    /// `${x-}` / `${x:-}` — the CLOSED nounset-safe form, whose default is EMPTY. Kept apart from
+    /// the general substitution because it is the only one whose body can hide nothing at all,
+    /// which is what the package sentinel rests on (`30I` §2.2).
+    EmptyDefault { colon: bool },
+    /// `${x-w}` `${x:-w}` `${x+w}` `${x:+w}` `${x=w}` `${x:=w}` `${x?w}` `${x:?w}`.
+    Substitute {
+        kind: SubstituteKind,
+        colon: bool,
+        word: Vec<WordPart>,
+    },
+    /// `${x%w}` `${x%%w}` `${x#w}` `${x##w}` — the four trims.
+    Trim {
+        end: TrimEnd,
+        greedy: bool,
+        pattern: Vec<WordPart>,
+    },
+    /// `${#x}`.
+    Length,
+    /// Everything else, INCLUDING the bash-family forms the dialect bans.
+    Unmodelled,
+}
+
+/// Which substitution `${x<op>w}` performs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SubstituteKind {
+    /// `-` — use `w` when unset.
+    Default,
+    /// `=` — assign `w` when unset.
+    Assign,
+    /// `+` — use `w` when SET.
+    Alternate,
+    /// `?` — fail with `w` when unset.
+    Error,
+}
+
+/// Which end `${x%w}` / `${x#w}` trims.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrimEnd {
+    /// `%` — the shortest/longest matching SUFFIX.
+    Suffix,
+    /// `#` — the shortest/longest matching PREFIX.
+    Prefix,
+}
+
+impl ParamOp {
+    /// Is this the `${x-}` / `${x:-}` form, whose default is empty? The projection the package
+    /// sentinel reads (`30I` §2.2) — a rename of what the old opaque part carried, not a widening.
+    #[must_use]
+    pub const fn default_word_is_empty(&self) -> bool {
+        matches!(self, ParamOp::EmptyDefault { .. })
+    }
 }
 
 impl WordPart {
@@ -250,7 +307,7 @@ impl WordPart {
     pub fn splits_unquoted(&self) -> bool {
         matches!(
             self,
-            WordPart::Param { .. } | WordPart::CommandSubst(_) | WordPart::ParamComplex { .. }
+            WordPart::Param { .. } | WordPart::CommandSubst(_) | WordPart::ParamExpansion { .. }
         )
     }
 }

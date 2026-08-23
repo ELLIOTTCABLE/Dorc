@@ -26,6 +26,7 @@
 //! and only then mints the [`crate::ast::WordPart::CommandSubst`] `AstId`. The lexer
 //! never touches the AST arena (keeps lexer ⟂ arena).
 
+use crate::ast::{SubstituteKind, TrimEnd};
 use dorc_core::{BytePos, Span};
 
 /// A lexed token: its kind plus the source span it covers.
@@ -105,13 +106,47 @@ pub(crate) enum LexPart {
     },
     /// `$( … )` / `` `…` `` — raw inner source (no surrounding delimiters).
     CommandSubst(String),
-    /// `${x:-y}`, `${#x}`, … — opaque operator-form parameter expansion. `empty_defaulted`
-    /// carries the name for `${x-}`/`${x:-}` alone; see [`crate::ast::WordPart::ParamComplex`].
-    ParamComplex {
-        empty_defaulted: Option<String>,
+    /// `${x:-y}`, `${0%/*}`, `${#x}`, … — an operator-form parameter expansion, decoded.
+    /// See [`crate::ast::WordPart::ParamExpansion`], whose shape this mirrors.
+    ParamExpansion {
+        base: String,
+        op: LexParamOp,
     },
     /// `$(( … ))` — arithmetic expansion (opaque, a ⊤-trigger when used as a word).
     Arithmetic,
+}
+
+/// The lexer's [`crate::ast::ParamOp`], carrying operand words as [`LexPart`]s.
+#[derive(Debug, Clone)]
+pub(crate) enum LexParamOp {
+    EmptyDefault {
+        colon: bool,
+    },
+    Substitute {
+        kind: SubstituteKind,
+        colon: bool,
+        word: Vec<LexPart>,
+    },
+    Trim {
+        end: TrimEnd,
+        greedy: bool,
+        pattern: Vec<LexPart>,
+    },
+    Length,
+    Unmodelled,
+}
+
+/// An operator recognised at a `${…}` body's base, before its operand has been lexed.
+#[derive(Debug, Clone, Copy)]
+enum Operator {
+    Substitute { kind: SubstituteKind, colon: bool },
+    Trim { end: TrimEnd, greedy: bool },
+}
+
+impl Operator {
+    const fn trim(end: TrimEnd, greedy: bool) -> Self {
+        Operator::Trim { end, greedy }
+    }
 }
 
 /// A still-pending heredoc: the operator's index in the token stream (so we can
@@ -664,12 +699,27 @@ impl Lexer<'_> {
         }
     }
 
-    /// `${...}` — simple `${name}` (name-chars only) ⇒ [`LexPart::Param`]; any
-    /// operator form (`${x:-y}`, `${#x}`, `${!ref}`) ⇒ opaque [`LexPart::ParamComplex`].
-    /// Balances nested `{}`.
+    /// `${...}` — simple `${name}` (name-chars only) ⇒ [`LexPart::Param`]; an operator form
+    /// (`${x:-y}`, `${0%/*}`, `${#x}`) ⇒ a decoded [`LexPart::ParamExpansion`].
+    ///
+    /// The operand is lexed IN PLACE with the ordinary word machinery rather than captured and
+    /// re-lexed, so its spans are real and its quoting is honest (`tn-coarse-subst-provenance` is
+    /// what re-lexing costs).
     fn lex_braced_param(&mut self) -> LexPart {
         self.pos += 1; // consume `{`
         let body_start = self.pos;
+        let body_end = self.scan_braced_body();
+        let part = self.decode_braced_body(body_start, body_end);
+        self.pos = body_end;
+        if self.pos < self.src.len() {
+            self.pos += 1; // consume `}`
+        }
+        part
+    }
+
+    /// Where this `${…}` body ends: the matching `}`, or EOF. Nested `{}` balance, and a `}`
+    /// inside a quoted pattern (`${x%"}"}`) does NOT close the expansion.
+    fn scan_braced_body(&mut self) -> usize {
         let mut depth = 1u32;
         while self.pos < self.src.len() {
             match self.src[self.pos] {
@@ -677,43 +727,158 @@ impl Lexer<'_> {
                 b'}' => {
                     depth -= 1;
                     if depth == 0 {
-                        break;
+                        return self.pos;
                     }
                 }
+                b'\'' => {
+                    self.skip_single_quoted_raw();
+                    continue;
+                }
+                b'"' => {
+                    self.skip_double_quoted_raw();
+                    continue;
+                }
+                b'`' => {
+                    self.skip_backtick_raw();
+                    continue;
+                }
+                b'\\' if self.pos + 1 < self.src.len() => self.pos += 1,
                 _ => {}
             }
             self.pos += 1;
         }
-        let body = &self.src[body_start..self.pos];
-        let simple =
-            !body.is_empty() && body.iter().all(|&c| c == b'_' || c.is_ascii_alphanumeric());
-        let part = if simple {
-            LexPart::Param {
-                name: String::from_utf8_lossy(body).into_owned(),
-            }
-        } else {
-            LexPart::ParamComplex {
-                empty_defaulted: Self::empty_defaulted_name(body),
-            }
-        };
-        if self.pos < self.src.len() {
-            self.pos += 1; // consume `}`
-        }
-        part
+        self.src.len()
     }
 
-    /// The parameter name of a `${name-}` / `${name:-}` body, and of nothing else.
+    /// Split a `${…}` body into its BASE and its OPERATOR, lexing any operand word in place.
     ///
-    /// The whole point is that these two bodies are CLOSED: the default is EMPTY, so no command
-    /// substitution, arithmetic, or further expansion can hide in one. Every other operator form —
-    /// `${x:-y}` included, whose `y` the lexer has already thrown away — answers `None` rather than
-    /// handing a reader a name whose surrounding operator it cannot see.
-    fn empty_defaulted_name(body: &[u8]) -> Option<String> {
-        let name = body
-            .strip_suffix(b":-")
-            .or_else(|| body.strip_suffix(b"-"))?;
-        (!name.is_empty() && name.iter().all(|&c| c == b'_' || c.is_ascii_alphanumeric()))
-            .then(|| String::from_utf8_lossy(name).into_owned())
+    /// Whatever this cannot name is [`LexParamOp::Unmodelled`] — a variant a consumer must match,
+    /// never a silent identity. Deciding what an operator MEANS is the analyzer's
+    /// (`semantic-top-not-here`): decoding mints no diagnostic here.
+    fn decode_braced_body(&mut self, body_start: usize, body_end: usize) -> LexPart {
+        let body = &self.src[body_start..body_end];
+        if !body.is_empty() && body.iter().all(|&c| c == b'_' || c.is_ascii_alphanumeric()) {
+            return LexPart::Param {
+                name: String::from_utf8_lossy(body).into_owned(),
+            };
+        }
+        let unmodelled = |base: String| LexPart::ParamExpansion {
+            base,
+            op: LexParamOp::Unmodelled,
+        };
+        if let Some(name) = body.strip_prefix(b"#")
+            && !name.is_empty()
+            && name.iter().all(|&c| c == b'_' || c.is_ascii_alphanumeric())
+        {
+            return LexPart::ParamExpansion {
+                base: String::from_utf8_lossy(name).into_owned(),
+                op: LexParamOp::Length,
+            };
+        }
+        let base_len = Self::base_name_len(body);
+        let base = String::from_utf8_lossy(&body[..base_len]).into_owned();
+        let Some((op_len, op)) = Self::operator_at(&body[base_len..]) else {
+            return unmodelled(base);
+        };
+        self.pos = body_start.saturating_add(base_len).saturating_add(op_len);
+        let operand = self.lex_parts_until(body_end);
+        LexPart::ParamExpansion {
+            base,
+            op: match op {
+                Operator::Substitute { kind, colon } => {
+                    if operand.is_empty() && kind == SubstituteKind::Default {
+                        LexParamOp::EmptyDefault { colon }
+                    } else {
+                        LexParamOp::Substitute {
+                            kind,
+                            colon,
+                            word: operand,
+                        }
+                    }
+                }
+                Operator::Trim { end, greedy } => LexParamOp::Trim {
+                    end,
+                    greedy,
+                    pattern: operand,
+                },
+            },
+        }
+    }
+
+    /// How many leading bytes of a `${…}` body name the parameter: a POSIX name, a positional
+    /// digit run, or one special parameter. Zero when the body opens with something else.
+    fn base_name_len(body: &[u8]) -> usize {
+        let named = body
+            .iter()
+            .take_while(|&&c| c == b'_' || c.is_ascii_alphanumeric())
+            .count();
+        if named > 0 {
+            return named;
+        }
+        usize::from(matches!(
+            body.first(),
+            Some(b'@' | b'*' | b'#' | b'?' | b'-' | b'$' | b'!')
+        ))
+    }
+
+    /// The operator immediately after the base, and how many bytes it spans.
+    fn operator_at(rest: &[u8]) -> Option<(usize, Operator)> {
+        let substitute = |byte: u8, colon: bool| {
+            let kind = match byte {
+                b'-' => SubstituteKind::Default,
+                b'=' => SubstituteKind::Assign,
+                b'+' => SubstituteKind::Alternate,
+                _ => SubstituteKind::Error,
+            };
+            Operator::Substitute { kind, colon }
+        };
+        match rest {
+            [b':', k @ (b'-' | b'=' | b'+' | b'?'), ..] => Some((2, substitute(*k, true))),
+            [k @ (b'-' | b'=' | b'+' | b'?'), ..] => Some((1, substitute(*k, false))),
+            [b'%', b'%', ..] => Some((2, Operator::trim(TrimEnd::Suffix, true))),
+            [b'%', ..] => Some((1, Operator::trim(TrimEnd::Suffix, false))),
+            [b'#', b'#', ..] => Some((2, Operator::trim(TrimEnd::Prefix, true))),
+            [b'#', ..] => Some((1, Operator::trim(TrimEnd::Prefix, false))),
+            _ => None,
+        }
+    }
+
+    /// Lex word-parts from the current position up to `end` — the ordinary word machinery, bounded
+    /// by the enclosing `${…}` rather than by a word terminator.
+    fn lex_parts_until(&mut self, end: usize) -> Vec<LexPart> {
+        let mut parts: Vec<LexPart> = Vec::new();
+        let mut literal = String::new();
+        while self.pos < end {
+            match self.src[self.pos] {
+                b'\'' => {
+                    Self::flush(&mut parts, &mut literal);
+                    parts.push(self.lex_single_quoted());
+                }
+                b'"' => {
+                    Self::flush(&mut parts, &mut literal);
+                    parts.push(self.lex_double_quoted());
+                }
+                b'$' => {
+                    Self::flush(&mut parts, &mut literal);
+                    parts.push(self.lex_dollar());
+                }
+                b'`' => {
+                    Self::flush(&mut parts, &mut literal);
+                    parts.push(self.lex_backtick());
+                }
+                b'\\' if self.pos + 1 < end => {
+                    self.pos += 1;
+                    literal.push(self.src[self.pos] as char);
+                    self.pos += 1;
+                }
+                b => {
+                    literal.push(b as char);
+                    self.pos += 1;
+                }
+            }
+        }
+        Self::flush(&mut parts, &mut literal);
+        parts
     }
 
     /// `$( ... )` command substitution: capture raw inner text, balancing nested
