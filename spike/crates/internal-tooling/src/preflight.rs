@@ -137,16 +137,20 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
     };
     let state = if warm { "warm" } else { "COLD" };
 
-    let disk = free_disk(root);
+    let cache = free_disk(root);
+    let host = wsl_host_mount(internal_tooling::repo_root());
+    let host_free = host.as_ref().map(|mnt| free_disk(mnt));
+    let disk = bound_of(&cache, host_free.as_ref());
+    let note = host_note(host.as_deref(), host_free.as_ref());
     let ram = free_ram();
 
     if let Ok(free) = disk
         && free < need_disk
     {
         println!(
-            "preflight {name}: REFUSED — {} free on the volume holding {}, needs {} ({state} cache). \
-             Free space (`mise run doctor` inventories what is reclaimable), or set \
-             DORC_PREFLIGHT=skip for an emergency.",
+            "preflight {name}: REFUSED — {} free on the volume holding {}{note}, needs {} \
+             ({state} cache). Free space (`mise run doctor` inventories what is reclaimable), or \
+             set DORC_PREFLIGHT=skip for an emergency.",
             gib(free),
             root.display(),
             gib(need_disk)
@@ -169,13 +173,71 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
     // An unmeasurable probe warns and passes. Refusing on it would block a whole platform
     // over a missing helper, which is a worse failure than the one being guarded against.
     println!(
-        "preflight {name}: ok — disk {} (needs {}, {state}), ram {} (needs {})",
-        say(&disk),
+        "preflight {name}: ok — disk {}{note} (needs {}, {state}), ram {} (needs {})",
+        say(&cache),
         gib(need_disk),
         say(&ram),
         gib(profile.ram)
     );
     ExitCode::SUCCESS
+}
+
+/// The dumbest capability probe that works: WSL always sets this, at no I/O cost.
+fn is_wsl() -> bool {
+    std::env::var_os("WSL_DISTRO_NAME").is_some()
+}
+
+/// `/mnt/<drive>` out of a path under it (`/mnt/c` for `/mnt/c/Users/…`), or `None` for a path
+/// that isn't. Pure and filesystem-free — the shape [`wsl_host_mount`] wraps with the runtime
+/// `is_wsl` gate, kept separate so the path algebra is unit-testable on its own.
+fn mnt_drive(path: &Path) -> Option<PathBuf> {
+    let mut parts = path.components();
+    if parts.next() != Some(std::path::Component::RootDir) {
+        return None;
+    }
+    if parts.next().is_none_or(|c| c.as_os_str() != "mnt") {
+        return None;
+    }
+    parts.next().map(|drive| Path::new("/mnt").join(drive))
+}
+
+/// Where WSL bind-mounts the Windows host filesystem, for a worktree that lives under it. `None`
+/// off WSL, and for a worktree inside the VM's own filesystem, where the cache reading in
+/// [`report`] already answers for everything under it.
+///
+/// Provenance (`300` §2, deepened this round): the cache volume read 789 GiB free — the vhdx's
+/// own nominal size — while the host `C:` it grows into held 2. A sparse vhdx never shrinks, so
+/// the host volume is the one that actually starves.
+fn wsl_host_mount(worktree: &Path) -> Option<PathBuf> {
+    if is_wsl() { mnt_drive(worktree) } else { None }
+}
+
+/// The bound a profile actually clears: the worse of two readings when both apply, the one
+/// reading when only one does, and a joined refusal only when NEITHER could be measured.
+fn bound_of(
+    cache: &Result<u64, String>,
+    host: Option<&Result<u64, String>>,
+) -> Result<u64, String> {
+    let Some(host) = host else {
+        return cache.clone();
+    };
+    match (cache, host) {
+        (Ok(a), Ok(b)) => Ok((*a).min(*b)),
+        (Ok(a), Err(_)) => Ok(*a),
+        (Err(_), Ok(b)) => Ok(*b),
+        (Err(e1), Err(e2)) => Err(format!("{e1}; {e2}")),
+    }
+}
+
+/// The second figure a preflight line grows under WSL — empty everywhere else, so the ordinary
+/// single-volume line is untouched.
+fn host_note(host: Option<&Path>, host_free: Option<&Result<u64, String>>) -> String {
+    match (host, host_free) {
+        (Some(mnt), Some(free)) => {
+            format!(", {} on {} (WSL host volume)", say(free), mnt.display())
+        }
+        _ => String::new(),
+    }
 }
 
 fn usage(problem: &str) -> ExitCode {
@@ -426,7 +488,42 @@ mod tests {
     use std::env::consts::EXE_SUFFIX;
     use std::path::Path;
 
-    use super::{Cache, PROFILES, free_disk, gib};
+    use super::{Cache, PROFILES, bound_of, free_disk, gib, mnt_drive};
+
+    #[test]
+    fn the_bound_is_the_worse_of_the_two_readings_that_apply() {
+        assert_eq!(bound_of(&Ok(5), Some(&Ok(3))), Ok(3));
+        assert_eq!(bound_of(&Ok(3), Some(&Ok(5))), Ok(3));
+        assert_eq!(
+            bound_of(&Ok(5), None),
+            Ok(5),
+            "off WSL, only the cache reading counts"
+        );
+        assert_eq!(
+            bound_of(&Ok(5), Some(&Err("no probe".to_owned()))),
+            Ok(5),
+            "an unmeasurable second reading must not blank out a real one"
+        );
+        assert_eq!(bound_of(&Err("no probe".to_owned()), Some(&Ok(5))), Ok(5));
+        assert!(
+            bound_of(&Err("a".to_owned()), Some(&Err("b".to_owned()))).is_err(),
+            "refuse only when NEITHER volume could be measured"
+        );
+    }
+
+    #[test]
+    fn mnt_drive_recognizes_only_a_genuine_bind_mount() {
+        assert_eq!(
+            mnt_drive(Path::new("/mnt/c/Users/ec/Sync/Code/Dorc")),
+            Some(Path::new("/mnt/c").to_path_buf())
+        );
+        assert_eq!(mnt_drive(Path::new("/home/ec/dorc")), None);
+        assert_eq!(
+            mnt_drive(Path::new("/mnt")),
+            None,
+            "no drive letter to join"
+        );
+    }
 
     #[test]
     fn the_workspace_witness_is_an_artifact_the_probe_cannot_create_for_itself() {
