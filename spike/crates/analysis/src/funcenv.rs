@@ -2452,7 +2452,7 @@ fn apply_operator(
             end,
             greedy,
             pattern,
-        } => trim(&value, &pattern_of(pattern)?, *end, *greedy),
+        } => Ok(trim(&value, &pattern_of(pattern)?, *end, *greedy)),
         ParamOp::Length | ParamOp::Unmodelled => Err(HavocCause::UnmodelledOperator),
     }
 }
@@ -2502,7 +2502,7 @@ fn trim(
     pattern: &[PatternAtom],
     end: dorc_syntax::ast::TrimEnd,
     greedy: bool,
-) -> Result<String, HavocCause> {
+) -> String {
     use dorc_syntax::ast::TrimEnd;
 
     let chars: Vec<char> = value.chars().collect();
@@ -2516,10 +2516,10 @@ fn trim(
             TrimEnd::Prefix => (&chars[len..], &chars[..len]),
         };
         if pattern_matches(pattern, candidate) {
-            return Ok(kept.iter().collect());
+            return kept.iter().collect();
         }
     }
-    Ok(value.to_owned())
+    value.to_owned()
 }
 
 /// Does `pattern` match the whole of `text`? A plain backtracking walk — patterns and paths are
@@ -2661,6 +2661,10 @@ struct LoadSites {
 /// environment; a node no path reaches executes nothing, so reading ⊤ off one would let a
 /// provably-dead branch poison the join it never reaches — exactly what the fold masks edges to
 /// prevent. `Entry` is exempt because minting the boundary state out of ⊥ is its whole job.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the whole analysis unit a per-node transfer is a pure function OF: its two programs, its loaded set, its value window, its pre-pass load answers, its name universe, and the node with its inflow. Bundling them would hide which of them a given arm reads."
+)]
 fn transfer(
     ast: &Ast,
     cfg: &Cfg,
@@ -4196,9 +4200,8 @@ mod tests {
         let pattern = |text: &str| {
             super::pattern_of(&[WordPart::Literal(text.to_owned())]).expect("a modelled pattern")
         };
-        let trim = |value: &str, pat: &str, end, greedy| {
-            super::trim(value, &pattern(pat), end, greedy).expect("a modelled trim")
-        };
+        let trim =
+            |value: &str, pat: &str, end, greedy| super::trim(value, &pattern(pat), end, greedy);
         assert_eq!(
             trim("/ops/pkg/book.sh", "/*", TrimEnd::Suffix, false),
             "/ops/pkg"

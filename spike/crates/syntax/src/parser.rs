@@ -1026,9 +1026,15 @@ impl Parser {
 
     /// Apply the ⊤-triggers that depend on the *whole* simple command. Returns a
     /// replacement ⊤-node id if one fires (the already-built children are salvaged).
-    /// Triggers (synthesis ⊤-set): `eval`; `.`/`source` of a dynamic target;
-    /// dynamic command name (first word not a literal); `$(( ))` as the command;
-    /// lvalue-taking builtins (`unset "$x"`, `printf -v`, `test -v`).
+    /// Triggers (synthesis ⊤-set): `eval`; dynamic command name (first word not a
+    /// literal); `$(( ))` as the command; lvalue-taking builtins (`unset "$x"`,
+    /// `printf -v`, `test -v`).
+    ///
+    /// `.`/`source` is deliberately ABSENT, whatever its operand carries: every spelling of one is
+    /// floor-valid text, and `30P:rul-floor-valid-text-never-parse-fails` forbids the parser
+    /// refusing that. The operand keeps its rich AST and the analyzer's LOAD PLANE answers — a
+    /// head it cannot evaluate over controller-known inputs is a point havoc, and the pre-network
+    /// complaint about one is the cli's.
     fn check_simple_triggers(
         &mut self,
         assigns: &[dorc_core::AstId],
@@ -1072,9 +1078,6 @@ impl Parser {
                 salvage(),
                 SyntaxUnsupportedReason::EvalConstructedCode,
             )),
-            // NOT a ⊤-trigger, whatever the operand carries: it is floor-valid text
-            // (`30P:rul-floor-valid-text-never-parse-fails`), so the LOAD PLANE answers instead.
-            "." | "source" => None,
             "unset" => {
                 // `unset "$x"` / `unset $x` — dynamic lvalue. A literal `unset FOO`
                 // is in principle modelable, but the ⊤-set lists unset of a dynamic

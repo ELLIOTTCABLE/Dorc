@@ -1054,13 +1054,18 @@ fn background_amp_emits_syntax_unsupported() {
 /// decode cells below (`30Qc` item 2): the lexer used to collapse every operator form to one
 /// opaque part and throw the body away, and each of them pins one thing that now survives.
 fn nth_word_parts(ast: &Ast, index: usize) -> &[WordPart] {
-    let item = script_items(ast)[0];
-    match kind(ast, item) {
-        NodeKind::Simple { words, .. } => match kind(ast, words[index]) {
-            NodeKind::Word { parts } => parts,
-            other => panic!("word {index} is not a Word: {other:?}"),
-        },
-        other => panic!("item is not Simple: {other:?}"),
+    let Some(&item) = script_items(ast).first() else {
+        panic!("the script has no first item")
+    };
+    let NodeKind::Simple { words, .. } = kind(ast, item) else {
+        panic!("item is not Simple: {:?}", kind(ast, item))
+    };
+    let Some(&word) = words.get(index) else {
+        panic!("the command has no word {index}")
+    };
+    match kind(ast, word) {
+        NodeKind::Word { parts } => parts,
+        other => panic!("word {index} is not a Word: {other:?}"),
     }
 }
 
