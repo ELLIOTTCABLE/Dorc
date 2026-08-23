@@ -989,8 +989,9 @@ pub fn select(
 #[cfg(test)]
 mod tests {
     use super::{
-        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, ImportEdit,
-        StdoutPosture, StreamPosture, artifact_stream, mirrored, placeable, select,
+        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, ImportEdit, Placement,
+        PlacementReason, StdoutPosture, StreamPosture, artifact_stream, mirrored, placeable,
+        select,
     };
     use crate::bundle::BundleProjection;
     use dorc_core::loadpath::Cwd;
@@ -1276,6 +1277,130 @@ mod tests {
             rendered.fallback(),
             Some(FormFallback::InliningUnproven { loads: 1 })
         );
+    }
+
+    /// The disclosure half of the ladder: a kept-in-place bundle says WHICH condition kept it, and
+    /// the import edit and the placement account are minted from one seat so they cannot disagree.
+    ///
+    /// CFG SHAPE: two books, one top-level `.` each — one whole-line and redirect-free (inside the
+    /// measured absorbable cell, so what keeps it is that the ladder has not answered), one as an
+    /// `||` right operand (outside that cell, so the shape is what keeps it).
+    #[test]
+    fn a_kept_in_place_bundle_says_which_condition_kept_it() {
+        let oracle = || {
+            (
+                vec!["wombat.dorc.sh".to_owned()],
+                vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            )
+        };
+        let (paths, srcs) = oracle();
+        let absorbable = book_sourced(
+            ". ./wombat.dorc.sh\nwombat sync a.conf\n",
+            paths,
+            srcs,
+            FormRequest::Auto,
+            StreamPosture::TerminalRender,
+        )
+        .expect("auto always lands somewhere");
+        assert_eq!(
+            absorbable.imports().first().map(ImportEdit::reason),
+            Some(&PlacementReason::KeptInPlaceLadderUnconsulted)
+        );
+
+        let (paths, srcs) = oracle();
+        let outside = book_sourced(
+            "false || . ./wombat.dorc.sh\nwombat sync a.conf\n",
+            paths,
+            srcs,
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("multipart does not need the absorbable cell");
+        assert_eq!(
+            outside.imports().first().map(ImportEdit::reason),
+            Some(&PlacementReason::KeptInPlaceShapeUnmeasured)
+        );
+    }
+
+    /// TARGET (`30Ng` §7 T1, human-typed; `30P:rul-front-lift-is-the-planners-first-consumer`): a
+    /// bundle nothing in the book contends with joins the LIFTED section ahead of the book, by pure
+    /// code motion, so the attention-preserving partition the single stream owes its reader is
+    /// partition-by-LAYOUT rather than an oracle ocean interleaved with their own mutative lines.
+    ///
+    /// CFG SHAPE: a top-level, whole-line, redirect-free, assignment-free `.` with NOTHING above it —
+    /// so no book statement observes or mutates any name the bundle binds before the load, the
+    /// bundle's own top level reads no book variable, and the unit carries no dynamism opener at all.
+    /// Every T1 condition holds and the placement is still `InPlace`.
+    #[test]
+    fn a_clean_bundle_hoists_ahead_of_the_book() {
+        let selection = book_sourced(
+            ". ./wombat.dorc.sh\nwombat sync a.conf\n",
+            vec!["wombat.dorc.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::TerminalRender,
+        )
+        .expect("auto always lands somewhere");
+        let decided = carried(&selection);
+        internal_tooling::xfail::xfail_until("p-x-front-hoist-lifts-a-clean-bundle", || {
+            assert_eq!(
+                decided
+                    .iter()
+                    .map(|decision| (decision.placement().clone(), decision.why().clone()))
+                    .collect::<Vec<_>>(),
+                vec![(Placement::Hoist, PlacementReason::HoistedAsIs)],
+                "nothing contends with this bundle, so the lift is pure code motion"
+            );
+        });
+    }
+
+    /// TARGET (`30Ng` §7 T2, human-typed, as narrowed by `30Qb:tc-t2-is-narrower-than-the-ladder-says`
+    /// and ruled to T2a): where the ONLY collision is a ROLE function — whose every reference is
+    /// engine-emitted, so the rename stays header-only (`28R:rul-munge-oracle-names-only`) — the
+    /// bundle still lifts, under a munged name. A helper or a file-level constant would need
+    /// alpha-rename, which is RESERVED (`d-alpha-rename-equivalence`), and falls to T3 instead.
+    ///
+    /// CFG SHAPE: a top-level funcdef binding the package's own role name, ABOVE a top-level
+    /// whole-line `.` of the package that binds it too, and the described site below both.
+    #[test]
+    fn a_colliding_role_name_hoists_under_a_munge() {
+        let selection = book_sourced(
+            "wombat__is_converged() { hork ;}\n. ./wombat.dorc.sh\nwombat sync a.conf\n",
+            vec!["wombat.dorc.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::TerminalRender,
+        )
+        .expect("auto always lands somewhere");
+        let decided = carried(&selection);
+        internal_tooling::xfail::xfail_until(
+            "p-x-front-hoist-munges-a-colliding-role-name",
+            || {
+                assert!(
+                    decided.iter().all(|decision| matches!(
+                        (decision.placement(), decision.why()),
+                        (Placement::Hoist, PlacementReason::HoistedMunged { .. })
+                    )),
+                    "the one collision is a role name, so the lift survives under a munge: {decided:?}"
+                );
+            },
+        );
+    }
+
+    /// Every placement decision this selection took over a book-reached source, in source order.
+    fn carried(selection: &super::Selection) -> Vec<dorc_plan::PlacementDecision> {
+        (0..8_u32)
+            .filter_map(|index| {
+                match selection
+                    .emission()
+                    .placements()
+                    .of(dorc_core::SourceFileId(index))
+                {
+                    dorc_plan::SourcePlacement::Carried(decision) => Some(decision.clone()),
+                    _ => None,
+                }
+            })
+            .collect()
     }
 
     /// Build a whole world the way the corpus does, over CLI-named prelude roots, and hand back

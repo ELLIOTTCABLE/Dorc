@@ -193,6 +193,28 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
+        name: "p-x-front-hoist-lifts-a-clean-bundle",
+        trigger: "`30Ng` §7 T1 / `30P:rul-front-lift-is-the-planners-first-consumer` — the ladder's \
+                  own top row: a bundle nothing in the book contends with joins the LIFTED section \
+                  ahead of the book by pure code motion. The PLANNER landed \
+                  (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`) and every \
+                  legality input it needs exists (`analysis::nameuse` · `region::CensusOpeners`); \
+                  what is unbuilt is the hoist ACTION, which has to say what becomes of the \
+                  authored `.` line once its target stands at the front",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-front-hoist-munges-a-colliding-role-name",
+        trigger: "`30Ng` §7 T2, narrowed to T2a by `30Qb:tc-t2-is-narrower-than-the-ladder-says` \
+                  (conductor-ruled): where the only collision is a ROLE function, whose every \
+                  reference is engine-emitted, the bundle still lifts under a header-only munge \
+                  (`28R:rul-munge-oracle-names-only`) — a helper or a file-level constant would \
+                  need alpha-rename, which stays RESERVED, and falls to T3",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
         name: "p-x-placement-tuning-pair",
         trigger: "`28Q:pin-emission-planner-universal` — placement chosen per body \
                   (`30P:rul-emission-is-the-umbrella-name`'s vocabulary: `hoist` for the many-use \
