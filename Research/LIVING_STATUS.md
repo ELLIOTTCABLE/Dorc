@@ -39,8 +39,7 @@ builders before dispatch. Every brief: the Safety block, step-zero worktree veri
 half — unread by Fable-class conductors by law) where it names the lane.
 
 **Human-gated (nothing dispatchable):** the root `_tmp-human-burndown.md` items; the
-`30P:open-rulings` residue (`choice-verbatim-or-re-say` under
-`rul-static-predict-sites-loads`; the controller-expectation/host-check pattern's UX + opaque
+`30P:open-rulings` residue (the controller-expectation/host-check pattern's UX + opaque
 review); the prose queue; the
 non-blocking `30N:open-items-riding-this-conduct (née §4)` set (wall-narration mint · the
 render↔spine feedback sitting · `tc-plan-owns-its-source` · book-level dot-locals domain ·
@@ -58,6 +57,11 @@ between — no snapshot-suffix sets, no singleton, no runtime-verified candidate
 only through a statically-evaluable stdlib predict (`30P:rul-static-predict-sites-loads`).
 Dorc never interprets what a convergence vouch checks; it only keeps its own movement and
 renaming from producing bindings ordinary sh would not (`30P:rul-guard-resolves-like-its-mutation`).
+The load plane's correctness posture is RULED (`30P:the-load-plane-stays-correct`, 2026-08-22):
+a book's `.` line is rewritten only under derived permission (explicit reference + transformed
+target — literal operands); EXACT-via-`$0` lines stay verbatim and are mirrored so they land;
+controller-evaluated predicts are verified at probe standup, artifact integrity at apply standup,
+and no per-line load verifier exists — the standups are tunnel negotiation, never plan lines.
 `gate:full-quiet` routes `test:floor` when floor paths
 are staged (a floor case must agree on both platform legs). The opaque-review gate is
 builder-initiated (`AGENTS.for-builders-only.md`); no builder triggered it this sitting.

@@ -48,8 +48,10 @@ boundedly, and HUMAN-ONLY.
 Book `.` lines decide which definitions exist where, so the planner is only as good as the
 load model. Three principles replace the idiom-by-idiom approach: an unknown source is a
 point havoc, not a poison; an operand resolves only over what the controller already knows,
-through shell semantics alone (with a set-valued answer for partly-dynamic operands); and a
-plain-sh file that is sourced is *included*.
+through shell semantics alone (set-valued only for a glob under an EXACT head); and a
+plain-sh file that is sourced is *included*. How the plane stays correct — what may be
+rewritten, what the controller may evaluate speculatively, and what each phase verifies at
+standup — is `the-load-plane-stays-correct`.
 
 ## the-emission-planner — one component, two modes, a closed vocabulary
 
@@ -265,10 +267,11 @@ command's output.
   therefore TRAILS the modelled bytes, `30D:reject-partial-stream-without-completion`; edge
   arms STRAWMAN.) A predict is STATICALLY EVALUABLE when its
   reached body lies wholly in the pure decidable set and its argv is controller-known (the
-  symbolic `$0` counts); the engine evaluates it at plan time per `$0` spelling — the static
-  half of the split the kind-owner roles already have (`disturbance_reaches_only`'s static
-  line vs its `dpkg -L` line), no host, no capture lane, no runtime `$0`. Obligations: (a)
-  NO runtime confirmation is owed — nothing executed, so `30D`'s
+  symbolic `$0` counts); the engine evaluates it at plan time, ON THE CONTROLLER,
+  SPECULATIVELY, once per modelled invocation shape — the static half of the split the
+  kind-owner roles already have (`disturbance_reaches_only`'s static line vs its `dpkg -L`
+  line), no host, no capture lane, no runtime `$0`. Obligations: (a) runtime confirmation
+  is owed at probe STANDUP (`mech-two-standups`), never through `30D`'s per-record OOB lane —
   `reject-missing-expected-confirmation` does not apply to a statically-consumed record;
   (b) this is a NAMED widening of `funcenv-reads-source-literal-plane-only`: the load plane
   now reads a value-prediction (`value-predictions`), a new trust edge at vouch tier — a
@@ -285,12 +288,11 @@ command's output.
   EXACT; bare `${0%/*}` ⇒ EXACT-or-dead, accepted with the lint. This SUBSUMES the
   byte-shape-recognition carve (which would have violated the typed
   `rul-no-tool-modelling-in-the-load-plane` with an unattributed engine reading) and the
-  capture-lane form of the parked ask. OPEN, human's: `choice-verbatim-or-re-say` — keep the
-  author's `$(dirname "$0")` verbatim under cwd-parity (the host's real `dirname` runs;
-  soundness = POSIX conformance on inputs the oracle accepted; consistent with `30I`'s
-  no-root-variable posture — conductor lean) or re-say to the shipped path (structural; the
-  over-magic caveat). Sequencing: the computed-`.` parse-tier refusal is repaired to
-  post-analysis first (`rul-floor-valid-text-never-parse-fails`).
+  capture-lane form of the parked ask. RULED: the author's `$(dirname "$0")` line stays
+  VERBATIM and Dorc mirrors so it lands (`rul-rewrite-permission-is-derived`, below);
+  soundness = POSIX conformance on inputs the oracle accepted, checked at probe standup.
+  Sequencing: the computed-`.` parse-tier refusal is repaired to post-analysis first
+  (`rul-floor-valid-text-never-parse-fails`).
 - **Slashless operands** — `. helpers.sh` is a PATH search, not a cwd lookup; the cwd search
   was deliberately removed from the standard over trojan-horse concerns
   [A-posix-dot-builtin-2018], and the atlas measured it fatal with the cwd off PATH. PATH is a
@@ -357,6 +359,76 @@ and local to `lane-load-plane-precision` + the planner lane's `Selection`) ·
 to confirm before ruling: today a plain-sh `.` is not acquired, so nothing ships, so the
 generated plan carries a dangling `.` that the atlas measured as fatal — `dorc apply` on the
 most common multi-file book shape would die at that line on the host.
+
+## the-load-plane-stays-correct — rewrite permission, the blessed lift, and the two standups
+
+The 2026-08-22 ruling that closed `choice-verbatim-or-re-say`, widened on the human's lead into
+the correctness posture of the whole load plane. The lift mechanism is general in principle, but
+`dirname` is its only entry and a second consumer is its own sitting; this section is about
+loading.
+
+- **`rul-rewrite-permission-is-derived`** [TYPED 2026-08-22] — Dorc may rewrite a book's `.`
+  line only when the reference names its target EXPLICITLY (a literal operand; a literal-assigned
+  book-set root) AND Dorc is already authorized to transform that target (a dorc-lang file it
+  strips or bundles). Permission to generate or move content carries the implicit permission to
+  re-point explicit references to it; nothing further is implied — a non-explicit reference would
+  be rewritten on Dorc's reading rather than the author's, and an untransformed target grants
+  nothing. Certainty is a separate axis: EXACT governs AUTHORITY (bindings below, vouches,
+  shipping); explicitness governs REWRITING.
+
+  ```sh
+  . ./lib/foo.dorc.sh               # explicit + transformed ⇒ may re-point (bundle) or paste
+  . "$(dirname "$0")/foo.dorc.sh"   # EXACT, not explicit ⇒ verbatim; the stripped copy is mirrored
+                                    #   at the authored relative path so the author's own line lands
+  . "$OPS_LIB/foo.sh"               # havoc ⇒ verbatim, nothing shipped, nothing claimed, hint
+  ```
+
+  Per form: tree-mirror ships every EXACT target (stripped if dorc-lang) at its authored path;
+  tree-bundle additionally re-points LITERAL dorc-lang imports
+  (`30Ng:rul-bundle-at-dorc-lang-boundaries` binds literal operands only); single-stream pastes
+  a literal `.` under the exclusion set, and an EXACT-via-`$0` `.` — which cannot stay verbatim
+  there, `$0` being `sh` — pastes the EXACT-resolved file or refuses the form; a havoc `.` stays
+  verbatim in every form and never refuses one.
+- **`mech-blessed-lift-to-literal`** [ACKED 2026-08-22] — the engine evaluates a predict at
+  plan time, ON THE CONTROLLER, SPECULATIVELY — abstract evaluation of oracle sh feeding probe
+  planning, for books not targeted at the controller — iff the reached arm is `P-static`
+  (every construct in the decidable set). It may VERIFY that evaluation host-side iff the
+  reached call-graph — transitively through frame-resolved function callees, splice-budgeted —
+  is `P-blessed` (every command-position callee cheap-and-read-only, blessed BY NAME: the
+  decidable-set entry is the blessing, never a class) and the family tool itself is blessed
+  (engine-granted by name, override-immune). `P-static ⇒ P-blessed`, not the converse. The
+  blessing is the engine's owned residue (`rul-probe-mutation-ownership-split`), not an
+  inference about authored commands (`structural-vouch-only` untouched). A user may redefine a
+  stdlib predict: the lift and the blessing survive exactly while the reached call-graph stays
+  inside the sets; otherwise the load is a point havoc with a line-precise hint. No per-line
+  guard of any kind exists: an EXACT `.` has, by definition, nothing above it that can move its
+  resolution — a `cd`, a `PATH` assignment, a shadowing definition of the tool, a havoc `.`
+  above each make it non-EXACT at analysis
+  (`ANALYZER-NEEDS:an-load-exactness-reads-binding-state`); that is an obligation on the
+  analysis, not on a guard.
+- **`mech-two-standups`** [ACKED; stop-on-contradiction TYPED 2026-08-22] — PROBE standup (no
+  tree yet): for every blessed-predict use, a three-way check on each modelled invocation shape
+  (the abstract evaluation's input→output set under the funcenv at the site — the live `$0`
+  spellings are one source of plurality, not the set): engine-static(body) = host(body) =
+  host(tool). Any disagreement is an analytic contradiction ⇒ the phase is Refused for that
+  host, before consent: we probe what the analysis found WANTING; we fact-check what it found
+  FOR-SURE. One shipped artifact — the check at the top, abort on mismatch, and the probe may
+  inline the verified literal below (its own `$0` is single-valued) — never a second exchange
+  (`rul-repeated-probing-reviewed-before-design`). APPLY standup (tree shipped): artifact
+  integrity — cwd parity, `$0` slash-bearing, every shipped file present and byte-matching its
+  manifest; mismatch ⇒ stop before the first book line. The apply never inlines; the author's
+  line runs the real tool as many times as written.
+- **`rul-standup-is-tunnel-negotiation`** [TYPED 2026-08-22] — both standups are engine-owned
+  integrity and fail-fast tooling on the capability-handshake tier
+  (`ANALYZER-NEEDS:an-host-capability-handshake`), not plan lines: they spend no user
+  attention, and Dorc reserves arbitrarily rich negotiation there at both phases. The blessed
+  set is a ruled strict core of the language whose host-side checking is
+  equivalent-modulo-perf-and-safety to "does this path exist on the host".
+- Open, none blocking: the host spelling of the checks (scaffolding may lean on tools; start
+  conservative); whether single-stream should hint when `$0` is used outside a pasted `.` (the
+  author's cwd-independence silently downgrades there); a predicted value consumed OUTSIDE the
+  load plane (`here=$(dirname "$0")` feeding a `cp` argv) is its own sitting — the load plane
+  reads it, nothing else does yet; the exclusion set's `if`-body `.` cell (-GUESS pasteable).
 
 ## scheduling-truth — horizons are attention-calls
 
@@ -438,12 +510,13 @@ the end of r30) · `load31-punted-load-shapes`.
 ## open-rulings — complete list for this topic
 
 1. `ask-computed-dot-degrades-to-a-wall` — subsumed by `rul-floor-valid-text-never-parse-fails`.
-2. `choice-verbatim-or-re-say` — under `rul-static-predict-sites-loads`: keep the author's
-   `$(dirname "$0")` verbatim (conductor lean) or re-say to the shipped path. Human's.
-3. The single-stream exclusion set's membership beyond `return` — deliberately unwelded;
+2. The single-stream exclusion set's membership beyond `return` — deliberately unwelded;
    grows during the spike (not a ruling to wait for).
 
-Ruled 2026-08-22 and recorded above: `rul-load-head-is-exact-or-havoc` (supersedes
+Ruled 2026-08-22 and recorded above: `choice-verbatim-or-re-say` → verbatim, by
+`rul-rewrite-permission-is-derived` + `mech-blessed-lift-to-literal` + `mech-two-standups` +
+`rul-standup-is-tunnel-negotiation` (`the-load-plane-stays-correct`) ·
+`rul-load-head-is-exact-or-havoc` (supersedes
 `rul-partly-dynamic-operand-is-a-set`; singleton/POSSIBLE/verified-candidate struck) ·
 `model-symbolic-dollar-zero` + `rul-dead-spelling-is-not-unsound` +
 `rul-dorc-invokes-in-a-modelled-live-spelling` · `rul-static-predict-sites-loads` (the
