@@ -827,6 +827,145 @@ fn member_family(
     })
 }
 
+/// Every member's own resolution of ONE spliced funcdef-body site whose CALL sits inside a
+/// member-closed `for` (`30L` §7) — the region lane's cousin of [`MemberFamily`].
+///
+/// Two mechanisms rather than one, because they fire on two different SYNTACTIC shapes and share
+/// only their discipline (`30Qa:dec-member-family-stays-a-separate-mechanism`):
+/// [`MemberFamily`] answers a mutating command written DIRECTLY in a loop body whose own argv names
+/// the loop variable, and its product is one site-keyed `EstablishMembers` class; this one answers a
+/// spliced body site whose operands come from the CALL, and its product is one class PER MEMBER on
+/// the owning call's [`SkipClass::InlineCall`] vector, so a region route can find its own.
+struct SplicedMembers {
+    /// The cells each member's argv resolved to, in list order, duplicates kept.
+    per_member: Vec<Vec<CommandEffect>>,
+    /// This node's aggregate measurement, present only when EVERY member's verdict body measured
+    /// exactly its own establish (the [`MemberFamily`] gate, one shape up).
+    measurement: Option<Measurement>,
+}
+
+/// Resolve one spliced body site's per-member cells, or `None` when the call's loop is not
+/// member-closed OR any member fails to resolve to a single establish.
+///
+/// ALL-OR-NOTHING, for `rul-every-erased-establish-is-vouched`'s reason rather than by analogy: the
+/// aggregate this feeds is identity- and cardinality-matched to the exact ordered establish sites,
+/// so a population that could not answer for one of its members is not a smaller population — it is
+/// no population. A refusal here leaves the node on the ordinary single-argv path, whose ⊤
+/// positional resolves `Opaque` ⇒ the site runs and walls, which is the floor.
+///
+/// A node that owns a spliced body of its OWN (a nested call under a member-closed loop) is refused
+/// here: its operands come from the enclosing binding rather than from `argv`, and one pass cannot
+/// settle that chain (`30L` §7's out-of-scope residue). It gens `Pure` on the call path above, and
+/// its own body sites reach no aggregate, so the region meets to Run.
+///
+/// # The out-params, one at a time
+///
+/// `command_effect`'s channels are NODE-keyed and N members share one node, so each is answered
+/// rather than assumed (`30Qa:dev-effect-probe-and-floor-remain`):
+/// * `backings` is keyed by FACT, not node, and its merge is a union plus a cross-provider fold to
+///   the safe floor — commutative and idempotent, so members cannot collide. The REAL map is passed
+///   (unlike [`MemberFamily`]'s throwaway) because these facts are no longer render-floored: a
+///   region replacement reads the survival tier, and a fact with no backing would fall to the
+///   singleton floor for no reason.
+/// * `measured` is aggregated, never overwritten: one `Measurement` over the ordered member facts,
+///   minted only when every member keyed its own — the same shape [`MemberFamily`] mints.
+/// * `degrade` is aid-plane only and node-keyed, so a first-member-wins overwrite would report one
+///   member's unresolvability as the SITE's (`271:rul-sin-ordering`). Suppressed: a member that
+///   degrades and still resolves is not an unresolvable site, and one that degrades and does not
+///   collapses the population, after which the single-argv path records the reason with its real
+///   span.
+/// * `cmdsub_tops` is suppressed with `site: None` for that same fallback reason — the collapse
+///   discloses the ⊤ once, with the real operand span.
+/// * `diags` is SHARED and may repeat: a member's verb is argparse-derived and can differ per
+///   member, so a per-member kind disagreement is not redundant by construction. Identical members
+///   duplicate the sentence; that is the r21 lane's standing behaviour, not a new one.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the same kernel inputs `member_family` threads — index, checks, verdicts, interner, \
+              diags, and the `28K` §2 positional oracle — over the spliced value plane instead"
+)]
+fn spliced_members(
+    id: CfgNodeId,
+    cfg: &Cfg,
+    value: &ValueFlow,
+    idx: &KindIndex,
+    checks: &[PredictSet],
+    verdicts: &VerdictIndex,
+    interner: &mut Interner,
+    diags: &mut Vec<Diag>,
+    backings: &mut BTreeMap<FactKey, FactBacking>,
+    live_defs: crate::funcenv::LiveDefinitions<'_>,
+) -> Option<SplicedMembers> {
+    if cfg.node(id).kind != CfgNodeKind::Command
+        || !cfg.is_spliced_internal(id)
+        || cfg.call_body_sites(id).is_some()
+    {
+        return None;
+    }
+    let members = value.spliced_member_argv(id)?;
+    let no_verdict_topology = VerdictIndex::default();
+    let mut per_member = Vec::with_capacity(members.len());
+    let mut facts = Vec::with_capacity(members.len());
+    let mut all_measured = true;
+    for argv in members {
+        let effects = command_effect(
+            idx,
+            checks,
+            &no_verdict_topology,
+            argv,
+            interner,
+            diags,
+            &mut Vec::new(),
+            None,
+            backings,
+            &mut None,
+            &mut None,
+            id,
+            live_defs,
+        );
+        let [CommandEffect::Establishes(fact)] = effects.as_slice() else {
+            return None;
+        };
+        let fact = *fact;
+        let mut member_measurement = None;
+        let _ = command_effect(
+            idx,
+            checks,
+            verdicts,
+            argv,
+            interner,
+            &mut Vec::new(),
+            &mut Vec::new(),
+            None,
+            &mut BTreeMap::new(),
+            &mut None,
+            &mut member_measurement,
+            id,
+            live_defs,
+        );
+        all_measured &= member_measurement
+            .as_ref()
+            .is_some_and(|measurement| measurement.subjects() == [fact]);
+        facts.push(fact);
+        per_member.push(effects);
+    }
+    if per_member.is_empty() {
+        return None;
+    }
+    let measurement = all_measured.then(|| {
+        Measurement::of_the_sites_establishes(
+            &facts
+                .iter()
+                .map(|fact| CommandEffect::Establishes(*fact))
+                .collect::<Vec<_>>(),
+        )
+    });
+    Some(SplicedMembers {
+        per_member,
+        measurement,
+    })
+}
+
 /// Build one [`CommandEffect`] from a declared [`EffectCell`] under the resolved
 /// (annotation-kind, entity). Enforces the kind-agreement rule (204 §6): the
 /// annotation is the declared identity, so on a mismatch the cell is re-keyed under
@@ -1127,6 +1266,17 @@ pub struct InlineSite {
     /// The spliced body command's CFG node (provenance; `has_top_successor` gate; never a Step
     /// leaf of its own — the CALL is the render unit, `i-3`).
     pub node: CfgNodeId,
+    /// Which EVALUATION of the call this entry answers for: the loop-member ordinal when the
+    /// call's enclosing `for` is member-closed (`30L` §7), `None` when it is evaluated once.
+    ///
+    /// The vector is member-major, so this is redundant with position — and deliberately carried
+    /// anyway. It is the key a region route joins on
+    /// (`plan::settle`'s per-`(cfg_node, member)` body-class lookup), and it is what keeps the
+    /// route axis from being re-derived by index arithmetic over a body-site count nobody passed
+    /// along. It matches `core::IterationSlot::member()` by construction: a route with no member
+    /// ordinal finds only a member-less entry, which is why a `NotIterated` route at an in-loop
+    /// node cannot silently answer from member 0's facts.
+    pub member: Option<u32>,
     /// The body site's own classification (with the call's positionals bound, `i-2`): an
     /// `EstablishProbeAmbient`/`QueryResolvable` is per-site probeable (`site N.M`); a Kill/Opaque/
     /// MustRun/EstablishProbeWritten blocks the whole call.
@@ -1223,6 +1373,7 @@ fn reach_transfer(
 fn node_effects(
     id: CfgNodeId,
     member_family: Option<&MemberFamily>,
+    spliced: Option<&SplicedMembers>,
     cfg: &Cfg,
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
@@ -1252,6 +1403,15 @@ fn node_effects(
     // spliced body (the establish reads Written) — the very poison the splice removes.
     if cfg.call_body_sites(id).is_some() {
         return vec![CommandEffect::Pure];
+    }
+    // `30L` §7: a spliced body site under a member-closed loop gens EVERY member's cell, the
+    // `EstablishMembers` shape one level up. The loop really does establish all of them at this one
+    // lowered node, and saying less would under-approximate the world for everything downstream.
+    if let Some(members) = spliced {
+        if let Some(measurement) = &members.measurement {
+            verdict_lane.insert(id, measurement.clone());
+        }
+        return members.per_member.iter().flatten().cloned().collect();
     }
     // s-2 (the EARLY classify-widening): resolve THIS node's real source span + a stable
     // site identity, so the migrated `dq-cmdsub-operand-top` spine carries a real span (not
@@ -1480,7 +1640,23 @@ fn classify_one_site(
             self_reached: self_reached.get(&i).copied().unwrap_or(false),
         };
     }
-    match cells.as_slice() {
+    classify_cells(cells, state, trust_reach, site_reachable)
+}
+
+/// The single-fact classification of ONE resolved cell vector against the reach state at its node.
+///
+/// Split from [`classify_one_site`] so the member lane can ask it about a cell vector that is not
+/// the node's own (`30L` §7): N members share one lowered node, and the node's vector is their
+/// union, so a member's class has to be read off the member's cells. Everything else — which state,
+/// which trust bits — is a fact about the NODE and stays shared, which is exactly right: the reach
+/// in-state at a loop node is the join over its iterations, and no member has a narrower one.
+fn classify_cells(
+    cells: &[CommandEffect],
+    state: &Reach,
+    trust_reach: bool,
+    site_reachable: bool,
+) -> SkipClass {
+    match cells {
         [CommandEffect::Establishes(f)] if trust_reach && site_reachable => {
             if state.mutated(f) {
                 SkipClass::EstablishProbeWritten(*f)
@@ -1697,6 +1873,7 @@ fn resolve_node_effects(
     live_defs: crate::funcenv::LiveDefinitions<'_>,
 ) -> (
     Vec<Option<MemberFamily>>,
+    Vec<Option<SplicedMembers>>,
     Vec<Vec<CommandEffect>>,
     Vec<CmdsubTop>,
     BTreeMap<FactKey, FactBacking>,
@@ -1721,6 +1898,22 @@ fn resolve_node_effects(
     // `277` §5 backing-SETS: the fact → survival-backing-provenance map, threaded from the
     // establishing `command_effect` (minting family + observe-widening selectors).
     let mut backings: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
+    let spliced: Vec<Option<SplicedMembers>> = (0..n)
+        .map(|i| {
+            spliced_members(
+                CfgNodeId(i as u32),
+                cfg,
+                value,
+                idx,
+                checks,
+                verdicts,
+                interner,
+                diags,
+                &mut backings,
+                live_defs,
+            )
+        })
+        .collect();
     let effects: Vec<Vec<CommandEffect>> = (0..n)
         .map(|i| {
             let id = CfgNodeId(i as u32);
@@ -1747,6 +1940,7 @@ fn resolve_node_effects(
             node_effects(
                 id,
                 member_families[i].as_ref(),
+                spliced[i].as_ref(),
                 cfg,
                 value,
                 ast,
@@ -1763,7 +1957,7 @@ fn resolve_node_effects(
             )
         })
         .collect();
-    (member_families, effects, cmdsub_tops, backings)
+    (member_families, spliced, effects, cmdsub_tops, backings)
 }
 
 /// Classify every `Command` node for the skip decision: resolve each command's
@@ -1933,7 +2127,7 @@ pub fn classify_with_why_diags(
     // disclosures (stage-1) and the `277` §5 survival-backing provenance. Extracted so this fn
     // stays under the line cap. `27N`: a wrapped BOOK site (`peeled`) resolves its INNER command
     // and re-keys the fact into the composed context.
-    let (member_families, mut effects, cmdsub_tops, backings) = resolve_node_effects(
+    let (member_families, spliced, mut effects, cmdsub_tops, backings) = resolve_node_effects(
         cfg,
         value,
         ast,
@@ -2075,6 +2269,30 @@ pub fn classify_with_why_diags(
             &self_reached,
         )
     };
+    // `30L` §7: ONE member's class at a spliced body site. Falls back to the node's own class where
+    // the member seat resolved nothing, so a body site that ignores the call's operands (a literal
+    // mutator, a query) answers the same thing at every member rather than dropping out.
+    let classify_member = |i: usize, member: usize| -> SkipClass {
+        let (Some(state), Some(&site_reachable)) = (reach.states.get(i), reachable.get(i)) else {
+            return SkipClass::MustRun;
+        };
+        match spliced
+            .get(i)
+            .and_then(Option::as_ref)
+            .and_then(|resolved| resolved.per_member.get(member))
+        {
+            Some(cells) => classify_cells(cells, state, trust_reach, site_reachable),
+            None => classify_one_site(
+                i,
+                &effects,
+                &member_families,
+                &reach.states,
+                trust_reach,
+                &reachable,
+                &self_reached,
+            ),
+        }
+    };
 
     let mut out = Vec::new();
     // R3 (24A §3 — the kill gap): leaf nodes whose effect is a `Kills`. A `Kills` classifies
@@ -2135,13 +2353,35 @@ pub fn classify_with_why_diags(
             {
                 kills.insert(id);
             }
-            let sites = body_sites
-                .iter()
-                .map(|&site| InlineSite {
-                    node: site,
-                    class: classify_site(site.index()),
-                })
-                .collect();
+            // `30L` §7 — MEMBER-MAJOR, and that ordering is an obligation rather than a taste: an
+            // in-loop inlined call already ships `site N.M` records today, so member 0's body-site
+            // indices ARE the whole non-loop numbering and every later member appends
+            // (`30L:pin-probe-site-identity-unchanged`). A site-major flattening would renumber
+            // every record the corpus has already committed.
+            let sites = match crate::cfg::loop_evaluations(ast, cfg, id) {
+                crate::cfg::LoopEvaluations::Members(members) => {
+                    let mut per_member =
+                        Vec::with_capacity(members.len().saturating_mul(body_sites.len()));
+                    for member in 0..members.len() {
+                        per_member.extend(body_sites.iter().map(|&site| InlineSite {
+                            node: site,
+                            member: Some(u32::try_from(member).unwrap_or(u32::MAX)),
+                            class: classify_member(site.index(), member),
+                        }));
+                    }
+                    per_member
+                }
+                crate::cfg::LoopEvaluations::Once | crate::cfg::LoopEvaluations::Unenumerable => {
+                    body_sites
+                        .iter()
+                        .map(|&site| InlineSite {
+                            node: site,
+                            member: None,
+                            class: classify_site(site.index()),
+                        })
+                        .collect()
+                }
+            };
             out.push((id, SkipClass::InlineCall { sites }));
             continue;
         }
@@ -4499,7 +4739,7 @@ command__predict() {
         let mut diags: Vec<Diag> = Vec::new();
         // The same precompute classify runs (member families + effects + the deferred cmdsub-⊤
         // records), then the same post-mint finalize — so this exercises the real wiring.
-        let (_families, effects, cmdsub_tops, _backings) = resolve_node_effects(
+        let (_families, _spliced, effects, cmdsub_tops, _backings) = resolve_node_effects(
             &built.value,
             &value,
             &parsed.value,

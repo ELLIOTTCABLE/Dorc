@@ -4047,12 +4047,14 @@ mod spine_record_tests {
                     sites: vec![
                         InlineSite {
                             node: aggregate,
+                            member: None,
                             class: SkipClass::EstablishProbeAmbient(curl),
                         },
                         // A QUERY member keys the call exactly as an establish member does; the
                         // first repair matched only the establish arms and dropped this one.
                         InlineSite {
                             node: aggregate,
+                            member: None,
                             class: SkipClass::QueryResolvable {
                                 fact: query,
                                 valid: true,
