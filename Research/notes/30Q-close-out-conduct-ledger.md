@@ -127,6 +127,11 @@ unsoundness" — conductor chose the retrofit (dispatched). Then, TYPED: the inf
 is HELD for an explicit ack; everything not behind it (the retrofit lane, its fold, the
 tooling Sonnet, ceremony prep) stays greenlit.
 
+2026-08-23, TYPED: "`. /etc/os-release; . ./relative.sh` is inherently, unsolvably unsound …
+The only sound remedies are admin-sourced." — `30Q:ask-ship-explicit-targets-below-a-clobber`
+is SETTLED: nothing shipped below a blind act; the retrofit's E2 stands as built; no further
+notes or churn on it.
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
