@@ -20,7 +20,7 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 | `28Q:stage-0-ship-seam` | LANDED; `30La` closed the aggregate residue | `FORFEITS:forfeit-wrapped-case-bodied-book-verdict` (named, not scheduled) |
 | `28Q:stage-i-definition-factoring` | LANDED + crosschecked (`308`) | the three closure-custody precision xfails (`lane-load-plane-precision`) |
 | `28Q:stage-emission-snapshot-transplant` | LANDED | the emission planner build (`lane-emission-planner`) |
-| `28Q:stage-ii-closure-custody` | infrastructure LANDED; `30I` runtime projection LANDED through step 8 | policy half HUMAN (`ratify-committee-sparing-fence` · `28M:keep-lift-and-registration-verdicts (née §11)` · `28Q:pin-closure-membership-and-diamond`) |
+| `28Q:stage-ii-closure-custody` | infrastructure LANDED; `30I` runtime projection LANDED through step 8 | policy half: the sparing dialect is RULED (`30J` §12; build on `30J` §10's trigger); HUMAN: cross-family registration (`30J` §6.5) · `28Q:pin-closure-membership-and-diamond` |
 | `28Q:stage-effective-world-reach` (`30K`) | BUILT, reviewed, repaired | `30Kb` non-blocking residue (`register-and-steering-debt`) |
 | `28Q:stage-ii-bundle-and-artifact-close` (`30I` 5b–8 · `30L` · `30Ng`) | BUILT; corpus promoted | the handoff's lanes, re-shaped by `30P` (`the-build-backlog`) |
 | `309:stage-spine-census` · `stage-spine-transition` | BUILT | — |
@@ -120,10 +120,8 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 
 ## human-gated-rulings — what each unblocks
 
-On the burndown (unchanged): `unblock-starter-oracle-library` · `ratify-committee-sparing-fence`
-· `design-report-only-refusal-scope` · `design-atmost-completion-speech` ·
-`design-world-scope-surface` · `rule-incarnation-continuity-semantics` ·
-`sweep-conductor-veto-pile`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
+On the burndown: `design-report-only-refusal-scope` · `design-atmost-completion-speech` ·
+`design-world-scope-surface` · `rule-incarnation-continuity-semantics`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
 rule the relative=controller / absolute=target class selector (acked as a lean) · the
 controller-expectation/host-check pattern's UX and opaque review (`choice-verbatim-or-re-say`
 is RULED: verbatim, `30P:the-load-plane-stays-correct`). From the r30 close-out conduct

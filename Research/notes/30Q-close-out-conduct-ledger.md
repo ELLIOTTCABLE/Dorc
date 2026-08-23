@@ -525,6 +525,33 @@ resumed until the human restarts the harness. Dispatch-ready afterwards, in this
 Human-owned, unchanged: `tc-dollar-zero-is-script-anchored` · `ask-ship-explicit-targets-below-a-clobber`
 · `tc-t2-is-narrower-than-the-ladder-says` · the prose queue (incl. the fruit lane's item-4 paragraph).
 
+## §5h — `ratify-committee-sparing-fence` dissolved (2026-08-23; sibling sitting, Fable rubber-duck; branch `ai/r30-dialect-ruling` off `ai/r30-conduct`)
+
+Finding first (+SURE, measured at `oracle::build_dialect` · `core::coord::compare` · `core::contested`
+and in `28P`'s lane-close): the `28M` §4 fence was HELD by the human and never built; the FORFEITS
+row's "built-as-spiked" was wrong. As-built: same-name cross-unit shadowing withdraws the family
+(`ContestedFamilies`); the dialect is one whole-unit last-wins set per family. What `28M` framed
+as three verdicts was two already ruled (speech-through-the-dependency-tree: `30I` §2.3/§3.3/§3.4
++ `28Q:syn-closure-is-the-speaker`; keep/lift: `30J` P2) and one live residue — two MINTING
+speakers in one family at one frame (only reachable below an admin bless, since a second
+`__predict` is a same-name shadow). A conductor mis-step recorded: the first read claimed the
+fence was a corollary of `pin-two-position-sparing`; it is orthogonal (one family drifting across
+frames vs two speakers at one frame), withdrawn in-sitting.
+
+**RULED [gentle ack, human-typed understanding]** `30J:rul-dialect-is-the-live-speakers-at-the-backing-frame`:
+a dialect is a property of one speaker closure per family; a comparison consults exactly the
+closure whose definition is live at the backing's frame; the claim contributes a token only;
+swapping the live definition swaps the dialect; two closures' words never pool. No fence; the
+two-position pin is subsumed (the backing's frame decides). Build rides `30J` §10's trigger; the
+`28T` mini-model is the proof home. Still open, unscheduled: cross-family registration (`30J` §6.5).
+
+Encoded: `30J` §12 (+ header, §0, §2.4, §3.1, §6.3, §8, §9, §10) · `28Q` §2/§5/§8/§9 (pins 5, 6,
+12 retired) · `28M` (header, §4 rewritten, §6 re-priced, §7, §8, §10, §11 → registration only) ·
+`28K` bitem4 + exclusions · `30I` neighbouring-work · FORFEITS (both sparing-dialect rows
+dropped) · ANALYZER-NEEDS `an-selector-dialect` · `spike/CLAUDE.md sparing-algebra` ·
+`analysis/CLAUDE.md` · `oracle/CLAUDE.md` · `30O` · `Research/README` · the root burndown item
+removed.
+
 ## §5 — Handoff pointers (for a successor, if the ceremony rolls over)
 
 `30O:sched-round-close-ceremony` priorities stand; add: the loop lane's iteration-aware route

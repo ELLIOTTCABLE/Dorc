@@ -82,7 +82,8 @@ and carries the license-contamination map.
 - **Oracle loading & name-resolution (custody, committee speech, one-name-two-definitions)** —
   `plans/28K` + `plans/28M` (specs) over the build/resume ledgers `notes/28O`/`28P`;
   same-role-name collisions fail-fast pre-network (the `28Q` §4 rider; priced background
-  `notes/28U` (née 293) §5).
+  `notes/28U` (née 293) §5). Whose selector vocabulary a survival comparison reads, and
+  which marks mint it: **`plans/30J`** (per speaker closure, at the backing's frame).
 - **Static loading & bundle emission (cwd parity, transitive dependencies, plan forms,
   source maps)** — **`plans/30I`** (THE design; one load model feeding analysis,
   explicit bundles, multipart plans, and full flattening; its §13 is the xfail
