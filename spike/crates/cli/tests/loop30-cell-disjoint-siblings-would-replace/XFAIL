@@ -1,0 +1,5 @@
+XFAIL: cell-blind self-reach (`Reach::is_pristine`) walls the shared `install_pkg` region to GUARD
+even though its establishes are provably disjoint from the sibling direct mutator's cells; a
+cell-aware self-reach would let it REPLACE instead. FORFEITS row:
+`forfeit-cell-blind-self-reach-walls-loop-siblings`; flagged widening:
+`30Qa:tc-self-reach-cell-blind-widening`. Greens once that widening lands and this case is promoted.

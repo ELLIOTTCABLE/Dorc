@@ -1,0 +1,56 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ab113127bc0dd1a01b80387b09fc48ec12227bd78afaaa8aa1497c78b3f5d1f0 sites=4 @@dorc@@\n'
+# site 0.0: sm.dorc.Package:libnginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'libnginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 0.1: sm.dorc.Package:libcurl@installed
+apt_get__is_converged 'install' '-y' 'libcurl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1.0: sm.dorc.Package:nginx@installed
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1.1: sm.dorc.Package:curl@installed
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1.1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# TARGET (REDS sibling of `loop30-direct-and-called-mutators-share-a-loop-body`,
+# `FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`): byte-identical CFG, oracles, mocks,
+# and convergence facts to that green case — only this file's expected outcome differs.
+#
+# CFG shape: a top-level `for` over two literal words; its body holds one direct command leaf AND
+# one call whose spliced body holds one command leaf (the region). All four cells converged; the two
+# families are cell-disjoint (`lib*` versus bare).
+#
+# TODAY: the region's own per-member establishes reach the direct mutator back over the loop's edge,
+# and self-reach (`Reach::is_pristine`) is CELL-BLIND — it cannot see that `lib$pkg` and `$pkg` never
+# alias — so disjointness buys nothing and the direct mutator's running walls the region down to
+# GUARD (`30Qa:fnd-self-reach-is-cell-blind-across-the-back-edge`).
+#
+# TARGET: a cell-AWARE self-reach (`30Qa:tc-self-reach-cell-blind-widening`, flagged not built) would
+# see the direct mutator's establish and the region's read/establish as provably-disjoint cells, so
+# the region's self-reach stays pristine and the shared `install_pkg` definition takes full elision
+# (Replace) instead of Guard — observed as: no runtime check ships at apply-time, and the direct
+# mutator is the ONLY thing in the run-set (`expected.ran`, this case).
+install_pkg() {
+   true   # dorc: elided [apt-get install -y "$1"] (already converged / dead branch)
+}
+
+for pkg in nginx curl; do
+   apt-get install -y "lib$pkg"
+   install_pkg "$pkg"
+done
