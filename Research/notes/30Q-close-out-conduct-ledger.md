@@ -57,7 +57,7 @@
 
 | lane | branch | note | builder shape | status |
 |---|---|---|---|---|
-| `lane-loop-propagation` | `ai/r30-lane-loop` | loop lane report | Opus; checkpoint after census-mint | CHECKPOINT RULED 2026-08-22 (census landed `f095ad43`, pin promoted; seam approved member-major; reds owed first) |
+| `lane-loop-propagation` | `ai/r30-lane-loop` → `-2` | loop lane report | Opus ×2 (census+value plane; then the licence) | FIRST BUILDER STOPPED GREEN at `69977343` (census, member value plane, member-keyed routes, four `loop30-*` reds; licence unbuilt — stop ENDORSED: the floor may move only after per-member facts exist); LICENCE BUILDER DISPATCHED 2026-08-22 |
 | `lane-emission-planner` | `ai/r30-lane-planner` → `-exec` | planner lane report | Opus MAP → ruling → EXECUTE | MAP FOLDED-IN-BRANCH `0c38045d` (30Pc repair + 2 evidence cells landed); RULED; EXECUTE DISPATCHED 2026-08-22 |
 | `lane-load-plane-precision` | `ai/r30-lane-load` → `-a`, `-b` (parallel) | load lane report | Opus MAP → ruling → EXECUTE-A ∥ EXECUTE-B | MAP FOLDED-IN-BRANCH `d2b47654` (5 red pins, glob retarget, plain-sh e2e red); RULED; A and B DISPATCHED 2026-08-22 |
 | `lane-influence-carriage` | — | influence lane report | Opus EXECUTE over the merged tip (scout census banked) | WAITING on the fold |
