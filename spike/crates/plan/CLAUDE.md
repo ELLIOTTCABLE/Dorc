@@ -292,6 +292,17 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   read only beside its OWN certification.
 - **wire-records** — probe results move to the `262` §2 records lane at
   block-rebuild (partial deriv-family ⇒ wall-total; additive keys).
+- **the-in-loop-floor-is-route-aware** (`30L` §7; built `30Qa`) — `floored_in_loop`
+  still binds every per-SITE leaf decision; it lifts ONLY for a route carrying a member
+  ORDINAL from a closed region population, because that edit lands once at the authored
+  definition, universally quantified over every member. The ordinal IS the fence: a
+  route the census gave no ordinal keeps the floor. Members are OVERLAYS, never clones —
+  one lowered `cfg_node`, N route instances, N `InlineSite` entries MEMBER-MAJOR, and
+  `site N.M` sub-indices that only ever append to member 0's non-loop numbering (in-loop
+  inline calls shipped `site 0.0` before this lane; that identity is pinned). The census
+  counts members independently of argv; duplicate `(site, fact)` establishes keep
+  refusing (ruled, `30Q`); `ship_auto`'s subject vector is the whole node population
+  (`node_subjects`), byte-identical to the single fact outside a loop.
 
 ## Determinism + precision tests
 

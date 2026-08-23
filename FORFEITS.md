@@ -161,19 +161,21 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   death walls the footprint total. FORFEITS: survival sparing whenever a kind-owner
   factors helpers (walls, never corruption). CAPTURE: the `HelperIndex` extension —
   staged as an emission-stage rider. REVISIT: that stage's fold.
-- **forfeit-loop-populations-open-until-propagation** — RULE (`30L` §7, staged by
-  design): loop-generated invocation populations are typed `Open` today — a
-  literal `for pkg in nginx curl; do install_pkg "$pkg"; done` contributes an
-  Open census and its regions Run — even though the member identity, the
-  `IterationSlot` axis, and the settlement's ordered member machinery are all
-  representation-ready. FORFEITS: every loop-member elision/guard until the
-  propagation lane lands; the r21 `20S` build proved the value real. CAPTURE:
-  the loop-propagation lane turns finite fully-enumerated literal populations
-  `Closed(members)` as a value-plane change (`p-x-loop-population-closes-over-
-  literal-members` is the standing red pin; identity/witness shapes may not be
-  re-keyed — `30L:pin-loop-types-need-no-rekey`). BACK-OUT: low by construction
-  (that immutability is what the staging bought). REVISIT: the propagation lane,
-  wanted soon per the `30L` charter.
+- **forfeit-cell-blind-self-reach-walls-loop-siblings** — RULE (as-built; r21's
+  `self_reached = Reach::is_pristine`, measured by the loop-propagation lane): self-reach
+  is CELL-BLIND — "nothing reached me at all" — so inside a closed member loop a region's
+  own member establishes reach a sibling DIRECT mutator back over the loop edge, and
+  cell-disjointness between the two buys nothing: the direct mutator runs, walls the
+  region, and the region takes GUARD where a cell-aware self-reach would let it REPLACE.
+  FORFEITS: full elision for the mixed loop body (a direct in-loop mutator beside a
+  called one); `loop30-direct-and-called-mutators-share-a-loop-body` greens as Guard.
+  CAPTURE: widen `is_pristine` to cell-aware self-reach — a licence widening, its own
+  lane (`tc-self-reach-cell-blind-widening`, loop lane report). BACK-OUT: low
+  (additive). REVISIT: the next settlement touch. REDS: OWED — a Replace-asserting
+  variant of that case, to mint at the next dispatch (the loop lane landed under a
+  dispatch hold). Residue that is NOT row-shaped, recorded in `30Q`: nested calls under a
+  member loop stay unbound (⊤ ⇒ run); duplicate `(site, fact)` establishes refuse (ruled);
+  a loop extent that rebinds its iteration variable refuses the member binding wholesale.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)

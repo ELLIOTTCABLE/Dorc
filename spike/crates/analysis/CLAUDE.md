@@ -52,8 +52,20 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (structural walk, then precise failure→exit edge materialization). Loops are
   real cycles (back-edges); a `while`/`until` condition is `StatusIterated`
   (errexit-exempt, blocks unconditionally); `if`/`elif` conditions are
-  `StatusRelaxable`; loop bodies are flagged `in_loop_body` (the structural floor
-  `plan` honors — no in-loop license).
+  `StatusRelaxable`; loop bodies are flagged `in_loop_body` (the per-SITE floor
+  `plan` honors; the one thing that lifts it is a universally-quantified region edit
+  over a closed member population — `plan/CLAUDE.md the-in-loop-floor-is-route-aware`).
+- **member-population-has-one-enumerating-seat** (`30L` §7; built `30Qa`) —
+  `cfg::loop_evaluations` is the ONE answer to "which members does this loop have":
+  the region census takes the COUNT, the value plane the member TEXTS; a second
+  enumerator is a licence surface that can disagree with itself. The member binding
+  is VOID wherever the loop's EXTENT rebinds the iteration variable
+  (`value::loop_extent_rebinds`; CFG-driven, because a spliced body is in-loop while
+  its span lives in the definition, so an AST-subtree walk sees the call and nothing
+  inside it) — measured: a `pkg=wombat` in the body made the probe measure cells the
+  command never touched, then replace a live mutator. A member's class comes from its
+  OWN cells (`classify_cells`); the node's union answers `MustRun`, the floor a
+  refusal falls to.
 - **pure-kernel** — ordered collections only; no clock/RNG/fs/net, directly or
   transitively; that purity is what lets DST run with no DI ceremony.
 - **funcenv-reads-source-literal-plane-only** (`28K` §2) — the function-environment
