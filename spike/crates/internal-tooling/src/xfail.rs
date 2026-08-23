@@ -343,6 +343,108 @@ pub const PINS: &[Pin] = &[
         horizon: Horizon::Scheduled("end-of-r30"),
         state: PinState::Live,
     },
+    Pin {
+        name: "p-x-non-exact-load-is-never-re-pointed",
+        trigger: "`30P:law-no-unsoundness-below-a-blind-act` + `rul-load-head-is-exact-or-havoc`: \
+                  re-pointing or pasting a `.` whose RESOLUTION is unknown changes which file the \
+                  host loads, so a rewrite needs EXACT as well as explicit. The emitter gates on \
+                  `BookLoad::explicit` alone today (`artifact::operand_is_explicit`), and \
+                  explicitness answers a different question — did the AUTHOR name the target",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-non-exact-load-ships-no-copy",
+        trigger: "`30P:law-no-unsoundness-below-a-blind-act`, the nothing-shipped clause \
+                  [human LEAN 2026-08-22, veto-eligible]: a copy of a file Dorc cannot prove the \
+                  author referenced is engine selection. A non-EXACT target is mirrored beside the \
+                  plan today, under the `30Q` §3 D2 re-cut that cwd-⊤ costs authority alone; the \
+                  law reverses that re-cut",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-file-test-refuses-under-unknown-cwd",
+        trigger: "`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`, the clause the \
+                  code does not yet honour: `dec-decidable-set-v0`'s `[ -f <loadable> ]` entry \
+                  decides TRUE only where the cwd at that line is DETERMINATE. `file_test` reads \
+                  no cwd state, so below a `cd` it asserts a host fact from controller state, \
+                  masks an arm dead, and can hide a mutator — a wrong-elision route with no \
+                  downstream repair",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-file-test-refuses-below-a-blind-load",
+        trigger: "the same entry, below the other cwd-⊤ act \
+                  (`30P:law-no-unsoundness-below-a-blind-act`: no cwd-dependent decision below a \
+                  line whose effect on the shell Dorc cannot see). Its own pin because the two \
+                  reach the gate by different seeds — a `cd` is recognized by its command word, a \
+                  blind `.` by its head being unheld",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-an-unheld-literal-load-havocs-the-cwd",
+        trigger: "`30P:law-no-unsoundness-below-a-blind-act` + `30Qc:rul-included-is-as-opaque-as-\
+                  unresolvable`: the cwd-clobber seed is keyed on OPERAND EVALUABILITY, so the \
+                  law's own example — `. /etc/os-release`, a literal the controller resolves \
+                  perfectly and holds no bytes for — seeds nothing, and a relative `.` below it \
+                  still binds. The seed belongs on the site being UNRESOLVABLE, which is the same \
+                  door an acquired plain-sh inclusion arrives at",
+        horizon: Horizon::Scheduled("end-of-r30"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-test-literal-narrows-a-variable",
+        trigger: "`FORFEITS:forfeit-value-narrowing-by-test` (`30Pd` §5, pencilled by the human \
+                  2026-08-22 as the lifted target): per-path refinement of a ⊤ value by \
+                  `test`/`[`/`case` literals, with `|| exit` making the refinement unconditional \
+                  below. Wants per-path value states in `analysis::value` — a lattice change with \
+                  the `30Na` monotonicity hazard",
+        horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-assertion-makes-a-dynamic-load-exact",
+        trigger: "`FORFEITS:forfeit-value-narrowing-by-test`, its load-plane consumer: with the \
+                  variable narrowed, a `$VAR`-headed `.` becomes EXACT under \
+                  `30P:rul-load-head-is-exact-or-havoc` and carries authority. Same capture, \
+                  different consumer — the load plane reads the narrowed value through \
+                  `SourceLiteralPlane`, so it lands the moment the plane can say",
+        horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-exact-check-narrows-file-contents",
+        trigger: "`FORFEITS:forfeit-file-content-facts-from-exact-checks`: a read-only check with \
+                  exact semantics (`cmp -s`, `grep -Fx`) mints no contents fact, so the \
+                  verify-then-source idiom stays a blind act. Wants a contents cell in the value \
+                  plane minted on the check's success path, with the stdlib predicts that model \
+                  those tools at parity",
+        horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-known-write-establishes-sourced-contents",
+        trigger: "`FORFEITS:forfeit-content-establishment-by-known-write`: a heredoc redirect or a \
+                  `cp` of book bytes establishes no contents fact a later `.` can consume, so the \
+                  deploy-then-source env-file pattern is a blind act. Wants the write to mint the \
+                  same contents cell the check above reads",
+        horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-dollar-zero-expansion-survives-a-blind-load",
+        trigger: "`FORFEITS:forfeit-shell-parity-immunity-model` (`30Pd` §3 `mech-never-top`): `$0` \
+                  is immutable for the shell's life and a parameter expansion runs no command, so \
+                  a `${0%/*}`-headed load is immune to what a blind act did — under ABSOLUTE \
+                  anchoring. Under a relative book path the operand is still cwd-relative, which \
+                  is `30Q` §3's open `tc-dollar-zero-is-script-anchored`, the HUMAN's; modelling \
+                  sh's own immunities in the funcenv is what greens it either way",
+        horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
+        state: PinState::Live,
+    },
 ];
 
 /// The pin registered under `name`.

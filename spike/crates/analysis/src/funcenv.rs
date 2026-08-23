@@ -5457,4 +5457,226 @@ mod tests {
         assert_eq!(env.loads().speaker_edges(), BTreeSet::new());
         assert_eq!(env.loads().selection_edges(), BTreeSet::new());
     }
+
+    // ── TABLE 8: no unsoundness below a blind act
+    //    (`30P:law-no-unsoundness-below-a-blind-act`) ──
+
+    /// THE SEED IS KEYED ON THE WRONG QUESTION — the law's own example, measured.
+    ///
+    /// `. /etc/os-release` is a BLIND ACT: it runs arbitrary sh in this shell. Its operand
+    /// evaluates perfectly, so [`load_head`] answers `Ok`, and the cwd-clobber seed in
+    /// [`load_sites`] takes only heads that answer `Err` — so the line clobbers nothing and a
+    /// relative `.` below it still resolves and still BINDS. Under the law nothing below a blind
+    /// act carries authority, and the seed belongs on the site being UNRESOLVABLE (which is the
+    /// same door an acquired plain-sh inclusion arrives at —
+    /// `30Qc:rul-included-is-as-opaque-as-unresolvable`).
+    ///
+    /// CFG SHAPE: two straight-line top-level `.`s — first a literal ABSOLUTE operand naming a
+    /// file the unit holds no bytes for, then a literal RELATIVE operand naming one it does — with
+    /// the binding read at the unit's exit below both.
+    #[test]
+    fn a_load_the_controller_does_not_hold_havocs_the_cwd_below_it() {
+        let book = ". /etc/os-release\n. ./lib.sh\n";
+        let (table, lib) = sourceable(book);
+        let (solved, exit) = solve_book(book, &table);
+        assert_eq!(
+            solved.binding_before(exit, ROLE),
+            Flat::Elem(Binding::Defined(lib)),
+            "interim: the second load binds, because the first seeded no clobber"
+        );
+        internal_tooling::xfail::xfail_until("p-x-an-unheld-literal-load-havocs-the-cwd", || {
+            assert_eq!(
+                solved.binding_before(exit, ROLE),
+                Flat::Top,
+                "the blind act may have cd'd, so the relative load below it names no file"
+            );
+        });
+    }
+
+    /// The decidable set's `[ -f <loadable> ]` entry asserts a HOST fact from CONTROLLER state,
+    /// and it is sound only under cwd-parity with the shipped manifest — so below a `cd` it must
+    /// refuse (`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`, the clause the code
+    /// does not yet honour). [`file_test`] reads no cwd state at all.
+    ///
+    /// `cd` is a blessed target-state-pure builtin and forms no wall, so NOTHING ELSE catches a
+    /// wrong TRUE here: it masks the short-circuit edge dead, which makes a conditional definition
+    /// unconditional and can erase the arm's bytes.
+    ///
+    /// CFG SHAPE: a top-level `cd` of a ⊤ operand, then `[ -f <loadable> ] && <funcdef>` — an
+    /// `&&` whose left arm IS the decisive command node and whose right arm binds the role.
+    #[test]
+    fn a_file_test_below_a_cd_decides_nothing() {
+        let book = "cd \"$D\"\n[ -f lib.sh ] && yum__is_converged() { :; }\n";
+        let (table, _) = sourceable(book);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(folds, 1, "interim: the short-circuit edge is masked dead");
+        internal_tooling::xfail::xfail_until("p-x-file-test-refuses-under-unknown-cwd", || {
+            assert_eq!(folds, 0, "an unknown cwd decides no filesystem test");
+            assert_eq!(
+                binding,
+                Flat::Top,
+                "so both arms live and the definition is a maybe"
+            );
+        });
+    }
+
+    /// The same entry below the OTHER cwd-⊤ act. Its own cell because the two reach the gate by
+    /// different seeds: a `cd` is recognized by its command word, a blind `.` by its head naming
+    /// nothing the controller holds.
+    ///
+    /// CFG SHAPE: a top-level `.` of a ⊤ operand, then `[ -f <loadable> ] && <funcdef>`.
+    #[test]
+    fn a_file_test_below_a_blind_load_decides_nothing() {
+        let book = ". \"$SITE_PROFILE/rc\"\n[ -f lib.sh ] && yum__is_converged() { :; }\n";
+        let (table, _) = sourceable(book);
+        let (binding, folds) = folded(book, &table);
+        assert_eq!(folds, 1, "interim: the short-circuit edge is masked dead");
+        internal_tooling::xfail::xfail_until("p-x-file-test-refuses-below-a-blind-load", || {
+            assert_eq!(folds, 0, "a blind act's cwd damage is the same damage");
+            assert_eq!(binding, Flat::Top);
+        });
+    }
+
+    // ── TABLE 9: the kernel punts `30Pd` §5 pencilled, encoded in sh and RED
+    //    (`30P:rul-forfeits-carry-reds`) ──
+
+    /// `FORFEITS:forfeit-value-narrowing-by-test` — a `test` on a ⊤ value does not refine that
+    /// value on its arms, and `|| exit` does not make the refinement unconditional below.
+    ///
+    /// Read at [`SourceLiteralPlane`] because that is the window the load plane and the oracle
+    /// argparse both consume: a value this plane cannot say is a site the engine cannot key.
+    ///
+    /// CFG SHAPE: a top-level assignment from a ⊤ variable, an `||` whose right arm is `exit` (so
+    /// the failing path is dead), and a described site below reading the same variable.
+    #[test]
+    fn an_equality_assertion_narrows_its_variable_below_itself() {
+        let book = "IMAGE=$UPSTREAM\n[ \"$IMAGE\" = nginx ] || exit 4\ndocker run \"$IMAGE\"\n";
+        let mut interner = Interner::default();
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = cfg::build(&ast).value;
+        let value = crate::value::analyze(&cfg, &ast, &mut interner);
+        let plane = SourceLiteralPlane::new(&value, &interner);
+        let site = command_at(&cfg, &ast, book, "docker run \"$IMAGE\"");
+        assert_eq!(
+            plane.variable_text(site, "IMAGE"),
+            None,
+            "interim: the assertion refines nothing, so the site's argv stays ⊤"
+        );
+        internal_tooling::xfail::xfail_until("p-x-test-literal-narrows-a-variable", || {
+            assert_eq!(
+                plane.variable_text(site, "IMAGE").as_deref(),
+                Some("nginx"),
+                "the dead failure path makes the equality unconditional below it"
+            );
+        });
+    }
+
+    /// The load-plane consumer of the same capture: with the variable narrowed, a `$VAR`-headed
+    /// `.` is EXACT (`30P:rul-load-head-is-exact-or-havoc`) and its definitions bind.
+    ///
+    /// CFG SHAPE: an assignment from a ⊤ variable, an asserting `||`-`exit`, then a top-level `.`
+    /// whose operand is one double-quoted word of that variable plus a literal tail.
+    #[test]
+    fn an_assertion_makes_a_dynamic_load_head_exact() {
+        let book = "LIB=$OPS_LIB\n[ \"$LIB\" = . ] || exit 3\n. \"$LIB/lib.sh\"\n";
+        let (table, lib) = sourceable(book);
+        let (solved, exit) = solve_book(book, &table);
+        assert_eq!(
+            solved.binding_before(exit, ROLE),
+            Flat::Top,
+            "interim: the head is a point havoc, so the load binds nothing"
+        );
+        internal_tooling::xfail::xfail_until("p-x-assertion-makes-a-dynamic-load-exact", || {
+            assert_eq!(
+                solved.binding_before(exit, ROLE),
+                Flat::Elem(Binding::Defined(lib)),
+                "an authored assertion is the EXACT witness the load head wanted"
+            );
+        });
+    }
+
+    /// `FORFEITS:forfeit-file-content-facts-from-exact-checks` — a read-only check with exact
+    /// semantics mints no contents fact, so the verify-then-source idiom stays a blind act.
+    ///
+    /// CFG SHAPE: a `cmp -s` whose failure path is `exit`, then a top-level `.` of the same
+    /// absolute path.
+    #[test]
+    fn an_exact_content_check_stops_a_load_from_being_blind() {
+        let book = "cmp -s /etc/os-release ./expect.txt || exit 3\n. /etc/os-release\n";
+        let (table, _) = sourceable(book);
+        let (solved, _) = solve_book(book, &table);
+        assert_eq!(
+            solved.unresolvable_loads().len(),
+            1,
+            "interim: the check mints no contents fact, so the load walls"
+        );
+        internal_tooling::xfail::xfail_until("p-x-exact-check-narrows-file-contents", || {
+            assert!(
+                solved.unresolvable_loads().is_empty(),
+                "contents proven equal to authored bytes: no havoc, no wall"
+            );
+        });
+    }
+
+    /// `FORFEITS:forfeit-content-establishment-by-known-write` — a write of book bytes establishes
+    /// no contents fact a later `.` can consume, so the deploy-then-source env-file pattern is a
+    /// blind act too.
+    ///
+    /// CFG SHAPE: a top-level heredoc redirect, then a top-level `.` of the path it wrote.
+    #[test]
+    fn a_known_write_stops_a_later_load_from_being_blind() {
+        let book = "cat >/etc/app/env <<'EOF'\nAPP_PORT=8080\nEOF\n. /etc/app/env\n";
+        let (table, _) = sourceable(book);
+        let (solved, _) = solve_book(book, &table);
+        assert_eq!(
+            solved.unresolvable_loads().len(),
+            1,
+            "interim: the write mints no contents fact, so the load walls"
+        );
+        internal_tooling::xfail::xfail_until(
+            "p-x-known-write-establishes-sourced-contents",
+            || {
+                assert!(
+                    solved.unresolvable_loads().is_empty(),
+                    "the contents are the book's own bytes: no havoc, no wall"
+                );
+            },
+        );
+    }
+
+    /// `FORFEITS:forfeit-shell-parity-immunity-model` — the funcenv models none of sh's own
+    /// immunities, so a `${0%/*}`-headed load loses its authority to a blind act above it even
+    /// though `$0` is immutable and a parameter expansion runs no command.
+    ///
+    /// The immunity is real only under ABSOLUTE anchoring (`30Pd` §3 `mech-never-top`); under the
+    /// relative book path this cell uses, the operand stays cwd-relative and the answer is
+    /// `30Q` §3's open `tc-dollar-zero-is-script-anchored`, which is the HUMAN's.
+    ///
+    /// CFG SHAPE: a top-level `.` of a ⊤ operand, then a top-level `.` whose operand is one
+    /// double-quoted word of `${0%/*}` plus a literal tail, over a book path with no directory.
+    #[test]
+    fn a_script_relative_load_survives_a_blind_act_above_it() {
+        let book = ". \"$SITE_PROFILE/rc\"\n. \"${0%/*}/lib.sh\"\n";
+        let cwd = dorc_core::loadpath::Cwd::default();
+        let mut table =
+            DefinitionTable::rooted_at(cwd.clone(), super::ScriptSpellings::of("book.sh", &cwd));
+        let lib = add_def(&mut table, 0, ROLE);
+        table.set_loadable("lib.sh", flat(vec![lib]));
+        let (solved, exit) = solve_book(book, &table);
+        assert_eq!(
+            solved.binding_before(exit, ROLE),
+            Flat::Top,
+            "interim: the operand is cwd-relative, so the blind act above costs it its authority"
+        );
+        internal_tooling::xfail::xfail_until(
+            "p-x-dollar-zero-expansion-survives-a-blind-load",
+            || {
+                assert_eq!(
+                    solved.binding_before(exit, ROLE),
+                    Flat::Elem(Binding::Defined(lib)),
+                    "`$0` is immutable and the expansion runs no command"
+                );
+            },
+        );
+    }
 }

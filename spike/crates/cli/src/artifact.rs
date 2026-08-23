@@ -2047,4 +2047,92 @@ mod tests {
         assert_eq!(placeable(""), None);
         assert_eq!(placeable("."), None);
     }
+
+    // ── No unsoundness below a blind act (`30P:law-no-unsoundness-below-a-blind-act`) ──
+
+    /// The world both cells below settle a form over: a BLIND ACT — a `.` of a file the controller
+    /// holds no bytes for, which runs arbitrary sh in the book's own shell — standing above an
+    /// ordinary literal dorc-lang load.
+    ///
+    /// The second operand is LITERAL, so `operand_is_explicit` answers true and every rewrite tier
+    /// is open to it. What it is not is EXACT: the blind act may have moved the working directory,
+    /// so which file `./wombat.dorc.sh` names on the host is unknown, and rewriting a reference
+    /// whose resolution is unknown changes which file the host loads.
+    fn below_a_blind_act(
+        request: FormRequest,
+        posture: StreamPosture,
+    ) -> Result<super::Selection, FormRefusal> {
+        book_sourced(
+            ". /etc/os-release\n. ./wombat.dorc.sh\nwombat sync a.conf\n",
+            vec!["wombat.dorc.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            request,
+            posture,
+        )
+    }
+
+    /// TARGET: the line stays VERBATIM in every form — not re-pointed at a bundle, not replaced by
+    /// one (`30P:the-load-plane-stays-correct`: "a literal `.` below a `cd`/havoc is NOT pasted and
+    /// NOT re-pointed … explicitness alone never licenses a rewrite — the resolution must be EXACT
+    /// too").
+    ///
+    /// The gate at every rewrite seat is `BookLoad::explicit` alone, and explicitness answers a
+    /// DIFFERENT question — did the author name this target — which this operand passes.
+    ///
+    /// CFG SHAPE: two straight-line top-level `.`s, each the whole of its own line with neither a
+    /// redirect nor a leading assignment (so the second is inside `floor30-inline-dot-boundary`'s
+    /// measured absorbable cell), and the described mutator below both.
+    #[test]
+    fn a_load_below_a_blind_act_is_never_re_pointed() {
+        let multipart = below_a_blind_act(FormRequest::Auto, StreamPosture::Materializable)
+            .expect("a relative dependency is placeable");
+        let one_stream = below_a_blind_act(FormRequest::Auto, StreamPosture::TerminalRender)
+            .expect("auto always lands somewhere");
+        assert_eq!(multipart.imports().len(), 1, "interim: re-pointed");
+        assert_eq!(
+            one_stream.form(),
+            ArtifactForm::Flattened,
+            "interim: pasted"
+        );
+        internal_tooling::xfail::xfail_until("p-x-non-exact-load-is-never-re-pointed", || {
+            assert!(
+                multipart.imports().is_empty(),
+                "multipart: the author's own operand is what finds the file: {:?}",
+                multipart.imports()
+            );
+            assert_eq!(
+                one_stream.form(),
+                ArtifactForm::PreservedBookTree,
+                "one stream: absorbing the bundle would replace the line outright"
+            );
+        });
+    }
+
+    /// TARGET: and nothing is SHIPPED for it — no bundle, no mirror
+    /// (`30P:law-no-unsoundness-below-a-blind-act`, the nothing-shipped clause: a copy of a file
+    /// Dorc cannot prove the author referenced is engine selection). Under the `30Q` §3 D2 re-cut
+    /// a cwd-⊤ load kept its acquisition and its mirror and lost only its binding authority; the
+    /// law reverses that, and this is the veto-eligible half.
+    ///
+    /// Its own cell rather than an assertion on the one above, because the two green at different
+    /// seats: the rewrite gate is `BookLoad`'s, the carriage gate is `bundle_files`/`mirrored_files`.
+    ///
+    /// CFG SHAPE: as above.
+    #[test]
+    fn a_load_below_a_blind_act_ships_no_copy() {
+        let multipart = below_a_blind_act(FormRequest::Auto, StreamPosture::Materializable)
+            .expect("a relative dependency is placeable");
+        assert_eq!(multipart.dependencies.len(), 1, "interim: the bundle ships");
+        internal_tooling::xfail::xfail_until("p-x-non-exact-load-ships-no-copy", || {
+            assert!(
+                multipart.dependencies.is_empty(),
+                "nothing is shipped on a guess about where the run stands: {:?}",
+                multipart
+                    .dependencies
+                    .iter()
+                    .map(|file| file.path.as_str())
+                    .collect::<Vec<_>>()
+            );
+        });
+    }
 }
