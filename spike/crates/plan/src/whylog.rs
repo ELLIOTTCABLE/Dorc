@@ -1319,9 +1319,8 @@ fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool, 
     let body = line.strip_prefix("apply leaf=")?;
     let (leaf, rest) = body.split_once(" disposition=")?;
     let (disposition, tail) = rest.split_once(" predicted=")?;
-    // CLOSED grammar, and the field is OPTIONAL on the read side whatever the writer's switch says:
-    // a durable written before the export existed, or by a build with it off, is ordinary input and
-    // must not refuse. An absent or unrecognised token rehydrates at the most-influenced point.
+    // OPTIONAL on the read side whatever the writer's switch says — a durable written with the
+    // export off is ordinary input and must not refuse; absent or unknown reads most-influenced.
     let (predicted, account) = match tail.split_once(" account=") {
         Some((predicted, account)) => (predicted, DurableAccount::rehydrated(Some(account))),
         None => (tail, DurableAccount::rehydrated(None)),

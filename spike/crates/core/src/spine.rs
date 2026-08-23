@@ -2186,9 +2186,9 @@ mod tests {
     #[test]
     fn the_spine_stores_the_account_a_mint_supplied_and_computes_none() {
         // `309:rul-spine-preserves-never-stamps`, and the REWRITE of the test that pinned the
-        // opposite: the two records below differ only in what their own constructors joined, which
-        // a run-wide stamp made unobservable at the reader. The phase is WIDENED, never minted —
-        // the intake mint has exactly one caller (`the_influence_grade_has_exactly_one_mint`).
+        // opposite: the two records differ only in what their own mints joined, which a run-wide
+        // stamp made unobservable. The phase is WIDENED, never minted (the intake mint has one
+        // caller — `the_influence_grade_has_exactly_one_mint`).
         let phase = crate::influence::Influenced::authored_before_contact(()).widen();
         let mut spine = Spine::<TestPlane>::new();
         spine.set_disposition(SpineDisposition::minted(

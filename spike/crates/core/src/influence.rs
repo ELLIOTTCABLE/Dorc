@@ -449,8 +449,7 @@ mod tests {
 
     #[test]
     fn the_account_chain_climbs_and_never_descends() {
-        // `306b` §1a at the ACCOUNT tier: every pair joins to the higher point in both argument
-        // orders, which is the whole of "no operation lowers a grade" once the combinator is `max`.
+        // `306b` §1a at the ACCOUNT tier: every pair joins to the higher point, both orders.
         let points = [
             InfluenceAccount::authored_before_contact(),
             InfluenceAccount::of_phase(phase()),
@@ -484,8 +483,7 @@ mod tests {
 
     #[test]
     fn the_join_answers_the_same_whatever_order_the_contributors_arrive() {
-        // `pin-set-meet-order-independence`: a fold over a contributor set is the shape every
-        // conversion seat uses, so the answer must not depend on which contributor is the head.
+        // `pin-set-meet-order-independence`, over the fold shape every conversion seat uses.
         let authored = InfluenceAccount::authored_before_contact();
         let influenced = InfluenceAccount::of_phase(phase());
         let untracked = InfluenceAccount::untracked();

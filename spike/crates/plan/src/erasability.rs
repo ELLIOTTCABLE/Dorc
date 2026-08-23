@@ -115,11 +115,9 @@ pub fn canonical_decision(
         // EXEMPT as DERIVED: a pure function of the fields above plus `(src, ast)` and the
         // defensive-emission input, all of which reach the byte-exact `render.apply` at (3).
         render: _,
-        // EXEMPT: influence is causal accounting ORTHOGONAL to authority (`306b` §10) and is ruled
-        // non-durable at `ExcludedContent::InfluenceGrade`. The digest answers "does this
-        // reproduce" about the decision plane; two runs that decided identically from differently
-        // -standing inputs reproduce identically, and folding the account in would move the
-        // durable's bytes for a field the durable is not allowed to keep.
+        // EXEMPT: influence is causal accounting ORTHOGONAL to authority (`306b` §10), ruled
+        // non-durable at `ExcludedContent::InfluenceGrade`. Two runs that decided identically from
+        // differently-standing inputs DO reproduce identically, which is what the digest asks.
         account: _,
     } = plan;
     let mut out = String::new();

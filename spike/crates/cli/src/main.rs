@@ -1220,10 +1220,8 @@ fn run(
                 dorc_oracle::reserved::role_family(name).map(|(base, _)| base.to_owned())
             }),
     );
-    // `tc-load-decisions-read-authored`, applied as the human's lean asks: the definition-plane
-    // decisions are MINTED HERE, above the intake, so nothing influenced can reach them by
-    // accident later. They are transcribed onto the Spine when one exists; the recording is not
-    // the mint (`30I:rul-load-decisions-are-authored-before-contact`).
+    // MINTED HERE, above the intake, so nothing influenced can reach them by accident later; the
+    // Spine write below is transcription, never the mint (`tc-load-decisions-read-authored`).
     let load_decisions = mint_load_decisions(&cfg.value, &contested, &env);
     // `302` §4 — the two pre-network solve seats, reported the moment they give up: both run
     // before the probe is compiled, so this is fail-fast in the project's sense (loud, on human
