@@ -3121,6 +3121,46 @@ fn artifact_set_selftest() -> Vec<String> {
     fails
 }
 
+/// Drive the case-shape classifier over the three `book.sh` dirs it must tell apart
+/// (`30Qa:fnd-missing-expected-out-hides-a-case`).
+///
+/// The middle answer is why this exists: a dir carrying `mocks/` and `probe-results.txt` but no
+/// `expected.out` used to classify as a real-tools fixture, and a real-tools fixture is only ever
+/// looked up by the name `lint-real-<tool>` — so the case left the suite silently, which is the
+/// one thing a discovery floor may not do (`count-drifts`' residual, made loud for this shape).
+fn case_shape_selftest() -> Vec<String> {
+    let mut fails = Vec::new();
+    let scratch = Scratch::new("caseshape");
+    let root = scratch.path.join("cases");
+    for (name, extra) in [
+        ("shape-round-trip", vec!["expected.out"]),
+        ("shape-missing-out", vec!["probe-results.txt"]),
+        ("shape-real-tools", vec![]),
+    ] {
+        let dir = root.join(name);
+        std::fs::create_dir_all(&dir).expect("create specimen case");
+        std::fs::write(dir.join("book.sh"), "true\n").expect("write book");
+        for file in extra {
+            std::fs::write(dir.join(file), "").expect("write specimen file");
+        }
+    }
+    let kinds: BTreeMap<String, E2eKind> = discover_e2e(&[root])
+        .into_iter()
+        .map(|case| (case.name, case.kind))
+        .collect();
+    for (name, want) in [
+        ("shape-round-trip", E2eKind::RoundTrip),
+        ("shape-missing-out", E2eKind::MissingExpectedOut),
+        ("shape-real-tools", E2eKind::LintReal),
+    ] {
+        let got = kinds.get(name).copied();
+        if got != Some(want) {
+            fails.push(format!("cs-{name} (want {want:?}, got {got:?})"));
+        }
+    }
+    fails
+}
+
 /// Drive the floor-transcript WRITE policy on a throwaway case: the refusal in both directions,
 /// and the mint's fold plus its byte-stability. No committed golden and no floor binary take part
 /// — gate-9 owns the measurement; what is proven here is who may commit it. Both directions are
@@ -3493,6 +3533,13 @@ fn preflight(harness: &Harness, discovered: usize) {
             selection.join("\n  ")
         ));
     }
+    let shapes = case_shape_selftest();
+    if !shapes.is_empty() {
+        fatal.push(format!(
+            "FATAL  case_shape_selftest FAILED — a mis-authored round-trip case could leave the suite in silence:\n  {}",
+            shapes.join("\n  ")
+        ));
+    }
     let artifact_set = artifact_set_selftest();
     if !artifact_set.is_empty() {
         fatal.push(format!(
@@ -3660,6 +3707,19 @@ fn main() {
             })),
             E2eKind::LintReal => {
                 real_fixtures.insert(case.name.clone(), case.dir);
+            }
+            E2eKind::MissingExpectedOut => {
+                let name = case.name.clone();
+                trials.push(Trial::test(name.clone(), move || {
+                    let residue = support::round_trip_residue(&case.dir).join(", ");
+                    Err(format!(
+                        "FAIL  {name}  [a round-trip case needs `expected.out`; \
+                         this dir also carries: {residue}. Mint it (an empty file is enough — \
+                         `BLESS=1` fills it) or reduce the dir to `book.sh` alone for the \
+                         real-tools lane.]"
+                    )
+                    .into())
+                }));
             }
         }
     }

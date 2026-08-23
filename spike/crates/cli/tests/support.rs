@@ -10,6 +10,7 @@
 //! | `<case>/cmd`             | a `dorc lint` case                                |
 //! | `<case>/book.sh` + `expected.out` | a round-trip case                        |
 //! | `<case>/book.sh` alone   | a real-tools lint fixture (opt-in lane)           |
+//! | `<case>/book.sh` + more  | a round-trip case missing `expected.out` — RED    |
 //! | anything else            | an `.rs` test's fixture space — not a case        |
 //!
 //! `paths-are-manifest-relative` (`crates/aid/CLAUDE.md`): [`case_roots`] is resolved from
@@ -341,6 +342,14 @@ pub(crate) enum E2eKind {
     Lint,
     /// A real-external-linter fixture, driven only under `DORC_E2E_REAL_TOOLS`.
     LintReal,
+    /// A dir that carries round-trip material but no `expected.out` — an authoring error, minted
+    /// as a RED trial (`30Qa:fnd-missing-expected-out-hides-a-case`).
+    ///
+    /// The shape table above admits a real-tools fixture as `book.sh` ALONE, so anything beside it
+    /// means the author meant a round-trip case. Before this, such a dir classified `LintReal` and
+    /// its name matched no `lint-real-<tool>` lookup, so the whole case vanished from the suite
+    /// with nothing said — the failure mode the discovery floor exists to make impossible.
+    MissingExpectedOut,
 }
 
 /// One discovered dir-form case.
@@ -387,6 +396,19 @@ fn multi_file_loom(name: &str, dir: &Path) -> Option<PathBuf> {
     inner.is_file().then_some(inner)
 }
 
+/// Everything in a `book.sh`-bearing dir that a real-tools fixture would not carry, sorted.
+///
+/// The shape table is the whole rule: a real-tools fixture is `book.sh` ALONE, so a non-empty
+/// answer here means the dir was authored as a round-trip case and its `expected.out` is missing.
+#[must_use]
+pub(crate) fn round_trip_residue(dir: &Path) -> Vec<String> {
+    sorted_entries(dir)
+        .into_iter()
+        .map(|(name, _)| name)
+        .filter(|name| name != "book.sh")
+        .collect()
+}
+
 /// Walk `roots` for dir-form cases. Panics on a duplicate trial name — two cases sharing
 /// a name would make the suite silently ambiguous under a filter.
 #[must_use]
@@ -403,8 +425,10 @@ pub(crate) fn discover_e2e(roots: &[PathBuf]) -> Vec<E2eCase> {
                 continue;
             } else if path.join("expected.out").is_file() {
                 E2eKind::RoundTrip
-            } else {
+            } else if round_trip_residue(&path).is_empty() {
                 E2eKind::LintReal
+            } else {
+                E2eKind::MissingExpectedOut
             };
             assert!(
                 !cases.iter().any(|case| case.name == name),
