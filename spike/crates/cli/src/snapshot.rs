@@ -52,6 +52,14 @@ pub enum SourceRole {
     /// A source acquired only because a NAMED root's top level sources it: it loads at that `.`,
     /// inside its sourcer's program, never before line 1 and never again as a root of its own.
     LoadDependency,
+    /// An ordinary sh file a book `.` names, acquired for its BYTES and modelled NOT AT ALL
+    /// (`30P:principle-book-code-source-is-inclusion`, r30's `mech-acquire-and-ship-plain-sh`).
+    ///
+    /// It signed no dorc-lang contract, so nothing is lifted from it, nothing it declares binds,
+    /// and its `.` site walls exactly as an unread one does
+    /// (`FORFEITS:forfeit-plain-sh-inclusion-analysis`). What acquiring it buys is one thing: the
+    /// artifact can mirror it beside the plan, so the author's own `.` finds it on the host.
+    PlainInclusion,
 }
 
 impl SourceRole {
@@ -59,6 +67,16 @@ impl SourceRole {
     #[must_use]
     pub const fn is_ambient(self) -> bool {
         matches!(self, SourceRole::NamedLoad)
+    }
+
+    /// Does the engine MODEL this source's text at all?
+    ///
+    /// The one predicate every LIFT and INDEX seat asks, so "acquired for bytes" cannot leak into
+    /// a definition universe by a consumer forgetting (`only-invocation-roots-are-ambient`'s shape:
+    /// demanded, never defaulted).
+    #[must_use]
+    pub const fn is_modelled(self) -> bool {
+        !matches!(self, SourceRole::PlainInclusion)
     }
 }
 
@@ -86,7 +104,7 @@ impl LoadPositions {
     pub fn book_sourced(files: std::collections::BTreeSet<usize>) -> Self {
         Self {
             book_sourced: files,
-            dependencies: std::collections::BTreeSet::new(),
+            ..Self::default()
         }
     }
 
@@ -99,9 +117,19 @@ impl LoadPositions {
 
     /// Book-sourced wins where a source is both: it is the more specific act, and the two agree on
     /// the only question any consumer asks — neither is ambient.
-    fn role_of(&self, file: usize) -> SourceRole {
+    ///
+    /// A book-sourced source splits again on the AUTHOR'S OWN CLAIM: a `# dorc-lang` marker says
+    /// "model me", and its absence says this is ordinary sh Dorc acquired to MIRROR
+    /// ([`SourceRole::PlainInclusion`]). Derived from the bytes rather than carried as a fourth
+    /// index set, because that is one rule with nothing to keep in step — and because the marker is
+    /// exactly the claim `marker-gates-syntax-only` already makes the discriminator everywhere else.
+    fn role_of(&self, file: usize, src: &str) -> SourceRole {
         if self.book_sourced.contains(&file) {
-            SourceRole::BookSourced
+            if dorc_oracle::marker::has_marker(src) {
+                SourceRole::BookSourced
+            } else {
+                SourceRole::PlainInclusion
+            }
         } else if self.dependencies.contains(&file) {
             SourceRole::LoadDependency
         } else {
@@ -151,7 +179,7 @@ impl StaticLoadSnapshot {
         book_src: &str,
     ) -> Self {
         let mut roles: Vec<SourceRole> = (0..oracle_paths.len())
-            .map(|file| positions.role_of(file))
+            .map(|file| positions.role_of(file, oracle_srcs.get(file).map_or("", String::as_str)))
             .collect();
         let mut paths = oracle_paths;
         let mut srcs = oracle_srcs;
@@ -200,10 +228,39 @@ impl StaticLoadSnapshot {
         &self.srcs
     }
 
-    /// The same bytes as `&str`, the shape the lift seats take.
+    /// The same bytes as `&str` — the REAL text, which is what mirroring, placement, diagnostics,
+    /// and the durable read.
     #[must_use]
     pub fn source_refs(&self) -> Vec<&str> {
         self.srcs.iter().map(String::as_str).collect()
+    }
+
+    /// Every source's text AS THE ENGINE MODELS IT: a [`SourceRole::PlainInclusion`] reads EMPTY,
+    /// because Dorc acquired its bytes to ship and models nothing in it
+    /// (`FORFEITS:forfeit-plain-sh-inclusion-analysis`).
+    ///
+    /// THE ONE SELECTION SEAT for that, and it is positional rather than filtered: the index IS the
+    /// `SourceFileId` (`28O:dec-load-order-is-the-id-order`), so dropping an entry would renumber
+    /// every source after it and silently re-aim every derived row's identity. An empty file lifts
+    /// nothing, declares nothing, and indexes nothing, so every lift seat gets the right answer by
+    /// construction rather than by remembering a role check.
+    ///
+    /// Every LIFT and INDEX seat takes this. [`source_refs`](Self::source_refs) is for the seats
+    /// that want the bytes themselves.
+    #[must_use]
+    pub fn modelled_refs(&self) -> Vec<&str> {
+        self.sources()
+            .map(|(_, src, role)| if role.is_modelled() { src } else { "" })
+            .collect()
+    }
+
+    /// The LOADED sources as the engine models them — [`modelled_refs`](Self::modelled_refs)'
+    /// book-free prefix, for the oracle-only lanes.
+    #[must_use]
+    pub fn modelled_oracle_refs(&self) -> Vec<&str> {
+        let mut refs = self.modelled_refs();
+        refs.truncate(self.book_index());
+        refs
     }
 
     /// The LOADED sources alone — everything that is not a book. The whylog's record of what was
@@ -342,8 +399,17 @@ pub fn book_reached(
             .iter()
             .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
             .filter(|&file| {
-                srcs.get(file)
-                    .is_some_and(|src| crate::sourcing::satisfies_the_contract(src))
+                // REACHED is a question about the book's own act, not about what the target
+                // signed: an ordinary sh file a book `.` names is reached, and MODELLING it is
+                // what [`LoadPositions::role_of`] answers separately
+                // (`30P:principle-book-code-source-is-inclusion`). What stays out is a file that
+                // CLAIMS the dialect and fails its own contract — the acquisition refuses those
+                // outright, and treating one as reached here would let the two drivers disagree
+                // about a file only one of them holds.
+                srcs.get(file).is_some_and(|src| {
+                    crate::sourcing::satisfies_the_contract(src)
+                        || !dorc_oracle::marker::has_marker(src)
+                })
             })
     };
     let mut reached: std::collections::BTreeSet<usize> = book_load_targets(book_src)
@@ -479,16 +545,42 @@ mod tests {
         );
     }
 
-    /// A book sourcing ordinary shell reaches nothing: the target signs no dorc-lang contract, so
-    /// it stays outside the load model and its site walls (`30I` §7.2). This is what keeps a
-    /// book's non-dorc-lang material where its author put it.
+    /// A book sourcing ordinary shell REACHES it and models nothing in it: the reach is a fact
+    /// about the book's own act, and the target's silence about the dialect makes it a
+    /// [`SourceRole::PlainInclusion`] — acquired for its bytes, its site still walling
+    /// (`30P:principle-book-code-source-is-inclusion`). That split is what keeps a book's
+    /// non-dorc-lang material where its author put it while still letting the artifact carry it.
+    ///
+    /// The MARKED-but-not-inert cousin is the control: a file that claims the dialect and fails its
+    /// own contract is not reached at all, because the acquisition refuses to hold one.
     #[test]
-    fn an_unmarked_target_is_outside_the_load_model() {
+    fn an_unmarked_target_is_reached_as_an_inclusion() {
         let paths = vec!["child.sh".to_owned()];
         let srcs = vec!["f() { :; }\n".to_owned()];
+        assert_eq!(
+            book_reached(&Cwd::at(""), &paths, &srcs, ". ./child.sh\n"),
+            [0].into(),
+            "unmarked ⇒ reached, so the artifact has bytes to mirror"
+        );
+        let snapshot = StaticLoadSnapshot::over(
+            Cwd::at(""),
+            paths.clone(),
+            srcs.clone(),
+            &LoadPositions::book_sourced([0].into()),
+            "book.sh",
+            ". ./child.sh\n",
+        );
+        assert_eq!(snapshot.role_of(0), Some(SourceRole::PlainInclusion));
+        assert_eq!(
+            snapshot.modelled_refs(),
+            ["", ". ./child.sh\n"],
+            "and it reads EMPTY at every lift and index seat"
+        );
+
+        let claiming = vec![format!("{MARKER}f() {{ :; }}\nfalse\n")];
         assert!(
-            book_reached(&Cwd::at(""), &paths, &srcs, ". ./child.sh\n").is_empty(),
-            "unmarked ⇒ not reached, however resolvable the path is"
+            book_reached(&Cwd::at(""), &paths, &claiming, ". ./child.sh\n").is_empty(),
+            "a file that claims the dialect and fails its contract is held by nobody"
         );
     }
 

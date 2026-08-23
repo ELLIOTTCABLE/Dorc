@@ -444,11 +444,17 @@ fn read_sourced_oracles(
 /// other operand does, so `SM_ORACLE_ROOT=./oracles; . "$SM_ORACLE_ROOT/alpha.oracle.sh"` names a
 /// file without the engine recognizing one variable name (`30I` §2.1).
 ///
-/// **Only MARKED dorc-lang targets are admitted.** A book sourcing an ordinary shell file is
-/// outside the load model: the engine reads nothing, models nothing, and the site walls exactly as
-/// it always has. That is what keeps a book's own non-dorc-lang material — top-level `return`,
-/// caller-loop control, anything a dumb inliner would miscompile — where its author put it
-/// (`30I` §7.2).
+/// **A MARKED dorc-lang target is MODELLED; any other resolvable target is INCLUDED.** An ordinary
+/// sh file a book `.`-sources is read for its BYTES and modelled not at all
+/// (`30P:principle-book-code-source-is-inclusion`, r30's `mech-acquire-and-ship-plain-sh`): the
+/// site walls exactly as it always has, nothing it declares binds, and what the reading buys is
+/// that the artifact can MIRROR it beside the plan. Before that, the generated plan carried a `.`
+/// naming a file the artifact never carried, which the atlas measured fatal on the host
+/// (`floor30-atlas-dot-missing-file-is-fatal`) — the most common multi-file book shape died at
+/// that line on a real apply. The splice and the single-stream paste stay forfeited
+/// (`FORFEITS:forfeit-plain-sh-inclusion-analysis`), so a book's own non-dorc-lang material —
+/// top-level `return`, caller-loop control, anything a dumb inliner would miscompile — stays where
+/// its author put it (`30I` §7.2).
 ///
 /// `load_dependencies` rides through because each round SOLVES: an include guard decides
 /// differently when a dependency is wrongly a root, and one deciding "already loaded" wants
@@ -460,7 +466,7 @@ fn read_book_sourced(
     mut paths: Vec<String>,
     mut srcs: Vec<String>,
     load_dependencies: &BTreeSet<usize>,
-) -> (Vec<String>, Vec<String>, BTreeSet<usize>) {
+) -> BookSourced {
     let ambient = paths.len();
     let book_ast = dorc_syntax::parse(book_src).value;
     let mut refused: BTreeSet<String> = BTreeSet::new();
@@ -489,7 +495,15 @@ fn read_book_sourced(
             let Ok(text) = std::fs::read_to_string(wanted) else {
                 continue;
             };
-            if !dorc_cli::sourcing::satisfies_the_contract(&text) {
+            // A file that CLAIMS the dialect and fails its own contract stays REFUSED: the author
+            // asked to be held to it by writing the marker
+            // (`30G:rul-inertness-is-contract-never-engine-fact`), and admitting it as an inclusion
+            // would make a lint failure a route to shipping — and would mirror an UNSTRIPPED marked
+            // file onto the host. A marker-free one is an ordinary sh INCLUSION, read for its bytes
+            // and modelled not at all; the snapshot derives that from the same marker.
+            if dorc_oracle::marker::has_marker(&text)
+                && !dorc_cli::sourcing::satisfies_the_contract(&text)
+            {
                 continue;
             }
             paths.push(wanted.clone());
@@ -500,8 +514,23 @@ fn read_book_sourced(
             break;
         }
     }
-    let reached = (ambient..paths.len()).collect();
-    (paths, srcs, reached)
+    BookSourced {
+        reached: (ambient..paths.len()).collect(),
+        paths,
+        srcs,
+    }
+}
+
+/// What the book-sourced acquisition read.
+///
+/// Which of them the engine MODELS is not carried here: the snapshot derives that from each file's
+/// own `# dorc-lang` marker, so there is no second index set to keep in step
+/// (`snapshot::LoadPositions::role_of`).
+struct BookSourced {
+    paths: Vec<String>,
+    srcs: Vec<String>,
+    /// Every source the loop appended: they load at a book `.`, never before line 1.
+    reached: BTreeSet<usize>,
 }
 
 /// How many times the acquisition re-solves before settling.
@@ -940,7 +969,7 @@ fn run(
     // THE SNAPSHOT (`30I` §3.1): the acquisition finishes here and nothing below re-reads a path.
     // What a book `.`-sources joins the loaded set exactly as what an oracle sources does, but
     // NOT ambiently — it binds at its own line.
-    let (oracle_paths, oracle_srcs, book_sourced) = read_book_sourced(
+    let acquired = read_book_sourced(
         cwd,
         book_name,
         &book_src,
@@ -950,19 +979,23 @@ fn run(
     );
     let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
         cwd.clone(),
-        oracle_paths,
-        oracle_srcs,
-        &dorc_cli::snapshot::LoadPositions::book_sourced(book_sourced)
+        acquired.paths,
+        acquired.srcs,
+        &dorc_cli::snapshot::LoadPositions::book_sourced(acquired.reached)
             .with_dependencies(load_dependencies),
         book_name,
         &book_src,
     );
     let oracle_paths = snapshot.oracle_paths();
     let oracle_srcs = snapshot.oracle_srcs();
-    let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
     let source_paths = snapshot.source_paths();
     let source_srcs = snapshot.source_srcs();
-    let source_refs: Vec<&str> = snapshot.source_refs();
+    // MODELLED text for every lift and index below — a `PlainInclusion` reads empty there, so it
+    // lifts nothing, declares nothing, and indexes nothing (`snapshot::modelled_refs`, the one
+    // selection seat). `source_srcs`/`oracle_srcs` above stay the REAL bytes, which is what the
+    // mirroring, the diagnostics, and the durable want.
+    let oracle_refs: Vec<&str> = snapshot.modelled_oracle_refs();
+    let source_refs: Vec<&str> = snapshot.modelled_refs();
     let source_path_refs: Vec<&str> = source_paths.iter().map(String::as_str).collect();
     let book_index = Some(snapshot.book_index());
 
@@ -2657,14 +2690,7 @@ fn select_artifact_form(
     let loads = book_loads(cfg, book, book_src, &projection);
     let posture = artifact_stream(stdout, args.artifact_dir.is_some())?;
     let request = args.form.map_or(FormRequest::Auto, FormRequest::Explicit);
-    select(
-        snapshot.cwd(),
-        snapshot.source_paths(),
-        &projection,
-        &loads,
-        request,
-        posture,
-    )
+    select(snapshot, &projection, &loads, request, posture)
 }
 
 /// Where this run's receipt goes: the admin's `--whylog-dir`, else the per-user state directory.
@@ -4277,7 +4303,12 @@ mod acquisition_tests {
             ],
         );
         let book = "OPS_LIB=.\n. \"$OPS_LIB/entry.dorc.sh\"\nstep first\n";
-        let (paths, srcs, reached) = super::read_book_sourced(
+        let super::BookSourced {
+            paths,
+            srcs,
+            reached,
+            ..
+        } = super::read_book_sourced(
             &package.cwd(),
             "book.sh",
             book,
@@ -4300,17 +4331,24 @@ mod acquisition_tests {
         assert_eq!(srcs.len(), paths.len());
     }
 
-    /// A book sourcing ordinary shell opens nothing: the target signs no dorc-lang contract, so it
-    /// stays outside the load model and its site walls exactly as it always has (`30I` §7.2). This
-    /// is what keeps a book's non-dorc-lang material where its author put it — including the
-    /// top-level `return` and failing-command shapes a dumb inliner would miscompile.
+    /// A book sourcing ordinary shell READS it and models nothing in it: the target signs no
+    /// dorc-lang contract, so it enters the snapshot as a [`SourceRole::PlainInclusion`] whose
+    /// bytes exist to be mirrored and whose site walls exactly as it always has
+    /// (`30P:principle-book-code-source-is-inclusion`, r30's acquire-and-ship slice). That is what
+    /// keeps a book's non-dorc-lang material where its author put it — including the top-level
+    /// `return` and failing-command shapes a dumb inliner would miscompile
+    /// (`FORFEITS:forfeit-plain-sh-inclusion-analysis`).
+    ///
+    /// The MARKED-but-not-inert cousin is the control, and it stays refused: an author who wrote
+    /// the marker asked to be held to the contract, and admitting them here would make a lint
+    /// failure a route to shipping.
     #[test]
-    fn an_unmarked_target_is_never_opened_into_the_model() {
+    fn an_unmarked_target_is_included_but_a_failing_marked_one_is_refused() {
         let package = Package::new(
             "unmarked",
             &[("child.sh", "SM_LOADED=1\nsm_q() { :; }\nfalse\n".to_owned())],
         );
-        let (paths, _, reached) = super::read_book_sourced(
+        let included = super::read_book_sourced(
             &package.cwd(),
             "book.sh",
             ". ./child.sh\n",
@@ -4318,7 +4356,42 @@ mod acquisition_tests {
             Vec::new(),
             &BTreeSet::new(),
         );
-        assert!(paths.is_empty() && reached.is_empty());
+        assert_eq!(names(&included.paths), ["child.sh".to_owned()].into());
+        assert_eq!(included.reached, [0].into());
+        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            package.cwd(),
+            included.paths.clone(),
+            included.srcs.clone(),
+            &dorc_cli::snapshot::LoadPositions::book_sourced(included.reached.clone()),
+            "book.sh",
+            ". ./child.sh\n",
+        );
+        assert_eq!(
+            snapshot.role_of(0),
+            Some(dorc_cli::snapshot::SourceRole::PlainInclusion),
+            "read for its BYTES, and classified as modelled-not-at-all"
+        );
+
+        let claiming = Package::new(
+            "marked-but-running",
+            &[(
+                "child.sh",
+                format!("{MARKER}sm_q() {{ :; }}\nfalse\n").to_owned(),
+            )],
+        );
+        let refused = super::read_book_sourced(
+            &claiming.cwd(),
+            "book.sh",
+            ". ./child.sh\n",
+            Vec::new(),
+            Vec::new(),
+            &BTreeSet::new(),
+        );
+        assert!(
+            refused.paths.is_empty(),
+            "a file that CLAIMS the dialect and runs a command at load stays refused: {:?}",
+            refused.paths
+        );
     }
 
     /// One acquisition-and-solve run over a package: which files the book's `.` lines REACHED, and
@@ -4339,7 +4412,7 @@ mod acquisition_tests {
 
     impl Loaded {
         fn of(cwd: dorc_core::loadpath::Cwd, book_path: &str, book: &str) -> Self {
-            let (paths, srcs, reached) = super::read_book_sourced(
+            let acquired = super::read_book_sourced(
                 &cwd,
                 book_path,
                 book,
@@ -4347,6 +4420,8 @@ mod acquisition_tests {
                 Vec::new(),
                 &BTreeSet::new(),
             );
+            let (paths, srcs) = (acquired.paths, acquired.srcs);
+            let reached = acquired.reached;
             let found = ordered_names(&paths);
             let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
                 cwd,
@@ -4928,32 +5003,28 @@ mod acquisition_tests {
         });
     }
 
-    /// TODAY's conservative answer for the unconditional cell above — an INTERIM pin, and the name
-    /// says so.
+    /// The conservative half of the answer for the unconditional cell above, and it did NOT move
+    /// when acquisition landed — which is the whole point of pinning it separately.
     ///
-    /// Worth pinning because "walls" is a compound of two facts that a repair could deliver
-    /// separately: the file is never opened (so its names are outside the unit's universe
-    /// entirely, which is `NoOpinion` rather than a withholding), and the site is disclosed as an
-    /// unresolvable load (which is what walls it and arms defensive emission). A lane that opened
-    /// the file without binding it, or bound it without disclosing, would leave one half standing
-    /// and this pin says which.
+    /// "Walls" is a compound of two facts a repair could deliver separately: the site is disclosed
+    /// as an unresolvable load (which is what walls it and arms defensive emission), and the file's
+    /// names stay outside the unit's universe entirely, which is `NoOpinion` rather than a
+    /// withholding. `mech-acquire-and-ship-plain-sh` changed only whether the bytes are READ; a
+    /// lane that let the reading bind names, or that stopped disclosing the site, would leave one
+    /// half standing and this says which
+    /// (`FORFEITS:forfeit-plain-sh-inclusion-analysis`).
     #[test]
-    fn a_plain_sh_source_walls_today_interim() {
+    fn a_plain_sh_source_walls_even_though_it_is_acquired() {
         let package = Package::new(
             "book-plain-sh-interim",
             &[("helpers.sh", "helper_fn() { :; }\n".to_owned())],
         );
         let loaded = Loaded::of(package.cwd(), "book.sh", ". ./helpers.sh\nhelper_fn\n");
 
-        assert!(
-            loaded.found.is_empty(),
-            "the target signs no dorc-lang contract, so it is never opened: {:?}",
-            loaded.found
-        );
         assert_eq!(
             loaded.env.unresolvable_loads().len(),
             1,
-            "and the site is disclosed as an unresolvable load, which is what walls it"
+            "the site is disclosed as an unresolvable load, which is what walls it"
         );
         assert_eq!(
             loaded.at_exit("helper_fn"),
@@ -4962,8 +5033,8 @@ mod acquisition_tests {
         );
     }
 
-    /// `p-x-plain-sh-inclusion-ships-beside-the-plan` — the r30 slice of
-    /// `30P:principle-book-code-source-is-inclusion`, and the twin of the interim pin above.
+    /// The r30 slice of `30P:principle-book-code-source-is-inclusion`, and the twin of the wall pin
+    /// above (promoted from `p-x-plain-sh-inclusion-ships-beside-the-plan`).
     ///
     /// `30P:ask-inclusion-in-r30` splits inclusion into three mechanics and takes exactly one:
     /// ACQUIRE the plain-sh target and record it as a load occurrence, so the placement already in
@@ -4991,32 +5062,27 @@ mod acquisition_tests {
         let occurrences = loaded.book_loads();
         let helper = loaded.at_exit("helper_fn");
 
-        internal_tooling::xfail::xfail_until(
-            "p-x-plain-sh-inclusion-ships-beside-the-plan",
-            || {
-                assert_eq!(
-                    loaded.found,
-                    ["helpers.sh"],
-                    "the file is READ, which is what gives the artifact bytes to mirror"
-                );
-                assert_eq!(
-                    occurrences,
-                    ["helpers.sh"],
-                    "and it enters the load account as an occurrence, which is what the placement keys \
-                 to (`30I:rul-bundles-key-to-load-occurrences`)"
-                );
-                assert_eq!(
-                    loaded.env.unresolvable_loads().len(),
-                    1,
-                    "the site still WALLS: acquiring bytes is not modelling them"
-                );
-                assert_eq!(
-                    helper,
-                    LiveDefinition::NoOpinion,
-                    "and its names stay outside the unit's universe — the splice is forfeited, not \
-                 delivered by the back door: {helper:?}"
-                );
-            },
+        assert_eq!(
+            loaded.found,
+            ["helpers.sh"],
+            "the file is READ, which is what gives the artifact bytes to mirror"
+        );
+        assert_eq!(
+            occurrences,
+            ["helpers.sh"],
+            "and it enters the load account as an occurrence, which is what the placement keys to \
+             (`30I:rul-bundles-key-to-load-occurrences`)"
+        );
+        assert_eq!(
+            loaded.env.unresolvable_loads().len(),
+            1,
+            "the site still WALLS: acquiring bytes is not modelling them"
+        );
+        assert_eq!(
+            helper,
+            LiveDefinition::NoOpinion,
+            "and its names stay outside the unit's universe — the splice is forfeited, not \
+             delivered by the back door: {helper:?}"
         );
     }
 
@@ -5031,7 +5097,7 @@ mod acquisition_tests {
             &[("pkg.oracle.sh", format!("{MARKER}sm_q() {{ :; }}\n"))],
         );
         let named = package.root.join("pkg.oracle.sh").display().to_string();
-        let (paths, _, reached) = super::read_book_sourced(
+        let acquired = super::read_book_sourced(
             &package.cwd(),
             "book.sh",
             "sm_q\n",
@@ -5039,8 +5105,11 @@ mod acquisition_tests {
             vec![format!("{MARKER}sm_q() {{ :; }}\n")],
             &BTreeSet::new(),
         );
-        assert_eq!(paths.len(), 1);
-        assert!(reached.is_empty(), "named on the command line ⇒ ambient");
+        assert_eq!(acquired.paths.len(), 1);
+        assert!(
+            acquired.reached.is_empty(),
+            "named on the command line ⇒ ambient"
+        );
     }
 
     /// The whole acquisition, from one named pre-source to the environment a book site reads, so
@@ -5057,13 +5126,12 @@ mod acquisition_tests {
         let (paths, srcs, dependencies) =
             super::read_sourced_oracles(&cwd, vec![named_path], vec![named_src]);
         let book = "wombat sync a.conf\n";
-        let (paths, srcs, reached) =
-            super::read_book_sourced(&cwd, "book.sh", book, paths, srcs, &dependencies);
+        let acquired = super::read_book_sourced(&cwd, "book.sh", book, paths, srcs, &dependencies);
         let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
             cwd,
-            paths,
-            srcs,
-            &dorc_cli::snapshot::LoadPositions::book_sourced(reached)
+            acquired.paths,
+            acquired.srcs,
+            &dorc_cli::snapshot::LoadPositions::book_sourced(acquired.reached)
                 .with_dependencies(dependencies),
             "book.sh",
             book,

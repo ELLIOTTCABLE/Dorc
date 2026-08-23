@@ -69,6 +69,22 @@ pub struct StripMapped {
     pub line_map: Vec<u32>,
 }
 
+impl StripMapped {
+    /// A file carried VERBATIM: the text unchanged, and the pure identity map.
+    ///
+    /// For material outside the dialect entirely — an ordinary sh file Dorc acquired in order to
+    /// MIRROR rather than to model (`30P:principle-book-code-source-is-inclusion`). Sited beside
+    /// the strip so "unedited" has one spelling and no caller can hand-roll a map that disagrees
+    /// with its own bytes.
+    #[must_use]
+    pub fn verbatim(src: &str) -> Self {
+        Self {
+            text: src.to_owned(),
+            line_map: identity_line_map(src),
+        }
+    }
+}
+
 /// Strip a file AND return the stripped-line → original-line map (`27R` §4). The stripped `text`
 /// is byte-identical to [`strip_file`] (both apply [`collect_strip_edits`]); the map is computed
 /// from the SAME edits, so it can never disagree with the bytes. An unmarked file is the identity

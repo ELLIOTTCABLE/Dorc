@@ -218,9 +218,13 @@ pub struct ClosureRefusal {
 /// [`unsolved`](Self::unsolved) is the posture of every index built without an environment — the
 /// instrument, hint, survival-snapshot, and hand-built seats — and answers exactly as the pre-frame
 /// seat did: the book census stays depth-blind and suspends for a regional definition too.
+/// The driver's per-name answer at one site: which loaded source's definition of the name is live
+/// there, in this index's own source-INDEX space.
+type LiveSourceAt<'a> = &'a dyn Fn(&str) -> Option<usize>;
+
 #[derive(Clone, Copy, Default)]
 pub struct SiteFrame<'a> {
-    live_source: Option<&'a dyn Fn(&str) -> Option<usize>>,
+    live_source: Option<LiveSourceAt<'a>>,
 }
 
 impl std::fmt::Debug for SiteFrame<'_> {
@@ -242,7 +246,7 @@ impl<'a> SiteFrame<'a> {
     /// live HERE, and `None` wherever the environment names none — `Undefined`, ⊤, and unreached
     /// alike, since none of the three proves anything (`silence-licenses-nothing`).
     #[must_use]
-    pub const fn at(lookup: &'a dyn Fn(&str) -> Option<usize>) -> Self {
+    pub const fn at(lookup: LiveSourceAt<'a>) -> Self {
         Self {
             live_source: Some(lookup),
         }

@@ -1,6 +1,0 @@
-XFAIL: the plain-sh target is never acquired, so nothing is mirrored and the published generation
-carries `plan.sh` alone while its own `.` names `./helpers.sh`. The structural gate that catches it
-is `unresolved_generated_imports` (a published plan's literal relative imports must resolve inside
-the generation). Greens with `p-x-plain-sh-inclusion-ships-beside-the-plan` (end-of-r30,
-`30P:mech-acquire-and-ship-plain-sh`); `expected.ran` below is the TARGET run set, and it is not
-compared while the case is red because `exec_check` runs only once the structural gates pass.

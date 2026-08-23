@@ -526,11 +526,12 @@ pub fn bundle_name(mirrored_path: &str) -> String {
 /// unplaceable rather than last-wins — an artifact whose dependency depends on which occurrence was
 /// walked last is not a projection of anything.
 fn bundle_files(
-    cwd: &Cwd,
-    snapshot_paths: &[String],
+    snapshot: &crate::snapshot::StaticLoadSnapshot,
     projection: &BundleProjection,
     loads: &[BookLoad],
 ) -> Result<(Vec<ArtifactFile>, Vec<ImportEdit>), usize> {
+    let cwd = snapshot.cwd();
+    let snapshot_paths = snapshot.source_paths();
     let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
     let mut imports: Vec<ImportEdit> = Vec::new();
     let mut unplaceable = 0_usize;
@@ -557,6 +558,22 @@ fn bundle_files(
             unplaceable = unplaceable.saturating_add(1);
             continue;
         };
+        // AN INCLUSION IS MIRRORED, NEVER BUNDLED. Its bytes are BOOK-CLASS
+        // (`30P:principle-book-code-source-is-inclusion`): Dorc composed nothing out of them and
+        // has nothing to re-say, so the file lands at the author's own relative path and the
+        // author's own `.` finds it there — no generated name, no import edit, `two-surfaces`'
+        // byte floor intact.
+        if let Some(entry) = projection.file(root.entry()) {
+            if is_included(snapshot, entry) {
+                match mirrored(cwd, authored_of(entry)) {
+                    Some(beside) => {
+                        place(beside, entry.copied().text().to_owned(), &mut unplaceable);
+                    }
+                    None => unplaceable = unplaceable.saturating_add(1),
+                }
+                continue;
+            }
+        }
         // A computed operand is not ours to re-say (`30P:rul-rewrite-permission-is-derived`): the
         // line stays verbatim, so every file under it is mirrored at the authored relative path the
         // author's own operand will resolve to.
@@ -585,6 +602,11 @@ fn bundle_files(
             root.bundled().to_owned(),
             &mut unplaceable,
         );
+        // SEAM (`30P:rul-rewrite-permission-is-derived`): an import edit may mint only for an
+        // EXPLICIT operand — a literal word, or one built from a literal-assigned book-set root.
+        // Today the resolution is `literal_text`-only, so every operand that reaches here is
+        // explicit and the fence is vacuous; when the load-head evaluator lands its typed
+        // explicitness marker, THIS is the seat that reads it before minting.
         imports.push(ImportEdit::Repoint {
             ast: operand,
             path: format!("./{destination}"),
@@ -621,11 +643,12 @@ fn bundle_files(
 /// §7.4 asks for. That is the whole difference from the default — the artifact is the author's tree
 /// rather than the engine's composition of it.
 fn mirrored_files(
-    cwd: &Cwd,
-    snapshot_paths: &[String],
+    snapshot: &crate::snapshot::StaticLoadSnapshot,
     projection: &BundleProjection,
     loads: &[BookLoad],
 ) -> Result<Vec<ArtifactFile>, usize> {
+    let cwd = snapshot.cwd();
+    let snapshot_paths = snapshot.source_paths();
     let wanted: std::collections::BTreeSet<BundleRootId> =
         loads.iter().map(|load| load.root).collect();
     let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
@@ -671,7 +694,11 @@ fn mirrored_files(
 /// the stream itself. That is exactly `floor30-inline-dot-boundary`'s cell 1, and only that cell:
 /// a `.` that shares its line, carries a redirect, or is not a top-level command is outside what was
 /// measured, so the FORM is unavailable rather than the substitution being attempted anyway.
-fn inline_imports(projection: &BundleProjection, loads: &[BookLoad]) -> Option<Vec<ImportEdit>> {
+fn inline_imports(
+    snapshot: &crate::snapshot::StaticLoadSnapshot,
+    projection: &BundleProjection,
+    loads: &[BookLoad],
+) -> Option<Vec<ImportEdit>> {
     loads
         .iter()
         .map(|load| {
@@ -680,6 +707,16 @@ fn inline_imports(projection: &BundleProjection, loads: &[BookLoad]) -> Option<V
                 .iter()
                 .find(|root| root.id() == load.root)
                 .filter(|_| load.absorbable && load.explicit)?;
+            // AN INCLUSION MAKES THE FORM UNAVAILABLE. Pasting an ordinary sh file into one stream
+            // is `mech-paste-plain-sh-single-stream`, which is forfeited behind a closed exclusion
+            // set nobody has welded (`30P:principle-book-code-source-is-inclusion` tier 3;
+            // `FORFEITS:forfeit-plain-sh-inclusion-analysis`) — top-level `return` alone would
+            // change what the surrounding plan does. Refusing by NAME is `KNOBS:kBACKFLIPS`'s
+            // verbatim-or-refuse weld; there is no compile-to-fit here.
+            let entry = projection.file(root.entry())?;
+            if is_included(snapshot, entry) {
+                return None;
+            }
             Some(ImportEdit::Inline {
                 ast: load.command,
                 sh: root.bundled().to_owned(),
@@ -764,6 +801,18 @@ fn placements(
         }
     }
     placed
+}
+
+/// Is this projected file an ordinary sh INCLUSION — acquired for its bytes, modelled not at all?
+///
+/// One seat, because three placement decisions turn on it and each would otherwise re-spell the
+/// role check (`30P:principle-book-code-source-is-inclusion`).
+fn is_included(
+    snapshot: &crate::snapshot::StaticLoadSnapshot,
+    file: &crate::bundle::BundleFile,
+) -> bool {
+    snapshot.role_of(file.copied().source().0 as usize)
+        == Some(crate::snapshot::SourceRole::PlainInclusion)
 }
 
 /// The artifact-set filename every form puts its plan projection under.
@@ -873,8 +922,7 @@ pub fn select_for_terminal_render(projection: &BundleProjection, loads: &[BookLo
 /// file is created — rather than returning a different form (`30I` §14: whether explicit
 /// single-stream intent may silently return multipart output is not builder latitude).
 pub fn select(
-    cwd: &Cwd,
-    snapshot_paths: &[String],
+    snapshot: &crate::snapshot::StaticLoadSnapshot,
     projection: &BundleProjection,
     loads: &[BookLoad],
     request: FormRequest,
@@ -882,7 +930,7 @@ pub fn select(
 ) -> Result<Selection, FormRefusal> {
     // A book with nothing to load is ALREADY one stream; one whose every bundle can stand where its
     // `.` stands becomes one (`floor30-inline-dot-boundary`'s measured cell).
-    let inlined = inline_imports(projection, loads);
+    let inlined = inline_imports(snapshot, projection, loads);
     let inline_debt = loads
         .iter()
         .filter(|load| !(load.absorbable && load.explicit))
@@ -890,9 +938,7 @@ pub fn select(
         .max(usize::from(inlined.is_none()));
     let multipart = match posture {
         StreamPosture::PipedArtifact | StreamPosture::TerminalRender => Err(None),
-        StreamPosture::Materializable => {
-            bundle_files(cwd, snapshot_paths, projection, loads).map_err(Some)
-        }
+        StreamPosture::Materializable => bundle_files(snapshot, projection, loads).map_err(Some),
     };
 
     let preserved = |fallback: Option<FormFallback>| Selection {
@@ -936,7 +982,7 @@ pub fn select(
         },
         FormRequest::Explicit(ArtifactForm::MirroredTree) => match posture {
             StreamPosture::Materializable => {
-                match mirrored_files(cwd, snapshot_paths, projection, loads) {
+                match mirrored_files(snapshot, projection, loads) {
                     Ok(dependencies) => Ok(Selection {
                         form: ArtifactForm::MirroredTree,
                         fallback: None,
@@ -1006,7 +1052,15 @@ mod tests {
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<ArtifactSet, FormRefusal> {
-        select(&Cwd::default(), &[], &empty(), loads, request, posture)
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
+            Cwd::default(),
+            Vec::new(),
+            Vec::new(),
+            &crate::snapshot::LoadPositions::roots_only(),
+            "book.sh",
+            "",
+        );
+        select(&snapshot, &empty(), loads, request, posture)
             .map(|selection| selection.with_plan(plan_sh.to_owned()))
     }
 
@@ -1729,6 +1783,110 @@ mod tests {
             ["plan.sh", "wombat.oracle.dorc-bundle.sh"],
             "the destination is the operand's own spelling, recovered through the cwd"
         );
+    }
+
+    /// AN ORDINARY SH INCLUSION IS MIRRORED AT ITS AUTHORED PATH, AND ITS `.` IS NEVER RE-SAID
+    /// (`30P:principle-book-code-source-is-inclusion`, r30's `mech-acquire-and-ship-plain-sh`).
+    ///
+    /// Three answers, and each is a separate ruling. The file lands under the SPELLING ITS AUTHOR
+    /// USED, not a generated bundle name, because Dorc composed nothing out of it and has nothing
+    /// to re-say. Its bytes are VERBATIM, because they are book-class and the strip's job is
+    /// erasing a dialect this file never claimed (`two-surfaces`). And no import edit mints,
+    /// because the authored `.` already names the file correctly at that path — which is also the
+    /// conservative side of `30P:rul-rewrite-permission-is-derived`, whose fence the import-edit
+    /// seat carries.
+    #[test]
+    fn a_plain_sh_inclusion_is_mirrored_verbatim_and_never_re_said() {
+        let selection = book_sourced(
+            ". ./helpers.sh\nplain_helper_step\n",
+            vec!["helpers.sh".to_owned()],
+            vec!["plain_helper_step() {\n   wombat note done\n}\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("a relative inclusion is placeable");
+        assert_eq!(selection.form(), ArtifactForm::Multipart);
+        assert!(
+            selection.imports().is_empty(),
+            "the authored `.` already names the file at the path it lands on: {:?}",
+            selection.imports()
+        );
+        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
+        assert_eq!(
+            paths,
+            ["plan.sh", "helpers.sh"],
+            "the author's own spelling, never a generated bundle name"
+        );
+        assert_eq!(
+            set.dependencies()[0].bytes,
+            "plain_helper_step() {\n   wombat note done\n}\n",
+            "book-class bytes are mirrored verbatim"
+        );
+    }
+
+    /// …and the CONTROL for the ruling that governs the rewrite: a dorc-lang dependency named
+    /// through a literal-assigned book-set ROOT is EXPLICIT, so its import IS re-said
+    /// (`30P:rul-rewrite-permission-is-derived`: EXACT governs authority, EXPLICITNESS governs
+    /// rewriting).
+    ///
+    /// The pair is what makes the rewrite permission observable rather than incidental: the same
+    /// artifact form re-points one and leaves the other verbatim, and the discriminator is what the
+    /// operand is, never whether the placement happened to be convenient. Today every operand that
+    /// reaches the import-edit seat resolved through controller-known TEXT, so the fence there is
+    /// vacuous; the seat carries it in a comment so a widened load-head evaluator has to visit it.
+    #[test]
+    fn a_book_set_root_is_explicit_enough_to_re_point() {
+        let selection = book_sourced(
+            "OPS_LIB=.\n. \"$OPS_LIB/wombat.oracle.sh\"\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::Materializable,
+        )
+        .expect("a root-relative dependency is placeable");
+        assert_eq!(selection.form(), ArtifactForm::Multipart);
+        assert!(
+            matches!(
+                selection.imports(),
+                [ImportEdit::Repoint { path, .. }] if path == "./wombat.oracle.dorc-bundle.sh"
+            ),
+            "an explicit operand's import names the published bundle: {:?}",
+            selection.imports()
+        );
+    }
+
+    /// A book that includes ordinary sh cannot be given the FLATTENED form, and the refusal names
+    /// it rather than quietly publishing a smaller answer.
+    ///
+    /// Pasting an inclusion into one stream is `mech-paste-plain-sh-single-stream`, forfeited
+    /// behind an exclusion set nobody has welded (`FORFEITS:forfeit-plain-sh-inclusion-analysis`):
+    /// a top-level `return` in the included file leaves the file under a `.` and would leave the
+    /// PLAN under a paste. `KNOBS:kBACKFLIPS` is welded to verbatim-or-refuse, so the most a
+    /// construct may cost its author is single-stream — never support.
+    #[test]
+    fn a_plain_sh_inclusion_refuses_the_flattened_form_by_name() {
+        let refusal = book_sourced(
+            ". ./helpers.sh\nplain_helper_step\n",
+            vec!["helpers.sh".to_owned()],
+            vec!["plain_helper_step() {\n   wombat note done\n}\n".to_owned()],
+            FormRequest::Explicit(ArtifactForm::Flattened),
+            StreamPosture::TerminalRender,
+        )
+        .expect_err("one stream cannot carry an inclusion");
+        assert_eq!(refusal.form(), "flattened");
+        assert_eq!(refusal.cause(), "inlining-unproven");
+        assert_eq!(refusal.loads(), 1);
+
+        let kept = book_sourced(
+            ". ./helpers.sh\nplain_helper_step\n",
+            vec!["helpers.sh".to_owned()],
+            vec!["plain_helper_step() {\n   wombat note done\n}\n".to_owned()],
+            FormRequest::Auto,
+            StreamPosture::PipedArtifact,
+        )
+        .expect_err("a KEPT stream carries a complete plan or the run stops");
+        assert_eq!(kept.cause(), "incomplete-single-stream");
     }
 
     /// BOTH ENDS of the bundle-point axis, over one world (`30Ng` §5, human-typed: both extremes

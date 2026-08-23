@@ -1,2 +1,31 @@
-# placeholder: this case is XFAIL, so the content golden is never compared (the XFAIL lens is
-# golden-text-blind by design). Re-bless it at promotion, when the case XPASSes.
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7332397c3a4783aa280ef59b8c232ea81172afb75a590c48c22a637079c6c143 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# TARGET (`30P:mech-acquire-and-ship-plain-sh`, the r30 slice of
+# `principle-book-code-source-is-inclusion`): an ordinary sh helper file a book sources is READ,
+# recorded as a load occurrence, and MIRRORED beside the published plan — while nothing inside it is
+# analyzed (`FORFEITS:forfeit-plain-sh-inclusion-analysis`: no splice, no bindings, the site walls).
+#
+# The capability is OBSERVED by RUNNING, which is the only way to observe it: the exec gate runs the
+# published `plan.sh` from inside its generation ALONE
+# (`cli/CLAUDE.md an-artifact-set-runs-from-its-own-generation`), so `plain_helper_step` can only be
+# defined there if the `.` found a mirrored `helpers.sh` beside the plan. A generation carrying the
+# plan alone dies at that line — a failed `.` is fatal even as the left operand of `||`
+# (`floor30-atlas-dot-missing-file-is-fatal`) — and the run set is empty instead.
+#
+# TARGET RUN SET: `ran: wombat note done`, emitted from inside the included file's own function.
+. ./helpers.sh
+
+plain_helper_step

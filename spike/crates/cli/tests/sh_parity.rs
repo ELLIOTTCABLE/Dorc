@@ -895,7 +895,11 @@ fn regional_ships(book_src: &str) -> bool {
             };
             (literal(0) == Some(wombat) && literal(1) == Some(sync)).then_some(id)
         });
-    let node = site.expect("the book calls `wombat sync b` at top level");
+    assert!(
+        site.is_some(),
+        "the book calls `wombat sync b` at top level"
+    );
+    let Some(node) = site else { return false };
     let operands: Vec<dorc_core::Symbol> = value
         .argv_values(node)
         .get(1..)

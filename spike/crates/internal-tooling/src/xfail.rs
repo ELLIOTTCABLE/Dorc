@@ -296,15 +296,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-plain-sh-inclusion-ships-beside-the-plan",
-        trigger: "`30P:mech-acquire-and-ship-plain-sh`: a resolvable `.` of ordinary sh enters the \
-                  load account as an occurrence and is mirrored beside the plan — analyzed NOT AT \
-                  ALL, the site still walls. Today acquisition is gated on the dorc-lang marker, so \
-                  nothing ships and the generated plan carries a `.` that is fatal on the host",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-blessed-toplevel-conditional",
         trigger: "the oracle-side blessing of read-only top-level commands \
                   (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \

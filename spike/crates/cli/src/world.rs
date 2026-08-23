@@ -122,7 +122,10 @@ impl WhyWorld {
         let mut arena = ProvArena::new();
         let book_src = snapshot.book_src();
         let oracle_srcs = snapshot.oracle_srcs();
-        let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
+        // MODELLED text for the lifts, the same seat the binary takes: a `PlainInclusion` reads
+        // empty, so a why report explains the world the run analysed rather than one that also
+        // read the file Dorc only mirrors.
+        let oracle_refs: Vec<&str> = snapshot.modelled_oracle_refs();
         // SOURCE-WIDE, exactly as the binary's `source_table` builds it: the oracles in load order,
         // then the book, which is an ordinary definition source
         // (`the-book-is-a-definition-source`). This seat used to lift oracle-only vectors and site
@@ -130,7 +133,7 @@ impl WhyWorld {
         // answered it — safe, but a why report that explains a different world than the run is a
         // decoration, which is the failure `one-definition-table-two-drivers` exists to prevent.
         let source_srcs = snapshot.source_srcs();
-        let source_refs: Vec<&str> = snapshot.source_refs();
+        let source_refs: Vec<&str> = snapshot.modelled_refs();
         let source_path_refs: Vec<&str> =
             snapshot.source_paths().iter().map(String::as_str).collect();
 
@@ -789,6 +792,16 @@ pub fn definition_table(
         let Some(src) = snapshot.oracle_srcs().get(idx) else {
             continue;
         };
+        // An ORDINARY sh file a book `.` names is acquired for its bytes and modelled not at all
+        // (`30P:principle-book-code-source-is-inclusion`). Filing it as `Included` is what keeps
+        // its declarations out of `names()` — which is the whole universe the environment has an
+        // opinion about — so its names stay `NoOpinion` rather than becoming `Withheld` at every
+        // consuming seat. Registering them here would deliver the forfeited splice by the back
+        // door (`FORFEITS:forfeit-plain-sh-inclusion-analysis`).
+        if snapshot.role_of(idx) == Some(crate::snapshot::SourceRole::PlainInclusion) {
+            table.set_included(path);
+            continue;
+        }
         let parsed = dorc_syntax::parse(src).value;
         let mut by_ast = BTreeMap::new();
         let mut ids = Vec::new();

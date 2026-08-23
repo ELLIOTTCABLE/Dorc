@@ -395,7 +395,20 @@ pub fn project(
             .source_srcs()
             .get(source)
             .ok_or(BundleProjectionError::MissingSource { occurrence })?;
-        let mapped = dorc_oracle::strip::strip_file_with_map(&mut Interner::default(), src);
+        // AN INCLUSION IS COPIED VERBATIM. Its bytes are BOOK-CLASS
+        // (`30P:principle-book-code-source-is-inclusion`), so the strip has no business in them:
+        // its job is erasing a DIALECT this file never claimed, and `two-surfaces`' byte floor says
+        // what ships is the author's own bytes. It is ALSO already the identity for a marker-free
+        // file, and every inclusion is marker-free by construction — a marked file that fails its
+        // own load-inert lint stays REFUSED at acquisition rather than becoming an inclusion, since
+        // filing it as one would make a lint failure a route to shipping. This branch states the
+        // rule rather than resting on that coincidence.
+        let mapped =
+            if snapshot.role_of(source) == Some(crate::snapshot::SourceRole::PlainInclusion) {
+                dorc_aid::Carrier::pure(dorc_oracle::strip::StripMapped::verbatim(src))
+            } else {
+                dorc_oracle::strip::strip_file_with_map(&mut Interner::default(), src)
+            };
         let source_id = dorc_analysis::funcenv::source_file_of_index(source);
         let root_occurrence = *root_occurrences
             .get(occurrence)

@@ -268,11 +268,12 @@ pub struct DefinitionTable {
     /// reason as [`Self::cwd`], and beside it because an operand built from `$0` resolves through
     /// that cwd.
     spellings: ScriptSpellings,
-    /// Per loadable path — in CANONICAL form, keyed through [`Self::cwd`] — that file's own top
-    /// level, as the closed program the loader interprets at each load site
-    /// (`crate::load::LoadProgram`). A file whose top level is a flat list of declarations is the
-    /// degenerate case, and applying it left-to-right reproduces sh's last-wins exactly as before.
-    by_path: BTreeMap<String, crate::load::LoadProgram>,
+    /// Per loadable path — in CANONICAL form, keyed through [`Self::cwd`] — what the controller
+    /// holds there ([`crate::load::Loadable`]): a dorc-lang file's own top level as the closed
+    /// program the loader interprets at each load site, or an ordinary sh file acquired for its
+    /// BYTES alone. A file whose top level is a flat list of declarations is the degenerate
+    /// program, and applying it left-to-right reproduces sh's last-wins exactly as before.
+    by_path: BTreeMap<String, crate::load::Loadable>,
     /// The ambient prefix: the CLI-named sources, in command-line order (`28K` §2 — they load
     /// "before line 1"; `30I:rul-pre-source-is-dot-prelude` — each one is an ordinary `.`).
     ambient: Vec<AmbientRoot>,
@@ -328,7 +329,19 @@ impl DefinitionTable {
     /// sourced absolutely from a book is ONE entry.
     pub fn set_loadable(&mut self, path: &str, program: crate::load::LoadProgram) {
         if let Some(key) = self.cwd.resolve_operand(path) {
-            self.by_path.insert(key, program);
+            self.by_path
+                .insert(key, crate::load::Loadable::Program(program));
+        }
+    }
+
+    /// Declare that `path` is an ordinary sh file the controller READ and does not model
+    /// (`30P:principle-book-code-source-is-inclusion`, r30's acquire-and-ship slice).
+    ///
+    /// It runs no program: the site havocs exactly as an unread one does, and this entry exists
+    /// only so the load account can carry the OCCURRENCE the artifact mirrors.
+    pub fn set_included(&mut self, path: &str) {
+        if let Some(key) = self.cwd.resolve_operand(path) {
+            self.by_path.insert(key, crate::load::Loadable::Included);
         }
     }
 
@@ -406,13 +419,24 @@ impl DefinitionTable {
 
     /// The program a canonical key names, for a nested load already resolved to one.
     fn program_at_key(&self, key: &str) -> Option<&crate::load::LoadProgram> {
-        self.by_path.get(key)
+        self.by_path.get(key)?.program()
+    }
+
+    /// Is this key an ordinary sh file the controller acquired but does not model?
+    ///
+    /// The ONE seat that tells an acquired inclusion from a target nobody read: both answer `None`
+    /// to every program question above — which is what keeps the wall and the havoc identical —
+    /// and only this one has bytes for the artifact to mirror.
+    fn included_at_key(&self, key: &str) -> bool {
+        matches!(self.by_path.get(key), Some(crate::load::Loadable::Included))
     }
 
     /// What a path OPERAND names — the `[ -f <path> ]` half of the decidable set, where the word
     /// is a filesystem operand rather than a `.` target and so carries no slash-less refusal.
     fn program_of_path_operand(&self, path: &str) -> Option<&crate::load::LoadProgram> {
-        self.by_path.get(&self.cwd.resolve_operand(path)?)
+        self.by_path
+            .get(&self.cwd.resolve_operand(path)?)?
+            .program()
     }
 
     /// Is a NON-FINAL component of `key` a file this unit holds — the DEAD reading
@@ -491,8 +515,11 @@ impl DefinitionTable {
             return false;
         }
         let mut inside = false;
-        for (key, program) in &self.by_path {
-            if !program.assigns(name) {
+        for (key, loadable) in &self.by_path {
+            if !loadable
+                .program()
+                .is_some_and(|program| program.assigns(name))
+            {
                 continue;
             }
             if closure.contains(key) {
@@ -539,6 +566,7 @@ impl DefinitionTable {
             .collect();
         self.by_path
             .values()
+            .filter_map(crate::load::Loadable::program)
             .any(|program| program.removes_any(&declared))
     }
 
@@ -2040,7 +2068,31 @@ fn settled_account(
     unresolved_targets: &BTreeMap<CfgNodeId, ResolvedHead>,
 ) -> LoadAccount {
     let mut account = LoadAccount::default();
-    account.want_all(unresolved_targets.values().map(|head| head.key.clone()));
+    // An acquired INCLUSION is no longer wanted — the controller holds its bytes — but it is still
+    // an unresolvable load everywhere else, because acquiring bytes is not modelling them.
+    account.want_all(
+        unresolved_targets
+            .values()
+            .filter(|head| !defs.included_at_key(&head.key))
+            .map(|head| head.key.clone()),
+    );
+    // ...and its OCCURRENCE is recorded here, where the resolved-and-programmed loads are, because
+    // that is what the artifact's placement keys to (`30I:rul-bundles-key-to-load-occurrences`).
+    // It runs no program: `30P:principle-book-code-source-is-inclusion`'s r30 slice is
+    // acquire-and-ship, and the splice stays forfeited
+    // (`FORFEITS:forfeit-plain-sh-inclusion-analysis`).
+    for (&node, head) in unresolved_targets {
+        if defs.included_at_key(&head.key) {
+            account.record(crate::load::LoadOccurrence {
+                sourcer: crate::load::LoadSourcer::Book,
+                target: head.key.clone(),
+                locus: None,
+                at: node,
+                within: None,
+                route: crate::load::LoadRoute::Taken,
+            });
+        }
+    }
     let universe = defs.names();
     let mut frame = Frame::default();
     for name in &universe {
@@ -2106,7 +2158,7 @@ fn sourced_definitions(defs: &DefinitionTable, env: &FuncEnv, node: CfgNodeId) -
     }
     env.resolved_loads
         .get(&node)
-        .and_then(|head| defs.by_path.get(head.key()))
+        .and_then(|head| defs.program_at_key(head.key()))
         .map_or_else(Vec::new, crate::load::LoadProgram::declarations)
 }
 

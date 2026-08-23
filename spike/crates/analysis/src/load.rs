@@ -186,6 +186,40 @@ impl LoadAccount {
     }
 }
 
+/// What the controller holds at one canonical key.
+///
+/// TWO species, and the type is what keeps them apart. A dorc-lang file signed the contract that
+/// makes its top level a closed load PROGRAM the loader may interpret; an ordinary sh file the
+/// controller merely READ signed nothing, and Dorc models nothing in it
+/// (`30P:principle-book-code-source-is-inclusion`, r30's acquire-and-ship slice —
+/// `FORFEITS:forfeit-plain-sh-inclusion-analysis` keeps the splice, the bindings, and the paste
+/// forfeited).
+///
+/// Making it a VARIANT rather than an absent program is what makes the forfeit unrepresentable
+/// instead of remembered: a source whose bytes the artifact ships but whose definitions also bind
+/// cannot be spelled, because the two live in different arms and only `Program` carries steps.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Loadable {
+    /// A dorc-lang file, as the closed program the loader interprets at each load site.
+    Program(LoadProgram),
+    /// An ordinary sh file the controller acquired for its BYTES alone. It binds nothing, its site
+    /// havocs exactly as an unread one does, and it exists in this table only so the load account
+    /// can carry its occurrence for the artifact to mirror.
+    Included,
+}
+
+impl Loadable {
+    /// The program this key names, or `None` for an inclusion — the ONE crossing, so no consumer
+    /// re-spells "an inclusion runs nothing".
+    #[must_use]
+    pub const fn program(&self) -> Option<&LoadProgram> {
+        match self {
+            Self::Program(program) => Some(program),
+            Self::Included => None,
+        }
+    }
+}
+
 /// One loadable file's top level, in source order.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LoadProgram {
