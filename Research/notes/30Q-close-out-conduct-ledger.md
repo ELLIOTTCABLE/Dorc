@@ -48,6 +48,18 @@
   rider list predated the `30P` re-cut (three-state load identity; `dirname` beyond POSSIBLE;
   `rul-guard-resolves-like-its-mutation` as PROPOSED). Rewritten in `30O` to current truth; the
   load MAP builder told directly. The brief itself was drafted from `30P` and did not inherit them.
+- **`fnd-load-plane-ruled-mid-flight`** — the human landed `30P:the-load-plane-stays-correct` on
+  `ai/main` (`dd78b192`) after wave-one dispatch. Absorbed: `rul-rewrite-permission-is-derived`
+  as a rider into load EXECUTE-A (an `Explicitness::{Literal, Evaluated}` marker on every
+  resolution), load EXECUTE-B and planner EXECUTE (import edits and hoists only for an explicit
+  literal operand; an EXACT-via-`$0` `.` stays verbatim, mirrored at its authored path; pinned
+  now while vacuous). Deferred to `30O`: the blessed lift, the two standups, the single-stream
+  `$0`-paste. UNSURE, raised to the human, direction NOT changed in flight
+  (`ask-ship-explicit-targets-below-a-clobber`): the per-form paragraph's "havoc ⇒ nothing
+  shipped" read against `an-load-exactness-reads-binding-state` (a `cd`/havoc `.` above makes a
+  `.` non-EXACT) would un-ship a literal relative oracle `.` below `. /etc/os-release`; the
+  lanes build the conductor's re-cut (mirror at the authored path, claim nothing). The conduct
+  branch is rebased onto `dd78b192`; lanes fold onto the ruled text.
 - **Human advice carried into every brief (typed 2026-08-22):** naming argued only for overloads
   and cross-domain glosses (a 10% lean; two-to-three-word names acceptable as the fix);
   whole-product unrepresentability statements for new/reshaped types; parser work is cheap and

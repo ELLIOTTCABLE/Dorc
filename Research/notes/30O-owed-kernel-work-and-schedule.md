@@ -109,6 +109,14 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 - `FORFEITS:forfeit-certifier-trip-evicts-elisions` capture (trips observed in the field).
 - `FORFEITS:forfeit-plain-sh-inclusion-analysis` (`30P` tiers 1 and 3: the splice and the
   single-stream paste) — the obvious entry point of the next language-surface round.
+- `30P:the-load-plane-stays-correct` (ruled 2026-08-22, after dispatch): `mech-blessed-lift-to-literal`
+  and `mech-two-standups` build with the static-predict tier (deadline: the first `dirname__predict`,
+  i.e. the stdlib revival) and with the approval/artifact-set identity
+  (`30Pb:fnd-reviewed-artifact-is-one-exact-set`); the single-stream paste of an EXACT-via-`$0`
+  dorc-lang `.` is unscheduled (refusing the form is the in-flight conservative state). The
+  typed `rul-rewrite-permission-is-derived` fence (rewrite only an EXPLICIT literal operand of a
+  transformed target) IS in r30: injected as a rider into the load EXECUTE-A/B and planner
+  EXECUTE lanes — a typed `Explicitness` marker on every resolution, import edits gated on it.
 
 ## human-gated-rulings — what each unblocks
 
@@ -116,9 +124,16 @@ On the burndown (unchanged): `unblock-starter-oracle-library` · `ratify-committ
 · `design-report-only-refusal-scope` · `design-atmost-completion-speech` ·
 `design-world-scope-surface` · `rule-incarnation-continuity-semantics` ·
 `sweep-conductor-veto-pile`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
-`choice-verbatim-or-re-say` (under `rul-static-predict-sites-loads`) · rule the
-relative=controller / absolute=target class selector (acked as a lean) · the
-controller-expectation/host-check pattern's UX and opaque review. Non-blocking, from `30N`:
+rule the relative=controller / absolute=target class selector (acked as a lean) · the
+controller-expectation/host-check pattern's UX and opaque review (`choice-verbatim-or-re-say`
+is RULED: verbatim, `30P:the-load-plane-stays-correct`). From the r30 close-out conduct
+(`30Q`): `tc-dollar-zero-is-script-anchored` (invoke the shipped plan by absolute path so a
+`$0`-derived `.` is cwd-immune on the host; gates the flagship `load30-point-havoc-and-script-relative`)
+· `ask-ship-explicit-targets-below-a-clobber` (whether a literal relative `.` below a `cd`/havoc
+`.` — non-EXACT by `an-load-exactness-reads-binding-state` — is still MIRRORED at its authored
+path while claiming nothing, as the in-flight lanes build it, or ships nothing per the per-form
+paragraph's "havoc ⇒ nothing shipped") · `tc-t2-is-narrower-than-the-ladder-says` (the typed T2
+needs alpha-rename for helper/constant collisions; built narrowed). Non-blocking, from `30N`:
 `30M:ask-wall-narration-ratify-or-mint (née §3)` · `30Ng:attn-render-refusal-feeds-the-spine`
 · `30Nd:tc-plan-owns-its-source` · `30Na:tc-book-level-dot-locals-domain` ·
 `30Na:tc-redirect-refusal-dead-or-owed` · `30Na:stop-spine-mode-is-durable` ·
