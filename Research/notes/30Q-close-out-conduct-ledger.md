@@ -162,6 +162,27 @@ dispatches SERIAL — after `lane-third-blind-act` returns and folds — to keep
 linear (no merges while context-constrained). The sibling's `§5g` (read by focused diff) stands
 as banked; the retrofit's steering re-says are committed with this entry.
 
+**`lane-third-blind-act` FOLDED (2026-08-23; conduct `66954cc2`)** — `Cfg::splice_refused` is
+recorded at the ONE seat that mints the refusal diagnostic (`Builder::refuse_splice`; EIGHT arms,
+not four — seven `CFG_INLINE_REFUSED` + the depth-2 positional Note, all recorded; the silent
+`?`-returns stay ordinary `Opaque`, which is what keeps the two goldens still); the clobber seed
+reads it; `p-x-an-unspliceable-call-havocs-the-cwd` promoted; a control cell pins the WRONG seed
+(`call_body_sites(id).is_none()`) red; zero goldens moved; both legs green; census 21 live /
+1 reserved, no expired group — the end-of-r30 pin set is green. Deviations all ACCEPTED (the
+Note arm joins the set — withholding direction; the arms refactored onto one seat; the control
+cell; the stale `load_sites` doc re-said; the base two doc commits ahead). OWED, conductor-tier,
+one line: `analysis/CLAUDE.md rul-havoc-is-pointwise-never-the-stack` still says the third act
+"is pinned red until the CFG's refusal set is queryable" — now false; `30Qf` §third-blind-act
+carries the replacement. `tc-*` for the successor/human, none blocking: a HELD cross-file oracle
+body is modelled as text, not shell state (its own `cd` is as invisible as a refused call's —
+oracle-contract residue, or `seam-interproc`'s cross-file half) · an over-budget wrapper is now
+also a CARRIAGE knob (`main() {…300 lines…}; main; . ./x.dorc.sh` ⇒ nothing shipped — rides the
+typed ship-nothing ruling; zero corpus books) · a refused body's OWN `.` lines keep their
+authority (the clobber closure walks from `cfg.entry()`; the pre-existing `vacuous-entry-fold`
+seam). **`lane-influence-carriage` EXECUTE DISPATCHED** from `66954cc2` on
+`ai/r30-lane-influence-exec` (Opus; checkpoint after R3; R10 = narrow `mode`; R11 = the durable
+export built-then-disabled).
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
