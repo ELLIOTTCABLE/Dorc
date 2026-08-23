@@ -564,7 +564,7 @@ fn bundle_files(
             for file in root.files().iter().filter_map(|&id| projection.file(id)) {
                 match mirrored(cwd, authored_of(file)) {
                     Some(beside) => {
-                        place(beside, file.copied().text().to_owned(), &mut unplaceable)
+                        place(beside, file.copied().text().to_owned(), &mut unplaceable);
                     }
                     None => unplaceable = unplaceable.saturating_add(1),
                 }
@@ -797,16 +797,16 @@ impl Selection {
         &self.imports
     }
 
-    /// Where this form stands every source a book `.` reaches
-    /// (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`).
+    /// Everything this settled form answers before the plan exists: where it stands every source a
+    /// book `.` reaches, and what each of those imports says.
     ///
-    /// Handed to `Plan::decided` beside the imports, because a definition cannot stand anywhere its
+    /// One value, handed whole to `Plan::decided`, because a definition cannot stand anywhere its
     /// own file's bytes do not: a form that carries a package at the author's `.` must not ALSO
     /// hoist that package's definitions above the whole book, and a form that carries it nowhere
-    /// places nothing.
+    /// places nothing (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`).
     #[must_use]
-    pub const fn placements(&self) -> &PlacedSources {
-        &self.placements
+    pub const fn emission(&self) -> dorc_plan::ArtifactEmission<'_> {
+        dorc_plan::ArtifactEmission::of(&self.placements, self.imports.as_slice())
     }
 
     /// Bind the settled form to the plan projection it describes.

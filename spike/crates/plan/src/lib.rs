@@ -134,8 +134,8 @@ pub use spine::{Authorised, PlanAuthority, PlanPlane, Spine, project_plan};
 
 pub mod placement;
 pub use placement::{
-    EmittedName, GuardSite, LoadSite, PlacedSources, Placement, PlacementDecision, PlacementReason,
-    SourcePlacement,
+    ArtifactEmission, EmittedName, GuardSite, LoadSite, NO_ARTIFACT_FORM, PlacedSources, Placement,
+    PlacementDecision, PlacementReason, SourcePlacement,
 };
 
 pub mod region;
@@ -2450,8 +2450,7 @@ impl DecidedRender {
         steps: &[Step],
         regions: &[RegionStep],
         defensive_emission: bool,
-        placed: &PlacedSources,
-        imports: &[ImportEdit],
+        emission: ArtifactEmission<'_>,
         src: &str,
         ast: &Ast,
     ) -> Self {
@@ -2530,7 +2529,7 @@ impl DecidedRender {
             edits().filter(|edit| !refused_asts.contains(&edit.ast)),
             edits(),
             defensive_emission,
-            placed,
+            emission.placements(),
             src,
             ast,
         );
@@ -2539,7 +2538,7 @@ impl DecidedRender {
             refused,
             neutralised,
             live_regions,
-            imports: imports.to_vec(),
+            imports: emission.imports().to_vec(),
         }
     }
 }
@@ -5058,29 +5057,22 @@ impl Plan {
     /// `src` and `ast` must be the pair every later render is handed. Nothing re-derives, so a plan
     /// decided against one tree and rendered against another prints stale answers; every producer
     /// holds exactly one pair, which is what makes that unrepresentable in practice rather than by
-    /// rule. `placed` is the artifact's own account of where each book-reached source stands, on
-    /// the same footing and for the same reason: a producer that defaulted it would hoist bytes the
-    /// artifact already carries at the author's `.`.
+    /// rule. `emission` is the artifact form's own settled answers — where each book-reached source
+    /// stands, and what each import says — on the same footing and for the same reason: a producer
+    /// that defaulted the carriage would hoist bytes the artifact already carries at the author's
+    /// `.`.
     #[must_use]
     pub fn decided(
         steps: Vec<Step>,
         regions: Vec<RegionStep>,
         survival_report: SurvivalReport,
         defensive_emission: bool,
-        placed: &PlacedSources,
-        imports: &[ImportEdit],
+        emission: ArtifactEmission<'_>,
         src: &str,
         ast: &Ast,
     ) -> Self {
-        let render = DecidedRender::decide(
-            &steps,
-            &regions,
-            defensive_emission,
-            placed,
-            imports,
-            src,
-            ast,
-        );
+        let render =
+            DecidedRender::decide(&steps, &regions, defensive_emission, emission, src, ast);
         Self {
             steps,
             regions,
@@ -5225,8 +5217,8 @@ impl Plan {
 }
 
 /// A source's index in the load-ordered vector, as the id every placement keys on.
-const fn source_file_id(index: usize) -> SourceFileId {
-    SourceFileId(index as u32)
+fn source_file_id(index: usize) -> SourceFileId {
+    SourceFileId(u32::try_from(index).unwrap_or(u32::MAX))
 }
 
 /// The definition→placement map [`pin_definitions`] fills, keyed so one definition cannot take two
@@ -5283,18 +5275,18 @@ impl PlacedDefinitions {
 /// is pope-sin tier (`271:rul-sin-ordering`), so the emission decides the binding rather than
 /// leaving a shell to re-derive it.
 ///
-/// Three rules, in the order they apply:
+/// Four rules, in the order they apply:
 ///
 /// 1. **Content-dedup.** Byte-identical bodies are ONE definition however many sites reach them
 ///    (vendored copies are the commonest real collision, `28K` §4).
-/// 1b. **The source's own placement decides.** A definition stands where the artifact stands the
+/// 2. **The source's own placement decides.** A definition stands where the artifact stands the
 ///    file it was authored in (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`): a
 ///    `--pre-source` root is AMBIENT and hoisting it is faithful, while a source a book `.` reaches
 ///    binds at that `.` and the artifact already carries its bytes there — so hoisting it would be
 ///    a SECOND copy, binding names at lines the authored program does not. A source nothing
-///    carries places nothing at all; the vouch is withheld upstream, and emitting no definition is
-///    the safe residue either way (an unbound check fails and the `||` runs the original).
-/// 2. **Already-in-place wins.** A body the book's own text already defines at top level, under
+///    carries places nothing at all, and emitting no definition is the safe residue: an unbound
+///    check fails and the `||` runs the original bytes.
+/// 3. **Already-in-place wins.** A body the book's own text already defines at top level, under
 ///    the same name and the same bytes, is not copied: the artifact would otherwise carry two
 ///    same-named funcdefs, which is the shape `oracle/src/reserved.rs` refuses by another route
 ///    and which `28K` §4 retires by ANY route. Nothing is re-derived — the definition is the
@@ -5302,7 +5294,7 @@ impl PlacedDefinitions {
 ///    live at every site that guards (`rul-visibility-is-full-positional`: a vouch exists only
 ///    where the definition it comes from is the one live at the line, so a book-sited definition
 ///    always PRECEDES its guards).
-/// 3. **Hash-munge the rest.** Where one name still has two distinct bodies, each is emitted
+/// 4. **Hash-munge the rest.** Where one name still has two distinct bodies, each is emitted
 ///    once under `<name>_h<digest>` and the call sites carry the disambiguated name
 ///    (`rul-hash-munge-disambiguation`). Engine SCAFFOLDING around authored bytes — the same
 ///    sanctioned category as the guard glue — never a second source of convergence-truth. The
@@ -6666,8 +6658,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             "",
             &ast,
         );
@@ -6728,8 +6719,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             src,
             &dorc_syntax::parse(src).value,
         )
@@ -6863,8 +6853,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             &src,
             &ast,
         );
@@ -6922,8 +6911,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &placed,
-            &[],
+            ArtifactEmission::of(&placed, &[]),
             src,
             &ast,
         );
@@ -6975,8 +6963,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &placed,
-            &[],
+            ArtifactEmission::of(&placed, &[]),
             src,
             &ast,
         );
@@ -7049,8 +7036,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             "",
             &dorc_syntax::parse("").value,
         );
@@ -7171,8 +7157,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             true,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             "",
             &dorc_syntax::parse("").value,
         );
@@ -7211,8 +7196,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             src,
             &dorc_syntax::parse(src).value,
         )
@@ -7461,8 +7445,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &PlacedSources::all_ambient(),
-            &[],
+            NO_ARTIFACT_FORM,
             "",
             &empty_ast,
         );
@@ -7486,8 +7469,7 @@ apt_get__is_converged() { return 0; }
                 Vec::new(),
                 SurvivalReport::default(),
                 false,
-                &PlacedSources::all_ambient(),
-                &[],
+                NO_ARTIFACT_FORM,
                 "",
                 &empty_ast,
             )

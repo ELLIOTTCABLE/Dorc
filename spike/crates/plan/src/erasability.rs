@@ -426,8 +426,7 @@ mod tests {
             Vec::new(),
             crate::SurvivalReport::default(),
             false,
-            &crate::PlacedSources::all_ambient(),
-            &[],
+            crate::NO_ARTIFACT_FORM,
             "",
             &ast,
         );

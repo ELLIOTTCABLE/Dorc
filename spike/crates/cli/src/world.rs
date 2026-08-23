@@ -543,8 +543,7 @@ impl WhyWorld {
             &mut spine,
             book_src,
             &parsed.value,
-            form_selection.placements(),
-            form_selection.imports(),
+            form_selection.emission(),
             &dorc_plan::PlanAuthority::without_intake(),
             &spent,
         );
@@ -1296,8 +1295,7 @@ mod tests {
             spine,
             BOOK,
             &ast,
-            &dorc_plan::PlacedSources::all_ambient(),
-            &[],
+            dorc_plan::NO_ARTIFACT_FORM,
             &dorc_plan::PlanAuthority::without_intake(),
             spent,
         )
@@ -1339,8 +1337,7 @@ mod tests {
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &dorc_plan::PlacedSources::all_ambient(),
-            &[],
+            dorc_plan::NO_ARTIFACT_FORM,
             BOOK,
             &dorc_syntax::parse(BOOK).value,
         )

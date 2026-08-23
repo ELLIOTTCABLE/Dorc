@@ -464,8 +464,7 @@ fn empty_probe_plan_default_is_inert() {
         Vec::new(),
         dorc_plan::SurvivalReport::default(),
         false,
-        &dorc_plan::PlacedSources::all_ambient(),
-        &[],
+        dorc_plan::NO_ARTIFACT_FORM,
         "",
         &ast,
     );

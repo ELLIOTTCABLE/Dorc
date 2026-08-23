@@ -1939,8 +1939,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         Vec::new(),
         SurvivalReport::default(),
         false,
-        &dorc_plan::PlacedSources::all_ambient(),
-        &[],
+        dorc_plan::NO_ARTIFACT_FORM,
         src,
         &ast,
     );
@@ -2009,16 +2008,17 @@ fn a_rewritten_import_reaches_the_bytes_the_surface_and_the_plane() {
             _ => None,
         })
         .expect("the load's operand");
+    let placed = dorc_plan::PlacedSources::all_ambient();
+    let imports = [dorc_plan::ImportEdit::Repoint {
+        ast: operand,
+        path: "./pkg.dorc-bundle.sh".to_owned(),
+    }];
     let plan = Plan::decided(
         Vec::new(),
         Vec::new(),
         SurvivalReport::default(),
         false,
-        &dorc_plan::PlacedSources::all_ambient(),
-        &[dorc_plan::ImportEdit::Repoint {
-            ast: operand,
-            path: "./pkg.dorc-bundle.sh".to_owned(),
-        }],
+        dorc_plan::ArtifactEmission::of(&placed, &imports),
         src,
         &ast,
     );

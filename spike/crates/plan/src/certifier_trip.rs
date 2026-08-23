@@ -208,15 +208,7 @@ pub fn project_censusless(
     authority: &PlanAuthority,
 ) -> Plan {
     let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false);
-    crate::project_plan(
-        spine,
-        src,
-        ast,
-        &crate::PlacedSources::all_ambient(),
-        &[],
-        authority,
-        &spent,
-    )
+    crate::project_plan(spine, src, ast, crate::NO_ARTIFACT_FORM, authority, &spent)
 }
 
 #[cfg(test)]
@@ -453,8 +445,7 @@ apt_get__predict() {
             spine,
             FIXTURE_BOOK,
             &ast,
-            &crate::PlacedSources::all_ambient(),
-            &[],
+            crate::NO_ARTIFACT_FORM,
             &crate::PlanAuthority::without_intake(),
             spent,
         )

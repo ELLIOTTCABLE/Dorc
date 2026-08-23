@@ -139,8 +139,7 @@ pub fn project_plan(
     spine: &mut Spine,
     src: &str,
     ast: &dorc_syntax::ast::Ast,
-    placed: &crate::PlacedSources,
-    imports: &[crate::ImportEdit],
+    emission: crate::ArtifactEmission<'_>,
     _authority: &PlanAuthority,
     _spent: &crate::certifier_trip::TripSpent,
 ) -> Plan {
@@ -169,8 +168,7 @@ pub fn project_plan(
         regions,
         project_survival_report(spine),
         projected_defensive_emission(spine),
-        placed,
-        imports,
+        emission,
         src,
         ast,
     );
@@ -400,8 +398,7 @@ mod tests {
             Vec::new(),
             SurvivalReport::default(),
             false,
-            &crate::PlacedSources::all_ambient(),
-            &[],
+            crate::NO_ARTIFACT_FORM,
             src,
             &ast,
         );

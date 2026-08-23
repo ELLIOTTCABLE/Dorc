@@ -263,6 +263,52 @@ impl PlacedSources {
     }
 }
 
+/// Everything a settled artifact form answers before the plan exists: where each book-reached
+/// source stands, and what each book-sited import says.
+///
+/// ONE value rather than two parameters side by side, on `30N:rul-census-inputs-are-non-optional`'s
+/// reasoning: they are one answer about ONE form, and a producer handed a carriage account from one
+/// form beside an import list from another would emit a plan describing neither.
+#[derive(Debug, Clone, Copy)]
+pub struct ArtifactEmission<'a> {
+    placements: &'a PlacedSources,
+    imports: &'a [crate::ImportEdit],
+}
+
+impl<'a> ArtifactEmission<'a> {
+    /// The answers a settled form gives.
+    #[must_use]
+    pub const fn of(placements: &'a PlacedSources, imports: &'a [crate::ImportEdit]) -> Self {
+        Self {
+            placements,
+            imports,
+        }
+    }
+
+    /// Where each book-reached source stands.
+    #[must_use]
+    pub const fn placements(&self) -> &'a PlacedSources {
+        self.placements
+    }
+
+    /// What each book-sited import says.
+    #[must_use]
+    pub const fn imports(&self) -> &'a [crate::ImportEdit] {
+        self.imports
+    }
+}
+
+/// The answer an instrument that settled no form holds: nothing book-reached, nothing re-said.
+///
+/// Sited as a const rather than a `Default` so a producer has to NAME the posture it is in — the
+/// kernel entries, `hostsim`, DST, and the censusless projections, none of which has an artifact.
+pub const NO_ARTIFACT_FORM: ArtifactEmission<'static> = ArtifactEmission {
+    placements: &PlacedSources {
+        reached: BTreeMap::new(),
+    },
+    imports: &[],
+};
+
 #[cfg(test)]
 mod tests {
     use super::{

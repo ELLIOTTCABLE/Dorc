@@ -30,5 +30,6 @@ pub mod erase;
 pub mod funcenv;
 pub mod lattice;
 pub mod load;
+pub mod nameuse;
 pub mod solve;
 pub mod value;
