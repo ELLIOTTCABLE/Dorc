@@ -2314,6 +2314,9 @@ pub enum ImportEdit {
         ast: AstId,
         /// The artifact-relative path the operand now names.
         path: String,
+        /// Which ladder condition decided this bundle's placement — minted WITH the edit, never
+        /// re-derived from it (`acts-and-dispositions-mint-together`).
+        reason: PlacementReason,
     },
     /// The bundle's own bytes stand where the `.` did, because one stream cannot carry a file
     /// beside the plan. Licensed only at the shape `floor30-inline-dot-boundary` measured.
@@ -2322,6 +2325,9 @@ pub enum ImportEdit {
         ast: AstId,
         /// The bundled dorc-lang text, exactly as the projection composed it.
         sh: String,
+        /// Which ladder condition decided this bundle's placement — minted WITH the edit, never
+        /// re-derived from it (`acts-and-dispositions-mint-together`).
+        reason: PlacementReason,
     },
 }
 
@@ -2331,6 +2337,14 @@ impl ImportEdit {
     pub const fn ast(&self) -> AstId {
         match self {
             Self::Repoint { ast, .. } | Self::Inline { ast, .. } => *ast,
+        }
+    }
+
+    /// Which ladder condition decided this bundle's placement.
+    #[must_use]
+    pub const fn reason(&self) -> &PlacementReason {
+        match self {
+            Self::Repoint { reason, .. } | Self::Inline { reason, .. } => reason,
         }
     }
 
@@ -5194,6 +5208,7 @@ impl Plan {
                     DiagCode::PlanImportRewritten(PlanImportRewritten {
                         verb: import.verb(),
                         names: import.names().to_owned(),
+                        reason: import.reason().word(),
                     }),
                     ast.node(import.ast()).span,
                 )

@@ -467,6 +467,12 @@ raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
 
+[tasks.loom]
+description = "The loom CLI, on this workspace's own toolchain: `publish CASE…` regenerates both generated locks plus the affected cases, `vars`/`sections`/`keys` discover, `add-register` seeds one. A bare `cargo run` here resolves the WRONG rustc and dies before it reads a case, which is the whole reason this task exists. Trailing args reach `dorc-loom` verbatim."
+dir = "spike"
+raw = true
+run = "cargo run -q -p dorc-loom --bin dorc-loom --"
+
 [tasks."bless:case"]
 description = "The SCOPED re-bless: BLESS=1 over exactly the named cases, and nothing else. `bless` above verifies the WHOLE suite first and refuses while anything is red, which is right for a conductor's close and a deadlock for the one job this exists for — a change that legitimately moves a case's golden cannot bless it while that case is the red one. Same selection `test:e2e` takes (ONE bare substring, or any number of case PATHS), same runner, same gates, and the trial filter is what keeps every other golden byte-identical. Verify the scope yourself afterwards: `git status --short` must show only the cases you named. A case carrying `expected.emitted` is still refused here — that is `bless:floor`'s."
 dir = "spike"

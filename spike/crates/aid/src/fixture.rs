@@ -125,6 +125,7 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::PlanImportRewritten(PlanImportRewritten {
                 verb: "repointed",
                 names: "./wombat.dorc-bundle.sh".to_owned(),
+                reason: "shape-unmeasured",
             }),
         ),
         (

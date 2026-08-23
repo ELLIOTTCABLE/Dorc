@@ -588,6 +588,7 @@ fn bundle_files(
         imports.push(ImportEdit::Repoint {
             ast: operand,
             path: format!("./{destination}"),
+            reason: kept_in_place_reason(load),
         });
         for &id in root.separate() {
             let Some(file) = projection.file(id) else {
@@ -682,9 +683,24 @@ fn inline_imports(projection: &BundleProjection, loads: &[BookLoad]) -> Option<V
             Some(ImportEdit::Inline {
                 ast: load.command,
                 sh: root.bundled().to_owned(),
+                reason: kept_in_place_reason(load),
             })
         })
         .collect()
+}
+
+/// Which ladder condition decided that this load's bundle stands where the author's `.` stands.
+///
+/// ONE seat, read by the placement account and by the import edit alike, so the reason a plan
+/// DISCLOSES and the reason the placement RECORDS cannot say different things about one line.
+const fn kept_in_place_reason(load: &BookLoad) -> PlacementReason {
+    if !load.explicit {
+        PlacementReason::KeptInPlaceOperandNotExplicit
+    } else if load.absorbable {
+        PlacementReason::KeptInPlaceLadderUnconsulted
+    } else {
+        PlacementReason::KeptInPlaceShapeUnmeasured
+    }
 }
 
 /// What a settled form does with one book-reached bundle's bytes.
@@ -739,13 +755,7 @@ fn placements(
                     PlacementDecision::new(
                         Placement::InPlace(LoadSite(load.command)),
                         EmittedName::Authored,
-                        if !load.explicit {
-                            PlacementReason::KeptInPlaceOperandNotExplicit
-                        } else if load.absorbable {
-                            PlacementReason::KeptInPlaceLadderUnconsulted
-                        } else {
-                            PlacementReason::KeptInPlaceShapeUnmeasured
-                        },
+                        kept_in_place_reason(load),
                     ),
                 );
             } else {

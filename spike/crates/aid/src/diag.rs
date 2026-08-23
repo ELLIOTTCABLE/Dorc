@@ -739,6 +739,10 @@ pub struct PlanImportRewritten {
     /// The artifact-relative path the import now names; EMPTY where the import is gone because the
     /// bytes it loaded stand in its place.
     pub names: String,
+    /// The closed word for WHICH condition of the front-lift ladder decided where this bundle
+    /// stands (`30P:rul-front-lift-is-the-planners-first-consumer`). A reason COMPONENT beside the
+    /// one code, never a sibling code per tier (`28L:rul-reason-enums-not-sibling-codes`).
+    pub reason: &'static str,
 }
 
 // ===========================================================================
@@ -3192,7 +3196,11 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             loads: _,
         })
         | DiagCode::ArtifactPublishRefused(ArtifactPublishRefused { reason: _ }) => Vec::new(),
-        DiagCode::PlanImportRewritten(PlanImportRewritten { verb: _, names }) => {
+        DiagCode::PlanImportRewritten(PlanImportRewritten {
+            verb: _,
+            names,
+            reason: _,
+        }) => {
             vec![ours("names", names.clone())]
         }
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {

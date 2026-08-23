@@ -130,6 +130,24 @@ pub enum PlacementReason {
     KeptInPlaceLadderUnconsulted,
 }
 
+impl PlacementReason {
+    /// The greppable word a disclosure prints — the variant's own name rather than prose, on
+    /// `ArtifactForm::name`'s footing (`27V:rul-output-form-unwelded` keeps the WORDS free; this is
+    /// the identity underneath them).
+    #[must_use]
+    pub const fn word(&self) -> &'static str {
+        match self {
+            Self::HoistedAsIs => "hoisted-as-is",
+            Self::HoistedMunged { .. } => "hoisted-munged",
+            Self::KeptInPlaceNameCollides { .. } => "name-collides",
+            Self::KeptInPlaceDynamismOpener => "dynamism-opener",
+            Self::KeptInPlaceShapeUnmeasured => "shape-unmeasured",
+            Self::KeptInPlaceOperandNotExplicit => "operand-not-explicit",
+            Self::KeptInPlaceLadderUnconsulted => "ladder-unconsulted",
+        }
+    }
+}
+
 /// One placement question, answered: where the bytes stand, under what name, and which ladder
 /// condition decided it.
 ///

@@ -2012,6 +2012,7 @@ fn a_rewritten_import_reaches_the_bytes_the_surface_and_the_plane() {
     let imports = [dorc_plan::ImportEdit::Repoint {
         ast: operand,
         path: "./pkg.dorc-bundle.sh".to_owned(),
+        reason: dorc_plan::PlacementReason::KeptInPlaceLadderUnconsulted,
     }];
     let plan = Plan::decided(
         Vec::new(),
