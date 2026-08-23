@@ -181,7 +181,17 @@ typed ship-nothing ruling; zero corpus books) · a refused body's OWN `.` lines 
 authority (the clobber closure walks from `cfg.entry()`; the pre-existing `vacuous-entry-fold`
 seam). **`lane-influence-carriage` EXECUTE DISPATCHED** from `66954cc2` on
 `ai/r30-lane-influence-exec` (Opus; checkpoint after R3; R10 = narrow `mode`; R11 = the durable
-export built-then-disabled).
+export built-then-disabled). **R3 CHECKPOINT (2026-08-23; `4d802e94`; `30Qd` §execute-checkpoint):**
+R1–R3 green, every golden byte-identical; the BEFORE `spine:baseline` committed. Rulings: the
+row boundaries moved (sealing forces the mutating seats into R2: R8, R9's two driver seats, the
+five authored postures, R4's type change; R3 absorbed a slice of R6) — ACCEPTED, each row
+independently green; `dev-carriage-census-needs-a-third-arm` (`Unminted` for the four
+writer-less species) ENDORSED; `dev-run-identity-grouped-out-of-the-invocation-mint`
+(`core::spine::RunIdentity`; no durable byte moves) ENDORSED; the builder's extra fence
+`every_untracked_adapter_is_enumerated` ENDORSED as an INVENTORY (asserts the named list,
+never emptiness forever). RED-cell (b) promoted at R3. R11's durable review: the human's typed
+flow (build all the way → disable → reviewers chew on it → human enables) is the review
+ordering for that row; built last on that basis. Resumed for R4–R11.
 
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
