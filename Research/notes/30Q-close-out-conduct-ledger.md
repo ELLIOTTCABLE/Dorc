@@ -154,6 +154,14 @@ FLATTENING: post-reingest influence is report/why-plane only; durable ingestion 
 rehydrates an account into a decision; the why-driver's widen is the DEFINITION. All eleven are
 in the EXECUTE brief (scratchpad `brief-influence-execute.md`, rows R10–R11 added).
 
+2026-08-23, TYPED to this session: "You're clear to proceed; dispatch influence-execute when you
+please" — the EXECUTE ACK. Terms: the conductor's only job is DISPATCH, RECEIPT, and LEDGERING
+until told otherwise — no tests or gates run by the conductor, bless/`gate:arc`/substantial
+edits held for a successor or a later ack; context suspected heavy. Then: influence EXECUTE
+dispatches SERIAL — after `lane-third-blind-act` returns and folds — to keep the history
+linear (no merges while context-constrained). The sibling's `§5g` (read by focused diff) stands
+as banked; the retrofit's steering re-says are committed with this entry.
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
