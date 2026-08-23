@@ -1072,11 +1072,8 @@ impl Parser {
                 salvage(),
                 SyntaxUnsupportedReason::EvalConstructedCode,
             )),
-            // NOT a ⊤-trigger, whatever the operand carries: `. "$(dirname "$0")/x.sh"` parses and
-            // runs under `posh ∩ dash`, and `30P:rul-floor-valid-text-never-parse-fails` forbids
-            // the parser refusing floor-valid text. The operand keeps its rich AST and the LOAD
-            // PLANE answers — a head it cannot evaluate over controller-known inputs is a point
-            // havoc, and the pre-network complaint is the cli's.
+            // NOT a ⊤-trigger, whatever the operand carries: it is floor-valid text
+            // (`30P:rul-floor-valid-text-never-parse-fails`), so the LOAD PLANE answers instead.
             "." | "source" => None,
             "unset" => {
                 // `unset "$x"` / `unset $x` — dynamic lvalue. A literal `unset FOO`

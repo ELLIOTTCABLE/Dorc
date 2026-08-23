@@ -1675,13 +1675,8 @@ fn run_control(
                     account.suspend(sourcer.to_owned());
                 }
             };
-            // ABSORBING, deliberately, where the book plane's own `.` is now pointwise: an
-            // unresolvable act inside a LOAD PROGRAM floors the rest of that program and the
-            // prelude it sits in (`30Mg` R1, the prelude floor, pinned by
-            // `an_unresolvable_prelude_load_floors_the_rest_of_the_prelude`). Making this
-            // pointwise too would let a LATER prelude root's bindings license sites — a licensure
-            // widening past `30P:principle-unknown-source-is-a-point-havoc`'s book-plane cell,
-            // owed a ruling rather than taken on the way past.
+            // ABSORBING where the book plane is pointwise: the `30Mg` R1 prelude floor. Pointwise
+            // here would let a LATER prelude root license sites — a widening owed a ruling.
             let Some(next) = target
                 .expand(locals, &ambient)
                 .and_then(|text| ctx.defs.cwd.resolve_dot(&text))
@@ -2048,8 +2043,7 @@ fn settled_account(
 /// An unresolvable target contributes nothing HERE (it havocs the environment instead, so every
 /// name reads ⊤ afterwards and nothing downstream is provable).
 fn sourced_definitions(defs: &DefinitionTable, env: &FuncEnv, node: CfgNodeId) -> Vec<DefId> {
-    // A cwd-havoc'd site names its file for the artifact and binds NOTHING, so it contributes no
-    // declarations either — a contest reported off it would rest on a binding that does not hold.
+    // A cwd-havoc'd site binds nothing, so it declares nothing: a contest off it holds no binding.
     if matches!(
         env.havoc_causes.get(&node),
         Some(HavocCause::CwdUnknown { .. })
@@ -2216,8 +2210,7 @@ fn load_head(
         cwd_relative: false,
         dies_slashless: false,
     };
-    // The author's own bytes named this (a literal word, or a root the value plane folded from
-    // literals), so an emitter may rewrite the line: `Explicitness::Literal`.
+    // The author's own bytes named this, so an emitter may rewrite the line.
     if let Some(text) = literals.literal_text(node, index) {
         return LoadHead {
             exact: named_key(key_of(defs, text, Explicitness::Literal)),
@@ -2234,8 +2227,7 @@ fn load_head(
     let NodeKind::Word { parts } = &ast.node(word).kind else {
         return dead;
     };
-    // Everything below went through the evaluator, so Dorc computed the name the author did not
-    // write: `Explicitness::Evaluated`, whatever EXACT answers.
+    // Below here Dorc COMPUTED the name, whatever EXACT answers.
     let evaluated = |spelling| match evaluate_word(defs, literals, node, parts, spelling) {
         Err(cause) => (OperandAnswer::Unevaluable(cause), false),
         Ok(text) => (
@@ -2284,8 +2276,7 @@ fn load_head(
 /// depth each keep clobbers alive longer than a path-exact answer would.
 fn cwd_clobbers(cfg: &Cfg, clobbering: &BTreeSet<CfgNodeId>) -> BTreeMap<CfgNodeId, CfgNodeId> {
     let count = cfg.node_count();
-    // `u32::MAX` = not yet reached. Both vectors move monotonically DOWN (a depth only shrinks, a
-    // clobber only appears or shallows), and both are bounded, so the worklist settles.
+    // `u32::MAX` = not yet reached; both vectors move monotonically DOWN and are bounded.
     let mut depth = vec![u32::MAX; count];
     let mut live: Vec<Option<(u32, CfgNodeId)>> = vec![None; count];
     depth[cfg.entry().index()] = 0;
@@ -2440,8 +2431,7 @@ fn apply_operator(
             let absent = *colon && value.is_empty();
             let word = || evaluate_word(defs, literals, node, word, spelling);
             match kind {
-                // The plane answered, so the parameter is SET: `-`/`=`/`?` all yield its value
-                // unless the colon form additionally rejects the empty one.
+                // The plane answered ⇒ SET: all three yield the value unless `:` rejects the empty.
                 SubstituteKind::Default | SubstituteKind::Assign | SubstituteKind::Error => {
                     if absent {
                         word()
@@ -2557,6 +2547,22 @@ fn pattern_matches(pattern: &[PatternAtom], text: &[char]) -> bool {
 /// THE ONE RESOLVER: the transfer reads this map rather than re-evaluating a head per worklist
 /// iteration, so no second answer to "which file is this" exists to drift from it
 /// (`30I:rul-one-loader-many-projections`).
+///
+/// # The cwd pass, and what it costs
+///
+/// The clobber SEED is a `.` whose head could not be evaluated (it may `cd` in the caller's own
+/// shell) plus every `cd`. EXECUTE-B's `Included` plain-sh target arrives through that same door
+/// with no edit here (`30Qc:rul-included-is-as-opaque-as-unresolvable`): once `program_at_key`
+/// stops answering for it, it is an unevaluated head like any other. NOT the merely-unread bucket
+/// — a book-sourced dorc-lang dependency is named-but-unloaded in acquisition round 1 and
+/// resolvable in round 2, so seeding clobbers from it would stop the acquisition fixpoint growing.
+///
+/// Below a clobber a relative head costs BINDING AUTHORITY and NOTHING else (`30P`, ruled
+/// 2026-08-22). The file is still acquired and still mirrored at its authored relative path,
+/// because cwd-parity is what keeps the shipped tree faithful to the author's and a plan that dies
+/// at the `.` on the host is a worse answer than one that runs the line. What it loses is the
+/// vouch: the site havocs and takes no custody, exactly as an unresolvable one does — which is why
+/// such a site sits in BOTH `resolved` and `unresolvable`.
 fn load_sites(
     ast: &Ast,
     cfg: &Cfg,
@@ -2565,14 +2571,6 @@ fn load_sites(
 ) -> LoadSites {
     let mut sites = LoadSites::default();
     let mut heads = Vec::new();
-    // A `.` whose OPERAND could not be evaluated may `cd`; so may a `cd`. The third member is
-    // EXECUTE-B's: a plain-sh `Included` target is exactly as opaque as an unresolvable one
-    // (`30Qc:rul-included-is-as-opaque-as-unresolvable`), and lands here through the same door
-    // once `program_at_key` stops answering for it.
-    //
-    // NOT the merely-unread bucket: a book-sourced dorc-lang dependency is named-but-unloaded in
-    // acquisition round 1 and resolvable in round 2, so seeding clobbers from it would stop the
-    // acquisition fixpoint growing.
     let mut clobbering = BTreeSet::new();
     for node in 0..cfg.node_count() {
         let id = CfgNodeId(u32::try_from(node).unwrap_or(u32::MAX));
@@ -2604,19 +2602,13 @@ fn load_sites(
     }
     let clobbers = cwd_clobbers(cfg, &clobbering);
     for (id, head) in heads {
-        // The cwd costs BINDING AUTHORITY and nothing else (`30P`, ruled 2026-08-22): the file is
-        // still acquired and still mirrored at its authored relative path, because cwd-parity is
-        // what keeps the shipped tree faithful and a plan that dies at the `.` on the host is a
-        // worse answer than one that runs the line. What it loses is the vouch — the site havocs
-        // and takes no custody, exactly as an unresolvable one does.
         let clobbered = head
             .cwd_relative
             .then(|| clobbers.get(&id).copied())
             .flatten();
         match head.exact {
-            // A target the operand NAMES but the controller never read is still a name: the
-            // acquisition reads exactly these and re-solves, which is how a book-sourced package
-            // joins the loaded set at all.
+            // A name the controller never read is still a name: the acquisition reads exactly these
+            // and re-solves, which is how a book-sourced package joins the loaded set at all.
             Ok(resolved) => {
                 if let Some(clobbered_at) = clobbered {
                     sites
@@ -2807,8 +2799,7 @@ fn command_transfer(
     let Some(word) = literals.literal_text(node, 0) else {
         return incoming.clone();
     };
-    // `28K` §1: we cannot know WHICH names an unloaded file defines, so every name it COULD have
-    // defined is ⊤ — at this line, and no further.
+    // `28K` §1: every name an unloaded file COULD define is ⊤ — at this line, and no further.
     let havoc = || {
         let mut env = incoming.clone();
         env.havoc_names(universe);
@@ -2816,8 +2807,7 @@ fn command_transfer(
     };
     match word {
         "." | "source" => {
-            // The cwd domain: this line names its file for acquisition and mirroring, and binds
-            // nothing, because a line above may have moved the working directory out from under it.
+            // Names its file for acquisition and mirroring; binds nothing (a line above may have cd'd).
             if sites.cwd_havoc.contains(&node) {
                 return havoc();
             }

@@ -256,9 +256,8 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 prior: "vendor/yum.oracle.sh:4".to_owned(),
             }),
         ),
-        // Same necessity, one seat further BACK: both load-head lints are minted by the binary's
-        // own load-edge driver, past everything the in-process book pipeline composes. Their
-        // end-to-end firing is a whole-product case's.
+        // Same necessity, one seat BACK: the load-head family is minted by the binary's own
+        // load-edge driver, past everything the in-process book pipeline composes.
         (
             "script-relative-load-dies-slashless",
             DiagCode::ScriptRelativeLoadDiesSlashless(ScriptRelativeLoadDiesSlashless),

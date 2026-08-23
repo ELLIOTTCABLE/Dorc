@@ -727,13 +727,12 @@ fn reject_dynamic_command_name_is_dynamic_execution() {
     assert_rejects("${prog} run", UnsupportedReason::DynamicExecution);
 }
 
+/// Why: every one of these parses and runs under `posh ∩ dash`, and
+/// `30P:rul-floor-valid-text-never-parse-fails` forbids the parser refusing floor-valid text.
+/// Which FILE the operand names is the load plane's question, and the pre-network complaint
+/// about one it cannot evaluate is the cli's; this test's own subject is that the AST survives.
 #[test]
 fn a_source_operand_parses_whatever_it_carries() {
-    // Why: every one of these parses and runs under `posh ∩ dash`, and
-    // `30P:rul-floor-valid-text-never-parse-fails` forbids the parser refusing floor-valid text.
-    // Which FILE the operand names is the load plane's question — it resolves the head over
-    // controller-known inputs or havocs — and the pre-network complaint about one it cannot
-    // evaluate is the cli's. This test's own subject is only that the AST survives.
     for accepted in [
         ". /etc/profile",
         ". \"$x\"",
@@ -1051,14 +1050,9 @@ fn background_amp_emits_syntax_unsupported() {
     );
 }
 
-// ===========================================================================
-// Parameter-expansion decode (`30Qc` item 2). The lexer used to collapse every
-// operator form to one opaque part and throw the body away; these pin that the
-// base, the operator, and the operand word all survive — and that deciding what
-// any of it MEANS stays the analyzer's (`semantic-top-not-here`: no diagnostic).
-// ===========================================================================
-
-/// The parts of word `index` of a top-level simple command.
+/// The parts of word `index` of a top-level simple command. Used by the parameter-expansion
+/// decode cells below (`30Qc` item 2): the lexer used to collapse every operator form to one
+/// opaque part and throw the body away, and each of them pins one thing that now survives.
 fn nth_word_parts(ast: &Ast, index: usize) -> &[WordPart] {
     let item = script_items(ast)[0];
     match kind(ast, item) {
@@ -1070,11 +1064,11 @@ fn nth_word_parts(ast: &Ast, index: usize) -> &[WordPart] {
     }
 }
 
+/// The flagship load head. `${0%/*}` is one non-greedy suffix trim over `$0`, and the pattern
+/// `/*` is a real lexed word rather than discarded bytes — without it the evaluator cannot tell
+/// `${0%/*}` from `${0%%/*}` and would resolve a different directory.
 #[test]
 fn a_trim_expansion_carries_its_base_operator_and_pattern() {
-    // The flagship load head. `${0%/*}` is one non-greedy suffix trim over `$0`, and the pattern
-    // `/*` is a real lexed word rather than discarded bytes — without it the evaluator cannot tell
-    // `${0%/*}` from `${0%%/*}` and would resolve a different directory.
     let p = parse(". \"${0%/*}/helpers.sh\"\n");
     assert!(
         p.diags.is_empty(),
@@ -1110,11 +1104,11 @@ fn a_trim_expansion_carries_its_base_operator_and_pattern() {
     }
 }
 
+/// The `{}`-only balancing bug: a `}` inside a quoted pattern used to end the expansion early,
+/// leaving the rest of the word to lex as garbage. The word here is ONE part, or the scan is
+/// still counting braces without looking at quotes.
 #[test]
 fn a_quoted_brace_inside_a_pattern_does_not_close_the_expansion() {
-    // The `{}`-only balancing bug: a `}` inside a quoted pattern used to end the expansion early,
-    // leaving the rest of the word to lex as garbage. The word here is ONE part or the scan is
-    // still counting braces without looking at quotes.
     let p = parse("hork ${v%'}'}\n");
     match nth_word_parts(&p.value, 1) {
         [
@@ -1130,10 +1124,10 @@ fn a_quoted_brace_inside_a_pattern_does_not_close_the_expansion() {
     }
 }
 
+/// `${x-}` / `${x:-}` is the ONE closed form — its default can hide nothing — and the package
+/// sentinel reads exactly that projection (`30I` §2.2).
 #[test]
 fn the_empty_default_form_keeps_its_own_variant() {
-    // `${x-}` / `${x:-}` is the ONE closed form — its default can hide nothing — and the package
-    // sentinel reads exactly that projection (`30I` §2.2).
     for (src, colon) in [("hork ${SM_PKG-}\n", false), ("hork ${SM_PKG:-}\n", true)] {
         match nth_word_parts(&parse(src).value, 1) {
             [WordPart::ParamExpansion { base, op }] => {
@@ -1148,10 +1142,10 @@ fn the_empty_default_form_keeps_its_own_variant() {
     }
 }
 
+/// `${x/y/z}` is a bash-family form the dialect bans. Decoding it as `Unmodelled` rather than
+/// silently as identity is what stops a consumer treating it as `$x`.
 #[test]
 fn an_unmodelled_operator_is_a_variant_a_consumer_must_match() {
-    // `${x/y/z}` is a bash-family form the dialect bans. Decoding it as `Unmodelled` rather than
-    // silently as identity is what stops a consumer treating it as `$x`.
     match nth_word_parts(&parse("hork ${v/a/b}\n").value, 1) {
         [
             WordPart::ParamExpansion {

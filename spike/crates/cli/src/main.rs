@@ -1072,10 +1072,8 @@ fn run(
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
         dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
     };
-    // The computed `.`, at its ruled TIER: post-analysis, pre-network, whole-run
-    // (`30P:rul-floor-valid-text-never-parse-fails` moved it off the parse tier and kept the
-    // outcome). Ranked last of the three because a book that is unmodeled or whose wrapper
-    // contradicts itself has a louder story to tell first.
+    // The computed `.` at its ruled TIER: post-analysis, pre-network, whole-run
+    // (`30P:rul-floor-valid-text-never-parse-fails` kept the outcome and moved only the tier).
     if matches!(book_outcome, RunOutcome::Complete)
         && env.havoc_causes().values().any(|cause| {
             matches!(

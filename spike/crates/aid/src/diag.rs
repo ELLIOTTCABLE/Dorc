@@ -2683,22 +2683,19 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
-        // WARNING: the off-ramp is the product's own promise, and a book that dies under
-        // `sh book.sh` has lost it — silently, since Dorc's own invocation works fine.
+        // WARNING: a book that dies under `sh book.sh` has silently lost the off-ramp.
         DiagCode::ScriptRelativeLoadDiesSlashless(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
             remediation: RemediationClass::ResolveDynamism,
         },
-        // WARNING: the load genuinely walls — a `PATH` search is a host read the controller may
-        // not make — and the repair is one `./`.
+        // WARNING: a `PATH` search is a host read, so the load walls; the repair is one `./`.
         DiagCode::SlashlessSourceSearchesPath(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
             remediation: RemediationClass::ResolveDynamism,
         },
-        // ERROR with a WarnOrDeny floor: the whole run fast-fails pre-network on this, so the line
-        // that says why must never be silenceable below Warning.
+        // ERROR/WarnOrDeny: the run fast-fails on this, so the line saying why is never silenceable.
         DiagCode::ComputedSourceOperand(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
