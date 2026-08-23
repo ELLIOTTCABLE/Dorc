@@ -669,9 +669,16 @@ struct RegionRound<'a> {
 ///
 /// Sibling instances of ONE region write to each other along the ordinary sequence, and the region's
 /// own ATOMIC replacement is what removes them — so its freshness is answered with the whole
-/// population silenced, the shape `effect::self_reach_holds` already takes one level down. Only for
-/// a plural population (a lone instance is never in its own in-state), and only ever read beside
-/// that solve's OWN certification.
+/// population silenced, the shape `effect::self_reach_holds` already takes one level down. Read only
+/// ever beside that solve's OWN certification.
+///
+/// Keyed on the population being CLOSED, never on its cardinality
+/// (`30L:pin-no-singleton-special-case`). The retired `count() > 1` guard was right about a lone
+/// NON-loop instance — a node's own gen reaches its own in-state only through a cycle, and outside a
+/// loop there is none — but that coincidence is not what it said, and it was WRONG for a lone MEMBER
+/// (`for pkg in a; do install_pkg "$pkg"; done`), whose single node reaches itself over the loop's
+/// back-edge and would have read its own establish as a wall. Running the solve unconditionally
+/// costs one solve on the acyclic population and returns the identical answer there.
 ///
 /// # The shared guard's economics
 ///
@@ -707,8 +714,7 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
         };
         let argv = crate::source_argv(src, ast, region_ast);
         let suppress: BTreeSet<CfgNodeId> = routes.routes().map(|route| route.cfg_node()).collect();
-        let solo =
-            (routes.count() > 1).then(|| solve_reaching_walls(cfg, round.effective, &suppress));
+        let solo = Some(solve_reaching_walls(cfg, round.effective, &suppress));
         let mut answers = Vec::with_capacity(routes.count());
         for route in routes.routes() {
             answers.push(decide_one_route(
@@ -779,8 +785,15 @@ fn region_routes(
         let call = route.invocation().node();
         let ast = cfg.node(call).ast;
         match leaf_of.get(&call).copied() {
+            // The member rides the key, because N evaluations of ONE invocation are N
+            // contributors and N identical rows would read as an account of N invocations
+            // (`core/CLAUDE.md a-record-says-what-its-population-holds`). `SiteId` already
+            // carries the axis, so nothing is re-keyed to say so.
             Some(leaf) => keyed.push(dorc_core::spine::RegionRoute {
-                invocation: dorc_core::SiteId::leaf(leaf),
+                invocation: dorc_core::SiteId {
+                    leaf,
+                    member: route.iteration().member(),
+                },
                 ast,
             }),
             None => unkeyed.push(dorc_core::spine::UnkeyedRegionRoute {
