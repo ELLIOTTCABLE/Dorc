@@ -264,15 +264,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-unknown-source-is-a-point-havoc",
-        trigger: "`principle-unknown-source-is-a-point-havoc`: an unresolvable `.` sets every \
-                  function binding to unknown AT THAT LINE and no further, so a later \
-                  UNCONDITIONAL definition in the same frame re-binds by sh's last-wins — today \
-                  the ⊤ never recovers and the whole tail of the book is unbindable",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-load-operand-dirname-of-dollar-zero",
         trigger: "`30P:rul-static-predict-sites-loads`: `$(dirname \"$0\")` names a COMMAND, and \
                   predicting its output inside the engine is the tool-modelling \

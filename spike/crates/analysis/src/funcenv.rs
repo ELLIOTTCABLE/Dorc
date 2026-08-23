@@ -620,6 +620,31 @@ impl EnvStack {
         }
     }
 
+    /// Every name the unit knows becomes unknown HERE and no further
+    /// (`30P:principle-unknown-source-is-a-point-havoc`).
+    ///
+    /// POINTWISE, and in the INNERMOST frame, because that is where a write lands and where a
+    /// later definition overwrites it — which is the whole delta: sh's `.` may define anything,
+    /// and sh's next top-level `f() { … }` re-binds `f` to those bytes whatever ran before it.
+    /// [`EnvStack::Top`] stays what it honestly is: a stack whose SHAPE is unknown too.
+    ///
+    /// Two consequences the tests pin. `ScopeExit`'s pop discards this, so a `.` inside `( … )`
+    /// binds nothing outside — sh, exactly. And a name OUTSIDE the universe is untouched: an
+    /// unknown file redefining a TOOL as a function is the same cell as the host's `PATH`
+    /// resolving that tool to anything, which `30P:rul-guard-resolves-like-its-mutation` places on
+    /// the admin's side of the horizon.
+    ///
+    /// MONOTONE (the worklist's caller-upheld precondition): the operation raises a FIXED set of
+    /// keys to ⊤ in one frame. For `x ⊑ y` both `Frames` of equal depth, raising the same keys in
+    /// both preserves the pointwise order; `Frames(_) ⊑ Top` is unchanged since `Top` has no frame
+    /// to write into; unequal depths are incomparable and join to `Top`, so the obligation is
+    /// vacuous there. No new lattice value exists, so the finite height is unchanged.
+    fn havoc_names(&mut self, universe: &BTreeSet<String>) {
+        for name in universe {
+            self.bind(name, Flat::Top);
+        }
+    }
+
     /// Bind `name` in the innermost frame.
     fn bind(&mut self, name: &str, to: Flat<Binding>) {
         if let EnvStack::Frames(frames) = self
@@ -1638,6 +1663,13 @@ fn run_control(
                     account.suspend(sourcer.to_owned());
                 }
             };
+            // ABSORBING, deliberately, where the book plane's own `.` is now pointwise: an
+            // unresolvable act inside a LOAD PROGRAM floors the rest of that program and the
+            // prelude it sits in (`30Mg` R1, the prelude floor, pinned by
+            // `an_unresolvable_prelude_load_floors_the_rest_of_the_prelude`). Making this
+            // pointwise too would let a LATER prelude root's bindings license sites — a licensure
+            // widening past `30P:principle-unknown-source-is-a-point-havoc`'s book-plane cell,
+            // owed a ruling rather than taken on the way past.
             let Some(next) = target
                 .expand(locals, &ambient)
                 .and_then(|text| ctx.defs.cwd.resolve_dot(&text))
@@ -1948,15 +1980,16 @@ fn settled_account(
 ) -> LoadAccount {
     let mut account = LoadAccount::default();
     account.want_all(unresolved_targets.values().map(|head| head.key.clone()));
-    let mut universe = Frame::default();
-    for name in defs.names() {
-        universe.insert(name, Flat::Elem(Binding::Undefined));
+    let universe = defs.names();
+    let mut frame = Frame::default();
+    for name in &universe {
+        frame.insert(name.clone(), Flat::Elem(Binding::Undefined));
     }
     drop(run_ambient_prefix(
         defs,
         literals,
         entry,
-        EnvStack::Frames(vec![universe]),
+        EnvStack::Frames(vec![frame]),
         &mut account,
     ));
     for (&node, head) in resolved_loads {
@@ -2547,7 +2580,7 @@ fn transfer(
             }
             _ => incoming.clone(),
         },
-        CfgNodeKind::Command => command_transfer(defs, literals, sites, id, incoming),
+        CfgNodeKind::Command => command_transfer(defs, literals, sites, universe, id, incoming),
         _ => incoming.clone(),
     }
 }
@@ -2633,20 +2666,27 @@ fn command_transfer(
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
     sites: &LoadSites,
+    universe: &BTreeSet<String>,
     node: CfgNodeId,
     incoming: &EnvStack,
 ) -> EnvStack {
-    let Some(head) = literals.literal_text(node, 0) else {
+    let Some(word) = literals.literal_text(node, 0) else {
         return incoming.clone();
     };
-    match head {
+    // `28K` §1: we cannot know WHICH names an unloaded file defines, so every name it COULD have
+    // defined is ⊤ — at this line, and no further.
+    let havoc = || {
+        let mut env = incoming.clone();
+        env.havoc_names(universe);
+        env
+    };
+    match word {
         "." | "source" => {
-            // `28K` §1: we cannot know WHICH names an unloaded file defines, so all of it is ⊤.
             let Some(head) = sites.resolved.get(&node) else {
-                return EnvStack::Top;
+                return havoc();
             };
             let Some(program) = defs.program_at_key(head.key()) else {
-                return EnvStack::Top;
+                return havoc();
             };
             run_program(
                 Loading {

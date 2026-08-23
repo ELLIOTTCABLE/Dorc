@@ -319,7 +319,8 @@ impl BookWorld {
     }
 }
 
-/// `p-x-unknown-source-is-a-point-havoc` — THE TARGET: the havoc is a POINT, not a suffix.
+/// THE TARGET: the havoc is a POINT, not a suffix (né `p-x-unknown-source-is-a-point-havoc`,
+/// promoted).
 ///
 /// The sh fact: `.` runs the named file in the caller's own shell, so at that line anything may
 /// have been defined and every name becomes unknown. What sh does NOT say is that the unknown
@@ -338,12 +339,60 @@ fn an_unknown_source_havocs_only_at_its_own_line() {
         .expect("the book's hork tune site is present");
     let later = world.live_before(site, "hork__is_converged");
 
-    internal_tooling::xfail::xfail_until("p-x-unknown-source-is-a-point-havoc", || {
-        assert!(
-            matches!(later, dorc_core::LiveDefinition::Live(_)),
-            "an unconditional definition BELOW the unknown source re-binds by last-wins: {later:?}"
+    assert!(
+        matches!(later, dorc_core::LiveDefinition::Live(_)),
+        "an unconditional definition BELOW the unknown source re-binds by last-wins: {later:?}"
+    );
+}
+
+/// The havoc's SCOPE, in the three cells that separate sh's two frame species — the reason it
+/// lands pointwise in the INNERMOST frame rather than absorbing the stack.
+///
+/// sh has no function-call scope for definitions: a `.` inside a called function's body defines
+/// into the caller's own (global) frame and its effect SURVIVES the return. It does have a
+/// subshell scope: a `.` inside `( … )` binds nothing outside the paren. The CFG says exactly
+/// this — `cfg::lower_scoped` pushes a scope for `( )` and `$( )` and for nothing else, and a
+/// spliced call adds no scope node — so `EnvStack`'s frames ARE subshell scopes and the havoc
+/// inherits both answers for free.
+///
+/// The third row is a LICENSING WIDENING over the pre-havoc engine, where the absorbing ⊤ survived
+/// the pop: it is the sh-parity answer (`rul-unsure-falls-toward-sh-parity`), resting on
+/// `floor30-atlas-subshell-nesting-and-removal-scope`.
+///
+/// CFG shape exercised: three straight-line books over one definition — one whose `.` sits inside
+/// a called funcdef's body (spliced, NO scope node), one whose definition sits below the call, and
+/// one whose `.` sits inside a subshell (a real `ScopeEnter`/`ScopeExit` pair).
+#[test]
+fn the_havoc_dies_at_a_paren_and_survives_a_return() {
+    const DEFINE: &str = "hork__is_converged() { hork status \"$1\"; }\n";
+    for (label, book, live) in [
+        (
+            "a `.` inside a called function havocs the caller's own frame and survives its return",
+            format!("{DEFINE}f() {{ . \"$SITE_PROFILE/rc\"; }}\nf\nhork tune web\n"),
+            false,
+        ),
+        (
+            "and a definition BELOW that call re-binds by last-wins",
+            format!("f() {{ . \"$SITE_PROFILE/rc\"; }}\nf\n{DEFINE}hork tune web\n"),
+            true,
+        ),
+        (
+            "a `.` inside a subshell binds nothing outside the paren, so the definition stands",
+            format!("{DEFINE}( . \"$SITE_PROFILE/rc\" )\nhork tune web\n"),
+            true,
+        ),
+    ] {
+        let mut world = BookWorld::of(&book);
+        let site = world
+            .site("hork", "tune")
+            .expect("the book's hork tune site is present");
+        let answer = world.live_before(site, "hork__is_converged");
+        assert_eq!(
+            matches!(answer, dorc_core::LiveDefinition::Live(_)),
+            live,
+            "{label} — {answer:?}"
         );
-    });
+    }
 }
 
 /// The other half of sh's answer, and it is GREEN: a name bound only ABOVE the unresolvable `.` is
