@@ -1,0 +1,2405 @@
+dorc-spine-baseline/1 cases=291
+case aggregate30-inline-verdict-primacy
+  digest 7d97a953365c8b22
+  records admitted
+  site 0.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case aggregate30-member-verdict-primacy
+  digest a87e51ae4237f687
+  records admitted
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case carry-fsview-elides
+  digest d6b943abe9c40732
+  records admitted
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case carry-fsview-hidden-read-walls
+  digest 897aff30a05d6752
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=dorc-auto:kp@converged
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-builtin-shadowed
+  digest 1f450fcf52b78ba7
+  records absent
+  site 0.- ast=9 run
+  site 1.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-errexit-unknown
+  digest b4db4a6a8e2db832
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused
+  digest b4db5b91809c5bc2
+  records absent
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-depth-budget
+  digest b1ee3ce30ed670d9
+  records absent
+  site 0.- ast=28 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-per-book-budget
+  digest fb5cf8dc6bdee600
+  records absent
+  site 0.- ast=64 run
+  site 1.- ast=66 run
+  site 2.- ast=68 run
+  site 3.- ast=70 run
+  site 4.- ast=72 run
+  site 5.- ast=74 run
+  site 6.- ast=76 run
+  site 7.- ast=78 run
+  site 8.- ast=80 run
+  site 9.- ast=82 run
+  site 10.- ast=84 run
+  site 11.- ast=86 run
+  site 12.- ast=88 run
+  site 13.- ast=90 run
+  site 14.- ast=92 run
+  site 15.- ast=94 run
+  site 16.- ast=96 run
+  site 17.- ast=98 run
+  site 18.- ast=100 run
+  site 19.- ast=102 run
+  site 20.- ast=104 run
+  site 21.- ast=106 run
+  site 22.- ast=108 run
+  site 23.- ast=110 run
+  site 24.- ast=112 run
+  site 25.- ast=114 run
+  site 26.- ast=116 run
+  site 27.- ast=118 run
+  site 28.- ast=120 run
+  site 29.- ast=122 run
+  site 30.- ast=124 run
+  site 31.- ast=126 run
+  site 32.- ast=128 run
+  site 33.- ast=130 run
+  site 34.- ast=132 run
+  site 35.- ast=134 run
+  site 36.- ast=136 run
+  site 37.- ast=138 run
+  site 38.- ast=140 run
+  site 39.- ast=142 run
+  site 40.- ast=144 run
+  site 41.- ast=146 run
+  site 42.- ast=148 run
+  site 43.- ast=150 run
+  site 44.- ast=152 run
+  site 45.- ast=154 run
+  site 46.- ast=156 run
+  site 47.- ast=158 run
+  site 48.- ast=160 run
+  site 49.- ast=162 run
+  site 50.- ast=164 run
+  site 51.- ast=166 run
+  site 52.- ast=168 run
+  site 53.- ast=170 run
+  site 54.- ast=172 run
+  site 55.- ast=174 run
+  site 56.- ast=176 run
+  site 57.- ast=178 run
+  site 58.- ast=180 run
+  site 59.- ast=182 run
+  site 60.- ast=184 run
+  site 61.- ast=186 run
+  site 62.- ast=188 run
+  site 63.- ast=190 run
+  site 64.- ast=192 run
+  site 65.- ast=194 run
+  site 66.- ast=196 run
+  site 67.- ast=198 run
+  site 68.- ast=200 run
+  site 69.- ast=202 run
+  site 70.- ast=204 run
+  site 71.- ast=206 run
+  site 72.- ast=208 run
+  site 73.- ast=210 run
+  site 74.- ast=212 run
+  site 75.- ast=214 run
+  site 76.- ast=216 run
+  site 77.- ast=218 run
+  site 78.- ast=220 run
+  site 79.- ast=222 run
+  site 80.- ast=224 run
+  site 81.- ast=226 run
+  site 82.- ast=228 run
+  site 83.- ast=230 run
+  site 84.- ast=232 run
+  site 85.- ast=234 run
+  site 86.- ast=236 run
+  site 87.- ast=238 run
+  site 88.- ast=240 run
+  site 89.- ast=242 run
+  site 90.- ast=244 run
+  site 91.- ast=246 run
+  site 92.- ast=248 run
+  site 93.- ast=250 run
+  site 94.- ast=252 run
+  site 95.- ast=254 run
+  site 96.- ast=256 run
+  site 97.- ast=258 run
+  site 98.- ast=260 run
+  site 99.- ast=262 run
+  site 100.- ast=264 run
+  site 101.- ast=266 run
+  site 102.- ast=268 run
+  site 103.- ast=270 run
+  site 104.- ast=272 run
+  site 105.- ast=274 run
+  site 106.- ast=276 run
+  site 107.- ast=278 run
+  site 108.- ast=280 run
+  site 109.- ast=282 run
+  site 110.- ast=284 run
+  site 111.- ast=286 run
+  site 112.- ast=288 run
+  site 113.- ast=290 run
+  site 114.- ast=292 run
+  site 115.- ast=294 run
+  site 116.- ast=296 run
+  site 117.- ast=298 run
+  site 118.- ast=300 run
+  site 119.- ast=302 run
+  site 120.- ast=304 run
+  site 121.- ast=306 run
+  site 122.- ast=308 run
+  site 123.- ast=310 run
+  site 124.- ast=312 run
+  site 125.- ast=314 run
+  site 126.- ast=316 run
+  site 127.- ast=318 run
+  site 128.- ast=320 run
+  site 129.- ast=322 run
+  site 130.- ast=324 run
+  site 131.- ast=326 run
+  site 132.- ast=328 run
+  site 133.- ast=330 run
+  site 134.- ast=332 run
+  site 135.- ast=334 run
+  site 136.- ast=336 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-per-call-budget
+  digest 600780f40afeef5a
+  records absent
+  site 0.- ast=1174 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-redefined
+  digest 1a4b17c6b29d2074
+  records absent
+  site 0.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-redirect-dynamic
+  digest 7a65400dfdbf06cb
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-unmodeled-positional
+  digest a0aa3a47a05345bc
+  records absent
+  site 0.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-inline-refused-write-redirect
+  digest c20072969eb924ad
+  records absent
+  site 0.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cfg-top-node
+  digest d023601dac3b4af5
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cmdsub-inner-nonleaf
+  digest dfa1515c0e6329d6
+  records absent
+  site 0.- ast=6 run
+  site 1.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case cmdsub-operand-top
+  digest 487ba50dc823d0a0
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=14 run
+  site 3.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-cross-unit-shadow-runs
+  digest 6ea3aaa82c3d0302
+  records refused
+  site 0.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-late-definition-licenses-nothing-above
+  digest 96330d4b6391857e
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=16 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-polyfill-guard-defers-to-the-oracle
+  digest ed67c88e4a58154b
+  records admitted
+  site 0.- ast=6 run
+  site 1.- ast=22 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged
+  hoisted bytes=148 digest=fbcd099a5f73
+  may-alias 0
+case contest28-top-licenses-nothing
+  digest ac410ec53af277e3
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=20 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case contest28-unset-f-blesses-elision
+  digest 2c4ba5fe77a5be46
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=16 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=dorc-auto:foobar@converged
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-babby-diverges
+  digest a0bb3215ce9036a1
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:hork@converged
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-babby-elides
+  digest a0bb3215ce9036a1
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:hork@converged
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-noescalation-runs
+  digest a0bb3215ce9036a1
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:hork@converged
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-unvouched-runs
+  digest f50730fa29ca9197
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:hork@converged
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case context-entry-wrapped-guard
+  digest 0fe058cdf45f6832
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case decline27-tier3-dynamic
+  digest 625a390233011d69
+  records admitted
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case deny26-state-builtin-mis-keys
+  digest f239689ff278d560
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case depth-2-positional-unthreaded
+  digest fe8b2ce07ae571ed
+  records absent
+  site 0.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case deriv-family-incomplete
+  digest ab35eaa7e9b67c6f
+  records admitted
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case door1-and-form
+  digest fd200a4699a38464
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 replace custody=MeasuredSelf via=QueryGuard standin=False fact=sm.dorc.PkgState:nginx@installed
+  site 2.- ast=13 omit controller=9
+  site 3.- ast=17 omit controller=9
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case door1-and-form-runs
+  digest 559984a3eb8e188c
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case effect-kind-disagreement
+  digest ec4e7d4d3f19dcfd
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-ambient-dependency-narrates
+  digest b9f1d2ec1e00496c
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-assigned-load-is-not-absorbable
+  digest 33421c8a0d5fce4b
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-book-redefinition-suspends-the-vouch
+  digest 382f0b6ca1d1ca13
+  records absent
+  site 0.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-book-shadowed-tool-declines
+  digest b0ff9f0e661e35e5
+  records absent
+  site 0.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-book-squats-the-munged-name
+  digest b6eac4cb9e4a2295
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=12 run
+  site 2.- ast=16 guard fact=dorc-auto:wombat@converged invoked=wombat__is_converged_h9713bef55
+  hoisted bytes=117 digest=dcef29131414
+  may-alias 0
+case emit30-cross-custody-plural-helper-suspends
+  digest 25aa673c0754907c
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-definition-vector-munges-everything
+  digest 384ad83226239050
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 guard fact=dorc-auto:apt_get@converged invoked=apt_get__is_converged_hc12ec1b7
+  site 2.- ast=10 run
+  hoisted bytes=247 digest=6921b31ec7aa
+  may-alias 0
+case emit30-disturbs-helper-ships-and-spares
+  digest 57c38bb5ce7dbd66
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-hoisted-closure-outruns-its-load
+  digest 67afdc8ace881bde
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=6 run
+  site 2.- ast=9 run
+  site 3.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-multipart-publishes-its-dependency
+  digest 61c3c3d25845c67b
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-single-stream-carries-the-closure-once
+  digest 4153003eb20e38bf
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case emit30-two-live-verdicts-under-one-name
+  digest dda8826cb0d28157
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged_h7a664f5a
+  site 2.- ast=10 run
+  site 3.- ast=23 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged
+  hoisted bytes=243 digest=14331dfdcd06
+  may-alias 0
+case emitted-line-unsafe-for-paste-round-trip
+  digest 8ac865d689436353
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-consumed-stdout
+  digest eb6c17b0cac3aa24
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-enclosing-pipe-subshell
+  digest 4501f6e4415d5e38
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:vim@installed
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-errexit-top-status-runs
+  digest be59ed8c652a29a1
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-kill-wall-runs
+  digest b3d22c8a7858e98a
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-modeled-wall-runs
+  digest cc3bba46d9a11af0
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-multi-entity
+  digest 2e79630c70eade36
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-opaque-var-runs
+  digest 092abb04b52c193b
+  records refused
+  site 0.- ast=6 run
+  site 1.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-poison-wall-dead
+  digest e3737480e2df3b3e
+  records admitted
+  site 0.- ast=2 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.PkgIndex@fresh
+  site 1.- ast=7 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-resolved-var-elides
+  digest 1529a8a4624894a9
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-shimmed-query-fold
+  digest 32f708c54dadd955
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 2.- ast=14 omit controller=9
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-subshell-establish
+  digest 954ea1f2400f7609
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:vim@installed
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case exec-subst-body-nonleaf
+  digest a652201710144d87
+  records admitted
+  site 0.- ast=8 run
+  site 1.- ast=13 guard fact=sm.dorc.Package:curl@installed invoked=apt_get__is_converged
+  hoisted bytes=237 digest=25f226646bcc
+  may-alias 0
+case exec-top-arith-in-arg-ok
+  digest 0799445bd87e98e2
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case fix-ladder-all-holds-folds-all
+  digest e840a8ee3096473e
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:alpha@installed
+  site 2.- ast=14 omit controller=9
+  site 3.- ast=22 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:beta@installed
+  site 4.- ast=27 omit controller=22
+  site 5.- ast=35 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:gamma@installed
+  site 6.- ast=40 omit controller=35
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case fix-ladder-middle-absent-stops-cascade
+  digest 02a8db98aed0b914
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:alpha@installed
+  site 2.- ast=14 omit controller=9
+  site 3.- ast=22 replace custody=MeasuredSelf via=QueryGuard standin=False fact=sm.dorc.PkgState:beta@installed
+  site 4.- ast=27 run
+  site 5.- ast=35 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-command-v-reads-fn-definedness
+  digest d9fa4b646faa04ef
+  records absent
+  site 0.- ast=12 run
+  site 1.- ast=16 run
+  site 2.- ast=20 run
+  site 3.- ast=29 run
+  site 4.- ast=33 run
+  site 5.- ast=37 run
+  site 6.- ast=46 run
+  site 7.- ast=50 run
+  site 8.- ast=54 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-define-if-absent-polyfill
+  digest e06653dc3e7bf9af
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=12 run
+  site 4.- ast=15 run
+  site 5.- ast=17 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-funcdef-as-or-operand
+  digest 56c0369d4c527fdc
+  records absent
+  site 0.- ast=6 run
+  site 1.- ast=15 run
+  site 2.- ast=20 run
+  site 3.- ast=27 run
+  site 4.- ast=36 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-load-order-last-definition-wins
+  digest e7ba20d140832fc4
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=12 run
+  site 4.- ast=16 run
+  site 5.- ast=19 run
+  site 6.- ast=21 run
+  site 7.- ast=26 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-subshell-scoped-re-source
+  digest fc51e7a77387b6c9
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor28-unset-f-and-redefinition
+  digest 808737ebae6c56a6
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  site 3.- ast=13 run
+  site 4.- ast=19 run
+  site 5.- ast=23 run
+  site 6.- ast=26 run
+  site 7.- ast=28 run
+  site 8.- ast=34 run
+  site 9.- ast=37 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-alias-then-funcdef-name
+  digest 9531d37c14e8d6a1
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=13 run
+  site 3.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-dollar-zero-inside-sourced-file
+  digest 6085b949942f4849
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-dollar-zero-spellings
+  digest 0427a7fa96f5ed5d
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  site 3.- ast=14 run
+  site 4.- ast=18 run
+  site 5.- ast=21 run
+  site 6.- ast=25 run
+  site 7.- ast=29 run
+  site 8.- ast=32 run
+  site 9.- ast=36 run
+  site 10.- ast=40 run
+  site 11.- ast=43 run
+  site 12.- ast=47 run
+  site 13.- ast=51 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-dot-inside-a-function-binds-globally
+  digest 6a77e554615d4a88
+  records absent
+  site 0.- ast=35 run
+  site 1.- ast=39 run
+  site 2.- ast=43 run
+  site 3.- ast=47 run
+  site 4.- ast=54 run
+  site 5.- ast=58 run
+  site 6.- ast=62 run
+  site 7.- ast=68 run
+  site 8.- ast=70 run
+  site 9.- ast=73 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-dot-missing-file-is-fatal
+  digest bde07918a6471628
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  site 3.- ast=13 run
+  site 4.- ast=16 run
+  site 5.- ast=19 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-dot-slashless-operand
+  digest b9cbae16b89a49c7
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  site 3.- ast=14 run
+  site 4.- ast=17 run
+  site 5.- ast=20 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-dot-with-operands
+  digest 2d4958b2fc628493
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  site 2.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-errexit-dot-last-command-fails
+  digest 00ccb64a727ea149
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  site 3.- ast=13 run
+  site 4.- ast=16 run
+  site 5.- ast=19 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-errexit-failure-inside-sourced-file
+  digest 225a97e9f10c94bb
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-errexit-set-inside-sourced-file
+  digest de13c0eac620f1f0
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=10 run
+  site 4.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-exit-in-sourced-file
+  digest ed95ebe9301cebe9
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=14 run
+  site 4.- ast=18 run
+  site 5.- ast=21 run
+  site 6.- ast=24 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-function-defined-inside-function-is-global
+  digest c7a7249818805b39
+  records absent
+  site 0.- ast=36 run
+  site 1.- ast=38 run
+  site 2.- ast=41 run
+  site 3.- ast=43 run
+  site 4.- ast=46 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-glob-no-match-stays-literal
+  digest 2567044837cf9dc4
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=10 run
+  site 3.- ast=16 run
+  site 4.- ast=19 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-glob-order-under-c-locale
+  digest a3b04556cab9845a
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-local-at-toplevel-of-sourced-file
+  digest 4d78e20a1578160a
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  site 3.- ast=15 run
+  site 4.- ast=20 run
+  site 5.- ast=23 run
+  site 6.- ast=27 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-nested-dot-resolves-against-cwd
+  digest bc2f8cb62f7faf65
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=8 run
+  site 2.- ast=13 run
+  site 3.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-readonly-set-in-sourced-file
+  digest 730f74a31c835d63
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  site 3.- ast=12 run
+  site 4.- ast=16 run
+  site 5.- ast=22 run
+  site 6.- ast=26 run
+  site 7.- ast=29 run
+  site 8.- ast=33 run
+  site 9.- ast=36 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-return-from-sourced-file-inside-function
+  digest defaeb9244f22ee6
+  records absent
+  site 0.- ast=17 run
+  site 1.- ast=21 run
+  site 2.- ast=24 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-return-inside-compound-in-sourced-file
+  digest 737627a5eb173783
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=9 run
+  site 3.- ast=13 run
+  site 4.- ast=16 run
+  site 5.- ast=20 run
+  site 6.- ast=23 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-second-dot-re-executes
+  digest 21c831cda4c0256f
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=12 run
+  site 4.- ast=15 run
+  site 5.- ast=18 run
+  site 6.- ast=21 run
+  site 7.- ast=26 run
+  site 8.- ast=29 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-sourced-file-edits-positional-params
+  digest 2e4193c2ae6a80da
+  records absent
+  site 0.- ast=5 run
+  site 1.- ast=11 run
+  site 2.- ast=14 run
+  site 3.- ast=20 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-sourced-file-state-persists
+  digest 5ac5eba53efc84e4
+  records absent
+  site 0.- ast=8 run
+  site 1.- ast=11 run
+  site 2.- ast=18 run
+  site 3.- ast=22 run
+  site 4.- ast=26 run
+  site 5.- ast=34 run
+  site 6.- ast=38 run
+  site 7.- ast=42 run
+  site 8.- ast=47 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-toplevel-return-in-main-script
+  digest 0f55f4fe98744321
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-atlas-toplevel-return-in-sourced-file
+  digest fa560f7ea61e8a01
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-blessed-override-above-and-below
+  digest 5a8a269701f297e7
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=13 run
+  site 5.- ast=17 run
+  site 6.- ast=20 run
+  site 7.- ast=24 run
+  site 8.- ast=26 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-deep-stack-binds-at-invocation
+  digest f2f087c4f505052b
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=10 run
+  site 4.- ast=12 run
+  site 5.- ast=15 run
+  site 6.- ast=17 run
+  site 7.- ast=21 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-diamond-source-binds-once
+  digest 690ebcd842d2d4a0
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-dot-loader-function-errexit
+  digest b2264e8128932444
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=9 run
+  site 3.- ast=12 run
+  site 4.- ast=15 run
+  site 5.- ast=18 run
+  site 6.- ast=25 run
+  site 7.- ast=28 run
+  site 8.- ast=36 run
+  site 9.- ast=42 run
+  site 10.- ast=75 run
+  site 11.- ast=77 run
+  site 12.- ast=80 run
+  site 13.- ast=82 run
+  site 14.- ast=85 run
+  site 15.- ast=92 run
+  site 16.- ast=95 run
+  site 17.- ast=103 run
+  site 18.- ast=109 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-helper-collision-across-frames
+  digest 206a98b4c4f682b7
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=10 run
+  site 4.- ast=12 run
+  site 5.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-inline-dot-boundary
+  digest 662acd1aed8f11fd
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=8 run
+  site 3.- ast=11 run
+  site 4.- ast=21 run
+  site 5.- ast=23 run
+  site 6.- ast=26 run
+  site 7.- ast=29 run
+  site 8.- ast=33 run
+  site 9.- ast=36 run
+  site 10.- ast=38 run
+  site 11.- ast=41 run
+  site 12.- ast=45 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-sibling-frames-hold-three-bodies
+  digest f9bf5532da46c50e
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=12 run
+  site 4.- ast=14 run
+  site 5.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-sourced-file-shares-one-environment
+  digest 1941a9855da18ab1
+  records absent
+  site 0.- ast=8 run
+  site 1.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-sourcing-is-transitive
+  digest 9a930f9af519284a
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case floor30-subshell-nesting-and-removal-scope
+  digest 2a0a6817d9362faf
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=7 run
+  site 3.- ast=9 run
+  site 4.- ast=17 run
+  site 5.- ast=21 run
+  site 6.- ast=24 run
+  site 7.- ast=29 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case footprint-incoherent
+  digest ab35eaa7e9b67c6f
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-a-regional-decline-is-a-decline
+  digest 3a14280eaa1c331b
+  records admitted
+  site 0.- ast=9 run
+  site 1.- ast=15 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged
+  hoisted bytes=148 digest=fbcd099a5f73
+  may-alias 0
+case frame30-nested-region-inherits-the-outer-body
+  digest ed058cdb3221fc1a
+  records admitted
+  site 0.- ast=11 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=dorc-auto:foobar@converged
+  site 1.- ast=19 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:foobar@converged
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-region-removal-dies-at-the-paren
+  digest c2df2789a79b5c57
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  site 2.- ast=13 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged
+  hoisted bytes=148 digest=fbcd099a5f73
+  may-alias 0
+case frame30-subshell-body-answers-inside-only
+  digest 5913a7e5359b9ddf
+  records admitted
+  site 0.- ast=11 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=dorc-auto:foobar@converged
+  site 1.- ast=17 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:foobar@converged
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case frame30-two-live-predicts-key-two-cells
+  digest 6400d450d481cb29
+  records admitted
+  site 0.- ast=28 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Service:alpha@active
+  site 1.- ast=34 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case glob-for-word-runs
+  digest c963acdbe3d3fb47
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-already-hand-guarded-runs
+  digest ebe0266886b0c7f2
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 run
+  site 2.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-fallthrough-canttell-runs
+  digest 9e225c4c3f2e0142
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 guard fact=sm.dorc.Package:nginx@installed invoked=apt_get__is_converged
+  site 2.- ast=10 run
+  hoisted bytes=216 digest=08ef98c23b8a
+  may-alias 0
+case guard23-fallthrough-drift-runs
+  digest fcce111008b2604a
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 guard fact=sm.dorc.Package:nginx@installed invoked=apt_get__is_converged
+  site 2.- ast=10 run
+  hoisted bytes=216 digest=08ef98c23b8a
+  may-alias 0
+case guard23-heredoc-refuses-loudly
+  digest 1881ac3de4f87ac0
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=8 guard fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-multioperand-atomic-runs
+  digest ba6f00a3bf4080dc
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-mutator-fails-book-continues
+  digest 51776dbac53676c0
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 guard fact=sm.dorc.Package:nginx@installed invoked=apt_get__is_converged
+  site 2.- ast=10 run
+  hoisted bytes=216 digest=08ef98c23b8a
+  may-alias 0
+case guard23-nounset-book-survives
+  digest 3527dc39e76c9a6b
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 guard fact=sm.dorc.Package:curl@installed invoked=apt_get__is_converged
+  site 3.- ast=15 run
+  hoisted bytes=260 digest=c778543be96c
+  may-alias 0
+case guard23-refusepath-rc0-never-passes
+  digest 03d29d47ffd69611
+  records refused
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-reingest-collision-verbatim
+  digest 6ac8c118ed5df25e
+  records refused
+  site 0.- ast=53 run
+  site 1.- ast=58 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case guard23-ternary-flagship
+  digest 5d6d956bdb9e2ef4
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=7 run
+  site 2.- ast=12 guard fact=sm.dorc.Package:curl@installed invoked=apt_get__is_converged
+  site 3.- ast=17 run
+  hoisted bytes=216 digest=08ef98c23b8a
+  may-alias 0
+case guard23-var-namespace-isolated
+  digest 3c2be84a287bf96e
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 guard fact=sm.dorc.Package:curl@installed invoked=apt_get__is_converged
+  site 3.- ast=15 run
+  hoisted bytes=230 digest=0f4672b26fb5
+  may-alias 0
+case guard26-classed-decline-guards-below
+  digest 1015170ccebed697
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 guard fact=sm.dorc.File:/etc/a.conf@content invoked=wombat__is_converged
+  site 2.- ast=10 guard fact=sm.dorc.File:/etc/b.conf@content invoked=wombat__is_converged
+  hoisted bytes=68 digest=d1c84755cb1e
+  may-alias 0
+case guard26-diverged-wall-guards-below
+  digest 9b27f76b81e30316
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 guard fact=sm.dorc.File:/etc/a.conf@content invoked=wombat__is_converged
+  site 2.- ast=10 guard fact=sm.dorc.File:/etc/b.conf@content invoked=wombat__is_converged
+  hoisted bytes=68 digest=d1c84755cb1e
+  may-alias 0
+case guard26-unmodeled-wall-guards-below
+  digest 9ccd8dd698c7bc8b
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 guard fact=sm.dorc.File:/etc/a.conf@content invoked=wombat__is_converged
+  site 2.- ast=10 guard fact=sm.dorc.File:/etc/b.conf@content invoked=wombat__is_converged
+  hoisted bytes=68 digest=d1c84755cb1e
+  may-alias 0
+case headline-guarded-realistic
+  digest f7eaa085ab6408ed
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=9 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:ca-certificates@installed
+  site 2.- ast=16 replace custody=MeasuredSelf via=QueryGuard standin=False fact=sm.dorc.PkgState:nginx@installed
+  site 3.- ast=21 run
+  site 4.- ast=25 run
+  site 5.- ast=30 run
+  site 6.- ast=35 run
+  site 7.- ast=39 run
+  site 8.- ast=43 run
+  site 9.- ast=50 run
+  site 10.- ast=55 run
+  site 11.- ast=60 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case headline-partial
+  digest 6dc8c08ca120e65e
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 run
+  site 3.- ast=14 run
+  site 4.- ast=18 run
+  site 5.- ast=22 run
+  site 6.- ast=26 run
+  site 7.- ast=29 run
+  site 8.- ast=33 run
+  site 9.- ast=37 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case headline-pi-webhost
+  digest 6dc8c08ca120e65e
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=10 run
+  site 3.- ast=14 run
+  site 4.- ast=18 run
+  site 5.- ast=22 run
+  site 6.- ast=26 run
+  site 7.- ast=29 run
+  site 8.- ast=33 run
+  site 9.- ast=37 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-clean-run
+  digest 07eeaa05058ec5cd
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-eval-wall-findings
+  digest 7d2a87469c4dfb03
+  records absent
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-jsonl-envelope
+  digest 7d2a87469c4dfb03
+  records absent
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-real-checkbashisms
+  digest 35c072afffb5808d
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-real-shellcheck
+  digest c7d9c5fb2197bc5e
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case lint-tools-absent-info
+  digest 07eeaa05058ec5cd
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-blind-act-withholds-its-carriage
+  digest ed1c3b6b3660b44d
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-plain-sh-inclusion-ships
+  digest 21107c62da811e9e
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-point-havoc-and-script-relative
+  digest 4db0ee98309cfb74
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-rooted-shared-dependency
+  digest a37d073888865d3c
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=11 run
+  site 4.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-script-relative-lints
+  digest 5aa61e2abfde4934
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-speaker-minting-is-observable
+  digest fa6c368932d1d3aa
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-subshell-errexit-fallback
+  digest 4b38265d4d0d0d5b
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=12 run
+  site 4.- ast=18 run
+  site 5.- ast=21 run
+  site 6.- ast=25 run
+  site 7.- ast=30 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load30-two-point-frames
+  digest 1db7c1fb73f73357
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=8 run
+  site 3.- ast=18 run
+  site 4.- ast=21 run
+  site 5.- ast=26 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case load31-punted-load-shapes
+  digest c50954a473ed676b
+  records refused
+  site 0.- ast=13 run
+  site 1.- ast=16 run
+  site 2.- ast=20 run
+  site 3.- ast=25 run
+  site 4.- ast=29 run
+  site 5.- ast=33 run
+  site 6.- ast=37 run
+  site 7.- ast=39 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-brace-range-runs-once
+  digest 2e42c0a8cfd19a39
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-member-external-writer-runs
+  digest a1e139e1f7ae6ca2
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=11 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-nested-converges
+  digest 9fe4db4cb7bb8e91
+  records refused
+  site 0.- ast=8 run
+  site 1.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop-var-body-reassign-tops
+  digest fcc5d66f9be46f6b
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop30-cell-disjoint-siblings-would-replace
+  digest 00da75185c2c1bfa
+  records admitted
+  site 0.- ast=14 run
+  site 1.- ast=17 run
+  hoisted bytes=222 digest=92283be04cd5
+  may-alias 0
+case loop30-converged-members-replace-the-shared-region
+  digest a1324e5c34bafc48
+  records admitted
+  site 0.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop30-direct-and-called-mutators-share-a-loop-body
+  digest c48bc0f4ef6541b6
+  records admitted
+  site 0.- ast=14 run
+  site 1.- ast=17 run
+  hoisted bytes=222 digest=92283be04cd5
+  may-alias 0
+case loop30-diverged-member-guards-the-shared-region
+  digest 565193f9f78fcf16
+  records admitted
+  site 0.- ast=12 run
+  hoisted bytes=222 digest=92283be04cd5
+  may-alias 0
+case loop30-rebound-member-runs-the-shared-region
+  digest d16581b337c864f2
+  records refused
+  site 0.- ast=12 run
+  site 1.- ast=14 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case loop30-repeated-member-refuses-the-aggregate
+  digest b776cede00a63401
+  records admitted
+  site 0.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case omitsafe21-heredoc-and-flipped-runs
+  digest c2589ddfd920cac8
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=10 replace custody=MeasuredSelf via=QueryGuard standin=False fact=sm.dorc.PkgState:nginx@installed
+  site 2.- ast=14 omit controller=10
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case omitsafe21-heredoc-guard-flipped-runs
+  digest 7e539b4a7624705a
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=10 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 2.- ast=15 omit controller=10
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case omitsafe21-heredoc-guard-keeps-body
+  digest 2cab04e8f1190ddf
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=10 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 2.- ast=15 omit controller=10
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case oracle-matched-zero-sites-round-trip
+  digest 748c98d66a21a737
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case partial-top-argv-runs
+  digest 567926c01a5c5b21
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case payload-bare-sh-c-walls
+  digest e2093950f78ebfcc
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case payload-composed-shape-walls
+  digest fba37677473d0154
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-closure-travels-with-the-definition
+  digest 1daaa23e5bf2b2b7
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 guard fact=dorc-auto:wombat@converged invoked=wombat__is_converged
+  hoisted bytes=131 digest=ec4a77330722
+  may-alias 0
+case pin28-contested-helper-resolves-by-last-wins
+  digest fc2477053f259289
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 guard fact=dorc-auto:wombat@converged invoked=wombat__is_converged
+  hoisted bytes=115 digest=399a4f2f90f6
+  may-alias 0
+case pin28-helper-package-entrypoints-discarded
+  digest e41787bcd72386e3
+  records refused
+  site 0.- ast=8 run
+  site 1.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-helper-package-entrypoints-lift
+  digest f1eacb25eff61ed6
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-reach-arm-death-walls-total
+  digest 2722fc62ceae4d59
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=6 guard fact=sm.dorc.File:/etc/nginx/nginx.conf@present invoked=installfile__is_converged
+  hoisted bytes=64 digest=9442df47bdfb
+  may-alias 0
+case pin28-reach-arm-survey-complete-spares
+  digest cf20cb6b84291200
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=6 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.File:/etc/nginx/nginx.conf@present
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-split-family-lane-separation
+  digest efbb346f77377e5c
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-survival-body-death-walls-total
+  digest f2b2996e43bda9af
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 guard fact=sm.dorc.Package:nginx@installed invoked=apt_get__is_converged
+  hoisted bytes=237 digest=25f226646bcc
+  may-alias 0
+case pin28-variable-resolved-source-loads
+  digest e90f6da4d530222d
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=5 run
+  site 2.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-wrapped-vouch-answers-at-a-live-site
+  digest f638f02cd9f03600
+  records admitted
+  site 0.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin28-wrapped-vouch-withholds-above-its-definition
+  digest 89733b32dea34307
+  records refused
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin30-swapped-entrypoints-source-the-helpers
+  digest e2d9001c5bbe1535
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case pin30-wrapped-case-bodied-in-book-verdict
+  digest 3a7298be984eafb3
+  records refused
+  site 0.- ast=25 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case probe-operand-quoting
+  digest c6a19bb674306ebc
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case reaches-conflict
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case reaches-provider-collision
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case records30-glued-line-refuses-the-attempt
+  digest 018c972b82ae9627
+  records refused
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case redir-target-top
+  digest 5e8f10038b5f570b
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case region30-drifted-route-guards-the-shared-region
+  digest 68152f6740d25d7e
+  records admitted
+  site 0.- ast=10 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=13 run
+  hoisted bytes=222 digest=92283be04cd5
+  may-alias 0
+case region30-mixed-body-splits-the-decision
+  digest 979685a8fe410504
+  records admitted
+  site 0.- ast=18 run
+  hoisted bytes=222 digest=92283be04cd5
+  may-alias 0
+case region30-twin-calls-share-one-region
+  digest 5361ef47a1c5d6f5
+  records admitted
+  site 0.- ast=10 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=13 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Package:curl@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case region30-unmeasured-route-runs-the-shared-region
+  digest ec29fdd9f67d0bee
+  records admitted
+  site 0.- ast=10 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case region30-whole-helper-stays-authored-text
+  digest a60bbdb1c59caa49
+  records admitted
+  site 0.- ast=15 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case render21-adjacent-multiline-elides
+  digest 65992866a25e98b9
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:a
+b@installed
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:c
+d@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case render21-heredoc-refusal
+  digest 062418f5ad8f7845
+  records admitted
+  site 0.- ast=5 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case render21-multiline-leaf-substitutes
+  digest 32f4c85bdf4dc228
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:multi
+line@installed
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case report27-decline-static-classed
+  digest ddb582cea61c5f82
+  records refused
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case reserved-namespace-squat
+  digest 19f0f636296553cc
+  records absent
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case resolver-conflict
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case resolver-provider-collision
+  digest ca5ad7fe5e744035
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case sourcing-degrades-safely
+  digest 0f3d702fff0be3f5
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case split-multi-operand-runs
+  digest bde086452581fd5f
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case split-single-elides
+  digest 2953c66494fc5211
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-adequacy-seed
+  digest de879248c25fe5fd
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-alias-provides
+  digest 9a819cc5664fbd50
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=7 guard fact=sm.dorc.Package:nginx-full@installed invoked=apt_get__is_converged
+  hoisted bytes=222 digest=cbf5569f83ac
+  may-alias 0
+case strawman24-alias-symlink
+  digest 630571e2aa946044
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=5 guard fact=sm.dorc.Fs:/etc/app.conf.lnk@written invoked=writeconf__is_converged
+  hoisted bytes=50 digest=dfcda64cb280
+  may-alias 0
+case strawman24-all-converged-clean
+  digest aa2459f92688cc60
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=8 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=sm.dorc.Service:nginx@enabled
+  site 2.- ast=13 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:curl@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-crosskind-residue
+  digest 195a2020883f91fd
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=8 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=sm.dorc.Service:nginx@enabled
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-derived-survive
+  digest a02f7071894f2bf6
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-errexit-defeats
+  digest b7efd50f9a74a8be
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  site 3.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-floor-no-oracle
+  digest 0efff1d77d71be0f
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-incoherent-refused
+  digest e65249b0ba7d9273
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-mixed-real
+  digest d1e41a0987ecd233
+  records admitted
+  site 0.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 1.- ast=11 omit controller=6
+  site 2.- ast=17 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:curl@installed
+  site 3.- ast=22 run
+  site 4.- ast=25 run
+  site 5.- ast=30 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-modeled-wall
+  digest 8eb1a5656c7128d2
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-nonsurvive-bare
+  digest a36847c57c872064
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-nonsurvive-hit
+  digest e23ce79c045bc0b9
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-opaque-wall
+  digest d85e974adb68bf50
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=7 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-partial-oracle
+  digest 7df3f460cf3464ff
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=8 run
+  site 2.- ast=13 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-floor
+  digest 286c89a00de00d7a
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=11 run
+  site 3.- ast=14 run
+  site 4.- ast=19 run
+  site 5.- ast=23 run
+  site 6.- ast=28 run
+  site 7.- ast=31 run
+  site 8.- ast=36 run
+  site 9.- ast=40 run
+  site 10.- ast=45 run
+  site 11.- ast=48 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-if-form
+  digest d0287bb705226952
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.GrepMatch:0.155.0@matched
+  site 2.- ast=12 omit controller=8
+  site 3.- ast=15 omit controller=8
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-oracle-converged
+  digest 6807621baa474c61
+  records admitted
+  site 0.- ast=2 run
+  site 1.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.GrepMatch:0.155.0@matched
+  site 2.- ast=11 omit controller=7
+  site 3.- ast=14 omit controller=7
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-single-lifts
+  digest fd4e5597730c65a0
+  records admitted
+  site 0.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:otelcol@installed
+  site 1.- ast=10 omit controller=6
+  site 2.- ast=13 omit controller=6
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-pipe-guard-unvouched-mid
+  digest 76e6fedbc4cf8dba
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  site 2.- ast=8 run
+  site 3.- ast=13 run
+  site 4.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-reach-crossauthor
+  digest ab01e9c4f0f476fd
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=6 guard fact=sm.dorc.File:/etc/nginx/nginx.conf@present invoked=installfile__is_converged
+  hoisted bytes=64 digest=9442df47bdfb
+  may-alias 0
+  poisoned 1 kind=sm.dorc.Package
+case strawman24-reach-static-service
+  digest 37a9aa226069910b
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=6 guard fact=sm.dorc.Service:nginx@enabled invoked=enablesvc__is_converged
+  hoisted bytes=78 digest=43e76c9537f5
+  may-alias 0
+  poisoned 1 kind=sm.dorc.Package
+case strawman24-survive-killwall
+  digest e4f6abe03ff87e2e
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-survive-multiwall
+  digest eeaab1ec8a13da44
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  site 2.- ast=14 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 3.- ast=19 run
+  site 4.- ast=24 guard fact=sm.dorc.Package:curl@installed invoked=apt_get__is_converged
+  hoisted bytes=237 digest=25f226646bcc
+  may-alias 0
+case strawman24-survive-simple
+  digest 757f818d2d49a868
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case strawman24-survive-simple-unflagged
+  digest 11c96f4d91ae24ce
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case survivebite27-naked-trust-chain
+  digest f75f6ae68e7bc7ef
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=7 replace custody=Vouched(DefinitionCustody(SourceFileId(1))) via=ConvergedEstablish standin=True fact=sm.dorc.Service:nginx@active
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed
+  digest 4215a5ed6030f36d
+  records absent
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-do-to-open-loop-body
+  digest 4d98768e53dec29f
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-esac-to-close-case
+  digest 36da0e511f313bfa
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-fi-to-close-if
+  digest 71d72fc4d46b9336
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-in-after-case-word
+  digest 3f2217ef25f4f899
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-rparen-after-case-pattern
+  digest 40f56edac3b559a4
+  records absent
+  site 0.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-then-after-elif
+  digest 59787d0a24772124
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-expected-then-after-if
+  digest c5edfefa7de3e856
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-unterminated-brace-group
+  digest a0ee017de5f50b58
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-unterminated-case-arm
+  digest bc51d55fdeaa9b1b
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-malformed-unterminated-subshell
+  digest bb696511e6054e26
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-arithmetic-as-command
+  digest 33e4425c1b0d9219
+  records absent
+  site 0.- ast=5 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-construct-trailing-redirection
+  digest a1104e5182233418
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-double-semicolon-outside-case
+  digest 44863e1344540582
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-dynamic-command-name
+  digest f6b34bdda4aeb114
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-eval-constructed-code
+  digest b8631f3e1827abac
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-expected-a-command
+  digest deb70294194ebc97
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-expected-a-word
+  digest 0fd249ffb738e5fb
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-list-not-terminated
+  digest 869640c1f9cc5b72
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-list-word-has-expansion
+  digest 6eac6f09ecf26d68
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-without-in-list
+  digest f74d76176c823870
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-for-without-variable-name
+  digest 39a63db5099c9c46
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-loop-jump-in-body
+  digest e00f07963fda1369
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-loop-jump-in-body-or-condition
+  digest 0baba4a71e2b4ee7
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-nesting-bound
+  digest 4feb89e23b9d6afd
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-operator-without-command
+  digest 4d4257edf40981c5
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-printf-writes-lvalue
+  digest fb6b10d53c1943c7
+  records absent
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-reserved-word-in-command-position
+  digest afddbe893e59f678
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-test-references-lvalue
+  digest 25c5115c931874dd
+  records absent
+  site 0.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case syntax-unsupported-unset-dynamic-lvalue
+  digest 8d7d09a91753b2d1
+  records absent
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case tiedown-killwall-statebearing
+  digest 852fafe0e2192903
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case tiedown-survive-statebearing
+  digest 347f87989a685c42
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case top-eval
+  digest 7d2a87469c4dfb03
+  records refused
+  site 0.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case touches-escalated
+  digest ab35eaa7e9b67c6f
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case typeless-floor-converged-elides
+  digest 9fc96a36815992ed
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:foobar@converged
+  site 1.- ast=8 run
+  site 2.- ast=12 guard fact=dorc-auto:foobar@converged invoked=foobar__is_converged
+  hoisted bytes=148 digest=fbcd099a5f73
+  may-alias 0
+case typeless-floor-oneliner
+  digest c371d52eda36320f
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=dorc-auto:mycmd@converged
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case verdict-coord-same-entity-shares-one-cell
+  digest 95274a98f58da17d
+  records admitted
+  site 0.- ast=3 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case verdict-coord-splits-sibling-cells
+  digest a04874dc4b22d75d
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.File:/etc/a.conf@content
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case while-condition-floor
+  digest 728eebf22f17af90
+  records refused
+  site 0.- ast=2 run
+  site 1.- ast=6 run
+  site 2.- ast=11 run
+  site 3.- ast=18 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-address-unmatched
+  digest 73966537963aa595
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-analysis-opener-guarded
+  digest 92e7e569b437fec3
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:80/tcp@allowed
+  site 1.- ast=8 run
+  site 2.- ast=12 guard fact=sm.dorc.Service:nginx@active invoked=systemctl__is_converged
+  site 3.- ast=17 run
+  site 4.- ast=22 run
+  site 5.- ast=26 guard fact=sm.dorc.Service:nginx@enabled invoked=systemctl__is_converged
+  hoisted bytes=186 digest=dd7e8b623f8c
+  may-alias 0
+case why-claims-payload
+  digest 014c34ce68b3be88
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=8 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-declines-payload
+  digest 665a948e6f484132
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  site 2.- ast=11 run
+  site 3.- ast=15 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-drift-address-unanswerable
+  digest 0e364c14ab95f8ea
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-drift-analysis-suppressed
+  digest 012d9cb195b55949
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-improvement-ran-blind
+  digest 61eaae915c4f6fc4
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-next-step-suspect-several-claims
+  digest 8ed56572d63c1fb6
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  site 2.- ast=13 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-nothing-to-report
+  digest bde3c22dd8557c70
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-cmdsub-opener
+  digest a2379b1a86edc55d
+  records absent
+  site 0.- ast=8 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-elide-cascaded
+  digest 23a2b104496e627a
+  records admitted
+  site 0.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:alpha@installed
+  site 1.- ast=11 omit controller=6
+  site 2.- ast=19 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:beta@installed
+  site 3.- ast=24 omit controller=19
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-render-refused
+  digest 272a4728f665de92
+  records admitted
+  site 0.- ast=4 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  site 1.- ast=9 run
+  site 2.- ast=14 guard fact=sm.dorc.Package:redis@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-run-not-elidable
+  digest ea9ca904401ad92a
+  records absent
+  site 0.- ast=2 run
+  site 1.- ast=7 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-run-unprobed
+  digest 661a3c86097234f7
+  records absent
+  site 0.- ast=4 run
+  site 1.- ast=9 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-reason-skipped-converged
+  digest a949b29024fa3a76
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Package:nginx@installed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case why-vouch-payload-establish
+  digest 39445a516489c4f4
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=17 replace custody=VouchedSeverally via=InlineCall standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-decline-unsound-arm
+  digest 0486ff905f5f28ed
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:80/tcp@allowed
+  site 1.- ast=6 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-drifted-book-degraded-receipt
+  digest 89e208f4dabb85eb
+  records refused
+  site 0.- ast=4 run
+  site 1.- ast=8 run
+  site 2.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-elide-and-hand-guard
+  digest 6e7975379798ea0e
+  records admitted
+  site 0.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 1.- ast=11 omit controller=6
+  site 2.- ast=16 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:80/tcp@allowed
+  site 3.- ast=20 replace custody=Vouched(DefinitionCustody(SourceFileId(3))) via=ConvergedEstablish standin=True fact=sm.dorc.Service:nginx@enabled
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-survive-trusted-footprint
+  digest dbc052979c8b6e62
+  records admitted
+  site 0.- ast=4 run
+  site 1.- ast=8 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case whygallery-wall-guards-downstream
+  digest 601757a98c85d9e3
+  records admitted
+  site 0.- ast=3 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:80/tcp@allowed
+  site 1.- ast=8 run
+  site 2.- ast=12 guard fact=sm.dorc.Service:nginx@active invoked=systemctl__is_converged
+  hoisted bytes=218 digest=f17460d7aece
+  may-alias 0
+case whygallery-webhost-whole
+  digest 0574ef8e5bd9390f
+  records admitted
+  site 0.- ast=6 replace custody=MeasuredSelf via=QueryGuard standin=True fact=sm.dorc.PkgState:nginx@installed
+  site 1.- ast=11 omit controller=6
+  site 2.- ast=16 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:80/tcp@allowed
+  site 3.- ast=20 replace custody=Vouched(DefinitionCustody(SourceFileId(3))) via=ConvergedEstablish standin=True fact=sm.dorc.Service:nginx@enabled
+  site 4.- ast=25 run
+  site 5.- ast=29 replace custody=Vouched(DefinitionCustody(SourceFileId(0))) via=ConvergedEstablish standin=True fact=sm.dorc.Firewall:443/tcp@allowed
+  site 6.- ast=34 run
+  site 7.- ast=38 guard fact=sm.dorc.Service:nginx@active invoked=systemctl__is_converged
+  site 8.- ast=41 run
+  site 9.- ast=44 run
+  hoisted bytes=218 digest=f17460d7aece
+  may-alias 0
+case whylog-book-desync
+  digest b7a7e495866814e2
+  records absent
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-carry-proof-is-the-shipped-body
+  digest 69a8402f86a46491
+  records refused
+  site 0.- ast=22 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-consent-comes-from-the-live-verdict
+  digest 079a4b06c1ff1e7e
+  records refused
+  site 0.- ast=3 run
+  site 1.- ast=16 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-contested-wrapper-peels-nothing
+  digest 2199050900484d77
+  records refused
+  site 0.- ast=12 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrap30-regional-wrapper-decline-walls
+  digest f33a675344937510
+  records refused
+  site 0.- ast=10 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapped-site-adoption-hint
+  digest 9f00905d8fe5085d
+  records absent
+  site 0.- ast=4 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-dual-peel-incoherent-fails-fast
+  digest c5f00ad7f6d4414a
+  records refused
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-entry-form-coheres
+  digest ad3663a4d7931c67
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-entry-incoherent-fails-fast
+  digest c2f263dfe0e6bf3f
+  records refused
+  site 0.- ast=2 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-identity-lend-map-coheres
+  digest 3ea5521a4606dde1
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-modeled-peel-coheres-walls
+  digest 79eaa3ceef73de8e
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
+case wrapper-unmodeled-peel-walls
+  digest c0a38577ab44457d
+  records refused
+  site 0.- ast=3 run
+  hoisted bytes=0 digest=e3b0c44298fc
+  may-alias 0
