@@ -1049,6 +1049,10 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   push made in-window is recorded in its §2 row, and every one of them is
   CONDUCTOR-tier and VETO-ELIGIBLE. No typed human reaction exists for any of
   them; silence is not ack.
+  <!-- /* correction 2026-08-22 (the close-out veto sweep): "recorded in its §2 row" was
+  false — that row is a fold summary and named no rulings; nothing anywhere enumerated the
+  pile, and three later documents pointed at this entry as if it were a list. The
+  enumerated register is §6 below. */ -->
 
 ## §ack-veto-review — the human-items sitting's typed reactions (2026-08-16; sibling-conductor session)
 
@@ -1123,3 +1127,123 @@ CLAUDE.md · (4) only what survives all three enters the SKILL.
   repair → definition-grade re-key + `verdict_cell_or_auto` separation →
   closure/sourcing build; two checkpoints) · tooling-pair (the unused-inventory
   report + the slow-test diagnosis).
+
+<!-- /* added 2026-08-22 (the close-out veto sweep, Fable rubber-duck sitting) — the register
+the burndown's `sweep-conductor-veto-pile`, `30O:the-schedule`, and LIVING_STATUS cite. It is
+current-state: a row's reaction column is rewritten when the human types; UNREACTED = no typed
+reaction names the ruling (silence ≠ ack). Scout-enumerated over `300`–`30Q` (marker-grep plus
+a full read of the push lane reports), conductor-triaged. Lesson, recorded here only (a
+conductor-skill edit was proposed and NACKED by the human 2026-08-22): a veto-eligible ruling
+wants ONE ROW in its ledger's ack-ledger at mint, never a pointer to a section.
+
+## §6 — The r30 conductor-veto pile, enumerated
+
+### §6a — the 2026-08-17 push's in-flight rulings (`§2` six-lane row; `30E` · `30F` · `30G` · `30H`)
+
+Enumerated 2026-08-22 from a full read of `30E` · `30F` · `30G` · `30H` + `plans/309`: nineteen
+decisions; NONE clears the human bar. Every licence- or durable-shaped one sits under a typed
+umbrella — `plans/309` "REVIEWED-MATCHES-INTENT, BUILD OPEN" + the `_tmp-309` fold's "I trust your
+engineering judgement; proceed as planned" (the spine lane), the 2026-08-17 closure rulings
+(`pin-closure-membership-and-diamond`, `28Q` §9 acks) and the later human-led `30I` re-cut of
+custody-as-closure (the custody lane). Dispositions:
+- CONDUCTOR-CLOSED as compliance with the durable tripwire (conservative direction; durable
+  bytes unchanged this stage): `30E:§8` `stop-siteid-digest-rekey` · `stop-drop-accounting-destination`
+  · the `new`-arm debug-dump gating (the human's own TYPED "structurally unable to ship" arm).
+- CONDUCTOR-CLOSED under `rul-strawman-formats-no-compat`: `flg-v1-durable-is-fixture-only` (the
+  zero-caller v1 `.whylog` grammar deleted).
+- CONDUCTOR-CLOSED as already-reserved, deadline-triggered: `30E:§8` `fnd-apply-authority-detaches-from-spine`
+  (the written apply script is an authority-bearer Dorc does not re-check) — the close is the
+  artifact-set identity `30P` reserves (`30Pb:fnd-reviewed-artifact-is-one-exact-set`) plus the
+  apply standup's manifest check (`30P:mech-two-standups`), both on `30O:deferred-by-ruling`. The
+  one licence-SHAPED gap in this group; not new.
+- CONDUCTOR-CLOSED as superseded by `30I`'s typed load/custody model: `30G` `dec-custody-is-containment-not-equivalence`
+  · `dev-custody-compare-is-asymmetric` · the `--WONDER`-graded "a sourced file joins the source
+  vector" lean (~SUSPECT: `30I`'s one-load-account subsumes it; the load lane is where a counter-
+  example would surface).
+- CONDUCTOR-CLOSED as consistent with core's dependency-clean law: `30F:§4` deviation 1 (Spine
+  generic over the `DecidePlane` seam — the seam exists to keep `core` clean; `30Nc` extended it).
+- CONDUCTOR-CLOSED, already routed elsewhere: `30F:§4` deviations 2–3 (report-only rendering) =
+  burndown item `design-report-only-refusal-scope` · deviation 5 (four `new` species unminted) →
+  `lane-influence-carriage`'s constructor census · deviation 6 (`WhyWorld` narrower than a run's
+  Spine) → the planner lane's `dev-why-world-carries-no-import-edits` residue · `30E:§8`
+  `stop-timings-already-durable`'s `306b` §2c doc correction → register debt.
+- PROSE QUEUE: `30G` `dev-two-new-decline-reasons` · `dev-diag-slug-still-says-not-load-inert`
+  (`oracle-file-not-load-inert` names a contract violation as if an engine proof; rename owed).
+- VERIFIED-CORE TOOLING, not licensing (the scout's `license` tag was loose): binder-hygiene's
+  `digest-ships-unrecorded` (drift between Rust and committed Lean is caught by `verify:translate-check`
+  at arc tier; the digest is a cheaper future witness) and `pairing-on-read-harness-body-evidence`
+  (the harness↔law pairing methodology is recorded nowhere but the `§2` bullet — binder-hygiene
+  minted NO lane report, the defect the §6 ledgering rule exists for) → one line owed in
+  `spike/verify/CLAUDE.md`'s registry at its next edit.
+- SUPERSEDED: `dot-resolves-against-sourcing-file` (`30I:rul-dot-resolves-as-sh`) · `30F:§4`
+  deviation 4, the render re-deriving decisions (`30Nd`: the render now transcribes).
+
+TRIAGE (conductor, 2026-08-22, human-directed "I don't have time; the list may not grow"): the
+bar for a HUMAN row is licence- or durable-affecting AND not already crosschecked or covered by a
+typed umbrella. Everything under that bar is CONDUCTOR-CLOSED — it stands as conductor-tier law
+with its routing named, costs no human time, and is veto-on-sight if ever noticed (unratified,
+never claimed as acked). Net human rows from this sweep: ONE, and it was already queued.
+
+### §6b — stand as conductor law (built, crosschecked; vetoing would undo a correctness repair)
+
+CONDUCTOR-CLOSED, all five: `30N:tc-splice-budget-is-licensure-review-tier` (budget constants are
+a winner-shifting licence surface) · `30N:rul-unset-f-spares-the-variable-plane` (a LEADING
+`unset -f` is exact by the builtin's spec) · `308:rul-wrapper-lane-joins-the-conversion` and
+`308:rul-carry-proof-is-same-definition` (both the stage-i crosscheck's product; each closed a
+live wrong-elision route) · `rul-primacy-moves-the-body-never-the-cell` mechanics (the human's own
+typed words left them to conductor latitude).
+
+### §6c — the one human row, and four conductor-closed with routing
+
+- **HUMAN (already on `30O:human-gated-rulings` as `30Q:ask-ship-explicit-targets-below-a-clobber`):**
+  the clobber sentence — a `cd` or havoc `.` above costs a later literal `.` its AUTHORITY only,
+  never its mirroring and never a later unconditional definition's binding. One typed line settles
+  it. RE-CUT 2026-08-22 (same sitting, after the human's consistency correction): below a
+  blind load, guards SURVIVE (Dorc pins the author's bytes and re-measures live;
+  `rul-guard-resolves-like-its-mutation`); what is lost is elision (total wall) and every
+  cwd-dependent decision. So point-havoc's last-wins re-bind is sound at guard tier, and the
+  prelude floor's later-roots-bind-⊤ is a CONSERVATIVE choice, not the only sound one — the
+  veto is a genuine taste call, small, and rides the clobber sentence.
+- `30M:ask-wall-narration-ratify-or-mint` — CONDUCTOR-CLOSED as (a): mint per the `kWARN` weld
+  (detection is cheap while the builder holds the analysis; muting is always cheap later). Aid-plane
+  only; the narrative consumer is still unbuilt (`289:seam-narrative-render-unconsumed`), so nothing
+  renders until it exists. Routed: the next lane touching the wall-formation seat (`TODO-ADDTL`).
+- `30M:ask-certification-row-shape` — CONDUCTOR-CLOSED: stands as built (one `whole-window` row
+  per run matches the per-(host, plan) trip latch); per-pass fidelity is a debugging want with the
+  same REVISIT as `FORFEITS:forfeit-certifier-trip-evicts-elisions` (a trip observed in the field).
+- `30Na:tc-redirect-refusal-dead-or-owed` — CONDUCTOR-CLOSED as DEAD: delete the unreachable path
+  and the `render-heredoc-refused` slug (its prose item dies with it). The obligation it implied —
+  guards at redirected sites — is a value item, routed (`TODO-ADDTL`); today those sites run, the
+  safe direction.
+- `30Na:stop-spine-mode-is-durable` — CONDUCTOR-CLOSED as ROUTED: a rider on `lane-influence-carriage`
+  (the one lane already reshaping `core::spine` and its constructors); the builder triggers
+  `rul-durable-contents-reviewed-before-design`'s opaque review per `AGENTS.for-builders-only.md`.
+  Not the human's time.
+
+### §6d — parked or out of scope (parks stand without a sitting)
+
+- `30Na:tc-book-level-dot-locals-domain` — licence-review-tier domain change (funcenv lattice with
+  a monotonicity hazard, or a value-plane reorder); xfail horizon end-of-r31 — UNREACTED, parked.
+- the prose queue (`30N` §4 item 9) and `307:ask-prose-correction-for-four-migrated-registers` —
+  the human's prose pass, a separate sitting.
+- `ratify-committee-sparing-fence` — its own burndown item.
+- `307:res-member-and-inline-lanes-still-predict-measured` — ~SUSPECT captured by `30La` (an
+  all-vouched population ships verdict bodies) with its FORFEITS row removed; verify before
+  spending attention.
+- `30D:rul-predict-reserved-prefix-is-fail-fast` — out of round
+  (`30J:rul-family-vocabulary-build-is-not-an-r30-blocker`).
+- `303`'s three `[CONDUCTOR-LEAN]`s — ~SUSPECT folded into `plans/302`; not verified line-by-line.
+
+### §6e — reacted (no action)
+
+`30N:rul-license-mints-at-settlement-from-shared-conclusion` · `rul-census-inputs-are-non-optional`
+· `rul-region-refusal-discloses-region-keyed` — ACKED (`30Ng`, 2026-08-21) ·
+`30Ne:tc-incoherence-table-is-conductor-derived` — stands (the reversal lean NACKED 2026-08-21) ·
+`adj-endorse-artifact-stream-reading` — NACKED → `30Ng:rul-piped-stdout-carries-a-full-plan` ·
+`adj-endorse-multipart-mirroring` — SUPERSEDED → `30Ng:rul-bundle-at-dorc-lang-boundaries` ·
+`30M:ask-spine-grade-boundary` + `adj-sentinel-literal-needs-ratify-or-build` — HUMAN-RULED
+2026-08-21 · the `§ack-implementation-open` set: `rul-emission-custody-composite` (mistake,
+repaired) · escalation-policy · resolved-pair-coherence · entry-tolerance (ACKED) ·
+`rul-all-nine-refuse-on-the-strict-path` (ACKED until the `309` narration-only machinery exists —
+still UNBUILT per `30O`'s stage table, so NOT re-triggered) · `pin-closure-membership-and-diamond`
+(closed). */ -->

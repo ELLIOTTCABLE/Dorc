@@ -176,6 +176,9 @@ sched-round-close-ceremony
    point-havoc's domains · the influence constructor census) → `307:veto-sweep-pile (née §5)`
    (human) → `gate:arc` → `CURRENT_ROUND` bump → the prose queue → fold to ai/main.
 ```
+<!-- /* correction 2026-08-22 (the close-out veto sweep): `307:veto-sweep-pile (née §5)` named
+no list — §5 is an ack-ledger whose last entry defers to a fold summary. The enumerated pile is
+`307` §6; the sweep reads that register. */ -->
 
 Brief riders, all lanes (the `30N` standing corrections plus today's): acceptance criteria
 for evidence tests state the CFG shape they exercise · budget inline `//` and `///`

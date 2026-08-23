@@ -179,6 +179,63 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   Residue that is NOT row-shaped, recorded in `30Q`: nested calls under a
   member loop stay unbound (⊤ ⇒ run); duplicate `(site, fact)` establishes refuse (ruled);
   a loop extent that rebinds its iteration variable refuses the member binding wholesale.
+- **forfeit-value-narrowing-by-test** — RULE (as-built; pencilled by the human 2026-08-22 as
+  the lifted target, `30Pd` §5): a `test`/`[`/`case` on a ⊤ value does not refine that value on
+  its arms, and `|| exit` does not make a refinement unconditional below; the fold only DECIDES
+  conditions from the environment, never lets conditions refine the environment.
+  ```sh
+  LIB=${OPS_LIB:-./lib}
+  [ "$LIB" = ./lib ] || exit 3      # below: LIB = ./lib exactly — today still ⊤
+  . "$LIB/docker.dorc.sh"           # would be EXACT ⇒ authority; today a point havoc
+  [ "$IMAGE" = nginx:1.27 ] || exit 4
+  docker run --name web "$IMAGE"    # would bind an entity ⇒ probeable; today ⊤-argv
+  ```
+  FORFEITS: every `$VAR`-headed load an assertion would make exact; every ⊤-argv site an
+  assertion would make probeable; per-arm precision under `case "$X"`. CAPTURE: per-path value
+  states in `analysis::value` (the capture path of `forfeit-divergence-collapse-to-unknown`),
+  literal `=`/`!=`/`-z`/`-n` and literal `case` arms first, globs/numerics decline to ⊤.
+  BACK-OUT: med (a lattice change with the `30Na` monotonicity hazard; serial after the
+  wave-one lanes, before influence carriage). REVISIT: `r31:kernel-punt-glance`. REDS:
+  `p-x-test-literal-narrows-a-variable` · `p-x-assertion-makes-a-dynamic-load-exact`.
+- **forfeit-file-content-facts-from-exact-checks** — RULE (as-built): a read-only check with
+  exact semantics mints no contents fact; the value plane has no "contents of P = S" cell.
+  ```sh
+  cmp -s /etc/os-release ./expect/debian-12/os-release || exit 3
+  . /etc/os-release                 # would be EXACT (known assignment-only bytes: no havoc, no
+                                    #   wall, values known); today a blind act
+  ```
+  FORFEITS: the verify-then-source idiom; tolerant membership narrowing (`grep -vFxf`). CAPTURE:
+  a contents cell in the value plane minted on the success path of `cmp`/`grep -Fx` (stdlib
+  predicts at parity — POSIX is the spec), consumed by the load plane as a narrowed constant.
+  BACK-OUT: low (additive). REVISIT: `r31:kernel-punt-glance`; the stdlib revival. REDS:
+  `p-x-exact-check-narrows-file-contents`.
+- **forfeit-content-establishment-by-known-write** — RULE (as-built): a write-shaped
+  redirection or `cp` with book bytes establishes no contents fact a later `.` can consume.
+  ```sh
+  cat >/etc/app/env <<'EOF'
+  APP_PORT=8080
+  EOF
+  . /etc/app/env                    # would be EXACT-by-establishment; today a blind act
+  ```
+  FORFEITS: the deploy-then-source env-file pattern. CAPTURE: the heredoc/redirect and `cp`
+  establishing a contents cell; the load plane reading it. BACK-OUT: low. REVISIT:
+  `r31:kernel-punt-glance`. REDS: `p-x-known-write-establishes-sourced-contents`.
+- **forfeit-shell-parity-immunity-model** — RULE (as-built; the cheap half may be absorbed
+  by the running load lane): the funcenv does not model sh's own immunities — POSIX lookup order
+  (special builtins beat functions), quoting suppressing alias recognition, `$0` immutability,
+  assignment words, subshell containment — so a blind act ⊤s dimensions the author can soundly
+  keep or restore.
+  ```sh
+  . /vendor/blind.sh
+  . "${0%/*}/oracles/x.sh"          # immune: immutable $0, pure expansion — today havoc
+  \unset -f cd; \unalias -a         # sound reset — today unrecognised
+  ( . /vendor/blind.sh )            # contained — today the havoc escapes the paren
+  ```
+  FORFEITS: authority below any blind act for every immune or reset dimension. CAPTURE: parity
+  modelling in `funcenv` (alias-table domain; named-function unset; quoted command words;
+  `$0`-relative loads immune to cwd ⊤ under `tc-dollar-zero-is-script-anchored`; subshell
+  scoping of the havoc). BACK-OUT: low. REVISIT: `r31:kernel-punt-glance`. REDS:
+  `p-x-dollar-zero-expansion-survives-a-blind-load` · `p-x-subshell-contains-a-blind-load`.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)

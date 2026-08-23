@@ -145,7 +145,16 @@ discipline: one rule per bullet, slugged; append to the matching section.
   under a capped, MONOTONE mask. The decidable set is `dec-decidable-set-v0`, CLOSED and growing
   by NAME only: `command -v <literal name the unit DEFINES>` (the universe restriction is what
   keeps an ordinary host PATH probe out) and `[ -f <path the controller resolved as loadable> ]`,
-  which decides TRUE only. Keyed on condition DECIDABILITY, never guard SHAPE
+  which decides TRUE only — and ONLY where the cwd at that line is determinate (no `cd` of a
+  shape other than `/…`/`./…`/`../…` above it in the frame, no unknown `.`, no spliced body
+  carrying either): the decision asserts a HOST fact from controller state and is sound solely
+  under cwd-parity with the file in the shipped manifest (human-acked 2026-08-22; the load
+  lane's cwd model is the gate — until it lands, a `[ -f ]` below any such act must not decide).
+  Load-bearing because NOTHING ELSE catches it: `cd` is a blessed target-state-pure builtin
+  (`value.rs`; `notes/199`) and forms no wall, so a wrong TRUE here masks the arm dead, can
+  ERASE its bytes (`plan::erase`), and can hide a mutator or an unknown `.` from the wall
+  computation — a wrong-elision route with no downstream repair.
+  Keyed on condition DECIDABILITY, never guard SHAPE
   (`28K:rul-conflict-pass-is-semantic`). Because every environment answer now SELECTS A WINNER —
   each resolution seat directly, and `funcenv::never_live` for the dialect's minting scan — any
   widening of the decidable set is a WINNER-SHIFTING licensure surface: license-review-tier, never a

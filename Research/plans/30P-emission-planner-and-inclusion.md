@@ -163,9 +163,48 @@ books cannot reach those hosts. The refusal text is human prose (the prose queue
 
 ## the-load-principles — three rules, no idioms
 
-**`principle-unknown-source-is-a-point-havoc`** [ACKED; r30] — an unresolvable `.` means
-"anything may have been defined here". Every function binding becomes unknown AT THAT LINE;
-a later unconditional definition in the same frame re-binds by last-wins. This is the
+**`law-no-unsoundness-below-a-blind-act`** [HUMAN, typed in substance 2026-08-22 — "we're not
+bending that for ergonomics"; "I am not rushing to introduce unsoundness here"]. Read this before
+anything below it. A *blind act* is a line whose effect on the shell Dorc cannot see: a `.` of a
+file the controller does not hold, an `eval` of ⊤, a call into a body Dorc cannot splice. Below
+one, Dorc's model of the shell is ⊤ and Dorc claims NOTHING from it, at any tier, under any flag:
+
+- no cwd-dependent decision — a relative `.` is not EXACT, `[ -f ./x ]` does not decide,
+  slashless `$0` is ⊤; no definition loaded below it carries authority; no load below it is
+  re-pointed or pasted (a rewrite of a reference whose resolution is unknown changes which file
+  the host loads — explicitness alone never licenses a rewrite);
+- no elision below it — the act ran commands, so it is a total wall (no footprint, no survival);
+- nothing shipped on a guess — a copy of a file Dorc cannot prove the author referenced is engine
+  selection, the thing `rul-load-head-is-exact-or-havoc` struck [LEAN, human 2026-08-22, "I'd
+  probably lean no … referential agnosticism"; one typed line to the running conductor settles
+  `30Q:ask-ship-explicit-targets-below-a-clobber`];
+- no engine-side recovery of any kind — not a syntactic check of host bytes, not an oracle's
+  claim about the shell model (a wrong one mis-attributes every line below to the wrong author,
+  the top of `271:rul-sin-ordering`), not a rewrite into a subshell (`kBACKFLIPS`).
+
+What survives: guards, because a guard is authored sh re-measured live and Dorc guarantees only
+its own movement (`rul-guard-resolves-like-its-mutation`); and the author's own remedies, which
+are plain defensive sh — contain it, reset it, assert it, establish it, or read it instead of
+executing it — catalogued in `notes/30Pd` with their exact payoffs. Recovery is author-spelled,
+attributable, and keeps the off-ramp; the hint names the cheapest remedy for the shape seen.
+Why the bought unsoundness does not extend here: that one is an imperfect model of the WORLD,
+fenced three ways and committee-shaped; this would be an imperfect model of the SHELL, which
+nobody but POSIX may speak for, single-speaker, with the whole suffix as blast radius.
+
+**`principle-unknown-source-is-a-point-havoc`** [ACKED; r30 — NARROWED 2026-08-22 by the law
+above: a point of total unknowledge for the shell model; the re-bind clause describes which
+BYTES Dorc pins, never a runtime binding it trusts] — an unresolvable `.` means
+"anything may have happened here": every binding — function, alias, variable, cwd, shell
+option, positional, and whether execution continues at all — is unknown AT THAT LINE; a later
+unconditional definition in the same frame re-binds its own NAME by last-wins. CAVEAT
+[conductor, 2026-08-22, from sh semantics — a ruling to take, not taken]: that re-bind is
+guaranteed only while the alias set is known; on alias-expanding shells (dash) an alias minted
+by the unknown file can rewrite the definition's name word itself, so below an unknown `.` even
+the runtime binding is never a proof. What that costs [human, same day]: nothing at guard tier —
+Dorc pins the author's BYTES and a guard re-measures live under `rul-guard-resolves-like-its-mutation`
+(a site word that means something else below the havoc is the author's footgun, as with a
+hand-written guard); ELISION below a blind load is out regardless, because the load is a total
+wall, and every cwd-dependent decision (`[ -f ]`, relative `.`, slashless `$0`) is ⊤. This is the
 unknown-callee kill-all transfer the engine already uses one plane down (`16P:T8`, the
 ambient gate) applied to the definition plane; today's whole-unit poison is its
 flow-insensitive approximation. Nothing else changes: the unknown `.` stays a definition
@@ -182,7 +221,9 @@ ELF interposition is first-wins; sh is last-wins.
 ```sh
 . /etc/os-release            # unknown to Dorc: every name is now "maybe" …
 hork__is_converged() { … }   # … but THIS is the last definition of this name: live
-hork tune web                # licensable
+hork tune web                # guard-tier at most: the havoc is a total wall, so never elide;
+                             #   the guard re-measures live on the pinned bytes (the word `hork`
+                             #   meaning something else here is the author's footgun)
 ```
 
 **`principle-load-operands-evaluate-over-controller-known-inputs`** — a `.` operand resolves
@@ -386,7 +427,9 @@ loading.
   Per form: tree-mirror ships every EXACT target (stripped if dorc-lang) at its authored path;
   tree-bundle additionally re-points LITERAL dorc-lang imports
   (`30Ng:rul-bundle-at-dorc-lang-boundaries` binds literal operands only); single-stream pastes
-  a literal `.` under the exclusion set, and an EXACT-via-`$0` `.` — which cannot stay verbatim
+  an EXACT literal `.` under the exclusion set (a literal `.` below a `cd`/havoc is NOT pasted
+  and NOT re-pointed: either rewrite changes which file the host loads, so explicitness alone
+  never licenses a rewrite — the resolution must be EXACT too), and an EXACT-via-`$0` `.` — which cannot stay verbatim
   there, `$0` being `sh` — pastes the EXACT-resolved file or refuses the form; a havoc `.` stays
   verbatim in every form and never refuses one.
 - **`mech-blessed-lift-to-literal`** [ACKED 2026-08-22] — the engine evaluates a predict at
