@@ -243,7 +243,8 @@ pub const PINS: &[Pin] = &[
                   `identity-declared-never-inferred` forbids — so the route is an authored, \
                   statically-evaluable `dirname__predict` whose stdout is positively claimed, and \
                   the shape waits on the stdlib that carries one. Absent it the operand is ⊤ ⇒ a \
-                  point havoc with a hint (`p-x-computed-dot-parses-and-havocs` is that half)",
+                  point havoc with a hint (the PARSE half landed: the operand PARSES and the site \
+                  havocs as `computed-source-operand`, cli's `EXIT_LOAD_UNRESOLVABLE`)",
         horizon: Horizon::Scheduled("r31:book-load-acceptance"),
         state: PinState::Live,
     },
