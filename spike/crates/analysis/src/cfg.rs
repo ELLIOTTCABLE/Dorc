@@ -377,6 +377,11 @@ pub struct Cfg {
     /// `site N.M` sub-record per body site (M = the index into this list). `BTreeMap` for
     /// `inv-determinism`.
     call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
+    /// arch-2 (`i-1`): every CALL node whose splice this graph REFUSED — the exact arms that mint
+    /// [`CfgInlineRefused`] (and the depth-2 positional note), recorded so a consumer can ASK
+    /// rather than infer. Emitted on the [`Cfg`] as [`Cfg::splice_refused`]. `BTreeSet` for
+    /// `inv-determinism`.
+    splice_refused: BTreeSet<CfgNodeId>,
     /// Per-node: WHOSE decision governs whether this node executes (`30K` §3.7).
     ///
     /// Effect-bearing nodes are not all plan leaves — a `$( … )` body command, a write-shaped
@@ -509,6 +514,24 @@ impl Cfg {
     #[must_use]
     pub fn call_body_sites(&self, id: CfgNodeId) -> Option<&[CfgNodeId]> {
         self.call_body_sites.get(&id).map(Vec::as_slice)
+    }
+
+    /// Did this graph REFUSE to splice a call at `id` — redefined, recursive, over depth, over
+    /// either node budget, or out of the splice slice (`i-1`)?
+    ///
+    /// This is the law's third blind act (`30P:law-no-unsoundness-below-a-blind-act`): a call whose
+    /// body Dorc cannot see runs arbitrary sh in THIS shell, so it may `cd`, `.`, or rebind
+    /// anything, and every plane that models shell state must read it as ⊤.
+    ///
+    /// [`call_body_sites`](Self::call_body_sites) answering `None` is NOT this question and must
+    /// never be read as it: the splicer inlines same-file funcdefs only, so `None` also covers
+    /// every call into an oracle body the controller holds and models
+    /// (`30Qf:fnd-a-loaded-body-is-never-spliced` — the misreading is one line away and costs a
+    /// licence at every helper call). Recorded at the refusal arms themselves, beside the
+    /// diagnostic, so nothing derives it a second time.
+    #[must_use]
+    pub fn splice_refused(&self, id: CfgNodeId) -> bool {
+        self.splice_refused.contains(&id)
     }
 
     /// Every inlined-CALL node paired with its body-leaf list (arch-2; the whole splice map).
@@ -713,6 +736,9 @@ struct Builder<'a> {
     /// arch-2: the CALL node → its ordered body-leaf list, accumulated as splices complete
     /// (`i-3`/`i-4`). Emitted on the [`Cfg`] as [`Cfg::call_body_sites`].
     call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
+    /// arch-2 (`i-1`): the CALL nodes whose splice was refused, accumulated by
+    /// [`refuse_splice`](Builder::refuse_splice). Emitted as [`Cfg::splice_refused`].
+    splice_refused: BTreeSet<CfgNodeId>,
     /// arch-2: the CALL node → the half-open arena range its splice minted. An enclosing splice's
     /// leaf scan uses it to skip a nested call's WHOLE region in one step: the nested call has
     /// already flattened everything under it, and re-walking the region flattens each deeper
@@ -780,6 +806,7 @@ impl<'a> Builder<'a> {
             inline_stack: Vec::new(),
             spliced_node_total: 0,
             call_body_sites: BTreeMap::new(),
+            splice_refused: BTreeSet::new(),
             spliced_ranges: BTreeMap::new(),
             consumed: Vec::new(),
             branches: Vec::new(),
@@ -1036,7 +1063,14 @@ impl<'a> Builder<'a> {
     /// leaves recorded against `cmd` for the plan/probe), or `None` when the command is not an
     /// eligible call (it stays an ordinary unmodeled command — `Opaque`, status quo). Every
     /// refusal is loud (a [`CFG_INLINE_REFUSED`] diagnostic) so the proportional degradation
-    /// is never silent (`211` §1). `i-1` eligibility, in order:
+    /// is never silent (`211` §1), and every refusal is also RECORDED
+    /// ([`Cfg::splice_refused`]) — the call is a blind act for every plane that models shell
+    /// state, and the arm that says so out loud is the arm that says so in data.
+    ///
+    /// The silent `?`-returns are NOT refusals and record nothing: a word that is not a literal,
+    /// that no funcdef declares, or whose only definitions follow the call, is an ordinary
+    /// unmodeled command (it might be a PATH binary) and the effect plane already walls it.
+    /// `i-1` eligibility, in order:
     ///
     /// * the command word is a fixed literal that names a funcdef with a definition strictly
     ///   BEFORE this call (a call before any definition, or a non-funcdef word, ⇒ `None`: it
@@ -1061,15 +1095,10 @@ impl<'a> Builder<'a> {
 
         let call_lo = self.span(id).lo;
         if defs.len() > 1 {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::Redefined {
-                        name: name.to_owned(),
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::Redefined {
+                name: name.to_owned(),
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
         // The LAST definition strictly BEFORE the call; a forward/absent definition resolves to
         // None (silent — the word might be a PATH binary at that program point, i-1).
@@ -1080,27 +1109,17 @@ impl<'a> Builder<'a> {
             .map(|(body, _)| *body)?;
 
         if self.inline_stack.contains(&body) {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::RecursiveCall {
-                        name: name.to_owned(),
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::RecursiveCall {
+                name: name.to_owned(),
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
         if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::DepthBudget {
-                        name: name.to_owned(),
-                        budget: inline_budget::MAX_DEPTH,
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::DepthBudget {
+                name: name.to_owned(),
+                budget: inline_budget::MAX_DEPTH,
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
         // Depth-2 positional threading does NOT work (arch-2 wave-2 correction): a NESTED call
         // (`inline_stack` already holds an enclosing body) whose own argument references a
@@ -1109,45 +1128,60 @@ impl<'a> Builder<'a> {
         // positional resolves ⊤). Refuse THIS inner call LOUDLY (a catalogued Note) instead of
         // shipping a silent safe `MustRun`; the call runs verbatim, the limitation is disclosed.
         if !self.inline_stack.is_empty() && self.call_args_reference_positional(words) {
-            // Migrated onto the Diag spine (B4 sweep). `cmd` is the CFG node for the call site;
-            // `self.span(id)` is the AST source span. CFG-node-space SiteId (pre-plan, same
-            // precedent as CmdsubOperandTop — flagged `tc-cmdsub-siteid`).
-            self.diags.push(Diag::new(
+            // CFG-node-space SiteId (pre-plan, same precedent as CmdsubOperandTop — flagged
+            // `tc-cmdsub-siteid`).
+            let note = Diag::new(
                 Code::Depth2PositionalUnthreaded(Depth2PositionalUnthreaded {
                     site: SiteId::leaf(LeafId(cmd.0)),
                     name: name.to_owned(),
                 }),
                 self.span(id),
-            ));
-            return None;
+            );
+            return self.refuse_splice(cmd, note);
         }
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::UnmodeledPositional {
-                        name: name.to_owned(),
-                        construct,
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::UnmodeledPositional {
+                name: name.to_owned(),
+                construct,
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
         // tc-M2: inlining would EXPOSE an invisible body file-write as wrong-ambience
         // (redirect-effects are unmodeled, y-1); `/dev/null` stays exempt (devnull-exemption).
         if let Some(redirect) = self.body_has_unmodeled_write_redirect(body) {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::WriteRedirect {
-                        name: name.to_owned(),
-                        redirect,
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::WriteRedirect {
+                name: name.to_owned(),
+                redirect,
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
         self.splice_funcdef_body(id, name, body, cmd)
+    }
+
+    /// Record ONE splice refusal and announce it, in the ONE seat that does both.
+    ///
+    /// The record and the diagnostic are the same act: an arm that told the author "Dorc did not
+    /// look inside this call" while leaving the binding plane believing it had is exactly the
+    /// unsoundness `30P:law-no-unsoundness-below-a-blind-act` names, so the seat that mints the
+    /// first mints the second. Always `None` — the call stays an ordinary `Opaque` command.
+    fn refuse_splice(&mut self, cmd: CfgNodeId, diag: Diag) -> Option<CfgNodeId> {
+        self.splice_refused.insert(cmd);
+        self.diags.push(diag);
+        None
+    }
+
+    /// [`refuse_splice`](Self::refuse_splice) for the arms that speak `CFG_INLINE_REFUSED`.
+    fn refuse_inline(
+        &mut self,
+        cmd: CfgNodeId,
+        id: AstId,
+        reason: CfgInlineRefusedReason,
+    ) -> Option<CfgNodeId> {
+        let diag = Diag::new(
+            Code::CfgInlineRefused(CfgInlineRefused { reason }),
+            self.span(id),
+        );
+        self.refuse_splice(cmd, diag)
     }
 
     /// arch-2: splice a fresh lowering of `body` (the funcdef body's AST) right after the CALL
@@ -1177,31 +1211,21 @@ impl<'a> Builder<'a> {
         // leaves a body lowers to). Checked BEFORE allocation so refusal needs no rollback.
         let estimate = subtree_node_count(self.ast, body);
         if estimate > inline_budget::MAX_NODES_PER_SITE {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::PerCallNodeBudget {
-                        name: name.to_owned(),
-                        estimate,
-                        budget: inline_budget::MAX_NODES_PER_SITE,
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::PerCallNodeBudget {
+                name: name.to_owned(),
+                estimate,
+                budget: inline_budget::MAX_NODES_PER_SITE,
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
         if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
-            self.diags.push(Diag::new(
-                Code::CfgInlineRefused(CfgInlineRefused {
-                    reason: CfgInlineRefusedReason::PerBookNodeBudget {
-                        name: name.to_owned(),
-                        spliced: self.spliced_node_total,
-                        estimate,
-                        budget: inline_budget::MAX_NODES_PER_BOOK,
-                    },
-                }),
-                self.span(id),
-            ));
-            return None;
+            let refusal = CfgInlineRefusedReason::PerBookNodeBudget {
+                name: name.to_owned(),
+                spliced: self.spliced_node_total,
+                estimate,
+                budget: inline_budget::MAX_NODES_PER_BOOK,
+            };
+            return self.refuse_inline(cmd, id, refusal);
         }
 
         // `inline_stack.push(body)` is the cycle guard: a recursive call inside the body
@@ -2292,6 +2316,7 @@ impl<'a> Builder<'a> {
             spliced_internal: self.spliced_internal,
             execution_owner: self.execution_owner,
             call_body_sites: self.call_body_sites,
+            splice_refused: self.splice_refused,
             consumed: self.consumed,
             branches: self.branches,
         };
