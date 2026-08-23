@@ -254,6 +254,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-corrupt",
     "whylog-unwritten",
     "aid-unloaded-sibling-oracle",
+    "oracle-matched-zero-sites",
     "unmodeled-wall-inventory",
     "verdict-terminal-pipeline",
     "for-loop-brace-range-runs-once",
@@ -349,6 +350,9 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
+    // cli/main.rs — a zero-matched-sites verdict is a claim about the whole ORACLE FILE, not any
+    // one book command site.
+    "OracleMatchedZeroSites",
     // cli/main.rs — a FORM is a whole-run property; a caret on a book command would blame the
     // admin's text for a v0 limit (`271:rul-sin-ordering`).
     "ArtifactFormRefused",

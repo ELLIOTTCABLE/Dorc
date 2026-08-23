@@ -30,10 +30,10 @@ use crate::diag::{
     LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
     MarkHashcolonMalformed, MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb,
     MarkerVersionUnrecognized, MissingDialectMarker, MungeNameInvalid, OperandPosition,
-    PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine,
-    RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused,
-    RecordsLateLine, RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused,
-    RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
+    OracleMatchedZeroSites, PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated,
+    RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused,
+    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
+    RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
     SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
     SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
@@ -215,6 +215,17 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "aid-unloaded-sibling-oracle",
             DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
                 oracles: "`redis.oracle.sh`".to_owned(),
+            }),
+        ),
+        // World-as-payload by necessity, same reason as its cli/main.rs sibling above: the
+        // aggregation reads the run's WHOLE final `Vouches` set (`30Qe:fruit-oracle-matched-zero-
+        // sites`), which a single-file loom's in-process consumer has no seat to reconstruct; the
+        // real firing route is proven separately by the whole-product round-trip case
+        // `crates/cli/tests/oracle-matched-zero-sites.loom`.
+        (
+            "oracle-matched-zero-sites",
+            DiagCode::OracleMatchedZeroSites(OracleMatchedZeroSites {
+                oracle: "hork.oracle.sh".to_owned(),
             }),
         ),
         (

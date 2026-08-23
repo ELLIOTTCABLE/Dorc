@@ -342,6 +342,10 @@ pub enum DiagCode {
     /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
     /// suggest-never-auto-load hint (`24H` ack-6). Advisory; the run is unchanged.
     AidUnloadedSiblingOracle(AidUnloadedSiblingOracle),
+    /// A LOADED oracle's `__is_converged` verdict never vouched any site this run — the
+    /// silent-decline value-evaporation detector (`30Qe:fruit-oracle-matched-zero-sites`;
+    /// `KNOBS:kWARN` rich, tune-high). Advisory; the run is unchanged.
+    OracleMatchedZeroSites(OracleMatchedZeroSites),
 
     // ── dorc-lint's own findings (`288` §5) — the lane-local namespace retired ────────────────
     /// The book carries unmodeled ⊤-walls — CFG top-nodes from a construct the parser does not
@@ -525,6 +529,7 @@ impl DiagCode {
             DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
             DiagCode::WhylogUnwritten(_) => "whylog-unwritten",
             DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
+            DiagCode::OracleMatchedZeroSites(_) => "oracle-matched-zero-sites",
             DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
             DiagCode::VerdictTerminalPipeline(_) => "verdict-terminal-pipeline",
             DiagCode::ForLoopBraceRangeRunsOnce(_) => "for-loop-brace-range-runs-once",
@@ -1860,6 +1865,15 @@ pub struct AidUnloadedSiblingOracle {
     pub oracles: String,
 }
 
+/// Payload of [`DiagCode::OracleMatchedZeroSites`] (`30Qe:fruit-oracle-matched-zero-sites`): the
+/// loaded oracle file whose verdict never vouched a site this run. Spanless — the claim is about
+/// the FILE, not any one book command.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleMatchedZeroSites {
+    /// The oracle's load path (`{oracle}`).
+    pub oracle: String,
+}
+
 /// Payload of [`DiagCode::UnmodeledWallInventory`] (`288` §5): the whole-book wall census the
 /// `unmodeled-inventory` lint source takes. Counts, never identities — `inv-referent-agnostic`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2932,6 +2946,15 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::ProvideModel,
         },
+        // The silent-decline value-evaporation hint: a Warning (`KNOBS:kWARN` rich, tune-high) —
+        // nothing broke, but a loaded oracle that never earned a vouch is exactly the kind of
+        // detection this era wants kept loud. ProvideModel: the honest repair, when the book DOES
+        // invoke the family, is widening the oracle's own argparse/verdict coverage.
+        DiagCode::OracleMatchedZeroSites(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
         // dorc-lint's own findings (`288` §5). Severities are the ones the lane-local codes
         // carried, now sourced from HERE (`crib-4`) instead of a construction site.
         DiagCode::UnmodeledWallInventory(_) => CodeSpec {
@@ -3390,6 +3413,9 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle { oracles }) => {
             vec![ours("oracles", oracles.clone())]
+        }
+        DiagCode::OracleMatchedZeroSites(OracleMatchedZeroSites { oracle }) => {
+            vec![ours("oracle", oracle.clone())]
         }
         DiagCode::UnmodeledWallInventory(UnmodeledWallInventory {
             wall_count,

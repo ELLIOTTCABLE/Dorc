@@ -65,7 +65,9 @@ mod source_match;
 mod transport_edge;
 mod whylog_store;
 
-use dorc_aid::diag::{AidUnloadedSiblingOracle, Diag, DiagCode, EscalationPolicy};
+use dorc_aid::diag::{
+    AidUnloadedSiblingOracle, Diag, DiagCode, EscalationPolicy, OracleMatchedZeroSites,
+};
 use dorc_aid::said::Said;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Severity};
 use dorc_core::{Interner, ProvArena, Symbol};
@@ -1413,6 +1415,17 @@ fn run(
         &mut interner,
         live_defs,
     ));
+
+    // `30Qe:fruit-oracle-matched-zero-sites` — the silent-decline value-evaporation detector
+    // (`KNOBS:kWARN` rich, tune-high): a loaded oracle whose verdict never actually vouched a site
+    // this run. Aggregated purely from the run's OWN final `vouches` (`the-fixpoint-owns-the-rounds`:
+    // vouches are frozen before the fixpoint loop, never rebuilt per round) — never a second lift.
+    report_at(
+        advisory,
+        "oracle",
+        None,
+        &oracle_matched_zero_sites_diagnostics(oracle_paths, &verdict_sets, &vouches, &interner),
+    );
 
     // The CONNECTED check-pipes (`24J` §2, repaired — `271:rul-only-oracle-bytes-ship`): a simple
     // all-vouched-read-only pipeline `A | F [| F…]` ships as ONE composed probe keyed to its
@@ -5828,6 +5841,55 @@ fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[Strin
     vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
         AidUnloadedSiblingOracle { oracles },
     ))]
+}
+
+/// The zero-matched-sites oracle warning (`30Qe:fruit-oracle-matched-zero-sites`; `KNOBS:kWARN`
+/// rich, tune-high) — the silent-decline value-evaporation detector: a LOADED oracle whose
+/// `__is_converged` verdict never actually vouched any site this run, either because the book
+/// never invokes its command at all, or every invocation's argv declined.
+///
+/// `oracle_paths`/`verdict_sets` are index-paired: oracle files sort FIRST in the source-wide
+/// vectors the verdict lift consumes, with the book last (`cli/CLAUDE.md
+/// the-book-is-a-definition-source`), and `oracle_paths` names only the oracle-only prefix — so
+/// zipping them walks exactly the loaded oracle files, in order, never the book. `vouches` is the
+/// run's FINAL, frozen vouch set.
+///
+/// Conservative by construction, and documented so, not silently: the comparison is FAMILY-NAME
+/// level (the munged `<name>__is_converged`), so a family whose command word DOES appear in the
+/// book but whose argv every shape declines still correctly reads as zero-matched (no vouch
+/// reached) — but a book-defined verdict that SHADOWS an oracle's same-named family
+/// (`oracle/CLAUDE.md visibility-is-full-positional`: at most one definition is live per name) is
+/// indistinguishable from the oracle's own vouch by fn_name alone, so a shadowed oracle can read
+/// as matched when its own body never ran. A rare edge, not chased here.
+fn oracle_matched_zero_sites_diagnostics(
+    oracle_paths: &[String],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    vouches: &dorc_plan::Vouches,
+    interner: &Interner,
+) -> Vec<Diag> {
+    let vouched = vouches.vouched_fn_names();
+    oracle_paths
+        .iter()
+        .zip(verdict_sets)
+        .filter_map(|(path, set)| {
+            let defined: Vec<String> = set
+                .providers()
+                .map(|sym| {
+                    format!(
+                        "{}__is_converged",
+                        dorc_oracle::to_funcname_segment(interner.resolve(sym))
+                    )
+                })
+                .collect();
+            let matched =
+                !defined.is_empty() && defined.iter().any(|f| vouched.contains(f.as_str()));
+            (!defined.is_empty() && !matched).then(|| {
+                Diag::new_spanless_site(DiagCode::OracleMatchedZeroSites(OracleMatchedZeroSites {
+                    oracle: path.clone(),
+                }))
+            })
+        })
+        .collect()
 }
 
 /// The escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility

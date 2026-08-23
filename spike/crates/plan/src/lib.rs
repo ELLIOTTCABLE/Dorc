@@ -1659,6 +1659,20 @@ impl Vouches {
             .any(|(candidate, _)| *candidate == site)
     }
 
+    /// Every REACHED verdict fn_name (`<munge>__is_converged`) actually vouched at some site in
+    /// this run (`30Qe:fruit-oracle-matched-zero-sites`) — the aggregation surface for the
+    /// zero-matched-sites aid-plane warning. `by_establish` holds ONLY reached vouches (an absent
+    /// site never guards, per its own doc), so this is exactly "which providers earned a vouch",
+    /// no re-derivation. License values flowing into narrative freely (`two-plane-aid-law`); this
+    /// crosses no plane back.
+    #[must_use]
+    pub fn vouched_fn_names(&self) -> BTreeSet<&str> {
+        self.by_establish
+            .values()
+            .map(|v| v.vouch().fn_name.as_str())
+            .collect()
+    }
+
     pub fn extend(&mut self, other: Self) {
         self.duplicates.extend(other.duplicates.iter().copied());
         for (site, fact) in other.order {
