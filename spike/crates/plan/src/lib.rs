@@ -7209,6 +7209,42 @@ apt_get__is_converged() { return 0; }
         );
     }
 
+    /// `30L:pin-probe-site-identity-unchanged` under member-major flattening: an in-loop inlined
+    /// call already ships `site N.M` records (measured: `site 0.0`, byte-identical to the same
+    /// call outside a loop), so the member axis may only ADD indices. Member-major numbering is
+    /// what makes that true — member 0's body-site indices are the whole non-loop numbering, and
+    /// every later member appends. A site-major flattening would renumber every existing record.
+    #[test]
+    fn an_in_loop_calls_member_zero_records_key_exactly_as_the_non_loop_call_does() {
+        let non_loop = probe_for_src(
+            "install_pkg() { apt-get install -y nginx; }\ninstall_pkg\n",
+            true,
+        )
+        .0;
+        let looped = probe_for_src(
+            "install_pkg() { apt-get install -y nginx; }\nfor pkg in a b; do install_pkg; done\n",
+            true,
+        )
+        .0;
+        let keys = |p: &ProbePlan| {
+            p.checks
+                .iter()
+                .map(|c| (c.site, c.member))
+                .collect::<Vec<_>>()
+        };
+        let (before, after) = (keys(&non_loop), keys(&looped));
+        assert_eq!(
+            before,
+            vec![(LeafId(0), Some(0))],
+            "the non-loop call ships one body-site record"
+        );
+        assert_eq!(
+            after.first().copied(),
+            before.first().copied(),
+            "member 0 keeps the non-loop record key"
+        );
+    }
+
     #[test]
     fn verdict_decline_leaf_index_matches_build_plan() {
         // `tc-verdictdecline-site-leaf-source`: `build_vouches` keys a `VerdictDecline` by the

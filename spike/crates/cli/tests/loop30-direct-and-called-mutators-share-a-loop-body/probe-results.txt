@@ -1,0 +1,7 @@
+# Leaf 0 is the DIRECT in-loop mutator: its sub-index is the r21 member index (libnginx, libcurl).
+# Leaf 1 is the CALL: its sub-index is member-major over (body-site, member) — one body site, so
+# member 0 then member 1 (nginx, curl). All four converged.
+site 0.0 effect=holds rc=0
+site 0.1 effect=holds rc=0
+site 1.0 effect=holds rc=0
+site 1.1 effect=holds rc=0

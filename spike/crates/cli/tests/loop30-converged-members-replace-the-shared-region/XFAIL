@@ -1,0 +1,4 @@
+XFAIL: the census closes the member population, but the licence is unbuilt — the in-loop floor in
+`plan`'s `site_conclusion` runs every route regardless of the population it belongs to, and the
+value plane binds `$1` from the loop variable's join rather than per member. Greens with the loop
+member-region licence (horizon end-of-r30).

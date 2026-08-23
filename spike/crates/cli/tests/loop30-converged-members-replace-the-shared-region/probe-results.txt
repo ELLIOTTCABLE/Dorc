@@ -1,0 +1,5 @@
+# Both members converged: member 0 is nginx, member 1 is curl. The `site N.M` sub-index is
+# member-major, so member 0 keys exactly as the same call outside a loop already does
+# (`30L:pin-probe-site-identity-unchanged`) and the member axis only ever appends.
+site 0.0 effect=holds rc=0
+site 0.1 effect=holds rc=0

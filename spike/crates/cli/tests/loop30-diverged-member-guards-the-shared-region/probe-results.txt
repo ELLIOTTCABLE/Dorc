@@ -1,0 +1,5 @@
+# Member 0 (nginx) is installed; member 1 (curl) is not. The members disagree, so the universal
+# Replace fails and the parametric guard absorbs it — the runtime dispatch happens per iteration,
+# inside sh, in the author's own bytes (`30L` section 4.5).
+site 0.0 effect=holds rc=0
+site 0.1 effect=absent rc=1

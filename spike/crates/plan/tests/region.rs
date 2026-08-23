@@ -464,6 +464,24 @@ fn a_non_literal_for_list_opens_the_population() {
     }
 }
 
+/// A COMMAND SUBSTITUTION in a `for` list never reaches the census at all: the parser ⊤-rejects
+/// such a loop (`UnsupportedReason::Loop`), so the body is never lowered and no region exists to
+/// have a population. Asserted rather than assumed, because "the census refuses it" and "the census
+/// never sees it" are different mechanisms and only one of them is actually load-bearing here.
+///
+/// CFG shape: a `for` whose list is `$(ls)`, lowered as one absorbing ⊤ node with no body.
+#[test]
+fn a_command_substitution_for_list_never_reaches_the_census() {
+    let census = census_of(
+        "install_pkg() { apt-get install -y nginx; }\nfor f in $(ls); do install_pkg; done\n",
+    );
+    assert!(
+        census.is_empty(),
+        "the loop is a parse-⊤, so its body holds no spliced call: {:?}",
+        regions(&census)
+    );
+}
+
 /// A NESTED loop opens: one region's evaluations would multiply across two lists, and no consumer
 /// downstream models that population shape. Both directions of the pair refuse, because the test is
 /// whether the innermost head is itself inside a loop.

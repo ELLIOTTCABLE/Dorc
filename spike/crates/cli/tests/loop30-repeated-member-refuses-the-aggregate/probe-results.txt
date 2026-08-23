@@ -1,0 +1,4 @@
+# Both members are the same package, so both members' records name ONE cell. Converged or not, the
+# aggregate identity refuses the duplicate and the region runs.
+site 0.0 effect=holds rc=0
+site 0.1 effect=holds rc=0
