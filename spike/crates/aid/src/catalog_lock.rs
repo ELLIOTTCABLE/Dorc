@@ -1058,4 +1058,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "for-loop-brace-range-runs-once",
+        when_fires: "a `for` loop's entire in-list is one bash/zsh brace-RANGE word (`{start..end}`, optionally `{start..end..step}`) -- POSIX sh (dash, posh) never expands braces, so the word stays one literal string and the loop body runs exactly ONCE, with the loop variable bound to that literal text, never to each number in the range. lint/source_portability.rs LoopBraceRange, rung-file, pure syntax over the parsed AST.",
+        why: "30Qe:fruit-loop-does-not-loop-lint. A real, repeated corpus footgun (k3s and the Kubernetes install docs both ship this exact shape) -- silent under `sh script.sh`: the loop still runs, exactly once, with no error at all. `{range}` carries the offending word verbatim. The check walks the WHOLE parsed AST (`ast.iter()`), so it fires equally inside a function body -- the shape below keeps the replay's OTHER lint source (analysis-diagnostics) clean by staying a valid oracle file.",
+        params: &[],
+        example: "[unwritten: for-loop-brace-range-runs-once]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
