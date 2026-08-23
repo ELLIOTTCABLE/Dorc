@@ -1067,4 +1067,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "load-carriage-withheld-under-unknown-cwd",
+        when_fires: "a BOOK's `.` names a file the controller HOLDS — the operand resolved, the bytes were read — but a line above it may have moved the working directory, so which file that operand names on the target is unknown. `analysis/funcenv.rs` `load_sites` records the site with `HavocCause::CwdUnknown { clobbered_at }`, and `cli/main.rs` `load_head_notices` mints this once per such `.` line, spanned there. Two acts land a `.` in that state: a `cd`, and a `.` of a file the controller does not hold (which runs arbitrary sh in the book's own shell and may `cd` inside it). `{line}` carries the 1-based line of that act, because it is the half the caret cannot show — the caret is on the load, the cause is above it. World-as-payload: the mint sits in the binary's own load-edge driver, past everything the in-process book pipeline composes.",
+        why: "`30P:law-no-unsoundness-below-a-blind-act` (human-typed in substance 2026-08-22), the nothing-shipped clause. Below a line whose effect on the shell Dorc cannot see, Dorc claims nothing — and a copy of a file Dorc cannot prove the author's own line will read is engine selection, which `rul-load-head-is-exact-or-havoc` struck. So the artifact carries NO copy of this load's target: not bundled, not mirrored, and the authored `.` is left exactly as written. The consequence the author cannot see from the plan alone is that the published tree has a hole where that dependency would have stood, so an apply may die at this line on the target — which is why this is a WARNING rather than a note, and why the payload names the cause rather than restating the operand. The load's AUTHORITY is separately gone (`rul-havoc-is-pointwise-never-the-stack`), so nothing below it is elided on its account either. Remediation register (help) wanted: the repair is the author's — move the `.` above the act, or make the operand independent of where the run stands.",
+        params: &[],
+        example: "[unwritten: load-carriage-withheld-under-unknown-cwd]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];

@@ -211,6 +211,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "helper-declaration-contested",
     "vouched-composition-not-present",
     "script-relative-load-dies-slashless",
+    "load-carriage-withheld-under-unknown-cwd",
     "slashless-source-searches-path",
     "computed-source-operand",
     "missing-dialect-marker",
