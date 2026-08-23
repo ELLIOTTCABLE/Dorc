@@ -1220,6 +1220,11 @@ fn run(
                 dorc_oracle::reserved::role_family(name).map(|(base, _)| base.to_owned())
             }),
     );
+    // `tc-load-decisions-read-authored`, applied as the human's lean asks: the definition-plane
+    // decisions are MINTED HERE, above the intake, so nothing influenced can reach them by
+    // accident later. They are transcribed onto the Spine when one exists; the recording is not
+    // the mint (`30I:rul-load-decisions-are-authored-before-contact`).
+    let load_decisions = mint_load_decisions(&cfg.value, &contested, &env);
     // `302` §4 — the two pre-network solve seats, reported the moment they give up: both run
     // before the probe is compiled, so this is fail-fast in the project's sense (loud, on human
     // timescales), and the plan that follows is the honest floor rather than nothing.
@@ -2099,8 +2104,7 @@ fn run(
         &cfg.value,
         &invalidators,
         trip,
-        &contested,
-        &env,
+        load_decisions,
         &verdict_lane,
         &plan
             .steps()
@@ -2767,6 +2771,49 @@ const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal
     }
 }
 
+/// Mint the definition-plane decisions, ABOVE THE INTAKE (`tc-load-decisions-read-authored`,
+/// human lean applied).
+///
+/// The carve is structural rather than asserted. `30I:rul-load-decisions-are-authored-before-contact`
+/// says these wear authored-before-contact, and every input here earns it: the contested families
+/// come from the function environment's own answer, which admits a word only when it is a literal
+/// graded `ValueGrade::ProgramText` (`funcenv-reads-source-literal-plane-only`), and the
+/// unresolvable loads are CFG positions. But the RECORDS used to be built inside
+/// [`record_new_arm`], on a path the intake had already reached — so the authored answer was a
+/// label the seat asserted rather than a fact about where it stood.
+///
+/// Called before the intake edge, this cannot read influenced material even by accident: there is
+/// nothing influenced in scope yet. Transcribing the finished records onto the Spine later is
+/// transcription, not a mint, so it joins nothing (`309:rul-spine-preserves-never-stamps`).
+fn mint_load_decisions(
+    cfg: &dorc_analysis::cfg::Cfg,
+    contested: &dorc_core::ContestedFamilies,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) -> Vec<dorc_core::spine::SpineLoadDecision> {
+    use dorc_core::spine::{SpineLoadDecision, WithheldCause};
+
+    let authored = dorc_core::influence::InfluenceAccount::authored_before_contact();
+    contested
+        .families()
+        .map(|name| {
+            SpineLoadDecision::minted(
+                name.to_owned(),
+                None,
+                Some(WithheldCause::Contested),
+                authored,
+            )
+        })
+        .chain(env.unresolvable_loads().iter().map(|node| {
+            SpineLoadDecision::minted(
+                format!("load@{}", cfg.node(*node).ast.0),
+                None,
+                Some(WithheldCause::Unprovable),
+                authored,
+            )
+        }))
+        .collect()
+}
+
 /// Write the run's `new`-arm records onto the Spine (`30E` §2's transitory species).
 ///
 /// These are non-durable in production but not RULED non-durable — the census's legal resting state
@@ -2795,16 +2842,15 @@ fn record_new_arm(
     cfg: &dorc_analysis::cfg::Cfg,
     invalidators: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
     trip: dorc_analysis::certify::CertifierTrip,
-    contested: &dorc_core::ContestedFamilies,
-    env: &dorc_analysis::funcenv::FuncEnv,
+    load_decisions: Vec<dorc_core::spine::SpineLoadDecision>,
     verdict_lane: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::Measurement>,
     spine_leaves: &[(dorc_core::AstId, dorc_core::LeafId)],
     admitted: bool,
     world_account: dorc_core::influence::InfluenceAccount,
 ) {
     use dorc_core::spine::{
-        AdmissionOutcome, ShipLane, SpineAdmission, SpineLoadDecision, SpineProbeShip,
-        SpineSiteClassification, SpineSolveCertification, WithheldCause,
+        AdmissionOutcome, ShipLane, SpineAdmission, SpineProbeShip, SpineSiteClassification,
+        SpineSolveCertification,
     };
 
     spine.set_admission(SpineAdmission::minted(
@@ -2827,21 +2873,8 @@ fn record_new_arm(
         trip.tripped(),
         world_account,
     ));
-    for name in contested.families() {
-        spine.push_load_decision(SpineLoadDecision::minted(
-            name.to_owned(),
-            None,
-            Some(WithheldCause::Contested),
-            world_account,
-        ));
-    }
-    for node in env.unresolvable_loads() {
-        spine.push_load_decision(SpineLoadDecision::minted(
-            format!("load@{}", cfg.node(*node).ast.0),
-            None,
-            Some(WithheldCause::Unprovable),
-            world_account,
-        ));
+    for record in load_decisions {
+        spine.push_load_decision(record);
     }
     for check in &probe.checks {
         spine.set_ship(SpineProbeShip::minted(
@@ -4265,8 +4298,7 @@ mod spine_record_tests {
             // `kills`-only read reported as `false`.
             &BTreeSet::from([standalone, aggregate]),
             dorc_analysis::certify::CertifierTrip::default(),
-            &dorc_core::ContestedFamilies::default(),
-            &env,
+            super::mint_load_decisions(&cfg, &dorc_core::ContestedFamilies::default(), &env),
             &BTreeMap::new(),
             &spine_leaves,
             true,
