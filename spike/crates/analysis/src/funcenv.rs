@@ -1116,7 +1116,7 @@ pub fn analyze(
     };
 
     match fold_to_environment(solve_pruned, |states| {
-        dead_edges(ast, cfg, defs, literals, states, true)
+        dead_edges(ast, cfg, defs, literals, &sites, states, true)
     }) {
         Ok((states, folded_edges)) => {
             let loads = settled_account(
@@ -1270,12 +1270,13 @@ fn dead_edges(
     cfg: &Cfg,
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    sites: &LoadSites,
     states: &[EnvStack],
     converged: bool,
 ) -> BTreeSet<(CfgNodeId, CfgNodeId)> {
     let mut out = BTreeSet::new();
     for branch in cfg.branches() {
-        let Some(held) = decide(ast, cfg, defs, literals, states, converged, branch) else {
+        let Some(held) = decide(ast, cfg, defs, literals, sites, states, converged, branch) else {
             continue;
         };
         for dead in branch.dead_successors(cfg, held) {
@@ -1292,11 +1293,12 @@ fn decide(
     cfg: &Cfg,
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    sites: &LoadSites,
     states: &[EnvStack],
     converged: bool,
     branch: &Branch,
 ) -> Option<bool> {
-    let (test, negated) = decidable_test(ast, cfg, defs, literals, branch)?;
+    let (test, negated) = decidable_test(ast, cfg, defs, literals, sites, branch)?;
     let holds = match test {
         DecidableTest::FunctionDefined(name) => {
             match binding_in(states, converged, branch.decided_at, &name) {
@@ -1324,6 +1326,7 @@ fn decidable_test(
     cfg: &Cfg,
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    sites: &LoadSites,
     branch: &Branch,
 ) -> Option<(DecidableTest, bool)> {
     let (simple, negated) = condition_shape(ast, branch.cond)?;
@@ -1339,8 +1342,8 @@ fn decidable_test(
             }
             DecidableTest::FunctionDefined(name.to_owned())
         }
-        "test" if literals.argv_len(node) == 3 => file_test(defs, literals, node, None)?,
-        "[" if literals.argv_len(node) == 4 => file_test(defs, literals, node, Some("]"))?,
+        "test" if literals.argv_len(node) == 3 => file_test(defs, literals, sites, node, None)?,
+        "[" if literals.argv_len(node) == 4 => file_test(defs, literals, sites, node, Some("]"))?,
         _ => return None,
     };
     Some((test, negated))
@@ -1372,13 +1375,34 @@ fn command_head(ast: &Ast, simple: AstId) -> Option<&str> {
 }
 
 /// The `-f <loadable path>` half of the decidable set, shared by the `test` and `[` spellings.
+///
+/// # The cwd gate
+///
+/// This entry asserts a HOST fact out of CONTROLLER state, and it is sound solely under cwd-parity
+/// with the file in the shipped manifest — so where the cwd at this line is not determinate it must
+/// refuse (`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`;
+/// `30P:law-no-unsoundness-below-a-blind-act`: no cwd-dependent decision below a line whose effect
+/// on the shell Dorc cannot see). Nothing else catches a wrong TRUE here — `cd` is a blessed
+/// target-state-pure builtin and forms no wall — and what it costs is an arm masked dead, a
+/// conditional definition made unconditional, and a mutator hidden from the wall computation.
+///
+/// It reads [`LoadSites::clobbers`], the same pre-pass answer the load heads take, so ONE seat
+/// answers "is the cwd determinate here". That pass runs ONCE, before the first solve, and is a
+/// pure function of the CFG and the operand answers — so the gate is round-INVARIANT: a condition
+/// it refuses in round 1 it refuses in every round, the masked-edge set still only grows, and
+/// `28M:dec-pessimistic-iteration`'s never-flips argument is untouched. Direction is strictly
+/// withholding: fewer decisions, fewer masked edges, more live paths, more ⊤ joins.
 fn file_test(
     defs: &DefinitionTable,
     literals: &SourceLiteralPlane<'_>,
+    sites: &LoadSites,
     node: CfgNodeId,
     closer: Option<&str>,
 ) -> Option<DecidableTest> {
     if literals.literal_text(node, 1)? != "-f" || literals.literal_text(node, 3) != closer {
+        return None;
+    }
+    if sites.clobbers.contains_key(&node) {
         return None;
     }
     let path = literals.literal_text(node, 2)?;
@@ -2754,6 +2778,7 @@ fn load_sites(
         heads.push((id, head));
     }
     let clobbers = cwd_clobbers(cfg, &clobbering);
+    sites.clobbers.clone_from(&clobbers);
     for (id, head) in heads {
         let clobbered = head
             .cwd_relative
@@ -2806,6 +2831,10 @@ struct LoadSites {
     /// Sites whose operand is a plain slash-less literal, which POSIX makes a `PATH` search rather
     /// than a cwd lookup — a host read, so the controller names no file.
     searches_path: BTreeSet<CfgNodeId>,
+    /// Per node, the act above it that may have moved the working directory — the ONE answer to
+    /// "is the cwd determinate here", read by the load heads and by the decidable set's `[ -f ]`
+    /// entry alike, so no second derivation of it exists to disagree.
+    clobbers: BTreeMap<CfgNodeId, CfgNodeId>,
 }
 
 /// The per-node transfer.
@@ -5545,9 +5574,8 @@ mod tests {
     }
 
     /// The decidable set's `[ -f <loadable> ]` entry asserts a HOST fact from CONTROLLER state,
-    /// and it is sound only under cwd-parity with the shipped manifest — so below a `cd` it must
-    /// refuse (`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`, the clause the code
-    /// does not yet honour). [`file_test`] reads no cwd state at all.
+    /// and it is sound only under cwd-parity with the shipped manifest — so below a `cd` it refuses
+    /// (né `p-x-file-test-refuses-under-unknown-cwd`, promoted).
     ///
     /// `cd` is a blessed target-state-pure builtin and forms no wall, so NOTHING ELSE catches a
     /// wrong TRUE here: it masks the short-circuit edge dead, which makes a conditional definition
@@ -5560,20 +5588,17 @@ mod tests {
         let book = "cd \"$D\"\n[ -f lib.sh ] && yum__is_converged() { :; }\n";
         let (table, _) = sourceable(book);
         let (binding, folds) = folded(book, &table);
-        assert_eq!(folds, 1, "interim: the short-circuit edge is masked dead");
-        internal_tooling::xfail::xfail_until("p-x-file-test-refuses-under-unknown-cwd", || {
-            assert_eq!(folds, 0, "an unknown cwd decides no filesystem test");
-            assert_eq!(
-                binding,
-                Flat::Top,
-                "so both arms live and the definition is a maybe"
-            );
-        });
+        assert_eq!(folds, 0, "an unknown cwd decides no filesystem test");
+        assert_eq!(
+            binding,
+            Flat::Top,
+            "so both arms live and the definition is a maybe"
+        );
     }
 
     /// The same entry below the OTHER cwd-⊤ act. Its own cell because the two reach the gate by
     /// different seeds: a `cd` is recognized by its command word, a blind `.` by its head naming
-    /// nothing the controller holds.
+    /// nothing the controller holds (né `p-x-file-test-refuses-below-a-blind-load`, promoted).
     ///
     /// CFG SHAPE: a top-level `.` of a ⊤ operand, then `[ -f <loadable> ] && <funcdef>`.
     #[test]
@@ -5581,11 +5606,8 @@ mod tests {
         let book = ". \"$SITE_PROFILE/rc\"\n[ -f lib.sh ] && yum__is_converged() { :; }\n";
         let (table, _) = sourceable(book);
         let (binding, folds) = folded(book, &table);
-        assert_eq!(folds, 1, "interim: the short-circuit edge is masked dead");
-        internal_tooling::xfail::xfail_until("p-x-file-test-refuses-below-a-blind-load", || {
-            assert_eq!(folds, 0, "a blind act's cwd damage is the same damage");
-            assert_eq!(binding, Flat::Top);
-        });
+        assert_eq!(folds, 0, "a blind act's cwd damage is the same damage");
+        assert_eq!(binding, Flat::Top);
     }
 
     // ── TABLE 9: the kernel punts `30Pd` §5 pencilled, encoded in sh and RED

@@ -344,27 +344,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-file-test-refuses-under-unknown-cwd",
-        trigger: "`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`, the clause the \
-                  code does not yet honour: `dec-decidable-set-v0`'s `[ -f <loadable> ]` entry \
-                  decides TRUE only where the cwd at that line is DETERMINATE. `file_test` reads \
-                  no cwd state, so below a `cd` it asserts a host fact from controller state, \
-                  masks an arm dead, and can hide a mutator — a wrong-elision route with no \
-                  downstream repair",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
-        name: "p-x-file-test-refuses-below-a-blind-load",
-        trigger: "the same entry, below the other cwd-⊤ act \
-                  (`30P:law-no-unsoundness-below-a-blind-act`: no cwd-dependent decision below a \
-                  line whose effect on the shell Dorc cannot see). Its own pin because the two \
-                  reach the gate by different seeds — a `cd` is recognized by its command word, a \
-                  blind `.` by its head being unheld",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-test-literal-narrows-a-variable",
         trigger: "`FORFEITS:forfeit-value-narrowing-by-test` (`30Pd` §5, pencilled by the human \
                   2026-08-22 as the lifted target): per-path refinement of a ⊤ value by \
