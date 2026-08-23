@@ -105,6 +105,17 @@ pub struct ValueFlow {
     /// ⇒ the consumer reads the ordinary (⊤-positional) [`argv`] entry. `BTreeMap` for
     /// `inv-determinism`.
     positional_argv: BTreeMap<CfgNodeId, Vec<ValueOf>>,
+    /// Per spliced funcdef-body `Command` node whose CALL sits inside a member-closed `for`
+    /// (`30L` §7): its argv resolved once PER MEMBER, in list order, duplicates kept.
+    ///
+    /// The member cousin of [`positional_argv`](Self::positional_argv), and named apart from
+    /// [`member_argv`](Self::member_argv) on purpose: that one is the r21 lane's per-member argv
+    /// for a mutating command written DIRECTLY in a loop body, keyed on the site's own argv
+    /// referencing the loop variable. This one is the SPLICED body's, and what varies per member
+    /// is the CALL's operands — so it is recorded for every body site of such a call, whether or
+    /// not the site itself names the loop variable. Absent ⇒ the call's loop is not
+    /// member-closed (or there is no loop), and the consumer reads the ordinary single-argv entry.
+    spliced_member_argv: BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>>,
     /// Per WRITE-shaped [`Redir`](CfgNodeKind::Redir) node (y-1, redirect-effects): the
     /// resolved redirect TARGET word for a file-write redirect (`>`/`>>`), keyed by the
     /// `Redir` node. A [`ValueOf::Literal`] is the resolved path (the effect classifier gens a
@@ -181,6 +192,15 @@ impl ValueFlow {
     #[must_use]
     pub fn member_argv(&self, node: CfgNodeId) -> Option<&Vec<Vec<ValueOf>>> {
         self.member_argv.get(&node)
+    }
+
+    /// The PER-MEMBER argvs of a spliced funcdef-body site whose CALL sits inside a member-closed
+    /// `for` (`30L` §7), in list order with duplicates kept, or `None` when the call's loop is not
+    /// member-closed. See [`spliced_member_argv`](Self::spliced_member_argv) (the field) for why
+    /// this is not [`member_argv`](Self::member_argv).
+    #[must_use]
+    pub fn spliced_member_argv(&self, node: CfgNodeId) -> Option<&Vec<Vec<ValueOf>>> {
+        self.spliced_member_argv.get(&node)
     }
 
     /// The resolved file-write redirect TARGET for a WRITE-shaped [`Redir`](CfgNodeKind::Redir)
@@ -345,6 +365,11 @@ fn resolve_passes(
     // resolved argv and re-resolve each body site's words.
     let positional_argv = prep.inline_pass(&argv, states, trusted, interner);
 
+    // `30L` §7: the same positional binding, once PER LOOP MEMBER, for a spliced body whose CALL
+    // sits inside a `for` over a literal list. The call's own operands are what vary
+    // (`install_pkg "$pkg"`), so each member re-resolves the call and re-binds `$1` from it.
+    let spliced_member_argv = prep.member_inline_pass(&argv, states, trusted, interner);
+
     // y-1 (redirect-effects): the resolved write-redirect TARGETS — a SEPARATE pass off the
     // same solution. A redirect target is an ordinary expansion (`>> "$logfile"`),
     // so it resolves against the `Redir` node's incoming env state exactly as a command word
@@ -361,6 +386,7 @@ fn resolve_passes(
         argv,
         member_argv,
         positional_argv,
+        spliced_member_argv,
         redir_target,
         argv_word_grades,
         states: states.to_vec(),
@@ -1144,6 +1170,111 @@ impl<'a> Prep<'a> {
             }
         }
         out
+    }
+
+    /// The per-member positional binding for every spliced body whose CALL sits inside a
+    /// member-closed `for` (`30L` §7) — the loop cousin of [`inline_pass`](Self::inline_pass).
+    ///
+    /// What varies per member is the CALL's own operands: `install_pkg "$pkg"` resolves to
+    /// `install_pkg nginx` at member 0 and `install_pkg curl` at member 1, so `$1` inside the
+    /// spliced body binds differently at each. The general transfer cannot see this — the loop
+    /// head joins the list words, so `$pkg` reads ⊤ inside the body and every member would resolve
+    /// the same ⊤ — which is exactly why this rides a post-solve pass, the `20S` Members precedent
+    /// (`members_pass`) applied one level up.
+    ///
+    /// The loop variable is overridden in the BODY SITE's environment too, not only the call's: sh
+    /// has no per-function variable scope, so a body that reads `$pkg` directly reads the
+    /// iteration's value (`rul-unsure-falls-toward-sh-parity`).
+    ///
+    /// Single-level by construction, because [`loop_evaluations`](crate::cfg::loop_evaluations)
+    /// answers `Unenumerable` for a nested loop. A NESTED CALL under a member-closed loop is
+    /// deliberately not bound here: its own call node is a spliced body site, so its operands come
+    /// from the enclosing binding rather than from `argv`, and one pass cannot settle that chain
+    /// the way [`inline_pass`](Self::inline_pass)'s iteration does. Absent ⇒ the consumer reads the
+    /// ordinary entry ⇒ ⊤ positionals ⇒ run, which is the floor.
+    fn member_inline_pass(
+        &self,
+        argv: &BTreeMap<CfgNodeId, Vec<ValueOf>>,
+        states: &[ValueEnv],
+        converged: bool,
+        interner: &mut Interner,
+    ) -> BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>> {
+        let mut out: BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>> = BTreeMap::new();
+        if !converged {
+            return out;
+        }
+        for (call, body_sites) in self.cfg.inlined_calls() {
+            let crate::cfg::LoopEvaluations::Members(members) =
+                crate::cfg::loop_evaluations(self.ast, self.cfg, call)
+            else {
+                continue;
+            };
+            let Some(var) = self.loop_var_of(call) else {
+                continue;
+            };
+            let NodeKind::Simple {
+                words: call_words, ..
+            } = &self.ast.node(self.cfg.node(call).ast).kind
+            else {
+                continue;
+            };
+            let Some(call_incoming) = states.get(call.index()) else {
+                continue;
+            };
+            for (index, member) in members.iter().enumerate() {
+                let mut call_env = call_incoming.clone();
+                call_env.insert(var.clone(), Flat::Elem(member.clone()));
+                let call_argv =
+                    intern_argv(self.resolve_site_words(call_words, &call_env), interner);
+                // A call whose own resolution is unavailable falls back to the general-transfer
+                // argv, exactly as `inline_pass` does; a ⊤ operand binds a ⊤ positional.
+                let call_argv = if call_argv.is_empty() {
+                    argv.get(&call).cloned().unwrap_or_default()
+                } else {
+                    call_argv
+                };
+                let positionals = positional_overlay(&call_argv, interner);
+                for &site_id in body_sites {
+                    let NodeKind::Simple { words, .. } =
+                        &self.ast.node(self.cfg.node(site_id).ast).kind
+                    else {
+                        continue;
+                    };
+                    let Some(incoming) = states.get(site_id.index()) else {
+                        continue;
+                    };
+                    let mut site_env = incoming.clone();
+                    site_env.insert(var.clone(), Flat::Elem(member.clone()));
+                    let resolved = intern_argv(
+                        self.resolve_site_words_with_positionals(words, &site_env, &positionals),
+                        interner,
+                    );
+                    let slots = out.entry(site_id).or_default();
+                    // Members arrive in list order; a body site reached under two different calls
+                    // in one loop keeps each call's own slot sequence.
+                    if slots.len() == index {
+                        slots.push(resolved);
+                    }
+                }
+            }
+            // A site that could not be resolved for EVERY member holds a partial population, which
+            // no consumer may read as an ordered member set.
+            for &site_id in body_sites {
+                if out.get(&site_id).is_some_and(|s| s.len() != members.len()) {
+                    out.remove(&site_id);
+                }
+            }
+        }
+        out
+    }
+
+    /// The iteration variable of the `for` loop enclosing `node`, where one is enclosing it.
+    fn loop_var_of(&self, node: CfgNodeId) -> Option<String> {
+        let head = self.cfg.enclosing_loop_head(node)?;
+        match &self.ast.node(self.cfg.node(head).ast).kind {
+            NodeKind::ForLoop { var, .. } => Some(var.clone()),
+            _ => None,
+        }
     }
 
     /// Resolve a spliced body site's `Simple` words with a positional OVERLAY (arch-2, `i-2`):
@@ -2034,6 +2165,92 @@ mod tests {
                 .map(|argv| argv.iter().map(|&v| word_of(v, &interner)).collect())
                 .collect()
         })
+    }
+
+    /// The spliced-body per-member argvs of the FIRST body command matching `cmd`.
+    fn spliced_member_argv_of(src: &str, cmd: &str) -> Option<Vec<Vec<Word>>> {
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value).value;
+        let mut interner = Interner::default();
+        let flow = analyze(&cfg, &parsed.value, &mut interner);
+        let node = cfg
+            .iter()
+            .filter(|(id, _)| cfg.is_spliced_internal(*id))
+            .map(|(id, _)| id)
+            .find(|&id| flow.spliced_member_argv(id).is_some())
+            .or_else(|| command_node(&cfg, &parsed.value, cmd))?;
+        flow.spliced_member_argv(node).map(|members| {
+            members
+                .iter()
+                .map(|argv| argv.iter().map(|&v| word_of(v, &interner)).collect())
+                .collect()
+        })
+    }
+
+    /// `30L` §7's value half: the CALL's operand is what varies per member, so `$1` inside the
+    /// spliced body binds to a DIFFERENT concrete at each iteration. Without this the loop head
+    /// joins the list words, `$pkg` reads ⊤ inside the body, and every member resolves the same ⊤
+    /// — which would make a member population vacuously uniform.
+    #[test]
+    fn a_calls_operand_binds_the_spliced_body_positional_per_member() {
+        assert_eq!(
+            spliced_member_argv_of(
+                "install_pkg() { apt-get install -y \"$1\"; }\n\
+                 for pkg in nginx curl; do install_pkg \"$pkg\"; done",
+                "apt-get"
+            ),
+            Some(vec![
+                vec![
+                    Word::Lit("apt-get".into()),
+                    Word::Lit("install".into()),
+                    Word::Lit("-y".into()),
+                    Word::Lit("nginx".into())
+                ],
+                vec![
+                    Word::Lit("apt-get".into()),
+                    Word::Lit("install".into()),
+                    Word::Lit("-y".into()),
+                    Word::Lit("curl".into())
+                ],
+            ]),
+            "member 0 binds nginx, member 1 binds curl, in list order"
+        );
+    }
+
+    /// sh has no per-function variable scope, so a spliced body reading the loop variable DIRECTLY
+    /// reads the iteration's value (`rul-unsure-falls-toward-sh-parity`). Pinned because binding
+    /// only the call's positionals would leave this word ⊤ and silently uniform across members.
+    #[test]
+    fn a_spliced_body_reading_the_loop_var_directly_sees_each_member() {
+        assert_eq!(
+            spliced_member_argv_of(
+                "install_pkg() { apt-get install -y \"$pkg\"; }\n\
+                 for pkg in nginx curl; do install_pkg; done",
+                "apt-get"
+            )
+            .map(|members| members
+                .iter()
+                .map(|argv| argv.last().cloned())
+                .collect::<Vec<_>>()),
+            Some(vec![
+                Some(Word::Lit("nginx".into())),
+                Some(Word::Lit("curl".into()))
+            ])
+        );
+    }
+
+    /// A loop the member seat cannot enumerate records nothing, so the consumer reads the ordinary
+    /// ⊤-positional entry and the region runs — the floor, not a uniform guess.
+    #[test]
+    fn an_unenumerable_loop_records_no_spliced_member_argv() {
+        assert_eq!(
+            spliced_member_argv_of(
+                "install_pkg() { apt-get install -y \"$1\"; }\n\
+                 while dpkg -s nginx; do install_pkg \"$x\"; done",
+                "apt-get"
+            ),
+            None
+        );
     }
 
     /// `argv_of` plus the convergence flag (for the loop test).

@@ -37,12 +37,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_aid::diag::{Diag, DiagCode};
-use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, ExecutionOwner};
+use dorc_analysis::cfg::{
+    Cfg, CfgNodeId, CfgNodeKind, ExecutionOwner, LoopEvaluations, loop_evaluations,
+};
 use dorc_core::influence::InfluencePhase;
 use dorc_core::region::{ElisionRegion, IterationSlot, RegionUniverse};
 use dorc_core::{AstId, DefinitionId, FactKey, SourceFileId, Span};
 use dorc_syntax::ast::{Ast, NodeKind, UnsupportedReason, WordPart};
-use dorc_syntax::sem;
 
 use crate::StandIn;
 
@@ -375,9 +376,13 @@ pub fn census(
         };
         let routes = instances.entry(region).or_default();
         match evaluations {
-            LoopEvaluations::Members(members) => {
-                routes.extend((0..members).map(|index| instance(IterationSlot::Member(index))));
-            }
+            // The census takes the COUNT; the member texts are the value plane's half of the same
+            // answer, which is why one seat produces both.
+            LoopEvaluations::Members(members) => routes.extend(
+                (0..members.len())
+                    .map(|index| u32::try_from(index).unwrap_or(u32::MAX))
+                    .map(|index| instance(IterationSlot::Member(index))),
+            ),
             LoopEvaluations::Once | LoopEvaluations::Unenumerable => {
                 routes.push(instance(IterationSlot::NotIterated));
             }
@@ -829,85 +834,6 @@ fn refused_function_names(diags: &[Diag]) -> Vec<String> {
             _ => None,
         })
         .collect()
-}
-
-/// How many evaluations of a node ONE entry to its enclosing loop produces (`30L` §7).
-///
-/// The axis a route population needs and CFG position cannot supply: a loop body is lowered once,
-/// with a real back-edge, so every iteration executes the same nodes
-/// (`30L:rul-one-call-site-is-not-one-evaluation`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum LoopEvaluations {
-    /// No enclosing loop: one evaluation per invocation.
-    Once,
-    /// A `for` over a fully literal list: this many ordered members.
-    Members(u32),
-    /// A loop whose evaluations the census cannot enumerate — the population opens.
-    Unenumerable,
-}
-
-/// Classify one node's enclosing loop (`30L` §7's `Open` → `Closed(members)` step).
-///
-/// The list is read SYNTACTICALLY and the count is taken from it ALONE — never from the r21
-/// per-member argv side-channel (`analysis::value::ValueFlow::member_argv`), which records only
-/// sites whose own argv references the loop variable. Iteration count is a property of the LIST;
-/// tying it to argv would count zero members for the commonest shape there is, a body command
-/// that ignores the loop variable.
-///
-/// Every word must be plain literal text after ordinary quoting, because that is exactly the case
-/// where the shell's own answer is "one field per word": field splitting applies to the results of
-/// expansions, never to literal text, so N literal words are N members — ordered, duplicates KEPT,
-/// since dash iterates `for x in a a` twice (`30N` §2, the `20S` member commitments). Anything
-/// else — an expansion, a command substitution, a positional, an unquoted glob, a leading tilde,
-/// a `while`/`until`, a nested loop — is unenumerable here and opens.
-///
-/// The count is an UPPER BOUND on evaluations and that is the safe direction: a body that exits or
-/// returns early evaluates a PREFIX of the members, and a universal meet over a superset of the
-/// executing routes can only refuse more (`30L:rul-shared-region-needs-universal-must`).
-fn loop_evaluations(ast: &Ast, cfg: &Cfg, node: CfgNodeId) -> LoopEvaluations {
-    if !cfg.in_loop_body(node) {
-        return LoopEvaluations::Once;
-    }
-    let Some(head) = cfg.enclosing_loop_head(node) else {
-        return LoopEvaluations::Unenumerable;
-    };
-    // A nested loop multiplies one region's evaluations across two lists, which is a population
-    // shape nothing downstream models; the inner head sits in the outer body, which is the test.
-    if cfg.in_loop_body(head) {
-        return LoopEvaluations::Unenumerable;
-    }
-    let NodeKind::ForLoop { words, .. } = &ast.node(cfg.node(head).ast).kind else {
-        return LoopEvaluations::Unenumerable;
-    };
-    // An empty list runs the body zero times. That is a claim about non-execution, not an
-    // enumeration, and it is not this seat's to make.
-    if words.is_empty() || !words.iter().all(|&word| word_is_plain_literal(ast, word)) {
-        return LoopEvaluations::Unenumerable;
-    }
-    u32::try_from(words.len()).map_or(LoopEvaluations::Unenumerable, LoopEvaluations::Members)
-}
-
-/// Is this word plain literal text — one field, whatever the shell does to it?
-fn word_is_plain_literal(ast: &Ast, word: AstId) -> bool {
-    let NodeKind::Word { parts } = &ast.node(word).kind else {
-        return false;
-    };
-    parts.iter().all(part_is_literal)
-        && !sem::word_has_unquoted_glob(parts)
-        && !sem::word_has_leading_tilde(parts)
-}
-
-/// A word fragment carrying no expansion. Double quotes recurse: `"nginx"` is literal, `"$pkg"`
-/// is not.
-fn part_is_literal(part: &WordPart) -> bool {
-    match part {
-        WordPart::Literal(_) | WordPart::SingleQuoted(_) => true,
-        WordPart::DoubleQuoted(parts) => parts.iter().all(part_is_literal),
-        WordPart::Param { .. }
-        | WordPart::CommandSubst(_)
-        | WordPart::ParamComplex { .. }
-        | WordPart::Arithmetic => false,
-    }
 }
 
 /// Nodes control can actually reach — a forward walk from entry.
