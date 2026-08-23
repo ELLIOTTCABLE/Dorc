@@ -576,6 +576,10 @@ fn one_round(
             invalidator: owns_invalidator,
             accounts_survival,
             aggregate_establishes: aggregate_establishes.as_ref(),
+            // The per-SITE seat. A leaf decision is one line's own conclusion and the in-loop
+            // render floor binds it exactly as before (`30L` §7 lifts the floor for REGION routes,
+            // and only those).
+            universally_quantified_member: None,
         });
         let disposition = decision.disposition;
         // `30K` §7 asks for a wall-formation account per effective mutation act; it is minted only
@@ -691,7 +695,13 @@ struct RegionRound<'a> {
 fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
     let (ast, cfg, src) = (round.inputs.ast, round.inputs.cfg, round.inputs.src);
     // A spliced body site is not a plan leaf, so its class lives inside its owning CALL's aggregate.
-    let body_class: BTreeMap<CfgNodeId, &SkipClass> = round
+    //
+    // Keyed by `(node, member)`, because N evaluations of one lowered node are N entries and a
+    // node-keyed map collapses them to whichever came LAST — one member's facts answering for every
+    // route, which is a universal meet that asked one question (`30L` §7). The member half is the
+    // route's own `IterationSlot::member()`, so a `NotIterated` route finds only a member-less
+    // entry and a member route finds only its own.
+    let body_class: BTreeMap<(CfgNodeId, Option<u32>), &SkipClass> = round
         .classification
         .classes
         .iter()
@@ -700,7 +710,7 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
             _ => None,
         })
         .flatten()
-        .map(|site| (site.node, &site.class))
+        .map(|site| ((site.node, site.member), &site.class))
         .collect();
 
     let mut decided = Vec::new();
@@ -817,7 +827,7 @@ fn ast_of_region(cfg: &Cfg, instances: impl Iterator<Item = CfgNodeId>) -> Optio
 fn decide_one_route(
     round: &RegionRound<'_>,
     route: RouteInstance,
-    body_class: &BTreeMap<CfgNodeId, &SkipClass>,
+    body_class: &BTreeMap<(CfgNodeId, Option<u32>), &SkipClass>,
     solo: Option<&(
         dorc_analysis::solve::Solution<ReachingWalls>,
         SolveConsistency<ReachingWalls>,
@@ -825,7 +835,8 @@ fn decide_one_route(
     argv: Option<&str>,
 ) -> crate::RouteDecision {
     let node = route.cfg_node();
-    let Some(class) = body_class.get(&node).copied() else {
+    let member = route.iteration().member();
+    let Some(class) = body_class.get(&(node, member)).copied() else {
         // No aggregate class admits nothing, so the region meets to Run: covered exactly, or not.
         return crate::RouteDecision {
             conclusion: RouteConclusion::Run,
@@ -878,6 +889,7 @@ fn decide_one_route(
             invalidator: round.classification.invalidators.contains(&node),
             accounts_survival: round.accounts_survival,
             aggregate_establishes: None,
+            universally_quantified_member: member,
         },
         argv,
     )

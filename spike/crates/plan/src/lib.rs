@@ -1833,23 +1833,27 @@ pub fn build_vouches_from_sets(
     let mut vouches = Vouches::new();
     // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
     // `VerdictDecline` keys by the site a report-lane record re-keys to (pinned by the leaf-index test).
-    let candidates: Vec<(usize, CfgNodeId, FactKey, bool)> = classes
+    // Each candidate carries the argv it is a candidate FOR. An inline body site under a
+    // member-closed loop (`30L` §7) has one per member, and the node's own single entry is ⊤ at
+    // every operand the call varies — so a seat that re-derived the argv from the node would
+    // withhold the vouch for exactly the population the region licence needs.
+    let candidates: Vec<(usize, CfgNodeId, FactKey, bool, Vec<ValueOf>)> = classes
         .iter()
         .enumerate()
         .flat_map(|(leaf_idx, (node, class))| match class {
             SkipClass::EstablishProbeAmbient(f) | SkipClass::EstablishProbeWritten(f) => {
-                vec![(leaf_idx, *node, *f, false)]
+                vec![(leaf_idx, *node, *f, false, value.argv_values(*node))]
             }
             SkipClass::EstablishMembers { members, .. } => members
                 .iter()
-                .map(|fact| (leaf_idx, *node, *fact, true))
+                .map(|fact| (leaf_idx, *node, *fact, true, value.argv_values(*node)))
                 .collect(),
             SkipClass::InlineCall { sites } => sites
                 .iter()
                 .filter_map(|site| match site.class {
                     SkipClass::EstablishProbeAmbient(fact)
                     | SkipClass::EstablishProbeWritten(fact) => {
-                        Some((leaf_idx, site.node, fact, false))
+                        Some((leaf_idx, site.node, fact, false, member_argv(value, site)))
                     }
                     _ => None,
                 })
@@ -1857,9 +1861,8 @@ pub fn build_vouches_from_sets(
             SkipClass::QueryResolvable { .. } | SkipClass::MustRun => Vec::new(),
         })
         .collect();
-    for (leaf_idx, node, fact, member_specialization) in candidates {
-        // Resolve the site's argv → (provider, operands), all literal — a ⊤ word ⇒ no vouch.
-        let argv = value.argv_values(node);
+    for (leaf_idx, node, fact, member_specialization, argv) in candidates {
+        // The site's argv → (provider, operands), all literal — a ⊤ word ⇒ no vouch.
         let Some((first, rest)) = argv.split_first() else {
             continue;
         };
@@ -4064,6 +4067,19 @@ fn push_member_checks(
     checks.extend(staged);
 }
 
+/// The argv ONE `InlineSite` entry answers for: its member's own where the call's loop is
+/// member-closed (`30L` §7), the ordinary positional-bound one otherwise.
+///
+/// One seat, three callers (the probe ship, the vouch lift, the region's guard economics), because
+/// a seat that read the node's single argv for a member would resolve ⊤ and withhold — silently,
+/// and differently at each of them.
+fn member_argv(value: &ValueFlow, site: &InlineSite) -> Vec<ValueOf> {
+    site.member
+        .and_then(|member| value.spliced_member_argv(site.node)?.get(member as usize))
+        .cloned()
+        .unwrap_or_else(|| value.argv_values(site.node))
+}
+
 /// Compile one `site N.M` check per probeable inlined body site.
 /// An exact all-vouched establish population uses verdict bodies; otherwise predictions cannot
 /// authorize replacement. Any unshippable selected establish rejects the whole call; queries stay
@@ -4095,16 +4111,36 @@ fn push_inline_checks(
         && establishes
             .iter()
             .all(|(node, fact)| is_vouched(*node, *fact));
+    // The ordered establish population of ONE lowered body node. Under a member-closed loop that is
+    // every member's cell, in member order — the SAME subject vector the effect plane keyed the
+    // node's verdict measurement to, which the verdict ship seat compares against exactly
+    // (`30La`: an incomplete population cannot ship reached verdict bodies). Outside a loop the
+    // node has one entry and this is byte-identically today's `&[fact]`.
+    let node_subjects = |node: CfgNodeId| -> Vec<FactKey> {
+        sites
+            .iter()
+            .filter(|entry| entry.node == node)
+            .filter_map(|entry| match entry.class {
+                SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
+                    Some(fact)
+                }
+                _ => None,
+            })
+            .collect()
+    };
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
         let member = Some(u32::try_from(idx).unwrap_or(u32::MAX));
         // The spliced body site's argv, resolved with the call's positionals bound (`i-2`;
-        // [`ValueFlow::argv_values`] returns the positional-bound form for a body node).
-        let body_argv = value.argv_values(body.node);
+        // [`ValueFlow::argv_values`] returns the positional-bound form for a body node) — or, under
+        // a member-closed loop (`30L` §7), THIS member's own (`spliced_member_argv`). The single
+        // entry there is bound from the loop variable's JOIN, so it is ⊤ at every operand the call
+        // varies: reading it for a member would ship no check at all.
+        let body_argv = member_argv(value, body);
         match &body.class {
             SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {
                 let shipped = if all_vouched {
-                    ship_auto_for_argv(&body_argv, body.node, &[*fact], ship_auto)
+                    ship_auto_for_argv(&body_argv, body.node, &node_subjects(body.node), ship_auto)
                 } else {
                     ship_for_argv(&body_argv, body.node, ship_body)
                 };
@@ -4522,6 +4558,21 @@ pub(crate) struct DecideSite<'a> {
     pub(crate) accounts_survival: bool,
     /// The one exact aggregate identity shared by freshness and vouch authorization.
     pub(crate) aggregate_establishes: Option<&'a AggregateEstablishes>,
+    /// This decision's loop-member ordinal, present ONLY when it answers for one route of a CLOSED
+    /// region population (`30L:rul-shared-region-needs-universal-must`).
+    ///
+    /// This is what lifts the in-loop render floor, and it is named for WHY rather than for which
+    /// loop. The floor's stated reason is line-granular render expressibility — it cannot elide one
+    /// iteration — and a region decision over a closed member population discharges exactly that:
+    /// the edit lands once at the authored definition and is universally quantified over every
+    /// member, so no single iteration is being singled out. The floor is NOT deleted; it still
+    /// binds every per-SITE leaf decision, which passes `None` here.
+    ///
+    /// An ordinal rather than a flag, and that is the safety property: a route the census could not
+    /// give a member (a `NotIterated` route at an in-loop node — unreachable today, unforbidden by
+    /// the type) carries `None`, so the floor stands for it. A boolean the region seat set would
+    /// lift the floor for that route on the seat's say-so.
+    pub(crate) universally_quantified_member: Option<u32>,
 }
 
 /// One region INSTANCE's answer: what the route concluded alone, what edit it would admit as one of
@@ -4568,6 +4619,22 @@ pub(crate) fn decide_route(p: &DecideSite<'_>, source_argv: Option<&str>) -> Rou
     }
 }
 
+/// THE IN-LOOP RENDER FLOOR (task-L1, `209` brk-1), route-aware since `30L` §7.
+///
+/// The floor exists because the line-granular render cannot elide ONE iteration and per-iteration
+/// deadness is not line-expressible. A decision that answers for one route of a CLOSED member
+/// population is not asking it to: the edit lands once, at the authored definition, universally
+/// quantified over every member (`30L:rul-shared-region-needs-universal-must`), which is precisely
+/// the condition the floor's reason names. Every other in-loop decision — every per-SITE leaf, and
+/// every route the census could not give a member — still takes it.
+///
+/// A named seat rather than two inline conditions because the two callers must not drift: one
+/// decides the route's own conclusion, the other whether it admits the shared guard, and a floor
+/// that lifted at one and not the other would produce a region that can Replace but not Guard.
+fn floored_in_loop(p: &DecideSite<'_>) -> bool {
+    p.cfg.in_loop_body(p.node) && p.universally_quantified_member.is_none()
+}
+
 /// The parametric guard one region instance ADMITS — the region tier's own guard question.
 ///
 /// Every safety conjunct of [`GuardLicense::mint`] is here: a reached vouch (so the check is the
@@ -4579,7 +4646,7 @@ pub(crate) fn decide_route(p: &DecideSite<'_>, source_argv: Option<&str>) -> Rou
 /// because the guard re-decides per invocation inside sh — which is the whole of `30L` §4.5, and the
 /// reason the ordinary site mint is left exactly as it is.
 fn region_guard_candidate(p: &DecideSite<'_>, source_argv: &str) -> Option<GuardLicense> {
-    if has_top_successor(p.cfg, p.node) || p.cfg.in_loop_body(p.node) {
+    if has_top_successor(p.cfg, p.node) || floored_in_loop(p) {
         return None;
     }
     let fact = match p.class {
@@ -4648,9 +4715,8 @@ fn site_conclusion(p: &DecideSite<'_>) -> (DecisionConclusion, SurvivalAccount) 
         SkipClass::InlineCall { sites } => return inline_disposition(p, sites),
         _ => {}
     }
-    // (0) the in-loop render floor (task-L1, `209` brk-1): the line-granular render cannot elide
-    // one iteration, and per-iteration deadness is not line-expressible.
-    if p.cfg.in_loop_body(p.node) {
+    // (0) the in-loop render floor (task-L1, `209` brk-1).
+    if floored_in_loop(p) {
         return (DecisionConclusion::Run, SurvivalAccount::Silent);
     }
 
@@ -7242,6 +7308,64 @@ apt_get__is_converged() { return 0; }
             after.first().copied(),
             before.first().copied(),
             "member 0 keeps the non-loop record key"
+        );
+    }
+
+    /// `30L` §7's effect half. CFG shape: a top-level `for` over two literal words, whose body
+    /// holds one call to a same-file funcdef whose spliced body holds one command leaf — so ONE
+    /// lowered `cfg_node` carries two evaluations.
+    ///
+    /// The capability observed is that the call's site vector holds one entry PER MEMBER, each
+    /// classified from that member's OWN argv: the two entries name DIFFERENT cells. A member-blind
+    /// seat cannot produce this — the node's single argv binds `$1` from the loop variable's join,
+    /// which is ⊤, so it classifies `MustRun` and there is nothing to disagree about. And the
+    /// ordering is member-major, which is what keeps member 0's `site N.M` sub-index equal to the
+    /// same call's outside a loop (`30L:pin-probe-site-identity-unchanged`).
+    #[test]
+    fn an_in_loop_calls_body_site_classifies_one_establish_per_member() {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse(
+            "install_pkg() { apt-get install -y \"$1\"; }\n\
+             for pkg in nginx curl; do install_pkg \"$pkg\"; done\n",
+        );
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &dorc_oracle::verdict::VerdictIndex::default(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let [(_, SkipClass::InlineCall { sites })] = classes.as_slice() else {
+            panic!("the in-loop call must classify InlineCall, got {classes:?}");
+        };
+        let members: Vec<(Option<u32>, CfgNodeId, String)> = sites
+            .iter()
+            .map(|site| {
+                let fact = match site.class {
+                    SkipClass::EstablishProbeAmbient(fact)
+                    | SkipClass::EstablishProbeWritten(fact) => fact_label(&i, fact),
+                    ref other => format!("{other:?}"),
+                };
+                (site.member, site.node, fact)
+            })
+            .collect();
+        let node = sites.first().map_or(CfgNodeId(u32::MAX), |site| site.node);
+        assert_eq!(
+            members,
+            vec![
+                (Some(0), node, "package:nginx@installed".to_owned()),
+                (Some(1), node, "package:curl@installed".to_owned()),
+            ],
+            "one entry per member, member-major, each keyed to its own member's cell at the ONE \
+             shared node"
         );
     }
 
