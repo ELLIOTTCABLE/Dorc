@@ -685,3 +685,135 @@ disk is recovered, before the red cells are treated as landed. The risk it cover
 four cells are unit-tier and were measured directly, and no production code changed — but the
 WSL leg has caught a Linux-only failure in this project before, and the whole-workspace clippy
 that rides `gate:full-quiet` has not seen these files.
+
+## §execute-checkpoint — R1–R3 landed, and where the rows moved
+
+> Tier: LLM-authored EXECUTE report (Opus builder; seat
+> `.claude/worktrees/agent-ab4cb8131f42ba75b`, branch `ai/r30-lane-influence-exec`, lineage
+> `ai/r30-conduct` @ `66954cc2`). Return-and-resume checkpoint: R4–R11 are NOT started.
+
+### Commits, in order
+
+| commit | row | what |
+|---|---|---|
+| `9f77ef43` | gate | the pre-conversion `spine:baseline`, frozen at `Research/notes/30Qd-spine-baseline-before.txt` (291 cases) |
+| `de18560a` | R1 | `core::influence::InfluenceAccount` + the `Account<T>` → `OperandAccount<T>` rename + three lexical fences |
+| `fd65b15b` | R2 | the sixteen species SEALED; `InfluenceBearing`; the `account_carriage` census; the run-wide account threaded |
+| `09cc0cfd` | R3 | the object-global stamp REMOVED; the stamp test rewritten; RED-cell (b) promoted; the mint fence's needle widened |
+| `9a3463ca` | — | comment-budget trim |
+
+`mise run test` GREEN at every one of the three row tips (2687 trials), `mise run check-quiet`
+GREEN before each commit. The whole e2e + loom corpus rides `mise run test`, so every golden and
+all nine loom-embedded `.whylog` transcripts are byte-identical as of `9a3463ca` — no bless, no
+re-bless, no drift.
+
+### `rul-row-boundaries-moved-under-the-sealing` — the one thing to rule on
+
+**The MAP's row split does not survive private fields, and R2/R3 absorbed parts of R4, R8 and R9.**
++SURE, and it is forced rather than chosen: sealing a record's fields means every seat that MUTATED
+one and every seat that SUPPLIED one has to change in the same commit that seals it, or the row is
+not compilable — and the brief's "each row independently green" outranks the row boundaries.
+
+What actually landed where, against `§map-8`:
+
+- **R2 absorbed R8 entirely.** `Spine::{disposition_mut, dispositions_mut, region_decisions_mut}`
+  are GONE, as `tc-spine-record-mut-accessors-survive` rules. Private fields left no third option:
+  a `&mut SpineDisposition` can no longer write `record.decision`, so the two post-construction
+  rewrites had to become named methods in the same commit. They are
+  `Spine::demote_dispositions(witness, stands, demoted) -> Vec<SiteId>` and
+  `Spine::demote_region_decisions(...) -> Vec<RegionRoutes>` (each demoted record re-mints as
+  `own_account ⊔ witness`), plus `Spine::reattach_dispositions(attach)` for
+  `attach_spine_probe_provenance`, which touches NO account and says why in its own doc
+  (`fnd-provenance-attach-raises-nothing`, stated as the property the MAP asked for).
+  `demote_on_trip` / `spend_certifier_trip` / `project_censusless` /
+  `cli::world::demote_on_certifier_trip` all gained a `witness: InfluenceAccount` parameter,
+  supplied by the caller because the two drivers reach their account differently.
+- **R2 absorbed R9's driver seats and the five authored postures.** `Spine::minted_at` had to take
+  an `InfluenceAccount` rather than a `Grade` at R2, or the conversion would have had to happen
+  inside `core::spine` — which would have put `of_phase` in the kernel and made the ruled
+  "one phase→account transition" false for two rows. So `results::ScopedHostEvidence::account()`
+  and `results::account_after_reaching_for_host_bytes()` (the ruled two-seat split) landed at R2,
+  the binary reads `world_account` ONCE beside `_scope`, and the five intakeless entries
+  (`plan::build_plan`, `coverage`, `hostsim`, `sweep::drive`, the two `main.rs` test seats) spell
+  `InfluenceAccount::authored_before_contact()`.
+- **R2 absorbed R4's TYPE change** (not its semantics): `SettleInputs.minted_at` and
+  `build_plan_walled`'s parameter are `InfluenceAccount`, and `RouteRegionProof`/
+  `SharedRegionDecision` carry `account` rather than `Option<InfluencePhase>`. `decide_region`'s
+  `find_map` became a `fold` over `join` — semantically identical today over a homogeneous
+  population, and the shape R5's `Untracked` arms need.
+- **R3 absorbed a slice of R6.** With the stamp gone, `record_render_decisions` had no account to
+  read, so `project_plan` gained a `world: InfluenceAccount` parameter and passes it down. `Plan`
+  itself does NOT carry an account yet — `Plan::decided`'s join is still R6's, and it will replace
+  this parameter.
+
+**What is left for R4–R9, unchanged in substance**: R4's per-object accounts on
+`SiteDecision`/`RouteDecision`/`ProvisionalSiteDecision`/`ProvisionalRegionDecision` and the
+`minted_at` → `world_account` rename; R5's `Untracked` arms and cells (a)/(c); R6's six licence
+mints and `Plan::decided`'s joined account; R7's RESTRICT side; R9's `tc-load-decisions-read-authored`
+lean plus whatever naming remains.
+
+### The sealing's exact shape
+
+Three legs, as `§map-2` proposed, with one sharpening.
+
+1. **TYPE.** All sixteen `SpineXxx` have private fields and exactly one `minted(<inputs>, account)`
+   constructor; every read is an accessor. `InfluenceBearing { fn account(&self) -> InfluenceAccount }`
+   is sealed by a private supertrait in `core::spine` and implemented once per species there. There
+   is no account setter, no `&mut` route to one, and no `Default` on the account.
+2. **CENSUS.** `SpineSpecies::account_carriage() -> AccountCarriage`, no wildcard, asserted by
+   `every_species_declares_how_its_writer_reaches_an_account`: **12 `Joined` / 0 `UntrackedAdapter`
+   / 4 `Unminted`**.
+3. **LEXICAL.** Three fences in `plan/src/spine.rs`'s test module over a shared workspace walk with
+   a non-empty-walk floor: `the_phase_to_account_transition_lives_at_one_seat` (`of_phase`),
+   `every_authored_before_contact_posture_is_enumerated`, `every_untracked_adapter_is_enumerated`.
+
+**`dev-carriage-census-needs-a-third-arm`** (deviation, conductor's to ratify). The MAP proposed
+`{Joined, UntrackedAdapter}`. I built `{Joined, UntrackedAdapter, Unminted}`, because four species
+(`Vouch`, `Observation`, `ValidityRound`, `Outcome`) have NO WRITER at all — `30F` §4.5 and `30Nd`
+already disclose that — and classifying them `Joined` would be a claim about a mint that does not
+exist, which `core/CLAUDE.md a-record-says-what-its-population-holds` forbids in so many words. The
+count assertion is what makes a species moving between arms a diff.
+
+### `dev-run-identity-grouped-out-of-the-invocation-mint` — a design choice the MAP did not foresee
+
+`SpineInvocation` has eight fields; `minted(…)` plus the account would be a nine-argument function,
+which `clippy::too_many_arguments` refuses. Rather than reach for an `#[expect]` on fresh code I
+grouped the four controller-minted fields into `core::spine::RunIdentity { nonce, attempt, host,
+started_at }` — which is what the type's own doc already called them ("controller-minted run
+identity plus what it was pointed at"), and which `rul-attribution-is-controller-minted` treats as
+one thing. `view::Invocation::of` reads them through `record.identity()`; **no durable byte moves.**
+Flagged because it is a public shape change the MAP did not price.
+
+### Surprises, each an OPEN item
+
+- **`fnd-the-mint-fence-had-a-second-blind-spelling`.** The R3 rider said to widen
+  `the_influence_grade_has_exactly_one_mint`'s needle. I did — it is now the bare `host_reported(`,
+  which no qualified path can slip — and in the same commit I stopped `core::spine`'s rewritten test
+  MINTING a phase at all: it widens an authored one instead. So the fence's population is genuinely
+  one file again (`plan/src/records.rs`) rather than one file plus a tolerated test.
+- **The three lexical fences enumerate TEST files too**, and cannot distinguish them lexically from
+  production. `of_phase` lists `cli/src/results.rs` (the one production seat) plus three test seats;
+  `authored_before_contact` lists twelve files. I chose enumerate-and-name over filter-and-guess,
+  because a filter that guessed would be the fence's own blind spot. The lists move as rows land,
+  which is the fence doing its job, but it does mean a conductor reading a row diff will see them
+  churn.
+- **`every_untracked_adapter_is_enumerated` is currently EMPTY**, asserted so. R5 is what first
+  populates it, and the human's stated purpose for this lane — force the discipline, then WATCH
+  whether holes appear — now has a mechanical instrument rather than only the fold report. Flagged
+  as an addition the brief did not ask for.
+- **`Spine::debug_dump` lost its run-wide `grade=` header line** (there is no run-wide account any
+  more) and gained per-record `account=` on the load-decision and region rows. It has no production
+  caller and no golden, so nothing moved.
+
+### Budget and evidence at the checkpoint
+
+- Inline `//`: **+22 added, −5 removed = 17 net new** against the lane budget of 30. Three of the 22
+  are the structural banner around the sealed-contract block, matching the file's existing style.
+- `///`: **+258**, counted separately (sixteen species × their accessors, the account type, the
+  three fences).
+- `mise run test`: 2687 trials, 2687 passed, 2 skipped. `mise run check-quiet`: clean.
+- `mise run xfail:census`: `p-x-spine-record-keeps-its-mints-account` is GONE from the registry
+  (promoted — its assertion survives as an ordinary test in `plan/src/spine.rs`); (a) and (c) are
+  still live and still red, as they should be until R5.
+- NOT yet run at this checkpoint: `bless:dry`, `mise run both gate:full-quiet`, and the AFTER
+  `spine:baseline`. All three are end-of-lane obligations.
