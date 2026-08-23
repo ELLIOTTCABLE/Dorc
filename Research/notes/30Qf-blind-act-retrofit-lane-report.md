@@ -669,3 +669,162 @@ Those proposals stand as written, with three corrections the build forced:
   `p-x-an-unspliceable-call-havocs-the-cwd`). Worth saying in steering rather than only in a pin
   trigger, because the tempting wrong fix — reading `call_body_sites`' absence as unmodelled — is
   one line away and reddens two goldens.
+
+## §third-blind-act
+
+> Tier: builder lane report (Opus, `lane-third-blind-act`; branch `ai/r30-lane-third-blind-act`,
+> worktree `.claude/worktrees/agent-a2971754683cccf39`, base `c228113d`). Appends only; neither
+> section above is edited. E3C's halt is discharged. Every "measured" below is the whole suite on
+> both platform legs unless it names a filter.
+
+### what-landed — two commits, each independently green
+
+| commit | what |
+|---|---|
+| `bacf026d` | `Cfg::splice_refused` — the refusal set, recorded at the arms that already announce the refusal |
+| `3ba6d241` | the clobber seed reads it; `p-x-an-unspliceable-call-havocs-the-cwd` promoted |
+
+ONE pin promoted and removed from `internal_tooling::xfail::PINS`. Census at the tip: 21 live,
+1 reserved, no expired group.
+
+### the-refusal-arms-are-eight-not-four
+
+`§retrofit-execute` and the brief both say "the same four refusal arms". MEASURED: there are
+EIGHT, and all eight are recorded. Seven mint `CFG_INLINE_REFUSED` (`Redefined` · `RecursiveCall` ·
+`DepthBudget` · `UnmodeledPositional` · `WriteRedirect` · `PerCallNodeBudget` ·
+`PerBookNodeBudget`); the eighth is the depth-2 positional arm, which mints
+`Depth2PositionalUnthreaded` — a Note rather than a refusal code, but the SAME act (the body is not
+spliced, the call runs verbatim, and nothing on the caller's route models what it did).
+
+Recording is ONE seat, not eight: `Builder::refuse_splice(cmd, diag)` records AND pushes, and
+`refuse_inline(cmd, id, reason)` is its thin wrapper for the seven that speak one code. So an arm
+that tells the author "Dorc did not look inside this call" while leaving the binding plane
+believing it had cannot be SPELLED — which is what "one mint, one record" buys over eight inserts.
+
+**The silent `?`-returns are NOT in the set, deliberately**: a non-literal command word, a word no
+funcdef declares, and a word whose only definitions FOLLOW the call each leave `try_inline_call`
+without a diagnostic, because the word is an ordinary unmodeled command that might be a PATH
+binary. They stay `Opaque` at the effect tier exactly as before. That boundary is
+`fnd-a-loaded-body-is-never-spliced`'s other half, and it is what keeps the two goldens still.
+
+### measured — nothing moved, and it moves under the wrong seed
+
+- Windows, before: `2679 passed, 2 skipped`. After: `2680 passed, 2 skipped` — the +1 is this
+  lane's own control cell. Linux leg: `2674 passed, 2 skipped` (the six-test delta is the
+  pre-existing platform-gated split, unmoved by this lane).
+- ZERO goldens, transcripts, run-sets or looms moved. The two `§retrofit-execute` named —
+  `cli/tests/definition_frames.rs the_engine_names_the_definition_the_shells_ran` over
+  `floor30-blessed-override-above-and-below.loom`, and `cli/tests/load30-two-point-frames` — are
+  both green and untouched. Nothing else moved either, so no law clause is owed.
+- **FALSIFIED BOTH WAYS**, which is what the control cell is for:
+  - seed removed ⇒ `a_call_dorc_cannot_splice_havocs_the_cwd_below_it` reddens
+    (`left: 1, right: 0` on the fold count) and the control stays green;
+  - seed replaced by the WRONG one (`cfg.call_body_sites(id).is_none()`) ⇒
+    `a_call_that_was_not_refused_leaves_the_cwd_determinate` reddens (`left: 0, right: 1`) and the
+    pin cell passes.
+
+  So the E3C bug is now caught at the UNIT tier, in milliseconds, by a cell whose doc says why —
+  rather than expensively by two goldens whose failure named neither cause.
+- `mise run both gate:full-quiet` green on both legs (`preflight gate: ok — disk 205.5 GiB free,
+  ram 10.1 GiB free`); `check-quiet` and `clippy` green.
+
+### the-red-cell's-shape-was-right
+
+`deploy() { shift; cd /srv; }` refuses through the `UnmodeledPositional` arm — a genuinely REFUSED
+call that mints `CFG_INLINE_REFUSED`, not merely an un-spliced one. No edit to the cell's book was
+needed; its interim assertions are deleted, as the greening commit owes.
+
+### deviations — every one OPEN
+
+1. **`dev-the-depth-two-note-joins-the-refusal-set`** — the brief scoped the record to the arms
+   that mint `CFG_INLINE_REFUSED`. The depth-2 positional arm mints a different code and is
+   recorded anyway, because it refuses a splice by every operational meaning of the word, and
+   excluding it would leave one blind act unmodelled for a reason about diagnostic taxonomy rather
+   than about the shell. Withholding direction; no test moved. Conductor re-derives.
+2. **`dev-the-arms-were-refactored-not-only-instrumented`** — eight `self.diags.push(…); return
+   None;` blocks became eight `return self.refuse_inline(…)` / `refuse_splice(…)` calls. Strictly
+   mechanical (the diagnostic payloads and their push order are unchanged), and it is what makes
+   one-mint-one-record structural rather than a convention eight sites must remember. It does
+   inflate the diff of a lane whose behavioural change is two lines.
+3. **`dev-a-control-cell-was-added-beside-the-pin`** — the brief asked for the pin promoted; a
+   second cell, `a_call_that_was_not_refused_leaves_the_cwd_determinate`, is committed with it.
+   `an-artifact-set-runs-from-its-own-generation`'s general law is the reason: an assertion that
+   cannot distinguish the right seed from the wrong one is not a demonstration, and the wrong seed
+   is the one that just cost a lane its execute half.
+4. **`dev-load-sites-doc-was-stale-in-two-clauses`** — `load_sites`' own `# The cwd pass` doc still
+   described the PRE-`8ac0e103` seed ("a `.` whose head could not be evaluated … NOT the
+   merely-unread bucket") and the PRE-`6c7f0443` carriage posture ("still mirrored at its authored
+   relative path"). Both are false at the tip and sit directly above the line this lane edits, so
+   they were re-said rather than left. Source doc comment only; no `CLAUDE.md`, no root doc.
+5. **`dev-base-was-two-doc-commits-ahead-of-the-brief`** — the brief named tip `d928ee29`; the
+   worktree came up at `c228113d`, which has `d928ee29` as an ancestor plus two doc-only conductor
+   commits (`FORFEITS` / `LIVING_STATUS` / `Research` / `TODO-ADDTL`, no code). Verified by
+   `merge-base --is-ancestor` and `diff --stat` before proceeding, rather than stopping.
+
+### tc-flags — cross-cutting, for the human
+
+1. **`tc-a-held-body-is-modelled-as-text-not-as-shell-state`** — the ruling this lane implements is
+   that a call into a body the controller HOLDS AND MODELS is not blind. That is right about
+   ATTRIBUTION and it is what keeps the goldens still, but it is worth saying plainly what the
+   engine models today: a cross-file oracle body is held as TEXT (lifted for roles, sliced for
+   shipping) and is not on the caller's route at all, so `command_transfer` never walks it and its
+   own `cd` is as invisible as an unspliceable call's.
+
+   ```sh
+   . ./oracles/site.dorc.sh      # held, modelled, lifted — and NOT spliced at the call below
+   site_prepare                  # its body: `cd /srv/site` … invisible to the cwd domain
+   . ./oracles/docker.dorc.sh    # today: still EXACT, still bound, still shipped
+   ```
+
+   Closing it is NOT the same act as this lane: the population is every helper call in every book,
+   so the conservative reading costs a licence everywhere, which is exactly what reddened the two
+   goldens. The honest options are (a) accept it as the oracle contract's residue — an oracle body
+   that `cd`s without returning is a contract violation the author owes — or (b) splice cross-file
+   bodies, which is `seam-interproc`'s cross-file half and its own round. This lane took neither;
+   its lean is (a) WITH the sentence written into steering, because the gap is currently recorded
+   nowhere.
+
+2. **`tc-an-over-budget-wrapper-now-costs-later-loads-their-carriage`** — the widened seed makes
+   `tc-nothing-shipped-costs-the-common-book-its-plan` reachable through a NEW door, and that door
+   is the shape `30L:req-census-admits-the-wrapped-book` re-sized the budgets for:
+
+   ```sh
+   main() { … 300 lines … }      # over MAX_NODES_PER_SITE ⇒ REFUSED ⇒ a blind act
+   main
+   . ./oracles/docker.dorc.sh    # ¬EXACT ⇒ no bindings, no vouch, and NOTHING SHIPPED
+   docker run --name web nginx   #   so the generated plan dies at the `.` on the host
+   ```
+
+   No corpus book has it (zero goldens moved) and the direction is withholding, so nothing unsound
+   ships. But a budget is now ALSO a carriage knob, which sharpens
+   `splice-budgets-are-licensure-not-perf` by one notch: raising a budget can now restore a
+   dependency to the shipped tree, not merely reveal a mutation. Same veto as
+   `tc-nothing-shipped-costs-the-common-book-its-plan`; one human line settles both together.
+
+3. **`tc-a-detached-body's-own-loads-keep-their-authority`** — the clobber closure walks from
+   `cfg.entry()`, so a `.` INSIDE the refused body is never reached and never marked. Its site is
+   still enumerated by `load_sites` (which iterates every node), so it still resolves, still binds
+   and still ships. That is the pre-existing `vacuous-entry-fold` seam rather than anything this
+   lane introduced, and the wrapped-book shape above puts real weight on it. Reported, not touched.
+
+### proposed-steering-and-register-edits (conductor applies; builders edit no `CLAUDE.md`)
+
+- `analysis/CLAUDE.md rul-havoc-is-pointwise-never-the-stack` — its cwd clause names two seed
+  species. Proposed rider: *"…and the THIRD blind act joins the same seed: a call whose body the
+  CFG refused to splice (`Cfg::splice_refused`) clobbers the cwd from its own line down, because it
+  runs arbitrary sh in this shell and `command_transfer` matches only `.`/`source`/`unset`. Never
+  `call_body_sites` answering `None` — the splicer inlines same-file funcdefs only, so that absence
+  also covers every call into an oracle body the controller holds, and reading it as unmodelled
+  costs a licence at every helper call (measured: two goldens, `30Qf`)."*
+- `analysis/CLAUDE.md` — `§retrofit-execute`'s proposed NEW rider ("the law names THREE blind acts
+  and the engine models TWO") is DISCHARGED, and should land as the replacement above rather than
+  as written: all three are modelled now, and what still needs saying in steering is the wrong-seed
+  tripwire, which that rider carries.
+- `analysis/CLAUDE.md splice-budgets-are-licensure-not-perf` — proposed rider: *"since the third
+  blind act, a budget also decides CARRIAGE: an over-budget call is a cwd clobber, so a relative
+  `.` below it is non-EXACT and its target is shipped by no form."*
+- `analysis/CLAUDE.md opaque-poison-is-the-product` — its "keep every refusal arm (splice
+  ineligibility, over-budget, recursion) poison-preserving" gains a second obligation worth naming:
+  a new refusal arm must also RECORD, and `Builder::refuse_splice` is the only seat that does both.
+- `internal_tooling::xfail::PINS` — `p-x-an-unspliceable-call-havocs-the-cwd` is removed; nothing
+  else referenced it (`FORFEITS.md` and `ANALYZER-NEEDS.md` never named it).
