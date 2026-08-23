@@ -605,3 +605,208 @@ open ruling `ask-dollar-zero-command-substitution-path` and say predicting `dirn
 tool-modelling `identity-declared-never-inferred` forbids". `30P:rul-static-predict-sites-loads`
 [ACKED 2026-08-22] unparked exactly that in its static form. Text-only drift, in
 `lane-load-plane-precision`'s pins — reported, not touched.
+
+# §execute
+
+> Tier: **LLM-authored, builder (Opus-class)**, lane `ai/r30-lane-planner-exec` from
+> `ai/r30-lane-planner@0c38045d`. Implements §map as the conductor ruled it, plus the mid-lane rider
+> `30P:rul-rewrite-permission-is-derived`. Grades: +SURE / ~SUSPECT / -GUESS / --WONDER.
+
+## what-landed — nine commits
+
+| commit | what |
+|---|---|
+| `8e9ab850` | `plan::placement`: the vocabulary (`Placement` · `EmittedName` · `PlacementReason` · `PlacementDecision` · `PlacedSources` · the `LoadSite`/`GuardSite` newtype pair · `DefinitionKey`). No consumer; corpus untouched. |
+| `3f60b87b` | `mise run bless:case` — the scoped re-bless (see `fnd-bless-gates-on-a-green-suite`). |
+| `33695701` | THE CORRECTNESS REPAIR: a definition inherits its SOURCE's placement, so nothing the artifact already carries at the author's `.` is hoisted a second time. Carries the rewrite-permission rider. Four goldens moved (`dev-four-goldens-moved-not-one`). |
+| `715526ff` | `analysis::nameuse::NameUseCensus` — where the book first observes or mutates each name. |
+| `f8c8cc9b` | `placement::EmittedNames`, the one mint for an emitted name, plus the squat witness case and its roster entry. |
+| `35cb32b0` | `PlacementReason` on both `ImportEdit` variants and on the `PlanImportRewritten` payload. |
+| `0941ed0a` | the regenerated catalogue lock (metadata only; `message` stays `None`). |
+| `a8a58e57` | the two front-hoist tier pins, RED, plus the kept-in-place reason assertions. |
+| `f9c5110e` | the kept-stream refusal, driven natively, asserting empty stdout (the `30Nh` harness gap). |
+
+## as-built — the shape, in four sentences
+
+**A definition inherits the placement of the FILE it was authored in.** `cli::artifact::select`
+settles a `PlacedSources` beside its import edits — for every source a book `.` reaches, whether the
+chosen form carries its bytes and where — and `Selection::emission()` hands the pair to
+`Plan::decided` as ONE value (`ArtifactEmission`), so a producer cannot hold a carriage account from
+one form beside an import list from another. `pin_definitions` files each closure declaration by its
+`ClosureDecl` key's source and each role body by its vouch's `defining_span` file; a source no book
+`.` reaches is AMBIENT and hoists as before, one a book `.` reaches is already carried and the
+preamble adds nothing, and one nothing carries places nothing. `PinnedDefinitions::hoisted()` is
+retired for `typeset(&Placement)`, so a form asks for the material AT a placement rather than
+assuming one.
+
+## deviations — every one OPEN
+
+1. **`dev-four-goldens-moved-not-one`** — the brief pre-authorised ONE existing golden to move
+   (`emit30-single-stream-carries-the-closure-twice`). Four did, all in the emit30 family, all the
+   same twelve bytes: the duplicated guard preamble leaving the artifact. Enumerated:
+   - `emit30-hoisted-closure-outruns-its-load` — XPASSED. Promoted: `XFAIL` and `head-expected.ran`
+     deleted, `expected.out` blessed, header re-said from target-tense to landed. `expected.ran`
+     unmoved (`hork stage unset`, which was the target all along).
+   - `emit30-single-stream-carries-the-closure-twice` → RENAMED `…-carries-the-closure-once`, header
+     rewritten. Its name asserted the defect; keeping it while the transcript shows one copy would
+     have made the case's own identity a lie. Run-set unmoved.
+   - `emit30-multipart-publishes-its-dependency` — the SAME repair, second witness: the bundle is
+     published beside the plan, so the preamble's copy was the second one. Twelve lines gone, nothing
+     else. Header's "puts the vouching body on the apply surface" re-said.
+   - `emit30-assigned-load-is-not-absorbable` — the residual cell: `PreservedBookTree` carries no
+     dependency, so nothing places the package's bytes and the preamble is empty. The GUARD survives
+     and resolves through the book's own `.`. Header re-said; `MODE=prod . ./wombat.dorc.sh` still
+     survives verbatim, which is what the case was minted for.
+2. **`dev-residual-withholds-placement-not-the-vouch`** — ruling 1 says the residual (a source the
+   artifact does not carry) WITHHOLDS "no hoist, no guard, no elide". Built as no PLACEMENT; the
+   vouch is untouched. Reasoning, and it is a collision between two of the conductor's own rulings:
+   ruling 9 mirrors the `Selection` into `WhyWorld` under `StreamPosture::TerminalRender`, which is
+   the only total posture — but a run with `--artifact-dir` settles `Materializable`, so for a book
+   whose `.` is outside the absorbable cell the two drivers settle DIFFERENT forms (multipart vs
+   preserved-book-tree) and therefore different carriage. If carriage fed the vouch, the why driver
+   would withhold guards the run granted — a decoration, which is exactly what
+   `one-definition-table-two-drivers` forbids — and the only repair would be putting the run's
+   posture in the durable, which ruling 9 forbids and `rul-durable-contents-reviewed-before-design`
+   STOPS for. Placement not feeding licensing dissolves it. Two further reasons it is also right on
+   its own: the PROBE ships oracle bytes whatever the apply form is, so an elision rests on a
+   measurement that was actually made; and a guard over an uncarried source resolves through the
+   author's own `.`, which is `rul-guard-resolves-like-its-mutation` exactly. ~SUSPECT the conductor
+   re-rules this as built; +SURE the two rulings as written cannot both hold.
+3. **`dev-hoist-action-not-built`** — step 6's T1/T2a are NOT built; the two pins are red and this is
+   the sentence the brief asked for. The predicate's inputs all exist now (`NameUseCensus` ·
+   `CensusOpeners` · the absorbable/explicit shape), and the missing half is not the decision but the
+   ACTION: hoisting a bundle means the authored `.` line's own bytes must become something, and
+   `30Ng` §7 says only "rewritten to its lifted resolution". In a single stream it cannot stay
+   verbatim (`$0` is `sh`, and the target is not beside the plan), so the engine would substitute an
+   authored line — a product-surface act bearing on `rul-attention-honesty`, the `two-surfaces` byte
+   floor, and `KNOBS:kBACKFLIPS`'s enumerated edit classes. Strawman, single stream, T1:
+
+   ```sh
+   # the artifact, with the bundle lifted to the front and the author's own load line …
+   :                      # … replaced by a null command? or
+   . ./wombat.dorc.sh     # … left verbatim, and fatal, because nothing is beside the plan?
+   ```
+
+   Second half, cheap but real: a hoisted bundle re-opens the double-carry from the other side (its
+   definitions would be pinned into the preamble AND stand in the lifted bundle text), so
+   `PlacedSources::of_definition` has to answer "carried, wherever" rather than "carried in place" —
+   a small reshape that belongs with the thing that needs it.
+4. **`dev-a-tier-pins-not-in-the-type-commit`** — ruling 5 asked for the (a)-tier pins in the same
+   commit as the type. They landed four commits later (`a8a58e57`), because they assert over
+   `Selection`'s placement account and that account is what commit `33695701` builds. Nothing was
+   lost; the ordering was the brief's, not a law.
+5. **`dev-tier-needles-are-not-expressible`** — ruling 5's option (c) has the tier e2e cases declare
+   `expect-diagnostic` needles for their own reason arm. `needles-are-structural` validates code
+   SLUGS, and `28L:rul-reason-enums-not-sibling-codes` forbids a code per tier, so a reason arm is
+   needle-able only once it RENDERS — and `plan-import-rewritten`'s register is `message: None`,
+   which renders `[unwritten: plan-import-rewritten]` with no reason in it. Built the observable half
+   natively instead (`a_kept_in_place_bundle_says_which_condition_kept_it`). The needle half unblocks
+   when a human writes the prose; the hole is declared in the case's `when-fires`.
+6. **`dev-two-mise-tasks-added`** — `bless:case` and `loom` (see `fnd-bless-gates-on-a-green-suite`
+   and `fnd-loom-cli-resolves-the-wrong-rustc`). Both are tooling, not product.
+
+## findings
+
+- **`fnd-bless-gates-on-a-green-suite`** (+SURE, measured) — `mise run bless` opens with
+  `gate:full-quiet` and refuses to write while ANYTHING is red. That is right for a conductor's close
+  and a deadlock for the one job a builder needs it for: a change that legitimately moves a case's
+  golden cannot bless that case, because that case IS the red one. Worse, the deadlock is
+  self-widening — an unblessed golden makes `dorc-aid`'s `rendered_corpus_carries_no_minted_non_ascii`
+  fail too, since a fixture line that no longer appears in the case's own inputs reads as
+  engine-minted. `bless:case` is `BLESS=1` over the ordinary trial filter, with the scope check left
+  to the caller's own porcelain.
+- **`fnd-loom-cli-resolves-the-wrong-rustc`** (+SURE, measured) — a bare `cargo run -p dorc-loom`
+  resolves rustc 1.95 and dies naming all fifteen crates before it reads a case; `dorc-loom publish`
+  is the sanctioned prose-edit path and had no task. `mise run loom -- …` is that task.
+- **`fnd-a-funcdef-is-not-a-plan-leaf`** (+SURE, measured while authoring the squat cell) — a
+  top-level `NodeKind::FuncDef` takes no `LeafId`, so site numbering skips it. Recorded because two
+  fixtures in this lane were authored against the wrong number first.
+- **`fnd-book-set-roots-resolve-and-must-stay-explicit`** (+SURE, measured) — the rewrite-permission
+  rider says "today every resolved operand is literal … so this is vacuous now". It is not:
+  `pin28-variable-resolved-source-loads` re-points `. "./$PKG.oracle.sh"` with `PKG=foobar`, and
+  `load30-rooted-shared-dependency` and two siblings are the same shape. A strict literal-only
+  predicate reddened four corpus cases. `30P:rul-rewrite-permission-is-derived`'s own definition
+  admits them ("a literal word, **or a literal-assigned book-set root**") while its per-form gloss
+  says "re-points LITERAL dorc-lang imports"; the definition is what is built. ~SUSPECT the gloss
+  wants the same words as the definition.
+
+## tc-flags
+
+- **`tc-uncarried-source-still-guards`** — `dev-residual-withholds-placement-not-the-vouch`, restated
+  as the judgment call it is. Product surface: a book whose `.` is outside the absorbable cell, run
+  without `--artifact-dir`, so nothing is placed beside the plan.
+
+  ```sh
+  false || . ./wombat.dorc.sh      # the artifact carries no copy of this package
+  hork provision                   # unmodeled: the site below guards rather than elides
+  wombat sync a.conf               # ( wombat__is_converged sync a.conf ) || wombat sync a.conf
+  ```
+
+  As built, that guard ships and resolves through the author's own `.` on the target. Under ruling
+  1's letter it would not ship and the mutator would run. My lean: as built — the guard is a live
+  re-check in the environment its own mutation runs in, and the alternative makes the why driver and
+  the run disagree.
+- **`tc-sink-not-attempted`** — `p-x-placement-tuning-pair` stays red. `tc-sink-changes-the-guard-shape`
+  was ruled admissible and step 6 was ordered last; the budget went to the ladder question above it,
+  which turned out to be the blocking one. Untouched, unprejudiced.
+
+## proposed-steering-edits — conductor's to place
+
+**`spike/crates/plan/CLAUDE.md`, appending to `pinned-definitions-are-the-artifact's-binding`:**
+
+> A definition's placement is INHERITED from the source it was authored in, never assumed
+> (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`). `Plan::decided` demands an
+> `ArtifactEmission` — the settled form's carriage account plus its import edits, as ONE value — and
+> `pin_definitions` files each declaration by its `ClosureDecl` key's source and each body by its
+> vouch's defining file. A `--pre-source` root is AMBIENT and hoisting it is faithful; a source a
+> book `.` reaches is already carried at that `.` since the bundling
+> (`30Ng:rul-bundle-at-dorc-lang-boundaries`), so the preamble adds nothing and a hoist would bind
+> names at lines the authored program does not — for VARIABLES as much as funcdefs, since the
+> closure track carries file-level constants. A source the form carries NOWHERE places nothing; the
+> guard, if any, resolves through the author's own `.`, which is
+> `30P:rul-guard-resolves-like-its-mutation` exactly. Every emitted name is minted through
+> `placement::EmittedNames`, which holds every name the book names and lengthens the digest until
+> the candidate is free — `<name>_h<digest>` is computable from the artifact, so it is squattable in
+> plain sight rather than colliding by accident.
+
+**`spike/crates/cli/CLAUDE.md`, appending to `artifact-forms-derive-from-one-structure`:**
+
+> A book `.` carrying a LEADING ASSIGNMENT is not absorbable: `ImportEdit::Inline` replaces the whole
+> command node, so `MODE=prod . ./entry.oracle.sh` would lose the assignment and the absorbed top
+> level would read an environment the authored `.` never had. `Repoint` moves only the operand and
+> stays eligible, so multipart is unaffected — the assignment costs the FORM, not the bundling.
+> Separately, permission to rewrite a `.` line at all is DERIVED from the operand naming its target
+> EXPLICITLY (`30P:rul-rewrite-permission-is-derived`): `artifact::operand_is_explicit` is the one
+> seat, no tier re-points, inlines or hoists a line it answers `false` for, and multipart mirrors
+> such a target at its authored relative path instead so the author's own operand finds it. EXACT is
+> a different axis and grants nothing here — it governs AUTHORITY, explicitness governs REWRITING.
+> `Selection::emission()` is what reaches the plan: the carriage account and the import edits as one
+> value, because they are one answer about one form.
+
+**`spike/CLAUDE.md`, the task list:** `mise run bless:case -- <case>` (the scoped re-bless; `bless`
+verifies the whole suite first and cannot write while the case it would fix is the red one) and
+`mise run loom -- <args>` (the loom CLI on this workspace's toolchain).
+
+**`ANALYZER-NEEDS.md`**, one row:
+
+> | an-name-observation-census | for a NAME and a POSITION: does the book observe or mutate that name above that line — calls, `command -v`/`type`, `unset`/`unalias`, `alias`, `export`/`readonly`, funcdefs, loop variables, and every parameter-expansion read. ⊤-biased: a non-literal command word, an operator-bearing expansion whose name the lexer discarded, and an `eval` are each a use of EVERY name. Built as `analysis::nameuse::NameUseCensus` (one AST walk, no fixpoint); the ⊤ arm narrows mechanically when the load lane decodes `ParamComplex` | emission planner (hoist legality); emitted-name freshness | an-static-load-occurrence-account | 30P, 30Qb | B |
+
+**`FORFEITS.md`** — nothing proposed; §map's reading holds (emission/placement limitations are
+excluded by the header's human-typed scope sharpening).
+
+## context-other-lanes-must-maintain
+
+- **`lane-load-plane-precision`** — `cli/src/artifact.rs`'s `operand_is_explicit` is the seat the
+  typed `Explicitness` marker replaces at the fold; its doc-comment says so in one line. It reads
+  the AST word today and refuses `ParamComplex`, `CommandSubst`, `Arithmetic` and `$0`, while
+  ACCEPTING a simple `$name` (see `fnd-book-set-roots-resolve-and-must-stay-explicit`). Also:
+  `NameUseCensus`'s ⊤ arm has one seat (`uses_everything`), and the `ParamComplex` decoding narrows
+  it there and nowhere else. `main.rs:~1060-1063` untouched, as briefed.
+- **`lane-influence-carriage`** — `PlacementDecision` and `PlacedSources` are new stable objects,
+  minted plain, ready to convert. `ArtifactEmission` is a borrow-only carrier of the two and is not
+  itself an object.
+- **Point-havoc** — T1's condition (d) is unbuilt, so nothing hardcodes the whole-unit reading of
+  `CensusOpeners`. When the hoist action lands it must be written position-scoped from the start
+  (conductor ruling 11).
+- **The four moved goldens** are all the same twelve lines. Any lane that re-blesses an emit30 case
+  should confirm the preamble is absent by design rather than by drift.
