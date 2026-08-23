@@ -601,7 +601,7 @@ This dissolves two earlier questions rather than answering them:
   minted. Co-speakerhood — a stranger's `disturbs` spelling the backing family's
   token — stays what it was: the token is read in the backing speaker's
   vocabulary (section 6.5).
-- Which position governs `claim@p × backing@q` (`28Q:pin-two-position-sparing`):
+- Which position governs `claim@p × backing@q` once liveness is frame-relative:
   the backing's frame. A token minted by any closure other than the one live
   there is not in the dialect, so it collides by construction; no separate
   agreement rule is needed.
