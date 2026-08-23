@@ -132,6 +132,12 @@ use world::{EffectiveAct, Freshness, NoMutationProof};
 pub mod spine;
 pub use spine::{Authorised, PlanAuthority, PlanPlane, Spine, project_plan};
 
+pub mod placement;
+pub use placement::{
+    EmittedName, GuardSite, LoadSite, PlacedSources, Placement, PlacementDecision, PlacementReason,
+    SourcePlacement,
+};
+
 pub mod region;
 
 // ===========================================================================
