@@ -5610,6 +5610,47 @@ mod tests {
         assert_eq!(binding, Flat::Top);
     }
 
+    /// THE LAW'S THIRD BLIND ACT: a call into a body Dorc cannot splice.
+    ///
+    /// `30P:law-no-unsoundness-below-a-blind-act` names three — an unresolvable `.`, an `eval` of
+    /// ⊤, and a call into a body Dorc cannot splice. The `eval` cell is closed by REFUSAL (the
+    /// parser mints `Unsupported` at Error severity and the cli folds any parse error into a
+    /// whole-run exit), but an over-budget, recursive or out-of-slice call stays an ordinary
+    /// `Command` node: `command_transfer` matches only `.`/`source`/`unset`, so the body's `cd`
+    /// and its `.` are invisible and the cwd below the call reads determinate.
+    ///
+    /// The discriminator is the CFG's own: `call_body_sites` answers `Some` exactly where a body
+    /// was spliced, and a spliced body's own acts are already ordinary nodes on the caller's route.
+    ///
+    /// CFG SHAPE: a top-level funcdef whose body uses `shift` (out of the splice slice, so the
+    /// call is refused), the call to it, and then each consumer in turn — a `[ -f <loadable> ]`
+    /// guarding a funcdef, and a relative `.` of a file the unit holds.
+    #[test]
+    fn a_call_dorc_cannot_splice_havocs_the_cwd_below_it() {
+        const DEFINE: &str = "deploy() { shift; cd /srv; }\ndeploy\n";
+        let decides = format!("{DEFINE}[ -f lib.sh ] && yum__is_converged() {{ :; }}\n");
+        let binds = format!("{DEFINE}. ./lib.sh\n");
+        let (decide_table, _) = sourceable(&decides);
+        let (bind_table, lib) = sourceable(&binds);
+        let (binding, folds) = folded(&decides, &decide_table);
+        let (solved, exit) = solve_book(&binds, &bind_table);
+        assert_eq!(folds, 1, "interim: the unspliced call clobbers nothing");
+        assert_eq!(
+            solved.binding_before(exit, ROLE),
+            Flat::Elem(Binding::Defined(lib)),
+            "interim: and the relative load below it still binds"
+        );
+        internal_tooling::xfail::xfail_until("p-x-an-unspliceable-call-havocs-the-cwd", || {
+            assert_eq!(folds, 0, "the body may have cd'd, so no file test decides");
+            assert_eq!(binding, Flat::Top);
+            assert_eq!(
+                solved.binding_before(exit, ROLE),
+                Flat::Top,
+                "and the relative load below it names no file"
+            );
+        });
+    }
+
     // ── TABLE 9: the kernel punts `30Pd` §5 pencilled, encoded in sh and RED
     //    (`30P:rul-forfeits-carry-reds`) ──
 
