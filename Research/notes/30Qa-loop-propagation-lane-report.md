@@ -183,16 +183,80 @@ type); a `Member(n)` whose `n` exceeds its loop's list length; a `NotIterated` r
 node (unreachable today, unforbidden). The last one is what the proposed `DecideSite` field must
 not read as a licence.
 
-## §2 — riders
+## §2 — post-checkpoint: what the rulings changed, and where the lane stopped
 
-- `analysis/src/value.rs` line ranges TOUCHED by this lane so far: NONE. The load-plane lane's
-  `variable_before` (~`:234`) and the decidable set are unmoved. If the seam plan is approved the
-  lane will touch `Prep::inline_pass` and the `positional_argv` field/accessor (~`:96-107`,
-  `:163-169`, `:1086`+) — still clear of the load plane's seats, but no longer zero.
-- Comment budget at the checkpoint: `git diff ai/main | grep -c '^+\s*//[^/]'` = 13 (brief: ≤25);
-  `grep -c '^+\s*///'` = 100, almost all of it the per-test invariant arguments spike style
-  requires plus one new enum, three functions and two recorded CFG fields.
-- FORFEITS: `forfeit-loop-populations-open-until-propagation` is NOT yet dischargeable — the
-  census closes, the licence does not. Its CAPTURE sentence should stop naming
-  `p-x-loop-population-closes-over-literal-members` as its standing red (the pin is promoted) and
-  name the region licence instead; drafted for the conductor in the lane's final report.
+### Answers the rulings asked for
+
+**`fnd-in-loop-inline-calls-already-ship-records`** (+SURE, measured, and now pinned by
+`an_in_loop_calls_member_zero_records_key_exactly_as_the_non_loop_call_does`): an in-loop inlined
+call ships `site 0.0` TODAY, byte-identical to the same call outside a loop. So there IS something
+to preserve, and member-major flattening is what preserves it — member 0's body-site indices ARE
+the whole non-loop numbering and every later member appends. A site-major flattening would renumber
+every existing record, which is why the ruling's ordering principle is load-bearing rather than
+cosmetic.
+
+**`fnd-count-guard-was-right-by-coincidence`** (+SURE, exclusion-checked both cells). The retired
+`(routes.count() > 1)` trigger at `settle.rs:711` was CORRECT for a lone NON-loop instance and
+WRONG for a lone member. The distinction it encoded is real but is not the one it named: a node's
+own gen reaches its own in-state only through a CYCLE, and outside a loop there is none — so
+cardinality and acyclicity coincided. Inside a loop the back-edge exists whatever the list length,
+so `for pkg in a; do install_pkg "$pkg"; done` would have read its own establish as a wall. Keyed on
+CLOSURE now; the extra solve on an acyclic population returns the identical answer.
+
+**`dec-two-numberings-are-named-apart`** — `IterationSlot::member()` keeps the MEMBER ordinal and
+never the flattened record index; the value plane's per-member argv is `spliced_member_argv`,
+deliberately not `member_argv` (r21's, for a mutating command written DIRECTLY in a loop body and
+keyed on the site's own argv naming the loop variable). Two numberings, two names, and the doc on
+each says which.
+
+### What landed after the checkpoint
+
+- `74e997d9` — the four red cells, XFAIL, plus the record-identity preservation pin and the
+  `$(ls)` census cell (brief case (f), which never reaches the census at all: a command
+  substitution in a `for` list is a parse-⊤, so the body is never lowered).
+- `1a46a191` — `region_routes` keys by member; the suppression solve keys on closure.
+- `fae42488` — the loop-member enumeration moved to ONE seat (`cfg::loop_evaluations`, returning
+  the ordered member TEXTS so the census takes the count and the value plane takes the values),
+  and `Prep::member_inline_pass` binds each member's own call operand into the spliced body it
+  calls. Three tests pin it, including the load-bearing one: `install_pkg "$pkg"` under
+  `for pkg in nginx curl` resolves `$1` to nginx at member 0 and curl at member 1.
+
+### `dev-effect-probe-and-floor-remain` — where the lane stopped, and why here
+
+The licence is NOT built. Three edits remain and they must land TOGETHER, because any two of them
+without the third is either dead code or a wrong licence:
+
+1. **effect** — the per-member classes on the InlineCall vector, member-major. The reusable seat is
+   `effect::member_family` (`effect.rs:735`), which already resolves one member argv through
+   `command_effect` with THROWAWAY out-params and already handles per-member verdict measurement.
+   The region lane wants the same shape keyed off `spliced_member_argv` for spliced BODY sites,
+   with `InlineSite` gaining the member ordinal so a route can find its own entry. Why this is the
+   deep one: `command_effect`'s real out-params (`verdict_lane`, `backings`, `degrades`, the
+   diagnostics) are all NODE-keyed, and N members at one node collide in every one of them —
+   `member_family`'s throwaway maps are exactly how the r21 lane sidestepped that, and the same
+   sidestep has to be justified again here rather than assumed.
+2. **probe** — `push_inline_checks` (`lib.rs:4099`) ships per member off `spliced_member_argv`
+   instead of `argv_values`. No record-grammar change under member-major.
+3. **consumer** — `settle.rs`'s `body_class` (`:687-697`) keyed by `(cfg_node, member)` rather than
+   collapsing N members to the last one, and the in-loop floor made route-aware at BOTH seats
+   (`lib.rs:4651-4655`, `:4582`).
+
+**The floor moves LAST, and that is a correctness statement, not a schedule.** Lifting it before
+the per-member facts exist would license a region from ONE member's fact applied to all of them,
+which is an under-execution — the cardinal sin. There is therefore no safe partial slice of this
+licence, which is why the lane stops at a green boundary rather than part-way through.
+
+## §3 — riders
+
+- `analysis/src/value.rs` line ranges TOUCHED, for the load-plane lane: the `ValueFlow` field block
+  (one field added after `positional_argv`, ~`:107`), one accessor beside `member_argv`
+  (~`:190`), one line in the `analyze` assembly (~`:346`), and a new `Prep::member_inline_pass` +
+  `loop_var_of` inserted immediately BEFORE `resolve_site_words_with_positionals` (~`:1150`).
+  `variable_before` and the decidable set are UNTOUCHED. Also touched, and shared with no
+  scheduled lane: `analysis/src/cfg.rs` (the enclosing-loop record; the `loop_evaluations` seat).
+- Comment budget: inline `//` = 22 (brief: ≤25); `///` = 172, sized to the pin count — two new
+  public seats in `cfg`, one public field + accessor and two private passes in `value`, one
+  recorded CFG field pair, and the per-test invariant arguments spike style requires.
+- FORFEITS: `forfeit-loop-populations-open-until-propagation` is NOT dischargeable — the census
+  closes, the licence does not. Its CAPTURE sentence must stop naming the now-promoted pin as its
+  standing red; the four `loop30-*` e2e cases are its reds. Drafted for the conductor to apply.

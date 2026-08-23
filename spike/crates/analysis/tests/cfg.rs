@@ -437,11 +437,8 @@ fn loop_body_commands_are_in_loop_post_loop_is_not() {
 
 #[test]
 fn a_nested_body_command_names_its_innermost_loop() {
-    // `Cfg::enclosing_loop_head` answers INNERMOST, because that is the loop whose list decides
-    // how many times the node evaluates per entry to it. The outer head answers no node inside
-    // the inner loop; the outer body's own command answers the outer head. Both directions are
-    // asserted, since an outer-wins bug would still look right from one of them.
-    //
+    // INNERMOST wins, because that is the loop whose list decides how many times the node
+    // evaluates. Both directions are asserted: an outer-wins bug still looks right from one.
     // CFG shape: two nested `for` heads, one command leaf in each body.
     let src =
         "for p in a b; do ufw allow 22; for q in c d; do apt-get install -y \"$q\"; done; done";

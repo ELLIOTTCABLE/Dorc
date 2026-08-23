@@ -365,9 +365,7 @@ fn resolve_passes(
     // resolved argv and re-resolve each body site's words.
     let positional_argv = prep.inline_pass(&argv, states, trusted, interner);
 
-    // `30L` §7: the same positional binding, once PER LOOP MEMBER, for a spliced body whose CALL
-    // sits inside a `for` over a literal list. The call's own operands are what vary
-    // (`install_pkg "$pkg"`), so each member re-resolves the call and re-binds `$1` from it.
+    // `30L` §7: the same binding, once PER LOOP MEMBER, where the call sits in a literal `for`.
     let spliced_member_argv = prep.member_inline_pass(&argv, states, trusted, interner);
 
     // y-1 (redirect-effects): the resolved write-redirect TARGETS — a SEPARATE pass off the
@@ -1250,8 +1248,6 @@ impl<'a> Prep<'a> {
                         interner,
                     );
                     let slots = out.entry(site_id).or_default();
-                    // Members arrive in list order; a body site reached under two different calls
-                    // in one loop keeps each call's own slot sequence.
                     if slots.len() == index {
                         slots.push(resolved);
                     }
