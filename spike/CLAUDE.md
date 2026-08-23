@@ -814,8 +814,13 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   authored idiom never changes because the sink VALUE is engine-supplied. Never restore a
   pathname-based capture protocol: the probe may not create, truncate, read, or unlink a host
   pathname it merely named (`rul-probe-writes-only-what-it-owns`).
-  Classes route AID only — the rc-partition stays a flat sink; the license plane
-  never reads a class. Silent declines stay legal; classing is enhancement.
+  **The lane is LOAD-BEARING by design** (human, re-stated 2026-08-23): a record is a
+  closed-set structured HEAD (verb, class, …) + the end-sentinel + an author-freeform TAIL
+  last. The head is bounded, closed-grammar, and MAY feed decisions (always `Influenced`);
+  the tail annotates the decision and is aid-only — placed last so overrun cannot reach a
+  decision and freeform cannot be mistaken for structure. The rc-partition stays a flat
+  sink; silent declines stay legal; classing is enhancement. The at-most completion
+  sentinel (`ANALYZER-NEEDS:an-atmost-completion-signal`) is a verb on this lane.
   Noise-tolerant (`27W:rul-report-noise-tolerant`): ingestion never silently drops
   author emissions — unrecognized/free-form lines are retained (sanitized, capped,
   attributed) and print in full at max verbosity; default surfaces stay selected.

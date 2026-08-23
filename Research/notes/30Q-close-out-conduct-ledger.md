@@ -571,6 +571,24 @@ stop-poking — the leans cancel; least work wins; not revisited soon. Conductor
 diagnostic and returns `IngressRefused` (exit 12); the forgiving-parser re-home and its
 allow-list entry (`307a:flg-allow-list-entry-not-added`) stay owed, unscheduled.
 
+## §5j — `design-atmost-completion-speech` ruled (2026-08-23; same sitting; on `ai/main`)
+
+**TYPED:** every completing path carries the sentinel ("it's not a completion sentinel if it's
+not completely present"; simple bodies write it once at the end, branching bodies push it into
+the branches — the author's burden, unsolvable for them). Spelling: the simple, stupid, obvious
+one — the same shape as the `return 2` companion, a `printf` to the engine-supplied report sink;
+the human's lean moved since 2026-07-31 because `__predict` already forced oracles onto that
+lane, so a second ceremony would be cruft. **Correction, human-typed:** the report lane is
+LOAD-BEARING by design — closed-set structured head + end-sentinel + freeform tail LAST; the
+head may feed decisions (Influenced), only the tail is aid-only. `spike/CLAUDE.md
+decline-class-emission`'s "classes route AID only / the license plane never reads a class" was
+miswired and is re-said. Acked riders: exactly one sentinel per body execution (0 and >1 both
+refuse the whole footprint); complements `deriv-end … body-rc`, never replaces it; pipeline-tail
+swallow is the blessed-pipefail spelling's job (stdlib teaching line); `…_only` bodies owe it
+too; a refused-for-no-sentinel footprint mints its hint. Encoded in
+`ANALYZER-NEEDS:an-atmost-completion-signal` (the durable home) · `28Q` §9 pin 8 · the steering
+bullet · `30O` · the burndown. Build rides the stdlib, unscheduled.
+
 ## §5 — Handoff pointers (for a successor, if the ceremony rolls over)
 
 `30O:sched-round-close-ceremony` priorities stand; add: the loop lane's iteration-aware route

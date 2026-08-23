@@ -120,7 +120,7 @@ unscheduled, not "later" [TYPED 2026-08-22]. Status per stage, +SURE unless mark
 
 ## human-gated-rulings — what each unblocks
 
-On the burndown: `design-atmost-completion-speech` · `design-world-scope-surface` · `rule-incarnation-continuity-semantics`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
+On the burndown: `design-world-scope-surface` · `rule-incarnation-continuity-semantics`. From `30P` (`30P:open-rulings` + `review-adjudication-inputs`):
 rule the relative=controller / absolute=target class selector (acked as a lean) · the
 controller-expectation/host-check pattern's UX and opaque review (`choice-verbatim-or-re-say`
 is RULED: verbatim, `30P:the-load-plane-stays-correct`). From the r30 close-out conduct

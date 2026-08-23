@@ -687,9 +687,10 @@ longer parked (implementation target `30K`) · `tc-inert-mocks-rail-is-dash-shap
 6. Cross-family registration (`30J` §6.5) — whether two families may deliberately
    co-refer; kind-owner design, unscheduled. (Keep/lift and the committee corner are
    `30J`; the license-tier half was RESOLVED by §4's verdict-primacy ruling.)
-8. `an-atmost-completion-signal` (exit-0 truncation) — pre-existing, human-owned,
-   unchanged by this plan; listed so nobody reads §3's atomicity inheritance as closing
-   it.
+8. `an-atmost-completion-signal` (exit-0 truncation) — RULED in that row: an
+   author-written completion sentinel on every completing path, a verb on the
+   load-bearing report lane, exactly one per body execution. §3's atomicity
+   inheritance is its first conjunct, not its closure. Build rides the stdlib.
 10. `pin-closure-membership-and-diamond` — closure MEMBERSHIP + overlap/diamond identity — the §2 open cells; owed before
     stage-ii's policy half. The diamond half is MECHANICALLY ACKED [human, 2026-08-13,
     skepticism recorded]: no single global rule is built — which inferred traits of
