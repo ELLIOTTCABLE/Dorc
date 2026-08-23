@@ -1,0 +1,27 @@
+---
+run: round-trip
+fixpoint: executed
+expect-diagnostic:
+  - emitted-line-unsafe-for-paste
+---
+-- book.sh --
+#!/bin/sh
+~doesnotexist arg
+
+-- replay --
+$ dorc --book=book.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=998393f5d98d8bc3d129398a0c8b0427af895c135188054bfbfc416f8427265b sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+~doesnotexist arg
