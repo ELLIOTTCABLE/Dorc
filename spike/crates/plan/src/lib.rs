@@ -4346,7 +4346,7 @@ pub fn build_plan_walled(
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
     trip: &mut dorc_analysis::certify::CertifierTrip,
-    minted_at: dorc_core::influence::InfluenceAccount,
+    world_account: dorc_core::influence::InfluenceAccount,
 ) -> Spine {
     let mut model = FrozenRoundModel {
         classification,
@@ -4363,7 +4363,7 @@ pub fn build_plan_walled(
         connected,
         policy,
         regions: &regions,
-        minted_at,
+        world_account,
     };
     // The ledger holds CFG SITES and grows by at least one per non-quiescent round, so the bound is
     // the node count plus the one round that proves nothing new. Leaf count is NOT the bound: a
@@ -4492,6 +4492,9 @@ pub(crate) struct SiteDecision {
     pub(crate) disposition: Disposition,
     pub(crate) act: EffectiveAct,
     pub(crate) survival: SurvivalAccount,
+    /// Where this decision stands relative to host contact
+    /// (`306b:rul-semantic-mints-join-influence`), joined at this mint from the inputs it read.
+    pub(crate) account: dorc_core::influence::InfluenceAccount,
 }
 
 /// The private semantic conclusion from which both public output and effective analysis project.
@@ -4612,6 +4615,18 @@ pub(crate) struct DecideSite<'a> {
     /// the type) carries `None`, so the floor stands for it. A boolean the region seat set would
     /// lift the floor for that route on the seat's say-so.
     pub(crate) universally_quantified_member: Option<u32>,
+    /// The RESTRICTED DEPENDENCY ACCOUNT (`306b` §10) the settlement holds for this round: where
+    /// the run itself stands, handed in rather than re-derived.
+    ///
+    /// It DOMINATES every decision this seat mints, and that is a v0 fact rather than a shortcut.
+    /// The per-cell conjunct that would make two routes differ is deliberately NOT built: the only
+    /// per-site discriminator available is which cells an admitted record spoke about, and a
+    /// decision also consumes `freshness`, which reads `ReachingWalls` over the decision-fed
+    /// effective set and is influenced the moment ANY site in the window read a record. Deriving
+    /// the account from the cell alone would therefore LAUNDER
+    /// (`30L:rul-shared-influence-never-launders`). The conjunct is pinned red rather than
+    /// approximated (`p-x-region-account-reaches-the-spine-record`'s neighbourhood).
+    pub(crate) world_account: dorc_core::influence::InfluenceAccount,
 }
 
 /// One region INSTANCE's answer: what the route concluded alone, what edit it would admit as one of
@@ -4634,6 +4649,10 @@ pub(crate) struct RouteDecision {
     /// site tier's own `jc-mint-policy m-a` reading one level up. The region seat drops the
     /// candidates when no route converged.
     pub(crate) verdict: Verdict,
+    /// Where this route's answer stands, joined at this mint. The region meet joins these
+    /// (`30L:rul-shared-influence-never-launders`): one uninfluenced route never cleanses a
+    /// host-influenced sibling.
+    pub(crate) account: dorc_core::influence::InfluenceAccount,
 }
 
 /// Decide one region instance (`30L` §4) — the route's own conclusion, plus what it admits.
@@ -4655,6 +4674,7 @@ pub(crate) fn decide_route(p: &DecideSite<'_>, source_argv: Option<&str>) -> Rou
         guard: source_argv.and_then(|argv| region_guard_candidate(p, argv)),
         verdict: establish.map_or(Verdict::Unknown, |(_, fact)| (p.observe)(fact).effect),
         establish,
+        account: p.world_account,
     }
 }
 
@@ -4715,6 +4735,7 @@ pub(crate) fn decide_site(p: &DecideSite<'_>) -> SiteDecision {
         } else {
             SurvivalAccount::Silent
         },
+        account: p.world_account,
     }
 }
 

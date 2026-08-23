@@ -1977,7 +1977,7 @@ fn run(
         regions: &regions,
         // `309` §2 grade-stamping: this settlement is downstream of the intake, so every record it
         // writes is host-influenced. Carried by construction, not by each mint site remembering.
-        minted_at: world_account,
+        world_account,
     };
     // The ledger holds CFG SITES (leaves and non-leaves alike) and grows by at least one per
     // non-quiescent round, so the bound is the node count plus the settling round. The leaf count
@@ -7799,7 +7799,7 @@ apt_get__is_converged() {
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
             regions: &dorc_plan::region::RegionCensus::default(),
-            minted_at: dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            world_account: dorc_core::influence::InfluenceAccount::authored_before_contact(),
         };
         let _ = origin;
         settle_world(
@@ -7972,7 +7972,7 @@ apt_get__is_converged() {
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
             regions: &dorc_plan::region::RegionCensus::default(),
-            minted_at: dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            world_account: dorc_core::influence::InfluenceAccount::authored_before_contact(),
         };
         let settled = settle_world(
             &frozen,

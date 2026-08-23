@@ -678,23 +678,33 @@ mod tests {
         );
     }
 
-    /// The staging census (`306b:rul-untracked-is-not-authored`).
+    /// The staging INVENTORY (`306b:rul-untracked-is-not-authored`) — not a ban.
     ///
     /// Gradation is deliberately not built, and the stated purpose of the threading is to force the
-    /// type discipline and then WATCH whether unconverted seams accumulate over later churn. That
-    /// watch needs an instrument: this is it, and the COUNT is asserted here precisely because
-    /// growth is the signal.
+    /// type discipline and then WATCH whether unconverted seams accumulate over later churn. So an
+    /// `untracked` adapter is LEGAL and expected; what it is not is silent. A seat that mints one
+    /// joins the list below in the same commit, which is what turns "we are staged here" into
+    /// something a reader can count rather than something they must go looking for.
+    ///
+    /// The list is empty only because nothing has needed an adapter yet.
     #[test]
     fn every_untracked_adapter_is_enumerated() {
+        /// Every seat that deliberately carries an explicit `untracked`, and what it stages.
+        const INVENTORY: &[&str] = &[];
+
         let (adapters, walked) = sources_naming(concat!("InfluenceAccount", "::untracked("));
         assert!(
             walked > 0,
             "the walk found no sources, so it proves nothing"
         );
+        let files: Vec<&str> = adapters
+            .iter()
+            .filter_map(|hit| hit.split_once(" x").map(|(file, _)| file))
+            .collect();
         assert_eq!(
-            adapters,
-            Vec::<String>::new(),
-            "an untracked seam is a staged hole; growth here is the thing to look at"
+            files, INVENTORY,
+            "an untracked seam is legal and STAGED — enumerate it here in the same commit; \
+             found {adapters:?}"
         );
     }
 }

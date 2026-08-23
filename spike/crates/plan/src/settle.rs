@@ -122,8 +122,12 @@ pub struct SettleInputs<'a> {
     /// that holds no region information — it decides nothing, so that driver's output is exactly
     /// what it was before regions existed.
     pub regions: &'a RegionCensus,
-    /// The influence grade every Spine record this settlement writes carries.
-    pub minted_at: InfluenceAccount,
+    /// A RESTRICTED DEPENDENCY ACCOUNT (`306b` §10): where the RUN stands relative to host contact,
+    /// handed in by the driver that holds the evidence rather than re-derived here.
+    ///
+    /// Not a grade word a caller chose, and not something this settlement stamps over its output:
+    /// each decision below JOINS from it at its own mint (`309:rul-spine-preserves-never-stamps`).
+    pub world_account: InfluenceAccount,
 }
 
 /// What one site's decision established, before anything is written anywhere (`30K` §3.4).
@@ -140,6 +144,8 @@ struct ProvisionalSiteDecision {
     disposition: Disposition,
     act: EffectiveAct,
     survival: SurvivalAccount,
+    /// The account `decide_site` joined, carried to the record rather than re-derived at the write.
+    account: InfluenceAccount,
 }
 
 /// What the survival tier concluded about one site, kept out of Spine until the round settles.
@@ -177,6 +183,11 @@ struct ProvisionalRegionDecision {
     /// typed reason rather than filtered out of the account.
     routes: dorc_core::spine::RegionRoutes,
     proofs: Vec<(CfgNodeId, NoMutationProof)>,
+    /// The account the region MEET joined over its contributing routes
+    /// (`30L:rul-shared-influence-never-launders`). Carried here because the lowering seat is where
+    /// the value the meet computed used to be dropped on the floor
+    /// (`p-x-region-account-reaches-the-spine-record`).
+    account: InfluenceAccount,
 }
 
 /// One settled round's decisions, sealed and therefore allowed to write Spine.
@@ -188,7 +199,7 @@ pub struct SettledEffectiveAnalysis {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
-    minted_at: InfluenceAccount,
+    world_account: InfluenceAccount,
 }
 
 /// One round's decisions, before quiescence is known. Deliberately without a Spine, Plan, render,
@@ -198,7 +209,7 @@ pub struct ProvisionalEffectiveRound {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
-    minted_at: InfluenceAccount,
+    world_account: InfluenceAccount,
 }
 
 /// The cap path intentionally discards every no-execution proof and seals the maximal-effects
@@ -230,7 +241,7 @@ impl ProvisionalEffectiveRound {
             decisions: self.decisions,
             regions: self.regions,
             walls: self.walls,
-            minted_at: self.minted_at,
+            world_account: self.world_account,
         }
     }
 
@@ -239,7 +250,7 @@ impl ProvisionalEffectiveRound {
             decisions: self.decisions,
             regions: self.regions,
             walls: self.walls,
-            minted_at: self.minted_at,
+            world_account: self.world_account,
         }
     }
 }
@@ -249,7 +260,6 @@ impl SettledEffectiveAnalysis {
     /// (`309:law-spine-write-only-during-run`).
     #[must_use]
     pub fn write_spine(self) -> Spine {
-        let world = self.minted_at;
         let mut spine = Spine::new();
         for (leaf, region) in self.walls {
             spine.push_narrative(CollapseNarrative::new(
@@ -270,17 +280,22 @@ impl SettledEffectiveAnalysis {
                 region.sh,
                 region.disposition,
                 region.routes,
-                world,
+                region.account,
             ));
         }
         for decision in self.decisions {
-            record_survival(&mut spine, decision.leaf, decision.survival, world);
+            record_survival(
+                &mut spine,
+                decision.leaf,
+                decision.survival,
+                decision.account,
+            );
             spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
                 dorc_core::SiteId::leaf(decision.leaf),
                 decision.ast,
                 decision.sh,
                 decision.disposition,
-                world,
+                decision.account,
             ));
         }
         spine
@@ -292,7 +307,7 @@ fn record_survival(
     spine: &mut Spine,
     leaf: LeafId,
     survival: SurvivalAccount,
-    world: InfluenceAccount,
+    decided: InfluenceAccount,
 ) {
     let account = survival;
     let outcome = match account {
@@ -320,7 +335,7 @@ fn record_survival(
         SurvivalAccount::Demoted(StaleCause::Poisoned { via_reach }) => via_reach,
         _ => None,
     };
-    spine.push_survival(SpineSurvival::minted(leaf, outcome, poisoned_by, world));
+    spine.push_survival(SpineSurvival::minted(leaf, outcome, poisoned_by, decided));
     if let SurvivalAccount::Demoted(cause) = account {
         spine.push_narrative(CollapseNarrative::new(
             SpeechAct::Derived,
@@ -581,6 +596,7 @@ fn one_round(
             aggregate_establishes: aggregate_establishes.as_ref(),
             // The per-SITE seat: the in-loop render floor binds a leaf decision exactly as before.
             universally_quantified_member: None,
+            world_account: inputs.world_account,
         });
         let disposition = decision.disposition;
         // `30K` §7 asks for a wall-formation account per effective mutation act; it is minted only
@@ -600,6 +616,7 @@ fn one_round(
             disposition,
             act: decision.act,
             survival: decision.survival,
+            account: decision.account,
         });
     }
     let regions = decide_regions(&RegionRound {
@@ -622,7 +639,7 @@ fn one_round(
             decisions,
             regions,
             walls,
-            minted_at: inputs.minted_at,
+            world_account: inputs.world_account,
         },
         classification,
         validity,
@@ -755,7 +772,7 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
                             .as_ref()
                             .map(|license| SharedGuard::of(license.canonical())),
                     ),
-                    round.inputs.minted_at,
+                    answer.account,
                 )
             })
             .collect();
@@ -769,6 +786,7 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
             disposition,
             routes: region_routes(cfg, round.leaf_of, routes),
             proofs,
+            account: decision.account(),
         });
     }
     decided
@@ -842,6 +860,9 @@ fn decide_one_route(
             guard: None,
             establish: None,
             verdict: dorc_core::Verdict::Unknown,
+            // EXACT, not a fallback: this route consulted nothing beyond where the run itself
+            // stands, so the run's account is the whole of its derivation.
+            account: round.inputs.world_account,
         };
     };
     let at = |states: &dorc_analysis::solve::Solution<ReachingWalls>| {
@@ -889,6 +910,7 @@ fn decide_one_route(
             accounts_survival: round.accounts_survival,
             aggregate_establishes: None,
             universally_quantified_member: member,
+            world_account: round.inputs.world_account,
         },
         argv,
     )
@@ -1430,22 +1452,20 @@ mod tests {
         }
     }
 
-    /// RED CELL (`306b:rul-influence-carried-by-entities`): the account a region's meet JOINED must
-    /// be the one its Spine record carries.
+    /// `306b:rul-influence-carried-by-entities`: the account a region's meet JOINED is the one its
+    /// Spine record carries.
     ///
-    /// The shape exercised: `write_spine`'s region arm, the one seat between
-    /// `region::decide_region`'s universal join and `SpineRegionDecision`. What it observes is
-    /// feature-off versus feature-on — today the arm writes a literal and the Spine's
-    /// object-global stamp decides every record's grade, so the meet's answer is computed and
-    /// discarded (`SharedRegionDecision::influence` has no reader, and `ProvisionalRegionDecision`
-    /// has no field); with the carriage threaded, the arm reads the decision's own account and a
-    /// route-level difference can reach the record at all.
+    /// The seat exercised is `write_spine`'s region arm, the one place between
+    /// `region::decide_region`'s universal join and `SpineRegionDecision`. Before the threading the
+    /// arm wrote a literal and the Spine's object-global stamp decided every record's grade, so the
+    /// meet's answer was computed and discarded — `SharedRegionDecision`'s join had no reader and
+    /// `ProvisionalRegionDecision` had no field to carry it.
     ///
-    /// Scanned rather than valued, on `only_the_universally_agreed_arm_retires_anything`'s
-    /// footing: the seat is private, its inputs are a whole `RegionRound`, and what is owed is
-    /// WHERE the account comes from, which no value-level assertion over a public API reaches. It
-    /// is the coarse half deliberately — the value half is
-    /// `p-x-spine-record-keeps-its-mints-account`, one level down, and the two green together.
+    /// Scanned rather than valued, on `only_the_universally_agreed_arm_retires_anything`'s footing:
+    /// the seat is private, its inputs are a whole `RegionRound`, and what is owed is WHERE the
+    /// account comes from — which no value-level assertion over a public API reaches. The value
+    /// half is `a_spine_record_keeps_the_account_its_mint_supplied`, one level down.
+    /// Promoted from `p-x-region-account-reaches-the-spine-record`.
     #[test]
     fn the_region_record_carries_the_account_its_meet_joined() {
         let source = include_str!("settle.rs");
@@ -1455,11 +1475,9 @@ mod tests {
             .and_then(|tail| tail.split("for decision in self.decisions").next())
             .expect("the region-writing arm of the settled Spine write")
             .to_owned();
-        internal_tooling::xfail::xfail_until("p-x-region-account-reaches-the-spine-record", || {
-            assert!(
-                arm.contains("region.account"),
-                "the region arm must write the account its own decision joined; found:\n{arm}"
-            );
-        });
+        assert!(
+            arm.contains("region.account"),
+            "the region arm must write the account its own decision joined; found:\n{arm}"
+        );
     }
 }

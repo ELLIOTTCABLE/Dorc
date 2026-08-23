@@ -309,18 +309,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-region-account-reaches-the-spine-record",
-        trigger: "`306b:rul-influence-carried-by-entities` + `30L:pin-influence-joins-most`: the \
-                  region meet already joins its routes' influence and `SharedRegionDecision` \
-                  exposes it, but the settlement's lowering never reads it and \
-                  `ProvisionalRegionDecision` has no field to carry it, so the value the meet \
-                  computed reaches no record — `write_spine`'s region arm writes a literal and the \
-                  Spine's object-global stamp overwrites that. Greens when the region account is \
-                  threaded from the meet to `SpineRegionDecision`",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-unenumerated-population-is-not-authored",
         trigger: "`306b:rul-untracked-is-not-authored`: an OPEN region population has routes the \
                   census could not enumerate, so their influence is unknown rather than absent — \
