@@ -467,6 +467,17 @@ raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
 
+[tasks."bless:case"]
+description = "The SCOPED re-bless: BLESS=1 over exactly the named cases, and nothing else. `bless` above verifies the WHOLE suite first and refuses while anything is red, which is right for a conductor's close and a deadlock for the one job this exists for — a change that legitimately moves a case's golden cannot bless it while that case is the red one. Same selection `test:e2e` takes (ONE bare substring, or any number of case PATHS), same runner, same gates, and the trial filter is what keeps every other golden byte-identical. Verify the scope yourself afterwards: `git status --short` must show only the cases you named. A case carrying `expected.emitted` is still refused here — that is `bless:floor`'s."
+dir = "spike"
+raw = true
+# The trailing `--` is load-bearing for the reason `test:e2e` records: without it mise's
+# passthrough lands on `cargo test`, whose own `[TESTNAME]` takes exactly one positional.
+run = "cargo test -p dorc-cli --test e2e --"
+
+[tasks."bless:case".env]
+BLESS = "1"
+
 [tasks."bless:floor"]
 description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floor case's `expected.emitted` — the manifest measured under dash AND posh, the transcript, and the book=<sha256> inside it, all written from one run, so nothing is hand-computed. Ordinary `bless` REFUSES such a case by design: expected.emitted is measure-once ground truth (the shells' own answer), never an engine render. Scope it to the case you are minting, exactly like `bless`. Refuses where the pair cannot be resolved — git's Windows userland ships no posh, so run this from WSL. Verifies with the full gate plus `test:floor` afterwards."
 raw = true
