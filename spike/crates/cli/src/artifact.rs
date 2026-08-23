@@ -278,6 +278,7 @@ pub struct ArtifactSet {
     fallback: Option<FormFallback>,
     primary: ArtifactFile,
     dependencies: Vec<ArtifactFile>,
+    account: dorc_core::influence::InfluenceAccount,
 }
 
 impl ArtifactSet {
@@ -285,6 +286,13 @@ impl ArtifactSet {
     #[must_use]
     pub const fn form(&self) -> ArtifactForm {
         self.form
+    }
+
+    /// Where this published product stands: the selection's own account JOINED with the plan's
+    /// (`Selection::with_plan`).
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.account
     }
 
     /// Why `auto` did not reach a more flattened form, where it did not.
@@ -936,12 +944,29 @@ impl Selection {
         dorc_plan::ArtifactEmission::of(&self.placements, self.imports.as_slice())
     }
 
-    /// Bind the settled form to the plan projection it describes.
+    /// Where this selection stands — RESTRICTED to authored-before-contact, and structurally so:
+    /// nothing here needs a probe, a host, or a rendered plan, which is the same property that
+    /// makes the refusal pre-network.
     #[must_use]
-    pub fn with_plan(self, plan_sh: String) -> ArtifactSet {
+    pub fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.emission().account()
+    }
+
+    /// Bind the settled form to the plan projection it describes.
+    ///
+    /// This is the JOIN seat: the artifact's bytes ARE the plan's, so the set stands wherever the
+    /// plan does, however pre-contact the form's own answers were
+    /// (`306b:rul-projections-continue-influence-flow`).
+    #[must_use]
+    pub fn with_plan(
+        self,
+        plan_sh: String,
+        plan_account: dorc_core::influence::InfluenceAccount,
+    ) -> ArtifactSet {
         ArtifactSet {
             form: self.form,
             fallback: self.fallback,
+            account: self.account().join(plan_account),
             primary: ArtifactFile {
                 path: PRIMARY_NAME.to_owned(),
                 bytes: plan_sh,
@@ -1134,8 +1159,12 @@ mod tests {
             "book.sh",
             "",
         );
-        select(&snapshot, &empty(), loads, request, posture)
-            .map(|selection| selection.with_plan(plan_sh.to_owned()))
+        select(&snapshot, &empty(), loads, request, posture).map(|selection| {
+            selection.with_plan(
+                plan_sh.to_owned(),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            )
+        })
     }
 
     /// A book load naming a root NO projection holds — so nothing can be composed for it, under any
@@ -1379,7 +1408,10 @@ mod tests {
             "an inexplicit operand is not ours to re-say: {:?}",
             multipart.imports()
         );
-        let published = multipart.with_plan(String::new());
+        let published = multipart.with_plan(
+            String::new(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
         assert_eq!(
             published
                 .dependencies()
@@ -1688,7 +1720,10 @@ mod tests {
             "the plan's import names the published bundle: {:?}",
             selection.imports()
         );
-        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let set = selection.with_plan(
+            "#!/bin/sh\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
         assert_eq!(paths, ["plan.sh", "wombat.oracle.dorc-bundle.sh"]);
         let dependency = &set.dependencies()[0].bytes;
@@ -1834,7 +1869,10 @@ mod tests {
         .expect("a dependency inside the load cwd is placeable");
         assert_eq!(selection.form(), ArtifactForm::Multipart);
         assert_eq!(selection.fallback(), None);
-        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let set = selection.with_plan(
+            "#!/bin/sh\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
         assert_eq!(
             paths,
@@ -1869,7 +1907,10 @@ mod tests {
             "the authored `.` already names the file at the path it lands on: {:?}",
             selection.imports()
         );
-        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let set = selection.with_plan(
+            "#!/bin/sh\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
         assert_eq!(
             paths,
@@ -2000,7 +2041,10 @@ mod tests {
             mirrored_tree.imports().is_empty(),
             "nothing is re-said, because a mirrored file needs no re-pointing"
         );
-        let set = mirrored_tree.with_plan("#!/bin/sh\n".to_owned());
+        let set = mirrored_tree.with_plan(
+            "#!/bin/sh\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
         assert_eq!(
             paths,
@@ -2037,7 +2081,10 @@ mod tests {
         )
         .expect("every dependency is inside the load cwd");
         assert_eq!(selection.form(), ArtifactForm::Multipart);
-        let set = selection.with_plan("#!/bin/sh\n".to_owned());
+        let set = selection.with_plan(
+            "#!/bin/sh\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
         let paths: Vec<&str> = set.files().map(|file| file.path.as_str()).collect();
         assert_eq!(
             paths,

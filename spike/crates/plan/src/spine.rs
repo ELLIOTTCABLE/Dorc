@@ -682,6 +682,7 @@ mod tests {
         assert_eq!(
             files,
             [
+                "cli/src/artifact.rs",
                 "cli/src/main.rs",
                 "cli/src/results.rs",
                 "cli/src/world.rs",
@@ -691,6 +692,7 @@ mod tests {
                 "plan/src/certifier_trip.rs",
                 "plan/src/erasability.rs",
                 "plan/src/lib.rs",
+                "plan/src/placement.rs",
                 "plan/src/region.rs",
                 "plan/src/spine.rs",
                 "plan/tests/erasability.rs",

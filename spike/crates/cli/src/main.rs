@@ -2340,7 +2340,8 @@ fn run(
     // ONE structure: the stream and the published tree both READ it, and there is deliberately no
     // second assembly to fall back to. rec-1 / ru-12 BYTE FLOOR holds inside it — `plan` and
     // `apply` emit byte-identical receipt-free bytes, and so does the round-trip's second block.
-    let artifact = form_selection.with_plan(plan.render_apply(&book_src, &parsed.value));
+    let artifact =
+        form_selection.with_plan(plan.render_apply(&book_src, &parsed.value), plan.account());
     print!("{}", artifact.primary().bytes);
 
     // `30Qe:fruit-emit-hygiene-paste-rules` (`KNOBS:kBOOT`) — the paste/splice-floor damage watch:

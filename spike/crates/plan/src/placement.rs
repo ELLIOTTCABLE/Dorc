@@ -151,13 +151,18 @@ impl PlacementReason {
 /// One placement question, answered: where the bytes stand, under what name, and which ladder
 /// condition decided it.
 ///
-/// A plain struct on purpose — `lane-influence-carriage` converts every stable semantic object to
-/// carry an influence account, and minting this one plain now is what lets that lane do it once.
+/// RESTRICTED to authored-before-contact (`30I:rul-load-decisions-are-authored-before-contact`):
+/// every input this decision reads — the load account, the definition vectors, the book's own
+/// names — is controller-supplied invocation material or operator-authored source text, all of it
+/// settled before the first host exchange. So the account is not a parameter: there is no value a
+/// caller could hand in, which is what makes the restriction a property of the type rather than a
+/// claim each caller re-asserts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlacementDecision {
     placement: Placement,
     naming: EmittedName,
     why: PlacementReason,
+    account: dorc_core::influence::InfluenceAccount,
 }
 
 impl PlacementDecision {
@@ -169,7 +174,14 @@ impl PlacementDecision {
             placement,
             naming,
             why,
+            account: dorc_core::influence::InfluenceAccount::authored_before_contact(),
         }
+    }
+
+    /// Where this decision stands. Always authored-before-contact, by the type's own restriction.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.account
     }
 
     /// Where the bytes stand.
@@ -241,6 +253,17 @@ impl PlacedSources {
     #[must_use]
     pub fn all_ambient() -> Self {
         Self::default()
+    }
+
+    /// Where this carriage account stands — the join over the placements it holds, which is
+    /// authored-before-contact by [`PlacementDecision`]'s own restriction and stays so over an
+    /// empty map (nothing placed is nothing host-shaped).
+    #[must_use]
+    pub fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.reached.values().flatten().fold(
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+            |joined, decision| joined.join(decision.account()),
+        )
     }
 
     /// Record where the artifact places one book-reached source.
@@ -381,6 +404,18 @@ impl<'a> ArtifactEmission<'a> {
     #[must_use]
     pub const fn imports(&self) -> &'a [crate::ImportEdit] {
         self.imports
+    }
+
+    /// Where this form's answers stand — the join over both halves, both of which are RESTRICTED
+    /// to authored-before-contact by their own types. It is what `Plan::decided` reads to satisfy
+    /// `306b:rul-consequential-sinks-require-influence` with no adapter.
+    #[must_use]
+    pub fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.imports
+            .iter()
+            .fold(self.placements.account(), |joined, import| {
+                joined.join(import.account())
+            })
     }
 }
 

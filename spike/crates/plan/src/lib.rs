@@ -2402,6 +2402,15 @@ impl ImportEdit {
         }
     }
 
+    /// Where this edit stands — RESTRICTED to authored-before-contact, and structurally so: an
+    /// import edit is settled from the load account and the book's own text before the plan exists,
+    /// which is why it can be an INPUT to `Plan::decided` at all
+    /// (`30I:rul-load-decisions-are-authored-before-contact`).
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        dorc_core::influence::InfluenceAccount::authored_before_contact()
+    }
+
     /// Which ladder condition decided this bundle's placement.
     #[must_use]
     pub const fn reason(&self) -> &PlacementReason {
@@ -2975,6 +2984,15 @@ fn verdict_fn_name(interner: &Interner, provider: Symbol) -> String {
 }
 
 impl ProbePlan {
+    /// Where this compiled probe stands — RESTRICTED to authored-before-contact, structurally: the
+    /// probe is compiled ONCE, from round 1, and is FROZEN thereafter
+    /// (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`), so it is settled strictly before
+    /// any host byte is read. What moves per round is a validity VIEW over it, never the plan.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        dorc_core::influence::InfluenceAccount::authored_before_contact()
+    }
+
     /// Attach classify's per-node give-up reasons to the un-resolvable sites
     /// ([`unresolvable_causes`](ProbePlan::unresolvable_causes)) — the DIAGNOSTICS-ONLY join, kept
     /// out of [`compile_probe`] because no compilation decision reads it and every caller but the
@@ -3265,6 +3283,13 @@ pub struct ResolverPlan {
 }
 
 impl ResolverPlan {
+    /// Where this compiled probe stands — RESTRICTED to authored-before-contact, on
+    /// [`ProbePlan::account`]'s reasoning: compiled before intake and frozen.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        dorc_core::influence::InfluenceAccount::authored_before_contact()
+    }
+
     /// Render the resolver-probe as read-only, self-reporting sh, APPENDED to the earlier probes in
     /// the SAME phase-1 block (no shebang). Each kind's stripped `<kind>__resolve` funcdef is emitted
     /// once (deduped, re-emitted on a body change — sh last-writer-wins), then invoked per COORDINATE
@@ -3332,6 +3357,13 @@ pub struct ReachPlan {
 }
 
 impl ReachPlan {
+    /// Where this compiled probe stands — RESTRICTED to authored-before-contact, on
+    /// [`ProbePlan::account`]'s reasoning: compiled before intake and frozen.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        dorc_core::influence::InfluenceAccount::authored_before_contact()
+    }
+
     /// Render the reach-probe as read-only, self-reporting sh, APPENDED to the earlier probes in the
     /// SAME phase-1 block (no shebang). Each per-arm wrapper is emitted once (deduped, re-emitted on a
     /// body change — sh last-writer-wins), then invoked per COORDINATE with the entity; its stdout is
@@ -3378,6 +3410,13 @@ fn touches_fn_name(interner: &Interner, provider: Symbol) -> String {
 }
 
 impl DerivationPlan {
+    /// Where this compiled probe stands — RESTRICTED to authored-before-contact, on
+    /// [`ProbePlan::account`]'s reasoning: compiled before intake and frozen.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        dorc_core::influence::InfluenceAccount::authored_before_contact()
+    }
+
     /// Render the derivation-probe as read-only, self-reporting sh, APPENDED to the convergence
     /// probe in the SAME phase-1 block (no shebang — the e2e shebang-split keeps it in phase-1).
     /// Each provider's stripped `<provider>__disturbs` funcdef is emitted once (deduped, re-emitted
