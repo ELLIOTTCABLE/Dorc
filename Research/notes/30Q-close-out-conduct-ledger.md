@@ -132,6 +132,28 @@ The only sound remedies are admin-sourced." — `30Q:ask-ship-explicit-targets-b
 is SETTLED: nothing shipped below a blind act; the retrofit's E2 stands as built; no further
 notes or churn on it.
 
+2026-08-23, RELAYED by the sibling session `r30-sit-blind-loads-unsoundness` (human-typed in
+that window; banked here as rulings for the influence EXECUTE — the EXECUTE ACK ITSELF is still
+owed as a line typed to THIS session): R10 `mode` — "fix it, I don't care how", not an
+opaque-review trigger (format, not content); (c) stays the lean · the durable account export is
+BUILT ALL THE WAY (View + writer + reader + e2es) then DISABLED behind one switch with those
+e2es swapped to xfails before lane-close; the human enables it post-review · "influence never
+decides whether a line elides" NACKED as law — true at v0 (no consumer), a future decision
+consumer is a typed human act (per-host contamination gating a revived cross-host planner is the
+strawman); never say "decision-inert by type" · the §6b exemption is a NARROW window:
+`InfluenceAccount::of_phase` is the ONE phase→account transition, caller-count fenced ·
+no gradation, and the fold report enumerates every `untracked` adapter seat (the discipline
+test's product) · no render change · per-host influence NOT built; `HostInfluenced` keeps the
+phase, its `()` payload reserved as the host-scope slot · no affine clean-of-host witness; a
+lexical fence on `authored_before_contact()` callers · load decisions: LEAN — move the
+`SpineLoadDecision` write pre-intake if cheap, else Authored DERIVED from funcenv inputs,
+reported as lean-applied · the `rul-rc-reaches-genkill-only-through-decisions` sentence is NOT
+struck; re-homed at the fold's steering edit to the sibling's TODO-ADDTL row
+`rc-vs-genkill-permanent-law` (uncommitted in the root checkout, the human's to commit) ·
+FLATTENING: post-reingest influence is report/why-plane only; durable ingestion never
+rehydrates an account into a decision; the why-driver's widen is the DEFINITION. All eleven are
+in the EXECUTE brief (scratchpad `brief-influence-execute.md`, rows R10–R11 added).
+
 ## §5c — SUCCESSOR SESSION (2026-08-22; supersedes §5b's and §5a's order)
 
 **Returns banked, UNADJUDICATED (held):** fold-repair `ai/r30-conduct-repair` @ `eae684b1`
