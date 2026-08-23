@@ -1624,7 +1624,6 @@ pub struct Spine<P: DecidePlane> {
     region_decisions: Vec<SpineRegionDecision<P>>,
     outcome: Option<SpineOutcome>,
     narratives: Vec<P::Narrative>,
-    stamp: InfluenceAccount,
 }
 
 impl<P: DecidePlane> Default for Spine<P> {
@@ -1647,7 +1646,6 @@ impl<P: DecidePlane> Default for Spine<P> {
             region_decisions: Vec::new(),
             outcome: None,
             narratives: Vec::new(),
-            stamp: InfluenceAccount::authored_before_contact(),
         }
     }
 }
@@ -1659,31 +1657,8 @@ impl<P: DecidePlane> Spine<P> {
         Self::default()
     }
 
-    /// An empty Spine whose records are all STAMPED with `account` (`309` §2 grade-stamping).
-    ///
-    /// INTERIM, and being removed: `309:rul-spine-preserves-never-stamps` rules that Spine stores
-    /// the account each record's own semantic mint joined and never applies an object-global one.
-    /// This still overwrites, so the sealing lands with today's answers unchanged; the overwrite is
-    /// what goes next, and the two red cells
-    /// (`p-x-spine-record-keeps-its-mints-account`, `p-x-region-account-reaches-the-spine-record`)
-    /// are what say so.
-    #[must_use]
-    pub fn minted_at(account: InfluenceAccount) -> Self {
-        Self {
-            stamp: account,
-            ..Self::default()
-        }
-    }
-
-    /// The account this Spine stamps over every record it stores. INTERIM, with `minted_at`.
-    #[must_use]
-    pub const fn stamp(&self) -> InfluenceAccount {
-        self.stamp
-    }
-
     /// Write the invocation record.
-    pub fn set_invocation(&mut self, mut record: SpineInvocation) {
-        record.account = self.stamp;
+    pub fn set_invocation(&mut self, record: SpineInvocation) {
         self.invocation = Some(record);
     }
 
@@ -1694,8 +1669,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the admitted record stream.
-    pub fn set_record_stream(&mut self, mut record: SpineRecordStream<P>) {
-        record.account = self.stamp;
+    pub fn set_record_stream(&mut self, record: SpineRecordStream<P>) {
         self.record_stream = Some(record);
     }
 
@@ -1706,8 +1680,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's licensed decision.
-    pub fn set_disposition(&mut self, mut record: SpineDisposition<P>) {
-        record.account = self.stamp;
+    pub fn set_disposition(&mut self, record: SpineDisposition<P>) {
         self.dispositions.insert(record.site, record);
     }
 
@@ -1768,8 +1741,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the decision digest.
-    pub fn set_digest(&mut self, mut record: SpineDigest) {
-        record.account = self.stamp;
+    pub fn set_digest(&mut self, record: SpineDigest) {
         self.digest = Some(record);
     }
 
@@ -1780,8 +1752,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the intake outcome.
-    pub fn set_admission(&mut self, mut record: SpineAdmission) {
-        record.account = self.stamp;
+    pub fn set_admission(&mut self, record: SpineAdmission) {
         self.admission = Some(record);
     }
 
@@ -1792,8 +1763,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the run outcome.
-    pub fn set_outcome(&mut self, mut record: SpineOutcome) {
-        record.account = self.stamp;
+    pub fn set_outcome(&mut self, record: SpineOutcome) {
         self.outcome = Some(record);
     }
 
@@ -1804,8 +1774,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a load-plane decision.
-    pub fn push_load_decision(&mut self, mut record: SpineLoadDecision) {
-        record.account = self.stamp;
+    pub fn push_load_decision(&mut self, record: SpineLoadDecision) {
         self.load_decisions.push(record);
     }
 
@@ -1816,8 +1785,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's classification.
-    pub fn set_classification(&mut self, mut record: SpineSiteClassification) {
-        record.account = self.stamp;
+    pub fn set_classification(&mut self, record: SpineSiteClassification) {
         self.classifications.insert(record.site, record);
     }
 
@@ -1827,8 +1795,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a solve certification.
-    pub fn push_certification(&mut self, mut record: SpineSolveCertification) {
-        record.account = self.stamp;
+    pub fn push_certification(&mut self, record: SpineSolveCertification) {
         self.certifications.push(record);
     }
 
@@ -1839,8 +1806,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a vouch record.
-    pub fn push_vouch(&mut self, mut record: SpineVouch) {
-        record.account = self.stamp;
+    pub fn push_vouch(&mut self, record: SpineVouch) {
         self.vouches.push(record);
     }
 
@@ -1851,8 +1817,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's ship decision.
-    pub fn set_ship(&mut self, mut record: SpineProbeShip) {
-        record.account = self.stamp;
+    pub fn set_ship(&mut self, record: SpineProbeShip) {
         self.ships.insert(record.site, record);
     }
 
@@ -1862,8 +1827,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write one site's observation.
-    pub fn set_observation(&mut self, mut record: SpineObservation) {
-        record.account = self.stamp;
+    pub fn set_observation(&mut self, record: SpineObservation) {
         self.observations.insert(record.site, record);
     }
 
@@ -1873,8 +1837,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a validity round.
-    pub fn push_round(&mut self, mut record: SpineValidityRound) {
-        record.account = self.stamp;
+    pub fn push_round(&mut self, record: SpineValidityRound) {
         self.rounds.push(record);
     }
 
@@ -1885,8 +1848,7 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a survival outcome.
-    pub fn push_survival(&mut self, mut record: SpineSurvival) {
-        record.account = self.stamp;
+    pub fn push_survival(&mut self, record: SpineSurvival) {
         self.survivals.push(record);
     }
 
@@ -1897,14 +1859,12 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Append a render-time decision.
-    pub fn push_render_decision(&mut self, mut record: SpineRenderDecision) {
-        record.account = self.stamp;
+    pub fn push_render_decision(&mut self, record: SpineRenderDecision) {
         self.render_decisions.push(record);
     }
 
     /// Append one authored region's shared decision.
-    pub fn push_region_decision(&mut self, mut record: SpineRegionDecision<P>) {
-        record.account = self.stamp;
+    pub fn push_region_decision(&mut self, record: SpineRegionDecision<P>) {
         self.region_decisions.push(record);
     }
 
@@ -1981,7 +1941,7 @@ impl<P: DecidePlane> Spine<P> {
         use std::fmt::Write as _;
 
         let mut out = String::new();
-        let _ = writeln!(out, "dorc-spine-new-arm stamp={}", self.stamp.label());
+        let _ = writeln!(out, "dorc-spine-new-arm");
         for species in SpineSpecies::ALL {
             if species.census_arm() != CensusArm::New {
                 continue;
@@ -1989,7 +1949,13 @@ impl<P: DecidePlane> Spine<P> {
             let _ = writeln!(out, "{} n={}", species.name(), self.population(species));
         }
         for record in &self.load_decisions {
-            let _ = writeln!(out, "  load {} withheld={:?}", record.name, record.withheld);
+            let _ = writeln!(
+                out,
+                "  load {} withheld={:?} account={}",
+                record.name,
+                record.withheld,
+                record.account.label()
+            );
         }
         for record in self.classifications.values() {
             let _ = writeln!(
@@ -2050,10 +2016,11 @@ impl<P: DecidePlane> Spine<P> {
         for record in &self.region_decisions {
             let _ = writeln!(
                 out,
-                "  region {:?} routes={} unkeyed={} {:?}",
+                "  region {:?} routes={} unkeyed={} account={} {:?}",
                 record.region,
                 record.routes.total(),
                 record.routes.unkeyed().len(),
+                record.account.label(),
                 record.decision
             );
         }
@@ -2184,16 +2151,17 @@ mod tests {
     }
 
     #[test]
-    fn the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it() {
-        // `309` §2 / `306c` §2, INTERIM: v0's flip is positional and global, so today the account
-        // belongs to the Spine a run builds and the setter overwrites whatever a mint supplied.
-        // That is exactly the behaviour `309:rul-spine-preserves-never-stamps` forbids and
-        // `p-x-spine-record-keeps-its-mints-account` pins red; this test records what the sealing
-        // step deliberately did NOT move, and is rewritten into its opposite when the stamp goes.
-        let phase =
-            crate::influence::Influenced::<crate::influence::HostReported, ()>::host_reported(())
-                .widen();
-        let mut spine = Spine::<TestPlane>::minted_at(InfluenceAccount::of_phase(phase));
+    fn the_spine_stores_the_account_a_mint_supplied_and_computes_none() {
+        // `309:rul-spine-preserves-never-stamps`. This test is the REWRITE of the one that pinned
+        // the opposite: the Spine used to hold a run-wide grade and every setter assigned it over
+        // whatever a mint supplied, which is what made a per-object account unobservable at the
+        // reader. There is no stamp to hand in any more — the two records below differ only in what
+        // their own constructors joined, and the Spine hands both back unchanged.
+        // WIDENED, never MINTED: the influence mint has exactly one caller in the workspace
+        // (`the_influence_grade_has_exactly_one_mint`), so a test that wants a phase marker builds
+        // one the free, one-way way rather than opening a second intake seat.
+        let phase = crate::influence::Influenced::authored_before_contact(()).widen();
+        let mut spine = Spine::<TestPlane>::new();
         spine.set_disposition(SpineDisposition::minted(
             SiteId::leaf(LeafId(0)),
             AstId(0),
@@ -2201,17 +2169,26 @@ mod tests {
             "Run",
             InfluenceAccount::authored_before_contact(),
         ));
+        spine.set_disposition(SpineDisposition::minted(
+            SiteId::leaf(LeafId(1)),
+            AstId(1),
+            String::new(),
+            "Run",
+            InfluenceAccount::of_phase(phase),
+        ));
         assert_eq!(
             spine
                 .disposition(SiteId::leaf(LeafId(0)))
                 .map(InfluenceBearing::account),
-            Some(InfluenceAccount::of_phase(phase)),
-            "the record wears the Spine's grade, not the one its mint site typed"
+            Some(InfluenceAccount::authored_before_contact()),
+            "a pre-contact decision must stop wearing a post-contact run's phase"
         );
         assert_eq!(
-            Spine::<TestPlane>::new().stamp(),
-            InfluenceAccount::authored_before_contact(),
-            "an intakeless Spine stays authored-before-contact"
+            spine
+                .disposition(SiteId::leaf(LeafId(1)))
+                .map(InfluenceBearing::account),
+            Some(InfluenceAccount::of_phase(phase)),
+            "and an influenced one keeps its own evidence, on the same Spine"
         );
     }
 

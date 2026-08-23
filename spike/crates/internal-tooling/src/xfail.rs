@@ -321,18 +321,6 @@ pub const PINS: &[Pin] = &[
         state: PinState::Live,
     },
     Pin {
-        name: "p-x-spine-record-keeps-its-mints-account",
-        trigger: "`309:rul-spine-preserves-never-stamps` + `306b:rul-semantic-mints-join-influence`: \
-                  every Spine setter overwrites the record's grade with one object-global scalar \
-                  handed to `Spine::minted_at`, so a mint's own answer cannot survive being \
-                  stored. Greens when the stamp is removed and each record arrives carrying the \
-                  account its own constructor joined — at which point `core::spine`'s \
-                  `the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it`, which pins the \
-                  forbidden behaviour, is REWRITTEN rather than left passing",
-        horizon: Horizon::Scheduled("end-of-r30"),
-        state: PinState::Live,
-    },
-    Pin {
         name: "p-x-unenumerated-population-is-not-authored",
         trigger: "`306b:rul-untracked-is-not-authored`: an OPEN region population has routes the \
                   census could not enumerate, so their influence is unknown rather than absent — \

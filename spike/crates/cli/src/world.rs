@@ -553,6 +553,7 @@ impl WhyWorld {
             form_selection.emission(),
             &dorc_plan::PlanAuthority::without_intake(),
             &spent,
+            crate::results::account_after_reaching_for_host_bytes(),
         );
         let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
         let narrative: Vec<CollapseNarrative> = classify_narrative
@@ -1343,6 +1344,7 @@ mod tests {
             dorc_plan::NO_ARTIFACT_FORM,
             &dorc_plan::PlanAuthority::without_intake(),
             spent,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 

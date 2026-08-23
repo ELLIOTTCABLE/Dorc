@@ -142,6 +142,7 @@ pub fn project_plan(
     emission: crate::ArtifactEmission<'_>,
     _authority: &PlanAuthority,
     _spent: &crate::certifier_trip::TripSpent,
+    world: dorc_core::influence::InfluenceAccount,
 ) -> Plan {
     let steps: Vec<Step> = spine
         .dispositions()
@@ -172,7 +173,7 @@ pub fn project_plan(
         src,
         ast,
     );
-    record_render_decisions(spine, &plan);
+    record_render_decisions(spine, &plan, world);
     plan
 }
 
@@ -232,10 +233,14 @@ pub fn project_survival_report(spine: &Spine) -> SurvivalReport {
 /// A refused REGION reaches a row on the species' REGION axis
 /// (`30N:rul-region-refusal-discloses-region-keyed`): the same record, keyed by the identity a
 /// region has, never by one of the invocations that share the edit.
-pub fn record_render_decisions(spine: &mut Spine, plan: &Plan) {
+pub fn record_render_decisions(
+    spine: &mut Spine,
+    plan: &Plan,
+    world: dorc_core::influence::InfluenceAccount,
+) {
     use dorc_core::spine::{RefusalCause, RenderDecision, SpineRenderDecision};
 
-    let decided = spine.stamp();
+    let decided = world;
     let pinned = plan.pinned_definitions();
     for step in plan.steps() {
         if let Some(invoked) = pinned.invoked(step.ast) {
@@ -405,7 +410,11 @@ mod tests {
         );
 
         let mut spine = Spine::new();
-        record_render_decisions(&mut spine, &plan);
+        record_render_decisions(
+            &mut spine,
+            &plan,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
 
         let binding = spine.render_decisions().iter().find(|record| {
             matches!(record.decision(), RenderDecision::PinnedBinding { .. })
@@ -500,21 +509,20 @@ mod tests {
         );
     }
 
-    /// RED CELL (`309:rul-spine-preserves-never-stamps`): a Spine STORES the account a record's own
-    /// semantic mint joined — it never computes one, never applies an object-global grade, and
-    /// never fills an absent field.
+    /// `309:rul-spine-preserves-never-stamps`: a Spine STORES the account a record's own semantic
+    /// mint joined — it never computes one, never applies an object-global grade, and never fills
+    /// an absent field.
     ///
-    /// The shape exercised: one record whose mint answered authored-before-contact, stored on a
-    /// Spine belonging to a run that read host bytes. Feature-off, every setter assigns the
-    /// run-wide scalar over whatever the mint supplied, so a per-object join is not merely absent
-    /// but unobservable — the two inputs are indistinguishable at the reader. Feature-on, the
-    /// record answers what its own constructor joined, which is what lets a pre-contact decision
-    /// stop wearing a post-contact run's phase
+    /// The shape exercised: two records on ONE Spine belonging to a run that read host bytes, whose
+    /// mints answered differently. Before the stamp went, every setter assigned the run-wide scalar
+    /// over whatever the mint supplied, so a per-object account was not merely absent but
+    /// unobservable — the two inputs were indistinguishable at the reader. What it buys is that a
+    /// pre-contact decision stops wearing a post-contact run's phase
     /// (`30I:rul-load-decisions-are-authored-before-contact`).
     ///
-    /// `core::spine`'s `the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it` pins the
-    /// FORBIDDEN behaviour and is this cell's direct contradiction: it is rewritten when this
-    /// greens, never left passing beside it.
+    /// Promoted from `p-x-spine-record-keeps-its-mints-account`; `core::spine`'s
+    /// `the_spine_stamps_the_grade_so_a_mint_site_cannot_forget_it` pinned the forbidden behaviour
+    /// and was rewritten into its opposite in the same commit rather than left passing beside this.
     #[test]
     fn a_spine_record_keeps_the_account_its_mint_supplied() {
         use dorc_core::influence::{InfluenceAccount, Influenced};
@@ -522,25 +530,28 @@ mod tests {
         use dorc_core::{AstId, LeafId, SiteId};
 
         let phase = Influenced::authored_before_contact(()).widen();
-        let mut spine = Spine::minted_at(InfluenceAccount::of_phase(phase));
-        spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
-            SiteId::leaf(LeafId(0)),
-            AstId(0),
-            String::new(),
-            Disposition::Run,
-            InfluenceAccount::authored_before_contact(),
-        ));
-        let stored = spine
-            .disposition(SiteId::leaf(LeafId(0)))
-            .expect("the record was stored")
-            .account();
-        internal_tooling::xfail::xfail_until("p-x-spine-record-keeps-its-mints-account", || {
-            assert_eq!(
-                stored,
+        let mut spine = Spine::new();
+        for (leaf, account) in [
+            (LeafId(0), InfluenceAccount::authored_before_contact()),
+            (LeafId(1), InfluenceAccount::of_phase(phase)),
+        ] {
+            spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+                SiteId::leaf(leaf),
+                AstId(leaf.0),
+                String::new(),
+                Disposition::Run,
+                account,
+            ));
+        }
+        let stored: Vec<InfluenceAccount> = spine.dispositions().map(|r| r.account()).collect();
+        assert_eq!(
+            stored,
+            [
                 InfluenceAccount::authored_before_contact(),
-                "the record must answer what its own mint joined, not the run's global phase"
-            );
-        });
+                InfluenceAccount::of_phase(phase)
+            ],
+            "each record must answer what its own mint joined, not one run-wide phase"
+        );
     }
 
     /// Every workspace source naming `needle`, as `crate/dir/file.rs x<count>`, sorted, EXCLUDING
@@ -662,6 +673,7 @@ mod tests {
                 "plan/src/region.rs",
                 "plan/src/spine.rs",
                 "plan/tests/region.rs",
+                "plan/tests/render_corpus.rs",
                 "sweep/src/drive.rs",
             ],
             "a new authored claim is a design act; found {claimants:?}"

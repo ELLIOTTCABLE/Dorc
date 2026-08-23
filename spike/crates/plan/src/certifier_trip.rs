@@ -200,7 +200,15 @@ pub fn project_censusless(
     witness: dorc_core::influence::InfluenceAccount,
 ) -> Plan {
     let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false, witness);
-    crate::project_plan(spine, src, ast, crate::NO_ARTIFACT_FORM, authority, &spent)
+    crate::project_plan(
+        spine,
+        src,
+        ast,
+        crate::NO_ARTIFACT_FORM,
+        authority,
+        &spent,
+        witness,
+    )
 }
 
 #[cfg(test)]
@@ -446,6 +454,7 @@ apt_get__predict() {
             crate::NO_ARTIFACT_FORM,
             &crate::PlanAuthority::without_intake(),
             spent,
+            InfluenceAccount::authored_before_contact(),
         )
     }
 

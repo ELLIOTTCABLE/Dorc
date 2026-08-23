@@ -2080,9 +2080,11 @@ mod tests {
                 } else if path.extension().is_some_and(|extension| extension == "rs") {
                     scanned = scanned.saturating_add(1);
                     let source = std::fs::read_to_string(&path).unwrap_or_default();
-                    if source.contains("Influenced::host_reported(")
-                        || source.contains("::<HostReported, ()>::host_reported(")
-                    {
+                    // The BARE call spelling, so no qualified path slips it: the two-needle form
+                    // this replaces missed `Influenced::<crate::influence::HostReported, ()>::…`,
+                    // which really did sit in `core::spine` for a while
+                    // (`30Qd:fnd-one-mint-fence-misses-a-qualified-spelling`).
+                    if source.contains("host_reported(") {
                         minters.push(path.display().to_string().replace('\\', "/"));
                     }
                 }

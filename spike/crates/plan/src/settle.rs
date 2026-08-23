@@ -250,7 +250,7 @@ impl SettledEffectiveAnalysis {
     #[must_use]
     pub fn write_spine(self) -> Spine {
         let world = self.minted_at;
-        let mut spine = Spine::minted_at(world);
+        let mut spine = Spine::new();
         for (leaf, region) in self.walls {
             spine.push_narrative(CollapseNarrative::new(
                 SpeechAct::Derived,
