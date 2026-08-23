@@ -1404,9 +1404,8 @@ fn node_effects(
     if cfg.call_body_sites(id).is_some() {
         return vec![CommandEffect::Pure];
     }
-    // `30L` §7: a spliced body site under a member-closed loop gens EVERY member's cell, the
-    // `EstablishMembers` shape one level up. The loop really does establish all of them at this one
-    // lowered node, and saying less would under-approximate the world for everything downstream.
+    // The loop really does establish every member's cell at this one lowered node, and saying less
+    // would under-approximate the world for everything downstream (the `EstablishMembers` shape).
     if let Some(members) = spliced {
         if let Some(measurement) = &members.measurement {
             verdict_lane.insert(id, measurement.clone());
@@ -2269,9 +2268,8 @@ pub fn classify_with_why_diags(
             &self_reached,
         )
     };
-    // `30L` §7: ONE member's class at a spliced body site. Falls back to the node's own class where
-    // the member seat resolved nothing, so a body site that ignores the call's operands (a literal
-    // mutator, a query) answers the same thing at every member rather than dropping out.
+    // ONE member's class. The fallback keeps a body site that ignores the call's operands (a
+    // literal mutator, a query) answering the same thing at every member rather than dropping out.
     let classify_member = |i: usize, member: usize| -> SkipClass {
         let (Some(state), Some(&site_reachable)) = (reach.states.get(i), reachable.get(i)) else {
             return SkipClass::MustRun;
@@ -2353,11 +2351,9 @@ pub fn classify_with_why_diags(
             {
                 kills.insert(id);
             }
-            // `30L` §7 — MEMBER-MAJOR, and that ordering is an obligation rather than a taste: an
-            // in-loop inlined call already ships `site N.M` records today, so member 0's body-site
-            // indices ARE the whole non-loop numbering and every later member appends
-            // (`30L:pin-probe-site-identity-unchanged`). A site-major flattening would renumber
-            // every record the corpus has already committed.
+            // MEMBER-MAJOR, an obligation rather than a taste: an in-loop call already ships
+            // `site N.M` today, so member 0's indices ARE the non-loop numbering and every later
+            // member appends. Site-major would renumber every committed record.
             let sites = match crate::cfg::loop_evaluations(ast, cfg, id) {
                 crate::cfg::LoopEvaluations::Members(members) => {
                     let mut per_member =

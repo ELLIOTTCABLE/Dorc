@@ -1833,10 +1833,8 @@ pub fn build_vouches_from_sets(
     let mut vouches = Vouches::new();
     // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
     // `VerdictDecline` keys by the site a report-lane record re-keys to (pinned by the leaf-index test).
-    // Each candidate carries the argv it is a candidate FOR. An inline body site under a
-    // member-closed loop (`30L` §7) has one per member, and the node's own single entry is ⊤ at
-    // every operand the call varies — so a seat that re-derived the argv from the node would
-    // withhold the vouch for exactly the population the region licence needs.
+    // Each candidate carries the argv it is a candidate FOR: a seat that re-derived it from the
+    // node would read the ⊤ single entry and withhold every member's vouch (`30L` §7).
     let candidates: Vec<(usize, CfgNodeId, FactKey, bool, Vec<ValueOf>)> = classes
         .iter()
         .enumerate()
@@ -4068,11 +4066,12 @@ fn push_member_checks(
 }
 
 /// The argv ONE `InlineSite` entry answers for: its member's own where the call's loop is
-/// member-closed (`30L` §7), the ordinary positional-bound one otherwise.
+/// member-closed (`30L` §7), the ordinary positional-bound one (`i-2`) otherwise.
 ///
-/// One seat, three callers (the probe ship, the vouch lift, the region's guard economics), because
-/// a seat that read the node's single argv for a member would resolve ⊤ and withhold — silently,
-/// and differently at each of them.
+/// One seat, two callers (the probe ship and the vouch lift), because a seat that read the node's
+/// single argv for a member would resolve ⊤ and withhold — silently, and differently at each. The
+/// node's single entry binds `$1` from the loop variable's JOIN, so it is ⊤ at exactly the operands
+/// the call varies, which is the whole population the region licence needs.
 fn member_argv(value: &ValueFlow, site: &InlineSite) -> Vec<ValueOf> {
     site.member
         .and_then(|member| value.spliced_member_argv(site.node)?.get(member as usize))
@@ -4111,11 +4110,9 @@ fn push_inline_checks(
         && establishes
             .iter()
             .all(|(node, fact)| is_vouched(*node, *fact));
-    // The ordered establish population of ONE lowered body node. Under a member-closed loop that is
-    // every member's cell, in member order — the SAME subject vector the effect plane keyed the
-    // node's verdict measurement to, which the verdict ship seat compares against exactly
-    // (`30La`: an incomplete population cannot ship reached verdict bodies). Outside a loop the
-    // node has one entry and this is byte-identically today's `&[fact]`.
+    // One lowered body node's ordered establish population — the SAME subject vector the effect
+    // plane keyed its verdict measurement to, which the verdict ship seat compares exactly (`30La`).
+    // Outside a loop the node has one entry, byte-identically today's `&[fact]`.
     let node_subjects = |node: CfgNodeId| -> Vec<FactKey> {
         sites
             .iter()
@@ -4131,11 +4128,6 @@ fn push_inline_checks(
     let mut staged = Vec::new();
     for (idx, body) in sites.iter().enumerate() {
         let member = Some(u32::try_from(idx).unwrap_or(u32::MAX));
-        // The spliced body site's argv, resolved with the call's positionals bound (`i-2`;
-        // [`ValueFlow::argv_values`] returns the positional-bound form for a body node) — or, under
-        // a member-closed loop (`30L` §7), THIS member's own (`spliced_member_argv`). The single
-        // entry there is bound from the loop variable's JOIN, so it is ⊤ at every operand the call
-        // varies: reading it for a member would ship no check at all.
         let body_argv = member_argv(value, body);
         match &body.class {
             SkipClass::EstablishProbeAmbient(fact) | SkipClass::EstablishProbeWritten(fact) => {

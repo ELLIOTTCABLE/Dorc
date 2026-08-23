@@ -576,9 +576,7 @@ fn one_round(
             invalidator: owns_invalidator,
             accounts_survival,
             aggregate_establishes: aggregate_establishes.as_ref(),
-            // The per-SITE seat. A leaf decision is one line's own conclusion and the in-loop
-            // render floor binds it exactly as before (`30L` §7 lifts the floor for REGION routes,
-            // and only those).
+            // The per-SITE seat: the in-loop render floor binds a leaf decision exactly as before.
             universally_quantified_member: None,
         });
         let disposition = decision.disposition;
@@ -696,11 +694,9 @@ fn decide_regions(round: &RegionRound<'_>) -> Vec<ProvisionalRegionDecision> {
     let (ast, cfg, src) = (round.inputs.ast, round.inputs.cfg, round.inputs.src);
     // A spliced body site is not a plan leaf, so its class lives inside its owning CALL's aggregate.
     //
-    // Keyed by `(node, member)`, because N evaluations of one lowered node are N entries and a
-    // node-keyed map collapses them to whichever came LAST — one member's facts answering for every
-    // route, which is a universal meet that asked one question (`30L` §7). The member half is the
-    // route's own `IterationSlot::member()`, so a `NotIterated` route finds only a member-less
-    // entry and a member route finds only its own.
+    // Keyed by `(node, member)`: a node-keyed map collapses N evaluations to whichever came LAST,
+    // which is a universal meet that asked one question (`30L` §7). The member half is the route's
+    // own `IterationSlot::member()`, so neither kind of route can answer from the other's facts.
     let body_class: BTreeMap<(CfgNodeId, Option<u32>), &SkipClass> = round
         .classification
         .classes
