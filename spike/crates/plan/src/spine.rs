@@ -565,7 +565,10 @@ mod tests {
                 account,
             ));
         }
-        let stored: Vec<InfluenceAccount> = spine.dispositions().map(|r| r.account()).collect();
+        let stored: Vec<InfluenceAccount> = spine
+            .dispositions()
+            .map(InfluenceBearing::account)
+            .collect();
         assert_eq!(
             stored,
             [
@@ -599,7 +602,7 @@ mod tests {
                     stack.push(path);
                     continue;
                 }
-                if !path.extension().is_some_and(|ext| ext == "rs") {
+                if path.extension().is_none_or(|ext| ext != "rs") {
                     continue;
                 }
                 walked += 1;

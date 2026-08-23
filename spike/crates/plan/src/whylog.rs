@@ -996,26 +996,7 @@ pub fn try_serialize_v2(
     )?;
     retain_metadata(&mut retained, &doc.decision_digest, limits)?;
     write_instants(&mut out, &doc.instants, limits)?;
-    for apply in &doc.apply {
-        retain_metadata(&mut retained, &apply.disposition, limits)?;
-        // The gate, spelled once on the WRITE side: switched off, the row's bytes are exactly what
-        // they were before the account existed.
-        let account = if ACCOUNT_EXPORT {
-            format!(" account={}", apply.account.label())
-        } else {
-            String::new()
-        };
-        write_v2_line(
-            &mut out,
-            format!(
-                "apply leaf={} disposition={} predicted={}{account} {TERMINAL_TOKEN}",
-                apply.leaf,
-                apply.disposition,
-                u8::from(apply.predicted)
-            ),
-            limits,
-        )?;
-    }
+    write_apply_rows(&mut out, &mut retained, &doc.apply, limits)?;
     write_v2_line(
         &mut out,
         format!("results bytes={} {TERMINAL_TOKEN}", results.len()),
@@ -1356,6 +1337,39 @@ fn parse_v2_apply(line: &str, limits: WhylogLimits) -> Option<(u32, &str, bool, 
         predicted,
         account,
     ))
+}
+
+/// Write the predicted apply rows — and, when [`ACCOUNT_EXPORT`] is on, each row's account beside
+/// its disposition.
+///
+/// The gate is spelled ONCE, here, on the write side. Switched off, a row's bytes are exactly what
+/// they were before the account existed, which is what lets the byte-identity gate prove the export
+/// is inert rather than merely believed to be.
+fn write_apply_rows(
+    out: &mut Vec<u8>,
+    retained: &mut usize,
+    apply: &[ApplyLine],
+    limits: WhylogLimits,
+) -> Result<(), WhylogWriteRefusal> {
+    for row in apply {
+        retain_metadata(retained, &row.disposition, limits)?;
+        let account = if ACCOUNT_EXPORT {
+            format!(" account={}", row.account.label())
+        } else {
+            String::new()
+        };
+        write_v2_line(
+            out,
+            format!(
+                "apply leaf={} disposition={} predicted={}{account} {TERMINAL_TOKEN}",
+                row.leaf,
+                row.disposition,
+                u8::from(row.predicted)
+            ),
+            limits,
+        )?;
+    }
+    Ok(())
 }
 
 /// Write the per-record arrival instants, refusing a repeated or out-of-order ordinal before any

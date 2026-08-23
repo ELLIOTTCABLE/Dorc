@@ -117,7 +117,7 @@ pub fn demote_on_trip(
         Disposition::Guard(license) => census_unique(license.insert().fn_name()),
         Disposition::Replace(..) | Disposition::Omit { .. } => false,
     };
-    let demoted_sites = spine.demote_dispositions(witness, &stands, &Disposition::Run);
+    let demoted_sites = spine.demote_dispositions(witness, stands, &Disposition::Run);
     for site in &demoted_sites {
         out.demoted = out.demoted.saturating_add(1);
         out.narrative.push(CollapseNarrative::new(
@@ -128,7 +128,7 @@ pub fn demote_on_trip(
             },
         ));
     }
-    for routes in spine.demote_region_decisions(witness, &stands, &Disposition::Run) {
+    for routes in spine.demote_region_decisions(witness, stands, &Disposition::Run) {
         out.demoted = out.demoted.saturating_add(1);
         for route in routes.keyed() {
             out.narrative.push(CollapseNarrative::new(
@@ -396,7 +396,7 @@ apt_get__predict() {
                     a_vouch(fn_name, "body"),
                     Verdict::Converged,
                     &dorc_analysis::lattice::May(dorc_analysis::lattice::Powerset::default()),
-                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
+                    InfluenceAccount::authored_before_contact(),
                 )
                 .expect("a converged probe verdict mints a guard"),
             ),

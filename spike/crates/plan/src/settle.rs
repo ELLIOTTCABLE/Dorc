@@ -199,7 +199,6 @@ pub struct SettledEffectiveAnalysis {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
-    world_account: InfluenceAccount,
 }
 
 /// One round's decisions, before quiescence is known. Deliberately without a Spine, Plan, render,
@@ -209,7 +208,6 @@ pub struct ProvisionalEffectiveRound {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
-    world_account: InfluenceAccount,
 }
 
 /// The cap path intentionally discards every no-execution proof and seals the maximal-effects
@@ -241,7 +239,6 @@ impl ProvisionalEffectiveRound {
             decisions: self.decisions,
             regions: self.regions,
             walls: self.walls,
-            world_account: self.world_account,
         }
     }
 
@@ -250,7 +247,6 @@ impl ProvisionalEffectiveRound {
             decisions: self.decisions,
             regions: self.regions,
             walls: self.walls,
-            world_account: self.world_account,
         }
     }
 }
@@ -639,7 +635,6 @@ fn one_round(
             decisions,
             regions,
             walls,
-            world_account: inputs.world_account,
         },
         classification,
         validity,
