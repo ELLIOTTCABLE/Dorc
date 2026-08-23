@@ -1,4 +1,3 @@
 #!/bin/sh
 . "${0%/*}/.log"; _dorc_logged "$@"
-case ${3-} in curl) exit 1 ;; esac
 exit 0

@@ -1,0 +1,4 @@
+ran: apt-get install -y libnginx
+ran: aptcheck -q -- nginx
+ran: apt-get install -y libcurl
+ran: aptcheck -q -- curl

@@ -10,8 +10,15 @@
 #
 # The two `site N.M` sub-indices mean different populations at the two leaves — member index at
 # leaf 0, member-major (body-site, member) at leaf 1 — and they must not collide or double-count.
-# The four cells are disjoint (`lib*` versus bare), so the direct mutator's own erasure is what
-# clears the wall its establishes would otherwise cast over the call across the back-edge.
+#
+# MEASURED, and what makes this case earn its keep: the direct mutator RUNS, although all four
+# cells are converged and the two families are disjoint (`lib*` versus bare). The r21 lane's
+# self-reach gate is `Reach::is_pristine` — "nothing at all reached me", which is cell-BLIND — and
+# the region's own per-member establishes reach it back over the loop's edge, so disjointness buys
+# nothing there. Its running establishes then wall the region, which takes the GUARD tier instead
+# of Replace. The member axis still reaches a licence: the parametric check re-decides per
+# iteration, inside sh, in the author's own bytes — and without the route-aware floor this region
+# would simply run.
 install_pkg() {
    apt-get install -y "$1"
 }

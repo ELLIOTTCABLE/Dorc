@@ -1,1 +1,46 @@
-PLACEHOLDER: this case is XFAIL; its transcript is minted at promotion.
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=4cad2ea920b36d426544728c7afadddc4e83e17ea15cbfd4b4492e8fda35d357 sites=2 @@dorc@@\n'
+# site 0.0: sm.dorc.Package:nginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 0.1: sm.dorc.Package:nginx@installed
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# NO-DEDUP, HONOURED CONSERVATIVELY. `for x in a a` is TWO evaluations — dash iterates the list,
+# not a set — so the census mints two member routes and never one (`30N` section 2, the `20S`
+# member commitments).
+#
+# CFG shape: a top-level `for` over two IDENTICAL literal words; its body holds one call; the
+# spliced body holds one command leaf. One region, one lowered `cfg_node`, two member routes.
+#
+# Both members resolve `$1` to the same operand, so both establish ONE cell at ONE site. The
+# aggregate identity is the exact ordered `(site, fact)` population and it rejects duplicates, so
+# the whole region takes the run floor rather than erasing two executions against one vouched
+# establish (`rul-every-erased-establish-is-vouched`: identity- AND cardinality-matched). This is
+# a deliberate value forfeit in a shape that has no per-member variation to lose, and it is the
+# safe direction — the alternative is a proof identity that cannot count its own executions.
+install_pkg() {
+   apt-get install -y "$1"
+}
+
+for pkg in nginx nginx; do
+   install_pkg "$pkg"
+done

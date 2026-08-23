@@ -1,1 +1,73 @@
-PLACEHOLDER: this case is XFAIL; its transcript is minted at promotion.
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a4ac5fb591738feaba2a75a366300f879adff500343ad1540be3bd6ea7176ff2 sites=4 @@dorc@@\n'
+# site 0.0: sm.dorc.Package:libnginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'libnginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 0.1: sm.dorc.Package:libcurl@installed
+apt_get__is_converged 'install' '-y' 'libcurl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1.0: sm.dorc.Package:nginx@installed
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1.1: sm.dorc.Package:curl@installed
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1.1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+# TWO MECHANISMS, ONE LOOP BODY. A mutating command written DIRECTLY in the body and a CALL whose
+# spliced body mutates are different syntactic shapes with different machinery, and this book puts
+# them side by side so neither can quietly answer for the other.
+#
+# CFG shape: a top-level `for` over two literal words; its body holds one direct command leaf AND
+# one call whose spliced body holds one command leaf. Two plan leaves; the first takes the r21
+# per-member aggregate lane (its argv references the loop variable), the second takes the region
+# lane (its region is the definition's body, and the member axis is an overlay on one node).
+#
+# The two `site N.M` sub-indices mean different populations at the two leaves — member index at
+# leaf 0, member-major (body-site, member) at leaf 1 — and they must not collide or double-count.
+#
+# MEASURED, and what makes this case earn its keep: the direct mutator RUNS, although all four
+# cells are converged and the two families are disjoint (`lib*` versus bare). The r21 lane's
+# self-reach gate is `Reach::is_pristine` — "nothing at all reached me", which is cell-BLIND — and
+# the region's own per-member establishes reach it back over the loop's edge, so disjointness buys
+# nothing there. Its running establishes then wall the region, which takes the GUARD tier instead
+# of Replace. The member axis still reaches a licence: the parametric check re-decides per
+# iteration, inside sh, in the author's own bytes — and without the route-aware floor this region
+# would simply run.
+install_pkg() {
+   ( apt_get__is_converged install -y "$1" ) || apt-get install -y "$1"   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
+}
+
+for pkg in nginx curl; do
+   apt-get install -y "lib$pkg"
+   install_pkg "$pkg"
+done

@@ -1,5 +1,0 @@
-XFAIL: the authored records are the TARGET shape — one per member. Today the call ships a single
-body-site record with no member axis, so gate 1 diverges. The apply run-set is already the target
-(both executions run, because the duplicate `(site, fact)` pair refuses the aggregate), which is
-what makes this the negative control: only the record population and the transcript move. Greens
-with the loop member-region licence (horizon end-of-r30).

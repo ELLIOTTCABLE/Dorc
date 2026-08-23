@@ -1,3 +1,0 @@
-XFAIL: the census closes the member population, but the licence is unbuilt — `region_guard_candidate`
-refuses any in-loop node outright, so no route admits the parametric guard and the region runs both
-iterations unguarded. Greens with the loop member-region licence (horizon end-of-r30).
