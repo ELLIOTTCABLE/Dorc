@@ -757,3 +757,207 @@ before 8 because 8 creates new havoc sites.
 - Everyone: `load31-punted-load-shapes`'s `expected.ran` is NOT being compared today
   (`fnd-plain-sh-dies-on-the-host`). Do not read it as an assertion until the case's structural
   gates pass.
+
+## §execute-a
+
+> Tier: builder lane report (Opus, EXECUTE-A half; branch `ai/r30-lane-load-a`, base `d2b47654`).
+> Grades: +SURE / ~SUSPECT / -GUESS. §map is not edited; this appends what was BUILT against it.
+
+### what-landed — the commit series, in §map's order
+
+`98e7bc73` `ParamOp` decode (lexer + AST + the four consumers), with ruling 8's `{}`-balancing fix
+folded in (same function; inseparable from the rewrite) · `41f7455b` `ScriptSpellings` on
+`DefinitionTable` · `6d9cf5a8` the operand evaluator (`OperandAnswer`/`HavocCause`/`load_head`),
+`load_sites` as THE resolver the transfer reads · `95517ad6`+`166292fe` the two lint codes, their
+defining cases, the lock · `1469f798` the conductor's mid-lane `Explicitness` rider ·
+`e536595e` the e2e needle case · `7f1285a2` a flake repair (below) · `7a7fc18f` D1 pointwise havoc ·
+`a9ea60df` D2 cwd clobbers · `b937462f` D3 errexit · `9213ad4e`+`a118bef8` the parse-tier move,
+`EXIT_LOAD_UNRESOLVABLE`, `computed-source-operand` · `2b53a18b` ruling 6's new red.
+
+Every step independently green; no existing golden moved (one tried to — see
+`fnd-errexit-coarse-rule-cost-a-guard`).
+
+### fnd-frames-are-subshell-scopes — the CONFIRM ruling 1 demanded
+
++SURE, read from the lowering rather than inferred. `cfg::lower_scoped` is the ONLY producer of
+`ScopeEnter`/`ScopeExit` (subshell `( )` and `$( )` bodies), and `splice_funcdef_body` adds no
+scope node. So `EnvStack` frames are SUBSHELL scopes, a `.` inside a called function's spliced body
+binds into the caller's own frame and survives the return, and a `.` inside `( … )` dies at the
+paren — sh, for free. The three cells the ruling names are one test,
+`the_havoc_dies_at_a_paren_and_survives_a_return` (`cli/tests/sh_parity.rs`). The two
+anti-regression greens named in ruling 1 are UNMOVED and still green:
+`a_name_bound_only_before_an_unknown_source_is_withheld_after_it` ·
+`an_unknown_source_keeps_defensive_emission_and_its_wall`.
+
+The third cell is the LICENSING WIDENING it was called out as: before this lane the absorbing ⊤
+survived `ScopeExit`'s pop, so a `.` inside a subshell poisoned the rest of the book.
+
+### dev-prelude-floor-keeps-the-absorbing-top — OPEN
+
+The pointwise havoc lands at the ONE seat `fnd-top-is-absorbing-not-pointwise` named
+(`command_transfer`'s `.` arm). The nested-load arm inside `run_control` — a `.` a LOAD PROGRAM
+spells — deliberately keeps `EnvStack::Top`. Making it pointwise too flips
+`an_unresolvable_prelude_load_floors_the_rest_of_the_prelude`, i.e. retires the `30Mg` R1 prelude
+floor and lets a LATER prelude root's bindings license sites. That is a licensure widening past the
+book-plane cell `30P:principle-unknown-source-is-a-point-havoc` states, and it is owed a ruling
+rather than taken in passing. Recorded in the code at the arm.
+
+### fnd-errexit-coarse-rule-cost-a-guard — why D3 is lexical
+
+D3 wants "a `.` whose target is not a closed load-inert program". The CFG is built BEFORE anything
+is loaded — the acquisition that loads is driven by this graph — so that predicate is unavailable
+at the seat. Measured, in order: the coarse form (EVERY `.` ⇒ ⊤) moved an EXISTING golden,
+`emit30-multipart-publishes-its-dependency`, which LOST its guard preamble; the lexical form (a `.`
+whose operand is not a fixed literal ⇒ ⊤) greens the pin, moves no golden, and leaves a resolvable
+dorc-lang package alone. The residue: a LITERAL operand naming a file the controller never read
+gets no failure-edge. Its bindings havoc through the load plane either way; what is lost is
+confined to the state AT the unit's exit, where a site-keyed act does not read.
+
+Second-order cost, worth the conductor's eye: the errexit edges make `cfg.exit()` join the
+abort-paths, so `funcenv::unprovable` withholds MORE. One unit cell moved with it
+(`a_package_may_remove_a_binding`), re-pointed from `cfg.exit()` to its own SITE — which is where
+`visibility-is-full-positional` puts every consuming act anyway.
+
+### fnd-an-evaluated-head-was-already-being-rewritten — for the planner/EXECUTE-B fold
+
++SURE, observed. The rider's hazard is REAL and live: with `${0%/*}` resolving, `artifact.rs`'s
+`inline_imports` absorbed the `.` line of the new e2e case `load30-script-relative-lints` into the
+bundle — a rewrite of a line whose target the author never spelled, which
+`30P:rul-rewrite-permission-is-derived` forbids. Its committed golden RECORDS today's behaviour; it
+should churn when the fold lands the filter. The marker to read is
+`funcenv::ResolvedHead::explicitness()` on every entry of `FuncEnv::resolved_loads()`.
+
+`Explicitness::{Literal, Evaluated}` — name argued: the ruling's own word, no corpus overload; the
+near alternatives all collide (`spelling` is taken in this very module by `ScriptSpellings`,
+`provenance` is the derivation DAG, `grade` is claim-tier). RESIDUE: `Literal` is set wherever
+`SourceLiteralPlane::literal_text` answers, which includes a positional the value plane overlaid
+under splicing (`. "$1"` in an inlined body). That is the conductor's own spelling of the rule
+("a plain literal word or a literal-assigned book-set root"), and the sharper test would deny the
+ruling's literal-assigned-root clause.
+
+The companion `ANALYZER-NEEDS:an-load-exactness-reads-binding-state`: D2 covers the `cd` and the
+havoc `.`; `PATH=` and a shadowing definition above matter only for the static-predict tier, which
+is not this lane's.
+
+### seats-execute-b-and-the-planner-read
+
+- `funcenv::FuncEnv::resolved_loads() -> &BTreeMap<CfgNodeId, ResolvedHead>` (né `sourced_paths`,
+  which had no consumer outside `funcenv`). `ResolvedHead::key()` + `::explicitness()`.
+- `funcenv::FuncEnv::havoc_causes() -> &BTreeMap<CfgNodeId, HavocCause>`; `HavocCause::CwdUnknown
+  { clobbered_at }` carries the blaming node for the hint `tc-cwd-havoc-costs-relative-acquisition`
+  asks for. `dies_slashless()` / `searches_path()` are the two lint populations.
+- The cwd-clobber SEED set is one place, in `load_sites`: a `.` whose head is `Err`, plus every
+  `cd`. EXECUTE-B's `Included` third member arrives through the same door with no edit here —
+  filing a plain-sh target as anything `program_at_key` does not answer for puts it in that bucket.
+  NOT the merely-unread bucket, or the acquisition fixpoint stops growing.
+- A cwd-havoc'd site STAYS in `resolved_loads` (so `settled_account` records its occurrence and the
+  artifact still mirrors it) and joins `unresolvable_loads` (so it walls). `command_transfer`
+  checks the havoc set BEFORE the resolved map.
+
+### touch-ranges
+
+`analysis/src/funcenv.rs`: `ScriptSpellings`/`Spelling` · `EnvStack::havoc_names` · `FuncEnv`
+fields + accessors · `DefinitionTable::a_non_final_component_is_a_file` · the load-head evaluator
+block (between its own `// ──` banner and `load_sites`) · `load_sites` two-pass + `cwd_clobbers` ·
+`command_transfer`. `analysis/src/cfg.rs`: `sources_a_file` + one line in `lower_simple`'s toggle
+record. `cli/src/main.rs`: `EXIT_LOAD_UNRESOLVABLE`/`RunOutcome::LoadUnresolvable` ·
+`load_head_notices` + its call beside `positional_loading_notices` · the outcome upgrade after
+`env` · `acquisition_tests`. `syntax/src/{lexer,ast,parser}.rs`: the decode.
+
+### deviations — OPEN, each for the conductor to re-derive
+
+- **`dev-prelude-floor-keeps-the-absorbing-top`** (above).
+- **`dev-errexit-is-a-lexical-operand-test`** (`fnd-errexit-coarse-rule-cost-a-guard`).
+- **`dev-cwd-cell-re-pointed-to-the-ruling`** — the committed red cell
+  `a_relative_source_below_an_unknown_one_cannot_be_identified` asserted `found.is_empty()`, which
+  ruling 2(b) reverses. Re-pointed: the file IS acquired and mirrored, both sites wall, and the
+  helper is `Withheld`. The pin is promoted.
+- **`dev-lint-severity-follows-the-map`** — both lints are `Warning` as §map says. My lean is that
+  `script-relative-load-dies-slashless` belongs at NOTE, on `role-defined-below-its-sites`'
+  footing: nothing about THIS run is wrong, the book applies unchanged, and it fires on the
+  flagship `${0%/*}` idiom in its ordinary invocation. Left as ruled; flagged, not taken.
+- **`dev-source-of-dynamic-target-is-retired`** — the parser change made the
+  `SyntaxUnsupportedReason::SourceOfDynamicTarget` component unreachable, and the commit hook
+  caught its now-drifting defining case. The variant, its render arm, its case, and its
+  `arrangement_migration` row are DELETED (`don't maintain legacy copies`). Its arrangement-lock
+  row survives as an unowned register; it reddened no gate, and removing it wants a generator-side
+  act rather than a builder hand-edit.
+- **`dev-two-step-publish-commits`** — `dorc-loom publish` refuses an uncommitted case, so each
+  code lands as commit-then-publish-then-commit-the-lock. The first of each pair leaves
+  `every_fixture_slug_is_case_owned` red for one commit; the flow is the tool's, not a choice.
+- **`dev-parser-span-residue-not-taken`** — ruling 8's optional second half. NOT taken: a
+  `CommandSubst` body's inner-relative spans are not a small fix once computed operands are
+  reachable (the body is re-lexed in its own coordinate space, so every diagnostic inside one needs
+  the locator-DAG the debt names), and the blast radius is every command substitution, not just a
+  load operand. Listed, per the human's lean. `WordPart::Arithmetic` carrying no body is
+  unshrinkable rather than unshrunk — the lexer never captures the text.
+
+### finding-temp-tree-tests-raced — a flake, repaired
+
+Two `#[test]`s calling one helper run CONCURRENTLY, and `Package::new`'s pid+tag path let each
+one's `Drop` delete the other's tree mid-run. Seen twice under this lane, wearing two faces: a
+`PermissionDenied` on the re-create (Windows blocks a create over a pending delete) and a
+`NoOpinion` where the case wanted `Withheld` (the dependency file had been removed). Repaired with
+a per-package serial; `whylog_store.rs`'s `Scratch` had the same shape across RUNS (no pid at all)
+and got the pid. Both are `#[cfg(test)]`-only.
+
+### types-make-unrepresentable — product-wide
+
+- **`ScriptSpellings` on `DefinitionTable`** (as §map argued): a load answer computed against a
+  `$0` that disagrees with the cwd the same table resolves against; a `$0` from a host or a
+  payload; a resolution that consulted one spelling where two are live. Still ADMITS a book invoked
+  through a symlink or found on `PATH`, where sh's real `$0` is neither spelling.
+- **`ResolvedHead` + `Explicitness`**: a resolved load whose REWRITE permission is unknown to a
+  consumer — the two travel as one value, so an emitter cannot read the key without meeting the
+  marker. Still ADMITS an emitter that reads `explicitness()` and ignores it; nothing types the
+  obligation, which is why the fold has to visit those seats.
+- **`OperandAnswer` + `HavocCause`**: a havoc with no attributable cause; a "resolved" answer that
+  named no key. Still ADMITS a `Dead` verdict that is wrong because the target's tree is not the
+  generation Dorc built.
+- **`ParamOp`**: a trim whose pattern was discarded; an operator silently treated as identity.
+
+### proposed-steering-and-register-edits (conductor applies)
+
+- `syntax/CLAUDE.md syntactic-top-triggers`: the source clause is now false in BOTH halves — a `.`
+  operand carrying a command substitution or arithmetic PARSES. Proposed: *"a `.`/`source` operand
+  parses whatever it carries and routes to the analyzer's load plane, which resolves the head over
+  controller-known inputs or answers ⊤ ⇒ point havoc; the pre-network complaint is the cli's
+  (`30P:rul-floor-valid-text-never-parse-fails`)."* Same file: `tn-coarse-subst-provenance` now has
+  its first real consumer and should say so.
+- `analysis/CLAUDE.md`, new bullet, `rul-havoc-is-pointwise-never-the-stack`: as §map drafted, plus
+  the built carve — *"a `.` inside a LOAD PROGRAM keeps the absorbing ⊤ (the `30Mg` R1 prelude
+  floor); only the book plane's own `.` is pointwise."*
+- `analysis/CLAUDE.md funcenv-reads-source-literal-plane-only`, rider: the load-head evaluator
+  reads the AST for STRUCTURE and routes every variable read through the plane; `$0` is a
+  controller-held constant on `DefinitionTable`, not a variable. Fence:
+  `the_load_head_evaluator_names_no_value_plane_accessor`.
+- `analysis/CLAUDE.md`, new bullet under the dangers: `rul-exact-is-not-explicit` — EXACT governs
+  authority, EXPLICITNESS governs rewriting; `ResolvedHead::explicitness()` is the one seat, and an
+  emitter that re-points or pastes an `Evaluated` head is rewriting a line nobody spelled.
+- `oracle/CLAUDE.md` (two dangling cites): the `ParamComplex`-discards-the-name rationale under the
+  constants-ride-per-contributing-file bullet is stale — the body is decoded now, and the constant
+  capture's completeness argument needs restating on its own terms. `closure.rs`'s module header
+  carries the same sentence (B's file; not touched).
+- `FORFEITS.md forfeit-book-dynamic-load-analysis` REDS: add
+  `p-x-load-operand-case-over-dollar-zero`. The row's FORFEITS clause should drop `${0%/*}`
+  (captured) and keep the `$(dirname "$0")` / `$(cd … && pwd)` / glob / slashless members.
+- `30O:register-and-steering-debt`: `cli/CLAUDE.md`'s owed harness-contract lines can now say the
+  `$0` shape is modelled, not merely platform-bound.
+
+### tc-flags
+
+- **`tc-cwd-havoc-costs-relative-acquisition`** — RESOLVED IN THE BUILD by ruling 2(b): acquisition
+  and mirroring are untouched, only authority is lost. What remains open is the HINT. The cause is
+  minted and carries its blaming node (`HavocCause::CwdUnknown { clobbered_at }`); nothing renders
+  it yet. Strawman: `. /etc/os-release` then `. ./oracles/docker.dorc.sh` — the second still ships,
+  and the reader is owed a line naming the first as why its vouches went quiet.
+- **`tc-dollar-zero-spelling-asymmetry`** / **`tc-computed-dot-complaint-shape`** — built exactly as
+  ruled (4 and 5). No new judgment surfaced.
+
+### context-other-lanes-must-maintain
+
+- `FuncEnv::sourced_paths()` is GONE, renamed `resolved_loads()` with a richer value. It had no
+  consumer outside `funcenv`, so nothing broke; a lane holding an old branch will see a rename.
+- `SyntaxUnsupportedReason::SourceOfDynamicTarget` is gone; anything matching it will not compile.
+- `cfg::build` now records an errexit toggle at a non-literal-operand `.`. A lane that adds book
+  fixtures with such a `.` should expect failure-edges it did not have.
