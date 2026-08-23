@@ -1727,4 +1727,18 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "As records-integrity-refused-nonce.",
         words: Some(ProseTier::Slop(&["the book digest (it is not the digest of the book this invocation analyzed)"])),
     },
+    ArrangementEntry {
+        slug: "emitted-line-unsafe-for-paste-line-too-long",
+        occurrence: None,
+        when_used: "Fills the `{reason}` hole of emitted-line-unsafe-for-paste when the finalized artifact's physical line reaches the canonical-tty line-discipline cap. The value is the line's byte length.",
+        why: "30Qe:fruit-emit-hygiene-paste-rules. 28L rul-reason-enums-not-sibling-codes: the two paste-hygiene hazards share one slug, so each is a typed PasteHygieneHazardReason variant with its own prose-component. Seeded unwritten (builders author zero user-facing prose).",
+        words: None,
+    },
+    ArrangementEntry {
+        slug: "emitted-line-unsafe-for-paste-leading-tilde",
+        occurrence: None,
+        when_used: "Fills the `{reason}` hole of emitted-line-unsafe-for-paste when the finalized artifact's physical line begins `~`.",
+        why: "As emitted-line-unsafe-for-paste-line-too-long.",
+        words: None,
+    },
 ];

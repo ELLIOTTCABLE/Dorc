@@ -66,7 +66,8 @@ mod transport_edge;
 mod whylog_store;
 
 use dorc_aid::diag::{
-    AidUnloadedSiblingOracle, Diag, DiagCode, EscalationPolicy, OracleMatchedZeroSites,
+    AidUnloadedSiblingOracle, Diag, DiagCode, EmittedLineUnsafeForPaste, EscalationPolicy,
+    OracleMatchedZeroSites, PasteHygieneHazardReason,
 };
 use dorc_aid::said::Said;
 use dorc_aid::{Carrier, CollapseKind, CollapseNarrative, Severity};
@@ -2335,6 +2336,17 @@ fn run(
     // `apply` emit byte-identical receipt-free bytes, and so does the round-trip's second block.
     let artifact = form_selection.with_plan(plan.render_apply(&book_src, &parsed.value));
     print!("{}", artifact.primary().bytes);
+
+    // `30Qe:fruit-emit-hygiene-paste-rules` (`KNOBS:kBOOT`) — the paste/splice-floor damage watch:
+    // scan the FINALIZED artifact bytes (post `with_plan`, the exact bytes stdout/a published tree
+    // ship) for a physical line that a live human-mediated paste could corrupt or truncate.
+    // Detection only (`two-surfaces`): a hazard is a diagnostic, never a rewrite of authored bytes.
+    report_at(
+        advisory,
+        "emission",
+        None,
+        &emitted_line_unsafe_for_paste_diagnostics(&artifact.primary().bytes),
+    );
 
     // On the PLAN surface, never woven into the artifact bytes (`two-surfaces`).
     if let Some(fallback) = artifact.fallback() {
@@ -5885,6 +5897,31 @@ fn oracle_matched_zero_sites_diagnostics(
                     oracle: path.clone(),
                 }))
             })
+        })
+        .collect()
+}
+
+/// The paste/splice-floor damage-watch diagnostics (`30Qe:fruit-emit-hygiene-paste-rules`;
+/// `KNOBS:kBOOT`) — one [`DiagCode::EmittedLineUnsafeForPaste`] per
+/// [`dorc_plan::render::PasteHygieneHazard`] [`dorc_plan::render::paste_hygiene_hazards`] finds in
+/// `rendered`, the FINALIZED artifact bytes (post `with_plan` — the exact bytes stdout or a
+/// published tree ships). Spanless: the claim is about a RENDERED PHYSICAL LINE, which has no
+/// book-AST span.
+fn emitted_line_unsafe_for_paste_diagnostics(rendered: &str) -> Vec<Diag> {
+    dorc_plan::render::paste_hygiene_hazards(rendered)
+        .into_iter()
+        .map(|hazard| {
+            let (line, reason) = match hazard {
+                dorc_plan::render::PasteHygieneHazard::LineTooLong { line, len } => {
+                    (line, PasteHygieneHazardReason::LineTooLong { len })
+                }
+                dorc_plan::render::PasteHygieneHazard::LeadingTilde { line } => {
+                    (line, PasteHygieneHazardReason::LeadingTilde)
+                }
+            };
+            Diag::new_spanless_site(DiagCode::EmittedLineUnsafeForPaste(
+                EmittedLineUnsafeForPaste { line, reason },
+            ))
         })
         .collect()
 }

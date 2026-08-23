@@ -183,6 +183,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "artifact-form-fallback",
     "artifact-publish-refused",
     "plan-import-rewritten",
+    "emitted-line-unsafe-for-paste",
     "cmdsub-inner-nonleaf",
     "redir-target-top",
     "depth-2-positional-unthreaded",
@@ -358,6 +359,10 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "ArtifactFormRefused",
     "ArtifactFormFallback",
     "ArtifactPublishRefused",
+    // cli/main.rs — a paste hazard is a claim about a FINALIZED ARTIFACT's rendered physical line,
+    // which has no book-AST span (`plan::render::PasteHygieneHazard`'s own doc: durable/paste-facing
+    // surfaces, never a source-text property).
+    "EmittedLineUnsafeForPaste",
     // lint — the external-tool trio is ABOUT a foreign process, not about any dorc bytes, so its
     // emit context genuinely has no span. The four dorc-native lint codes DO carry real spans.
     "LintToolAbsent",

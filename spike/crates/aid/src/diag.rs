@@ -110,6 +110,12 @@ pub enum DiagCode {
     /// (`30Ng:rul-bundle-at-dorc-lang-boundaries`, human-typed). The one rewrite Dorc reserves over
     /// a plan it generated, and therefore one it must never make silently.
     PlanImportRewritten(PlanImportRewritten),
+    /// A finalized apply artifact's physical RENDERED line carries a paste/splice-floor hazard
+    /// (`plan::render::PasteHygieneHazard`; `30Qe:fruit-emit-hygiene-paste-rules`, `KNOBS:kBOOT`):
+    /// at/over the canonical-tty line cap, or a leading `~` (ssh's client-side escape char).
+    /// Detection only (`two-surfaces`) -- a hazard is a diagnostic, never a rewrite of authored
+    /// bytes. Advisory; the run is unchanged.
+    EmittedLineUnsafeForPaste(EmittedLineUnsafeForPaste),
 
     // ── B4 mechanical sweep: former `diag::legacy` survivors ────────────────
     /// A command runs inside a `$(…)` substitution body — effect-bearing but not independently
@@ -458,6 +464,7 @@ impl DiagCode {
             DiagCode::ArtifactFormFallback(_) => "artifact-form-fallback",
             DiagCode::ArtifactPublishRefused(_) => "artifact-publish-refused",
             DiagCode::PlanImportRewritten(_) => "plan-import-rewritten",
+            DiagCode::EmittedLineUnsafeForPaste(_) => "emitted-line-unsafe-for-paste",
             DiagCode::CmdsubInnerNonleaf(_) => "cmdsub-inner-nonleaf",
             DiagCode::RedirTargetTop(_) => "redir-target-top",
             DiagCode::Depth2PositionalUnthreaded(_) => "depth-2-positional-unthreaded",
@@ -767,6 +774,33 @@ pub struct PlanImportRewritten {
     /// stands (`30P:rul-front-lift-is-the-planners-first-consumer`). A reason COMPONENT beside the
     /// one code, never a sibling code per tier (`28L:rul-reason-enums-not-sibling-codes`).
     pub reason: &'static str,
+}
+
+/// Payload of [`DiagCode::EmittedLineUnsafeForPaste`] (`30Qe:fruit-emit-hygiene-paste-rules`): one
+/// [`PasteHygieneHazardReason`] `dorc_plan::render::paste_hygiene_hazards` found in the FINALIZED
+/// artifact's rendered bytes. Spanless -- the claim is about a RENDERED PHYSICAL LINE, which has no
+/// book-AST span (`dorc_plan::render::PasteHygieneHazard`'s own doc: durable/paste-facing surfaces,
+/// never a source-text property).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmittedLineUnsafeForPaste {
+    /// 1-indexed physical line number in the finalized artifact (`{line}`).
+    pub line: usize,
+    /// Which paste-hygiene rule the line broke.
+    pub reason: PasteHygieneHazardReason,
+}
+
+/// Which paste/splice-floor rule fired (see [`CfgTopNodeReason`] for why the reason enums live in
+/// this crate rather than in `plan`, which mints the decision).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PasteHygieneHazardReason {
+    /// The line's byte length reaches the canonical-tty line-discipline cap (`{len}`).
+    LineTooLong {
+        /// The offending line's byte length.
+        len: usize,
+    },
+    /// The line begins with `~` -- ssh's client-side escape character, consumed by the client
+    /// during an interactive paste and never reaching the remote shell.
+    LeadingTilde,
 }
 
 // ===========================================================================
@@ -2538,6 +2572,15 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::Structural,
         },
+        // Structural: the hazard is a fact about the paste/tty floor (`KNOBS:kBOOT`), never a Dorc
+        // modeling gap and never a wrongly-authored line -- rewrapping the line or renaming a
+        // `~`-leading word is a real fix, but none of the other three classes name "the render/paste
+        // channel" as the thing to work around, so this is the argued closest fit.
+        DiagCode::EmittedLineUnsafeForPaste(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::Structural,
+        },
         // ── B4 sweep: former diag::legacy survivors ──────────────────────────
         // Pure disclosures (the apply runs these sites regardless) → Note + Floor::None.
         DiagCode::CmdsubInnerNonleaf(_) => CodeSpec {
@@ -3288,6 +3331,10 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }) => {
             vec![ours("names", names.clone())]
         }
+        DiagCode::EmittedLineUnsafeForPaste(EmittedLineUnsafeForPaste { line, reason }) => vec![
+            ours("line", line.to_string()),
+            component("reason", paste_hygiene_hazard_reason_text(ctx, *reason)),
+        ],
         DiagCode::CmdsubInnerNonleaf(CmdsubInnerNonleaf { site: _, inner }) => {
             vec![ours("inner", inner.clone())]
         }
@@ -4321,6 +4368,27 @@ fn cfg_top_node_text(ctx: &RenderCtx<'_>, reason: CfgTopNodeReason) -> Component
         CfgTopNodeReason::NestingBound => "cfg-top-node-nesting-bound",
     };
     component_text(ctx.arrangements(), slug, None, &[])
+}
+
+/// The registry sentence for one [`PasteHygieneHazardReason`].
+fn paste_hygiene_hazard_reason_text(
+    ctx: &RenderCtx<'_>,
+    reason: PasteHygieneHazardReason,
+) -> ComponentText {
+    match reason {
+        PasteHygieneHazardReason::LineTooLong { len } => component_text(
+            ctx.arrangements(),
+            "emitted-line-unsafe-for-paste-line-too-long",
+            None,
+            &borrowed(&[len.to_string()]),
+        ),
+        PasteHygieneHazardReason::LeadingTilde => component_text(
+            ctx.arrangements(),
+            "emitted-line-unsafe-for-paste-leading-tilde",
+            None,
+            &[],
+        ),
+    }
 }
 
 /// The registry sentence for one [`CfgInlineRefusedReason`].
