@@ -116,6 +116,18 @@ pub enum PlacementReason {
     /// T3: the `.` itself sits outside the shape `floor30-inline-dot-boundary` measured, so the
     /// bytes stay exactly where they are.
     KeptInPlaceShapeUnmeasured,
+    /// Decline: the operand does not name its target EXPLICITLY, so no tier may rewrite that line
+    /// at all (`30P:rul-rewrite-permission-is-derived`). Its own arm rather than
+    /// [`KeptInPlaceShapeUnmeasured`](Self::KeptInPlaceShapeUnmeasured) because the two owe the
+    /// admin different sentences and rest on different things: that one is a measurement gap in the
+    /// `.` COMMAND's form, this one is a standing licence limit on the OPERAND, and it does not
+    /// close as the floor grows.
+    KeptInPlaceOperandNotExplicit,
+    /// SPIKE SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the front-lift ladder
+    /// has not answered for this bundle at all. The bytes stand at the author's `.` because that is
+    /// where the FORM puts them, and no hoist was considered — the ladder's own arms above replace
+    /// this one as it lands, and it goes away with them.
+    KeptInPlaceLadderUnconsulted,
 }
 
 /// One placement question, answered: where the bytes stand, under what name, and which ladder
@@ -159,6 +171,22 @@ impl PlacementDecision {
     pub const fn why(&self) -> &PlacementReason {
         &self.why
     }
+}
+
+/// What one placed definition IS — the identity a placement map admits at most once.
+///
+/// Two placements for one definition is the double-carry bug in type form
+/// (`30Qb:fnd-the-question-is-asked-in-four-places-not-three`), so the emission files by this and a
+/// second answer for one key cannot be spelled.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DefinitionKey {
+    /// A closure declaration, at the `(source, offset)` declaration site
+    /// `dorc_oracle::closure::ClosureDecl` already dedups on — a constants item binds several names
+    /// and a name-keyed identity could not spell it.
+    Declaration(SourceFileId, u32),
+    /// A role body, at its authored name plus the digest of its own bytes: one name may carry two
+    /// distinct bodies, and both are placed.
+    Body(String, String),
 }
 
 /// What the artifact does with one source's bytes.

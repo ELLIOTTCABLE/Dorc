@@ -42,7 +42,9 @@
 
 use dorc_core::loadpath::Cwd;
 use dorc_core::{AstId, Span};
-use dorc_plan::ImportEdit;
+use dorc_plan::{
+    EmittedName, ImportEdit, LoadSite, PlacedSources, Placement, PlacementDecision, PlacementReason,
+};
 
 use crate::bundle::{BundleProjection, BundleRootId};
 
@@ -334,6 +336,49 @@ pub struct BookLoad {
     /// different environment than the `.` they stand for. `Repoint` moves only the operand and
     /// stays eligible for that shape.
     pub absorbable: bool,
+    /// Does the operand name its target EXPLICITLY — the precondition every rewrite of this line
+    /// derives from (`30P:rul-rewrite-permission-is-derived`, human-typed)?
+    ///
+    /// Permission to re-point, inline or hoist an import comes from the AUTHOR having written what
+    /// the line loads, never from the load plane's EXACT-ness, which answers a different question
+    /// (can the controller say which file this resolves to). A computed operand stays verbatim in
+    /// every form; where a form places files at all its target is mirrored at the authored relative
+    /// path, and the author's own line finds it there.
+    pub explicit: bool,
+}
+
+/// Does this operand name its target explicitly (`30P:rul-rewrite-permission-is-derived`)?
+///
+/// The ruling's two admitted spellings are a LITERAL word and a literal-assigned BOOK-SET ROOT
+/// (`30I` §2.1) — the author writing what the line loads, in one piece or in two. A simple `$name`
+/// therefore passes: the load plane admits a word only where its value is program text
+/// (`funcenv-reads-source-literal-plane-only`), so an operand that resolved through a `$name` at all
+/// resolved through a literal the book itself assigns.
+///
+/// Refused, and each for its own reason: an operator-bearing expansion and a command substitution
+/// are what a `$0`-relative operand is spelled with, arithmetic is dynamic, and `$0` itself is
+/// SELF-LOCATION rather than a named target — the engine knowing which file it resolves to is the
+/// load plane's EXACT-ness, which this predicate exists to keep from becoming permission.
+///
+/// SEAM: this reads the shape off the AST word. The load plane is landing an evaluator under which
+/// a `${0%/*}`-headed operand resolves EXACT, and the typed explicitness marker it carries on that
+/// resolution replaces this seat at that fold — the predicate stays, its answer moves.
+fn operand_is_explicit(book: &dorc_syntax::Ast, operand: AstId) -> bool {
+    use dorc_syntax::ast::WordPart;
+    fn parts_are_explicit(parts: &[WordPart]) -> bool {
+        parts.iter().all(|part| match part {
+            WordPart::Literal(_) | WordPart::SingleQuoted(_) => true,
+            WordPart::DoubleQuoted(inner) => parts_are_explicit(inner),
+            WordPart::Param { name } => name != "0",
+            WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex { .. } => {
+                false
+            }
+        })
+    }
+    match &book.node(operand).kind {
+        dorc_syntax::ast::NodeKind::Word { parts } => parts_are_explicit(parts),
+        _ => false,
+    }
 }
 
 /// The book's own root load occurrences, paired with the bundle roots they opened.
@@ -388,6 +433,7 @@ pub fn book_loads(
                 operand,
                 root: occurrence.root(),
                 absorbable: top_level.contains(&command) && bare && alone_on_line(book_src, span),
+                explicit: operand.is_some_and(|word| operand_is_explicit(book, word)),
             }
         })
         .collect()
@@ -503,12 +549,29 @@ fn bundle_files(
     for load in loads {
         // Unplaceable, never silently skipped: omitting a file the runtime `.` will look for is
         // what the possible-load projection exists to prevent (`30I` §6.1).
-        let Some((root, entry, operand)) = projection
+        let Some(root) = projection
             .roots()
             .iter()
             .find(|root| root.id() == load.root)
-            .and_then(|root| Some((root, projection.file(root.entry())?, load.operand?)))
         else {
+            unplaceable = unplaceable.saturating_add(1);
+            continue;
+        };
+        // A computed operand is not ours to re-say (`30P:rul-rewrite-permission-is-derived`): the
+        // line stays verbatim, so every file under it is mirrored at the authored relative path the
+        // author's own operand will resolve to.
+        if !load.explicit {
+            for file in root.files().iter().filter_map(|&id| projection.file(id)) {
+                match mirrored(cwd, authored_of(file)) {
+                    Some(beside) => {
+                        place(beside, file.copied().text().to_owned(), &mut unplaceable)
+                    }
+                    None => unplaceable = unplaceable.saturating_add(1),
+                }
+            }
+            continue;
+        }
+        let Some((entry, operand)) = projection.file(root.entry()).zip(load.operand) else {
             unplaceable = unplaceable.saturating_add(1);
             continue;
         };
@@ -615,13 +678,82 @@ fn inline_imports(projection: &BundleProjection, loads: &[BookLoad]) -> Option<V
                 .roots()
                 .iter()
                 .find(|root| root.id() == load.root)
-                .filter(|_| load.absorbable)?;
+                .filter(|_| load.absorbable && load.explicit)?;
             Some(ImportEdit::Inline {
                 ast: load.command,
                 sh: root.bundled().to_owned(),
             })
         })
         .collect()
+}
+
+/// What a settled form does with one book-reached bundle's bytes.
+///
+/// One value rather than two bools side by side: those are swappable without a type error, and the
+/// difference between them decides whether a package's definitions may be hoisted above the book.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Carriage {
+    /// Every file under the root reaches the artifact — the bundle at the `.`, and each nested file
+    /// the bundle could not absorb beside it.
+    WholeRoot,
+    /// The bundle's absorbed bytes stand at the `.`, and a nested file it could not absorb reaches
+    /// nothing: one stream carries no file beside the plan.
+    AbsorbedOnly,
+    /// Nothing reaches the artifact: the form places no dependency at all.
+    Nothing,
+}
+
+/// Where a settled form stands every source a book `.` reaches
+/// (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`).
+///
+/// Keyed by SOURCE rather than by bundle, because that is the question a definition asks: it
+/// inherits the placement of the file it was authored in, and a bundle is several files.
+fn placements(
+    projection: &BundleProjection,
+    loads: &[BookLoad],
+    carriage: Carriage,
+) -> PlacedSources {
+    let mut placed = PlacedSources::all_ambient();
+    for load in loads {
+        let Some(root) = projection
+            .roots()
+            .iter()
+            .find(|root| root.id() == load.root)
+        else {
+            continue;
+        };
+        let separate: std::collections::BTreeSet<_> = root.separate().iter().copied().collect();
+        for &id in root.files() {
+            let Some(file) = projection.file(id) else {
+                continue;
+            };
+            let source = file.copied().source();
+            let reaches = match carriage {
+                Carriage::WholeRoot => true,
+                Carriage::AbsorbedOnly => !separate.contains(&id),
+                Carriage::Nothing => false,
+            };
+            if reaches {
+                placed.carried(
+                    source,
+                    PlacementDecision::new(
+                        Placement::InPlace(LoadSite(load.command)),
+                        EmittedName::Authored,
+                        if !load.explicit {
+                            PlacementReason::KeptInPlaceOperandNotExplicit
+                        } else if load.absorbable {
+                            PlacementReason::KeptInPlaceLadderUnconsulted
+                        } else {
+                            PlacementReason::KeptInPlaceShapeUnmeasured
+                        },
+                    ),
+                );
+            } else {
+                placed.uncarried(source);
+            }
+        }
+    }
+    placed
 }
 
 /// The artifact-set filename every form puts its plan projection under.
@@ -638,6 +770,7 @@ pub struct Selection {
     fallback: Option<FormFallback>,
     dependencies: Vec<ArtifactFile>,
     imports: Vec<ImportEdit>,
+    placements: PlacedSources,
 }
 
 impl Selection {
@@ -664,6 +797,18 @@ impl Selection {
         &self.imports
     }
 
+    /// Where this form stands every source a book `.` reaches
+    /// (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`).
+    ///
+    /// Handed to `Plan::decided` beside the imports, because a definition cannot stand anywhere its
+    /// own file's bytes do not: a form that carries a package at the author's `.` must not ALSO
+    /// hoist that package's definitions above the whole book, and a form that carries it nowhere
+    /// places nothing.
+    #[must_use]
+    pub const fn placements(&self) -> &PlacedSources {
+        &self.placements
+    }
+
     /// Bind the settled form to the plan projection it describes.
     #[must_use]
     pub fn with_plan(self, plan_sh: String) -> ArtifactSet {
@@ -676,6 +821,38 @@ impl Selection {
             },
             dependencies: self.dependencies,
         }
+    }
+}
+
+/// The form a TERMINAL RENDER settles — `auto` on a stdout a person is watching.
+///
+/// TOTAL by construction, and that is why it is its own entry point: this is the one cell with no
+/// refusal, because nothing is being kept to run later, so `auto` may settle for a less flattened
+/// form and say so. The why driver mirrors the run's carriage through here rather than through a
+/// refusal path it could never take (`one-definition-table-two-drivers`), and [`select`]'s own
+/// `auto`-at-a-terminal arm calls it, so the two cannot drift.
+#[must_use]
+pub fn select_for_terminal_render(projection: &BundleProjection, loads: &[BookLoad]) -> Selection {
+    let inline_debt = loads
+        .iter()
+        .filter(|load| !(load.absorbable && load.explicit))
+        .count()
+        .max(usize::from(inline_imports(projection, loads).is_none()));
+    match inline_imports(projection, loads) {
+        Some(imports) => Selection {
+            form: ArtifactForm::Flattened,
+            fallback: None,
+            dependencies: Vec::new(),
+            imports,
+            placements: placements(projection, loads, Carriage::AbsorbedOnly),
+        },
+        None => Selection {
+            form: ArtifactForm::PreservedBookTree,
+            fallback: Some(FormFallback::InliningUnproven { loads: inline_debt }),
+            dependencies: Vec::new(),
+            imports: Vec::new(),
+            placements: placements(projection, loads, Carriage::Nothing),
+        },
     }
 }
 
@@ -698,7 +875,7 @@ pub fn select(
     let inlined = inline_imports(projection, loads);
     let inline_debt = loads
         .iter()
-        .filter(|load| !load.absorbable)
+        .filter(|load| !(load.absorbable && load.explicit))
         .count()
         .max(usize::from(inlined.is_none()));
     let multipart = match posture {
@@ -713,13 +890,16 @@ pub fn select(
         fallback,
         dependencies: Vec::new(),
         imports: Vec::new(),
+        placements: placements(projection, loads, Carriage::Nothing),
     };
     let flattened = |imports: Vec<ImportEdit>| Selection {
         form: ArtifactForm::Flattened,
         fallback: None,
         dependencies: Vec::new(),
         imports,
+        placements: placements(projection, loads, Carriage::AbsorbedOnly),
     };
+    let whole_root = || placements(projection, loads, Carriage::WholeRoot);
 
     match request {
         FormRequest::Explicit(ArtifactForm::Flattened) => {
@@ -734,6 +914,7 @@ pub fn select(
                 fallback: None,
                 dependencies,
                 imports,
+                placements: whole_root(),
             }),
             Err(None) => Err(FormRefusal::NoArtifactStream {
                 form: ArtifactForm::Multipart,
@@ -751,6 +932,7 @@ pub fn select(
                         fallback: None,
                         dependencies,
                         imports: Vec::new(),
+                        placements: whole_root(),
                     }),
                     Err(unplaceable) => Err(FormRefusal::Unavailable {
                         form: ArtifactForm::MirroredTree,
@@ -777,16 +959,14 @@ pub fn select(
             StreamPosture::PipedArtifact => inlined
                 .map(flattened)
                 .ok_or(FormRefusal::IncompleteSingleStream { loads: inline_debt }),
-            StreamPosture::TerminalRender => Ok(match inlined {
-                Some(imports) => flattened(imports),
-                None => preserved(Some(FormFallback::InliningUnproven { loads: inline_debt })),
-            }),
+            StreamPosture::TerminalRender => Ok(select_for_terminal_render(projection, loads)),
             StreamPosture::Materializable => Ok(match multipart {
                 Ok((dependencies, imports)) => Selection {
                     form: ArtifactForm::Multipart,
                     fallback: None,
                     dependencies,
                     imports,
+                    placements: whole_root(),
                 },
                 Err(unplaceable) => preserved(Some(FormFallback::DependencyUnplaceable {
                     loads: unplaceable.unwrap_or(loads.len()),
@@ -828,6 +1008,7 @@ mod tests {
             operand: Some(dorc_core::AstId(1)),
             root: crate::bundle::BundleRootId::first(),
             absorbable: true,
+            explicit: true,
         }
     }
 
@@ -991,6 +1172,102 @@ mod tests {
         assert_eq!(refusal.cause(), "incomplete-single-stream");
     }
 
+    /// A `.` whose operand does not name its target EXPLICITLY is never re-pointed, inlined or
+    /// hoisted by any tier, in any form (`30P:rul-rewrite-permission-is-derived`, human-typed).
+    ///
+    /// CFG SHAPE: five top-level `Simple`s carrying one operand word each, one per admitted or
+    /// refused spelling. The head is a plain command rather than a `.` because the predicate reads
+    /// the WORD and nothing else, and because a `$( … )` inside a `.` operand is a parse-tier
+    /// refusal today (`30P:fnd-computed-dot-is-a-whole-book-refusal`) — which would take the whole
+    /// fixture with it. Today none of the refused three resolves at all, so the rewrite question
+    /// never arises through a selection; the load lane's evaluator makes the `$0` forms resolve
+    /// EXACT, and EXACT must not become permission — which is why the PRECONDITION is pinned at its
+    /// own seat rather than through a selection that cannot yet reach it.
+    #[test]
+    fn a_computed_operand_is_never_explicit_enough_to_rewrite() {
+        use dorc_syntax::ast::NodeKind;
+        let book = concat!(
+            "hork \"${0%/*}/wombat.dorc.sh\"\n",
+            "hork \"$(dirname \"$0\")/wombat.dorc.sh\"\n",
+            "hork \"$0\"\n",
+            "hork './wombat.dorc.sh'\n",
+            "hork \"./$PKG.dorc.sh\"\n",
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
+            panic!("a script parses to a script");
+        };
+        let operands: Vec<dorc_core::AstId> = items
+            .iter()
+            .filter_map(|&id| match &ast.node(id).kind {
+                NodeKind::Simple { words, .. } => words.get(1).copied(),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(operands.len(), 5, "five `.` lines, five operands");
+        let explicit: Vec<bool> = operands
+            .iter()
+            .map(|&word| super::operand_is_explicit(&ast, word))
+            .collect();
+        assert_eq!(
+            explicit,
+            vec![false, false, false, true, true],
+            "self-location names no target the engine may re-say; a literal word and a \
+             literal-assigned book-set root are the author naming one"
+        );
+    }
+
+    /// The same rule at the FORM seat: with the operand inexplicit, one stream is unavailable (there
+    /// is no line the bundle may stand in for) and multipart carries the dependency at its AUTHORED
+    /// relative path with no import re-said, so the author's own operand finds it there.
+    #[test]
+    fn an_inexplicit_operand_mirrors_rather_than_re_saying_its_import() {
+        let cwd = Cwd::default();
+        let (snapshot, projection, mut loads) = world_at(
+            &cwd,
+            ". ./wombat.dorc.sh\nwombat sync a.conf\n",
+            vec!["wombat.dorc.sh".to_owned()],
+            vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
+        );
+        assert_eq!(loads.len(), 1, "one book-sited load");
+        loads[0].explicit = false;
+        let settled = |request, posture| {
+            select(
+                &cwd,
+                snapshot.source_paths(),
+                &projection,
+                &loads,
+                request,
+                posture,
+            )
+        };
+        let multipart = settled(FormRequest::Auto, StreamPosture::Materializable)
+            .expect("the dependency is placeable at its authored path");
+        assert_eq!(multipart.form(), ArtifactForm::Multipart);
+        assert!(
+            multipart.imports().is_empty(),
+            "an inexplicit operand is not ours to re-say: {:?}",
+            multipart.imports()
+        );
+        let published = multipart.with_plan(String::new());
+        assert_eq!(
+            published
+                .dependencies()
+                .iter()
+                .map(|file| file.path.as_str())
+                .collect::<Vec<_>>(),
+            vec!["wombat.dorc.sh"],
+            "the target mirrors where the author's own operand resolves"
+        );
+        let rendered = settled(FormRequest::Auto, StreamPosture::TerminalRender)
+            .expect("a render is allowed to be less flattened");
+        assert_eq!(rendered.form(), ArtifactForm::PreservedBookTree);
+        assert_eq!(
+            rendered.fallback(),
+            Some(FormFallback::InliningUnproven { loads: 1 })
+        );
+    }
+
     /// Build a whole world the way the corpus does, over CLI-named prelude roots, and hand back
     /// the loader's complete occurrence account.
     fn account_of(
@@ -1089,6 +1366,29 @@ mod tests {
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<super::Selection, FormRefusal> {
+        let (snapshot, projection, loads) = world_at(cwd, book, paths, srcs);
+        select(
+            cwd,
+            snapshot.source_paths(),
+            &projection,
+            &loads,
+            request,
+            posture,
+        )
+    }
+
+    /// The analysed world a form is settled over, handed back whole so a test can perturb the loads
+    /// before selecting.
+    fn world_at(
+        cwd: &Cwd,
+        book: &str,
+        paths: Vec<String>,
+        srcs: Vec<String>,
+    ) -> (
+        crate::snapshot::StaticLoadSnapshot,
+        BundleProjection,
+        Vec<super::BookLoad>,
+    ) {
         let reached = crate::snapshot::book_reached(cwd, &paths, &srcs, book);
         let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd.clone(),
@@ -1109,14 +1409,7 @@ mod tests {
             .map(crate::bundle::BundleProjectionOutput::into_projection)
             .expect("one closed occurrence forest");
         let loads = super::book_loads(&cfg, &ast, book, &projection);
-        select(
-            cwd,
-            snapshot.source_paths(),
-            &projection,
-            &loads,
-            request,
-            posture,
-        )
+        (snapshot, projection, loads)
     }
 
     /// THE MULTIPART PLACEMENT, end to end over a real load: the book's dorc-lang dependency is

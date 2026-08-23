@@ -65,6 +65,26 @@ impl std::fmt::Debug for WhyWorld {
     }
 }
 
+/// The artifact form a why render settles, re-derived from the authored snapshot alone
+/// (`30Qb:dev-why-world-gains-a-selection`).
+///
+/// `StreamPosture::TerminalRender` because that is what a why render is: nothing is being kept to
+/// run later, so the selector is total and this seat needs no refusal path. It opens no file and
+/// contacts nothing — `bundle::project` consumes the snapshot and the loader's account and resolves
+/// nothing (`bundle-projection-is-pre-contact-and-not-placement`).
+fn select_terminal_form(
+    snapshot: &StaticLoadSnapshot,
+    cfg: &dorc_analysis::cfg::Cfg,
+    book: &dorc_syntax::ast::Ast,
+    env: &dorc_analysis::funcenv::FuncEnv,
+) -> crate::artifact::Selection {
+    let projection = crate::bundle::project(snapshot, env.loads())
+        .map(crate::bundle::BundleProjectionOutput::into_projection)
+        .unwrap_or_default();
+    let loads = crate::artifact::book_loads(cfg, book, snapshot.book_src(), &projection);
+    crate::artifact::select_for_terminal_render(&projection, &loads)
+}
+
 impl WhyWorld {
     /// Analyze `book_src` against `oracle_srcs` with no measurements — every fact ⊤, every site runs.
     #[must_use]
@@ -127,6 +147,12 @@ impl WhyWorld {
             dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
         };
         let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
+        // The artifact form, mirrored (`one-definition-table-two-drivers`): the placement decisions
+        // are part of what a why report has to explain, and a report answering from a different
+        // carriage than the run's would be a decoration. Authored-before-contact, so it needs no
+        // host; settled under `TerminalRender`, which is what a why render IS — the only posture in
+        // which `auto` never refuses, so this seat stays total.
+        let form_selection = select_terminal_form(snapshot, &cfg.value, &parsed.value, &env);
         // THE EDGE, mirrored: the widening above is exactly what
         // `withdrawal-is-applied-once-never-consulted` requires to route through here first, so the
         // contested fact is minted from the same two calls in the same order the binary uses and
@@ -513,13 +539,12 @@ impl WhyWorld {
         // This world is handed results somebody else already decided about, so the intake authority
         // is the DRIVER's to hold and the driver's refused path never reaches a why world
         // (`the_driver_takes_its_authority_from_its_admission`).
-        // NO import edits: a why world settles no artifact form, so it has no bundle for an import
-        // to name (narrowing disclosed at the module header, beside the wrapped sites).
         let plan = dorc_plan::project_plan(
             &mut spine,
             book_src,
             &parsed.value,
-            &[],
+            form_selection.placements(),
+            form_selection.imports(),
             &dorc_plan::PlanAuthority::without_intake(),
             &spent,
         );
@@ -1271,6 +1296,7 @@ mod tests {
             spine,
             BOOK,
             &ast,
+            &dorc_plan::PlacedSources::all_ambient(),
             &[],
             &dorc_plan::PlanAuthority::without_intake(),
             spent,
@@ -1313,6 +1339,7 @@ mod tests {
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &dorc_plan::PlacedSources::all_ambient(),
             &[],
             BOOK,
             &dorc_syntax::parse(BOOK).value,

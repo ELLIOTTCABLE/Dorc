@@ -2010,6 +2010,7 @@ fn run(
         &mut spine,
         &book_src,
         &parsed.value,
+        form_selection.placements(),
         form_selection.imports(),
         &authority,
         &spent,

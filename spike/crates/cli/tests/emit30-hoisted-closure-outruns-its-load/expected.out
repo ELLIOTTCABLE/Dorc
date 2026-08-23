@@ -1,2 +1,43 @@
-# placeholder: this case is XFAIL, so the content golden is never compared (the XFAIL lens is
-# golden-text-blind by design). Re-bless it at promotion, when the case XPASSes.
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=baabfd6c2a83e65bf09e7a24b1c5dfcbb4dbc7fda97ec0214ef44f06ac2f5d52 sites=1 @@dorc@@\n'
+# site 3: dorc-auto:wombat@converged
+WOMBAT_ROOT=/etc/wombat
+_wombat_dest() {
+   wombat cmp -- "$1" "$WOMBAT_ROOT/$1"
+}
+wombat__is_converged() {
+   _wombat_dest "$2"
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# A file-level oracle CONSTANT is not hoisted above a book line that observes the same name
+# (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`).
+#
+# CFG SHAPE: one top-level `Simple` (`hork stage`) whose only argument is a parameter expansion of
+# `WOMBAT_ROOT`, standing ABOVE the top-level `.` that binds that name. Three top-level `Simple`s
+# follow: the unmodeled wall, and the described `wombat sync` whose vouching body reaches the
+# constant through a helper.
+#
+# WHAT IT OBSERVES: `ran: hork stage unset` — the value the book's own text gives that line. The
+# hoist this pin was minted against put `WOMBAT_ROOT=/etc/wombat` ahead of that read, so the line
+# received a value the authored program never gave it, and the engine's own counterfactual rail
+# called the difference an unattributable delta. The artifact already carries this oracle's bytes AT
+# THE `.`, because a book-sited dorc-lang root is placed there by the bundle, so the closure needs no
+# hoist at all and the preamble carries only what has nowhere else to be.
+hork stage "${WOMBAT_ROOT-unset}"
+. './wombat.dorc-bundle.sh'
+hork provision
+( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

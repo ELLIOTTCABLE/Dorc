@@ -262,8 +262,8 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     let _ = writeln!(
         out,
         "  hoisted bytes={} digest={}",
-        pinned.hoisted().len(),
-        short_digest(&pinned.hoisted())
+        pinned.typeset(&dorc_plan::Placement::Hoist).len(),
+        short_digest(&pinned.typeset(&dorc_plan::Placement::Hoist))
     );
 
     let survival = &plan.survival_report;

@@ -1339,10 +1339,13 @@ impl GuardInsert {
 
 /// One body the artifact must place ahead of the guards that invoke it (`28K` §4).
 ///
-/// FORM-NEUTRAL by construction: it carries the decided bytes and the name they are bound under,
-/// and nothing about where or how a particular artifact typesets them.
+/// FORM-NEUTRAL by construction: it carries the decided bytes, the name they are bound under, and
+/// the PLACEMENT the planner decided for them — never a particular artifact's typesetting of that
+/// placement.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PinnedDefinition {
+    /// What this definition is, for the map that places each of them exactly once.
+    pub key: placement::DefinitionKey,
     /// The exact bytes to place — a stripped helper declaration or a stripped role body, already
     /// carrying its emitted name.
     pub bytes: String,
@@ -1350,6 +1353,10 @@ pub struct PinnedDefinition {
     /// reader therefore cannot map it back on their own (`28K` §4 `rul-hash-munge-disambiguation`).
     /// `None` for a helper declaration and for a body emitted under its own name.
     pub disambiguated: Option<String>,
+    /// Where the artifact stands these bytes — INHERITED from the source they were authored in
+    /// (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`), never assumed. Non-`Option`
+    /// so a definition with no placement decision cannot be constructed.
+    pub placement: Placement,
 }
 
 /// What the apply artifact places, and which name each guarded site's check invokes
@@ -1375,12 +1382,16 @@ impl PinnedDefinitions {
         &self.definitions
     }
 
-    /// The sh-form typesetting of [`definitions`](Self::definitions): each body's bytes on their
-    /// own lines, a disambiguated one preceded by the provenance comment naming what it authored.
+    /// The sh-form typesetting of everything placed AT `at`: each body's bytes on their own lines,
+    /// a disambiguated one preceded by the provenance comment naming what it authored.
+    ///
+    /// Placement-indexed rather than hoist-only (`30P:the-emission-planner`): "hoist" used to be an
+    /// assumption no value recorded, and a form that ignored a placement would silently flatten it.
+    /// A form asks for the material at ONE placement and typesets that.
     #[must_use]
-    pub fn hoisted(&self) -> String {
+    pub fn typeset(&self, at: &Placement) -> String {
         let mut out = String::new();
-        for definition in &self.definitions {
+        for definition in self.definitions.iter().filter(|d| d.placement == *at) {
             if let Some(authored) = &definition.disambiguated {
                 out.push_str(&render::apply::pinned_provenance(authored));
             }
@@ -2439,6 +2450,7 @@ impl DecidedRender {
         steps: &[Step],
         regions: &[RegionStep],
         defensive_emission: bool,
+        placed: &PlacedSources,
         imports: &[ImportEdit],
         src: &str,
         ast: &Ast,
@@ -2518,6 +2530,7 @@ impl DecidedRender {
             edits().filter(|edit| !refused_asts.contains(&edit.ast)),
             edits(),
             defensive_emission,
+            placed,
             src,
             ast,
         );
@@ -5045,18 +5058,29 @@ impl Plan {
     /// `src` and `ast` must be the pair every later render is handed. Nothing re-derives, so a plan
     /// decided against one tree and rendered against another prints stale answers; every producer
     /// holds exactly one pair, which is what makes that unrepresentable in practice rather than by
-    /// rule.
+    /// rule. `placed` is the artifact's own account of where each book-reached source stands, on
+    /// the same footing and for the same reason: a producer that defaulted it would hoist bytes the
+    /// artifact already carries at the author's `.`.
     #[must_use]
     pub fn decided(
         steps: Vec<Step>,
         regions: Vec<RegionStep>,
         survival_report: SurvivalReport,
         defensive_emission: bool,
+        placed: &PlacedSources,
         imports: &[ImportEdit],
         src: &str,
         ast: &Ast,
     ) -> Self {
-        let render = DecidedRender::decide(&steps, &regions, defensive_emission, imports, src, ast);
+        let render = DecidedRender::decide(
+            &steps,
+            &regions,
+            defensive_emission,
+            placed,
+            imports,
+            src,
+            ast,
+        );
         Self {
             steps,
             regions,
@@ -5200,6 +5224,51 @@ impl Plan {
     }
 }
 
+/// A source's index in the load-ordered vector, as the id every placement keys on.
+const fn source_file_id(index: usize) -> SourceFileId {
+    SourceFileId(index as u32)
+}
+
+/// The definition→placement map [`pin_definitions`] fills, keyed so one definition cannot take two
+/// placements (`30Qb` §9: that duplicate IS the double-carry bug).
+///
+/// A `Vec` beside the key set rather than a `BTreeMap` alone, because emission ORDER is load order
+/// then source order for declarations and first-seen within a name for bodies — none of which the
+/// key's own ordering reproduces.
+#[derive(Default)]
+struct PlacedDefinitions {
+    ordered: Vec<PinnedDefinition>,
+    keyed: BTreeSet<placement::DefinitionKey>,
+}
+
+impl PlacedDefinitions {
+    /// Place one definition, unless its source carries it nowhere or it is already placed.
+    fn place(
+        &mut self,
+        key: placement::DefinitionKey,
+        at: Option<Placement>,
+        bytes: String,
+        disambiguated: Option<String>,
+    ) {
+        let Some(placement) = at else {
+            return;
+        };
+        if !self.keyed.insert(key.clone()) {
+            return;
+        }
+        self.ordered.push(PinnedDefinition {
+            key,
+            bytes,
+            disambiguated,
+            placement,
+        });
+    }
+
+    fn into_vec(self) -> Vec<PinnedDefinition> {
+        self.ordered
+    }
+}
+
 /// Decide **which body each guard invokes, and under what name** (`28K` §4
 /// `rul-runtime-resolution-never-load-bearing`).
 ///
@@ -5218,6 +5287,13 @@ impl Plan {
 ///
 /// 1. **Content-dedup.** Byte-identical bodies are ONE definition however many sites reach them
 ///    (vendored copies are the commonest real collision, `28K` §4).
+/// 1b. **The source's own placement decides.** A definition stands where the artifact stands the
+///    file it was authored in (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`): a
+///    `--pre-source` root is AMBIENT and hoisting it is faithful, while a source a book `.` reaches
+///    binds at that `.` and the artifact already carries its bytes there — so hoisting it would be
+///    a SECOND copy, binding names at lines the authored program does not. A source nothing
+///    carries places nothing at all; the vouch is withheld upstream, and emitting no definition is
+///    the safe residue either way (an unbound check fails and the `||` runs the original).
 /// 2. **Already-in-place wins.** A body the book's own text already defines at top level, under
 ///    the same name and the same bytes, is not copied: the artifact would otherwise carry two
 ///    same-named funcdefs, which is the shape `oracle/src/reserved.rs` refuses by another route
@@ -5246,12 +5322,14 @@ fn pin_definitions<'a>(
     emitting: impl Iterator<Item = RenderedEdit<'a>>,
     invoking: impl Iterator<Item = RenderedEdit<'a>>,
     defensive_emission: bool,
+    placed: &PlacedSources,
     src: &str,
     ast: &Ast,
 ) -> PinnedDefinitions {
     let mut snapshot: BTreeMap<(usize, u32), &str> = BTreeMap::new();
     // Distinct bodies per funcname, first-seen order preserved within a name.
     let mut bodies: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    let mut body_source: BTreeMap<(&str, &str), SourceFileId> = BTreeMap::new();
     for edit in emitting {
         let Disposition::Guard(license) = edit.disposition else {
             continue;
@@ -5260,44 +5338,54 @@ fn pin_definitions<'a>(
         for decl in insert.closure() {
             snapshot.insert(decl.key(), decl.bytes());
         }
+        if let Some((_, file)) = insert.defining_span() {
+            body_source
+                .entry((insert.fn_name(), insert.body()))
+                .or_insert(file);
+        }
         let under = bodies.entry(insert.fn_name()).or_default();
         if !under.contains(&insert.body()) {
             under.push(insert.body());
         }
     }
     let mut emitted_names: BTreeMap<(&str, &str), String> = BTreeMap::new();
-    let mut definitions: Vec<PinnedDefinition> = Vec::new();
-    for bytes in snapshot.into_values() {
-        definitions.push(PinnedDefinition {
-            bytes: bytes.to_owned(),
-            disambiguated: None,
-        });
+    let mut definitions = PlacedDefinitions::default();
+    for ((file, offset), bytes) in snapshot {
+        definitions.place(
+            placement::DefinitionKey::Declaration(source_file_id(file), offset),
+            placed.of_definition(Some(source_file_id(file))),
+            bytes.to_owned(),
+            None,
+        );
     }
     for (name, distinct) in &bodies {
         let book_claims = book_defines_at_top_level(ast, name);
         for body in distinct {
+            let digest = short_digest(body);
+            let key = placement::DefinitionKey::Body((*name).to_owned(), digest.clone());
+            let at = placed.of_definition(body_source.get(&(name, body)).copied());
             if book_already_defines(src, ast, name, body) {
                 emitted_names.insert((name, body), (*name).to_owned());
                 continue;
             }
             let plural = distinct.len() > 1;
             if !(plural || book_claims || defensive_emission) {
-                definitions.push(PinnedDefinition {
-                    bytes: (*body).to_owned(),
-                    disambiguated: None,
-                });
+                definitions.place(key, at, (*body).to_owned(), None);
                 emitted_names.insert((name, body), (*name).to_owned());
                 continue;
             }
-            let emitted = format!("{name}_h{}", short_digest(body));
+            let emitted = format!("{name}_h{digest}");
             let header = format!("{name}()");
-            definitions.push(PinnedDefinition {
-                bytes: body.replacen(&header, &format!("{emitted}()"), 1),
-                disambiguated: plural.then(|| (*name).to_owned()),
-            });
+            definitions.place(
+                key,
+                at,
+                body.replacen(&header, &format!("{emitted}()"), 1),
+                plural.then(|| (*name).to_owned()),
+            );
             emitted_names.insert((name, body), emitted);
         }
     }
+    let definitions = definitions.into_vec();
     let invoked = invoking
         .filter_map(|edit| {
             let Disposition::Guard(license) = edit.disposition else {
@@ -5380,7 +5468,7 @@ impl Plan {
         // no site guards ⇒ a guard-free book stays byte-identical to HEAD. `emit_span_edits` emits
         // `apply_header()` as the artifact's verbatim prefix, so splicing after it lands the defs
         // above the whole book.
-        let preamble = pinned.hoisted();
+        let preamble = pinned.typeset(&Placement::Hoist);
         if preamble.is_empty() {
             return artifact;
         }
@@ -6578,16 +6666,20 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &PlacedSources::all_ambient(),
             &[],
             "",
             &ast,
         );
         let pinned = plan.pinned_definitions();
         assert_eq!(
-            pinned.hoisted().matches("apt_get__is_converged()").count(),
+            pinned
+                .typeset(&Placement::Hoist)
+                .matches("apt_get__is_converged()")
+                .count(),
             1,
             "one BODY ⇒ one hoist: {}",
-            pinned.hoisted()
+            pinned.typeset(&Placement::Hoist)
         );
         assert_eq!(
             pinned.invoked(AstId(0)),
@@ -6636,6 +6728,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &PlacedSources::all_ambient(),
             &[],
             src,
             &dorc_syntax::parse(src).value,
@@ -6671,26 +6764,31 @@ apt_get__is_converged() { return 0; }
                  guard as a description instead of an opaque call (`23A:P-reingest`): {name}"
             );
             assert_eq!(
-                pinned.hoisted().matches(&format!("{name}()")).count(),
+                pinned
+                    .typeset(&Placement::Hoist)
+                    .matches(&format!("{name}()"))
+                    .count(),
                 1,
                 "each body emitted exactly once, under its own name:\n{}",
-                pinned.hoisted()
+                pinned.typeset(&Placement::Hoist)
             );
         }
         assert!(
-            !pinned.hoisted().contains("apt_get__is_converged()"),
+            !pinned
+                .typeset(&Placement::Hoist)
+                .contains("apt_get__is_converged()"),
             "the plain name binds nothing when the unit holds two bodies:\n{}",
-            pinned.hoisted()
+            pinned.typeset(&Placement::Hoist)
         );
         assert_eq!(
             pinned
-                .hoisted()
+                .typeset(&Placement::Hoist)
                 .matches("# dorc: pinned definition of `apt_get__is_converged`")
                 .count(),
             2,
             "each munged body names the AUTHORED function it is, or a reader cannot answer whose \
              judgment runs:\n{}",
-            pinned.hoisted()
+            pinned.typeset(&Placement::Hoist)
         );
     }
 
@@ -6707,7 +6805,7 @@ apt_get__is_converged() { return 0; }
         let plan = two_guard_plan([body, body], &src);
         let pinned = plan.pinned_definitions();
         assert_eq!(
-            pinned.hoisted(),
+            pinned.typeset(&Placement::Hoist),
             "",
             "the book's own definition IS the pin — no second funcdef ships"
         );
@@ -6765,17 +6863,150 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &PlacedSources::all_ambient(),
             &[],
             &src,
             &ast,
         );
         let pinned = plan.pinned_definitions();
         assert_eq!(
-            pinned.hoisted(),
+            pinned.typeset(&Placement::Hoist),
             format!("{helper}\n"),
             "the snapshot ships; the book's own body does not travel"
         );
         assert_eq!(pinned.invoked(AstId(0)), Some("apt_get__is_converged"));
+    }
+
+    /// A vouch whose source a book `.` reaches stands AT that `.`, never above the book
+    /// (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`).
+    ///
+    /// CFG SHAPE: two top-level `Simple`s — the `.` that binds the package, then the guarded
+    /// mutator below it. The book defines nothing, so ALREADY-IN-PLACE cannot answer and the
+    /// pre-repair emission hoisted a full copy of the package's constants, helpers and role body
+    /// above the whole book; the artifact then bound those names at lines the authored program
+    /// does not, which is the hazard `pinned-definitions-are-the-artifact's-binding` names for
+    /// funcdefs and `emit30-hoisted-closure-outruns-its-load` measured for a constant.
+    #[test]
+    fn a_book_loaded_definition_stands_at_its_load_rather_than_above_the_book() {
+        use dorc_core::{ByVouch, Rung};
+        let helper = "_apt_dest() { printf '%s\\n' \"$1\" ; }";
+        let body = "apt_get__is_converged() { dpkg-query -W \"$(_apt_dest \"$1\")\" ; }";
+        let src = ". ./pkg.dorc.sh\napt-get install curl\n";
+        let ast = dorc_syntax::parse(src).value;
+        let vouch = loaded_vouch(helper, body);
+        let site = LoadSite(AstId(1));
+        let mut placed = PlacedSources::all_ambient();
+        placed.carried(
+            SourceFileId(0),
+            PlacementDecision::new(
+                Placement::InPlace(site),
+                EmittedName::Authored,
+                PlacementReason::KeptInPlaceLadderUnconsulted,
+            ),
+        );
+        let plan = Plan::decided(
+            vec![Step {
+                leaf: LeafId(0),
+                ast: AstId(0),
+                sh: "apt-get install curl".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(
+                        nginx_fact(),
+                        ByVouch::vouched(vouch, Rung::Both),
+                        Verdict::Converged,
+                        &quiet(),
+                    )
+                    .unwrap(),
+                ),
+            }],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            &placed,
+            &[],
+            src,
+            &ast,
+        );
+        let pinned = plan.pinned_definitions();
+        assert_eq!(
+            pinned.typeset(&Placement::Hoist),
+            "",
+            "the artifact already carries these bytes at the `.`; a hoist would be a second copy"
+        );
+        assert_eq!(
+            pinned.typeset(&Placement::InPlace(site)),
+            format!("{helper}\n{body}\n"),
+            "the material is placed, at the position its own source binds at"
+        );
+        assert_eq!(pinned.invoked(AstId(0)), Some("apt_get__is_converged"));
+    }
+
+    /// A source the artifact carries NOWHERE places nothing — there is no position for its bytes to
+    /// stand at, and inventing one is exactly the hoist the rule above closes. The guard's check
+    /// then resolves through the book's own `.`, as its mutation does, and falls through to the
+    /// original bytes if nothing bound it (`rul-guard-resolves-like-its-mutation`).
+    ///
+    /// CFG SHAPE: as above — the `.` and the guarded mutator below it — with the form carrying no
+    /// dependency (the preserved-book-tree fallback).
+    #[test]
+    fn an_uncarried_book_loaded_definition_is_placed_nowhere() {
+        use dorc_core::{ByVouch, Rung};
+        let helper = "_apt_dest() { printf '%s\\n' \"$1\" ; }";
+        let body = "apt_get__is_converged() { dpkg-query -W \"$(_apt_dest \"$1\")\" ; }";
+        let src = ". ./pkg.dorc.sh\napt-get install curl\n";
+        let ast = dorc_syntax::parse(src).value;
+        let mut placed = PlacedSources::all_ambient();
+        placed.uncarried(SourceFileId(0));
+        let plan = Plan::decided(
+            vec![Step {
+                leaf: LeafId(0),
+                ast: AstId(0),
+                sh: "apt-get install curl".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(
+                        nginx_fact(),
+                        ByVouch::vouched(loaded_vouch(helper, body), Rung::Both),
+                        Verdict::Converged,
+                        &quiet(),
+                    )
+                    .unwrap(),
+                ),
+            }],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            &placed,
+            &[],
+            src,
+            &ast,
+        );
+        let pinned = plan.pinned_definitions();
+        assert!(
+            pinned.definitions().is_empty(),
+            "nothing carries this source, so nothing may be placed: {:?}",
+            pinned.definitions()
+        );
+    }
+
+    /// A vouch whose defining span names source 0 — what makes a definition's placement answerable.
+    fn loaded_vouch(helper: &str, body: &str) -> VerdictVouch {
+        let helpers = dorc_oracle::closure::HelperIndex::build(&[helper], None);
+        let closure = helpers
+            .closure_for(0, body)
+            .expect("one source declares one helper");
+        VerdictVouch::new(
+            "apt_get__is_converged".to_string(),
+            body.to_string(),
+            "apt_get__is_converged install curl".to_string(),
+            "package".to_string(),
+            Vec::new(),
+            dorc_core::DefinitionCustody::of_defining_file(SourceFileId(0)),
+        )
+        .with_closure(&closure)
+        .with_defining_span(
+            dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(0)),
+            SourceFileId(0),
+        )
     }
 
     /// Two guards reaching ONE helper emit it once. The snapshot is hoisted above the whole book, so
@@ -6818,12 +7049,13 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &PlacedSources::all_ambient(),
             &[],
             "",
             &dorc_syntax::parse("").value,
         );
         let pinned = plan.pinned_definitions();
-        let hoisted = pinned.hoisted();
+        let hoisted = pinned.typeset(&Placement::Hoist);
         assert_eq!(
             hoisted.matches("_apt_dest() {").count(),
             1,
@@ -6890,15 +7122,19 @@ apt_get__is_converged() { return 0; }
                 "{cell}: the ENGINE's definition munges — {invoked}"
             );
             assert!(
-                !pinned.hoisted().contains("apt_get__is_converged()"),
+                !pinned
+                    .typeset(&Placement::Hoist)
+                    .contains("apt_get__is_converged()"),
                 "{cell}: and the preamble binds the bare name NOWHERE, so the book's own definition \
                  is the artifact's only binding for it and its own calls are untouched:\n{}",
-                pinned.hoisted()
+                pinned.typeset(&Placement::Hoist)
             );
             assert!(
-                pinned.hoisted().contains(&format!("{invoked}()")),
+                pinned
+                    .typeset(&Placement::Hoist)
+                    .contains(&format!("{invoked}()")),
                 "{cell}: the engine's body is still emitted, under its own name:\n{}",
-                pinned.hoisted()
+                pinned.typeset(&Placement::Hoist)
             );
         }
     }
@@ -6935,6 +7171,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             true,
+            &PlacedSources::all_ambient(),
             &[],
             "",
             &dorc_syntax::parse("").value,
@@ -6947,9 +7184,11 @@ apt_get__is_converged() { return 0; }
              {invoked}"
         );
         assert!(
-            !pinned.hoisted().contains("apt_get__is_converged()"),
+            !pinned
+                .typeset(&Placement::Hoist)
+                .contains("apt_get__is_converged()"),
             "no bare name survives for an `alias` to rebind:\n{}",
-            pinned.hoisted()
+            pinned.typeset(&Placement::Hoist)
         );
         assert_eq!(
             pinned.invoked(AstId(1)),
@@ -6972,6 +7211,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &PlacedSources::all_ambient(),
             &[],
             src,
             &dorc_syntax::parse(src).value,
@@ -7009,17 +7249,19 @@ apt_get__is_converged() { return 0; }
         let many_plan = two_guard_plan([body, body], &src);
         let many = many_plan.pinned_definitions();
         assert_eq!(
-            many.hoisted().matches("apt_get__is_converged_h").count(),
+            many.typeset(&Placement::Hoist)
+                .matches("apt_get__is_converged_h")
+                .count(),
             1,
             "the many-use half lifts ONE munged definition above the book:\n{}",
-            many.hoisted()
+            many.typeset(&Placement::Hoist)
         );
 
         // Setup outside the closure: a panic in there would read as the target still failing.
         let plan = one_guard_plan(body, &src);
         let guards = plan.disposition_counts().guard;
         let once = plan.pinned_definitions();
-        let hoisted = once.hoisted();
+        let hoisted = once.typeset(&Placement::Hoist);
         internal_tooling::xfail::xfail_until("p-x-placement-tuning-pair", || {
             assert_eq!(guards, 1, "the single site still guards");
             assert!(
@@ -7219,6 +7461,7 @@ apt_get__is_converged() { return 0; }
             Vec::new(),
             SurvivalReport::default(),
             false,
+            &PlacedSources::all_ambient(),
             &[],
             "",
             &empty_ast,
@@ -7243,6 +7486,7 @@ apt_get__is_converged() { return 0; }
                 Vec::new(),
                 SurvivalReport::default(),
                 false,
+                &PlacedSources::all_ambient(),
                 &[],
                 "",
                 &empty_ast,

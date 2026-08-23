@@ -195,9 +195,10 @@ pub fn spend_certifier_trip(
 /// Censusless is honest for every instrument here — none holds a `DefinitionTable` — so every guard
 /// demotes too (`FORFEITS:forfeit-certifier-trip-demotes-guards`: safe, merely poorer).
 ///
-/// No IMPORT edits either, and for the same species of reason: an instrument that never settled an
-/// artifact form has no bundle for an import to name, and inventing one here would put a rewrite in
-/// a plan nobody is going to publish.
+/// No IMPORT edits either, and no book-reached placements, for the same species of reason: an
+/// instrument that never settled an artifact form has no bundle for an import to name and no
+/// carriage account to inherit from, and inventing either here would put a rewrite in a plan nobody
+/// is going to publish.
 #[must_use]
 pub fn project_censusless(
     spine: &mut Spine,
@@ -207,7 +208,15 @@ pub fn project_censusless(
     authority: &PlanAuthority,
 ) -> Plan {
     let (_cleanup, spent) = spend_certifier_trip(spine, trip, |_| false);
-    crate::project_plan(spine, src, ast, &[], authority, &spent)
+    crate::project_plan(
+        spine,
+        src,
+        ast,
+        &crate::PlacedSources::all_ambient(),
+        &[],
+        authority,
+        &spent,
+    )
 }
 
 #[cfg(test)]
@@ -444,6 +453,7 @@ apt_get__predict() {
             spine,
             FIXTURE_BOOK,
             &ast,
+            &crate::PlacedSources::all_ambient(),
             &[],
             &crate::PlanAuthority::without_intake(),
             spent,

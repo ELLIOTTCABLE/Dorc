@@ -21,8 +21,11 @@ expect-diagnostic: artifact-form-fallback
 # special builtin, so a non-interactive shell that cannot find what it sources EXITS, and the exec
 # rail's cwd is an empty throwaway sandbox.
 #
-# `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts the
-# vouching body on the apply surface and keeps the run non-vacuous.
+# `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts a
+# guard on the apply surface and keeps the run non-vacuous. Its BODY is NOT in a preamble: this
+# form carries no dependency at all, so no position exists for the engine to stand the package's
+# bytes at, and the guard resolves through the book's own `.` exactly as its mutation does
+# (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`, the residual).
 MODE=prod . ./wombat.dorc.sh
 hork provision
 wombat sync a.conf
@@ -52,7 +55,7 @@ $ dorc --book=book.sh --results - < probe-results.txt
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=cca91cab391cfbb684d0c7a2b45fd0a2286b67ac7c4fe8cea96cd4caed3fa8d5 sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ba2a27643560420bcd9ce87c48428b6cf50992d67b56a2eda09b190188831ae7 sites=1 @@dorc@@\n'
 # site 2: dorc-auto:wombat@converged
 wombat__is_converged() {
    case "${1-}" in
@@ -66,18 +69,6 @@ wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
-
-# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
-# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
-# authored bytes verbatim, no engine-synthesized sh).
-wombat__is_converged() {
-   case "${1-}" in
-   sync) wombat status --conf -- "${2-}" ;;
-   *) return 2 ;;
-   esac
-}
-
-# dorc: end of lifted material; the book follows, in its authored order.
 
 #!/bin/sh
 # emit30-assigned-load-is-not-absorbable (`30Pc:bug-assignment-bearing-dot-is-inlineable`) — the
@@ -96,8 +87,11 @@ wombat__is_converged() {
 # special builtin, so a non-interactive shell that cannot find what it sources EXITS, and the exec
 # rail's cwd is an empty throwaway sandbox.
 #
-# `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts the
-# vouching body on the apply surface and keeps the run non-vacuous.
+# `hork` is unmodeled and walls, so the site below it guards rather than elides — which puts a
+# guard on the apply surface and keeps the run non-vacuous. Its BODY is NOT in a preamble: this
+# form carries no dependency at all, so no position exists for the engine to stand the package's
+# bytes at, and the guard resolves through the book's own `.` exactly as its mutation does
+# (`30Qb:rul-a-loaded-definitions-placement-is-its-load-position`, the residual).
 MODE=prod . ./wombat.dorc.sh
 hork provision
 ( wombat__is_converged sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]

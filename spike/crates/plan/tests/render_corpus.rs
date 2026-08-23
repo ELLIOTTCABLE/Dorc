@@ -1939,6 +1939,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         Vec::new(),
         SurvivalReport::default(),
         false,
+        &dorc_plan::PlacedSources::all_ambient(),
         &[],
         src,
         &ast,
@@ -2013,6 +2014,7 @@ fn a_rewritten_import_reaches_the_bytes_the_surface_and_the_plane() {
         Vec::new(),
         SurvivalReport::default(),
         false,
+        &dorc_plan::PlacedSources::all_ambient(),
         &[dorc_plan::ImportEdit::Repoint {
             ast: operand,
             path: "./pkg.dorc-bundle.sh".to_owned(),
