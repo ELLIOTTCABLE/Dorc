@@ -5856,15 +5856,15 @@ fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[Strin
 /// book but whose argv every shape declines still correctly reads as zero-matched (no vouch
 /// reached) — but a book-defined verdict that SHADOWS an oracle's same-named family
 /// (`oracle/CLAUDE.md visibility-is-full-positional`: at most one definition is live per name) is
-/// indistinguishable from the oracle's own vouch by fn_name alone, so a shadowed oracle can read
+/// indistinguishable from the oracle's own vouch by `fn_name` alone, so a shadowed oracle can read
 /// as matched when its own body never ran. A rare edge, not chased here.
 fn oracle_matched_zero_sites_diagnostics(
     oracle_paths: &[String],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
-    vouches: &dorc_plan::Vouches,
+    run_vouches: &dorc_plan::Vouches,
     interner: &Interner,
 ) -> Vec<Diag> {
-    let vouched = vouches.vouched_fn_names();
+    let vouched = run_vouches.vouched_fn_names();
     oracle_paths
         .iter()
         .zip(verdict_sets)
