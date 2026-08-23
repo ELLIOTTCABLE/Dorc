@@ -1659,7 +1659,7 @@ impl Vouches {
             .any(|(candidate, _)| *candidate == site)
     }
 
-    /// Every REACHED verdict fn_name (`<munge>__is_converged`) actually vouched at some site in
+    /// Every REACHED verdict `fn_name` (`<munge>__is_converged`) actually vouched at some site in
     /// this run (`30Qe:fruit-oracle-matched-zero-sites`) — the aggregation surface for the
     /// zero-matched-sites aid-plane warning. `by_establish` holds ONLY reached vouches (an absent
     /// site never guards, per its own doc), so this is exactly "which providers earned a vouch",
