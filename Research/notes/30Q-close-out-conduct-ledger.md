@@ -61,7 +61,7 @@
 | `lane-emission-planner` | `ai/r30-lane-planner` → `-exec` | planner lane report | Opus MAP → ruling → EXECUTE | MAP FOLDED-IN-BRANCH `0c38045d` (30Pc repair + 2 evidence cells landed); RULED; EXECUTE DISPATCHED 2026-08-22 |
 | `lane-load-plane-precision` | `ai/r30-lane-load` → `-a`, `-b` (parallel) | load lane report | Opus MAP → ruling → EXECUTE-A ∥ EXECUTE-B | MAP FOLDED-IN-BRANCH `d2b47654` (5 red pins, glob retarget, plain-sh e2e red); RULED; A and B DISPATCHED 2026-08-22 |
 | `lane-influence-carriage` | — | influence lane report | Opus EXECUTE over the merged tip (scout census banked) | WAITING on the fold |
-| `lane-fruit-arc` | `ai/r30-lane-fruit` | fruit lane report | Sonnet, one shot | DISPATCHED 2026-08-22 |
+| `lane-fruit-arc` | `ai/r30-lane-fruit` → `-2` | fruit lane report | Sonnet ×2 | FIRST SONNET HUMAN-STOPPED at `306a7a00` (items 1–3 landed; item 1 detector unwired; gate unconfirmed; item 4 paragraph → prose queue; FOUND a latent `dorc_oracle::predict` lexer bug misreading `{1..N}` as a group opener on the loom lift path — kernel batch); CLOSER DISPATCHED 2026-08-22 |
 
 Briefs: scratchpad `brief-common.md` + `brief-<lane>.md`; scout maps `scout-<lane>.md` (session
 scratchpad; the load-bearing findings are copied into the briefs and into this ledger).
