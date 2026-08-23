@@ -793,6 +793,12 @@ pub struct FuncEnv {
     /// Per RESOLVED `.`/`source` site, the loadable path it names — so the shadow pass can replay
     /// which definitions that statement bound without re-reading the value plane.
     resolved_loads: BTreeMap<CfgNodeId, ResolvedHead>,
+    /// Per site whose head NAMED a file the controller holds no `LoadProgram` for — an unread
+    /// target, or an acquired plain-sh inclusion. Kept beside the resolved map because EXACT-ness
+    /// asks whether the head names ONE file, which both answer, while carrying a program is the
+    /// separate question of whether the engine MODELS it
+    /// (`rul-acquiring-bytes-is-not-modelling-them`).
+    named_loads: BTreeMap<CfgNodeId, ResolvedHead>,
     /// THE ONE LOAD ACCOUNT (`30I:rul-one-load-account-separate-projections`): every statically
     /// possible resolved load occurrence the settled walk followed, with its locus and positional
     /// context, from which every consumer derives its own projection.
@@ -892,6 +898,32 @@ impl FuncEnv {
     #[must_use]
     pub fn folded_edges(&self) -> &BTreeSet<(CfgNodeId, CfgNodeId)> {
         &self.folded_edges
+    }
+
+    /// May authority rest on this `.` site's load — and if not, WHY
+    /// (`30P:rul-load-head-is-exact-or-havoc`)?
+    ///
+    /// THE ONE SEAT. Composed here rather than at each consumer because a cwd-havoc'd site sits
+    /// in BOTH [`Self::resolved_loads`] (the file is still named, so it is still acquired) and
+    /// [`Self::havoc_causes`]: a consumer reading only the first would call it EXACT and hand a
+    /// rewrite or a shipped copy to a line whose resolution nobody knows.
+    ///
+    /// EXACT-ness asks whether the head names ONE file, so a NAMED-but-unmodelled target answers
+    /// `Ok` alongside a resolved one — carrying a `LoadProgram` is the separate question
+    /// (`rul-acquiring-bytes-is-not-modelling-them`). A node the loader answered for at all is
+    /// denied conservatively, because a site with no head is a site nothing may rest on.
+    ///
+    /// # Errors
+    /// The cause that denies EXACT-ness — an unevaluable operand, a cwd a line above may have
+    /// moved, or a head naming nothing this unit can identify.
+    pub fn load_certainty(&self, node: CfgNodeId) -> Result<&ResolvedHead, HavocCause> {
+        if let Some(&cause) = self.havoc_causes.get(&node) {
+            return Err(cause);
+        }
+        self.resolved_loads
+            .get(&node)
+            .or_else(|| self.named_loads.get(&node))
+            .ok_or(HavocCause::NotInSnapshot)
     }
 }
 
@@ -1103,6 +1135,7 @@ pub fn analyze(
                 searches_path: sites.searches_path.clone(),
                 havoc_causes: sites.causes.clone(),
                 resolved_loads,
+                named_loads: sites.named.clone(),
                 folded_edges,
                 loads,
             }
@@ -1170,6 +1203,7 @@ pub fn funcenv_floor<G: Graph>(graph: &G, floor: EnvFloor) -> FuncEnv {
         searches_path: BTreeSet::new(),
         havoc_causes: BTreeMap::new(),
         resolved_loads: BTreeMap::new(),
+        named_loads: BTreeMap::new(),
         folded_edges: BTreeSet::new(),
         loads: LoadAccount::default(),
     }
@@ -3102,6 +3136,7 @@ mod tests {
             searches_path: BTreeSet::new(),
             havoc_causes: BTreeMap::new(),
             resolved_loads: BTreeMap::new(),
+            named_loads: BTreeMap::new(),
             folded_edges: BTreeSet::new(),
             loads: crate::load::LoadAccount::default(),
         };

@@ -2709,7 +2709,7 @@ fn select_artifact_form(
     let projection = dorc_cli::bundle::project(snapshot, env.loads())
         .map(dorc_cli::bundle::BundleProjectionOutput::into_projection)
         .unwrap_or_default();
-    let loads = book_loads(cfg, book, book_src, &projection);
+    let loads = book_loads(cfg, book, book_src, &projection, env);
     let posture = artifact_stream(stdout, args.artifact_dir.is_some())?;
     let request = args.form.map_or(FormRequest::Auto, FormRequest::Explicit);
     select(snapshot, &projection, &loads, request, posture)

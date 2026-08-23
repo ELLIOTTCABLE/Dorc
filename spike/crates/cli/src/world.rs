@@ -81,7 +81,7 @@ fn select_terminal_form(
     let projection = crate::bundle::project(snapshot, env.loads())
         .map(crate::bundle::BundleProjectionOutput::into_projection)
         .unwrap_or_default();
-    let loads = crate::artifact::book_loads(cfg, book, snapshot.book_src(), &projection);
+    let loads = crate::artifact::book_loads(cfg, book, snapshot.book_src(), &projection, env);
     crate::artifact::select_for_terminal_render(snapshot, &projection, &loads)
 }
 

@@ -336,15 +336,58 @@ pub struct BookLoad {
     /// different environment than the `.` they stand for. `Repoint` moves only the operand and
     /// stays eligible for that shape.
     pub absorbable: bool,
-    /// Does the operand name its target EXPLICITLY — the precondition every rewrite of this line
-    /// derives from (`30P:rul-rewrite-permission-is-derived`, human-typed)?
-    ///
-    /// Permission to re-point, inline or hoist an import comes from the AUTHOR having written what
-    /// the line loads, never from the load plane's EXACT-ness, which answers a different question
-    /// (can the controller say which file this resolves to). A computed operand stays verbatim in
-    /// every form; where a form places files at all its target is mirrored at the authored relative
-    /// path, and the author's own line finds it there.
-    pub explicit: bool,
+    /// What Dorc may do to this `.` line, on the two axes that govern it.
+    pub permits: LoadPermission,
+}
+
+/// What Dorc may do to one `.` line — and the two axes are NOT interchangeable.
+///
+/// EXPLICITNESS asks whether the AUTHOR named the target, so a rewrite of that line is Dorc's to
+/// make (`30P:rul-rewrite-permission-is-derived`, human-typed). EXACTNESS asks whether the
+/// CONTROLLER can say which file the line loads, so anything may rest on it at all
+/// (`30P:rul-load-head-is-exact-or-havoc`). Below a BLIND ACT — a line whose effect on the shell
+/// Dorc cannot see — the second fails while the first still holds, and that cell is exactly where
+/// re-pointing a reference changes which file the host loads
+/// (`30P:law-no-unsoundness-below-a-blind-act`).
+///
+/// One value with private fields rather than two bools side by side: those are swappable without a
+/// type error, and the questions they answer reach different seats. Three cells, and the third is
+/// the one the law adds — an EXACT explicit load may be re-pointed or pasted; an EXACT inexplicit
+/// one stays verbatim and is mirrored so the author's own operand finds it; a non-EXACT one stays
+/// verbatim and nothing is shipped for it at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LoadPermission {
+    explicit: bool,
+    exact: bool,
+}
+
+impl LoadPermission {
+    /// The permission a load carries, from the two questions answered independently.
+    #[must_use]
+    pub const fn of(explicit: bool, exact: bool) -> Self {
+        Self { explicit, exact }
+    }
+
+    /// May an emitter re-point, inline, hoist or paste this line? The author named the target AND
+    /// Dorc knows which file that is — explicitness alone never licenses a rewrite.
+    #[must_use]
+    pub const fn may_rewrite(self) -> bool {
+        self.explicit && self.exact
+    }
+
+    /// May any form carry a copy of this line's target? A copy of a file Dorc cannot prove the
+    /// author referenced is engine selection, which is the thing the law strikes.
+    #[must_use]
+    pub const fn may_ship(self) -> bool {
+        self.exact
+    }
+
+    /// Did the author name the target — the REWRITE axis alone, for the one seat that owes the
+    /// admin a sentence about which of the two failed.
+    #[must_use]
+    pub const fn is_explicit(self) -> bool {
+        self.explicit
+    }
 }
 
 /// Does this operand name its target explicitly (`30P:rul-rewrite-permission-is-derived`)?
@@ -386,12 +429,16 @@ fn operand_is_explicit(book: &dorc_syntax::Ast, operand: AstId) -> bool {
 /// A `--pre-source` root is deliberately absent: it is not in the book's bytes, so no artifact
 /// form has anything to place for it — the guard preamble already carries whatever of it the
 /// artifact needs (`pinned-definitions-are-the-artifact's-binding`).
+/// `env` answers the EXACT axis: `funcenv::FuncEnv::load_certainty` is the ONE seat that composes
+/// the analysis's own two maps, so no second derivation of "does Dorc know which file this loads"
+/// exists here to drift from it (`30P:rul-load-head-is-exact-or-havoc`).
 #[must_use]
 pub fn book_loads(
     cfg: &dorc_analysis::cfg::Cfg,
     book: &dorc_syntax::Ast,
     book_src: &str,
     projection: &BundleProjection,
+    env: &dorc_analysis::funcenv::FuncEnv,
 ) -> Vec<BookLoad> {
     use dorc_syntax::ast::NodeKind;
 
@@ -433,7 +480,10 @@ pub fn book_loads(
                 operand,
                 root: occurrence.root(),
                 absorbable: top_level.contains(&command) && bare && alone_on_line(book_src, span),
-                explicit: operand.is_some_and(|word| operand_is_explicit(book, word)),
+                permits: LoadPermission::of(
+                    operand.is_some_and(|word| operand_is_explicit(book, word)),
+                    env.load_certainty(occurrence.load().at).is_ok(),
+                ),
             }
         })
         .collect()
@@ -574,10 +624,10 @@ fn bundle_files(
             }
             continue;
         }
-        // A computed operand is not ours to re-say (`30P:rul-rewrite-permission-is-derived`): the
-        // line stays verbatim, so every file under it is mirrored at the authored relative path the
-        // author's own operand will resolve to.
-        if !load.explicit {
+        // A line Dorc may not rewrite stays verbatim, so every file under it is mirrored at the
+        // authored relative path the author's own operand will resolve to. Two ways to land here:
+        // the author did not NAME the target, or Dorc cannot say WHICH file the line loads.
+        if !load.permits.may_rewrite() {
             for file in root.files().iter().filter_map(|&id| projection.file(id)) {
                 match mirrored(cwd, authored_of(file)) {
                     Some(beside) => {
@@ -706,7 +756,7 @@ fn inline_imports(
                 .roots()
                 .iter()
                 .find(|root| root.id() == load.root)
-                .filter(|_| load.absorbable && load.explicit)?;
+                .filter(|_| load.absorbable && load.permits.may_rewrite())?;
             // AN INCLUSION MAKES THE FORM UNAVAILABLE. Pasting an ordinary sh file into one stream
             // is `mech-paste-plain-sh-single-stream`, which is forfeited behind a closed exclusion
             // set nobody has welded (`30P:principle-book-code-source-is-inclusion` tier 3;
@@ -730,8 +780,13 @@ fn inline_imports(
 ///
 /// ONE seat, read by the placement account and by the import edit alike, so the reason a plan
 /// DISCLOSES and the reason the placement RECORDS cannot say different things about one line.
+///
+/// It reads the EXPLICITNESS axis alone, deliberately: a non-EXACT load reaches no import edit and
+/// carries no bytes anywhere, so it never arrives here at all. Answering
+/// `KeptInPlaceOperandNotExplicit` for a line that IS explicit and merely non-EXACT would point the
+/// author at the wrong repair, which is the top of `271:rul-sin-ordering`.
 const fn kept_in_place_reason(load: &BookLoad) -> PlacementReason {
-    if !load.explicit {
+    if !load.permits.is_explicit() {
         PlacementReason::KeptInPlaceOperandNotExplicit
     } else if load.absorbable {
         PlacementReason::KeptInPlaceLadderUnconsulted
@@ -898,7 +953,7 @@ pub fn select_for_terminal_render(
 ) -> Selection {
     let inline_debt = loads
         .iter()
-        .filter(|load| !(load.absorbable && load.explicit))
+        .filter(|load| !(load.absorbable && load.permits.may_rewrite()))
         .count()
         .max(usize::from(
             inline_imports(snapshot, projection, loads).is_none(),
@@ -939,7 +994,7 @@ pub fn select(
     let inlined = inline_imports(snapshot, projection, loads);
     let inline_debt = loads
         .iter()
-        .filter(|load| !(load.absorbable && load.explicit))
+        .filter(|load| !(load.absorbable && load.permits.may_rewrite()))
         .count()
         .max(usize::from(inlined.is_none()));
     let multipart = match posture {
@@ -1079,7 +1134,7 @@ mod tests {
             operand: Some(dorc_core::AstId(1)),
             root: crate::bundle::BundleRootId::first(),
             absorbable: true,
-            explicit: true,
+            permits: super::LoadPermission::of(true, true),
         }
     }
 
@@ -1301,7 +1356,7 @@ mod tests {
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
         );
         assert_eq!(loads.len(), 1, "one book-sited load");
-        loads[0].explicit = false;
+        loads[0].permits = super::LoadPermission::of(false, true);
         let settled = |request, posture| select(&snapshot, &projection, &loads, request, posture);
         let multipart = settled(FormRequest::Auto, StreamPosture::Materializable)
             .expect("the dependency is placeable at its authored path");
@@ -1584,7 +1639,7 @@ mod tests {
         let projection = crate::bundle::project(&snapshot, env.loads())
             .map(crate::bundle::BundleProjectionOutput::into_projection)
             .expect("one closed occurrence forest");
-        let loads = super::book_loads(&cfg, &ast, book, &projection);
+        let loads = super::book_loads(&cfg, &ast, book, &projection, &env);
         (snapshot, projection, loads)
     }
 
@@ -2059,11 +2114,12 @@ mod tests {
     /// so which file `./wombat.dorc.sh` names on the host is unknown, and rewriting a reference
     /// whose resolution is unknown changes which file the host loads.
     fn below_a_blind_act(
+        blind: &str,
         request: FormRequest,
         posture: StreamPosture,
     ) -> Result<super::Selection, FormRefusal> {
         book_sourced(
-            ". /etc/os-release\n. ./wombat.dorc.sh\nwombat sync a.conf\n",
+            &format!("{blind}\n. ./wombat.dorc.sh\nwombat sync a.conf\n"),
             vec!["wombat.dorc.sh".to_owned()],
             vec!["# dorc-lang/v0.2\nwombat__is_converged() { :; }\n".to_owned()],
             request,
@@ -2071,23 +2127,52 @@ mod tests {
         )
     }
 
+    /// A blind act whose OPERAND the controller cannot evaluate. The engine already reads this one
+    /// as a cwd clobber, so the load below it is already non-EXACT — which is what makes it the
+    /// direct assertion beside each pin: the rewrite gate is observable here TODAY, and the pin
+    /// beside it is waiting on the seed widening alone, never on the gate.
+    const DYNAMIC_BLIND_ACT: &str = ". \"$SITE_PROFILE/rc\"";
+
+    /// The same act with a LITERAL operand — the law's own example. It evaluates perfectly and the
+    /// controller holds no bytes for it, which is exactly the species the clobber seed misses.
+    const LITERAL_BLIND_ACT: &str = ". /etc/os-release";
+
     /// TARGET: the line stays VERBATIM in every form — not re-pointed at a bundle, not replaced by
     /// one (`30P:the-load-plane-stays-correct`: "a literal `.` below a `cd`/havoc is NOT pasted and
     /// NOT re-pointed … explicitness alone never licenses a rewrite — the resolution must be EXACT
     /// too").
     ///
-    /// The gate at every rewrite seat is `BookLoad::explicit` alone, and explicitness answers a
-    /// DIFFERENT question — did the author name this target — which this operand passes.
+    /// Both blind-act SPELLINGS are asserted, and they discharge at different commits. The dynamic
+    /// operand already reads as a cwd clobber, so it is what makes the REWRITE GATE observable on
+    /// its own; the literal one waits on the clobber seed, which is a separate question about which
+    /// acts are blind at all.
     ///
     /// CFG SHAPE: two straight-line top-level `.`s, each the whole of its own line with neither a
     /// redirect nor a leading assignment (so the second is inside `floor30-inline-dot-boundary`'s
     /// measured absorbable cell), and the described mutator below both.
     #[test]
     fn a_load_below_a_blind_act_is_never_re_pointed() {
-        let multipart = below_a_blind_act(FormRequest::Auto, StreamPosture::Materializable)
-            .expect("a relative dependency is placeable");
-        let one_stream = below_a_blind_act(FormRequest::Auto, StreamPosture::TerminalRender)
-            .expect("auto always lands somewhere");
+        let settled = |blind| {
+            (
+                below_a_blind_act(blind, FormRequest::Auto, StreamPosture::Materializable)
+                    .expect("a relative dependency is placeable"),
+                below_a_blind_act(blind, FormRequest::Auto, StreamPosture::TerminalRender)
+                    .expect("auto always lands somewhere"),
+            )
+        };
+        let (dynamic_multipart, dynamic_one_stream) = settled(DYNAMIC_BLIND_ACT);
+        assert!(
+            dynamic_multipart.imports().is_empty(),
+            "a dynamic blind act already denies the rewrite: {:?}",
+            dynamic_multipart.imports()
+        );
+        assert_eq!(
+            dynamic_one_stream.form(),
+            ArtifactForm::PreservedBookTree,
+            "and one stream cannot absorb a line it may not replace"
+        );
+
+        let (multipart, one_stream) = settled(LITERAL_BLIND_ACT);
         assert_eq!(multipart.imports().len(), 1, "interim: re-pointed");
         assert_eq!(
             one_stream.form(),
@@ -2117,22 +2202,32 @@ mod tests {
     /// Its own cell rather than an assertion on the one above, because the two green at different
     /// seats: the rewrite gate is `BookLoad`'s, the carriage gate is `bundle_files`/`mirrored_files`.
     ///
+    /// Both spellings again, and here they discharge TOGETHER: refusing the rewrite still mirrors
+    /// the target, so neither is green until the carriage gate lands.
+    ///
     /// CFG SHAPE: as above.
     #[test]
     fn a_load_below_a_blind_act_ships_no_copy() {
-        let multipart = below_a_blind_act(FormRequest::Auto, StreamPosture::Materializable)
-            .expect("a relative dependency is placeable");
-        assert_eq!(multipart.dependencies.len(), 1, "interim: the bundle ships");
+        let placed = |blind| {
+            below_a_blind_act(blind, FormRequest::Auto, StreamPosture::Materializable)
+                .expect("a relative dependency is placeable")
+        };
+        let dynamic = placed(DYNAMIC_BLIND_ACT);
+        let literal = placed(LITERAL_BLIND_ACT);
+        assert_eq!(dynamic.dependencies.len(), 1, "interim: mirrored anyway");
+        assert_eq!(literal.dependencies.len(), 1, "interim: the bundle ships");
         internal_tooling::xfail::xfail_until("p-x-non-exact-load-ships-no-copy", || {
-            assert!(
-                multipart.dependencies.is_empty(),
-                "nothing is shipped on a guess about where the run stands: {:?}",
-                multipart
-                    .dependencies
-                    .iter()
-                    .map(|file| file.path.as_str())
-                    .collect::<Vec<_>>()
-            );
+            for settled in [&dynamic, &literal] {
+                assert!(
+                    settled.dependencies.is_empty(),
+                    "nothing is shipped on a guess about where the run stands: {:?}",
+                    settled
+                        .dependencies
+                        .iter()
+                        .map(|file| file.path.as_str())
+                        .collect::<Vec<_>>()
+                );
+            }
         });
     }
 }
