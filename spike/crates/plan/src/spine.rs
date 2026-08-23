@@ -14,7 +14,7 @@
 //! `Refused` admission (`306b:rul-report-only-output-cannot-plan`).
 
 use dorc_aid::narrative::CollapseNarrative;
-use dorc_core::spine::{DecidePlane, SurvivalDemote, SurvivalOutcome};
+use dorc_core::spine::{DecidePlane, InfluenceBearing, SurvivalDemote, SurvivalOutcome};
 
 use crate::records::Admission;
 use crate::{Disposition, Plan, Step, SurvivalReport};
@@ -164,6 +164,25 @@ pub fn project_plan(
             routes: record.routes().clone(),
         })
         .collect();
+    // `306b:rul-projections-continue-influence-flow` — Spine finalization does not terminate
+    // propagation. The fold starts at the PROJECTING RUN's own account rather than at ⊥, so a plan
+    // over zero records answers where the run stands instead of reading pre-contact.
+    let decided = spine
+        .dispositions()
+        .map(InfluenceBearing::account)
+        .chain(
+            spine
+                .region_decisions()
+                .iter()
+                .map(InfluenceBearing::account),
+        )
+        .chain(
+            spine
+                .render_decisions()
+                .iter()
+                .map(InfluenceBearing::account),
+        )
+        .fold(world, dorc_core::influence::InfluenceAccount::join);
     let plan = Plan::decided(
         steps,
         regions,
@@ -172,8 +191,9 @@ pub fn project_plan(
         emission,
         src,
         ast,
+        decided,
     );
-    record_render_decisions(spine, &plan, world);
+    record_render_decisions(spine, &plan, plan.account());
     plan
 }
 
@@ -386,6 +406,7 @@ mod tests {
                             &dorc_analysis::lattice::May(
                                 dorc_analysis::lattice::Powerset::default(),
                             ),
+                            dorc_core::influence::InfluenceAccount::authored_before_contact(),
                         )
                         .expect("a converged probe verdict mints a guard"),
                     ),
@@ -407,6 +428,7 @@ mod tests {
             crate::NO_ARTIFACT_FORM,
             src,
             &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
 
         let mut spine = Spine::new();
@@ -667,9 +689,11 @@ mod tests {
                 "coverage/src/lib.rs",
                 "hostsim/src/lib.rs",
                 "plan/src/certifier_trip.rs",
+                "plan/src/erasability.rs",
                 "plan/src/lib.rs",
                 "plan/src/region.rs",
                 "plan/src/spine.rs",
+                "plan/tests/erasability.rs",
                 "plan/tests/region.rs",
                 "plan/tests/render_corpus.rs",
                 "sweep/src/drive.rs",

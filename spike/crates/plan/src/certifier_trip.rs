@@ -396,6 +396,7 @@ apt_get__predict() {
                     a_vouch(fn_name, "body"),
                     Verdict::Converged,
                     &dorc_analysis::lattice::May(dorc_analysis::lattice::Powerset::default()),
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
                 )
                 .expect("a converged probe verdict mints a guard"),
             ),

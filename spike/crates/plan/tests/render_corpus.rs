@@ -1942,6 +1942,7 @@ fn a_redirect_refused_guard_is_disclosed_on_every_surface() {
         dorc_plan::NO_ARTIFACT_FORM,
         src,
         &ast,
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
 
     let diags = plan.render_refusal_diagnostics(&ast, &Interner::default());
@@ -2026,6 +2027,7 @@ fn a_rewritten_import_reaches_the_bytes_the_surface_and_the_plane() {
         dorc_plan::ArtifactEmission::of(&placed, &imports),
         src,
         &ast,
+        dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
 
     let artifact = plan.render_apply(src, &ast);

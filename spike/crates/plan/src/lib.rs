@@ -40,6 +40,7 @@
 //!     dorc_analysis::lattice::May<dorc_analysis::lattice::Powerset<dorc_core::Channel>>,
 //!     dorc_core::Predicted<dorc_core::Rc>,
 //!     Option<ByVouch<VerdictVouch>>,
+//!     dorc_core::influence::InfluenceAccount,
 //! ) -> Option<ReplaceLicense> = ReplaceLicense::prove_replaceable::<Probe>;
 //! ```
 //!
@@ -492,6 +493,12 @@ pub struct ReplaceLicense {
     /// stamps it, so "which author is this license speaking for" has an answer that is read off the
     /// value rather than re-derived from three unrelated mechanisms agreeing.
     custody: dorc_core::LicenseCustody,
+    /// Where this LICENSE stands relative to host contact (`306b:rul-influence-carried-by-entities`
+    /// names licenses explicitly). Private and immutable, joined at the mint from the account the
+    /// decision that reached this mint carried. EXEMPT from the decision digest — the identity
+    /// plane answers "does this reproduce", and influence is orthogonal causal accounting
+    /// (`306b` §10), ruled non-durable at `ExcludedContent::InfluenceGrade`.
+    account: dorc_core::influence::InfluenceAccount,
 }
 
 impl ReplaceLicense {
@@ -569,6 +576,7 @@ impl ReplaceLicense {
         consumed: May<Powerset<Channel>>,
         status: Predicted<Rc>,
         vouch: Option<ByVouch<VerdictVouch>>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<ReplaceLicense> {
         // The elide-weld (TC-tier-2): consume the reached vouch BY VALUE — no vouch ⇒ run.
         // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
@@ -586,6 +594,7 @@ impl ReplaceLicense {
             return None;
         }
         consumption_ok(&consumed, status).then_some(ReplaceLicense {
+            account,
             custody,
             fact,
             derivation: Derivation {
@@ -632,8 +641,10 @@ impl ReplaceLicense {
         verdict: Verdict,
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<ReplaceLicense> {
         query_substitutes(valid, consumed, status).then_some(ReplaceLicense {
+            account,
             custody: dorc_core::LicenseCustody::MeasuredSelf,
             fact,
             derivation: Derivation {
@@ -681,6 +692,7 @@ impl ReplaceLicense {
         self_reached: bool,
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<ReplaceLicense> {
         let representative = all_vouched.representative();
         if !self_reached {
@@ -697,6 +709,7 @@ impl ReplaceLicense {
         }
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            account,
             custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact: representative,
             derivation: Derivation {
@@ -753,6 +766,7 @@ impl ReplaceLicense {
         observe: &(impl Fn(FactKey) -> Observable + ?Sized),
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<ReplaceLicense> {
         let mut representative: Option<FactKey> = None;
         for site in sites {
@@ -788,6 +802,7 @@ impl ReplaceLicense {
         }
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            account,
             custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact,
             derivation: Derivation {
@@ -825,6 +840,7 @@ impl ReplaceLicense {
         all_vouched: AllEstablishesVouched,
         consumed: &May<Powerset<Channel>>,
         status: Predicted<Rc>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<ReplaceLicense> {
         if !consumption_ok(consumed, status) {
             return None;
@@ -832,6 +848,7 @@ impl ReplaceLicense {
         let fact = all_vouched.representative();
         let establish_vouches = all_vouched.into_receipts();
         Some(ReplaceLicense {
+            account,
             custody: dorc_core::LicenseCustody::VouchedSeverally,
             fact,
             derivation: Derivation {
@@ -852,8 +869,10 @@ impl ReplaceLicense {
     fn prove_inline_query_replaceable(
         proof: ReadSubstitutionProof,
         consumed: &May<Powerset<Channel>>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<ReplaceLicense> {
         consumption_ok(consumed, proof.status).then_some(ReplaceLicense {
+            account,
             custody: dorc_core::LicenseCustody::MeasuredSelf,
             fact: proof.fact,
             derivation: Derivation {
@@ -938,6 +957,12 @@ impl ReplaceLicense {
     #[must_use]
     pub fn custody(&self) -> dorc_core::LicenseCustody {
         self.custody
+    }
+
+    /// Where this license stands relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.account
     }
 
     /// The audit trail (the greyed-out "why" for the plan UI).
@@ -1468,6 +1493,10 @@ pub struct GuardLicense {
     /// [`ReplaceLicense::with_probe_attribution`]: pure OUTPUT provenance keyed on a site the mint
     /// already decided, so no decision can read it, and `Eq`/identity treat it as absent.
     probe: Option<ProbeAttribution>,
+    /// Where this LICENSE stands relative to host contact, on exactly
+    /// [`ReplaceLicense`]'s terms: private, immutable, joined at the mint, and EXEMPT from the
+    /// decision digest.
+    account: dorc_core::influence::InfluenceAccount,
 }
 
 impl GuardLicense {
@@ -1498,6 +1527,7 @@ impl GuardLicense {
         vouch: ByVouch<VerdictVouch>,
         probe_verdict: Verdict,
         consumed: &May<Powerset<Channel>>,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<GuardLicense> {
         if probe_verdict != Verdict::Converged {
             return None;
@@ -1506,6 +1536,7 @@ impl GuardLicense {
             return None;
         }
         Some(GuardLicense {
+            account,
             fact,
             insert: GuardInsert {
                 vouch: vouch.into_vouch(),
@@ -1545,6 +1576,7 @@ impl GuardLicense {
         probe_verdict: Verdict,
         consumed: &May<Powerset<Channel>>,
         source_argv: &str,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Option<GuardLicense> {
         if probe_verdict == Verdict::Unknown {
             return None;
@@ -1559,6 +1591,7 @@ impl GuardLicense {
             format!("{} {source_argv}", vouch.fn_name)
         };
         Some(GuardLicense {
+            account,
             fact,
             insert: GuardInsert {
                 vouch,
@@ -1566,6 +1599,12 @@ impl GuardLicense {
             },
             probe: None,
         })
+    }
+
+    /// Where this guard stands relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.account
     }
 
     /// This guard's decision-relevant bytes — the identity a shared region meets on.
@@ -2611,6 +2650,9 @@ pub struct Plan {
     /// changed the artifact. It is now an INPUT to the one decision act, and a plan cannot be
     /// assembled with its render undecided.
     render: DecidedRender,
+    /// Where this projection stands (`306b:rul-projections-continue-influence-flow`). Private and
+    /// immutable; read through [`Plan::account`].
+    account: dorc_core::influence::InfluenceAccount,
 }
 
 /// The per-disposition tally that backs the CLI plan-summary surface (plans/240 Stage-1
@@ -4720,6 +4762,7 @@ fn region_guard_candidate(p: &DecideSite<'_>, source_argv: &str) -> Option<Guard
         (p.observe)(fact).effect,
         &consumed,
         source_argv,
+        p.world_account,
     )
 }
 
@@ -4805,6 +4848,7 @@ fn site_conclusion(p: &DecideSite<'_>) -> (DecisionConclusion, SurvivalAccount) 
                 observed.effect,
                 &consumed,
                 observed.status,
+                p.world_account,
             ) {
                 Some(license) => DecisionConclusion::Replace(license, standin_for(observed.status)),
                 None => DecisionConclusion::Run,
@@ -4842,6 +4886,7 @@ fn establish_disposition(
         consumed.clone(),
         observed.status,
         vouch.cloned(),
+        p.world_account,
     );
     match (p.freshness, licensed) {
         (Freshness::FreshClean, Some(license)) => (
@@ -4870,7 +4915,13 @@ fn establish_disposition(
                 SurvivalAccount::Silent
             };
             let disposition = match vouch {
-                Some(v) => match GuardLicense::mint(fact, v.clone(), observed.effect, &consumed) {
+                Some(v) => match GuardLicense::mint(
+                    fact,
+                    v.clone(),
+                    observed.effect,
+                    &consumed,
+                    p.world_account,
+                ) {
                     Some(license) => DecisionConclusion::Guard(license),
                     None => DecisionConclusion::Run,
                 },
@@ -4928,6 +4979,7 @@ fn members_disposition(
         self_reached,
         &consumed,
         status,
+        p.world_account,
     );
     aggregate_outcome(p, licensed, StandIn::True)
 }
@@ -4959,7 +5011,8 @@ fn inline_disposition(
             Predicted::Value(rc) => StandIn::from_rc(rc),
             Predicted::Top => return (DecisionConclusion::Run, SurvivalAccount::Silent),
         };
-        let licensed = ReplaceLicense::prove_inline_query_replaceable(proof, &consumed);
+        let licensed =
+            ReplaceLicense::prove_inline_query_replaceable(proof, &consumed, p.world_account);
         return aggregate_outcome(p, licensed, stand_in);
     }
     let Some(establishes) = p.aggregate_establishes else {
@@ -4968,8 +5021,14 @@ fn inline_disposition(
     let Some(all_vouched) = AllEstablishesVouched::mint(establishes, p.vouches) else {
         return (DecisionConclusion::Run, SurvivalAccount::Silent);
     };
-    let licensed =
-        ReplaceLicense::prove_inline_replaceable(sites, all_vouched, p.observe, &consumed, status);
+    let licensed = ReplaceLicense::prove_inline_replaceable(
+        sites,
+        all_vouched,
+        p.observe,
+        &consumed,
+        status,
+        p.world_account,
+    );
     aggregate_outcome(p, licensed, StandIn::True)
 }
 
@@ -5111,7 +5170,16 @@ impl Plan {
     /// stands, and what each import says — on the same footing and for the same reason: a producer
     /// that defaulted the carriage would hoist bytes the artifact already carries at the author's
     /// `.`.
+    ///
+    /// `account` is where the PROJECTION stands (`306b:rul-projections-continue-influence-flow`):
+    /// Spine finalization does not terminate propagation, so the plan a view derives is another
+    /// influence-bearing object joining its Spine inputs. `project_plan` computes it; a producer
+    /// building a plan by hand joins whatever its own inputs carried.
     #[must_use]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "every argument is a distinct settled answer this one act decides the render from; bundling them would re-spell this signature one layer down and give a producer a struct it could half-fill"
+    )]
     pub fn decided(
         steps: Vec<Step>,
         regions: Vec<RegionStep>,
@@ -5120,6 +5188,7 @@ impl Plan {
         emission: ArtifactEmission<'_>,
         src: &str,
         ast: &Ast,
+        account: dorc_core::influence::InfluenceAccount,
     ) -> Self {
         let render =
             DecidedRender::decide(&steps, &regions, defensive_emission, emission, src, ast);
@@ -5128,7 +5197,15 @@ impl Plan {
             regions,
             survival_report,
             render,
+            account,
         }
+    }
+
+    /// Where this plan stands relative to host contact — the join over every record the projection
+    /// read, and the run it was projected by.
+    #[must_use]
+    pub const fn account(&self) -> dorc_core::influence::InfluenceAccount {
+        self.account
     }
 
     /// Tally the plan's leaves by disposition for the plan-summary UI (plans/240 Stage-1
@@ -6612,6 +6689,7 @@ apt_get__is_converged() { return 0; }
                 ByVouch::vouched(vouch(), Rung::Both),
                 Verdict::Diverged,
                 &quiet(),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "a diverged probe-verdict must not mint a guard"
@@ -6622,6 +6700,7 @@ apt_get__is_converged() { return 0; }
                 ByVouch::vouched(vouch(), Rung::Both),
                 Verdict::Unknown,
                 &quiet(),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "an unknown probe-verdict must not mint a guard"
@@ -6631,6 +6710,7 @@ apt_get__is_converged() { return 0; }
             ByVouch::vouched(vouch(), Rung::Both),
             Verdict::Converged,
             &quiet(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
         .expect("a converged probe-verdict + vouch mints a guard");
         assert_eq!(license.fact(), nginx_fact());
@@ -6652,6 +6732,7 @@ apt_get__is_converged() { return 0; }
             ByVouch::vouched(vouch, Rung::Both),
             Verdict::Converged,
             &quiet(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
         .unwrap();
         // The guard_shape law: `( <check> ) || <original verbatim>   # dorc: guard [...]`.
@@ -6702,6 +6783,7 @@ apt_get__is_converged() { return 0; }
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
                         &quiet(),
+                        dorc_core::influence::InfluenceAccount::authored_before_contact(),
                     )
                     .unwrap(),
                 ),
@@ -6718,6 +6800,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             "",
             &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let pinned = plan.pinned_definitions();
         assert_eq!(
@@ -6766,6 +6849,7 @@ apt_get__is_converged() { return 0; }
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
                         &quiet(),
+                        dorc_core::influence::InfluenceAccount::authored_before_contact(),
                     )
                     .unwrap(),
                 ),
@@ -6779,6 +6863,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             src,
             &dorc_syntax::parse(src).value,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 
@@ -6903,6 +6988,7 @@ apt_get__is_converged() { return 0; }
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
                         &quiet(),
+                        dorc_core::influence::InfluenceAccount::authored_before_contact(),
                     )
                     .unwrap(),
                 ),
@@ -6913,6 +6999,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             &src,
             &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let pinned = plan.pinned_definitions();
         assert_eq!(
@@ -6961,6 +7048,7 @@ apt_get__is_converged() { return 0; }
                         ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
                         &quiet(),
+                        dorc_core::influence::InfluenceAccount::authored_before_contact(),
                     )
                     .unwrap(),
                 ),
@@ -6971,6 +7059,7 @@ apt_get__is_converged() { return 0; }
             ArtifactEmission::of(&placed, &[]),
             src,
             &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let pinned = plan.pinned_definitions();
         assert_eq!(
@@ -7013,6 +7102,7 @@ apt_get__is_converged() { return 0; }
                         ByVouch::vouched(loaded_vouch(helper, body), Rung::Both),
                         Verdict::Converged,
                         &quiet(),
+                        dorc_core::influence::InfluenceAccount::authored_before_contact(),
                     )
                     .unwrap(),
                 ),
@@ -7023,6 +7113,7 @@ apt_get__is_converged() { return 0; }
             ArtifactEmission::of(&placed, &[]),
             src,
             &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let pinned = plan.pinned_definitions();
         assert!(
@@ -7086,6 +7177,7 @@ apt_get__is_converged() { return 0; }
                     ),
                     Verdict::Converged,
                     &quiet(),
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
                 )
                 .unwrap(),
             ),
@@ -7098,6 +7190,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             "",
             &dorc_syntax::parse("").value,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let pinned = plan.pinned_definitions();
         let hoisted = pinned.typeset(&Placement::Hoist);
@@ -7219,6 +7312,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             "",
             &dorc_syntax::parse("").value,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let pinned = defensive.pinned_definitions();
         let invoked = pinned.invoked(AstId(0)).expect("the site still guards");
@@ -7258,6 +7352,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             src,
             &dorc_syntax::parse(src).value,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 
@@ -7480,6 +7575,7 @@ apt_get__is_converged() { return 0; }
             quiet(),
             Predicted::Top,
             Some(test_vouch()),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
         .expect("a converged, ambient, Must fact with no consumption mints a Replace license");
         let step = |leaf: u32, disposition: Disposition| Step {
@@ -7507,6 +7603,7 @@ apt_get__is_converged() { return 0; }
             NO_ARTIFACT_FORM,
             "",
             &empty_ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let c = plan.disposition_counts();
         assert_eq!(c.sites, 4, "four leaves");
@@ -7531,6 +7628,7 @@ apt_get__is_converged() { return 0; }
                 NO_ARTIFACT_FORM,
                 "",
                 &empty_ast,
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .disposition_counts(),
             DispositionCounts::default()
@@ -8188,6 +8286,7 @@ apt_get__is_converged() {
             quiet(),
             Predicted::Value(Rc(0)),
             Some(test_vouch()),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         ) else {
             panic!("ambient + must + converged must license a skip");
         };
@@ -8214,6 +8313,7 @@ apt_get__is_converged() {
                 quiet(),
                 Predicted::Value(Rc(0)),
                 None,
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "a converged ambient Must fact WITHOUT a vouch must not elide (no vouch ⇒ run)"
@@ -8253,6 +8353,7 @@ apt_get__is_converged() {
                 quiet(),
                 Predicted::Top,
                 Some(vouch_from(file)),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .expect("a converged ambient Must fact WITH a vouch elides");
             assert_eq!(
@@ -8268,6 +8369,7 @@ apt_get__is_converged() {
             Verdict::Converged,
             &quiet(),
             Predicted::Value(Rc(0)),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
         .expect("a valid known-rc Query substitutes");
         assert_eq!(
@@ -8299,6 +8401,7 @@ apt_get__is_converged() {
             // What an Establish site always arrives with: the rc firewall withheld it.
             Predicted::Top,
             Some(test_vouch()),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
         .expect("the establish elide mints");
         assert!(
@@ -8337,6 +8440,7 @@ apt_get__is_converged() {
                 consumed,
                 Predicted::Top,
                 Some(test_vouch()),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
         };
         assert!(
@@ -8370,6 +8474,7 @@ apt_get__is_converged() {
                     consumed,
                     Predicted::Value(Rc(0)),
                     Some(test_vouch()),
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
                 )
                 .is_none(),
                 "a consumed {obs:?} must forbid the stub even with a declared rc"
@@ -8395,6 +8500,7 @@ apt_get__is_converged() {
                 consumed(),
                 Predicted::Top,
                 Some(test_vouch()),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "`&&`/`||`-consumed status + undeclared rc must block (kFAIL-perform floor)"
@@ -8409,6 +8515,7 @@ apt_get__is_converged() {
                     consumed(),
                     Predicted::Value(rc),
                     Some(test_vouch()),
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
                 )
                 .is_some(),
                 "`&&`/`||`-consumed status + declared rc {rc:?} licenses (value-preserving)"
@@ -8438,6 +8545,7 @@ apt_get__is_converged() {
                     May(Powerset::singleton(Channel::StatusIterated)),
                     rc,
                     Some(test_vouch()),
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
                 )
                 .is_none(),
                 "a loop condition's StatusIterated blocks unconditionally (per-iteration sequence), rc={rc:?}"
@@ -8458,6 +8566,7 @@ apt_get__is_converged() {
                     quiet(),
                     Predicted::Value(Rc(0)),
                     Some(test_vouch()),
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
                 )
                 .is_none(),
                 "verdict {v:?} must NOT license a skip"
@@ -8477,6 +8586,7 @@ apt_get__is_converged() {
                 quiet(),
                 Predicted::Value(Rc(0)),
                 Some(test_vouch()),
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none()
         );
@@ -10192,6 +10302,7 @@ apt_get__is_converged() {
                 true,
                 &quiet(),
                 Predicted::Top,
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_some(),
             "all-converged + self-reached + quiet ⇒ license"
@@ -10204,6 +10315,7 @@ apt_get__is_converged() {
                 true,
                 &quiet(),
                 Predicted::Top,
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "one diverged member ⇒ no license"
@@ -10216,6 +10328,7 @@ apt_get__is_converged() {
                 false,
                 &quiet(),
                 Predicted::Top,
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "self-reach false ⇒ no license"
@@ -10229,6 +10342,7 @@ apt_get__is_converged() {
                 true,
                 &May(Powerset::singleton(Channel::StatusRelaxable)),
                 Predicted::Top,
+                dorc_core::influence::InfluenceAccount::authored_before_contact(),
             )
             .is_none(),
             "a consumed status with a ⊤ mutator rc ⇒ blocked (item-3(c))"
@@ -10364,6 +10478,7 @@ apt_get__is_converged() {
             all_vouched,
             &May(Powerset::default()),
             Predicted::Top,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
         .expect("an all-vouched population with no consumed channel replaces");
         assert_eq!(

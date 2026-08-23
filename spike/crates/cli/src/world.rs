@@ -1377,6 +1377,7 @@ mod tests {
                         vouch,
                         Verdict::Converged,
                         &dorc_analysis::lattice::May(dorc_analysis::lattice::Powerset::default()),
+                        dorc_core::influence::InfluenceAccount::authored_before_contact(),
                     )
                     .expect("a converged probe verdict mints a guard"),
                 ),
@@ -1387,6 +1388,7 @@ mod tests {
             dorc_plan::NO_ARTIFACT_FORM,
             BOOK,
             &dorc_syntax::parse(BOOK).value,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         )
     }
 

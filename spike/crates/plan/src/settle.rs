@@ -1009,6 +1009,13 @@ fn shared_replacement(
         all_vouched,
         &dorc_analysis::lattice::May(consumed),
         dorc_core::Predicted::Top,
+        // The SHARED license's account is the join over every contributing route, which is what the
+        // meet already computed (`30L:rul-shared-influence-never-launders`).
+        answers
+            .iter()
+            .fold(round.inputs.world_account, |joined, answer| {
+                joined.join(answer.account)
+            }),
     )?;
     let proofs: Option<Vec<_>> = establishes
         .iter()

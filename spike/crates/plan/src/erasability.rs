@@ -115,6 +115,12 @@ pub fn canonical_decision(
         // EXEMPT as DERIVED: a pure function of the fields above plus `(src, ast)` and the
         // defensive-emission input, all of which reach the byte-exact `render.apply` at (3).
         render: _,
+        // EXEMPT: influence is causal accounting ORTHOGONAL to authority (`306b` §10) and is ruled
+        // non-durable at `ExcludedContent::InfluenceGrade`. The digest answers "does this
+        // reproduce" about the decision plane; two runs that decided identically from differently
+        // -standing inputs reproduce identically, and folding the account in would move the
+        // durable's bytes for a field the durable is not allowed to keep.
+        account: _,
     } = plan;
     let mut out = String::new();
     // (1) the per-site dispositions (the structured decision).
@@ -241,6 +247,8 @@ fn canon_disposition(d: &Disposition) -> String {
                 insert,
                 // EXEMPT (Exempt::ReceiptId + Exempt::Timing): a why-chain row, decided-without.
                 probe: _,
+                // EXEMPT, on the `Plan::account` reasoning above.
+                account: _,
             } = license;
             format!("Guard fact={} {}", canon_fact(*fact), insert.canonical())
         }
@@ -429,6 +437,7 @@ mod tests {
             crate::NO_ARTIFACT_FORM,
             "",
             &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let interner = dorc_core::Interner::default();
         let d1 = decision_digest(&plan, &probe, "", &ast, &interner, &[]);
