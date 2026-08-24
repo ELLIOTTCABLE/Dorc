@@ -147,6 +147,7 @@ pub mod ids;
 pub mod image;
 pub mod limits;
 pub mod model;
+pub mod overlay;
 pub mod projection;
 pub mod reader;
 pub mod reingested;

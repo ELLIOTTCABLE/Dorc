@@ -348,6 +348,19 @@ impl ApplyArtifactImageId {
     }
 }
 
+/// The bare SHA-256 of a span, in lowercase hexadecimal.
+///
+/// Deliberately not domain-separated and deliberately not a [`Sha256Digest`]. This is a
+/// binding check between a decrypted region and the skeleton it enriches, not an identity
+/// that names an object, and a reader holding the span must be able to reproduce it with an
+/// ordinary `sha256sum`. Never use it where an identity is expected.
+#[must_use]
+pub fn span_digest_hex(span: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(span);
+    to_hex(&hasher.finalize())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
