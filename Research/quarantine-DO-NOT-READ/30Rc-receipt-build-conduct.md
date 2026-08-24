@@ -24,6 +24,21 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 
 Every builder: scout → STOP → conductor ack → implement.
 
+## standing brief riders (carry into every dispatch this arc)
+
+- Opacity: out-quarantine artifacts carry mechanism, never reasoning. `adversarial`
+  and `threat` never appear outside quarantine; `untrusted`/`authenticated` are code
+  identifiers only, not prose. Comment budget near zero — a doc-comment states the
+  mechanical contract and stops.
+- Citations spell `quarantine/<docID>[:slug]`. Never the directory's real name in a
+  citation, never a resolvable path; the non-resolving form is the speed-bump.
+- Non-correctness tooling chafe (lints, hk routing, mise ergonomics, config) is
+  FIXED, not documented or worked around — human-authorized 2026-08-24. Correctness,
+  testing, and verification machinery is excluded and escalates to me.
+- Read-only Sonnet scouts: 1–2 concurrent, ~3–4 per stage; find and collate, never
+  opine or decide. One carve: a narrow read-write scout may repair tooling per above.
+- Every builder: scout → STOP → conductor ack → implement.
+
 ## adjudications
 
 (none yet)
