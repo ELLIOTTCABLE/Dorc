@@ -147,9 +147,10 @@ half of every question defers into the final selection front.
 | 4 | `front-key-lifecycle` | Question 3, as a practice question. |
 | 5 | `front-storage-primitives` | Question 4, as a platform-semantics question. |
 | 6 | `front-commitment-vs-digest` | Question 5. |
-| 7 | `front-cleanup-without-a-daemon` | Retention and clearing for a one-shot tool that is emphatically not a daemon. Independent of the cryptographic chain. |
-| 8 | `front-transport-red-lines` | Which of this round's conclusions may be shared with a live transport and — more valuably — which must never be, however convenient the reuse looks. Runs late because it consumes everything. |
-| 9 | `front-selection` | Product-flavoured by design and therefore last. Every candidate package, crate, and library, ranked against the assembled shopping list, with seams counted. Consumes front 1 and every principles front at once, including front 8's red lines, so that a candidate is never chosen *because* it also serves transport. |
+| 7 | `front-write-ordering` | When the durable is written relative to the mutations it explains. Raised by the human off front 5: if a write can fail in this many ways and the correct response is to fail rather than retry, the record may need to exist *before* the mutations rather than after. Runs before cleanup because it decides what the store contains. One criterion carried in from the human: any split must justify itself by a durability or atomicity boundary and never by a taxonomy of content, or coherence stops being a property of construction and becomes a property of composition. |
+| 8 | `front-cleanup-without-a-daemon` | Retention and clearing for a one-shot tool that is emphatically not a daemon. Independent of the cryptographic chain. |
+| 9 | `front-transport-red-lines` | Which of this round's conclusions may be shared with a live transport and — more valuably — which must never be, however convenient the reuse looks. Runs late because it consumes everything. Sharpened by the human: front 6's "the decision identity must never cross a wire" is very likely wrong as stated, since idempotency guards, multi-host caching, and saved approval all appear to require it to cross, and the design review already anticipates those. Re-derivability and unlinkability are not co-satisfiable in one value, so if the tension is real the answer is a second identity for the wire, not a prohibition. This front must resolve it rather than restate the red line. |
+| 10 | `front-selection` | Product-flavoured by design and therefore last. Every candidate package, crate, and library, ranked against the assembled shopping list, with seams counted. Consumes front 1 and every principles front at once, including front 8's red lines, so that a candidate is never chosen *because* it also serves transport. |
 
 Fronts 2 onward chain normally — each is briefed from what the previous ones found. Front 1
 is the sole exception, for the anchoring reason recorded above; front 2 starts from scratch
@@ -327,6 +328,77 @@ From `front-storage-primitives`:
   refuse anything deeper.
 - Open gap, deliberately not chased: how these primitives degrade on network, roaming, and
   file-sync-managed home directories. That is a common Windows and macOS reality.
+
+From `front-commitment-vs-digest`:
+
+- **A keyless document cannot commit to a low-entropy value.** Clean negative result. The option
+  space has two points, not three: publish the salt beside the digest (one hash per guess to
+  confirm), or discard it (output nobody can ever open, including the owner). The plain
+  projection must therefore emit *no* value-derived output for an opaque-value-capable field —
+  not a digest, not a truncated one, not a salted one. What it may emit is a per-document random
+  tag per distinct value, buying exactly one thing: within-document equality classes.
+- **"Shape metadata is safe" is false, with measured numbers. Length is a value.** Counts and
+  lengths alone leak enough to uniquely identify a document in the sense of a UUID over enough
+  bytes; measured cases recover a fifth of a genomic file from lengths, and identify a song
+  across a ten-thousand-item library from two chunk lengths. The plain projection's offer of
+  presence, count and length needs re-pricing rather than assuming.
+- **The three identities want three different constructions, and uniformity is a mistake.**
+  Decision identity: a public collision-resistant digest over an *injective tuple encoding* —
+  a standardised, test-vectored construction exists for exactly this and costs nothing at fixed
+  arity — because a future run must re-derive it with no secret. Document identity: a
+  prefix-determined **random token** minted at header time, carried in the header *and* the
+  filename and checked against each other, because it must survive partial damage, be computable
+  before the first byte, and not be a matching oracle. Opaque-field commitment: nothing in plain
+  beyond an unrelated random tag, and nothing in rich because the authentication tag already
+  commits.
+- Truncate integrity digests freely; **never truncate as a privacy measure**. Truncation creates
+  an anonymity set, not hiding, and the anonymity-set model fails whenever candidates are not
+  equiprobable — with measured collapses on record.
+- **A readable name is a disclosure problem, not a commitment problem.** There is no construction
+  that makes a name readable to its owner and opaque to whoever can list the directory. The only
+  coherent rule is a scope rule: a minted name may contain exactly what the rich projection's
+  plaintext skeleton already contains and nothing from the opaque-value-capable set. A hostname
+  in a name is a real leak knowingly taken; the store listing is then an infrastructure inventory
+  and a schedule, and the documentation should say that in those words.
+- **Name minting must be injective.** Lowercasing and character-class stripping are not, so two
+  hosts can mint one name — which under create-exclusively-under-the-final-name is a hard
+  publication failure, not a silent overwrite. Either escape, or carry the random document token
+  as the disambiguator.
+- Binding the document token to the filename costs one comparison and removes an entire
+  undetectable-swap class, demonstrated in the field when a shipped system bound integrity to an
+  internal identity but not to the published name.
+
+## Human leans on the findings
+
+**These are leans, not rulings.** The human has typed them and has explicitly declined to weld
+them. Where a finding conflicts with one, the lean does not automatically win — research the
+tension and report it, with the strongest available case on each side. Several are firm leans
+and the first is the firmest, but none is a constraint you may not argue with. Do not treat
+anything in this section as settled, and do not narrow a search because of it.
+
+- **Symlinks are first-class and their support may be existential** (firmest of these). The
+  first users are homelab
+  and home-user types, where symbolic links and cross-machine configuration sharing are the
+  norm. A tool that handles them poorly is a tool this human has used and hated. A flat
+  refusal is therefore off the table, and so is a one-level exception if real layouts need
+  more. Reframe the property: the guarantee is not "refuse redirection" but "follow, then
+  validate what you landed on" — ownership and non-group/other-writability of the resolved
+  target. Note that the threat no-follow defends against, another local principal redirecting
+  your paths, largely coincides with the same-user principal this design has already conceded
+  it cannot defend against; the place a refusal genuinely earns its keep is a path component
+  inside a directory some *other* principal can write to, which a per-user configuration
+  directory is not.
+- **Filenames are human-readable.** Not opaque tokens, not bare digests. The collision hazard
+  is answered by performing *our own* normalisation — a strict subset of what every supported
+  controller platform accepts — so that a name we mint cannot collide under any platform's
+  folding or normalisation rules. This is the most-restrictive-input discipline applied to
+  naming rather than to parsing.
+- **A panic is not an acceptable response to a write failure** for a tool whose purpose is
+  explaining failures. The reference case that panics is a database protecting mutable state
+  it owns; this design has no mutable state to corrupt. The response is to fail the
+  publication, emit no file, touch nothing existing, and report the failure as a fact.
+- **The record may want writing before the mutation rather than after.** Firm lean, and the
+  reason for the write-ordering front rather than a settled answer it should confirm.
 
 ## Discipline for every dispatched researcher
 
