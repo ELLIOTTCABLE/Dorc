@@ -494,34 +494,95 @@ fn a_region_from_another_document_releases_nothing() {
         &their_resolver,
         &their_opener,
     );
-    assert!(
-        outcome.is_err(),
-        "a region written for another document released something"
-    );
+    match outcome {
+        // The region is inside the signed body, so a swap is caught by the outer check before
+        // the region binding is even consulted. The binding itself is pinned at the validator,
+        // over inert bytes, where no signature can mask it.
+        Err(partial) => assert_eq!(
+            partial.reason(),
+            &dorc_receipt::format::RefusalReason::SignatureCheck
+        ),
+        Ok(_) => panic!("a region written for another document released something"),
+    }
 }
 
 #[test]
-fn a_damaged_region_releases_nothing_and_names_the_step_that_stopped() {
+fn a_damaged_region_is_refused_by_the_signature_because_the_signature_covers_it() {
+    // Naming the layer matters: the region is inside the signed body, so a flipped byte is a
+    // signature failure and never reaches the opener at all. A test that accepted either
+    // answer would keep passing if that ordering were ever reversed.
     let (bytes, opener, resolver) = rich_document(82, b"dorc plan book.sh");
     let text = String::from_utf8(bytes).expect("text");
-    // Flip one base64 character inside the region, leaving every marker and width intact, so
-    // the shape still locates and the failure is the package's own authentication.
     let at = text.find("-----BEGIN").expect("a region") + 40;
-    let mut damaged = text.clone().into_bytes();
+    let mut damaged = text.into_bytes();
     damaged[at] = if damaged[at] == b'A' { b'B' } else { b'A' };
 
-    let outcome = read_rich::<PlanReceipt>(damaged, &ReceiptLimits::V1, &resolver, &opener);
-    match outcome {
-        Err(partial) => assert!(
-            matches!(
-                partial.reason(),
-                dorc_receipt::format::RefusalReason::RegionUnopenable
-                    | dorc_receipt::format::RefusalReason::SignatureCheck
-            ),
-            "unexpected reason: {:?}",
-            partial.reason()
+    match read_rich::<PlanReceipt>(damaged, &ReceiptLimits::V1, &resolver, &opener) {
+        Err(partial) => assert_eq!(
+            partial.reason(),
+            &dorc_receipt::format::RefusalReason::SignatureCheck
         ),
         Ok(_) => panic!("a damaged region read as whole"),
+    }
+}
+
+#[test]
+fn a_damaged_region_under_a_matching_signature_is_refused_by_the_opener() {
+    // The other half of the same statement. Re-signing the damaged bytes gets past the outer
+    // check, and what refuses then is the region's own authentication — so the two layers are
+    // separately load-bearing rather than one masking the other.
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let opener = AgeOpener::of(identity);
+    let signer = signing_key();
+    let verifier = material().expect("the fixture verification material is well formed");
+    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+
+    let mut ids = CountingIds(85);
+    let skeleton = rich_skeleton(
+        &mut ids,
+        signer.signing_key_id(),
+        &sealer.encryption_key_id().hex(),
+    );
+    let span = dorc_receipt::format::serialize_skeleton::<PlanReceipt, Rich>(&skeleton)
+        .expect("the fixture skeleton serializes");
+    let plaintext = OverlayPlaintext::canonical(
+        &skeleton.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &[OverlayEntry::of(0, OpaqueFieldTag::Argv, b"argv".to_vec())],
+    );
+    let whole = DraftReceipt::<PlanReceipt, Rich>::of(skeleton)
+        .serialize(plaintext, &sealer)
+        .expect("a rich document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+
+    let located = dorc_receipt::format::locate(&whole, &ReceiptLimits::V1).expect("it locates");
+    let armor = located.armor.expect("it carries a region");
+    let mut damaged: Vec<u8> = armor.clone().into_bytes();
+    let at = 40;
+    damaged[at] = if damaged[at] == b'A' { b'B' } else { b'A' };
+    let damaged = String::from_utf8(damaged).expect("still text");
+
+    let body = dorc_receipt::format::signed_body(&span, Some(&damaged));
+    let signature = signer.sign(&dorc_receipt::ids::pae(
+        &dorc_receipt::model::payload_type::<PlanReceipt, Rich>(),
+        &body,
+    ));
+    let resigned = dorc_receipt::format::assemble(
+        &span,
+        Some(&damaged),
+        &dorc_receipt::ids::to_hex(&signature),
+    );
+
+    match read_rich::<PlanReceipt>(resigned, &ReceiptLimits::V1, &resolver, &opener) {
+        Err(partial) => assert_eq!(
+            partial.reason(),
+            &dorc_receipt::format::RefusalReason::RegionUnopenable
+        ),
+        Ok(_) => panic!("a damaged region opened"),
     }
 }
 
