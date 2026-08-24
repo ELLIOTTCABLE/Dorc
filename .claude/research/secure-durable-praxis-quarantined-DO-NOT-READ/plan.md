@@ -164,7 +164,7 @@ may challenge inherited conclusions and MUST NOT assume the front-10 stack was s
 
 ### `front-readable-envelope-feasibility`
 
-Read `Research/quarantine-DO-NOT-READ/30Rc` for the soft human direction: preserve a strong
+Read `Research/quarantine-DO-NOT-READ/30Ra-durable-whylog-security-review.md` for the soft human direction: preserve a strong
 lean toward one directly inspectable canonical grammar; rich/plain and disclosure policy may
 vary, but format plurality is not the starting point. Compare only credible strict text shapes
 (for example JSON Text Sequences, a standard self-delimiting text sequence, and a radically
@@ -180,7 +180,7 @@ that a later exact-construction review will consume.
 
 ### `front-publication-contract-feasibility`
 
-Read `30Rc`'s pre-dispatch receipt boundary. Treat publication as part of the default mutation
+Read `30Ra:pre-dispatch-publication-boundary`. Treat publication as part of the default mutation
 gate before the first mutative dispatch, while later durable-only failure does not abort an
 otherwise coherent apply. Research and, where possible, execute the smallest safe-Rust protocol
 for exclusive ownership, private creation, incomplete-file visibility, no-replace publication,
@@ -743,7 +743,7 @@ From `front-readable-envelope-feasibility` (corrective front 12):
   authentication mismatch where a file the tool has just written cannot be read back by the same
   tool. It also ships a switch that removes the readable skeleton from authentication entirely, and
   its binding breaks outright on a host-format feature that makes paths dynamic. This is a failure
-  of precisely the thing 30Rc contemplates, and it is the single most on-point evidence available.
+  of precisely the thing `30Ra:rul-one-readable-envelope` contemplates, and it is the single most on-point evidence available.
 - **The counter-example that works does so by being greenfield and strict**: a directly readable
   line-framed header carrying opaque material, authenticated over every byte up to and including
   its closing marker, with no canonicalization anywhere in the verify path, unknown members ignored
