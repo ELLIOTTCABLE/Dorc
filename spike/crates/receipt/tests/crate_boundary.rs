@@ -75,6 +75,43 @@ fn the_pure_receipt_crate_names_no_other_workspace_crate() {
     );
 }
 
+/// Whether `text` reaches into `krate`'s namespace, matching the crate name as a WHOLE
+/// identifier.
+///
+/// A bare `contains("age::")` also matches every type whose name merely ends in those letters —
+/// `ApplyArtifactImage::`, `Message::`, `Storage::` — so the fence would refuse ordinary code
+/// while still catching nothing it does not catch here. A fence that fires on a name is a fence
+/// people route around.
+fn names_crate(text: &str, krate: &str) -> bool {
+    let needle = format!("{krate}::");
+    let mut from = 0_usize;
+    while let Some(offset) = text.get(from..).and_then(|rest| rest.find(&needle)) {
+        let at = from.saturating_add(offset);
+        let preceded = text
+            .get(..at)
+            .and_then(|before| before.bytes().next_back())
+            .is_some_and(|byte| byte.is_ascii_alphanumeric() || byte == b'_');
+        if !preceded {
+            return true;
+        }
+        from = at.saturating_add(needle.len());
+    }
+    false
+}
+
+#[test]
+fn the_namespace_fence_matches_a_crate_and_not_a_name_that_merely_ends_in_one() {
+    // The fence's own regression: it exists to catch a reach into `age`, and a type called
+    // `ApplyArtifactImage` is not one.
+    assert!(names_crate("use age::Encryptor;", "age"));
+    assert!(names_crate("let x = age::armor();", "age"));
+    assert!(names_crate("age::Foo", "age"));
+    assert!(!names_crate("ApplyArtifactImage::of_parts(...)", "age"));
+    assert!(!names_crate("Message::new()", "age"));
+    assert!(!names_crate("crate::storage::of()", "age"));
+    assert!(names_crate("(ed25519_dalek::Signature)", "ed25519_dalek"));
+}
+
 #[test]
 fn no_source_file_of_the_pure_crate_names_a_crypto_package() {
     // The manifest fence and this one answer different questions: one is what the crate may
@@ -87,9 +124,9 @@ fn no_source_file_of_the_pure_crate_names_a_crypto_package() {
             continue;
         }
         let text = std::fs::read_to_string(&path).unwrap_or_default();
-        for token in ["dorc_receipt_crypto", "ed25519_dalek", "age::"] {
+        for token in ["dorc_receipt_crypto", "ed25519_dalek", "age"] {
             assert!(
-                !text.contains(token),
+                !names_crate(&text, token),
                 "{} reaches for {token}",
                 path.display()
             );

@@ -144,6 +144,7 @@ pub mod capability;
 pub mod format;
 pub mod grammar;
 pub mod ids;
+pub mod image;
 pub mod limits;
 pub mod model;
 pub mod reader;
@@ -152,6 +153,7 @@ pub mod writer;
 
 pub use format::{RefusalReason, Skeleton, SkeletonRecord};
 pub use grammar::{FieldType, RecordKind};
+pub use image::{ApplyArtifactImage, ApplyImageEntry, ImageRefusal, RecordedApplyPath};
 pub use limits::ReceiptLimits;
 pub use model::{
     ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Projection, Rich, SelfAssertedReceiptSigner,
