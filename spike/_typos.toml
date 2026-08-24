@@ -52,4 +52,12 @@ extend-ignore-re = [
    # then reports as dangling (measured: `30Nd` -> `30And`, r30). Keyed on the UPPERCASE letter so
    # ordinal words (`30th`) stay spell-checked.
    "\\b[0-9]{2,3}[A-Z][a-z]?\\b",
+   # Long unbroken base64/alphanumeric runs: the armored region of a rich receipt vector, and
+   # the bech32 fixture key beside it. Machine bytes whose accidental letter runs spell
+   # triggers (`goe`, `oik`). Measured: fix mode rewrote two committed vectors, turning a
+   # 64-character armor line into 65, which the reader then refused for a wrong width — so the
+   # corruption presented as a parser bug. `[files] extend-exclude` does NOT close this: typos
+   # honours ignore rules for walked paths but not for paths passed explicitly, and the hook
+   # passes `{{files}}`. Underscores and hyphens break the class, so identifiers stay checked.
+   "[A-Za-z0-9+/]{32,}={0,2}",
 ]
