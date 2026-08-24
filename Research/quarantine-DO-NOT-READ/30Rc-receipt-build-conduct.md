@@ -89,7 +89,12 @@ Stage 0 checkpoint, 2026-08-24:
   REPLACE `dorc.exe`, which is the denied operation. Confirmed reproducing under
   `cargo test --no-run`. See blocker below.
 
-## OPEN BLOCKER — completion gate on Windows
+## OPEN — completion gate on Windows (INTERMITTENT, not a hard block)
+
+REVISED after 2A: it ran `gate:full-quiet` green on BOTH legs and never hit the
+signature, so this fires on a SyncThing scan window rather than deterministically.
+Lanes can retry. The fix below is still owed — an intermittent gate is a gate people
+learn to re-run until it passes, which is how a real failure gets waved through.
 
 `cargo nextest`'s relink fails `Access is denied` removing
 `<worktree>/spike/target/debug/dorc.exe`. Windows `CARGO_TARGET_DIR` is
