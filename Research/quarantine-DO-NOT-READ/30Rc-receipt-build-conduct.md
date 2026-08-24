@@ -15,8 +15,8 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 0 laws/crate/deps/vectors | `ai/r30-receipt` | LANDED `88f71314..23b5a9b7` |
 | 1 identity + plain kernel | `ai/r30-receipt` | LANDED; gate blocked, see below |
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
-| 2B overlay + age | `ai/r30-receipt-overlay` | BUILT 17 commits; rebase + bridge + rich vectors in flight |
-| 2C recorded models + graph | `ai/r30-receipt-models` | BUILT `db3104df`; WSL green, Windows wrapper retry |
+| 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
+| 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
@@ -424,3 +424,27 @@ That two of three causes are transient or non-reproducible is the whole argument
 asserting the OBSERVABLE (work was selected) over diagnosing causes. Floor limits, stated
 by its builder: it predicts SELECTION from hk's own plan, not EXECUTION; and `hk config get`
 hangs forever outside a git repo (hk 1.53.0), so it confirms a worktree via git first.
+
+## STAGE 2 CLOSED — assembled at `ai/r30-receipt`
+
+Fold order held: 2A → 2B → 2C → gate-floor. 53 commits over `ai/main`. Every conflict
+resolved as a UNION with nothing discarded (2C's rule, taken from 2B's `.gitattributes`
+precedent). Removed two now-false crate `CLAUDE.md` Owed entries that 2B discharged.
+
+Two nits carried into Stage 3, neither worth a lane:
+- The crate has TWO public `RecordedMode` enums — 2A's in `image.rs` (a file mode) and 2C's
+  in `tokens.rs` (an invocation mode). Different modules, neither root-re-exported, so it
+  compiles unambiguously — but one crate, two same-named public types, unrelated meanings.
+  Rename at the top of Stage 3.
+- `crate_boundary.rs` now carries two crate-name matchers (2A's `names_crate`, 2C's
+  `names_identifier`). Redundant, and neither lane's to delete.
+
+2C's added invariant prose: a recorded row model and the grammar table are two files that
+must move together, and the failure is NOT silent — the model emits through `to_record` and
+the table refuses a row it could not read back. The writer's self-check is what turns a
+cross-lane grammar widening from a corruption into a test failure, and it works only while
+every row goes out through `to_record`; a projection hand-building a `SkeletonRecord` would
+bypass the one thing that caught it. Also: retaining the document image means node identity
+depends on caller-supplied bytes, so an ingest caller passing a RE-SERIALIZED image rather
+than the bytes it read would make two reads of one document look divergent — the
+literal-bytes discipline arriving one layer up, where no type enforces it.
