@@ -2,14 +2,17 @@
 //! corpus runner carries one: hk exits 0 on an empty selection, so a gate that asked nothing and
 //! a gate that passed share an exit code, and a lane reads the second.
 //!
-//! Two vacuous runs were measured on one branch in r30, with DIFFERENT causes, which is why this
-//! asserts the OBSERVABLE — that work was actually selected — rather than any one cause:
+//! THREE vacuous runs were measured in r30 with three different causes, which is why this asserts
+//! the OBSERVABLE — that work was actually selected — rather than any one cause:
 //!
 //! - the base `--pr` diffs against could not be determined. hk degrades silently in BOTH
 //!   directions and rc 0 either way: an unresolvable ref widens to EVERY file in the repo, and an
 //!   absent `default_branch` guesses `origin/HEAD`, then `main`.
 //! - the base resolved, git reported 114 changed files, and hk's own selection still chose
 //!   nothing — on one platform leg only, at the same commit as a leg that selected correctly.
+//! - a change of pure DELETIONS selects nothing at all, because every step's globs are matched
+//!   against paths that no longer exist. Delete `core/src/lib.rs` and the completion gate is
+//!   green over a tree that does not compile (measured 2026-08-24).
 //!
 //! So git and hk are asked the same question independently and their answers compared. When hk
 //! selects nothing, hk is asked a second time whether it covers the paths git named: hk is its own
@@ -110,9 +113,12 @@ fn verdict(f: &Facts) -> Result<String, String> {
         return Err(format!(
             "{TAG}: REFUSED — {head_line}; hk selected NO check, yet git reports {changed} \
              changed file(s) that hk matches {covering} check(s) against when handed them \
-             directly. The gate would report success having run nothing. Inspect with \
-             `hk check --pr --plan`; treat no result from this checkout as meaningful until it \
-             selects work."
+             directly, so the gate would report success having run nothing. Two known causes: a \
+             change of pure DELETIONS (hk drops paths that no longer exist on disk, clippy \
+             included), or hk's selection failing on this platform leg. Either way this run \
+             proves nothing — check the change with \
+             `hk check --all --profile medium --profile slow`, and read \
+             `hk check --pr --plan` for which it was."
         ));
     }
     // Both quiet cases are genuine, and they are different: nothing changed at all (`ai/main`
@@ -294,7 +300,9 @@ mod tests {
         assert!(line.contains("1 changed file(s), 6 check(s) selected"));
     }
 
-    /// The measured WSL vacuity: base fine, diff large, hk's own selection empty anyway.
+    /// Both measured shapes of this: the WSL leg selecting nothing over a 114-file diff, and a
+    /// pure-deletion change selecting nothing anywhere. The floor cannot tell them apart, and
+    /// does not need to — either way the gate is about to prove nothing.
     #[test]
     fn selecting_nothing_over_covered_changes_refuses() {
         let got = verdict(&Facts {

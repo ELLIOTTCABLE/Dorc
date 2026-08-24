@@ -906,8 +906,8 @@ mise run gate             # check + a fresh build + the whole suite (the pre-com
 mise run both gate:full-quiet # builder completion: path-routed, both platform legs
 mise run gate:arc         # conductor close: completion + applicable advanced verifiers
 mise run gate:step -- X   # re-run one failed hk step, without reclassifying the change
-mise run gate:base        # the gate's DISCOVERY FLOOR (rides gate:full*): names the base
-                          #   `--pr` will diff, or refuses when it cannot be determined
+mise run gate:floor       # the gate's DISCOVERY FLOOR (rides gate:full*): what this run will
+                          #   check, or a refusal when it would check nothing
 mise run bless            # ORCHESTRATOR-ONLY golden re-bless (see below)
 mise run bless:dry        # ... acceptance summary, zero golden writes
 mise run bless:floor      # ORCHESTRATOR-ONLY: the one path that may write an `expected.emitted`
@@ -971,21 +971,27 @@ no task covers, and consider adding the task instead.
   change-to-command decision tree; hk conservatively chooses applicable checks and
   `gate:step` re-runs one named failure. False-positive inclusion costs wall-clock;
   false-negative exclusion invalidates the gate.
-- **gate-base-is-determinable** (r30, after a lane reported a green completion gate having
-  run nothing) — `gate:full*` open with `mise run gate:base`, the gate's own DISCOVERY
-  FLOOR, for the reason each corpus runner carries one: hk exits 0 on an empty selection,
-  so a gate that asked nothing and a gate that passed share an exit code. `--pr` is
-  `--from-ref <hk's default_branch> --to-ref HEAD` and hk degrades silently in BOTH
-  directions when that base is unanswerable (measured 2026-08-24, rc 0 either way): an
-  unresolvable ref widens to EVERY file in the repo, and an absent `default_branch`
-  guesses `origin/HEAD` — absent here, the remote is `ec` — then `main`. The floor refuses
-  those, plus an unborn HEAD and a base sharing no history; a detached HEAD is fine and is
-  named, not refused. It asks git BEFORE hk because `hk config get` HANGS forever outside a
-  worktree. An empty branch diff over a base that DOES resolve is legitimate (`ai/main`
-  after a fold) and PASSES — the pass line says `branch diff EMPTY` when nothing is ahead,
-  and READING that line is the only thing standing between a lane and a green gate that
-  checked nothing: all three selections can be legitimately empty at once, and no
-  precondition can tell that from a lane whose work never reached its branch.
+- **gate-refuses-a-vacuous-run** (r30, after two lanes reported a green completion gate
+  having run nothing, for DIFFERENT reasons) — `gate:full*` open with `mise run gate:floor`,
+  the gate's own DISCOVERY FLOOR, for the reason each corpus runner carries one: hk exits 0
+  on an empty selection, so a gate that asked nothing and a gate that passed share an exit
+  code. It asserts the OBSERVABLE rather than any one cause: git and hk are asked
+  independently what changed, and when hk's own selection is EMPTY, hk is asked a second
+  time whether it covers the paths git named. hk is thus its own coverage oracle — the floor
+  never re-states hk's globs — so "nothing hk covers changed" stays quiet and "hk covers
+  these and still selected none" REFUSES. THREE vacuity paths are measured (2026-08-24), all
+  rc 0: an unresolvable `default_branch` widens `--pr` to EVERY file in the repo while an
+  absent one guesses `origin/HEAD` (absent here — the remote is `ec`) then `main`; hk
+  selecting nothing over a 114-file diff on the WSL leg alone, at a commit where the Windows
+  leg selected correctly; and a change of pure DELETIONS selecting nothing anywhere, because
+  every glob is matched against paths no longer on disk — delete `core/src/lib.rs` and the
+  completion gate is GREEN over a tree that does not compile. The floor also refuses an
+  unborn HEAD, a base sharing no history, and hk declining to say what it will select; a
+  detached HEAD is fine and is named, not refused. It asks git BEFORE hk because
+  `hk config get` HANGS forever outside a worktree. Two limits, both deliberate: it predicts
+  SELECTION from hk's own plan and cannot see EXECUTION (that needs a post-gate step reading
+  hk state), and the profiles it measures under are spelled in the task body beside the
+  `hk check` lines they must match.
 - **verify-lane-family** (r30) — `verify:check` rides builder completion on both legs
   (cheap tier: catalogue coherence, unit/slug contracts, hole census, report currency;
   no external engine). `verify:translate-check`, `verify:lean-badges`, and
