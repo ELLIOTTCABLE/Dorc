@@ -10,7 +10,6 @@
 #![expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    clippy::indexing_slicing,
     reason = "spike/clippy.toml's allow-*-in-tests keys reach inline #[cfg(test)] modules only, \
               not a separate integration-test crate; the file-top expect is its documented answer"
 )]
@@ -61,7 +60,7 @@ fn round_trip<R: RecordedRow + PartialEq + core::fmt::Debug>(row: &R) {
 }
 
 #[test]
-fn every_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
+fn every_plan_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
     round_trip(&RecordedInvocation::of(
         RecordedMode::Plan,
         Some(1_700_000_000_000),
@@ -120,6 +119,10 @@ fn every_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
         OpaqueState::Unavailable,
         RecordedInfluence::AuthoredBeforeContact,
     ));
+}
+
+#[test]
+fn every_plan_analysis_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
     round_trip(&RecordedSiteClassification::of(
         site(11, 12),
         RecordedAst::of(13),
@@ -172,6 +175,10 @@ fn every_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
         OpaqueState::Captured,
         RecordedInfluence::AuthoredBeforeContact,
     ));
+}
+
+#[test]
+fn every_apply_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
     round_trip(&RecordedApplyIntentRow::of(
         digest_of('4'),
         digest_of('5'),
@@ -196,6 +203,10 @@ fn every_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
         digest_of('8'),
         RecordedInfluence::AuthoredBeforeContact,
     ));
+}
+
+#[test]
+fn every_outcome_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
     round_trip(&RecordedApplyOutcomeRow::of(
         digest_of('9'),
         RecordedTerminalState::Unknown,

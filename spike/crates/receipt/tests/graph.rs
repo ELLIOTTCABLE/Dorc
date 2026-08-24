@@ -10,7 +10,6 @@
 #![expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    clippy::indexing_slicing,
     reason = "spike/clippy.toml's allow-*-in-tests keys reach inline #[cfg(test)] modules only, \
               not a separate integration-test crate; the file-top expect is its documented answer"
 )]
