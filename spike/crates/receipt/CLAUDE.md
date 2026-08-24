@@ -72,9 +72,20 @@ Make the code self-documenting instead of explaining it.
 ## Law — reading back (`30R:standing-invariants` · `30R:recorded-versus-rederived`)
 
 - **read-back-authorizes-nothing** — every value recovered from a document wears
-  `Reingested`. No `Deref`, no `AsRef`, no `Borrow`, no generic `map`, no `into_inner`, no
-  raw accessor; decomposition answers another `Reingested` or a report-only scalar. Nothing
-  read back may reach a license, a plan, an artifact, probing, or an apply.
+  `Reingested`. No `Deref`, no `AsRef`, no `Borrow`, no generic `map`, no `into_inner`, and no
+  generic accessor of ANY kind: there is deliberately no way to ask a `Reingested<T>` for its
+  `T`. Decomposition is per-species inherent methods answering another `Reingested` or a
+  report-only scalar. This is structural, not a rule about which types join `RecordedType` — a
+  generic accessor would move the seal onto that membership list, which is honour-system, and
+  the crate had one until the recorded models made the hole reachable. Nothing read back may
+  reach a license, a plan, an artifact, probing, or an apply.
+- **comparison-is-not-extraction** — `Reingested<T>` implements `PartialEq`/`Eq`/`Clone` where
+  `T` does. Comparing two sealed values, or holding a second handle on one, hands nothing out;
+  it is what lets graph correlation tell one document read twice from two documents claiming
+  one identity without an accessor existing.
+- **a-model-comes-only-from-a-document** — the sole route to `Reingested<RecordedX>` is
+  `Reingested<Receipt<X, _, _>>::model()`. `RecordedX::of_records` is public because a
+  projection must BUILD one to write it; what it answers is a bare model, never a sealed one.
 - **recorded-and-current-stay-four-states** — `RecordedCurrent` preserves recorded-only,
   current-only, both-agreeing, and both-disagreeing. Disagreement is a finding that keeps
   both values; it is never resolved by picking one.
@@ -158,7 +169,15 @@ Make the code self-documenting instead of explaining it.
 - **a-document-identity-is-minted-not-derived** — a receipt identity comes from an injected
   `ReceiptIdSource`, not from content: two documents over identical content must not
   collide. `ReceiptId::of_source_bytes` is the one seam every source mints through; a source
-  filling it from a counter is a fixture and lives only in a test.
+  filling it from a counter is a fixture and lives only in a test. The gate over its callers is
+  lexical and two-way (`crate_boundary.rs`), because no type can privilege one file over another.
+- **a-fence-matches-identifier-boundaries** — every lexical gate in `crate_boundary.rs` matches
+  whole identifiers, never substrings: `age` occurs inside `storage`, `package`, `message`, and
+  `ApplyArtifactImage`, and a fence that cries wolf is one people learn to route around rather
+  than read. `names_identifier` is the one matcher and carries its own regression test. Each gate
+  is two-way — an entry that no longer names its subject fails, so the list cannot rot into a
+  description of what used to be true — and asserts a non-empty walk, so a gate looking in the
+  wrong place fails rather than passing over nothing.
 - **content-identities-hash-in-their-constructor** — `PlanningInputId`, `PresentedPlanId`,
   and `ApplyArtifactImageId` are computed from complete typed material in the same operation
   that stores them. No public constructor accepts one ready-made.
@@ -166,17 +185,45 @@ Make the code self-documenting instead of explaining it.
   separate domains and no conversion exists in either direction. An identity in a document
   aids lookup; it never selects an implementation or grants acceptance.
 
+## Law — the recorded models
+
+- **a-row-writes-positionally-and-reads-by-key** — `RecordedRow::atoms` emits in table order and
+  `of_record` reads by key. `SkeletonRecord::build` checks each atom against the table, which
+  catches a wrong TYPE and never a swapped PAIR — `leaf` and `ast` are both counts. The round
+  trip is the fence, so every row fixture uses DISTINCT values in same-typed fields; equal values
+  make a transposition invisible.
+- **relational-closure-lives-in-the-model** — declared counts agreeing with rows present, ordinals
+  contiguous from zero, an ordinal naming a row that exists. These are checks only a typed model
+  can express, so `format` stays a pure one-exact-form byte check and the aggregates refuse.
+  Intra-document references are checked here; a reference reaching ANOTHER document
+  (`site-outcome.assignment` into its intent) is graph work, because a document read alone cannot
+  know what the other one declared.
+- **two-refusal-families** — `RefusalReason` is the grammar answer and `ModelRefusal` the model
+  answer, and they are not interchangeable. A document can parse and fail to close over itself;
+  that is not a byte-level departure and must not be spelled as one. Adding a variant to
+  `RefusalReason` is a conductor act.
+- **the-render-axis-is-a-function-of-the-kind** — `render-decision` carries `subject member`, and
+  `RecordedRenderKind::subject_axis` decides which the row may populate: a leaf (with an optional
+  member) for the site-keyed kinds, a region ordinal in the `region-decision` space for the
+  region-keyed ones, neither for `import-*` and `defensive-emission-*`. `RenderSubject` makes the
+  disagreeing combinations unrepresentable rather than merely refused, because a region owns no
+  execution and a row keyed by a contributing invocation names the wrong thing.
+- **emission-is-canonical** — a model emits in its species kind order, then by ordinal within a
+  kind, and reading requires ordinals already ascending. Two documents carrying the same content
+  cannot differ in bytes, which is what "one exact writer form" means above the byte layer.
+- **a-negative-case-names-its-exact-refusal** — every refusal fixture asserts the refusal AND its
+  operands, and every graph fixture asserts the whole shape: node counts, the exact edge list,
+  the exact finding list. A test asserting only that something was refused is satisfied by a
+  refusal for any other reason, which is how a guard silently stops covering the departure it is
+  named for. Graph findings are retentions plus a verdict, so this matters most there: the wrong
+  finding, the right finding for the wrong pair, and one finding where two were owed all satisfy
+  "a finding was recorded".
+
 ## Owed
 
-- **owed-fixture-identity-fence** — `ReceiptId::of_source_bytes` is the correct seam, but
-  nothing yet stops a production file calling it with fixed bytes. The lexical
-  non-empty-walk gate over its callers is owed alongside the reingestion consumer gate.
 - **owed-rich-projection** — `Rich` is declared and no rich document is emitted. The region
   model, its validator, and the sealed round trip are the next stage's work; do not emit a
   partially built rich document outside a test.
-- **owed-record-models** — the recorded per-species models and the graph are declared in the
-  module map and not yet built. Nothing here may grow an empty field or a speculative public API
-  ahead of them. The apply image IS built (`image.rs`).
 - **owed-image-refusal-bridge** — `ImageRefusal` is a closed enum local to `image.rs` rather
   than a `format::RefusalReason` variant, deliberately: adding a variant to a Stage 1 type while
   sibling lanes compile against it is a cross-lane event. Whoever lands the rich reader owns the
@@ -189,3 +236,6 @@ Make the code self-documenting instead of explaining it.
   is the shape `content-identities-hash-in-their-constructor` exists to forbid. It is currently
   harmless (no constructor accepts a ready-made id, so one cannot be injected into an image) and
   is load-bearing for a `compile_fail` seal in `lib.rs`. Narrowing it is a fold-tier decision.
+- **owed-reingestion-consumer-gate** — the identity mint now has its lexical gate
+  (`crate_boundary.rs`), and the sibling gate enumerating every `Reingested` consumer across
+  crates lands with the stage that first wires one.
