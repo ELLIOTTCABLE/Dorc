@@ -211,6 +211,15 @@ Make the code self-documenting instead of explaining it.
 - **emission-is-canonical** — a model emits in its species kind order, then by ordinal within a
   kind, and reading requires ordinals already ascending. Two documents carrying the same content
   cannot differ in bytes, which is what "one exact writer form" means above the byte layer.
+- **one-identity-may-span-two-projections** — a receipt identity names the receipt-EVENT, not the
+  byte-document, so a rich document and the plain remint of it legitimately share an identity and
+  legitimately differ in bytes. Correlation therefore classifies a second claimant through
+  `projection::same_identity_pair` and never by comparing models or content: differing bytes are a
+  finding only WITHIN one projection. `GraphNode` retains the projection word and the exact image
+  for that reason alone — the rule lives beside `narrow_to_plain`, which is what creates the
+  legitimate case, and is consumed here rather than re-derived. The pair that separates the rule
+  from the bug is two adjacent cases, one per crate: same projection differing bytes is a finding,
+  two projections of one event is one node.
 - **a-negative-case-names-its-exact-refusal** — every refusal fixture asserts the refusal AND its
   operands, and every graph fixture asserts the whole shape: node counts, the exact edge list,
   the exact finding list. A test asserting only that something was refused is satisfied by a
