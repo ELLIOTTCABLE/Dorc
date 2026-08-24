@@ -9,14 +9,15 @@
 //! are constructed in `dorc-receipt` and are unreachable from here.
 //!
 //! The one lint carve here is about the dependency graph rather than this crate's code:
-//! `age` reaches both `sha2` 0.10 and 0.11 (and `digest`, `crypto-common`, `block-buffer`,
-//! `cpufeatures`, `const-oid`, `hybrid-array` beside them) through separate subtrees, which
+//! `age` reaches two major lines of `sha2`, `digest`, `crypto-common`, `block-buffer`,
+//! `cpufeatures`, `const-oid`, and `hybrid-array` through separate subtrees, which
 //! `clippy::multiple_crate_versions` reports and `-D warnings` then makes fatal. Both current
-//! `age` lines carry it, so no version choice avoids it. The workspace already ruled the other
-//! way on duplicate versions — `deny.toml` sets `multiple-versions = "warn"` — and this restores
-//! that ruling for the one crate with a real dependency tree. The pure `dorc-receipt` keeps the
-//! unmodified workspace posture, which is part of what the crate split buys.
-#![allow(
+//! `age` lines carry it, so no version choice avoids it, and `deny.toml` already sets
+//! `multiple-versions = "warn"` for the workspace. Scoped here rather than to `clippy.toml`,
+//! whose workspace-wide key would also have to name `syn`, `thiserror`, and `thiserror-impl` —
+//! ordinary ecosystem churn unrelated to this dependency. `expect`, so it warns once the
+//! duplication clears.
+#![expect(
     clippy::multiple_crate_versions,
     reason = "a transitive-dependency fact; see the module note above"
 )]
