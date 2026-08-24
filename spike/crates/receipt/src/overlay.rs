@@ -401,14 +401,14 @@ impl DecryptedOpaqueOverlay {
         let mut previous: Option<(u64, usize)> = None;
         for entry in &parsed.entries {
             let key = entry.key();
-            if let Some(last) = previous {
-                if key <= last {
-                    return Err(if key == last {
-                        OverlayFault::DuplicateKey
-                    } else {
-                        OverlayFault::Ordering
-                    });
-                }
+            if let Some(last) = previous
+                && key <= last
+            {
+                return Err(if key == last {
+                    OverlayFault::DuplicateKey
+                } else {
+                    OverlayFault::Ordering
+                });
             }
             if !seen.insert(key) {
                 return Err(OverlayFault::DuplicateKey);
