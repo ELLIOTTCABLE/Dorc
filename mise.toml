@@ -274,6 +274,7 @@ dir = "spike"
 # calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
 run = [
    "mise run preflight gate",
+   "mise run gate:base",
    "hk check --pr --profile medium --profile slow --no-fail-fast --quiet",
    "hk check --staged --profile medium --profile slow --no-fail-fast --quiet",
    "hk check --unstaged --profile medium --profile slow --no-fail-fast --quiet",
@@ -398,6 +399,7 @@ raw = true
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
 run = [
   "mise run preflight gate",
+  "mise run gate:base",
   "hk check --pr --profile medium --profile slow --no-fail-fast",
   "hk check --staged --profile medium --profile slow --no-fail-fast",
   "hk check --unstaged --profile medium --profile slow --no-fail-fast",
@@ -408,6 +410,15 @@ description = "Run one hk gate step over all matching paths."
 raw = true
 usage = 'arg "step" help="hk step name from the failed gate output"'
 run = "hk check --all --profile medium --profile slow --profile arc --step {{ usage.step }} --no-fail-fast"
+
+[tasks."gate:base"]
+description = "The gate's DISCOVERY FLOOR: can this checkout say what `--pr` is about to diff? One line naming the base, this branch, and how many commits are ahead of the fork — or a LOUD refusal naming the remedy. Rides gate:full*; run it alone to answer 'why did my gate check nothing?'. An empty branch diff over a base that resolves is legitimate and PASSES (ai/main after a fold is exactly that), and the pass line says so."
+raw = true
+dir = "spike"
+# Sited before the hk checks because hk cannot fail this way itself: an empty selection and a
+# clean pass share one exit code, and BOTH degradations measured on 2026-08-24 exit 0 — an
+# unresolvable base widens to every file in the repo, an absent one guesses `origin/HEAD`.
+run = "cargo run -q -p internal-tooling -- gate-base"
 
 [tasks."gate:arc"]
 description = "CONDUCTOR-ONLY: run completion, arc checks, and RustSec audit."
