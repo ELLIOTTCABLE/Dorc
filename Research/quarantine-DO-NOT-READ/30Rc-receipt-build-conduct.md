@@ -466,3 +466,57 @@ call at ~45 min and PLAN the handoff. The scout/STOP/ack split costs ~12 min and
 restart point — both lanes that died had banked their scouting and their commits, so two
 deaths cost one write-up total, and even that was recovered by resuming the agent the
 harness had given up on.
+
+## stage 3 checkpoint, 2026-08-24 — rulings
+
+THREE `core` widenings, not the one I briefed:
+- `class` becomes a closed EIGHT-ARM ENUM in `core`, replacing the `&'static str`
+  (precedent: `30N` §4 narrowed a String mode for the same reason). A stringly label nothing
+  may branch on, that a projection is obliged to branch on, is a contradiction the type absorbs.
+- `SpineSiteClassification` CARRIES ITS AST — the row requires it, the record lacks it, the
+  recorder already holds the value it discards. My brief missed this.
+- `SourceRole` moves into `core`; `SourceClaim` widens to `{path, digest, role, bytes}`;
+  `SpineInvocation`'s `book` + `oracles` COLLAPSE into one ordered `sources`. The deciding
+  argument: the ordinal column MEANS load order, acquisition is oracles-then-book, so a
+  two-way split records an order that never happened. This arc's whole product is a durable
+  that does not lie about what occurred. (Secondary: `SourceRole::is_modelled()` gates
+  lifting, so the enum is decide-plane vocabulary already — a misplacement, not a move.)
+
+`seat-settlement-carries-its-classification` over a plan-owned back-map: kills a SECOND
+derivation of a mapping `plan` already computes (`settle.rs` builds `leaf_of` from the same
+`site_order`), and puts classification beside disposition where the keying is identical.
+`oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` is the live precedent.
+
+FOURTH sighting of the bare-byte-constructor habit: `PlanningInputId::over` and
+`PresentedPlanId::over`, undisclosed, and Stage 3 is their first caller. RULED: rename to
+fenceable names (`over` cannot be whole-identifier fenced — that IS the problem), named for
+what they CONSUME, gated by the existing two-way caller allow-list rather than a second
+fence shape. `ApplyArtifactImageId::over` too if cheap.
+
+`SpineDigest` → `PresentedPlan` across species + wire token. It stops being a digest; a
+misnomer in the one structure everything projects from is the expensive kind, and
+`rul-strawman-formats-no-compat` exists for exactly this. My token to amend.
+
+`ask-whylog-fence-inventories` — RULED: **the fence follows its subject.** The untracked-adapter
+inventory is losing its SUBJECT (the rehydration floor) to a crate its walk cannot see, not
+merely an entry. Before the writer is disabled, the receipt crate must carry its own
+equivalent fence over its own floor — absent/unreadable grade reads MOST-influenced — asserted
+by a test there; then the plan-side entry shrinks truthfully. Rejected: keeping a dead writer
+breathing so a check stays green. If the receipt-side fence needs more than a test, STOP.
+
+`ask-region-licensor-has-no-axis` — site dispositions only + projection-omission naming the
+region case. Declined to widen: unlike `render-decision.member`, no sibling-row convention is
+broken and the region's decision is already on its own row. The stated principle holds.
+
+ADDED to the stage against `30Rb`'s Stage 6 scheduling: fold `plan::invocation::book_digest`
+into the receipt's SHA-256 now — measured byte-identical, `plan` gains the dependency here
+anyway, and root `AGENTS.md` says do-now-absent-a-reason. Deferring would mean tolerating two
+SHA-256 implementations on purpose for three stages, which is the smell I cited at Stage 0.
+
+`pre-settlement-quiescent` gets TYPED (a `debug_assert` is not a guarantee);
+`pre-target-specialization-final` is recorded satisfied-VACUOUSLY and says so — a width-one
+spike has no referent and pretending otherwise is the receipt lying about what it checked.
+V1 STRETCH: cutting nothing; every row measured live.
+
+Sizing correction: the builder self-estimated 70 min for a scout the harness timed at 17.
+Watch for that — a builder's own wallclock sense is unreliable and it will mis-budget from it.
