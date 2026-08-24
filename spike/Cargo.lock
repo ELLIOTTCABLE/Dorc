@@ -558,6 +558,7 @@ dependencies = [
  "dorc-core",
  "dorc-hostsim",
  "dorc-oracle",
+ "dorc-receipt",
  "dorc-sparing-reference",
  "dorc-syntax",
  "internal-tooling",

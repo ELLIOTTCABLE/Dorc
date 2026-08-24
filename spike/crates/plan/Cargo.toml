@@ -30,6 +30,9 @@ dorc-oracle = { path = "../oracle", version = "0.0.0" }
 # deps, one pass, authored blind to this crate: every survival verdict re-derives through it before
 # a plan ships, and the differential drives both implementations over the same inputs.
 dorc-sparing-reference = { path = "../sparing-reference", version = "0.1.0" }
+# The durable receipt family. Pure (`sha2` only, a function of its input bytes), which is what
+# lets the last kernel stage depend on it without moving `inv-determinism`.
+dorc-receipt = { path = "../receipt", version = "0.0.0" }
 
 # TEST-ONLY, and deliberately so: the kernel gains no dependency. `render_corpus`'s
 # `dash -n` net needs a POSIX shell, and `internal-tooling` (std-only repo plumbing, not
