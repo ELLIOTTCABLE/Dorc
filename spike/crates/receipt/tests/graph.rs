@@ -39,7 +39,7 @@ use dorc_receipt::rows::{
 };
 use dorc_receipt::tokens::ClosedToken;
 use dorc_receipt::tokens::{
-    ImageState, OpaqueState, RecordedApplyPolicy, RecordedDurableState, RecordedMode,
+    ImageState, OpaqueState, RecordedApplyPolicy, RecordedDurableState, RecordedInvocationMode,
     RecordedOriginState, RecordedSiteStatus, RecordedSourceRole, RecordedTerminalState,
 };
 use dorc_receipt::writer::DraftReceipt;
@@ -125,7 +125,7 @@ fn bytes_of<D: Species>(receipt_id: &str, records: Vec<SkeletonRecord>) -> Vec<u
         .to_vec()
 }
 
-fn invocation(mode: RecordedMode) -> SkeletonRecord {
+fn invocation(mode: RecordedInvocationMode) -> SkeletonRecord {
     RecordedInvocation::of(
         mode,
         None,
@@ -152,7 +152,10 @@ fn plan_bytes(tag: &str, flavour: char) -> Vec<u8> {
     )
     .to_record()
     .unwrap();
-    bytes_of::<PlanReceipt>(&identity(tag), vec![invocation(RecordedMode::Plan), source])
+    bytes_of::<PlanReceipt>(
+        &identity(tag),
+        vec![invocation(RecordedInvocationMode::Plan), source],
+    )
 }
 
 /// An intent naming zero or more originating plans by their document identities.
@@ -163,7 +166,7 @@ fn intent_bytes(tag: &str, origins: &[&str]) -> Vec<u8> {
         RecordedOriginState::Known
     };
     let mut records = vec![
-        invocation(RecordedMode::Apply),
+        invocation(RecordedInvocationMode::Apply),
         RecordedApplyIntentRow::of(
             digest_of('5'),
             digest_of('6'),
@@ -204,7 +207,7 @@ fn intent_bytes(tag: &str, origins: &[&str]) -> Vec<u8> {
 
 fn outcome_bytes(tag: &str, intent: &str, terminal: RecordedTerminalState) -> Vec<u8> {
     let records = vec![
-        invocation(RecordedMode::Apply),
+        invocation(RecordedInvocationMode::Apply),
         RecordedApplyOutcomeRow::of(
             identity(intent),
             terminal,
@@ -685,7 +688,7 @@ fn the_graph_exposes_no_route_to_world_state() {
     // What a node offers is its sealed model and the provenance of the material that checked it.
     // The model answers report scalars and further sealed values, and nothing else.
     assert_eq!(node.signer().token(), "trusted");
-    assert_eq!(node.model().mode(), RecordedMode::Plan);
+    assert_eq!(node.model().mode(), RecordedInvocationMode::Plan);
     assert_eq!(node.model().sources().len(), 1);
     assert_eq!(node.model().sources()[0].ordinal(), 0);
     assert_eq!(

@@ -15,7 +15,7 @@ use crate::format::{RefusalReason, SkeletonRecord};
 use crate::grammar::{self, RecordKind};
 use crate::reingested::RecordedInfluence;
 use crate::tokens::{
-    ClosedToken, OpaqueState, RecordedMode, RecordedOmissionReason, RecordedSpineSpecies,
+    ClosedToken, OpaqueState, RecordedInvocationMode, RecordedOmissionReason, RecordedSpineSpecies,
     bool_of_token,
 };
 
@@ -542,7 +542,7 @@ impl RecordedOperands {
 /// The producing invocation and its controller-minted attempt identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordedInvocation {
-    mode: RecordedMode,
+    mode: RecordedInvocationMode,
     started: Option<u64>,
     argv: OpaqueState,
     target: OpaqueState,
@@ -554,7 +554,7 @@ impl RecordedInvocation {
     /// One invocation row.
     #[must_use]
     pub const fn of(
-        mode: RecordedMode,
+        mode: RecordedInvocationMode,
         started: Option<u64>,
         argv: OpaqueState,
         target: OpaqueState,
@@ -573,7 +573,7 @@ impl RecordedInvocation {
 
     /// Which invocation shape produced the document.
     #[must_use]
-    pub const fn mode(&self) -> RecordedMode {
+    pub const fn mode(&self) -> RecordedInvocationMode {
         self.mode
     }
 

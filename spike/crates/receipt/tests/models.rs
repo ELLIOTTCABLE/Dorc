@@ -37,8 +37,8 @@ use dorc_receipt::rows::{
 };
 use dorc_receipt::tokens::{
     ImageState, OpaqueState, RecordedAdmissionOutcome, RecordedApplyPolicy, RecordedDisposition,
-    RecordedDurableState, RecordedLicenseCustody, RecordedLicenseVerb, RecordedLoadOutcome,
-    RecordedMode, RecordedNarrativeKind, RecordedOmissionReason, RecordedOriginState,
+    RecordedDurableState, RecordedInvocationMode, RecordedLicenseCustody, RecordedLicenseVerb,
+    RecordedLoadOutcome, RecordedNarrativeKind, RecordedOmissionReason, RecordedOriginState,
     RecordedRenderKind, RecordedShipLane, RecordedSiteClass, RecordedSiteStatus, RecordedSolvePass,
     RecordedSourceRole, RecordedSpeechAct, RecordedSpineSpecies, RecordedSurvivalOutcome,
     RecordedTerminalState,
@@ -63,7 +63,7 @@ fn round_trip<R: RecordedRow + PartialEq + core::fmt::Debug>(row: &R) {
 #[test]
 fn every_plan_row_survives_its_own_round_trip_with_distinct_same_typed_fields() {
     round_trip(&RecordedInvocation::of(
-        RecordedMode::Plan,
+        RecordedInvocationMode::Plan,
         Some(1_700_000_000_000),
         OpaqueState::Captured,
         OpaqueState::WithheldPlain,
@@ -335,7 +335,7 @@ fn a_render_row_cannot_carry_a_subject_its_kind_does_not_own() {
 
 fn invocation_record() -> SkeletonRecord {
     RecordedInvocation::of(
-        RecordedMode::Plan,
+        RecordedInvocationMode::Plan,
         None,
         OpaqueState::WithheldPlain,
         OpaqueState::WithheldPlain,
@@ -445,7 +445,7 @@ fn intent_records(assignments: u32, origins: &[(u32, u32)]) -> Vec<SkeletonRecor
     };
     let mut records = vec![
         RecordedInvocation::of(
-            RecordedMode::Apply,
+            RecordedInvocationMode::Apply,
             None,
             OpaqueState::WithheldPlain,
             OpaqueState::WithheldPlain,
@@ -567,7 +567,7 @@ fn an_intent_model_refuses_an_origin_state_its_assignments_contradict() {
 fn an_outcome_model_closes_its_declared_site_count() {
     let mut records = vec![
         RecordedInvocation::of(
-            RecordedMode::Apply,
+            RecordedInvocationMode::Apply,
             None,
             OpaqueState::WithheldPlain,
             OpaqueState::WithheldPlain,

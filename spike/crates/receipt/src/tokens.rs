@@ -113,7 +113,7 @@ impl ClosedToken for ImageState {
 /// The invocation shape that produced a document. Minted from the command dispatch seat, never from
 /// the analyzer own invocation vocabulary, whose inhabitant set is ruled elsewhere.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RecordedMode {
+pub enum RecordedInvocationMode {
     /// A planning invocation.
     Plan,
     /// An applying invocation.
@@ -122,7 +122,7 @@ pub enum RecordedMode {
     RoundTrip,
 }
 
-impl ClosedToken for RecordedMode {
+impl ClosedToken for RecordedInvocationMode {
     const TOKENS: &'static [&'static str] = grammar::MODE;
     const ALL: &'static [Self] = &[Self::Plan, Self::Apply, Self::RoundTrip];
     fn token(self) -> &'static str {
@@ -999,7 +999,7 @@ mod tests {
         // its variant, is a projection that silently drops or invents a state.
         census::<OpaqueState>("opaque-state");
         census::<ImageState>("image-state");
-        census::<RecordedMode>("mode");
+        census::<RecordedInvocationMode>("mode");
         census::<RecordedSourceRole>("source-role");
         census::<RecordedAdmissionOutcome>("admission-outcome");
         census::<RecordedDisposition>("disposition");

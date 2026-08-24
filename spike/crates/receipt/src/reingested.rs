@@ -18,7 +18,7 @@ use crate::plan::{RecordedPlanReceipt, RecordedSource};
 use crate::reader::Receipt;
 use crate::rows::{ModelRefusal, RecordedProjectionOmission};
 use crate::tokens::{
-    RecordedApplyPolicy, RecordedMode, RecordedOmissionReason, RecordedOriginState,
+    RecordedApplyPolicy, RecordedInvocationMode, RecordedOmissionReason, RecordedOriginState,
     RecordedSourceRole, RecordedSpineSpecies, RecordedTerminalState,
 };
 
@@ -152,7 +152,7 @@ impl<P: Projection, T: SignerTrust> Reingested<Receipt<ApplyOutcome, P, T>> {
 impl Reingested<RecordedPlanReceipt> {
     /// Which invocation shape produced the document.
     #[must_use]
-    pub const fn mode(&self) -> RecordedMode {
+    pub const fn mode(&self) -> RecordedInvocationMode {
         self.0.invocation().mode()
     }
 
