@@ -140,17 +140,22 @@
 //! }
 //! ```
 
+pub mod apply;
 pub mod capability;
 pub mod format;
 pub mod grammar;
+pub mod graph;
 pub mod ids;
 pub mod image;
 pub mod limits;
 pub mod model;
+pub mod outcome;
 pub mod overlay;
+pub mod plan;
 pub mod projection;
 pub mod reader;
 pub mod reingested;
+pub mod rows;
 pub mod tokens;
 pub mod writer;
 

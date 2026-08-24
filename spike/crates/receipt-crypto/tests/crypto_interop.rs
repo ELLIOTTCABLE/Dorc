@@ -173,8 +173,7 @@ fn round_trip<D: Species>(name: &str, failures: &mut Vec<String>) {
     let named = PolicyNames(TrustedEd25519Key::of(named_material));
     match read_plain::<D>(bytes.clone(), &limits, &named) {
         Ok(ReadPlain::Trusted(recorded)) => {
-            let report = recorded.as_report();
-            if report.signer_provenance() != "trusted" || report.skeleton().records.len() != 1 {
+            if recorded.signer_provenance() != "trusted" || recorded.record_count() != 1 {
                 failures.push(format!("{name}: a trusted read reported wrongly"));
             }
         }
@@ -189,7 +188,7 @@ fn round_trip<D: Species>(name: &str, failures: &mut Vec<String>) {
     let unnamed = PolicyDoesNotName(SelfAssertedEd25519Key::of(unnamed_material));
     match read_plain::<D>(bytes, &limits, &unnamed) {
         Ok(ReadPlain::SelfAsserted(recorded)) => {
-            if recorded.as_report().signer_provenance() != "self-asserted" {
+            if recorded.signer_provenance() != "self-asserted" {
                 failures.push(format!("{name}: a self-asserted read reported wrongly"));
             }
         }
