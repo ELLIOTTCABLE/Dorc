@@ -579,21 +579,21 @@ fn model_of(body: &[u8], limits: &ReceiptLimits) -> Result<(), String> {
         format!("{reason:?}")
     }
     match species_line(body).as_str() {
-        "species apply-intent" => format::parse_body::<ApplyIntent, Plain>(body, limits)
+        "species apply-intent" => format::parse_skeleton_span::<ApplyIntent, Plain>(body, limits)
             .map_err(fault)
             .and_then(|parsed| {
                 dorc_receipt::apply::RecordedApplyIntent::of_records(&parsed.records)
                     .map(|_| ())
                     .map_err(fault)
             }),
-        "species apply-outcome" => format::parse_body::<ApplyOutcome, Plain>(body, limits)
+        "species apply-outcome" => format::parse_skeleton_span::<ApplyOutcome, Plain>(body, limits)
             .map_err(fault)
             .and_then(|parsed| {
                 dorc_receipt::outcome::RecordedApplyOutcome::of_records(&parsed.records)
                     .map(|_| ())
                     .map_err(fault)
             }),
-        _ => format::parse_body::<PlanReceipt, Plain>(body, limits)
+        _ => format::parse_skeleton_span::<PlanReceipt, Plain>(body, limits)
             .map_err(fault)
             .and_then(|parsed| {
                 dorc_receipt::plan::RecordedPlanReceipt::of_records(&parsed.records)

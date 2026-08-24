@@ -134,6 +134,7 @@ pub struct RecordedAdmission {
     outcome: RecordedAdmissionOutcome,
     records: u64,
     bytes: u64,
+    stream: OpaqueState,
     account: RecordedInfluence,
 }
 
@@ -144,12 +145,14 @@ impl RecordedAdmission {
         outcome: RecordedAdmissionOutcome,
         records: u64,
         bytes: u64,
+        stream: OpaqueState,
         account: RecordedInfluence,
     ) -> Self {
         Self {
             outcome,
             records,
             bytes,
+            stream,
             account,
         }
     }
@@ -172,6 +175,12 @@ impl RecordedAdmission {
         self.bytes
     }
 
+    /// What the projection holds in place of the admitted record stream.
+    #[must_use]
+    pub const fn stream(&self) -> OpaqueState {
+        self.stream
+    }
+
     /// Where this record stood relative to host contact.
     #[must_use]
     pub const fn account(&self) -> RecordedInfluence {
@@ -187,6 +196,7 @@ impl RecordedRow for RecordedAdmission {
             self.outcome.token().to_owned(),
             self.records.to_string(),
             self.bytes.to_string(),
+            self.stream.token().to_owned(),
             self.account.token().to_owned(),
         ]
     }
@@ -197,6 +207,7 @@ impl RecordedRow for RecordedAdmission {
             rows::closed(record, "outcome")?,
             rows::wide(record, "records")?,
             rows::wide(record, "bytes")?,
+            rows::closed(record, "stream")?,
             rows::account(record),
         ))
     }

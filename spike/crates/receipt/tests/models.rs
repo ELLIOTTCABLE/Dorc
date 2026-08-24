@@ -89,6 +89,7 @@ fn every_plan_row_survives_its_own_round_trip_with_distinct_same_typed_fields() 
         RecordedAdmissionOutcome::Admitted,
         11,
         22,
+        OpaqueState::Captured,
         RecordedInfluence::HostInfluenced,
     ));
     round_trip(&RecordedPresentedPlan::of(
