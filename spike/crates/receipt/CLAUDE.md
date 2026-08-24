@@ -230,13 +230,6 @@ Make the code self-documenting instead of explaining it.
 
 ## Owed
 
-- **owed-rich-projection** — `Rich` is declared and no rich document is emitted. The region
-  model, its validator, and the sealed round trip are the next stage's work; do not emit a
-  partially built rich document outside a test.
-- **owed-image-refusal-bridge** — `ImageRefusal` is a closed enum local to `image.rs` rather
-  than a `format::RefusalReason` variant, deliberately: adding a variant to a Stage 1 type while
-  sibling lanes compile against it is a cross-lane event. Whoever lands the rich reader owns the
-  bridge from one into the other.
 - **owed-unknown-mode-refusal-at-the-caller** — `RecordedMode` makes an unknown mode
   unrepresentable, which means the obligation to REFUSE when mode-relevance is unknown lands
   wholly on the artifact-to-image conversion. No type here can state that obligation, and no test
