@@ -1066,10 +1066,10 @@ fn validate(
             "image-entry-bytes",
             |limits| limits.image_entry_bytes,
         )?;
-        if let RecordedMode::Octal(bits) = entry.mode() {
-            if bits > MAX_MODE_BITS {
-                return Err(ImageRefusal::EntryShape { what: "mode-bits" });
-            }
+        if let RecordedMode::Octal(bits) = entry.mode()
+            && bits > MAX_MODE_BITS
+        {
+            return Err(ImageRefusal::EntryShape { what: "mode-bits" });
         }
         match entry.kind() {
             ApplyEntryKind::Stream => {
@@ -1204,10 +1204,10 @@ fn check_accounted(
 ) -> Result<(), ImageRefusal> {
     let mut accounted = vec![false; entries.len()];
     let mut mark = |id: ApplyEntryId| {
-        if let Ok(index) = usize::try_from(id.get()) {
-            if let Some(slot) = accounted.get_mut(index) {
-                *slot = true;
-            }
+        if let Ok(index) = usize::try_from(id.get())
+            && let Some(slot) = accounted.get_mut(index)
+        {
+            *slot = true;
         }
     };
     for root in roots {
@@ -1229,7 +1229,8 @@ fn check_accounted(
 ///
 /// Cycles are recorded rather than refused: the container reports what an apply uses and does
 /// not adjudicate whether the book is sensible. Ignoring the closing edge is what keeps a cycle
-/// from reading as unbounded depth.
+/// from reading as unbounded depth. Deterministic for a given input: starts are walked in
+/// ascending order and children in canonical edge order.
 fn check_depth(
     entries: &[ApplyImageEntry],
     roots: &[ApplyRoot],
@@ -1237,22 +1238,14 @@ fn check_depth(
     edges: &[ApplyEdge],
     limits: &ReceiptLimits,
 ) -> Result<(), ImageRefusal> {
-    #[derive(Clone, Copy, PartialEq, Eq)]
-    enum Colour {
-        White,
-        Grey,
-        Black,
-    }
-
     let mut children: Vec<Vec<usize>> = vec![Vec::new(); entries.len()];
     for edge in edges {
         if let (Ok(parent), Ok(child)) = (
             usize::try_from(edge.parent().get()),
             usize::try_from(edge.child().get()),
-        ) {
-            if let Some(slot) = children.get_mut(parent) {
-                slot.push(child);
-            }
+        ) && let Some(slot) = children.get_mut(parent)
+        {
+            slot.push(child);
         }
     }
 
@@ -1261,7 +1254,8 @@ fn check_depth(
     let mut starts: Vec<usize> = Vec::new();
     for id in entrypoints
         .iter()
-        .chain(roots.iter().map(ApplyRoot::entry_ref))
+        .copied()
+        .chain(roots.iter().map(|root| root.entry()))
     {
         if let Ok(index) = usize::try_from(id.get()) {
             starts.push(index);
@@ -1272,69 +1266,64 @@ fn check_depth(
 
     let mut deepest = 0_u64;
     for start in starts {
-        walk(start, &children, &mut colour, &mut longest)?;
+        longest_from(start, &children, &mut colour, &mut longest);
         deepest = deepest.max(longest.get(start).copied().unwrap_or(0));
     }
-    if !limits.topology_depth.admits(deepest) {
-        return Err(ImageRefusal::TopologyDepth);
-    }
-    return Ok(());
-
-    fn walk(
-        start: usize,
-        children: &[Vec<usize>],
-        colour: &mut [Colour],
-        longest: &mut [u64],
-    ) -> Result<(), ImageRefusal> {
-        if colour.get(start) == Some(&Colour::Black) {
-            return Ok(());
-        }
-        let mut stack: Vec<(usize, usize)> = vec![(start, 0)];
-        if let Some(slot) = colour.get_mut(start) {
-            *slot = Colour::Grey;
-        }
-        while let Some((node, cursor)) = stack.last_mut() {
-            let node = *node;
-            let next = children
-                .get(node)
-                .and_then(|list| list.get(*cursor))
-                .copied();
-            match next {
-                Some(child) => {
-                    *cursor = cursor.saturating_add(1);
-                    if colour.get(child) == Some(&Colour::White) {
-                        if let Some(slot) = colour.get_mut(child) {
-                            *slot = Colour::Grey;
-                        }
-                        stack.push((child, 0));
-                    }
-                }
-                None => {
-                    let best = children
-                        .get(node)
-                        .into_iter()
-                        .flatten()
-                        .filter(|child| colour.get(**child) == Some(&Colour::Black))
-                        .filter_map(|child| longest.get(*child).copied())
-                        .max()
-                        .unwrap_or(0);
-                    if let Some(slot) = longest.get_mut(node) {
-                        *slot = best.saturating_add(1);
-                    }
-                    if let Some(slot) = colour.get_mut(node) {
-                        *slot = Colour::Black;
-                    }
-                    stack.pop();
-                }
-            }
-        }
+    if limits.topology_depth.admits(deepest) {
         Ok(())
+    } else {
+        Err(ImageRefusal::TopologyDepth)
     }
 }
 
-impl ApplyRoot {
-    const fn entry_ref(&self) -> &ApplyEntryId {
-        &self.entry
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Colour {
+    White,
+    Grey,
+    Black,
+}
+
+/// Iterative three-colour search. A grey child is an ancestor on the current path, so the edge
+/// reaching it closes a cycle and contributes nothing; a black child is already measured.
+fn longest_from(start: usize, children: &[Vec<usize>], colour: &mut [Colour], longest: &mut [u64]) {
+    if colour.get(start) == Some(&Colour::Black) {
+        return;
+    }
+    let mut stack: Vec<(usize, usize)> = vec![(start, 0)];
+    if let Some(slot) = colour.get_mut(start) {
+        *slot = Colour::Grey;
+    }
+    while let Some((node, cursor)) = stack.last_mut() {
+        let node = *node;
+        let next = children
+            .get(node)
+            .and_then(|list| list.get(*cursor))
+            .copied();
+        if let Some(child) = next {
+            *cursor = cursor.saturating_add(1);
+            if colour.get(child) == Some(&Colour::White) {
+                if let Some(slot) = colour.get_mut(child) {
+                    *slot = Colour::Grey;
+                }
+                stack.push((child, 0));
+            }
+        } else {
+            let best = children
+                .get(node)
+                .into_iter()
+                .flatten()
+                .filter(|child| colour.get(**child) == Some(&Colour::Black))
+                .filter_map(|child| longest.get(*child).copied())
+                .max()
+                .unwrap_or(0);
+            if let Some(slot) = longest.get_mut(node) {
+                *slot = best.saturating_add(1);
+            }
+            if let Some(slot) = colour.get_mut(node) {
+                *slot = Colour::Black;
+            }
+            stack.pop();
+        }
     }
 }
 

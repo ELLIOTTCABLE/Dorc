@@ -1,3 +1,9 @@
+#![expect(
+    clippy::panic,
+    reason = "clippy.toml's allow-panic-in-tests reaches `#[test]` functions in this crate but \
+              not the plain fixture-building helpers beside them, and threading a Result through \
+              fixtures that must succeed buys nothing"
+)]
 //! The `dorc-apply-artifact-image/1` container: what an apply actually uses, recorded exactly.
 //!
 //! The container may ENCODE an apply image and may never CHANGE it, so most of what follows is
