@@ -368,6 +368,66 @@ From `front-commitment-vs-digest`:
   undetectable-swap class, demonstrated in the field when a shipped system bound integrity to an
   internal identity but not to the published name.
 
+From `front-write-ordering`:
+
+- **Write-ahead buys exactly one direction**: no effect exists without a record of the intent to
+  cause it. It never buys the converse — a record does not imply the effect happened. The
+  prediction hazard is not an implementation flaw; it is the other half of the only guarantee on
+  offer.
+- **The atomicity-boundary criterion is the pattern's own founding condition**, not a house rule:
+  the intentions set must have no effect on the data until one final atomic commit.
+- **The guarantee does not survive the trip to another machine.** Far-side effects can be
+  deferred and replayed safely only if they are named so duplicates are discarded, restartable,
+  and undoable-or-unneeded. An arbitrary remote shell command satisfies none of the three, and
+  the largest vendor with the strongest incentive offers a deduplication contract on a handful of
+  operations by default and admits a timed-out mutating request leaves success indeterminable.
+  What survives is "we knew what we meant to do, and we knew it before we did it" — which is the
+  whole forensic value, and must never render as a description of what happened.
+- **Every split found in shipped systems is temporal, never taxonomic**, which independently
+  corroborates the criterion.
+- **The answer is both, with an asymmetric failure policy.** A decision document published before
+  the first remote packet; on write failure, fail the run — nothing has been mutated and the
+  operator is where they started. An outcome document published after the last mutation; on write
+  failure, never refuse anything and never silently lose — fail the publication per the storage
+  front, then dump the *plain projection* to stderr under a loud not-persisted banner. The
+  storage front's "emit nothing" governs publication atomicity and must not be stretched into
+  "do not tell the operator".
+- **The human's stated reason is unsupported by the corpus.** Nobody infers controller health
+  from a failed local write, and the enumerated failure modes are environmental — a full disk says
+  nothing about whether the host pipes work. The ordering conclusion stands on
+  forensics-availability grounds alone, which is the stronger footing.
+- The field splits along a legible line: **security-audit records fail closed; operational
+  convenience records fail open.** The whylog is awkwardly both, which is why the policy must be
+  per-record-class rather than global.
+- **Record shape: one decision document per point at which the engine commits to a set of
+  mutations, one outcome document per run.** A per-target split *fails* the criterion — nothing
+  new must be durable before host N that was not durable before host 1 — **unless** the engine
+  re-decides mid-run from host reports, in which case each re-decision is a genuine boundary and
+  the same rule generates the right answer without a new principle. Phase splits pass iff probe
+  results feed apply decisions. Progress and heartbeat records fail. Size-motivated splits should
+  be refused: read efficiency is not a reason to convert coherence into composition.
+  **Open, and undetermined by the code** — the apply executor does not exist yet, so whether an
+  invocation plans wholly up front or interleaves is a design decision the conductor owns.
+- The decision document must be a **different top-level type**, not a marked variant of the
+  outcome document, so a reader is structurally unable to render one as the other. The join must
+  be checkable in both directions, with "outcome references a decision I do not have" and
+  "decision with no outcome" as *distinct* first-class refusals rather than one merged failure.
+- **New security cost, and it is the real price of writing early**: for the duration of a run the
+  store contains a document naming every host about to be touched and every command about to be
+  run. That upgrades the store listing from a record of the past to **a schedule of the future**,
+  which is materially more useful to an adversary. Encryption at rest does not address it — the
+  skeleton is plaintext by design and the same-user principal is already conceded.
+- The availability counter has forced a shipped retraction elsewhere: a hard halt-on-audit-failure
+  action was removed upstream because it prevents administrators from taking corrective action.
+  The attested middle is to scope fail-closed to the pre-mutation record only, graduate warnings
+  rather than cliff, always leave an explicit per-invocation override that the diagnostic names,
+  refuse to degrade the medium into volatile storage, and never collapse this axis into the
+  encryption-unavailable axis.
+- The last-ditch stderr dump should emit the **plain projection**, which is a type that cannot
+  represent opaque-value-capable fields — best readability and best confidentiality in one choice.
+  Comparable tools dump raw secret-bearing state to the terminal, which in continuous integration
+  means straight into a build log.
+
 ## Human leans on the findings
 
 **These are leans, not rulings.** The human has typed them and has explicitly declined to weld
