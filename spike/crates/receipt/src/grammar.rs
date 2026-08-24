@@ -361,6 +361,7 @@ const ADMISSION_FIELDS: &[Field] = &[
     f("outcome", FieldType::Closed(ADMISSION_OUTCOME)),
     f("records", FieldType::Wide),
     f("bytes", FieldType::Wide),
+    f("stream", FieldType::Closed(OPAQUE_STATE)),
     ACCOUNT_FIELD,
 ];
 
