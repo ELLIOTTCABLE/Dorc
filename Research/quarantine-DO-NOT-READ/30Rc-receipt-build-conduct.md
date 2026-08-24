@@ -17,7 +17,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
-| 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
+| 3 presented plan + PlanReceipt | `ai/r30-receipt` | dispatched from `761a6ea0` |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
@@ -448,3 +448,21 @@ bypass the one thing that caught it. Also: retaining the document image means no
 depends on caller-supplied bytes, so an ingest caller passing a RE-SERIALIZED image rather
 than the bytes it read would make two reads of one document look divergent — the
 literal-bytes discipline arriving one layer up, where no type enforces it.
+
+## stage-2 acceptance — the strongest evidence of the arc
+
+`mise run both gate:full-quiet` on the assembled `ai/r30-receipt` @ `761a6ea0`: rc=0, BOTH
+legs, all three hk checks executed on each, zero failures — and the new floor fired on both
+(`127 changed file(s), 11 check(s) selected`), so non-vacuity is ASSERTED rather than
+assumed. A direct re-run minutes later hit the `Access is denied` relink lock, re-confirming
+that lock as intermittent. NB for my own future reading: a `cmd > file` inside a
+backgrounded Bash call leaves the harness's own capture EMPTY — read the redirect target,
+not the task output file. I raised a false alarm on exactly that.
+
+Builder sizing, measured across this arc (carry into every later brief):
+scouting 10–17 min, consistently. Build phases 37–80+ min. TWO builders degraded or died
+past ~70 min / ~700k tokens; the healthiest lane totalled 47 min across three calls. Size a
+call at ~45 min and PLAN the handoff. The scout/STOP/ack split costs ~12 min and buys a warm
+restart point — both lanes that died had banked their scouting and their commits, so two
+deaths cost one write-up total, and even that was recovered by resuming the agent the
+harness had given up on.
