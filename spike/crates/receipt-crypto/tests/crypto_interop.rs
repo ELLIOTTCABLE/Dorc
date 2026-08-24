@@ -7,6 +7,12 @@
 //! Every test collects its failures and asserts them together, so one run names everything
 //! that moved rather than stopping at the first.
 
+#![expect(
+    clippy::expect_used,
+    reason = "an integration test crate is an ordinary crate to clippy, so the central \
+              allow-in-tests keys do not reach it; see spike/clippy.toml"
+)]
+
 use dorc_receipt::capability::{
     OverlayOpener, OverlaySealer, PublicationGrade, ReceiptSigner, ReceiptSink,
     SelfAssertedReceiptVerificationKey, TrustedReceiptVerificationKey, VerificationKeyResolver,
@@ -15,9 +21,11 @@ use dorc_receipt::format::{Skeleton, SkeletonRecord};
 use dorc_receipt::grammar::RecordKind;
 use dorc_receipt::ids::{ReceiptId, ReceiptIdSource, SigningKeyId};
 use dorc_receipt::limits::ReceiptLimits;
-use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Species};
-use dorc_receipt::reader::{ReadPlain, read_plain};
-use dorc_receipt::writer::DraftReceipt;
+use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, Species};
+use dorc_receipt::overlay::OverlayEntry;
+use dorc_receipt::projection::OpaqueFieldTag;
+use dorc_receipt::reader::{ReadPlain, ReadRich, read_plain, read_rich};
+use dorc_receipt::writer::{DraftReceipt, OverlayPlaintext};
 use dorc_receipt_crypto::{
     AgeOpener, AgeSealer, Ed25519Signer, Ed25519Verifier, SelfAssertedEd25519Key, TrustedEd25519Key,
 };
@@ -333,5 +341,202 @@ fn the_two_provider_roles_derive_separate_identities() {
         signing_key().signing_key_id().hex(),
         sealer.encryption_key_id().hex(),
         "the two provider roles never alias"
+    );
+}
+
+/// A rich skeleton whose invocation row captures its argv, bound to one encryption provider.
+fn rich_skeleton(ids: &mut CountingIds, signing: SigningKeyId, encryption: &str) -> Skeleton {
+    let row = SkeletonRecord::build(
+        RecordKind::Invocation,
+        [
+            "plan",
+            "absent",
+            "captured",
+            "withheld-plain",
+            "0",
+            "authored-before-contact",
+        ]
+        .iter()
+        .map(|atom| (*atom).to_owned())
+        .collect(),
+    )
+    .expect("the fixture row is well formed");
+    Skeleton {
+        receipt_id: ids.next_receipt_id().hex(),
+        signing_key_id: signing.hex(),
+        encryption_key_id: Some(encryption.to_owned()),
+        records: vec![row],
+    }
+}
+
+#[test]
+fn a_rich_document_round_trips_through_both_real_packages() {
+    // The whole order in one run: seal, serialize, sign, then locate, verify, parse, open and
+    // validate. Every step is real; nothing here is a stand-in.
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let opener = AgeOpener::of(identity);
+    let signer = signing_key();
+    let Some(verifier) = material() else {
+        panic!("the fixture verification material is well formed")
+    };
+    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+
+    let mut ids = CountingIds(70);
+    let skeleton = rich_skeleton(
+        &mut ids,
+        signer.signing_key_id(),
+        &sealer.encryption_key_id().hex(),
+    );
+    let span = dorc_receipt::format::serialize_skeleton::<PlanReceipt, Rich>(&skeleton)
+        .expect("the fixture skeleton serializes");
+    let entries = vec![OverlayEntry::of(
+        0,
+        OpaqueFieldTag::Argv,
+        b"dorc plan book.sh web1".to_vec(),
+    )];
+    let plaintext = OverlayPlaintext::canonical(
+        &skeleton.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &entries,
+    );
+
+    let serialized = DraftReceipt::<PlanReceipt, Rich>::of(skeleton)
+        .serialize(plaintext, &sealer)
+        .expect("a rich document serializes");
+    let bytes = serialized.sign(&signer).bytes().to_vec();
+
+    let text = String::from_utf8(bytes.clone()).expect("the document is text");
+    assert!(
+        !text.contains('\r'),
+        "the stored document is LF-only throughout"
+    );
+    assert!(
+        text.contains("-----BEGIN AGE ENCRYPTED FILE-----"),
+        "the region is stored in canonical armor"
+    );
+
+    match read_rich::<PlanReceipt>(bytes, &ReceiptLimits::V1, &resolver, &opener) {
+        Ok(ReadRich::Trusted(_)) => {}
+        other => panic!("the rich document did not read back: {other:?}"),
+    }
+}
+
+#[test]
+fn a_real_armored_region_satisfies_the_shape_the_locator_requires() {
+    // The locator's shape check is written against this writer's output. Measuring the real
+    // region against it is what keeps the two from drifting apart silently: if the package
+    // ever changes its wrapping, this fails rather than every rich document failing to locate.
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let region = sealer.seal(b"some region bytes").expect("the region seals");
+    assert_eq!(dorc_receipt::format::check_armor_shape(&region), Ok(()));
+}
+
+/// Build one signed rich document, and hand back its bytes and the material to read it.
+fn rich_document(seed: u8, argv: &[u8]) -> (Vec<u8>, AgeOpener, PolicyNames) {
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let opener = AgeOpener::of(identity);
+    let signer = signing_key();
+    let verifier = material().expect("the fixture verification material is well formed");
+    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+
+    let mut ids = CountingIds(seed);
+    let skeleton = rich_skeleton(
+        &mut ids,
+        signer.signing_key_id(),
+        &sealer.encryption_key_id().hex(),
+    );
+    let span = dorc_receipt::format::serialize_skeleton::<PlanReceipt, Rich>(&skeleton)
+        .expect("the fixture skeleton serializes");
+    let plaintext = OverlayPlaintext::canonical(
+        &skeleton.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &[OverlayEntry::of(0, OpaqueFieldTag::Argv, argv.to_vec())],
+    );
+    let bytes = DraftReceipt::<PlanReceipt, Rich>::of(skeleton)
+        .serialize(plaintext, &sealer)
+        .expect("a rich document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+    (bytes, opener, resolver)
+}
+
+#[test]
+fn a_region_from_another_document_releases_nothing() {
+    // Both documents are validly signed and both regions open. What refuses the swap is the
+    // region's own binding to the skeleton it was written for.
+    let (mine, _, _) = rich_document(80, b"mine");
+    let (theirs, their_opener, their_resolver) = rich_document(81, b"theirs");
+
+    let text = String::from_utf8(mine).expect("text");
+    let start = text.find("-----BEGIN").expect("a region");
+    let end = text.find("opaque-end").expect("a terminator");
+    let foreign_region = &text[start..end];
+
+    let target = String::from_utf8(theirs).expect("text");
+    let t_start = target.find("-----BEGIN").expect("a region");
+    let t_end = target.find("opaque-end").expect("a terminator");
+    let swapped = format!(
+        "{}{}{}",
+        &target[..t_start],
+        foreign_region,
+        &target[t_end..]
+    );
+
+    let outcome = read_rich::<PlanReceipt>(
+        swapped.into_bytes(),
+        &ReceiptLimits::V1,
+        &their_resolver,
+        &their_opener,
+    );
+    assert!(
+        outcome.is_err(),
+        "a region written for another document released something"
+    );
+}
+
+#[test]
+fn a_damaged_region_releases_nothing_and_names_the_step_that_stopped() {
+    let (bytes, opener, resolver) = rich_document(82, b"dorc plan book.sh");
+    let text = String::from_utf8(bytes).expect("text");
+    // Flip one base64 character inside the region, leaving every marker and width intact, so
+    // the shape still locates and the failure is the package's own authentication.
+    let at = text.find("-----BEGIN").expect("a region") + 40;
+    let mut damaged = text.clone().into_bytes();
+    damaged[at] = if damaged[at] == b'A' { b'B' } else { b'A' };
+
+    let outcome = read_rich::<PlanReceipt>(damaged, &ReceiptLimits::V1, &resolver, &opener);
+    match outcome {
+        Err(partial) => assert!(
+            matches!(
+                partial.reason(),
+                dorc_receipt::format::RefusalReason::RegionUnopenable
+                    | dorc_receipt::format::RefusalReason::SignatureCheck
+            ),
+            "unexpected reason: {:?}",
+            partial.reason()
+        ),
+        Ok(_) => panic!("a damaged region read as whole"),
+    }
+}
+
+#[test]
+fn the_two_projections_refuse_each_other_at_the_reader() {
+    // Plain and rich are separate documents, not one document read two ways.
+    let (rich, opener, resolver) = rich_document(83, b"dorc plan book.sh");
+    assert!(
+        read_plain::<PlanReceipt>(rich, &ReceiptLimits::V1, &resolver).is_err(),
+        "a rich document did not read as plain"
+    );
+
+    let plain = signed_bytes::<PlanReceipt>(84).expect("a plain document");
+    assert!(
+        read_rich::<PlanReceipt>(plain, &ReceiptLimits::V1, &resolver, &opener).is_err(),
+        "a plain document did not read as rich"
     );
 }
