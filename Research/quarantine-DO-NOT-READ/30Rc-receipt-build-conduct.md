@@ -14,7 +14,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 |---|---|---|
 | 0 laws/crate/deps/vectors | `ai/r30-receipt` | LANDED `88f71314..23b5a9b7` |
 | 1 identity + plain kernel | `ai/r30-receipt` | LANDED; gate blocked, see below |
-| 2A apply image | `ai/r30-receipt-image` | BUILT `f7f6aa53`, both legs green; one reversal owed |
+| 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | `ai/r30-receipt-overlay` | dispatched 11:35 |
 | 2C recorded models + graph | `ai/r30-receipt-models` | dispatched 11:35 |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
@@ -233,3 +233,16 @@ negative case to its exact refusal rather than to the fact of refusal.
 - `LIVING_STATUS` entry; `FORFEITS` row for no-append (`30Ra:no-append-in-v1`).
 - prose queue: every register minted `None` this arc.
 - `gate:arc` from the populated branch before the fold.
+
+## my scheduling error — concurrent WSL gates
+
+`spike/CLAUDE.md` already rules that heavy WSL work is SERIALIZED across concurrent
+lanes (the ~20GiB WSL cap binds, not host RAM). I dispatched three parallel lanes each
+ending in `mise run both gate:full-quiet` and broke it. 2A took three preflight refusals
+(2.8 → 1.9 → 0.5 GiB available, `vmmemWSL` RISING) and correctly refused every wrong
+escape — no `DORC_PREFLIGHT=skip`, no `wsl --shutdown`, no touching sibling processes —
+decomposing the wrapper into its constituent checks instead and reporting the wrapper as
+NOT obtained. Also learned: polling makes the reading worse, since each probe consumes
+the RAM it measures. Both remaining lanes now carry the handling rule; serialize on
+request. `preflight-bounds-before-spend`'s "run Windows first" advice does not cover the
+three-lanes-at-once shape — worth a line from the steering author.
