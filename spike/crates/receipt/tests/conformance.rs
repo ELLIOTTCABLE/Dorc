@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use dorc_receipt::format::{self, RefusalReason};
 use dorc_receipt::grammar::RecordKind;
 use dorc_receipt::limits::{CountLimit, ReceiptLimits};
-use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt};
+use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich};
 
 fn vectors(kind: &str) -> Vec<(String, Vec<u8>)> {
     let root: PathBuf = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -56,12 +56,12 @@ fn species_line(bytes: &[u8]) -> String {
 fn parse_plain(body: &[u8], limits: &ReceiptLimits) -> Result<(), RefusalReason> {
     match species_line(body).as_str() {
         "species apply-intent" => {
-            format::parse_body::<ApplyIntent, Plain>(body, limits).map(|_| ())
+            format::parse_skeleton_span::<ApplyIntent, Plain>(body, limits).map(|_| ())
         }
         "species apply-outcome" => {
-            format::parse_body::<ApplyOutcome, Plain>(body, limits).map(|_| ())
+            format::parse_skeleton_span::<ApplyOutcome, Plain>(body, limits).map(|_| ())
         }
-        _ => format::parse_body::<PlanReceipt, Plain>(body, limits).map(|_| ()),
+        _ => format::parse_skeleton_span::<PlanReceipt, Plain>(body, limits).map(|_| ()),
     }
 }
 
@@ -69,15 +69,15 @@ fn parse_plain(body: &[u8], limits: &ReceiptLimits) -> Result<(), RefusalReason>
 fn round_trip(body: &[u8], limits: &ReceiptLimits) -> Option<Result<String, RefusalReason>> {
     match species_line(body).as_str() {
         "species plan" => Some(
-            format::parse_body::<PlanReceipt, Plain>(body, limits)
+            format::parse_skeleton_span::<PlanReceipt, Plain>(body, limits)
                 .and_then(|parsed| format::serialize_skeleton::<PlanReceipt, Plain>(&parsed)),
         ),
         "species apply-intent" => Some(
-            format::parse_body::<ApplyIntent, Plain>(body, limits)
+            format::parse_skeleton_span::<ApplyIntent, Plain>(body, limits)
                 .and_then(|parsed| format::serialize_skeleton::<ApplyIntent, Plain>(&parsed)),
         ),
         "species apply-outcome" => Some(
-            format::parse_body::<ApplyOutcome, Plain>(body, limits)
+            format::parse_skeleton_span::<ApplyOutcome, Plain>(body, limits)
                 .and_then(|parsed| format::serialize_skeleton::<ApplyOutcome, Plain>(&parsed)),
         ),
         _ => None,
@@ -101,18 +101,72 @@ fn every_valid_vector_parses_and_reserializes_to_the_same_bytes() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
+/// A vector is a skeleton span; make it a whole document by appending a well-shaped trailer.
+///
+/// The trailer is syntactically valid and cryptographically meaningless, which is all the
+/// locator needs: it checks shape and never checks a signature.
+fn as_document(span: &[u8]) -> Vec<u8> {
+    let mut out = span.to_vec();
+    out.extend_from_slice(b"signature ");
+    out.extend_from_slice("0".repeat(128).as_bytes());
+    out.push(b'\n');
+    out
+}
+
+/// Drive a vector through the real read order: locate, then parse the located skeleton span.
+///
+/// Routing through the locator is what exercises the byte-level guards. Those live in
+/// `locate` alone, so a test that called the parser directly would never reach them and a
+/// vector named for a line-ending departure would be refused — if at all — for some other
+/// reason entirely.
+fn locate_then_parse(span: &[u8], limits: &ReceiptLimits) -> Result<(), RefusalReason> {
+    let document = as_document(span);
+    let located = format::locate(&document, limits)?;
+    parse_plain(&located.skeleton, limits)
+}
+
 #[test]
-fn every_invalid_vector_is_refused() {
+fn every_invalid_vector_is_refused_by_the_whole_read_order() {
     // One departure per vector, so a refusal is attributable to that departure alone.
     let limits = ReceiptLimits::V1;
     let accepted: Vec<String> = vectors("invalid")
         .into_iter()
-        .filter(|(_, bytes)| parse_plain(bytes, &limits).is_ok())
+        .filter(|(_, bytes)| locate_then_parse(bytes, &limits).is_ok())
         .map(|(name, _)| name)
         .collect();
     assert!(
         accepted.is_empty(),
         "the grammar admits exactly one form, but accepted {accepted:#?}"
+    );
+}
+
+#[test]
+fn a_byte_level_departure_is_refused_by_the_locator_and_named_for_what_it_is() {
+    // The point of these two vectors is the byte, so the refusal has to name the byte. Both
+    // would otherwise be refused further in for an incidental reason — a stray carriage
+    // return also derails the version line — and the vector would then be passing for a
+    // reason other than the one it was written to prove.
+    let limits = ReceiptLimits::V1;
+    let mut failures: Vec<String> = Vec::new();
+    for (name, span) in vectors("invalid") {
+        let want = match name.as_str() {
+            "carriage-returns.skeleton.crlf" => b'\r',
+            "tab-separator.skeleton" => b'\t',
+            _ => continue,
+        };
+        match format::locate(&as_document(&span), &limits) {
+            Err(RefusalReason::IllegalByte { byte }) if byte == want => {}
+            other => failures.push(format!(
+                "{name}: wanted IllegalByte {want:?}, got {other:?}"
+            )),
+        }
+    }
+    assert_eq!(failures.len(), 0, "{failures:#?}");
+    assert!(
+        vectors("invalid")
+            .iter()
+            .any(|(name, _)| name == "carriage-returns.skeleton.crlf"),
+        "the wrong-line-ending vector is what keeps the locator's byte guard honest"
     );
 }
 
@@ -227,12 +281,12 @@ fn the_record_bound_refuses_at_boundary_plus_one() {
 
     let mut at = ReceiptLimits::V1;
     at.records = CountLimit::of(1);
-    assert!(format::parse_body::<PlanReceipt, Plain>(body.as_bytes(), &at).is_ok());
+    assert!(format::parse_skeleton_span::<PlanReceipt, Plain>(body.as_bytes(), &at).is_ok());
 
     let mut under = ReceiptLimits::V1;
     under.records = CountLimit::of(0);
     assert!(matches!(
-        format::parse_body::<PlanReceipt, Plain>(body.as_bytes(), &under),
+        format::parse_skeleton_span::<PlanReceipt, Plain>(body.as_bytes(), &under),
         Err(RefusalReason::OverBound { what: "records" })
     ));
 }
@@ -243,7 +297,42 @@ fn a_declared_count_never_allocates_before_the_bound_is_checked() {
     // record is read, so the declaration cannot drive an allocation on its own.
     let body = one_record_body("18446744073709551615");
     assert!(matches!(
-        format::parse_body::<PlanReceipt, Plain>(body.as_bytes(), &ReceiptLimits::V1),
+        format::parse_skeleton_span::<PlanReceipt, Plain>(body.as_bytes(), &ReceiptLimits::V1),
         Err(RefusalReason::OverBound { what: "records" })
     ));
+}
+
+#[test]
+fn a_rich_skeleton_parses_from_its_own_span_and_not_from_the_whole_signed_body() {
+    // The signed body of a rich document is the skeleton span followed by the region. Only
+    // the first of those is a skeleton, and handing the parser the whole body asks it to read
+    // the region as records. This pins which span the reader takes: the two are the same
+    // bytes for plain, so nothing else in the corpus can tell the difference, and the
+    // substitution would go unnoticed until a rich document existed to fail on it.
+    let limits = ReceiptLimits::V1;
+    let Ok(row) = build(
+        RecordKind::SolveCertification,
+        &["whole-window", "yes", "no", "authored-before-contact"],
+    ) else {
+        panic!("the fixture row is well formed");
+    };
+    let skeleton = skeleton_of(vec![row], Some("d".repeat(64)));
+    let Ok(span) = format::serialize_skeleton::<PlanReceipt, Rich>(&skeleton) else {
+        panic!("the fixture skeleton serializes");
+    };
+
+    assert!(
+        format::parse_skeleton_span::<PlanReceipt, Rich>(span.as_bytes(), &limits).is_ok(),
+        "the skeleton span is what parses"
+    );
+
+    let body = format::signed_body(&span, Some("-----BEGIN AGE ENCRYPTED FILE-----"));
+    assert!(
+        body.len() > span.len(),
+        "a rich body extends past its skeleton"
+    );
+    assert!(
+        format::parse_skeleton_span::<PlanReceipt, Rich>(&body, &limits).is_err(),
+        "the whole signed body is not a skeleton and must not parse as one"
+    );
 }
