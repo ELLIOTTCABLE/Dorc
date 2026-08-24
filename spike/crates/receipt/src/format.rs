@@ -80,6 +80,8 @@ pub enum RefusalReason {
     ProviderMismatch,
     /// The region did not validate against this document's skeleton.
     Overlay(crate::overlay::OverlayFault),
+    /// An apply image carried in this document was not accepted.
+    Image(crate::image::ImageRefusal),
 }
 
 /// One skeleton record: its kind and one atom per field, in table order.
