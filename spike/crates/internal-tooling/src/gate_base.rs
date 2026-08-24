@@ -90,10 +90,14 @@ fn verdict(b: &Facts) -> Result<String, String> {
 }
 
 /// Gather the facts, asking each question of whoever owns the answer.
+///
+/// git answers first and hk is asked only once it confirms a worktree: `hk config get` HANGS
+/// forever outside one (measured, hk 1.53.0). Inside one this adds no hang the gate did not
+/// already carry — its own `hk check` follows immediately.
 fn probe() -> Facts {
-    let configured = hk_default_branch();
-    let base = configured.as_deref().and_then(commit_of);
     let head = commit_of("HEAD");
+    let configured = head.as_ref().and_then(|_| hk_default_branch());
+    let base = configured.as_deref().and_then(commit_of);
     let ahead_of_fork = base
         .as_deref()
         .and_then(|b| git(&["merge-base", b, "HEAD"]))
