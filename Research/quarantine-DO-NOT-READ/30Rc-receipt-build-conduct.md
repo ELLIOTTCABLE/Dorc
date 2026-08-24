@@ -16,7 +16,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 1 identity + plain kernel | `ai/r30-receipt` | LANDED; gate blocked, see below |
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | `ai/r30-receipt-overlay` | dispatched 11:35 |
-| 2C recorded models + graph | `ai/r30-receipt-models` | dispatched 11:35 |
+| 2C recorded models + graph | `ai/r30-receipt-models` | BUILT `db3104df`; WSL green, Windows wrapper retry |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
@@ -246,3 +246,65 @@ NOT obtained. Also learned: polling makes the reading worse, since each probe co
 the RAM it measures. Both remaining lanes now carry the handling rule; serialize on
 request. `preflight-bounds-before-spend`'s "run Windows first" advice does not cover the
 three-lanes-at-once shape — worth a line from the steering author.
+
+## from the models lane (2C, `db3104df`)
+
+Deviations, all reported not taken: two extra modules to keep files under ~1500 lines;
+graph stores recorded models + a trust token rather than heterogeneous `Receipt<D,P,T>`
+(`30Rb` explicitly permits when clearer); `RecordedApplyAssignment` is the row and
+`AssignedTarget` the composed M:N value with no public constructor; `PartialReceipt` and
+`OutcomeAvailability` non-generic. Ratified: two refusal families (`RefusalReason` for
+grammar, `ModelRefusal` for the model), which composes with 2A's local `ImageRefusal` and
+2B's overlay arms — check at fold that three has not become a thicket.
+
+The two-way fence caught two stale `MAY_NAME_IT` entries on its FIRST run (`cli` names no
+receipt crate; `receipt-crypto` cannot depend on itself). A one-way fence would have
+carried both forever while asserting nothing. List is now empty and true; the stage that
+first wires a production caller adds its entry as a visible act.
+
+**Third sighting of one pattern, now generalized:** `ids.rs` has nine public `of_hex`
+constructors from bare digest text, and `Sha256Digest::over` takes a caller-chosen domain
+— together they mint any content identity over arbitrary bytes. 2A's
+`ApplyArtifactImageId::over` and 2B's `OverlayPlaintext::of` are instances of this root.
+DECIDE THE NARROWING AT THE STAGE 2 FOLD.
+
+Invariant prose from this lane:
+
+A row's `atoms` write positionally into the grammar table's field order, and nothing in
+the type system relates the two; `SkeletonRecord::build` cannot help, because it validates
+each atom's type independently and `leaf` and `ast` are both counts. The round-trip test is
+the whole fence, and it bites ONLY because every fixture row uses distinct values in every
+same-typed field. Someone simplifying a fixture to zeros because "the numbers don't matter"
+disarms it with nothing going red. The numbers are the mechanism, not decoration.
+
+The render row's identity axis is unrepresentable-when-wrong on the writing side but
+RE-DERIVED on the reading side, because `of_record` reconstructs the subject from two bare
+integer slots by consulting the kind's axis. Two copies of one rule. Add a kind and only
+the writer's copy fails to compile.
+
+The region ordinal space is the one cross-row reference with no type behind it: region rows
+define it by position, render rows name it by a bare integer. The in-range check catches a
+DANGLING reference, never a WRONG one — so if a projection numbers regions in one order and
+emits them in another, every region-keyed render row silently describes a different region
+and the document still closes. Whatever mints those ordinals must derive the number and the
+emission position from one walk.
+
+Each accessor on a `Reingested` is a decision about what may leave a recorded document, and
+nothing would notice a careless one — a future method returning something structured rather
+than a report scalar or another sealed value compiles and passes everything. The habit is
+the check: scalars and sealed values out, nothing else. That is exactly why the generic
+accessor had to go — it moved the guarantee onto a membership list instead of the wrapper.
+
+`MissingOutcome` is unconstructible outside correlation only because it carries a private
+field of a private unit type. Load-bearing, and looks like clutter; removing or publishing
+it lets any caller holding an intent identity assert no outcome exists — a claim about the
+record set that only correlation can make.
+
+Graph order-independence rests on two separable things: `BTreeMap` storage and sorted
+returns. One test notices, and only because it feeds the same documents backwards. Anything
+new returning a collection must sort and must join that reversal test.
+
+Several reads are `Option`-typed for shapes the grammar already forbids, and those branches
+fail QUIETLY — a document whose identity would not parse is skipped rather than reported.
+Fine while the field type guarantees the shape; a silent disappearance the moment anything
+loosens it.
