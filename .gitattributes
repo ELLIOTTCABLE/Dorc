@@ -23,3 +23,12 @@
 # cover real source; the vectors are kept tiny so losing `diff` costs a reviewer nothing `od -c`
 # does not give back.
 *.applyimage binary
+
+# ...and receipt conformance vectors whose bytes ARE the thing under test. A receipt is signed
+# over its exact bytes and an overlay payload is length-framed and binary-safe, so either may
+# carry non-ASCII or a deliberate wrong ending; a check-in filter rewriting one byte turns a
+# vector that should be refused into one that parses, and the suite then passes for the wrong
+# reason. Pinned by EXTENSION, like the rule above. `.skeleton` deliberately stays text: those
+# are hand-reviewed ASCII and worth a readable diff.
+*.receipt binary
+*.overlay binary
