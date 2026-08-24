@@ -10,6 +10,7 @@ use crate::capability::{OverlaySealer, PublicationGrade, ReceiptSigner, ReceiptS
 use crate::format::{self, RefusalReason, Skeleton};
 use crate::ids::to_hex;
 use crate::model::{Plain, Projection, Rich, Species, payload_type};
+use crate::overlay::{self, OverlayEntry};
 
 /// A receipt still being assembled.
 #[derive(Debug)]
@@ -53,22 +54,30 @@ impl<D: Species> DraftReceipt<D, Plain> {
 impl<D: Species> DraftReceipt<D, Rich> {
     /// Serialize with exactly one region, sealing the plaintext once.
     ///
-    /// The plaintext is consumed by value and sealed in the same act, so no caller retains
-    /// it and no second region can be produced from it.
+    /// The plaintext is consumed by value and sealed in the same act, so no caller retains it
+    /// and no second region can be produced from it. Three things are checked before the
+    /// region is stored: that the sealer answered at all, that it is the provider the skeleton
+    /// names, and that what came back is a region this format's own reader can locate. The
+    /// last is what stops a document being emitted that its own reader would refuse.
     ///
     /// # Errors
-    /// Refuses a draft naming no encryption provider, or a seal the sealer declined.
+    /// Refuses a draft naming no encryption provider, a provider that is not the sealer's, a
+    /// declined seal, or a region outside the stored armored shape.
     pub fn serialize(
         self,
         plaintext: OverlayPlaintext,
         sealer: &dyn OverlaySealer,
     ) -> Result<SerializedReceipt<D, Rich>, RefusalReason> {
-        if self.skeleton.encryption_key_id.is_none() {
+        let Some(declared) = self.skeleton.encryption_key_id.clone() else {
             return Err(RefusalReason::OverlayPresence);
+        };
+        if declared != sealer.encryption_key_id().hex() {
+            return Err(RefusalReason::ProviderMismatch);
         }
         let text = format::serialize_skeleton::<D, Rich>(&self.skeleton)?;
         let OverlayPlaintext { bytes } = plaintext;
-        let armor = sealer.seal(&bytes).ok_or(RefusalReason::OverlayPresence)?;
+        let armor = sealer.seal(&bytes).ok_or(RefusalReason::SealDeclined)?;
+        format::check_armor_shape(&armor)?;
         Ok(SerializedReceipt {
             skeleton: text,
             armor: Some(armor),
@@ -85,10 +94,20 @@ pub struct OverlayPlaintext {
 }
 
 impl OverlayPlaintext {
-    /// Take ownership of the exact plaintext bytes.
+    /// Build one region's plaintext from its entries, in canonical form.
+    ///
+    /// The one public way to obtain a plaintext, so a caller supplies content and never
+    /// layout: ordering, framing, and the document binding are written here.
     #[must_use]
-    pub const fn of(bytes: Vec<u8>) -> Self {
-        Self { bytes }
+    pub fn canonical(
+        receipt_id: &str,
+        species: &str,
+        skeleton_span: &[u8],
+        entries: &[OverlayEntry],
+    ) -> Self {
+        Self {
+            bytes: overlay::serialize(receipt_id, species, skeleton_span, entries),
+        }
     }
 }
 

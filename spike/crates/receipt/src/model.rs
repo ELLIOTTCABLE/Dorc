@@ -20,11 +20,16 @@ pub trait Species: sealed::Sealed + core::fmt::Debug + Copy {
 }
 
 /// Which projection this is.
+///
+/// The associated region is what makes a plain document unable to hold detail: its region
+/// type has no value to hold one, so the state is unrepresentable rather than merely unused.
 pub trait Projection: sealed::Sealed + core::fmt::Debug + Copy {
     /// The literal word in the `projection` header line.
     const TOKEN: &'static str;
     /// Whether this projection carries an encrypted region.
     const HAS_OVERLAY: bool;
+    /// What this projection carries where a region would be.
+    type Region: core::fmt::Debug;
 }
 
 /// Where the verification material for a checked document came from.
@@ -90,6 +95,10 @@ impl Species for ApplyOutcome {
     ];
 }
 
+/// What a plain document carries where a region would be: nothing, and no way to hold one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoOpaqueOverlay;
+
 /// The projection with no encrypted region. Opaque-capable fields carry a state word and
 /// no value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,12 +112,14 @@ impl sealed::Sealed for Plain {}
 impl Projection for Plain {
     const TOKEN: &'static str = "plain";
     const HAS_OVERLAY: bool = false;
+    type Region = NoOpaqueOverlay;
 }
 
 impl sealed::Sealed for Rich {}
 impl Projection for Rich {
     const TOKEN: &'static str = "rich";
     const HAS_OVERLAY: bool = true;
+    type Region = crate::overlay::ValidatedOpaqueOverlay;
 }
 
 /// The verification material was named by controller policy.

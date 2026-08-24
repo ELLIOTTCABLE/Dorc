@@ -161,6 +161,8 @@ pub use model::{
     ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Projection, Rich, SelfAssertedReceiptSigner,
     SignerTrust, Species, TrustedReceiptSigner,
 };
-pub use reader::{BoundedReceiptBytes, PartialReceipt, ReadPlain, Receipt, read_plain};
+pub use reader::{
+    BoundedReceiptBytes, PartialReceipt, ReadPlain, ReadRich, Receipt, read_plain, read_rich,
+};
 pub use reingested::{RecordedCurrent, RecordedInfluence, Reingested};
 pub use writer::{DraftReceipt, PublishedReceipt, SerializedReceipt, SignedReceipt};

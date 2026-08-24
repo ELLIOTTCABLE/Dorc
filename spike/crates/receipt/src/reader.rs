@@ -195,6 +195,7 @@ impl<D: Species, P: Projection, T: SignerTrust> ParsedReceiptSkeleton<D, P, T> {
 #[derive(Debug)]
 pub struct Receipt<D: Species, P: Projection, T: SignerTrust> {
     skeleton: Skeleton,
+    region: P::Region,
     species: PhantomData<D>,
     projection: PhantomData<P>,
     trust: PhantomData<T>,
@@ -207,6 +208,7 @@ impl<D: Species, T: SignerTrust> Receipt<D, crate::model::Plain, T> {
     pub fn of_plain(parsed: ParsedReceiptSkeleton<D, crate::model::Plain, T>) -> Self {
         Self {
             skeleton: parsed.skeleton,
+            region: crate::model::NoOpaqueOverlay,
             species: PhantomData,
             projection: PhantomData,
             trust: PhantomData,
@@ -321,4 +323,117 @@ impl PartialReceipt {
     pub fn bounded_structure(&self) -> Option<&str> {
         self.bounded_structure.as_deref()
     }
+}
+
+impl<D: Species, T: SignerTrust> Receipt<D, crate::model::Rich, T> {
+    /// Complete a rich document from a region that has already validated.
+    ///
+    /// Private to the crate and reachable only from [`read_rich`], so a rich receipt cannot
+    /// exist without a region that was checked against this document's own skeleton.
+    fn of_rich(
+        parsed: ParsedReceiptSkeleton<D, crate::model::Rich, T>,
+        region: crate::overlay::ValidatedOpaqueOverlay,
+    ) -> Self {
+        Self {
+            skeleton: parsed.skeleton,
+            region,
+            species: PhantomData,
+            projection: PhantomData,
+            trust: PhantomData,
+        }
+    }
+
+    /// The bytes filling one slot of one record.
+    #[must_use]
+    pub fn detail(&self, record: u64, tag: crate::projection::OpaqueFieldTag) -> Option<&[u8]> {
+        self.region.value(record, tag)
+    }
+
+    /// The validated region.
+    #[must_use]
+    pub const fn region(&self) -> &crate::overlay::ValidatedOpaqueOverlay {
+        &self.region
+    }
+}
+
+/// A completed rich read, carrying which provenance its material had.
+#[derive(Debug)]
+pub enum ReadRich<D: Species> {
+    /// Read under material controller policy names.
+    Trusted(crate::reingested::Reingested<Receipt<D, crate::model::Rich, TrustedReceiptSigner>>),
+    /// Read under material controller policy does not name.
+    SelfAsserted(
+        crate::reingested::Reingested<Receipt<D, crate::model::Rich, SelfAssertedReceiptSigner>>,
+    ),
+}
+
+/// Read one rich document end to end: bound, locate, check, parse, open, validate, seal.
+///
+/// The order is the point and it is not negotiable at a call site. Opening cannot begin until
+/// the outer signature has checked, and no opened byte reaches a report until the region has
+/// validated completely against the skeleton that was signed. A failure at any step answers a
+/// partial receipt and releases nothing — never a partial enrichment.
+///
+/// # Errors
+/// Answers a partial receipt for every condition that stops the read.
+pub fn read_rich<D: Species>(
+    bytes: Vec<u8>,
+    limits: &ReceiptLimits,
+    resolver: &dyn VerificationKeyResolver,
+    opener: &dyn crate::capability::OverlayOpener,
+) -> Result<ReadRich<D>, PartialReceipt> {
+    let bounded = BoundedReceiptBytes::of(bytes, limits).map_err(PartialReceipt::of)?;
+    let located = bounded.locate(limits).map_err(PartialReceipt::of)?;
+    if located.armor.is_none() {
+        return Err(PartialReceipt::of(RefusalReason::OverlayPresence));
+    }
+    match check_signature::<D, crate::model::Rich>(&located, resolver)
+        .map_err(PartialReceipt::of)?
+    {
+        Checked::Trusted(checked) => {
+            let parsed = ParsedReceiptSkeleton::<D, crate::model::Rich, TrustedReceiptSigner>::of(
+                &checked, limits,
+            )
+            .map_err(PartialReceipt::of)?;
+            let region =
+                open_and_validate::<D, TrustedReceiptSigner>(&checked, &parsed, limits, opener)?;
+            Ok(ReadRich::Trusted(crate::reingested::Reingested::seal(
+                Receipt::of_rich(parsed, region),
+            )))
+        }
+        Checked::SelfAsserted(checked) => {
+            let parsed =
+                ParsedReceiptSkeleton::<D, crate::model::Rich, SelfAssertedReceiptSigner>::of(
+                    &checked, limits,
+                )
+                .map_err(PartialReceipt::of)?;
+            let region = open_and_validate::<D, SelfAssertedReceiptSigner>(
+                &checked, &parsed, limits, opener,
+            )?;
+            Ok(ReadRich::SelfAsserted(crate::reingested::Reingested::seal(
+                Receipt::of_rich(parsed, region),
+            )))
+        }
+    }
+}
+
+/// Open the region and validate it against the skeleton that was signed.
+///
+/// Takes the checked state by reference so the span it digests is the span the signature
+/// covered, not a re-read of anything.
+fn open_and_validate<D: Species, T: SignerTrust>(
+    checked: &ReceiptSignatureChecked<T>,
+    parsed: &ParsedReceiptSkeleton<D, crate::model::Rich, T>,
+    limits: &ReceiptLimits,
+    opener: &dyn crate::capability::OverlayOpener,
+) -> Result<crate::overlay::ValidatedOpaqueOverlay, PartialReceipt> {
+    let armor = parsed
+        .armor()
+        .ok_or_else(|| PartialReceipt::of(RefusalReason::OverlayPresence))?;
+    let plaintext = opener
+        .open(armor, limits.overlay_bytes.get())
+        .ok_or_else(|| PartialReceipt::of(RefusalReason::RegionUnopenable))?;
+    crate::overlay::DecryptedOpaqueOverlay::of(plaintext)
+        .validate(parsed.skeleton(), checked.skeleton(), D::TOKEN, limits)
+        .map_err(|fault| PartialReceipt::of(RefusalReason::Overlay(fault)))
 }
