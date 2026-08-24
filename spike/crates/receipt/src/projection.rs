@@ -233,6 +233,42 @@ pub fn narrow_to_plain(rich: &Skeleton) -> Result<Skeleton, RefusalReason> {
     })
 }
 
+/// How two documents carrying one receipt identity relate.
+///
+/// A receipt identity names the receipt-event, not the byte-document, so one identity legitimately
+/// spans a rich document and the plain remint of it. Correlation must therefore key on identity
+/// alone and treat differing bytes as a finding only within one projection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SameIdentityPair {
+    /// Two projections of one receipt-event. They correlate to one node; nothing is wrong.
+    DistinctProjections,
+    /// One projection, one byte-image, encountered twice.
+    Identical,
+    /// One projection, two byte-images. A finding: retain both, prefer neither.
+    Divergent,
+}
+
+/// Classify two documents already known to carry the same receipt identity.
+///
+/// The projection words come from the documents themselves, which is what lets a caller holding
+/// two heterogeneous receipts ask the question without knowing either type statically.
+#[must_use]
+pub fn same_identity_pair(
+    left_projection: &str,
+    left_bytes: &[u8],
+    right_projection: &str,
+    right_bytes: &[u8],
+) -> SameIdentityPair {
+    if left_projection != right_projection {
+        return SameIdentityPair::DistinctProjections;
+    }
+    if left_bytes == right_bytes {
+        SameIdentityPair::Identical
+    } else {
+        SameIdentityPair::Divergent
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
