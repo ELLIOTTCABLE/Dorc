@@ -647,6 +647,65 @@ From `front-selection`:
   compilation against the vendor's own crate. The only safe wrapper is a stale 2021 crate. This is
   the one named requirement with no implementation path, and it needs a decision rather than a crate.
 
+From `front-verified-toolchain` (the added eleventh turn):
+
+- **The projection invariant is two properties wearing one sentence, and the tool proves only one.**
+  Disjointness is not non-representability: a plain rule carrying an *optional* ciphertext is still
+  accepted as disjoint from rich. Both halves are obtainable, from different mechanisms.
+- **Disjointness is real, machine-checked, and one line of schema** — write the two projections as a
+  single choice and the checker proves no item satisfies both, or *refuses and names what it could
+  not separate*. Sound, deliberately incomplete, refuses rather than guesses. It reaches actual
+  bytes only via the container's determinism theorem plus the checker being deterministic-only —
+  a chain to write down rather than assume.
+- **Two maps cannot be decided at all** — the checker returns an explicit not-supported failure. So
+  "avoid maps entirely", already the round's highest-leverage restriction, turns out to be the
+  *precondition for the proof existing*. Three conditions in total: arrays or tags but never maps;
+  a structural discriminator (leading literal, arity, or tag — all three demonstrated); and
+  deterministic encoding.
+- **The non-representability half is a compile error, not a proof.** Exhaustive destructuring is the
+  guard that actually fires; two other plausible-looking guards silently do nothing.
+- **The recommended adoption is as a *checker*, not a generator** — an option the selection front did
+  not consider. Run the prover over a schema model in continuous integration while keeping a
+  hand-written reader over the vendored container. That buys the proof without vendoring a megabyte
+  of unreviewable generated code (positional field names, non-ASCII type names, ~112 KB from a
+  seven-line schema). Its cost is model-versus-code drift, which this project already knows how to
+  manage. Marked by its author as judgement rather than result.
+- Generation exists on Linux and macOS only and needs a 913 MB toolchain; the *build* needs none of
+  it. The prover's admit switch **silently skips every query and leaves no marker in the output**.
+  Bus factor is one.
+- **The panic count was wrong and is larger**: 546 across the generated set, not 111 — that figure
+  was the container core alone. The honest comparison still favours it: 546 knowable, singly-caused,
+  mechanically re-checkable panics beat an unknown number of unproved ones in a hand-written
+  decoder, and the field evidence never puts the failure in the verified region. The real costs are
+  that the panic lint must be disabled over the whole vendored region and re-disabled on every
+  regeneration — **and the one unwrap in the unverified glue, which has a CVE attached in a directly
+  comparable project.**
+- **The verified/unverified boundary is a *value* boundary, not a call boundary**, which is
+  favourable — four crossings: bytes in under our own bound, values out (**convert once into named
+  types; never let a generated type escape**), errors out (**never a panic, abort, or unwrap** —
+  upstream's own reference glue calls process-abort, which is exactly the wrong thing), and the
+  unchanged crypto seam. Yes, this is where the risk moved.
+- The counter-thesis is strong and partly unanswerable: specification bugs, not proof failures, are
+  the observed mode; most surveyed verified systems still depended on unverified elements;
+  research-purpose verified projects are commonly abandoned. Against it, re-verification cost is
+  measured low. **The maintenance liability is not compute — it is the toolchain's continued
+  existence and the reviewability of its output.**
+
+## The final front's note to the inheriting conductor
+
+1. This round produced **principles**, which are durable, and **selections**, whose shelf life is
+   months. Put the selections in one dated place alongside the measurement that justified each, so
+   the next person re-runs a measurement rather than re-reading eleven fronts.
+2. **The most transferable result is not about any format**: an invariant that reads "reviewers must
+   ensure X" can often become "the build fails if not X" — and it is usually *two* mechanisms,
+   because it is usually two properties. Run this design's other invariants through that question.
+3. **Be suspicious of this round's coherence.** The independent corroborations are real but unevenly
+   distributed: the storage, write-ordering, and cleanup fronts had no external specification to
+   collide with and rest largely on the round's own reasoning. Those three deserve an outside pass.
+   And the finding most worth attacking is the last front's own — that the projection invariant is
+   now "checked", when what is checked is a *model* of it, by a tool with a bus factor of one, on
+   two of three platforms.
+
 ## Open gaps for whoever picks this up
 
 - How these storage primitives degrade on network, roaming, and file-sync-managed home directories,
