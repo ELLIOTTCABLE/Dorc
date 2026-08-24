@@ -101,6 +101,47 @@ machine-specific and should never sync), or extend `mise.toml:118`'s Windows arm
 per-worktree cache outside the tree, mirroring the WSL arm. Blocks the completion
 contract for every builder on this arc.
 
+Stage 2 checkpoints, 2026-08-24 (all three lanes):
+
+- **Base red, found independently by 2A and 2B, fixed by me at `50e1b2d4`.** The
+  `carriage-returns.skeleton` invalid vector had ZERO CR bytes committed — root
+  `.gitattributes` `* text=auto eol=lf` ate them at `git add`. Green in the authoring
+  tree only because git never rewrites the working file. Renamed to `.crlf` (the
+  pre-existing `*.crlf binary` rule, until now matching zero files). I fixed it on base
+  rather than in a lane: three lanes repairing one shared file is a three-way conflict.
+  Generalized rule for the arc: never trust the working tree as evidence of what was
+  committed; verify with `check-attr` + `cat-file -p :<path>`.
+- **Table amended three times total** (`invocation.attempt`, `admission.stream`,
+  `render-decision.member`), each closing a live loss inconsistent with the table's own
+  conventions. Principle stated to lanes: "record more" is the tiebreaker where the spec
+  is SILENT, never a licence to grow a REQUIRED field list whenever something is
+  droppable. Applied in the negative to `narrative`'s dropped site — its consumer is
+  owned by another round (`289:seam-narrative-render-unconsumed`), so it takes a
+  projection-omission instead.
+- **I reversed my own clippy ruling on 2B's measurement.** I chose `clippy.toml`'s
+  `allowed-duplicate-crates` because it "names the specific duplicates"; 2B measured TEN
+  duplicates, not seven, three being generic ecosystem churn (`syn`, `thiserror`) — and
+  `clippy.toml` is workspace-wide, so that option is BROADER than the crate-root
+  attribute I rejected. Now `#![expect(…, reason)]` in `dorc-receipt-crypto` only
+  (`expect`, so it self-ratchets). My error: I ruled from a crate list I took on faith
+  instead of asking for the measurement first.
+- Rich parsing could not succeed at all (2B): `ParsedReceiptSkeleton::of` fed the whole
+  rich body to a parser whose trailing check demands the skeleton terminator. Invisible
+  because no rich document existed. 2B fixes it by parsing the skeleton prefix.
+- **A pattern, not two slips:** 2A and 2C independently found public constructors taking
+  bare bytes (`ApplyArtifactImageId::over`, `OverlayPlaintext::of`, `Reingested::as_report`).
+  Same shape three times in one crate. Worth the steering author's attention.
+- Skeleton digest stays PLAIN SHA-256 over the literal skeleton span (both governing docs
+  say so) against 2B's domain-separation lean: it is a binding check, not an identity
+  mint, and `sha256sum`-by-hand reproducibility IS the readable-format product goal.
+  If crate law reads as covering it, that is crate-law wording to sharpen.
+- Approved: a committed age fixture identity (fresh-generated, fixture-named, seals only
+  committed vectors, covered by the lexical fence); `*.receipt`/`*.overlay`/`*.applyimage`
+  binary-pinned by extension, `*.skeleton` left text for reviewable diffs; 2C's inert
+  deterministic test signer inside `dorc-receipt`'s own tests.
+- Both fences 2C offered: two-way allow-list (`sinv-production-fences` requires it) and
+  resolver-implementor enumeration.
+
 ## banked for later stages
 
 - Stage 4: `transport::SessionOutcome` is whole-artifact, not per-site, and no apply
@@ -108,8 +149,21 @@ contract for every builder on this arc.
 - Stage 2A: `ArtifactSet`/`ArtifactFile` discard modes, roots, and edges, and hold
   bytes as `String`; the image container is binary-safe. 2A is "carry topology the
   live type throws away", not "add a container".
+- Stage 3 is BIGGER than `30Rb` sizes it, three ways (2C measured): `class_label`
+  (`cli/main.rs:2924`) discards both booleans before they reach Spine, so widening
+  `SpineSiteClassification` is MANDATORY not optional — my 8-token split created this;
+  four Spine species are unminted, so `licensor` deriving from `ReplaceLicense`/
+  `GuardLicense` is new `plan` code, not an accessor read; and `SpineSiteClassification`
+  is CFG-node-keyed against a site-keyed decision plane, so `cli/main.rs`'s hand-built
+  `ast → leaf` back-map must become a real seat. That is a refactor, not a projection.
+- Stage 4: `gap-plain-intent-topology-summary` — `30Rb` promises plain intents carry
+  "topology/count summaries" but `apply-assignment` has nowhere to hold them; deferred
+  here with a projection-omission rather than rippling the grammar mid-fan-out.
 - Stage 5: `dorc-loom` reads receipts and so needs a verifier; decide there whether
-  it takes the impl crate or a fixture verifier.
+  it takes the impl crate or a fixture verifier. Also: narratives carry no site, so no
+  narrative is attributable to a line — `dorc why N` is site-keyed.
+- At the Stage 2 fold: decide `ApplyArtifactImageId::over(&[u8])`'s public visibility
+  (2A left it, correctly, rather than change a Stage-1 type mid-fan-out).
 - `mise run lint:docids` accepts and checks `quarantine/<docID>` (prefix transparent
   to the matcher, resolved against a name-only listing — no quarantined file opened).
   It scans Markdown only; `.rs` citations are unvalidated, a crate `CLAUDE.md` is not.
