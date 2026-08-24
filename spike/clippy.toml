@@ -6,11 +6,21 @@
 # allowed to panic/unwrap/index/print freely. These keys grant that allowance
 # centrally so test code needs no per-item `#[expect]`.
 #
-# Scope caveat (verified empirically against clippy 0.1.96): these keys suppress
-# the lints only in `#[cfg(test)]`/`#[test]` code compiled with `--cfg test`
-# (inline test modules). They do NOT reach separate integration-test crates under
-# `tests/*.rs` — those are ordinary library crates to clippy. Integration tests
-# that trip these lints carry a file-top `#![expect(...)]` instead.
+# Scope caveat (verified empirically against clippy 0.1.96, refined 2026-08-24):
+# these keys suppress the lints in code clippy recognises as a TEST — an inline
+# `#[cfg(test)]` module, and a `#[test]`-annotated function anywhere, INCLUDING
+# one in a separate integration-test crate under `tests/*.rs`. What they do NOT
+# reach is a plain helper `fn` sitting beside those `#[test]` functions in an
+# integration-test file: to clippy that is ordinary library code, so a fixture
+# builder that unwraps or panics trips the lint while the test calling it does
+# not. Do not read a green `#[test]` as proof the file is covered.
+#
+# The sanctioned answer there is a file-top `#![expect(..., reason = "...")]`
+# naming only the lints that actually fire — `#![expect]`, never `#![allow]`
+# (`allow_attributes` and `allow_attributes_without_reason` are themselves warn
+# lints), and an over-broad list of its own becomes an unfulfilled-expectation
+# warning. Rewriting a fixture builder to thread a `Result` through tests that
+# must succeed is ceremony, not safety; spend the escape hatch instead.
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-panic-in-tests = true
