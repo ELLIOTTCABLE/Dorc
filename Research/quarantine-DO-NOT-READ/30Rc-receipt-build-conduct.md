@@ -14,7 +14,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 |---|---|---|
 | 0 laws/crate/deps/vectors | `ai/r30-receipt` | LANDED `88f71314..23b5a9b7` |
 | 1 identity + plain kernel | `ai/r30-receipt` | LANDED; gate blocked, see below |
-| 2A apply image | `ai/r30-receipt-image` | dispatched 11:35 |
+| 2A apply image | `ai/r30-receipt-image` | BUILT `f7f6aa53`, both legs green; one reversal owed |
 | 2B overlay + age | `ai/r30-receipt-overlay` | dispatched 11:35 |
 | 2C recorded models + graph | `ai/r30-receipt-models` | dispatched 11:35 |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
@@ -170,7 +170,56 @@ Stage 2 checkpoints, 2026-08-24 (all three lanes):
 
 ## invariant prose (raw; for the design agent to synthesize — do not pre-format)
 
-(collecting)
+From the apply-image lane:
+
+The mode type has no unknown arm, so a caller cannot record "I don't know whether this
+entry's mode is an execution input." That reads as safety and is, but the obligation it
+creates lands entirely outside the crate: whoever writes the artifact-to-image conversion
+will hold a two-arm choice, and the path of least resistance is to write "unused" for
+anything not obviously executable — which is the exact failure the type was meant to
+prevent, merely relocated. No signature states the duty and no test in the crate can fail
+if that conversion quietly guesses. The conversion has to refuse, and only someone knowing
+to will make it.
+
+The container refuses a great deal, and every refusal happens before an intent is
+published. That is the right seat, but it makes the refusal set load-bearing on
+availability in a way an ordinary parser's is not: a path outside the grammar does not
+degrade an image, it stops an apply. Anyone tempted to widen the refusal set should notice
+they are deciding what apply images are expressible at all, not tightening a parser.
+
+`encode()` hands back the bytes the image was minted or read with — deliberately, so the
+bytes an identity was computed over and the bytes a consumer reads are one object. The
+consequence is that the obvious round-trip test (parse a file, compare `encode()` to the
+file) is vacuous and passes however broken the encoder is. The real proof is a `remint`
+helper pushing a parsed image back through the public constructors so the encoder actually
+runs again. Simplify `remint` away as redundant and the corpus keeps passing while testing
+nothing.
+
+Two entry-shape rules are enforced twice on purpose — the stream constructor cannot be
+handed a path or mode, and the parser separately refuses a declared path or mode on a
+stream row. The second is not redundant: a document does not arrive through the
+constructor. Deleting either half leaves every current test green.
+
+The depth walk is deterministic only because starts are visited in ascending order and
+children in canonical edge order, and canonical edge order exists because the mint sorts.
+On an acyclic graph none of that matters. On a cyclic one it decides which edge is
+classified as cycle-closing, so a change to edge sorting silently changes the depth a
+cyclic image reports — and one vector in the corpus would notice.
+
+Path normalization and path recording hold opposite postures on purpose: emission-side
+code collapses and rewrites, the recorded-path type refuses non-canonical input rather
+than repairing it. Both are right at their own seat. If normalization ever drifts into the
+recording side, the bytes recorded stop being the bytes applied and nothing says so.
+
+Recurring across lanes, worth the author's attention as one thing rather than three:
+public constructors taking bare bytes kept appearing (a content-identity mint, an overlay
+plaintext wrapper, a generic report accessor). Each was individually harmless and each
+would have become a hole as its type set widened.
+
+And: two lanes independently shipped negative tests that passed for a reason other than
+the one they claimed — a vector refused at framing rather than at its named departure, and
+a guard never reached by the suite that named it. The fix that generalizes is pinning each
+negative case to its exact refusal rather than to the fact of refusal.
 
 ## conductor-owed at close
 
