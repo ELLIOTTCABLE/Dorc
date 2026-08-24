@@ -3,7 +3,9 @@ species apply-intent
 projection plain
 receipt-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 signing-key-id cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-records 2
+records 4
 record 0 invocation mode=apply started=absent argv=withheld-plain target=withheld-plain attempt=2 account=authored-before-contact
 record 1 apply-intent session=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb generation=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb policy=required-rich assignments=1 origin-state=known account=authored-before-contact
+record 2 apply-assignment ordinal=0 target=withheld-plain context=withheld-plain image=dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd image-state=withheld-plain origins=1 account=authored-before-contact
+record 3 plan-origin assignment=0 ordinal=0 receipt=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee presented=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff account=authored-before-contact
 skeleton-end

@@ -278,6 +278,65 @@ fn the_fixture_identity_is_unreachable_from_production() {
     }
 }
 
+/// Whether `text` names `ident` as a WHOLE identifier.
+///
+/// Substring matching is a false-positive generator — `age` occurs inside `storage`, `package`,
+/// `message`, and `ApplyArtifactImage` — and a fence that cries wolf is one people learn to route
+/// around rather than read. Every fence below matches on identifier boundaries.
+fn names_identifier(text: &str, ident: &str) -> bool {
+    fn is_ident_byte(byte: Option<&u8>) -> bool {
+        byte.is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'_')
+    }
+    let bytes = text.as_bytes();
+    let mut from = 0_usize;
+    while let Some(rest) = text.get(from..) {
+        let Some(at) = rest.find(ident) else {
+            return false;
+        };
+        let start = from.saturating_add(at);
+        let end = start.saturating_add(ident.len());
+        let bounded_left = start == 0 || !is_ident_byte(bytes.get(start.saturating_sub(1)));
+        let bounded_right = !is_ident_byte(bytes.get(end));
+        if bounded_left && bounded_right {
+            return true;
+        }
+        from = start.saturating_add(1);
+    }
+    false
+}
+
+#[test]
+fn the_fence_matcher_reads_identifier_boundaries_not_substrings() {
+    // The regression this exists for: a fence written against `age` that also fires on every
+    // `package`, `storage`, and `message` in the tree.
+    assert!(names_identifier("use age::Encryptor;", "age"));
+    assert!(names_identifier("let x = age ;", "age"));
+    assert!(!names_identifier("mod storage;", "age"));
+    assert!(!names_identifier("fn package() {}", "age"));
+    assert!(!names_identifier("ApplyArtifactImage::over(b)", "age"));
+    assert!(names_identifier(
+        "ReceiptId::of_source_bytes(raw)",
+        "of_source_bytes"
+    ));
+    assert!(!names_identifier(
+        "fn of_source_bytes_v2() {}",
+        "of_source_bytes"
+    ));
+    assert!(!names_identifier(
+        "let my_of_source_bytes = 1;",
+        "of_source_bytes"
+    ));
+    assert!(!names_identifier("", "age"));
+}
+
+/// Whether `text` carries an `impl` of `trait_name`, matched on identifier boundaries.
+fn implements(text: &str, trait_name: &str) -> bool {
+    text.lines().any(|line| {
+        let trimmed = line.trim_start();
+        trimmed.starts_with("impl ") && names_identifier(trimmed, trait_name)
+    })
+}
+
 /// Every production source file in the workspace, keyed by a slash-normalized relative path.
 ///
 /// Walks `crates/*/src` only: a test target is not a production boundary, and the whole point of
@@ -328,26 +387,31 @@ fn production_sources() -> Vec<(String, String)> {
     out
 }
 
-/// Assert the set of production files mentioning `needle` is exactly `allowed`, both ways.
+/// The production files naming `ident` as a whole identifier.
+fn production_naming(ident: &str) -> Vec<String> {
+    production_sources()
+        .into_iter()
+        .filter(|(_, text)| names_identifier(text, ident))
+        .map(|(path, _)| path)
+        .collect()
+}
+
+/// Assert the set of production files naming `ident` is exactly `allowed`, both ways.
 ///
 /// Two-way on purpose: a file that gains the mention fails, and an entry that no longer has it
 /// fails too, so the list cannot rot into a description of what used to be true.
-fn fence(needle: &str, allowed: &[&str]) {
-    let found: Vec<String> = production_sources()
-        .into_iter()
-        .filter(|(_, text)| text.contains(needle))
-        .map(|(path, _)| path)
-        .collect();
+fn fence(ident: &str, allowed: &[&str]) {
+    let found = production_naming(ident);
     for path in &found {
         assert!(
             allowed.contains(&path.as_str()),
-            "{path} names `{needle}`; only {allowed:?} may"
+            "{path} names `{ident}`; only {allowed:?} may"
         );
     }
     for entry in allowed {
         assert!(
             found.iter().any(|path| path == entry),
-            "the allow-list entry {entry} no longer names `{needle}`; remove it rather than \
+            "the allow-list entry {entry} no longer names `{ident}`; remove it rather than \
              leaving a fence describing what used to be true"
         );
     }
@@ -393,49 +457,61 @@ fn the_identity_mint_is_reachable_from_one_production_file() {
 #[test]
 fn verification_material_is_supplied_from_one_production_file() {
     // The resolver is the seam through which a permissive verifier could reach the reader, and a
-    // fence covering only the crypto crate's NAME would not see one written elsewhere. Implementing
-    // any of these in a production file is the visible act.
-    for needle in [
-        "impl VerificationKeyResolver",
-        "impl TrustedReceiptVerificationKey",
-        "impl SelfAssertedReceiptVerificationKey",
+    // fence covering only the crypto crate's NAME would not see one written elsewhere: a
+    // resolver returning a verifier that answers yes need never mention that crate.
+    for trait_name in [
+        "VerificationKeyResolver",
+        "TrustedReceiptVerificationKey",
+        "SelfAssertedReceiptVerificationKey",
     ] {
         let found: Vec<String> = production_sources()
             .into_iter()
-            .filter(|(_, text)| text.contains(needle))
+            .filter(|(_, text)| implements(text, trait_name))
             .map(|(path, _)| path)
             .collect();
         for path in &found {
             assert!(
                 path == "receipt-crypto/src/lib.rs",
-                "{path} carries `{needle}`; only the implementation crate may"
+                "{path} implements `{trait_name}`; only the implementation crate may"
             );
         }
     }
-    // Two-way: the implementation crate must still carry the two it is allowed to.
-    fence(
-        "impl TrustedReceiptVerificationKey",
-        &["receipt-crypto/src/lib.rs"],
-    );
-    fence(
-        "impl SelfAssertedReceiptVerificationKey",
-        &["receipt-crypto/src/lib.rs"],
-    );
+    // Two-way: the implementation crate must still carry the two it is allowed to, or the fence
+    // above is guarding a surface that moved.
+    for trait_name in [
+        "TrustedReceiptVerificationKey",
+        "SelfAssertedReceiptVerificationKey",
+    ] {
+        let found: Vec<String> = production_sources()
+            .into_iter()
+            .filter(|(_, text)| implements(text, trait_name))
+            .map(|(path, _)| path)
+            .collect();
+        assert_eq!(
+            found,
+            vec!["receipt-crypto/src/lib.rs".to_owned()],
+            "the implementation crate must still implement {trait_name}"
+        );
+    }
 }
 
 #[test]
 fn the_fixture_signature_stand_in_never_reaches_a_production_file() {
     // The graph corpus signs its documents with an inert deterministic stand-in. It is confined
     // by living in a test target; this asserts that rather than trusting it.
-    for needle in ["inert_signature", "InertSigner", "InertKey"] {
-        let found: Vec<String> = production_sources()
-            .into_iter()
-            .filter(|(_, text)| text.contains(needle))
-            .map(|(path, _)| path)
-            .collect();
+    for ident in ["inert_signature", "InertSigner", "InertKey"] {
+        let found = production_naming(ident);
         assert!(
             found.is_empty(),
-            "the fixture signature stand-in reached production: {found:?}"
+            "the fixture signature stand-in reached production: {found:?} names `{ident}`"
         );
     }
+    // Non-empty walk: the assertions above are vacuous if the walk found nothing, and this is
+    // the one that would notice.
+    assert!(
+        production_naming("ReceiptId")
+            .iter()
+            .any(|p| p == "receipt/src/ids.rs"),
+        "the production walk cannot see the crate it is fencing"
+    );
 }

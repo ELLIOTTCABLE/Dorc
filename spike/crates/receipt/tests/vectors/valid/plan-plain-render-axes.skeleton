@@ -1,0 +1,12 @@
+dorc-receipt/1
+species plan
+projection plain
+receipt-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+signing-key-id cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+records 5
+record 0 invocation mode=plan started=absent argv=withheld-plain target=withheld-plain attempt=1 account=authored-before-contact
+record 1 region-decision region=0 ast=12 disposition=replace routes=3 shell=withheld-plain account=authored-before-contact
+record 2 render-decision subject=7 member=2 kind=pinned-binding detail=withheld-plain account=authored-before-contact
+record 3 render-decision subject=0 member=absent kind=refused-heredoc-region detail=withheld-plain account=authored-before-contact
+record 4 render-decision subject=absent member=absent kind=import-inlined detail=withheld-plain account=authored-before-contact
+skeleton-end

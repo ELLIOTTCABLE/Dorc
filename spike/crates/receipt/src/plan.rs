@@ -947,6 +947,8 @@ impl RecordedRenderDecision {
     ) -> Result<Self, RelationFault> {
         if subject.axis() != kind.subject_axis() {
             return Err(RelationFault::SubjectAxisDisagrees {
+                expected: kind.subject_axis().token(),
+                supplied: subject.axis().token(),
                 kind: Self::KIND.token(),
             });
         }
@@ -1008,8 +1010,19 @@ impl RecordedRow for RecordedRenderDecision {
         let kind: RecordedRenderKind = rows::closed(record, "kind")?;
         let raw_subject = rows::opt_count(record, "subject")?;
         let raw_member = rows::opt_count(record, "member")?;
+        // What the two slots look like, rather than a guess at what the writer meant: a reader
+        // can only report the shape it was handed, and naming it exactly is what lets a negative
+        // test pin which departure it caught.
+        let supplied = match (raw_subject.is_some(), raw_member.is_some()) {
+            (true, true) => "leaf",
+            (true, false) => "subject-without-member",
+            (false, true) => "member-without-subject",
+            (false, false) => "none",
+        };
         let axis_fault = || {
             ModelRefusal::Relation(RelationFault::SubjectAxisDisagrees {
+                expected: kind.subject_axis().token(),
+                supplied,
                 kind: Self::KIND.token(),
             })
         };

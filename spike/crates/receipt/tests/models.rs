@@ -10,8 +10,9 @@
 #![expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    reason = "spike/clippy.toml's allow-*-in-tests keys reach inline #[cfg(test)] modules only, \
-              not a separate integration-test crate; the file-top expect is its documented answer"
+    reason = "spike/clippy.toml's allow-*-in-tests keys reach the #[test] functions of an \
+              integration-test crate but not the plain helper functions beside them, which is \
+              what these files are largely made of; the file-top expect is the documented answer"
 )]
 
 use dorc_receipt::apply::{
@@ -253,43 +254,58 @@ fn a_row_model_refuses_a_record_of_another_kind() {
     )
     .to_record()
     .unwrap();
-    assert!(matches!(
-        RecordedSource::of_record(&other),
-        Err(ModelRefusal::Kind { .. })
-    ));
+    assert_eq!(
+        RecordedSource::of_record(&other).unwrap_err(),
+        ModelRefusal::Kind {
+            expected: "source",
+            found: "solve-certification",
+        }
+    );
 }
 
 #[test]
 fn a_render_row_cannot_carry_a_subject_its_kind_does_not_own() {
     // The axis is a function of the kind, so these are refused at construction rather than
-    // written and discovered by a reader.
-    assert!(matches!(
-        RecordedRenderDecision::of(
+    // written and discovered by a reader. Each refusal names the axis the kind owns AND the axis
+    // it was handed, so the three cases below are distinguishable from one another rather than
+    // all satisfied by any axis complaint.
+    let cases = [
+        (
             RenderSubject::Region(RegionOrdinal::of(0)),
             RecordedRenderKind::PinnedBinding,
-            OpaqueState::Captured,
-            RecordedInfluence::AuthoredBeforeContact,
+            "leaf",
+            "region",
         ),
-        Err(RelationFault::SubjectAxisDisagrees { .. })
-    ));
-    assert!(matches!(
-        RecordedRenderDecision::of(
+        (
             RenderSubject::Leaf(site(1, 2)),
             RecordedRenderKind::ImportInlined,
-            OpaqueState::Captured,
-            RecordedInfluence::AuthoredBeforeContact,
+            "none",
+            "leaf",
         ),
-        Err(RelationFault::SubjectAxisDisagrees { .. })
-    ));
-    assert!(matches!(
-        RecordedRenderDecision::of(
+        (
             RenderSubject::None,
             RecordedRenderKind::RefusedHeredocRegion,
-            OpaqueState::Captured,
-            RecordedInfluence::AuthoredBeforeContact,
+            "region",
+            "none",
         ),
-        Err(RelationFault::SubjectAxisDisagrees { .. })
-    ));
+    ];
+    for (subject, kind, expected, supplied) in cases {
+        assert_eq!(
+            RecordedRenderDecision::of(
+                subject,
+                kind,
+                OpaqueState::Captured,
+                RecordedInfluence::AuthoredBeforeContact,
+            )
+            .unwrap_err(),
+            RelationFault::SubjectAxisDisagrees {
+                expected,
+                supplied,
+                kind: "render-decision",
+            },
+            "{kind:?} was handed a {supplied} subject"
+        );
+    }
     // And the three that DO agree are accepted, so the refusals above are about the axis and
     // not about the constructor refusing everything.
     for (subject, kind) in [
@@ -345,36 +361,34 @@ fn source_record(ordinal: u32) -> SkeletonRecord {
 
 #[test]
 fn a_plan_model_wants_exactly_one_invocation() {
-    assert!(matches!(
-        RecordedPlanReceipt::of_records(&[source_record(0)]),
-        Err(ModelRefusal::Relation(
-            RelationFault::MissingSingleton { .. }
-        ))
-    ));
-    assert!(matches!(
-        RecordedPlanReceipt::of_records(&[invocation_record(), invocation_record()]),
-        Err(ModelRefusal::Relation(
-            RelationFault::DuplicateSingleton { .. }
-        ))
-    ));
+    // Each refusal is pinned to its exact operands. A negative test that asserts only "it was
+    // refused" is satisfied by a refusal for any other reason, which is how a guard stops
+    // covering the departure it is named for.
+    assert_eq!(
+        RecordedPlanReceipt::of_records(&[source_record(0)]).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::MissingSingleton { kind: "invocation" })
+    );
+    assert_eq!(
+        RecordedPlanReceipt::of_records(&[invocation_record(), invocation_record()]).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::DuplicateSingleton { kind: "invocation" })
+    );
     assert!(RecordedPlanReceipt::of_records(&[invocation_record()]).is_ok());
 }
 
 #[test]
 fn a_plan_model_wants_its_ordinals_contiguous_from_zero() {
     // A gap means a row was dropped somewhere between the projection and the document, which a
-    // reader counting rows would silently absorb.
+    // reader counting rows would silently absorb. The pinned operands say WHICH ordinal broke
+    // the run, so a refusal arriving from another kind cannot satisfy this.
     let records = vec![invocation_record(), source_record(0), source_record(2)];
-    assert!(matches!(
-        RecordedPlanReceipt::of_records(&records),
-        Err(ModelRefusal::Relation(
-            RelationFault::OrdinalNotContiguous {
-                expected: 1,
-                found: 2,
-                ..
-            }
-        ))
-    ));
+    assert_eq!(
+        RecordedPlanReceipt::of_records(&records).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::OrdinalNotContiguous {
+            kind: "source",
+            expected: 1,
+            found: 2,
+        })
+    );
     let good = vec![invocation_record(), source_record(0), source_record(1)];
     assert!(RecordedPlanReceipt::of_records(&good).is_ok());
 }
@@ -390,12 +404,10 @@ fn a_render_row_cannot_name_a_region_the_document_does_not_declare() {
     .unwrap()
     .to_record()
     .unwrap();
-    assert!(matches!(
-        RecordedPlanReceipt::of_records(&[invocation_record(), render]),
-        Err(ModelRefusal::Relation(RelationFault::DanglingRegion {
-            region: 3
-        }))
-    ));
+    assert_eq!(
+        RecordedPlanReceipt::of_records(&[invocation_record(), render]).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::DanglingRegion { region: 3 })
+    );
 }
 
 #[test]
@@ -507,21 +519,23 @@ fn an_intent_model_closes_assignments_over_their_origins() {
 fn an_intent_model_refuses_a_declared_count_the_rows_contradict() {
     let mut records = intent_records(2, &[]);
     records.pop();
-    assert!(matches!(
-        RecordedApplyIntent::of_records(&records),
-        Err(ModelRefusal::Relation(RelationFault::CountDisagrees { .. }))
-    ));
+    assert_eq!(
+        RecordedApplyIntent::of_records(&records).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::CountDisagrees {
+            kind: "apply-intent",
+            declared: 2,
+            present: 1,
+        })
+    );
 }
 
 #[test]
 fn an_intent_model_refuses_an_origin_naming_no_assignment() {
     let records = intent_records(1, &[(4, 0)]);
-    assert!(matches!(
-        RecordedApplyIntent::of_records(&records),
-        Err(ModelRefusal::Relation(RelationFault::DanglingAssignment {
-            assignment: 4
-        }))
-    ));
+    assert_eq!(
+        RecordedApplyIntent::of_records(&records).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::DanglingAssignment { assignment: 4 })
+    );
 }
 
 #[test]
@@ -539,15 +553,13 @@ fn an_intent_model_refuses_an_origin_state_its_assignments_contradict() {
     )
     .to_record()
     .unwrap();
-    assert!(matches!(
-        RecordedApplyIntent::of_records(&records),
-        Err(ModelRefusal::Relation(
-            RelationFault::OriginStateDisagrees {
-                with_origins: 0,
-                ..
-            }
-        ))
-    ));
+    assert_eq!(
+        RecordedApplyIntent::of_records(&records).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::OriginStateDisagrees {
+            declared: "known",
+            with_origins: 0,
+        })
+    );
 }
 
 #[test]
@@ -573,10 +585,14 @@ fn an_outcome_model_closes_its_declared_site_count() {
         .to_record()
         .unwrap(),
     ];
-    assert!(matches!(
-        RecordedApplyOutcome::of_records(&records),
-        Err(ModelRefusal::Relation(RelationFault::CountDisagrees { .. }))
-    ));
+    assert_eq!(
+        RecordedApplyOutcome::of_records(&records).unwrap_err(),
+        ModelRefusal::Relation(RelationFault::CountDisagrees {
+            kind: "apply-outcome",
+            declared: 1,
+            present: 0,
+        })
+    );
     records.push(
         RecordedSiteOutcome::of(
             SiteOutcomeOrdinal::of(0),

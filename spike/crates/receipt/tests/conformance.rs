@@ -572,3 +572,51 @@ fn every_committed_rich_document_locates_and_reassembles_to_its_own_bytes() {
     }
     assert!(failures.is_empty(), "{failures:#?}");
 }
+
+/// Build the typed model for whichever species a valid vector names.
+fn model_of(body: &[u8], limits: &ReceiptLimits) -> Result<(), String> {
+    fn fault<E: core::fmt::Debug>(reason: E) -> String {
+        format!("{reason:?}")
+    }
+    match species_line(body).as_str() {
+        "species apply-intent" => format::parse_body::<ApplyIntent, Plain>(body, limits)
+            .map_err(fault)
+            .and_then(|parsed| {
+                dorc_receipt::apply::RecordedApplyIntent::of_records(&parsed.records)
+                    .map(|_| ())
+                    .map_err(fault)
+            }),
+        "species apply-outcome" => format::parse_body::<ApplyOutcome, Plain>(body, limits)
+            .map_err(fault)
+            .and_then(|parsed| {
+                dorc_receipt::outcome::RecordedApplyOutcome::of_records(&parsed.records)
+                    .map(|_| ())
+                    .map_err(fault)
+            }),
+        _ => format::parse_body::<PlanReceipt, Plain>(body, limits)
+            .map_err(fault)
+            .and_then(|parsed| {
+                dorc_receipt::plan::RecordedPlanReceipt::of_records(&parsed.records)
+                    .map(|_| ())
+                    .map_err(fault)
+            }),
+    }
+}
+
+#[test]
+fn every_valid_vector_also_closes_as_a_typed_model() {
+    // The corpus is valid at BOTH layers or it is not a corpus. A vector that parses under the
+    // grammar and does not close over itself would be a "valid" document no correct writer could
+    // emit — a declared count with no rows behind it, an ordinal naming nothing — and it would
+    // pass the grammar test above while being unusable as model-test input.
+    let limits = ReceiptLimits::V1;
+    let failures: Vec<String> = vectors("valid")
+        .into_iter()
+        .filter_map(|(name, bytes)| {
+            model_of(&bytes, &limits)
+                .err()
+                .map(|why| format!("{name}: {why}"))
+        })
+        .collect();
+    assert!(failures.is_empty(), "{failures:#?}");
+}

@@ -10,11 +10,13 @@
 #![expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    reason = "spike/clippy.toml's allow-*-in-tests keys reach inline #[cfg(test)] modules only, \
-              not a separate integration-test crate; the file-top expect is its documented answer"
+    reason = "spike/clippy.toml's allow-*-in-tests keys reach the #[test] functions of an \
+              integration-test crate but not the plain helper functions beside them, which is \
+              what these files are largely made of; the file-top expect is the documented answer"
 )]
 
 use dorc_receipt::ReceiptLimits;
+use dorc_receipt::RefusalReason;
 use dorc_receipt::apply::{RecordedApplyAssignment, RecordedApplyIntentRow, RecordedPlanOrigin};
 use dorc_receipt::capability::PublicationGrade;
 use dorc_receipt::capability::{
@@ -22,7 +24,7 @@ use dorc_receipt::capability::{
     TrustedReceiptVerificationKey, VerificationKeyResolver,
 };
 use dorc_receipt::format::{Skeleton, SkeletonRecord};
-use dorc_receipt::graph::{GraphFinding, ReceiptEdge, ReceiptGraph};
+use dorc_receipt::graph::{GraphFinding, GraphSpecies, ReceiptEdge, ReceiptGraph};
 use dorc_receipt::ids::{
     ApplyIntentId, ApplyOutcomeId, PlanReceiptId, Sha256Digest, SigningKeyId, from_hex_32,
 };
@@ -280,19 +282,87 @@ fn outcome_id(tag: &str) -> ApplyOutcomeId {
     ApplyOutcomeId::of_hex(&identity(tag)).unwrap()
 }
 
+/// The complete shape of a correlated set: how many of each node, and the EXACT edge and finding
+/// lists.
+///
+/// Findings here are retentions plus a verdict, not refusals, so "a finding was recorded" is
+/// satisfied by a correlator that recorded the wrong finding, the right finding for the wrong
+/// pair, or one finding where two were owed. Every case below therefore pins the whole shape.
+#[derive(Debug, PartialEq, Eq)]
+struct Shape {
+    plans: usize,
+    intents: usize,
+    outcomes: usize,
+    collisions: usize,
+    partials: usize,
+    edges: Vec<ReceiptEdge>,
+    findings: Vec<GraphFinding>,
+}
+
+impl Shape {
+    /// The expected shape, with the two lists sorted so a case may list them in any order.
+    fn expected(
+        counts: (usize, usize, usize, usize, usize),
+        mut edges: Vec<ReceiptEdge>,
+        mut findings: Vec<GraphFinding>,
+    ) -> Self {
+        edges.sort();
+        findings.sort();
+        Self {
+            plans: counts.0,
+            intents: counts.1,
+            outcomes: counts.2,
+            collisions: counts.3,
+            partials: counts.4,
+            edges,
+            findings,
+        }
+    }
+}
+
+fn shape_of(graph: &ReceiptGraph) -> Shape {
+    Shape {
+        plans: graph.plans().len(),
+        intents: graph.intents().len(),
+        outcomes: graph.outcomes().len(),
+        collisions: graph.collisions().len(),
+        partials: graph.partials().len(),
+        edges: graph.edges(),
+        findings: graph.findings(),
+    }
+}
+
+fn plan_to(plan: &str, intent: &str) -> ReceiptEdge {
+    ReceiptEdge::PlanToIntent {
+        plan: plan_id(plan),
+        intent: intent_id(intent),
+    }
+}
+
+fn intent_to(intent: &str, outcome: &str) -> ReceiptEdge {
+    ReceiptEdge::IntentToOutcome {
+        intent: intent_id(intent),
+        outcome: outcome_id(outcome),
+    }
+}
+
 #[test]
 fn the_fixture_read_path_reaches_a_sealed_document() {
     // The corpus is only correlating real reads if this holds: everything below goes through
     // bound, locate, signature check, parse, and seal.
     let graph = graph_of(&[(Kind::Plan, plan_bytes("p", 'a'))]);
-    assert_eq!(graph.plans().len(), 1);
-    assert!(graph.partials().is_empty());
     assert!(graph.faults().is_empty());
+    assert_eq!(
+        shape_of(&graph),
+        Shape::expected((1, 0, 0, 0, 0), vec![], vec![])
+    );
 }
 
 #[test]
 fn one_plan_feeds_many_intents_and_each_intent_has_at_most_one_outcome() {
-    // The shape the design draws: one plan, three applies, one of them never answered.
+    // The shape the design draws: one plan, three applies, one of them never answered. The
+    // unanswered apply contributes NO finding — an absent outcome is an availability reached by
+    // correlation, not a fault in the record set.
     let documents = vec![
         (Kind::Plan, plan_bytes("p", 'a')),
         (Kind::Intent, intent_bytes("a1", &["p"])),
@@ -307,22 +377,20 @@ fn one_plan_feeds_many_intents_and_each_intent_has_at_most_one_outcome() {
             outcome_bytes("o3", "a3", RecordedTerminalState::CommandFailed),
         ),
     ];
-    let graph = graph_of(&documents);
-    let edges = graph.edges();
-    for tag in ["a1", "a2", "a3"] {
-        assert!(
-            edges.contains(&ReceiptEdge::PlanToIntent {
-                plan: plan_id("p"),
-                intent: intent_id(tag),
-            }),
-            "{tag} should correlate to its plan"
-        );
-    }
-    assert!(edges.contains(&ReceiptEdge::IntentToOutcome {
-        intent: intent_id("a1"),
-        outcome: outcome_id("o1"),
-    }));
-    assert_eq!(edges.len(), 5, "three origins and two outcomes");
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (1, 3, 2, 0, 0),
+            vec![
+                plan_to("p", "a1"),
+                plan_to("p", "a2"),
+                plan_to("p", "a3"),
+                intent_to("a1", "o1"),
+                intent_to("a3", "o3"),
+            ],
+            vec![],
+        )
+    );
 }
 
 #[test]
@@ -333,24 +401,32 @@ fn one_intent_may_compose_many_presented_plans() {
         (Kind::Plan, plan_bytes("p2", 'b')),
         (Kind::Intent, intent_bytes("a1", &["p1", "p2"])),
     ];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.edges().len(), 2);
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (2, 1, 0, 0, 0),
+            vec![plan_to("p1", "a1"), plan_to("p2", "a1")],
+            vec![],
+        )
+    );
 }
 
 #[test]
 fn one_plan_named_twice_by_one_assignment_is_retained_twice() {
     // Duplicate origin occurrences are legal and are not a set: collapsing them would report a
-    // mapping the admin did not make.
+    // mapping the admin did not make. The expected edge list carries the SAME edge twice, which
+    // is the assertion that the occurrence count survived.
     let documents = vec![
         (Kind::Plan, plan_bytes("p", 'a')),
         (Kind::Intent, intent_bytes("a1", &["p", "p"])),
     ];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.intents().len(), 1);
     assert_eq!(
-        graph.edges().len(),
-        2,
-        "the occurrence count survives correlation"
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (1, 1, 0, 0, 0),
+            vec![plan_to("p", "a1"), plan_to("p", "a1")],
+            vec![],
+        )
     );
 }
 
@@ -358,7 +434,8 @@ fn one_plan_named_twice_by_one_assignment_is_retained_twice() {
 // verdicts are opposite: identical content under one identity is one document, and differing
 // content under one identity is two documents and a finding. Collapsing the second the way the
 // first is collapsed is the tempting bug, and it is tempting precisely because the first MUST
-// collapse.
+// collapse. Both pin the WHOLE shape, so a correlator that got the node count right and the
+// finding list wrong fails here.
 
 #[test]
 fn the_same_document_read_twice_is_one_document() {
@@ -366,13 +443,10 @@ fn the_same_document_read_twice_is_one_document() {
         (Kind::Plan, plan_bytes("p", 'a')),
         (Kind::Plan, plan_bytes("p", 'a')),
     ];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.plans().len(), 1);
-    assert!(
-        graph.collisions().is_empty(),
-        "identical bytes are not a collision"
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected((1, 0, 0, 0, 0), vec![], vec![])
     );
-    assert!(graph.findings().is_empty());
 }
 
 #[test]
@@ -381,20 +455,23 @@ fn two_documents_claiming_one_identity_are_both_retained_as_a_finding() {
         (Kind::Plan, plan_bytes("p", 'a')),
         (Kind::Plan, plan_bytes("p", 'b')),
     ];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.plans().len(), 1, "one keeps the identity");
-    assert_eq!(graph.collisions().len(), 1, "and the other is retained");
-    assert!(
-        graph
-            .findings()
-            .iter()
-            .any(|finding| matches!(finding, GraphFinding::IdentityCollision { .. })),
-        "a collision is a finding, never a silent last-write-wins"
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (1, 0, 0, 1, 0),
+            vec![],
+            vec![GraphFinding::IdentityCollision {
+                species: GraphSpecies::Plan,
+                identity: identity("p"),
+            }],
+        )
     );
 }
 
 #[test]
-fn a_second_outcome_for_one_intent_is_a_finding() {
+fn a_second_outcome_for_one_intent_is_a_finding_naming_the_later_one() {
+    // Which outcome is supernumerary is decided by identity order, not arrival order, so the
+    // expectation is computed the same way rather than guessed.
     let documents = vec![
         (Kind::Intent, intent_bytes("a1", &[])),
         (
@@ -406,42 +483,60 @@ fn a_second_outcome_for_one_intent_is_a_finding() {
             outcome_bytes("o2", "a1", RecordedTerminalState::Unknown),
         ),
     ];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.outcomes().len(), 2, "both outcomes are retained");
-    assert!(
-        graph
-            .findings()
-            .iter()
-            .any(|finding| matches!(finding, GraphFinding::SupernumeraryOutcome { .. })),
-        "one intent answered twice is a finding"
+    let later = if outcome_id("o1") < outcome_id("o2") {
+        "o2"
+    } else {
+        "o1"
+    };
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (0, 1, 2, 0, 0),
+            vec![intent_to("a1", "o1"), intent_to("a1", "o2")],
+            vec![
+                GraphFinding::OriginatingPlanUnavailable {
+                    intent: intent_id("a1"),
+                },
+                GraphFinding::SupernumeraryOutcome {
+                    intent: intent_id("a1"),
+                    outcome: outcome_id(later),
+                },
+            ],
+        )
     );
 }
 
 #[test]
-fn an_intent_without_its_plan_is_first_class() {
+fn an_intent_whose_named_plan_is_absent_carries_that_finding_and_no_other() {
+    // Contrast with the collision case above: both leave an intent with no plan edge, and only
+    // one of them is a disagreement about an identity. The exact finding list keeps them apart.
     let documents = vec![(Kind::Intent, intent_bytes("a1", &["p"]))];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.intents().len(), 1);
-    assert!(graph.edges().is_empty(), "no edge without both endpoints");
-    assert!(
-        graph
-            .findings()
-            .contains(&GraphFinding::OriginatingPlanAbsent {
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (0, 1, 0, 0, 0),
+            vec![],
+            vec![GraphFinding::OriginatingPlanAbsent {
                 intent: intent_id("a1"),
                 plan: plan_id("p"),
-            })
+            }],
+        )
     );
 }
 
 #[test]
-fn an_intent_naming_no_plan_at_all_is_first_class() {
-    let graph = graph_of(&[(Kind::Intent, intent_bytes("a1", &[]))]);
-    assert!(
-        graph
-            .findings()
-            .contains(&GraphFinding::OriginatingPlanUnavailable {
+fn an_intent_naming_no_plan_at_all_is_a_different_finding() {
+    // Naming a plan that is not held and naming none at all are different reports, because they
+    // ask the reader for different things.
+    assert_eq!(
+        shape_of(&graph_of(&[(Kind::Intent, intent_bytes("a1", &[]))])),
+        Shape::expected(
+            (0, 1, 0, 0, 0),
+            vec![],
+            vec![GraphFinding::OriginatingPlanUnavailable {
                 intent: intent_id("a1"),
-            })
+            }],
+        )
     );
 }
 
@@ -451,16 +546,16 @@ fn an_outcome_without_its_intent_is_first_class() {
         Kind::Outcome,
         outcome_bytes("o1", "a1", RecordedTerminalState::Complete),
     )];
-    let graph = graph_of(&documents);
-    assert_eq!(graph.outcomes().len(), 1);
-    assert!(graph.edges().is_empty());
-    assert!(
-        graph
-            .findings()
-            .contains(&GraphFinding::OutcomeWithoutIntent {
+    assert_eq!(
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (0, 0, 1, 0, 0),
+            vec![],
+            vec![GraphFinding::OutcomeWithoutIntent {
                 outcome: outcome_id("o1"),
                 intent: intent_id("a1"),
-            })
+            }],
+        )
     );
 }
 
@@ -490,9 +585,9 @@ fn a_missing_outcome_says_only_that_none_was_found() {
 
 #[test]
 fn the_arrival_order_of_documents_never_changes_the_graph() {
-    // There is no filename parameter anywhere in the ingest surface, so the only way order
-    // could reach a verdict is through iteration. Feeding the same set backwards proves it
-    // does not.
+    // There is no filename parameter anywhere in the ingest surface, so the only way order could
+    // reach a verdict is through iteration. Feeding the same set backwards proves it does not,
+    // and comparing WHOLE shapes rather than lengths is what makes that meaningful.
     let mut documents = vec![
         (Kind::Plan, plan_bytes("p1", 'a')),
         (Kind::Plan, plan_bytes("p2", 'b')),
@@ -507,33 +602,50 @@ fn the_arrival_order_of_documents_never_changes_the_graph() {
             outcome_bytes("o9", "missing", RecordedTerminalState::Unknown),
         ),
     ];
-    let forward = graph_of(&documents);
+    let forward = shape_of(&graph_of(&documents));
     documents.reverse();
-    let backward = graph_of(&documents);
-    assert_eq!(forward.edges(), backward.edges());
-    assert_eq!(forward.findings(), backward.findings());
-    assert_eq!(forward.plans().len(), backward.plans().len());
+    let backward = shape_of(&graph_of(&documents));
+    assert_eq!(forward, backward);
+    // And the shape itself is the expected one, so the two are not equal by both being wrong.
+    assert_eq!(
+        forward,
+        Shape::expected(
+            (2, 2, 2, 0, 0),
+            vec![
+                plan_to("p1", "a1"),
+                plan_to("p1", "a2"),
+                plan_to("p2", "a2"),
+                intent_to("a1", "o1"),
+            ],
+            vec![GraphFinding::OutcomeWithoutIntent {
+                outcome: outcome_id("o9"),
+                intent: intent_id("missing"),
+            }],
+        )
+    );
 }
 
 #[test]
 fn a_damaged_document_sits_beside_the_findings_and_correlates_nothing() {
     let mut damaged = plan_bytes("p", 'a');
-    let last = damaged.len().saturating_sub(20);
-    damaged.truncate(last);
+    let keep = damaged.len().saturating_sub(20);
+    damaged.truncate(keep);
     let documents = vec![
         (Kind::Plan, damaged),
         (Kind::Intent, intent_bytes("a1", &["p"])),
     ];
-    let graph = graph_of(&documents);
+    // The damaged document is retained as a partial, completes nothing, and mints no edge — so
+    // the intent that named it reports its plan absent, exactly as if it had never been offered.
     assert_eq!(
-        graph.partials().len(),
-        1,
-        "the damaged document is retained"
-    );
-    assert!(graph.plans().is_empty(), "and completes nothing");
-    assert!(
-        graph.edges().is_empty(),
-        "a partial document mints no edge, so the intent stays unattached"
+        shape_of(&graph_of(&documents)),
+        Shape::expected(
+            (0, 1, 0, 0, 1),
+            vec![],
+            vec![GraphFinding::OriginatingPlanAbsent {
+                intent: intent_id("a1"),
+                plan: plan_id("p"),
+            }],
+        )
     );
 }
 
@@ -553,24 +665,25 @@ fn a_document_signed_by_unheld_material_never_completes() {
             None
         }
     }
-    let outcome = read_plain::<PlanReceipt>(
+    let refusal = read_plain::<PlanReceipt>(
         plan_bytes("p", 'a'),
         &ReceiptLimits::V1,
         &PolicyHoldsNothing,
-    );
-    assert!(outcome.is_err(), "no material, no complete receipt");
+    )
+    .expect_err("no material, no complete receipt");
+    assert_eq!(refusal.reason(), &RefusalReason::KeyUnavailable);
 }
 
 #[test]
 fn the_graph_exposes_no_route_to_world_state() {
     // A negative pin on the API rather than on a value: correlation is by typed identity only,
-    // so there is deliberately nothing here that could join freshness, generation, authority,
-    // or an influence account. If a later change adds one, this test is where the argument for
-    // it has to be made.
+    // so there is deliberately nothing here that could join freshness, generation, authority, or
+    // an influence account. If a later change adds one, this test is where the argument for it
+    // has to be made.
     let graph = graph_of(&[(Kind::Plan, plan_bytes("p", 'a'))]);
     let node = graph.plans().values().next().unwrap();
-    // What a node offers is its sealed model and the provenance of the material that checked
-    // it. The model answers report scalars and further sealed values, and nothing else.
+    // What a node offers is its sealed model and the provenance of the material that checked it.
+    // The model answers report scalars and further sealed values, and nothing else.
     assert_eq!(node.signer().token(), "trusted");
     assert_eq!(node.model().mode(), RecordedMode::Plan);
     assert_eq!(node.model().sources().len(), 1);
@@ -585,16 +698,21 @@ fn the_graph_exposes_no_route_to_world_state() {
 fn a_publication_grade_is_not_a_correlation_input() {
     // Grades describe how a sink placed bytes; they are narration and never reach the graph.
     assert_eq!(PublicationGrade::Volatile.token(), "volatile");
-    let graph = graph_of(&[(Kind::Plan, plan_bytes("p", 'a'))]);
-    assert!(graph.findings().is_empty());
+    assert_eq!(
+        shape_of(&graph_of(&[(Kind::Plan, plan_bytes("p", 'a'))])),
+        Shape::expected((1, 0, 0, 0, 0), vec![], vec![])
+    );
 }
 
 #[test]
 fn a_partial_receipt_carries_its_reason_and_promotes_nothing() {
-    let partial = PartialReceipt::of(dorc_receipt::RefusalReason::SignatureCheck);
+    let partial = PartialReceipt::of(RefusalReason::SignatureCheck);
     assert!(partial.bounded_structure().is_none());
+    assert_eq!(partial.reason(), &RefusalReason::SignatureCheck);
     let mut graph = ReceiptGraph::new();
     graph.ingest_partial(partial);
-    assert_eq!(graph.partials().len(), 1);
-    assert!(graph.plans().is_empty());
+    assert_eq!(
+        shape_of(&graph),
+        Shape::expected((0, 0, 0, 0, 1), vec![], vec![])
+    );
 }

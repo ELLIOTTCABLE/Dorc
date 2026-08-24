@@ -418,6 +418,18 @@ pub enum RenderSubjectAxis {
     None,
 }
 
+impl RenderSubjectAxis {
+    /// The word a report renders for this axis.
+    #[must_use]
+    pub const fn token(self) -> &'static str {
+        match self {
+            Self::Leaf => "leaf",
+            Self::Region => "region",
+            Self::None => "none",
+        }
+    }
+}
+
 /// Which render-time decision a row records. The key axis rides the token, because a region owns no
 /// execution and a row keyed by a contributing invocation would name the wrong thing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

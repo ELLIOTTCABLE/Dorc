@@ -86,6 +86,10 @@ pub enum RelationFault {
     },
     /// A render row populated an identity slot its kind does not own.
     SubjectAxisDisagrees {
+        /// The axis the kind owns.
+        expected: &'static str,
+        /// The axis the row supplied.
+        supplied: &'static str,
         /// The kind whose axis was contradicted.
         kind: &'static str,
     },

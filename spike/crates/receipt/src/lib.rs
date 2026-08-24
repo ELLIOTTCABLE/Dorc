@@ -86,19 +86,70 @@
 //! }
 //! ```
 //!
-//! A reingested value has no public mint, so nothing can wrap a live value to look recorded:
+//! A recorded model is buildable as a bare value, which is how a projection makes one:
+//!
+//! ```
+//! use dorc_receipt::plan::RecordedPlanReceipt;
+//! assert!(RecordedPlanReceipt::of_records(&[]).is_err(), "a document names its invocation");
+//! ```
+//!
+//! But nothing can wrap one to look as though it came back from a document:
 //!
 //! ```compile_fail
 //! use dorc_receipt::Reingested;
-//! let _forged = Reingested::seal(7_u8);
+//! use dorc_receipt::plan::RecordedPlanReceipt;
+//! fn forge(model: RecordedPlanReceipt) -> Reingested<RecordedPlanReceipt> {
+//!     Reingested::seal(model)
+//! }
 //! ```
 //!
-//! And it offers no route back out — no unwrap, no dereference:
+//! And a sealed value offers no route back out — no unwrap:
 //!
 //! ```compile_fail
-//! use dorc_receipt::{Reingested, RecordedInfluence};
-//! fn take(value: Reingested<RecordedInfluence>) -> RecordedInfluence {
+//! use dorc_receipt::Reingested;
+//! use dorc_receipt::plan::RecordedPlanReceipt;
+//! fn take(value: Reingested<RecordedPlanReceipt>) -> RecordedPlanReceipt {
 //!     value.into_inner()
+//! }
+//! ```
+//!
+//! no dereference:
+//!
+//! ```compile_fail
+//! use dorc_receipt::Reingested;
+//! use dorc_receipt::plan::RecordedPlanReceipt;
+//! fn take(value: &Reingested<RecordedPlanReceipt>) -> &RecordedPlanReceipt {
+//!     &**value
+//! }
+//! ```
+//!
+//! and no generic accessor, which is the shape that would make the seal depend on which types
+//! join the recorded set rather than on the wrapper itself:
+//!
+//! ```compile_fail
+//! use dorc_receipt::Reingested;
+//! use dorc_receipt::plan::RecordedPlanReceipt;
+//! fn take(value: &Reingested<RecordedPlanReceipt>) -> &RecordedPlanReceipt {
+//!     value.as_report()
+//! }
+//! ```
+//!
+//! An outside type cannot join the recorded set:
+//!
+//! ```compile_fail
+//! #[derive(Debug)]
+//! struct Mine;
+//! impl dorc_receipt::reingested::RecordedType for Mine {}
+//! ```
+//!
+//! A missing outcome is reached by correlation, so a caller holding an intent identity cannot
+//! assert one:
+//!
+//! ```compile_fail
+//! use dorc_receipt::ids::ApplyIntentId;
+//! use dorc_receipt::outcome::MissingOutcome;
+//! fn claim(intent: ApplyIntentId) -> MissingOutcome {
+//!     MissingOutcome::of(intent)
 //! }
 //! ```
 //!
