@@ -728,6 +728,83 @@ From `front-verified-toolchain` (the added eleventh turn):
   measured low. **The maintenance liability is not compute — it is the toolchain's continued
   existence and the reviewability of its output.**
 
+From `front-readable-envelope-feasibility` (corrective front 12):
+
+- **The question was never text versus binary. It is whether the authentication covers the literal
+  file bytes or a re-derived model.** Every canonicalization failure the front found is a
+  re-derivation failure, and re-derivation is equally available to a binary format. Canonicity is
+  relative to a chosen equality relation, and byte equality is available: a whylog's identity
+  already *is* its bytes — content digests, diffing, and quoting into a ticket all assume so.
+  Choose byte equality and the whole canonicalization apparatus is answered by not being needed.
+- **The closest shipped analogue of the rich projection binds the wrong thing.** A widely used tool
+  encrypts leaf values in place and leaves keys and structure readable for exactly this design's
+  stated reasons — and authenticates a *reconstructed tree* rather than the file. It can therefore
+  disagree with itself: an open bug with a minimal reproduction shows a deterministic
+  authentication mismatch where a file the tool has just written cannot be read back by the same
+  tool. It also ships a switch that removes the readable skeleton from authentication entirely, and
+  its binding breaks outright on a host-format feature that makes paths dynamic. This is a failure
+  of precisely the thing 30Rc contemplates, and it is the single most on-point evidence available.
+- **The counter-example that works does so by being greenfield and strict**: a directly readable
+  line-framed header carrying opaque material, authenticated over every byte up to and including
+  its closing marker, with no canonicalization anywhere in the verify path, unknown members ignored
+  yet *inside* the authenticated span, and non-canonical encodings rejected rather than repaired.
+- **Text parser differentials in the wild trace to tolerance rules, not to textness.** Of 180
+  effective bypasses in one study, 105 came from implementations not following the specification and
+  75 from specifications declining to define abnormal-input handling. Every mechanism is a
+  be-liberal rule. A greenfield strict grammar has neither category. The cautionary armor format is
+  the same story with the receipt attached — it publishes three grammars for one format, and its
+  ambiguity is retrofitted de-facto tolerance.
+- **Length-prefix framing does not buy allocation safety for a whole-file local artifact; it is the
+  hazard.** The declared-length preallocation CVEs land on the binary side, and both fixes were to
+  become scan-proportional. For a file whose size is knowable before reading, a bounded scan is
+  proportional by construction.
+- **A readable durable adds a parser a binary one does not: the human**, who is the sloppiest one in
+  the system. This is the thesis's one cost that cannot be engineered away, only bounded. The rule
+  that bounds it: **render only from the verified span** — the framing lines are inside the
+  human-visible document, so any byte outside the authenticated prefix is a forgery surface.
+- **The binding answer, which the front treats as decisive: never authenticate a re-derivation.**
+  Each sealed member's associated data is the digest of every byte emitted before its ciphertext
+  begins — a running transcript, the same chaining value two shipped protocol families already use —
+  and the document closes with an authentication tag over the literal file prefix. Nothing is
+  normalised, sorted at verify time, re-emitted, or re-parsed-then-rehashed; the verifier's input is
+  the file. Two honest bounds: a symmetric tag gives integrity, never authorship; and the
+  render-only-from-verified-span rule is a hard requirement on the read surface, not advice.
+- **Two candidates returned.** The recommended one is an indentation-nested readable envelope with
+  six authored seams — grammar, canonical writer, strict reader, binding rule, projection types,
+  truncation semantics — none of them cryptographic design, plus a conformance kit that becomes
+  mandatory the moment a second reader exists. The alternative borrows a standardised canonical
+  length-prefixed text grammar, dropping to roughly four seams, and pays in tool shape rather than
+  aesthetics: no line structure means one grep hit, one diff hunk, and a wall in a pager. Carrying
+  both isolates what readability actually costs — **line structure, not ASCII-ness, is what ordinary
+  tools need.**
+- Eliminated rather than deferred: a standard JSON text sequence (its own security section concedes
+  no canonical form, that re-encoding breaks signature validation, and that its resynchronisation
+  smuggles data); a signed-note format that forbids the control bytes we must carry; a
+  non-self-describing binary encoding, fatal for an artifact read years later by an unknown version;
+  and **any borrowed general-purpose host format**, because when indentation is a user preference the
+  byte form is not a function of the content, so authentication cannot cover bytes, so it must
+  re-derive, so it can disagree with itself.
+- **Topology:** per-member and grouped encryption are both natural in a readable envelope; whole-
+  document fights it outright, because encrypting everything simply *is* abandoning the thesis. The
+  cost that must not be hidden: **per-member ciphertext lengths leak per-member plaintext lengths**
+  in a document whose structure is deliberately in the clear. Grouping plus padding mitigates and
+  trades directly against the readability that motivates the design — a genuine downstream decision,
+  deliberately left unmade.
+- **Open design cut, unresolved:** narrative member order versus checkable member order. Sorted is
+  what a schema-free reader can verify; schema order is more readable but only checkable by a reader
+  that knows the schema, which cannot then verify member placement from a *newer* version.
+- The binary counter-thesis survives as an option to preserve rather than a ruling. Its strongest
+  form is that formally verified parsers exist for binary and for nothing else, and will not exist
+  for a bespoke text grammar — which given this project's verified-core discipline is not a small
+  argument. Its price list: deterministic-binary profiles are still being narrowed years on; the
+  verified toolchain does not run on one of the three development platforms; and the
+  hexdump-identifies-the-format objection stands on its own terms. If the reader ever needs a
+  machine-checked proof, the honest move is a second verified binary representation *derived from*
+  the readable one with the readable one still canonical — not a swap.
+- **Largest gap in what it returns, self-reported**: one agent wrote one implementation of its own
+  grammar, which proves the properties achievable rather than robust. The strongest available check
+  is two independent readers and a differential fuzzer, and that has not been done.
+
 ## The final front's note to the inheriting conductor
 
 1. This round produced **principles**, which are durable, and **selections**, whose shelf life is
