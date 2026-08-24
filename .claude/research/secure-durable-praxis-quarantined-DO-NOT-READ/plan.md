@@ -501,6 +501,85 @@ From `front-cleanup-without-a-daemon`:
   thread (the archives disallow automated fetching) and the normative audit-retention control
   (only unread third-party mirrors were reachable). Both would be settled by one human fetch each.
 
+From `front-transport-red-lines`:
+
+**Red lines — never reuse these on a wire, however adjacent and understood the code is.**
+
+1. `red-never-reuse-the-prefix-reader` — the total bounded reader returning "N valid units then
+   damage". On a wire the adversary chooses N; the prefix contract *is* the truncation-attack
+   class, and prefix truncation has no at-rest analogue at all. A transport reader stops
+   permanently on first authentication failure, discards partial state, never resynchronises,
+   never surfaces a prefix. Share the grammar; never the recovery policy; never one path with a
+   flag.
+2. `red-never-reuse-the-key-diagnostics` — the careful key-failure vocabulary. The classical
+   composition theorem provably fails for a channel with multiple distinguishable decryption
+   errors, and is rescued only by requiring every error be computable from what the adversary
+   already holds. One externally visible failure behaviour, preferably silence; diagnostics go to
+   the *local* log.
+3. `red-never-share-one-keyspace-across-directions` — a file has one writer, a session has two.
+   Two keys, two counters, two contexts, distinct labels, from the moment the session exists.
+4. `red-never-let-the-ordinal-origin-be-negotiated` — counter zeroed at every key installation,
+   the reset point inside the authenticated transcript, exhaustion terminates. A mature protocol
+   was broken in 2023 by exactly this omission. If the channel is lossy, the inherited "a gap is
+   damage" **inverts** to "a gap is normal, a repeat is an attack".
+5. `red-never-put-a-plain-projection-on-the-wire-as-a-mode` — two postures must be two
+   *endpoints*, sharing no key material, no identity, no buffer. Merely *offering* a weak mode
+   endangers peers that chose the strong one.
+6. `red-never-compress-anything-on-the-wire-either` — the transport case is not milder, it is
+   quantifiably worse, and length-hiding padding fails because averaging over repeats shrinks the
+   noise.
+7. `red-never-cross-a-scope-with-a-scope-local-value` — two new failure modes beyond the at-rest
+   one: a value merely *not transmitted* can still leak through replay-and-observe-acceptance, and
+   a value that does reach a peer can become a forging capability.
+8. `red-never-reuse-key-material-across-the-two-modalities` — separate roots, or one derivation
+   root with prefix-free labelled expansion that neither use touches directly. Retain-forever is
+   right at rest and wrong on a wire.
+
+**Green — transfers intact:** the flat sequence of self-delimiting units; chunk-then-authenticate-
+before-release; derived rather than drawn nonces; key commitment (required for a *strictly
+stronger* reason on a wire, since it is what makes partitioning oracles efficient); injective
+context encoding; domain separation through labels, which is the single most transferable piece;
+the terminator unit, upgraded from good idea to mandatory and checked in both directions; never
+choosing a backend from untrusted input; never binding document-end-determined context.
+
+**Amber — same component, different parameters, and the distinction must not collapse:** the
+chunked construction, nonce derivation, rekey trigger, error surface, integrity-tag length
+(truncate freely at rest; full length on a wire, because the adversary gets rapid feedback on
+guesses), the associated-data channel (left empty at rest; the standard stream construction puts
+the ordinal *in* it), structural visibility (the plaintext skeleton is the at-rest product and
+every transport design inverts it), identity value, and key-rotation policy.
+
+- **Decision identity, resolved: neither prohibition nor the public digest.** The prohibition
+  fails because the peer already holds most of the preimage. Sending the digest fails for a reason
+  the prohibition never named — a deliberately re-derivable digest over largely-known inputs is a
+  *guessable* identifier, and a guessable idempotency key lets an attacker fetch another client's
+  cached result. **The answer is a second identity for the wire**: client-minted and random rather
+  than derived, with any content-derived fingerprint computed by the resource from the payload it
+  already holds, single-use where possible, and **the minter owning the expiry** — a peer that can
+  renew extends the linkage window. Measured: a seven-day lifetime leaves most users permanently
+  linkable; twenty-four hours leaves almost none.
+  The structural claim survives with one escape worth knowing: re-derivability and unlinkability
+  cannot coexist in one value, but *verifiability* and unlinkability can, at the price of
+  interactive blinded issuance. A cheaper fourth option — pairwise per-peer derived identifiers —
+  was surfaced but not read and would repay one focused pass.
+- Retention couples to the wire mechanically rather than by judgement: an acceptance window that
+  is published *derives* the period for which redeemed identities must be remembered.
+- **The deletion ledger** may cross to a trusted audit sink and may not cross to a semi-trusted
+  managed host — and Dorc's hosts are targets, not sinks. **Retention policy must never cross**:
+  most demonstrated log-tampering techniques change policy or routing rather than records, and
+  both major clouds converged on making baseline retention a locked channel the ordinary control
+  plane cannot reach. **Any state a wire protocol depends on gets an explicit published bounded
+  lifetime both ends can compute**, and a defined behaviour past the bound that is not silent
+  disagreement — free now, expensive later. **Publish the grace period and make it identical
+  everywhere**, because a per-operator value identifies the operator.
+- The counter-thesis's real content is strong — mature libraries genuinely do ship one
+  construction for both modalities — but the same sources concede there is no formal proof for
+  parallel mode use, and that *accretion is itself the documented failure mode*. **Synthesis that
+  survives both: one library and one primitive set; two constructions, each named, each with its
+  own conformance vectors, sharing no key material and no code path that branches on modality.**
+  A framework whose modality difference is visible in the protocol *name* is the existence proof,
+  and that visibility is a checkable review property rather than a nicety.
+
 ## Human leans on the findings
 
 **These are leans, not rulings.** The human has typed them and has explicitly declined to weld
