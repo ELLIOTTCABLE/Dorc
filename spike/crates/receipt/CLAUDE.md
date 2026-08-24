@@ -85,6 +85,57 @@ Make the code self-documenting instead of explaining it.
   `Receipt`, and no field of a partial document is promoted because it looks plausible. A
   bounded structural view renders whole, under one status.
 
+## Law — the apply image (`30R:receipt-species-and-correlation`)
+
+- **the-container-encodes-never-changes** — `image.rs` may encode an apply image and may never
+  alter one. No bundling, flattening, relocation, import rewriting, path normalization,
+  deduplication, or byte change: re-materializing reproduces every entry, path, mode, root, edge,
+  entrypoint and byte. The grammar REFUSES a shape it cannot record; it never repairs one.
+- **framing-is-by-declared-length** — content and path blocks are consumed by their declared
+  byte length and never scanned for a delimiter, which is what lets an entry hold any byte,
+  including a run spelling `image-end`. The corpus carries that vector; keep it.
+- **identity-is-minted-in-the-constructor** — the two mints validate, encode, hash, and store in
+  one operation. No constructor accepts an `ApplyArtifactImageId`, and there is no digest-only
+  or archive-reference constructor.
+- **parse-compares-against-a-supplied-identity** — the container carries no identity of its own,
+  so `parse` REQUIRES the expected `ApplyArtifactImageId` and refuses a mismatch before an image
+  exists. There is deliberately no unchecked variant: the caller threading the skeleton's digest
+  in is what binds the two. Every invalid vector is handed the identity of its own bytes so a
+  departure can never be masked by the identity check.
+- **the-canonical-bytes-are-stored-once** — an image owns the exact bytes it was minted or read
+  with, and `encode()` hands those back rather than re-running the encoder. Re-encoding to
+  compare is the failure class this format exists to avoid. The corpus proves encoder and parser
+  agree by RE-MINTING a parsed image through the public constructors and comparing bytes —
+  comparing a parsed image's own `encode()` to its file is vacuous.
+- **a-stream-has-no-path-and-no-mode** — enforced twice, and both halves are load-bearing:
+  `ApplyImageEntry::stream` cannot be given either, and the parser refuses a declared path or
+  mode on a stream entry independently, because a document is not built through that
+  constructor. At most one stream per image — two path-less entries could not be told apart at
+  materialization.
+- **paths-refuse-what-cannot-materialize** — beyond the byte and component grammar, two
+  whole-image rules are siblings and belong together: no two paths equal under ASCII
+  case-folding, and no path names a directory another path names as a file. Both refuse for the
+  same reason — the pair cannot exist on any filesystem — not as a policy preference.
+- **an-unknown-mode-is-unrepresentable** — `RecordedMode` is `Unused` or `Octal`, with no unknown
+  arm. `unused` means mode is not an execution input, NEVER that a relevant mode was not known.
+  A caller that cannot tell which it has must refuse at its own seat; it cannot record the
+  question. Nothing in this crate can enforce that obligation — see the note in `Owed`.
+- **roots-are-artifact-units-not-files** — a root is a top-level authored unit the artifact
+  covers, pointing at the entry that materializes it; several roots may name one entry, which is
+  what a flattened artifact is. A single external stream is its own root and its own entrypoint —
+  that is not a fabricated bundle root, because no bundle exists.
+- **every-entry-is-accounted-for** — topology validates both directions: forward, every
+  entrypoint, root target, and edge endpoint names an existing entry; reverse, every entry is
+  named by a root, an entrypoint, or as some edge's child. An orphan refuses.
+- **a-cycle-is-recorded-never-refused** — a load cycle is bounded by `topology_depth` (the walk
+  ignores the edge that closes it) and otherwise recorded as-is. The container reports what an
+  apply uses; it does not adjudicate whether the book is sensible, and refusing here would refuse
+  an apply before its intent was ever published.
+- **edges-sort-but-identifiers-do-not** — edge order carries no information, so the mint sorts
+  into canonical order and the parser requires strictly ascending (which is also the no-repeat
+  check). Entry and root ordinals are the caller's, so a non-contiguous one REFUSES rather than
+  being renumbered; entrypoint ORDER is execution order and is preserved exactly.
+
 ## Law — bounds
 
 - **limits-are-one-policy-value** — every parser takes a complete `ReceiptLimits`; a nested
@@ -119,6 +170,18 @@ Make the code self-documenting instead of explaining it.
 - **owed-rich-projection** — `Rich` is declared and no rich document is emitted. The region
   model, its validator, and the sealed round trip are the next stage's work; do not emit a
   partially built rich document outside a test.
-- **owed-record-models** — the recorded per-species models, the apply image, and the graph
-  are declared in the module map and not yet built. Nothing here may grow an empty field or
-  a speculative public API ahead of them.
+- **owed-record-models** — the recorded per-species models and the graph are declared in the
+  module map and not yet built. Nothing here may grow an empty field or a speculative public API
+  ahead of them. The apply image IS built (`image.rs`).
+- **owed-image-refusal-bridge** — `ImageRefusal` is a closed enum local to `image.rs` rather
+  than a `format::RefusalReason` variant, deliberately: adding a variant to a Stage 1 type while
+  sibling lanes compile against it is a cross-lane event. Whoever lands the rich reader owns the
+  bridge from one into the other.
+- **owed-unknown-mode-refusal-at-the-caller** — `RecordedMode` makes an unknown mode
+  unrepresentable, which means the obligation to REFUSE when mode-relevance is unknown lands
+  wholly on the artifact-to-image conversion. No type here can state that obligation, and no test
+  here can fail if that conversion quietly records `Unused` for a mode it never determined.
+- **owed-image-identity-over-is-public** — `ApplyArtifactImageId::over` takes bare bytes, which
+  is the shape `content-identities-hash-in-their-constructor` exists to forbid. It is currently
+  harmless (no constructor accepts a ready-made id, so one cannot be injected into an image) and
+  is load-bearing for a `compile_fail` seal in `lib.rs`. Narrowing it is a fold-tier decision.
