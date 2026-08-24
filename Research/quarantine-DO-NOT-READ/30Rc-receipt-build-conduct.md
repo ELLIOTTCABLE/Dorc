@@ -396,3 +396,31 @@ A rich receipt cannot exist without a validated region only because its construc
 private and reachable solely from the validating read path — enforced by VISIBILITY, not by
 the type. The region field would happily hold an unchecked value if a second constructor
 appeared.
+
+## the vacuous gate — my diagnosis was WRONG; the floor is the answer anyway
+
+CORRECTION: I asserted "no upstream" as the confirmed cause, to the human and to two
+builders. The gate-floor builder TESTED it and disproved it — hk reads `hk.pkl`'s
+`default_branch` (pinned since 2026-08-18), not the git upstream, and resolves `ai/main`
+correctly on a branch with none. Setting upstreams changed nothing causally; the Windows
+leg going 3 lines → 196 correlated with a rebase, not with my fix. I ruled from a plausible
+mechanism instead of testing it, having just told a builder off for the same shape.
+
+Three vacuity causes now known, and only ONE reproduces:
+- `default_branch` absent/unreadable ⇒ hk guesses `origin/HEAD` (this remote is `ec`, so it
+  fails), falls back to `main`, prints three git fatals and EXITS 0.
+- The WSL-leg instance 2B measured: does not reproduce. Both legs now resolve
+  `default_branch` = `ai/main` and `hk check --pr --plan` selects 19 files on each. Most
+  likely hk's per-worktree state cache (2B separately observed hk caching a prior run's
+  steps). Transient, invisible, undebuggable after the fact.
+- **PURE DELETIONS SELECT NOTHING** (the builder's find, reproduced live): every glob is
+  matched against paths no longer on disk, so a deletion-only change selects ZERO steps and
+  the gate reports green over a tree that cannot compile. **STAGE 6 IS A DELETION STAGE** —
+  ripping `whylog.rs`, `whylog_store.rs`, the fixtures, the flags. Without the floor, Stage
+  6's completion gate would have been vacuous by construction. Accepted cost: a
+  deletion-only commit now refuses; that is correct, not cry-wolf.
+
+That two of three causes are transient or non-reproducible is the whole argument for
+asserting the OBSERVABLE (work was selected) over diagnosing causes. Floor limits, stated
+by its builder: it predicts SELECTION from hk's own plan, not EXECUTION; and `hk config get`
+hangs forever outside a git repo (hk 1.53.0), so it confirms a worktree via git first.
