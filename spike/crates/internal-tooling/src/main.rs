@@ -12,6 +12,7 @@ mod coverage;
 mod docids;
 mod doctor;
 mod fmt_detached;
+mod gate_base;
 mod hook_selftest;
 mod livetest;
 mod posix_script;
@@ -31,6 +32,7 @@ fn main() -> ExitCode {
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
         Some("preflight") => preflight::run(args.get(1..).unwrap_or_default()),
+        Some("gate-base") => gate_base::run(),
         Some("fmt-detached") => fmt_detached::run(args.get(1..).unwrap_or_default()),
         Some("docids") => docids::run(args.get(1..).unwrap_or_default()),
         Some("doctor") => doctor::run(args.get(1..).unwrap_or_default()),
@@ -47,7 +49,7 @@ fn main() -> ExitCode {
             );
             eprintln!(
                 "tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines, \
-                 preflight, doctor, xfail-census, fmt-detached, docids"
+                 preflight, gate-base, doctor, xfail-census, fmt-detached, docids"
             );
             ExitCode::from(2)
         }
