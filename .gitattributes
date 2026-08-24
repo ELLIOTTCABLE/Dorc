@@ -14,3 +14,12 @@
 # silently widen to cover real source; `binary` additionally stops an editor or a diff view
 # "helpfully" normalising the one file whose entire purpose is to be wrong.
 *.crlf binary
+
+# ...and the apply-image container vectors, which are binary by design: the container is
+# length-framed so an entry's content may hold any byte, and the corpus has to prove it — NUL,
+# DEL, 0xFF, a bare CR, and a run that spells the container's own terminator. `text=auto` would
+# read most of those as text and normalise the line endings inside a content block, corrupting
+# an exact-byte vector silently. Pinned by EXTENSION, as above, so the exemption cannot widen to
+# cover real source; the vectors are kept tiny so losing `diff` costs a reviewer nothing `od -c`
+# does not give back.
+*.applyimage binary
