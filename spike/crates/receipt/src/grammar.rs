@@ -435,8 +435,13 @@ const SURVIVAL_FIELDS: &[Field] = &[
     ACCOUNT_FIELD,
 ];
 
+// `subject` is polymorphic and read off `kind`: a leaf for the site-keyed kinds, a region
+// ordinal (the `region-decision.region` space) for the region-keyed ones, and absent for the
+// import and defensive-emission kinds, which own neither axis. `member` is the second site
+// axis and is absent wherever `subject` is not a leaf.
 const RENDER_DECISION_FIELDS: &[Field] = &[
     f("subject", FieldType::OptionalCount),
+    f("member", FieldType::OptionalCount),
     f("kind", FieldType::Closed(RENDER_KIND)),
     f("detail", FieldType::Closed(OPAQUE_STATE)),
     ACCOUNT_FIELD,
