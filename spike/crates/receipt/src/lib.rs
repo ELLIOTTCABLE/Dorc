@@ -62,7 +62,7 @@
 //!
 //! ```compile_fail
 //! use dorc_receipt::ids::{ApplyArtifactImageId, PresentedPlanId};
-//! let image = ApplyArtifactImageId::over(b"bytes");
+//! let image = ApplyArtifactImageId::of_canonical_image(b"bytes");
 //! let _crossed: PresentedPlanId = image;
 //! ```
 //!

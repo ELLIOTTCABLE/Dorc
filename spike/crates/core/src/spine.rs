@@ -171,8 +171,8 @@ pub enum SpineSpecies {
     RecordStream,
     /// The per-site licensed decision — the license-bearing record `Plan` projects from.
     Disposition,
-    /// The decision digest over the identity plane.
-    Digest,
+    /// The identities of the presented approval surface.
+    PresentedPlan,
     /// Definition binding, custody, contested families, never-live, helper conflicts.
     LoadDecision,
     /// The classify tuple per site: class, verdict-lane, kills, backings, degrade causes.
@@ -246,7 +246,7 @@ impl SpineSpecies {
         Self::Invocation,
         Self::RecordStream,
         Self::Disposition,
-        Self::Digest,
+        Self::PresentedPlan,
         Self::LoadDecision,
         Self::SiteClassification,
         Self::SolveCertification,
@@ -268,7 +268,7 @@ impl SpineSpecies {
     #[must_use]
     pub const fn census_arm(self) -> CensusArm {
         match self {
-            Self::Invocation | Self::RecordStream | Self::Disposition | Self::Digest => {
+            Self::Invocation | Self::RecordStream | Self::Disposition | Self::PresentedPlan => {
                 CensusArm::Durable
             }
             Self::LoadDecision
@@ -299,7 +299,7 @@ impl SpineSpecies {
             Self::Invocation
             | Self::RecordStream
             | Self::Disposition
-            | Self::Digest
+            | Self::PresentedPlan
             | Self::LoadDecision
             | Self::SiteClassification
             | Self::SolveCertification
@@ -321,7 +321,7 @@ impl SpineSpecies {
             Self::Invocation => "SpineInvocation",
             Self::RecordStream => "SpineRecordStream",
             Self::Disposition => "SpineDisposition",
-            Self::Digest => "SpineDigest",
+            Self::PresentedPlan => "SpinePresentedPlan",
             Self::LoadDecision => "SpineLoadDecision",
             Self::SiteClassification => "SpineSiteClassification",
             Self::SolveCertification => "SpineSolveCertification",
@@ -620,24 +620,29 @@ impl<P: DecidePlane> SpineDisposition<P> {
     }
 }
 
-/// The decision digest over the identity plane (`22A` concl-3).
+/// The identities of one complete approval surface — what a run PRESENTED (`22A` concl-3).
+///
+/// AS POPULATED: one identity, spelled as its writer spells it. The species carries the approval
+/// surface rather than a drift-detector digest, which is why it is named for the surface; the
+/// remaining identities of that surface join it when the projection that computes them lands.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SpineDigest {
-    digest: String,
+pub struct SpinePresentedPlan {
+    identity: String,
     account: InfluenceAccount,
 }
 
-impl SpineDigest {
-    /// Mint the decision digest record.
+impl SpinePresentedPlan {
+    /// Mint the approval-surface record.
     #[must_use]
-    pub const fn minted(digest: String, account: InfluenceAccount) -> Self {
-        Self { digest, account }
+    pub const fn minted(identity: String, account: InfluenceAccount) -> Self {
+        Self { identity, account }
     }
 
-    /// The 16-hex-char FNV-1a digest.
+    /// The surface identity, as its writer spelled it. Referent-agnostic: compared and displayed,
+    /// never decoded.
     #[must_use]
-    pub fn digest(&self) -> &str {
-        &self.digest
+    pub fn identity(&self) -> &str {
+        &self.identity
     }
 }
 
@@ -1625,8 +1630,8 @@ impl<P: DecidePlane> InfluenceBearing for SpineDisposition<P> {
     }
 }
 
-impl sealed::Sealed for SpineDigest {}
-impl InfluenceBearing for SpineDigest {
+impl sealed::Sealed for SpinePresentedPlan {}
+impl InfluenceBearing for SpinePresentedPlan {
     fn account(&self) -> InfluenceAccount {
         self.account
     }
@@ -1729,7 +1734,7 @@ pub struct Spine<P: DecidePlane> {
     invocation: Option<SpineInvocation>,
     record_stream: Option<SpineRecordStream<P>>,
     dispositions: BTreeMap<SiteId, SpineDisposition<P>>,
-    digest: Option<SpineDigest>,
+    digest: Option<SpinePresentedPlan>,
     load_decisions: Vec<SpineLoadDecision>,
     classifications: BTreeMap<SiteId, SpineSiteClassification>,
     certifications: Vec<SpineSolveCertification>,
@@ -1860,13 +1865,13 @@ impl<P: DecidePlane> Spine<P> {
     }
 
     /// Write the decision digest.
-    pub fn set_digest(&mut self, record: SpineDigest) {
+    pub fn set_digest(&mut self, record: SpinePresentedPlan) {
         self.digest = Some(record);
     }
 
     /// The decision digest.
     #[must_use]
-    pub const fn digest(&self) -> Option<&SpineDigest> {
+    pub const fn digest(&self) -> Option<&SpinePresentedPlan> {
         self.digest.as_ref()
     }
 
@@ -2162,7 +2167,7 @@ impl<P: DecidePlane> Spine<P> {
             SpineSpecies::Invocation => usize::from(self.invocation.is_some()),
             SpineSpecies::RecordStream => usize::from(self.record_stream.is_some()),
             SpineSpecies::Disposition => self.dispositions.len(),
-            SpineSpecies::Digest => usize::from(self.digest.is_some()),
+            SpineSpecies::PresentedPlan => usize::from(self.digest.is_some()),
             SpineSpecies::LoadDecision => self.load_decisions.len(),
             SpineSpecies::SiteClassification => self.classifications.len(),
             SpineSpecies::SolveCertification => self.certifications.len(),

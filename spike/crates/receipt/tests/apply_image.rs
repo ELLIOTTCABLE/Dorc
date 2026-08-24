@@ -284,7 +284,7 @@ fn every_valid_vector_parses_and_re_encodes_to_the_same_bytes() {
     let limits = ReceiptLimits::V1;
     let mut failures: Vec<String> = Vec::new();
     for (name, bytes) in vectors("valid") {
-        let expected = ApplyArtifactImageId::over(&bytes);
+        let expected = ApplyArtifactImageId::of_canonical_image(&bytes);
         let parsed = match ApplyArtifactImage::parse(&bytes, expected, &limits) {
             Ok(parsed) => parsed,
             Err(refusal) => {
@@ -312,7 +312,7 @@ fn every_invalid_vector_is_refused_for_its_own_departure() {
     let limits = ReceiptLimits::V1;
     let mut wrong: Vec<String> = Vec::new();
     for (name, bytes) in vectors("invalid") {
-        let expected = ApplyArtifactImageId::over(&bytes);
+        let expected = ApplyArtifactImageId::of_canonical_image(&bytes);
         match ApplyArtifactImage::parse(&bytes, expected, &limits) {
             Ok(_) => wrong.push(format!("{name}: accepted")),
             Err(ImageRefusal::IdentityMismatch) => {
@@ -330,7 +330,7 @@ fn the_corpus_covers_every_form_and_both_entry_kinds() {
     let mut forms: Vec<&'static str> = Vec::new();
     let mut kinds: Vec<&'static str> = Vec::new();
     for (_, bytes) in vectors("valid") {
-        let expected = ApplyArtifactImageId::over(&bytes);
+        let expected = ApplyArtifactImageId::of_canonical_image(&bytes);
         let Ok(image) = ApplyArtifactImage::parse(&bytes, expected, &ReceiptLimits::V1) else {
             continue;
         };
@@ -661,7 +661,7 @@ fn each_invalid_vector_refuses_at_the_condition_it_is_named_for() {
     let mut seen: Vec<String> = Vec::new();
     for (file, bytes) in vectors("invalid") {
         let name = file.strip_suffix(".applyimage").unwrap_or(&file).to_owned();
-        let expected = ApplyArtifactImageId::over(&bytes);
+        let expected = ApplyArtifactImageId::of_canonical_image(&bytes);
         let got = match ApplyArtifactImage::parse(&bytes, expected, &ReceiptLimits::V1) {
             Ok(_) => "ACCEPTED".to_owned(),
             Err(refusal) => label(&refusal),

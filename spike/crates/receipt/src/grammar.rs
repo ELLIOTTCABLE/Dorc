@@ -152,7 +152,7 @@ pub const SPINE_SPECIES: &[&str] = &[
     "invocation",
     "record-stream",
     "disposition",
-    "digest",
+    "presented-plan",
     "load-decision",
     "site-classification",
     "solve-certification",

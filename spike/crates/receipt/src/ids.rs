@@ -290,8 +290,12 @@ pub struct ApplyArtifactImageId(Sha256Digest);
 
 impl PlanningInputId {
     /// Compute from the complete canonical encoding of the planner's inputs.
+    ///
+    /// Named for what it CONSUMES, and lexically fenced to its one production caller
+    /// (`crate_boundary.rs`): nothing in the type stops a caller hashing bytes that are not a
+    /// complete canonical encoding, so the gate over its callers cannot be a type.
     #[must_use]
-    pub fn over(canonical: &[u8]) -> Self {
+    pub fn of_canonical_inputs(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(PLANNING_INPUT_DOMAIN, canonical))
     }
 
@@ -310,8 +314,11 @@ impl PlanningInputId {
 
 impl PresentedPlanId {
     /// Compute from the complete canonical encoding of one settled approval surface.
+    ///
+    /// Named for what it CONSUMES, and lexically fenced to its one production caller
+    /// (`crate_boundary.rs`), on `of_canonical_inputs`' reasoning.
     #[must_use]
-    pub fn over(canonical: &[u8]) -> Self {
+    pub fn of_canonical_decision(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(PRESENTED_PLAN_DOMAIN, canonical))
     }
 
@@ -330,8 +337,11 @@ impl PresentedPlanId {
 
 impl ApplyArtifactImageId {
     /// Compute from the exact canonical image encoding.
+    ///
+    /// Named for what it CONSUMES, and lexically fenced to its one production caller
+    /// (`crate_boundary.rs`), on `of_canonical_inputs`' reasoning.
     #[must_use]
-    pub fn over(canonical: &[u8]) -> Self {
+    pub fn of_canonical_image(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(APPLY_IMAGE_DOMAIN, canonical))
     }
 

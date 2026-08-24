@@ -455,6 +455,27 @@ fn the_identity_mint_is_reachable_from_one_production_file() {
 }
 
 #[test]
+fn the_image_identity_mint_is_reachable_from_one_production_file() {
+    // The mint takes bare bytes, which is the shape `content-identities-hash-in-their-constructor`
+    // exists to forbid, and no type can say "these bytes are a complete canonical encoding". So the
+    // gate over its callers is lexical and two-way, exactly as the document-identity seam's is.
+    // Three entries because the fence matches NAMES rather than calls, and each names it for a
+    // different reason: `ids.rs` DECLARES it; `image.rs` is the one production file that CALLS it,
+    // being the sole mint, which validates, encodes, hashes and stores in one operation; and
+    // `lib.rs` names it inside a `compile_fail` doc example proving an image identity cannot cross
+    // into another domain. A fence listing only the caller would fail on the other two rather than
+    // catching anything.
+    fence(
+        "of_canonical_image",
+        &[
+            "receipt/src/ids.rs",
+            "receipt/src/image.rs",
+            "receipt/src/lib.rs",
+        ],
+    );
+}
+
+#[test]
 fn verification_material_is_supplied_from_one_production_file() {
     // The resolver is the seam through which a permissive verifier could reach the reader, and a
     // fence covering only the crypto crate's NAME would not see one written elsewhere: a

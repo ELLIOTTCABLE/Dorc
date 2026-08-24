@@ -538,7 +538,7 @@ pub struct WhylogV2Metadata {
 pub mod view {
     use dorc_core::RunInstant;
     use dorc_core::SourceRole;
-    use dorc_core::spine::{SpineDigest, SpineInvocation};
+    use dorc_core::spine::{SpineInvocation, SpinePresentedPlan};
 
     use super::ApplyLine;
     use crate::Disposition;
@@ -594,7 +594,7 @@ pub mod view {
         }
     }
 
-    /// The `SpineDigest` View: the digest string, and nothing beside it.
+    /// The `SpinePresentedPlan` View: the digest string, and nothing beside it.
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Digest {
         /// The decision digest at write time.
@@ -604,9 +604,9 @@ pub mod view {
     impl Digest {
         /// Project the record.
         #[must_use]
-        pub fn of(record: &SpineDigest) -> Self {
+        pub fn of(record: &SpinePresentedPlan) -> Self {
             Self {
-                digest: record.digest().to_owned(),
+                digest: record.identity().to_owned(),
             }
         }
     }

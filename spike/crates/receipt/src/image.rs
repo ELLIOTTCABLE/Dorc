@@ -683,7 +683,7 @@ impl ApplyArtifactImage {
             });
         }
         Ok(Self {
-            id: ApplyArtifactImageId::over(&canonical),
+            id: ApplyArtifactImageId::of_canonical_image(&canonical),
             canonical,
             form,
             entrypoints,
@@ -722,7 +722,7 @@ impl ApplyArtifactImage {
             &parsed.edges,
             limits,
         )?;
-        let id = ApplyArtifactImageId::over(bytes);
+        let id = ApplyArtifactImageId::of_canonical_image(bytes);
         if id != expected {
             return Err(ImageRefusal::IdentityMismatch);
         }

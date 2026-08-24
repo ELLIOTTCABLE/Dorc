@@ -683,8 +683,8 @@ pub enum RecordedSpineSpecies {
     RecordStream,
     /// Per-site dispositions.
     Disposition,
-    /// The decision digest.
-    Digest,
+    /// The identities of the approval surface.
+    PresentedPlan,
     /// Definition-plane outcomes.
     LoadDecision,
     /// Site classifications.
@@ -717,7 +717,7 @@ impl ClosedToken for RecordedSpineSpecies {
         Self::Invocation,
         Self::RecordStream,
         Self::Disposition,
-        Self::Digest,
+        Self::PresentedPlan,
         Self::LoadDecision,
         Self::SiteClassification,
         Self::SolveCertification,
@@ -736,7 +736,7 @@ impl ClosedToken for RecordedSpineSpecies {
             Self::Invocation => "invocation",
             Self::RecordStream => "record-stream",
             Self::Disposition => "disposition",
-            Self::Digest => "digest",
+            Self::PresentedPlan => "presented-plan",
             Self::LoadDecision => "load-decision",
             Self::SiteClassification => "site-classification",
             Self::SolveCertification => "solve-certification",

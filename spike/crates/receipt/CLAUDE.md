@@ -181,6 +181,14 @@ Make the code self-documenting instead of explaining it.
 - **content-identities-hash-in-their-constructor** — `PlanningInputId`, `PresentedPlanId`,
   and `ApplyArtifactImageId` are computed from complete typed material in the same operation
   that stores them. No public constructor accepts one ready-made.
+
+  All three mints still take the canonical ENCODING as bytes, because no type can state "these
+  bytes are a complete canonical encoding of X". Each is therefore named for what it CONSUMES
+  (`of_canonical_inputs` / `of_canonical_decision` / `of_canonical_image`) rather than for what it
+  produces, so a whole-identifier fence can match it, and each is gated by the same two-way lexical
+  allow-list `ReceiptId::of_source_bytes` uses. A mint named `over` could not be fenced at all —
+  the identifier is too common to match without crying wolf, which is the property
+  `a-fence-matches-identifier-boundaries` rules out.
 - **provider-identities-never-convert** — the signing and encryption identities derive under
   separate domains and no conversion exists in either direction. An identity in a document
   aids lookup; it never selects an implementation or grants acceptance.
@@ -234,10 +242,6 @@ Make the code self-documenting instead of explaining it.
   unrepresentable, which means the obligation to REFUSE when mode-relevance is unknown lands
   wholly on the artifact-to-image conversion. No type here can state that obligation, and no test
   here can fail if that conversion quietly records `Unused` for a mode it never determined.
-- **owed-image-identity-over-is-public** — `ApplyArtifactImageId::over` takes bare bytes, which
-  is the shape `content-identities-hash-in-their-constructor` exists to forbid. It is currently
-  harmless (no constructor accepts a ready-made id, so one cannot be injected into an image) and
-  is load-bearing for a `compile_fail` seal in `lib.rs`. Narrowing it is a fold-tier decision.
 - **owed-reingestion-consumer-gate** — the identity mint now has its lexical gate
   (`crate_boundary.rs`), and the sibling gate enumerating every `Reingested` consumer across
   crates lands with the stage that first wires one.

@@ -2908,7 +2908,7 @@ fn record_durable_arm(
         },
         world_account,
     ));
-    spine.set_digest(dorc_core::spine::SpineDigest::minted(
+    spine.set_digest(dorc_core::spine::SpinePresentedPlan::minted(
         decision_digest.to_owned(),
         world_account,
     ));
