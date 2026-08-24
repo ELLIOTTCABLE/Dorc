@@ -202,3 +202,68 @@ fn the_armor_feature_is_named_explicitly() {
         );
     }
 }
+
+/// The files permitted to carry fixture key material, by crate-relative path.
+///
+/// Narrow to the file, not the crate, and two-way: an entry naming a file that no longer
+/// carries any is as much a failure as material in a file with no entry. Adding a row is the
+/// visible act.
+const MAY_CARRY_FIXTURE_KEY_MATERIAL: [&str; 1] = ["receipt-crypto/tests/crypto_interop.rs"];
+
+/// Every `.rs` file under the workspace's crates, as crate-relative paths.
+fn workspace_sources() -> Vec<(String, String)> {
+    fn walk(dir: &Path, root: &Path, out: &mut Vec<(String, String)>) {
+        for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, root, out);
+            } else if path.extension().is_some_and(|ext| ext == "rs") {
+                let relative = path
+                    .strip_prefix(root)
+                    .unwrap_or(&path)
+                    .to_string_lossy()
+                    .replace(std::path::MAIN_SEPARATOR, "/");
+                out.push((relative, std::fs::read_to_string(&path).unwrap_or_default()));
+            }
+        }
+    }
+    let root = crates_root();
+    let mut out = Vec::new();
+    walk(&root, &root, &mut out);
+    out
+}
+
+#[test]
+fn the_fixture_identity_is_unreachable_from_production() {
+    // A private key committed to seal frozen vectors has exactly one legitimate home. No type
+    // can say "this constant is not reachable from a shipped path", so the fence is lexical:
+    // find every file carrying key material and require it to be one of the listed test files.
+    // The walk asserts it found files, because a walk that matched nothing would pass while
+    // proving nothing — the same failure shape as a corpus that loads zero vectors.
+    let sources = workspace_sources();
+    assert!(
+        sources.len() > 20,
+        "the source walk found only {} files; it is looking in the wrong place",
+        sources.len()
+    );
+
+    let carriers: Vec<String> = sources
+        .iter()
+        // Spelled in halves so this file does not match its own search and report itself.
+        .filter(|(_, text)| text.contains(concat!("AGE-SECRET", "-KEY-")))
+        .map(|(path, _)| path.clone())
+        .collect();
+
+    for path in &carriers {
+        assert!(
+            MAY_CARRY_FIXTURE_KEY_MATERIAL.contains(&path.as_str()),
+            "{path} carries fixture key material and is not on the list"
+        );
+    }
+    for allowed in MAY_CARRY_FIXTURE_KEY_MATERIAL {
+        assert!(
+            carriers.iter().any(|path| path == allowed),
+            "{allowed} is listed but carries no key material; the entry is stale"
+        );
+    }
+}

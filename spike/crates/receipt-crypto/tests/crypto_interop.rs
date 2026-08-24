@@ -674,3 +674,145 @@ fn rich_narrows_to_plain_by_reminting_and_never_by_stripping_text() {
         "a rich document with its region deleted must not read as a plain one"
     );
 }
+
+/// The age identity that seals the committed rich vectors, and nothing else, ever.
+///
+/// Generated fresh for this corpus and reused from nowhere. It exists so a frozen rich
+/// document stays openable: age encryption is not reproducible, so those vectors cannot be
+/// regenerated and must be readable years from now with the material committed beside them.
+/// It is fixture material by construction — an integration test is not compiled into any
+/// library, and `the_fixture_identity_is_unreachable_from_production` holds it there.
+const FIXTURE_ONLY_AGE_IDENTITY_SEALS_COMMITTED_VECTORS_ONLY: &str =
+    "AGE-SECRET-KEY-1WRNNRELNXYYJLWD2WTKAYUDDQRDP76K0QU4FCLT05LRYKTJ47JSQ6J8N8H";
+
+fn committed_rich_vectors() -> Vec<(String, Vec<u8>)> {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../receipt/tests/vectors/valid");
+    let mut out: Vec<(String, Vec<u8>)> = std::fs::read_dir(&root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry.path();
+            let name = path.file_name()?.to_str()?.to_owned();
+            if !name.contains(".receipt") {
+                return None;
+            }
+            Some((name, std::fs::read(&path).ok()?))
+        })
+        .collect();
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    assert!(!out.is_empty(), "no committed rich vectors");
+    out
+}
+
+#[test]
+fn every_committed_rich_vector_reads_back_whole_under_the_fixture_material() {
+    // The frozen corpus, driven through the entire order with the real packages: verify, parse,
+    // open, validate. An in-process round trip proves the writer and the reader agree with each
+    // other; this proves they still agree with bytes neither of them just produced.
+    let identity: age::x25519::Identity = FIXTURE_ONLY_AGE_IDENTITY_SEALS_COMMITTED_VECTORS_ONLY
+        .parse()
+        .expect("the fixture identity parses");
+    let opener = AgeOpener::of(identity);
+    let verifier = material().expect("the fixture verification material is well formed");
+    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+
+    let mut failures: Vec<String> = Vec::new();
+    for (name, bytes) in committed_rich_vectors() {
+        let species = String::from_utf8_lossy(&bytes)
+            .lines()
+            .nth(1)
+            .unwrap_or_default()
+            .to_owned();
+        let outcome = match species.as_str() {
+            "species plan" => {
+                read_rich::<PlanReceipt>(bytes, &ReceiptLimits::V1, &resolver, &opener)
+                    .map(|_| ())
+                    .map_err(|partial| format!("{:?}", partial.reason()))
+            }
+            "species apply-intent" => {
+                read_rich::<ApplyIntent>(bytes, &ReceiptLimits::V1, &resolver, &opener)
+                    .map(|_| ())
+                    .map_err(|partial| format!("{:?}", partial.reason()))
+            }
+            "species apply-outcome" => {
+                read_rich::<ApplyOutcome>(bytes, &ReceiptLimits::V1, &resolver, &opener)
+                    .map(|_| ())
+                    .map_err(|partial| format!("{:?}", partial.reason()))
+            }
+            other => Err(format!("unknown species line {other}")),
+        };
+        if let Err(reason) = outcome {
+            failures.push(format!("{name}: {reason}"));
+        }
+    }
+    assert!(failures.is_empty(), "{failures:#?}");
+}
+
+#[test]
+fn a_plain_remint_shares_its_identity_with_the_rich_document_and_is_not_a_finding() {
+    // The shape that separates the rule from the bug. A rich document and the plain remint of
+    // it carry one receipt identity and different bytes, which is exactly the pattern a
+    // divergence check is built to catch — and here it is correct and expected. The
+    // discriminator is the projection: differing bytes are a finding only within one.
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let signer = signing_key();
+
+    let mut ids = CountingIds(95);
+    let rich = rich_skeleton(
+        &mut ids,
+        signer.signing_key_id(),
+        &sealer.encryption_key_id().hex(),
+    );
+    let span = dorc_receipt::format::serialize_skeleton::<PlanReceipt, Rich>(&rich)
+        .expect("the fixture skeleton serializes");
+    let plaintext = OverlayPlaintext::canonical(
+        &rich.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &[OverlayEntry::of(0, OpaqueFieldTag::Argv, b"argv".to_vec())],
+    );
+    let rich_bytes = DraftReceipt::<PlanReceipt, Rich>::of(rich.clone())
+        .serialize(plaintext, &sealer)
+        .expect("a rich document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich).expect("the narrowing holds");
+    assert_eq!(
+        plain.receipt_id, rich.receipt_id,
+        "the remint keeps the identity of the event it describes"
+    );
+    let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
+        .serialize()
+        .expect("the narrowed document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+    assert_ne!(
+        rich_bytes, plain_bytes,
+        "and differs from it in every byte that matters"
+    );
+
+    assert_eq!(
+        dorc_receipt::projection::same_identity_pair("rich", &rich_bytes, "plain", &plain_bytes),
+        dorc_receipt::projection::SameIdentityPair::DistinctProjections,
+        "one event, two projections: one node, no finding"
+    );
+
+    // Same projection, differing bytes, is the case the finding exists for and must stay one.
+    let mut forged = rich_bytes.clone();
+    let last = forged.len().saturating_sub(2);
+    forged[last] = if forged[last] == b'a' { b'b' } else { b'a' };
+    assert_eq!(
+        dorc_receipt::projection::same_identity_pair("rich", &rich_bytes, "rich", &forged),
+        dorc_receipt::projection::SameIdentityPair::Divergent
+    );
+    assert_eq!(
+        dorc_receipt::projection::same_identity_pair("rich", &rich_bytes, "rich", &rich_bytes),
+        dorc_receipt::projection::SameIdentityPair::Identical
+    );
+}
