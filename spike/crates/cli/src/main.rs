@@ -2403,10 +2403,7 @@ fn run(
         record_durable_arm(
             &mut spine,
             &framing,
-            book_name,
-            &book_src,
-            oracle_paths,
-            oracle_srcs,
+            &snapshot,
             &decision_digest,
             clock.now(),
             results,
@@ -2963,15 +2960,12 @@ fn class_cells(class: &dorc_analysis::effect::SkipClass) -> Vec<dorc_core::FactK
 /// and one seat decides what a durable KEEPS of it.
 #[expect(
     clippy::too_many_arguments,
-    reason = "the invocation record IS a wide tuple of independent invocation facts (framing/book/oracles/digest/instant); bundling them behind a params struct would just re-spell this signature one layer down"
+    reason = "the invocation record IS a wide tuple of independent invocation facts (framing/snapshot/digest/instant); bundling them behind a params struct would just re-spell this signature one layer down"
 )]
 fn record_durable_arm(
     spine: &mut dorc_plan::Spine,
     framing: &dorc_plan::records::Framing,
-    book_name: &str,
-    book_src: &str,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
+    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
     decision_digest: &str,
     started_at: Option<dorc_core::RunInstant>,
     results: &SiteResults,
@@ -2981,18 +2975,7 @@ fn record_durable_arm(
     spine.set_invocation(dorc_core::spine::SpineInvocation::minted(
         dorc_core::spine::InvocationMode::WhylogReplay,
         std::env::args().collect(),
-        dorc_core::spine::SourceClaim {
-            path: book_name.to_owned(),
-            digest: book_digest(book_src),
-        },
-        oracle_paths
-            .iter()
-            .zip(oracle_srcs)
-            .map(|(path, src)| dorc_core::spine::SourceClaim {
-                path: path.clone(),
-                digest: book_digest(src),
-            })
-            .collect(),
+        source_claims(snapshot),
         dorc_core::spine::RunIdentity {
             nonce: framing.nonce().0.clone(),
             attempt: framing.attempt(),
@@ -3016,6 +2999,26 @@ fn record_durable_arm(
             .collect(),
         world_account,
     ));
+}
+
+/// Every acquired source as one ordered role-carrying claim, straight off the snapshot's own
+/// triple seat.
+///
+/// The book is a row wearing [`SourceRole::Book`], not a field beside the others: acquisition
+/// loads named oracles BEFORE the book, so the load order a durable ordinal means is exactly
+/// this vector's order.
+fn source_claims(
+    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
+) -> Vec<dorc_core::spine::SourceClaim> {
+    snapshot
+        .source_claims()
+        .map(|(path, src, role)| dorc_core::spine::SourceClaim {
+            path: path.to_owned(),
+            digest: book_digest(src),
+            role,
+            bytes: u64::try_from(src.len()).unwrap_or(u64::MAX),
+        })
+        .collect()
 }
 
 /// The two notices the full-positional regime owes a book author (`28K` §2

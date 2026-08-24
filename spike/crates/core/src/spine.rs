@@ -48,7 +48,9 @@
 use std::collections::BTreeMap;
 
 use crate::influence::InfluenceAccount;
-use crate::{AstId, DefinitionCustody, FactKey, KindId, LeafId, RunInstant, SiteId, SourceFileId};
+use crate::{
+    AstId, DefinitionCustody, FactKey, KindId, LeafId, RunInstant, SiteId, SourceFileId, SourceRole,
+};
 
 /// The payload types a Spine carries that `core` cannot name (`309` §2 crate-home).
 ///
@@ -375,13 +377,21 @@ impl ExcludedContent {
 // The record species
 // ===========================================================================
 
-/// One oracle or book input the run loaded, by path and content digest.
+/// One file the run acquired, as the invocation named it.
+///
+/// Carries its own [`SourceRole`] rather than leaving role to be read off a position, and its
+/// own byte length: a durable projection records both per source, and neither is recoverable
+/// from a `(path, digest)` pair after the fact.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceClaim {
     /// The path as the invocation named it.
     pub path: String,
     /// The content digest at load time.
     pub digest: String,
+    /// What this source was to the run.
+    pub role: SourceRole,
+    /// How many bytes the acquired text held.
+    pub bytes: u64,
 }
 
 /// What mode a reader should REPLAY a durable under — deliberately NOT a claim about the
@@ -437,28 +447,30 @@ pub struct RunIdentity {
 pub struct SpineInvocation {
     mode: InvocationMode,
     argv: Vec<String>,
-    book: SourceClaim,
-    oracles: Vec<SourceClaim>,
+    sources: Vec<SourceClaim>,
     identity: RunIdentity,
     account: InfluenceAccount,
 }
 
 impl SpineInvocation {
     /// Mint the invocation record.
+    ///
+    /// `sources` is ONE vector in LOAD ORDER, each row wearing its own role. The two-vector
+    /// shape it replaced could not express that order — acquisition loads named oracles before
+    /// the book, so a book-first-then-oracles pair recorded a load order that never happened,
+    /// and the ordinal a durable projection writes means load order.
     #[must_use]
     pub fn minted(
         mode: InvocationMode,
         argv: Vec<String>,
-        book: SourceClaim,
-        oracles: Vec<SourceClaim>,
+        sources: Vec<SourceClaim>,
         identity: RunIdentity,
         account: InfluenceAccount,
     ) -> Self {
         Self {
             mode,
             argv,
-            book,
-            oracles,
+            sources,
             identity,
             account,
         }
@@ -477,16 +489,15 @@ impl SpineInvocation {
         &self.argv
     }
 
-    /// The book path and its content digest.
+    /// Every acquired source, in load order, each wearing its role.
     #[must_use]
-    pub const fn book(&self) -> &SourceClaim {
-        &self.book
+    pub fn sources(&self) -> &[SourceClaim] {
+        &self.sources
     }
 
-    /// Each oracle path and digest, in load order.
-    #[must_use]
-    pub fn oracles(&self) -> &[SourceClaim] {
-        &self.oracles
+    /// The sources of one role, in load order.
+    pub fn sources_in_role(&self, role: SourceRole) -> impl Iterator<Item = &SourceClaim> {
+        self.sources.iter().filter(move |claim| claim.role == role)
     }
 
     /// The controller-minted run identity.

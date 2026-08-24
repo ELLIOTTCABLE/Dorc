@@ -37,48 +37,9 @@
 
 use dorc_core::loadpath::Cwd;
 
-/// What a source IS in this run, independently of where it sits in the vector.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum SourceRole {
-    /// A root the invocation named as a book: admin-authored, chaotic, and the surface the plan
-    /// renders. Its own `.` acts change visibility and mint no speaker (`30I` §2.3).
-    Book,
-    /// A root the invocation named to LOAD — an oracle. Its definitions are ambient: they load
-    /// before the book's first line, as the `.` prelude a pre-source is.
-    NamedLoad,
-    /// A root reached only from a book `.`. It loads AT that line and nowhere else, so its
-    /// definitions license nothing above their own load point.
-    BookSourced,
-    /// A source acquired only because a NAMED root's top level sources it: it loads at that `.`,
-    /// inside its sourcer's program, never before line 1 and never again as a root of its own.
-    LoadDependency,
-    /// An ordinary sh file a book `.` names, acquired for its BYTES and modelled NOT AT ALL
-    /// (`30P:principle-book-code-source-is-inclusion`, r30's `mech-acquire-and-ship-plain-sh`).
-    ///
-    /// It signed no dorc-lang contract, so nothing is lifted from it, nothing it declares binds,
-    /// and its `.` site walls exactly as an unread one does
-    /// (`FORFEITS:forfeit-plain-sh-inclusion-analysis`). What acquiring it buys is one thing: the
-    /// artifact can mirror it beside the plan, so the author's own `.` finds it on the host.
-    PlainInclusion,
-}
-
-impl SourceRole {
-    /// Does this source load before the book's first line?
-    #[must_use]
-    pub const fn is_ambient(self) -> bool {
-        matches!(self, SourceRole::NamedLoad)
-    }
-
-    /// Does the engine MODEL this source's text at all?
-    ///
-    /// The one predicate every LIFT and INDEX seat asks, so "acquired for bytes" cannot leak into
-    /// a definition universe by a consumer forgetting (`only-invocation-roots-are-ambient`'s shape:
-    /// demanded, never defaulted).
-    #[must_use]
-    pub const fn is_modelled(self) -> bool {
-        !matches!(self, SourceRole::PlainInclusion)
-    }
-}
+/// The role vocabulary now lives in `dorc_core`, because a durable projection asks the same
+/// question this snapshot does. Re-exported so every consumer keeps one spelling.
+pub use dorc_core::SourceRole;
 
 /// Which acquired sources do NOT load before the book's first line, and why — what
 /// [`StaticLoadSnapshot::over`] turns into [`SourceRole`]s.
@@ -220,6 +181,19 @@ impl StaticLoadSnapshot {
             .iter()
             .enumerate()
             .filter_map(|(file, &role)| Some((file, self.srcs.get(file)?.as_str(), role)))
+    }
+
+    /// Every source as a `(path, bytes, role)` triple, in LOAD order.
+    ///
+    /// The three vectors are built together by [`Self::over`], so this is the seat that owns their
+    /// positional agreement. A consumer indexing two of them separately would carry that invariant
+    /// wherever it went, and answer with a defaulted empty path where it slipped.
+    pub fn source_claims(&self) -> impl Iterator<Item = (&str, &str, SourceRole)> {
+        self.paths
+            .iter()
+            .zip(&self.srcs)
+            .zip(&self.roles)
+            .map(|((path, src), &role)| (path.as_str(), src.as_str(), role))
     }
 
     /// Every source's bytes, positionally matching [`Self::source_paths`].

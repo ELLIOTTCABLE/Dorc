@@ -537,6 +537,7 @@ pub struct WhylogV2Metadata {
 /// behind the tripwire.
 pub mod view {
     use dorc_core::RunInstant;
+    use dorc_core::SourceRole;
     use dorc_core::spine::{SpineDigest, SpineInvocation};
 
     use super::ApplyLine;
@@ -567,23 +568,29 @@ pub mod view {
     impl Invocation {
         /// Project the record. The grade is dropped by NOT BEING NAMED — `306c` §2's scope fence in
         /// its structural form.
+        ///
+        /// `None` when the source vector names no book. The vector is role-carrying and ordered by
+        /// LOAD position, so the book is found by its role rather than by sitting last; a run that
+        /// recorded no book row has no durable to write, which is the projection's own contract.
         #[must_use]
-        pub fn of(record: &SpineInvocation) -> Self {
+        pub fn of(record: &SpineInvocation) -> Option<Self> {
             let identity = record.identity();
-            Self {
+            let book = record.sources_in_role(SourceRole::Book).next()?;
+            Some(Self {
                 mode: record.mode(),
                 argv: record.argv().to_vec(),
-                book: (record.book().path.clone(), record.book().digest.clone()),
+                book: (book.path.clone(), book.digest.clone()),
                 oracles: record
-                    .oracles()
+                    .sources()
                     .iter()
+                    .filter(|claim| claim.role != SourceRole::Book)
                     .map(|claim| (claim.path.clone(), claim.digest.clone()))
                     .collect(),
                 nonce: identity.nonce.clone(),
                 attempt: identity.attempt,
                 host: identity.host.clone(),
                 started_at: identity.started_at,
-            }
+            })
         }
     }
 
@@ -666,7 +673,7 @@ impl<'a> DurableProjection<'a> {
     /// one: a whole-document refusal is the writer's contract, and it starts here.
     #[must_use]
     pub fn project(spine: &'a crate::Spine) -> Option<Self> {
-        let invocation = view::Invocation::of(spine.invocation()?);
+        let invocation = view::Invocation::of(spine.invocation()?)?;
         let digest = view::Digest::of(spine.digest()?);
         let stream = spine.record_stream()?;
         let apply = spine

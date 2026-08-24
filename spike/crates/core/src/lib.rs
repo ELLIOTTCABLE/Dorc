@@ -263,6 +263,9 @@ pub use custody::{CustodyClosures, custody_reaches};
 
 pub mod loadpath;
 
+pub mod source;
+pub use source::SourceRole;
+
 pub mod region;
 pub use region::{ElisionRegion, IterationSlot, RegionUniverse};
 
