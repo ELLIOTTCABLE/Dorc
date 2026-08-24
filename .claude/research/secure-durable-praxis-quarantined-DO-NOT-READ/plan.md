@@ -129,19 +129,19 @@ Serial by ruling: each front's fruit narrows the next, and research proceeds bro
 researcher mints its own turn file. Fronts after the first are re-briefed from what the
 earlier ones found, so the descriptions below are a starting shape, not a fixed schedule.
 
-Standing rule, learned the hard way on front 1: **product-flavoured research runs last.**
+Standing rule, learned the hard way on front 1: **product-flavoured research runs only after principles.**
 A front that reads READMEs and project pages comes back as a feature list with a
 point-of-view attached, and a feature list read early frames every later question as "does
 this beat that package." Principles, specifications, practice, and attack literature come
 first and are gathered clean. Which package to actually take is one consolidated front at the
-end, where the shopping list meets the candidates with everything visible at once.
+end of the principles chain, where the shopping list meets the candidates with everything visible at once.
 
 Each front therefore splits: the principles half runs in sequence below; the which-package
-half of every question defers into the final selection front.
+half of every question defers into the front-10 selection.
 
 | # | Front | Shape |
 |---|---|---|
-| 1 | `front-shopping-posture` | RUN, and fenced from the conductor. Whole-package candidates and supply-chain practice. Product-flavoured, so its fruit is consumed at the final selection front rather than chained forward. |
+| 1 | `front-shopping-posture` | RUN, and fenced from the conductor. Whole-package candidates and supply-chain practice. Product-flavoured, so its fruit is consumed at the front-10 selection rather than chained forward. |
 | 2 | `front-field-encryption-construction` | Question 2 minus library selection. Constructions, granularity, associated-data discipline, nonce safety, key commitment, and the composition-failure literature. The hub: its answers constrain what the container must express and what key material must exist. |
 | 3 | `front-wire-container` | Question 1, as a format and specification question. |
 | 4 | `front-key-lifecycle` | Question 3, as a practice question. |
@@ -150,11 +150,48 @@ half of every question defers into the final selection front.
 | 7 | `front-write-ordering` | When the durable is written relative to the mutations it explains. Raised by the human off front 5: if a write can fail in this many ways and the correct response is to fail rather than retry, the record may need to exist *before* the mutations rather than after. Runs before cleanup because it decides what the store contains. One criterion carried in from the human: any split must justify itself by a durability or atomicity boundary and never by a taxonomy of content, or coherence stops being a property of construction and becomes a property of composition. |
 | 8 | `front-cleanup-without-a-daemon` | Retention and clearing for a one-shot tool that is emphatically not a daemon. Independent of the cryptographic chain. |
 | 9 | `front-transport-red-lines` | Which of this round's conclusions may be shared with a live transport and — more valuably — which must never be, however convenient the reuse looks. Runs late because it consumes everything. Sharpened by the human: front 6's "the decision identity must never cross a wire" is very likely wrong as stated, since idempotency guards, multi-host caching, and saved approval all appear to require it to cross, and the design review already anticipates those. Re-derivability and unlinkability are not co-satisfiable in one value, so if the tension is real the answer is a second identity for the wire, not a prohibition. This front must resolve it rather than restate the red line. |
-| 10 | `front-selection` | Product-flavoured by design and therefore last. Every candidate package, crate, and library, ranked against the assembled shopping list, with seams counted. Consumes front 1 and every principles front at once, including front 8's red lines, so that a candidate is never chosen *because* it also serves transport. |
+| 10 | `front-selection` | Product-flavoured by design and run after the principles fronts. Every candidate package, crate, and library, ranked against the assembled shopping list, with seams counted. Consumes front 1 and every principles front at once, including front 8's red lines, so that a candidate is never chosen *because* it also serves transport. |
+| 11 | `front-verified-toolchain` | RUN post-selection addendum. Tested whether EverCDDL can check rich/plain separation and priced its generated code, proof boundary, and vendoring burden. |
+| 12 | `front-readable-envelope-feasibility` | PENDING corrective front. Test whether one directly readable, deliberately tiny grammar can satisfy the bounded hostile-reader, exact-byte, rich/plain, damage, and cryptographic-binding requirements without intolerable custom glue. |
+| 13 | `front-publication-contract-feasibility` | PENDING corrective front. Establish the exact pre-dispatch publication and crash guarantees reachable from safe Rust on Windows, macOS, and Unix, including symlinked roots and sync-managed filesystems. |
 
-Fronts 2 onward chain normally — each is briefed from what the previous ones found. Front 1
-is the sole exception, for the anchoring reason recorded above; front 2 starts from scratch
-and must not read front 1's turn file.
+Fronts 2 through 10 chain normally. Front 1 is the anchoring exception recorded below.
+Fronts 11 through 13 are post-selection corrective addenda: selection exposed questions the
+principles chain had not actually settled. Front 11 has run. Run front 12, then front 13; both
+may challenge inherited conclusions and MUST NOT assume the front-10 stack was selected.
+
+## Pending corrective-front briefs
+
+### `front-readable-envelope-feasibility`
+
+Read `Research/quarantine-DO-NOT-READ/30Rc` for the soft human direction: preserve a strong
+lean toward one directly inspectable canonical grammar; rich/plain and disclosure policy may
+vary, but format plurality is not the starting point. Compare only credible strict text shapes
+(for example JSON Text Sequences, a standard self-delimiting text sequence, and a radically
+narrowed line-framed envelope) against the binary counter-thesis. Prototype enough to test
+determinism, duplicate/unknown fields, truncation, allocation bounds, exact opaque bytes,
+whole-document projection mode, ordinary `less`/`grep`/diff use, and binding the complete
+structural skeleton to encrypted material without ambiguous canonicalization.
+
+Return either one or two credible readable constructions with authored-seam counts, or a
+concrete account of why direct readability forces unacceptable parser or cryptographic glue.
+Do not select the final cryptographic construction; this front decides the envelope topology
+that a later exact-construction review will consume.
+
+### `front-publication-contract-feasibility`
+
+Read `30Rc`'s pre-dispatch receipt boundary. Treat publication as part of the default mutation
+gate before the first mutative dispatch, while later durable-only failure does not abort an
+otherwise coherent apply. Research and, where possible, execute the smallest safe-Rust protocol
+for exclusive ownership, private creation, incomplete-file visibility, no-replace publication,
+file and directory synchronization, process/OS crash survival, bounded enumeration, symlinked
+user-selected roots, and owned cleanup on Windows, macOS, and Unix. Include Syncthing conflict
+files and the documented limits of roaming, cloud-sync, and network filesystems; separate logical
+atomicity from power-loss durability rather than collapsing them.
+
+Return a per-platform guarantee matrix, the exact reachable primitives and maintained crates,
+the properties that are impossible or unreachable under `unsafe_code = "forbid"`, and the narrowest
+honest common contract. Do not paper over a platform gap to preserve symmetry.
 
 ## Conductor blind-fence, front 1
 
@@ -165,7 +202,7 @@ is steered by the human directly and returns nothing in its report.
 The reason is anchoring, not adjudication. Front 1 came back product-heavy. A conductor
 holding a feature-list for some particular package will, without meaning to, frame every
 later front as "does this beat that package", which poisons the counter-thesis the round
-depends on. The shopping list gets compared against candidates once, at the end, with
+depends on. The shopping list gets compared against candidates once, at front 10, with
 everything on the table at the same time — not incrementally, front by front.
 
 A future conductor reading this plan after a context break should honour the fence rather
