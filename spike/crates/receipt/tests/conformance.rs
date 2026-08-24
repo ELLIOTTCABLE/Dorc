@@ -124,22 +124,6 @@ fn locate_then_parse(span: &[u8], limits: &ReceiptLimits) -> Result<(), RefusalR
     let located = format::locate(&document, limits)?;
     parse_plain(&located.skeleton, limits)
 }
-
-#[test]
-fn every_invalid_vector_is_refused_by_the_whole_read_order() {
-    // One departure per vector, so a refusal is attributable to that departure alone.
-    let limits = ReceiptLimits::V1;
-    let accepted: Vec<String> = vectors("invalid")
-        .into_iter()
-        .filter(|(_, bytes)| locate_then_parse(bytes, &limits).is_ok())
-        .map(|(name, _)| name)
-        .collect();
-    assert!(
-        accepted.is_empty(),
-        "the grammar admits exactly one form, but accepted {accepted:#?}"
-    );
-}
-
 #[test]
 fn a_byte_level_departure_is_refused_by_the_locator_and_named_for_what_it_is() {
     // The point of these two vectors is the byte, so the refusal has to name the byte. Both
@@ -335,4 +319,130 @@ fn a_rich_skeleton_parses_from_its_own_span_and_not_from_the_whole_signed_body()
         format::parse_skeleton_span::<PlanReceipt, Rich>(&body, &limits).is_err(),
         "the whole signed body is not a skeleton and must not parse as one"
     );
+}
+
+/// Every invalid vector, bound to the exact refusal its own departure must produce.
+///
+/// Binding the reason, not merely "it was refused", is what keeps a negative vector honest.
+/// Several departures here fail closed in ways that are indistinguishable from the outside —
+/// a wrong count and a stray line both stop the same parse — so a vector that drifted onto a
+/// neighbouring reason would keep passing while testing nothing.
+const EXPECTED: &[(&str, RefusalReason)] = &[
+    (
+        "bad-optional-token.skeleton",
+        RefusalReason::FieldAtom { key: "started" },
+    ),
+    (
+        "blank-line.skeleton",
+        RefusalReason::Structure {
+            what: "skeleton-end",
+        },
+    ),
+    (
+        "bytes-after-terminator.skeleton",
+        RefusalReason::SignatureShape,
+    ),
+    (
+        "carriage-returns.skeleton.crlf",
+        RefusalReason::IllegalByte { byte: b'\r' },
+    ),
+    (
+        "extra-field.skeleton",
+        RefusalReason::FieldAtom { key: "account" },
+    ),
+    (
+        "kind-not-in-species.skeleton",
+        RefusalReason::UnknownRecordKind,
+    ),
+    ("leading-zero.skeleton", RefusalReason::RecordCount),
+    (
+        "missing-field.skeleton",
+        RefusalReason::FieldShape { kind: "invocation" },
+    ),
+    (
+        "missing-final-newline.skeleton",
+        RefusalReason::Structure {
+            what: "skeleton-end",
+        },
+    ),
+    (
+        "negative-integer.skeleton",
+        RefusalReason::FieldAtom { key: "bytes" },
+    ),
+    (
+        "no-terminator.skeleton",
+        RefusalReason::Structure {
+            what: "skeleton-end",
+        },
+    ),
+    (
+        "noncontiguous-record-id.skeleton",
+        RefusalReason::RecordIdentity,
+    ),
+    (
+        "projection-mismatch.skeleton",
+        RefusalReason::DomainMismatch,
+    ),
+    ("record-count-too-high.skeleton", RefusalReason::RecordCount),
+    ("record-count-too-low.skeleton", RefusalReason::RecordCount),
+    (
+        "reordered-fields.skeleton",
+        RefusalReason::FieldShape { kind: "invocation" },
+    ),
+    (
+        "short-digest.skeleton",
+        RefusalReason::FieldAtom { key: "digest" },
+    ),
+    (
+        "species-mismatch.skeleton",
+        RefusalReason::UnknownRecordKind,
+    ),
+    (
+        "tab-separator.skeleton",
+        RefusalReason::IllegalByte { byte: b'\t' },
+    ),
+    (
+        "trailing-space.skeleton",
+        RefusalReason::Structure { what: "records" },
+    ),
+    ("unknown-kind.skeleton", RefusalReason::UnknownRecordKind),
+    (
+        "unsupported-version.skeleton",
+        RefusalReason::UnsupportedVersion,
+    ),
+    (
+        "wrong-token-case.skeleton",
+        RefusalReason::FieldAtom { key: "account" },
+    ),
+];
+
+#[test]
+fn every_invalid_vector_is_refused_for_exactly_its_own_departure() {
+    // Total in both directions: a vector with no row is unaccounted for, and a row with no
+    // vector is a table that outlived the file it describes.
+    let limits = ReceiptLimits::V1;
+    let mut failures: Vec<String> = Vec::new();
+    let present: Vec<String> = vectors("invalid")
+        .into_iter()
+        .map(|(name, _)| name)
+        .collect();
+
+    for (name, _) in EXPECTED {
+        if !present.iter().any(|have| have == name) {
+            failures.push(format!(
+                "{name}: named by the table, absent from the corpus"
+            ));
+        }
+    }
+    for (name, bytes) in vectors("invalid") {
+        let Some((_, want)) = EXPECTED.iter().find(|(row, _)| *row == name) else {
+            failures.push(format!("{name}: in the corpus, absent from the table"));
+            continue;
+        };
+        match locate_then_parse(&bytes, &limits) {
+            Err(got) if got == *want => {}
+            other => failures.push(format!("{name}: wanted {want:?}, got {other:?}")),
+        }
+    }
+    assert!(failures.is_empty(), "{failures:#?}");
 }
