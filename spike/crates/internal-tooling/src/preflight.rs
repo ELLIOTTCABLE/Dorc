@@ -172,9 +172,15 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
 
     // An unmeasurable probe warns and passes. Refusing on it would block a whole platform
     // over a missing helper, which is a worse failure than the one being guarded against.
+    //
+    // Headlines `disk` (the same MIN-of-cache-and-host bound the refusal check above acts
+    // on), not `cache` alone — under WSL the cache volume is a sparse vhdx that overstates
+    // its own free space (see `wsl_host_mount`'s doc comment), and a passing line that
+    // headlined that number would read as reassuring while hiding the figure that actually
+    // governs. `note` still appends the host reading by name for provenance.
     println!(
         "preflight {name}: ok — disk {}{note} (needs {}, {state}), ram {} (needs {})",
-        say(&cache),
+        say(&disk),
         gib(need_disk),
         say(&ram),
         gib(profile.ram)
