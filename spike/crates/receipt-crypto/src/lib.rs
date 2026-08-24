@@ -178,9 +178,13 @@ impl OverlaySealer for AgeSealer {
         writer.write_all(plaintext).ok()?;
         writer.finish().ok()?.finish().ok()?;
         let text = String::from_utf8(armored).ok()?;
-        // The region is stored without its own trailing newline; the format supplies the one
-        // that closes the region.
-        Some(text.trim_end_matches('\n').to_owned())
+        // This writer emits CRLF, and the receipt grammar admits LF only, so the stored form
+        // is normalized here at the seam. Line endings are framing around the base64 payload,
+        // not part of the ciphertext, and the reader below accepts the LF form; the outer
+        // signature then binds exactly what is stored. The region is stored without a trailing
+        // newline, because the format supplies the one that closes the region.
+        let lf = text.replace("\r\n", "\n");
+        Some(lf.trim_end_matches(['\n', '\r']).to_owned())
     }
 }
 

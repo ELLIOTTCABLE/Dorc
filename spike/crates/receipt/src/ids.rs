@@ -107,6 +107,16 @@ const fn nibble(byte: u8) -> Option<u8> {
 pub struct ReceiptId([u8; 32]);
 
 impl ReceiptId {
+    /// The one seam a [`ReceiptIdSource`] mints through.
+    ///
+    /// Takes the exact 32 bytes the source produced. The production source at the
+    /// command-line edge fills them from the operating system; a source that fills them from
+    /// a counter is a fixture and lives only in a test.
+    #[must_use]
+    pub const fn of_source_bytes(raw: [u8; 32]) -> Self {
+        Self(raw)
+    }
+
     /// The lowercase hexadecimal spelling.
     #[must_use]
     pub fn hex(self) -> String {
@@ -353,7 +363,7 @@ mod tests {
                 *slot = self.0;
             }
             self.0 = self.0.wrapping_add(1);
-            ReceiptId(raw)
+            ReceiptId::of_source_bytes(raw)
         }
     }
 

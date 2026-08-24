@@ -28,6 +28,117 @@
 //!
 //! Everything read back wears [`reingested::Reingested`], which has no route to a live
 //! value.
+//!
+//! # The seals, as compile-fail pins
+//!
+//! Each pin below is paired with the positive control that proves it fails for the stated
+//! reason rather than because the example was malformed.
+//!
+//! A document identity is per-species, so one cannot stand in for another:
+//!
+//! ```
+//! use dorc_receipt::ids::{PlanReceiptId, ApplyIntentId};
+//! let text = "a".repeat(64);
+//! let plan: Option<PlanReceiptId> = PlanReceiptId::of_hex(&text);
+//! let intent: Option<ApplyIntentId> = ApplyIntentId::of_hex(&text);
+//! assert!(plan.is_some() && intent.is_some());
+//! ```
+//!
+//! ```compile_fail
+//! use dorc_receipt::ids::{PlanReceiptId, ApplyIntentId};
+//! let plan = PlanReceiptId::of_hex(&"a".repeat(64)).unwrap();
+//! let _crossed: ApplyIntentId = plan;
+//! ```
+//!
+//! The two provider roles never alias:
+//!
+//! ```compile_fail
+//! use dorc_receipt::ids::{SigningKeyId, EncryptionKeyId};
+//! let signing = SigningKeyId::of_public_material(b"m");
+//! let _crossed: EncryptionKeyId = signing;
+//! ```
+//!
+//! An image identity is not a presentation identity:
+//!
+//! ```compile_fail
+//! use dorc_receipt::ids::{ApplyArtifactImageId, PresentedPlanId};
+//! let image = ApplyArtifactImageId::over(b"bytes");
+//! let _crossed: PresentedPlanId = image;
+//! ```
+//!
+//! The species, projection and provenance traits are sealed, so no outside type joins the
+//! set:
+//!
+//! ```compile_fail
+//! #[derive(Debug, Clone, Copy)]
+//! struct MySpecies;
+//! impl dorc_receipt::Species for MySpecies {
+//!     const TOKEN: &'static str = "mine";
+//!     const KINDS: &'static [dorc_receipt::RecordKind] = &[];
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! #[derive(Debug, Clone, Copy)]
+//! struct MyTrust;
+//! impl dorc_receipt::SignerTrust for MyTrust {
+//!     const TOKEN: &'static str = "mine";
+//! }
+//! ```
+//!
+//! A reingested value has no public mint, so nothing can wrap a live value to look recorded:
+//!
+//! ```compile_fail
+//! use dorc_receipt::Reingested;
+//! let _forged = Reingested::seal(7_u8);
+//! ```
+//!
+//! And it offers no route back out — no unwrap, no dereference:
+//!
+//! ```compile_fail
+//! use dorc_receipt::{Reingested, RecordedInfluence};
+//! fn take(value: Reingested<RecordedInfluence>) -> RecordedInfluence {
+//!     value.into_inner()
+//! }
+//! ```
+//!
+//! A recorded influence grade is a report value and never becomes a live account:
+//!
+//! ```
+//! use dorc_receipt::RecordedInfluence;
+//! assert_eq!(
+//!     RecordedInfluence::of_token(None),
+//!     RecordedInfluence::MostInfluenced
+//! );
+//! ```
+//!
+//! ```compile_fail
+//! use dorc_receipt::RecordedInfluence;
+//! let grade = RecordedInfluence::of_token(Some("host-influenced"));
+//! let _live: dorc_core::influence::InfluenceAccount = grade.into();
+//! ```
+//!
+//! A checked state cannot be built by a caller; only the crate's own check produces one:
+//!
+//! ```compile_fail
+//! use dorc_receipt::reader::ReceiptSignatureChecked;
+//! use dorc_receipt::TrustedReceiptSigner;
+//! let _forged: ReceiptSignatureChecked<TrustedReceiptSigner> = ReceiptSignatureChecked {
+//!     body: Vec::new(),
+//!     skeleton: Vec::new(),
+//!     armor: None,
+//!     trust: core::marker::PhantomData,
+//! };
+//! ```
+//!
+//! A signed document is not `Clone`, so a publication cannot be replayed from a copy:
+//!
+//! ```compile_fail
+//! use dorc_receipt::{DraftReceipt, Plain, PlanReceipt, Skeleton};
+//! fn duplicate(signed: dorc_receipt::SignedReceipt<PlanReceipt, Plain>) {
+//!     let _second = signed.clone();
+//! }
+//! ```
 
 pub mod capability;
 pub mod format;

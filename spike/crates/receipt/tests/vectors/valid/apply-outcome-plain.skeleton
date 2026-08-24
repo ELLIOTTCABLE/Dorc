@@ -1,0 +1,9 @@
+dorc-receipt/1
+species apply-outcome
+projection plain
+receipt-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+signing-key-id cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+records 2
+record 0 invocation mode=apply started=1700000000001 argv=withheld-plain target=withheld-plain attempt=2 account=host-influenced
+record 1 apply-outcome intent=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb terminal=unknown sites=0 durable=published account=host-influenced
+skeleton-end

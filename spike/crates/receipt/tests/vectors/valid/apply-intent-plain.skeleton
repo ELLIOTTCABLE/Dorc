@@ -1,0 +1,9 @@
+dorc-receipt/1
+species apply-intent
+projection plain
+receipt-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+signing-key-id cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+records 2
+record 0 invocation mode=apply started=absent argv=withheld-plain target=withheld-plain attempt=2 account=authored-before-contact
+record 1 apply-intent session=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb generation=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb policy=required-rich assignments=1 origin-state=known account=authored-before-contact
+skeleton-end
