@@ -67,6 +67,19 @@ pub enum RefusalReason {
     SignatureCheck,
     /// No verification material was available for the named provider.
     KeyUnavailable,
+    /// The armored region did not match the one shape the format admits.
+    ArmorShape {
+        /// Which part.
+        what: &'static str,
+    },
+    /// The sealer did not produce a region.
+    SealDeclined,
+    /// The region was not openable with the material supplied.
+    RegionUnopenable,
+    /// The skeleton names one encryption provider and the region was sealed to another.
+    ProviderMismatch,
+    /// The region did not validate against this document's skeleton.
+    Overlay(crate::overlay::OverlayFault),
 }
 
 /// One skeleton record: its kind and one atom per field, in table order.
@@ -272,6 +285,7 @@ pub fn locate(
             .and_then(|n| n.checked_add(at))
             .and_then(|n| n.checked_add(close.len()))
             .ok_or(RefusalReason::Structure { what: OVERLAY_END })?;
+        check_armor_shape(region)?;
         (Some(region.to_owned()), consumed)
     } else {
         (None, skeleton_end)
@@ -531,4 +545,56 @@ pub fn signed_body(skeleton: &str, armor: Option<&str>) -> Vec<u8> {
         out.push('\n');
     }
     out.into_bytes()
+}
+
+/// The literal line opening an armored region.
+pub const ARMOR_BEGIN: &str = "-----BEGIN AGE ENCRYPTED FILE-----";
+
+/// The literal line closing an armored region.
+pub const ARMOR_END: &str = "-----END AGE ENCRYPTED FILE-----";
+
+/// Check that a region is the one armored shape this format stores.
+///
+/// Lexical only: markers, line widths, and the base64 alphabet. It runs before the region is
+/// handed to an opener, and it is also what the writer checks before storing one, so a
+/// region that could not be read back is refused rather than emitted.
+///
+/// Two properties beyond shape are load-bearing. The alphabet excludes `-`, which is what
+/// makes a data line unable to spell either region terminator, so the terminator search that
+/// located this span cannot have stopped inside it. And it admits no carriage return, so the
+/// region agrees with the rest of the document about what a line ending is.
+///
+/// # Errors
+/// Refuses a missing marker, an empty region, a stray byte, or an irregular line width.
+pub fn check_armor_shape(region: &str) -> Result<(), RefusalReason> {
+    let mut lines = region.split('\n');
+    if lines.next() != Some(ARMOR_BEGIN) {
+        return Err(RefusalReason::ArmorShape { what: "begin" });
+    }
+    let rest: Vec<&str> = lines.collect();
+    let Some((last, data)) = rest.split_last() else {
+        return Err(RefusalReason::ArmorShape { what: "end" });
+    };
+    if *last != ARMOR_END {
+        return Err(RefusalReason::ArmorShape { what: "end" });
+    }
+    let Some((final_data, full)) = data.split_last() else {
+        return Err(RefusalReason::ArmorShape { what: "empty" });
+    };
+    for line in data {
+        if line.is_empty() || !line.bytes().all(is_armor_byte) {
+            return Err(RefusalReason::ArmorShape { what: "alphabet" });
+        }
+    }
+    let Some(width) = full.first().map(|line| line.len()) else {
+        return Ok(());
+    };
+    if full.iter().any(|line| line.len() != width) || final_data.len() > width {
+        return Err(RefusalReason::ArmorShape { what: "width" });
+    }
+    Ok(())
+}
+
+const fn is_armor_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'/' | b'=')
 }
