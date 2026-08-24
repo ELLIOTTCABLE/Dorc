@@ -92,6 +92,14 @@ Make the code self-documenting instead of explaining it.
 - **an-unreadable-grade-reads-highest** — absent, unknown, malformed, or unverifiable
   influence material reads `MostInfluenced`. Losing this metadata may only ever make a
   reader more careful.
+
+  The floor is decided at ONE seat and that is fenced (`crate_boundary.rs`), because the guarantee
+  had to travel with its subject: it used to be an entry in `plan`'s untracked-adapter inventory,
+  which walks `plan`'s own sources and therefore cannot see a floor that lives here. The fence's
+  subject is the FLOOR POINT rather than the reader — a seat that decides a grade without naming
+  the floor is not flooring at all — and the reader (`of_token`) is deliberately not the subject,
+  since that name is too common to match without crying wolf
+  (`a-fence-matches-identifier-boundaries`).
 - **partial-never-becomes-complete** — there is no conversion from `PartialReceipt` to
   `Receipt`, and no field of a partial document is promoted because it looks plausible. A
   bounded structural view renders whole, under one status.

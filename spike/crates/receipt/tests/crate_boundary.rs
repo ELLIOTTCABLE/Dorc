@@ -476,6 +476,27 @@ fn the_image_identity_mint_is_reachable_from_one_production_file() {
 }
 
 #[test]
+fn the_rehydration_floor_is_decided_at_one_seat() {
+    // The GUARANTEE this carries, and where it came from: `plan`'s untracked-adapter inventory
+    // enumerates every seat that deliberately carries an untracked grade, and the durable's
+    // rehydration floor — an absent or unreadable grade reads MOST-influenced — used to be one of
+    // its entries. That inventory walks `plan`'s own sources, so once the floor lives here it is
+    // outside what the inventory can see: the guarantee has to travel with its subject rather than
+    // the entry being dropped.
+    //
+    // Two-way and NAME-matched, on `of_canonical_image`'s terms. `reingested.rs` declares the grade
+    // and decides it; `lib.rs` names the floor in the doc example that pins a recorded grade never
+    // becoming a live account. A THIRD file naming the floor means a second seat is deciding a
+    // grade, which is exactly the thing that must not appear quietly — and a seat that decides one
+    // WITHOUT naming the floor is not flooring at all, which is why the floor rather than the
+    // reader is the subject.
+    fence(
+        "MostInfluenced",
+        &["receipt/src/lib.rs", "receipt/src/reingested.rs"],
+    );
+}
+
+#[test]
 fn verification_material_is_supplied_from_one_production_file() {
     // The resolver is the seam through which a permissive verifier could reach the reader, and a
     // fence covering only the crypto crate's NAME would not see one written elsewhere: a
