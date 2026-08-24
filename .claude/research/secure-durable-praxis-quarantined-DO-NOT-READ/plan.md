@@ -428,6 +428,79 @@ From `front-write-ordering`:
   Comparable tools dump raw secret-bearing state to the terminal, which in continuous integration
   means straight into a build log.
 
+From `front-cleanup-without-a-daemon`:
+
+- **The lean survives on a different reason than the one that motivated it.** "One-shot tools do
+  not do housekeeping during unrelated invocations" is factually false — several tools of exactly
+  that shape do, and three added it deliberately after complaints. The variable that separates
+  tools which delete unbidden from tools which refuse is not daemon-ness, it is
+  **reconstructibility**: a tool may delete on its own initiative exactly what it can recreate.
+  No automatic cleaner in the corpus deletes an unreconstructible primary record, and every tool
+  holding one demands an explicit command every time. A whylog is unreconstructible by
+  construction, and write-ordering made half of it a record of *intent* that no later run can
+  re-derive. Re-ground the position here; the original framing will not survive review and the
+  replacement is sharper, because it also licenses the one housekeeping we *may* do unbidden —
+  removing what is provably redundant and ours.
+- **Clean at the end, after the outcome document is published, and only when explicitly asked.**
+  Start-of-run is ruled out: it delays what the operator asked for, runs before the run's own
+  record exists, and would run before the pre-mutation publication, so a cleaner that fills the
+  disk could abort a run the operator wanted. Never detach the work into the background — a
+  detached collector in a comparable tool mutated state under a *later* command, and the standard
+  opt-out silently stopped working when a default was renamed.
+- **Count-shaped retention policies are attackable; use duration-shaped selectors.** An adversary
+  who can only *add* records injects one decoy per window and the next honest "keep the last N"
+  deletes every legitimate record. This design already concedes host-influenced record bytes.
+- **Deleting records does not give back enumeration cost** — directories in the common filesystem
+  families never compact online. **Shard by date prefix from day one**: it bounds any single
+  directory read, turns age selection into a directory-level operation, keeps names readable, and
+  needs no hash. Its one new cost is that the shard tree is a calendar of when the operator worked.
+- Judge age from modification time, never from inode-change time — a package upgrade's recursive
+  ownership change resets the latter on every entry and blocks cleanup entirely.
+- **Orphan decision documents are retained *longer*, not shorter.** "Incomplete" is a report class,
+  not a retention class. An orphan is the least reconstructible document in the store and the only
+  thing telling a firefighter which hosts were about to be touched. It is also **not damage** —
+  damage has its own vocabulary, and conflating them trains operators to ignore the one document
+  that says a run died mid-flight.
+- **A clearing operation publishes its own record before it unlinks anything** — an append-only
+  deletion ledger under the same exclusive-create rule, holding only random document tokens, a
+  count, and a wall clock. Neither deletion order is truthful without it: one falsely says the run
+  was killed, the other falsely says someone removed the intent record. This is write-ahead applied
+  recursively to the cleaner, and it discharges the deletion-audit half of the glue mandate.
+- **Grace must exceed the longest plausible run, not the longest plausible pause** — a decision at
+  *t* whose outcome lands at *t+45min* must not be reapable in between.
+- The store's home is the per-user **state** directory, at restrictive permissions; never the
+  working directory, the cache directory, the temporary directory, or the runtime directory. All
+  four killers that got a comparable tool's artefact disabled by default are properties of writing
+  into the working directory. Do not write a cache-directory tag — it is not a cache, it would drop
+  the store out of backups, and it is attacker-plantable — but document it as the operator's
+  one-line lever if they decide otherwise.
+- **Key deletion as retention fails on the standards body's own preconditions**: no plaintext may
+  ever have existed on the same medium (the plain-projection fallback writes exactly that), and it
+  is not to be trusted where the medium has been backed up or escrowed (the key is a file in the
+  per-user configuration directory, which is in every backup and dotfile sync).
+- **The best-effort boundary.** Our responsibility ends where the effect of our deletion stops
+  being observable to us. Five things sit past that line and the documentation must name all five:
+  backups, file-sync clients and roaming profiles, names that have already escaped into indexers
+  and completion caches, the medium itself (unlink is our ceiling), and copies the operator made.
+  On our side we owe a store nobody else reaps, a retention vocabulary rich enough that nobody
+  hand-rolls a find-and-delete, whole-pair deletion with a ledger entry, and a report of what could
+  not be removed and why. **Irresponsibility begins where the mechanism's guarantee would be weaker
+  than the word attached to it**: no overwrite-before-unlink, no "secure delete" or "shred" or
+  "purge" flag, and key deletion may be an opt-in policy but never described as erasure. The honest
+  verb is "remove from this store".
+- **Believed retention can be worse than none.** An operator who thinks they set fifteen-day
+  retention is more misled than one who knows nothing is deleted. That argues for shipping the
+  vocabulary with brutal honesty about scope, not for shipping nothing.
+- The sharpest counter is internal: under the asymmetric failure policy, a failed pre-mutation
+  publication fails the run — so **a store that fills the disk stops the operator from operating.**
+  Unbounded growth is not untidiness; it is a mechanism by which record-keeping takes the tool
+  offline.
+- "Record nothing" *can* mean "creates nothing" today, because the document token protects only
+  the store's own namespace. That ends the instant an identity crosses a wire.
+- Two gaps left open for want of a fetchable source: the quantitative directory-non-compaction
+  thread (the archives disallow automated fetching) and the normative audit-retention control
+  (only unread third-party mirrors were reachable). Both would be settled by one human fetch each.
+
 ## Human leans on the findings
 
 **These are leans, not rulings.** The human has typed them and has explicitly declined to weld
