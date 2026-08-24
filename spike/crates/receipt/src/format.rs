@@ -313,17 +313,22 @@ fn header_value<'a>(skeleton: &'a str, key: &str) -> Option<&'a str> {
         .find_map(|line| line.strip_prefix(key)?.strip_prefix(' '))
 }
 
-/// Parse the exact body span under the species and projection the header selected.
+/// Parse the literal skeleton span under the species and projection the header selected.
 ///
-/// Takes the same bytes the signature was checked over. Nothing is re-derived.
+/// Takes the skeleton span, which is a prefix of the span the signature was checked over —
+/// for plain the two are the same bytes, and for rich the remainder is the armored region,
+/// which goes to the opener. Both are slices of the one checked body, so nothing is
+/// re-derived or re-read. The span ends at the terminator's newline, and bytes past it are
+/// refused here rather than skipped.
 ///
 /// # Errors
 /// Refuses any departure from the exact grammar, including a count or identity mismatch.
-pub fn parse_body<D: Species, P: Projection>(
-    body: &[u8],
+pub fn parse_skeleton_span<D: Species, P: Projection>(
+    skeleton: &[u8],
     limits: &ReceiptLimits,
 ) -> Result<Skeleton, RefusalReason> {
-    let text = core::str::from_utf8(body).map_err(|_| RefusalReason::IllegalByte { byte: 0 })?;
+    let text =
+        core::str::from_utf8(skeleton).map_err(|_| RefusalReason::IllegalByte { byte: 0 })?;
     let mut lines = text.split('\n');
 
     expect(&mut lines, VERSION_LINE, "version")?;

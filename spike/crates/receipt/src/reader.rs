@@ -162,7 +162,7 @@ impl<D: Species, P: Projection, T: SignerTrust> ParsedReceiptSkeleton<D, P, T> {
         checked: &ReceiptSignatureChecked<T>,
         limits: &ReceiptLimits,
     ) -> Result<Self, RefusalReason> {
-        let skeleton = format::parse_body::<D, P>(checked.body(), limits)?;
+        let skeleton = format::parse_skeleton_span::<D, P>(checked.skeleton(), limits)?;
         if P::HAS_OVERLAY != checked.armor().is_some() {
             return Err(RefusalReason::OverlayPresence);
         }
