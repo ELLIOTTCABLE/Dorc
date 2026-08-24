@@ -7,8 +7,9 @@
 
 #![expect(
     clippy::unwrap_used,
-    clippy::panic,
+    clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
     reason = "an integration test crate is an ordinary crate to clippy, so the central \
               allow-in-tests keys do not reach it; see spike/clippy.toml"
 )]
