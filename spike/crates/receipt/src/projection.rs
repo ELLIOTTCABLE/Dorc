@@ -5,6 +5,7 @@
 //! and the map is injective within a kind: two fields of one record sharing a tag would
 //! name one overlay slot from two places.
 
+use crate::format::{RefusalReason, Skeleton, SkeletonRecord};
 use crate::grammar::{FieldType, IMAGE_STATE, OPAQUE_STATE, RecordKind};
 
 /// A detail-capable field wire tag.
@@ -191,6 +192,44 @@ pub fn carries_a_state_word(kind: RecordKind, key: &str) -> bool {
     kind.fields().iter().any(|field| {
         field.key == key
             && matches!(field.ty, FieldType::Closed(set) if set == OPAQUE_STATE || set == IMAGE_STATE)
+    })
+}
+
+/// The state word a detail value carries once its projection cannot hold it.
+pub const WITHHELD_PLAIN: &str = "withheld-plain";
+
+/// Narrow a rich skeleton to its plain projection.
+///
+/// A semantic remint, never a textual strip: every captured slot becomes a withheld one and
+/// the encryption provider line goes, so the result is a document that says what it is rather
+/// than a rich document with bytes removed. The caller serializes and signs the result, which
+/// is what makes the plain signature cover plain bytes under the plain domain.
+///
+/// # Errors
+/// Refuses if a narrowed record no longer satisfies its own field table.
+pub fn narrow_to_plain(rich: &Skeleton) -> Result<Skeleton, RefusalReason> {
+    let mut records = Vec::with_capacity(rich.records.len());
+    for record in &rich.records {
+        let kind = record.kind();
+        let slots = opaque_slots(kind);
+        let mut atoms: Vec<String> = record.atoms().to_vec();
+        for (index, field) in kind.fields().iter().enumerate() {
+            if !slots.iter().any(|slot| slot.key == field.key) {
+                continue;
+            }
+            if let Some(atom) = atoms.get_mut(index)
+                && atom == CAPTURED
+            {
+                WITHHELD_PLAIN.clone_into(atom);
+            }
+        }
+        records.push(SkeletonRecord::build(kind, atoms)?);
+    }
+    Ok(Skeleton {
+        receipt_id: rich.receipt_id.clone(),
+        signing_key_id: rich.signing_key_id.clone(),
+        encryption_key_id: None,
+        records,
     })
 }
 
