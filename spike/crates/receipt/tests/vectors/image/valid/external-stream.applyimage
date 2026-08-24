@@ -1,0 +1,14 @@
+dorc-apply-artifact-image/1
+form external-stream
+entrypoints 1
+entrypoint 0
+roots 1
+root 0 0
+entries 1
+entry 0 stream unused 0 28
+
+#!/bin/sh
+ufw allow 443/tcp
+
+edges 0
+image-end

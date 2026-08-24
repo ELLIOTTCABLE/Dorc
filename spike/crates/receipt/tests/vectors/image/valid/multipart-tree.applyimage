@@ -1,0 +1,26 @@
+dorc-apply-artifact-image/1
+form multipart
+entrypoints 1
+entrypoint 0
+roots 2
+root 0 1
+root 1 2
+entries 3
+entry 0 file 0755 7 39
+plan.sh
+#!/bin/sh
+. ./lib/a.dorc-bundle.sh
+foo
+
+entry 1 file unused 20 11
+lib/a.dorc-bundle.sh
+a() { :; }
+
+entry 2 file unused 20 11
+lib/b.dorc-bundle.sh
+b() { :; }
+
+edges 2
+edge 0 1 loads
+edge 1 2 loads
+image-end

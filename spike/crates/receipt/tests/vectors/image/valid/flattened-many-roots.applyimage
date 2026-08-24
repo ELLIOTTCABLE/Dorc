@@ -1,0 +1,17 @@
+dorc-apply-artifact-image/1
+form flattened
+entrypoints 1
+entrypoint 0
+roots 3
+root 0 0
+root 1 0
+root 2 0
+entries 1
+entry 0 file 0755 7 39
+plan.sh
+#!/bin/sh
+. ./lib/a.dorc-bundle.sh
+foo
+
+edges 0
+image-end

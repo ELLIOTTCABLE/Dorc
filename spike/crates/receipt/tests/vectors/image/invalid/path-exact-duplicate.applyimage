@@ -1,0 +1,18 @@
+dorc-apply-artifact-image/1
+form multipart
+entrypoints 1
+entrypoint 0
+roots 1
+root 0 0
+entries 2
+entry 0 file 0755 7 2
+same.sh
+x
+
+entry 1 file unused 7 2
+same.sh
+x
+
+edges 1
+edge 0 1 loads
+image-end

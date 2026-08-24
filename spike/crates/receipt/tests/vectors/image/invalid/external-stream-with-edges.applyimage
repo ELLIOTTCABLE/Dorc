@@ -1,0 +1,18 @@
+dorc-apply-artifact-image/1
+form external-stream
+entrypoints 1
+entrypoint 0
+roots 1
+root 0 0
+entries 2
+entry 0 stream unused 0 2
+
+x
+
+entry 1 file unused 8 2
+extra.sh
+x
+
+edges 1
+edge 0 1 loads
+image-end

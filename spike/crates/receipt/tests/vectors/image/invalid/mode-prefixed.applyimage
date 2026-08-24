@@ -1,0 +1,12 @@
+dorc-apply-artifact-image/1
+form multipart
+entrypoints 1
+entrypoint 0
+roots 1
+root 0 0
+entries 1
+entry 0 file 0o755 7 2
+plan.sh
+x
+edges 0
+image-end
