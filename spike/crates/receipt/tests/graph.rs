@@ -246,18 +246,18 @@ fn feed(graph: &mut ReceiptGraph, documents: &[(Kind, Vec<u8>)]) {
     for (kind, bytes) in documents {
         match kind {
             Kind::Plan => match read_plain::<PlanReceipt>(bytes.clone(), &limits, &resolver) {
-                Ok(ReadPlain::Trusted(document)) => graph.ingest_plan(&document),
-                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_plan(&document),
+                Ok(ReadPlain::Trusted(document)) => graph.ingest_plan(&document, bytes),
+                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_plan(&document, bytes),
                 Err(partial) => graph.ingest_partial(partial),
             },
             Kind::Intent => match read_plain::<ApplyIntent>(bytes.clone(), &limits, &resolver) {
-                Ok(ReadPlain::Trusted(document)) => graph.ingest_intent(&document),
-                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_intent(&document),
+                Ok(ReadPlain::Trusted(document)) => graph.ingest_intent(&document, bytes),
+                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_intent(&document, bytes),
                 Err(partial) => graph.ingest_partial(partial),
             },
             Kind::Outcome => match read_plain::<ApplyOutcome>(bytes.clone(), &limits, &resolver) {
-                Ok(ReadPlain::Trusted(document)) => graph.ingest_outcome(&document),
-                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_outcome(&document),
+                Ok(ReadPlain::Trusted(document)) => graph.ingest_outcome(&document, bytes),
+                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_outcome(&document, bytes),
                 Err(partial) => graph.ingest_partial(partial),
             },
         }

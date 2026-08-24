@@ -15,6 +15,7 @@ use crate::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId};
 use crate::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Projection, SignerTrust};
 use crate::outcome::{MissingOutcome, OutcomeAvailability, RecordedApplyOutcome};
 use crate::plan::RecordedPlanReceipt;
+use crate::projection::{SameIdentityPair, same_identity_pair};
 use crate::reader::{PartialReceipt, Receipt};
 use crate::reingested::{RecordedType, Reingested};
 use crate::rows::ModelRefusal;
@@ -165,10 +166,16 @@ impl CollidedDocument {
 }
 
 /// One document the graph holds, with the provenance of the material that checked it.
+///
+/// Retains the projection word and the exact document image because that is what classifying a
+/// second claimant to one identity requires: a receipt identity names the receipt-event, not the
+/// byte-document, so differing bytes are a finding only WITHIN one projection.
 #[derive(Debug)]
 pub struct GraphNode<M: RecordedType> {
     model: Reingested<M>,
     signer: RecordedSignerTrust,
+    projection: &'static str,
+    image: Vec<u8>,
 }
 
 impl<M: RecordedType> GraphNode<M> {
@@ -182,6 +189,12 @@ impl<M: RecordedType> GraphNode<M> {
     #[must_use]
     pub const fn signer(&self) -> RecordedSignerTrust {
         self.signer
+    }
+
+    /// Which projection of the receipt-event this node holds.
+    #[must_use]
+    pub const fn projection(&self) -> &'static str {
+        self.projection
     }
 }
 
@@ -207,27 +220,39 @@ impl ReceiptGraph {
         Self::default()
     }
 
-    /// Take one plan document.
+    /// Take one plan document, with the exact bytes it was read from.
+    ///
+    /// The image is required because a second claimant to one identity is classified by
+    /// [`same_identity_pair`], not by comparing models: a rich document and its plain remint
+    /// share an identity legitimately and carry different content.
     pub fn ingest_plan<P: Projection, T: SignerTrust>(
         &mut self,
         document: &Reingested<Receipt<PlanReceipt, P, T>>,
+        image: &[u8],
     ) {
         let Some(id) = document.receipt_id() else {
             return;
         };
         match document.model() {
             Ok(model) => match self.plans.get(&id) {
-                Some(held) if held.model() == &model => {}
-                Some(_) => self.collisions.push(CollidedDocument::Plan {
-                    identity: id,
-                    model: Box::new(model),
-                }),
+                Some(held) => {
+                    if same_identity_pair(held.projection, &held.image, P::TOKEN, image)
+                        == SameIdentityPair::Divergent
+                    {
+                        self.collisions.push(CollidedDocument::Plan {
+                            identity: id,
+                            model: Box::new(model),
+                        });
+                    }
+                }
                 None => {
                     self.plans.insert(
                         id,
                         GraphNode {
                             model,
                             signer: provenance::<T>(),
+                            projection: P::TOKEN,
+                            image: image.to_vec(),
                         },
                     );
                 }
@@ -236,27 +261,35 @@ impl ReceiptGraph {
         }
     }
 
-    /// Take one apply intent.
+    /// Take one apply intent, with the exact bytes it was read from.
     pub fn ingest_intent<P: Projection, T: SignerTrust>(
         &mut self,
         document: &Reingested<Receipt<ApplyIntent, P, T>>,
+        image: &[u8],
     ) {
         let Some(id) = document.receipt_id() else {
             return;
         };
         match document.model() {
             Ok(model) => match self.intents.get(&id) {
-                Some(held) if held.model() == &model => {}
-                Some(_) => self.collisions.push(CollidedDocument::Intent {
-                    identity: id,
-                    model: Box::new(model),
-                }),
+                Some(held) => {
+                    if same_identity_pair(held.projection, &held.image, P::TOKEN, image)
+                        == SameIdentityPair::Divergent
+                    {
+                        self.collisions.push(CollidedDocument::Intent {
+                            identity: id,
+                            model: Box::new(model),
+                        });
+                    }
+                }
                 None => {
                     self.intents.insert(
                         id,
                         GraphNode {
                             model,
                             signer: provenance::<T>(),
+                            projection: P::TOKEN,
+                            image: image.to_vec(),
                         },
                     );
                 }
@@ -265,27 +298,35 @@ impl ReceiptGraph {
         }
     }
 
-    /// Take one apply outcome.
+    /// Take one apply outcome, with the exact bytes it was read from.
     pub fn ingest_outcome<P: Projection, T: SignerTrust>(
         &mut self,
         document: &Reingested<Receipt<ApplyOutcome, P, T>>,
+        image: &[u8],
     ) {
         let Some(id) = document.receipt_id() else {
             return;
         };
         match document.model() {
             Ok(model) => match self.outcomes.get(&id) {
-                Some(held) if held.model() == &model => {}
-                Some(_) => self.collisions.push(CollidedDocument::Outcome {
-                    identity: id,
-                    model: Box::new(model),
-                }),
+                Some(held) => {
+                    if same_identity_pair(held.projection, &held.image, P::TOKEN, image)
+                        == SameIdentityPair::Divergent
+                    {
+                        self.collisions.push(CollidedDocument::Outcome {
+                            identity: id,
+                            model: Box::new(model),
+                        });
+                    }
+                }
                 None => {
                     self.outcomes.insert(
                         id,
                         GraphNode {
                             model,
                             signer: provenance::<T>(),
+                            projection: P::TOKEN,
+                            image: image.to_vec(),
                         },
                     );
                 }

@@ -815,3 +815,86 @@ fn a_plain_remint_shares_its_identity_with_the_rich_document_and_is_not_a_findin
         dorc_receipt::projection::SameIdentityPair::Identical
     );
 }
+
+#[test]
+fn a_rich_document_and_its_plain_remint_correlate_to_one_node() {
+    // The pair that separates the rule from the bug. A receipt identity names the
+    // receipt-event, not the byte-document, so a rich document and the plain remint of it
+    // legitimately share an identity and legitimately differ in bytes. Correlation must
+    // therefore consult `same_identity_pair` — which knows the projections differ — rather
+    // than comparing content and calling the difference a collision.
+    //
+    // Its sibling lives in the pure crate's graph corpus
+    // (`two_documents_claiming_one_identity_are_both_retained_as_a_finding`): SAME projection,
+    // differing bytes, which IS a finding. Read the two together; they differ by exactly which
+    // projection the second document carries, and their verdicts are opposite.
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let opener = AgeOpener::of(identity);
+    let signer = signing_key();
+    let verifier = material().expect("the fixture verification material is well formed");
+    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+
+    let mut ids = CountingIds(150);
+    let rich = rich_skeleton(
+        &mut ids,
+        signer.signing_key_id(),
+        &sealer.encryption_key_id().hex(),
+    );
+    let span = dorc_receipt::format::serialize_skeleton::<PlanReceipt, Rich>(&rich)
+        .expect("the fixture skeleton serializes");
+    let plaintext = OverlayPlaintext::canonical(
+        &rich.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &[OverlayEntry::of(0, OpaqueFieldTag::Argv, b"argv".to_vec())],
+    );
+    let rich_bytes = DraftReceipt::<PlanReceipt, Rich>::of(rich.clone())
+        .serialize(plaintext, &sealer)
+        .expect("a rich document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich).expect("the narrowing holds");
+    let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
+        .serialize()
+        .expect("the narrowed document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+    assert_ne!(
+        rich_bytes, plain_bytes,
+        "the two projections must really differ, or this case proves nothing"
+    );
+
+    let mut graph = dorc_receipt::graph::ReceiptGraph::new();
+    match read_rich::<PlanReceipt>(rich_bytes.clone(), &ReceiptLimits::V1, &resolver, &opener)
+        .expect("the rich document reads")
+    {
+        ReadRich::Trusted(document) => {
+            graph.ingest_plan(&document, &rich_bytes);
+        }
+        ReadRich::SelfAsserted(document) => {
+            graph.ingest_plan(&document, &rich_bytes);
+        }
+    }
+    match read_plain::<PlanReceipt>(plain_bytes.clone(), &ReceiptLimits::V1, &resolver)
+        .expect("the reminted document reads")
+    {
+        ReadPlain::Trusted(document) => graph.ingest_plan(&document, &plain_bytes),
+        ReadPlain::SelfAsserted(document) => graph.ingest_plan(&document, &plain_bytes),
+    }
+
+    assert_eq!(graph.plans().len(), 1, "two projections, one receipt-event");
+    assert!(
+        graph.collisions().is_empty(),
+        "a legitimate remint is not a collision"
+    );
+    assert!(
+        graph.findings().is_empty(),
+        "and it owes a reader no finding: {:?}",
+        graph.findings()
+    );
+    assert!(graph.faults().is_empty());
+}
