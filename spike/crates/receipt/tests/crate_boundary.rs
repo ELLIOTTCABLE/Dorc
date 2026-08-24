@@ -12,6 +12,17 @@ fn crates_root() -> PathBuf {
         .map_or_else(PathBuf::new, Path::to_path_buf)
 }
 
+/// The crates permitted to name the implementation crate, which carries the randomness.
+///
+/// Checked BOTH ways: a crate outside this list naming it fails, and an entry that stops
+/// naming it fails too. An anticipatory entry is the failure mode the second direction
+/// exists for — it reads as a fence while permitting a crate nothing has yet checked.
+///
+/// EMPTY today: the implementation crate exists and nothing depends on it yet, its own tests
+/// being its only consumer. The stage that first wires a production caller adds its entry
+/// here in the same commit as the manifest line, which is the act being made visible.
+const MAY_NAME_IT: [&str; 0] = [];
+
 fn manifests() -> Vec<(String, String)> {
     let root = crates_root();
     let mut found: Vec<(String, String)> = std::fs::read_dir(&root)
@@ -140,7 +151,6 @@ fn no_source_file_of_the_pure_crate_names_a_crypto_package() {
 fn only_the_edge_may_name_the_crypto_implementation_crate() {
     // The implementation crate carries the randomness, so the set of crates allowed to name
     // it is an allow-list rather than a convention. Adding an entry here is the visible act.
-    const MAY_NAME_IT: [&str; 2] = ["receipt-crypto", "cli"];
     let mut named_by: Vec<String> = Vec::new();
     for (crate_dir, manifest) in manifests() {
         if dependency_lines(&manifest)
@@ -264,6 +274,168 @@ fn the_fixture_identity_is_unreachable_from_production() {
         assert!(
             carriers.iter().any(|path| path == allowed),
             "{allowed} is listed but carries no key material; the entry is stale"
+        );
+    }
+}
+
+/// Every production source file in the workspace, keyed by a slash-normalized relative path.
+///
+/// Walks `crates/*/src` only: a test target is not a production boundary, and the whole point of
+/// several fences below is the distinction. The walk asserts it found sources, so a fence that
+/// silently looked in the wrong place fails rather than passing over an empty set.
+fn production_sources() -> Vec<(String, String)> {
+    fn walk(dir: &Path, prefix: &str, out: &mut Vec<(String, String)>) {
+        for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let joined = if prefix.is_empty() {
+                name.to_owned()
+            } else {
+                format!("{prefix}/{name}")
+            };
+            if path.is_dir() {
+                walk(&path, &joined, out);
+            } else if path.extension().is_some_and(|ext| ext == "rs") {
+                out.push((joined, std::fs::read_to_string(&path).unwrap_or_default()));
+            }
+        }
+    }
+
+    let root = crates_root();
+    let mut out: Vec<(String, String)> = Vec::new();
+    for entry in std::fs::read_dir(&root).into_iter().flatten().flatten() {
+        let src = entry.path().join("src");
+        if !src.is_dir() {
+            continue;
+        }
+        let Some(krate) = entry
+            .path()
+            .file_name()
+            .and_then(|n| n.to_str().map(str::to_owned))
+        else {
+            continue;
+        };
+        walk(&src, &format!("{krate}/src"), &mut out);
+    }
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    assert!(
+        out.len() > 20,
+        "the production source walk found {} files; it is looking in the wrong place",
+        out.len()
+    );
+    out
+}
+
+/// Assert the set of production files mentioning `needle` is exactly `allowed`, both ways.
+///
+/// Two-way on purpose: a file that gains the mention fails, and an entry that no longer has it
+/// fails too, so the list cannot rot into a description of what used to be true.
+fn fence(needle: &str, allowed: &[&str]) {
+    let found: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| text.contains(needle))
+        .map(|(path, _)| path)
+        .collect();
+    for path in &found {
+        assert!(
+            allowed.contains(&path.as_str()),
+            "{path} names `{needle}`; only {allowed:?} may"
+        );
+    }
+    for entry in allowed {
+        assert!(
+            found.iter().any(|path| path == entry),
+            "the allow-list entry {entry} no longer names `{needle}`; remove it rather than \
+             leaving a fence describing what used to be true"
+        );
+    }
+}
+
+#[test]
+fn every_crate_allowed_to_name_the_crypto_implementation_still_names_it() {
+    // The other direction of `only_the_edge_may_name_the_crypto_implementation_crate`. A stale
+    // entry there would keep passing while quietly widening what the fence permits.
+    let named_by: Vec<String> = manifests()
+        .into_iter()
+        .filter(|(_, manifest)| {
+            dependency_lines(manifest)
+                .iter()
+                .any(|line| line.starts_with("dorc-receipt-crypto"))
+        })
+        .map(|(krate, _)| krate)
+        .collect();
+    assert_eq!(
+        named_by.len(),
+        MAY_NAME_IT.len(),
+        "the set naming the crypto implementation crate is {named_by:?}; the allow-list is \
+         {MAY_NAME_IT:?}, and the two must agree exactly"
+    );
+    for entry in MAY_NAME_IT {
+        assert!(
+            named_by.iter().any(|krate| krate == entry),
+            "{entry} is allowed to name the crypto implementation crate and does not; the \
+             allow-list has gone stale"
+        );
+    }
+}
+
+#[test]
+fn the_identity_mint_is_reachable_from_one_production_file() {
+    // A document identity is controller-minted per document. The seam is honest, but nothing in
+    // the type stops a production file calling it with fixed bytes, so the gate over its callers
+    // is lexical. `ids.rs` both declares it and drives it from its own fixture source, which
+    // lives behind `#[cfg(test)]`.
+    fence("of_source_bytes", &["receipt/src/ids.rs"]);
+}
+
+#[test]
+fn verification_material_is_supplied_from_one_production_file() {
+    // The resolver is the seam through which a permissive verifier could reach the reader, and a
+    // fence covering only the crypto crate's NAME would not see one written elsewhere. Implementing
+    // any of these in a production file is the visible act.
+    for needle in [
+        "impl VerificationKeyResolver",
+        "impl TrustedReceiptVerificationKey",
+        "impl SelfAssertedReceiptVerificationKey",
+    ] {
+        let found: Vec<String> = production_sources()
+            .into_iter()
+            .filter(|(_, text)| text.contains(needle))
+            .map(|(path, _)| path)
+            .collect();
+        for path in &found {
+            assert!(
+                path == "receipt-crypto/src/lib.rs",
+                "{path} carries `{needle}`; only the implementation crate may"
+            );
+        }
+    }
+    // Two-way: the implementation crate must still carry the two it is allowed to.
+    fence(
+        "impl TrustedReceiptVerificationKey",
+        &["receipt-crypto/src/lib.rs"],
+    );
+    fence(
+        "impl SelfAssertedReceiptVerificationKey",
+        &["receipt-crypto/src/lib.rs"],
+    );
+}
+
+#[test]
+fn the_fixture_signature_stand_in_never_reaches_a_production_file() {
+    // The graph corpus signs its documents with an inert deterministic stand-in. It is confined
+    // by living in a test target; this asserts that rather than trusting it.
+    for needle in ["inert_signature", "InertSigner", "InertKey"] {
+        let found: Vec<String> = production_sources()
+            .into_iter()
+            .filter(|(_, text)| text.contains(needle))
+            .map(|(path, _)| path)
+            .collect();
+        assert!(
+            found.is_empty(),
+            "the fixture signature stand-in reached production: {found:?}"
         );
     }
 }
