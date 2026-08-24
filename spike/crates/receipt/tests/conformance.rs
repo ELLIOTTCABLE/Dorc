@@ -446,3 +446,34 @@ fn every_invalid_vector_is_refused_for_exactly_its_own_departure() {
     }
     assert!(failures.is_empty(), "{failures:#?}");
 }
+
+#[test]
+fn a_nested_refusal_reaches_the_document_vocabulary_without_losing_its_detail() {
+    // Three refusal families meet at one document-level vocabulary: the skeleton grammar's own
+    // arms, the region's, and the image's. The two nested ones are carried whole rather than
+    // flattened to a generic arm, because the sentence a reader needs — which slot, which
+    // path, which bound — lives in the inner value and cannot be recovered once it is dropped.
+    let overlay = RefusalReason::Overlay(dorc_receipt::overlay::OverlayFault::DuplicateKey);
+    let image = RefusalReason::Image(dorc_receipt::image::ImageRefusal::SecondStream);
+    assert_ne!(overlay, image, "the two families are distinguishable");
+
+    match &image {
+        RefusalReason::Image(inner) => assert_eq!(
+            inner,
+            &dorc_receipt::image::ImageRefusal::SecondStream,
+            "the inner refusal survives the widening"
+        ),
+        other => panic!("the image arm did not carry its own value: {other:?}"),
+    }
+
+    // A document-level arm is not interchangeable with a nested one naming the same idea: an
+    // over-bound skeleton and an over-bound image are different objects being refused.
+    assert_ne!(
+        RefusalReason::OverBound {
+            what: "skeleton-bytes"
+        },
+        RefusalReason::Image(dorc_receipt::image::ImageRefusal::OverBound {
+            what: "image-bytes"
+        })
+    );
+}
