@@ -235,6 +235,31 @@ impl ApplyEntryKind {
     }
 }
 
+/// Permission bits a four-octal-digit field can spell.
+///
+/// Private field: the bound is the type's, not a caller's, so a value past [`MAX_MODE_BITS`]
+/// cannot exist to be handed to an image in the first place.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ModeBits(u16);
+
+impl ModeBits {
+    /// Take permission bits, refusing anything the field cannot spell.
+    #[must_use]
+    pub const fn of(bits: u16) -> Option<Self> {
+        if bits > MAX_MODE_BITS {
+            None
+        } else {
+            Some(Self(bits))
+        }
+    }
+
+    /// The bits.
+    #[must_use]
+    pub const fn get(self) -> u16 {
+        self.0
+    }
+}
+
 /// A file mode, or a statement that mode is not an execution input for this entry.
 ///
 /// There is deliberately no unknown arm. A caller that does not know whether an entry's mode
@@ -243,17 +268,26 @@ impl ApplyEntryKind {
 pub enum RecordedMode {
     /// Mode is not an execution input for this entry.
     Unused,
-    /// Exactly these permission bits, at most [`MAX_MODE_BITS`].
-    Octal(u16),
+    /// Exactly these permission bits.
+    Octal(ModeBits),
 }
 
 impl RecordedMode {
+    /// Permission bits, refusing anything a four-octal-digit field cannot spell.
+    #[must_use]
+    pub const fn octal(bits: u16) -> Option<Self> {
+        match ModeBits::of(bits) {
+            Some(bits) => Some(Self::Octal(bits)),
+            None => None,
+        }
+    }
+
     /// The literal field in an `entry` line: `unused`, or exactly four octal digits.
     #[must_use]
     pub fn token(self) -> String {
         match self {
             Self::Unused => "unused".to_owned(),
-            Self::Octal(bits) => format!("{bits:04o}"),
+            Self::Octal(bits) => format!("{:04o}", bits.get()),
         }
     }
 
@@ -269,7 +303,10 @@ impl RecordedMode {
         if token.len() != 4 || !token.bytes().all(|byte| (b'0'..=b'7').contains(&byte)) {
             return None;
         }
-        u16::from_str_radix(token, 8).ok().map(Self::Octal)
+        u16::from_str_radix(token, 8)
+            .ok()
+            .and_then(ModeBits::of)
+            .map(Self::Octal)
     }
 }
 
@@ -1066,11 +1103,6 @@ fn validate(
             "image-entry-bytes",
             |limits| limits.image_entry_bytes,
         )?;
-        if let RecordedMode::Octal(bits) = entry.mode()
-            && bits > MAX_MODE_BITS
-        {
-            return Err(ImageRefusal::EntryShape { what: "mode-bits" });
-        }
         match entry.kind() {
             ApplyEntryKind::Stream => {
                 if entry.path().is_some() {
@@ -1441,9 +1473,15 @@ mod tests {
     #[test]
     fn a_mode_field_is_unused_or_exactly_four_octal_digits() {
         assert_eq!(RecordedMode::Unused.token(), "unused");
-        assert_eq!(RecordedMode::Octal(0o755).token(), "0755");
-        assert_eq!(RecordedMode::Octal(0o0).token(), "0000");
-        assert_eq!(RecordedMode::Octal(0o4755).token(), "4755");
+        assert_eq!(
+            RecordedMode::octal(0o755).expect("in range").token(),
+            "0755"
+        );
+        assert_eq!(RecordedMode::octal(0o0).expect("in range").token(), "0000");
+        assert_eq!(
+            RecordedMode::octal(0o4755).expect("in range").token(),
+            "4755"
+        );
         for token in ["unused", "0755", "0000", "4755"] {
             assert_eq!(
                 RecordedMode::of_token(token)
@@ -1455,6 +1493,23 @@ mod tests {
         for token in ["755", "00755", "0o755", "0778", "", "UNUSED", "absent"] {
             assert_eq!(RecordedMode::of_token(token), None, "{token:?}");
         }
+    }
+
+    #[test]
+    fn permission_bits_past_a_four_digit_field_cannot_be_constructed() {
+        // The bound belongs to the type, not to the image mint: a value the field could not
+        // spell has no way to reach an entry, so no call site is trusted to check it.
+        assert_eq!(ModeBits::of(MAX_MODE_BITS).map(ModeBits::get), Some(0o7777));
+        assert_eq!(ModeBits::of(0o10000), None);
+        assert_eq!(ModeBits::of(u16::MAX), None);
+        assert_eq!(RecordedMode::octal(0o10000), None);
+        // And the wire form cannot smuggle one past it: four octal digits top out here.
+        assert_eq!(
+            RecordedMode::of_token("7777")
+                .map(RecordedMode::token)
+                .as_deref(),
+            Some("7777")
+        );
     }
 
     #[test]

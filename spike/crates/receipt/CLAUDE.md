@@ -116,10 +116,14 @@ Make the code self-documenting instead of explaining it.
   whole-image rules are siblings and belong together: no two paths equal under ASCII
   case-folding, and no path names a directory another path names as a file. Both refuse for the
   same reason — the pair cannot exist on any filesystem — not as a policy preference.
-- **an-unknown-mode-is-unrepresentable** — `RecordedMode` is `Unused` or `Octal`, with no unknown
-  arm. `unused` means mode is not an execution input, NEVER that a relevant mode was not known.
-  A caller that cannot tell which it has must refuse at its own seat; it cannot record the
-  question. Nothing in this crate can enforce that obligation — see the note in `Owed`.
+- **an-unknown-mode-is-unrepresentable** — `RecordedMode` is `Unused` or `Octal(ModeBits)`,
+  with no unknown arm. `unused` means mode is not an execution input, NEVER that a relevant
+  mode was not known. A caller that cannot tell which it has must refuse at its own seat; it
+  cannot record the question. Nothing in this crate can enforce THAT obligation — see the
+  note in `Owed`. What the crate does enforce is the range: `ModeBits` holds the
+  four-octal-digit bound in a private field, so a value the wire form could not spell cannot
+  be constructed anywhere. The mint is not trusted to check it, and no call site can be the
+  place that forgot.
 - **roots-are-artifact-units-not-files** — a root is a top-level authored unit the artifact
   covers, pointing at the entry that materializes it; several roots may name one entry, which is
   what a flattened artifact is. A single external stream is its own root and its own entrypoint —

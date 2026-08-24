@@ -27,6 +27,13 @@ fn path(text: &str) -> RecordedApplyPath {
     }
 }
 
+fn mode(bits: u16) -> RecordedMode {
+    match RecordedMode::octal(bits) {
+        Some(value) => value,
+        None => panic!("{bits:o} is past what a four-octal-digit field can spell"),
+    }
+}
+
 fn file_entry(id: u32, at: &str, mode: RecordedMode, bytes: &[u8]) -> ApplyImageEntry {
     ApplyImageEntry::file(
         ApplyEntryId::of(id),
@@ -39,12 +46,7 @@ fn file_entry(id: u32, at: &str, mode: RecordedMode, bytes: &[u8]) -> ApplyImage
 /// A three-file multipart image: one plan and two bundles it loads.
 fn multipart() -> ApplyArtifactImage {
     let entries = vec![
-        file_entry(
-            0,
-            "plan.sh",
-            RecordedMode::Octal(0o755),
-            b"#!/bin/sh\n. ./a.sh\n",
-        ),
+        file_entry(0, "plan.sh", mode(0o755), b"#!/bin/sh\n. ./a.sh\n"),
         file_entry(
             1,
             "lib/a.dorc-bundle.sh",
@@ -147,7 +149,7 @@ fn a_multi_file_image_round_trips_every_entry_path_mode_root_edge_and_byte() {
         panic!("three entries");
     };
     assert_eq!(plan.path().map(RecordedApplyPath::text), Some("plan.sh"));
-    assert_eq!(plan.mode(), RecordedMode::Octal(0o755));
+    assert_eq!(plan.mode(), mode(0o755));
     assert_eq!(plan.bytes().get(), b"#!/bin/sh\n. ./a.sh\n");
 }
 
@@ -395,7 +397,7 @@ fn a_cycle_is_recorded_rather_than_refused() {
     // sensible. A mutually-loading pair is legal sh, so refusing it here would refuse an apply
     // before its intent was ever published.
     let entries = vec![
-        file_entry(0, "plan.sh", RecordedMode::Octal(0o755), b"x\n"),
+        file_entry(0, "plan.sh", mode(0o755), b"x\n"),
         file_entry(1, "a.sh", RecordedMode::Unused, b"y\n"),
     ];
     let edges = vec![
@@ -432,7 +434,7 @@ fn edges_reach_canonical_order_however_they_were_supplied() {
         ApplyArtifactImage::of_parts(
             RecordedArtifactForm::Multipart,
             vec![
-                file_entry(0, "plan.sh", RecordedMode::Octal(0o755), b"x\n"),
+                file_entry(0, "plan.sh", mode(0o755), b"x\n"),
                 file_entry(1, "a.sh", RecordedMode::Unused, b"y\n"),
                 file_entry(2, "b.sh", RecordedMode::Unused, b"z\n"),
             ],
@@ -469,7 +471,7 @@ fn each_aggregate_bound_refuses_before_anything_is_read() {
         ApplyArtifactImage::of_parts(
             RecordedArtifactForm::Multipart,
             vec![
-                file_entry(0, "plan.sh", RecordedMode::Octal(0o755), b"xx\n"),
+                file_entry(0, "plan.sh", mode(0o755), b"xx\n"),
                 file_entry(1, "a.sh", RecordedMode::Unused, b"yy\n"),
             ],
             vec![ApplyRoot::of(ApplyRootId::of(0), ApplyEntryId::of(0))],
@@ -545,12 +547,7 @@ fn several_roots_may_land_in_one_entry() {
     // image records that rather than inventing one root per file.
     let image = ApplyArtifactImage::of_parts(
         RecordedArtifactForm::Flattened,
-        vec![file_entry(
-            0,
-            "plan.sh",
-            RecordedMode::Octal(0o755),
-            b"#!/bin/sh\n",
-        )],
+        vec![file_entry(0, "plan.sh", mode(0o755), b"#!/bin/sh\n")],
         vec![
             ApplyRoot::of(ApplyRootId::of(0), ApplyEntryId::of(0)),
             ApplyRoot::of(ApplyRootId::of(1), ApplyEntryId::of(0)),
