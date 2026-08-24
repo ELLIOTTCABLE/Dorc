@@ -540,3 +540,76 @@ fn the_two_projections_refuse_each_other_at_the_reader() {
         "a plain document did not read as rich"
     );
 }
+
+#[test]
+fn rich_narrows_to_plain_by_reminting_and_never_by_stripping_text() {
+    // Two halves. The remint produces a document that says what it is and carries a signature
+    // over its own plain bytes. The strip produces bytes nobody signed, and the reader says so
+    // rather than accepting a rich document with its region deleted.
+    let identity = age::x25519::Identity::generate();
+    let sealer = AgeSealer::of(identity.to_public());
+    let signer = signing_key();
+    let verifier = material().expect("the fixture verification material is well formed");
+    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+
+    let mut ids = CountingIds(90);
+    let rich = rich_skeleton(
+        &mut ids,
+        signer.signing_key_id(),
+        &sealer.encryption_key_id().hex(),
+    );
+    let span = dorc_receipt::format::serialize_skeleton::<PlanReceipt, Rich>(&rich)
+        .expect("the fixture skeleton serializes");
+    let plaintext = OverlayPlaintext::canonical(
+        &rich.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &[OverlayEntry::of(0, OpaqueFieldTag::Argv, b"argv".to_vec())],
+    );
+    let rich_bytes = DraftReceipt::<PlanReceipt, Rich>::of(rich.clone())
+        .serialize(plaintext, &sealer)
+        .expect("a rich document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich).expect("the narrowing holds");
+    assert_eq!(
+        plain.encryption_key_id, None,
+        "plain names no encryption provider"
+    );
+    let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
+        .serialize()
+        .expect("the narrowed document serializes")
+        .sign(&signer)
+        .bytes()
+        .to_vec();
+    let narrowed = String::from_utf8(plain_bytes.clone()).expect("text");
+    assert!(
+        narrowed.contains("argv=withheld-plain"),
+        "a captured slot narrows to a withheld one: {narrowed}"
+    );
+    assert!(
+        !narrowed.contains("captured"),
+        "no slot still claims capture"
+    );
+    assert!(
+        read_plain::<PlanReceipt>(plain_bytes, &ReceiptLimits::V1, &resolver).is_ok(),
+        "the reminted document reads as plain under its own signature"
+    );
+
+    // Now the strip: delete the region from the rich bytes and relabel the projection, which
+    // is what a textual narrowing would amount to.
+    let rich_text = String::from_utf8(rich_bytes).expect("text");
+    let start = rich_text.find("opaque-overlay\n").expect("a region opens");
+    let end = rich_text.find("opaque-end\n").expect("a region closes") + "opaque-end\n".len();
+    let stripped = format!(
+        "{}{}",
+        rich_text[..start].replace("projection rich", "projection plain"),
+        &rich_text[end..]
+    );
+    assert!(
+        read_plain::<PlanReceipt>(stripped.into_bytes(), &ReceiptLimits::V1, &resolver).is_err(),
+        "a rich document with its region deleted must not read as a plain one"
+    );
+}
