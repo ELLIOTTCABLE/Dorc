@@ -580,6 +580,85 @@ every transport design inverts it), identity value, and key-rotation policy.
   A framework whose modality difference is visible in the protocol *name* is the existence proof,
   and that visibility is a checkable review property rather than a nicety.
 
+From `front-selection`:
+
+- **There is no one package.** The recommendation is two runtime dependencies plus `std`, plus one
+  specification implemented against published negative vectors: a verified deterministic-CBOR
+  container (vendored at a pinned commit, zero dependencies, zero unsafe *by compiler proof*, no
+  build script, no proc macro, no clock/network/filesystem/randomness surface); the C2SP
+  chunked-encryption specification over a small primitive set; and `std` alone for storage.
+  **Total authored cryptographic seams: one** — the context-tuple encoding into the specification's
+  variable tail. Twelve authored seams overall, enumerated in the turn file; what is *absent* from
+  that list is what matters — nonce management, determinism enforcement, duplicate-key rejection,
+  bounded decode, key commitment, truncation detection, and the ordinal all come from the two
+  dependencies.
+- **The encryption half of the shopping list is a specification that already exists**, matching nine
+  fronts of independently-derived principles clause for clause, including the mandatory key
+  commitment, the derived nonce, the short-final-chunk truncation closure, the empty
+  associated-data field with context bound through the derivation info string, and negative test
+  vectors. **But nobody ships it in Rust** — one implementation in another language, and one inside
+  a Python library. The scheme is about 250 lines.
+- **The live alternative, which the researcher could not defeat and which is the human's to rule
+  on:** take a whole-blob file-encryption format instead, for **zero** authored cryptographic code.
+  The seam count does not improve — it relocates to binding the skeleton to the blob — and it costs
+  a large dependency graph, whole-blob-only granularity, and an uninterceptable randomness draw.
+  The only arguments against it are a dependency count and a granularity mismatch, neither of which
+  is a security argument. **If the ruling is "no machine-written cryptographic code at any cost",
+  this is the answer and the shopping list changes to match.**
+- **The container fork closes toward binary**, and both sides of the original framing were wrong in
+  the same direction. The security side is larger: the verified library is a shipped *strict
+  recognizer* enforcing on decode every restriction the list demands — non-preferred integers,
+  indefinite lengths, duplicate keys, unsorted keys, floats, invalid UTF-8 all rejected — so
+  "determinism is opt-in everywhere" does not apply to it, and its parse signature returns
+  `(item, remainder)`, which *is* the "N valid units then damage" contract natively. The
+  readability side is smaller: the skeleton's alphabet is closed and contains no arbitrary text by
+  construction, the leaves are unreadable either way, and the design already has a better
+  pre-disclosure inspection than a pager — the plain projection, a type that cannot represent
+  opaque-value-capable fields. **And the fork was not symmetric**: "avoid maps entirely" is
+  incompatible with a readable text container, because in text the readability *is* the field names.
+  Three non-optional conditions: a diagnostic-notation renderer ships day one rather than being
+  retrofitted; it follows the standard notation including its standardised elision stand-in; and the
+  file carries labelled framing so a hexdump identifies it. **What reopens the fork:** a ruling that
+  an operator must inspect the file on a machine without `dorc`.
+- Both flagged claims verified. The machine-checked result is real, current, builds clean under the
+  workspace's own `forbid(unsafe_code)`, and is stronger than reported — with one thing to weigh,
+  111 proved-unreachable panic sites plus one unwrap in maintainer-labelled unverified glue. The
+  decoder-coercion claim is confirmed and *broader* — the coercion is bidirectional, so two byte
+  sequences of different lengths decode to one value. One correction to the container front:
+  duplicate-key rejection is a typed-versus-schema-free distinction, not a text-versus-binary one.
+- **The mainstream Rust CBOR crate cannot read a sequence at all** — it returns the first item and
+  silently discards the rest. That is a silent-truncation hazard, and the COSE crate depends on it,
+  which eliminates COSE-in-Rust in one manifest line.
+- **No maintained key-committing construction ships in Rust.** The one requirement marked REQUIRED
+  is the one nobody sells; it comes only as a construction.
+- **The audited crate shipped the exact failure this design exists to avoid**: a detached-decrypt
+  path returned plaintext to the caller's buffer even when tag verification failed, three years
+  after a clean audit. Whoever writes the decrypt path should read that advisory first.
+- **The single-package database counter-candidate loses on its own documentation** — it destroys the
+  requirement that motivated the design (its own page says text tools are not useful on it), its
+  relocated configuration seams fail silently, it does not close the Windows gaps but hides them, it
+  fights immutability, and it converts many small failures into one large one for an artifact whose
+  purpose is being available after something went wrong. A sidecar index should be refused
+  explicitly; date-prefix sharding already bounds enumeration.
+- **The symlink lean deleted a dependency.** Follow-then-validate needs only `std`; the capability
+  crate is unnecessary, and it brings a Windows enumeration path that *panics* under no-follow.
+  If the lean reverses, that dependency and that panic both come back.
+- **The Windows key-file permission check is provably unreachable from safe Rust** — proved by
+  compilation against the vendor's own crate. The only safe wrapper is a stale 2021 crate. This is
+  the one named requirement with no implementation path, and it needs a decision rather than a crate.
+
+## Open gaps for whoever picks this up
+
+- How these storage primitives degrade on network, roaming, and file-sync-managed home directories,
+  and specifically what a sync client that mints conflict files does to a store whose model is
+  exclusive-create, immutability, and enumeration of only files we made. Named by the storage front,
+  deliberately not chased, and directly relevant to the first users' environments.
+- Two sources unreachable for citation: the quantitative directory-non-compaction thread (archives
+  disallow automated fetching) and the normative audit-retention control (only unread mirrors).
+- The single most on-point paper in the literature — a journal treatment of selective encryption of
+  sensitive fields in structured logs — is paywalled and was confirmed unavailable by every route.
+  The round was synthesised without it.
+
 ## Human leans on the findings
 
 **These are leans, not rulings.** The human has typed them and has explicitly declined to weld
