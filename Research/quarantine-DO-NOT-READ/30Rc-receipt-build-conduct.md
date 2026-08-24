@@ -12,11 +12,11 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 
 | Stage | Lane | State |
 |---|---|---|
-| 0 laws/crate/deps/vectors | `ai/r30-receipt` | not started |
-| 1 identity + plain kernel | `ai/r30-receipt` | not started |
-| 2A apply image | tbd | not started |
-| 2B overlay + age | tbd | not started |
-| 2C recorded models + graph | tbd | not started |
+| 0 laws/crate/deps/vectors | `ai/r30-receipt` | LANDED `88f71314..23b5a9b7` |
+| 1 identity + plain kernel | `ai/r30-receipt` | LANDED; gate blocked, see below |
+| 2A apply image | `ai/r30-receipt-image` | dispatched 11:35 |
+| 2B overlay + age | `ai/r30-receipt-overlay` | dispatched 11:35 |
+| 2C recorded models + graph | `ai/r30-receipt-models` | dispatched 11:35 |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
@@ -75,7 +75,31 @@ Stage 0 checkpoint, 2026-08-24:
 
 ## deviations reported by builders
 
-(none yet)
+- Stage 0+1: `crypto.rs` → `capability.rs` in the pure crate (the adapters it named
+  moved to the sibling); `check_signature` returns a two-arm enum rather than a
+  generic, because a generic IS the "caller requests its preferred trust marker" the
+  spec forbids. Both accepted — the second actively enforces a REQUIRED effect.
+- Stage 0+1 rewrote two integration-test files panic-free rather than using the
+  documented file-top `#![expect]`, costing ~1h. MY briefing gap, not its error: the
+  lint posture lives in `spike/Cargo.toml` + `spike/clippy.toml`, and
+  `spike/CLAUDE.md`'s "(tests may)" is misleading without the caveat. Now a standing
+  rider in every brief.
+- Stage 0+1 reported `gate:full-quiet` as environmentally blocked. I called that
+  transient after two clean `mise run build` runs; I WAS WRONG — `build` never has to
+  REPLACE `dorc.exe`, which is the denied operation. Confirmed reproducing under
+  `cargo test --no-run`. See blocker below.
+
+## OPEN BLOCKER — completion gate on Windows
+
+`cargo nextest`'s relink fails `Access is denied` removing
+`<worktree>/spike/target/debug/dorc.exe`. Windows `CARGO_TARGET_DIR` is
+`{{config_root}}/spike/target` (`mise.toml:118`) — inside the SyncThing-synced tree,
+with no `.stignore` covering it; SyncThing holds the handle. The WSL leg already
+points outside the tree and is unaffected. Two fixes, human-owned: exclude
+`**/target` from SyncThing (the actual root cause; target dirs are huge and
+machine-specific and should never sync), or extend `mise.toml:118`'s Windows arm to a
+per-worktree cache outside the tree, mirroring the WSL arm. Blocks the completion
+contract for every builder on this arc.
 
 ## banked for later stages
 
