@@ -15,7 +15,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 0 laws/crate/deps/vectors | `ai/r30-receipt` | LANDED `88f71314..23b5a9b7` |
 | 1 identity + plain kernel | `ai/r30-receipt` | LANDED; gate blocked, see below |
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
-| 2B overlay + age | `ai/r30-receipt-overlay` | dispatched 11:35 |
+| 2B overlay + age | `ai/r30-receipt-overlay` | BUILT 17 commits; rebase + bridge + rich vectors in flight |
 | 2C recorded models + graph | `ai/r30-receipt-models` | BUILT `db3104df`; WSL green, Windows wrapper retry |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | not started |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
@@ -308,3 +308,91 @@ Several reads are `Option`-typed for shapes the grammar already forbids, and tho
 fail QUIETLY — a document whose identity would not parse is skipped rather than reported.
 Fine while the field type guarantees the shape; a silent disappearance the moment anything
 loosens it.
+
+## MY ERROR — the gate could answer green without asking a question
+
+2B measured `gate:full-quiet` returning rc=0 in THREE LINES having run nothing. Cause
+confirmed: I minted the three Stage-2 lane worktrees with `git worktree add -b <branch>
+<path> <commit>`, which sets NO UPSTREAM; `hk check --pr` then has no base to resolve,
+matches no paths, and with a clean tree `--staged`/`--unstaged` match nothing either.
+Three no-ops, exit 0. `spike/CLAUDE.md` already holds this principle for the corpus
+runners (a discovery floor; zero trials would otherwise exit green) — the GATE has no
+equivalent. Upstreams now set on all lane branches; a floor is being built on
+`ai/r30-gate-floor`. Standing process fix: every lane worktree is minted FROM `ai/main`,
+never from a bare commit.
+
+Corollary worth holding: 2A reported a green Windows wrapper on an upstream-less branch,
+so that green was probably vacuous too. Its WSL leg (208s, cold cache) was real, and every
+lane independently ran `mise run test` directly — which is where the substantive evidence
+for all three lanes actually comes from, not from the wrapper.
+
+## from the overlay lane (2B, report recovered after the session ended)
+
+Its 17 commits survived intact; only the write-up was lost, then recovered on resume.
+Rich reading was structurally IMPOSSIBLE on the base, not merely untested. Two committed
+invalid vectors were refused for genuinely the wrong reason (`blank-line` and
+`record-count-too-high` both landing on `RecordCount`). `OpaqueFieldTag` did not exist at
+all on its base — the whole 17-member table is 2B's, with `apply-context` at 16.
+`#![expect]` verified to suppress the duplicate-version lint on clippy 0.1.96 and to
+self-ratchet. `Projection::Region` added (approved: `30Rb` requires the effect, and an
+`Option` would leave an unvalidated rich receipt representable).
+
+RULED `tc-remint-keeps-the-document-identity`: a plain remint KEEPS the rich document's
+identity — the identity names the receipt-event, not the byte-document, and species and
+projection both sit inside the signature domain. Cross-lane consequence neither lane could
+see: 2C's graph treats one identity with differing bytes as a FINDING, which would fire
+spuriously on a rich receipt beside its own plain remint. Refined: the finding is
+same-identity, same-projection, differing bytes; same identity across DIFFERENT projections
+is legitimate and correlates to one node. 2B pins it.
+
+Owed and assigned to 2B at rebase: the 2A refusal bridge (`RefusalReason::Image`), and
+`plan-frozen-rich-document-vectors`, which is a V1 EXIT condition
+(`30Rb:receipt-verification-map` wants a valid plain AND rich receipt per species), traded
+away under time pressure for the remint and the exact-refusal table. No age identity was
+generated or committed, so its four conditions activate now.
+
+Invariant prose from this lane:
+
+A plain document's signed body and its skeleton span are BYTE-IDENTICAL — the locator sets
+body-end to skeleton-end when there is no region — so every plain test passes whichever of
+the two you hand the parser. They diverge only for rich, which did not exist when the choice
+was made. That is exactly how the reader came to parse the whole body: correct for
+everything that existed, structurally unable to succeed once a region followed the
+terminator. What must stay true is that the skeleton span and the armor span are both slices
+of the ONE located body, taken in a single pass, and that neither is re-derived by a second
+walk. Nothing stops a future reader from locating the armor separately — and then the bytes
+verified and the bytes opened could differ with no type complaining.
+
+The line-ending normalization is safe only because it happens before serialization, hence
+before signing, so the signature covers exactly the stored form — and because nothing on the
+read path normalizes at all. Move that same conversion anywhere onto the read side and it
+silently becomes a normalization sitting between the bytes verified and the bytes used,
+which is the single failure the literal-byte discipline exists to prevent. It is correct
+because of WHERE IT SITS, not what it does.
+
+Paired and equally invisible: `seal` strips trailing newlines because the format supplies
+the one that closes the region; `open` pushes exactly one back. They mirror each other
+ACROSS A CRATE BOUNDARY with nothing enforcing the pairing, and change either half alone and
+the round trip breaks looking like a decryption failure rather than a framing one. The
+append is legitimate only because it happens AFTER the outer signature has checked.
+
+The region terminator search works because of somebody else's alphabet: the locator finds
+the region end by searching for a literal, unambiguous only because Age's armor is base64
+plus marker lines and standard base64 excludes the hyphen. That argument lives inside
+another project's encoder and is one upgrade away from false. Now asserted locally by a
+writer-side shape check, itself measured against a REAL sealed region — so an Age change
+fails one loud test instead of every rich document mysteriously failing to locate.
+
+Token-set constants are `const`, not `static`, so they inline at each use site and
+`core::ptr::eq` on them is unreliable — a slot-versus-grammar cross-check failed on exactly
+that. Compare token sets by value.
+
+The overlay's total-account property rests on the captured-slot set being computed from the
+SKELETON ALONE. If that computation ever took a hint from the region, the region would be
+describing the set it is required to satisfy, and both directions of the two-way check
+collapse into one. Short function, looks unimportant.
+
+A rich receipt cannot exist without a validated region only because its constructor is
+private and reachable solely from the validating read path — enforced by VISIBILITY, not by
+the type. The region field would happily hold an unchecked value if a second constructor
+appeared.
