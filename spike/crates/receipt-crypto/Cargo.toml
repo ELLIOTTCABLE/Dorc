@@ -1,0 +1,26 @@
+[package]
+name = "dorc-receipt-crypto"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The implementations of `dorc-receipt`'s injected capability traits, and NOTHING else.
+#
+# This crate exists so the RNG these packages carry cannot reach the analyzer kernel: only
+# `dorc-cli` depends on it, and `dorc-plan` depends on the pure crate alone. It mints no
+# checked, trusted, or complete receipt state — those constructors live in `dorc-receipt`
+# and are unreachable from here, so verify-before-interpret is enforced by the crate
+# boundary rather than by call ordering.
+#
+# Feature discipline: `age`'s `armor` is NOT a default feature and the grammar requires
+# canonical ASCII armor, so it is named explicitly. `plugin`, `ssh`, `async`, `cli-common`
+# and `unstable` stay off; `ed25519-dalek` takes no key generation, serde, batch, prehash,
+# or hazardous surface.
+[dependencies]
+dorc-receipt = { path = "../receipt", version = "0.0.0" }
+age = { version = "=0.12.1", default-features = false, features = ["armor"] }
+ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true
