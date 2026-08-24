@@ -379,6 +379,11 @@ pub fn parse_skeleton_span<D: Species, P: Projection>(
     let mut records = Vec::new();
     for index in 0..count {
         let line = lines.next().ok_or(RefusalReason::RecordCount)?;
+        // Meeting the terminator while records are still owed is a count disagreement, not a
+        // misshaped record line.
+        if line == SKELETON_END {
+            return Err(RefusalReason::RecordCount);
+        }
         if !limits
             .line_bytes
             .admits(u64::try_from(line.len()).unwrap_or(u64::MAX))
@@ -390,7 +395,10 @@ pub fn parse_skeleton_span<D: Species, P: Projection>(
 
     match lines.next() {
         Some(SKELETON_END) => {}
-        _ => return Err(RefusalReason::RecordCount),
+        // A further record where the terminator was due is a count disagreement; anything else
+        // there is a structural one, and the two are not interchangeable.
+        Some(line) if line.starts_with("record ") => return Err(RefusalReason::RecordCount),
+        _ => return Err(RefusalReason::Structure { what: SKELETON_END }),
     }
     // The body ends with the terminator's newline, so `split` yields one trailing empty
     // piece and nothing after it. Anything else is bytes between the terminator and the
