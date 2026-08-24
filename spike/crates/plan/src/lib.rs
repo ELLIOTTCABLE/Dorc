@@ -126,7 +126,8 @@ pub mod settle;
 use erase::DeadBranchProof;
 use settle::SurvivalAccount;
 pub use settle::{
-    RoundClassification, RoundModel, SettleInputs, Settlement, settle_effective_world,
+    RoundClassification, RoundModel, SettleInputs, Settlement, SettlementQuiescence,
+    settle_effective_world,
 };
 use world::{EffectiveAct, Freshness, NoMutationProof};
 
@@ -4436,11 +4437,15 @@ pub fn build_plan_walled(
     };
     // No loaded-source set here, so no openers and no universe. An EMPTY census decides no region.
     let regions = region::RegionCensus::default();
+    // This entry ships no probe, so no site was ever put on the verdict lane. Empty is the honest
+    // answer rather than a defaulted one — the rows it produces state `no`, and that is true.
+    let verdict_lane = BTreeSet::new();
     let inputs = SettleInputs {
         src,
         ast,
         cfg,
         vouches,
+        verdict_lane: &verdict_lane,
         connected,
         policy,
         regions: &regions,

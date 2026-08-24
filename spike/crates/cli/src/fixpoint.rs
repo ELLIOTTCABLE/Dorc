@@ -104,10 +104,10 @@ pub struct SettledFixpoint {
     pub validity: BTreeMap<dorc_plan::LeafId, bool>,
     /// Everything the rounds proved cannot execute, round-tagged.
     pub ledger: dorc_plan::NoExecutionLedger,
-    /// Did the loop hit its cap and degrade to the maximal-effects answer? Unreachable at the
-    /// production bound, so the caller `debug_assert`s it false; the fault-injection pin drives it
-    /// true deliberately.
-    pub capped: bool,
+    /// Whether the loop reached quiescence, or hit its cap and degraded to the maximal-effects
+    /// answer. Degrading is unreachable at the production bound, so the caller `debug_assert`s
+    /// quiescence; the fault-injection pin drives the cap deliberately.
+    pub quiescence: dorc_plan::SettlementQuiescence,
     /// Failing effective-reach post-fixpoint checks across every round (`30K` §4.4). Zero is the
     /// healthy state; anything else is OUR defect and the whole window took its floor.
     pub effective_solve_failures: u32,
@@ -440,12 +440,12 @@ pub fn settle_world(
     // Withdrawing licensed elisions is a safety-narrowing like any other, so it narrates. Minted
     // here rather than inside the settlement because the narrative belongs to the fold's own slice
     // and a provisional round may not build a narrative surface at all.
-    if settlement.capped {
+    if let Some(discarded) = settlement.quiescence.discarded() {
         model.merge_narrative.push(CollapseNarrative::new(
             dorc_aid::narrative::SpeechAct::Derived,
             dorc_aid::narrative::CollapseKind::FixpointCapDegrade {
                 rounds: cap,
-                discarded: settlement.discarded_on_cap,
+                discarded,
             },
         ));
     }
@@ -460,7 +460,7 @@ pub fn settle_world(
         spine: settlement.spine,
         validity: settlement.validity,
         ledger: settlement.ledger,
-        capped: settlement.capped,
+        quiescence: settlement.quiescence,
         origin_validity: settlement.origin_validity,
         effective_solve_failures: settlement.effective_solve_failures,
     }

@@ -697,6 +697,7 @@ mod tests {
                 "plan/src/lib.rs",
                 "plan/src/placement.rs",
                 "plan/src/region.rs",
+                "plan/src/settle.rs",
                 "plan/src/spine.rs",
                 "plan/src/whylog.rs",
                 "plan/tests/erasability.rs",

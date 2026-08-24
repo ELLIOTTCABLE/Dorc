@@ -711,11 +711,75 @@ pub enum WithheldCause {
     HelperConflict,
 }
 
+/// What the analysis concluded about one site — the classification vocabulary, closed.
+///
+/// A closed enum rather than the `&'static str` discriminant label it replaced. The label was
+/// referent-agnostic by construction (nothing branched on it), which is exactly what made it the
+/// wrong carrier once a projection had to: a projection is OBLIGED to branch on it, and a string
+/// nothing may read cannot be the thing it reads. Narrowing follows the same reasoning that
+/// narrowed [`InvocationMode`] from a `String` in this file — make the false spellings unspellable
+/// rather than documenting that they must not occur.
+///
+/// The two boolean-bearing source arms SPLIT here, and that is the point of the widening: a query
+/// whose resolved value is stale licenses nothing a valid one licenses, and a member population
+/// something else reached licenses nothing a self-reached one does. Merging either pair would make
+/// two rows that decide differently read identically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SpineSiteClass {
+    /// Nothing licenses replacing this site.
+    MustRun,
+    /// An establish whose cell an ambient probe reads.
+    EstablishProbeAmbient,
+    /// An establish whose cell a written probe reads, so the resting probe is not authoritative.
+    EstablishProbeWritten,
+    /// A read-only query guard whose probe-time answer is still valid.
+    QueryResolvableValid,
+    /// A read-only query guard whose probe-time answer a reaching mutator made stale.
+    QueryResolvableStale,
+    /// A member population whose only in-script writers are its own members.
+    EstablishMembersSelfReached,
+    /// A member population something outside it reached.
+    EstablishMembersReached,
+    /// An inlined call whose body sites are themselves classified.
+    InlineCall,
+}
+
+impl SpineSiteClass {
+    /// Every class, for a census walking the set.
+    pub const ALL: [Self; 8] = [
+        Self::MustRun,
+        Self::EstablishProbeAmbient,
+        Self::EstablishProbeWritten,
+        Self::QueryResolvableValid,
+        Self::QueryResolvableStale,
+        Self::EstablishMembersSelfReached,
+        Self::EstablishMembersReached,
+        Self::InlineCall,
+    ];
+
+    /// The class's greppable name — for the debug dump and the census instrument. Referent-agnostic
+    /// at every consumer that renders it.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::MustRun => "MustRun",
+            Self::EstablishProbeAmbient => "EstablishProbeAmbient",
+            Self::EstablishProbeWritten => "EstablishProbeWritten",
+            Self::QueryResolvableValid => "QueryResolvableValid",
+            Self::QueryResolvableStale => "QueryResolvableStale",
+            Self::EstablishMembersSelfReached => "EstablishMembersSelfReached",
+            Self::EstablishMembersReached => "EstablishMembersReached",
+            Self::InlineCall => "InlineCall",
+        }
+    }
+}
+
 /// One site's classification outcome — the analysis tuple, as an account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineSiteClassification {
     site: SiteId,
-    class: &'static str,
+    ast: AstId,
+    class: SpineSiteClass,
     verdict_lane: bool,
     invalidator: bool,
     cells: OperandAccount<FactKey>,
@@ -727,7 +791,8 @@ impl SpineSiteClassification {
     #[must_use]
     pub const fn minted(
         site: SiteId,
-        class: &'static str,
+        ast: AstId,
+        class: SpineSiteClass,
         verdict_lane: bool,
         invalidator: bool,
         cells: OperandAccount<FactKey>,
@@ -735,6 +800,7 @@ impl SpineSiteClassification {
     ) -> Self {
         Self {
             site,
+            ast,
             class,
             verdict_lane,
             invalidator,
@@ -749,13 +815,23 @@ impl SpineSiteClassification {
         self.site
     }
 
-    /// The `SkipClass` discriminant name (referent-agnostic: a label, never branched on here).
+    /// The source back-map, on [`SpineDisposition`]'s terms — the same node the decision for this
+    /// site was keyed from, carried rather than re-derived by a consumer holding only a leaf.
     #[must_use]
-    pub const fn class(&self) -> &'static str {
+    pub const fn ast(&self) -> AstId {
+        self.ast
+    }
+
+    /// What the analysis concluded.
+    #[must_use]
+    pub const fn class(&self) -> SpineSiteClass {
         self.class
     }
 
     /// Whether the site is verdict-lane (`verdict-lane-is-site-keyed`).
+    ///
+    /// AS POPULATED: an ORIGIN-round answer, frozen. Which body a site ships is decided once and
+    /// the probe is never rebuilt, so a later round's reclassification neither asks nor answers it.
     #[must_use]
     pub const fn verdict_lane(&self) -> bool {
         self.verdict_lane
@@ -778,7 +854,6 @@ impl SpineSiteClassification {
         &self.cells
     }
 }
-
 /// One certification outcome (`plans/302`).
 ///
 /// AS POPULATED (`30Nd` meaning-audit): the sole production writer emits ONE `whole-window` row per
@@ -2004,9 +2079,10 @@ impl<P: DecidePlane> Spine<P> {
         for record in self.classifications.values() {
             let _ = writeln!(
                 out,
-                "  classify {:?} class={} verdict-lane={} invalidator={} cells={}",
+                "  classify {:?} ast={:?} class={} verdict-lane={} invalidator={} cells={}",
                 record.site,
-                record.class,
+                record.ast,
+                record.class.name(),
                 record.verdict_lane,
                 record.invalidator,
                 record.cells.total()

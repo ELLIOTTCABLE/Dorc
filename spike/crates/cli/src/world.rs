@@ -470,11 +470,15 @@ impl WhyWorld {
             ),
             snapshot.book_file(),
         );
+        // The ORIGIN round's answer, exactly as the binary freezes it — a why report explains the
+        // run's own world, so it must not re-derive a lane the run decided once.
+        let verdict_lane_sites: BTreeSet<_> = verdict_lane.keys().copied().collect();
         let plan_inputs = dorc_plan::SettleInputs {
             src: book_src,
             ast: &parsed.value,
             cfg: &cfg.value,
             vouches: &vouches,
+            verdict_lane: &verdict_lane_sites,
             connected: &dorc_plan::ConnectedPipes::default(),
             policy,
             regions: &regions,

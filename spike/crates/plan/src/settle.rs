@@ -35,7 +35,10 @@ use dorc_analysis::certify::{CertifierTrip, SolveConsistency};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, ExecutionOwner};
 use dorc_analysis::effect::SkipClass;
 use dorc_core::influence::InfluenceAccount;
-use dorc_core::spine::{SpineSurvival, SurvivalDemote, SurvivalOutcome};
+use dorc_core::spine::{
+    OperandAccount, SpineSiteClass, SpineSiteClassification, SpineSurvival, SurvivalDemote,
+    SurvivalOutcome,
+};
 use dorc_core::{AstId, Channel, FactBacking, FactKey, KindId, LeafId, Observable};
 use dorc_syntax::ast::Ast;
 
@@ -73,6 +76,75 @@ pub struct RoundClassification {
     pub fact_backings: BTreeMap<FactKey, FactBacking>,
 }
 
+/// Project one site's analysis conclusion into the closed Spine vocabulary.
+///
+/// The two boolean-bearing arms SPLIT: `QueryResolvable`'s validity bit and `EstablishMembers`'
+/// self-reach bit each decide whether the row licenses anything, so folding either pair into one
+/// token would make two rows that decide differently read identically.
+const fn class_of(class: &SkipClass) -> SpineSiteClass {
+    match class {
+        SkipClass::MustRun => SpineSiteClass::MustRun,
+        SkipClass::EstablishProbeAmbient(_) => SpineSiteClass::EstablishProbeAmbient,
+        SkipClass::EstablishProbeWritten(_) => SpineSiteClass::EstablishProbeWritten,
+        SkipClass::QueryResolvable { valid: true, .. } => SpineSiteClass::QueryResolvableValid,
+        SkipClass::QueryResolvable { valid: false, .. } => SpineSiteClass::QueryResolvableStale,
+        SkipClass::EstablishMembers {
+            self_reached: true, ..
+        } => SpineSiteClass::EstablishMembersSelfReached,
+        SkipClass::EstablishMembers {
+            self_reached: false,
+            ..
+        } => SpineSiteClass::EstablishMembersReached,
+        SkipClass::InlineCall { .. } => SpineSiteClass::InlineCall,
+    }
+}
+
+/// Every cell one classification keys on, in member order (`aggregate-mints-carry-the-same-demand`).
+///
+/// RECURSIVE over aggregates: an `InlineCall`'s members are themselves classifications, so a member
+/// that resolves a QUERY cell keys the call exactly as an establish member does. Matching only the
+/// two establish arms makes the account narrower than the decision it claims to describe.
+fn class_cells(class: &SkipClass) -> Vec<FactKey> {
+    match class {
+        SkipClass::MustRun => Vec::new(),
+        SkipClass::EstablishProbeAmbient(fact)
+        | SkipClass::EstablishProbeWritten(fact)
+        | SkipClass::QueryResolvable { fact, .. } => vec![*fact],
+        SkipClass::EstablishMembers { members, .. } => members.clone(),
+        SkipClass::InlineCall { sites } => sites
+            .iter()
+            .flat_map(|site| class_cells(&site.class))
+            .collect(),
+    }
+}
+
+/// One round's classification rows, keyed by the SAME `(leaf, node)` pairing the round's decisions
+/// are — which is the reason this is built here rather than at a driver.
+///
+/// A driver holds only `(ast, leaf)` and has to bridge `node → ast → leaf` to key a row, which is a
+/// second derivation of a mapping `site_order` already computed. Reading one integer space as
+/// another would key a record to somebody else's site, which is exactly what
+/// `inv-site-keyed-results` forbids.
+fn classification_rows(
+    inputs: &SettleInputs<'_>,
+    ordered: &[(LeafId, CfgNodeId, &SkipClass)],
+    invalidators: &BTreeSet<CfgNodeId>,
+) -> Vec<SpineSiteClassification> {
+    ordered
+        .iter()
+        .map(|(leaf, node, class)| {
+            SpineSiteClassification::minted(
+                dorc_core::SiteId::leaf(*leaf),
+                inputs.cfg.node(*node).ast,
+                class_of(class),
+                inputs.verdict_lane.contains(node),
+                invalidators.contains(node),
+                OperandAccount::capped(class_cells(class)),
+                inputs.world_account,
+            )
+        })
+        .collect()
+}
 /// The two things a settlement round must ask of its caller, and nothing else.
 ///
 /// The loop cannot own these: reclassifying needs the analyzer and the interner, and folding needs
@@ -109,6 +181,13 @@ pub struct SettleInputs<'a> {
     pub cfg: &'a Cfg,
     /// The per-site verdict vouches, built once from the origin model.
     pub vouches: &'a Vouches,
+    /// Which sites the ORIGIN round put on the verdict lane.
+    ///
+    /// Frozen with everything else here, and necessarily: which body a site ships is decided once
+    /// and the probe is never rebuilt, so a later round neither asks nor answers it. Membership
+    /// only — what a classification record states is that the site WAS verdict-lane, never which
+    /// measurement put it there.
+    pub verdict_lane: &'a BTreeSet<CfgNodeId>,
     /// The recognised connected check-pipes.
     pub connected: &'a ConnectedPipes,
     /// How this run treats a mutation that will really execute.
@@ -199,6 +278,7 @@ pub struct SettledEffectiveAnalysis {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
+    classifications: Vec<SpineSiteClassification>,
 }
 
 /// One round's decisions, before quiescence is known. Deliberately without a Spine, Plan, render,
@@ -208,6 +288,7 @@ pub struct ProvisionalEffectiveRound {
     decisions: Vec<ProvisionalSiteDecision>,
     regions: Vec<ProvisionalRegionDecision>,
     walls: Vec<(LeafId, Option<ElisionRegion>)>,
+    classifications: Vec<SpineSiteClassification>,
 }
 
 /// The cap path intentionally discards every no-execution proof and seals the maximal-effects
@@ -239,6 +320,7 @@ impl ProvisionalEffectiveRound {
             decisions: self.decisions,
             regions: self.regions,
             walls: self.walls,
+            classifications: self.classifications,
         }
     }
 
@@ -247,6 +329,7 @@ impl ProvisionalEffectiveRound {
             decisions: self.decisions,
             regions: self.regions,
             walls: self.walls,
+            classifications: self.classifications,
         }
     }
 }
@@ -257,6 +340,9 @@ impl SettledEffectiveAnalysis {
     #[must_use]
     pub fn write_spine(self) -> Spine {
         let mut spine = Spine::new();
+        for record in self.classifications {
+            spine.set_classification(record);
+        }
         for (leaf, region) in self.walls {
             spine.push_narrative(CollapseNarrative::new(
                 SpeechAct::Derived,
@@ -383,8 +469,7 @@ pub fn settle_effective_world(
                 validity: outcome.validity,
                 origin_validity: origin_validity.unwrap_or_default(),
                 ledger,
-                capped: false,
-                discarded_on_cap: 0,
+                quiescence: SettlementQuiescence::Quiescent,
                 effective_solve_failures: failures,
             };
         }
@@ -399,12 +484,47 @@ pub fn settle_effective_world(
                 validity: outcome.validity,
                 origin_validity: origin_validity.unwrap_or_default(),
                 ledger,
-                capped: true,
-                discarded_on_cap: discarded,
+                quiescence: SettlementQuiescence::CappedAtFloor { discarded },
                 effective_solve_failures: failures,
             };
         }
         number = number.saturating_add(1);
+    }
+}
+
+/// Whether the settlement reached quiescence, or degraded to the maximal-effects floor.
+///
+/// A typed answer rather than a `bool` beside a count, because the count cannot exist without the
+/// cap: the discarded-proof total is meaningful only on the degraded arm, and a pair of independent
+/// fields let a reader ask one without the other. Consumers that may act only on a settled world
+/// ask for [`Quiescent`](Self::Quiescent) by name; a `debug_assert` is not a guarantee.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettlementQuiescence {
+    /// A round proved nothing further un-runnable, and the ledger minted its witness.
+    Quiescent,
+    /// The round cap was hit. The ledger was DISCARDED and re-derived from origin rather than
+    /// shipping a partial fixpoint, so the answer is exactly the pre-fixpoint one.
+    CappedAtFloor {
+        /// How many proofs the cap withdrew — captured before the rebuild, because what the
+        /// narrative owes its reader is what was taken away, not what survived (nothing does).
+        discarded: u32,
+    },
+}
+
+impl SettlementQuiescence {
+    /// Did the settlement reach quiescence?
+    #[must_use]
+    pub const fn is_quiescent(self) -> bool {
+        matches!(self, Self::Quiescent)
+    }
+
+    /// The proofs the cap withdrew, where it fired.
+    #[must_use]
+    pub const fn discarded(self) -> Option<u32> {
+        match self {
+            Self::Quiescent => None,
+            Self::CappedAtFloor { discarded } => Some(discarded),
+        }
     }
 }
 
@@ -423,11 +543,9 @@ pub struct Settlement {
     pub origin_validity: BTreeMap<LeafId, bool>,
     /// Everything the rounds proved cannot execute, round-tagged.
     pub ledger: NoExecutionLedger,
-    /// Did the loop hit its cap and degrade to the maximal-effects answer?
-    pub capped: bool,
-    /// How many proofs the cap DISCARDED — captured before the ledger was rebuilt, because the
-    /// number the narrative owes its reader is what was withdrawn, not what survived (nothing does).
-    pub discarded_on_cap: u32,
+    /// Whether the loop reached quiescence, or hit its cap and degraded to the maximal-effects
+    /// answer — and, on that arm, how many proofs the degrade withdrew.
+    pub quiescence: SettlementQuiescence,
     /// How many effective-reach post-fixpoint CHECKS failed across every round (`30K` §4.4).
     ///
     /// A scalar, and accumulated across ALL rounds rather than kept from the settled one, for the
@@ -630,11 +748,13 @@ fn one_round(
         dead: &dead,
         accounts_survival,
     });
+    let classifications = classification_rows(inputs, &ordered, &classification.invalidators);
     RoundOutcome {
         round: ProvisionalEffectiveRound {
             decisions,
             regions,
             walls,
+            classifications,
         },
         classification,
         validity,
@@ -1113,6 +1233,141 @@ pub(crate) fn replacement_death(
 mod tests {
     use super::*;
 
+    /// `30Mc` F3, both flat falsehoods at once: `invalidator` is documented "gens into reach" and
+    /// was written from `kills` alone (false for every ordinary establish), and an `InlineCall`
+    /// mapped its ordered member account to an EMPTY cell list.
+    ///
+    /// Driven through the WIRING seat rather than a pure per-record helper, because the defect was
+    /// which set each field reads (`anti-masking-tests`). The two sets are made DISTINGUISHING —
+    /// one node is verdict-lane and the other is an invalidator, never both — so a seat that read
+    /// either from the wrong side fails rather than agreeing by coincidence.
+    #[test]
+    fn a_classification_record_states_what_its_fields_promise() {
+        use dorc_analysis::cfg::CfgNodeKind;
+        use dorc_analysis::effect::InlineSite;
+        use dorc_core::{Context, EntityRef, Interner, OpaqueToken, SelectorId};
+
+        let src = "apt-get install -y nginx\napt-get install -y curl\n";
+        let ast = dorc_syntax::parse(src).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = Interner::default();
+
+        let commands: Vec<CfgNodeId> = cfg
+            .iter()
+            .filter(|(_, node)| node.kind == CfgNodeKind::Command)
+            .map(|(id, _)| id)
+            .collect();
+        let (standalone, aggregate) = (commands[0], commands[1]);
+        let mut cell = |text: &str| FactKey {
+            kind: KindId(interner.intern("sm.dorc.Package")),
+            entity: EntityRef::Operand(OpaqueToken(interner.intern(text))),
+            selector: SelectorId(interner.intern("installed")),
+            context: Context::HostDefault,
+        };
+        let (nginx, curl, query) = (cell("nginx"), cell("curl"), cell("wombat"));
+        let ambient = SkipClass::EstablishProbeAmbient(nginx);
+        let inline_call = SkipClass::InlineCall {
+            sites: vec![
+                InlineSite {
+                    node: aggregate,
+                    member: None,
+                    class: SkipClass::EstablishProbeAmbient(curl),
+                },
+                // A QUERY member keys the call exactly as an establish member does; the first
+                // repair matched only the establish arms and dropped this one.
+                InlineSite {
+                    node: aggregate,
+                    member: None,
+                    class: SkipClass::QueryResolvable {
+                        fact: query,
+                        valid: true,
+                    },
+                },
+            ],
+        };
+        let ordered = vec![
+            (LeafId(0), standalone, &ambient),
+            (LeafId(1), aggregate, &inline_call),
+        ];
+
+        let vouches = Vouches::new();
+        let regions = RegionCensus::default();
+        // DISTINGUISHING: the standalone is verdict-lane and not an invalidator; the aggregate is
+        // an invalidator and not verdict-lane. A swapped read cannot pass both rows.
+        let verdict_lane = BTreeSet::from([standalone]);
+        let invalidators = BTreeSet::from([aggregate]);
+        let connected = ConnectedPipes::default();
+        let inputs = SettleInputs {
+            src,
+            ast: &ast,
+            cfg: &cfg,
+            vouches: &vouches,
+            verdict_lane: &verdict_lane,
+            connected: &connected,
+            policy: WallPolicy::Honest,
+            regions: &regions,
+            world_account: InfluenceAccount::authored_before_contact(),
+        };
+
+        let rows = classification_rows(&inputs, &ordered, &invalidators);
+        let stated: Vec<(SpineSiteClass, bool, bool, usize)> = rows
+            .iter()
+            .map(|row| {
+                (
+                    row.class(),
+                    row.verdict_lane(),
+                    row.invalidator(),
+                    row.cells().shown().len(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            stated,
+            [
+                (SpineSiteClass::EstablishProbeAmbient, true, false, 1),
+                (SpineSiteClass::InlineCall, false, true, 2),
+            ],
+            "each field must read its own set, and the aggregate keys on EVERY member — establish \
+             and query alike, not on nothing and not on a filtered subset"
+        );
+        // The row's own back-map, not one a consumer holding a leaf would have to re-derive.
+        assert_eq!(
+            rows.iter()
+                .map(SpineSiteClassification::ast)
+                .collect::<Vec<_>>(),
+            vec![cfg.node(standalone).ast, cfg.node(aggregate).ast],
+        );
+    }
+
+    /// The two boolean-bearing source arms SPLIT rather than merging, which is the whole reason the
+    /// class stopped being a discriminant label. A merge would make two rows that decide
+    /// differently read identically.
+    #[test]
+    fn each_boolean_bearing_class_keeps_its_two_answers_apart() {
+        use dorc_core::{Context, EntityRef, Interner, SelectorId};
+
+        let mut interner = Interner::default();
+        let fact = FactKey {
+            kind: KindId(interner.intern("sm.dorc.Package")),
+            entity: EntityRef::Singleton,
+            selector: SelectorId(interner.intern("installed")),
+            context: Context::HostDefault,
+        };
+        assert_ne!(
+            class_of(&SkipClass::QueryResolvable { fact, valid: true }),
+            class_of(&SkipClass::QueryResolvable { fact, valid: false }),
+        );
+        assert_ne!(
+            class_of(&SkipClass::EstablishMembers {
+                members: vec![fact],
+                self_reached: true,
+            }),
+            class_of(&SkipClass::EstablishMembers {
+                members: vec![fact],
+                self_reached: false,
+            }),
+        );
+    }
     /// THE EFFECTIVE-REACH FLOOR, driven by a REAL `Inconsistent` (`30K` §4.4 · `302` §6.8's
     /// shape): a clean policy answer does not rescue an answer that failed its own post-fixpoint
     /// check. Both halves have to be held at once for the pin to mean anything, which is why the

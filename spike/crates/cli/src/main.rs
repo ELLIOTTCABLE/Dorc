@@ -1970,11 +1970,15 @@ fn run(
         ),
         snapshot.book_file(),
     );
+    // The ORIGIN round decided which sites ship a verdict body and the probe is never rebuilt, so
+    // this is frozen alongside the rest of the settlement's inputs rather than re-derived per round.
+    let verdict_lane_sites: BTreeSet<_> = verdict_lane.keys().copied().collect();
     let plan_inputs = dorc_plan::SettleInputs {
         src: &book_src,
         ast: &parsed.value,
         cfg: &cfg.value,
         vouches: &vouches,
+        verdict_lane: &verdict_lane_sites,
         connected: &connected,
         policy,
         regions: &regions,
@@ -2000,13 +2004,12 @@ fn run(
         &mut trip,
     );
     debug_assert!(
-        !settled.capped,
+        settled.quiescence.is_quiescent(),
         "the settlement hit its site-count cap — no-execution stopped being monotone"
     );
     let round = settled.round;
     let classes = round.classes;
     let kills = round.kills;
-    let invalidators = round.invalidators;
     let why_diags = round.why_diags;
     let classify_narrative = round.classify_narrative;
     let round_diags = round.diags;
@@ -2098,17 +2101,8 @@ fn run(
     record_new_arm(
         &mut spine,
         &probe,
-        &classes,
-        &cfg.value,
-        &invalidators,
         trip,
         load_decisions,
-        &verdict_lane,
-        &plan
-            .steps()
-            .iter()
-            .map(|step| (step.ast, step.leaf))
-            .collect::<Vec<_>>(),
         admitted_records.is_some(),
         world_account,
     );
@@ -2823,29 +2817,16 @@ fn mint_load_decisions(
 /// recording them means deciding what a round may leave behind, which is its own question), and
 /// `SpineOutcome` (the exit-code seat runs past every projection and holds no Spine there; found by
 /// the `30Nd` meaning-audit, where `30F` §4.5 had disclosed only the first three).
-#[expect(
-    clippy::too_many_arguments,
-    reason = "one recording pass over independent analysis products; a params struct would be this signature re-spelled"
-)]
 fn record_new_arm(
     spine: &mut dorc_plan::Spine,
     probe: &dorc_plan::ProbePlan,
-    classes: &[(
-        dorc_analysis::cfg::CfgNodeId,
-        dorc_analysis::effect::SkipClass,
-    )],
-    cfg: &dorc_analysis::cfg::Cfg,
-    invalidators: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
     trip: dorc_analysis::certify::CertifierTrip,
     load_decisions: Vec<dorc_core::spine::SpineLoadDecision>,
-    verdict_lane: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::Measurement>,
-    spine_leaves: &[(dorc_core::AstId, dorc_core::LeafId)],
     admitted: bool,
     world_account: dorc_core::influence::InfluenceAccount,
 ) {
     use dorc_core::spine::{
-        AdmissionOutcome, ShipLane, SpineAdmission, SpineProbeShip, SpineSiteClassification,
-        SpineSolveCertification,
+        AdmissionOutcome, ShipLane, SpineAdmission, SpineProbeShip, SpineSolveCertification,
     };
 
     spine.set_admission(SpineAdmission::minted(
@@ -2893,63 +2874,6 @@ fn record_new_arm(
             None,
             world_account,
         ));
-    }
-    // A classification is CFG-node-keyed while the decision plane is SITE-keyed, and the two spaces
-    // are unrelated integers — reading one as the other would key a record to somebody else's site,
-    // which is precisely what `inv-site-keyed-results` exists to forbid. The plan already carries the
-    // one true mapping (leaf ids are assigned by span in `build_plan_walled`), so the bridge is its
-    // `ast → leaf` back-map; a node with no leaf has no site to be keyed by and is skipped.
-    let leaf_of: BTreeMap<dorc_core::AstId, dorc_core::LeafId> =
-        spine_leaves.iter().copied().collect();
-    for (node, class) in classes {
-        let Some(leaf) = leaf_of.get(&cfg.node(*node).ast).copied() else {
-            continue;
-        };
-        spine.set_classification(SpineSiteClassification::minted(
-            dorc_core::SiteId::leaf(leaf),
-            class_label(class),
-            verdict_lane.contains_key(node),
-            // The REAL invalidator set (`classify-answers-with-its-invalidators`): `kills` alone
-            // read false for every ordinary establish and every opaque leaf.
-            invalidators.contains(node),
-            dorc_core::spine::OperandAccount::capped(class_cells(class)),
-            world_account,
-        ));
-    }
-}
-
-/// The `SkipClass` discriminant's greppable label — referent-agnostic, never branched on.
-const fn class_label(class: &dorc_analysis::effect::SkipClass) -> &'static str {
-    use dorc_analysis::effect::SkipClass;
-    match class {
-        SkipClass::MustRun => "MustRun",
-        SkipClass::EstablishProbeAmbient(_) => "EstablishProbeAmbient",
-        SkipClass::EstablishProbeWritten(_) => "EstablishProbeWritten",
-        SkipClass::QueryResolvable { .. } => "QueryResolvable",
-        SkipClass::EstablishMembers { .. } => "EstablishMembers",
-        SkipClass::InlineCall { .. } => "InlineCall",
-    }
-}
-
-/// Every cell one classification keys on, in member order (`aggregate-mints-carry-the-same-demand`).
-///
-/// RECURSIVE over aggregates, and that is the point: an `InlineCall`'s members are themselves
-/// classifications, so a member that resolves a QUERY cell keys the call exactly as an establish
-/// member does. The first cut of this matched only the two establish arms and dropped the rest —
-/// which made the account narrower than the decision it claims to describe, the same species of
-/// falsehood as the empty list it replaced (`30Mc` F3, completed).
-fn class_cells(class: &dorc_analysis::effect::SkipClass) -> Vec<dorc_core::FactKey> {
-    use dorc_analysis::effect::SkipClass;
-    match class {
-        SkipClass::MustRun => Vec::new(),
-        SkipClass::EstablishProbeAmbient(fact)
-        | SkipClass::EstablishProbeWritten(fact)
-        | SkipClass::QueryResolvable { fact, .. } => vec![*fact],
-        SkipClass::EstablishMembers { members, .. } => members.clone(),
-        SkipClass::InlineCall { sites } => sites
-            .iter()
-            .flat_map(|site| class_cells(&site.class))
-            .collect(),
     }
 }
 
@@ -4215,113 +4139,6 @@ mod fixpoint_freezes_the_environment_tests {
                  live"
             );
         }
-    }
-}
-
-#[cfg(test)]
-mod spine_record_tests {
-    use std::collections::{BTreeMap, BTreeSet};
-
-    use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
-    use dorc_analysis::effect::{InlineSite, SkipClass};
-    use dorc_core::{EntityRef, FactKey, KindId, LeafId, OpaqueToken, SelectorId};
-
-    fn cell(interner: &mut dorc_core::Interner, entity: &str) -> FactKey {
-        FactKey::cell(
-            KindId(interner.intern("package")),
-            EntityRef::Operand(OpaqueToken(interner.intern(entity))),
-            SelectorId(interner.intern("installed")),
-        )
-    }
-
-    /// `30Mc` F3, both flat falsehoods at once: `invalidator` is documented "gens into reach" and
-    /// was written from `kills` alone (false for every ordinary establish), and an `InlineCall`
-    /// mapped its ordered member account to an EMPTY cell list. Driven through `record_new_arm`
-    /// because the defect was the WIRING — which set the seat reads — and a pure per-record helper
-    /// would have been just as wrong while passing (`anti-masking-tests`).
-    #[test]
-    fn a_classification_record_states_what_its_fields_promise() {
-        let src = "apt-get install -y nginx\napt-get install -y curl\n";
-        let ast = dorc_syntax::parse(src).value;
-        let cfg = dorc_analysis::cfg::build(&ast).value;
-        let mut interner = dorc_core::Interner::default();
-        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
-        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-        let definitions = dorc_analysis::funcenv::DefinitionTable::default();
-        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
-
-        let commands: Vec<CfgNodeId> = cfg
-            .iter()
-            .filter(|(_, node)| node.kind == CfgNodeKind::Command)
-            .map(|(id, _)| id)
-            .collect();
-        let (standalone, aggregate) = (commands[0], commands[1]);
-        let (nginx, curl) = (cell(&mut interner, "nginx"), cell(&mut interner, "curl"));
-        let query = cell(&mut interner, "wombat");
-        let classes = vec![
-            (standalone, SkipClass::EstablishProbeAmbient(nginx)),
-            (
-                aggregate,
-                SkipClass::InlineCall {
-                    sites: vec![
-                        InlineSite {
-                            node: aggregate,
-                            member: None,
-                            class: SkipClass::EstablishProbeAmbient(curl),
-                        },
-                        // A QUERY member keys the call exactly as an establish member does; the
-                        // first repair matched only the establish arms and dropped this one.
-                        InlineSite {
-                            node: aggregate,
-                            member: None,
-                            class: SkipClass::QueryResolvable {
-                                fact: query,
-                                valid: true,
-                            },
-                        },
-                    ],
-                },
-            ),
-        ];
-        let spine_leaves: Vec<(dorc_core::AstId, LeafId)> = commands
-            .iter()
-            .enumerate()
-            .map(|(n, node)| (cfg.node(*node).ast, LeafId(u32::try_from(n).unwrap_or(0))))
-            .collect();
-
-        let mut spine = dorc_plan::Spine::new();
-        super::record_new_arm(
-            &mut spine,
-            &dorc_plan::ProbePlan::default(),
-            &classes,
-            &cfg,
-            // An establish gens into reach and is NOT a kill: the exact population the retired
-            // `kills`-only read reported as `false`.
-            &BTreeSet::from([standalone, aggregate]),
-            dorc_analysis::certify::CertifierTrip::default(),
-            super::mint_load_decisions(&cfg, &dorc_core::ContestedFamilies::default(), &env),
-            &BTreeMap::new(),
-            &spine_leaves,
-            true,
-            dorc_core::influence::InfluenceAccount::authored_before_contact(),
-        );
-
-        let recorded: Vec<(&str, bool, usize)> = spine
-            .classifications()
-            .map(|record| {
-                (
-                    record.class(),
-                    record.invalidator(),
-                    record.cells().shown().len(),
-                )
-            })
-            .collect();
-        assert_eq!(
-            recorded,
-            [("EstablishProbeAmbient", true, 1), ("InlineCall", true, 2)],
-            "both sites gen into reach, and the aggregate keys on EVERY member — establish and \
-             query alike, not on nothing and not on a filtered subset"
-        );
     }
 }
 
@@ -7833,6 +7650,7 @@ apt_get__is_converged() {
             ast: &parsed.value,
             cfg: &cfg,
             vouches: &vouches,
+            verdict_lane: &BTreeSet::new(),
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
             regions: &dorc_plan::region::RegionCensus::default(),
@@ -8006,6 +7824,7 @@ apt_get__is_converged() {
             ast: &parsed.value,
             cfg: &cfg,
             vouches: &vouches,
+            verdict_lane: &BTreeSet::new(),
             connected: &connected,
             policy: dorc_plan::WallPolicy::Honest,
             regions: &dorc_plan::region::RegionCensus::default(),
