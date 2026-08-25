@@ -1305,3 +1305,54 @@ mod deterministic_apply_route {
         );
     }
 }
+
+/// Asking for a stored durable belongs to the explain surface, and the binary is what enforces it.
+///
+/// Driven through the real binary on purpose. The rule is argv handling, and the parser seat is
+/// already pinned beside `reads_the_receipt` in `dorc_cli`'s own tests — but a guard proven at one
+/// seat, in one direction, is the shape this arc keeps finding after the fact. The e2e corpus
+/// cannot express this cell either: its replay blocks require rc 0 and discard stderr, and its
+/// lint lane fixes both the subcommand and the book, so a refusing invocation has nowhere to sit
+/// there. Hence natively, beside the routes it protects.
+///
+/// MEASURED, verifying this in its failing direction: with the refusal disabled `dorc plan --last
+/// book.sh` still exits non-zero, on `cli-file-not-found`. So the exit status alone proves
+/// NOTHING here — the slug assertion is the whole test, and simplifying it to a rc check would
+/// leave a guard that passes whatever the parser does.
+///
+/// The `why` leg is not decoration. Without it the case would pass just as happily if every
+/// invocation refused for every reason, which would prove the flag unusable rather than confined.
+#[test]
+fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary() {
+    const SLUG: &str = "cli-flag-requires-mode";
+
+    for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
+        let refused = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"))
+            .args([mode, "--last", "book.sh"])
+            .output()
+            .expect("the built binary runs");
+        assert!(
+            !refused.status.success(),
+            "`dorc {mode} --last` must not proceed: a stored record stream would stand where a \
+             live measurement belongs"
+        );
+        let stderr = String::from_utf8_lossy(&refused.stderr);
+        assert!(
+            stderr.contains(SLUG) && stderr.contains("--last"),
+            "`dorc {mode} --last` must refuse by naming the flag and the mode it belongs to, \
+             rather than by any other refusal that happens to fire first; got: {stderr}"
+        );
+    }
+
+    // The control: the same flag, on the surface that owns it, is not refused for this reason.
+    // Whatever else a durable-less run reports, it must not be this.
+    let explained = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"))
+        .args(["why", "--last", "--whylog-dir=no-such-directory"])
+        .output()
+        .expect("the built binary runs");
+    let stderr = String::from_utf8_lossy(&explained.stderr);
+    assert!(
+        !stderr.contains(SLUG),
+        "`dorc why --last` is the one invocation the flag is for; got: {stderr}"
+    );
+}
