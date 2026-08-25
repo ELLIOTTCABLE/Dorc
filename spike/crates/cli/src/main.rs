@@ -5303,6 +5303,9 @@ fn ship_consented_apply(args: &Args, host: &str, clock: &mut RunClock) -> Result
         timeout: args.apply_timeout.map(std::time::Duration::from_secs),
         invocation: &invocation,
         limits: &dorc_receipt::limits::ReceiptLimits::V1,
+        // A thin session established nothing on the far side: the destination is argv and every
+        // context axis is unentered, so what it produced is controller-authored.
+        standup_account: dorc_core::influence::InfluenceAccount::authored_before_contact(),
     };
     let mut ids =
         dorc_cli::receipt_edge::OsReceiptIdSource::over(dorc_cli::receipt_edge::OsEntropy);

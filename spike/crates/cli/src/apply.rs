@@ -239,19 +239,42 @@ pub struct ConsentedApplyRequest<'a> {
     pub invocation: &'a ApplyInvocation,
     /// What a document may carry.
     pub limits: &'a ReceiptLimits,
+    /// The account for everything the STANDUP produced.
+    ///
+    /// Beside the invocation rather than beside the capabilities, because it is true of the run
+    /// whether or not anything is published, and because the caller decides it: only the caller
+    /// knows how much its own session established. The invocation carries its own account, so
+    /// this seat is where the two sit side by side and neither is derived from the other.
+    pub standup_account: dorc_core::influence::InfluenceAccount,
 }
 
-/// What a route needs to turn its own decisions into published documents.
-pub struct ApplyPublication<'a> {
-    /// Produces the signature over exact bytes.
-    pub signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
-    /// Where a published document goes.
-    pub sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
-    /// Seals the one region a rich document carries.
-    pub sealer: &'a dyn OverlaySealer,
-    /// The account for everything the STANDUP produced, which the caller decides because only
-    /// the caller knows how much its session established.
-    pub resolved: dorc_core::influence::InfluenceAccount,
+/// The three injected capabilities a route needs in order to publish anything.
+///
+/// A BUNDLE, and named as one: it says what a route CAN do, never that a publication happened.
+/// Nothing about a published document is readable from it, and its fields are private so a
+/// later reader cannot come to believe otherwise by taking one
+/// (`30Rb:critical-type-effect-map`'s negative rules bind the publication RESULT types, and this
+/// is deliberately not one of them). The result is `PublishedApplyIntent`, which is minted at
+/// the publication seat and consumed by the gate.
+pub struct ApplyPublishingCapabilities<'a> {
+    signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
+    sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
+    sealer: &'a dyn OverlaySealer,
+}
+
+impl<'a> ApplyPublishingCapabilities<'a> {
+    /// Bind one run's publishing capabilities.
+    pub fn of(
+        signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
+        sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
+        sealer: &'a dyn OverlaySealer,
+    ) -> Self {
+        Self {
+            signer,
+            sink,
+            sealer,
+        }
+    }
 }
 
 /// How one apply invocation was authorized to spend mutation authority.
@@ -261,7 +284,7 @@ pub struct ApplyPublication<'a> {
 /// publication is not a bypass.
 pub enum ApplyAuthorization<'a> {
     /// The default posture: publish a rich intent binding the exact bytes, or dispatch nothing.
-    RequiredPublication(ApplyPublication<'a>),
+    RequiredPublication(ApplyPublishingCapabilities<'a>),
     /// The invocation explicitly configured dispatch with no durable intent behind it.
     ConfiguredBypass(ConfiguredReceiptBypass),
 }
@@ -273,10 +296,10 @@ impl core::fmt::Debug for ConsentedApplyRequest<'_> {
     }
 }
 
-impl core::fmt::Debug for ApplyPublication<'_> {
+impl core::fmt::Debug for ApplyPublishingCapabilities<'_> {
     /// Names the type and no material.
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("ApplyPublication")
+        f.write_str("ApplyPublishingCapabilities")
     }
 }
 
@@ -425,20 +448,19 @@ fn bypass_route(
 fn published_route(
     request: &ConsentedApplyRequest<'_>,
     ids: &mut dyn ReceiptIdSource,
-    publication: ApplyPublication<'_>,
+    publication: ApplyPublishingCapabilities<'_>,
     driver: &mut dyn SessionDriver,
 ) -> Result<ConsentedApply, ConsentedApplyRefusal> {
-    let ApplyPublication {
+    let ApplyPublishingCapabilities {
         signer,
         sink,
         sealer,
-        resolved,
     } = publication;
     let intent = prepare_intent_for(request, ids, ReceiptPolicyWitness::required_rich())?;
     let published = publish_apply_intent(
         &intent,
         request.invocation,
-        resolved,
+        request.standup_account,
         request.limits,
         ReceiptCapabilities::of(&mut *ids, signer, &mut *sink),
         sealer,

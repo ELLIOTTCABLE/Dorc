@@ -892,8 +892,8 @@ mod deterministic_apply_route {
         CountingIds, FIXTURE_SECRET, MemorySink, RefusingSink, age_pair, authored, policy_for,
     };
     use dorc_cli::apply::{
-        ApplyAuthorization, ApplyPublication, ConsentedApplyRefusal, ConsentedApplyRequest,
-        apply_invocation, consented_apply,
+        ApplyAuthorization, ApplyPublishingCapabilities, ConsentedApplyRefusal,
+        ConsentedApplyRequest, apply_invocation, consented_apply,
     };
     use dorc_receipt::capability::PublicationGrade;
     use dorc_receipt::dispatch::{
@@ -946,14 +946,12 @@ mod deterministic_apply_route {
                 timeout: None,
                 invocation: &invocation,
                 limits: &ReceiptLimits::V1,
+                standup_account: authored(),
             },
             &mut ids,
-            ApplyAuthorization::RequiredPublication(ApplyPublication {
-                signer: &signer,
-                sink: &mut sink,
-                sealer: &sealer,
-                resolved: authored(),
-            }),
+            ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
+                &signer, &mut sink, &sealer,
+            )),
             &mut driver,
         )
         .expect("a placed intent authorizes one dispatch");
@@ -1055,14 +1053,12 @@ mod deterministic_apply_route {
                 timeout: None,
                 invocation: &invocation,
                 limits: &ReceiptLimits::V1,
+                standup_account: authored(),
             },
             &mut ids,
-            ApplyAuthorization::RequiredPublication(ApplyPublication {
-                signer: &signer,
-                sink: &mut sink,
-                sealer: &sealer,
-                resolved: authored(),
-            }),
+            ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
+                &signer, &mut sink, &sealer,
+            )),
             &mut driver,
         )
         .expect_err("an intent nothing placed authorizes nothing");
@@ -1117,14 +1113,12 @@ mod deterministic_apply_route {
                 timeout: None,
                 invocation: &invocation,
                 limits: &ReceiptLimits::V1,
+                standup_account: authored(),
             },
             &mut ids,
-            ApplyAuthorization::RequiredPublication(ApplyPublication {
-                signer: &signer,
-                sink: &mut sink,
-                sealer: &sealer,
-                resolved: authored(),
-            }),
+            ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
+                &signer, &mut sink, &sealer,
+            )),
             &mut driver,
         )
         .expect("a placed intent authorizes the dispatch whatever the outcome document does");
@@ -1162,6 +1156,7 @@ mod deterministic_apply_route {
                 timeout: None,
                 invocation: &invocation,
                 limits: &ReceiptLimits::V1,
+                standup_account: authored(),
             },
             &mut ids,
             ApplyAuthorization::ConfiguredBypass(ConfiguredReceiptBypass::configured()),
@@ -1206,6 +1201,7 @@ mod deterministic_apply_route {
                 timeout: None,
                 invocation: &invocation,
                 limits: &narrow,
+                standup_account: authored(),
             },
             &mut ids,
             ApplyAuthorization::ConfiguredBypass(ConfiguredReceiptBypass::configured()),
@@ -1245,14 +1241,12 @@ mod deterministic_apply_route {
                 timeout: None,
                 invocation: &invocation,
                 limits: &ReceiptLimits::V1,
+                standup_account: authored(),
             },
             &mut ids,
-            ApplyAuthorization::RequiredPublication(ApplyPublication {
-                signer: &signer,
-                sink: &mut sink,
-                sealer: &sealer,
-                resolved: authored(),
-            }),
+            ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
+                &signer, &mut sink, &sealer,
+            )),
             &mut driver,
         )
         .expect("a lost session is an outcome, not a refusal");
