@@ -293,9 +293,10 @@ impl PlanningInputId {
     ///
     /// Named for what it CONSUMES, and lexically fenced over its callers (`crate_boundary.rs`):
     /// nothing in the type stops a caller hashing bytes that are not a complete canonical
-    /// encoding, so the gate over its callers cannot be a type. The fence is DECLARATION-ONLY
-    /// today — this file, and no caller — and widens in the same commit as its reviewed sole
-    /// production caller.
+    /// encoding, so the gate over its callers cannot be a type. The fence names this file, which
+    /// DECLARES it, and `plan/src/planning_input.rs`, the one production file that CALLS it —
+    /// the module owning the typed inputs value and its encoding. A third entry means a second
+    /// seat is deciding what the planner's inputs were.
     #[must_use]
     pub fn of_canonical_inputs(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(PLANNING_INPUT_DOMAIN, canonical))

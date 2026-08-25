@@ -27,13 +27,14 @@
 //! is the "fails on any unassigned field" gate. Prefer *canonicalize-don't-exempt* (clamp a
 //! legitimately-varying field to a deterministic form) over exempting it.
 //!
-//! # The digest (concl-3, `mechanism-decision-digest`)
+//! # The identity (concl-3, `mechanism-decision-digest`)
 //!
-//! [`decision_digest`] is a one-line hash of the canonical identity plane, emitted on every
-//! analyzer run (cheap always-on drift signal — Zephyr's per-build checksum). It hashes ONLY
-//! the identity plane (via the same canon path the gate uses), so a receipt change never moves
-//! it. The hash is a hand-rolled FNV-1a (`core` is dependency-free and `DefaultHasher` is not
-//! a stable cross-version function); its job is drift-detection, not cryptographic strength.
+//! [`presented_plan_id`] hashes the canonical identity plane into the approval surface's content
+//! identity, emitted on every analyzer run (cheap always-on drift signal — Zephyr's per-build
+//! checksum). It hashes ONLY the identity plane (via the same canon path the gate uses), so a
+//! receipt change never moves it. It is SHA-256, domain-separated, through the receipt crate's
+//! one implementation — the same value a receipt records, so a printed identity and a recorded
+//! one can never disagree about which surface they name.
 
 use dorc_aid::Diag;
 
