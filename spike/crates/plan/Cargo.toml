@@ -64,5 +64,9 @@ path = "tests/sparing_differential.rs"
 name = "region"
 path = "tests/region.rs"
 
+[[test]]
+name = "env_identity_pins"
+path = "tests/env_identity_pins.rs"
+
 [lints]
 workspace = true

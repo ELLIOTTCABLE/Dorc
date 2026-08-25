@@ -371,6 +371,60 @@ pub const PINS: &[Pin] = &[
         horizon: Horizon::Scheduled("r31:kernel-punt-glance"),
         state: PinState::Live,
     },
+    Pin {
+        name: "p-x-prefix-assignment-splits-fact-identity",
+        trigger: "`30S:rul-prefix-joins-site-identity` — a leading assignment-prefix's VALUE \
+                  joins the site's fact identity (finishing `24S`'s ρ-fold intent), so two \
+                  sites differing only by prefix value mint distinct FactKeys and stop sharing \
+                  probe state",
+        horizon: Horizon::Unscheduled {
+            marker: "r31",
+            why: "`plans/30S` §5 names this an attention-call pin, not a scheduled build stage: \
+                  the model is ruled but the ρ-fold value-carriage work is unscheduled; this \
+                  boundary is where the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-env-wrapper-context-carries-values",
+        trigger: "`30S:finding-rho-fold-value-blind` (`27K` §8's disclosed debt) — \
+                  `RhoAccum::fold`/`RhoClaim` carry the claimed variable's VALUE, not merely \
+                  its name, into the composed `Context::Wrapped` key",
+        horizon: Horizon::Unscheduled {
+            marker: "r31",
+            why: "`plans/30S` §5 names this an attention-call pin, not a scheduled build stage: \
+                  the model is ruled but the ρ-fold value-carriage work is unscheduled; this \
+                  boundary is where the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-ambient-export-fences-fact-transport",
+        trigger: "`30S:rul-export-is-an-index-fence` — an ambient `export` mutation between two \
+                  sites walls Must-transport of facts established above it, its dual one plane \
+                  over the poison wall",
+        horizon: Horizon::Unscheduled {
+            marker: "r31",
+            why: "`plans/30S` §5 names this an attention-call pin, not a scheduled build stage: \
+                  the fence model is ruled but unscheduled; this boundary is where the census \
+                  should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-unwitnessed-env-delta-withholds-probe",
+        trigger: "`30S:model-pin-or-sever-composition` — a verdict body that neither pins \
+                  (consumes faithfully) nor severs (`env -i`-class hygiene) a book env-delta \
+                  variable withholds the probe/license below that delta rather than measuring \
+                  under an unwitnessed environment",
+        horizon: Horizon::Unscheduled {
+            marker: "r31",
+            why: "`plans/30S` §5 names this an attention-call pin, not a scheduled build stage: \
+                  the pin-or-sever envelope is ruled but unscheduled; this boundary is where \
+                  the census should force the question",
+        },
+        state: PinState::Live,
+    },
 ];
 
 /// The pin registered under `name`.
