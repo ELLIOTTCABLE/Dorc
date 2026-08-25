@@ -65,6 +65,15 @@ invocation's-own plus standup-resolved, caller decides both.
 The live→recorded projection sits in the receipt crate over plain value carriers; the
 live→carrier half is still owed at the CLI seat and belongs to the route lane.
 
+One residual for whoever unblocks item 4: an invocation's spelled target is now a distinct
+no-conversion type from a resolved destination, but the laundering path that still compiles
+is `Spelled(context.destination().as_bytes().to_vec())`. Closing it means
+`ResolvedApplyContext` no longer handing out a bare `&str` — that type's own lane. What the
+split buys meanwhile is that the mistake requires writing `Spelled` over a resolved answer at
+a named constructor: a false claim rather than an argument-position slip. A two-way lexical
+census over that constructor is the tree's established alternative; minting one was
+deliberately not done at a builder seat.
+
 Three residues from the carriage lane: a diagnostic for a refused planned image (absence is
 truthful but silent; the code is mintable, the defining case reads as diagnostics territory);
 the binary's own `planned_image` wiring is unobservable from any test target, so the
