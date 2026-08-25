@@ -25,6 +25,10 @@ complete; Stage 4 is partial; Stages 5–6 are unstarted.
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
 | Base | `ai/main` @ `388e0249` — rebased onto it 2026-08-25, conflict-free. Re-check before folding; the sibling is still moving. |
 
+**This file's single home is `ai/r30-conduct`.** The copy in the build worktree is a dead
+stub from the arc's first commit. Brief every builder to read it as
+`git show ai/r30-conduct:Research/quarantine-DO-NOT-READ/30Rc-receipt-build-conduct.md`.
+
 **A sibling conductor is actively working on `ai/main`** (env-identity, plan-diff,
 bootstrap-graph). Rebase the build branch before folding, and re-read `LIVING_STATUS` before
 editing it — it was rewritten by that sibling during this arc.
@@ -127,6 +131,14 @@ read `uncollected`. Both are explained under *rulings*; neither is an oversight.
   sign rather than conditionally declining. It flips the day a key provider lands.
   Consequence: there is no second active writer, so the old whylog writer stays — Stage 3's
   literal exit clause is unmet by design, not by neglect.
+- **`roots` = `plan.sh` at 0, bundle roots appended.** The alternative makes a `root` line
+  assert one thing in the one-file case and another once a dependency appears; a durable
+  field whose meaning changes shape under a non-trivial population is the drift the
+  ordinals carry-in describes. Pinned by a test that the two cases agree on root 0.
+- **The final-presentation witness mints AFTER the artifact bytes**, retiring the interim
+  `planned_image: None`. Not a new position — it is the already-ruled one, which the
+  plan-time absence of an image had deferred. The fence at that seat moves with it and is
+  verified in its failing direction.
 - `age` 0.12.x with `armor` explicit (not a default feature). `core::spine::InvocationMode`
   untouched. `survival.outcome` and `site-classification.class` split to eight tokens each
   rather than merging variants with differing repair meaning. `SessionOutcome::LostAfterSend`
@@ -319,6 +331,21 @@ discriminator exists — point the target dir outside the synced tree for one ru
 been run.
 
 ## open with the human
+
+**`open-permit-needs-a-standup-the-route-lacks` — BLOCKING Stage 4 item 4.** Both arms of
+`IntentPublicationGate::permit` consume a `PreparedApplyIntent`, so even the configured
+bypass needs an `ApplySessionReady` and therefore a `ResolvedApplyContext` with six
+defaultless fields. `ship_consented_apply` can honestly answer one, and even that is the
+invocation's spelling rather than a resolution. Both of `30Rb`'s sanctioned outcomes are
+closed: supplying the rest is the named "fake target/session identity" stop condition, and
+a genuine standup was ruled out above. Three candidates, none conductor-rulable:
+`option-refuse-remote-apply-entirely` (honest, loud; breaks `spike/e2e/livetest.sh:253`,
+which is never a gate — so silent to CI, loud to the human);
+`option-sessionless-bypass-mint` (a governed change to a reviewed type, and it inverts
+`sinv-controller-attribution`'s absence-means-no-authority); `option-bind-bytes-without-permit`
+(image built and validated pre-dispatch, no affine boundary — less than
+`30Rb:apply-dispatch-sequence` asks, and it leaves a mutative path beside an unused permit
+chain, which is the shape that rots).
 
 The four departures an outside-lineage spec-compliance pass graded as needing a human ruling
 have all been RULED and BUILT — see *rulings that bind* above. Nothing from that pass is
