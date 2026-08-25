@@ -1,0 +1,13 @@
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+case "$1" in
+   status)
+      shift
+      [ "$1" = "--" ] && shift
+      case "$1" in
+         gamma) exit 0 ;;
+         *) exit 1 ;;
+      esac
+      ;;
+   *) exit 0 ;;
+esac

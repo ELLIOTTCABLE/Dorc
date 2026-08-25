@@ -1,0 +1,46 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=TARGET sites=3 @@dorc@@\n'
+# TARGET (`plans/30S`): only the three witnessed sites ship a check. `snipe/gamma` (site 2) and
+# `wombat/beta` (site 6) withhold -- gamma because its scrappy verdict body neither pins nor
+# severs the `VERBOSE` export above it (`30S:model-pin-or-sever-composition`); beta because the
+# `PATH` export invalidates the site's own dispatch (`30S:rul-resolution-delta-invalidates-dispatch`)
+# -- both fall back to `site:N unresolvable-no-probe`, same as the two `export` lines themselves.
+# site 1: test.dorc.Widget:alpha@converged
+wombat__is_converged() {
+   [ "$1" = ensure ] || return 2
+   env -i PATH=/usr/bin:/bin wombat status -- "$2"
+}
+wombat__is_converged 'ensure' 'alpha'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 3: test.dorc.Widget:web1@converged (measured under {AWS_PROFILE=staging})
+grebe__is_converged() {
+   [ "$1" = ensure ] || return 2
+   grebe status -- "$2"
+}
+grebe__is_converged 'ensure' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 4: test.dorc.Widget:web1@converged (measured under {AWS_PROFILE=prod} -- a DISTINCT cell
+# from site 3 now that the prefix VALUE joins fact identity, `30S:rul-prefix-joins-site-identity`)
+grebe__is_converged 'ensure' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 4 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+# site:6 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+export VERBOSE=true
+# wombat ensure alpha   # dorc: elided (already converged / dead branch)
+snipe ensure gamma
+# AWS_PROFILE=staging grebe ensure web1   # dorc: elided (already converged / dead branch)
+AWS_PROFILE=prod grebe ensure web1
+export PATH="/opt/fake:$PATH"
+wombat ensure beta

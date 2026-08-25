@@ -1,0 +1,7 @@
+# Five oracled sites in book order: wombat/alpha (1), snipe/gamma (2), grebe/web1-staging (3),
+# grebe/web1-prod (4), wombat/beta (6). The two `export` lines (0, 5) mint no site of their own.
+site 1 effect=holds rc=0
+site 2 effect=holds rc=0
+site 3 effect=holds rc=0
+site 4 effect=absent rc=1
+site 6 effect=holds rc=0

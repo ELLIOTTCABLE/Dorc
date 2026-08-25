@@ -1,0 +1,10 @@
+XFAIL (`plans/30S` #5): env identity is unbuilt -- the bare-prefix retarget on `grebe`, the
+value-blind rho-fold, the `export` index-fence, and the pin-or-sever probing envelope are all
+ruled but not implemented. TODAY every site here is unmodeled-by-env-delta and treated exactly
+as if no export or prefix ever ran; TARGET (`30S:model-pin-or-sever-composition` +
+`30S:rul-export-is-an-index-fence` + `30S:rul-prefix-joins-site-identity`) is: `wombat/alpha`
+elides (its `env -i`-severed verdict body is provably unreachable from the unrelated
+`VERBOSE` export); `snipe/gamma` withholds (its scrappy verdict body neither pins nor severs
+`VERBOSE`); the `grebe/web1` pair splits by prefix VALUE (staging may elide, prod must run);
+`wombat/beta` withholds (the `PATH` export is a resolution-class delta that walls dispatch
+itself). Greens once `plans/30S` section 2's model lands and this case is promoted.
