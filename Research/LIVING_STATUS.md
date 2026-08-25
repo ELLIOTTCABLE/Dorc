@@ -135,8 +135,9 @@ the conductor-closed residue rows live in `TODO-ADDTL` (`r30-close-out-residue`)
   close. The 2026-08-24/25 sittings (`notes/26L`+`26Lb`, exploration/brainstorm-tier — cite
   no commitments) bear on its shape: conductor-book topology, punt-now-not-forever on
   cross-host influence, and capture soft-gated on `30D` stdout claims (unclaimed stdout
-  correctly starves the capture lane). **`26K:fruit-arc (née §0a)`** is the one
-  parallel-anytime slice and is scheduled.
+  correctly starves the capture lane). **`26K:fruit-arc (née §0a)`** LANDED as r30's
+  fruit lane (verified in-tree 2026-08-25; residue: the no-secrets authoring-doc
+  paragraph, human-adjacent).
 - **The forfeited inclusion tiers** — `FORFEITS:forfeit-plain-sh-inclusion-analysis`; the
   next language-surface round's entry point.
 

@@ -12,7 +12,14 @@ by existing analysis are fine -- zero new machinery, no new or changed
 analysis/walking, "the moral equivalent of adding a printf", pure aid/render
 planes only. Anything more belongs to the kernel-builder.
 
-### §0a -- The fruit arc (one conductor-arc, unstaged; correctness-only)
+### §0a -- The fruit arc (LANDED as r30's fruit lane; one residue)
+
+> STATUS (verified in-tree 2026-08-25): the paste-hygiene rules
+> (`plan/src/render.rs` `CANONICAL_TTY_LINE_CAP_BYTES` + the leading-`~` check),
+> the matched-zero-sites warning (`aid`/`cli` loom cases), and the brace-range
+> lint (`lint/src/source_portability.rs` + its loom case) all landed via r30's
+> fruit lane. Residue: only fruit-doc-no-secrets-payload (the authoring-doc
+> paragraph) remains unwritten — human-adjacent prose.
 
 - fruit-emit-hygiene-paste-rules -- renderer law on durable/paste-facing
   emissions: no physical line approaching the 4095-byte canonical-tty cap; no
