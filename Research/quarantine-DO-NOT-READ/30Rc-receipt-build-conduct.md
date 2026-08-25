@@ -14,16 +14,18 @@ Replace the single mutable whylog with three immutable receipt species — a pla
 apply intent written before the first mutating dispatch, and an apply outcome — correlated by
 typed identities into a report-only graph. Everything read back is inert by type. Two new
 crates: a pure `dorc-receipt` and a `dorc-receipt-crypto` holding only the Age/Ed25519
-implementations of its capability traits. Stages 0–2 are complete; Stage 3 is substantively
-complete; Stage 4 is partial; Stages 5–6 are unstarted.
+implementations of its capability traits. Stages 0–4 are complete and Stage 5 is complete
+except its severance; Stage 6 is unstarted. Both remainders are one blocker — the binary can
+neither sign nor verify, so it writes and reads no receipts — and that blocker is the human's.
 
 ## where the work is
 
 | | |
 |---|---|
-| Build branch | `ai/r30-receipt` @ `5b73d56b`, worktree `.claude/worktrees/r30-receipt` |
+| Build branch | `ai/r30-receipt` @ `aa2eeb89`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
-| Base | `ai/main` @ `388e0249` — rebased onto it 2026-08-25, conflict-free. Re-check before folding; the sibling is still moving. |
+| Base | `ai/main` @ `dcf426ad` — rebased onto it three times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
+| Also standing | `ai/r30-hk-stash` @ `234d0da6`, worktree `.claude/worktrees/r30-hkstash` — a measurement lane's evidence; the human said drop it with the rest at cleanup. |
 
 **This file's single home is `ai/r30-conduct`.** The copy in the build worktree is a dead
 stub from the arc's first commit. Brief every builder to read it as
