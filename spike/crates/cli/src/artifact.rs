@@ -1308,12 +1308,48 @@ pub fn select(
 #[cfg(test)]
 mod tests {
     use super::{
-        ArtifactForm, ArtifactSet, FormFallback, FormRefusal, FormRequest, ImportEdit, Placement,
-        PlacementReason, StdoutPosture, StreamPosture, artifact_stream, mirrored, placeable,
-        select,
+        ArtifactForm, ArtifactSet, ArtifactTopology, FormFallback, FormRefusal, FormRequest,
+        ImportEdit, Placement, PlacementReason, Selection, StdoutPosture, StreamPosture,
+        artifact_stream, mirrored, placeable, select,
     };
     use crate::bundle::BundleProjection;
     use dorc_core::loadpath::Cwd;
+
+    /// A topology naming a file the set does not publish refuses AS ITSELF, rather than as one of
+    /// the image model's structural refusals.
+    ///
+    /// Unreachable from [`select`], which builds both halves in one act — so this pins the
+    /// defensive arm, and pins that it stays distinguishable. The two halves failing closed in
+    /// ways that look alike is what would make "it was rejected" satisfied by several different
+    /// bugs.
+    #[test]
+    fn a_topology_naming_an_unpublished_path_refuses_as_itself() {
+        let set = Selection {
+            form: ArtifactForm::Multipart,
+            fallback: None,
+            dependencies: Vec::new(),
+            imports: Vec::new(),
+            placements: dorc_plan::PlacedSources::all_ambient(),
+            topology: ArtifactTopology {
+                roots: vec!["never-published.sh".to_owned()],
+                edges: Vec::new(),
+            },
+        }
+        .with_plan(
+            "#!/bin/sh\n:\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
+
+        assert_eq!(
+            crate::apply::image_of_artifact_set(&set, &dorc_receipt::limits::ReceiptLimits::V1),
+            Err(
+                crate::apply::ImageCarriageRefusal::TopologyNamesUnpublishedPath {
+                    path: "never-published.sh".to_owned(),
+                }
+            ),
+            "the refusal names the path, so a reader is not sent looking for a malformed entry"
+        );
+    }
 
     fn empty() -> BundleProjection {
         BundleProjection::default()
@@ -1713,7 +1749,7 @@ mod tests {
     }
 
     /// Every placement decision this selection took over a book-reached source, in source order.
-    fn carried(selection: &super::Selection) -> Vec<dorc_plan::PlacementDecision> {
+    fn carried(selection: &Selection) -> Vec<dorc_plan::PlacementDecision> {
         (0..8_u32)
             .filter_map(|index| {
                 match selection
@@ -1809,7 +1845,7 @@ mod tests {
         srcs: Vec<String>,
         request: FormRequest,
         posture: StreamPosture,
-    ) -> Result<super::Selection, FormRefusal> {
+    ) -> Result<Selection, FormRefusal> {
         book_sourced_at(&Cwd::default(), book, paths, srcs, request, posture)
     }
 
@@ -1822,7 +1858,7 @@ mod tests {
         srcs: Vec<String>,
         request: FormRequest,
         posture: StreamPosture,
-    ) -> Result<super::Selection, FormRefusal> {
+    ) -> Result<Selection, FormRefusal> {
         let (snapshot, projection, loads) = world_at(cwd, book, paths, srcs);
         select(&snapshot, &projection, &loads, request, posture)
     }
@@ -2351,7 +2387,7 @@ mod tests {
         blind: &str,
         request: FormRequest,
         posture: StreamPosture,
-    ) -> Result<super::Selection, FormRefusal> {
+    ) -> Result<Selection, FormRefusal> {
         book_sourced(
             &format!("{blind}\n. ./wombat.dorc.sh\nwombat sync a.conf\n"),
             vec!["wombat.dorc.sh".to_owned()],
