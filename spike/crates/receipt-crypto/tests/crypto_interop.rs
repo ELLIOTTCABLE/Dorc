@@ -633,10 +633,16 @@ fn rich_narrows_to_plain_by_reminting_and_never_by_stripping_text() {
         .bytes()
         .to_vec();
 
-    let plain = dorc_receipt::projection::narrow_to_plain(&rich).expect("the narrowing holds");
+    let mut remint_ids = CountingIds(180);
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids)
+        .expect("the narrowing holds");
     assert_eq!(
         plain.encryption_key_id, None,
         "plain names no encryption provider"
+    );
+    assert_ne!(
+        plain.receipt_id, rich.receipt_id,
+        "the narrowed document is its own document and mints its own identity"
     );
     let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
         .serialize()
@@ -750,11 +756,10 @@ fn every_committed_rich_vector_reads_back_whole_under_the_fixture_material() {
 }
 
 #[test]
-fn a_plain_remint_shares_its_identity_with_the_rich_document_and_is_not_a_finding() {
-    // The shape that separates the rule from the bug. A rich document and the plain remint of
-    // it carry one receipt identity and different bytes, which is exactly the pattern a
-    // divergence check is built to catch — and here it is correct and expected. The
-    // discriminator is the projection: differing bytes are a finding only within one.
+fn a_plain_remint_is_a_second_document_with_its_own_identity() {
+    // The case that would catch a regression to treating a remint as the same document. A
+    // narrowed document is minted, not relabelled: it gets its own identity from the injected
+    // source, so nothing downstream has to reason about one identity spanning two byte-images.
     let identity = age::x25519::Identity::generate();
     let sealer = AgeSealer::of(identity.to_public());
     let signer = signing_key();
@@ -780,10 +785,12 @@ fn a_plain_remint_shares_its_identity_with_the_rich_document_and_is_not_a_findin
         .bytes()
         .to_vec();
 
-    let plain = dorc_receipt::projection::narrow_to_plain(&rich).expect("the narrowing holds");
-    assert_eq!(
+    let mut remint_ids = CountingIds(200);
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids)
+        .expect("the narrowing holds");
+    assert_ne!(
         plain.receipt_id, rich.receipt_id,
-        "the remint keeps the identity of the event it describes"
+        "a remint mints its own identity like any other document"
     );
     let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
         .serialize()
@@ -791,43 +798,32 @@ fn a_plain_remint_shares_its_identity_with_the_rich_document_and_is_not_a_findin
         .sign(&signer)
         .bytes()
         .to_vec();
-    assert_ne!(
-        rich_bytes, plain_bytes,
-        "and differs from it in every byte that matters"
-    );
+    assert_ne!(rich_bytes, plain_bytes);
 
-    assert_eq!(
-        dorc_receipt::projection::same_identity_pair("rich", &rich_bytes, "plain", &plain_bytes),
-        dorc_receipt::projection::SameIdentityPair::DistinctProjections,
-        "one event, two projections: one node, no finding"
-    );
-
-    // Same projection, differing bytes, is the case the finding exists for and must stay one.
+    // One identity, differing bytes, stays a finding with no carve-out to escape through.
     let mut forged = rich_bytes.clone();
     let last = forged.len().saturating_sub(2);
     forged[last] = if forged[last] == b'a' { b'b' } else { b'a' };
     assert_eq!(
-        dorc_receipt::projection::same_identity_pair("rich", &rich_bytes, "rich", &forged),
+        dorc_receipt::projection::same_identity_pair(&rich_bytes, &forged),
         dorc_receipt::projection::SameIdentityPair::Divergent
     );
     assert_eq!(
-        dorc_receipt::projection::same_identity_pair("rich", &rich_bytes, "rich", &rich_bytes),
+        dorc_receipt::projection::same_identity_pair(&rich_bytes, &rich_bytes),
         dorc_receipt::projection::SameIdentityPair::Identical
     );
 }
 
 #[test]
-fn a_rich_document_and_its_plain_remint_correlate_to_one_node() {
-    // The pair that separates the rule from the bug. A receipt identity names the
-    // receipt-event, not the byte-document, so a rich document and the plain remint of it
-    // legitimately share an identity and legitimately differ in bytes. Correlation must
-    // therefore consult `same_identity_pair` — which knows the projections differ — rather
-    // than comparing content and calling the difference a collision.
+fn a_rich_document_and_its_plain_remint_are_two_nodes_and_no_finding() {
+    // A remint is a new document with its own identity, so the graph holds two nodes and owes
+    // a reader nothing: no collision, because nothing collided, and no correlation, because
+    // the two carry no recorded link to each other.
     //
-    // Its sibling lives in the pure crate's graph corpus
-    // (`two_documents_claiming_one_identity_are_both_retained_as_a_finding`): SAME projection,
-    // differing bytes, which IS a finding. Read the two together; they differ by exactly which
-    // projection the second document carries, and their verdicts are opposite.
+    // Its sibling in the pure crate's graph corpus
+    // (`two_documents_claiming_one_identity_are_both_retained_as_a_finding`) is the case that
+    // DOES fire: one identity, differing bytes. The two differ by whether the second document
+    // minted its own identity, which is the only thing that ever made them different cases.
     let identity = age::x25519::Identity::generate();
     let sealer = AgeSealer::of(identity.to_public());
     let opener = AgeOpener::of(identity);
@@ -856,7 +852,9 @@ fn a_rich_document_and_its_plain_remint_correlate_to_one_node() {
         .bytes()
         .to_vec();
 
-    let plain = dorc_receipt::projection::narrow_to_plain(&rich).expect("the narrowing holds");
+    let mut remint_ids = CountingIds(210);
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids)
+        .expect("the narrowing holds");
     let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
         .serialize()
         .expect("the narrowed document serializes")
@@ -886,10 +884,14 @@ fn a_rich_document_and_its_plain_remint_correlate_to_one_node() {
         ReadPlain::SelfAsserted(document) => graph.ingest_plan(&document, &plain_bytes),
     }
 
-    assert_eq!(graph.plans().len(), 1, "two projections, one receipt-event");
+    assert_eq!(
+        graph.plans().len(),
+        2,
+        "a remint is a second document, so it is a second node"
+    );
     assert!(
         graph.collisions().is_empty(),
-        "a legitimate remint is not a collision"
+        "two identities cannot collide"
     );
     assert!(
         graph.findings().is_empty(),
