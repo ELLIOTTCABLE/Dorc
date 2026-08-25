@@ -17,7 +17,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
-| 3 presented plan + PlanReceipt | `ai/r30-receipt` | dispatched from `761a6ea0` |
+| 3 presented plan + PlanReceipt | `ai/r30-receipt` | boundaries 1-2 LANDED; 3-4 resumed from `cd05d080` |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
@@ -551,3 +551,42 @@ after asking about exactly this conflict.
 Sol dispatched read-only over all 37 recorded deviations, spec-compliance ONLY, verdicts
 A/B/C/D + adjudication where the spec is soft. Kit: scratchpad `30Rc1-dispatch-bundle.md`;
 report lands at `30Rc1`. Human trusts its judgement for now.
+
+## foreign adjudication and the D-class revert
+
+Sol (GPT-5.6, foreign, read-only) over all 37 deviations: 25 A · 7 B · 4 C · 1 D. Raw report
+`30Rc1`, kit `30Rc1-spec-compliance-kit`. The four C's are now the top entry of root
+`TODO-ADDTL.md`, collapsed into one item in PUBLIC vocabulary, awaiting the human. (NB the
+human actually meant an ephemeral `_tmp-human-burndown.md`; they said leave it, do not chase.)
+
+CALIBRATION, worth more than the verdicts: the two deviations I flagged to the human as my
+WEAKEST both came back clean — the crate split (B: the higher-authority kernel rule wins) and
+the Stage-6→3 schedule pull (A: earlier removal preserves every required effect). The one I
+was MOST confident of came back D. My confidence was inverted relative to my accuracy.
+
+**D-class REVERTED** at `cd05d080`, net −11 lines. My ruling that a rich-to-plain remint keeps
+the original's identity contradicted three spec facts together: the procedure calls its output
+A NEW PLAIN DOCUMENT; identities are controller-minted per document through the injected
+source, explicitly not derived from content; and the graph is REQUIRED to keep
+same-identity-different-bytes distinguishable — which the refinement collapsed. A remint now
+mints its own identity. Gate green and SUBSTANTIVE on both legs (floor: 138 files, 10 checks
+each — the first properly-selecting WSL leg of the arc).
+
+Deliberate capability gap, recorded not filled: a narrowed document carries NO recorded
+reference to the one it was narrowed from. There is no field and adding one is a grammar
+change, which escalates. Nothing in V1 routes through the remint, so it costs nothing today —
+but two documents can never be known as two views of one event from the documents alone.
+
+Builder's invariant prose, the sharpest of the arc:
+
+Why the wrong ruling was attractive enough that both of us took it: "identity names the
+receipt-event, not the byte-document" is a clean abstraction that buys correlation for free
+with no link field. What it costs is invisible at adoption — it spends the ONE distinction the
+graph exists to preserve, because a graph required to keep same-identity-different-bytes
+distinguishable cannot also have a rule making some of them legitimately identical. The
+general shape: **when a decision makes a downstream check easier, that is the moment to ask
+whether the check was the thing protecting you.**
+
+And: every test agreed with the ruling, because the tests were written after it. Tests
+authored downstream of a decision encode the decision and cannot falsify it. What caught this
+was an outside pass against the spec text — nothing in the suite could have.
