@@ -12,10 +12,10 @@
 //! wrong reason would still pass a test that only asked whether it refused.
 
 use dorc_receipt::dispatch::{
-    ApplySessionReady, ConfiguredReceiptBypass, DurableFailure, ExecutionIntegrityFailure,
-    IntentPreparationRefusal, IntentPublicationGate, PendingApplyAssignment, PendingOrigins,
-    PlanOriginOccurrence, PostDispatchFailure, ReadyApplyTarget, ReceiptPolicyWitness,
-    ResolvedApplyContext,
+    ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, DurableFailure,
+    ExecutionIntegrityFailure, IntentPreparationRefusal, IntentPublicationGate,
+    PendingApplyAssignment, PendingOrigins, PlanOriginOccurrence, PostDispatchFailure,
+    ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext, ResolvedAxis,
 };
 use dorc_receipt::ids::{
     ApplyGenerationId, ApplySessionId, PlanReceiptId, PresentedPlanId, ReadyApplyTargetId,
@@ -39,14 +39,18 @@ impl ReceiptIdSource for Counter {
     }
 }
 
+fn entered(text: &str) -> ResolvedAxis {
+    ResolvedAxis::Established(text.to_owned())
+}
+
 fn context(destination: &str) -> ResolvedApplyContext {
     ResolvedApplyContext::of(
-        destination.to_owned(),
-        "root".to_owned(),
-        "host".to_owned(),
-        "/root".to_owned(),
-        "inherited".to_owned(),
-        "session".to_owned(),
+        ApplyDestination::addressed(destination.to_owned()),
+        entered("root"),
+        entered("host"),
+        entered("/root"),
+        entered("inherited"),
+        entered("session"),
     )
 }
 
@@ -103,9 +107,9 @@ fn a_prepared_intent_copies_the_sessions_own_answer_rather_than_a_callers() {
         panic!("the assignment vector is non-empty by construction");
     };
     assert_eq!(
-        only.context().destination(),
-        "web1.example.net",
-        "the record carries the standup's resolved destination"
+        only.context(),
+        &context("web1.example.net"),
+        "the record carries the standup's own answer for this target, whole"
     );
     assert_eq!(
         only.session(),

@@ -13,11 +13,12 @@
 //! that looks at the correspondence can tell.
 
 use dorc_receipt::apply::OriginatingPlans;
-use dorc_receipt::context::RecordedApplyContext;
+use dorc_receipt::context::{RecordedApplyContext, RecordedAxis};
 use dorc_receipt::dispatch::{
-    ApplySessionReady, ConfiguredReceiptBypass, IntentPublicationGate, MutationDispatched,
-    PendingApplyAssignment, PendingOrigins, PlanOriginOccurrence, PreparedApplyIntent,
-    ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext,
+    ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, IntentPublicationGate,
+    MutationDispatched, PendingApplyAssignment, PendingOrigins, PlanOriginOccurrence,
+    PreparedApplyIntent, ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext,
+    ResolvedAxis,
 };
 use dorc_receipt::ids::{
     ApplyGenerationId, ApplyIntentId, ApplySessionId, PlanReceiptId, PresentedPlanId,
@@ -54,13 +55,17 @@ impl ReceiptIdSource for Counter {
 /// back.
 fn context(destination: &str) -> ResolvedApplyContext {
     ResolvedApplyContext::of(
-        destination.to_owned(),
-        "deploy".to_owned(),
-        "netns-blue".to_owned(),
-        "/srv/app".to_owned(),
-        "inherited-minus-ssh".to_owned(),
-        "agent-forwarded".to_owned(),
+        ApplyDestination::addressed(destination.to_owned()),
+        entered("deploy"),
+        entered("netns-blue"),
+        entered("/srv/app"),
+        entered("inherited-minus-ssh"),
+        entered("agent-forwarded"),
     )
+}
+
+fn entered(text: &str) -> ResolvedAxis {
+    ResolvedAxis::Established(text.to_owned())
 }
 
 fn image(bytes: &[u8]) -> ApplyArtifactImage {
@@ -237,20 +242,90 @@ fn an_assignments_destination_and_its_remaining_axes_ride_one_record() {
         Ok(decoded) => decoded,
         Err(fault) => panic!("the projection wrote a block its own reader refuses: {fault:?}"),
     };
-    let live = context("web1.example.net");
-    assert_eq!(decoded.account(), live.account().as_bytes());
-    assert_eq!(decoded.namespace(), live.namespace().as_bytes());
     assert_eq!(
-        decoded.working_directory(),
-        live.working_directory().as_bytes()
+        decoded,
+        RecordedApplyContext::of(
+            RecordedAxis::Established(b"deploy".to_vec()),
+            RecordedAxis::Established(b"netns-blue".to_vec()),
+            RecordedAxis::Established(b"/srv/app".to_vec()),
+            RecordedAxis::Established(b"inherited-minus-ssh".to_vec()),
+            RecordedAxis::Established(b"agent-forwarded".to_vec()),
+        ),
+        "each axis arrives carrying the answer the standup gave for IT"
     );
-    assert_eq!(
-        decoded.environment_policy(),
-        live.environment_policy().as_bytes()
+}
+
+#[test]
+fn a_session_that_entered_no_context_records_that_and_not_five_empty_answers() {
+    // The thin session's whole claim, at the seat that writes it. Five unentered axes must reach
+    // the region as unentered — a projection that flattened them into empty values would record
+    // "established as nothing", which is a statement about the host nobody made.
+    let mut ids = Counter(0);
+    let target = ReadyApplyTargetId::mint(&mut ids);
+    let thin = ResolvedApplyContext::of(
+        ApplyDestination::addressed("web1.example.net".to_owned()),
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
     );
+    let ready = match ApplySessionReady::of(
+        ApplySessionId::mint(&mut ids),
+        ApplyGenerationId::mint(&mut ids),
+        vec![ReadyApplyTarget::of(target, thin)],
+    ) {
+        Ok(ready) => ready,
+        Err(refusal) => panic!("a thin standup should close: {refusal:?}"),
+    };
+    let intent = match ready.prepare_intent(
+        vec![PendingApplyAssignment::of(
+            AssignmentOrdinal::of(0),
+            target,
+            image(b"#!/bin/sh\n:\n"),
+            PendingOrigins::Unavailable,
+        )],
+        ReceiptPolicyWitness::configured_bypass(),
+    ) {
+        Ok(intent) => intent,
+        Err(refusal) => panic!("a thin assignment should prepare: {refusal:?}"),
+    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a thin intent projects: {refusal:?}"),
+        };
+    let record = projected
+        .record_of(AssignmentOrdinal::of(0))
+        .unwrap_or_else(|| panic!("the assignment was emitted"));
+    let Some(carried) = projected
+        .details()
+        .iter()
+        .find(|entry| entry.record() == record && entry.tag() == OpaqueFieldTag::ApplyContext)
+        .map(|entry| entry.bytes().to_vec())
+    else {
+        panic!("a thin assignment still captures its context")
+    };
+
     assert_eq!(
-        decoded.credential_scope(),
-        live.credential_scope().as_bytes()
+        RecordedApplyContext::decode(&carried, &ReceiptLimits::V1),
+        Ok(RecordedApplyContext::of(
+            RecordedAxis::NotEstablished,
+            RecordedAxis::NotEstablished,
+            RecordedAxis::NotEstablished,
+            RecordedAxis::NotEstablished,
+            RecordedAxis::NotEstablished,
+        ))
+    );
+    // The destination is a different question and is still answered: a thin session knows where
+    // it addressed, and only the five context axes are unentered.
+    assert_eq!(
+        projected
+            .details()
+            .iter()
+            .find(|entry| entry.record() == record && entry.tag() == OpaqueFieldTag::TargetName)
+            .map(|entry| entry.bytes().to_vec()),
+        Some(b"web1.example.net".to_vec())
     );
 }
 

@@ -20,8 +20,10 @@
 use crate::apply::{
     RecordedApplyAssignment, RecordedApplyIntent, RecordedApplyIntentRow, RecordedPlanOrigin,
 };
-use crate::context::RecordedApplyContext;
-use crate::dispatch::{MutationDispatched, PreparedApplyIntent, SessionApplyAssignment};
+use crate::context::{RecordedApplyContext, RecordedAxis};
+use crate::dispatch::{
+    MutationDispatched, PreparedApplyIntent, ResolvedAxis, SessionApplyAssignment,
+};
 use crate::format::{RefusalReason, SkeletonRecord};
 use crate::ids::ApplyIntentId;
 use crate::limits::ReceiptLimits;
@@ -327,13 +329,13 @@ fn assignment_row(
     account: RecordedInfluence,
 ) -> (RecordedApplyAssignment, [Detail; 3]) {
     let context = assignment.context();
-    let destination = context.destination().as_bytes().to_vec();
+    let destination = context.destination().bytes().to_vec();
     let recorded = RecordedApplyContext::of(
-        context.account().as_bytes().to_vec(),
-        context.namespace().as_bytes().to_vec(),
-        context.working_directory().as_bytes().to_vec(),
-        context.environment_policy().as_bytes().to_vec(),
-        context.credential_scope().as_bytes().to_vec(),
+        recorded_axis(context.account()),
+        recorded_axis(context.namespace()),
+        recorded_axis(context.working_directory()),
+        recorded_axis(context.environment_policy()),
+        recorded_axis(context.credential_scope()),
     );
     let origins = u32::try_from(assignment.origins().len()).unwrap_or(u32::MAX);
     let row = RecordedApplyAssignment::of(
@@ -359,6 +361,18 @@ fn assignment_row(
             ),
         ],
     )
+}
+
+/// One axis as a document records it.
+///
+/// The one crossing between the live and recorded axis vocabularies, and it is arm-for-arm: a
+/// session that entered nothing records that it entered nothing, and no branch here can turn
+/// either arm into the other.
+fn recorded_axis(axis: &ResolvedAxis) -> RecordedAxis {
+    match axis {
+        ResolvedAxis::Established(text) => RecordedAxis::Established(text.as_bytes().to_vec()),
+        ResolvedAxis::NotEstablished => RecordedAxis::NotEstablished,
+    }
 }
 
 /// What one site did during an apply, as execution reported it.

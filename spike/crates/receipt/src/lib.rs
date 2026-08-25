@@ -166,7 +166,7 @@
 //! use dorc_receipt::dispatch::ResolvedApplyContext;
 //! use dorc_receipt::project::InvocationTarget;
 //! fn launder(context: ResolvedApplyContext) -> InvocationTarget {
-//!     context.into()
+//!     InvocationTarget::Spelled(context.destination().bytes().to_vec())
 //! }
 //! ```
 //!

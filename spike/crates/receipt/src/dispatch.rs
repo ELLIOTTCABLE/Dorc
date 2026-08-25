@@ -20,32 +20,77 @@ use crate::rows::{AssignmentOrdinal, OriginOrdinal};
 use crate::tokens::RecordedApplyPolicy;
 use crate::writer::PublishedReceipt;
 
-/// The six dimensions a standup must resolve before a target counts as ready.
+/// Where a controller is sending an apply's bytes.
 ///
-/// All six are required and none has a default. The list is not decoration: a shift in any of
-/// them changes which world the artifact's own reads answer in, so a value nobody resolved is
-/// a target nobody can attribute a mutation to. A route that cannot answer all six cannot
-/// build this, which is the intended outcome for a one-shot channel that establishes nothing.
+/// `addressed` rather than resolved: what a controller knows without asking anybody is the
+/// destination it will hand its own transport, which is invocation material and therefore its
+/// own fact. Nothing on the far side has confirmed a name, and this type claims none.
+///
+/// The spelling is private and readable only inside this crate, so the ONE slot that records a
+/// destination is the only thing that can read one. That is what closes the substitution
+/// [`crate::project::InvocationTarget`] exists to refuse: a row recording what somebody TYPED
+/// takes bytes, and no caller can obtain bytes from one of these to hand it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplyDestination(String);
+
+impl ApplyDestination {
+    /// Name the destination this controller will address.
+    #[must_use]
+    pub const fn addressed(spelling: String) -> Self {
+        Self(spelling)
+    }
+
+    /// The exact bytes, for the one slot that records them.
+    pub(crate) fn bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+/// One context axis a standup either entered or did not.
+///
+/// Two arms and no third, because "the axis was entered and resolved to nothing" and "no context
+/// was entered" are different statements and a session that established nothing makes only the
+/// second. An empty [`Self::Established`] is therefore a real answer rather than a spelling of
+/// absence — which is why absence needs an arm of its own instead of a sentinel value.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ResolvedAxis {
+    /// The standup entered this axis, and this is what it resolved to.
+    Established(String),
+    /// Nothing was entered on this axis.
+    NotEstablished,
+}
+
+/// The six dimensions a standup answers about one target.
+///
+/// All six are required and NONE has a default. The list is not decoration: a shift in any of
+/// them changes which world the artifact's own reads answer in, so an axis nobody can speak for
+/// must say so rather than be filled in.
+///
+/// A session that entered no context answers [`ResolvedAxis::NotEstablished`] five times, which
+/// is a true statement a controller can make about itself: nothing escalated, nothing entered,
+/// running as whatever the destination resolves to. It establishes very little, and saying so is
+/// the point — the constructor takes six arguments however thin the session is, so growing this
+/// value as machinery arrives is filling arms in, never adding fields nobody fills.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedApplyContext {
-    destination: String,
-    account: String,
-    namespace: String,
-    working_directory: String,
-    environment_policy: String,
-    credential_scope: String,
+    destination: ApplyDestination,
+    account: ResolvedAxis,
+    namespace: ResolvedAxis,
+    working_directory: ResolvedAxis,
+    environment_policy: ResolvedAxis,
+    credential_scope: ResolvedAxis,
 }
 
 impl ResolvedApplyContext {
-    /// Take one standup's six resolved answers.
+    /// Take one standup's destination and its five context answers.
     #[must_use]
     pub const fn of(
-        destination: String,
-        account: String,
-        namespace: String,
-        working_directory: String,
-        environment_policy: String,
-        credential_scope: String,
+        destination: ApplyDestination,
+        account: ResolvedAxis,
+        namespace: ResolvedAxis,
+        working_directory: ResolvedAxis,
+        environment_policy: ResolvedAxis,
+        credential_scope: ResolvedAxis,
     ) -> Self {
         Self {
             destination,
@@ -57,39 +102,39 @@ impl ResolvedApplyContext {
         }
     }
 
-    /// The destination as the standup resolved it, never as an invocation spelled it.
+    /// Where the controller addressed this target.
     #[must_use]
-    pub fn destination(&self) -> &str {
+    pub const fn destination(&self) -> &ApplyDestination {
         &self.destination
     }
 
     /// The principal the session authenticated as.
     #[must_use]
-    pub fn account(&self) -> &str {
+    pub const fn account(&self) -> &ResolvedAxis {
         &self.account
     }
 
     /// The namespace the session entered.
     #[must_use]
-    pub fn namespace(&self) -> &str {
+    pub const fn namespace(&self) -> &ResolvedAxis {
         &self.namespace
     }
 
     /// Where the session stands.
     #[must_use]
-    pub fn working_directory(&self) -> &str {
+    pub const fn working_directory(&self) -> &ResolvedAxis {
         &self.working_directory
     }
 
     /// Which environment the session carries.
     #[must_use]
-    pub fn environment_policy(&self) -> &str {
+    pub const fn environment_policy(&self) -> &ResolvedAxis {
         &self.environment_policy
     }
 
     /// What the session's credentials reach.
     #[must_use]
-    pub fn credential_scope(&self) -> &str {
+    pub const fn credential_scope(&self) -> &ResolvedAxis {
         &self.credential_scope
     }
 }

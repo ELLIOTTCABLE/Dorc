@@ -468,19 +468,20 @@ fn prepared_apply_intent(
     dorc_receipt::image::ApplyArtifactImage,
 ) {
     use dorc_receipt::dispatch::{
-        ApplySessionReady, PendingApplyAssignment, PendingOrigins, ReadyApplyTarget,
-        ReceiptPolicyWitness, ResolvedApplyContext,
+        ApplyDestination, ApplySessionReady, PendingApplyAssignment, PendingOrigins,
+        ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext, ResolvedAxis,
     };
     use dorc_receipt::ids::{ApplyGenerationId, ApplySessionId, ReadyApplyTargetId};
 
+    let entered = |text: &str| ResolvedAxis::Established(text.to_owned());
     let target = ReadyApplyTargetId::mint(ids);
     let context = ResolvedApplyContext::of(
-        APPLY_DESTINATION.to_owned(),
-        "deploy".to_owned(),
-        "netns-blue".to_owned(),
-        "/srv/app".to_owned(),
-        "inherited-minus-ssh".to_owned(),
-        "agent-forwarded".to_owned(),
+        ApplyDestination::addressed(APPLY_DESTINATION.to_owned()),
+        entered("deploy"),
+        entered("netns-blue"),
+        entered("/srv/app"),
+        entered("inherited-minus-ssh"),
+        entered("agent-forwarded"),
     );
     let ready = match ApplySessionReady::of(
         ApplySessionId::mint(ids),
