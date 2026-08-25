@@ -384,3 +384,61 @@ is never the monitoring loop — monitoring is stateful and alien to kSTATE/kAGE
 backup tools' genuinely read-only native verbs (`restic check`, `borg check`) are
 ordinary stdlib candidates on their own merits; the words "fire drill" / "DR" /
 "disaster recovery" appear in no render, hint, or pitch.
+
+## 8 — bootstrap graph → straight-line dispatch elision — CLOSED 2026-08-25
+
+(Adjacent ruling banked first, human-stated 2026-08-25:
+`story-fleet-rotation-strict-choreography` (index 7) is KILLED — someone-else's-problem,
+not our wheelhouse; on re-check it lands nearest our known danger cells (secrets NYI,
+`AID-NEEDS:law-whylog-is-sensitive`, secret-adjacent fleet state riding the fact plane)
+and dedicated tooling owns the domain. Its mechanism shape — a destructive line gated on
+a fleet-wide conjunction, resume-by-measurement — survives inside story 10.)
+
+The story as pitched (derive the inter-host precedence graph from a conductor-book;
+cycle-break attribution; order-vs-graph check; empty-world drill) is DEAD standalone.
+Epistemic decomposition showed each edge is a conjunction of five knowledge atoms
+(line's host-scope · establishment · consumption · coordinate coincidence · measurement
+vantage), each needing authored claims — a surface ~ordinal to the existing
+architecture, with NO selfish gradual-enhancement driver anywhere in it (human: unsold;
+correct). A "why-lens residue of conductor-book elision" reframe followed, then the
+human's challenge collapsed it further, terminally:
+
+- fnd-straight-line-dispatch-elision-needs-no-topology — straight-line convergence
+  against Complex Dispatches (`ssh host <payload.sh`, `ansible-playbook`,
+  `terraform apply`) is fully covered by `is_converged` + prefix induction under
+  EXISTING law (elided dispatch casts no wall; first runner walls; below it,
+  guard/run). No referent-piercing, no host model, no vantage machinery. The transit
+  lives inside the authored oracle body (its own ssh'ing rides the vouch); the engine
+  never needs to know ssh transits anything.
+- fnd-survival-past-complex-dispatch-structurally-dead — two independent kill reasons:
+  no author can bound a Complex Dispatch's footprint (the honest at-most is "anything,
+  anywhere" — a wall spelled politely), and consuming a host-targeted claim needs
+  cross-spelling host identity, permanently untrusted
+  (`FORFEITS:forfeit-no-host-merging`, failure-direction inverted for hosts). Not a
+  scoping deferral; the design. The graph story's edges were survival-tier artifacts,
+  so they die with it. Residue: the linear wall structure (already in the plan render)
+  + at most a wall-economics hint ("permanent decliner at line 3 shadows five
+  checkable dispatches below it" — the admin may reorder; Dorc never does).
+- The requirements ledger for straight-line conductor-book elision, pleasantly short:
+  local-exec as a supported mode (the keystone; already `26K` §0b's prerequisite) ·
+  the hand-vouch pattern (zero new machinery) · delegation stdlib for the
+  terraform-class (ansible-class declines honestly, per USER_STORY rung 3) ·
+  `kPROBING` cost-classes (a minutes-long `terraform plan` probe must earn its
+  check-tax) · the chartered wall-transparent-until increment. Payload-descent
+  (analyze the controller-resident payload bytes; ship its compiled probe through an
+  ssh entry-form under `27C` measure-in-the-denoted-context — a *transit* species of
+  wrapper) is a LATER gradual-enhancement rung buying per-site verdicts inside
+  dispatches and partial-convergence renders; prerequisite of nothing.
+- edge-redirection-blind-argparse (banked sharp edge) — the oracle contract is
+  argv-keyed, and a dispatch's payload identity lives in a REDIRECTION argparse never
+  sees: `ssh dns1 <standup-dns.sh` and `ssh dns1 <tuning.sh` present identical argv,
+  so a family-level `ssh__is_converged` casing on the destination silently answers
+  for both payloads. Idiomatic fix already in the language: name the dispatch as an
+  in-book function (`standup_dns() { ssh dns1 <standup-dns.sh ;}`) and vouch THAT
+  family — per-dispatch name, vouch, attribution, in sh a tidy admin half-writes
+  anyway. Teach as the pattern; ~SUSPECT a lint (an `ssh`-family vouch meeting a
+  site with redirected stdin) is warranted.
+- Vantage alarm DOWNGRADED from the earlier turns: vacuous at the hand-vouch rung
+  (probes execute where the book runs; remote reads live inside authored bodies),
+  covered by `27C` context-keying at the descent rung; it only ever mattered for
+  cross-vantage fact *transport*, which died with survival.
