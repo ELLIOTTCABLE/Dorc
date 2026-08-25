@@ -692,6 +692,7 @@ mod tests {
         assert_eq!(
             files,
             [
+                "cli/src/apply.rs",
                 "cli/src/artifact.rs",
                 "cli/src/main.rs",
                 "cli/src/results.rs",

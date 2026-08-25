@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod apply;
 pub mod artifact;
 pub mod bundle;
 pub mod fixpoint;
