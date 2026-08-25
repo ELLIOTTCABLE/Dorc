@@ -21,9 +21,9 @@ complete; Stage 4 is partial; Stages 5–6 are unstarted.
 
 | | |
 |---|---|
-| Build branch | `ai/r30-receipt` @ `29e8880e`, worktree `.claude/worktrees/r30-receipt` |
+| Build branch | `ai/r30-receipt` @ `5b73d56b`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
-| Base | `ai/main` — **has moved 8 commits ahead**; the build branch needs a rebase before folding |
+| Base | `ai/main` @ `388e0249` — rebased onto it 2026-08-25, conflict-free. Re-check before folding; the sibling is still moving. |
 
 **A sibling conductor is actively working on `ai/main`** (env-identity, plan-diff,
 bootstrap-graph). Rebase the build branch before folding, and re-read `LIVING_STATUS` before
