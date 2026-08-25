@@ -442,3 +442,78 @@ human's challenge collapsed it further, terminally:
   (probes execute where the book runs; remote reads live inside authored bodies),
   covered by `27C` context-keying at the descent rung; it only ever mattered for
   cross-vantage fact *transport*, which died with survival.
+
+## 11 — plan-diff → the dump rung and the fact-table — CLOSED 2026-08-25
+
+First story of the sitting to survive mostly intact (human's words: "isn't a massive
+stretch"). Nothing welded (human-typed); conversation-tier except where marked.
+
+The story AS PITCHED — diff per-target PLAN artifacts; plan-hash aggregation as a
+product — is dead in that spelling; human-ack on the bulk of the misfit ledger:
+
+- misfit-plan-is-work-not-world — a plan describes remaining WORK, doubly lossy over
+  the world (the book's lens, then the verdict lattice: a cell converged on both sides
+  vanishes even where underlying values differ). "Identical plans" will be read as
+  "equivalent environments" — a claim we structurally cannot make; pope-sin-adjacent.
+- misfit-plan-shape-becomes-api — diffing plan bytes makes render shape load-bearing;
+  head-on collision with the stability ledger (`276:rul-verdicts-never-stable`;
+  plan-as-API is the NAMED failure mode).
+- misfit-correspondence-is-inventory — "staging's db1 plays prod's db1's role" is
+  role/inventory metadata: declaring it grows the layer `260:dec-26-hosts-spelling`
+  refused; inferring it from name-similarity is the never-derive-separation sin.
+  Correspondence stays the admin's three-line sh loop, permanently.
+- misfit-time-conflated-with-space — two plans are two measurement instants; the
+  save-Tuesday's-staging/diff-Friday's-prod workflow is persisted measurement
+  re-entering decision-adjacent use (rec-5 / kSTATE fence). A fact-table emission
+  carries its timestamp in the header; re-ingestion stays refused.
+- misfit-third-persona / additive-attention-surface — noted; softened by the stance
+  ruling below.
+- Stale-context caveat: this turn's intended-vs-drifted / parameter-provenance thread
+  partially re-derived ground the env sitting (the `plans/30S` arc) already covered
+  more deeply; defer to that record rather than this section.
+
+- rul-dx-not-ui-is-the-expensive-surface (human-typed stance) — a `dorc diff`-shaped
+  verb/UX is NOT foreclosed: the litigated-to-death, shaved-clean surfaces are the DX
+  surfaces (what users author; what grammars promise); UI is comparatively cheap and
+  churns later. The "emit a table and let diff(1) do it" retreat was over-cautious at
+  the verb tier — the discipline binds the authored surface and the table's contract,
+  not the render conveniences over it.
+
+Raw-sh baseline, honestly strong — the MECHANISM is entirely free:
+`ssh "$h" sh -s <collect.sh | sort` per side + `diff`; fleet fingerprint-bucketing is
+`probe | sha256sum` through `sort | uniq -c`; pairing is a hand-written loop. What raw
+sh pays forever is CONTENT: the hand-curated lens (blind spots = forgotten facts) ·
+per-tool volatile-scrubbing that rots (timestamps/UUIDs/locale/format churn) ·
+byte-diff ≠ semantic diff (nginx vs nginx-full; reordered-equivalent config → flood →
+fatigue → the practice dies) · observer skew (each side's own tools print differently)
+· set/cardinality questions past `uniq -c` grade.
+
+What Dorc brings, reframed OFF plans ONTO the fact-table: probe output is already the
+normalized, deterministic, entity-keyed artifact all that scrubbing approximates. Lens
+derived from the book (the entity read-set; honest silence outside it — the projection
+misfit inverted into a stated contract: "we diff what your book manages") · a predict's
+output is already canonicalized cells under kVOLATILES discipline — normalization as a
+BYPRODUCT of oracle authorship, maintained once by the tool-knower, inherited by every
+admin · `resolve()` kills the alias false-positive class · selector granularity yields
+semantic diff cells ("same package, version differs"), never byte walls · shipped check
+bytes identical on both sides (~SUSPECT residual: those bytes still invoke each host's
+own tool versions).
+
+- rul-dump-is-below-the-verdict-rung (human-typed; the section headline — the match
+  the first-cut analysis missed) — a dump member (name strawman) is STRICTLY LESS work
+  than `is_converged`: the verdict member must filter volatility AND THEN render a
+  semantic judgment over what remains; a diffable dump only filters volatility. A new
+  BOTTOM rung of the gradual-enhancement ladder, below the vouch — and a training rung:
+  its authoring skill (what is volatile, what is identity) is exactly the first half of
+  verdict-authoring.
+- rul-oracle-set-is-the-coverage-database (human-typed, gloss-tier) — nobody maintains
+  a parallel registry: the loaded oracle set already enumerates every tool/config
+  surface in actual use. "print the oracles this book uses" ≈ the tool inventory, free;
+  "print the ones lacking a dump member" ≈ the todo-list for making the state-dump
+  complete over the admin's REAL infrastructure — coverage measured against the book,
+  never against the world. Human: an easy win, as a gloss.
+
+Seals held: the table is aid/report-plane, decision-inert by type — never a license
+input, never re-ingested. Permanently-refuse lean (conductor's, un-ruled): any surface
+answering "is staging representative?" in the behavioral sense — every step toward it
+is a claim we cannot back.
