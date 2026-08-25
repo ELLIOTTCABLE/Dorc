@@ -329,3 +329,58 @@ while). Detail in chat; this is the fixpoint bank.
 - checked-coherent, no action: 30D's static-authority/runtime-confirms discipline vs
   `26C` severed-provenance + controller-minted attribution; the until-loop direction
   is orthogonal throughout.
+
+## bank-recovery-drill-too-big-for-us — the DR/recovery-runbook niche (examined 2026-08-25)
+
+Story examined: `story-recovery-book-continuous-fire-drill` — cron a recovery book's
+`dorc plan --exit-code` as continuous runbook-viability validation; the plan render as
+the mid-incident attention product. Verdict (human, hard side-eye not hard nack): the
+niche is Too Big For Us in the short/mid-term — and probably *correctly* so, not merely
+unaffordable. The served version of the space is sandboxed actual-execution (Veeam
+SureBackup, ASR/SRM test-failovers): expensive because that is what verification of
+recovery genuinely costs. The cheap probeable slice is the lemon version, and the
+remaining unowned slice (semantic/flag/topology rot) is AI-agent-shaped work — Dorc's
+only sane posture there is substrate (a tool an agent calls), never owner.
+
+Survivors of the critical pass, banked:
+
+- crit-incident-time-is-maximal-volatility (BANKED, human: blood-on-wall) — incident
+  time is, by definition, the moment of maximal world-state churn: the hermeticity
+  precondition (`KNOBS:kVOLATILES`) and probe-time→apply-time staleness are maximally
+  violated exactly when stakes are maximal. The correlation is structural, not
+  incidental — and users may not spot it either. Candidate README-disclaimer material
+  (a thought for the record; NOT an owed task).
+- crit-guard-half-suspect-under-fire (human extension) — even the guard tier degrades
+  under firefighting: (1) the check-tax inverts — check-then-command costs most
+  precisely while the downtime clock ticks; (2) convergence ≠ repair: "converge, from
+  new/empty or from near-correct" and "repair from arbitrary unknown damage" are
+  fundamentally different problems, and an oracle's vouch is authored for exactly ONE
+  of them. A convergence-tier yes may not survive transplantation to the repair tier.
+- crit-fire-drill-without-fire — probes never mutate (welded), so Dorc structurally
+  cannot inject the failure; a drill without fire validates the *healthy* world, and
+  the incident is the world leaving that validated state.
+- crit-false-assurance-is-the-product-inverted — a green precondition badge displaces
+  real drills; the audit-checkbox buyer *wants* the false assurance; a wrong "you're
+  fine" here surfaces at maximum stakes with maximum attribution to us.
+- crit-probing-the-backup-estate-is-an-attack-path — a standing credentialed probe
+  path from the controller into deliberately-isolated backup/secondary estate is a
+  security regression (the isolation exists to fence off exactly the controller).
+- crit-adverse-selection-of-oracle-quality — oracles are debugged by use; DR paths are
+  the least-used, so a recovery book leans on the worst-calibrated vouches in the
+  library.
+- Honest counter-evidence, recorded: GitLab 2017 was entirely probeable-precondition
+  rot — the probeable slice covered the marquee incident; but the base rate is unknown
+  (-GUESS: lower today), the post-2017 gap was absorbed by ordinary monitoring, and
+  the industry's drawn lesson was restore-testing, not precondition-checking.
+
+mindset-avoid-resembling-disaster-tooling (human-stated 2026-08-25, for the record; no
+owed work, nothing foresworn permanently): be careful of Dorc surfaces even *looking
+kinda like* disaster-tooling from the wrong angle, in an unfortunate light, unless the
+surface was *designed* to be that. The failure mode is accidental entry by resemblance.
+
+What survives, deliberately anticlimactic (no build, no vocabulary): a recovery book is
+just a book; `plan --exit-code` stays a check-command some OTHER monitor may run (Dorc
+is never the monitoring loop — monitoring is stateful and alien to kSTATE/kAGENTLESS);
+backup tools' genuinely read-only native verbs (`restic check`, `borg check`) are
+ordinary stdlib candidates on their own merits; the words "fire drill" / "DR" /
+"disaster recovery" appear in no render, hint, or pitch.
