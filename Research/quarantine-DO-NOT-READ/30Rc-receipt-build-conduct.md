@@ -18,7 +18,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
 | 3 presented plan + PlanReceipt | `ai/r30-receipt` | SUBSTANTIVE @ `57b78a8e`; writer + 7 slots deferred |
-| 4 intent/dispatch/outcome | `ai/r30-receipt` | dispatched from `57b78a8e` |
+| 4 intent/dispatch/outcome | `ai/r30-receipt` | PARTIAL `29e8880e`; chain live, projection+DST owed |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
 
@@ -912,3 +912,50 @@ document.
 re-emission must stay in one order. A position is range-checked and never sense-checked, so
 drift enriches whichever row shares the integer while the document still validates cleanly —
 the same hazard as the region-ordinal walk, one level up.
+
+## stage 4 PARTIAL — `29e8880e`. My precondition worry was WRONG, measured.
+
+2891 tests (+14), both legs green, floor 154 files / 10 checks — the builder checked the FLOOR
+not the exit code. No relink lock this run.
+
+**THE PRECONDITION IS MET; there is no live defect.** I suspected the presentation witness minted
+before artifact bytes were final, from line numbers. Measured answer: `presented_plan_id` does not
+READ the artifact bytes — it RENDERS THEM ITSELF (`canonical_decision` carries a `== render.apply ==`
+section invoking the same `render_apply` call with the same arguments the artifact seat uses). The
+executable half is final AND hashed at mint time; the witness derives it rather than waiting for
+it. Moving the artifact seat is a convenience, not a fix. Third time this arc that a plausible
+line-number reading of mine has been wrong under measurement.
+
+Banked beside it: the artifact's DEPENDENCY bytes and form are NOT in the presented-plan canon —
+not a hole, because the witness carries three identities and the image id covers form, entries,
+roots and edges. Which is precisely why the human's ruling made it a TRIPLE rather than one
+identity; the shape is now load-bearing rather than tidy.
+
+Landed: standup → prepared → gate → one-use permit → spent phase, with the durable/integrity
+failure split; the artifact→image conversion for dependency-free sets plus the external
+single-stream path; ruling (c) on plain-intent topology.
+
+Deviations, all reported not asked: `SessionApplyAssignment` (the spec's name is already the
+skeleton ROW); `PendingOrigins` as the live counterpart; the four dispatch types sited in the pure
+crate because crate-privacy is what makes the mints unfakeable. And one improvement beyond spec:
+**the permit carries the declared assignment ordinals**, which makes its consumption of the intent
+real rather than nominal and gives the outcome projection a way to refuse a site row naming an
+assignment nobody authorized.
+
+Negatives pinned to exact refusals, five ways where one would have passed: unknown-target vs
+omitted-target vs duplicate-ordinal vs gapped-ordinal vs gapped-ORIGIN-ordinal are five distinct
+assertions, "because from outside they all end in 'no permit'".
+
+**CONFIRMED (conductor):** adding `cli/src/apply.rs` to the `authored_before_contact` census. Its
+first two attempts were both WRONG and it loosened neither fence — the authored posture fired, so
+it tried `untracked()`, which fired its own. The reasoning is exactly right and is now the
+clearest statement of why we have two censuses: **the untracked list is an INVENTORY OF PRODUCTION
+SEAMS staging real holes, and putting a test fixture in it would pollute the very metric it exists
+to count**; the authored census explicitly lists fixture seats and already carries the sibling this
+fixture was copied from. A true entry, not a widening. Escaping one fence by entering the other
+would have passed the gate and quietly destroyed what the inventory measures.
+
+Owed for Stage 4 exit: multi-file topology carriage (the selection discards the bundle projection
+and the load account before the artifact set is built — restoring that carriage IS the work;
+inventing the edges is a different and wrong record), intent/outcome projection and publication,
+the DST apply route, and gating `ship_consented_apply`.
