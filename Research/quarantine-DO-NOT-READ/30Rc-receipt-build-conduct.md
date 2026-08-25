@@ -46,7 +46,7 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 2A apply image · 2B overlay+Age · 2C models+graph | done, folded in that order |
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
 | 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
-| 5 why / correlation / re-derivation | not started |
+| 5 why / correlation / re-derivation | **partial** — see the blocker under *open with the human* |
 | 6 rip the old implementation | not started |
 
 ## what is owed
@@ -435,6 +435,28 @@ been run.
 
 ## open with the human
 
+**`open-the-arc-cannot-exit-without-a-key-provider` — BLOCKING Stages 5 and 6.** The exit
+criteria and the no-key-provider ruling are mutually inconsistent, and this is the second
+place this arc has found both sanctioned outcomes closed.
+
+Every valid receipt carries a signature. The crypto crate is a dev-dependency of `cli`, so
+the shipped binary can neither sign nor verify — it writes and reads no receipts at all.
+Flipping the dependency does not help: without a key there is nothing to sign with, so the
+binary would decline at runtime instead of being unable, which is strictly worse and equally
+non-writing. So today the receipt family is exercised only under test with injected fixture
+capabilities, and the old whylog remains the only working durable.
+
+That makes three exit clauses unreachable as written: a plan route writing/reading/explaining
+a receipt from the *real* pipeline; both product routes ending in `dorc why`; and the old
+format, writer, and reader being deleted. Deleting the old writer while the replacement
+cannot run in the binary leaves the product with no durable and `dorc why --last` with
+nothing to read.
+
+Three ways out, all the human's: relax the exit so the old whylog survives until a provider
+lands (the arc closes architecturally complete, product-incomplete); accept a binary that
+writes no durable and delete the old one anyway (spike-honest, product-regressive); or lift
+the no-provider ruling. Nothing here is conductor-rulable and no lane may work around it.
+
 The four departures an outside-lineage spec-compliance pass graded as needing a human ruling
 have all been RULED and BUILT — see *rulings that bind* above. Nothing from that pass is
 outstanding. `30Rc1` holds the raw adjudication; it is foreign output, unadjudicated, and that
@@ -446,6 +468,14 @@ entry in root `TODO-ADDTL.md`. Also with the human: the Windows relink lock abov
 source vector's positional fallback.
 
 ## ARC-CLOSE OBLIGATIONS — nothing ships with these outstanding
+
+0. **Gate-8 asserts far less than it reads as asserting** (measured 2026-08-25, acted on by
+   nobody). Across all six protected cases the only live needle is `=== OUTCOME ===`; every
+   other line of `survivebite27`'s `expect-why-chain` — the block that reads as pinning the
+   tier-worded links, the two loci, and the naked-trust epilogue — begins with `#` and is
+   filtered before comparison. **Verify this independently before letting it lower the price
+   of losing that arm**; it is a finding that happens to reduce the cost of a thing that
+   blocks work, which is the shape that most deserves a second measurement.
 
 1. **Gate-8 restoration.** Disabling the whylog writer empties the replay arm of **six** loom
    cases (`survivebite27-naked-trust-chain` and five `whygallery-*`) through
