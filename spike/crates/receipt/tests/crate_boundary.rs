@@ -219,7 +219,10 @@ fn the_armor_feature_is_named_explicitly() {
 /// Narrow to the file, not the crate, and two-way: an entry naming a file that no longer
 /// carries any is as much a failure as material in a file with no entry. Adding a row is the
 /// visible act.
-const MAY_CARRY_FIXTURE_KEY_MATERIAL: [&str; 1] = ["receipt-crypto/tests/crypto_interop.rs"];
+const MAY_CARRY_FIXTURE_KEY_MATERIAL: [&str; 2] = [
+    "cli/tests/receipt_route.rs",
+    "receipt-crypto/tests/crypto_interop.rs",
+];
 
 /// Every `.rs` file under the workspace's crates, as crate-relative paths.
 fn workspace_sources() -> Vec<(String, String)> {
