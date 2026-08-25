@@ -74,8 +74,10 @@ coherent shape that forces the difficult and retrofit-hostile decisions:
 - report-only recorded types with no authority conversion;
 - minimal projection of values that already exist in the current whylog path;
 - injected fixture signer/sealer and receipt sink/source interfaces;
+- one minimal production local-file key provider and immutable per-user receipt store,
+  specified exclusively by `30Rd`;
 - the first-dispatch permit and failure-direction state represented and exercised under
-  DST, without requiring the final production store/config surface; and
+  DST and through the concrete local durable edge; and
 - one or two full product routes that write, read, correlate, and explain all three
   species.
 
@@ -89,14 +91,28 @@ The required product-spanning routes are:
 V1 exits when these routes are green, the crate boundaries and typestates are in use,
 the selected libraries interoperate in ordinary round trips, strict malformed/truncated
 inputs are covered, and the old format, reader, writer, fixtures, and live paths are
-entirely removed. It does not wait for every semantic species, production key custody,
-platform stores, profiles,
-retention, hardened publication, broad multi-host execution, source archives, or the
-full defense-in-depth verification programme.
+entirely removed. It does not wait for every semantic species, alternative/platform/
+hardware key providers, rotation/import/export, profiles, retention, custom roots,
+broad multi-host execution, source archives, or the full defense-in-depth verification
+programme.
 
 Everything else in the normative half is the target shape to preserve while staging.
 Sections marked later are not v1 build obligations unless the implementation conductor
 finds that omitting one would foreclose or distort the v1 architecture.
+
+## v1-minimal-production-durable-edge
+
+**[ACKED]** V1 must leave the shipped binary able to persist and read its new receipt
+family after the old whylog is removed. The minimal production baseline is one
+versioned local-file keyset under the per-user configuration root plus one versioned
+immutable receipt store under the per-user state root. It is not a temporary weak mode
+and not a complete provider ecosystem.
+
+`Research/quarantine-DO-NOT-READ/30Rd-minimal-production-durable-edge.md` is the
+single normative specification for its key files, first-use state machine, store,
+platform guarantees, product assembly, failure directions, and test/fault discipline.
+This document retains only the enclosing architecture and claims. `30Rb` schedules
+the `30Rd` work before old-durable removal and does not restate it.
 
 ## threat-model-and-security-claims
 
@@ -167,10 +183,13 @@ PlanReceipt P -------------- ApplyIntent A2 -> no outcome
                               ApplyIntent A3 -> ApplyOutcome O3
 ```
 
-One plan may be edited and applied repeatedly, under different policies or to
-different targets. Plan and apply are not one transaction and do not form a fixed
-one-to-one-to-one trio. Correlation is report narration over immutable identities,
-never continuity of world freshness, host generation, or authority.
+The diagram is one readable slice, not a cardinality rule. The actual graph is M:N:
+one plan may be edited and applied repeatedly, and one apply assignment may compose
+zero, one, or many originating presented plans under admin control. An intent contains
+one or more target/image assignments; one intent has zero or one outcome. Plan and
+apply are not one transaction and do not form a fixed one-to-one-to-one trio.
+Correlation is report narration over immutable identities, never continuity of world
+freshness, host generation, or authority.
 
 The reader has explicit states for:
 
@@ -257,15 +276,15 @@ needed by the plan/why e2e. General excerpt selection and archive lookup are lat
 
 - producing apply invocation and policy;
 - exact originating `PlanReceipt` identity, if available;
-- one exact `ApplyImage` containing every executable stream and file the apply will
-  use, by value;
+- non-empty ordered admin-owned assignments, each carrying one exact `ApplyImage`
+  containing every executable stream and file that assignment will use, by value;
 - original artifact form, entrypoints, ordered roots, transitive dependency topology,
   target-relative paths, file kinds/modes where relevant, and exact bytes;
 - target/context and generation;
 - controller semantics/version;
 - tunnel/session and resolved target identity established at standup;
 - decision/artifact identity; and
-- the one-time commitment to first mutative dispatch.
+- the requested publication policy and the exact prepared pre-publication state.
 
 A digest identifies bytes that remain available; it does not recover edited stdin
 or a deleted artifact. An informal line diff is insufficient for arbitrary added,
@@ -305,8 +324,12 @@ host output admitted by policy, durable failure, and references to the exact
 
 Controller crash, process kill, power loss, or an unusable post-dispatch durable
 sink may leave no outcome. Absence means only that no outcome was durably recorded.
-`ApplyIntent` proves that Dorc spent authority to dispatch; it cannot prove what
-reached or changed the host.
+A reingested `ApplyIntent` proves only that these exact signed intent bytes exist. It
+records prepared intent, requested policy, and pre-publication prerequisites; it does
+not reconstruct the ephemeral required-grade publication proof or prove dispatch
+eligibility. It cannot prove that the affine permit was minted/consumed, that a
+dispatch call occurred, or that anything reached or changed the host. Presence
+without an outcome remains explicitly unknown.
 
 V1 needs only the outcome fields produced by its DST/hostsim route, including success,
 failure/unknown, per-site identity/status, intent correlation, and explicit no-outcome.
@@ -563,17 +586,19 @@ a new key era and never rewrites receipts or derives a replacement key from its
 predecessor. Key deletion is loss of detail, not secure erasure.
 
 The receipt crate accepts injected signing and encryption capabilities from day one.
-Production key-provider configuration, organization-managed files, dislocated mounts,
-platform keychains, TPMs, and hardware tokens are later product work. Merely placing a
-readable key in `/etc` does not create separation if backup and access policy still
-co-propagate it.
+V1 supplies those capabilities through the minimal local provider in `30Rd`.
+Organization-managed files, dislocated mounts, platform keychains, TPMs, hardware
+tokens, provider selection, and richer configuration are later product work. Merely
+placing a readable key in `/etc` does not create separation if backup and access policy
+still co-propagate it.
 
 Documentation must state that a whole-home or whole-machine copy containing both
 receipts and private keys defeats most local cryptographic separation.
 
-V1 proves key-role separation through injected fixture capabilities and format key ids.
-First-use generation, private-file storage, rotation, import/export, trust distribution,
-and provider selection are later product work.
+V1 proves key-role separation through both fixture capabilities and the concrete local
+provider. First-use generation and private-file storage are V1 obligations under `30Rd`.
+Rotation, import/export, trust distribution, provider selection, and alternative custody
+remain later product work.
 
 ## no-in-file-crypto-negotiation
 
@@ -679,9 +704,10 @@ After consumption, the apply enters `MutationDispatched`. Durable-only failure n
 longer withholds mutation. This transition occurs even if delivery or remote outcome
 later becomes unknown; it records authority spent, not mutation proved.
 
-V1 threads and exercises this state machine through the DST/hostsim apply route using
-an injected receipt sink. Production filesystem grade and configuration enforcement are
-later.
+V1 threads and exercises this state machine both through the DST/hostsim injected-sink
+route and through `30Rd`'s concrete local store. The concrete store's private required-
+grade proof is what the production permit mint consumes; fixture/volatile proofs cannot
+satisfy it. Broader filesystem grades and user configuration are later.
 
 ## post-dispatch-durable-failure-direction
 
@@ -707,38 +733,16 @@ forfeited value, not an accidental claim that no commands ran.
 
 ## storage-and-publication-contract
 
-**[LATER PRODUCT EDGE; RESERVE INTERFACE NOW]** The store remains a per-user state directory of immutable independently identified files.
-One cross-platform abstraction owns platform-specific implementations and shared behavioral
-tests. It must:
+The store is a per-user collection of immutable independently identified receipt files,
+not a mutable database, cache, or `latest` pointer. Required publication is a typed
+runtime fact and is never reconstructed merely because complete receipt bytes are later
+found. Incomplete material never reads complete, and platform guarantees remain explicit
+rather than being normalized into false parity.
 
-- resolve/create a private state root and retain an ownership-bearing directory handle where
-  reachable;
-- support a user-selected symlinked root by resolving and validating the landing before
-  internal operations, without turning every internal entry into a free pathname redirect;
-- create privately and exclusively;
-- write under explicit total byte limits;
-- synchronize complete content to the strongest named grade the active policy requires and
-  the platform can honestly provide;
-- publish one final name without replacement;
-- keep incomplete content unselectable as a complete receipt;
-- synchronize the directory where the platform provides a meaningful operation;
-- enumerate completely to `limit + 1` and report overflow/errors;
-- remove only entries whose store ownership/identity was established;
-- expose platform guarantee differences rather than claiming POSIX parity; and
-- keep filesystem, clock, and randomness behind injected edges.
-
-The exact temporary-versus-final publication protocol, Windows ACL implementation, network
-filesystem grade, and sync-client behavior remain implementation-planning work. A pre-dispatch
-policy names the grade it requires; unsupported grade is a visible refusal or explicit configured
-bypass, never silent weakening.
-
-No mutable `latest` pointer or sidecar database is required. Reader selection uses bounded
-complete enumeration of committed names and validates internal identity against the filename.
-
-V1 owns only the narrow receipt source/sink interface, immutable byte ownership, publication
-result/grade types, and a deterministic in-memory or throwaway-filesystem implementation for
-the e2e routes. Production ACLs, synchronization, symlink roots, enumeration, cleanup, and
-cross-platform guarantees are later.
+`30Rd` is the sole V1 mechanism specification for roots, names, publication,
+synchronization, enumeration, incomplete files, platform differences, and testing.
+Custom roots, stronger Windows ACL inspection, cleanup/retention, network-filesystem
+grades, and broader platform hardening remain later design work.
 
 ## typesystem-architecture-and-mints
 
@@ -906,17 +910,19 @@ v1 dependency order:
 7. Thread the affine dispatch/failure-direction state through one DST apply route that emits
    intent plus outcome or explicit no-outcome.
 8. Correlate all three recorded species in `dorc why` and prove the two full routes.
-9. Delete the old format, reader, writer, fixtures, compatibility paths, and one-file assumptions;
+9. Build the minimal production key provider/store and prove real-binary restart routes exactly as
+   specified by `30Rd`.
+10. Delete the old format, reader, writer, fixtures, compatibility paths, and one-file assumptions;
    the arc ends with exactly one live receipt implementation.
 
-Do not build production key discovery, profile/config surfaces, full store hardening,
-retention, source archive, every Spine species, complete executor/multi-host coverage, or
-pre-publication polish in v1. Do not emit a partially built rich format outside tests until
-its complete sign/encrypt/read path is present.
+Do not build alternative key discovery/providers, profile/config surfaces, full store
+hardening, retention, source archive, every Spine species, complete executor/multi-host
+coverage, or pre-publication polish in v1. Do not emit a partially built rich format
+outside tests until its complete sign/encrypt/read path is present.
 
 The later/pre-publication build-out, in rough dependency order, is:
 
-1. production store publication and key providers;
+1. alternative key providers, production hardening beyond the `30Rd` baseline, and rotation;
 2. purpose-driven PlanReceipt species and bounded source excerpts;
 3. full apply intent/outcome integration and mutation gate;
 4. individual policies followed by convenience/hardening expansions;
@@ -937,9 +943,11 @@ Build one small committed conformance corpus independent of spike internals:
 - one small mutation sweep over a complete fixture; and
 - injected receipt-sink success/failure on both sides of first dispatch.
 
-The two product-spanning plan/why and apply/why DST routes are the v1 acceptance tests. Keep fixture
-keys and nondeterminism at the receipt edge. Do not build the full platform filesystem fault matrix,
-source archive, profile, rotation, or multi-host test families now.
+The two product-spanning plan/why and apply/why DST routes plus `30Rd`'s concrete local-provider/
+store process-restart routes are the v1 acceptance tests. Keep fixture keys and nondeterminism at
+the receipt edge, and keep fixture selection structurally out of the production path. Do not build
+the full native macOS/power-loss filesystem matrix, source archive, profile, rotation, or multi-host
+test families now.
 
 ### verification-deferred-until-build-out
 
@@ -1308,25 +1316,19 @@ longer.
 
 ## open-product-and-implementation-questions
 
-The implementation-planning conductor must still settle or schedule:
+`30Rb` settles the V1 receipt grammar/packages/limits and `30Rd` settles the V1
+local key/store baseline. The remaining later product questions are:
 
-- exact skeleton and overlay grammar tokens;
-- exact Ed25519 and DSSE/PAE Rust packages;
-- exact official Age crate/features and its dependency acceptance record;
-- key file binary format and restrictive cross-platform creation;
 - trusted-key import/export and signer-fingerprint UX;
 - policy/config names and exact convenience/hardening pre-publication expansions;
-- platform publication grades and Windows ACL implementation;
+- stronger Windows ACL implementation and publication grades beyond the V1 baseline;
 - signed plain fallback defaults for plan and apply;
-- filename disclosure and timestamp granularity;
 - retention/store-budget defaults and explicit cleanup UX;
 - padding policy for the grouped overlay;
-- maximum receipt/record/field sizes;
-- exact bounded excerpt budgets, optional source-archive design, and `ApplyImage` receipt-container
-  encoding;
+- exact bounded excerpt budgets and optional source-archive design;
 - how much bounded unauthenticated structure `dorc why` renders after signature failure;
 - whether an independent recognizer ships before publication or later; and
-- the exact point old v2 code, formats, tests, and catalog messages are deleted.
+- key rotation, recovery, alternative providers, custom roots, and native macOS validation.
 
 None may reopen the ruled topology silently. A contradiction discovered during implementation returns
 here for review rather than being solved by a local compatibility path, unsigned mode, inline ciphertext,

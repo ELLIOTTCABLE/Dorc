@@ -10,6 +10,10 @@
 >
 > `AGENTS.for-builders-only.md` remains independently binding. Every governed
 > surface still receives its required review; this plan is not a substitute.
+>
+> The minimal production local key provider, receipt store, product assembly, and
+> testing/fault discipline are specified only by `30Rd`. Builders touching that
+> edge MUST read `30Rd` in full; this document schedules it and does not restate it.
 
 ## 30Rb:how-to-read-requirements
 
@@ -38,7 +42,9 @@ an escape constructor.
 V1 exits only when all of the following hold:
 
 1. A standalone `dorc-receipt` crate owns the receipt models, exact format,
-   identities, projections, graph, reader/writer states, and crypto adapters.
+   identities, projections, graph, and reader/writer states; narrow sibling crates
+   own concrete crypto adapters and the local durable edge without entering the
+   analyzer dependency graph.
 2. `PlanReceipt`, `ApplyIntent`, and `ApplyOutcome` all round-trip as signed plain
    and signed rich receipts under one `dorc-receipt/1` grammar.
 3. Rich receipts contain one Age-armored reverse overlay; plain receipts cannot
@@ -53,13 +59,16 @@ V1 exits only when all of the following hold:
 7. Receipt read-back has no conversion to live evidence, influence accounts,
    vouches, licenses, `PlanAuthority`, plans, artifacts, probing, caches, or
    mutation.
-8. The old whylog format, parser, writer, store assumptions, fixtures, replay
+8. The `30Rd` minimal production baseline can initialize/reopen its versioned local
+   keyset, publish/read versioned receipts, and complete real-binary process-restart
+   plan/why and apply/why routes on Windows and Unix.
+9. The old whylog format, parser, writer, store assumptions, fixtures, replay
    authority, FNV decision digest, and compatibility paths are deleted.
-9. The required conformance, mutation, compile-fail, DST, e2e, and existing
+10. The required conformance, mutation, compile-fail, DST, e2e, and existing
    Windows/WSL builder-completion gates are green without re-blessing unrelated
-   output. This is the repository's ordinary `mise run both gate:full-quiet`
-   discipline, not `30Ra`'s deferred full native Windows/Unix/macOS platform or
-   filesystem-fault matrix.
+   output. This includes `30Rd`'s concrete Windows/Unix baseline tests under the
+   repository's ordinary `mise run both gate:full-quiet`; it does not imply the
+   deferred full native Windows/Unix/macOS or power-loss filesystem matrix.
 
 Temporary coexistence is allowed only inside an unlanded construction branch. No
 folded stage may expose two production readers or writers.
@@ -69,12 +78,12 @@ folded stage may expose two production readers or writers.
 | Current surface | Current fact | V1 action |
 |---|---|---|
 | `core/src/spine.rs` | Sixteen sealed species; four old durable views; twelve newer species | Keep Spine live and authority-bearing. Project a richer report-only receipt view; do not serialize Spine records directly. |
-| `plan/src/whylog.rs` | Entire `dorc-whylog/2` grammar, parser, writer, `ApplyLine`, `DurableAccount`, and replay envelope | Delete after the new plan route is live. Reuse tested bounded-parser techniques, not types or tokens. |
+| `plan/src/whylog.rs` | Entire `dorc-whylog/2` grammar, parser, writer, `ApplyLine`, `DurableAccount`, and replay envelope | Delete only in Stage 6 after Stage 5A/`30Rd` D4 proves the concrete production replacement. Reuse tested bounded-parser techniques, not types or tokens. |
 | `plan/src/spine.rs` | `PlanAuthority::of_admitted_replay()` re-authorizes replay | Delete. Reingested bytes must enter a report-only derivation route. |
 | `plan/src/erasability.rs` | One FNV-1a-64 `decision_digest` over the current canonical identity plane | Delete the FNV digest. Preserve the erasability differential, but use the one SHA-256-backed `PresentedPlanId` identity path. |
 | `cli/src/artifact.rs` | `ArtifactSet` owns final `plan.sh` plus deterministic dependencies, but drops roots/edges/modes | Retain the live emission type; carry enough topology to mint an exact `ApplyArtifactImage`. |
 | `cli/src/main.rs` | Scattered whylog write/replay flow and raw single-stream remote apply | Replace with typed receipt projection and apply orchestration. |
-| `cli/src/whylog_store.rs` | Direct env/fs default store, indexed names, retention deletion | Remove from V1. Replace with injected source/sink plus a narrow explicit throwaway-directory adapter for the e2e route. Production store policy remains LATER. |
+| `cli/src/whylog_store.rs` | Direct env/fs default store, indexed names, retention deletion | Replace with `30Rd`'s versioned local store. Reuse mechanisms only where they satisfy `30Rd`; carry no old indexing, retention, flags, or format assumptions. Delete the old module only after the concrete restart routes are green. |
 | `cli/src/results.rs` | Width-one live attribution and replay claim matching | Keep live intake scope. Recorded receipt claims never mint or recover this scope. |
 | `cli/src/why.rs`, `world.rs`, `lib.rs` | `Receipt`, `ReplayLoad`, `DriftedReceipt`, digest-only disagreement | Replace with `Reingested<T>`, `ReceiptGraph`, source-resolution states, and recorded/re-derived comparison. |
 | `dorc-loom/src/consumer.rs` and its tests | Directly parses old whylog fixtures through `dorc_plan::whylog`; the old CLI store still contains a stale comment naming a no-longer-present loom-side store | Move to receipt reader/report adapters and new receipt fixtures; delete every direct old-reader use, old flag parser, and stale cross-reference. |
@@ -109,10 +118,13 @@ are the durable reference):
 ```text
 dorc-core
 
-dorc-receipt -> sha2, ed25519-dalek, age
+dorc-receipt -> sha2
+dorc-receipt-crypto -> dorc-receipt, ed25519-dalek, age
+dorc-receipt-local -> dorc-receipt, dorc-receipt-crypto
 
 dorc-plan -> dorc-core, dorc-receipt, ...
-dorc-cli  -> dorc-plan, dorc-receipt, dorc-transport, ...
+dorc-cli  -> dorc-plan, dorc-receipt, dorc-receipt-crypto,
+             dorc-receipt-local, dorc-transport, ...
 dorc-loom -> dorc-cli, dorc-receipt, ...       (test/authoring consumer)
 dorc-hostsim -dev-> dorc-receipt            (only for receipt DST fixtures)
 ```
@@ -129,6 +141,10 @@ Do not introduce a `dorc-core` edge to avoid writing that explicit boundary.
 report-only receipt graph into existing aid/weft parts. This keeps Age randomness
 and crypto dependencies out of the describe-plane dependency graph.
 
+**REQUIRED:** the additional boundaries, dependencies, and fixture/production
+fences at the local durable edge are exactly `30Rd:component-and-dependency-boundaries`
+and `30Rd:test-and-fixture-fences`.
+
 ### Dependency selection constraints
 
 Builders select current maintained Rust implementations, pin exact versions and
@@ -138,13 +154,16 @@ diff in review. Required adapter constraints:
 - Age exposes only one X25519 recipient/identity path plus canonical ASCII armor.
   Do not expose passphrases, SSH recipients, plugins, async, CLI helpers, remote
   recipients, or algorithm choice.
-- Ed25519 uses ordinary signing and strict verification. Enable no key generation,
-  serialization, legacy compatibility, batch, prehash, hazardous, or key-file
-  surfaces in the receipt crate.
+- Ed25519 uses ordinary signing and strict verification. The receipt crate exposes
+  no concrete key generation or serialization. The crypto sibling enables only the
+  V1 PKCS#8/zeroization surfaces required by `30Rd`; legacy compatibility, batch,
+  prehash, hazardous, serde, and PEM convenience stay off.
 - SHA-256 owns source/content IDs, skeleton digest, key ID derivation, presented
   plan identity, and apply-image identity behind domain-specific wrappers.
-- An OS-CSPRNG adapter exists only at `cli::receipt_edge::OsReceiptIdSource`;
-  tests and DST inject a source, and no kernel calls OS randomness.
+- Receipt-ID entropy and private-key generation are separate injected production
+  capabilities with non-convertible outputs. `cli::receipt_edge::OsReceiptIdSource`
+  remains the sole receipt-ID adapter; `30Rd` owns the separate complete key-generator
+  edge. Tests and DST inject both, and no kernel calls OS randomness.
 - DSSE PAE may be implemented directly from its tiny standardized injective
   construction or through a narrow maintained implementation. Do not import a
   Sigstore object ecosystem or create a second envelope merely to obtain PAE.
@@ -178,7 +197,6 @@ spike/crates/receipt/
     format.rs          exact skeleton/inner grammar and DSSE PAE
     writer.rs          affine writer states
     reader.rs          monotone reader states and partial outcomes
-    crypto.rs          narrow Age/Ed25519 adapters
     reingested.rs      non-extractable Reingested<T>
     graph.rs           report-only M:N ReceiptGraph
   tests/
@@ -192,13 +210,14 @@ spike/crates/receipt/
 
 Small modules may be combined when that improves scanning. Do not combine the
 reader and writer, the overlay and skeleton parser, or recorded and live adapters.
+Concrete Age/Ed25519 adapters live in the dependency-outward `dorc-receipt-crypto`
+sibling. `30Rd` alone specifies the additional `dorc-receipt-local` modules.
 
 New adapter files to add:
 
 ```text
 plan/src/receipt.rs          Spine/Plan -> PlanReceipt projection
 cli/src/receipt_edge.rs      IDs, signer/sealer, source/sink orchestration
-cli/src/receipt_store.rs     explicit throwaway V1 adapter only
 cli/src/apply.rs             session -> intent -> permit -> outcome orchestration
 cli/src/why.rs               ReceiptGraph -> aid/weft render projection
 ```
@@ -271,7 +290,24 @@ An unchanged apply has the same planned and actual image ID. An admin edit chang
 the actual image ID while retaining the originating presented-plan ID for
 narration.
 
-All three use independent domain-separated encodings. A `[u8; 32]` from one domain
+The V1 domains are exact:
+
+```text
+PlanningInputId       application/vnd.dorc.receipt.v1.planning-input
+PresentedPlanId       application/vnd.dorc.receipt.v1.presented-plan
+ApplyArtifactImageId  application/vnd.dorc.apply-artifact-image.v1
+SigningKeyId          application/vnd.dorc.receipt.v1.signing-key-id
+EncryptionKeyId       application/vnd.dorc.receipt.v1.encryption-key-id
+```
+
+Each ID is SHA-256 over DSSE PAE of its domain plus one exact injective component
+encoding. Stage 0 MUST commit one exhaustive identity table fixing every component,
+field order, width/length framing, source byte encoding, and empty/absent spelling for
+`PlanningInputId` and `PresentedPlanId`, plus valid and cross-field-substitution
+vectors. The table has no wildcard/default and is reviewed before Stage 1 mints either
+ID. `ApplyArtifactImageId` remains fixed by `30Rb:apply-artifact-image-format`.
+
+All five use independent domain-separated encodings. A `[u8; 32]` from one domain
 cannot construct another domain's public newtype.
 
 No public constructor accepts any of these three IDs. Their sole mints consume the
@@ -348,6 +384,7 @@ The names are TYPE LEAN; the effects are REQUIRED.
 | `ReceiptSignatureChecked<T>` | Exact DSSE-PAE body verified with a controller-supplied key already carrying sealed trust marker `T`. Private fields and constructors; still unparsed and not truth. |
 | `TrustedReceiptSigner` / `SelfAssertedReceiptSigner` | Private sealed markers for controller policy provenance of the verification key. The key resolver's two private mints are the only constructors; receipt bytes and generic callers cannot select or upgrade the marker. |
 | `BoundedReceiptBytes` | Aggregate input bound enforced before parsing/allocation. |
+| `ReceiptOrderToken` | Exactly 20 authenticated decimal digits from the injected controller clock. Store selection only: no authority, freshness, graph edge, or receipt-ID conversion. A local filename must match it. |
 | `LocatedReceiptEnvelope` | Only exact byte spans and bounded prefix tokens located. No semantic fields interpreted. |
 | `ParsedReceiptSkeleton<D,P,T>` | Exact checked body parsed under the species/projection grammar used for signature domain. |
 | `OpaqueOverlay` family | Opaque values inaccessible until Age authentication and complete reverse-overlay validation. |
@@ -356,10 +393,10 @@ The names are TYPE LEAN; the effects are REQUIRED.
 | `ApplyTopology` | Entrypoints, roots, entries, and dependency edges validated in both directions. No dangling IDs or implicit dedup. |
 | `ApplySessionReady` | One aggregate per `dorc apply` invocation, containing a non-empty set of fully resolved target/session/context records. Not one per target. |
 | `PreparedApplyIntent` | Exact image assignments, origins, policy, controller semantics, session, target context, and generation frozen. |
-| `IntentPublicationGate` | Closed `Published` or explicit `ConfiguredBypass`; attempted/failed publication is neither. |
-| `MutationDispatchPermit` | Non-`Clone`, one use, minted only after the publication gate and consumed immediately before the first potentially mutative dispatch globally. |
+| `IntentPublicationGate` | Closed `Published` or explicit `ConfiguredBypass`; attempted/failed publication is neither. The local `Published` arm consumes one private value binding exact intent receipt, image-account witness, requested policy, and `30Rd` required local publication proof; callers cannot pair these after the fact. |
+| `MutationDispatchPermit` | Non-`Clone`, one use, minted atomically from the complete publication-gate value and consumed immediately before the first potentially mutative dispatch globally. |
 | `MutationDispatched` | Authority-spent phase after permit consumption. Durable-only failure no longer aborts coherent orchestration. |
-| `ReceiptSigner`, `ReceiptVerifier`, `OverlaySealer`, `OverlayOpener`, `ReceiptSink`, `ReceiptSource` | One-purpose injected capabilities. No generic crypto/store provider, key acquisition, algorithm selection, fallback, or environment lookup. |
+| `ReceiptSigner`, `ReceiptVerifier`, `OverlaySealer`, `OverlayOpener`, `ReceiptSink`, `ReceiptSource` | One-purpose injected capabilities. No generic crypto/store provider, key acquisition, algorithm selection, fallback, or environment lookup. The concrete local implementations narrow through `30Rd`'s typed name, bound, ownership, and publication-proof APIs rather than exposing the weak raw string/`Vec` trait shapes at the CLI. |
 
 ### Mandatory negative API rules
 
@@ -472,6 +509,7 @@ dorc-receipt/1
 species <plan|apply-intent|apply-outcome>
 projection <plain|rich>
 receipt-id <64-lower-hex>
+order <20-decimal-digits>
 signing-key-id <64-lower-hex>
 [rich only] encryption-key-id <64-lower-hex>
 records <canonical-u64>
@@ -490,10 +528,16 @@ bytes. A plain document proceeds directly from `signing-key-id` to `records`; a
 rich document has exactly one intervening `encryption-key-id` line and exactly one
 overlay region after `skeleton-end`.
 
-Decimal values have no sign and no leading zero except literal `0`. Hex is exact
-length and lowercase. Record IDs are canonical decimal integers, unique and
+Decimal field values have no sign and no leading zero except literal `0`. The
+top-level `order` is the one fixed-width exception: exactly 20 decimal digits, with
+leading zeroes required, and it is a `ReceiptOrderToken` used for local store
+selection only. Hex is exact length and lowercase. Record IDs are canonical decimal integers, unique and
 contiguous from `0` through `records - 1`; the writer assigns them, never host
 payloads.
+
+The order token is inside the signed body. A local store filename carrying an order,
+species, or receipt ID must match these authenticated header values after verification;
+filename metadata never overrides them.
 
 The literal skeleton span is byte 0 through and including `skeleton-end\n`.
 The signed body is byte 0 through and including `skeleton-end\n` for plain, or
@@ -878,8 +922,10 @@ planned mapping:
 - `OriginatingPlans` per assignment;
 - actual policy and controller semantics;
 - generation and invocation identity;
-- commitment to first mutative dispatch; and
-- explicit publication grade/bypass provenance in the report model.
+- requested publication policy and exact prepared pre-publication state; and
+- requested publication grade and configured-bypass provenance in the receipt model;
+  achieved publication proof remains an ephemeral typed result and is never inferred
+  from finding the file later.
 
 A plain ApplyIntent records IDs, topology/count summaries, and
 `withheld-plain`; it cannot mint a required publication witness. In V1, a signed
@@ -1149,7 +1195,8 @@ arithmetic, and aggregate budget.
 Touch:
 
 - `spike/Cargo.toml`, `spike/Cargo.lock`;
-- new `crates/receipt/{Cargo.toml,CLAUDE.md,src/lib.rs}`;
+- new `crates/receipt/{Cargo.toml,CLAUDE.md,src/lib.rs}` and the dependency-outward
+  `crates/receipt-crypto` sibling boundary;
 - `hk.pkl` only if ordinary workspace routing fails to include the crate;
 - committed grammar/overlay/image valid and invalid fixture vectors.
 
@@ -1165,7 +1212,8 @@ Do not parallelize lockfile or format-token authorship.
 
 ### Stage 1 - identity and plain kernel (serial foundation)
 
-Touch new receipt modules only.
+Touch new receipt modules for pure identity/format/state work and `receipt-crypto`
+only for the concrete Ed25519 adapter.
 
 Build:
 
@@ -1174,7 +1222,8 @@ Build:
 - sealed species/projection/trust markers;
 - `Receipt<D,P,T>`, partials, reader/writer states;
 - exact skeleton grammar and locator;
-- DSSE PAE, Ed25519 signing/strict verification;
+- DSSE PAE in `receipt`; Ed25519 signing/strict verification in `receipt-crypto`
+  behind the receipt capability traits;
 - signed plain round-trips for all three species;
 - compile-fail authority/state bypasses.
 
@@ -1191,7 +1240,8 @@ and materialization round-trip. Do not touch CLI artifact selection yet.
 
 #### Stage 2B - reverse overlay and Age
 
-Touch `projection.rs`, `overlay.rs`, `crypto.rs`, rich conformance tests.
+Touch receipt `projection.rs`/`overlay.rs`, `receipt-crypto`, and rich conformance
+tests. No receipt-local `crypto.rs` or concrete crypto dependency is permitted.
 
 Build inert reverse-overlay validator first, then Age adapter and one complete rich
 round-trip. No partially built rich production writer is exposed between commits.
@@ -1226,8 +1276,9 @@ Build:
 - the conductor-approved V1 STRETCH tranche and complete omission census;
 - signed plain and rich plan route through injected sink/source.
 
-Exit: product-spanning plan -> receipt -> read route green. The old whylog writer is
-disabled or deleted; there is never a second active writer.
+Exit: product-spanning injected plan -> receipt -> read route green. The old whylog
+remains the sole default production writer until `30Rd` Stage D4 makes the replacement
+usable by the real binary; there is never a second default production writer.
 
 ### Stage 4 - apply intent, dispatch, and outcome (kernel work may parallel; CLI integration is serial)
 
@@ -1278,13 +1329,27 @@ Build:
 Exit: both product routes end in `dorc why`; receipt bytes cannot reach any operation
 endpoint.
 
+### Stage 5A - minimal production durable edge (serial integration)
+
+Build every stage and acceptance property in `30Rd:implementation-sequence` and
+`30Rd:v1-acceptance-and-exit`. `30Rd` is the sole mechanism specification; do not
+copy a subset into a lane brief and treat omitted constraints as optional.
+
+Exit: the real binary initializes/reopens the V1 local keyset, publishes/reads the
+V1 local store, survives a process restart, and completes the plan/why and apply/why
+routes on both platform legs. Fixture/volatile capabilities cannot satisfy the
+production route. The old whylog remains until this exit is green.
+
 ### Stage 6 - rip old implementation and harden (serial close)
+
+Stage 6 MUST NOT begin before Stage 5A exits.
 
 Delete:
 
 - `plan/src/whylog.rs` and all `WhylogV2*`, `WHYLOG_*`, `ApplyLine`,
   `DurableProjection`, old `DurableAccount`, and `ACCOUNT_EXPORT`;
-- `cli/src/whylog_store.rs` and old default-env/retention behavior;
+- `cli/src/whylog_store.rs` and old default-env/retention behavior after their
+  `30Rd` replacement is live;
 - `PlanAuthority::of_admitted_replay`;
 - `Replay`, `ReplayLoad`, old `DriftedReceipt`, old digest-only disagreement,
   and old receipt rendering structs where superseded;
@@ -1312,7 +1377,8 @@ Commit:
 - CRLF, missing LF, tabs, trailing spaces, blank lines, comments, duplicate fields,
   unknown fields/kinds, alternate integers/hex, reordered fields/records, trailing
   bytes, wrong EOF, and unsupported version refusals;
-- body, species, projection, key ID, signature, and signature-domain mutation;
+- body, species, projection, authenticated order, key ID, signature, and
+  signature-domain mutation;
 - missing/extra/duplicate/dangling/cross-document/wrong-field overlay entries;
 - damaged/truncated Age armor and unavailable key;
 - single-stream and multi-file image topology/byte round-trip;
@@ -1324,6 +1390,8 @@ Commit:
   `MostInfluenced`, recomputation disagreement, and proof that every such value
   remains report-only;
 - no-compression/no-append/no-second-overlay grammar refusals.
+- local filename/internal version/species/order/receipt-ID agreement, maximum-order
+  ambiguity cohorts, and newest-partial-no-fallback behavior through `30Rd`.
 
 ### Required compile-fail/fence corpus
 
@@ -1441,8 +1509,9 @@ STOP and return to the conductor if any builder believes they need:
   bounds;
 - a new observation made solely for durability;
 - a permissive parse, unknown-field recovery, or ignored trailing bytes;
-- append, compression, mutable completion, retention, production key discovery,
-  default platform store, archive, or policy-profile work in V1;
+- append, compression, mutable completion, retention, alternative key providers,
+  provider discovery/selection, archive, policy profiles, or store work beyond the
+  required `30Rd` baseline in V1;
 - a user-facing prose string authored by a builder; or
 - weakening a negative test to make a check pass.
 
@@ -1461,7 +1530,7 @@ Every lane report states:
 9. comment budget; and
 10. any `tc-*` decision left for the conductor rather than resolved locally.
 
-The build conductor reads `30Ra` and this document together. Builders receive only
+The build conductor reads `30Ra`, this document, and `30Rd` together. Builders receive only
 the stage they own plus all cross-stage type contracts it consumes; they do not
 locally reinterpret the receipt architecture.
 

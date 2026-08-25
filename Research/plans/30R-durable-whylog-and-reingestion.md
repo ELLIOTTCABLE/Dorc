@@ -3,8 +3,10 @@
 > Tier: conductor-facing project design. Full specification, constraints,
 > alternatives, and rationale live in
 > `Research/quarantine-DO-NOT-READ/30Ra-durable-whylog-security-review.md`.
-> Do not follow that pointer unless explicitly authorized to access the
-> quarantine. This document is sufficient for ordinary planning and construction.
+> The current-tree schedule is quarantine `30Rb`; the default local durable edge is
+> specified only by quarantine `30Rd`. Do not follow those pointers unless explicitly
+> authorized. This document is sufficient for ordinary product planning, but it is
+> not an implementation brief for the local durable edge.
 >
 > Changes in this region defer to the relevant crate-local `inv-*` laws and
 > require the standing opaque-review process before the design or implementation
@@ -23,9 +25,14 @@ PlanReceipt P -------------- ApplyIntent A2 -> no outcome
                               ApplyIntent A3 -> ApplyOutcome O3
 ```
 
+This is one readable slice. The actual report-only relation is M:N: one presented
+plan can feed many apply assignments, and one assignment can cite zero, one, or many
+originating plans under admin control. An intent holds a non-empty ordered assignment
+set; an intent has zero or one outcome.
+
 `PlanReceipt` is the primary whylog: probing, analysis, vouches, decisions, and
-the emitted plan. `ApplyIntent` records the exact admin-adopted apply image and
-context immediately before first mutative dispatch. `ApplyOutcome` records actual
+the emitted plan. `ApplyIntent` records the exact admin-adopted assignment images
+and contexts immediately before first mutative dispatch. `ApplyOutcome` records actual
 execution on every graceful terminal path. Missing graph edges remain explicit and
 imply nothing about unrecorded outcomes.
 
@@ -47,14 +54,16 @@ product-spanning DST routes. It includes:
 - exact single-stream and multi-file `ApplyImage` round trips;
 - projection, validation, completeness, and recorded/live typestates;
 - injected algorithm/provider and receipt source/sink interfaces;
+- one default local-file provider and immutable per-user receipt store, sufficient
+  for the shipped binary to persist and reopen the new format;
 - the smallest current plan values needed by one plan/why route;
 - the dispatch-state seam exercised under DST; and
 - plan/why plus apply/why e2e coverage.
 
-V1 does not include production provider/configuration surfaces, convenience or
-hardening actions, full store hardening, retention, source archive, every semantic
-species, complete executor/multi-host wiring, or the deeper pre-publication
-verification programme.
+V1 does not include alternative provider/configuration surfaces, convenience or
+hardening actions, rotation/import/export, custom roots, full store hardening,
+retention, source archive, every semantic species, complete executor/multi-host
+wiring, or the deeper pre-publication verification programme.
 
 The arc ends with the old format, reader, writer, fixtures, compatibility paths,
 and one-file assumptions entirely removed. Temporary coexistence while constructing
@@ -111,9 +120,10 @@ records alone. Archive presence never affects receipt validity or action. V1 rec
 existing identities and may carry one excerpt required by its e2e; general excerpt
 and archive policy is later.
 
-`ApplyIntent` binds one exact by-value apply image: every stream and file the apply
-will use, the original artifact form, entrypoints, roots, complete transitive
-dependency topology, target-relative placement, and exact bytes. The image may be
+`ApplyIntent` binds non-empty ordered admin-owned assignments, each with one exact
+by-value apply image: every stream and file that assignment will use, the original
+artifact form, entrypoints, roots, complete transitive dependency topology,
+target-relative placement, and exact bytes. An image may be
 encoded in a deterministic txtar-like receipt container, but receipt creation never
 flattens, bundles, relocates, rewrites, or otherwise changes what apply actually uses.
 A digest, lossy diff, or best-effort archive reference cannot mint dispatch authority.
@@ -206,20 +216,21 @@ reader.
 The two algorithm-provider roles are independently generated, stored, rotated, and
 typed. Neither derives from the other. Private provider paths never enter receipts.
 
-The eventual baseline uses restrictive private files under the per-user configuration
-root, while receipts live under the per-user state root. Explicit organization paths,
+The V1 baseline uses restrictive private files under the per-user configuration root,
+while receipts live under the per-user state root. Explicit organization paths,
 dislocated mounts, platform stores, and hardware providers are later guided choices.
 Old public verification material remains available for old receipts; old rich-detail
 material remains readable only while its matching provider remains available.
 
-V1 uses injected fixture capabilities. Production generation, custody, import/export,
-provider selection, rotation, and guided setup are later.
+V1 keeps injected fixture capabilities for deterministic tests and also supplies one
+concrete local provider for the normal binary. Import/export, provider selection,
+rotation, and guided setup are later.
 
 ## default-and-guided-policy
 
 This is a later/pre-publication product surface, not a v1 obligation.
 
-The baseline eventually selects validated rich receipts, private-file providers,
+The V1 baseline selects validated rich receipts, a local private-file provider,
 required `ApplyIntent` publication before mutative dispatch, no automatic rich-to-plain
 fallback, no clear detail mode, no unrelated-command deletion, and filenames without
 host identity or detail values.
@@ -275,20 +286,18 @@ After first dispatch commitment, durable-only failure no longer aborts otherwise
 coherent orchestration. Transport, execution, target attribution, generation, and
 mutation-integrity failures remain separate and retain their own abort behavior.
 
-V1 exercises this state through an injected receipt sink in its DST route. Production
-filesystem grades and configuration enforcement are later. V1 does not append
-outcomes; a controller crash may lose in-memory results while the intent remains.
+V1 exercises this state through both an injected receipt sink in DST and the default
+local store in its product route. Broader filesystem grades and configuration remain
+later. V1 does not append outcomes; a controller crash may lose in-memory results
+while the intent remains.
 
 ## receipt-store-contract
 
-This is a later product edge. V1 reserves receipt source/sink and publication
-result/grade types and uses deterministic in-memory or throwaway implementations.
-
-The eventual per-user immutable store owns private exclusive creation, explicit
-bounds, complete no-replace publication, named synchronization grades, unselectable
-incomplete content, bounded enumeration, filename/internal-identity agreement, owned
-cleanup, user-selected symlinked-root handling, and injected filesystem/clock/randomness.
-No mutable `latest` pointer or sidecar database is required.
+V1 includes a per-user immutable store with private exclusive creation, explicit
+bounds, no-replace publication, named platform-specific synchronization results,
+unselectable incomplete content, bounded enumeration, filename/internal-identity
+agreement, and injected filesystem/clock/randomness. It adds no automatic cleanup,
+custom-root policy, mutable `latest` pointer, or sidecar database.
 
 ## target-crate-boundaries
 
@@ -298,10 +307,13 @@ The target dependency direction is:
 - Spine and plan/execution code mint stable semantic records at their authoritative
   seats;
 - a standalone dependency-light receipt crate owns recorded types, grammar,
-  projections, graph identities, algorithm adapters, and parser/writer states;
+  projections, graph identities, capability traits, and parser/writer states;
+- a dependency-outward crypto sibling owns the concrete algorithm adapters;
 - `plan` projects the minimal plan semantics into `PlanReceipt`;
 - execution/orchestration mints `ApplyIntent` and `ApplyOutcome`;
-- `cli` eventually owns I/O, provider/configuration, publication, and user-selected
+- a local-edge sibling owns the default key/store I/O without entering the analyzer
+  dependency graph;
+- `cli` owns production assembly, publication policy, and later user-selected
   acceptance; and
 - `aid` renders recorded models and never feeds them back to decisions.
 
@@ -322,12 +334,15 @@ this v1 order:
 5. Route minimal current plan values through receipt write/read and `dorc why`.
 6. Route intent, hostsim/DST execution, outcome or no-outcome, correlation, and why.
 7. Thread the dispatch/failure-direction state through that route.
-8. Delete the old format, parser, writer, fixtures, compatibility paths, and one-file
+8. Build and test the default local provider/store through real-binary process-restart
+   plan/why and apply/why routes.
+9. Delete the old format, parser, writer, fixtures, compatibility paths, and one-file
    assumptions. The arc ends with exactly one live implementation.
 
-Later/pre-publication work adds production store and providers, broader semantic
-species/excerpts, full executor and mutation gating, individual policy/configuration,
-guided profiles, retention, source archive, platform breadth, and final polish.
+Later/pre-publication work adds alternative providers, broader store hardening,
+broader semantic species/excerpts, full executor and mutation gating, individual
+policy/configuration, guided profiles, retention, source archive, platform breadth,
+and final polish.
 
 ## verification-direction-and-tools
 
@@ -358,8 +373,9 @@ when receipts and private provider material co-propagate.
 
 The v1 plan must settle exact grammar tokens, library packages/adapters, exact
 `ApplyImage` receipt encoding, minimal current projection fields, fixture interfaces,
-e2e routes, and old-code deletion. Later planning owns provider files, acceptance UX,
-policy names, publication grades, retention, padding, production limits, source
+the default local provider/store, e2e routes, and old-code deletion. Later planning
+owns alternative providers, acceptance UX, policy names, stronger publication grades,
+retention, padding, later retuning/widening of the fixed V1 limits, source
 excerpts/archive, and unvalidated render limits.
 
 These details may refine but not silently reopen the receipt graph, single readable
