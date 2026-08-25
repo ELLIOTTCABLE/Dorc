@@ -134,8 +134,6 @@ pub fn image_of_artifact_set(
         })
     };
 
-    // The plan is root 0 under every form; the authored loads' roots follow it in the carriage's
-    // own order.
     let mut roots = vec![ApplyRoot::of(ApplyRootId::of(0), PLAN_ENTRY)];
     for path in set.topology().roots() {
         let ordinal =

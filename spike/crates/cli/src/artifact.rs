@@ -1207,8 +1207,6 @@ pub fn select(
         StreamPosture::Materializable => bundle_files(snapshot, projection, loads).map_err(Some),
     };
 
-    // Both forms below place no file beside the plan, so an EMPTY topology is their exact answer
-    // rather than an unknown one.
     let preserved = |fallback: Option<FormFallback>| Selection {
         form: ArtifactForm::PreservedBookTree,
         fallback,
