@@ -203,6 +203,17 @@ impl Reingested<RecordedPlanReceipt> {
     }
 }
 
+impl<D: Species, T: SignerTrust> Reingested<Receipt<D, crate::model::Rich, T>> {
+    /// The bytes filling one slot of one record, as the validated region carried them.
+    ///
+    /// A report-only scalar, like every other decomposition here: the seal forbids handing out the
+    /// recorded VALUE, not the bytes of a field a report renders.
+    #[must_use]
+    pub fn detail(&self, record: u64, tag: crate::projection::OpaqueFieldTag) -> Option<&[u8]> {
+        self.0.detail(record, tag)
+    }
+}
+
 impl Reingested<RecordedSource> {
     /// Where this source sat in the acquired-source table.
     #[must_use]
