@@ -565,7 +565,11 @@ const fn carriage(species: SpineSpecies) -> (bool, RecordedOmissionReason) {
         | SpineSpecies::RegionDecision => (true, RecordedOmissionReason::NotProjectedV1),
         // The stream's own bytes are an opaque slot on the admission row, never a row of their own.
         SpineSpecies::RecordStream => (false, RecordedOmissionReason::ContentExcluded),
-        // The approval-surface identities are not minted yet, so no row can state them.
+        // The row demands THREE identities and one of them has no producer. The approval surface's
+        // own identity is minted (`PlanPlane::PresentedPlanIdentity`) and the planned image's field
+        // is optional, but `planning-input` is a required digest and nothing yet encodes the
+        // planner's complete input tuple. Emitting the row would mean inventing that encoding at
+        // this seat, and an inputs identity that omits an input reads two different runs as one.
         SpineSpecies::PresentedPlan => (false, RecordedOmissionReason::NotProjectedV1),
         // The run outcome belongs to the apply-outcome document, never to a plan receipt.
         SpineSpecies::Vouch
