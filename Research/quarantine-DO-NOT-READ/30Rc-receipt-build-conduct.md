@@ -17,7 +17,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
-| 3 presented plan + PlanReceipt | `ai/r30-receipt` | PARTIAL `5f315189`; witness + row + write route remain |
+| 3 presented plan + PlanReceipt | `ai/r30-receipt` | `3ad097df`; write route live, TWO exit items unmet |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
@@ -805,3 +805,59 @@ is not — never by loosening the fence. The builder flagged rather than assumed
 Gate: Linux green, floor 147 files / 10 checks. Windows wrapper blocked TWICE by the relink
 lock (retried once as briefed, persisted); direct measurement green — 2867 passed, 2 skipped,
 `check-quiet` clean. Restoration debt still NONE; the whylog writer was not reached.
+
+## write route LANDED — `3ad097df`. Stage 3 has TWO unmet exit items.
+
+7 commits, 16 files, +774/−133. 2871 tests. Both gate legs rc=0, floor 150 files / 10 checks
+each — the builder CHECKED the floor rather than trusting the exit code, because the pass was
+only 14 lines. That habit is now doing real work.
+
+Landed: `plan::presentation::FinalPresentation` (the witness — private fields, satisfies no
+identity API, **accepts no identity**: it computes both inside itself); the `presented-plan`
+row, retiring its omission; the lib-side write route with the crypto crate as a
+DEV-dependency plus its fence entry; an in-process integration test. Bypass removed: the
+binary's own recording seat and source-claims builder deleted, and with them a SECOND
+construction of the invocation record — it is now built once and shared by witness and Spine,
+so they cannot describe two runs.
+
+**UNMET EXIT ITEM 1 — the whylog writer stands.** Follows from the human's in-process ruling:
+no production caller can sign, so there is no second active writer to remove, and removing the
+old one would leave the binary with none. Restoration debt still ZERO.
+
+**UNMET EXIT ITEM 2 — the route publishes PLAIN ONLY.** `30Rb`'s Stage 3 build list names
+"signed plain AND rich". Rich needs the held bytes collected into overlay entries and the
+projection today emits opaque STATES rather than VALUES — a real structural gap, not laziness.
+But this was a scope call the builder MADE and disclosed afterward rather than escalating
+first, which is the shape the brief told it to avoid. Mild, and surfaced to the human rather
+than ratified by me. NB rich is REQUIRED by Stage 4's dispatch permit
+(`Published(PublishedReceipt<ApplyIntent, Rich, Grade>, ExactApplyImagesPresent)`), so
+deferring it does not save it.
+
+Disclosed and accepted: controller-semantics is `dorc/0.0.0` for every spike build, so that
+member of `PlanningInputId` discriminates nothing today. Honest value, disclosed at the const;
+it starts working when versions become real.
+
+Invariant prose from this lane:
+
+**The witness looks inert and is not.** Nothing in its type prevents constructing one earlier
+than the settled seat — every input it takes exists long before settlement quiesces. Only
+WHERE IT IS CALLED FROM makes it honest, exactly as with the identity mint beneath it. Move
+that call up the function "to have it available sooner" and nothing fails, and the receipt
+names a surface that was never presented.
+
+**The cross-plan check is weaker than it looks, deliberately.** It compares the one identity
+the witness and the Spine both hold and refuses on disagreement AND on absence — catching a
+whole-witness swap, the realistic accident. It CANNOT catch a witness whose two other
+identities were wrong from birth, because the Spine has no copy to disagree with. Those two
+are load-bearing precisely because nothing downstream can contradict them — which is why the
+constructor COMPUTES both rather than accepting either, and why adding a parameter that
+accepts one would dissolve the guarantee while every test stayed green.
+
+**The recording seat is lib-side for one reason** that will look arbitrary to a tidier: the
+battery proving the write route drives THAT seat. Move it back into the binary and the test
+can still be written — it will re-implement the recording and prove nothing.
+
+**`WhyWorld` never populates the Spine's durable arm** — no invocation, presented plan, record
+stream, or admission. Projecting from a `WhyWorld` Spine refuses today; the read-back route
+hits it immediately. Whether the why-driver should populate its own arm is a real design
+question, not an oversight to patch.
