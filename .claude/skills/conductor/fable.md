@@ -38,6 +38,26 @@ harness, use these model-specific expectations:
   writing, so it is reasonable to keep their project context and guardrails hot
   and reuse them with shorter follow-up prompts for related investigative work.
 
+## Subagent token tracking
+
+Subagents' tool results carry a running `<total_tokens>` count via
+system-reminder tags. Notes on its behavior:
+
+- It is one continuing score for the subagent's whole session, not a per-turn
+  reset. In practice it tracks reasonably close to the actual billed/
+  harness-limited count.
+- Internal reasoning tokens, output tokens, and input/context tokens all
+  appear to count against it. The system prompt does not appear to be
+  counted, so the value is off by a small, roughly-fixed amount from session
+  start rather than starting at the nominal ceiling.
+- Brief subagents to start winding down — committing work and updating any
+  ledger/status doc — once their observed spend approaches ~800,000 tokens.
+  Past that point they are approaching catastrophic compaction.
+- A subagent's own sub-subagents' reports do not appear to count against its
+  total. With deep dispatch chains, or a sub-subagent returning a large or
+  long report, the parent's counter can end up significantly out of sync with
+  actual consumption — do not treat it as authoritative in that shape of tree.
+
 ## Quarantine and opaque review
 
 *You* may not ever read anything in the quarantine unless directly asked by the
