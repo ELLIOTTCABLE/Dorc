@@ -167,9 +167,10 @@ impl CollidedDocument {
 
 /// One document the graph holds, with the provenance of the material that checked it.
 ///
-/// Retains the projection word and the exact document image because that is what classifying a
-/// second claimant to one identity requires: a receipt identity names the receipt-event, not the
-/// byte-document, so differing bytes are a finding only WITHIN one projection.
+/// Retains the exact document image because that is what classifying a second claimant to one
+/// identity requires: an identity is minted per document, so two documents holding one is a
+/// finding whenever their bytes differ, and both are retained. The projection word is kept for
+/// reporting, never to excuse a difference.
 #[derive(Debug)]
 pub struct GraphNode<M: RecordedType> {
     model: Reingested<M>,
@@ -223,8 +224,8 @@ impl ReceiptGraph {
     /// Take one plan document, with the exact bytes it was read from.
     ///
     /// The image is required because a second claimant to one identity is classified by
-    /// [`same_identity_pair`], not by comparing models: a rich document and its plain remint
-    /// share an identity legitimately and carry different content.
+    /// [`same_identity_pair`], not by comparing models: two models can agree while the bytes
+    /// they were read from do not.
     pub fn ingest_plan<P: Projection, T: SignerTrust>(
         &mut self,
         document: &Reingested<Receipt<PlanReceipt, P, T>>,
@@ -236,9 +237,7 @@ impl ReceiptGraph {
         match document.model() {
             Ok(model) => match self.plans.get(&id) {
                 Some(held) => {
-                    if same_identity_pair(held.projection, &held.image, P::TOKEN, image)
-                        == SameIdentityPair::Divergent
-                    {
+                    if same_identity_pair(&held.image, image) == SameIdentityPair::Divergent {
                         self.collisions.push(CollidedDocument::Plan {
                             identity: id,
                             model: Box::new(model),
@@ -273,9 +272,7 @@ impl ReceiptGraph {
         match document.model() {
             Ok(model) => match self.intents.get(&id) {
                 Some(held) => {
-                    if same_identity_pair(held.projection, &held.image, P::TOKEN, image)
-                        == SameIdentityPair::Divergent
-                    {
+                    if same_identity_pair(&held.image, image) == SameIdentityPair::Divergent {
                         self.collisions.push(CollidedDocument::Intent {
                             identity: id,
                             model: Box::new(model),
@@ -310,9 +307,7 @@ impl ReceiptGraph {
         match document.model() {
             Ok(model) => match self.outcomes.get(&id) {
                 Some(held) => {
-                    if same_identity_pair(held.projection, &held.image, P::TOKEN, image)
-                        == SameIdentityPair::Divergent
-                    {
+                    if same_identity_pair(&held.image, image) == SameIdentityPair::Divergent {
                         self.collisions.push(CollidedDocument::Outcome {
                             identity: id,
                             model: Box::new(model),
