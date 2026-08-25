@@ -46,12 +46,25 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 2A apply image · 2B overlay+Age · 2C models+graph | done, folded in that order |
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
 | 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
-| 5 why / correlation / re-derivation | **partial** — see the blocker under *open with the human* |
+| 5 why / correlation / re-derivation | done except its severance — see the blocker |
 | 6 rip the old implementation | not started |
 
 ## what is owed
 
-**Stage 4 is DONE.** Stages 5 and 6 remain.
+**Stage 4 is DONE. Stage 5 is DONE except its severance**, and Stage 6 is unstarted; both
+remainders are the one blocker below and nothing else.
+
+Landed in Stage 5: the from-nothing replay authority mint deleted and the witness re-derived
+from its admission; the recorded-versus-recomputed comparison sealed so a live disposition
+carrying an execution license can no longer occupy its current arm; source standing and
+source material answered as two independent questions rather than one flat enum; a two-way
+file-narrow fence over every seat naming the read-back wrapper, verified in both failing
+directions; and `--last` confined to `dorc why`, refusing on plan/apply/probe/round-trip/
+bundle at parse time, pinned through the binary with a `why --last` control.
+
+Not built, deliberately: the why-phase witness. Until the why route reads receipts its mint
+has no honest gate, and building it would put a from-nothing witness back in the lane that
+removed one.
 
 `tc-two-accounts-per-apply-document` is now SHAPED but not welded: both accounts sit side by
 side on the apply request (`invocation` and `standup_account`), neither derived from the
@@ -347,6 +360,15 @@ the one it claims; a round-trip test made vacuous by an encoder handing back sto
 tests written downstream of a decision, which encode that decision and cannot falsify it; and a
 test that re-implements the seat it means to exercise, demonstrating a capability it does not
 observe.
+
+A fifth guise, found by falsification in the `--last` lane and the sharpest of them: **an
+exit-status assertion on a refusal is vacuous whenever a DIFFERENT refusal fires anyway.**
+With the new guard disabled, `dorc plan --last book.sh` still exits non-zero — on
+file-not-found, because the book is absent from the cwd — so a test checking only "it
+refused" passes with the guard removed. Only the assertion naming the exact slug catches the
+regression. The tidying instinct that replaces a slug check with a plain rc check is
+therefore a silent un-testing, and the case now carries that measurement in its own doc so a
+successor knows what they would be deleting.
 
 Countermeasures now in use: **pin every negative to its exact refusal in a committed table** —
 the overlay family fails closed in ways that look alike, so "it was rejected" is satisfied by
