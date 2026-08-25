@@ -761,3 +761,74 @@ fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
         Some(PublicationRefusal::Sink)
     );
 }
+
+#[test]
+fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
+    // The degraded terminal report: sealing failed or no material was configured, and the run can
+    // still say what it reached. The states must narrow — a plain document claiming `captured`
+    // would promise a region it does not have, which is a document its own reader refuses.
+    use dorc_receipt::dispatch::{ConfiguredReceiptBypass, IntentPublicationGate};
+    use dorc_receipt::project::{ApplyOutcomeReport, ApplySiteReport};
+
+    let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+    let mut ids = CountingIds(0);
+    let mut sink = MemorySink::default();
+    let (intent, _) = prepared_apply_intent(&mut ids);
+    let phase = IntentPublicationGate::ConfiguredBypass(ConfiguredReceiptBypass::configured())
+        .permit(intent)
+        .spend();
+
+    let report = ApplyOutcomeReport::of(
+        dorc_receipt::ids::ApplyIntentId::of_hex(&"f".repeat(64))
+            .expect("the fixture identity parses"),
+        dorc_receipt::tokens::RecordedTerminalState::Unknown,
+        dorc_receipt::tokens::RecordedDurableState::Failed,
+        vec![ApplySiteReport::of(
+            dorc_receipt::rows::AssignmentOrdinal::of(0),
+            dorc_receipt::rows::RecordedSite::of(dorc_receipt::rows::RecordedLeaf::of(0), None),
+            dorc_receipt::tokens::RecordedSiteStatus::Unknown,
+            None,
+            Some(b"partial output\n".to_vec()),
+            None,
+            host_influenced(),
+        )],
+        host_influenced(),
+    );
+
+    let (id, grade) = dorc_cli::receipt_edge::publish_plain_apply_outcome(
+        &phase,
+        &report,
+        &apply_invocation(),
+        &ReceiptLimits::V1,
+        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+    )
+    .expect("a declared outcome publishes plainly");
+    assert_eq!(grade, PublicationGrade::Volatile);
+
+    let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
+    let readable = String::from_utf8_lossy(&bytes).to_string();
+    assert!(readable.contains("stdout=withheld-plain"));
+    assert!(
+        !readable.contains("partial output"),
+        "a plain document carries no host bytes anywhere"
+    );
+
+    let recorded = match read_plain::<dorc_receipt::model::ApplyOutcome>(
+        bytes,
+        &ReceiptLimits::V1,
+        &policy_for(&signer),
+    ) {
+        Ok(ReadPlain::Trusted(recorded)) => recorded,
+        other => panic!("a document this controller signed must read trusted: {other:?}"),
+    };
+    assert_eq!(recorded.receipt_id(), Some(id));
+    let model = recorded
+        .model()
+        .expect("the record stream closes over itself");
+    assert_eq!(model.site_count(), 1);
+    assert_eq!(
+        model.terminal(),
+        dorc_receipt::tokens::RecordedTerminalState::Unknown,
+        "a run that produced no completion marker says unknown, never not-attempted"
+    );
+}

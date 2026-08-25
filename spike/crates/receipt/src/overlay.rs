@@ -153,18 +153,6 @@ impl DocumentRows {
         Ok(())
     }
 
-    /// The records, in emission order.
-    #[must_use]
-    pub fn records(&self) -> &[crate::format::SkeletonRecord] {
-        &self.records
-    }
-
-    /// The detail values, one per captured slot that was offered one.
-    #[must_use]
-    pub fn details(&self) -> &[OverlayEntry] {
-        &self.details
-    }
-
     /// Take both vectors, for a caller assembling a document.
     #[must_use]
     pub fn into_parts(self) -> (Vec<crate::format::SkeletonRecord>, Vec<OverlayEntry>) {
