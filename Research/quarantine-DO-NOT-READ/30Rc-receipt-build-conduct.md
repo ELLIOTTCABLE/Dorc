@@ -17,8 +17,8 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
-| 3 presented plan + PlanReceipt | `ai/r30-receipt` | `3ad097df`; write route live, TWO exit items unmet |
-| 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
+| 3 presented plan + PlanReceipt | `ai/r30-receipt` | SUBSTANTIVE @ `57b78a8e`; writer + 7 slots deferred |
+| 4 intent/dispatch/outcome | `ai/r30-receipt` | dispatched from `57b78a8e` |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
 
@@ -861,3 +861,54 @@ can still be written — it will re-implement the recording and prove nothing.
 stream, or admission. Projecting from a `WhyWorld` Spine refuses today; the read-back route
 hits it immediately. Whether the why-driver should populate its own arm is a real design
 question, not an oversight to patch.
+
+## rich LANDED — `57b78a8e`. Stage 3 substantively complete.
+
+12 commits total this stage (`5f315189`→`57b78a8e`), 2877 tests, both legs green, floor 150/10.
+Held values ride an Age-sealed reverse region; the readable skeleton carries only state words.
+
+**The leak test is the one that matters**, and it asserts BOTH halves at once: the readable half
+must say `target=captured` and must NOT contain the value, while the authenticated half must
+hand back exactly the bytes. Asserting only the second would pass a document that leaked every
+value in clear beside its own ciphertext.
+
+The captured-slot account is checked at the WRITER, both ways, before a byte is sealed — and it
+earned itself on its first run, catching seven slots claiming `captured` while offering nothing.
+
+**Scope, stated not asked:** five slot species carry real held bytes (target name, source path,
+site shell, region shell, import path). Seven now read `uncollected`: argv, record stream, load
+custody, probe-ship source, survival poison, render detail, licensor locus. Each holds
+SOMETHING, but writing it means deciding a durable RENDERING — a custody, a span, a source-file
+id — which is a durable-content decision, not a projection-seat one, and the governed-durable
+rule puts that behind review. `uncollected` is distinct from `unavailable` (which would claim
+the run held nothing) so the loss is recorded IN-BAND rather than needing an omission row. A
+narrowing of durable content is the safe direction; a successor funding those slots ADDS
+rather than corrects.
+
+Negatives: it did NOT duplicate the receipt crate's 16-case overlay corpus, adding four
+route-level cases that corpus cannot see. The sharp one — a corrupted region that is then
+RE-SIGNED passes the signature and fails the open, isolating `RegionUnopenable` from
+`SignatureCheck`, with a companion that skips re-signing and lands on `SignatureCheck`. The two
+look-alike causes are told apart rather than collapsed into "it was rejected".
+
+Measurement corrected two premises again: the fixture target is `localhost`, and a plain read of
+rich bytes refuses at `OverlayPresence` STRUCTURALLY, before any material is consulted — stronger
+than assumed, and pinned to what it actually gives rather than what was expected.
+
+Restraint worth recording: the age constructors take material by exact encoding and GENERATE
+NONE — `x25519` deliberately not re-exported, because that would add the key-generation surface
+the crypto crate is specified to lack.
+
+Invariant prose:
+
+**`captured` is now a promise the writer must FUND.** Before this, marking a slot captured cost
+nothing; now a slot that says captured with no entry produces a document its own reader refuses,
+and the writer's account check is the only thing turning that from a reader-side mystery into a
+refusal at the seat that caused it. The temptation is widening `held()` back over a slot whose
+value is convenient to flag but not designed to write — a one-word change that breaks the
+document.
+
+**A detail entry is keyed by its record's POSITION**, so the projection's walk and the model's
+re-emission must stay in one order. A position is range-checked and never sense-checked, so
+drift enriches whichever row shares the integer while the document still validates cleanly —
+the same hazard as the region-ordinal walk, one level up.
