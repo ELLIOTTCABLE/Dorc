@@ -51,9 +51,19 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 
 ## what is owed
 
-**Stage 4 exit:** multi-file topology carriage is DONE. Still owed: the intent/outcome
-projection and publication; the DST apply route; and gating `ship_consented_apply`, which
-today verifies nothing about the bytes it ships and is BLOCKED — see *open with the human*.
+**Stage 4 exit:** multi-file topology carriage and the intent/outcome projection are DONE.
+Still owed: the DST apply route, and gating `ship_consented_apply`, which today verifies
+nothing about the bytes it ships. **Both are BLOCKED** — the ship gate on the human ruling
+below, and the route because its shape differs depending on which way that ruling goes.
+Stage 5 is serial after them (`main.rs` again), so the arc genuinely stalls here.
+
+One open judgment, deliberately unresolved and coupled to that ruling:
+`tc-two-accounts-per-apply-document` — whether a standup's resolved answers count as
+host-influenced depends on where a standup gets them, which is the blocked question. Left as
+invocation's-own plus standup-resolved, caller decides both.
+
+The live→recorded projection sits in the receipt crate over plain value carriers; the
+live→carrier half is still owed at the CLI seat and belongs to the route lane.
 
 Three residues from the carriage lane: a diagnostic for a refused planned image (absence is
 truthful but silent; the code is mintable, the defining case reads as diagnostics territory);
@@ -139,6 +149,16 @@ read `uncollected`. Both are explained under *rulings*; neither is an oversight.
   sign rather than conditionally declining. It flips the day a key provider lands.
   Consequence: there is no second active writer, so the old whylog writer stays — Stage 3's
   literal exit clause is unmet by design, not by neglect.
+- **`dorc-apply-context/1`**, a nested exact container inside one opaque field carrying the
+  five non-destination context axes, on the `ApplyArtifactImage` precedent; the destination
+  rides the sibling `target-name` slot so neither repeats the other. A strawman wire name
+  like every other pre-user one — rename in place, never adapt.
+- **`30Rb`'s prose promises more than its reviewed tables hold in at least two places**
+  (plain-intent topology summaries; apply-intent controller semantics). The tables were the
+  reviewed artifact and they win; a third instance gets the same answer.
+- **The writer-side aggregate bound fails per species**: the intent's required arm REFUSES
+  (it binds exact bytes, so omission cannot mint the permit), the outcome OMITS with
+  `omitted-limit` (a bounded report is still a true one).
 - **`roots` = `plan.sh` at 0, bundle roots appended.** The alternative makes a `root` line
   assert one thing in the one-file case and another once a dependency appears; a durable
   field whose meaning changes shape under a non-trivial population is the drift the
