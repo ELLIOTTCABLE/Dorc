@@ -51,9 +51,17 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 
 ## what is owed
 
-**Stage 4 exit:** multi-file topology carriage; the intent/outcome projection and publication;
-the DST apply route; and gating `ship_consented_apply`, which today verifies nothing about the
-bytes it ships.
+**Stage 4 exit:** multi-file topology carriage is DONE. Still owed: the intent/outcome
+projection and publication; the DST apply route; and gating `ship_consented_apply`, which
+today verifies nothing about the bytes it ships and is BLOCKED — see *open with the human*.
+
+Three residues from the carriage lane: a diagnostic for a refused planned image (absence is
+truthful but silent; the code is mintable, the defining case reads as diagnostics territory);
+the binary's own `planned_image` wiring is unobservable from any test target, so the
+projection half is covered at its own seat instead (same disclosure class as
+`receipt_route.rs`'s existing cut); and `WhyWorld::final_presentation` still takes
+`planned_image` and its one caller passes `None`, so a why report would name no image where
+the run does — Stage 5's lane.
 
 **Stage 3 residue, deliberate:** the old whylog writer still stands, and seven overlay slots
 read `uncollected`. Both are explained under *rulings*; neither is an oversight.
@@ -252,8 +260,18 @@ in the post-dispatch failure set is load-bearing: six of seven arms narrow to no
 the durable one reaches the continuation, which is what stops a future agent widening a match
 arm until a lost host is handled like a logging problem.
 
-The conversion refuses a set carrying dependency files rather than recording an obvious-looking
-topology. "The plan loads everything beside it" is true for the bundled form and false for the
+The file↔published-path correspondence exists only at the PLACING act and nowhere after, so it
+is recorded by the same call that chooses each destination — which is what makes a forgotten
+siting a refusal rather than a silently short edge set. Two consequences a successor will meet:
+an absorbed dependency sites at the SAME path as the bytes that swallowed it, so
+`parent == child ⇒ no edge` covers absorption with no special-casing (give absorbed files their
+own destinations and edges appear naming files the artifact does not publish); and every edge
+today's four forms can state is `loads` — `Contains` needs both ends published and none does,
+so its absence is a fact about the forms, not an omission. A planned image that cannot be built
+reads as absence, not failure; `presented-plan` already spells absence, so no wire table moved.
+
+The conversion originally refused a set carrying dependency files rather than recording an
+obvious-looking topology. "The plan loads everything beside it" is true for the bundled form and false for the
 mirrored one the moment one dependency sources another — and that falsehood would sit inside a
 container whose entire promise is reproducing exactly what the apply uses. The information
 exists (the bundle projection knows which entry each root materializes; the load account knows
