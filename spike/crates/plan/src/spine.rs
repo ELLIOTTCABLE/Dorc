@@ -696,6 +696,7 @@ mod tests {
                 "cli/src/main.rs",
                 "cli/src/results.rs",
                 "cli/src/world.rs",
+                "cli/tests/receipt_route.rs",
                 "core/src/spine.rs",
                 "coverage/src/lib.rs",
                 "hostsim/src/lib.rs",

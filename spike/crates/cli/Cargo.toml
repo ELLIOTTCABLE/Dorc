@@ -108,6 +108,10 @@ path = "tests/definition_frames.rs"
 # drives whole worlds through the real pipeline to ask whether a linguistic behaviour cost a site
 # its LICENSE, which no single-crate assertion can answer.
 [[test]]
+name = "receipt_route"
+path = "tests/receipt_route.rs"
+
+[[test]]
 name = "sh_parity"
 path = "tests/sh_parity.rs"
 
