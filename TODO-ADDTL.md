@@ -12,6 +12,19 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 *(The 2026-07-27 trio — ssh executor, live-acceptance gate, CRLF gate — is BUILT and folded on `ai/r26-unify`; Dorc has now run for real against a VPS and a container. What stands now:)*
 
+* [ ] **four unruled departures in the durable-receipt build (`30R`; adjudication in
+  `quarantine/30Rc1`)** — an outside-lineage spec-compliance pass graded these as genuine
+  departures the specification does not license, needing a human ruling rather than a
+  conductor's. Each is BUILT and standing. (1) The source-ordering fix: the receipt's source
+  ordinal means load order, which the two-category invocation model cannot express truthfully —
+  but collapsing those categories restructures a live model beyond the latitude `30R` names.
+  Carries a gentle, explicitly-unwelded ack and wants outside grounding. (2) The presented-plan
+  identity: `30R` names one identity on the decide-plane; as built, that binding carries an
+  aggregate of three. (3) Two content-identity mints stand unfenced until a later boundary
+  supplies their callers — the fence corpus is required complete and admits no staged
+  exception. (4) Shared constructors renamed after the stage freeze that existed to stop
+  parallel lanes renegotiating them; the lanes have since folded, so the ruling is procedural.
+
 * [ ] **the render↔spine feedback shape (`30Ng:attn-render-refusal-feeds-the-spine`)** —
   human-flagged 2026-08-21, unruled: render-refusal ("won't elide: required syntax") is a
   mutative-difference-causing decision and must feed BACK into the decision spine; the
