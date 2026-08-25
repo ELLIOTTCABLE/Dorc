@@ -625,3 +625,55 @@ narrative/omission rows the run's, following `project_plan`'s existing fold), re
 three floor-writes. Green with no list edit. Its own caveat, worth keeping: the fence's subject
 is the VARIANT, so it catches both acts — over-broad, useful here, and a future legitimate
 projection-time floor-write would need a real decision rather than a list entry.
+
+## human rulings 2026-08-24 (late) + ARC-CLOSE OBLIGATIONS
+
+Spec amended by the human at `0036ac3c`, trailer section
+`30Rb:post-compliance-source-and-identity-advice`; plus `_tmp-handoff.md` at root (ephemeral,
+do not chase). Rulings on the four C's:
+
+- **Source ordinal = deterministic acquired-source/`SourceFileId` TABLE order**, NOT dynamic
+  shell load-occurrence order. The collapse stands but the JUSTIFICATION I approved it on is
+  superseded — the builder had argued the ordinal must express load order. Docs corrected in
+  four files (`a5c53b93`). `SourceRole` is V1 table classification only; repeated/multi-role/
+  multi-target stay with `30I`'s occurrence account.
+- **`PlanPlane::PresentedPlanIdentity` is exactly `PresentedPlanId`.** A private
+  final-presentation witness may carry the three atomically into projection but is NOT an
+  identity and cannot satisfy identity APIs; minted only after both views and artifact bytes
+  are final; cross-plan field substitution pinned; no generic identity-bundle framework.
+- Two mints get **declaration-only two-way fences NOW** (`d437f8e4`), widened only with each
+  reviewed sole production caller. Their doc-comments had been CLAIMING a fence that did not
+  exist.
+- Post-freeze constructor names **KEPT**; no aliases, no rework.
+
+**MY ERROR, corrected to the human:** the burndown entry said all four were "BUILT and
+standing". `PresentedPlanIdentity` never existed anywhere in the tree — I reported a Stage 3
+scout's FLAGGED INTENT as though it were built, and the human ruled on a hypothetical I had
+described as landed. The ruling lands fine as a build instruction; the report was wrong.
+
+**NACKED:** creating a private construction boundary for the source vector. My thread instead:
+the projection derives the book row from its explicit ROLE, never from position or a
+last-element fallback — truthful without touching `core` structure. Left alone deliberately:
+the positional fallback answering with the last element when no Book is present. Real defect,
+pre-existing, separable, ripples through consumers — recorded for the human, not folded in.
+
+**Product-spanning = IN-PROCESS now, with injected fixture capabilities; e2e is OWED, not
+waived.** Both are eventually owed; delaying e2e while supporting components land across later
+stages is reasonable. THE BOUND: acceptable only where the risk is "a bug e2e would have caught
+is caught by a later builder instead" — late detection is affordable churn. NOT acceptable where
+it risks eventual INCORRECTNESS. Undetectable ≠ late.
+
+**Test architecture must not drive build order** — exclusive categories, and emphatically NOT a
+general licence to disregard tests. Narrowly, for tests NON-PRODUCTIVELY blocking build order,
+over the PRECISE predicted range: leave-red (costly — successor churn) · disable (if tooling
+reaches it) · remove (extremis only). Least-destructive instrument that actually unblocks.
+
+### >>> ARC-CLOSE OBLIGATION — RESTORE VERBATIM <<<
+Gate-8's replay arm blocks the writer swap: disabling the whylog writer empties the replay half
+of SEVEN loom cases (`why-claims-payload`, `survivebite27-naked-trust-chain`, five
+`whygallery-*`) via `cli/tests/e2e.rs` gate-8 `scan_why_chain`, which drives the binary three
+times and compares a live render against a replayed one. The builder may leave-red/disable/
+remove over the window "until Stage 5 moves gate-8's replay arm onto the receipt reader", and
+MUST report which cases, which instrument, and exactly what restores them. **Every one must be
+restored verbatim before the arc closes — re-enabled, green, or re-added byte-identical.**
+Nothing ships with this outstanding.
