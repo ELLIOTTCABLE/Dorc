@@ -475,6 +475,7 @@ dependencies = [
  "dorc-oracle",
  "dorc-plan",
  "dorc-receipt",
+ "dorc-receipt-crypto",
  "dorc-syntax",
  "dorc-transport",
  "errorloom",

@@ -8,10 +8,12 @@ publish = false
 # The implementations of `dorc-receipt`'s injected capability traits, and NOTHING else.
 #
 # This crate exists so the RNG these packages carry cannot reach the analyzer kernel: only
-# `dorc-cli` depends on it, and `dorc-plan` depends on the pure crate alone. It mints no
-# checked, trusted, or complete receipt state — those constructors live in `dorc-receipt`
-# and are unreachable from here, so verify-before-interpret is enforced by the crate
-# boundary rather than by call ordering.
+# `dorc-cli` depends on it, and `dorc-plan` depends on the pure crate alone. That one edge is
+# DEV-ONLY for now — the write route takes injected capabilities and links no implementation, so
+# the shipped binary cannot sign a document; the edge becomes ordinary when a key provider lands.
+# It mints no checked, trusted, or complete receipt state — those constructors live in
+# `dorc-receipt` and are unreachable from here, so verify-before-interpret is enforced by the
+# crate boundary rather than by call ordering.
 #
 # Feature discipline: `age`'s `armor` is NOT a default feature and the grammar requires
 # canonical ASCII armor, so it is named explicitly. `plugin`, `ssh`, `async`, `cli-common`

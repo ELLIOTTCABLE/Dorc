@@ -18,10 +18,11 @@ fn crates_root() -> PathBuf {
 /// naming it fails too. An anticipatory entry is the failure mode the second direction
 /// exists for — it reads as a fence while permitting a crate nothing has yet checked.
 ///
-/// EMPTY today: the implementation crate exists and nothing depends on it yet, its own tests
-/// being its only consumer. The stage that first wires a production caller adds its entry
-/// here in the same commit as the manifest line, which is the act being made visible.
-const MAY_NAME_IT: [&str; 0] = [];
+/// `cli` names it DEV-ONLY: the write route's orchestration takes injected capabilities and links
+/// no implementation, so the shipped binary cannot sign. The list does not record that distinction,
+/// and must not — it answers which crates may reach the randomness at all, and a dev target reaches
+/// it exactly as a production one would. The entry stays put when the edge becomes ordinary.
+const MAY_NAME_IT: [&str; 1] = ["cli"];
 
 fn manifests() -> Vec<(String, String)> {
     let root = crates_root();

@@ -79,6 +79,13 @@ internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
 # resolves it, and no non-test build sees it.
 dorc-loom = { path = "../dorc-loom", version = "0.0.0" }
 errorloom = { path = "../errorloom", version = "0.0.0" }
+# The capability IMPLEMENTATIONS, dev-only on purpose. The write route's orchestration takes
+# injected capabilities and links nothing; the fixture signer that satisfies them lives in the
+# battery. So the shipped binary is structurally unable to sign a document rather than merely
+# declining to, and this edge becomes an ordinary dependency on the day a key provider lands.
+# Naming it at all is a governed act: `receipt/tests/crate_boundary.rs` allow-lists the crates
+# that may, two-way and section-blind, so this line and that entry move together.
+dorc-receipt-crypto = { path = "../receipt-crypto", version = "0.0.0" }
 
 [[test]]
 name = "e2e"
