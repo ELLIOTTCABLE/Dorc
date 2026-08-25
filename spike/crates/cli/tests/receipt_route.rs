@@ -1,9 +1,14 @@
-//! The plan-receipt write route, driven in process against the real pipeline.
+//! The receipt write routes — plan and apply — driven in process against the real seats.
 //!
 //! Every seat this exercises past the pipeline is the one the binary calls: the recording seat and
-//! the publication seat both live in `dorc_cli::receipt_edge`, so this battery cannot green while
+//! the publication seats all live in `dorc_cli::receipt_edge`, so this battery cannot green while
 //! the shipped route is broken. That is the whole point of the seat living lib-side — a battery
 //! that re-implemented the recording would demonstrate a capability it never observed.
+//!
+//! DISCLOSED SCOPE CUT, apply lane: no route in the tree produces a resolved apply context yet, so
+//! the standup values below are fixture material and no e2e case can reach these seats. What is
+//! proven here is the projection, the region accounting, and the publication — not that a live
+//! apply reaches them.
 //!
 //! DISCLOSED SCOPE CUT: the Spine here comes from `WhyWorld`, the sanctioned second driver, rather
 //! than from the binary's own pipeline, which no test target can reach. Both are real runs over
@@ -20,7 +25,8 @@
 
 use dorc_cli::receipt_edge::{
     CONTROLLER_SEMANTICS, PublicationRefusal, ReceiptCapabilities, invocation_record,
-    planning_mode, publish_plan_receipt, publish_rich_plan_receipt, record_durable_arm,
+    planning_mode, publish_apply_intent, publish_apply_outcome, publish_plain_apply_intent,
+    publish_plan_receipt, publish_rich_plan_receipt, record_durable_arm,
 };
 use dorc_cli::results::{RunClock, RunSources, SiteResults, admit_fixture_records};
 use dorc_core::Interner;
@@ -427,4 +433,330 @@ fn a_tampered_region_releases_nothing() {
     )
     .expect_err("an edited region is refused");
     assert_eq!(partial.reason(), &RefusalReason::SignatureCheck);
+}
+
+/// The book an apply is handed, distinctive enough that finding its bytes in a readable half is
+/// unambiguous.
+const APPLY_BYTES: &[u8] = b"#!/bin/sh\napt-get install -y nginx\n";
+
+/// The destination this battery's standup resolves, likewise distinctive.
+const APPLY_DESTINATION: &str = "web7.example.net";
+
+fn apply_invocation() -> dorc_receipt::project::ApplyInvocation {
+    dorc_receipt::project::ApplyInvocation::of(
+        RecordedInvocationMode::Apply,
+        None,
+        Some(APPLY_DESTINATION.as_bytes().to_vec()),
+        1,
+        dorc_receipt::RecordedInfluence::of_token(Some("authored-before-contact")),
+    )
+}
+
+fn host_influenced() -> dorc_receipt::RecordedInfluence {
+    dorc_receipt::RecordedInfluence::of_token(Some("host-influenced"))
+}
+
+/// One prepared intent over fixture standup values, plus the exact image it binds.
+///
+/// The context's six answers are distinct, which is what would make a transposed axis visible in
+/// the region rather than agreeing with itself.
+fn prepared_apply_intent(
+    ids: &mut CountingIds,
+) -> (
+    dorc_receipt::dispatch::PreparedApplyIntent,
+    dorc_receipt::image::ApplyArtifactImage,
+) {
+    use dorc_receipt::dispatch::{
+        ApplySessionReady, PendingApplyAssignment, PendingOrigins, ReadyApplyTarget,
+        ReceiptPolicyWitness, ResolvedApplyContext,
+    };
+    use dorc_receipt::ids::{ApplyGenerationId, ApplySessionId, ReadyApplyTargetId};
+
+    let target = ReadyApplyTargetId::mint(ids);
+    let context = ResolvedApplyContext::of(
+        APPLY_DESTINATION.to_owned(),
+        "deploy".to_owned(),
+        "netns-blue".to_owned(),
+        "/srv/app".to_owned(),
+        "inherited-minus-ssh".to_owned(),
+        "agent-forwarded".to_owned(),
+    );
+    let ready = match ApplySessionReady::of(
+        ApplySessionId::mint(ids),
+        ApplyGenerationId::mint(ids),
+        vec![ReadyApplyTarget::of(target, context)],
+    ) {
+        Ok(ready) => ready,
+        Err(refusal) => panic!("a well-formed standup closes: {refusal:?}"),
+    };
+    let image = match dorc_receipt::image::ApplyArtifactImage::of_external_stream(
+        dorc_receipt::image::ApplyEntryBytes::of(APPLY_BYTES.to_vec()),
+        &ReceiptLimits::V1,
+    ) {
+        Ok(image) => image,
+        Err(refusal) => panic!("a single stream builds: {refusal:?}"),
+    };
+    let assignment = PendingApplyAssignment::of(
+        dorc_receipt::rows::AssignmentOrdinal::of(0),
+        target,
+        image.clone(),
+        PendingOrigins::Unavailable,
+    );
+    match ready.prepare_intent(vec![assignment], ReceiptPolicyWitness::required_rich()) {
+        Ok(prepared) => (prepared, image),
+        Err(refusal) => panic!("a well-formed assignment prepares: {refusal:?}"),
+    }
+}
+
+/// Every value answering one tag anywhere in a document, so an assertion names the value rather
+/// than a record position it would have to hard-code.
+fn details_for<D: dorc_receipt::Species>(
+    recorded: &dorc_receipt::Reingested<
+        dorc_receipt::Receipt<D, dorc_receipt::model::Rich, dorc_receipt::TrustedReceiptSigner>,
+    >,
+    tag: OpaqueFieldTag,
+) -> Vec<Vec<u8>> {
+    (0..u64::try_from(recorded.record_count()).unwrap_or(0))
+        .filter_map(|record| recorded.detail(record, tag).map(<[u8]>::to_vec))
+        .collect()
+}
+
+#[test]
+fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it() {
+    // BOTH halves of the reverse-overlay bargain, on the value the required-publication route
+    // exists to bind. The readable side must not contain the bytes an apply will run — not the
+    // bytes, not a name pointing at them — and the authenticated side must hand back the
+    // assignment's own canonical image, which is what the accounting compared before sealing.
+    let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+    let (sealer, opener) = age_pair();
+    let mut ids = CountingIds(0);
+    let mut sink = MemorySink::default();
+    let (intent, image) = prepared_apply_intent(&mut ids);
+
+    let published = publish_apply_intent(
+        &intent,
+        &apply_invocation(),
+        authored(),
+        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        &sealer,
+    )
+    .expect("a prepared intent publishes richly");
+    assert_eq!(published.grade(), PublicationGrade::Volatile);
+    let announced = published.id();
+
+    let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
+    let readable = String::from_utf8_lossy(&bytes).to_string();
+    let skeleton = readable
+        .split("opaque-overlay")
+        .next()
+        .expect("the document has a readable half")
+        .to_owned();
+    assert!(
+        skeleton.contains("image-state=captured"),
+        "the skeleton states the image rode the region"
+    );
+    assert!(
+        !skeleton.contains("apt-get"),
+        "the skeleton carries the STATE and never the bytes an apply would run"
+    );
+    assert!(
+        !skeleton.contains(APPLY_DESTINATION),
+        "a captured destination must not appear on the readable side either"
+    );
+
+    let recorded = match read_rich::<dorc_receipt::model::ApplyIntent>(
+        bytes,
+        &ReceiptLimits::V1,
+        &policy_for(&signer),
+        &opener,
+    ) {
+        Ok(ReadRich::Trusted(recorded)) => recorded,
+        Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
+        Ok(other) => panic!("expected a trusted read: {other:?}"),
+    };
+    assert_eq!(
+        recorded.receipt_id(),
+        Some(announced),
+        "the identity the seat handed back is the document's own"
+    );
+    assert_eq!(
+        details_for(&recorded, OpaqueFieldTag::ApplyArtifactImage),
+        vec![image.encode().to_vec()],
+        "exactly one record carries the image, and it is this assignment's canonical bytes"
+    );
+    assert_eq!(
+        details_for(&recorded, OpaqueFieldTag::ApplyContext).len(),
+        1,
+        "the assignment's remaining resolved axes ride their own slot"
+    );
+
+    let model = recorded
+        .model()
+        .expect("the record stream closes over itself");
+    assert_eq!(model.assignment_count(), 1);
+    assert_eq!(
+        model.policy(),
+        dorc_receipt::tokens::RecordedApplyPolicy::RequiredRich
+    );
+}
+
+#[test]
+fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
+    // The bypass route's report document. It records the identities and the shape and says
+    // withheld-plain where the bytes would be, which is why it cannot satisfy required
+    // publication even when it reads back perfectly.
+    let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+    let mut ids = CountingIds(0);
+    let mut sink = MemorySink::default();
+    let (intent, _) = prepared_apply_intent(&mut ids);
+
+    let (id, grade) = publish_plain_apply_intent(
+        &intent,
+        &apply_invocation(),
+        authored(),
+        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+    )
+    .expect("a prepared intent publishes plainly");
+    assert_eq!(grade, PublicationGrade::Volatile);
+
+    let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
+    let readable = String::from_utf8_lossy(&bytes).to_string();
+    assert!(readable.contains("image-state=withheld-plain"));
+    assert!(
+        !readable.contains("opaque-overlay"),
+        "a plain document has no region at all"
+    );
+    assert!(!readable.contains("apt-get"));
+
+    let recorded = match read_plain::<dorc_receipt::model::ApplyIntent>(
+        bytes,
+        &ReceiptLimits::V1,
+        &policy_for(&signer),
+    ) {
+        Ok(ReadPlain::Trusted(recorded)) => recorded,
+        other => panic!("a document this controller signed must read trusted: {other:?}"),
+    };
+    assert_eq!(recorded.receipt_id(), Some(id));
+    let model = recorded
+        .model()
+        .expect("the record stream closes over itself");
+    assert_eq!(model.assignment_count(), 1);
+    assert_eq!(
+        model.origin_state(),
+        dorc_receipt::tokens::RecordedOriginState::Unavailable,
+        "an apply handed bytes cannot say which plan produced them"
+    );
+}
+
+#[test]
+fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
+    // The whole required-publication chain in one case: publish the rich intent, build the gate
+    // from what publication answered, spend the permit, then record what execution reached. The
+    // outcome names the identity the publication minted rather than one a caller supplied.
+    use dorc_receipt::dispatch::IntentPublicationGate;
+    use dorc_receipt::project::{ApplyOutcomeReport, ApplySiteReport};
+
+    let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+    let (sealer, opener) = age_pair();
+    let mut ids = CountingIds(0);
+    let mut sink = MemorySink::default();
+    let (intent, _) = prepared_apply_intent(&mut ids);
+
+    let published = publish_apply_intent(
+        &intent,
+        &apply_invocation(),
+        authored(),
+        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        &sealer,
+    )
+    .expect("a prepared intent publishes richly");
+    let intent_id = published.id();
+    let (receipt, images) = published.into_gate_parts();
+    let phase = IntentPublicationGate::Published(receipt, images)
+        .permit(intent)
+        .spend();
+
+    let tail = b"E: Unable to locate package\n".to_vec();
+    let report = ApplyOutcomeReport::of(
+        intent_id,
+        dorc_receipt::tokens::RecordedTerminalState::CommandFailed,
+        dorc_receipt::tokens::RecordedDurableState::Published,
+        vec![ApplySiteReport::of(
+            dorc_receipt::rows::AssignmentOrdinal::of(0),
+            dorc_receipt::rows::RecordedSite::of(dorc_receipt::rows::RecordedLeaf::of(2), None),
+            dorc_receipt::tokens::RecordedSiteStatus::Ran,
+            Some(1),
+            Some(tail.clone()),
+            None,
+            host_influenced(),
+        )],
+        host_influenced(),
+    );
+
+    let (outcome_id, grade) = publish_apply_outcome(
+        &phase,
+        &report,
+        &apply_invocation(),
+        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        &sealer,
+    )
+    .expect("a declared outcome publishes richly");
+    assert_eq!(grade, PublicationGrade::Volatile);
+    assert_ne!(
+        outcome_id.hex(),
+        intent_id.hex(),
+        "two documents never share one identity"
+    );
+
+    let (_, bytes) = sink.0.into_iter().nth(1).expect("the sink placed two");
+    let readable = String::from_utf8_lossy(&bytes).to_string();
+    assert!(
+        !readable.contains("Unable to locate package"),
+        "admitted host output rides the region, never the readable half"
+    );
+
+    let recorded = match read_rich::<dorc_receipt::model::ApplyOutcome>(
+        bytes,
+        &ReceiptLimits::V1,
+        &policy_for(&signer),
+        &opener,
+    ) {
+        Ok(ReadRich::Trusted(recorded)) => recorded,
+        Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
+        Ok(other) => panic!("expected a trusted read: {other:?}"),
+    };
+    assert_eq!(details_for(&recorded, OpaqueFieldTag::Stdout), vec![tail]);
+    let model = recorded
+        .model()
+        .expect("the record stream closes over itself");
+    assert_eq!(model.intent(), Some(intent_id));
+    assert_eq!(model.site_count(), 1);
+    assert_eq!(
+        model.terminal(),
+        dorc_receipt::tokens::RecordedTerminalState::CommandFailed
+    );
+}
+
+#[test]
+fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
+    // Pinned to its exact refusal, like the plan lane's: a publication failure and a projection
+    // failure are repaired by different people, and the intent lane adds a third look-alike —
+    // the image accounting — that must stay distinguishable from both.
+    let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+    let (sealer, _) = age_pair();
+    let mut ids = CountingIds(0);
+    let mut sink = RefusingSink;
+    let (intent, _) = prepared_apply_intent(&mut ids);
+
+    assert_eq!(
+        publish_apply_intent(
+            &intent,
+            &apply_invocation(),
+            authored(),
+            ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+            &sealer,
+        )
+        .err(),
+        Some(PublicationRefusal::Sink)
+    );
 }
