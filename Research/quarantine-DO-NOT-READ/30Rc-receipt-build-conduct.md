@@ -368,6 +368,30 @@ glob is matched against paths no longer on disk. Stage 6 is a deletion stage. Wi
 its gate would have been vacuous by construction. Accepted cost: a deletion-only commit now
 refuses.
 
+**A pathspec commit CAN sweep, but not in an agent's environment** (measured 2026-08-25;
+evidence and a re-runnable harness on `ai/r30-hk-stash` @ `234d0da6`, worktree
+`.claude/worktrees/r30-hkstash`, left standing for the human). `hk.pkl`'s `cargo_fmt` carries
+`stage = "spike/**/*.rs"`, and in FIX mode hk stages every dirty match of that glob, not the
+files the step was handed — proven by a run that committed files `cargo fmt` cannot have
+touched. It reaches a pathspec commit because git re-reads its partial-commit false index
+*after* the hook, so a hook-side `git add` lands. `HK_FIX=0` prevents it outright and is
+verified arriving inside the hook process itself, so no agent can hit it; the builder report
+that prompted this is better explained by a broader-than-believed pathspec.
+
+Two things a successor should carry anyway. **The human's cell is not fully protected by
+stashing**: `cargo fmt --all` is workspace-global, so a file clean in the worktree but
+unformatted in HEAD is rewritten for the first time — a stash cannot hide a change that does
+not exist yet — and the glob then commits it. And **"pre-commit is check-only under agents"
+now rests on `HK_FIX=0` alone**; `HK_STASH=none` removed the second independent guard, so it
+is a single point of failure with a silent failure mode. Proposed fix, measured, NOT landed
+(the human's to route): drop the `stage` keys from `cargo_fmt` and its detached twin, so hk
+falls back to staging the step's own files as `typos` already does. Cost: a collateral
+reformat is left visibly unstaged rather than silently committed.
+
+Plain-git rider worth knowing regardless: `git commit -- <dir>` commits everything dirty
+under that directory, and `git commit -- <paths>` commits the WORKTREE content of those
+paths, ignoring what was staged.
+
 **Windows relink lock, unresolved and the human's.** `cargo test --no-run` intermittently
 cannot remove `spike/target/debug/dorc.exe` (`Access is denied`). Established: not the build —
 it survives deleting the binary, and only that step trips it. Suspected but NOT proven: a sync
