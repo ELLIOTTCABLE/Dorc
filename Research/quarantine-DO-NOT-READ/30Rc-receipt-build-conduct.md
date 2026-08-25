@@ -17,7 +17,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
-| 3 presented plan + PlanReceipt | `ai/r30-receipt` | PARTIAL `01826bab`; blocked on `PlanningInputId` membership |
+| 3 presented plan + PlanReceipt | `ai/r30-receipt` | PARTIAL `5f315189`; witness + row + write route remain |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
@@ -766,3 +766,42 @@ Running tally of my own calls this arc: WRONG on the remint identity (reverted),
 this membership (corrected before build), and RIGHT on the two I flagged to the human as my
 weakest (crate split, schedule pull — both cleared by the foreign pass). My confidence keeps
 running inverse to my accuracy; weight accordingly.
+
+## `PlanningInputId` BUILT — `5f315189`, 69 ahead. Deliberate stop.
+
+Private typed `PlanningInputs` + canonical encoding in `plan/src/planning_input.rs` (642
+lines): domain-tagged, length-framed on every free-form value, count-tagged on every
+collection, explicit-absent on every option, no generic serializer. Both halves of the ruling
+in — authored state and admitted world state, the latter in the planner's own order.
+
+The census is MECHANICAL AND TWO-WAY and was falsified in both directions: nine members named,
+a perturbation table that must name exactly those carrying values with the rest enumerated in
+`ABSENT_BY_CONSTRUCTION` plus reason; deleting one member's encoder line reddens both census
+tests with their own exact refusals ("changing X did not move the identity, so it is not part
+of it" / "the census names X and the encoding never writes it").
+
+My correction is pinned as its own named test — converged vs drifted host differing ONLY in
+admitted records — AND its inverse is pinned too: nonce and start instant provably do NOT
+participate, so identical scoped inputs genuinely share one identity rather than every run
+minting its own. Both directions of the ruling's boundary, not just the half I got wrong.
+
+**Two premises MEASURED, not assumed, each killing a test the builder had already written.**
+Intake folds an exact-repeat record before the planner sees it — site facts AND report bodies
+— so there was no duplicate for the encoding to preserve and its first "duplicates are kept"
+test asserted a multiplicity that does not exist. Now pins the fold BOTH ways, so the day
+intake stops folding is a red test here rather than a silent widening. And the header declares
+SITE FACTS, not records, so a report-only stream truncates at intake unless the count excludes
+it. The ruling's "preserve duplicates wherever the planner does" is thus satisfied vacuously —
+and pinned so it stays honest.
+
+**CONFIRMED (conductor):** adding `plan/src/planning_input.rs` to
+`every_authored_before_contact_posture_is_enumerated` is correct and is NOT a design act. The
+module's production code claims no account; only its fixture spells it, and test files are
+already on that roster. The distinction that makes it safe, worth keeping: **adding a TRUE
+entry MAINTAINS the guarantee; widening the matcher or removing an entry would weaken it.** A
+fence firing is answered by adding the entry when the entry is true, or fixing the code when it
+is not — never by loosening the fence. The builder flagged rather than assumed, correctly.
+
+Gate: Linux green, floor 147 files / 10 checks. Windows wrapper blocked TWICE by the relink
+lock (retried once as briefed, persisted); direct measurement green — 2867 passed, 2 skipped,
+`check-quiet` clean. Restoration debt still NONE; the whylog writer was not reached.
