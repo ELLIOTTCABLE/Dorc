@@ -161,6 +161,15 @@ impl AgeSealer {
     pub const fn of(recipient: x25519::Recipient) -> Self {
         Self { recipient }
     }
+
+    /// Take one recipient by its exact public encoding.
+    ///
+    /// Material is SUPPLIED, never invented: there is deliberately no generation surface here,
+    /// and this constructor adds none — it parses what a provider already holds.
+    #[must_use]
+    pub fn of_recipient_text(text: &str) -> Option<Self> {
+        text.parse().ok().map(Self::of)
+    }
 }
 
 impl OverlaySealer for AgeSealer {
@@ -206,6 +215,21 @@ impl AgeOpener {
     #[must_use]
     pub const fn of(identity: x25519::Identity) -> Self {
         Self { identity }
+    }
+
+    /// Take one identity by its exact secret encoding. Parses; never generates.
+    #[must_use]
+    pub fn of_identity_text(text: &str) -> Option<Self> {
+        text.parse().ok().map(Self::of)
+    }
+
+    /// The PUBLIC half of the material this holds, for naming the recipient a sealer needs.
+    ///
+    /// Public by construction, so answering it discloses nothing the recipient encoding does not
+    /// already say.
+    #[must_use]
+    pub fn recipient_text(&self) -> String {
+        self.identity.to_public().to_string()
     }
 }
 
