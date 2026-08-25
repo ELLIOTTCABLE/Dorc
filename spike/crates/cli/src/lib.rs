@@ -342,8 +342,9 @@ pub struct Args {
     /// Since `28E:lean-why-is-whylog-reconciliation` this is what `dorc why` does ANYWAY when no
     /// record source was named ([`Args::reads_the_receipt`]); the flag survives as a spelling
     /// rather than a switch, because it is printed in committed transcripts and typed in muscle
-    /// memory, and it still means something on plan-producing modes. Bundle projection is the
-    /// deliberate exception: it consumes authored-before-contact inputs only.
+    /// memory. It is a `why` flag and refuses on every other mode: a durable answers what a past
+    /// run decided, and feeding one back into a mode that EMITS an artifact would let a stored
+    /// record stream stand where a live measurement belongs.
     pub last: bool,
     /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
     /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
@@ -441,7 +442,7 @@ impl Args {
 /// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
 /// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
 const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
-    (last && !matches!(mode, Mode::Bundle)) || (matches!(mode, Mode::Why) && !has_results)
+    matches!(mode, Mode::Why) && (last || !has_results)
 }
 
 /// Every claimant this invocation puts on stdin, in argv order
@@ -794,6 +795,20 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             // ergonomic). A second one is refused below, never merged.
             books.push(arg);
         }
+    }
+    // Reading a durable is an EXPLAIN act, so the flag that asks for one belongs to the explain
+    // surface and nowhere else. It used to replay on the plan-producing modes too, which turned a
+    // stored record stream back into the inputs of an emitted artifact; the same rule `--whylog`
+    // already follows now covers the flag that selects one. Refused HERE, ahead of the book check,
+    // because a mode that cannot use the flag should say so rather than complain about a book it
+    // would not have needed.
+    if last && mode != Mode::Why {
+        return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+            dorc_aid::diag::CliFlagRequiresMode {
+                flag: "--last",
+                mode: "dorc why",
+            },
+        )));
     }
     let ships_a_rendered_plan = mode == Mode::Apply && host.is_some();
     if let [first, second, ..] = &books[..] {
@@ -1622,12 +1637,32 @@ mod tests {
             "naming an exact durable is still reading a receipt"
         );
         assert!(
-            analyzed(&["plan", "--last", "book.sh"]).reads_the_receipt(),
-            "`--last` survives as a spelling and still means replay on the other modes"
-        );
-        assert!(
             !analyzed(&["plan", "book.sh"]).reads_the_receipt(),
-            "plan without --last is a live analysis, untouched by the fold"
+            "plan is a live analysis, untouched by the fold"
+        );
+    }
+
+    /// `--last` is an EXPLAIN flag. Replaying a durable into a mode that emits an artifact let a
+    /// stored record stream supply the inputs of a plan, so the flag refuses everywhere but `why`
+    /// — including `bundle`, which used to accept and silently ignore it.
+    #[test]
+    fn asking_for_a_stored_receipt_refuses_outside_the_explain_surface() {
+        for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
+            let refusal = parse_args_from(vec![
+                mode.to_owned(),
+                "--last".to_owned(),
+                "book.sh".to_owned(),
+            ])
+            .expect_err("--last belongs to dorc why");
+            assert_eq!(
+                refusal.code.slug(),
+                "cli-flag-requires-mode",
+                "{mode} --last must name the mode the flag belongs to"
+            );
+        }
+        assert!(
+            parse_args_from(vec!["why".to_owned(), "--last".to_owned()]).is_ok(),
+            "the explain surface still takes it"
         );
     }
 
@@ -1679,7 +1714,6 @@ mod tests {
         assert_eq!(args.book.as_deref(), Some("book.sh"));
         assert_eq!(args.pre_sources, ["entry.sh"]);
         assert!(!args.reads_the_receipt());
-        assert!(!analyzed(&["bundle", "book.sh", "--last"]).reads_the_receipt());
         assert!(
             analyzed(&["bundle", "--pre-source", "entry.sh"])
                 .book

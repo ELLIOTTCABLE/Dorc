@@ -918,20 +918,22 @@ fn run(
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
-    let replay = if mode != Mode::Bundle && args.reads_the_receipt() {
+    // Only the explain surface reads a durable, so this is the one mode that can hold a replay
+    // (`Args::reads_the_receipt`, and the refusal the parser raises for every other mode).
+    let replay = if args.reads_the_receipt() {
         let loaded = load_whylog_replay(args)?;
         report_at(advisory, "whylog", None, &loaded.diags);
         match loaded.value {
             ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
             // Answered ABOVE the pipeline, whose first act is analyzing the book at the recorded
-            // path — under drift, not the run's book. Only `why` has a degraded surface; every
-            // other receipt-reading mode wants a plan, and there is no honest degraded plan.
-            ReplayLoad::Drifted(drifted) if mode == Mode::Why => {
+            // path — under drift, not the run's book. The degraded surface is `why`'s alone, which
+            // is now the only surface that gets here at all.
+            ReplayLoad::Drifted(drifted) => {
                 emit_drifted_why(args.why_address.as_deref(), &drifted);
                 std::io::stdout().flush().ok();
                 return Ok(RunOutcome::Complete);
             }
-            ReplayLoad::Drifted(_) | ReplayLoad::Refused => {
+            ReplayLoad::Refused => {
                 return Ok(RunOutcome::IngressRefused);
             }
         }
