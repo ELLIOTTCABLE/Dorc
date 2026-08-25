@@ -144,8 +144,9 @@ fn a_render_row_names_the_region_the_run_decided_and_not_its_neighbour() {
         authored(),
     ));
 
-    let model = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
         .expect("the Spine projects");
+    let model = projected.model();
     let rendered = model.renders();
     assert_eq!(rendered.len(), 1, "one refusal was recorded");
     let row = &rendered[0];
@@ -183,8 +184,9 @@ fn every_species_the_projection_declines_states_its_population() {
         authored(),
     ));
 
-    let model = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
         .expect("the Spine projects");
+    let model = projected.model();
     let omitted: Vec<RecordedSpineSpecies> = model
         .omissions()
         .iter()
@@ -260,8 +262,9 @@ fn a_licensed_verb_is_attributed_and_an_unlicensed_one_mints_nothing() {
         authored(),
     ));
 
-    let model = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
         .expect("the Spine projects");
+    let model = projected.model();
     assert_eq!(model.sites().len(), 1, "the decision itself is recorded");
     assert!(
         model.licensors().is_empty(),
@@ -299,5 +302,81 @@ fn a_run_that_recorded_no_surface_has_nothing_for_a_witness_to_answer_to() {
     assert_eq!(
         project(&spine, RecordedInvocationMode::Plan, authored(), &witness()),
         Err(ProjectionRefusal::NoPresentedPlan)
+    );
+}
+
+#[test]
+fn the_projected_order_is_the_canonical_one() {
+    // LOAD-BEARING, not tidiness. A detail entry is keyed by its record's POSITION, and the model
+    // re-emits records in `PlanReceipt::KINDS` order. If the projection's own walk drifted from
+    // that order, every detail would enrich whichever row happened to share its integer — and the
+    // document would still validate, because a position is range-checked and never sense-checked.
+    // This is the same hazard the region-ordinal walk carries, one level up.
+    let mut spine = spine_with_invocation();
+    spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+        dorc_core::SiteId::leaf(dorc_core::LeafId(0)),
+        AstId(1),
+        String::from("apt-get update"),
+        Disposition::Run,
+        authored(),
+    ));
+    spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+        dorc_core::SiteId::leaf(dorc_core::LeafId(1)),
+        AstId(2),
+        String::from("cp ./a ./b"),
+        Disposition::Run,
+        authored(),
+    ));
+
+    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+        .expect("the Spine projects");
+    assert_eq!(
+        projected.records(),
+        projected
+            .model()
+            .to_records()
+            .expect("the model re-emits")
+            .as_slice(),
+        "the walk that numbered the details and the walk that emits the document must agree"
+    );
+}
+
+#[test]
+fn a_detail_is_offered_for_every_slot_the_row_marked_captured_and_no_other() {
+    // The writer's half of the two-way account. The reader recomputes the required set from the
+    // skeleton alone, so a projection offering a value for an unmarked slot, or marking a slot it
+    // cannot fill, produces a document its own reader refuses.
+    let mut spine = spine_with_invocation();
+    spine.set_disposition(dorc_core::spine::SpineDisposition::minted(
+        dorc_core::SiteId::leaf(dorc_core::LeafId(0)),
+        AstId(1),
+        String::from("apt-get update"),
+        Disposition::Run,
+        authored(),
+    ));
+
+    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+        .expect("the Spine projects");
+    let skeleton = dorc_receipt::format::Skeleton {
+        receipt_id: "a".repeat(64),
+        signing_key_id: "b".repeat(64),
+        encryption_key_id: Some("c".repeat(64)),
+        records: projected.records().to_vec(),
+    };
+    let mut offered: Vec<(u64, dorc_receipt::projection::OpaqueFieldTag)> = projected
+        .details()
+        .iter()
+        .map(|entry| (entry.record(), entry.tag()))
+        .collect();
+    offered.sort_by_key(|(record, tag)| (*record, tag.order()));
+    assert_eq!(
+        offered,
+        dorc_receipt::overlay::captured_slots(&skeleton),
+        "the offered details and the skeleton's own captured account must agree exactly"
+    );
+    assert!(
+        !offered.is_empty(),
+        "a run holding a target, a source path and a site's shell offers details, so an empty \
+         account here would make the comparison vacuous"
     );
 }
