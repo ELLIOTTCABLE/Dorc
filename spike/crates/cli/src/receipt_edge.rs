@@ -14,14 +14,20 @@ use dorc_plan::planning_input::PlanningMode;
 use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::records::{AdmittedUnscopedHostRecords, Framing};
 use dorc_receipt::capability::{OverlaySealer, PublicationGrade, ReceiptSigner, ReceiptSink};
+use dorc_receipt::dispatch::{ExactApplyImagesPresent, MutationDispatched, PreparedApplyIntent};
 use dorc_receipt::format::{Skeleton, serialize_skeleton};
-use dorc_receipt::ids::ReceiptIdSource;
-use dorc_receipt::model::{Plain, PlanReceipt, Rich, Species};
-use dorc_receipt::overlay::captured_slots;
+use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, ReceiptIdSource};
+use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, Species};
+use dorc_receipt::overlay::{OverlayEntry, captured_slots};
+use dorc_receipt::project::{
+    ApplyInvocation, ApplyOutcomeReport, ApplyProjectionRefusal, project_apply_intent,
+    project_apply_outcome,
+};
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::projection::narrow_to_plain;
 use dorc_receipt::tokens::RecordedInvocationMode;
-use dorc_receipt::writer::{DraftReceipt, OverlayPlaintext};
+use dorc_receipt::writer::{DraftReceipt, OverlayPlaintext, PublishedReceipt};
+use dorc_receipt::{RecordedInfluence, SkeletonRecord};
 
 use crate::results::SiteResults;
 use crate::snapshot::StaticLoadSnapshot;
@@ -152,26 +158,124 @@ impl core::fmt::Debug for ReceiptCapabilities<'_> {
     }
 }
 
-/// Why a run published no plan document.
+/// Why a run published no document.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicationRefusal {
     /// The Spine did not project.
     Projection(dorc_plan::receipt::ProjectionRefusal),
+    /// An apply-side value did not project.
+    ApplyProjection(ApplyProjectionRefusal),
     /// A projected row did not satisfy the grammar table.
     Grammar(dorc_receipt::RefusalReason),
     /// The sink did not place the document.
     Sink,
     /// The region and the skeleton do not account for one another exactly.
     OverlayAccount,
+    /// The region does not carry every assignment's own image, by value.
+    ImageAccount,
+    /// The published document's own identity is not a receipt identity.
+    Identity,
+}
+
+/// Narrow, sign, and publish one PLAIN document, and answer its own identity.
+///
+/// PLAIN is a statement rather than a shortcut: a projection marks a slot `captured` wherever the
+/// run HELD the value, and narrowing is what turns each of those into `withheld-plain`. Reusing
+/// that one seat is what keeps a plain document's states honest instead of a second assembly
+/// deciding them again — and what makes a plain document a REMINT, taking its own identity.
+///
+/// # Errors
+/// Refuses a row outside the grammar and a sink that declines.
+fn narrow_and_publish<D: Species>(
+    records: Vec<SkeletonRecord>,
+    prefix: &str,
+    ids: &mut dyn ReceiptIdSource,
+    signer: &dyn ReceiptSigner,
+    sink: &mut dyn ReceiptSink,
+) -> Result<(String, PublicationGrade), PublicationRefusal> {
+    let assembled = Skeleton {
+        receipt_id: ids.next_receipt_id().hex(),
+        signing_key_id: signer.signing_key_id().hex(),
+        encryption_key_id: None,
+        records,
+    };
+    let plain = narrow_to_plain(&assembled, ids).map_err(PublicationRefusal::Grammar)?;
+    let id = plain.receipt_id.clone();
+    let name = format!("{prefix}-{id}");
+    let document = DraftReceipt::<D, Plain>::of(plain)
+        .serialize()
+        .map_err(PublicationRefusal::Grammar)?
+        .sign(signer);
+    document
+        .publish(&name, sink)
+        .map(|published| (id, published.grade()))
+        .map_err(|_| PublicationRefusal::Sink)
+}
+
+/// Account, seal, sign, and publish one RICH document.
+///
+/// The readable skeleton is the plain form's: it carries each slot's state word and never the
+/// value, never an offset, and never a name pointing into the region. Enrichment runs the other
+/// way — the authenticated region names already-signed slots — which is why the region is built
+/// from `captured_slots` rather than from anything the skeleton could be read to request.
+///
+/// The account is checked HERE, in both directions, before a byte is sealed: a document whose
+/// region does not exactly match its own captured slots would be refused by its own reader, and
+/// emitting one would turn a writer bug into a reader-side mystery.
+///
+/// # Errors
+/// Refuses a row outside the grammar, a region that does not account for the skeleton exactly, a
+/// sealer that declines, or a sink that declines.
+fn seal_and_publish<D: Species>(
+    skeleton: Skeleton,
+    details: &[OverlayEntry],
+    prefix: &str,
+    signer: &dyn ReceiptSigner,
+    sink: &mut dyn ReceiptSink,
+    sealer: &dyn OverlaySealer,
+) -> Result<PublishedReceipt<D, Rich>, PublicationRefusal> {
+    let required = captured_slots(&skeleton);
+    let offered: Vec<(u64, OpaqueFieldTag)> = {
+        let mut keys: Vec<(u64, OpaqueFieldTag)> = details
+            .iter()
+            .map(|entry| (entry.record(), entry.tag()))
+            .collect();
+        keys.sort_by_key(|(record, tag)| (*record, tag.order()));
+        keys
+    };
+    if offered != required {
+        return Err(PublicationRefusal::OverlayAccount);
+    }
+
+    let span = serialize_skeleton::<D, Rich>(&skeleton).map_err(PublicationRefusal::Grammar)?;
+    let plaintext =
+        OverlayPlaintext::canonical(&skeleton.receipt_id, D::TOKEN, span.as_bytes(), details);
+    let name = format!("{prefix}-{}", skeleton.receipt_id);
+    let document = DraftReceipt::<D, Rich>::of(skeleton)
+        .serialize(plaintext, sealer)
+        .map_err(PublicationRefusal::Grammar)?
+        .sign(signer);
+    document
+        .publish(&name, sink)
+        .map_err(|_| PublicationRefusal::Sink)
+}
+
+/// The skeleton a rich document is assembled into, before its region is sealed.
+fn rich_skeleton(
+    receipt_id: String,
+    records: Vec<SkeletonRecord>,
+    signer: &dyn ReceiptSigner,
+    sealer: &dyn OverlaySealer,
+) -> Skeleton {
+    Skeleton {
+        receipt_id,
+        signing_key_id: signer.signing_key_id().hex(),
+        encryption_key_id: Some(sealer.encryption_key_id().hex()),
+        records,
+    }
 }
 
 /// Project, narrow, sign, and publish one plan document.
-///
-/// PLAIN, and that is a statement rather than a shortcut: the projection marks a slot `captured`
-/// wherever the run HELD the value, and narrowing is what turns each of those into
-/// `withheld-plain`. Reusing that one seat is what keeps a plain document's states honest instead
-/// of a second assembly deciding them again. The rich projection needs the held bytes themselves
-/// and is owed separately.
 ///
 /// # Errors
 /// Refuses a Spine that does not project, a row outside the grammar, or a sink that declines.
@@ -186,34 +290,10 @@ pub fn publish_plan_receipt(
     let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
         .map_err(PublicationRefusal::Projection)?;
     let (_, records, _) = projected.into_parts();
-    let assembled = Skeleton {
-        receipt_id: ids.next_receipt_id().hex(),
-        signing_key_id: signer.signing_key_id().hex(),
-        encryption_key_id: None,
-        records,
-    };
-    let plain = narrow_to_plain(&assembled, ids).map_err(PublicationRefusal::Grammar)?;
-    let name = format!("plan-{}", plain.receipt_id);
-    let document = DraftReceipt::<PlanReceipt, Plain>::of(plain)
-        .serialize()
-        .map_err(PublicationRefusal::Grammar)?
-        .sign(signer);
-    document
-        .publish(&name, sink)
-        .map(|published| published.grade())
-        .map_err(|_| PublicationRefusal::Sink)
+    narrow_and_publish::<PlanReceipt>(records, "plan", ids, signer, sink).map(|(_, grade)| grade)
 }
 
 /// Project, seal, sign, and publish one RICH plan document.
-///
-/// The readable skeleton is unchanged from the plain form: it carries each slot's state word and
-/// never the value, never an offset, and never a name pointing into the region. Enrichment runs
-/// the other way — the authenticated region names already-signed slots — which is why the region
-/// is built from `captured_slots` rather than from anything the skeleton could be read to request.
-///
-/// The account is checked HERE, in both directions, before a byte is sealed: a document whose
-/// region does not exactly match its own captured slots would be refused by its own reader, and
-/// emitting one would turn a writer bug into a reader-side mystery.
 ///
 /// # Errors
 /// Refuses a Spine that does not project, a row outside the grammar, a region that does not
@@ -230,41 +310,161 @@ pub fn publish_rich_plan_receipt(
     let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
         .map_err(PublicationRefusal::Projection)?;
     let (_, records, details) = projected.into_parts();
-    let skeleton = Skeleton {
-        receipt_id: ids.next_receipt_id().hex(),
-        signing_key_id: signer.signing_key_id().hex(),
-        encryption_key_id: Some(sealer.encryption_key_id().hex()),
-        records,
-    };
+    let skeleton = rich_skeleton(ids.next_receipt_id().hex(), records, signer, sealer);
+    seal_and_publish::<PlanReceipt>(skeleton, &details, "plan", signer, sink, sealer)
+        .map(|published| published.grade())
+}
 
-    let required = captured_slots(&skeleton);
-    let offered: Vec<(u64, OpaqueFieldTag)> = {
-        let mut keys: Vec<(u64, OpaqueFieldTag)> = details
-            .iter()
-            .map(|entry| (entry.record(), entry.tag()))
-            .collect();
-        keys.sort_by_key(|(record, tag)| (*record, tag.order()));
-        keys
-    };
-    if offered != required {
-        return Err(PublicationRefusal::OverlayAccount);
+/// One published rich apply intent: what the publication gate's required arm is assembled from.
+///
+/// The identity travels beside the document because the gate CONSUMES both members, and an
+/// outcome must still name the intent it answers afterwards.
+#[derive(Debug)]
+pub struct PublishedApplyIntent {
+    id: ApplyIntentId,
+    receipt: PublishedReceipt<ApplyIntent, Rich>,
+    images: ExactApplyImagesPresent,
+}
+
+impl PublishedApplyIntent {
+    /// The intent's own identity.
+    #[must_use]
+    pub const fn id(&self) -> ApplyIntentId {
+        self.id
     }
 
-    let span =
-        serialize_skeleton::<PlanReceipt, Rich>(&skeleton).map_err(PublicationRefusal::Grammar)?;
-    let plaintext = OverlayPlaintext::canonical(
-        &skeleton.receipt_id,
-        PlanReceipt::TOKEN,
-        span.as_bytes(),
+    /// How durably the sink placed it.
+    #[must_use]
+    pub const fn grade(&self) -> PublicationGrade {
+        self.receipt.grade()
+    }
+
+    /// Take the two values the required publication arm is built from.
+    #[must_use]
+    pub fn into_gate_parts(self) -> (PublishedReceipt<ApplyIntent, Rich>, ExactApplyImagesPresent) {
+        (self.receipt, self.images)
+    }
+}
+
+/// Project, account, seal, sign, and publish one RICH apply intent.
+///
+/// The image accounting runs against the entries that are ABOUT TO BE SEALED, keyed by the map
+/// the projection recorded while emitting. That ordering is the whole of what the capability
+/// means: a document published without it would say `captured` over a region whose bytes nobody
+/// compared to the images the apply will run.
+///
+/// # Errors
+/// Refuses an intent that does not project, a region that does not carry every assignment's own
+/// image, a row outside the grammar, a region that does not account for the skeleton exactly, a
+/// sealer that declines, or a sink that declines.
+pub fn publish_apply_intent(
+    intent: &PreparedApplyIntent,
+    invocation: &ApplyInvocation,
+    resolved: dorc_core::influence::InfluenceAccount,
+    caps: ReceiptCapabilities<'_>,
+    sealer: &dyn OverlaySealer,
+) -> Result<PublishedApplyIntent, PublicationRefusal> {
+    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let projected = project_apply_intent(intent, invocation, grade(resolved))
+        .map_err(PublicationRefusal::ApplyProjection)?;
+    let images = intent
+        .account_images(projected.details(), &|ordinal| projected.record_of(ordinal))
+        .ok_or(PublicationRefusal::ImageAccount)?;
+    let (_, records, details) = projected.into_parts();
+    let id = ApplyIntentId::mint(ids);
+    let skeleton = rich_skeleton(id.hex(), records, signer, sealer);
+    let receipt =
+        seal_and_publish::<ApplyIntent>(skeleton, &details, "apply-intent", signer, sink, sealer)?;
+    Ok(PublishedApplyIntent {
+        id,
+        receipt,
+        images,
+    })
+}
+
+/// Project, narrow, sign, and publish one PLAIN apply intent, and answer its own identity.
+///
+/// Report data, never authority: a plain intent carries `withheld-plain` where the images would
+/// be, and there is no route from this seat to the capability the required arm demands. The
+/// identity comes back so a later outcome can name the document that was actually written.
+///
+/// # Errors
+/// Refuses an intent that does not project, a row outside the grammar, a sink that declines, and
+/// a narrowed document whose identity is not a receipt identity.
+pub fn publish_plain_apply_intent(
+    intent: &PreparedApplyIntent,
+    invocation: &ApplyInvocation,
+    resolved: dorc_core::influence::InfluenceAccount,
+    caps: ReceiptCapabilities<'_>,
+) -> Result<(ApplyIntentId, PublicationGrade), PublicationRefusal> {
+    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let projected = project_apply_intent(intent, invocation, grade(resolved))
+        .map_err(PublicationRefusal::ApplyProjection)?;
+    let (_, records, _) = projected.into_parts();
+    let (spelled, published) =
+        narrow_and_publish::<ApplyIntent>(records, "apply-intent", ids, signer, sink)?;
+    let id = ApplyIntentId::of_hex(&spelled).ok_or(PublicationRefusal::Identity)?;
+    Ok((id, published))
+}
+
+/// Project, seal, sign, and publish one RICH apply outcome.
+///
+/// # Errors
+/// Refuses an outcome that does not project — including one naming an assignment the cleared
+/// intent never declared — a row outside the grammar, a region that does not account for the
+/// skeleton exactly, a sealer that declines, or a sink that declines.
+pub fn publish_apply_outcome(
+    dispatched: &MutationDispatched,
+    report: &ApplyOutcomeReport,
+    invocation: &ApplyInvocation,
+    caps: ReceiptCapabilities<'_>,
+    sealer: &dyn OverlaySealer,
+) -> Result<(ApplyOutcomeId, PublicationGrade), PublicationRefusal> {
+    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let projected = project_apply_outcome(dispatched, report, invocation)
+        .map_err(PublicationRefusal::ApplyProjection)?;
+    let (_, records, details) = projected.into_parts();
+    let id = ApplyOutcomeId::mint(ids);
+    let skeleton = rich_skeleton(id.hex(), records, signer, sealer);
+    let receipt = seal_and_publish::<ApplyOutcome>(
+        skeleton,
         &details,
-    );
-    let name = format!("plan-{}", skeleton.receipt_id);
-    let document = DraftReceipt::<PlanReceipt, Rich>::of(skeleton)
-        .serialize(plaintext, sealer)
-        .map_err(PublicationRefusal::Grammar)?
-        .sign(signer);
-    document
-        .publish(&name, sink)
-        .map(|published| published.grade())
-        .map_err(|_| PublicationRefusal::Sink)
+        "apply-outcome",
+        signer,
+        sink,
+        sealer,
+    )?;
+    Ok((id, receipt.grade()))
+}
+
+/// Project, narrow, sign, and publish one PLAIN apply outcome.
+///
+/// The degraded terminal report: the route taken when a region cannot be sealed but the run can
+/// still say what it reached. Every byte channel narrows to `withheld-plain`.
+///
+/// # Errors
+/// Refuses an outcome that does not project, a row outside the grammar, a sink that declines, and
+/// a narrowed document whose identity is not a receipt identity.
+pub fn publish_plain_apply_outcome(
+    dispatched: &MutationDispatched,
+    report: &ApplyOutcomeReport,
+    invocation: &ApplyInvocation,
+    caps: ReceiptCapabilities<'_>,
+) -> Result<(ApplyOutcomeId, PublicationGrade), PublicationRefusal> {
+    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let projected = project_apply_outcome(dispatched, report, invocation)
+        .map_err(PublicationRefusal::ApplyProjection)?;
+    let (_, records, _) = projected.into_parts();
+    let (spelled, published) =
+        narrow_and_publish::<ApplyOutcome>(records, "apply-outcome", ids, signer, sink)?;
+    let id = ApplyOutcomeId::of_hex(&spelled).ok_or(PublicationRefusal::Identity)?;
+    Ok((id, published))
+}
+
+/// The recorded grade of one live account.
+///
+/// The one conversion in this direction, and it goes through the closed token vocabulary rather
+/// than a variant, so nothing here decides a grade.
+fn grade(account: dorc_core::influence::InfluenceAccount) -> RecordedInfluence {
+    RecordedInfluence::of_token(Some(account.label()))
 }

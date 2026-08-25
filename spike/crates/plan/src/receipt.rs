@@ -13,14 +13,14 @@ use dorc_core::spine::{
     SpineSpecies, SurvivalDemote, SurvivalOutcome, WithheldCause,
 };
 use dorc_receipt::ids::ApplyArtifactImageId;
-use dorc_receipt::overlay::OverlayEntry;
+use dorc_receipt::overlay::{DocumentRows, OverlayEntry};
 use dorc_receipt::plan::{
     RecordedAdmission, RecordedLicensor, RecordedLoadDecision, RecordedNarrative,
     RecordedPlanReceipt, RecordedPresentedPlan, RecordedProbeShip, RecordedRegionDecision,
     RecordedRenderDecision, RecordedSiteClassification, RecordedSiteDecision,
     RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject,
 };
-use dorc_receipt::projection::{OpaqueFieldTag, opaque_slots};
+use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::rows::{
     LoadOrdinal, ModelRefusal, NarrativeOrdinal, RecordedAst, RecordedInvocation, RecordedLeaf,
     RecordedMember, RecordedOperands, RecordedProjectionOmission, RecordedRow, RecordedSite,
@@ -80,7 +80,7 @@ pub fn project(
     world: dorc_core::influence::InfluenceAccount,
     presentation: &FinalPresentation,
 ) -> Result<ProjectedPlan, ProjectionRefusal> {
-    let mut rows = Rows::default();
+    let mut rows = DocumentRows::default();
     let invocation = spine.invocation().ok_or(ProjectionRefusal::NoInvocation)?;
     let surface = spine
         .presented_plan()
@@ -93,7 +93,8 @@ pub fn project(
     // entry is keyed by its record's POSITION, so a walk that emitted in one order while the
     // model re-emitted in another would enrich whichever row happened to share that integer.
     // `the_projected_order_is_the_canonical_one` is what holds the two together.
-    rows.push(
+    push(
+        &mut rows,
         &invocation_row(invocation, mode),
         &[(
             OpaqueFieldTag::TargetName,
@@ -101,17 +102,23 @@ pub fn project(
         )],
     )?;
     for (ordinal, claim) in invocation.sources().iter().enumerate() {
-        rows.push(
+        push(
+            &mut rows,
             &source_row(ordinal, claim, invocation.account()),
             &[(OpaqueFieldTag::SourcePath, held_bytes(&claim.path))],
         )?;
     }
     if let Some(row) = admission_row(spine) {
-        rows.push(&row, &[])?;
+        push(&mut rows, &row, &[])?;
     }
-    rows.push(&presented_row(presentation, surface.account()), &[])?;
+    push(
+        &mut rows,
+        &presented_row(presentation, surface.account()),
+        &[],
+    )?;
     for record in spine.dispositions() {
-        rows.push(
+        push(
+            &mut rows,
             &site_row(record),
             &[(OpaqueFieldTag::Shell, held_bytes(record.sh()))],
         )?;
@@ -124,49 +131,52 @@ pub fn project(
     for (position, record) in spine.region_decisions().iter().enumerate() {
         let ordinal = RegionOrdinal::of(count(position));
         region_of.insert(record.region(), ordinal);
-        rows.push(
+        push(
+            &mut rows,
             &region_row(ordinal, record),
             &[(OpaqueFieldTag::Shell, held_bytes(record.sh()))],
         )?;
     }
     for (ordinal, record) in spine.load_decisions().iter().enumerate() {
-        rows.push(
+        push(
+            &mut rows,
             &load_row(ordinal, record),
             &[(OpaqueFieldTag::ImportPath, held_bytes(record.name()))],
         )?;
     }
     for record in spine.classifications() {
-        rows.push(&classification_row(record), &[])?;
+        push(&mut rows, &classification_row(record), &[])?;
     }
     for record in spine.certifications() {
-        rows.push(&certification_row(record)?, &[])?;
+        push(&mut rows, &certification_row(record)?, &[])?;
     }
     for record in spine.ships() {
-        rows.push(&ship_row(record), &[])?;
+        push(&mut rows, &ship_row(record), &[])?;
     }
     for record in spine.survivals() {
-        rows.push(&survival_row(record), &[])?;
+        push(&mut rows, &survival_row(record), &[])?;
     }
     for record in spine.render_decisions() {
-        rows.push(&render_row(record, &region_of)?, &[])?;
+        push(&mut rows, &render_row(record, &region_of)?, &[])?;
     }
     for (ordinal, narrative) in spine.narratives().iter().enumerate() {
-        rows.push(&narrative_row(ordinal, narrative, world), &[])?;
+        push(&mut rows, &narrative_row(ordinal, narrative, world), &[])?;
     }
     for record in spine.dispositions() {
         if let Some(row) = licensor_row(record) {
-            rows.push(&row, &[])?;
+            push(&mut rows, &row, &[])?;
         }
     }
     for row in omission_rows(spine, world) {
-        rows.push(&row, &[])?;
+        push(&mut rows, &row, &[])?;
     }
 
-    let model = RecordedPlanReceipt::of_records(&rows.records).map_err(ProjectionRefusal::Model)?;
+    let (records, details) = rows.into_parts();
+    let model = RecordedPlanReceipt::of_records(&records).map_err(ProjectionRefusal::Model)?;
     Ok(ProjectedPlan {
         model,
-        records: rows.records,
-        details: rows.details,
+        records,
+        details,
     })
 }
 
@@ -209,42 +219,17 @@ impl ProjectedPlan {
     }
 }
 
-/// Records and their detail values, accumulated together so a detail cannot outlive the position
-/// it names.
-#[derive(Default)]
-struct Rows {
-    records: Vec<SkeletonRecord>,
-    details: Vec<OverlayEntry>,
-}
-
-impl Rows {
-    /// Emit one row, and the detail values for whichever of its slots it marked captured.
-    ///
-    /// A value offered for a slot the row did NOT mark captured is dropped rather than emitted:
-    /// the skeleton's own state word is the account both sides are matched against, so an entry
-    /// the skeleton does not ask for is exactly what `Unaccounted` refuses.
-    fn push<R: RecordedRow>(
-        &mut self,
-        row: &R,
-        values: &[(OpaqueFieldTag, Option<Vec<u8>>)],
-    ) -> Result<(), ProjectionRefusal> {
-        let record = row.to_record().map_err(ProjectionRefusal::Grammar)?;
-        let id = u64::try_from(self.records.len()).unwrap_or(u64::MAX);
-        let captured: Vec<OpaqueFieldTag> = opaque_slots(R::KIND)
-            .iter()
-            .filter(|slot| record.atom(slot.key) == Some(dorc_receipt::projection::CAPTURED))
-            .map(|slot| slot.tag)
-            .collect();
-        for (tag, bytes) in values {
-            if let Some(bytes) = bytes
-                && captured.contains(tag)
-            {
-                self.details.push(OverlayEntry::of(id, *tag, bytes.clone()));
-            }
-        }
-        self.records.push(record);
-        Ok(())
-    }
+/// Emit one row, and the detail values for whichever of its slots it marked captured.
+///
+/// A thin skin over the shared accumulator so this projection's own refusal vocabulary reaches
+/// its call sites. The rule it wraps — a value is carried only for a slot its own row marked
+/// captured — lives at ONE seat, beside the account a reader checks it against.
+fn push<R: RecordedRow>(
+    rows: &mut DocumentRows,
+    row: &R,
+    values: &[(OpaqueFieldTag, Option<Vec<u8>>)],
+) -> Result<(), ProjectionRefusal> {
+    rows.push(row, values).map_err(ProjectionRefusal::Grammar)
 }
 
 /// The bytes of a value the run holds, or nothing where it holds none.

@@ -193,6 +193,7 @@
 
 pub mod apply;
 pub mod capability;
+pub mod context;
 pub mod dispatch;
 pub mod format;
 pub mod grammar;
@@ -204,6 +205,7 @@ pub mod model;
 pub mod outcome;
 pub mod overlay;
 pub mod plan;
+pub mod project;
 pub mod projection;
 pub mod reader;
 pub mod reingested;

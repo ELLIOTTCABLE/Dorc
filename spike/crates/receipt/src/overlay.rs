@@ -101,6 +101,77 @@ impl OverlayEntry {
     }
 }
 
+/// Records and the detail values belonging to the slots those records marked captured.
+///
+/// One seat for the rule that makes `captured` a promise the writer funds: a value is carried
+/// only for a slot its own row marked captured, and a value offered for any other slot is
+/// dropped. A projection keeping a private copy of that rule would be a second chance to
+/// disagree with the account [`captured_slots`] computes and a reader checks.
+///
+/// The two vectors travel together because a detail is keyed by its record's POSITION, so
+/// numbering and emitting are one act rather than two walks that can drift.
+#[derive(Debug, Default)]
+pub struct DocumentRows {
+    records: Vec<crate::format::SkeletonRecord>,
+    details: Vec<OverlayEntry>,
+}
+
+impl DocumentRows {
+    /// Which position the next row will occupy.
+    ///
+    /// Read BEFORE the push that fills it, by a projection owing its caller a map from its own
+    /// subject back to a record.
+    #[must_use]
+    pub fn next_record(&self) -> u64 {
+        u64::try_from(self.records.len()).unwrap_or(u64::MAX)
+    }
+
+    /// Emit one row, and the detail values for whichever of its slots it marked captured.
+    ///
+    /// # Errors
+    /// Refuses whatever the grammar table refuses of the row's own atoms.
+    pub fn push<R: crate::rows::RecordedRow>(
+        &mut self,
+        row: &R,
+        values: &[(OpaqueFieldTag, Option<Vec<u8>>)],
+    ) -> Result<(), crate::format::RefusalReason> {
+        let record = row.to_record()?;
+        let id = self.next_record();
+        let captured: Vec<OpaqueFieldTag> = opaque_slots(R::KIND)
+            .iter()
+            .filter(|slot| record.atom(slot.key) == Some(CAPTURED))
+            .map(|slot| slot.tag)
+            .collect();
+        for (tag, bytes) in values {
+            if let Some(bytes) = bytes
+                && captured.contains(tag)
+            {
+                self.details.push(OverlayEntry::of(id, *tag, bytes.clone()));
+            }
+        }
+        self.records.push(record);
+        Ok(())
+    }
+
+    /// The records, in emission order.
+    #[must_use]
+    pub fn records(&self) -> &[crate::format::SkeletonRecord] {
+        &self.records
+    }
+
+    /// The detail values, one per captured slot that was offered one.
+    #[must_use]
+    pub fn details(&self) -> &[OverlayEntry] {
+        &self.details
+    }
+
+    /// Take both vectors, for a caller assembling a document.
+    #[must_use]
+    pub fn into_parts(self) -> (Vec<crate::format::SkeletonRecord>, Vec<OverlayEntry>) {
+        (self.records, self.details)
+    }
+}
+
 /// The slots a skeleton says are captured, in canonical order.
 ///
 /// Computed from the skeleton alone. This is the account the region is matched against in
