@@ -26,6 +26,7 @@ pub mod bundle;
 pub mod fixpoint;
 pub mod kinds;
 pub mod provenance;
+pub mod receipt_edge;
 pub mod results;
 pub mod snapshot;
 pub mod sourcing;

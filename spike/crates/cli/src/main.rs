@@ -2253,14 +2253,40 @@ fn run(
         .chain(refusals.iter().cloned())
         .chain(trip_diags)
         .collect();
-    let presented_plan = dorc_plan::erasability::presented_plan_id(
+    // The invocation record is built HERE, not at the recording seat, so the witness below and the
+    // Spine describe one run rather than two constructions of one.
+    let invocation = dorc_cli::receipt_edge::invocation_record(
+        std::env::args().collect(),
+        &framing,
+        &snapshot,
+        clock.now(),
+        world_account,
+    );
+    // Everything reaching this is final — the plan came from its one constructor after settlement
+    // quiesced, and the canon reads the rendered artifacts — so the surface is settled before a byte
+    // is hashed. The witness mints both identities it carries; it accepts neither.
+    let presentation = dorc_plan::presentation::FinalPresentation::of_settled(
         &plan,
         &probe,
         &book_src,
         &parsed.value,
         &interner,
         &identity_diags,
+        dorc_plan::planning_input::PlanningInputs::of(
+            dorc_cli::receipt_edge::CONTROLLER_SEMANTICS,
+            &invocation,
+            spine.admission(),
+            admitted_records.as_ref(),
+            dorc_plan::planning_input::PlanningPolicy::of(
+                dorc_cli::receipt_edge::planning_mode(mode),
+                args.risk_faultless_skips,
+            ),
+        ),
+        // No apply image is built at plan time, so the planned-image field reads absent rather
+        // than naming one nothing minted.
+        None,
     );
+    let presented_plan = presentation.presented_plan();
 
     // ack-2 `dorc why`: NOT an artifact-producing invocation. Emit the source-line-keyed report to
     // STDOUT (its own non-analysis output) and return — no artifact, no plan-summary, no digest.
@@ -2394,12 +2420,10 @@ fn run(
         && whylog_eligible
         && let Some(records) = admitted_records
     {
-        record_durable_arm(
+        dorc_cli::receipt_edge::record_durable_arm(
             &mut spine,
-            &framing,
-            &snapshot,
-            presented_plan,
-            clock.now(),
+            invocation,
+            &presentation,
             results,
             records,
             world_account,
@@ -2875,74 +2899,6 @@ fn record_new_arm(
             world_account,
         ));
     }
-}
-
-/// Write the run's durable-arm records onto the Spine (`30E` §2's four species).
-///
-/// The durable itself is projected from these through `plan::whylog`'s per-species Views; nothing
-/// here decides what reaches disk. That separation is the point: the driver states what the run WAS,
-/// and one seat decides what a durable KEEPS of it.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "the invocation record IS a wide tuple of independent invocation facts (framing/snapshot/digest/instant); bundling them behind a params struct would just re-spell this signature one layer down"
-)]
-fn record_durable_arm(
-    spine: &mut dorc_plan::Spine,
-    framing: &dorc_plan::records::Framing,
-    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
-    presented_plan: dorc_receipt::ids::PresentedPlanId,
-    started_at: Option<dorc_core::RunInstant>,
-    results: &SiteResults,
-    records: dorc_plan::records::AdmittedUnscopedHostRecords,
-    world_account: dorc_core::influence::InfluenceAccount,
-) {
-    spine.set_invocation(dorc_core::spine::SpineInvocation::minted(
-        dorc_core::spine::InvocationMode::WhylogReplay,
-        std::env::args().collect(),
-        source_claims(snapshot),
-        dorc_core::spine::RunIdentity {
-            nonce: framing.nonce().0.clone(),
-            attempt: framing.attempt(),
-            host: framing.host().to_owned(),
-            started_at,
-        },
-        world_account,
-    ));
-    spine.set_presented_plan(dorc_core::spine::SpinePresentedPlan::minted(
-        presented_plan,
-        world_account,
-    ));
-    spine.set_record_stream(dorc_core::spine::SpineRecordStream::minted(
-        records,
-        results
-            .records
-            .values()
-            .filter_map(|record| Some((record.stamp.ordinal, record.stamp.received_at?)))
-            .collect::<BTreeMap<_, _>>()
-            .into_iter()
-            .collect(),
-        world_account,
-    ));
-}
-
-/// Every acquired source as one ordered role-carrying claim, straight off the snapshot's own
-/// triple seat.
-///
-/// The book is a row wearing [`SourceRole::Book`], not a field beside the others. The snapshot's
-/// three vectors are indexed by `SourceFileId`, so this vector's order IS the acquired-source table
-/// order a durable ordinal over it means.
-fn source_claims(
-    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
-) -> Vec<dorc_core::spine::SourceClaim> {
-    snapshot
-        .source_claims()
-        .map(|(path, src, role)| dorc_core::spine::SourceClaim {
-            path: path.to_owned(),
-            digest: book_digest(src),
-            role,
-            bytes: u64::try_from(src.len()).unwrap_or(u64::MAX),
-        })
-        .collect()
 }
 
 /// The two notices the full-positional regime owes a book author (`28K` §2
