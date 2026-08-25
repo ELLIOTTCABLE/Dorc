@@ -320,15 +320,15 @@ been run.
 
 ## open with the human
 
-Four departures graded by an outside-lineage spec-compliance pass as needing a human ruling sit
-in root `TODO-ADDTL.md` as its top entry, in public vocabulary: the source-model restructuring
-(carries a gentle, explicitly-unwelded ack and wants outside grounding), the presented-plan
-identity binding, two content-identity mints standing declaration-only until their callers
-exist, and constructors renamed after a stage freeze. `30Rc1` holds the raw adjudication; it is
-foreign output, unadjudicated, and that model over-flags severity.
+The four departures an outside-lineage spec-compliance pass graded as needing a human ruling
+have all been RULED and BUILT — see *rulings that bind* above. Nothing from that pass is
+outstanding. `30Rc1` holds the raw adjudication; it is foreign output, unadjudicated, and that
+model over-flags severity.
 
-Also with the human: the Windows relink lock above; and the source vector's positional
-fallback.
+One residue: **the acquired-source restructuring stands on an explicitly temporary, unwelded
+ack** and wants grounding from outside this arc before it welds. It is the sole receipt-arc
+entry in root `TODO-ADDTL.md`. Also with the human: the Windows relink lock above, and the
+source vector's positional fallback.
 
 ## ARC-CLOSE OBLIGATIONS — nothing ships with these outstanding
 
