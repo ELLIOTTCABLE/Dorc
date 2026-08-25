@@ -63,31 +63,6 @@ pub enum Exempt {
     Timing,
 }
 
-/// A FNV-1a hasher state — a small, fixed, dependency-free, deterministic hash (`core` forbids
-/// deps; `std`'s `DefaultHasher` output is explicitly NOT a stable cross-version function, so
-/// it cannot back a digest other tools compare). Drift-detection strength, not cryptographic.
-struct Fnv1a(u64);
-
-impl Fnv1a {
-    const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
-    const PRIME: u64 = 0x0000_0100_0000_01b3;
-
-    fn new() -> Self {
-        Self(Self::OFFSET)
-    }
-
-    fn write(&mut self, bytes: &[u8]) {
-        for &b in bytes {
-            self.0 ^= u64::from(b);
-            self.0 = self.0.wrapping_mul(Self::PRIME);
-        }
-    }
-
-    fn finish(&self) -> u64 {
-        self.0
-    }
-}
-
 /// Build the canonical identity-plane STRING of a whole decision (`plan` + `probe` + their
 /// rendered artifacts + diagnostics) — the single source the digest hashes and the gate
 /// compares. Two runs are decision-identical iff their canonical strings are byte-equal.
@@ -159,22 +134,30 @@ pub fn canonical_decision(
     out
 }
 
-/// The one-line decision digest (`mechanism-decision-digest`): a stable hash of the canonical
-/// identity plane, emitted on every analyzer run as a cheap drift signal. Receipt changes
-/// cannot move it (the canon plane omits the exempt fields by construction).
+/// Mint the approval surface's content identity from the canonical identity plane
+/// (`quarantine/30Rb:receipt-identity-map`).
+///
+/// This is the ONE identity path: the drift signal the analyzer prints and the identity a
+/// receipt records are the same value, so a printed identity and a recorded one can never
+/// disagree about which surface they name.
+///
+/// The seat is what licenses the mint. Every input reaching [`canonical_decision`] is final —
+/// the `Plan` comes from its one constructor, after settlement has quiesced and the certifier
+/// latch is spent, and the canon reads the rendered artifacts, so the human view, the executable
+/// bytes, and every site and region decision are settled before a byte is hashed.
+///
+/// Receipt changes cannot move it: the canon plane omits the exempt fields by construction.
 #[must_use]
-pub fn decision_digest(
+pub fn presented_plan_id(
     plan: &Plan,
     probe: &ProbePlan,
     src: &str,
     ast: &dorc_syntax::ast::Ast,
     interner: &dorc_core::Interner,
     diags: &[Diag],
-) -> String {
+) -> dorc_receipt::ids::PresentedPlanId {
     let canon = canonical_decision(plan, probe, src, ast, interner, diags);
-    let mut h = Fnv1a::new();
-    h.write(canon.as_bytes());
-    format!("{:016x}", h.finish())
+    dorc_receipt::ids::PresentedPlanId::of_canonical_decision(canon.as_bytes())
 }
 
 /// Canonicalize one plan [`Step`] — EXHAUSTIVE destructure (no `..`): a new field stops this
@@ -438,10 +421,10 @@ mod tests {
             dorc_core::influence::InfluenceAccount::authored_before_contact(),
         );
         let interner = dorc_core::Interner::default();
-        let d1 = decision_digest(&plan, &probe, "", &ast, &interner, &[]);
-        let d2 = decision_digest(&plan, &probe, "", &ast, &interner, &[]);
-        assert_eq!(d1, d2, "digest is deterministic");
-        assert_eq!(d1.len(), 16, "16 hex chars (u64)");
+        let d1 = presented_plan_id(&plan, &probe, "", &ast, &interner, &[]);
+        let d2 = presented_plan_id(&plan, &probe, "", &ast, &interner, &[]);
+        assert_eq!(d1, d2, "one surface, one identity");
+        assert_eq!(d1.hex().len(), 64, "SHA-256, hex-spelled");
     }
 
     #[test]

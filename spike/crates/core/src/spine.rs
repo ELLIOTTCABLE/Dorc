@@ -83,6 +83,15 @@ pub trait DecidePlane {
     /// happen to instantiate to one enum today; a seam that let one be handed where the other was
     /// expected would make that coincidence load-bearing.
     type RegionDecision: core::fmt::Debug + Clone;
+    /// The identity of one complete approval surface (`plan::PresentedPlanId` at the one
+    /// instantiation).
+    ///
+    /// Named through this seam because the identity is minted by the crate owning the durable
+    /// family, and `core` may not depend on it. `core` stores what the presentation seat handed it
+    /// and hands it back; it never decodes, compares, or re-derives one (`inv-referent-agnostic`).
+    /// A `String` here would let any stringly value stand in for a minted identity, which is the
+    /// substitution the parameter exists to make unspellable.
+    type PresentedPlanIdentity: core::fmt::Debug + Clone;
 }
 
 /// How many exemplars an unbounded operand account keeps before it reports a count instead
@@ -623,26 +632,27 @@ impl<P: DecidePlane> SpineDisposition<P> {
 
 /// The identities of one complete approval surface — what a run PRESENTED (`22A` concl-3).
 ///
-/// AS POPULATED: one identity, spelled as its writer spells it. The species carries the approval
-/// surface rather than a drift-detector digest, which is why it is named for the surface; the
-/// remaining identities of that surface join it when the projection that computes them lands.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SpinePresentedPlan {
-    identity: String,
+/// AS POPULATED: one identity — the plane's own minted `PresentedPlanIdentity`, which is what the
+/// species is named for. The remaining identities of that surface travel to the projection in the
+/// presentation seat's own private witness, not here: this record holds the identity of the
+/// approval surface, and a record holding three identities would be an identity of nothing.
+#[derive(Debug, Clone)]
+pub struct SpinePresentedPlan<P: DecidePlane> {
+    identity: P::PresentedPlanIdentity,
     account: InfluenceAccount,
 }
 
-impl SpinePresentedPlan {
+impl<P: DecidePlane> SpinePresentedPlan<P> {
     /// Mint the approval-surface record.
     #[must_use]
-    pub const fn minted(identity: String, account: InfluenceAccount) -> Self {
+    pub const fn minted(identity: P::PresentedPlanIdentity, account: InfluenceAccount) -> Self {
         Self { identity, account }
     }
 
-    /// The surface identity, as its writer spelled it. Referent-agnostic: compared and displayed,
-    /// never decoded.
+    /// The surface identity. Referent-agnostic: carried and displayed by its own spelling, never
+    /// decoded or re-derived here.
     #[must_use]
-    pub fn identity(&self) -> &str {
+    pub const fn identity(&self) -> &P::PresentedPlanIdentity {
         &self.identity
     }
 }
@@ -1631,8 +1641,8 @@ impl<P: DecidePlane> InfluenceBearing for SpineDisposition<P> {
     }
 }
 
-impl sealed::Sealed for SpinePresentedPlan {}
-impl InfluenceBearing for SpinePresentedPlan {
+impl<P: DecidePlane> sealed::Sealed for SpinePresentedPlan<P> {}
+impl<P: DecidePlane> InfluenceBearing for SpinePresentedPlan<P> {
     fn account(&self) -> InfluenceAccount {
         self.account
     }
@@ -1735,7 +1745,7 @@ pub struct Spine<P: DecidePlane> {
     invocation: Option<SpineInvocation>,
     record_stream: Option<SpineRecordStream<P>>,
     dispositions: BTreeMap<SiteId, SpineDisposition<P>>,
-    digest: Option<SpinePresentedPlan>,
+    presented_plan: Option<SpinePresentedPlan<P>>,
     load_decisions: Vec<SpineLoadDecision>,
     classifications: BTreeMap<SiteId, SpineSiteClassification>,
     certifications: Vec<SpineSolveCertification>,
@@ -1757,7 +1767,7 @@ impl<P: DecidePlane> Default for Spine<P> {
             invocation: None,
             record_stream: None,
             dispositions: BTreeMap::new(),
-            digest: None,
+            presented_plan: None,
             load_decisions: Vec::new(),
             classifications: BTreeMap::new(),
             certifications: Vec::new(),
@@ -1865,15 +1875,15 @@ impl<P: DecidePlane> Spine<P> {
         }
     }
 
-    /// Write the decision digest.
-    pub fn set_digest(&mut self, record: SpinePresentedPlan) {
-        self.digest = Some(record);
+    /// Write the approval-surface record.
+    pub fn set_presented_plan(&mut self, record: SpinePresentedPlan<P>) {
+        self.presented_plan = Some(record);
     }
 
-    /// The decision digest.
+    /// The approval-surface record.
     #[must_use]
-    pub const fn digest(&self) -> Option<&SpinePresentedPlan> {
-        self.digest.as_ref()
+    pub const fn presented_plan(&self) -> Option<&SpinePresentedPlan<P>> {
+        self.presented_plan.as_ref()
     }
 
     /// Write the intake outcome.
@@ -2168,7 +2178,7 @@ impl<P: DecidePlane> Spine<P> {
             SpineSpecies::Invocation => usize::from(self.invocation.is_some()),
             SpineSpecies::RecordStream => usize::from(self.record_stream.is_some()),
             SpineSpecies::Disposition => self.dispositions.len(),
-            SpineSpecies::PresentedPlan => usize::from(self.digest.is_some()),
+            SpineSpecies::PresentedPlan => usize::from(self.presented_plan.is_some()),
             SpineSpecies::LoadDecision => self.load_decisions.len(),
             SpineSpecies::SiteClassification => self.classifications.len(),
             SpineSpecies::SolveCertification => self.certifications.len(),
@@ -2200,6 +2210,7 @@ mod tests {
         type Records = ();
         type Narrative = ();
         type RegionDecision = &'static str;
+        type PresentedPlanIdentity = &'static str;
     }
 
     #[test]

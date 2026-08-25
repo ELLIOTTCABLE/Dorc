@@ -144,7 +144,7 @@ pub fn plan_envelope_parts(
     book_name: &str,
 ) -> dorc_aid::tagged::RenderParts {
     let counts = world.disposition_counts();
-    let digest = world.decision_digest();
+    let digest = world.presented_plan_hex();
     let numbers = [
         counts.sites.to_string(),
         counts.elide.to_string(),

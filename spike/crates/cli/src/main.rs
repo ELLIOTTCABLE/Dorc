@@ -2253,7 +2253,7 @@ fn run(
         .chain(refusals.iter().cloned())
         .chain(trip_diags)
         .collect();
-    let decision_digest = dorc_plan::erasability::decision_digest(
+    let presented_plan = dorc_plan::erasability::presented_plan_id(
         &plan,
         &probe,
         &book_src,
@@ -2268,7 +2268,7 @@ fn run(
     if mode == Mode::Why {
         // `--last` belt-and-suspenders: a diverged decision digest (same inputs) ⇒ refuse, not narrate.
         if let Some(r) = &replay
-            && decision_digest != r.decision_digest
+            && presented_plan.hex() != r.decision_digest
         {
             report_at(
                 advisory,
@@ -2386,7 +2386,7 @@ fn run(
 
     eprintln!(
         "{}",
-        chrome("cli-decision-digest-line", &[&decision_digest])
+        chrome("cli-decision-digest-line", &[&presented_plan.hex()])
     );
 
     // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
@@ -2398,7 +2398,7 @@ fn run(
             &mut spine,
             &framing,
             &snapshot,
-            &decision_digest,
+            presented_plan,
             clock.now(),
             results,
             records,
@@ -2890,7 +2890,7 @@ fn record_durable_arm(
     spine: &mut dorc_plan::Spine,
     framing: &dorc_plan::records::Framing,
     snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
-    decision_digest: &str,
+    presented_plan: dorc_receipt::ids::PresentedPlanId,
     started_at: Option<dorc_core::RunInstant>,
     results: &SiteResults,
     records: dorc_plan::records::AdmittedUnscopedHostRecords,
@@ -2908,8 +2908,8 @@ fn record_durable_arm(
         },
         world_account,
     ));
-    spine.set_digest(dorc_core::spine::SpinePresentedPlan::minted(
-        decision_digest.to_owned(),
+    spine.set_presented_plan(dorc_core::spine::SpinePresentedPlan::minted(
+        presented_plan,
         world_account,
     ));
     spine.set_record_stream(dorc_core::spine::SpineRecordStream::minted(

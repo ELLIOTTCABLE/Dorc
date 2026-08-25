@@ -604,9 +604,9 @@ pub mod view {
     impl Digest {
         /// Project the record.
         #[must_use]
-        pub fn of(record: &SpinePresentedPlan) -> Self {
+        pub fn of(record: &SpinePresentedPlan<crate::PlanPlane>) -> Self {
             Self {
-                digest: record.identity().to_owned(),
+                digest: record.identity().hex(),
             }
         }
     }
@@ -674,7 +674,7 @@ impl<'a> DurableProjection<'a> {
     #[must_use]
     pub fn project(spine: &'a crate::Spine) -> Option<Self> {
         let invocation = view::Invocation::of(spine.invocation()?)?;
-        let digest = view::Digest::of(spine.digest()?);
+        let digest = view::Digest::of(spine.presented_plan()?);
         let stream = spine.record_stream()?;
         let apply = spine
             .dispositions()

@@ -32,6 +32,13 @@ impl DecidePlane for PlanPlane {
     /// could be. The identities differ (`ElisionRegion` vs `SiteId`), which is why the seam keeps
     /// them separate types even where they instantiate to one enum.
     type RegionDecision = Disposition;
+    /// The approval surface's own content identity, minted from the canonical decision encoding
+    /// once every view of that surface is final (`quarantine/30Rb:receipt-identity-map`).
+    ///
+    /// The receipt crate owns it because it owns the domain separation: a `[u8; 32]` from the
+    /// planning-input or apply-image domain cannot construct one, so the three identities this
+    /// arc mints cannot be substituted for one another at any seat that stores or records them.
+    type PresentedPlanIdentity = dorc_receipt::ids::PresentedPlanId;
 }
 
 /// The engine's Spine: one structure, every decision (`309` §0).

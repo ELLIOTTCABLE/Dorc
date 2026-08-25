@@ -57,7 +57,7 @@
 use dorc_core::{
     EntityRef, FactKey, Interner, KindId, Observable, OpaqueToken, ProvArena, SelectorId, Verdict,
 };
-use dorc_plan::erasability::{canonical_decision, decision_digest};
+use dorc_plan::erasability::{canonical_decision, presented_plan_id};
 use dorc_plan::{ConnectedPipes, ProbePlan, build_plan, compile_probe};
 
 /// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these erasability
@@ -391,63 +391,64 @@ fn digest_is_receipt_invariant_across_runs() {
     let converged = converged_facts(&mut i);
     let book = "ufw allow 80/tcp\napt-get install nginx\napt-get update\n";
 
-    let digest_for = |variation: ArenaMode, i: &mut Interner| -> String {
-        let parsed = dorc_syntax::parse(book);
-        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, i);
-        let mut arena = match variation {
-            ArenaMode::Normal => ProvArena::new(),
-            ArenaMode::Adversarial { seed } => ProvArena::adversarial(seed),
+    let digest_for =
+        |variation: ArenaMode, i: &mut Interner| -> dorc_receipt::ids::PresentedPlanId {
+            let parsed = dorc_syntax::parse(book);
+            let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+            let value = dorc_analysis::value::analyze(&cfg, &parsed.value, i);
+            let mut arena = match variation {
+                ArenaMode::Normal => ProvArena::new(),
+                ArenaMode::Adversarial { seed } => ProvArena::adversarial(seed),
+            };
+            let classification = dorc_analysis::effect::classify(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &dorc_oracle::verdict::VerdictIndex::default(),
+                i,
+                &mut arena,
+            );
+            let classes = classification.value;
+            let invalidators = classification.invalidators;
+            let probe = compile_probe(
+                &parsed.value,
+                &cfg,
+                &value,
+                &classes,
+                &std::collections::BTreeMap::new(),
+                &ConnectedPipes::default(),
+                |_, provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
+                |_, _, _, _| None,
+                |_, _| false,
+            );
+            let observe = |f: FactKey| {
+                if converged.contains(&f) {
+                    Observable::verdict_only(Verdict::Converged)
+                } else {
+                    Observable::verdict_only(Verdict::Diverged)
+                }
+            };
+            let plan = build_plan(
+                book,
+                &parsed.value,
+                &cfg,
+                &classes,
+                &invalidators,
+                &vouch_all(&classes),
+                observe,
+                &mut arena,
+            );
+            presented_plan_id(&plan, &probe, book, &parsed.value, i, &[])
         };
-        let classification = dorc_analysis::effect::classify(
-            &cfg,
-            &value,
-            &parsed.value,
-            &idx,
-            &checks,
-            &dorc_oracle::verdict::VerdictIndex::default(),
-            i,
-            &mut arena,
-        );
-        let classes = classification.value;
-        let invalidators = classification.invalidators;
-        let probe = compile_probe(
-            &parsed.value,
-            &cfg,
-            &value,
-            &classes,
-            &std::collections::BTreeMap::new(),
-            &ConnectedPipes::default(),
-            |_, provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
-            |_, _, _, _| None,
-            |_, _| false,
-        );
-        let observe = |f: FactKey| {
-            if converged.contains(&f) {
-                Observable::verdict_only(Verdict::Converged)
-            } else {
-                Observable::verdict_only(Verdict::Diverged)
-            }
-        };
-        let plan = build_plan(
-            book,
-            &parsed.value,
-            &cfg,
-            &classes,
-            &invalidators,
-            &vouch_all(&classes),
-            observe,
-            &mut arena,
-        );
-        decision_digest(&plan, &probe, book, &parsed.value, i, &[])
-    };
 
     let normal = digest_for(ArenaMode::Normal, &mut i);
     let adversarial = digest_for(ArenaMode::Adversarial { seed: 4242 }, &mut i);
     assert_eq!(
         normal, adversarial,
-        "the decision digest moved under adversarial receipts — it must hash only the identity \
-         plane (hunt-5)"
+        "the approval-surface identity moved under adversarial receipts — it must hash only the \
+         identity plane (hunt-5)"
     );
 }
 

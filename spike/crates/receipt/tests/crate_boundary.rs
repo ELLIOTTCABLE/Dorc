@@ -486,11 +486,16 @@ fn the_planning_input_identity_mint_is_declared_and_not_yet_driven() {
 }
 
 #[test]
-fn the_presented_plan_identity_mint_is_declared_and_not_yet_driven() {
-    // The approval surface's mint, on the same terms. Its caller has to sit after the human view,
-    // the executable view, and the artifact bytes are all final, so a caller appearing before that
-    // seat exists is the departure this catches.
-    fence("of_canonical_decision", &["receipt/src/ids.rs"]);
+fn the_presented_plan_identity_mint_is_driven_from_one_production_file() {
+    // Two entries, each for a different reason, on `of_canonical_image`'s terms: `ids.rs` DECLARES
+    // it, and `plan/src/erasability.rs` is the one production file that CALLS it — the seat that
+    // already owns the canonical identity plane, and therefore the only one holding a complete
+    // settled surface to hash. A third entry means a second seat is naming a surface identity,
+    // which is what must not appear quietly.
+    fence(
+        "of_canonical_decision",
+        &["plan/src/erasability.rs", "receipt/src/ids.rs"],
+    );
 }
 
 #[test]

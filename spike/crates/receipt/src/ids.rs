@@ -318,9 +318,9 @@ impl PresentedPlanId {
     /// Compute from the complete canonical encoding of one settled approval surface.
     ///
     /// Named for what it CONSUMES, and lexically fenced over its callers (`crate_boundary.rs`) on
-    /// `of_canonical_inputs`' reasoning. DECLARATION-ONLY today: the seat that could call it sits
-    /// after the human view, the executable view, and the artifact bytes are all final, and does
-    /// not exist yet.
+    /// `of_canonical_inputs`' reasoning. Its one production caller is the seat holding the settled
+    /// canonical identity plane — after the human view, the executable view, and the artifact
+    /// bytes are all final.
     #[must_use]
     pub fn of_canonical_decision(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(PRESENTED_PLAN_DOMAIN, canonical))

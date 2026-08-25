@@ -196,7 +196,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     let (plan, _ast, symbols) = built.plan_ast_and_interner();
 
     let _ = writeln!(out, "case {}", world.label);
-    let _ = writeln!(out, "  digest {}", built.decision_digest());
+    let _ = writeln!(out, "  digest {}", built.presented_plan_hex());
     // What ADMISSION answered, never whether a file was present: a case whose committed records the
     // intake refuses analyses as the unmeasured world, and reporting its mere file as `measured`
     // would overstate what this baseline froze.

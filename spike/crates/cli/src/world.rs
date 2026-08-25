@@ -608,16 +608,17 @@ impl WhyWorld {
         self.plan.survival_report.may_alias_fires()
     }
 
-    /// This world's decision digest — the same stable hash the binary prints, from the same inputs.
+    /// This world's approval-surface identity, hex-spelled — the same identity the binary prints,
+    /// from the same inputs.
     #[must_use]
-    pub fn decision_digest(&self) -> String {
+    pub fn presented_plan_hex(&self) -> String {
         let identity: Vec<Diag> = self
             .why_diags
             .iter()
             .cloned()
             .chain(self.refusals.iter().cloned())
             .collect();
-        dorc_plan::erasability::decision_digest(
+        dorc_plan::erasability::presented_plan_id(
             &self.plan,
             &self.probe,
             self.snapshot.book_src(),
@@ -625,6 +626,7 @@ impl WhyWorld {
             &self.interner,
             &identity,
         )
+        .hex()
     }
 
     /// The plan this world built, the AST its spans index into, and the interner that minted its
