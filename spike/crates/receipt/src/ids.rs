@@ -200,6 +200,75 @@ impl ApplyOutcomeId {
     }
 }
 
+/// One apply invocation's session identity.
+///
+/// An OCCURRENCE rather than a content hash: a session is a standup that happened, so nothing
+/// about it is a function of bytes and there is no material to derive it from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ApplySessionId(ReceiptId);
+
+/// One dispatch generation's identity, on [`ApplySessionId`]'s footing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ApplyGenerationId(ReceiptId);
+
+/// One resolved target's identity WITHIN a session.
+///
+/// Collision-resistant rather than an ordinal, so an identity minted under one session cannot
+/// name a member of another by arithmetic coincidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ReadyApplyTargetId(ReceiptId);
+
+impl ApplySessionId {
+    /// Take the next identity for an apply session.
+    pub fn mint(source: &mut dyn ReceiptIdSource) -> Self {
+        Self(source.next_receipt_id())
+    }
+
+    /// The lowercase hexadecimal spelling.
+    #[must_use]
+    pub fn hex(self) -> String {
+        self.0.hex()
+    }
+
+    /// Recover an identity from a receipt's own bytes, for correlation only.
+    #[must_use]
+    pub fn of_hex(text: &str) -> Option<Self> {
+        Some(Self(ReceiptId(from_hex_32(text)?)))
+    }
+}
+
+impl ApplyGenerationId {
+    /// Take the next identity for a dispatch generation.
+    pub fn mint(source: &mut dyn ReceiptIdSource) -> Self {
+        Self(source.next_receipt_id())
+    }
+
+    /// The lowercase hexadecimal spelling.
+    #[must_use]
+    pub fn hex(self) -> String {
+        self.0.hex()
+    }
+
+    /// Recover an identity from a receipt's own bytes, for correlation only.
+    #[must_use]
+    pub fn of_hex(text: &str) -> Option<Self> {
+        Some(Self(ReceiptId(from_hex_32(text)?)))
+    }
+}
+
+impl ReadyApplyTargetId {
+    /// Take the next identity for a resolved target.
+    pub fn mint(source: &mut dyn ReceiptIdSource) -> Self {
+        Self(source.next_receipt_id())
+    }
+
+    /// The lowercase hexadecimal spelling.
+    #[must_use]
+    pub fn hex(self) -> String {
+        self.0.hex()
+    }
+}
+
 /// The shared representation behind a provider identity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct KeyId([u8; 32]);

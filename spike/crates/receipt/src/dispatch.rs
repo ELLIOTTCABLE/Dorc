@@ -1,0 +1,830 @@
+//! The pre-dispatch authority chain: standup, prepared intent, publication gate, and the
+//! one-use permit the first potentially mutative dispatch consumes.
+//!
+//! Every state here is affine and privately constructed. The chain exists so that "we spent
+//! authority to mutate a host" is a thing a type records rather than a thing a call site
+//! remembers to do, and so that the two routes to a permit — required publication of a rich
+//! intent, and an explicit configured bypass — cannot be reached from one another.
+//!
+//! The crate stays pure: a session's resolved identity arrives as VALUES from whatever edge
+//! established it. Nothing here opens a connection, reads an environment, or asks a clock.
+
+use crate::ids::{
+    ApplyGenerationId, ApplySessionId, PlanReceiptId, PresentedPlanId, ReadyApplyTargetId,
+};
+use crate::image::ApplyArtifactImage;
+use crate::model::{ApplyIntent, Rich};
+use crate::overlay::OverlayEntry;
+use crate::projection::OpaqueFieldTag;
+use crate::rows::{AssignmentOrdinal, OriginOrdinal};
+use crate::tokens::RecordedApplyPolicy;
+use crate::writer::PublishedReceipt;
+
+/// The six dimensions a standup must resolve before a target counts as ready.
+///
+/// All six are required and none has a default. The list is not decoration: a shift in any of
+/// them changes which world the artifact's own reads answer in, so a value nobody resolved is
+/// a target nobody can attribute a mutation to. A route that cannot answer all six cannot
+/// build this, which is the intended outcome for a one-shot channel that establishes nothing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedApplyContext {
+    destination: String,
+    account: String,
+    namespace: String,
+    working_directory: String,
+    environment_policy: String,
+    credential_scope: String,
+}
+
+impl ResolvedApplyContext {
+    /// Take one standup's six resolved answers.
+    #[must_use]
+    pub const fn of(
+        destination: String,
+        account: String,
+        namespace: String,
+        working_directory: String,
+        environment_policy: String,
+        credential_scope: String,
+    ) -> Self {
+        Self {
+            destination,
+            account,
+            namespace,
+            working_directory,
+            environment_policy,
+            credential_scope,
+        }
+    }
+
+    /// The destination as the standup resolved it, never as an invocation spelled it.
+    #[must_use]
+    pub fn destination(&self) -> &str {
+        &self.destination
+    }
+
+    /// The principal the session authenticated as.
+    #[must_use]
+    pub fn account(&self) -> &str {
+        &self.account
+    }
+
+    /// The namespace the session entered.
+    #[must_use]
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    /// Where the session stands.
+    #[must_use]
+    pub fn working_directory(&self) -> &str {
+        &self.working_directory
+    }
+
+    /// Which environment the session carries.
+    #[must_use]
+    pub fn environment_policy(&self) -> &str {
+        &self.environment_policy
+    }
+
+    /// What the session's credentials reach.
+    #[must_use]
+    pub fn credential_scope(&self) -> &str {
+        &self.credential_scope
+    }
+}
+
+/// One target a standup resolved, bound to the session that resolved it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReadyApplyTarget {
+    id: ReadyApplyTargetId,
+    context: ResolvedApplyContext,
+}
+
+impl ReadyApplyTarget {
+    /// Name one resolved target.
+    #[must_use]
+    pub const fn of(id: ReadyApplyTargetId, context: ResolvedApplyContext) -> Self {
+        Self { id, context }
+    }
+
+    /// This target's identity within its session.
+    #[must_use]
+    pub const fn id(&self) -> ReadyApplyTargetId {
+        self.id
+    }
+
+    /// What the standup resolved.
+    #[must_use]
+    pub const fn context(&self) -> &ResolvedApplyContext {
+        &self.context
+    }
+}
+
+/// One originating plan an assignment composes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlanOriginOccurrence {
+    ordinal: OriginOrdinal,
+    receipt: PlanReceiptId,
+    presented: PresentedPlanId,
+}
+
+impl PlanOriginOccurrence {
+    /// Name one occurrence. Duplicates are legal: the admin may compose one plan twice.
+    #[must_use]
+    pub const fn of(
+        ordinal: OriginOrdinal,
+        receipt: PlanReceiptId,
+        presented: PresentedPlanId,
+    ) -> Self {
+        Self {
+            ordinal,
+            receipt,
+            presented,
+        }
+    }
+
+    /// Where this occurrence sat within its assignment.
+    #[must_use]
+    pub const fn ordinal(&self) -> OriginOrdinal {
+        self.ordinal
+    }
+
+    /// Which plan document it came from.
+    #[must_use]
+    pub const fn receipt(&self) -> PlanReceiptId {
+        self.receipt
+    }
+
+    /// Which approval surface it came from.
+    #[must_use]
+    pub const fn presented(&self) -> PresentedPlanId {
+        self.presented
+    }
+}
+
+/// Which presented plans an assignment composes, before the intent is prepared.
+///
+/// [`OriginatingPlans`]'s live counterpart: `Unavailable` is explicit, and an empty `Known` is
+/// unrepresentable because the constructor refuses it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PendingOrigins {
+    /// The apply cannot say which plans this assignment came from.
+    Unavailable,
+    /// At least one occurrence, in the order the admin composed them.
+    Known(Vec<PlanOriginOccurrence>),
+}
+
+impl PendingOrigins {
+    /// Take a non-empty occurrence list, refusing an empty one.
+    #[must_use]
+    pub fn known(occurrences: Vec<PlanOriginOccurrence>) -> Option<Self> {
+        (!occurrences.is_empty()).then_some(Self::Known(occurrences))
+    }
+
+    /// How many occurrences this declares.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Unavailable => 0,
+            Self::Known(occurrences) => occurrences.len(),
+        }
+    }
+
+    /// Whether this declares no occurrence.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// The occurrences, empty when unavailable.
+    #[must_use]
+    pub fn occurrences(&self) -> &[PlanOriginOccurrence] {
+        match self {
+            Self::Unavailable => &[],
+            Self::Known(occurrences) => occurrences,
+        }
+    }
+
+    /// The closed word the intent row records.
+    #[must_use]
+    pub const fn state(&self) -> crate::tokens::RecordedOriginState {
+        match self {
+            Self::Unavailable => crate::tokens::RecordedOriginState::Unavailable,
+            Self::Known(_) => crate::tokens::RecordedOriginState::Known,
+        }
+    }
+}
+
+/// One target-and-image pairing the admin asked for, before a session validates it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PendingApplyAssignment {
+    ordinal: AssignmentOrdinal,
+    target: ReadyApplyTargetId,
+    image: ApplyArtifactImage,
+    origins: PendingOrigins,
+}
+
+impl PendingApplyAssignment {
+    /// Ask for one image to be applied to one target.
+    #[must_use]
+    pub const fn of(
+        ordinal: AssignmentOrdinal,
+        target: ReadyApplyTargetId,
+        image: ApplyArtifactImage,
+        origins: PendingOrigins,
+    ) -> Self {
+        Self {
+            ordinal,
+            target,
+            image,
+            origins,
+        }
+    }
+
+    /// Where this assignment sits in the intent.
+    #[must_use]
+    pub const fn ordinal(&self) -> AssignmentOrdinal {
+        self.ordinal
+    }
+}
+
+/// One assignment bound to the session that resolved its target.
+///
+/// No public constructor: the only mint is [`ApplySessionReady::prepare_intent`], which copies
+/// the session's own answer for the named target rather than accepting one from a caller.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SessionApplyAssignment {
+    ordinal: AssignmentOrdinal,
+    session: ApplySessionId,
+    target: ReadyApplyTargetId,
+    context: ResolvedApplyContext,
+    image: ApplyArtifactImage,
+    origins: PendingOrigins,
+}
+
+impl SessionApplyAssignment {
+    /// Where this assignment sits in the intent.
+    #[must_use]
+    pub const fn ordinal(&self) -> AssignmentOrdinal {
+        self.ordinal
+    }
+
+    /// The session this assignment is bound to.
+    #[must_use]
+    pub const fn session(&self) -> ApplySessionId {
+        self.session
+    }
+
+    /// Which resolved target it names.
+    #[must_use]
+    pub const fn target(&self) -> ReadyApplyTargetId {
+        self.target
+    }
+
+    /// The session's own answer for that target, copied at the mint.
+    #[must_use]
+    pub const fn context(&self) -> &ResolvedApplyContext {
+        &self.context
+    }
+
+    /// The exact image, by value.
+    #[must_use]
+    pub const fn image(&self) -> &ApplyArtifactImage {
+        &self.image
+    }
+
+    /// Which presented plans it composes.
+    #[must_use]
+    pub const fn origins(&self) -> &PendingOrigins {
+        &self.origins
+    }
+}
+
+/// Why a session refused to prepare an intent.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IntentPreparationRefusal {
+    /// No assignment was offered.
+    NoAssignments,
+    /// An assignment named a target this session did not resolve.
+    UnknownTarget,
+    /// Two assignments claimed one ordinal.
+    DuplicateOrdinal,
+    /// Assignment ordinals are not contiguous from zero.
+    OrdinalNotContiguous {
+        /// The ordinal the sequence wanted next.
+        expected: u32,
+        /// The ordinal it found.
+        found: u32,
+    },
+    /// A target this session resolved was left unassigned.
+    ReadyTargetOmitted,
+    /// An origin list declared occurrence ordinals that are not contiguous from zero.
+    OriginNotContiguous {
+        /// The ordinal the sequence wanted next.
+        expected: u32,
+        /// The ordinal it found.
+        found: u32,
+    },
+}
+
+/// One `dorc apply` invocation's standup: every target it resolved, as one aggregate.
+///
+/// ONE per invocation, never one per target. A per-target standup record licenses nothing by
+/// itself, because the thing being authorized is an apply, not a connection.
+#[derive(Debug)]
+pub struct ApplySessionReady {
+    id: ApplySessionId,
+    generation: ApplyGenerationId,
+    targets: Vec<ReadyApplyTarget>,
+}
+
+impl ApplySessionReady {
+    /// Close a standup over the targets it resolved.
+    ///
+    /// # Errors
+    /// Refuses an empty standup and a repeated target identity.
+    pub fn of(
+        id: ApplySessionId,
+        generation: ApplyGenerationId,
+        targets: Vec<ReadyApplyTarget>,
+    ) -> Result<Self, IntentPreparationRefusal> {
+        if targets.is_empty() {
+            return Err(IntentPreparationRefusal::NoAssignments);
+        }
+        let mut seen: Vec<ReadyApplyTargetId> = targets.iter().map(ReadyApplyTarget::id).collect();
+        seen.sort_unstable();
+        let before = seen.len();
+        seen.dedup();
+        if seen.len() != before {
+            return Err(IntentPreparationRefusal::UnknownTarget);
+        }
+        Ok(Self {
+            id,
+            generation,
+            targets,
+        })
+    }
+
+    /// This session's identity.
+    #[must_use]
+    pub const fn id(&self) -> ApplySessionId {
+        self.id
+    }
+
+    /// This session's dispatch generation.
+    #[must_use]
+    pub const fn generation(&self) -> ApplyGenerationId {
+        self.generation
+    }
+
+    /// The targets it resolved.
+    #[must_use]
+    pub fn targets(&self) -> &[ReadyApplyTarget] {
+        &self.targets
+    }
+
+    /// Bind assignments to this session, consuming it.
+    ///
+    /// Each assignment's target must name exactly one member, and the mint COPIES that
+    /// member's resolved context into the record rather than accepting a caller's. Every
+    /// resolved target must be assigned: a standup that reached a host the intent then omits
+    /// is a session the intent does not describe.
+    ///
+    /// # Errors
+    /// Refuses an empty, unknown-target, duplicate, non-contiguous, or partial assignment set.
+    pub fn prepare_intent(
+        self,
+        assignments: Vec<PendingApplyAssignment>,
+        policy: ReceiptPolicyWitness,
+    ) -> Result<PreparedApplyIntent, IntentPreparationRefusal> {
+        if assignments.is_empty() {
+            return Err(IntentPreparationRefusal::NoAssignments);
+        }
+        let mut ordinals: Vec<u32> = assignments
+            .iter()
+            .map(|a| a.ordinal.get())
+            .collect::<Vec<_>>();
+        ordinals.sort_unstable();
+        for (index, ordinal) in ordinals.iter().enumerate() {
+            let expected = u32::try_from(index).unwrap_or(u32::MAX);
+            if *ordinal < expected {
+                return Err(IntentPreparationRefusal::DuplicateOrdinal);
+            }
+            if *ordinal != expected {
+                return Err(IntentPreparationRefusal::OrdinalNotContiguous {
+                    expected,
+                    found: *ordinal,
+                });
+            }
+        }
+        let mut bound: Vec<SessionApplyAssignment> = Vec::with_capacity(assignments.len());
+        for assignment in assignments {
+            let Some(target) = self
+                .targets
+                .iter()
+                .find(|target| target.id == assignment.target)
+            else {
+                return Err(IntentPreparationRefusal::UnknownTarget);
+            };
+            for (index, occurrence) in assignment.origins.occurrences().iter().enumerate() {
+                let expected = u32::try_from(index).unwrap_or(u32::MAX);
+                if occurrence.ordinal.get() != expected {
+                    return Err(IntentPreparationRefusal::OriginNotContiguous {
+                        expected,
+                        found: occurrence.ordinal.get(),
+                    });
+                }
+            }
+            bound.push(SessionApplyAssignment {
+                ordinal: assignment.ordinal,
+                session: self.id,
+                target: assignment.target,
+                context: target.context.clone(),
+                image: assignment.image,
+                origins: assignment.origins,
+            });
+        }
+        if !self
+            .targets
+            .iter()
+            .all(|target| bound.iter().any(|a| a.target == target.id))
+        {
+            return Err(IntentPreparationRefusal::ReadyTargetOmitted);
+        }
+        bound.sort_by_key(SessionApplyAssignment::ordinal);
+        Ok(PreparedApplyIntent {
+            session: self.id,
+            generation: self.generation,
+            assignments: bound,
+            policy,
+        })
+    }
+}
+
+/// Which publication policy an apply is running under.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReceiptPolicyWitness(RecordedApplyPolicy);
+
+impl ReceiptPolicyWitness {
+    /// The default posture: a rich intent is published before dispatch or nothing dispatches.
+    #[must_use]
+    pub const fn required_rich() -> Self {
+        Self(RecordedApplyPolicy::RequiredRich)
+    }
+
+    /// The explicitly configured posture that permits dispatch without required publication.
+    #[must_use]
+    pub const fn configured_bypass() -> Self {
+        Self(RecordedApplyPolicy::ConfiguredBypass)
+    }
+
+    /// The closed word the intent row records.
+    #[must_use]
+    pub const fn token(self) -> RecordedApplyPolicy {
+        self.0
+    }
+}
+
+/// An intent whose assignments, session, generation and policy are frozen.
+///
+/// Not `Clone`: an intent is prepared once and either reaches a gate or is dropped.
+#[derive(Debug)]
+pub struct PreparedApplyIntent {
+    session: ApplySessionId,
+    generation: ApplyGenerationId,
+    assignments: Vec<SessionApplyAssignment>,
+    policy: ReceiptPolicyWitness,
+}
+
+impl PreparedApplyIntent {
+    /// The session this intent was prepared under.
+    #[must_use]
+    pub const fn session(&self) -> ApplySessionId {
+        self.session
+    }
+
+    /// The dispatch generation.
+    #[must_use]
+    pub const fn generation(&self) -> ApplyGenerationId {
+        self.generation
+    }
+
+    /// The bound assignments, in ordinal order and never empty.
+    #[must_use]
+    pub fn assignments(&self) -> &[SessionApplyAssignment] {
+        &self.assignments
+    }
+
+    /// The policy in force.
+    #[must_use]
+    pub const fn policy(&self) -> ReceiptPolicyWitness {
+        self.policy
+    }
+
+    /// Which presented-plan state the intent row records across every assignment.
+    #[must_use]
+    pub fn origin_state(&self) -> crate::tokens::RecordedOriginState {
+        if self
+            .assignments
+            .iter()
+            .any(|assignment| !assignment.origins.is_empty())
+        {
+            crate::tokens::RecordedOriginState::Known
+        } else {
+            crate::tokens::RecordedOriginState::Unavailable
+        }
+    }
+
+    /// Prove that every assignment's exact image reached the region about to be published.
+    ///
+    /// The accounting is a byte comparison against each assignment's own canonical image
+    /// encoding, keyed by the record the assignment occupies. A caller cannot hand over the
+    /// capability, and cannot obtain one by declaring the images present: the entries checked
+    /// here are the entries that will be sealed.
+    ///
+    /// `record_of` answers which skeleton record an assignment ordinal occupies, because that
+    /// numbering belongs to the document being assembled rather than to this type.
+    #[must_use]
+    pub fn account_images(
+        &self,
+        entries: &[OverlayEntry],
+        record_of: &dyn Fn(AssignmentOrdinal) -> Option<u64>,
+    ) -> Option<ExactApplyImagesPresent> {
+        for assignment in &self.assignments {
+            let record = record_of(assignment.ordinal)?;
+            let carried = entries.iter().find(|entry| {
+                entry.record() == record && entry.tag() == OpaqueFieldTag::ApplyArtifactImage
+            })?;
+            if carried.bytes() != assignment.image.encode() {
+                return None;
+            }
+        }
+        Some(ExactApplyImagesPresent(()))
+    }
+}
+
+/// Proof that a published rich intent carried every assignment's exact image by value.
+///
+/// Minted only by [`PreparedApplyIntent::account_images`]. Not `Clone`, and its field is a
+/// private unit, so there is no literal spelling of it outside this module.
+#[derive(Debug)]
+pub struct ExactApplyImagesPresent(());
+
+/// An explicitly configured decision to dispatch without required publication.
+///
+/// Not `Clone`, and deliberately verbose to construct: this is the one value that lets a
+/// mutation proceed with no durable intent behind it, so a reader grepping for it finds every
+/// site that spends it.
+#[derive(Debug)]
+pub struct ConfiguredReceiptBypass(());
+
+impl ConfiguredReceiptBypass {
+    /// Declare that this invocation is configured to dispatch without required publication.
+    #[must_use]
+    pub const fn configured() -> Self {
+        Self(())
+    }
+}
+
+/// How an intent cleared the pre-dispatch boundary.
+///
+/// The two arms are disjoint and neither converts to the other: there is no route from a
+/// plain publication, an attempted publication, or a failed one into `Published`.
+#[derive(Debug)]
+pub enum IntentPublicationGate {
+    /// A rich intent was published, and every assignment's exact image was in it.
+    Published(PublishedReceipt<ApplyIntent, Rich>, ExactApplyImagesPresent),
+    /// An explicit configuration permitted dispatch without required publication.
+    ConfiguredBypass(ConfiguredReceiptBypass),
+}
+
+impl IntentPublicationGate {
+    /// The closed word describing which route was taken.
+    #[must_use]
+    pub const fn policy(&self) -> RecordedApplyPolicy {
+        match self {
+            Self::Published(_, _) => RecordedApplyPolicy::RequiredRich,
+            Self::ConfiguredBypass(_) => RecordedApplyPolicy::ConfiguredBypass,
+        }
+    }
+
+    /// Mint the one-use permit, consuming BOTH the gate and the intent it cleared.
+    ///
+    /// The intent is spent rather than borrowed so one prepared intent cannot clear two
+    /// gates: publication runs against a borrow, and the value itself ends here. What
+    /// survives into the permit is the DECLARED assignment set, because an outcome may only
+    /// name an assignment this intent actually declared.
+    #[must_use]
+    pub fn permit(self, intent: PreparedApplyIntent) -> MutationDispatchPermit {
+        let policy = self.policy();
+        let PreparedApplyIntent {
+            session,
+            generation,
+            assignments,
+            policy: _,
+        } = intent;
+        MutationDispatchPermit {
+            policy,
+            session,
+            generation,
+            declared: assignments
+                .into_iter()
+                .map(|assignment| assignment.ordinal)
+                .collect(),
+        }
+    }
+}
+
+/// The authority to dispatch the first potentially mutative command of one apply.
+///
+/// Not `Clone`, and spent by value. There is no constructor: the sole mint is
+/// [`IntentPublicationGate::permit`], so a permit cannot exist without a gate having been
+/// cleared, and cannot be spent twice.
+#[derive(Debug)]
+pub struct MutationDispatchPermit {
+    policy: RecordedApplyPolicy,
+    session: ApplySessionId,
+    generation: ApplyGenerationId,
+    declared: Vec<AssignmentOrdinal>,
+}
+
+impl MutationDispatchPermit {
+    /// Spend the permit, entering the authority-spent phase.
+    ///
+    /// Spent immediately BEFORE the dispatching call, and spent even when that call turns out
+    /// to have attempted nothing: the controller committed, and a committed apply must not be
+    /// retried on the strength of an unknown answer.
+    #[must_use]
+    pub fn spend(self) -> MutationDispatched {
+        MutationDispatched {
+            policy: self.policy,
+            session: self.session,
+            generation: self.generation,
+            declared: self.declared,
+        }
+    }
+}
+
+/// The phase after a permit is spent. Durable-only failure no longer withholds mutation.
+///
+/// Not `Copy`: it owns the declared assignment set, which is what an outcome projection
+/// checks a site row against.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MutationDispatched {
+    policy: RecordedApplyPolicy,
+    session: ApplySessionId,
+    generation: ApplyGenerationId,
+    declared: Vec<AssignmentOrdinal>,
+}
+
+impl MutationDispatched {
+    /// Which route authorized the dispatch.
+    #[must_use]
+    pub const fn policy(&self) -> RecordedApplyPolicy {
+        self.policy
+    }
+
+    /// The session whose authority was spent.
+    #[must_use]
+    pub const fn session(&self) -> ApplySessionId {
+        self.session
+    }
+
+    /// The generation whose authority was spent.
+    #[must_use]
+    pub const fn generation(&self) -> ApplyGenerationId {
+        self.generation
+    }
+
+    /// Did the cleared intent declare this assignment?
+    ///
+    /// An outcome projection asks before recording a site row: a row naming an assignment
+    /// the intent never declared would attribute execution to a target nobody authorized.
+    #[must_use]
+    pub fn declares(&self, ordinal: AssignmentOrdinal) -> bool {
+        self.declared.contains(&ordinal)
+    }
+
+    /// Every assignment the cleared intent declared, in ordinal order.
+    #[must_use]
+    pub fn declared(&self) -> &[AssignmentOrdinal] {
+        &self.declared
+    }
+
+    /// Continue orchestration past a failure that is only about the durable.
+    ///
+    /// Takes [`DurableFailure`] and not [`PostDispatchFailure`], so a caller holding an
+    /// integrity failure cannot reach this by widening a match arm.
+    #[must_use]
+    pub fn continue_after(self, failure: DurableFailure) -> DurableFailureReported {
+        DurableFailureReported {
+            phase: self,
+            failure,
+        }
+    }
+}
+
+/// A durable failure that was reported and did not stop the apply.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurableFailureReported {
+    phase: MutationDispatched,
+    failure: DurableFailure,
+}
+
+impl DurableFailureReported {
+    /// The phase the apply continued in.
+    #[must_use]
+    pub const fn phase(&self) -> &MutationDispatched {
+        &self.phase
+    }
+
+    /// What failed.
+    #[must_use]
+    pub const fn failure(&self) -> DurableFailure {
+        self.failure
+    }
+}
+
+/// What went wrong with the durable, and nothing else.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DurableFailure {
+    /// The document could not be projected from what the run held.
+    Projection,
+    /// A projected row did not satisfy the grammar.
+    Grammar,
+    /// The region could not be sealed.
+    Seal,
+    /// The document could not be signed.
+    Signature,
+    /// The sink did not place the document.
+    Sink,
+}
+
+/// Transport integrity was lost after dispatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransportIntegrityFailure;
+
+/// Execution integrity was lost after dispatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExecutionIntegrityFailure;
+
+/// Controller attribution was lost after dispatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AttributionIntegrityFailure;
+
+/// The dispatch generation was superseded or revoked after dispatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GenerationIntegrityFailure;
+
+/// The target the apply reached is not the target it was authorized for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TargetIntegrityFailure;
+
+/// Mutation integrity was lost after dispatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MutationIntegrityFailure;
+
+/// Everything that can go wrong after the permit is spent, with the durable kept apart.
+///
+/// Six of the seven arms retain their existing abort behaviour. The seventh is the only one
+/// [`MutationDispatched::continue_after`] accepts, and that asymmetry is the whole point of
+/// the enum: a generic fallback that swallowed the other six would turn a lost host into a
+/// logging problem.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PostDispatchFailure {
+    /// Only the durable failed.
+    DurableOnly(DurableFailure),
+    /// The channel to the host was lost.
+    TransportIntegrity(TransportIntegrityFailure),
+    /// What executed is no longer known.
+    ExecutionIntegrity(ExecutionIntegrityFailure),
+    /// Who the controller is talking to is no longer established.
+    AttributionIntegrity(AttributionIntegrityFailure),
+    /// This generation's authority was revoked.
+    GenerationIntegrity(GenerationIntegrityFailure),
+    /// The reached target is not the authorized one.
+    TargetIntegrity(TargetIntegrityFailure),
+    /// Mutation integrity was lost.
+    MutationIntegrity(MutationIntegrityFailure),
+}
+
+impl PostDispatchFailure {
+    /// The durable failure this is, where it is one.
+    ///
+    /// The ONE narrowing, and it answers `None` for every integrity arm. A caller reaching
+    /// [`MutationDispatched::continue_after`] therefore has to have come through here and
+    /// handled the `None`.
+    #[must_use]
+    pub const fn durable_only(self) -> Option<DurableFailure> {
+        match self {
+            Self::DurableOnly(failure) => Some(failure),
+            Self::TransportIntegrity(_)
+            | Self::ExecutionIntegrity(_)
+            | Self::AttributionIntegrity(_)
+            | Self::GenerationIntegrity(_)
+            | Self::TargetIntegrity(_)
+            | Self::MutationIntegrity(_) => None,
+        }
+    }
+}

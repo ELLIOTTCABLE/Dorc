@@ -193,6 +193,7 @@
 
 pub mod apply;
 pub mod capability;
+pub mod dispatch;
 pub mod format;
 pub mod grammar;
 pub mod graph;
