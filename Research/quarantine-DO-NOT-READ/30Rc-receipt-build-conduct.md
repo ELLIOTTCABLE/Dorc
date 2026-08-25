@@ -590,3 +590,38 @@ whether the check was the thing protecting you.**
 And: every test agreed with the ruling, because the tests were written after it. Tests
 authored downstream of a decision encode the decision and cannot falsify it. What caught this
 was an outside pass against the spec text — nothing in the suite could have.
+
+## boundary 3 landed; boundary 4 BLOCKED on a human ruling
+
+`b1104258`, 64 ahead of `ai/main`. The Spine→PlanReceipt projection, fourteen row families,
+an omission census. Both gate legs green and selecting 10 checks over 140 files. 2856 tests.
+The builder FALSIFIED its region-ordinal pin (made the projection default to ordinal zero,
+confirmed the test fails on exactly the claim it names) — the trap I briefed hardest, checked
+rather than asserted. Human steered it directly to make-durable-and-stop at ~830k tokens.
+
+**BLOCKED:** the `presented-plan` row needs two REQUIRED 64-hex digests; the Spine carries one
+16-hex string. Unemittable until the three-identity payload lands — which is burndown C item
+2, awaiting the human. The projection emits `presented: None` plus an explicit
+`not-projected-v1` omission, which is correct WHICHEVER way they rule, so it needs no revisit.
+Boundary 4 cannot start until then.
+
+**NEW, escalated not decided (correctly — it trips the new threshold):**
+`finding-survival-wall-is-typed-as-a-leaf`. `RecordedSurvival::wall()` is
+`Option<RecordedLeaf>` documented "the leaf of the wall that stood", but its ONLY source is
+`SurvivalOutcome::RederivationDisagreed { wall: u32 }` — the crossed wall's ORDINAL in the
+accumulated set. Writing an ordinal into a leaf-typed field keys the wall to whatever leaf
+shares that integer: `inv-site-keyed-results`' failure class, landing in the durable. The wire
+type is an agnostic count, so this is Rust-type-and-meaning, not bytes — but it is a Stage 1
+public type whose field meaning was set at my Stage 0 checkpoint, so it is mine-or-the-human's.
+Currently the projection records the outcome token and WITHHOLDS the number: states nothing
+false, loses a detail, and has no omission row to carry it (the census is per-species and
+Survival IS carried). This is a defect in the table I approved.
+
+**A fence caught its own author, and the author fixed the code.** The rehydration fence added
+last stint fired on the builder's own new projection — three seats DECIDING a grade at
+projection time, which is a different act from reading one back. It did NOT widen the
+allow-list; it threaded the account through instead (source rows carry the invocation's own,
+narrative/omission rows the run's, following `project_plan`'s existing fold), removing all
+three floor-writes. Green with no list edit. Its own caveat, worth keeping: the fence's subject
+is the VARIANT, so it catches both acts — over-broad, useful here, and a future legitimate
+projection-time floor-write would need a real decision rather than a list entry.
