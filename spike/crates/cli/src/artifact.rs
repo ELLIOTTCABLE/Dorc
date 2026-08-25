@@ -307,8 +307,9 @@ impl ArtifactSet {
         &self.primary
     }
 
-    /// The generated dependencies, in a deterministic order. EMPTY for every form but
-    /// [`ArtifactForm::Multipart`].
+    /// The generated dependencies, in a deterministic order. Populated for
+    /// [`ArtifactForm::Multipart`] and [`ArtifactForm::MirroredTree`]; empty for the two forms
+    /// that place no file beside the plan.
     #[must_use]
     pub fn dependencies(&self) -> &[ArtifactFile] {
         &self.dependencies
