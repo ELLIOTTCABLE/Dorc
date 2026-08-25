@@ -221,11 +221,14 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 19 = 16 (`28K`'s loading refusals, spending `289:rul-unwritten-ceiling-one-bump`)
-    // + `28K` §2's two positional notices + §4's closure refusal. Unwritten because a builder
-    // authors ZERO prose (`27V:rul-error-authorship-tier`).
+    // Ceiling 21 = 19 (`28K`'s loading refusals, spending `289:rul-unwritten-ceiling-one-bump`,
+    // plus `28K` §2's two positional notices and §4's closure refusal) + the apply lane's two
+    // refusals: an invocation that cannot record its own intent, and bytes that cannot be bound
+    // to one. Unwritten because a builder authors ZERO prose
+    // (`27V:rul-error-authorship-tier`); both carry a `why` naming the remediation register the
+    // words are owed.
     assert!(
-        unwritten.len() <= 19,
+        unwritten.len() <= 21,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

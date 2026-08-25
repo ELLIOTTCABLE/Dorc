@@ -1076,4 +1076,22 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "apply-intent-not-publishable",
+        when_fires: "a `dorc apply --host` invocation reached the apply seat and this build cannot publish the pre-dispatch intent that authorizes a first mutative dispatch. cli/main.rs ship_consented_apply, decided from argv alone and refused before the plan file is read or any identity is minted. {flag} names the one thing that dispatches with no durable intent behind it.",
+        why: "30Rb apply-dispatch-sequence - a permit is minted only from a cleared publication gate, and the shipped binary links no implementation of a signer or a sealer, so the required arm is structurally unreachable rather than conditionally declined. The refusal is therefore what `apply --host` IS until a key provider lands, and the bypass is a typed per-invocation act rather than a default, a terminal reading, or a receipt write that happened to succeed. Remediation register (help) wanted: name the flag, and say plainly that taking it means the run spends mutation authority with nothing recording what it was about to do.",
+        params: &[],
+        example: "[unwritten: apply-intent-not-publishable]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
+    CatalogEntry {
+        slug: "apply-plan-not-dispatchable",
+        when_fires: "a `dorc apply --host` invocation could not turn the bytes it was handed into something a dispatch permit may be minted over, so it shipped nothing. cli/main.rs apply_refused, over cli/apply.rs consented_apply's own refusal. {reason} is the closed word for which step did not close: `image-not-recordable` (the bytes are past what one exact image may carry), `session-not-preparable` (the session could not bind its own assignment), `intent-not-published` (the intent was not placed). Only the first is reachable from the shipped binary today; the other two are structurally unreachable there and exist because the seat is shared with the deterministic route.",
+        why: "30Rb apply-dispatch-sequence - an intent binds EXACT bytes, so bytes that cannot be recorded exactly are bytes no permit may be minted over and no dispatch may follow. One code carrying a reason WORD rather than three sibling codes (28L rul-reason-enums-not-sibling-codes): the world is one - an apply that bound nothing and shipped nothing - and only the step that did not close differs. Remediation register (help) wanted: per reason, and for the reachable one that means naming the bound rather than the file.",
+        params: &[],
+        example: "[unwritten: apply-plan-not-dispatchable]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
