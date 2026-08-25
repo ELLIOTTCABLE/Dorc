@@ -520,3 +520,34 @@ V1 STRETCH: cutting nothing; every row measured live.
 
 Sizing correction: the builder self-estimated 70 min for a scout the harness timed at 17.
 Watch for that — a builder's own wallclock sense is unreliable and it will mis-budget from it.
+
+## HUMAN CORRECTION 2026-08-24 — I was signing off at the wrong critical-eye
+
+Human: "you're making fairly significant rulings without stopping to ask me... if you can't
+follow the plan, or the codebase resists and pushes you towards cross-cutting changes that
+*aren't in the spec*, then stop and ask." And: the builders are working at the correct
+altitude and velocity; the failure is MY sign-off, not their work.
+
+THE TEST, going forward: is it *obviously* correct AND in no way in tension with the spec
+(i.e. a simple spec oversight)? → ack. Can I not tell? → the human. "The builder's reasoning
+is good" is NOT "obviously correct" — that conflation is the whole defect.
+
+Escalate unconditionally: anything touching `core`/`plan` structure `30Rb` does not name ·
+any grammar-table or wire-token change · any schedule change · any Stage 1 public API change.
+
+Standing: the source-ordinal collapse has a GENTLE, TEMPORARY, explicitly-unwelded ack and
+wants outside grounding. Every other deviation is EXPLICITLY unattended — not acked, not
+nacked, not noticed. Minimize future ones even at risk of interrupt.
+
+Also ruled: builder-authored CLAUDE.md edits are OUT of the tree (removed at `e55a7fe9`;
+`spike/CLAUDE.md` restored byte-identical to `a2d2a3e2`, the 255-line crate file deleted;
+content recoverable from the commits that added it). Their SPIRIT goes into individual
+builder prompts where siblings/successors need it; the human reviews steering prose at the
+end of the whole arc. NEW STANDING RIDER: builders report invariant prose to me and never
+write a steering file. This conflicts with `30Rb`'s own instruction to write crate-local
+invariants — the human's ruling wins, and I should have clamped it in the briefs on day one
+after asking about exactly this conflict.
+
+Sol dispatched read-only over all 37 recorded deviations, spec-compliance ONLY, verdicts
+A/B/C/D + adjudication where the spec is soft. Kit: scratchpad `30Rc1-dispatch-bundle.md`;
+report lands at `30Rc1`. Human trusts its judgement for now.
