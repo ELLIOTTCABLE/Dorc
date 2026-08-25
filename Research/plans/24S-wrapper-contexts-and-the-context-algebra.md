@@ -251,6 +251,12 @@ Contract points, each load-bearing:
   oracle turns scrub into concrete *absence* (stronger than ⊤). (-GUESS seed: derive
   per-host sudoers survivors via `sudo -l` at probe time, a touches()-style host-run
   arm — opaques7-finding23.)
+
+  > *(Annotation 2026-08-24: this bullet's bar is now RULED and extended —
+  > `plans/30S`: values carry into the composed context key (the as-built ρ-fold is
+  > name-only, `27K` §8's debt, now red-pinned); bare assignment-prefixes join site
+  > identity through the same peel; ambient `export` fences fact-transport; and the
+  > pin-or-sever envelope composition governs probing under a book env-delta.)*
 - **Wrapper self-effects are the wrapper node's own** (opaques6-finding4): eliding the
   line elides sudo's auth-timestamp refresh, `nohup`'s nohup.out, `time`'s output.
   Identity-transform ≠ observable-free; the wrapper oracle vouches its own observables
