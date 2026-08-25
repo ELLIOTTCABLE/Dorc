@@ -11,11 +11,13 @@ use dorc_core::influence::InfluenceAccount;
 use dorc_core::region::{ElisionRegion, RegionUniverse};
 use dorc_core::spine::{
     InvocationMode, RegionRoutes, RenderDecision, RunIdentity, SourceClaim, SpineInvocation,
-    SpineRegionDecision, SpineRenderDecision, SpineSpecies,
+    SpinePresentedPlan, SpineRegionDecision, SpineRenderDecision, SpineSpecies,
 };
-use dorc_core::{AstId, BytePos, DefinitionId, SourceFileId, SourceRole, Span};
+use dorc_core::{AstId, BytePos, DefinitionId, Interner, SourceFileId, SourceRole, Span};
+use dorc_plan::planning_input::{PlanningInputs, PlanningMode, PlanningPolicy};
+use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::receipt::{ProjectionRefusal, project};
-use dorc_plan::{Disposition, Spine};
+use dorc_plan::{Disposition, NO_ARTIFACT_FORM, Plan, ProbePlan, Spine, SurvivalReport};
 use dorc_receipt::plan::RenderSubject;
 use dorc_receipt::rows::RecordedProjectionOmission;
 use dorc_receipt::tokens::{
@@ -27,10 +29,11 @@ fn authored() -> InfluenceAccount {
     InfluenceAccount::authored_before_contact()
 }
 
-/// A Spine carrying the one record the projection demands, and nothing else.
-fn spine_with_invocation() -> Spine {
-    let mut spine = Spine::new();
-    spine.set_invocation(SpineInvocation::minted(
+/// The book every baseline witness is settled over.
+const BASELINE_BOOK: &str = "";
+
+fn invocation() -> SpineInvocation {
+    SpineInvocation::minted(
         InvocationMode::WhylogReplay,
         vec![String::from("dorc"), String::from("plan")],
         vec![SourceClaim {
@@ -45,6 +48,51 @@ fn spine_with_invocation() -> Spine {
             host: String::from("web1"),
             started_at: None,
         },
+        authored(),
+    )
+}
+
+/// A witness over one settled surface. Two different books settle to two different surfaces.
+fn witness_over(book: &str) -> FinalPresentation {
+    let ast = dorc_syntax::parse(book).value;
+    let plan = Plan::decided(
+        vec![],
+        Vec::new(),
+        SurvivalReport::default(),
+        false,
+        NO_ARTIFACT_FORM,
+        book,
+        &ast,
+        authored(),
+    );
+    FinalPresentation::of_settled(
+        &plan,
+        &ProbePlan::default(),
+        book,
+        &ast,
+        &Interner::default(),
+        &[],
+        PlanningInputs::of(
+            "dorc/test",
+            &invocation(),
+            None,
+            None,
+            PlanningPolicy::of(PlanningMode::Plan, false),
+        ),
+        None,
+    )
+}
+
+fn witness() -> FinalPresentation {
+    witness_over(BASELINE_BOOK)
+}
+
+/// A Spine carrying the two records the projection demands, and nothing else.
+fn spine_with_invocation() -> Spine {
+    let mut spine = Spine::new();
+    spine.set_invocation(invocation());
+    spine.set_presented_plan(SpinePresentedPlan::minted(
+        witness().presented_plan(),
         authored(),
     ));
     spine
@@ -96,8 +144,8 @@ fn a_render_row_names_the_region_the_run_decided_and_not_its_neighbour() {
         authored(),
     ));
 
-    let model =
-        project(&spine, RecordedInvocationMode::Plan, authored()).expect("the Spine projects");
+    let model = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+        .expect("the Spine projects");
     let rendered = model.renders();
     assert_eq!(rendered.len(), 1, "one refusal was recorded");
     let row = &rendered[0];
@@ -135,8 +183,8 @@ fn every_species_the_projection_declines_states_its_population() {
         authored(),
     ));
 
-    let model =
-        project(&spine, RecordedInvocationMode::Plan, authored()).expect("the Spine projects");
+    let model = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+        .expect("the Spine projects");
     let omitted: Vec<RecordedSpineSpecies> = model
         .omissions()
         .iter()
@@ -150,7 +198,6 @@ fn every_species_the_projection_declines_states_its_population() {
     );
     for declined in [
         RecordedSpineSpecies::RecordStream,
-        RecordedSpineSpecies::PresentedPlan,
         RecordedSpineSpecies::Vouch,
         RecordedSpineSpecies::Observation,
         RecordedSpineSpecies::ValidityRound,
@@ -164,19 +211,29 @@ fn every_species_the_projection_declines_states_its_population() {
     }
     assert_eq!(
         omitted.len(),
-        SpineSpecies::ALL.len() - 10,
-        "ten species are carried; every other one mints a row"
+        SpineSpecies::ALL.len() - 11,
+        "eleven species are carried; every other one mints a row"
     );
 
-    // The approval-surface identities are not minted yet, so the row that would state them is
-    // absent rather than half-filled.
-    assert!(model.presented().is_none());
-    let presented = model
+    // The reason axis carries real distinctions, so one is pinned: the stream is not "not yet"
+    // work, it is content that rides the admission row as an opaque slot and never gets a row.
+    let stream = model
         .omissions()
         .iter()
-        .find(|row| row.species() == RecordedSpineSpecies::PresentedPlan)
-        .expect("the presented-plan omission is recorded");
-    assert_eq!(presented.reason(), RecordedOmissionReason::NotProjectedV1);
+        .find(|row| row.species() == RecordedSpineSpecies::RecordStream)
+        .expect("the record-stream omission is recorded");
+    assert_eq!(stream.reason(), RecordedOmissionReason::ContentExcluded);
+
+    // The approval surface is CARRIED now, so it must neither be reported omitted nor be absent.
+    assert!(
+        !omitted.contains(&RecordedSpineSpecies::PresentedPlan),
+        "the approval surface is carried and must not also say it was omitted"
+    );
+    let presented = model.presented().expect("the surface projects a row");
+    assert_eq!(presented.planning_input(), witness().planning_input().hex());
+    assert_eq!(presented.presented_plan(), witness().presented_plan().hex());
+    // No image is built at plan time, so the optional field reads absent rather than inventing one.
+    assert_eq!(presented.planned_image(), None);
 }
 
 #[test]
@@ -185,7 +242,7 @@ fn a_spine_with_no_invocation_has_no_document_to_write() {
     // projection refuses rather than emitting a shape whose required singleton is missing.
     let spine = Spine::new();
     assert_eq!(
-        project(&spine, RecordedInvocationMode::Plan, authored()),
+        project(&spine, RecordedInvocationMode::Plan, authored(), &witness()),
         Err(ProjectionRefusal::NoInvocation)
     );
 }
@@ -203,11 +260,44 @@ fn a_licensed_verb_is_attributed_and_an_unlicensed_one_mints_nothing() {
         authored(),
     ));
 
-    let model =
-        project(&spine, RecordedInvocationMode::Plan, authored()).expect("the Spine projects");
+    let model = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
+        .expect("the Spine projects");
     assert_eq!(model.sites().len(), 1, "the decision itself is recorded");
     assert!(
         model.licensors().is_empty(),
         "a run licenses no irreversible verb, so it attributes none"
+    );
+}
+
+#[test]
+fn a_witness_from_another_surface_cannot_supply_this_one_s_identities() {
+    // THE substitution trap. A witness carries two identities the Spine has no copy of, so nothing
+    // in the document could contradict them — a witness from a different plan would supply this
+    // run's `planning-input` and its own image, and the receipt would validate cleanly while
+    // naming inputs this run never consumed. The one identity BOTH hold is what makes the swap
+    // detectable, so the projection compares it and refuses.
+    let other = witness_over("true\n");
+    assert_ne!(
+        other.presented_plan(),
+        witness().presented_plan(),
+        "the two books must settle to different surfaces, or this case proves nothing"
+    );
+    let spine = spine_with_invocation();
+    assert_eq!(
+        project(&spine, RecordedInvocationMode::Plan, authored(), &other),
+        Err(ProjectionRefusal::PresentationMismatch)
+    );
+}
+
+#[test]
+fn a_run_that_recorded_no_surface_has_nothing_for_a_witness_to_answer_to() {
+    // The other half: with no recorded surface there is nothing to compare against, and accepting
+    // the witness anyway would let it vouch for itself — which is exactly the swap above, minus
+    // the evidence that would catch it.
+    let mut spine = Spine::new();
+    spine.set_invocation(invocation());
+    assert_eq!(
+        project(&spine, RecordedInvocationMode::Plan, authored(), &witness()),
+        Err(ProjectionRefusal::NoPresentedPlan)
     );
 }

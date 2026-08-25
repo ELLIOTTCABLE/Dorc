@@ -12,11 +12,12 @@ use dorc_core::spine::{
     AdmissionOutcome, InfluenceBearing, RefusalCause, RenderDecision, ShipLane, SpineSiteClass,
     SpineSpecies, SurvivalDemote, SurvivalOutcome, WithheldCause,
 };
+use dorc_receipt::ids::ApplyArtifactImageId;
 use dorc_receipt::plan::{
     RecordedAdmission, RecordedLicensor, RecordedLoadDecision, RecordedNarrative,
-    RecordedPlanReceipt, RecordedProbeShip, RecordedRegionDecision, RecordedRenderDecision,
-    RecordedSiteClassification, RecordedSiteDecision, RecordedSolveCertification, RecordedSource,
-    RecordedSurvival, RenderSubject,
+    RecordedPlanReceipt, RecordedPresentedPlan, RecordedProbeShip, RecordedRegionDecision,
+    RecordedRenderDecision, RecordedSiteClassification, RecordedSiteDecision,
+    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject,
 };
 use dorc_receipt::rows::{
     LoadOrdinal, ModelRefusal, NarrativeOrdinal, RecordedAst, RecordedInvocation, RecordedLeaf,
@@ -32,6 +33,7 @@ use dorc_receipt::tokens::{
 };
 use dorc_receipt::{RecordedInfluence, RefusalReason, SkeletonRecord};
 
+use crate::presentation::FinalPresentation;
 use crate::{Disposition, PlanPlane, Spine};
 
 /// Why a Spine did not project.
@@ -49,6 +51,11 @@ pub enum ProjectionRefusal {
         /// Which field.
         field: &'static str,
     },
+    /// The run recorded no approval surface, so there is nothing for a witness to be checked
+    /// against.
+    NoPresentedPlan,
+    /// The witness names a different approval surface than the Spine recorded.
+    PresentationMismatch,
 }
 
 /// Project the recorded plan-receipt model from the Spine.
@@ -57,16 +64,28 @@ pub enum ProjectionRefusal {
 /// is a REPLAY instruction and states nothing about the invocation that produced the record, so
 /// deriving the producing shape from it would be a fabricated claim.
 ///
+/// The witness carries the two identities the Spine does not. The one it SHARES with the Spine is
+/// what ties it to THIS run: a witness naming another surface refuses, and so does a Spine that
+/// recorded none to check against, because a witness cannot vouch for itself.
+///
 /// # Errors
-/// Refuses a Spine with no invocation, a row the grammar table rejects, a record set that does not
-/// close over itself, or a stringly field outside its closed vocabulary.
+/// Refuses a Spine with no invocation or no recorded surface, a witness naming a different
+/// surface, a row the grammar table rejects, a record set that does not close over itself, or a
+/// stringly field outside its closed vocabulary.
 pub fn project(
     spine: &Spine,
     mode: RecordedInvocationMode,
     world: dorc_core::influence::InfluenceAccount,
+    presentation: &FinalPresentation,
 ) -> Result<RecordedPlanReceipt, ProjectionRefusal> {
     let mut records: Vec<SkeletonRecord> = Vec::new();
     let invocation = spine.invocation().ok_or(ProjectionRefusal::NoInvocation)?;
+    let surface = spine
+        .presented_plan()
+        .ok_or(ProjectionRefusal::NoPresentedPlan)?;
+    if *surface.identity() != presentation.presented_plan() {
+        return Err(ProjectionRefusal::PresentationMismatch);
+    }
 
     push(&mut records, &invocation_row(invocation, mode))?;
     for (ordinal, claim) in invocation.sources().iter().enumerate() {
@@ -78,6 +97,10 @@ pub fn project(
     if let Some(row) = admission_row(spine) {
         push(&mut records, &row)?;
     }
+    push(
+        &mut records,
+        &presented_row(presentation, surface.account()),
+    )?;
     for record in spine.dispositions() {
         push(&mut records, &site_row(record))?;
         if let Some(row) = licensor_row(record) {
@@ -211,6 +234,22 @@ fn admission_row(spine: &Spine) -> Option<RecordedAdmission> {
         held(stream.is_some()),
         grade(admission.account()),
     ))
+}
+
+/// The three identities of the surface this run presented.
+///
+/// The witness supplies all three; the account is the Spine record's own, so the row stands exactly
+/// where the run stated the surface stood.
+fn presented_row(
+    presentation: &FinalPresentation,
+    account: dorc_core::influence::InfluenceAccount,
+) -> RecordedPresentedPlan {
+    RecordedPresentedPlan::of(
+        presentation.planning_input().hex(),
+        presentation.presented_plan().hex(),
+        presentation.planned_image().map(ApplyArtifactImageId::hex),
+        grade(account),
+    )
 }
 
 const fn disposition_of(decision: &Disposition) -> RecordedDisposition {
@@ -562,15 +601,10 @@ const fn carriage(species: SpineSpecies) -> (bool, RecordedOmissionReason) {
         | SpineSpecies::Admission
         | SpineSpecies::Survival
         | SpineSpecies::RenderDecision
-        | SpineSpecies::RegionDecision => (true, RecordedOmissionReason::NotProjectedV1),
+        | SpineSpecies::RegionDecision
+        | SpineSpecies::PresentedPlan => (true, RecordedOmissionReason::NotProjectedV1),
         // The stream's own bytes are an opaque slot on the admission row, never a row of their own.
         SpineSpecies::RecordStream => (false, RecordedOmissionReason::ContentExcluded),
-        // The row demands THREE identities and one of them has no producer. The approval surface's
-        // own identity is minted (`PlanPlane::PresentedPlanIdentity`) and the planned image's field
-        // is optional, but `planning-input` is a required digest and nothing yet encodes the
-        // planner's complete input tuple. Emitting the row would mean inventing that encoding at
-        // this seat, and an inputs identity that omits an input reads two different runs as one.
-        SpineSpecies::PresentedPlan => (false, RecordedOmissionReason::NotProjectedV1),
         // The run outcome belongs to the apply-outcome document, never to a plan receipt.
         SpineSpecies::Vouch
         | SpineSpecies::Observation
