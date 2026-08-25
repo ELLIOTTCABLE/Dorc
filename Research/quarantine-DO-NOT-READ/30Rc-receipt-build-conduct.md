@@ -435,6 +435,17 @@ been run.
 
 ## open with the human
 
+**The laundering seat is `results::replayed_records`, not the authority mint** (measured
+2026-08-25). `of_admitted_replay`'s from-nothing mint is deleted and the witness now derives
+from the admission that earned it — but that was a re-attribution, not the severance. On the
+`dorc why` route, `replayed_records` converts a durable's record stream into the SAME
+admitted-evidence types a live probe intake produces, and below that seat replayed bytes are
+indistinguishable from live measurement: real replace/guard licenses are minted, a real plan
+is projected and decided, a presented-plan identity is minted. `why` returns before printing,
+so nothing reaches stdout — the licenses are still genuinely constructed. The precondition for
+removing it is exactly the blocker below: the binary must be able to READ a receipt, so that
+`why` answers from recorded content and `replayed_records` has no caller.
+
 **`open-the-arc-cannot-exit-without-a-key-provider` — BLOCKING Stages 5 and 6.** The exit
 criteria and the no-key-provider ruling are mutually inconsistent, and this is the second
 place this arc has found both sanctioned outcomes closed.
