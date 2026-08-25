@@ -728,3 +728,41 @@ phrase "load order" coincides with it ONLY because an earlier ruling made identi
 acquisition order agree. Anything that decouples them — a source acquired more than once, or
 reached in a different order than numbered — silently changes what every recorded ordinal
 claims, without touching receipt code at all.
+
+## `PlanningInputId` membership — RULED (sibling conductor; human skimmed, not deeply evaluated)
+
+Source: `_tmp-handoff.md` at root, ephemeral. Conductor-tier authority — binding, but if a
+builder finds it incoherent against the tree that is a STOP, not a local reconciliation.
+
+- **Boundary:** it identifies the complete decision-relevant VALUE presented to the planner,
+  including authority scope. Two invocations with genuinely identical scoped inputs MAY share
+  it — correct, not a collision. `ReceiptId` distinguishes events. (Same distinction the arc
+  already paid for once, when I wrongly made a document identity carry event meaning.)
+- **Include, authored:** ordered acquired-source table with exact digests, roles, named paths,
+  resolution context; the static load-occurrence account; exact oracle provenance; controller
+  semantics/version; target/context/generation; every parsed policy value affecting analysis
+  or settlement.
+- **Include, admitted world state:** admission outcome, and every bounded typed
+  controller-attributed record the planner consumes. Preserve duplicates and ordering wherever
+  the planner does. Attempt, generation, host/target, source-set attribution — so evidence
+  cannot cross scope through an identity collision.
+- **Exclude:** dispositions, render decisions, narratives, receipt-storage policy,
+  `PresentedPlanId`, artifact bytes. `PresentedPlanId` BINDS this id together with the
+  finalized approval and the planned image id.
+- **Encoding:** one private typed `PlanningInputs` value — domain separation, length framing,
+  explicit option/count tags, deterministic collection order. Field census + PERTURBATION
+  tests making every decision-relevant member load-bearing. No generic serialization, no
+  projection-seat bag of fields.
+
+**MY READ WAS WRONG, twice, and the second is sharp.** I told the human the tuple was roughly
+"sources, argv, target/context, controller semantics, policy". `argv` should be SEMANTIC
+INVOCATION; and I omitted the ADMITTED WORLD STATE entirely — without which **a converged host
+and a drifted host mint the same `PlanningInputId`**, defeating the identity's stated meaning.
+The planner consumes probe results; an inputs identity ignoring what the world said is not an
+identity of the planner's inputs. Precisely the failure the builder refused to invent an
+encoding for.
+
+Running tally of my own calls this arc: WRONG on the remint identity (reverted), WRONG on
+this membership (corrected before build), and RIGHT on the two I flagged to the human as my
+weakest (crate split, schedule pull — both cleared by the foreign pass). My confidence keeps
+running inverse to my accuracy; weight accordingly.
