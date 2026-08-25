@@ -24,6 +24,7 @@ use crate::context::RecordedApplyContext;
 use crate::dispatch::{MutationDispatched, PreparedApplyIntent, SessionApplyAssignment};
 use crate::format::{RefusalReason, SkeletonRecord};
 use crate::ids::ApplyIntentId;
+use crate::limits::ReceiptLimits;
 use crate::outcome::{
     RecordedApplyOutcome, RecordedApplyOutcomeRow, RecordedChannels, RecordedSiteOutcome,
 };
@@ -53,6 +54,31 @@ pub enum ApplyProjectionRefusal {
         /// The ordinal the site row named.
         assignment: u32,
     },
+}
+
+/// What one byte channel costs a document, and what its row says about it.
+///
+/// A value past the per-field bound, or one that would spend past the run's whole host-output
+/// budget, is left out and SAID to be left out. `omitted-limit` is the word for a bound stopping
+/// a carry, and it is a different statement from `unavailable` — the run held these bytes.
+///
+/// The budget is spent in row order, so which channel loses is the document's own order rather
+/// than a size comparison across sites.
+fn admit_channel(
+    value: Option<&Vec<u8>>,
+    spent: &mut u64,
+    limits: &ReceiptLimits,
+) -> (OpaqueState, Option<Vec<u8>>) {
+    let Some(bytes) = value else {
+        return (OpaqueState::Unavailable, None);
+    };
+    let measured = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    let after = spent.saturating_add(measured);
+    if !limits.opaque_field_bytes.admits(measured) || !limits.host_output_bytes.admits(after) {
+        return (OpaqueState::OmittedLimit, None);
+    }
+    *spent = after;
+    (OpaqueState::Captured, Some(bytes.clone()))
 }
 
 /// One value a row offers for one of its slots, absent where the run held none.
@@ -393,6 +419,10 @@ impl ProjectedApplyOutcome {
 /// `dispatched` is consulted rather than decorative: a site row naming an assignment the cleared
 /// intent never declared is refused here, at the seat that could still tell.
 ///
+/// `limits` bounds what the byte channels may cost. A host's output is unbounded by nature, and a
+/// document that carried all of it would be one its own reader refuses whole — so the budget is
+/// spent per row and what it will not cover is recorded as omitted rather than dropped silently.
+///
 /// # Errors
 /// Refuses a site naming an undeclared assignment, a row the grammar table rejects, and a record
 /// set that does not close over itself.
@@ -400,6 +430,7 @@ pub fn project_apply_outcome(
     dispatched: &MutationDispatched,
     report: &ApplyOutcomeReport,
     invocation: &ApplyInvocation,
+    limits: &ReceiptLimits,
 ) -> Result<ProjectedApplyOutcome, ApplyProjectionRefusal> {
     for site in &report.sites {
         if !dispatched.declares(site.assignment) {
@@ -426,8 +457,11 @@ pub fn project_apply_outcome(
         &[],
     )?;
 
+    let mut spent: u64 = 0;
     for (position, site) in report.sites.iter().enumerate() {
         let ordinal = SiteOutcomeOrdinal::of(u32::try_from(position).unwrap_or(u32::MAX));
+        let (out_state, out_bytes) = admit_channel(site.stdout.as_ref(), &mut spent, limits);
+        let (err_state, err_bytes) = admit_channel(site.stderr.as_ref(), &mut spent, limits);
         push(
             &mut rows,
             &RecordedSiteOutcome::of(
@@ -436,12 +470,12 @@ pub fn project_apply_outcome(
                 site.site,
                 site.status,
                 site.tool_rc,
-                RecordedChannels::of(held(site.stdout.is_some()), held(site.stderr.is_some())),
+                RecordedChannels::of(out_state, err_state),
                 site.account,
             ),
             &[
-                (OpaqueFieldTag::Stdout, site.stdout.clone()),
-                (OpaqueFieldTag::Stderr, site.stderr.clone()),
+                (OpaqueFieldTag::Stdout, out_bytes),
+                (OpaqueFieldTag::Stderr, err_bytes),
             ],
         )?;
     }

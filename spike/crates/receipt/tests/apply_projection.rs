@@ -24,7 +24,7 @@ use dorc_receipt::ids::{
     ReadyApplyTargetId, ReceiptId, ReceiptIdSource,
 };
 use dorc_receipt::image::{ApplyArtifactImage, ApplyEntryBytes};
-use dorc_receipt::limits::ReceiptLimits;
+use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
 use dorc_receipt::project::{
     ApplyInvocation, ApplyOutcomeReport, ApplyProjectionRefusal, ApplySiteReport,
     project_apply_intent, project_apply_outcome,
@@ -358,7 +358,7 @@ fn an_outcome_naming_an_assignment_the_intent_never_declared_refuses_at_that_ord
         influenced(),
     );
     assert_eq!(
-        project_apply_outcome(&phase, &report, &invocation()),
+        project_apply_outcome(&phase, &report, &invocation(), &ReceiptLimits::V1),
         Err(ApplyProjectionRefusal::UndeclaredAssignment { assignment: 4 })
     );
 }
@@ -376,7 +376,8 @@ fn an_outcome_projects_the_order_its_own_model_re_emits_and_numbers_its_sites_fr
         vec![site(0, 3, Some(b"ok\n".to_vec())), site(0, 7, None)],
         influenced(),
     );
-    let projected = match project_apply_outcome(&phase, &report, &invocation()) {
+    let projected = match project_apply_outcome(&phase, &report, &invocation(), &ReceiptLimits::V1)
+    {
         Ok(projected) => projected,
         Err(refusal) => panic!("a declared outcome projects: {refusal:?}"),
     };
@@ -413,7 +414,8 @@ fn a_site_holding_no_output_records_unavailable_and_carries_no_entry() {
         vec![site(0, 1, Some(b"listening\n".to_vec()))],
         influenced(),
     );
-    let projected = match project_apply_outcome(&phase, &report, &invocation()) {
+    let projected = match project_apply_outcome(&phase, &report, &invocation(), &ReceiptLimits::V1)
+    {
         Ok(projected) => projected,
         Err(refusal) => panic!("a declared outcome projects: {refusal:?}"),
     };
@@ -520,5 +522,57 @@ fn a_prepared_intent_records_the_policy_that_prepared_it() {
         projected.model().intent().policy().token(),
         "required-rich",
         "the two routes are told apart in the document, not only in the type"
+    );
+}
+
+#[test]
+fn a_channel_past_the_run_budget_records_omitted_and_carries_nothing() {
+    // `omitted-limit` and `unavailable` are different statements — a bound stopped this carry,
+    // versus the run holding nothing — and one document must be able to say each. The budget is
+    // spent in row order, so the falsifiable claim is that the FIRST site keeps its output and
+    // the second loses it, rather than both surviving or both being dropped.
+    let narrow = ReceiptLimits {
+        host_output_bytes: ByteLimit::of(6),
+        ..ReceiptLimits::V1
+    };
+    let mut ids = Counter(0);
+    let phase = dispatched(one_assignment(&mut ids));
+    let report = ApplyOutcomeReport::of(
+        ApplyIntentId::of_hex(&"e".repeat(64))
+            .unwrap_or_else(|| panic!("the fixture identity parses")),
+        RecordedTerminalState::Complete,
+        RecordedDurableState::Published,
+        vec![
+            site(0, 1, Some(b"123456".to_vec())),
+            site(0, 2, Some(b"7".to_vec())),
+        ],
+        influenced(),
+    );
+    let projected = match project_apply_outcome(&phase, &report, &invocation(), &narrow) {
+        Ok(projected) => projected,
+        Err(refusal) => panic!("a declared outcome projects: {refusal:?}"),
+    };
+
+    let rows = projected.model().sites();
+    let first = rows.first().unwrap_or_else(|| panic!("two sites"));
+    let second = rows.get(1).unwrap_or_else(|| panic!("two sites"));
+    assert_eq!(first.channels().stdout().token(), "captured");
+    assert_eq!(second.channels().stdout().token(), "omitted-limit");
+    assert_eq!(
+        second.channels().stderr().token(),
+        "unavailable",
+        "a channel the run never held still says so, beside one a bound stopped"
+    );
+
+    let carried: Vec<Vec<u8>> = projected
+        .details()
+        .iter()
+        .filter(|entry| entry.tag() == OpaqueFieldTag::Stdout)
+        .map(|entry| entry.bytes().to_vec())
+        .collect();
+    assert_eq!(
+        carried,
+        vec![b"123456".to_vec()],
+        "the omitted channel carries no entry at all"
     );
 }

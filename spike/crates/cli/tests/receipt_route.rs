@@ -697,6 +697,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &phase,
         &report,
         &apply_invocation(),
+        &ReceiptLimits::V1,
         ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
         &sealer,
     )

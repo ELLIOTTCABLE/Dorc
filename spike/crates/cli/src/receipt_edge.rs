@@ -17,6 +17,7 @@ use dorc_receipt::capability::{OverlaySealer, PublicationGrade, ReceiptSigner, R
 use dorc_receipt::dispatch::{ExactApplyImagesPresent, MutationDispatched, PreparedApplyIntent};
 use dorc_receipt::format::{Skeleton, serialize_skeleton};
 use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, ReceiptIdSource};
+use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, Species};
 use dorc_receipt::overlay::{OverlayEntry, captured_slots};
 use dorc_receipt::project::{
@@ -417,11 +418,12 @@ pub fn publish_apply_outcome(
     dispatched: &MutationDispatched,
     report: &ApplyOutcomeReport,
     invocation: &ApplyInvocation,
+    limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<(ApplyOutcomeId, PublicationGrade), PublicationRefusal> {
     let ReceiptCapabilities { ids, signer, sink } = caps;
-    let projected = project_apply_outcome(dispatched, report, invocation)
+    let projected = project_apply_outcome(dispatched, report, invocation, limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let (_, records, details) = projected.into_parts();
     let id = ApplyOutcomeId::mint(ids);
@@ -449,10 +451,11 @@ pub fn publish_plain_apply_outcome(
     dispatched: &MutationDispatched,
     report: &ApplyOutcomeReport,
     invocation: &ApplyInvocation,
+    limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
 ) -> Result<(ApplyOutcomeId, PublicationGrade), PublicationRefusal> {
     let ReceiptCapabilities { ids, signer, sink } = caps;
-    let projected = project_apply_outcome(dispatched, report, invocation)
+    let projected = project_apply_outcome(dispatched, report, invocation, limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let (_, records, _) = projected.into_parts();
     let (spelled, published) =
