@@ -291,9 +291,11 @@ pub struct ApplyArtifactImageId(Sha256Digest);
 impl PlanningInputId {
     /// Compute from the complete canonical encoding of the planner's inputs.
     ///
-    /// Named for what it CONSUMES, and lexically fenced to its one production caller
-    /// (`crate_boundary.rs`): nothing in the type stops a caller hashing bytes that are not a
-    /// complete canonical encoding, so the gate over its callers cannot be a type.
+    /// Named for what it CONSUMES, and lexically fenced over its callers (`crate_boundary.rs`):
+    /// nothing in the type stops a caller hashing bytes that are not a complete canonical
+    /// encoding, so the gate over its callers cannot be a type. The fence is DECLARATION-ONLY
+    /// today — this file, and no caller — and widens in the same commit as its reviewed sole
+    /// production caller.
     #[must_use]
     pub fn of_canonical_inputs(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(PLANNING_INPUT_DOMAIN, canonical))
@@ -315,8 +317,10 @@ impl PlanningInputId {
 impl PresentedPlanId {
     /// Compute from the complete canonical encoding of one settled approval surface.
     ///
-    /// Named for what it CONSUMES, and lexically fenced to its one production caller
-    /// (`crate_boundary.rs`), on `of_canonical_inputs`' reasoning.
+    /// Named for what it CONSUMES, and lexically fenced over its callers (`crate_boundary.rs`) on
+    /// `of_canonical_inputs`' reasoning. DECLARATION-ONLY today: the seat that could call it sits
+    /// after the human view, the executable view, and the artifact bytes are all final, and does
+    /// not exist yet.
     #[must_use]
     pub fn of_canonical_decision(canonical: &[u8]) -> Self {
         Self(Sha256Digest::over(PRESENTED_PLAN_DOMAIN, canonical))

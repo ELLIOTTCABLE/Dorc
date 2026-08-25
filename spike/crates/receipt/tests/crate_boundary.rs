@@ -476,6 +476,24 @@ fn the_image_identity_mint_is_reachable_from_one_production_file() {
 }
 
 #[test]
+fn the_planning_input_identity_mint_is_declared_and_not_yet_driven() {
+    // Same shape and same reason as the image mint's fence: bare bytes in, and no type can say
+    // "these are the complete canonical encoding of the planner's inputs". DECLARATION-ONLY is the
+    // whole entry — `ids.rs` declares it and no production file calls it yet. The list widens in
+    // the same commit as the reviewed sole production caller, never ahead of one: an anticipatory
+    // entry reads as a fence while permitting a call nobody has looked at.
+    fence("of_canonical_inputs", &["receipt/src/ids.rs"]);
+}
+
+#[test]
+fn the_presented_plan_identity_mint_is_declared_and_not_yet_driven() {
+    // The approval surface's mint, on the same terms. Its caller has to sit after the human view,
+    // the executable view, and the artifact bytes are all final, so a caller appearing before that
+    // seat exists is the departure this catches.
+    fence("of_canonical_decision", &["receipt/src/ids.rs"]);
+}
+
+#[test]
 fn the_rehydration_floor_is_decided_at_one_seat() {
     // The GUARANTEE this carries, and where it came from: `plan`'s untracked-adapter inventory
     // enumerates every seat that deliberately carries an untracked grade, and the durable's
