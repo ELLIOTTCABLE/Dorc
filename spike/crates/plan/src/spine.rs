@@ -95,23 +95,15 @@ impl PlanAuthority {
         }
     }
 
-    /// The authority a REPLAY carries. The durable passed its own admission upstream, whose refusal
-    /// returns before any analysis; a replay then re-derives a decision that was already made and
-    /// opens no channel to a host, so there is no live intake integrity for this seat to answer for.
-    #[must_use]
-    pub const fn of_admitted_replay() -> Self {
-        Self(())
-    }
-
     /// A run with no intake at all — the kernel entries, `hostsim`, and DST, which analyse the
     /// unmeasured world (every fact ⊤ ⇒ every site runs).
     ///
     /// Not a bypass: a run that never opened an intake has no integrity to have lost, and the
     /// refusal this witness exists to enforce is about a channel that broke, not about one that was
     /// never opened. `the_driver_takes_its_authority_from_its_admission` is the fence — the binary
-    /// driver, the one place a live intake is answered, reaches its authority through
-    /// [`of_admission`](Self::of_admission) or [`of_admitted_replay`](Self::of_admitted_replay), so
-    /// a refused intake can never be re-authorised by reaching for this instead.
+    /// driver, the one place an intake is answered, reaches its authority through
+    /// [`authorise`](Self::authorise) and nowhere else, so a refused intake can never be
+    /// re-authorised by reaching for this instead.
     #[must_use]
     pub const fn without_intake() -> Self {
         Self(())

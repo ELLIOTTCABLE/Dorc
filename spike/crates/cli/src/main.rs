@@ -1751,12 +1751,7 @@ fn run(
                 &mut RunClock::Recorded(r.instants.clone()),
                 &mut interner,
             );
-            (
-                None,
-                scoped,
-                false,
-                dorc_plan::PlanAuthority::of_admitted_replay(),
-            )
+            (None, scoped, false, r.authority)
         } else {
             // The BOUNDED READ is this edge's (`rul-host-bytes-bounded-before-admission`): the limit
             // is spent against the real reader, before anything is allocated, and only the bounded
@@ -2463,6 +2458,9 @@ struct Replay {
     /// The instants the ORIGINAL run recorded for its probe records, by arrival ordinal.
     instants: BTreeMap<u64, dorc_core::RunInstant>,
     records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
+    /// The licence to produce an authority-bearing projection, carried from the durable's own
+    /// admission rather than asserted where one is wanted.
+    authority: dorc_plan::PlanAuthority,
 }
 
 enum ReplayLoad {
@@ -2604,12 +2602,17 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
     let record_stream_version = envelope.record_stream_version();
     let instants: BTreeMap<u64, dorc_core::RunInstant> =
         envelope.recorded_instants().iter().copied().collect();
-    match dorc_plan::whylog::admit_unscoped_whylog_replay(
+    // The authority rides out of the SAME match that decides the outcome, exactly as the live
+    // intake's does. It used to be dropped here and re-minted from nothing where the projection
+    // wanted one, which made a durable's licence to plan a fact about where a call sat rather than
+    // about what any admission answered — and a positional licence is one a later edit can move
+    // without anything noticing.
+    match dorc_plan::PlanAuthority::authorise(dorc_plan::whylog::admit_unscoped_whylog_replay(
         envelope,
         &framing,
         dorc_plan::records::HostEvidenceLimits::spike_default(),
-    ) {
-        dorc_plan::records::Admission::Admitted(replay) => {
+    )) {
+        dorc_plan::Authorised::Admitted(replay, authority) => {
             Ok(Carrier::pure(ReplayLoad::Admitted(Replay {
                 book_path,
                 oracle_paths,
@@ -2618,9 +2621,10 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
                 record_stream_version,
                 instants: instants.clone(),
                 records: Some(replay.records().clone()),
+                authority,
             })))
         }
-        dorc_plan::records::Admission::NoObservation => {
+        dorc_plan::Authorised::NoObservation(authority) => {
             Ok(Carrier::pure(ReplayLoad::NoObservation(Replay {
                 book_path,
                 oracle_paths,
@@ -2629,9 +2633,10 @@ fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
                 record_stream_version,
                 instants: instants.clone(),
                 records: None,
+                authority,
             })))
         }
-        dorc_plan::records::Admission::Refused(reason) => Ok(refuse_replay(reason)),
+        dorc_plan::Authorised::Refused(reason) => Ok(refuse_replay(reason)),
     }
 }
 

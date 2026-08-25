@@ -68,7 +68,7 @@
 //! use dorc_core::influence::InfluenceAccount;
 //! use dorc_receipt::RecordedInfluence;
 //!
-//! let _live = InfluenceAccount::untracked();
+//! let _live = InfluenceAccount::authored_before_contact();
 //! let _recorded = RecordedInfluence::of_token(Some("host-influenced"));
 //! ```
 //!
