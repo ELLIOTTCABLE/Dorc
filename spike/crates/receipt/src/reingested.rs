@@ -14,20 +14,86 @@ use crate::apply::RecordedApplyIntent;
 use crate::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId, PresentedPlanId};
 use crate::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Projection, SignerTrust, Species};
 use crate::outcome::RecordedApplyOutcome;
-use crate::plan::{RecordedPlanReceipt, RecordedSource};
+use crate::plan::{RecordedPlanReceipt, RecordedSiteDecision, RecordedSource};
 use crate::reader::Receipt;
 use crate::rows::{ModelRefusal, RecordedProjectionOmission};
 use crate::tokens::{
-    RecordedApplyPolicy, RecordedInvocationMode, RecordedOmissionReason, RecordedOriginState,
-    RecordedSourceRole, RecordedSpineSpecies, RecordedTerminalState,
+    ClosedToken, RecordedApplyPolicy, RecordedDisposition, RecordedInvocationMode,
+    RecordedOmissionReason, RecordedOriginState, RecordedSourceRole, RecordedSpineSpecies,
+    RecordedTerminalState,
 };
 
 mod sealed {
     pub trait RecordedType {}
+    pub trait ReDerived {}
 }
 
 /// The closed set of things a document can yield back.
 pub trait RecordedType: sealed::RecordedType {}
+
+/// The closed set of things the CURRENT arm of a comparison may hold.
+///
+/// Sealed for the same reason [`RecordedType`] is, against the opposite mistake. Comparing a
+/// recorded conclusion with one derived today is a report act, so the value standing beside the
+/// recorded one has to be a report value too. Left open, the arm accepts a live decision — and a
+/// live decision carries the licence for the irreversible verb inside itself, so a report would
+/// then be holding one and could hand it on.
+pub trait ReDerived: sealed::ReDerived {}
+
+/// A plan outcome derived under CURRENT inputs, for comparison against a recorded one.
+///
+/// The four verbs are the same words a document spells, and that is exactly why this is its own
+/// type rather than a reuse of either neighbour. It is not a
+/// [`RecordedDisposition`](crate::tokens::RecordedDisposition) — that came off a document, this
+/// did not — and it is not a live decision, which carries a licence. There is no conversion from
+/// either: the four constructors are the only way to make one, so a seat producing one has to
+/// name the verb it derived, and no bulk `From` can turn a document's answer into a
+/// freshly-derived one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReDerivedDisposition(RecordedDisposition);
+
+impl sealed::ReDerived for ReDerivedDisposition {}
+impl ReDerived for ReDerivedDisposition {}
+
+impl ReDerivedDisposition {
+    /// The authored bytes execute.
+    #[must_use]
+    pub const fn run() -> Self {
+        Self(RecordedDisposition::Run)
+    }
+
+    /// The authored bytes are replaced by a value-preserving stand-in.
+    #[must_use]
+    pub const fn replace() -> Self {
+        Self(RecordedDisposition::Replace)
+    }
+
+    /// The site lies in a branch proved dead.
+    #[must_use]
+    pub const fn omit() -> Self {
+        Self(RecordedDisposition::Omit)
+    }
+
+    /// A check is inserted ahead of the authored bytes, which survive verbatim.
+    #[must_use]
+    pub const fn guard() -> Self {
+        Self(RecordedDisposition::Guard)
+    }
+
+    /// The word a report renders.
+    #[must_use]
+    pub fn token(self) -> &'static str {
+        self.0.token()
+    }
+
+    /// Whether a recorded answer and this one name the same verb.
+    ///
+    /// A comparison, never a coercion: it answers a question about two values and yields neither.
+    #[must_use]
+    pub fn agrees_with(self, recorded: RecordedDisposition) -> bool {
+        self.0 == recorded
+    }
+}
 
 impl<D: Species, P: Projection, T: SignerTrust> sealed::RecordedType for Receipt<D, P, T> {}
 impl<D: Species, P: Projection, T: SignerTrust> RecordedType for Receipt<D, P, T> {}
@@ -40,6 +106,8 @@ impl sealed::RecordedType for RecordedApplyOutcome {}
 impl RecordedType for RecordedApplyOutcome {}
 impl sealed::RecordedType for RecordedSource {}
 impl RecordedType for RecordedSource {}
+impl sealed::RecordedType for RecordedSiteDecision {}
+impl RecordedType for RecordedSiteDecision {}
 impl sealed::RecordedType for RecordedProjectionOmission {}
 impl RecordedType for RecordedProjectionOmission {}
 
@@ -190,6 +258,17 @@ impl Reingested<RecordedPlanReceipt> {
         self.0.sites().len()
     }
 
+    /// Every site decision, each still sealed.
+    #[must_use]
+    pub fn sites(&self) -> Vec<Reingested<RecordedSiteDecision>> {
+        self.0
+            .sites()
+            .iter()
+            .cloned()
+            .map(Reingested::seal)
+            .collect()
+    }
+
     /// How many region decisions the document carries.
     #[must_use]
     pub fn region_count(&self) -> usize {
@@ -237,6 +316,20 @@ impl Reingested<RecordedSource> {
     #[must_use]
     pub const fn bytes(&self) -> u64 {
         self.0.bytes()
+    }
+}
+
+impl Reingested<RecordedSiteDecision> {
+    /// What the document says the plan did with the site.
+    #[must_use]
+    pub const fn disposition(&self) -> RecordedDisposition {
+        self.0.disposition()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
     }
 }
 
@@ -321,7 +414,7 @@ impl Reingested<RecordedApplyOutcome> {
 /// Four states, and they never substitute for one another. Disagreement is a finding that
 /// keeps both values, never a resolution that picks one.
 #[derive(Debug)]
-pub enum RecordedCurrent<R: RecordedType, C> {
+pub enum RecordedCurrent<R: RecordedType, C: ReDerived> {
     /// Only the document has it.
     RecordedOnly(Reingested<R>),
     /// Only the current derivation has it.
@@ -342,7 +435,7 @@ pub enum RecordedCurrent<R: RecordedType, C> {
     },
 }
 
-impl<R: RecordedType, C> RecordedCurrent<R, C> {
+impl<R: RecordedType, C: ReDerived> RecordedCurrent<R, C> {
     /// The word a report renders for this comparison.
     #[must_use]
     pub const fn token(&self) -> &'static str {
@@ -358,6 +451,35 @@ impl<R: RecordedType, C> RecordedCurrent<R, C> {
     #[must_use]
     pub const fn is_finding(&self) -> bool {
         matches!(self, Self::BothDisagreeing { .. })
+    }
+}
+
+impl RecordedCurrent<RecordedSiteDecision, ReDerivedDisposition> {
+    /// Classify one site's recorded conclusion against the one derived today.
+    ///
+    /// The arm is decided HERE, from the two values, rather than chosen by a caller. A caller
+    /// that picks `BothAgreeing` picks it whether or not the two agree, which makes the one arm
+    /// a reader would most trust the one arm nothing checks — and there is no repair downstream,
+    /// because both values survive into a report that has already been told they match.
+    ///
+    /// Absent on both sides is no comparison at all, not a vacuous agreement.
+    #[must_use]
+    pub fn of_site(
+        recorded: Option<Reingested<RecordedSiteDecision>>,
+        current: Option<ReDerivedDisposition>,
+    ) -> Option<Self> {
+        match (recorded, current) {
+            (Some(recorded), Some(current)) => {
+                Some(if current.agrees_with(recorded.disposition()) {
+                    Self::BothAgreeing { recorded, current }
+                } else {
+                    Self::BothDisagreeing { recorded, current }
+                })
+            }
+            (Some(recorded), None) => Some(Self::RecordedOnly(recorded)),
+            (None, Some(current)) => Some(Self::CurrentOnly(current)),
+            (None, None) => None,
+        }
     }
 }
 
@@ -444,9 +566,92 @@ mod tests {
 
     #[test]
     fn only_disagreement_is_a_finding() {
-        let agreeing: RecordedCurrent<Receipt<PlanReceipt, Plain, TrustedReceiptSigner>, u8> =
-            RecordedCurrent::CurrentOnly(1);
+        let current: RecordedCurrent<
+            Receipt<PlanReceipt, Plain, TrustedReceiptSigner>,
+            ReDerivedDisposition,
+        > = RecordedCurrent::CurrentOnly(ReDerivedDisposition::run());
+        assert!(!current.is_finding());
+        assert_eq!(current.token(), "current-only");
+    }
+
+    fn site(disposition: RecordedDisposition) -> Reingested<RecordedSiteDecision> {
+        use crate::rows::{RecordedAst, RecordedLeaf, RecordedSite};
+        Reingested::seal(RecordedSiteDecision::of(
+            RecordedSite::of(RecordedLeaf::of(0), None),
+            RecordedAst::of(0),
+            disposition,
+            crate::tokens::OpaqueState::Uncollected,
+            RecordedInfluence::MostInfluenced,
+        ))
+    }
+
+    #[test]
+    fn the_four_states_are_decided_from_the_values_never_chosen() {
+        // The whole point of classifying here: a caller cannot label a disagreement as agreement.
+        let agreeing = RecordedCurrent::of_site(
+            Some(site(RecordedDisposition::Guard)),
+            Some(ReDerivedDisposition::guard()),
+        )
+        .expect("two values compare");
+        assert_eq!(agreeing.token(), "both-agreeing");
         assert!(!agreeing.is_finding());
-        assert_eq!(agreeing.token(), "current-only");
+
+        let disagreeing = RecordedCurrent::of_site(
+            Some(site(RecordedDisposition::Replace)),
+            Some(ReDerivedDisposition::run()),
+        )
+        .expect("two values compare");
+        assert_eq!(disagreeing.token(), "both-disagreeing");
+        assert!(disagreeing.is_finding());
+
+        assert_eq!(
+            RecordedCurrent::of_site(Some(site(RecordedDisposition::Omit)), None)
+                .expect("one value still compares")
+                .token(),
+            "recorded-only"
+        );
+        assert_eq!(
+            RecordedCurrent::of_site(None, Some(ReDerivedDisposition::omit()))
+                .expect("one value still compares")
+                .token(),
+            "current-only"
+        );
+        assert!(
+            RecordedCurrent::of_site(None, None).is_none(),
+            "neither side holding anything is no comparison, not a vacuous agreement"
+        );
+    }
+
+    #[test]
+    fn a_disagreement_keeps_both_values() {
+        // Disagreement is a finding that PRESERVES both, never a selection of either — so a
+        // report can say what the document recorded AND what today derives, and name the gap.
+        let comparison = RecordedCurrent::of_site(
+            Some(site(RecordedDisposition::Replace)),
+            Some(ReDerivedDisposition::run()),
+        )
+        .expect("two values compare");
+        let RecordedCurrent::BothDisagreeing { recorded, current } = comparison else {
+            panic!("a Replace beside a run is a disagreement")
+        };
+        assert_eq!(recorded.disposition(), RecordedDisposition::Replace);
+        assert_eq!(current.token(), "run");
+    }
+
+    #[test]
+    fn a_rederived_verb_reads_as_itself_and_agrees_only_with_its_own() {
+        for (current, recorded) in [
+            (ReDerivedDisposition::run(), RecordedDisposition::Run),
+            (
+                ReDerivedDisposition::replace(),
+                RecordedDisposition::Replace,
+            ),
+            (ReDerivedDisposition::omit(), RecordedDisposition::Omit),
+            (ReDerivedDisposition::guard(), RecordedDisposition::Guard),
+        ] {
+            assert_eq!(current.token(), recorded.token());
+            assert!(current.agrees_with(recorded));
+        }
+        assert!(!ReDerivedDisposition::run().agrees_with(RecordedDisposition::Guard));
     }
 }

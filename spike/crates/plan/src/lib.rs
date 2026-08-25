@@ -96,6 +96,30 @@
 //! let recorded = dorc_receipt::tokens::RecordedDisposition::Run;
 //! let _live: dorc_plan::Disposition = recorded;
 //! ```
+//!
+//! The comparison that stands a recorded conclusion beside a currently-derived one takes a
+//! report value on BOTH sides. A re-derived verb satisfies it:
+//!
+//! ```
+//! use dorc_receipt::{ReDerivedDisposition, RecordedCurrent};
+//! use dorc_receipt::plan::RecordedSiteDecision;
+//!
+//! let _pinned: fn(
+//!     Option<dorc_receipt::Reingested<RecordedSiteDecision>>,
+//!     Option<ReDerivedDisposition>,
+//! ) -> Option<RecordedCurrent<RecordedSiteDecision, ReDerivedDisposition>> =
+//!     RecordedCurrent::of_site;
+//! ```
+//!
+//! and a live decision — which carries the elision licence in its own `Replace` arm — cannot
+//! stand in that seat, so a report can never come to be holding one:
+//!
+//! ```compile_fail
+//! use dorc_receipt::RecordedCurrent;
+//! use dorc_receipt::plan::RecordedSiteDecision;
+//!
+//! fn leak(_: RecordedCurrent<RecordedSiteDecision, dorc_plan::Disposition>) {}
+//! ```
 
 #![forbid(unsafe_code)]
 // Seeded round-19 code predates the take-3 lint gate; this crate-root expect

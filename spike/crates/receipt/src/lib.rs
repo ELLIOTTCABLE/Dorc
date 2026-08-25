@@ -241,5 +241,7 @@ pub use model::{
 pub use reader::{
     BoundedReceiptBytes, PartialReceipt, ReadPlain, ReadRich, Receipt, read_plain, read_rich,
 };
-pub use reingested::{RecordedCurrent, RecordedInfluence, Reingested};
+pub use reingested::{
+    ReDerived, ReDerivedDisposition, RecordedCurrent, RecordedInfluence, Reingested,
+};
 pub use writer::{DraftReceipt, PublishedReceipt, SerializedReceipt, SignedReceipt};
