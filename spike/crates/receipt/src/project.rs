@@ -267,10 +267,12 @@ pub fn project_apply_intent(
     })
 }
 
-/// One assignment's row, and the two values its slots may carry.
+/// One assignment's row, and the three values its slots may carry.
 ///
 /// The image rides its slot as the exact canonical encoding, which is the same byte-image the
-/// accounting compares against — the region proves the image is present by BEING it.
+/// accounting compares against — the region proves the image is present by BEING it. The
+/// destination and the remaining resolved axes ride two slots of the same row, so a reader
+/// recombining them cannot pair one assignment's host with another's siting.
 fn assignment_row(
     assignment: &SessionApplyAssignment,
     account: RecordedInfluence,
