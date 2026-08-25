@@ -125,12 +125,18 @@ the conductor-closed residue rows live in `TODO-ADDTL` (`r30-close-out-residue`)
 - **block-stdlib** — zero non-fixture oracles; the dialect-reach human gate is RULED (`30Q` §5g:
   POSIX `test` grammar + `$(…)`-as-⊤ in predict bodies, carry safe-list split, tracer continues
   past an unevaluable gate); remaining gates are engineering — that dialect-widening lane, the
-  `30D`+`30J` predict-contract arc, the `27Q` preconditions.
+  `30D`+`30J` predict-contract arc, the `30S` env-identity floor
+  (`30S:seq-stdlib-gates-on-env-identity`: retarget-sensitive families never ship on
+  name-blind fact keys), the `27Q` preconditions.
   On-ramp: `notes/27Q`.
 - **`28Q:stage-iii-world-scopes`** — gated on `design-world-scope-surface`,
   `rule-incarnation-continuity-semantics`, and the ssh oracle (⇐ stdlib).
 - **r26 reactive/capture + multi-host revival** — `26B`/`26C` + `260`–`262`; after the r30
-  close. **`26K:fruit-arc (née §0a)`** is the one parallel-anytime slice and is scheduled.
+  close. The 2026-08-24/25 sittings (`notes/26L`+`26Lb`, exploration/brainstorm-tier — cite
+  no commitments) bear on its shape: conductor-book topology, punt-now-not-forever on
+  cross-host influence, and capture soft-gated on `30D` stdout claims (unclaimed stdout
+  correctly starves the capture lane). **`26K:fruit-arc (née §0a)`** is the one
+  parallel-anytime slice and is scheduled.
 - **The forfeited inclusion tiers** — `FORFEITS:forfeit-plain-sh-inclusion-analysis`; the
   next language-surface round's entry point.
 

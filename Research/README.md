@@ -115,11 +115,20 @@ and carries the license-contamination map.
   adjudicated `notes/26A` (round 26, branch `ai/spike3-r26`); joined out-of-order by
   `notes/26B` (reactive plan-construction direction + the capture-fold deferral,
   minted mid-r27).
+- **Meta-orchestration / conductor-books (fleet glue, native orchestration)** —
+  `notes/26L` (exploration report: the L0–L7 strata, the candidate medium-term plateau,
+  the negative findings) + `notes/26Lb` (the 2026-08-24/25 brainstorm ledger: per-story
+  rulings, kills, banked residues). Both EXPLORATION/BRAINSTORM-tier by their own
+  headers — cite no commitments from them.
 - **Wrapper contexts (sudo/su/env): context-entry probing, the escalation dial, the
   tolerance vouch** — **`plans/27C` (THE current spec: measurement in the site's denoted
   context; reuse-never-acquire; the fallback consumption lane)** over `notes/273` (the
   wrapper surface redesign — predict absorbs wrapper modeling; dissolved `24S` §2b/§6b)
   over `plans/24S` (proposal-tier; its §0 impossibility ledger stands).
+- **Environment identity (the `export`-retarget gap; pin-or-sever probe envelopes)** —
+  **`plans/30S`** (design-of-record: an assignment-prefix joins site fact-identity; an
+  ambient export fences fact-transport; positive-speech-only witnesses; its §4
+  `seq-stdlib-gates-on-env-identity` gates every retarget-sensitive stdlib family).
 - **Payload decomposition (`sh -c` strings, heredoc books, the render ladder)** —
   `plans/24T` (proposal-tier; composes with 24S).
 - **Dotfiles / ops-siblinghood / why-run honesty** — `plans/24R` (secondary positions;
@@ -306,7 +315,9 @@ and carries the license-contamination map.
   `SIBLINGS.md` + **`plans/26K`** (§0 is the actionable head). NOT complete: the `26K`
   §0a fruit arc is unstarted, and the reactive/capture + multi-host revival waits
   behind the r28/`28Q` push; stdlib and the why/loom prose tails stay gently held —
-  `LIVING_STATUS.md`. (Same round-id as the tabled multi-host r26 above — branch
+  `LIVING_STATUS.md`. The 2026-08-24/25 meta-orchestration sittings are `notes/26L` +
+  `notes/26Lb` (exploration/brainstorm-tier); the env-identity design they surfaced is
+  banked at `plans/30S`. (Same round-id as the tabled multi-host r26 above — branch
   lineage, not chronology; this entry is its revival.)
 
 ## Vendor/ (full-history clones)
