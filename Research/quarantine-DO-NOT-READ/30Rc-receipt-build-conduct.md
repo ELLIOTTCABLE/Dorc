@@ -371,7 +371,13 @@ source vector's positional fallback.
    passing unconditionally and fire its own XPASS. Only leave-red or remove.
 2. **Steering prose.** Every invariant above is owed a synthesis pass into the crate and spike
    steering files, by an authorized author, reviewed by the human. Nothing was written to the
-   tree.
+   tree. Carries one edit outside this arc: `.claude/skills/conductor/fable.md`'s single
+   ~800k subagent-token figure wants splitting into two, human-typed 2026-08-25 —
+   **~750k, stop taking new ground** (finish the item, land its tests, report, commit; a
+   planning boundary with comfortable room, explicitly not drop-plates) and **~850k, write
+   down what matters** (the ledger, and any in-flight lie such as a disabled or
+   deliberately-red test that would be catastrophic to forget — NOT "commit bad state";
+   worktrees are durable and code survives, knowledge is what does not).
 3. **Branch and worktree cleanup**, blocked on the containment problem described at the top.
 4. **`plans/30R` reconciliation** against `30Rb` as amended, in public vocabulary.
 5. **`gate:arc`** from the populated branch before folding into `ai/main`.
