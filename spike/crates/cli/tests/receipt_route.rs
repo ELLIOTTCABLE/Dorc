@@ -5,10 +5,11 @@
 //! the shipped route is broken. That is the whole point of the seat living lib-side — a battery
 //! that re-implemented the recording would demonstrate a capability it never observed.
 //!
-//! DISCLOSED SCOPE CUT, apply lane: no route in the tree produces a resolved apply context yet, so
-//! the standup values below are fixture material and no e2e case can reach these seats. What is
-//! proven here is the projection, the region accounting, and the publication — not that a live
-//! apply reaches them.
+//! DISCLOSED SCOPE CUT, apply lane: the standup values in the PUBLICATION cases below are fixture
+//! material — six distinct answers, which is what makes a transposed axis visible. The live route
+//! stands up a THIN session instead, and `deterministic_apply_route` at the foot of this file is
+//! where that one is driven end to end. What no test target can reach either way is the binary's
+//! own argv handling around the seat, which is the e2e corpus's.
 //!
 //! DISCLOSED SCOPE CUT: the Spine here comes from `WhyWorld`, the sanctioned second driver, rather
 //! than from the binary's own pipeline, which no test target can reach. Both are real runs over
@@ -874,4 +875,439 @@ fn an_intent_whose_region_a_reader_could_not_open_refuses_before_anything_is_pla
         sink.0.is_empty(),
         "a refused publication places nothing, so no dispatch can follow it"
     );
+}
+
+/// The deterministic apply route, end to end: the seat the binary calls, over a scripted host.
+///
+/// This is the acceptance the whole apply lane exists for. It drives `consented_apply` — the SAME
+/// seat `dorc apply --host` reaches — through the REQUIRED publication arm with injected fixture
+/// capabilities, which is the arm the shipped binary structurally cannot take. What it proves is
+/// the ORDER: the intent is a placed document before anything is shipped, the permit is spent
+/// around the one shipment, and the outcome names the intent that authorized it.
+///
+/// The host is `SimDriver`, so no process, socket, or clock is involved; `remaining()` and
+/// `calls` are what let the negatives below assert what did NOT happen.
+mod deterministic_apply_route {
+    use super::{
+        CountingIds, FIXTURE_SECRET, MemorySink, RefusingSink, age_pair, authored, policy_for,
+    };
+    use dorc_cli::apply::{
+        ApplyAuthorization, ApplyPublication, ConsentedApplyRefusal, ConsentedApplyRequest,
+        apply_invocation, consented_apply,
+    };
+    use dorc_receipt::capability::PublicationGrade;
+    use dorc_receipt::dispatch::{
+        AttributionIntegrityFailure, ConfiguredReceiptBypass, DurableFailure,
+        ExecutionIntegrityFailure, GenerationIntegrityFailure, MutationIntegrityFailure,
+        PostDispatchFailure, TargetIntegrityFailure, TransportIntegrityFailure,
+    };
+    use dorc_receipt::graph::ReceiptGraph;
+    use dorc_receipt::limits::ReceiptLimits;
+    use dorc_receipt::outcome::OutcomeAvailability;
+    use dorc_receipt::reader::{ReadRich, read_rich};
+    use dorc_receipt::tokens::{ClosedToken, RecordedApplyPolicy, RecordedTerminalState};
+    use dorc_receipt_crypto::Ed25519Signer;
+    use dorc_transport::sim::{SimDriver, SimScript};
+    use dorc_transport::{HostId, Phase};
+
+    /// The bytes this route consents to and the host runs.
+    const PLAN: &[u8] = b"#!/bin/sh\nufw allow 443/tcp\n";
+
+    /// The destination the controller addresses.
+    const DESTINATION: &str = "web9.example.net";
+
+    fn destination() -> HostId {
+        HostId::new(DESTINATION).expect("the fixture destination is an ssh destination")
+    }
+
+    /// A host that runs the artifact and exits with `status`.
+    fn host_running(status: i32) -> SimDriver {
+        SimDriver::new(vec![SimScript::Completes {
+            stdout: Vec::new(),
+            status,
+        }])
+    }
+
+    #[test]
+    fn the_required_arm_publishes_the_intent_before_it_ships_and_names_it_afterwards() {
+        let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+        let (sealer, opener) = age_pair();
+        let mut ids = CountingIds(0);
+        let mut sink = MemorySink::default();
+        let mut driver = host_running(0);
+        let destination = destination();
+        let invocation = apply_invocation(DESTINATION, None);
+
+        let reached = consented_apply(
+            &ConsentedApplyRequest {
+                plan: PLAN,
+                destination: &destination,
+                nonce: "r0",
+                timeout: None,
+                invocation: &invocation,
+                limits: &ReceiptLimits::V1,
+            },
+            &mut ids,
+            ApplyAuthorization::RequiredPublication(ApplyPublication {
+                signer: &signer,
+                sink: &mut sink,
+                sealer: &sealer,
+                resolved: authored(),
+            }),
+            &mut driver,
+        )
+        .expect("a placed intent authorizes one dispatch");
+
+        assert_eq!(
+            driver.calls.len(),
+            1,
+            "an apply ships once and never retries"
+        );
+        let call = driver.calls.first().expect("one call");
+        assert_eq!(call.phase, Phase::Apply);
+        assert_eq!(call.artifact, PLAN, "the host runs the consented bytes");
+        assert_eq!(call.host, DESTINATION);
+
+        assert_eq!(sink.0.len(), 2, "one intent and one outcome");
+        let intent_id = reached
+            .intent
+            .expect("the required arm published an intent");
+        let outcome_id = reached
+            .outcome
+            .expect("a shipped apply records what it reached");
+        assert_eq!(reached.durable_failure, None);
+        assert!(
+            sink.0
+                .first()
+                .expect("the sink placed two")
+                .0
+                .starts_with("apply-intent-"),
+            "the intent is the FIRST thing placed; a dispatch that shipped before it would have \
+             spent authority nothing recorded"
+        );
+
+        let mut graph = ReceiptGraph::new();
+        for (name, bytes) in &sink.0 {
+            if name.starts_with("apply-intent-") {
+                match read_rich::<dorc_receipt::model::ApplyIntent>(
+                    bytes.clone(),
+                    &ReceiptLimits::V1,
+                    &policy_for(&signer),
+                    &opener,
+                ) {
+                    Ok(ReadRich::Trusted(document)) => graph.ingest_intent(&document, bytes),
+                    other => panic!("the intent must read trusted: {other:?}"),
+                }
+            } else {
+                match read_rich::<dorc_receipt::model::ApplyOutcome>(
+                    bytes.clone(),
+                    &ReceiptLimits::V1,
+                    &policy_for(&signer),
+                    &opener,
+                ) {
+                    Ok(ReadRich::Trusted(document)) => graph.ingest_outcome(&document, bytes),
+                    other => panic!("the outcome must read trusted: {other:?}"),
+                }
+            }
+        }
+        assert_eq!(graph.intents().len(), 1);
+        assert_eq!(graph.outcomes().len(), 1);
+        assert!(graph.collisions().is_empty());
+        match graph.outcome_for(intent_id) {
+            OutcomeAvailability::Recorded(recorded) => {
+                assert_eq!(
+                    recorded.terminal(),
+                    RecordedTerminalState::Complete,
+                    "the host exited zero, so the run reached completion"
+                );
+            }
+            OutcomeAvailability::Missing(_) => {
+                panic!("this route published an outcome, so the graph must find it")
+            }
+        }
+        assert_ne!(
+            outcome_id.hex(),
+            intent_id.hex(),
+            "two documents never share one identity"
+        );
+    }
+
+    /// THE ordering negative: a sink that will not place the intent must leave the host untouched.
+    ///
+    /// Pinned on the DRIVER rather than on the return value, because "it returned an error" is
+    /// satisfied by a route that shipped first and failed afterwards — which is the exact failure
+    /// the pre-dispatch boundary exists to prevent.
+    #[test]
+    fn an_unplaceable_intent_refuses_before_the_host_is_contacted_at_all() {
+        let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+        let (sealer, _) = age_pair();
+        let mut ids = CountingIds(0);
+        let mut sink = RefusingSink;
+        let mut driver = host_running(0);
+        let destination = destination();
+        let invocation = apply_invocation(DESTINATION, None);
+
+        let refusal = consented_apply(
+            &ConsentedApplyRequest {
+                plan: PLAN,
+                destination: &destination,
+                nonce: "r0",
+                timeout: None,
+                invocation: &invocation,
+                limits: &ReceiptLimits::V1,
+            },
+            &mut ids,
+            ApplyAuthorization::RequiredPublication(ApplyPublication {
+                signer: &signer,
+                sink: &mut sink,
+                sealer: &sealer,
+                resolved: authored(),
+            }),
+            &mut driver,
+        )
+        .expect_err("an intent nothing placed authorizes nothing");
+
+        assert!(
+            matches!(refusal, ConsentedApplyRefusal::Publication(_)),
+            "the refusal names the publication, not the bytes: {refusal:?}"
+        );
+        assert!(
+            driver.calls.is_empty(),
+            "NOTHING was shipped — this is the whole of the pre-dispatch boundary"
+        );
+        assert_eq!(
+            driver.remaining(),
+            1,
+            "the scripted session went unused, so no session was opened by another name"
+        );
+    }
+
+    /// A sink that places the intent and then refuses the OUTCOME: the apply still happened.
+    ///
+    /// The mirror of the case above, and the pair is the point. Before the permit, a durable
+    /// failure withholds the mutation; after it, the mutation has happened and a durable failure
+    /// is narration — reporting it is all that is left, and stopping would restore nothing.
+    #[test]
+    fn a_durable_failure_past_the_permit_is_reported_and_the_apply_still_ran() {
+        /// Places the first document and refuses every one after it.
+        struct PlacesTheFirstOnly {
+            placed: usize,
+        }
+
+        impl dorc_receipt::capability::ReceiptSink for PlacesTheFirstOnly {
+            fn publish(&mut self, _: &str, _: &[u8]) -> Option<PublicationGrade> {
+                self.placed = self.placed.saturating_add(1);
+                (self.placed == 1).then_some(PublicationGrade::Volatile)
+            }
+        }
+
+        let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+        let (sealer, _) = age_pair();
+        let mut ids = CountingIds(0);
+        let mut sink = PlacesTheFirstOnly { placed: 0 };
+        let mut driver = host_running(0);
+        let destination = destination();
+        let invocation = apply_invocation(DESTINATION, None);
+
+        let reached = consented_apply(
+            &ConsentedApplyRequest {
+                plan: PLAN,
+                destination: &destination,
+                nonce: "r0",
+                timeout: None,
+                invocation: &invocation,
+                limits: &ReceiptLimits::V1,
+            },
+            &mut ids,
+            ApplyAuthorization::RequiredPublication(ApplyPublication {
+                signer: &signer,
+                sink: &mut sink,
+                sealer: &sealer,
+                resolved: authored(),
+            }),
+            &mut driver,
+        )
+        .expect("a placed intent authorizes the dispatch whatever the outcome document does");
+
+        assert_eq!(driver.calls.len(), 1, "the apply ran");
+        assert!(reached.intent.is_some(), "its intent was placed");
+        assert_eq!(
+            reached.outcome, None,
+            "its outcome was not, and the run says so rather than inventing an identity"
+        );
+        assert_eq!(
+            reached.durable_failure,
+            Some(DurableFailure::Sink),
+            "the failure is reported as what it was — a sink, not an execution"
+        );
+    }
+
+    /// The bypass arm dispatches, and publishes nothing at all.
+    ///
+    /// It reaches a permit by a route with no publication in it, which is why the two arms must
+    /// stay unreachable from one another: a failed publication is not a bypass, and a bypass is
+    /// not a publication that happened to work.
+    #[test]
+    fn the_bypass_arm_ships_and_places_no_document() {
+        let mut ids = CountingIds(0);
+        let mut driver = host_running(0);
+        let destination = destination();
+        let invocation = apply_invocation(DESTINATION, None);
+
+        let reached = consented_apply(
+            &ConsentedApplyRequest {
+                plan: PLAN,
+                destination: &destination,
+                nonce: "r0",
+                timeout: None,
+                invocation: &invocation,
+                limits: &ReceiptLimits::V1,
+            },
+            &mut ids,
+            ApplyAuthorization::ConfiguredBypass(ConfiguredReceiptBypass::configured()),
+            &mut driver,
+        )
+        .expect("an explicitly configured bypass dispatches");
+
+        assert_eq!(driver.calls.len(), 1);
+        assert_eq!(reached.intent, None, "no intent document exists to name");
+        assert_eq!(reached.outcome, None);
+        assert_eq!(
+            reached.durable_failure, None,
+            "nothing failed: this invocation asked for no durable at all"
+        );
+        assert_eq!(
+            RecordedApplyPolicy::ConfiguredBypass.token(),
+            "configured-bypass",
+            "the word a document would record for this route, had one been written"
+        );
+    }
+
+    /// Bytes past what one exact image may carry never reach a permit.
+    ///
+    /// An intent binds EXACT bytes, so bytes no image can hold are bytes nothing can bind — and
+    /// the refusal lands before the session, not after the shipment.
+    #[test]
+    fn bytes_that_cannot_be_recorded_exactly_refuse_before_the_session_is_stood_up() {
+        let narrow = ReceiptLimits {
+            image_entry_bytes: dorc_receipt::limits::ByteLimit::of(4),
+            ..ReceiptLimits::V1
+        };
+        let mut ids = CountingIds(0);
+        let mut driver = host_running(0);
+        let destination = destination();
+        let invocation = apply_invocation(DESTINATION, None);
+
+        let refusal = consented_apply(
+            &ConsentedApplyRequest {
+                plan: PLAN,
+                destination: &destination,
+                nonce: "r0",
+                timeout: None,
+                invocation: &invocation,
+                limits: &narrow,
+            },
+            &mut ids,
+            ApplyAuthorization::ConfiguredBypass(ConfiguredReceiptBypass::configured()),
+            &mut driver,
+        )
+        .expect_err("bytes no image can hold bind nothing");
+
+        assert!(
+            matches!(refusal, ConsentedApplyRefusal::Image(_)),
+            "pinned to the image, apart from the publication and preparation refusals it \
+             otherwise resembles: {refusal:?}"
+        );
+        assert!(driver.calls.is_empty(), "and nothing was shipped");
+    }
+
+    /// A lost session records UNKNOWN, and the permit is still spent.
+    ///
+    /// Absence of output cannot prove absence of execution, so the host's state is neither clean
+    /// nor failed. The document says so in its own word rather than rounding to either.
+    #[test]
+    fn a_session_lost_after_sending_records_unknown_and_never_re_ships() {
+        let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+        let (sealer, opener) = age_pair();
+        let mut ids = CountingIds(0);
+        let mut sink = MemorySink::default();
+        let mut driver = SimDriver::new(vec![SimScript::SeveredAfter {
+            stdout: b"partial".to_vec(),
+        }]);
+        let destination = destination();
+        let invocation = apply_invocation(DESTINATION, None);
+
+        let reached = consented_apply(
+            &ConsentedApplyRequest {
+                plan: PLAN,
+                destination: &destination,
+                nonce: "r0",
+                timeout: None,
+                invocation: &invocation,
+                limits: &ReceiptLimits::V1,
+            },
+            &mut ids,
+            ApplyAuthorization::RequiredPublication(ApplyPublication {
+                signer: &signer,
+                sink: &mut sink,
+                sealer: &sealer,
+                resolved: authored(),
+            }),
+            &mut driver,
+        )
+        .expect("a lost session is an outcome, not a refusal");
+
+        assert_eq!(
+            driver.calls.len(),
+            1,
+            "an unknown outcome is exactly when a re-ship would double-apply"
+        );
+        assert!(reached.outcome.is_some());
+        let (_, bytes) = sink.0.into_iter().nth(1).expect("the sink placed two");
+        let recorded = match read_rich::<dorc_receipt::model::ApplyOutcome>(
+            bytes,
+            &ReceiptLimits::V1,
+            &policy_for(&signer),
+            &opener,
+        ) {
+            Ok(ReadRich::Trusted(recorded)) => recorded,
+            other => panic!("the outcome must read trusted: {other:?}"),
+        };
+        assert_eq!(
+            recorded
+                .model()
+                .expect("the record stream closes over itself")
+                .terminal(),
+            RecordedTerminalState::Unknown,
+            "not complete, and not failed: nobody knows"
+        );
+    }
+
+    /// The asymmetry that stops a lost host being handled like a logging problem.
+    ///
+    /// Only the durable arm narrows to the continuation. Six arms answer `None`, so a caller
+    /// holding one cannot reach `continue_after` by widening a match — the narrowing is the only
+    /// door and it is closed to them.
+    #[test]
+    fn six_of_the_seven_post_dispatch_failures_never_narrow_to_a_durable_one() {
+        for failure in [
+            PostDispatchFailure::TransportIntegrity(TransportIntegrityFailure),
+            PostDispatchFailure::ExecutionIntegrity(ExecutionIntegrityFailure),
+            PostDispatchFailure::AttributionIntegrity(AttributionIntegrityFailure),
+            PostDispatchFailure::GenerationIntegrity(GenerationIntegrityFailure),
+            PostDispatchFailure::TargetIntegrity(TargetIntegrityFailure),
+            PostDispatchFailure::MutationIntegrity(MutationIntegrityFailure),
+        ] {
+            assert_eq!(
+                failure.durable_only(),
+                None,
+                "an integrity failure is not a durable failure: {failure:?}"
+            );
+        }
+        assert_eq!(
+            PostDispatchFailure::DurableOnly(DurableFailure::Sink).durable_only(),
+            Some(DurableFailure::Sink),
+            "and the one that IS narrows, or the asymmetry would prove nothing"
+        );
+    }
 }

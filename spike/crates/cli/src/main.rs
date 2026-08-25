@@ -5253,11 +5253,9 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
     reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
 )]
 fn ship_consented_apply(args: &Args, host: &str, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
-    // Refused before the plan is even read: what is missing is this build's ability to publish
-    // the pre-dispatch intent, which argv alone decides, so refusing costs nothing and reaches
-    // no file. The required arm is unreachable here by CONSTRUCTION rather than by this branch —
-    // the binary links no implementation of a signer or a sealer — so the only authorization it
-    // can build is the bypass, and it builds one only when the invocation asked.
+    // Argv alone decides this, so refusing reaches no file. The required arm is unreachable here
+    // by CONSTRUCTION and not by this branch — the binary links no signer and no sealer — so the
+    // only authorization it can build is the bypass, and only when the invocation asked.
     if !args.dispatch_without_receipt {
         return Err(Diag::new_spanless_site(
             DiagCode::ApplyIntentNotPublishable(dorc_aid::diag::ApplyIntentNotPublishable {
