@@ -227,6 +227,7 @@ pub mod projection;
 pub mod reader;
 pub mod reingested;
 pub mod rows;
+pub mod source;
 pub mod tokens;
 pub mod writer;
 
