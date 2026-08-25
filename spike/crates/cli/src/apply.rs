@@ -2,18 +2,31 @@
 //!
 //! # Why this is not a field rename
 //!
-//! [`ArtifactSet`](crate::artifact::ArtifactSet) is a flat bag: a primary and a list of
-//! `{path, bytes}`. An [`ApplyArtifactImage`] additionally records ROOTS (which top-level
-//! authored unit each entry materializes), EDGES (which entry loads or contains which), and a
-//! MODE per entry. The first two are derived at selection time from the bundle projection and
-//! the load account, and `Selection::with_plan` does not carry them forward — so a set with
-//! dependencies cannot yet be turned into an exact image, and this module REFUSES rather than
-//! synthesizing a topology it cannot observe.
+//! An [`ApplyArtifactImage`] records more than a list of `{path, bytes}`: ROOTS (which published
+//! path each authored load materializes), EDGES (which file reaches which), and a MODE per entry.
+//! The first two are answerable only where the placement happens — the bundle projection knows
+//! which entry a root materializes and the load account knows which occurrence encloses which —
+//! so [`ArtifactSet`](crate::artifact::ArtifactSet) CARRIES them
+//! ([`ArtifactTopology`](crate::artifact::ArtifactTopology)) and this module reads that carriage
+//! rather than reconstructing it.
 //!
-//! That refusal is the whole design here. A flat `plan.sh loads everything` edge set would be
-//! wrong for the mirrored form the moment one dependency sources another: the image would
-//! record the plan as the loader of a file some other dependency loads, which is a false
-//! statement about what the apply uses, in a container whose entire promise is exactness.
+//! Reading it is the whole design here. A flat `plan.sh loads everything` edge set would be wrong
+//! for the mirrored form the moment one dependency sources another: the image would record the
+//! plan as the loader of a file some other dependency loads, which is a false statement about
+//! what the apply uses, in a container whose entire promise is exactness. Where the carriage is
+//! incomplete the FORM refuses at selection, before any network contact; where it names a path
+//! the set does not publish, this module refuses. Neither guesses.
+//!
+//! # Roots, and why the plan is one
+//!
+//! Root 0 is always the plan projection itself, with the authored loads' roots appended after it.
+//! A `root` line therefore means the same thing in a one-file image as in a multi-file one — the
+//! alternative would change the field's shape the moment a dependency appeared, which is the
+//! class of drift a positional record cannot sense-check.
+//!
+//! Every edge this form can state is a `loads`. An ABSORBED dependency is bytes inside another
+//! file rather than a file of its own, so it has no entry to name and casts no edge; `contains`
+//! would need both ends published, which no form here does.
 //!
 //! # Why every mode is `unused`, and why that is a statement
 //!
@@ -31,9 +44,12 @@
 //! IS an execution input, and there is no constructor here that would let it through wearing
 //! `unused`.
 
+use std::collections::BTreeMap;
+
 use dorc_receipt::image::{
-    ApplyArtifactImage, ApplyEntryBytes, ApplyEntryId, ApplyImageEntry, ApplyRoot, ApplyRootId,
-    ApplyTopology, ImageRefusal, RecordedApplyPath, RecordedArtifactForm, RecordedMode,
+    ApplyArtifactImage, ApplyEdge, ApplyEdgeKind, ApplyEntryBytes, ApplyEntryId, ApplyImageEntry,
+    ApplyRoot, ApplyRootId, ApplyTopology, ImageRefusal, RecordedApplyPath, RecordedArtifactForm,
+    RecordedMode,
 };
 use dorc_receipt::limits::ReceiptLimits;
 
@@ -42,14 +58,19 @@ use crate::artifact::{ArtifactForm, ArtifactSet};
 /// Why an emitted artifact set could not be recorded as an exact image.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImageCarriageRefusal {
-    /// The set carries dependency files whose load topology the selection did not retain.
+    /// The carried topology names a path the set does not publish.
     ///
-    /// Not a bound and not a malformed input: the artifact is fine and the RECORD cannot yet
-    /// be made exact. Named separately from every [`ImageRefusal`] so a reader is never sent
-    /// looking for a bad path when the missing thing is an edge.
-    TopologyNotCarried {
-        /// How many dependency files the set placed.
-        dependencies: usize,
+    /// Not a bound and not a malformed input: the two halves of the carriage disagree about
+    /// which files exist. Named separately from every [`ImageRefusal`] so a reader is never sent
+    /// looking for a bad path when the wrong thing is an edge.
+    TopologyNamesUnpublishedPath {
+        /// The path the topology named.
+        path: String,
+    },
+    /// The set publishes more files than an entry ordinal can name.
+    TooManyEntries {
+        /// How many files the set publishes.
+        files: usize,
     },
     /// The image model refused the entries this set produced.
     Image(ImageRefusal),
@@ -71,38 +92,74 @@ const fn recorded_form(form: ArtifactForm) -> RecordedArtifactForm {
     }
 }
 
+/// The entry ordinal the plan projection always occupies.
+const PLAN_ENTRY: ApplyEntryId = ApplyEntryId::of(0);
+
 /// Record one emitted artifact set as the exact image an apply would use.
 ///
+/// The set's own publication order fixes the entry ordinals — the plan first, then its
+/// dependencies — and the carried topology is resolved against those same paths, so nothing here
+/// re-derives which file reaches which.
+///
 /// # Errors
-/// Refuses a set carrying dependencies (their load topology is not carried yet) and every
+/// Refuses a topology naming an unpublished path, a set past the ordinal space, and every
 /// structural condition the image model refuses.
 pub fn image_of_artifact_set(
     set: &ArtifactSet,
     limits: &ReceiptLimits,
 ) -> Result<ApplyArtifactImage, ImageCarriageRefusal> {
-    let dependencies = set.dependencies().len();
-    if dependencies > 0 {
-        return Err(ImageCarriageRefusal::TopologyNotCarried { dependencies });
+    let mut entries: Vec<ApplyImageEntry> = Vec::new();
+    let mut entry_of: BTreeMap<&str, ApplyEntryId> = BTreeMap::new();
+    for (ordinal, file) in set.files().enumerate() {
+        let ordinal = u32::try_from(ordinal).map_err(|_| ImageCarriageRefusal::TooManyEntries {
+            files: set.dependencies().len().saturating_add(1),
+        })?;
+        let id = ApplyEntryId::of(ordinal);
+        let path = RecordedApplyPath::of(file.path.as_bytes(), limits)
+            .map_err(|refusal| ImageCarriageRefusal::Image(refusal.into()))?;
+        entries.push(ApplyImageEntry::file(
+            id,
+            path,
+            RecordedMode::Unused,
+            ApplyEntryBytes::of(file.bytes.clone().into_bytes()),
+        ));
+        entry_of.insert(file.path.as_str(), id);
     }
-    // With no file beside it the plan IS the whole artifact: one entry, the one authored unit
-    // that entry materializes, one entrypoint, and no edge to state — every relation the
-    // container can express is either present or vacuously absent, so the image is exact
-    // rather than merely plausible.
-    let primary = set.primary();
-    let path = RecordedApplyPath::of(primary.path.as_bytes(), limits)
-        .map_err(|refusal| ImageCarriageRefusal::Image(refusal.into()))?;
-    let entry = ApplyImageEntry::file(
-        ApplyEntryId::of(0),
-        path,
-        RecordedMode::Unused,
-        ApplyEntryBytes::of(primary.bytes.clone().into_bytes()),
-    );
+
+    let resolve = |path: &str| {
+        entry_of.get(path).copied().ok_or_else(|| {
+            ImageCarriageRefusal::TopologyNamesUnpublishedPath {
+                path: path.to_owned(),
+            }
+        })
+    };
+
+    // The plan is root 0 under every form; the authored loads' roots follow it in the carriage's
+    // own order.
+    let mut roots = vec![ApplyRoot::of(ApplyRootId::of(0), PLAN_ENTRY)];
+    for path in set.topology().roots() {
+        let ordinal =
+            u32::try_from(roots.len()).map_err(|_| ImageCarriageRefusal::TooManyEntries {
+                files: roots.len().saturating_add(1),
+            })?;
+        roots.push(ApplyRoot::of(ApplyRootId::of(ordinal), resolve(path)?));
+    }
+
+    let mut edges: Vec<ApplyEdge> = Vec::new();
+    for edge in set.topology().edges() {
+        edges.push(ApplyEdge::of(
+            resolve(&edge.parent)?,
+            resolve(&edge.child)?,
+            ApplyEdgeKind::Loads,
+        ));
+    }
+
     ApplyArtifactImage::of_parts(
         recorded_form(set.form()),
-        vec![entry],
-        vec![ApplyRoot::of(ApplyRootId::of(0), ApplyEntryId::of(0))],
-        vec![ApplyEntryId::of(0)],
-        ApplyTopology::of(Vec::new()),
+        entries,
+        roots,
+        vec![PLAN_ENTRY],
+        ApplyTopology::of(edges),
         limits,
     )
     .map_err(ImageCarriageRefusal::Image)
@@ -126,7 +183,7 @@ pub fn image_of_external_stream(
 
 #[cfg(test)]
 mod tests {
-    use super::{ImageCarriageRefusal, image_of_artifact_set, image_of_external_stream};
+    use super::{image_of_artifact_set, image_of_external_stream};
     use crate::artifact::{ArtifactForm, ArtifactSet, FormRequest, StreamPosture, select};
     use crate::bundle::BundleProjection;
     use dorc_core::loadpath::Cwd;
@@ -227,16 +284,178 @@ mod tests {
         assert_ne!(one.id(), two.id());
     }
 
-    /// The refusal is a VARIANT, not a panic and not a silent empty topology: a reader of the
-    /// error learns that the artifact was fine and the record could not be made exact.
+    /// Build a whole world over a BOOK-sourced tree and settle one named form over it.
+    ///
+    /// Spelled out here rather than shared with `artifact`'s own battery: these tests are about
+    /// what the IMAGE records, and a helper that quietly changed which world it built would move
+    /// both sides of the comparison at once.
+    fn image_over(
+        book: &str,
+        paths: Vec<String>,
+        srcs: Vec<String>,
+        request: FormRequest,
+    ) -> dorc_receipt::image::ApplyArtifactImage {
+        let cwd = Cwd::default();
+        let reached = crate::snapshot::book_reached(&cwd, &paths, &srcs, book);
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
+            cwd.clone(),
+            paths,
+            srcs,
+            &crate::snapshot::LoadPositions::book_sourced(reached),
+            "book.sh",
+            book,
+        );
+        let ast = dorc_syntax::parse(book).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut interner = dorc_core::Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+        let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+        let definitions = crate::world::definition_table(&snapshot, &ast);
+        let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
+        let projection = crate::bundle::project(&snapshot, env.loads())
+            .map(crate::bundle::BundleProjectionOutput::into_projection)
+            .expect("one closed occurrence forest");
+        let loads = crate::artifact::book_loads(&cfg, &ast, book, &projection, &env);
+        let set = select(
+            &snapshot,
+            &projection,
+            &loads,
+            request,
+            StreamPosture::Materializable,
+        )
+        .expect("a relative dependency is placeable")
+        .with_plan(
+            "#!/bin/sh\n:\n".to_owned(),
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
+        image_of_artifact_set(&set, &ReceiptLimits::V1).expect("the topology is carried")
+    }
+
+    /// Which entry an edge names, as the published path — the form every assertion below reads,
+    /// because an ordinal says nothing to a reader of a failure.
+    fn edges_of(image: &dorc_receipt::image::ApplyArtifactImage) -> Vec<(String, String)> {
+        let path_of = |id: dorc_receipt::image::ApplyEntryId| {
+            image
+                .entries()
+                .iter()
+                .find(|entry| entry.id() == id)
+                .and_then(|entry| entry.path().map(|path| path.text().to_owned()))
+                .unwrap_or_else(|| "<stream>".to_owned())
+        };
+        image
+            .topology()
+            .edges()
+            .iter()
+            .map(|edge| (path_of(edge.parent()), path_of(edge.child())))
+            .collect()
+    }
+
+    /// THE FALSIFIER for `ruling-image-roots-are-plan-zero-plus-bundle-roots`: root 0 means the
+    /// same thing whether or not a dependency exists.
+    ///
+    /// A `root` line whose subject changed shape once a second file appeared would be a positional
+    /// record that is range-checked and never sense-checked — valid-looking in both cases and
+    /// describing different things. If a later change demotes the plan out of the root set, this
+    /// is the test that says so.
     #[test]
-    fn the_carriage_refusal_names_dependencies_rather_than_a_malformed_input() {
-        let refusal = ImageCarriageRefusal::TopologyNotCarried { dependencies: 3 };
-        assert_ne!(
-            refusal,
-            ImageCarriageRefusal::TopologyNotCarried { dependencies: 2 },
-            "the count is part of the refusal, so a reader is not told merely that something \
-             was carried"
+    fn root_zero_is_the_plan_in_a_one_file_image_and_in_a_multi_file_one() {
+        let alone = image_of_artifact_set(
+            &set_of("#!/bin/sh\napt-get install -y nginx\n"),
+            &ReceiptLimits::V1,
+        )
+        .expect("no dependencies");
+        let beside = image_over(
+            ". ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec![
+                "# dorc-lang/v0.2\nwombat__is_converged() { wombat status : sm.dorc.W:@ok ;}\n"
+                    .to_owned(),
+            ],
+            FormRequest::Auto,
+        );
+
+        for image in [&alone, &beside] {
+            let root = image.roots().first().expect("every image has a root");
+            assert_eq!(root.id().get(), 0);
+            assert_eq!(
+                root.entry(),
+                image.entrypoints()[0],
+                "root 0 materializes the entrypoint"
+            );
+            let entry = image
+                .entries()
+                .iter()
+                .find(|entry| entry.id() == root.entry())
+                .expect("the root names a published entry");
+            assert_eq!(
+                entry.path().map(|path| path.text().to_owned()),
+                Some("plan.sh".to_owned()),
+                "root 0 is the plan projection under both shapes"
+            );
+        }
+        assert!(
+            beside.roots().len() > alone.roots().len(),
+            "the authored load's root is APPENDED rather than replacing the plan's"
+        );
+    }
+
+    /// A multipart set records its bundle as a file the plan loads.
+    #[test]
+    fn a_bundled_dependency_is_an_entry_the_plan_reaches() {
+        let image = image_over(
+            ". ./wombat.oracle.sh\nwombat sync a.conf\n",
+            vec!["wombat.oracle.sh".to_owned()],
+            vec![
+                "# dorc-lang/v0.2\nwombat__is_converged() { wombat status : sm.dorc.W:@ok ;}\n"
+                    .to_owned(),
+            ],
+            FormRequest::Auto,
+        );
+        assert_eq!(image.form(), RecordedArtifactForm::Multipart);
+        assert_eq!(image.entries().len(), 2);
+        assert_eq!(
+            edges_of(&image),
+            vec![(
+                "plan.sh".to_owned(),
+                "wombat.oracle.dorc-bundle.sh".to_owned()
+            )],
+            "the plan's re-said import is what reaches the bundle"
+        );
+    }
+
+    /// THE CASE THE FLAT SHORTCUT GETS WRONG: one dependency sourcing another, mirrored.
+    ///
+    /// Every file stands at its own authored path here, so `inner` is reached by `outer` and NOT
+    /// by the plan. An edge set that said `plan.sh loads inner.oracle.sh` would validate cleanly,
+    /// read plausibly, and be false about what the apply does — inside a container whose entire
+    /// promise is reproducing exactly what the apply uses. Nothing in the corpus exercises this
+    /// shape, which is why it is built here rather than borrowed.
+    #[test]
+    fn a_dependency_sourcing_another_records_the_inner_reach_and_not_a_flat_one() {
+        let image = image_over(
+            ". ./outer.oracle.sh\nwombat sync a.conf\n",
+            vec!["outer.oracle.sh".to_owned(), "inner.oracle.sh".to_owned()],
+            vec![
+                "# dorc-lang/v0.2\n. ./inner.oracle.sh\n".to_owned(),
+                "# dorc-lang/v0.2\nwombat__is_converged() { wombat status : sm.dorc.W:@ok ;}\n"
+                    .to_owned(),
+            ],
+            FormRequest::Explicit(ArtifactForm::MirroredTree),
+        );
+        assert_eq!(image.form(), RecordedArtifactForm::MirroredTree);
+        // In the container's canonical endpoint order, which puts the plan's own reach first
+        // because the plan is entry 0.
+        assert_eq!(
+            edges_of(&image),
+            vec![
+                ("plan.sh".to_owned(), "outer.oracle.sh".to_owned()),
+                ("outer.oracle.sh".to_owned(), "inner.oracle.sh".to_owned()),
+            ],
+            "the inner file's loader is the file that sources it"
+        );
+        assert!(
+            !edges_of(&image).contains(&("plan.sh".to_owned(), "inner.oracle.sh".to_owned())),
+            "the plan does not load what its dependency loads"
         );
     }
 }

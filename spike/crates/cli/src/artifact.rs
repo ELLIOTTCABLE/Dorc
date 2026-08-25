@@ -46,7 +46,7 @@ use dorc_plan::{
     EmittedName, ImportEdit, LoadSite, PlacedSources, Placement, PlacementDecision, PlacementReason,
 };
 
-use crate::bundle::{BundleProjection, BundleRootId};
+use crate::bundle::{BundleFileId, BundleProjection, BundleRootId};
 
 /// The maximum dependency files one artifact set will place.
 ///
@@ -279,6 +279,7 @@ pub struct ArtifactSet {
     primary: ArtifactFile,
     dependencies: Vec<ArtifactFile>,
     account: dorc_core::influence::InfluenceAccount,
+    topology: ArtifactTopology,
 }
 
 impl ArtifactSet {
@@ -318,6 +319,13 @@ impl ArtifactSet {
     /// Every file to publish, primary first.
     pub fn files(&self) -> impl Iterator<Item = &ArtifactFile> {
         std::iter::once(&self.primary).chain(self.dependencies.iter())
+    }
+
+    /// Which published paths this set materializes as roots, and how its files reach one another —
+    /// carried from the placement seat that chose each destination.
+    #[must_use]
+    pub const fn topology(&self) -> &ArtifactTopology {
+        &self.topology
     }
 }
 
@@ -573,6 +581,177 @@ pub fn bundle_name(mirrored_path: &str) -> String {
     format!("{stem}.dorc-bundle.sh")
 }
 
+/// One file-to-file reach inside a published artifact, named by the paths the artifact publishes.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CarriedEdge {
+    /// The published path whose bytes reach the child.
+    pub parent: String,
+    /// The published path they reach.
+    pub child: String,
+}
+
+/// Which published paths a settled form materializes as roots, and how its files reach one another.
+///
+/// Built beside the placement that chose each destination, because that is the only seat holding
+/// the correspondence between a projected file and the path carrying its bytes: the bundle
+/// projection answers which entry a root materializes and the load account answers which occurrence
+/// encloses which, and both are gone by the time an artifact set exists. A consumer downstream can
+/// restore neither, so this is carriage rather than derivation — where the correspondence is
+/// missing the form refuses instead of composing a plausible one
+/// (`30Ng:rul-bundle-at-dorc-lang-boundaries`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ArtifactTopology {
+    roots: Vec<String>,
+    edges: Vec<CarriedEdge>,
+}
+
+impl ArtifactTopology {
+    /// The published path each shipped book-sited load materializes, deduplicated: two load points
+    /// naming one entrypoint compose one file and therefore one root.
+    #[must_use]
+    pub fn roots(&self) -> &[String] {
+        &self.roots
+    }
+
+    /// Every reach between published files, in a deterministic order.
+    #[must_use]
+    pub fn edges(&self) -> &[CarriedEdge] {
+        &self.edges
+    }
+}
+
+/// Restore the load topology over the paths a placement seat actually chose.
+///
+/// `sited` maps every projected file a form carried to the published path holding its bytes — for
+/// an ABSORBED file that is the path of the bundle it was inlined into, which is what makes an
+/// absorbed dependency produce no edge without a special case: parent and child name one path, and
+/// a file does not reach itself.
+///
+/// Answers `None` on any gap. The enclosure index, the root's entry, and every carried file must
+/// all resolve, because an edge set that is complete except where it was hard to look is exactly
+/// the false record this container exists to refuse.
+fn topology_of(
+    projection: &BundleProjection,
+    loads: &[BookLoad],
+    sited: &std::collections::BTreeMap<BundleFileId, String>,
+) -> Option<ArtifactTopology> {
+    let shipped: std::collections::BTreeSet<BundleRootId> = loads
+        .iter()
+        .filter(|load| load.permits.may_ship())
+        .map(|load| load.root)
+        .collect();
+    let mut roots: Vec<String> = Vec::new();
+    for id in &shipped {
+        let root = projection.roots().iter().find(|root| root.id() == *id)?;
+        let destination = sited.get(&root.entry())?;
+        if !roots.contains(destination) {
+            roots.push(destination.clone());
+        }
+    }
+
+    let occurrences = projection.occurrences();
+    let mut edges: std::collections::BTreeSet<CarriedEdge> = std::collections::BTreeSet::new();
+    for occurrence in occurrences {
+        if !shipped.contains(&occurrence.root()) {
+            continue;
+        }
+        let child = sited.get(&occurrence.file())?;
+        // A root act is reached by the BOOK's own `.`, which the plan projection carries — under
+        // every form, whether the import was re-said to name a generated bundle or left naming the
+        // author's own mirrored path.
+        let parent = match occurrence.load().within {
+            None => PRIMARY_NAME.to_owned(),
+            Some(enclosing) => sited.get(&occurrences.get(enclosing)?.file())?.clone(),
+        };
+        if parent == *child {
+            continue;
+        }
+        edges.insert(CarriedEdge {
+            parent,
+            child: child.clone(),
+        });
+    }
+
+    Some(ArtifactTopology {
+        roots,
+        edges: edges.into_iter().collect(),
+    })
+}
+
+/// A form's placements, and the correspondence between a projected file and the published path
+/// holding its bytes.
+///
+/// One value rather than three locals, because the correspondence is only true if it is recorded
+/// by the same act that chooses the destination: a seat that placed bytes and forgot to site them
+/// leaves an artifact whose record of itself is short, which the topology walk then reads as a gap.
+#[derive(Default)]
+struct Placer {
+    placed: std::collections::BTreeMap<String, String>,
+    sited: std::collections::BTreeMap<BundleFileId, String>,
+    unplaceable: usize,
+}
+
+impl Placer {
+    /// Put `bytes` at `destination`, siting every projected file those bytes carry.
+    ///
+    /// Two DIFFERENT byte-sets claiming one destination is unplaceable rather than last-wins — an
+    /// artifact whose dependency depends on which occurrence was walked last is not a projection
+    /// of anything.
+    fn place(&mut self, carried: &[BundleFileId], destination: &str, bytes: String) {
+        match self.placed.get(destination) {
+            Some(existing) if *existing != bytes => {
+                self.miss();
+                return;
+            }
+            Some(_) => {}
+            None => drop(self.placed.insert(destination.to_owned(), bytes)),
+        }
+        for &file in carried {
+            self.sited.insert(file, destination.to_owned());
+        }
+    }
+
+    /// Note one file the form could not place.
+    fn miss(&mut self) {
+        self.unplaceable = self.unplaceable.saturating_add(1);
+    }
+
+    /// The placed files and their topology, or the count that made the form unavailable.
+    ///
+    /// A topology that cannot be stated exactly fails the form HERE, pre-network, exactly as an
+    /// unplaceable file does.
+    fn finish(
+        self,
+        projection: &BundleProjection,
+        loads: &[BookLoad],
+    ) -> Result<(Vec<ArtifactFile>, ArtifactTopology), usize> {
+        if self.unplaceable > 0 || self.placed.len() > MAX_DEPENDENCIES {
+            return Err(self
+                .unplaceable
+                .max(self.placed.len().saturating_sub(MAX_DEPENDENCIES)));
+        }
+        let topology = topology_of(projection, loads, &self.sited).ok_or(1_usize)?;
+        Ok((
+            self.placed
+                .into_iter()
+                .map(|(path, bytes)| ArtifactFile { path, bytes })
+                .collect(),
+            topology,
+        ))
+    }
+}
+
+/// The files a root's bundled text absorbed — its entry and every nested file it inlined.
+fn absorbed_files(root: &crate::bundle::BundleRoot) -> Vec<BundleFileId> {
+    let separate: std::collections::BTreeSet<BundleFileId> =
+        root.separate().iter().copied().collect();
+    root.files()
+        .iter()
+        .copied()
+        .filter(|id| !separate.contains(id))
+        .collect()
+}
+
 /// What a multipart set would place, and which import each book load then names — or the count that
 /// made it impossible.
 ///
@@ -588,19 +767,11 @@ fn bundle_files(
     snapshot: &crate::snapshot::StaticLoadSnapshot,
     projection: &BundleProjection,
     loads: &[BookLoad],
-) -> Result<(Vec<ArtifactFile>, Vec<ImportEdit>), usize> {
+) -> Result<(Vec<ArtifactFile>, Vec<ImportEdit>, ArtifactTopology), usize> {
     let cwd = snapshot.cwd();
     let snapshot_paths = snapshot.source_paths();
-    let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+    let mut out = Placer::default();
     let mut imports: Vec<ImportEdit> = Vec::new();
-    let mut unplaceable = 0_usize;
-    let mut place = |destination: String, bytes: String, unplaceable: &mut usize| match placed
-        .get(&destination)
-    {
-        Some(existing) if *existing != bytes => *unplaceable = unplaceable.saturating_add(1),
-        Some(_) => {}
-        None => drop(placed.insert(destination, bytes)),
-    };
     let authored_of = |file: &crate::bundle::BundleFile| {
         snapshot_paths
             .get(file.copied().source().0 as usize)
@@ -621,7 +792,7 @@ fn bundle_files(
             .iter()
             .find(|root| root.id() == load.root)
         else {
-            unplaceable = unplaceable.saturating_add(1);
+            out.miss();
             continue;
         };
         // AN INCLUSION IS MIRRORED, NEVER BUNDLED. Its bytes are BOOK-CLASS
@@ -634,9 +805,9 @@ fn bundle_files(
         {
             match mirrored(cwd, authored_of(entry)) {
                 Some(beside) => {
-                    place(beside, entry.copied().text().to_owned(), &mut unplaceable);
+                    out.place(&[root.entry()], &beside, entry.copied().text().to_owned());
                 }
-                None => unplaceable = unplaceable.saturating_add(1),
+                None => out.miss(),
             }
             continue;
         }
@@ -644,29 +815,34 @@ fn bundle_files(
         // authored relative path the author's own operand will resolve to. Two ways to land here:
         // the author did not NAME the target, or Dorc cannot say WHICH file the line loads.
         if !load.permits.may_rewrite() {
-            for file in root.files().iter().filter_map(|&id| projection.file(id)) {
+            for &id in root.files() {
+                let Some(file) = projection.file(id) else {
+                    out.miss();
+                    continue;
+                };
                 match mirrored(cwd, authored_of(file)) {
-                    Some(beside) => {
-                        place(beside, file.copied().text().to_owned(), &mut unplaceable);
-                    }
-                    None => unplaceable = unplaceable.saturating_add(1),
+                    Some(beside) => out.place(&[id], &beside, file.copied().text().to_owned()),
+                    None => out.miss(),
                 }
             }
             continue;
         }
         let Some((entry, operand)) = projection.file(root.entry()).zip(load.operand) else {
-            unplaceable = unplaceable.saturating_add(1);
+            out.miss();
             continue;
         };
         let Some(destination) = mirrored(cwd, authored_of(entry)).map(|path| bundle_name(&path))
         else {
-            unplaceable = unplaceable.saturating_add(1);
+            out.miss();
             continue;
         };
-        place(
-            destination.clone(),
+        // The bundle's bytes carry the entry AND every nested file it absorbed, so all of them are
+        // sited at this one destination. That is what makes an absorbed dependency cast no edge:
+        // its `.` was replaced by the bytes, and a file does not reach itself.
+        out.place(
+            &absorbed_files(root),
+            &destination,
             root.bundled().to_owned(),
-            &mut unplaceable,
         );
         // SEAM (`30P:rul-rewrite-permission-is-derived`): an import edit may mint only for an
         // EXPLICIT operand — a literal word, or one built from a literal-assigned book-set root.
@@ -680,25 +856,17 @@ fn bundle_files(
         });
         for &id in root.separate() {
             let Some(file) = projection.file(id) else {
+                out.miss();
                 continue;
             };
-            let Some(beside) = mirrored(cwd, authored_of(file)) else {
-                unplaceable = unplaceable.saturating_add(1);
-                continue;
-            };
-            place(beside, file.copied().text().to_owned(), &mut unplaceable);
+            match mirrored(cwd, authored_of(file)) {
+                Some(beside) => out.place(&[id], &beside, file.copied().text().to_owned()),
+                None => out.miss(),
+            }
         }
     }
-    if unplaceable > 0 || placed.len() > MAX_DEPENDENCIES {
-        return Err(unplaceable.max(placed.len().saturating_sub(MAX_DEPENDENCIES)));
-    }
-    Ok((
-        placed
-            .into_iter()
-            .map(|(path, bytes)| ArtifactFile { path, bytes })
-            .collect(),
-        imports,
-    ))
+    let (dependencies, topology) = out.finish(projection, loads)?;
+    Ok((dependencies, imports, topology))
 }
 
 /// Every reached source at its OWN authored relative path — the no-flatten end of the bundle-point
@@ -712,7 +880,7 @@ fn mirrored_files(
     snapshot: &crate::snapshot::StaticLoadSnapshot,
     projection: &BundleProjection,
     loads: &[BookLoad],
-) -> Result<Vec<ArtifactFile>, usize> {
+) -> Result<(Vec<ArtifactFile>, ArtifactTopology), usize> {
     let cwd = snapshot.cwd();
     let snapshot_paths = snapshot.source_paths();
     // A non-EXACT load carries nothing here either — the mirror is a shipped copy like any other
@@ -722,40 +890,32 @@ fn mirrored_files(
         .filter(|load| load.permits.may_ship())
         .map(|load| load.root)
         .collect();
-    let mut placed: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
-    let mut unplaceable = 0_usize;
+    let mut out = Placer::default();
     for id in &wanted {
         let Some(root) = projection.roots().iter().find(|root| root.id() == *id) else {
-            unplaceable = unplaceable.saturating_add(1);
+            out.miss();
             continue;
         };
-        for &file in root.files() {
-            let Some(file) = projection.file(file) else {
+        // NOTHING IS ABSORBED IN THIS FORM: every file stands at its own authored path, which is
+        // exactly why its edges cannot be assumed. The moment one dependency sources another the
+        // plan is not what loads the inner file, and the siting below is what says so.
+        for &id in root.files() {
+            let Some(file) = projection.file(id) else {
+                out.miss();
                 continue;
             };
             let authored = snapshot_paths
                 .get(file.copied().source().0 as usize)
                 .map_or("", String::as_str);
-            let (Some(destination), bytes) = (mirrored(cwd, authored), file.copied().text()) else {
-                unplaceable = unplaceable.saturating_add(1);
-                continue;
-            };
-            match placed.get(&destination) {
-                Some(existing) if existing != bytes => {
-                    unplaceable = unplaceable.saturating_add(1);
+            match mirrored(cwd, authored) {
+                Some(destination) => {
+                    out.place(&[id], &destination, file.copied().text().to_owned());
                 }
-                Some(_) => {}
-                None => drop(placed.insert(destination, bytes.to_owned())),
+                None => out.miss(),
             }
         }
     }
-    if unplaceable > 0 || placed.len() > MAX_DEPENDENCIES {
-        return Err(unplaceable.max(placed.len().saturating_sub(MAX_DEPENDENCIES)));
-    }
-    Ok(placed
-        .into_iter()
-        .map(|(path, bytes)| ArtifactFile { path, bytes })
-        .collect())
+    out.finish(projection, loads)
 }
 
 /// The in-place substitutions a single-stream set needs, or `None` when one of its loads cannot be
@@ -907,6 +1067,7 @@ pub struct Selection {
     dependencies: Vec<ArtifactFile>,
     imports: Vec<ImportEdit>,
     placements: PlacedSources,
+    topology: ArtifactTopology,
 }
 
 impl Selection {
@@ -973,6 +1134,7 @@ impl Selection {
                 bytes: plan_sh,
             },
             dependencies: self.dependencies,
+            topology: self.topology,
         }
     }
 }
@@ -1004,6 +1166,9 @@ pub fn select_for_terminal_render(
             dependencies: Vec::new(),
             imports,
             placements: placements(projection, loads, Carriage::AbsorbedOnly),
+            // EMPTY IS EXACT HERE, not unknown: a form that places no file beside the plan has one
+            // published path, so its every relation is vacuously absent rather than unrecorded.
+            topology: ArtifactTopology::default(),
         },
         None => Selection {
             form: ArtifactForm::PreservedBookTree,
@@ -1011,6 +1176,7 @@ pub fn select_for_terminal_render(
             dependencies: Vec::new(),
             imports: Vec::new(),
             placements: placements(projection, loads, Carriage::Nothing),
+            topology: ArtifactTopology::default(),
         },
     }
 }
@@ -1041,12 +1207,15 @@ pub fn select(
         StreamPosture::Materializable => bundle_files(snapshot, projection, loads).map_err(Some),
     };
 
+    // Both forms below place no file beside the plan, so an EMPTY topology is their exact answer
+    // rather than an unknown one.
     let preserved = |fallback: Option<FormFallback>| Selection {
         form: ArtifactForm::PreservedBookTree,
         fallback,
         dependencies: Vec::new(),
         imports: Vec::new(),
         placements: placements(projection, loads, Carriage::Nothing),
+        topology: ArtifactTopology::default(),
     };
     let flattened = |imports: Vec<ImportEdit>| Selection {
         form: ArtifactForm::Flattened,
@@ -1054,6 +1223,7 @@ pub fn select(
         dependencies: Vec::new(),
         imports,
         placements: placements(projection, loads, Carriage::AbsorbedOnly),
+        topology: ArtifactTopology::default(),
     };
     let whole_root = || placements(projection, loads, Carriage::WholeRoot);
 
@@ -1065,12 +1235,13 @@ pub fn select(
             })
         }
         FormRequest::Explicit(ArtifactForm::Multipart) => match multipart {
-            Ok((dependencies, imports)) => Ok(Selection {
+            Ok((dependencies, imports, topology)) => Ok(Selection {
                 form: ArtifactForm::Multipart,
                 fallback: None,
                 dependencies,
                 imports,
                 placements: whole_root(),
+                topology,
             }),
             Err(None) => Err(FormRefusal::NoArtifactStream {
                 form: ArtifactForm::Multipart,
@@ -1082,12 +1253,13 @@ pub fn select(
         },
         FormRequest::Explicit(ArtifactForm::MirroredTree) => match posture {
             StreamPosture::Materializable => match mirrored_files(snapshot, projection, loads) {
-                Ok(dependencies) => Ok(Selection {
+                Ok((dependencies, topology)) => Ok(Selection {
                     form: ArtifactForm::MirroredTree,
                     fallback: None,
                     dependencies,
                     imports: Vec::new(),
                     placements: whole_root(),
+                    topology,
                 }),
                 Err(unplaceable) => Err(FormRefusal::Unavailable {
                     form: ArtifactForm::MirroredTree,
@@ -1117,12 +1289,13 @@ pub fn select(
                 Ok(select_for_terminal_render(snapshot, projection, loads))
             }
             StreamPosture::Materializable => Ok(match multipart {
-                Ok((dependencies, imports)) => Selection {
+                Ok((dependencies, imports, topology)) => Selection {
                     form: ArtifactForm::Multipart,
                     fallback: None,
                     dependencies,
                     imports,
                     placements: whole_root(),
+                    topology,
                 },
                 Err(unplaceable) => preserved(Some(FormFallback::DependencyUnplaceable {
                     loads: unplaceable.unwrap_or(loads.len()),
