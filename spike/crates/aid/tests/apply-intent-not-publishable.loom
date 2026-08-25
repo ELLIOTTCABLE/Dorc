@@ -1,0 +1,11 @@
+---
+code: apply-intent-not-publishable
+envelope: invocation
+when-fires: a `dorc apply --host` invocation reached the apply seat and this build cannot publish the pre-dispatch intent that authorizes a first mutative dispatch. cli/main.rs ship_consented_apply, decided from argv alone and refused before the plan file is read or any identity is minted. {flag} names the one thing that dispatches with no durable intent behind it.
+why: 30Rb apply-dispatch-sequence - a permit is minted only from a cleared publication gate, and the shipped binary links no implementation of a signer or a sealer, so the required arm is structurally unreachable rather than conditionally declined. The refusal is therefore what `apply --host` IS until a key provider lands, and the bypass is a typed per-invocation act rather than a default, a terminal reading, or a receipt write that happened to succeed. Remediation register (help) wanted: name the flag, and say plainly that taking it means the run spends mutation authority with nothing recording what it was about to do.
+---
+-- replay --
+$ dorc apply --host web1.example.net --plan plan.sh
+dorc: error[apply-intent-not-publishable]: [unwritten:
+apply-intent-not-publishable]
+usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

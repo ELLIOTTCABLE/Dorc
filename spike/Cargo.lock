@@ -479,6 +479,7 @@ dependencies = [
  "dorc-syntax",
  "dorc-transport",
  "errorloom",
+ "getrandom",
  "internal-tooling",
  "libtest-mimic",
  "weft",

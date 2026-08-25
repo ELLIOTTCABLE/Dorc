@@ -905,7 +905,7 @@ fn run(
     if args.mode == Mode::Apply
         && let Some(host) = args.host.as_deref()
     {
-        return ship_consented_apply(args, host);
+        return ship_consented_apply(args, host, clock);
     }
 
     let mut interner = Interner::default();
@@ -5252,7 +5252,19 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
     clippy::result_large_err,
     reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
 )]
-fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
+fn ship_consented_apply(args: &Args, host: &str, clock: &mut RunClock) -> Result<RunOutcome, Diag> {
+    // Refused before the plan is even read: what is missing is this build's ability to publish
+    // the pre-dispatch intent, which argv alone decides, so refusing costs nothing and reaches
+    // no file. The required arm is unreachable here by CONSTRUCTION rather than by this branch —
+    // the binary links no implementation of a signer or a sealer — so the only authorization it
+    // can build is the bypass, and it builds one only when the invocation asked.
+    if !args.dispatch_without_receipt {
+        return Err(Diag::new_spanless_site(
+            DiagCode::ApplyIntentNotPublishable(dorc_aid::diag::ApplyIntentNotPublishable {
+                flag: "--dispatch-without-receipt",
+            }),
+        ));
+    }
     // `owed-no-flag-defaults-to-stdin`: the artifact is NAMED or it is nothing. `-` is stdin like
     // any other filename position; absent is refused by the parser, so the `None` arm here is
     // unreachable and says so rather than quietly re-acquiring the stream.
@@ -5273,6 +5285,11 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
             )));
         }
     };
+    // Before any identity is minted and any session stood up: these bytes are a file the user has
+    // had in their hands and may have edited on any OS, and no parser of ours has seen them.
+    if let Some(line) = transport_edge::first_carriage_return(&artifact) {
+        return Err(transport_edge::crlf_refusal("the plan", line));
+    }
     let destination =
         dorc_transport::HostId::new(host).map_err(|_| transport_edge::host_rejected(host))?;
     let mut driver = transport_edge::driver_for_invocation(
@@ -5280,15 +5297,28 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
         args.accept_new,
         args.ssh_config.as_deref(),
     );
-    let timeout = args.apply_timeout.map(std::time::Duration::from_secs);
-
-    match transport_edge::apply_to_host(
+    let invocation = dorc_cli::apply::apply_invocation(host, clock.now());
+    let request = dorc_cli::apply::ConsentedApplyRequest {
+        plan: &artifact,
+        destination: &destination,
+        nonce: &transport_edge::mint_nonce(),
+        timeout: args.apply_timeout.map(std::time::Duration::from_secs),
+        invocation: &invocation,
+        limits: &dorc_receipt::limits::ReceiptLimits::V1,
+    };
+    let mut ids =
+        dorc_cli::receipt_edge::OsReceiptIdSource::over(dorc_cli::receipt_edge::OsEntropy);
+    let reached = dorc_cli::apply::consented_apply(
+        &request,
+        &mut ids,
+        dorc_cli::apply::ApplyAuthorization::ConfiguredBypass(
+            dorc_receipt::dispatch::ConfiguredReceiptBypass::configured(),
+        ),
         driver.as_mut(),
-        &destination,
-        &transport_edge::mint_nonce(),
-        &artifact,
-        timeout,
-    )? {
+    )
+    .map_err(|refusal| apply_refused(&refusal))?;
+
+    match transport_edge::classify_shipment(reached.shipped) {
         transport_edge::AppliedOutcome::Ran { status } => {
             if status == 0 {
                 Ok(RunOutcome::Complete)
@@ -5321,6 +5351,22 @@ fn ship_consented_apply(args: &Args, host: &str) -> Result<RunOutcome, Diag> {
             Ok(RunOutcome::HostNotReached)
         }
     }
+}
+
+/// The diagnostic for an apply that reached no dispatch, in the words of what did not close.
+///
+/// One code and a closed reason word rather than three sibling codes: the world is one — an apply
+/// that bound nothing and shipped nothing — and only the step that did not close differs.
+fn apply_refused(refusal: &dorc_cli::apply::ConsentedApplyRefusal) -> Diag {
+    use dorc_cli::apply::ConsentedApplyRefusal;
+    let reason = match refusal {
+        ConsentedApplyRefusal::Image(_) => "image-not-recordable",
+        ConsentedApplyRefusal::Preparation(_) => "session-not-preparable",
+        ConsentedApplyRefusal::Publication(_) => "intent-not-published",
+    };
+    Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
+        dorc_aid::diag::ApplyPlanNotDispatchable { reason },
+    ))
 }
 
 /// The rc a `128 + SIGPIPE` early-exit race lands on (`sigpipe-flap-class`, `279f` §5):

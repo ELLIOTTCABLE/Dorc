@@ -4,9 +4,13 @@
 //! re-implemented the recording would demonstrate a capability it never observed, which is the
 //! defect `one-definition-table-two-drivers` exists to refuse.
 //!
-//! Nothing here opens a file, reads the environment, asks a clock, or produces randomness. Every
-//! such answer arrives as a VALUE — argv, the run instant, the identity source, the signer, the
-//! sink — so the seam this module sits on is the one `lib-target-is-a-loom-seam` draws.
+//! Nothing here opens a file, reads the environment, or asks a clock. Every such answer arrives
+//! as a VALUE — argv, the run instant, the signer, the sink — so the seam this module sits on is
+//! the one `lib-target-is-a-loom-seam` draws.
+//!
+//! The ONE exception is [`OsEntropy`], which reads the operating system's randomness. It reaches
+//! the seats below only as an injected value, so it is the only thing in this file a test
+//! replaces rather than drives, and every other seat here stays a function of what it was handed.
 
 use std::collections::BTreeMap;
 
@@ -16,7 +20,9 @@ use dorc_plan::records::{AdmittedUnscopedHostRecords, Framing};
 use dorc_receipt::capability::{OverlaySealer, PublicationGrade, ReceiptSigner, ReceiptSink};
 use dorc_receipt::dispatch::{ExactApplyImagesPresent, MutationDispatched, PreparedApplyIntent};
 use dorc_receipt::format::{Skeleton, serialize_skeleton};
-use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, ReceiptIdSource};
+use dorc_receipt::ids::{
+    ApplyIntentId, ApplyOutcomeId, EntropyReceiptIds, ReceiptIdEntropy, ReceiptIdSource,
+};
 use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, Species};
 use dorc_receipt::overlay::{OverlayEntry, captured_slots};
@@ -129,6 +135,26 @@ fn source_claims(snapshot: &StaticLoadSnapshot) -> Vec<dorc_core::spine::SourceC
         })
         .collect()
 }
+
+/// The operating system's randomness: the ONE seat in this binary that asks for any.
+///
+/// It asks rather than deriving because a receipt identity is required to be collision-resistant,
+/// and every value a run already holds that could stand in for one — the session nonce, the
+/// clock, the process id — carries only enough entropy to separate one attempt from the next.
+///
+/// It hands over BYTES and never an identity: the mint stays in the receipt crate's own one file,
+/// which is what lets a production source exist without a second place able to spell one.
+#[derive(Debug, Default)]
+pub struct OsEntropy;
+
+impl ReceiptIdEntropy for OsEntropy {
+    fn fill(&mut self, raw: &mut [u8; 32]) -> bool {
+        getrandom::getrandom(raw).is_ok()
+    }
+}
+
+/// The production identity source this binary mints documents with.
+pub type OsReceiptIdSource = EntropyReceiptIds<OsEntropy>;
 
 /// The capabilities this edge was injected with.
 ///

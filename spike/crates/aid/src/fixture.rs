@@ -21,20 +21,21 @@ use dorc_core::{Capability, EscalationDial, LeafId, TopCause};
 use crate::ForeignBytes;
 
 use crate::diag::{
-    AidUnloadedSiblingOracle, ArtifactFormFallback, ArtifactFormRefused, ArtifactPublishRefused,
-    CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable,
-    CliShimDirUnwritable, CmdsubOperandTop, CommandName, ComputedSourceOperand, DanglingReference,
-    DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EmittedLineUnsafeForPaste,
-    EscalationPolicy, HelperDeclarationContested, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles,
-    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, LoadCarriageWithheldUnderUnknownCwd, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
-    MissingDialectMarker, MungeNameInvalid, OperandPosition, OracleMatchedZeroSites,
-    PasteHygieneHazardReason, PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated,
-    RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused,
-    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
-    RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
+    AidUnloadedSiblingOracle, ApplyIntentNotPublishable, ApplyPlanNotDispatchable,
+    ArtifactFormFallback, ArtifactFormRefused, ArtifactPublishRefused, CarriedAcrossSubstrateAxis,
+    CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable, CliShimDirUnwritable,
+    CmdsubOperandTop, CommandName, ComputedSourceOperand, DanglingReference, DiagCode,
+    DorcShExecFailed, DorcShScriptUnreadable, EmittedLineUnsafeForPaste, EscalationPolicy,
+    HelperDeclarationContested, HostEvidenceAdmissionRefused, HostEvidenceRefusalKind,
+    InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles, LintRequiredToolsMissing,
+    LintToolAbsent, LintToolFailedWithoutFindings, LintToolOutputUnparsable,
+    LoadCarriageWithheldUnderUnknownCwd, MarkHashcolonMalformed, MarkRcArityExceeded,
+    MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
+    MungeNameInvalid, OperandPosition, OracleMatchedZeroSites, PasteHygieneHazardReason,
+    PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine,
+    RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused,
+    RecordsLateLine, RecordsSentinelNonce, RecordsTornLine, RenderHeredocRefused,
+    RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
     SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
     SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
@@ -423,6 +424,19 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             "dorc-sh-exec-failed",
             DiagCode::DorcShExecFailed(DorcShExecFailed {
                 detail: ForeignBytes::from_io_edge("No such file or directory (os error 2)"),
+            }),
+        ),
+        // An apply seat, not bytes we parsed: this driver opens no sockets and mints no identity.
+        (
+            "apply-intent-not-publishable",
+            DiagCode::ApplyIntentNotPublishable(ApplyIntentNotPublishable {
+                flag: "--dispatch-without-receipt",
+            }),
+        ),
+        (
+            "apply-plan-not-dispatchable",
+            DiagCode::ApplyPlanNotDispatchable(ApplyPlanNotDispatchable {
+                reason: "image-not-recordable",
             }),
         ),
         // A SESSION, not bytes we parsed: the spike opens no sockets.

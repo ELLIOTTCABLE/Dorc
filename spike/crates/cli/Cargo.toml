@@ -62,6 +62,14 @@ weft = { path = "../weft", version = "0.0.0" }
 anstream = "=0.6.18"
 anstyle = "=1.0.10"
 
+# The operating system's randomness, for the ONE thing this binary mints that must be
+# collision-resistant rather than merely unique-per-attempt: a receipt identity. Named here and
+# read at exactly one seat (`receipt_edge::OsReceiptIdSource`), which is the edge
+# `inv-determinism` allows real I/O at; every kernel and every test takes an injected source
+# instead. Already in the graph beneath the crypto crate, so this line adds an edge and no
+# package. Exact-pinned (wildcards = deny).
+getrandom = "=0.2.17"
+
 # The two central case runners (`288` §3). They are `harness = false` because a corpus
 # case is DATA, not a `#[test]` fn: libtest-mimic turns each discovered case into one
 # named, filterable trial while keeping the ordinary `cargo test` CLI. Test-only, and

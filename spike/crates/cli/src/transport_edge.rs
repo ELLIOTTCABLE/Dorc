@@ -191,30 +191,6 @@ pub(crate) fn ship_probe(
     }
 }
 
-/// Ship an already-rendered apply artifact. Once.
-///
-/// There is no retry parameter and no loop, because there is no licence for one: under Unknown a
-/// re-ship risks double-applying, and the sanctioned recovery is re-probe-then-re-plan — the
-/// probe is the retry-file (`law-no-double-apply`).
-pub(crate) fn ship_apply(
-    driver: &mut dyn SessionDriver,
-    host: &HostId,
-    nonce: &str,
-    artifact: &[u8],
-    timeout: Option<Duration>,
-) -> Result<SessionOutcome, NotAttempted> {
-    let Ok(marker) = SessionMarker::new(nonce, 1) else {
-        return Err(NotAttempted::MarkerUnusable);
-    };
-    Ok(driver.run(&SessionRequest {
-        host,
-        phase: Phase::Apply,
-        artifact,
-        marker: &marker,
-        timeout,
-    }))
-}
-
 /// Where a CR byte sits in bytes about to be shipped, as a 1-based line number.
 ///
 /// The gate is on CR rather than on `\r\n` specifically: a lone CR line ending breaks a remote
@@ -263,31 +239,14 @@ pub(crate) enum AppliedOutcome {
     NotAttempted(NotAttempted),
 }
 
-/// Ship an already-rendered apply artifact and classify the result.
+/// Classify what one apply shipment did, echoing the host's streams as it goes.
 ///
-/// Reads the artifact from `source`, re-checks it for carriage returns, ships it ONCE, and echoes
-/// the host's streams through the shared display encoder.
-///
-/// The CRLF re-check is not redundant with the plan-time one: the bytes shipped here are a file
-/// the user has had in their hands and may have edited on any OS, and no parser of ours has seen
-/// them (`26A` amend-smalls).
-#[expect(
-    clippy::result_large_err,
-    reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
-)]
-pub(crate) fn apply_to_host(
-    driver: &mut dyn SessionDriver,
-    host: &HostId,
-    nonce: &str,
-    artifact: &[u8],
-    timeout: Option<Duration>,
-) -> Result<AppliedOutcome, Diag> {
-    if let Some(line) = first_carriage_return(artifact) {
-        return Err(crlf_refusal("the plan", line));
-    }
-    let shipped = match ship_apply(driver, host, nonce, artifact, timeout) {
-        Ok(outcome) => outcome,
-        Err(why) => return Ok(AppliedOutcome::NotAttempted(why)),
+/// `None` is a run that could not build a session marker, so nothing was ever sent. Total: every
+/// way a shipment can end is a value here, which is what lets the caller sit immediately past a
+/// spent permit with nothing between them that could fail.
+pub(crate) fn classify_shipment(shipped: Option<SessionOutcome>) -> AppliedOutcome {
+    let Some(shipped) = shipped else {
+        return AppliedOutcome::NotAttempted(NotAttempted::MarkerUnusable);
     };
     match shipped {
         SessionOutcome::Completed {
@@ -297,7 +256,7 @@ pub(crate) fn apply_to_host(
         } => {
             echo(&stdout, false);
             echo(&stderr, true);
-            Ok(AppliedOutcome::Ran { status })
+            AppliedOutcome::Ran { status }
         }
         SessionOutcome::LostAfterSend {
             stdout,
@@ -306,11 +265,11 @@ pub(crate) fn apply_to_host(
         } => {
             echo(&stdout, false);
             echo(&stderr, true);
-            Ok(AppliedOutcome::Unknown { diagnosis })
+            AppliedOutcome::Unknown { diagnosis }
         }
-        SessionOutcome::NotAttempted { reason } => Ok(AppliedOutcome::NotAttempted(
-            NotAttempted::SpawnRefused(reason),
-        )),
+        SessionOutcome::NotAttempted { reason } => {
+            AppliedOutcome::NotAttempted(NotAttempted::SpawnRefused(reason))
+        }
     }
 }
 

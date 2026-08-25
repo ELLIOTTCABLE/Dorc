@@ -741,7 +741,13 @@ mod tests {
         ///   malformed (`306b:rul-missing-influence-grade-reads-highest`). Not a staged hole in the
         ///   same sense: it is the ruled REHYDRATION floor, and it stays after the export is
         ///   enabled.
+        /// * `cli/src/apply.rs` — an apply OUTCOME's account. Its terminal state is what a host's
+        ///   own marker and streams said, so the value is genuinely influenced; what is missing is
+        ///   the threading, because the transport lane carries no `Influenced` and there is no
+        ///   phase to mint from. `untracked` reads HIGHER than `host-influenced`, so the staging
+        ///   cannot under-claim — it over-claims until the lane converts.
         const INVENTORY: &[&str] = &[
+            "cli/src/apply.rs",
             "plan/src/region.rs",
             "plan/src/whylog.rs",
             "plan/tests/region.rs",

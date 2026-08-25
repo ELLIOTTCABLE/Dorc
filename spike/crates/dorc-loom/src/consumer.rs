@@ -1476,7 +1476,19 @@ struct DirectPlan<'a> {
 /// A remote apply's outcome has no in-process world to drive — this driver opens no sockets — so
 /// there is nothing to execute, only prose to pin against a canonical payload.
 fn parse_direct_remote_apply(words: &[&str]) -> bool {
-    matches!(words, ["dorc", "apply", "--host", _, "--plan", _])
+    matches!(
+        words,
+        ["dorc", "apply", "--host", _, "--plan", _]
+            | [
+                "dorc",
+                "apply",
+                "--host",
+                _,
+                "--plan",
+                _,
+                "--dispatch-without-receipt"
+            ]
+    )
 }
 
 fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {

@@ -131,6 +131,53 @@ pub trait ReceiptIdSource {
     fn next_receipt_id(&mut self) -> ReceiptId;
 }
 
+/// Where a production edge's unpredictable bytes come from.
+///
+/// One method wide, and it hands over BYTES rather than an identity: the edge owns the platform
+/// call and this file owns the mint, so a production source does not have to name the mint to
+/// exist. That is what keeps `of_source_bytes` reachable from exactly one file while the edge
+/// that fills it lives where real I/O is allowed.
+pub trait ReceiptIdEntropy {
+    /// Fill `raw` with fresh unpredictable bytes, answering whether the platform could.
+    fn fill(&mut self, raw: &mut [u8; 32]) -> bool;
+}
+
+/// The production identity source: one fresh document identity per fill.
+///
+/// A platform that cannot answer does not get a weaker identity. The failure is RECORDED and
+/// [`Self::intact`] is what a caller checks before spending anything an identity reached; the
+/// bytes handed out after a fault are not an identity and no route may treat them as one.
+#[derive(Debug)]
+pub struct EntropyReceiptIds<E: ReceiptIdEntropy> {
+    entropy: E,
+    faulted: bool,
+}
+
+impl<E: ReceiptIdEntropy> EntropyReceiptIds<E> {
+    /// Mint identities from `entropy`.
+    pub const fn over(entropy: E) -> Self {
+        Self {
+            entropy,
+            faulted: false,
+        }
+    }
+
+    /// Whether every identity this source handed out came from the platform.
+    pub const fn intact(&self) -> bool {
+        !self.faulted
+    }
+}
+
+impl<E: ReceiptIdEntropy> ReceiptIdSource for EntropyReceiptIds<E> {
+    fn next_receipt_id(&mut self) -> ReceiptId {
+        let mut raw = [0_u8; 32];
+        if !self.entropy.fill(&mut raw) {
+            self.faulted = true;
+        }
+        ReceiptId::of_source_bytes(raw)
+    }
+}
+
 /// One plan receipt's identity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PlanReceiptId(ReceiptId);

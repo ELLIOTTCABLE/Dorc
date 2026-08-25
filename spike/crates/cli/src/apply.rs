@@ -45,15 +45,35 @@
 //! `unused`.
 
 use std::collections::BTreeMap;
+use std::time::Duration;
 
+use dorc_receipt::RecordedInfluence;
+use dorc_receipt::capability::OverlaySealer;
+use dorc_receipt::dispatch::{
+    ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, DurableFailure,
+    IntentPreparationRefusal, IntentPublicationGate, PendingApplyAssignment, PendingOrigins,
+    PostDispatchFailure, ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext,
+    ResolvedAxis,
+};
+use dorc_receipt::ids::{
+    ApplyGenerationId, ApplyIntentId, ApplyOutcomeId, ApplySessionId, ReadyApplyTargetId,
+    ReceiptIdSource,
+};
 use dorc_receipt::image::{
     ApplyArtifactImage, ApplyEdge, ApplyEdgeKind, ApplyEntryBytes, ApplyEntryId, ApplyImageEntry,
     ApplyRoot, ApplyRootId, ApplyTopology, ImageRefusal, RecordedApplyPath, RecordedArtifactForm,
     RecordedMode,
 };
 use dorc_receipt::limits::ReceiptLimits;
+use dorc_receipt::project::{ApplyInvocation, ApplyOutcomeReport, InvocationTarget};
+use dorc_receipt::rows::AssignmentOrdinal;
+use dorc_receipt::tokens::{RecordedDurableState, RecordedInvocationMode, RecordedTerminalState};
+use dorc_transport::{HostId, Phase, SessionDriver, SessionMarker, SessionOutcome, SessionRequest};
 
 use crate::artifact::{ArtifactForm, ArtifactSet};
+use crate::receipt_edge::{
+    PublicationRefusal, ReceiptCapabilities, publish_apply_intent, publish_apply_outcome,
+};
 
 /// Why an emitted artifact set could not be recorded as an exact image.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -177,6 +197,351 @@ pub fn image_of_external_stream(
 ) -> Result<ApplyArtifactImage, ImageCarriageRefusal> {
     ApplyArtifactImage::of_external_stream(ApplyEntryBytes::of(bytes), limits)
         .map_err(ImageCarriageRefusal::Image)
+}
+
+/// The attempt an apply ships under.
+///
+/// One, always: an apply is shipped once and never retried (`law-no-double-apply`), so the
+/// session marker's attempt is a constant here rather than a counter. It is recorded because a
+/// document's invocation row has the field, not because this lane can vary it.
+const APPLY_ATTEMPT: u32 = 1;
+
+/// What this process was handed, as the invocation facts an apply-side document records.
+///
+/// `host` is what the invocation SPELLED, which is why it arrives as a `&str` from argv and
+/// becomes an [`InvocationTarget::Spelled`]: an apply reads no book, so there is no other place a
+/// target could come from, and the destination a session addresses is recorded separately by the
+/// assignment that addressed it.
+#[must_use]
+pub fn apply_invocation(host: &str, started: Option<dorc_core::RunInstant>) -> ApplyInvocation {
+    ApplyInvocation::of(
+        RecordedInvocationMode::Apply,
+        started.map(|instant| instant.0),
+        InvocationTarget::Spelled(host.as_bytes().to_vec()),
+        APPLY_ATTEMPT,
+        RecordedInfluence::of_token(Some(
+            dorc_core::influence::InfluenceAccount::authored_before_contact().label(),
+        )),
+    )
+}
+
+/// One `dorc apply` invocation, as the orchestration below reads it.
+pub struct ConsentedApplyRequest<'a> {
+    /// The exact bytes the admin consented to, which the apply will run.
+    pub plan: &'a [u8],
+    /// Where the controller will address them.
+    pub destination: &'a HostId,
+    /// The run's own session nonce.
+    pub nonce: &'a str,
+    /// The wall-clock ceiling on the session, if the invocation named one.
+    pub timeout: Option<Duration>,
+    /// What the invocation itself was.
+    pub invocation: &'a ApplyInvocation,
+    /// What a document may carry.
+    pub limits: &'a ReceiptLimits,
+}
+
+/// What a route needs to turn its own decisions into published documents.
+pub struct ApplyPublication<'a> {
+    /// Produces the signature over exact bytes.
+    pub signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
+    /// Where a published document goes.
+    pub sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
+    /// Seals the one region a rich document carries.
+    pub sealer: &'a dyn OverlaySealer,
+    /// The account for everything the STANDUP produced, which the caller decides because only
+    /// the caller knows how much its session established.
+    pub resolved: dorc_core::influence::InfluenceAccount,
+}
+
+/// How one apply invocation was authorized to spend mutation authority.
+///
+/// Two arms, and the routes below them share no step that mints a permit: an invocation that
+/// cannot build the first cannot reach a permit by way of the second's machinery, and a failed
+/// publication is not a bypass.
+pub enum ApplyAuthorization<'a> {
+    /// The default posture: publish a rich intent binding the exact bytes, or dispatch nothing.
+    RequiredPublication(ApplyPublication<'a>),
+    /// The invocation explicitly configured dispatch with no durable intent behind it.
+    ConfiguredBypass(ConfiguredReceiptBypass),
+}
+
+impl core::fmt::Debug for ConsentedApplyRequest<'_> {
+    /// Names the type and no material: the plan bytes are what the admin consented to run.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("ConsentedApplyRequest")
+    }
+}
+
+impl core::fmt::Debug for ApplyPublication<'_> {
+    /// Names the type and no material.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("ApplyPublication")
+    }
+}
+
+impl core::fmt::Debug for ApplyAuthorization<'_> {
+    /// Names the ARM, which is the whole of what a reader wants and carries nothing.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match *self {
+            Self::RequiredPublication(_) => "RequiredPublication",
+            Self::ConfiguredBypass(_) => "ConfiguredBypass",
+        })
+    }
+}
+
+/// Why an apply dispatched nothing.
+///
+/// Every arm here is a PRE-dispatch refusal: past the permit the apply continues, and the one
+/// thing that can still go wrong on the durable is reported rather than returned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ConsentedApplyRefusal {
+    /// The bytes could not be recorded as an exact image, so nothing could bind them.
+    Image(ImageCarriageRefusal),
+    /// The session could not bind its own assignment.
+    Preparation(IntentPreparationRefusal),
+    /// The intent could not be published, so no permit was minted.
+    Publication(PublicationRefusal),
+}
+
+/// What one authorized apply reached.
+#[derive(Debug)]
+pub struct ConsentedApply {
+    /// What the shipment did, or `None` where no session marker could be built and nothing was
+    /// ever sent.
+    pub shipped: Option<SessionOutcome>,
+    /// The published intent, where one was published.
+    pub intent: Option<ApplyIntentId>,
+    /// The published outcome, where one was published.
+    pub outcome: Option<ApplyOutcomeId>,
+    /// A durable failure that happened AFTER the permit was spent, and therefore did not stop
+    /// the apply. Its presence is narration; the apply's own result is [`Self::shipped`].
+    pub durable_failure: Option<DurableFailure>,
+}
+
+/// Dispatch one consented apply, spending exactly one permit around exactly one shipment.
+///
+/// The whole pre-dispatch sequence lives here so the binary and the deterministic route drive
+/// ONE of it: the bytes are bounded and identified into an exact image, a session addresses one
+/// destination, the image is bound to that session as an assignment, a gate is cleared, and only
+/// then is a permit minted and immediately spent.
+///
+/// # Errors
+/// Refuses bytes carrying a carriage return, bytes that cannot be recorded exactly, a session
+/// that cannot bind its assignment, and — on the required arm alone — a publication that did not
+/// place a document. Every one of those returns before any shipment.
+pub fn consented_apply(
+    request: &ConsentedApplyRequest<'_>,
+    ids: &mut dyn ReceiptIdSource,
+    authorization: ApplyAuthorization<'_>,
+    driver: &mut dyn SessionDriver,
+) -> Result<ConsentedApply, ConsentedApplyRefusal> {
+    match authorization {
+        ApplyAuthorization::ConfiguredBypass(bypass) => bypass_route(request, ids, bypass, driver),
+        ApplyAuthorization::RequiredPublication(publication) => {
+            published_route(request, ids, publication, driver)
+        }
+    }
+}
+
+/// The session a `dorc apply --host` invocation stands up.
+///
+/// THIN, and every word of it true: the controller knows where it is addressing, and it entered
+/// no context — nothing escalated, nothing chrooted, no namespace and no working directory of its
+/// own, running as whatever the destination resolves to. Five axes therefore say they were not
+/// established rather than being filled with a plausible answer, which is the difference between
+/// a session that establishes little and one that claims something.
+///
+/// It grows by replacing arms as machinery arrives, and the seat stays where it is: one mint, one
+/// place, chronologically fixed immediately after the invocation is read.
+fn thin_session_context(destination: &HostId) -> ResolvedApplyContext {
+    ResolvedApplyContext::of(
+        ApplyDestination::addressed(destination.as_str().to_owned()),
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+        ResolvedAxis::NotEstablished,
+    )
+}
+
+/// The prelude both routes take: exact bytes, a session, and one assignment binding them.
+///
+/// The bytes are BOUNDED, VALIDATED and IDENTIFIED here and nowhere later: an image is the thing
+/// an intent binds, so bytes that cannot become one are bytes no permit may be minted over.
+fn prepare_intent_for(
+    request: &ConsentedApplyRequest<'_>,
+    ids: &mut dyn ReceiptIdSource,
+    policy: ReceiptPolicyWitness,
+) -> Result<dorc_receipt::dispatch::PreparedApplyIntent, ConsentedApplyRefusal> {
+    let image = image_of_external_stream(request.plan.to_vec(), request.limits)
+        .map_err(ConsentedApplyRefusal::Image)?;
+
+    let target = ReadyApplyTargetId::mint(ids);
+    let session = ApplySessionReady::of(
+        ApplySessionId::mint(ids),
+        ApplyGenerationId::mint(ids),
+        vec![ReadyApplyTarget::of(
+            target,
+            thin_session_context(request.destination),
+        )],
+    )
+    .map_err(ConsentedApplyRefusal::Preparation)?;
+
+    session
+        .prepare_intent(
+            vec![PendingApplyAssignment::of(
+                AssignmentOrdinal::of(0),
+                target,
+                image,
+                PendingOrigins::Unavailable,
+            )],
+            policy,
+        )
+        .map_err(ConsentedApplyRefusal::Preparation)
+}
+
+/// Dispatch without a durable intent, because the invocation said to.
+fn bypass_route(
+    request: &ConsentedApplyRequest<'_>,
+    ids: &mut dyn ReceiptIdSource,
+    bypass: ConfiguredReceiptBypass,
+    driver: &mut dyn SessionDriver,
+) -> Result<ConsentedApply, ConsentedApplyRefusal> {
+    let intent = prepare_intent_for(request, ids, ReceiptPolicyWitness::configured_bypass())?;
+    let _spent: dorc_receipt::dispatch::MutationDispatched =
+        IntentPublicationGate::ConfiguredBypass(bypass)
+            .permit(intent)
+            .spend();
+    Ok(ConsentedApply {
+        shipped: ship_once(request, driver),
+        intent: None,
+        outcome: None,
+        durable_failure: None,
+    })
+}
+
+/// Publish the intent first, and dispatch only if that placed a document.
+fn published_route(
+    request: &ConsentedApplyRequest<'_>,
+    ids: &mut dyn ReceiptIdSource,
+    publication: ApplyPublication<'_>,
+    driver: &mut dyn SessionDriver,
+) -> Result<ConsentedApply, ConsentedApplyRefusal> {
+    let ApplyPublication {
+        signer,
+        sink,
+        sealer,
+        resolved,
+    } = publication;
+    let intent = prepare_intent_for(request, ids, ReceiptPolicyWitness::required_rich())?;
+    let published = publish_apply_intent(
+        &intent,
+        request.invocation,
+        resolved,
+        request.limits,
+        ReceiptCapabilities::of(&mut *ids, signer, &mut *sink),
+        sealer,
+    )
+    .map_err(ConsentedApplyRefusal::Publication)?;
+
+    let intent_id = published.id();
+    let (receipt, images) = published.into_gate_parts();
+    let dispatched = IntentPublicationGate::Published(receipt, images)
+        .permit(intent)
+        .spend();
+
+    let shipped = ship_once(request, driver);
+    let report = ApplyOutcomeReport::of(
+        intent_id,
+        terminal_of(shipped.as_ref()),
+        RecordedDurableState::Published,
+        Vec::new(),
+        RecordedInfluence::of_token(Some(
+            dorc_core::influence::InfluenceAccount::untracked().label(),
+        )),
+    );
+
+    let placed = publish_apply_outcome(
+        &dispatched,
+        &report,
+        request.invocation,
+        request.limits,
+        ReceiptCapabilities::of(&mut *ids, signer, &mut *sink),
+        sealer,
+    );
+    let (outcome, durable_failure) = match placed {
+        Ok((id, _)) => (Some(id), None),
+        Err(refusal) => {
+            let failure = durable_failure_of(&refusal);
+            // Past the permit only the durable may fail this way, and the narrowing is what
+            // proves it: an integrity failure answers `None` here and never reaches the
+            // continuation.
+            match PostDispatchFailure::DurableOnly(failure).durable_only() {
+                Some(only) => {
+                    let _reported = dispatched.continue_after(only);
+                }
+                None => return Err(ConsentedApplyRefusal::Publication(refusal)),
+            }
+            (None, Some(failure))
+        }
+    };
+    Ok(ConsentedApply {
+        shipped,
+        intent: Some(intent_id),
+        outcome,
+        durable_failure,
+    })
+}
+
+/// Ship the consented bytes ONCE.
+///
+/// No retry parameter and no loop, because there is no licence for one: under an unknown outcome
+/// a re-ship risks double-applying, and the sanctioned recovery is re-probe-then-re-plan — the
+/// probe is the retry-file (`law-no-double-apply`). `None` is a nonce that could not become a
+/// session marker, so no process was ever created.
+fn ship_once(
+    request: &ConsentedApplyRequest<'_>,
+    driver: &mut dyn SessionDriver,
+) -> Option<SessionOutcome> {
+    let marker = SessionMarker::new(request.nonce, APPLY_ATTEMPT).ok()?;
+    Some(driver.run(&SessionRequest {
+        host: request.destination,
+        phase: Phase::Apply,
+        artifact: request.plan,
+        marker: &marker,
+        timeout: request.timeout,
+    }))
+}
+
+/// Which terminal state a shipment reached.
+///
+/// `None` is a shipment that never happened, which is the ONE outcome licensed to claim the host
+/// was untouched — and it is licensed because the claim is local: no process was created.
+const fn terminal_of(shipped: Option<&SessionOutcome>) -> RecordedTerminalState {
+    match shipped {
+        Some(SessionOutcome::Completed { status: 0, .. }) => RecordedTerminalState::Complete,
+        Some(SessionOutcome::Completed { .. }) => RecordedTerminalState::CommandFailed,
+        Some(SessionOutcome::LostAfterSend { .. }) => RecordedTerminalState::Unknown,
+        Some(SessionOutcome::NotAttempted { .. }) | None => RecordedTerminalState::NotAttempted,
+    }
+}
+
+/// Which durable failure a publication refusal is.
+///
+/// Total by construction rather than by judgment: every arm of a publication refusal is about
+/// writing a document, so all of them are durable failures and none of them is anything else.
+const fn durable_failure_of(refusal: &PublicationRefusal) -> DurableFailure {
+    match refusal {
+        PublicationRefusal::Sink => DurableFailure::Sink,
+        PublicationRefusal::Grammar(_) => DurableFailure::Grammar,
+        PublicationRefusal::RegionOverBound => DurableFailure::Seal,
+        PublicationRefusal::Projection(_)
+        | PublicationRefusal::ApplyProjection(_)
+        | PublicationRefusal::OverlayAccount
+        | PublicationRefusal::ImageAccount
+        | PublicationRefusal::Identity => DurableFailure::Projection,
+    }
 }
 
 #[cfg(test)]

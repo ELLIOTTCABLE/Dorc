@@ -372,6 +372,17 @@ pub struct Args {
     /// read and consented to; letting it take a book would put build-and-apply in one breath,
     /// which is the one thing the plan→apply consent cut exists to prevent.
     pub plan: Option<String>,
+    /// `--dispatch-without-receipt`: spend mutation authority with no durable intent behind it.
+    ///
+    /// `apply --host` alone REFUSES, because this build cannot publish the pre-dispatch intent
+    /// that authorizes a first mutative dispatch. This flag is the one thing that lets it
+    /// proceed anyway, and it is deliberately its own word rather than a second meaning on
+    /// `--no-whylog`: that flag is subtractive everywhere it appears, and on this lane the
+    /// choice is not subtractive at all — it is what makes the run happen.
+    ///
+    /// Per-invocation and typed. Never a default, never read off a terminal, and never satisfied
+    /// by a receipt write that happened to succeed.
+    pub dispatch_without_receipt: bool,
     /// `--accept-new`: accept an unknown host key on first contact. Off by default; the default
     /// defers to OpenSSH's own `known_hosts` enforcement.
     pub accept_new: bool,
@@ -526,6 +537,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut form: Option<ArtifactForm> = None;
     let mut host: Option<String> = None;
     let mut plan: Option<String> = None;
+    let mut dispatch_without_receipt = false;
     let mut accept_new = false;
     let mut ssh_config: Option<String> = None;
     let mut connect_timeout: Option<u64> = None;
@@ -697,6 +709,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 it.next()
                     .ok_or_else(|| flag_needs_value("--plan", "a path"))?,
             );
+        } else if arg == "--dispatch-without-receipt" {
+            dispatch_without_receipt = true;
         } else if arg == "--accept-new" {
             accept_new = true;
         } else if let Some(p) = arg.strip_prefix("--ssh-config=") {
@@ -751,6 +765,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--shim-dir",
                 "--host",
                 "--plan",
+                "--dispatch-without-receipt",
                 "--accept-new",
                 "--ssh-config",
                 "--connect-timeout",
@@ -904,6 +919,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         all,
         host,
         plan,
+        dispatch_without_receipt,
         accept_new,
         ssh_config,
         connect_timeout,

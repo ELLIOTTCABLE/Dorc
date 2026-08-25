@@ -413,6 +413,12 @@ pub enum DiagCode {
     /// `--plan`). The inverse of [`DiagCode::CliFlagRequiresMode`], and a separate world: there the
     /// flag was wrong for the mode, here the mode is missing an input it cannot default.
     CliModeNeedsFlag(CliModeNeedsFlag),
+    /// A `dorc apply --host` invocation cannot publish the pre-dispatch intent that authorizes a
+    /// first mutative dispatch, and did not name the flag that dispatches without one.
+    ApplyIntentNotPublishable(ApplyIntentNotPublishable),
+    /// A `dorc apply --host` invocation could not turn the bytes it was handed into something a
+    /// dispatch permit may be minted over, so it dispatched nothing.
+    ApplyPlanNotDispatchable(ApplyPlanNotDispatchable),
     /// An input file does not exist.
     CliFileNotFound(CliFileNotFound),
     /// An input file exists but is not readable by this process.
@@ -566,6 +572,8 @@ impl DiagCode {
             DiagCode::CliFlagsMutuallyExclusive(_) => "cli-flags-mutually-exclusive",
             DiagCode::CliFlagRequiresMode(_) => "cli-flag-requires-mode",
             DiagCode::CliModeNeedsFlag(_) => "cli-mode-needs-flag",
+            DiagCode::ApplyIntentNotPublishable(_) => "apply-intent-not-publishable",
+            DiagCode::ApplyPlanNotDispatchable(_) => "apply-plan-not-dispatchable",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
             DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
             DiagCode::CliFileUnreadable(_) => "cli-file-unreadable",
@@ -2204,6 +2212,29 @@ pub struct CliShimDirUnwritable {
     pub detail: ForeignBytes,
 }
 
+/// Payload of [`DiagCode::ApplyIntentNotPublishable`]: an apply that cannot record its own intent.
+///
+/// A distinct world from every other apply refusal: the invocation is well formed, the bytes are
+/// readable, and the host is reachable — what is missing is the ability to write the document that
+/// authorizes spending mutation authority. `{flag}` names the one thing that dispatches anyway.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplyIntentNotPublishable {
+    /// The flag that dispatches with no durable intent behind it (`{flag}`).
+    pub flag: &'static str,
+}
+
+/// Payload of [`DiagCode::ApplyPlanNotDispatchable`]: bytes that could not be bound to an intent.
+///
+/// One code carrying a closed reason WORD rather than three sibling codes
+/// (`28L:rul-reason-enums-not-sibling-codes`): the world is one — an apply that reached no
+/// dispatch — and the word says which step of binding the bytes did not close.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplyPlanNotDispatchable {
+    /// The closed word: `image-not-recordable`, `session-not-preparable`, or
+    /// `intent-not-published` (`{reason}`).
+    pub reason: &'static str,
+}
+
 /// Payload of [`DiagCode::TransportCrlfRefused`]: bytes bound for a host are not LF-only.
 ///
 /// A CRLF shebang is an exec failure the remote kernel reports before any shell of ours exists,
@@ -3089,6 +3120,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::CliFlagsMutuallyExclusive(_)
         | DiagCode::CliFlagRequiresMode(_)
         | DiagCode::CliModeNeedsFlag(_)
+        | DiagCode::ApplyIntentNotPublishable(_)
+        | DiagCode::ApplyPlanNotDispatchable(_)
         | DiagCode::CliFileNotFound(_)
         | DiagCode::CliFilePermissionDenied(_)
         | DiagCode::CliFileUnreadable(_)
@@ -3596,6 +3629,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::DorcShExecFailed(DorcShExecFailed { detail }) => vec![foreign("detail", detail)],
         DiagCode::CliShimDirUnwritable(CliShimDirUnwritable { path, detail }) => {
             vec![ours("path", path.clone()), foreign("detail", detail)]
+        }
+        DiagCode::ApplyIntentNotPublishable(ApplyIntentNotPublishable { flag }) => {
+            vec![ours("flag", (*flag).to_owned())]
+        }
+        DiagCode::ApplyPlanNotDispatchable(ApplyPlanNotDispatchable { reason }) => {
+            vec![ours("reason", (*reason).to_owned())]
         }
         DiagCode::TransportCrlfRefused(TransportCrlfRefused { which, line }) => {
             vec![ours("which", which.clone()), ours("line", line.clone())]
