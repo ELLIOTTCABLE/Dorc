@@ -612,21 +612,50 @@ impl WhyWorld {
     /// from the same inputs.
     #[must_use]
     pub fn presented_plan_hex(&self) -> String {
-        let identity: Vec<Diag> = self
-            .why_diags
-            .iter()
-            .cloned()
-            .chain(self.refusals.iter().cloned())
-            .collect();
         dorc_plan::erasability::presented_plan_id(
             &self.plan,
             &self.probe,
             self.snapshot.book_src(),
             &self.ast,
             &self.interner,
-            &identity,
+            &self.identity_diags(),
         )
         .hex()
+    }
+
+    /// The Error-class diagnostics this world contributes to its own identity plane.
+    ///
+    /// ONE assembly, shared by every seat that hashes this surface: two seats choosing
+    /// independently which diagnostics are identity would mint two identities from one world.
+    fn identity_diags(&self) -> Vec<Diag> {
+        self.why_diags
+            .iter()
+            .cloned()
+            .chain(self.refusals.iter().cloned())
+            .collect()
+    }
+
+    /// Witness this world's settled surface
+    /// (`quarantine/30Rb:post-compliance-source-and-identity-advice`).
+    ///
+    /// The world holds the settled six; the caller supplies only what the world cannot know — the
+    /// planner's inputs, and the planned image where one was built.
+    #[must_use]
+    pub fn final_presentation(
+        &self,
+        inputs: dorc_plan::planning_input::PlanningInputs<'_>,
+        planned_image: Option<dorc_receipt::ids::ApplyArtifactImageId>,
+    ) -> dorc_plan::presentation::FinalPresentation {
+        dorc_plan::presentation::FinalPresentation::of_settled(
+            &self.plan,
+            &self.probe,
+            self.snapshot.book_src(),
+            &self.ast,
+            &self.interner,
+            &self.identity_diags(),
+            inputs,
+            planned_image,
+        )
     }
 
     /// The plan this world built, the AST its spans index into, and the interner that minted its
@@ -654,6 +683,16 @@ impl WhyWorld {
     #[must_use]
     pub const fn spine(&self) -> &dorc_plan::Spine {
         &self.spine
+    }
+
+    /// Take this world's Spine, to record a durable arm onto it.
+    ///
+    /// Consuming rather than borrowing: recording MUTATES, and a world whose Spine has been
+    /// written to has outlived the decisions it reported. Witness the surface first — the witness
+    /// is a value and outlives the world that minted it.
+    #[must_use]
+    pub fn into_spine(self) -> dorc_plan::Spine {
+        self.spine
     }
 
     /// Borrow this world as the report context.
