@@ -14,6 +14,39 @@
 
 ---
 
+## CURRENT STATE (2026-08-25 — the durable receipt family is IN FLIGHT on `ai/r30-receipt`; a fresh conductor resumes from `quarantine/30Rc`)
+
+**Where to start:** `plans/30R` is the conductor-facing design. `quarantine/30Rc` is the live
+conductor state — branch tips, what binds, what is owed, and an invariant corpus awaiting a
+steering-prose synthesis. Read `30Rc` in full before dispatching anything; it carries the
+carry-ins builders must not rediscover.
+
+**Branch state:** `ai/r30-receipt` (worktree `.claude/worktrees/r30-receipt`) carries the arc
+linearly — two new crates (a dependency-light receipt crate plus a sibling holding its provider
+implementations), the exact grammar and its record families, recorded models, the report-only
+graph, the plan-side projection, and the pre-dispatch authority chain. It is 85 commits over
+`ai/main` and **8 behind it**; rebase before folding. `ai/r30-conduct` carries the ledger only.
+Five folded lane branches/worktrees resist `-d` because the build branch was rebased mid-arc and
+their commits are now copies — left for the human, do not force.
+
+**Dispatch state:** stages 0–2 done; stage 3 substantive; **stage 4 partial** (authority chain
+built — intent/outcome projection, the deterministic apply route, and gating the ship path are
+owed); stages 5–6 unstarted. No lane is open; every builder stopped deliberately at a commit
+boundary.
+
+**Owed at close, hard:** the six why-chain e2e cases whose replay arm the old writer's removal
+will empty (restored verbatim — and neither "disable" instrument reaches them); a steering-prose
+synthesis from `30Rc`'s invariant corpus, since builders authored none this arc by ruling;
+`plans/30R` reconciliation; `gate:arc`. Four departures await the human as the top entry of
+`TODO-ADDTL`.
+
+**One tooling change landed for everyone:** `gate:full-quiet` now opens with `gate:floor`, which
+refuses a run that would check nothing. It exists because the gate was measured returning success
+having executed zero checks — and a **pure-deletion changeset selects zero checks**, which matters
+for any deletion-shaped stage. Read the floor's line, never the exit code alone. Unresolved and
+the human's: `cargo test --no-run` intermittently cannot replace `spike/target/debug/dorc.exe` on
+Windows (`Access is denied`), where `CARGO_TARGET_DIR` sits inside the synced tree.
+
 ## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
 
 **Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
