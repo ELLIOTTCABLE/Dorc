@@ -26,7 +26,7 @@ use dorc_receipt::ids::{
 use dorc_receipt::image::{ApplyArtifactImage, ApplyEntryBytes};
 use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
 use dorc_receipt::project::{
-    ApplyInvocation, ApplyOutcomeReport, ApplyProjectionRefusal, ApplySiteReport,
+    ApplyInvocation, ApplyOutcomeReport, ApplyProjectionRefusal, ApplySiteReport, InvocationTarget,
     project_apply_intent, project_apply_outcome,
 };
 use dorc_receipt::projection::OpaqueFieldTag;
@@ -85,7 +85,7 @@ fn invocation() -> ApplyInvocation {
     ApplyInvocation::of(
         RecordedInvocationMode::Apply,
         Some(17),
-        Some(b"web1.example.net".to_vec()),
+        InvocationTarget::Spelled(b"web1.example.net".to_vec()),
         1,
         authored(),
     )
@@ -144,10 +144,11 @@ fn an_intent_projects_the_order_its_own_model_re_emits() {
     // shared the integer, with the document still validating cleanly.
     let mut ids = Counter(0);
     let intent = one_assignment(&mut ids);
-    let projected = match project_apply_intent(&intent, &invocation(), authored()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
 
     // Non-vacuity floor: a document with no assignment row would satisfy the comparison below
     // while proving the walk carried nothing.
@@ -172,10 +173,11 @@ fn the_recorded_map_is_the_one_the_image_accounting_answers_to() {
     // that guessed the offset instead would mint a capability against a row it never checked.
     let mut ids = Counter(0);
     let intent = one_assignment(&mut ids);
-    let projected = match project_apply_intent(&intent, &invocation(), authored()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
 
     assert!(
         intent
@@ -208,10 +210,11 @@ fn an_assignments_destination_and_its_remaining_axes_ride_one_record() {
     // distinct fixture values are what make a transposition visible rather than vacuous.
     let mut ids = Counter(0);
     let intent = one_assignment(&mut ids);
-    let projected = match project_apply_intent(&intent, &invocation(), authored()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
     let record = projected
         .record_of(AssignmentOrdinal::of(0))
         .unwrap_or_else(|| panic!("the assignment was emitted"));
@@ -285,10 +288,11 @@ fn origins_reach_their_own_assignment_and_the_row_states_which_state_that_is() {
         Ok(intent) => intent,
         Err(refusal) => panic!("a well-formed pair should prepare: {refusal:?}"),
     };
-    let projected = match project_apply_intent(&intent, &invocation(), influenced()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), influenced(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
 
     let model = projected.model();
     assert_eq!(model.intent().origin_state(), RecordedOriginState::Known);
@@ -317,10 +321,11 @@ fn origins_reach_their_own_assignment_and_the_row_states_which_state_that_is() {
 fn a_prepared_intent_with_no_origin_records_the_unavailable_state() {
     let mut ids = Counter(0);
     let intent = one_assignment(&mut ids);
-    let projected = match project_apply_intent(&intent, &invocation(), authored()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
     assert_eq!(
         projected.model().intent().origin_state(),
         RecordedOriginState::Unavailable
@@ -466,8 +471,14 @@ fn a_multi_target_invocation_names_no_target_of_its_own() {
         Ok(intent) => intent,
         Err(refusal) => panic!("a well-formed pair should prepare: {refusal:?}"),
     };
-    let fleet = ApplyInvocation::of(RecordedInvocationMode::Apply, None, None, 1, authored());
-    let projected = match project_apply_intent(&intent, &fleet, authored()) {
+    let fleet = ApplyInvocation::of(
+        RecordedInvocationMode::Apply,
+        None,
+        InvocationTarget::NotOne,
+        1,
+        authored(),
+    );
+    let projected = match project_apply_intent(&intent, &fleet, authored(), &ReceiptLimits::V1) {
         Ok(projected) => projected,
         Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
     };
@@ -503,10 +514,11 @@ fn a_prepared_intent_records_the_policy_that_prepared_it() {
             Ok(intent) => intent,
             Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
         };
-    let projected = match project_apply_intent(&intent, &invocation(), authored()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
     assert_eq!(
         projected.model().intent().policy().token(),
         "configured-bypass"
@@ -514,10 +526,11 @@ fn a_prepared_intent_records_the_policy_that_prepared_it() {
 
     let mut other = Counter(40);
     let required = one_assignment(&mut other);
-    let projected = match project_apply_intent(&required, &invocation(), authored()) {
-        Ok(projected) => projected,
-        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
-    };
+    let projected =
+        match project_apply_intent(&required, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
     assert_eq!(
         projected.model().intent().policy().token(),
         "required-rich",

@@ -153,6 +153,23 @@
 //! }
 //! ```
 //!
+//! An invocation's own spelling and a destination a standup resolved are different facts, and
+//! no conversion joins them. Both legitimate constructions compile:
+//!
+//! ```
+//! use dorc_receipt::project::InvocationTarget;
+//! let _spelled = InvocationTarget::Spelled(b"web1.example.net".to_vec());
+//! let _fleet = InvocationTarget::NotOne;
+//! ```
+//!
+//! ```compile_fail
+//! use dorc_receipt::dispatch::ResolvedApplyContext;
+//! use dorc_receipt::project::InvocationTarget;
+//! fn launder(context: ResolvedApplyContext) -> InvocationTarget {
+//!     context.into()
+//! }
+//! ```
+//!
 //! A recorded influence grade is a report value and never becomes a live account:
 //!
 //! ```

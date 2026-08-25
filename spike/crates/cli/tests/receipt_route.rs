@@ -39,7 +39,7 @@ use dorc_receipt::capability::{
 };
 use dorc_receipt::format::RefusalReason;
 use dorc_receipt::ids::{ReceiptId, ReceiptIdSource, SigningKeyId};
-use dorc_receipt::limits::ReceiptLimits;
+use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
 use dorc_receipt::model::PlanReceipt;
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::{ReadPlain, read_plain};
@@ -287,6 +287,7 @@ fn published_rich() -> (Vec<u8>, FinalPresentation, Ed25519Signer) {
         RecordedInvocationMode::Plan,
         authored(),
         &presentation,
+        &ReceiptLimits::V1,
         ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
         &sealer,
     )
@@ -446,7 +447,7 @@ fn apply_invocation() -> dorc_receipt::project::ApplyInvocation {
     dorc_receipt::project::ApplyInvocation::of(
         RecordedInvocationMode::Apply,
         None,
-        Some(APPLY_DESTINATION.as_bytes().to_vec()),
+        dorc_receipt::project::InvocationTarget::Spelled(APPLY_DESTINATION.as_bytes().to_vec()),
         1,
         dorc_receipt::RecordedInfluence::of_token(Some("authored-before-contact")),
     )
@@ -537,6 +538,7 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
         &intent,
         &apply_invocation(),
         authored(),
+        &ReceiptLimits::V1,
         ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
         &sealer,
     )
@@ -614,6 +616,7 @@ fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
         &intent,
         &apply_invocation(),
         authored(),
+        &ReceiptLimits::V1,
         ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
     )
     .expect("a prepared intent publishes plainly");
@@ -666,6 +669,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &intent,
         &apply_invocation(),
         authored(),
+        &ReceiptLimits::V1,
         ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
         &sealer,
     )
@@ -754,6 +758,7 @@ fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
             &intent,
             &apply_invocation(),
             authored(),
+            &ReceiptLimits::V1,
             ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
             &sealer,
         )
@@ -830,5 +835,42 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
         model.terminal(),
         dorc_receipt::tokens::RecordedTerminalState::Unknown,
         "a run that produced no completion marker says unknown, never not-attempted"
+    );
+}
+
+#[test]
+fn an_intent_whose_region_a_reader_could_not_open_refuses_before_anything_is_placed() {
+    // REFUSAL, not omission. The required arm binds exact bytes by value, so a document that
+    // left some out could not fund the capability that arm exists to mint — and a document
+    // larger than a reader may open is one nobody can read back at all. The narrowed bound
+    // stands in for a region of real size; what is asserted is the direction and the seat.
+    //
+    // Pinned apart from the two failures beside it: a sink that declines, and a region that
+    // does not account for its own skeleton. All three end in no document, by three repairs.
+    let narrow = ReceiptLimits {
+        overlay_bytes: ByteLimit::of(10),
+        ..ReceiptLimits::V1
+    };
+    let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+    let (sealer, _) = age_pair();
+    let mut ids = CountingIds(0);
+    let mut sink = MemorySink::default();
+    let (intent, _) = prepared_apply_intent(&mut ids);
+
+    assert_eq!(
+        publish_apply_intent(
+            &intent,
+            &apply_invocation(),
+            authored(),
+            &narrow,
+            ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+            &sealer,
+        )
+        .err(),
+        Some(PublicationRefusal::RegionOverBound)
+    );
+    assert!(
+        sink.0.is_empty(),
+        "a refused publication places nothing, so no dispatch can follow it"
     );
 }

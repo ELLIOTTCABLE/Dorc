@@ -56,29 +56,44 @@ pub enum ApplyProjectionRefusal {
     },
 }
 
-/// What one byte channel costs a document, and what its row says about it.
+/// What one value costs one opaque field, and what its row says about it.
 ///
-/// A value past the per-field bound, or one that would spend past the run's whole host-output
-/// budget, is left out and SAID to be left out. `omitted-limit` is the word for a bound stopping
-/// a carry, and it is a different statement from `unavailable` — the run held these bytes.
+/// A value past the per-field bound is left out and SAID to be left out. `omitted-limit` is the
+/// word for a bound stopping a carry, and it is a different statement from `unavailable` — the
+/// run held these bytes.
+fn admit_field(value: Option<&Vec<u8>>, limits: &ReceiptLimits) -> (OpaqueState, Option<Vec<u8>>) {
+    let Some(bytes) = value else {
+        return (OpaqueState::Unavailable, None);
+    };
+    let measured = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    if limits.opaque_field_bytes.admits(measured) {
+        (OpaqueState::Captured, Some(bytes.clone()))
+    } else {
+        (OpaqueState::OmittedLimit, None)
+    }
+}
+
+/// What one byte channel of host output costs a document.
 ///
-/// The budget is spent in row order, so which channel loses is the document's own order rather
-/// than a size comparison across sites.
+/// [`admit_field`]'s bound, plus the run's whole host-output budget. A host's output is
+/// unbounded by nature, so the budget is what keeps a document readable; it is spent in row
+/// order, so which channel loses is the document's own order rather than a size comparison
+/// across sites.
 fn admit_channel(
     value: Option<&Vec<u8>>,
     spent: &mut u64,
     limits: &ReceiptLimits,
 ) -> (OpaqueState, Option<Vec<u8>>) {
-    let Some(bytes) = value else {
-        return (OpaqueState::Unavailable, None);
+    let (state, bytes) = admit_field(value, limits);
+    let Some(bytes) = bytes else {
+        return (state, None);
     };
-    let measured = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
-    let after = spent.saturating_add(measured);
-    if !limits.opaque_field_bytes.admits(measured) || !limits.host_output_bytes.admits(after) {
+    let after = spent.saturating_add(u64::try_from(bytes.len()).unwrap_or(u64::MAX));
+    if !limits.host_output_bytes.admits(after) {
         return (OpaqueState::OmittedLimit, None);
     }
     *spent = after;
-    (OpaqueState::Captured, Some(bytes.clone()))
+    (OpaqueState::Captured, Some(bytes))
 }
 
 /// One value a row offers for one of its slots, absent where the run held none.
@@ -96,6 +111,33 @@ const fn held(present: bool) -> OpaqueState {
     }
 }
 
+/// What an invocation SPELLED as its target.
+///
+/// A distinct type from a destination a standup RESOLVED, with no conversion in either
+/// direction. Both are host-shaped strings and only their provenance tells them apart, so the
+/// type is what keeps an answer from the far side of a connection out of the row that records
+/// what somebody typed — a substitution that would attribute a resolution to the command line
+/// while every field still validated.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InvocationTarget {
+    /// The invocation spelled exactly one target; these are the bytes it spelled.
+    Spelled(Vec<u8>),
+    /// The invocation spelled no single target of its own — none at all, or several. The
+    /// assignments carry the resolved answers, and this row says it holds none rather than
+    /// electing one of them.
+    NotOne,
+}
+
+impl InvocationTarget {
+    /// The spelled bytes, where there was exactly one.
+    fn bytes(&self) -> Option<Vec<u8>> {
+        match self {
+            Self::Spelled(bytes) => Some(bytes.clone()),
+            Self::NotOne => None,
+        }
+    }
+}
+
 /// The invocation facts a document records, for a lane with no Spine holding them.
 ///
 /// The account is the invocation record's own. Every apply-side record beside it takes its
@@ -106,7 +148,7 @@ const fn held(present: bool) -> OpaqueState {
 pub struct ApplyInvocation {
     mode: RecordedInvocationMode,
     started: Option<u64>,
-    target: Option<Vec<u8>>,
+    target: InvocationTarget,
     attempt: u32,
     account: RecordedInfluence,
 }
@@ -114,14 +156,15 @@ pub struct ApplyInvocation {
 impl ApplyInvocation {
     /// Name one apply invocation.
     ///
-    /// `target` is what the invocation SPELLED, where it spelled one. A multi-target apply names
-    /// none here and its assignments carry the resolved answers; recording one of them as the
-    /// invocation's own would be a claim the invocation did not make.
+    /// `target` is what the invocation SPELLED. It is [`InvocationTarget`] and not bytes, so a
+    /// destination a standup resolved cannot arrive here by sitting in the right argument
+    /// position — recording one of those as the invocation's own would be a claim the
+    /// invocation did not make.
     #[must_use]
     pub const fn of(
         mode: RecordedInvocationMode,
         started: Option<u64>,
-        target: Option<Vec<u8>>,
+        target: InvocationTarget,
         attempt: u32,
         account: RecordedInfluence,
     ) -> Self {
@@ -139,16 +182,17 @@ impl ApplyInvocation {
     /// `argv` reads `uncollected` rather than being carried: the run holds it, and writing it
     /// decides a durable rendering that the plan lane also declines at its own seat. The two
     /// lanes agree so a successor funding argv funds it once.
-    fn row(&self) -> (RecordedInvocation, [Detail; 1]) {
+    fn row(&self, limits: &ReceiptLimits) -> (RecordedInvocation, [Detail; 1]) {
+        let (state, spelled) = admit_field(self.target.bytes().as_ref(), limits);
         let row = RecordedInvocation::of(
             self.mode,
             self.started,
             OpaqueState::Uncollected,
-            held(self.target.is_some()),
+            state,
             self.attempt,
             self.account,
         );
-        (row, [(OpaqueFieldTag::TargetName, self.target.clone())])
+        (row, [(OpaqueFieldTag::TargetName, spelled)])
     }
 }
 
@@ -207,15 +251,20 @@ impl ProjectedApplyIntent {
 /// assignments, and their origins. It is separate from the invocation's own because a resolved
 /// target is an answer from the far side of a connection, whatever the invocation was.
 ///
+/// `limits` bounds what one opaque field may carry. Nothing an intent BINDS is omitted here —
+/// a region too large to hold the images is refused at the publication seat, where the required
+/// arm is — so the bound reaches only the invocation's own spelled target, which is narration.
+///
 /// # Errors
 /// Refuses a row the grammar table rejects and a record set that does not close over itself.
 pub fn project_apply_intent(
     intent: &PreparedApplyIntent,
     invocation: &ApplyInvocation,
     resolved: RecordedInfluence,
+    limits: &ReceiptLimits,
 ) -> Result<ProjectedApplyIntent, ApplyProjectionRefusal> {
     let mut rows = DocumentRows::default();
-    let (row, values) = invocation.row();
+    let (row, values) = invocation.row(limits);
     push(&mut rows, &row, &values)?;
 
     let assignments = u32::try_from(intent.assignments().len()).unwrap_or(u32::MAX);
@@ -443,7 +492,7 @@ pub fn project_apply_outcome(
     }
 
     let mut rows = DocumentRows::default();
-    let (row, values) = invocation.row();
+    let (row, values) = invocation.row(limits);
     push(&mut rows, &row, &values)?;
 
     let sites = u32::try_from(report.sites.len()).unwrap_or(u32::MAX);

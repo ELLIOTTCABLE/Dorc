@@ -172,7 +172,12 @@ pub enum PublicationRefusal {
     Sink,
     /// The region and the skeleton do not account for one another exactly.
     OverlayAccount,
-    /// The region does not carry every assignment's own image, by value.
+    /// The region would be larger than a reader may open, so no document is emitted.
+    ///
+    /// Refusal rather than omission wherever the required arm is: an intent binds exact bytes,
+    /// and a document that left some out could not fund the capability that arm demands.
+    RegionOverBound,
+    /// The region does not carry each assignment exact image, by value.
     ImageAccount,
     /// The published document's own identity is not a receipt identity.
     Identity,
@@ -231,6 +236,7 @@ fn seal_and_publish<D: Species>(
     skeleton: Skeleton,
     details: &[OverlayEntry],
     prefix: &str,
+    limits: &ReceiptLimits,
     signer: &dyn ReceiptSigner,
     sink: &mut dyn ReceiptSink,
     sealer: &dyn OverlaySealer,
@@ -251,6 +257,9 @@ fn seal_and_publish<D: Species>(
     let span = serialize_skeleton::<D, Rich>(&skeleton).map_err(PublicationRefusal::Grammar)?;
     let plaintext =
         OverlayPlaintext::canonical(&skeleton.receipt_id, D::TOKEN, span.as_bytes(), details);
+    if !limits.overlay_bytes.admits(plaintext.opened_bytes()) {
+        return Err(PublicationRefusal::RegionOverBound);
+    }
     let name = format!("{prefix}-{}", skeleton.receipt_id);
     let document = DraftReceipt::<D, Rich>::of(skeleton)
         .serialize(plaintext, sealer)
@@ -304,6 +313,7 @@ pub fn publish_rich_plan_receipt(
     mode: RecordedInvocationMode,
     world: dorc_core::influence::InfluenceAccount,
     presentation: &FinalPresentation,
+    limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<PublicationGrade, PublicationRefusal> {
@@ -312,7 +322,7 @@ pub fn publish_rich_plan_receipt(
         .map_err(PublicationRefusal::Projection)?;
     let (_, records, details) = projected.into_parts();
     let skeleton = rich_skeleton(ids.next_receipt_id().hex(), records, signer, sealer);
-    seal_and_publish::<PlanReceipt>(skeleton, &details, "plan", signer, sink, sealer)
+    seal_and_publish::<PlanReceipt>(skeleton, &details, "plan", limits, signer, sink, sealer)
         .map(|published| published.grade())
 }
 
@@ -362,11 +372,12 @@ pub fn publish_apply_intent(
     intent: &PreparedApplyIntent,
     invocation: &ApplyInvocation,
     resolved: dorc_core::influence::InfluenceAccount,
+    limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<PublishedApplyIntent, PublicationRefusal> {
     let ReceiptCapabilities { ids, signer, sink } = caps;
-    let projected = project_apply_intent(intent, invocation, grade(resolved))
+    let projected = project_apply_intent(intent, invocation, grade(resolved), limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let images = intent
         .account_images(projected.details(), &|ordinal| projected.record_of(ordinal))
@@ -374,8 +385,15 @@ pub fn publish_apply_intent(
     let (_, records, details) = projected.into_parts();
     let id = ApplyIntentId::mint(ids);
     let skeleton = rich_skeleton(id.hex(), records, signer, sealer);
-    let receipt =
-        seal_and_publish::<ApplyIntent>(skeleton, &details, "apply-intent", signer, sink, sealer)?;
+    let receipt = seal_and_publish::<ApplyIntent>(
+        skeleton,
+        &details,
+        "apply-intent",
+        limits,
+        signer,
+        sink,
+        sealer,
+    )?;
     Ok(PublishedApplyIntent {
         id,
         receipt,
@@ -396,10 +414,11 @@ pub fn publish_plain_apply_intent(
     intent: &PreparedApplyIntent,
     invocation: &ApplyInvocation,
     resolved: dorc_core::influence::InfluenceAccount,
+    limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
 ) -> Result<(ApplyIntentId, PublicationGrade), PublicationRefusal> {
     let ReceiptCapabilities { ids, signer, sink } = caps;
-    let projected = project_apply_intent(intent, invocation, grade(resolved))
+    let projected = project_apply_intent(intent, invocation, grade(resolved), limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let (_, records, _) = projected.into_parts();
     let (spelled, published) =
@@ -432,6 +451,7 @@ pub fn publish_apply_outcome(
         skeleton,
         &details,
         "apply-outcome",
+        limits,
         signer,
         sink,
         sealer,

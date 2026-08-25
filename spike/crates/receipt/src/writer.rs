@@ -109,6 +109,16 @@ impl OverlayPlaintext {
             bytes: overlay::serialize(receipt_id, species, skeleton_span, entries),
         }
     }
+
+    /// How many bytes this region occupies once opened.
+    ///
+    /// The quantity a reader bounds, measured on the exact bytes about to be sealed rather than
+    /// estimated from the entries — framing counts, and a writer that summed only payloads would
+    /// pass its own check and emit a document its own reader refuses.
+    #[must_use]
+    pub fn opened_bytes(&self) -> u64 {
+        u64::try_from(self.bytes.len()).unwrap_or(u64::MAX)
+    }
 }
 
 /// A receipt whose bytes are fixed. No semantic value can change past this point.
