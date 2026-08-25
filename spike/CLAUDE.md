@@ -577,11 +577,18 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   PERMANENT, unversionable compat surface — recognized even in unmarked files.
 - **role-menu** — `cmd__predict()`: the one read-only model of a command;
   wrapper-ness is DETECTED, never declared (a body whose command-position `"$@"`
-  runs its argument-slot is a peeling wrapper by tautology); per-channel
-  claim/decline vocabulary: delegation line = faithful all-channel claim · printf =
-  asserted output claim · explicit return = rc claim · redirect-to-null =
-  per-channel DECLINE (that channel ⊤ for consumers) · `return 2` = whole-shape
-  decline. `cmd__is_converged()`: the verdict member (see
+  runs its argument-slot is a peeling wrapper by tautology); per-channel model
+  (`30D`, 2026-08-19 — supersedes the r27 claim/decline vocabulary): Status = the
+  function's ordinary aggregate exit status, EVERY value predicted — `return 2`
+  predicts status 2, no reserved decline status
+  (`30D:rul-predict-status-keeps-every-value`); Stdout/Stderr default DECLINED
+  (⊤ for consumers), claimed only by the statically-recognized authored DREP
+  `predicts <channel-set>` record at a completion point
+  (`30D:rul-predict-channel-defaults` · `rul-predict-overrides-are-authored-shell`);
+  declines/unknowns are DREP speech (`predicts none …`), never an exit status; the
+  0/1/≥2 partition belongs to verdict functions ONLY
+  (`30D:rul-verdict-partition-stays-separate`). `cmd__is_converged()`: the verdict
+  member (see
   rul-vouch-is-verdict-authoring). `cmd__disturbs()` (né touches): at-most claims
   per MATCHED invocation-shape, emitted `: disturbs KIND[@sel]`. `cmd__lend_map()`:
   the wrapper's dimension member — a bare `: lends DIM` (no value) = full lend; a

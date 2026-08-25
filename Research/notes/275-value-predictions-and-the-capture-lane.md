@@ -65,6 +65,11 @@ not urgent.
   (delegation-produced: the tool itself spoke at probe time) / `author-composed`
   (printf-produced: the author asserted it) / `⊤`. A value concatenated from a
   delegation read and a composed decoration grades as composed.
+  <!-- superseded-in-part by 30D (2026-08-19): stdout/stderr are default-DECLINED —
+  a bare delegation line no longer claims them; world-spoken values exist only where
+  the author's statically-recognized DREP `predicts` speech claims the stream
+  (30D:rul-predict-channel-defaults). The grade vocabulary here stands; this note's
+  availability assumptions predate that algebra. -->
 - **backing**: a SET of coordinates — the union of the producing reads' observed
   (`:?`) coordinates, computed **per-channel and recipe-granular**, not per-line.
   This granularity is the finding from `271:rul-orthogonality-counterexample-test`'s

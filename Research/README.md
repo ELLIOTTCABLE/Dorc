@@ -139,7 +139,10 @@ and carries the license-contamination map.
   cites stale); the BUILD is deferred to the r26 revival — direction + design bank
   `notes/26B` (reactive plan-construction; the binding-site gate-question) +
   **`notes/26C`** (the fixpoint semantics made precise; the quiet-welding audit; the
-  R0–R4 revival ladder; the captured-bytes-as-data law ask).
+  R0–R4 revival ladder; the captured-bytes-as-data law ask). Read the whole cluster
+  under **`notes/30D`** (2026-08-19): stdout/stderr are now default-DECLINED, claimed
+  only by authored DREP `predicts` speech — the cluster predates that algebra and
+  assumes the superseded delegation-claims-all-channels vocabulary.
 - **Eval'ers & the `dorc:sh` reentry trio** — `notes/274` (reentry token ·
   descend-don't-license · the probe-shipping split).
 - **Did round-27's design survive adversarial review?** — `notes/279f` (the crosscheck
