@@ -45,25 +45,33 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 1 identity + plain kernel | done |
 | 2A apply image · 2B overlay+Age · 2C models+graph | done, folded in that order |
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
-| 4 intent / dispatch / outcome | **partial** — authority chain built, projection owed |
+| 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
 | 5 why / correlation / re-derivation | not started |
 | 6 rip the old implementation | not started |
 
 ## what is owed
 
-**Stage 4 exit:** multi-file topology carriage and the intent/outcome projection are DONE.
-Still owed: the DST apply route, and gating `ship_consented_apply`, which today verifies
-nothing about the bytes it ships. **Both are BLOCKED** — the ship gate on the human ruling
-below, and the route because its shape differs depending on which way that ruling goes.
-Stage 5 is serial after them (`main.rs` again), so the arc genuinely stalls here.
+**Stage 4 is DONE.** Stages 5 and 6 remain.
 
-One open judgment, deliberately unresolved and coupled to that ruling:
-`tc-two-accounts-per-apply-document` — whether a standup's resolved answers count as
-host-influenced depends on where a standup gets them, which is the blocked question. Left as
-invocation's-own plus standup-resolved, caller decides both.
+`tc-two-accounts-per-apply-document` is now SHAPED but not welded: both accounts sit side by
+side on the apply request (`invocation` and `standup_account`), neither derived from the
+other, so the caller that knows how thin its session is decides both and the projection seat
+decides nothing. Under a thin session nothing is host-reported — the destination is argv, the
+five axes unentered — so `authored-before-contact` is TRUE today. When the context grows the
+answer moves at the caller, not in the projection.
 
-The live→recorded projection sits in the receipt crate over plain value carriers; the
-live→carrier half is still owed at the CLI seat and belongs to the route lane.
+**A user-facing surface awaits the human:** `--dispatch-without-receipt`, the explicit apply
+bypass. `--no-whylog` was deliberately NOT reused: it is subtractive everywhere it appears,
+while here the default is a refusal and the flag is what makes the run happen — one token
+meaning "write less" on plan and "proceed anyway" on apply is a silent second meaning on a
+flag that authorizes mutation. `livetest.sh` passes it beside `--no-whylog` (added, not
+swapped); Stage 6's removal of the `--whylog` family will touch that line again. Name and
+help text are the human's; the register is `None`, so a rename is free.
+
+**Per-site apply detail does not exist.** The session outcome is whole-artifact, so the real
+route records zero site rows and `ApplySiteReport` is exercised by the fixture battery alone.
+Inventing rows would be the different-and-wrong record. The outcome's influence reads
+`untracked` — truthful, and higher than host-influenced so it cannot under-claim.
 
 One residual for whoever unblocks item 4: an invocation's spelled target is now a distinct
 no-conversion type from a resolved destination, but the laundering path that still compiles
@@ -253,6 +261,18 @@ same-typed fields. **The numbers are the mechanism, not decoration.** What conve
 cross-lane grammar widening from corruption into a test failure is that every row goes out
 through the writer's own emitter, which refuses a row it could not read back — a projection
 hand-building a record bypasses the one thing that caught it.
+
+### A capability bundle that quietly grew a decision
+
+`ApplyPublishingCapabilities` (né `ApplyPublication`) was described by its builder as a plain
+bundle of injected capabilities, and was — except for one field that became the recorded
+influence account on every intent row the route writes. That is state a decision rests on,
+behind public fields, under a name that reads like *a publication happened*. The rules on
+publication types did not formally bite a bundle; they would have bitten whatever a later
+agent grew it into. **The name is the hazard as much as the fields are** — a type whose name
+asserts an outcome invites being read for that outcome. The repair took both halves: the
+account moved onto the request beside the invocation's own, and the bundle was renamed to say
+what it is and privatised behind a constructor.
 
 ### Promises the writer must fund
 
