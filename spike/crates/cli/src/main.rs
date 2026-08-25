@@ -2253,6 +2253,24 @@ fn run(
         .chain(refusals.iter().cloned())
         .chain(trip_diags)
         .collect();
+    // ONE structure: the stream and the published tree both READ it, and there is deliberately no
+    // second assembly to fall back to. rec-1 / ru-12 BYTE FLOOR holds inside it — `plan` and
+    // `apply` emit byte-identical receipt-free bytes, and so does the round-trip's second block.
+    //
+    // It is bound HERE, ahead of the witness, because the witness may be minted only once the
+    // executable view is final (`30Rb:post-compliance-source-and-identity-advice`). Nothing is
+    // emitted yet — the stream write stays at its own seat below.
+    let artifact =
+        form_selection.with_plan(plan.render_apply(&book_src, &parsed.value), plan.account());
+    // The identity of the image an apply of these bytes would use. A set whose topology the form
+    // could not carry, or whose bytes exceed the receipt bounds, names NOTHING here rather than
+    // naming a cousin — the field's absence is the honest answer, and `presented-plan` already
+    // spells it. OWED: a diagnostic for the refused case, so the loss is visible rather than
+    // merely truthful.
+    let planned_image =
+        dorc_cli::apply::image_of_artifact_set(&artifact, &dorc_receipt::limits::ReceiptLimits::V1)
+            .ok()
+            .map(|image| image.id());
     // The invocation record is built HERE, not at the recording seat, so the witness below and the
     // Spine describe one run rather than two constructions of one.
     let invocation = dorc_cli::receipt_edge::invocation_record(
@@ -2282,9 +2300,7 @@ fn run(
                 args.risk_faultless_skips,
             ),
         ),
-        // No apply image is built at plan time, so the planned-image field reads absent rather
-        // than naming one nothing minted.
-        None,
+        planned_image,
     );
     let presented_plan = presentation.presented_plan();
 
@@ -2359,11 +2375,6 @@ fn run(
         return Ok(book_outcome);
     }
 
-    // ONE structure: the stream and the published tree both READ it, and there is deliberately no
-    // second assembly to fall back to. rec-1 / ru-12 BYTE FLOOR holds inside it — `plan` and
-    // `apply` emit byte-identical receipt-free bytes, and so does the round-trip's second block.
-    let artifact =
-        form_selection.with_plan(plan.render_apply(&book_src, &parsed.value), plan.account());
     print!("{}", artifact.primary().bytes);
 
     // `30Qe:fruit-emit-hygiene-paste-rules` (`KNOBS:kBOOT`) — the paste/splice-floor damage watch:

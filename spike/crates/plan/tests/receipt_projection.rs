@@ -234,8 +234,71 @@ fn every_species_the_projection_declines_states_its_population() {
     let presented = model.presented().expect("the surface projects a row");
     assert_eq!(presented.planning_input(), witness().planning_input().hex());
     assert_eq!(presented.presented_plan(), witness().presented_plan().hex());
-    // No image is built at plan time, so the optional field reads absent rather than inventing one.
+    // THIS witness names no image, so the optional field reads absent rather than inventing one.
+    // A run whose form could not be recorded exactly lands here too — see the paired case below,
+    // which is what keeps absence from being the only outcome anything observes.
     assert_eq!(presented.planned_image(), None);
+}
+
+/// A witness that DOES name an image projects its identity, rather than dropping it into the
+/// absence the case above asserts.
+///
+/// Without this the two outcomes are indistinguishable: every assertion in the corpus would pass
+/// against a projection that discarded the field entirely.
+#[test]
+fn a_witness_naming_an_image_carries_its_identity_into_the_row() {
+    let image = dorc_receipt::image::ApplyArtifactImage::of_external_stream(
+        dorc_receipt::image::ApplyEntryBytes::of(b"#!/bin/sh\n:\n".to_vec()),
+        &dorc_receipt::limits::ReceiptLimits::V1,
+    )
+    .expect("a single stream is within bounds");
+
+    let witness = FinalPresentation::of_settled(
+        &Plan::decided(
+            vec![],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            NO_ARTIFACT_FORM,
+            BASELINE_BOOK,
+            &dorc_syntax::parse(BASELINE_BOOK).value,
+            authored(),
+        ),
+        &ProbePlan::default(),
+        BASELINE_BOOK,
+        &dorc_syntax::parse(BASELINE_BOOK).value,
+        &Interner::default(),
+        &[],
+        PlanningInputs::of(
+            "dorc/test",
+            &invocation(),
+            None,
+            None,
+            PlanningPolicy::of(PlanningMode::Plan, false),
+        ),
+        Some(image.id()),
+    );
+
+    let model = project(
+        &spine_with_invocation(),
+        RecordedInvocationMode::Plan,
+        authored(),
+        &witness,
+    )
+    .expect("the spine projects")
+    .model()
+    .clone();
+    let presented = model.presented().expect("the surface projects a row");
+    assert_eq!(
+        presented.planned_image(),
+        Some(image.id().hex()).as_deref(),
+        "the row names the image the witness was minted with"
+    );
+    assert_ne!(
+        presented.presented_plan(),
+        image.id().hex(),
+        "the two identities are separate domains and never substitute for one another"
+    );
 }
 
 #[test]
