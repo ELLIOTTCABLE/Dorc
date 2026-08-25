@@ -73,3 +73,7 @@ path = "tests/env_identity_pins.rs"
 
 [lints]
 workspace = true
+
+[[test]]
+name = "receipt_projection"
+path = "tests/receipt_projection.rs"

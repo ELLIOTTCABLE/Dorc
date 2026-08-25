@@ -131,6 +131,8 @@ pub use settle::{
 };
 use world::{EffectiveAct, Freshness, NoMutationProof};
 
+pub mod receipt;
+
 pub mod spine;
 pub use spine::{Authorised, PlanAuthority, PlanPlane, Spine, project_plan};
 

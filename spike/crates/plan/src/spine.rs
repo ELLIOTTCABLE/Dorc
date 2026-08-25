@@ -701,6 +701,7 @@ mod tests {
                 "plan/src/spine.rs",
                 "plan/src/whylog.rs",
                 "plan/tests/erasability.rs",
+                "plan/tests/receipt_projection.rs",
                 "plan/tests/region.rs",
                 "plan/tests/render_corpus.rs",
                 "sweep/src/drive.rs",
