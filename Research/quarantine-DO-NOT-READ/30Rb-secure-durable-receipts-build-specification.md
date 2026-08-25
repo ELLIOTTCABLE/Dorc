@@ -1464,3 +1464,27 @@ Every lane report states:
 The build conductor reads `30Ra` and this document together. Builders receive only
 the stage they own plus all cross-stage type contracts it consumes; they do not
 locally reinterpret the receipt architecture.
+
+## 30Rb:post-compliance-source-and-identity-advice
+
+> Status: conductor-tier advice, directionally acknowledged by the human on
+> 2026-08-24, not a human ruling. A stage-compliance review found two places where
+> this specification fixed the durable output but underspecified the live value
+> supplying it; these narrow amendments govern V1 without opening adjacent loader
+> or identity redesign.
+
+- **FIX NOW - source table:** Retain one ordered, role-carrying `SourceClaim`
+  vector. Its ordinal is deterministic acquired-source/`SourceFileId` table order,
+  not dynamic shell load-occurrence order; preserve the current one-main-book
+  invariant at its private construction boundary. `SourceRole` is V1 table
+  classification only. Repeated, multi-role, and multi-target semantics remain
+  owned by `30I`'s occurrence account and are not added here; punt them unless
+  truthfulness forces refusal or omission.
+- **FIX NOW - presentation binding:** `PlanPlane::PresentedPlanIdentity` remains
+  exactly `PresentedPlanId`. A private final-presentation witness may carry
+  `PlanningInputId`, `PresentedPlanId`, and the planned `ApplyArtifactImageId`
+  atomically into receipt projection, but it is not an identity and cannot satisfy
+  identity APIs. Construct it, and mint its `PresentedPlanId`, only after the human
+  and executable views and artifact bytes are final; pin cross-plan field
+  substitution. Its storage location is implementor choice; do not build a generic
+  identity-bundle framework.
