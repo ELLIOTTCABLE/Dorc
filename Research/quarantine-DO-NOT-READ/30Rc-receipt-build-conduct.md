@@ -148,12 +148,24 @@ read `uncollected`. Both are explained under *rulings*; neither is an oversight.
   the wrong seat. `uncollected` differs from `unavailable` (which would claim the run held
   nothing), so the loss is recorded in-band. A successor funding these ADDS rather than
   corrects.
-- **The apply route stays behind a configured bypass**, not a genuine standup. The transport
-  layer refuses reusable multiplexing deliberately, with an attribution argument written at the
-  seat: a shared master is a socket at a path the user's config chose, so an attempt could
-  inherit a channel it never opened and the host it is attributed to stops being the
-  controller's own fact. Building the standup means re-opening a governed surface. And the
-  binary cannot sign anyway.
+- **The apply route mints a THIN session, and grows it** (human-typed 2026-08-25, superseding
+  this arc's earlier bypass-not-standup ruling). The stop condition forbids FABRICATING a
+  target identity; it does not forbid an honest one that establishes little. "No context was
+  entered — nothing escalated, nothing chrooted, running as whatever the destination
+  resolves to" is a true, controller-known statement, and the six defaultless fields were a
+  gap in the type rather than a fact about the world. What matters and is preserved: ONE mint
+  seat, chronologically fixed, consumed once per host, growing richer as machinery arrives.
+  Widen only in the honest direction; never add a default.
+  The transport layer still refuses reusable multiplexing deliberately, with an attribution
+  argument written at the seat: a shared master is a socket at a path the user's config chose,
+  so an attempt could inherit a channel it never opened and the host it is attributed to stops
+  being the controller's own fact. A thin session needs no multiplexing and does not reopen it.
+- **Ordinary `dorc apply --host` REFUSES; live acceptance rides an explicit harness-injected
+  `ConfiguredReceiptBypass`** — never a default, never TTY inference, never satisfied by an
+  ordinary receipt write succeeding (conveyed ruling, 2026-08-25). **No minimal key provider
+  ships now**; that reopens the deliberately deferred production key-custody surface. The
+  binary therefore still cannot sign, so the refusal is what the required arm becomes until a
+  provider lands; the deterministic route takes the published arm with injected fixtures.
 - **The crypto crate is a DEV-dependency of `cli`**, so the binary is structurally unable to
   sign rather than conditionally declining. It flips the day a key provider lands.
   Consequence: there is no second active writer, so the old whylog writer stays — Stage 3's
@@ -402,21 +414,6 @@ discriminator exists — point the target dir outside the synced tree for one ru
 been run.
 
 ## open with the human
-
-**`open-permit-needs-a-standup-the-route-lacks` — BLOCKING Stage 4 item 4.** Both arms of
-`IntentPublicationGate::permit` consume a `PreparedApplyIntent`, so even the configured
-bypass needs an `ApplySessionReady` and therefore a `ResolvedApplyContext` with six
-defaultless fields. `ship_consented_apply` can honestly answer one, and even that is the
-invocation's spelling rather than a resolution. Both of `30Rb`'s sanctioned outcomes are
-closed: supplying the rest is the named "fake target/session identity" stop condition, and
-a genuine standup was ruled out above. Three candidates, none conductor-rulable:
-`option-refuse-remote-apply-entirely` (honest, loud; breaks `spike/e2e/livetest.sh:253`,
-which is never a gate — so silent to CI, loud to the human);
-`option-sessionless-bypass-mint` (a governed change to a reviewed type, and it inverts
-`sinv-controller-attribution`'s absence-means-no-authority); `option-bind-bytes-without-permit`
-(image built and validated pre-dispatch, no affine boundary — less than
-`30Rb:apply-dispatch-sequence` asks, and it leaves a mutative path beside an unused permit
-chain, which is the shape that rots).
 
 The four departures an outside-lineage spec-compliance pass graded as needing a human ruling
 have all been RULED and BUILT — see *rulings that bind* above. Nothing from that pass is
