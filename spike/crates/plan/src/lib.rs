@@ -133,6 +133,8 @@ use world::{EffectiveAct, Freshness, NoMutationProof};
 
 pub mod planning_input;
 
+pub mod presentation;
+
 pub mod receipt;
 
 pub mod spine;
