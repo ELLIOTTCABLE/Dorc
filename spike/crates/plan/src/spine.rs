@@ -703,6 +703,7 @@ mod tests {
                 "plan/src/erasability.rs",
                 "plan/src/lib.rs",
                 "plan/src/placement.rs",
+                "plan/src/planning_input.rs",
                 "plan/src/region.rs",
                 "plan/src/settle.rs",
                 "plan/src/spine.rs",

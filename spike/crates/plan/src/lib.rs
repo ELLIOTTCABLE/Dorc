@@ -131,6 +131,8 @@ pub use settle::{
 };
 use world::{EffectiveAct, Freshness, NoMutationProof};
 
+pub mod planning_input;
+
 pub mod receipt;
 
 pub mod spine;

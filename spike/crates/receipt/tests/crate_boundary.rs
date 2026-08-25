@@ -476,13 +476,16 @@ fn the_image_identity_mint_is_reachable_from_one_production_file() {
 }
 
 #[test]
-fn the_planning_input_identity_mint_is_declared_and_not_yet_driven() {
+fn the_planning_input_identity_mint_is_driven_from_one_production_file() {
     // Same shape and same reason as the image mint's fence: bare bytes in, and no type can say
-    // "these are the complete canonical encoding of the planner's inputs". DECLARATION-ONLY is the
-    // whole entry — `ids.rs` declares it and no production file calls it yet. The list widens in
-    // the same commit as the reviewed sole production caller, never ahead of one: an anticipatory
-    // entry reads as a fence while permitting a call nobody has looked at.
-    fence("of_canonical_inputs", &["receipt/src/ids.rs"]);
+    // "these are the complete canonical encoding of the planner's inputs". `ids.rs` DECLARES it;
+    // `plan/src/planning_input.rs` is the one production file that CALLS it, being the module that
+    // owns the typed inputs value and its encoding. A third entry means a second seat is deciding
+    // what the planner's inputs were, which is exactly what must not appear quietly.
+    fence(
+        "of_canonical_inputs",
+        &["plan/src/planning_input.rs", "receipt/src/ids.rs"],
+    );
 }
 
 #[test]
