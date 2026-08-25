@@ -7,6 +7,7 @@
 
 use crate::format::{RefusalReason, Skeleton, SkeletonRecord};
 use crate::grammar::{FieldType, IMAGE_STATE, OPAQUE_STATE, RecordKind};
+use crate::ids::ReceiptIdSource;
 
 /// A detail-capable field wire tag.
 ///
@@ -198,16 +199,21 @@ pub fn carries_a_state_word(kind: RecordKind, key: &str) -> bool {
 /// The state word a detail value carries once its projection cannot hold it.
 pub const WITHHELD_PLAIN: &str = "withheld-plain";
 
-/// Narrow a rich skeleton to its plain projection.
+/// Narrow a rich skeleton to its plain projection, minting a fresh identity for the result.
 ///
-/// A semantic remint, never a textual strip: every captured slot becomes a withheld one and
-/// the encryption provider line goes, so the result is a document that says what it is rather
-/// than a rich document with bytes removed. The caller serializes and signs the result, which
-/// is what makes the plain signature cover plain bytes under the plain domain.
+/// A semantic remint, never a textual strip: every captured slot becomes a withheld one, the
+/// encryption provider line goes, and the document gets its own identity from the injected
+/// source like any other. The caller serializes and signs the result, which is what makes the
+/// plain signature cover plain bytes under the plain domain.
+///
+/// The narrowed document carries no recorded reference back to the one it was narrowed from.
 ///
 /// # Errors
 /// Refuses if a narrowed record no longer satisfies its own field table.
-pub fn narrow_to_plain(rich: &Skeleton) -> Result<Skeleton, RefusalReason> {
+pub fn narrow_to_plain(
+    rich: &Skeleton,
+    ids: &mut dyn ReceiptIdSource,
+) -> Result<Skeleton, RefusalReason> {
     let mut records = Vec::with_capacity(rich.records.len());
     for record in &rich.records {
         let kind = record.kind();
@@ -226,7 +232,7 @@ pub fn narrow_to_plain(rich: &Skeleton) -> Result<Skeleton, RefusalReason> {
         records.push(SkeletonRecord::build(kind, atoms)?);
     }
     Ok(Skeleton {
-        receipt_id: rich.receipt_id.clone(),
+        receipt_id: ids.next_receipt_id().hex(),
         signing_key_id: rich.signing_key_id.clone(),
         encryption_key_id: None,
         records,
@@ -235,33 +241,19 @@ pub fn narrow_to_plain(rich: &Skeleton) -> Result<Skeleton, RefusalReason> {
 
 /// How two documents carrying one receipt identity relate.
 ///
-/// A receipt identity names the receipt-event, not the byte-document, so one identity legitimately
-/// spans a rich document and the plain remint of it. Correlation must therefore key on identity
-/// alone and treat differing bytes as a finding only within one projection.
+/// An identity is minted per document, so two documents holding one is unambiguous: either they
+/// are the same bytes seen twice, or they disagree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SameIdentityPair {
-    /// Two projections of one receipt-event. They correlate to one node; nothing is wrong.
-    DistinctProjections,
-    /// One projection, one byte-image, encountered twice.
+    /// One byte-image, encountered twice.
     Identical,
-    /// One projection, two byte-images. A finding: retain both, prefer neither.
+    /// Two byte-images under one identity. A finding: retain both, prefer neither.
     Divergent,
 }
 
 /// Classify two documents already known to carry the same receipt identity.
-///
-/// The projection words come from the documents themselves, which is what lets a caller holding
-/// two heterogeneous receipts ask the question without knowing either type statically.
 #[must_use]
-pub fn same_identity_pair(
-    left_projection: &str,
-    left_bytes: &[u8],
-    right_projection: &str,
-    right_bytes: &[u8],
-) -> SameIdentityPair {
-    if left_projection != right_projection {
-        return SameIdentityPair::DistinctProjections;
-    }
+pub fn same_identity_pair(left_bytes: &[u8], right_bytes: &[u8]) -> SameIdentityPair {
     if left_bytes == right_bytes {
         SameIdentityPair::Identical
     } else {
