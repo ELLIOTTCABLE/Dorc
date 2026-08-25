@@ -17,7 +17,7 @@ Stage-2 lanes branch from the Stage-1 tip; fold 2A → 2B → 2C.
 | 2A apply image | FOLDED into `ai/r30-receipt` @ `5ba1c9c0` | DONE |
 | 2B overlay + age | FOLDED @ `8d7311f4` | DONE |
 | 2C recorded models + graph | FOLDED @ `575bf489` | DONE |
-| 3 presented plan + PlanReceipt | `ai/r30-receipt` | boundaries 1-2 LANDED; 3-4 resumed from `cd05d080` |
+| 3 presented plan + PlanReceipt | `ai/r30-receipt` | PARTIAL `01826bab`; blocked on `PlanningInputId` membership |
 | 4 intent/dispatch/outcome | `ai/r30-receipt` | not started |
 | 5 why/correlation/re-derivation | `ai/r30-receipt` | not started |
 | 6 rip old implementation | `ai/r30-receipt` | not started |
@@ -677,3 +677,54 @@ remove over the window "until Stage 5 moves gate-8's replay arm onto the receipt
 MUST report which cases, which instrument, and exactly what restores them. **Every one must be
 restored verbatim before the arc closes — re-enabled, green, or re-added byte-identical.**
 Nothing ships with this outstanding.
+
+## stage 3 partial — `01826bab`, blocked on `PlanningInputId` membership
+
+68 ahead of `ai/main`. Both legs green, floor 146 files / 10 checks each. 2858 tests.
+
+Landed: A1's doc half, A3's fences, A2's STRUCTURAL half (`DecidePlane` widened,
+`SpinePresentedPlan<P>` generic, `PlanPlane::PresentedPlanIdentity = PresentedPlanId`,
+now PRODUCED). **The FNV digest is DELETED, not retained** — one identity path, and the
+value the analyzer prints is the value a receipt would record. `PresentedPlanId`'s fence
+allow-lists exactly its one reviewed production caller (`plan/src/erasability.rs`, the seat
+already holding the settled canonical identity plane); both fences falsified by planting
+mentions and confirming each fires by name.
+
+**>>> THE GATE-8 RESTORATION OBLIGATION IS VOID FOR NOW <<<** Nothing was disabled, removed,
+or left red — the builder never reached the whylog writer, so the authorised instrument went
+unused. The FINDING still stands as a Stage 5/6 input (the writer swap will hit gate-8's
+replay arm for seven cases), but there is no outstanding debt at this moment.
+
+One golden churned and wants an eye at merge: `aid/tests/cli-plan-summary-line.loom`, one
+line, digest 16→64 hex. Regenerated through the runner's own dump path rather than EITHER
+bless authority, so exactly one case file moved and no lock or prose register was
+republished — correct handling of `two-bless-paths-split-by-directory`.
+
+**BLOCKED, correctly escalated:** `PlanningInputId`'s canonical encoding needs a membership
+ruling. The `presented-plan` row wants three identities; the approval surface's own is now
+minted and the planned image's field can honestly read absent, but `planning-input` is a
+REQUIRED digest and nothing in the tree encodes the planner's complete input tuple. Deciding
+what is IN that tuple is a design act with identity consequences — **an inputs identity that
+omits an input reads two different runs as the same run.** `30Rb` gives it one sentence and no
+membership. The builder left the omission row standing rather than inventing an encoding at a
+projection seat; a witness carrying one real identity and two absent ones would have been the
+stub the spec forbids. Everything else in the write route is unblocked.
+
+Invariant prose from this lane, the sharpest point of the arc so far:
+
+**The identity now flowing through the decide plane is licensed by WHERE IT IS COMPUTED, not
+by what it is.** The mint takes bare bytes; nothing in its signature knows whether they are a
+complete settled surface or a fragment someone hashed early. What makes the call honest is
+that its one caller sits downstream of a plan only its single constructor can produce, after
+settlement quiesced and the certifier latch was spent, reading rendered artifacts — so both
+views and every site and region decision are final when the hash runs. Move that call earlier,
+or add a second one somewhere more convenient, and the TYPE SYSTEM WILL NOT NOTICE; only the
+lexical fence will, and only if nobody widens it to make their build pass. Same reasoning
+governs the declaration-only fences: they look like empty bureaucracy right up until someone
+adds a caller, and the entry they must add in the same commit IS the whole point.
+
+And: the source ordinal means position in the acquired-source table, and the tree's older
+phrase "load order" coincides with it ONLY because an earlier ruling made identifier order and
+acquisition order agree. Anything that decouples them — a source acquired more than once, or
+reached in a different order than numbered — silently changes what every recorded ordinal
+claims, without touching receipt code at all.
