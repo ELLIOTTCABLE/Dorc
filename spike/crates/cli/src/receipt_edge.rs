@@ -13,13 +13,15 @@ use std::collections::BTreeMap;
 use dorc_plan::planning_input::PlanningMode;
 use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::records::{AdmittedUnscopedHostRecords, Framing};
-use dorc_receipt::capability::{PublicationGrade, ReceiptSigner, ReceiptSink};
-use dorc_receipt::format::Skeleton;
+use dorc_receipt::capability::{OverlaySealer, PublicationGrade, ReceiptSigner, ReceiptSink};
+use dorc_receipt::format::{Skeleton, serialize_skeleton};
 use dorc_receipt::ids::ReceiptIdSource;
-use dorc_receipt::model::{Plain, PlanReceipt};
+use dorc_receipt::model::{Plain, PlanReceipt, Rich, Species};
+use dorc_receipt::overlay::captured_slots;
+use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::projection::narrow_to_plain;
 use dorc_receipt::tokens::RecordedInvocationMode;
-use dorc_receipt::writer::DraftReceipt;
+use dorc_receipt::writer::{DraftReceipt, OverlayPlaintext};
 
 use crate::results::SiteResults;
 use crate::snapshot::StaticLoadSnapshot;
@@ -121,6 +123,35 @@ fn source_claims(snapshot: &StaticLoadSnapshot) -> Vec<dorc_core::spine::SourceC
         .collect()
 }
 
+/// The capabilities this edge was injected with.
+///
+/// They travel together because they are one thing: what a run needs in order to turn a decision
+/// into a published document. Bundling them is not a signature dodge — it is what stops a caller
+/// pairing one run's identity source with another's sink.
+pub struct ReceiptCapabilities<'a> {
+    ids: &'a mut dyn ReceiptIdSource,
+    signer: &'a dyn ReceiptSigner,
+    sink: &'a mut dyn ReceiptSink,
+}
+
+impl<'a> ReceiptCapabilities<'a> {
+    /// Bind one run's capabilities.
+    pub fn of(
+        ids: &'a mut dyn ReceiptIdSource,
+        signer: &'a dyn ReceiptSigner,
+        sink: &'a mut dyn ReceiptSink,
+    ) -> Self {
+        Self { ids, signer, sink }
+    }
+}
+
+impl core::fmt::Debug for ReceiptCapabilities<'_> {
+    /// Names the type and no material.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("ReceiptCapabilities")
+    }
+}
+
 /// Why a run published no plan document.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicationRefusal {
@@ -130,6 +161,8 @@ pub enum PublicationRefusal {
     Grammar(dorc_receipt::RefusalReason),
     /// The sink did not place the document.
     Sink,
+    /// The region and the skeleton do not account for one another exactly.
+    OverlayAccount,
 }
 
 /// Project, narrow, sign, and publish one plan document.
@@ -147,13 +180,12 @@ pub fn publish_plan_receipt(
     mode: RecordedInvocationMode,
     world: dorc_core::influence::InfluenceAccount,
     presentation: &FinalPresentation,
-    ids: &mut dyn ReceiptIdSource,
-    signer: &dyn ReceiptSigner,
-    sink: &mut dyn ReceiptSink,
+    caps: ReceiptCapabilities<'_>,
 ) -> Result<PublicationGrade, PublicationRefusal> {
-    let model = dorc_plan::receipt::project(spine, mode, world, presentation)
+    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
         .map_err(PublicationRefusal::Projection)?;
-    let records = model.to_records().map_err(PublicationRefusal::Grammar)?;
+    let (_, records, _) = projected.into_parts();
     let assembled = Skeleton {
         receipt_id: ids.next_receipt_id().hex(),
         signing_key_id: signer.signing_key_id().hex(),
@@ -164,6 +196,71 @@ pub fn publish_plan_receipt(
     let name = format!("plan-{}", plain.receipt_id);
     let document = DraftReceipt::<PlanReceipt, Plain>::of(plain)
         .serialize()
+        .map_err(PublicationRefusal::Grammar)?
+        .sign(signer);
+    document
+        .publish(&name, sink)
+        .map(|published| published.grade())
+        .map_err(|_| PublicationRefusal::Sink)
+}
+
+/// Project, seal, sign, and publish one RICH plan document.
+///
+/// The readable skeleton is unchanged from the plain form: it carries each slot's state word and
+/// never the value, never an offset, and never a name pointing into the region. Enrichment runs
+/// the other way — the authenticated region names already-signed slots — which is why the region
+/// is built from `captured_slots` rather than from anything the skeleton could be read to request.
+///
+/// The account is checked HERE, in both directions, before a byte is sealed: a document whose
+/// region does not exactly match its own captured slots would be refused by its own reader, and
+/// emitting one would turn a writer bug into a reader-side mystery.
+///
+/// # Errors
+/// Refuses a Spine that does not project, a row outside the grammar, a region that does not
+/// account for the skeleton exactly, a sealer that declines, or a sink that declines.
+pub fn publish_rich_plan_receipt(
+    spine: &dorc_plan::Spine,
+    mode: RecordedInvocationMode,
+    world: dorc_core::influence::InfluenceAccount,
+    presentation: &FinalPresentation,
+    caps: ReceiptCapabilities<'_>,
+    sealer: &dyn OverlaySealer,
+) -> Result<PublicationGrade, PublicationRefusal> {
+    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
+        .map_err(PublicationRefusal::Projection)?;
+    let (_, records, details) = projected.into_parts();
+    let skeleton = Skeleton {
+        receipt_id: ids.next_receipt_id().hex(),
+        signing_key_id: signer.signing_key_id().hex(),
+        encryption_key_id: Some(sealer.encryption_key_id().hex()),
+        records,
+    };
+
+    let required = captured_slots(&skeleton);
+    let offered: Vec<(u64, OpaqueFieldTag)> = {
+        let mut keys: Vec<(u64, OpaqueFieldTag)> = details
+            .iter()
+            .map(|entry| (entry.record(), entry.tag()))
+            .collect();
+        keys.sort_by_key(|(record, tag)| (*record, tag.order()));
+        keys
+    };
+    if offered != required {
+        return Err(PublicationRefusal::OverlayAccount);
+    }
+
+    let span =
+        serialize_skeleton::<PlanReceipt, Rich>(&skeleton).map_err(PublicationRefusal::Grammar)?;
+    let plaintext = OverlayPlaintext::canonical(
+        &skeleton.receipt_id,
+        PlanReceipt::TOKEN,
+        span.as_bytes(),
+        &details,
+    );
+    let name = format!("plan-{}", skeleton.receipt_id);
+    let document = DraftReceipt::<PlanReceipt, Rich>::of(skeleton)
+        .serialize(plaintext, sealer)
         .map_err(PublicationRefusal::Grammar)?
         .sign(signer);
     document
