@@ -170,7 +170,8 @@
 //! }
 //! ```
 //!
-//! A recorded influence grade is a report value and never becomes a live account:
+//! A recorded influence grade reads at the conservative point when a document says nothing
+//! usable:
 //!
 //! ```
 //! use dorc_receipt::RecordedInfluence;
@@ -180,11 +181,10 @@
 //! );
 //! ```
 //!
-//! ```compile_fail
-//! use dorc_receipt::RecordedInfluence;
-//! let grade = RecordedInfluence::of_token(Some("host-influenced"));
-//! let _live: dorc_core::influence::InfluenceAccount = grade.into();
-//! ```
+//! That it never becomes a live account cannot be pinned here: this crate names `sha2` and
+//! nothing else, so a doctest reaching for the live type fails on the unresolved path and would
+//! go on passing if the conversion were added. The pin lives in `dorc-plan`, which sees both
+//! crates, beside the one proving a recorded disposition is not a live one.
 //!
 //! A checked state cannot be built by a caller; only the crate's own check produces one:
 //!

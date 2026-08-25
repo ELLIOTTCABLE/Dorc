@@ -53,6 +53,49 @@
 //! ```compile_fail
 //! let _ = dorc_plan::AllEstablishesVouched::mint(&[], &dorc_plan::Vouches::default());
 //! ```
+//!
+//! # The reingest seal, pinned across the crate seam (`quarantine/30Rb:reingestion-and-why`)
+//!
+//! `dorc-receipt` cannot pin these itself. It names `sha2` and no other crate, so a doctest
+//! there reaching for a live type fails on the unresolved path — the right verdict for the
+//! wrong reason, and one that would keep passing after a conversion landed. This crate sees
+//! both planes, so the pins live here, each with the positive control that proves the negative
+//! fails on the conversion rather than on a typo.
+//!
+//! Both planes resolve, and each grade is reachable on its own side:
+//!
+//! ```
+//! use dorc_core::influence::InfluenceAccount;
+//! use dorc_receipt::RecordedInfluence;
+//!
+//! let _live = InfluenceAccount::untracked();
+//! let _recorded = RecordedInfluence::of_token(Some("host-influenced"));
+//! ```
+//!
+//! A recorded grade never rehydrates into the account a licence mint joins:
+//!
+//! ```compile_fail
+//! use dorc_core::influence::InfluenceAccount;
+//! use dorc_receipt::RecordedInfluence;
+//!
+//! let recorded = RecordedInfluence::of_token(Some("host-influenced"));
+//! let _live: InfluenceAccount = recorded.into();
+//! ```
+//!
+//! The same seam, one plane down: a [`Disposition`] carries the licence for the irreversible
+//! verb in its own `Replace` arm, so a recorded disposition satisfying one would be a durable
+//! minting an elision. A live one satisfies the binding:
+//!
+//! ```
+//! let _live: dorc_plan::Disposition = dorc_plan::Disposition::Run;
+//! ```
+//!
+//! and the value a document yields does not:
+//!
+//! ```compile_fail
+//! let recorded = dorc_receipt::tokens::RecordedDisposition::Run;
+//! let _live: dorc_plan::Disposition = recorded;
+//! ```
 
 #![forbid(unsafe_code)]
 // Seeded round-19 code predates the take-3 lint gate; this crate-root expect
