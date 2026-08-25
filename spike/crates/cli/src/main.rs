@@ -2928,9 +2928,9 @@ fn record_durable_arm(
 /// Every acquired source as one ordered role-carrying claim, straight off the snapshot's own
 /// triple seat.
 ///
-/// The book is a row wearing [`SourceRole::Book`], not a field beside the others: acquisition
-/// loads named oracles BEFORE the book, so the load order a durable ordinal means is exactly
-/// this vector's order.
+/// The book is a row wearing [`SourceRole::Book`], not a field beside the others. The snapshot's
+/// three vectors are indexed by `SourceFileId`, so this vector's order IS the acquired-source table
+/// order a durable ordinal over it means.
 fn source_claims(
     snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
 ) -> Vec<dorc_core::spine::SourceClaim> {

@@ -295,7 +295,7 @@ pub struct RecordedAst(u32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RegionOrdinal(u32);
 
-/// One acquired source, in load order.
+/// One acquired source, at its position in the acquired-source table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceOrdinal(u32);
 
@@ -372,7 +372,7 @@ impl RegionOrdinal {
 }
 
 impl SourceOrdinal {
-    /// One source, in load order.
+    /// One source, at its position in the acquired-source table.
     #[must_use]
     pub const fn of(value: u32) -> Self {
         Self(value)

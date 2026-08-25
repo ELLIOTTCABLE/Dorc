@@ -56,7 +56,7 @@ impl RecordedSource {
         }
     }
 
-    /// Where this source sat in load order.
+    /// Where this source sat in the acquired-source table.
     #[must_use]
     pub const fn ordinal(&self) -> SourceOrdinal {
         self.ordinal

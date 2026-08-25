@@ -204,7 +204,7 @@ impl Reingested<RecordedPlanReceipt> {
 }
 
 impl Reingested<RecordedSource> {
-    /// Where this source sat in load order.
+    /// Where this source sat in the acquired-source table.
     #[must_use]
     pub fn ordinal(&self) -> u32 {
         self.0.ordinal().get()

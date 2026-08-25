@@ -455,10 +455,11 @@ pub struct SpineInvocation {
 impl SpineInvocation {
     /// Mint the invocation record.
     ///
-    /// `sources` is ONE vector in LOAD ORDER, each row wearing its own role. The two-vector
-    /// shape it replaced could not express that order — acquisition loads named oracles before
-    /// the book, so a book-first-then-oracles pair recorded a load order that never happened,
-    /// and the ordinal a durable projection writes means load order.
+    /// `sources` is ONE vector in acquired-source TABLE order — the `SourceFileId` order every
+    /// other per-file vector is indexed by — each row wearing its own role. The ordinal a durable
+    /// projection writes over it means that table position and nothing else: not how many times a
+    /// source is reached, not the order a runtime would reach it in, not which target it was
+    /// acquired for. Exactly one row wears `SourceRole::Book`.
     #[must_use]
     pub fn minted(
         mode: InvocationMode,
@@ -489,13 +490,13 @@ impl SpineInvocation {
         &self.argv
     }
 
-    /// Every acquired source, in load order, each wearing its role.
+    /// Every acquired source, in `SourceFileId` table order, each wearing its role.
     #[must_use]
     pub fn sources(&self) -> &[SourceClaim] {
         &self.sources
     }
 
-    /// The sources of one role, in load order.
+    /// The sources of one role, in `SourceFileId` table order.
     pub fn sources_in_role(&self, role: SourceRole) -> impl Iterator<Item = &SourceClaim> {
         self.sources.iter().filter(move |claim| claim.role == role)
     }

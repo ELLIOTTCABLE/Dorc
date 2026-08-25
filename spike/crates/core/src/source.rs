@@ -3,8 +3,12 @@
 //! Lives here rather than beside the acquisition edge because two planes ask it. The edge
 //! asks it to decide what loads before the book's first line and whose text the engine
 //! models at all; a durable projection asks it to record, per source, what that source was.
-//! A role the projection could not name would have to be recorded as some other role, and a
-//! recorded load order that never happened is the one thing a receipt may not carry.
+//! A role the projection could not name would have to be recorded as some other role.
+//!
+//! For a durable projection the role is TABLE CLASSIFICATION: what one row of the acquired-source
+//! table is. It says nothing about how many times a source is reached, in what order the runtime
+//! reaches it, or which target it was acquired for; that account is `30I`'s and is not spelled
+//! here.
 
 /// What a source IS in this run, independently of where it sits in any vector.
 ///
