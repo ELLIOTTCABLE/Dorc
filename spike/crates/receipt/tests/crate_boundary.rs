@@ -567,6 +567,77 @@ fn verification_material_is_supplied_from_one_production_file() {
     }
 }
 
+/// Every production file permitted to name the read-back wrapper.
+///
+/// The wrapper is what makes a value from a document unusable as a live one, so the interesting
+/// question is not whether it is sound — no accessor hands its contents out — but WHERE it is
+/// spoken. Each entry is a seat that has looked at recorded material, and the list is how a new
+/// one becomes a diff somebody reads rather than an import somebody adds.
+///
+/// File-narrow rather than crate-narrow: naming a crate would permit every future file inside it,
+/// which is most of what this is for. Two-way, so a stale entry fails as loudly as a new mention.
+///
+/// Today every entry but one sits inside this crate, and that is the fact worth pinning: nothing
+/// downstream READS a document yet. When the report surface does, its file joins this list.
+///
+/// The exception, `plan/src/lib.rs`, names the wrapper only inside the doc examples that pin the
+/// seal across the crate seam — this crate cannot host them, seeing neither the live account nor
+/// the live decision they must fail to produce. It is a naming, not a consumption, and the fence
+/// matches names deliberately: one that tried to tell the two apart would be guessing.
+const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 6] = [
+    "plan/src/lib.rs",
+    "receipt/src/graph.rs",
+    "receipt/src/lib.rs",
+    "receipt/src/outcome.rs",
+    "receipt/src/reader.rs",
+    "receipt/src/reingested.rs",
+];
+
+#[test]
+fn every_consumer_of_the_read_back_wrapper_is_enumerated() {
+    // Answered by NAME rather than by call, for the reason the image-identity fence gives: a file
+    // that merely mentions the wrapper in a signature is as much a consumer as one that calls a
+    // decomposition, and a fence that could tell them apart would be re-implementing the compiler.
+    fence("Reingested", &MAY_NAME_THE_READ_BACK_WRAPPER);
+}
+
+#[test]
+fn the_read_back_fence_would_fail_on_a_stale_entry_and_on_a_new_mention() {
+    // The fence verified in its FAILING direction. A fence checked only against the tree as it
+    // stands is half-verified: it demonstrates that today passes, which is the half that carries
+    // no information. Both directions are exercised here against the real walk.
+    let found = production_naming("Reingested");
+    assert!(
+        !found.is_empty(),
+        "the walk found no file naming the wrapper; it is looking in the wrong place"
+    );
+
+    let stale = "receipt/src/limits.rs";
+    assert!(
+        !found.iter().any(|path| path == stale),
+        "{stale} was chosen because it names no wrapper; pick another for this check"
+    );
+    assert!(
+        !MAY_NAME_THE_READ_BACK_WRAPPER.contains(&stale),
+        "the stale-entry direction is only exercised by an entry the list does not hold"
+    );
+
+    let dropped = MAY_NAME_THE_READ_BACK_WRAPPER[0];
+    assert!(
+        found.iter().any(|path| path == dropped),
+        "{dropped} is listed and no longer names the wrapper; the entry has gone stale"
+    );
+    let narrowed: Vec<&str> = MAY_NAME_THE_READ_BACK_WRAPPER
+        .into_iter()
+        .filter(|entry| *entry != dropped)
+        .collect();
+    assert!(
+        found.iter().any(|path| !narrowed.contains(&path.as_str())),
+        "dropping {dropped} from the list must leave a file the fence would refuse; if it does \
+         not, the fence permits a mention it never checked"
+    );
+}
+
 #[test]
 fn the_fixture_signature_stand_in_never_reaches_a_production_file() {
     // The graph corpus signs its documents with an inert deterministic stand-in. It is confined
