@@ -29,6 +29,7 @@ use dorc_receipt::ids::{
     ApplyIntentId, ApplyOutcomeId, PlanReceiptId, Sha256Digest, SigningKeyId, from_hex_32,
 };
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Species};
+use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::outcome::{OutcomeAvailability, RecordedApplyOutcomeRow, RecordedSiteOutcome};
 use dorc_receipt::plan::RecordedSource;
 use dorc_receipt::reader::{PartialReceipt, ReadPlain, read_plain};
@@ -113,6 +114,7 @@ fn identity(tag: &str) -> String {
 fn bytes_of<D: Species>(receipt_id: &str, records: Vec<SkeletonRecord>) -> Vec<u8> {
     let skeleton = Skeleton {
         receipt_id: receipt_id.to_owned(),
+        order: ReceiptOrderToken::of_controller_millis(1_700_000_000_000),
         signing_key_id: fixture_key_id().hex(),
         encryption_key_id: None,
         records,

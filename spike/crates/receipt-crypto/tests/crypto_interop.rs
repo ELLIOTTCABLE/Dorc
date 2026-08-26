@@ -22,6 +22,7 @@ use dorc_receipt::grammar::RecordKind;
 use dorc_receipt::ids::{ReceiptId, ReceiptIdSource, SigningKeyId};
 use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, Species};
+use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::overlay::OverlayEntry;
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::{ReadPlain, ReadRich, read_plain, read_rich};
@@ -33,6 +34,16 @@ use dorc_receipt_crypto::{
 /// A fixed secret, so the corpus is reproducible. Test-only by construction: an integration
 /// test is not compiled into the library.
 const FIXTURE_SECRET: [u8; 32] = [7_u8; 32];
+
+/// The instant every fixture document is stamped with, so a committed rich vector carries a
+/// fixed reviewed order rather than one a run happened to observe.
+const FIXTURE_MILLIS: u64 = 1_700_000_000_000;
+
+/// The order a remint is stamped with: a second document written at a second moment, never the
+/// moment its origin was written.
+fn remint_order() -> ReceiptOrderToken {
+    ReceiptOrderToken::of_controller_millis(FIXTURE_MILLIS + 1)
+}
 
 /// A deterministic identity source. The production edge supplies one backed by the operating
 /// system; nothing in the kernel reaches for either.
@@ -117,6 +128,7 @@ fn one_row_skeleton(ids: &mut CountingIds, provider: SigningKeyId) -> Option<Ske
     .ok()?;
     Some(Skeleton {
         receipt_id: ids.next_receipt_id().hex(),
+        order: ReceiptOrderToken::of_controller_millis(FIXTURE_MILLIS),
         signing_key_id: provider.hex(),
         encryption_key_id: None,
         records: vec![row],
@@ -241,6 +253,71 @@ fn one_flipped_body_byte_fails_the_check() {
 }
 
 #[test]
+fn one_edited_order_digit_fails_the_check() {
+    // The order line is INSIDE the signed body, which is the whole of what stops a local name
+    // and a document disagreeing usefully: a store that trusted a filename could be handed one
+    // spelling in the name and another in the header, and the reader's comparison would be
+    // between two values the same party chose. Editing one digit is the smallest form of that,
+    // and it has to fail the signature rather than the grammar — the edited spelling below is
+    // still exactly twenty digits, so nothing downstream of the check would object to it.
+    let document = signed_bytes::<PlanReceipt>(11);
+    assert!(document.is_some(), "the fixture document did not sign");
+    let Some(mut bytes) = document else { return };
+    let unedited = bytes.clone();
+
+    let spelled = ReceiptOrderToken::of_controller_millis(FIXTURE_MILLIS).spelled();
+    let needle = format!("\norder {spelled}\n");
+    let found = bytes
+        .windows(needle.len())
+        .position(|window| window == needle.as_bytes());
+    assert!(
+        found.is_some(),
+        "the fixture document carries no order line"
+    );
+    let Some(at) = found else { return };
+
+    // The last digit of the order value: still a digit afterwards, so the departure is the
+    // signature and nothing else.
+    let slot = at
+        .checked_add(needle.len())
+        .and_then(|end| end.checked_sub(2))
+        .filter(|index| *index < bytes.len());
+    assert!(
+        slot.is_some(),
+        "the order line is shorter than its spelling"
+    );
+    let Some(index) = slot else { return };
+    if let Some(byte) = bytes.get_mut(index) {
+        assert!(byte.is_ascii_digit(), "the edited byte is an order digit");
+        *byte = if *byte == b'9' { b'8' } else { b'9' };
+    }
+
+    let held = material();
+    assert!(held.is_some(), "fixture material did not load");
+    let Some(held) = held else { return };
+    let named = PolicyNames(TrustedEd25519Key::of(held));
+    // The positive control, so the refusal below is caused by the edit rather than by the
+    // fixture never having read in the first place.
+    assert!(
+        read_plain::<PlanReceipt>(unedited, &ReceiptLimits::V1, &named).is_ok(),
+        "the unedited fixture reads"
+    );
+    // Pinned to the EXACT refusal, not merely to a refusal: an edited digit that still spelled
+    // twenty digits would also be refused if the grammar happened to reject it for some other
+    // reason, and the test would then pass with the order line outside the signed span, which is
+    // the one thing it exists to prove.
+    match read_plain::<PlanReceipt>(bytes, &ReceiptLimits::V1, &named) {
+        Err(partial) => assert_eq!(
+            *partial.reason(),
+            dorc_receipt::RefusalReason::SignatureCheck,
+            "an edited order fails the CHECK, which is what makes it authenticated rather than \
+             advisory metadata a store could be handed two spellings of"
+        ),
+        Ok(_) => panic!("an edited order must not read"),
+    }
+}
+
+#[test]
 fn a_document_signed_for_one_species_does_not_read_as_another() {
     // The payload type is derived from the type parameters, so reading a plan document as an
     // apply intent changes the checked input and fails before the grammar is consulted.
@@ -362,6 +439,7 @@ fn rich_skeleton(ids: &mut CountingIds, signing: SigningKeyId, encryption: &str)
     .expect("the fixture row is well formed");
     Skeleton {
         receipt_id: ids.next_receipt_id().hex(),
+        order: ReceiptOrderToken::of_controller_millis(FIXTURE_MILLIS),
         signing_key_id: signing.hex(),
         encryption_key_id: Some(encryption.to_owned()),
         records: vec![row],
@@ -634,7 +712,7 @@ fn rich_narrows_to_plain_by_reminting_and_never_by_stripping_text() {
         .to_vec();
 
     let mut remint_ids = CountingIds(180);
-    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids)
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids, remint_order())
         .expect("the narrowing holds");
     assert_eq!(
         plain.encryption_key_id, None,
@@ -786,11 +864,16 @@ fn a_plain_remint_is_a_second_document_with_its_own_identity() {
         .to_vec();
 
     let mut remint_ids = CountingIds(200);
-    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids)
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids, remint_order())
         .expect("the narrowing holds");
     assert_ne!(
         plain.receipt_id, rich.receipt_id,
         "a remint mints its own identity like any other document"
+    );
+    assert_ne!(
+        plain.order, rich.order,
+        "and takes the order of the moment it was written, not its origin's — two documents \
+         sharing a store position would read as a tie between one document and its own remint"
     );
     let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
         .serialize()
@@ -853,7 +936,7 @@ fn a_rich_document_and_its_plain_remint_are_two_nodes_and_no_finding() {
         .to_vec();
 
     let mut remint_ids = CountingIds(210);
-    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids)
+    let plain = dorc_receipt::projection::narrow_to_plain(&rich, &mut remint_ids, remint_order())
         .expect("the narrowing holds");
     let plain_bytes = DraftReceipt::<PlanReceipt, Plain>::of(plain)
         .serialize()

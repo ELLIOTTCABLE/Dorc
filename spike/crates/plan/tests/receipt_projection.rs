@@ -422,6 +422,7 @@ fn a_detail_is_offered_for_every_slot_the_row_marked_captured_and_no_other() {
         .expect("the Spine projects");
     let skeleton = dorc_receipt::format::Skeleton {
         receipt_id: "a".repeat(64),
+        order: dorc_receipt::ReceiptOrderToken::of_controller_millis(1_700_000_000_000),
         signing_key_id: "b".repeat(64),
         encryption_key_id: Some("c".repeat(64)),
         records: projected.records().to_vec(),

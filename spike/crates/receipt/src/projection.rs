@@ -208,11 +208,16 @@ pub const WITHHELD_PLAIN: &str = "withheld-plain";
 ///
 /// The narrowed document carries no recorded reference back to the one it was narrowed from.
 ///
+/// `order` is the caller's, not the origin's: a remint is a second document written at a second
+/// moment, and inheriting the first one's order would put two documents at one store position
+/// and call it a tie.
+///
 /// # Errors
 /// Refuses if a narrowed record no longer satisfies its own field table.
 pub fn narrow_to_plain(
     rich: &Skeleton,
     ids: &mut dyn ReceiptIdSource,
+    order: crate::order::ReceiptOrderToken,
 ) -> Result<Skeleton, RefusalReason> {
     let mut records = Vec::with_capacity(rich.records.len());
     for record in &rich.records {
@@ -233,6 +238,7 @@ pub fn narrow_to_plain(
     }
     Ok(Skeleton {
         receipt_id: ids.next_receipt_id().hex(),
+        order,
         signing_key_id: rich.signing_key_id.clone(),
         encryption_key_id: None,
         records,

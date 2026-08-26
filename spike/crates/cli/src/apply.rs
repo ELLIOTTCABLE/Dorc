@@ -248,7 +248,7 @@ pub struct ConsentedApplyRequest<'a> {
     pub standup_account: dorc_core::influence::InfluenceAccount,
 }
 
-/// The three injected capabilities a route needs in order to publish anything.
+/// The injected capabilities a route needs in order to publish anything.
 ///
 /// A BUNDLE, and named as one: it says what a route CAN do, never that a publication happened.
 /// Nothing about a published document is readable from it, and its fields are private so a
@@ -257,6 +257,7 @@ pub struct ConsentedApplyRequest<'a> {
 /// is deliberately not one of them). The result is `PublishedApplyIntent`, which is minted at
 /// the publication seat and consumed by the gate.
 pub struct ApplyPublishingCapabilities<'a> {
+    clock: &'a mut dyn dorc_receipt::order::ControllerClock,
     signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
     sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
     sealer: &'a dyn OverlaySealer,
@@ -265,11 +266,13 @@ pub struct ApplyPublishingCapabilities<'a> {
 impl<'a> ApplyPublishingCapabilities<'a> {
     /// Bind one run's publishing capabilities.
     pub fn of(
+        clock: &'a mut dyn dorc_receipt::order::ControllerClock,
         signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
         sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
         sealer: &'a dyn OverlaySealer,
     ) -> Self {
         Self {
+            clock,
             signer,
             sink,
             sealer,
@@ -452,6 +455,7 @@ fn published_route(
     driver: &mut dyn SessionDriver,
 ) -> Result<ConsentedApply, ConsentedApplyRefusal> {
     let ApplyPublishingCapabilities {
+        clock,
         signer,
         sink,
         sealer,
@@ -462,7 +466,7 @@ fn published_route(
         request.invocation,
         request.standup_account,
         request.limits,
-        ReceiptCapabilities::of(&mut *ids, signer, &mut *sink),
+        ReceiptCapabilities::of(&mut *ids, &mut *clock, signer, &mut *sink),
         sealer,
     )
     .map_err(ConsentedApplyRefusal::Publication)?;
@@ -489,7 +493,7 @@ fn published_route(
         &report,
         request.invocation,
         request.limits,
-        ReceiptCapabilities::of(&mut *ids, signer, &mut *sink),
+        ReceiptCapabilities::of(&mut *ids, &mut *clock, signer, &mut *sink),
         sealer,
     );
     let (outcome, durable_failure) = match placed {

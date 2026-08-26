@@ -219,6 +219,7 @@ pub mod ids;
 pub mod image;
 pub mod limits;
 pub mod model;
+pub mod order;
 pub mod outcome;
 pub mod overlay;
 pub mod plan;
@@ -239,6 +240,7 @@ pub use model::{
     ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Projection, Rich, SelfAssertedReceiptSigner,
     SignerTrust, Species, TrustedReceiptSigner,
 };
+pub use order::{ControllerClock, ReceiptOrderToken};
 pub use reader::{
     BoundedReceiptBytes, PartialReceipt, ReadPlain, ReadRich, Receipt, read_plain, read_rich,
 };

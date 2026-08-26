@@ -2,6 +2,7 @@ dorc-receipt/1
 species apply-intent
 projection plain
 receipt-id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+order 00000001700000000000
 signing-key-id cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 records 3
 record 0 invocation mode=plan started=1700000000000 argv=withheld-plain target=withheld-plain attempt=1 account=authored-before-contact

@@ -18,6 +18,7 @@ use dorc_receipt::format::{Skeleton, SkeletonRecord};
 use dorc_receipt::grammar::RecordKind;
 use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{PlanReceipt, Rich, Species};
+use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::overlay::{
     DecryptedOpaqueOverlay, OverlayEntry, OverlayFault, ValidatedOpaqueOverlay, captured_slots,
     serialize,
@@ -34,6 +35,7 @@ fn record(kind: RecordKind, atoms: &[&str]) -> SkeletonRecord {
 fn skeleton() -> Skeleton {
     Skeleton {
         receipt_id: RECEIPT.to_owned(),
+        order: ReceiptOrderToken::of_controller_millis(1_700_000_000_000),
         signing_key_id: "c".repeat(64),
         encryption_key_id: Some("d".repeat(64)),
         records: vec![

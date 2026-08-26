@@ -4,13 +4,14 @@
 //! re-implemented the recording would demonstrate a capability it never observed, which is the
 //! defect `one-definition-table-two-drivers` exists to refuse.
 //!
-//! Nothing here opens a file, reads the environment, or asks a clock. Every such answer arrives
-//! as a VALUE — argv, the run instant, the signer, the sink — so the seam this module sits on is
-//! the one `lib-target-is-a-loom-seam` draws.
+//! Nothing here opens a file or reads the environment. Every such answer arrives as a VALUE —
+//! argv, the run instant, the signer, the sink — so the seam this module sits on is the one
+//! `lib-target-is-a-loom-seam` draws.
 //!
-//! The ONE exception is [`OsEntropy`], which reads the operating system's randomness. It reaches
-//! the seats below only as an injected value, so it is the only thing in this file a test
-//! replaces rather than drives, and every other seat here stays a function of what it was handed.
+//! TWO seats hold an edge rather than a value, and both are injected in: [`OsEntropy`], which
+//! reads the operating system's randomness, and [`RunClockOrder`], which spends a reading of a
+//! run's own clock. They are what a test REPLACES; every other seat here stays a function of
+//! what it was handed.
 
 use std::collections::BTreeMap;
 
@@ -25,6 +26,7 @@ use dorc_receipt::ids::{
 };
 use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, Species};
+use dorc_receipt::order::{ControllerClock, ReceiptOrderToken};
 use dorc_receipt::overlay::{OverlayEntry, captured_slots};
 use dorc_receipt::project::{
     ApplyInvocation, ApplyOutcomeReport, ApplyProjectionRefusal, project_apply_intent,
@@ -163,6 +165,7 @@ pub type OsReceiptIdSource = EntropyReceiptIds<OsEntropy>;
 /// pairing one run's identity source with another's sink.
 pub struct ReceiptCapabilities<'a> {
     ids: &'a mut dyn ReceiptIdSource,
+    clock: &'a mut dyn ControllerClock,
     signer: &'a dyn ReceiptSigner,
     sink: &'a mut dyn ReceiptSink,
 }
@@ -171,10 +174,40 @@ impl<'a> ReceiptCapabilities<'a> {
     /// Bind one run's capabilities.
     pub fn of(
         ids: &'a mut dyn ReceiptIdSource,
+        clock: &'a mut dyn ControllerClock,
         signer: &'a dyn ReceiptSigner,
         sink: &'a mut dyn ReceiptSink,
     ) -> Self {
-        Self { ids, signer, sink }
+        Self {
+            ids,
+            clock,
+            signer,
+            sink,
+        }
+    }
+}
+
+/// The order a document is stamped with, read from a run's own clock.
+///
+/// Every published document takes ONE reading, so a run's documents order by when each was
+/// written rather than sharing one moment. An absent clock answers [`ReceiptOrderToken::UNDATED`]:
+/// the token selects a store position and asserts nothing, so a run whose platform could not date
+/// it sorts oldest instead of claiming a moment it never observed.
+#[derive(Debug)]
+pub struct RunClockOrder<'a>(&'a mut crate::results::RunClock);
+
+impl<'a> RunClockOrder<'a> {
+    /// Read orders from `clock`.
+    pub fn of(clock: &'a mut crate::results::RunClock) -> Self {
+        Self(clock)
+    }
+}
+
+impl ControllerClock for RunClockOrder<'_> {
+    fn order_token(&mut self) -> ReceiptOrderToken {
+        self.0.now().map_or(ReceiptOrderToken::UNDATED, |instant| {
+            ReceiptOrderToken::of_controller_millis(instant.0)
+        })
     }
 }
 
@@ -222,16 +255,21 @@ fn narrow_and_publish<D: Species>(
     records: Vec<SkeletonRecord>,
     prefix: &str,
     ids: &mut dyn ReceiptIdSource,
+    order: ReceiptOrderToken,
     signer: &dyn ReceiptSigner,
     sink: &mut dyn ReceiptSink,
 ) -> Result<(String, PublicationGrade), PublicationRefusal> {
+    // One clock reading covers both: the assembled value is scaffolding the narrow consumes, and
+    // only the narrowed document is ever written, so a second reading would advance a run's clock
+    // for a document nobody publishes.
     let assembled = Skeleton {
         receipt_id: ids.next_receipt_id().hex(),
+        order,
         signing_key_id: signer.signing_key_id().hex(),
         encryption_key_id: None,
         records,
     };
-    let plain = narrow_to_plain(&assembled, ids).map_err(PublicationRefusal::Grammar)?;
+    let plain = narrow_to_plain(&assembled, ids, order).map_err(PublicationRefusal::Grammar)?;
     let id = plain.receipt_id.clone();
     let name = format!("{prefix}-{id}");
     let document = DraftReceipt::<D, Plain>::of(plain)
@@ -299,12 +337,14 @@ fn seal_and_publish<D: Species>(
 /// The skeleton a rich document is assembled into, before its region is sealed.
 fn rich_skeleton(
     receipt_id: String,
+    order: ReceiptOrderToken,
     records: Vec<SkeletonRecord>,
     signer: &dyn ReceiptSigner,
     sealer: &dyn OverlaySealer,
 ) -> Skeleton {
     Skeleton {
         receipt_id,
+        order,
         signing_key_id: signer.signing_key_id().hex(),
         encryption_key_id: Some(sealer.encryption_key_id().hex()),
         records,
@@ -322,11 +362,17 @@ pub fn publish_plan_receipt(
     presentation: &FinalPresentation,
     caps: ReceiptCapabilities<'_>,
 ) -> Result<PublicationGrade, PublicationRefusal> {
-    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let ReceiptCapabilities {
+        ids,
+        clock,
+        signer,
+        sink,
+    } = caps;
     let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
         .map_err(PublicationRefusal::Projection)?;
     let (_, records, _) = projected.into_parts();
-    narrow_and_publish::<PlanReceipt>(records, "plan", ids, signer, sink).map(|(_, grade)| grade)
+    narrow_and_publish::<PlanReceipt>(records, "plan", ids, clock.order_token(), signer, sink)
+        .map(|(_, grade)| grade)
 }
 
 /// Project, seal, sign, and publish one RICH plan document.
@@ -343,11 +389,22 @@ pub fn publish_rich_plan_receipt(
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<PublicationGrade, PublicationRefusal> {
-    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let ReceiptCapabilities {
+        ids,
+        clock,
+        signer,
+        sink,
+    } = caps;
     let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
         .map_err(PublicationRefusal::Projection)?;
     let (_, records, details) = projected.into_parts();
-    let skeleton = rich_skeleton(ids.next_receipt_id().hex(), records, signer, sealer);
+    let skeleton = rich_skeleton(
+        ids.next_receipt_id().hex(),
+        clock.order_token(),
+        records,
+        signer,
+        sealer,
+    );
     seal_and_publish::<PlanReceipt>(skeleton, &details, "plan", limits, signer, sink, sealer)
         .map(|published| published.grade())
 }
@@ -402,7 +459,12 @@ pub fn publish_apply_intent(
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<PublishedApplyIntent, PublicationRefusal> {
-    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let ReceiptCapabilities {
+        ids,
+        clock,
+        signer,
+        sink,
+    } = caps;
     let projected = project_apply_intent(intent, invocation, grade(resolved), limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let images = intent
@@ -410,7 +472,7 @@ pub fn publish_apply_intent(
         .ok_or(PublicationRefusal::ImageAccount)?;
     let (_, records, details) = projected.into_parts();
     let id = ApplyIntentId::mint(ids);
-    let skeleton = rich_skeleton(id.hex(), records, signer, sealer);
+    let skeleton = rich_skeleton(id.hex(), clock.order_token(), records, signer, sealer);
     let receipt = seal_and_publish::<ApplyIntent>(
         skeleton,
         &details,
@@ -443,12 +505,23 @@ pub fn publish_plain_apply_intent(
     limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
 ) -> Result<(ApplyIntentId, PublicationGrade), PublicationRefusal> {
-    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let ReceiptCapabilities {
+        ids,
+        clock,
+        signer,
+        sink,
+    } = caps;
     let projected = project_apply_intent(intent, invocation, grade(resolved), limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let (_, records, _) = projected.into_parts();
-    let (spelled, published) =
-        narrow_and_publish::<ApplyIntent>(records, "apply-intent", ids, signer, sink)?;
+    let (spelled, published) = narrow_and_publish::<ApplyIntent>(
+        records,
+        "apply-intent",
+        ids,
+        clock.order_token(),
+        signer,
+        sink,
+    )?;
     let id = ApplyIntentId::of_hex(&spelled).ok_or(PublicationRefusal::Identity)?;
     Ok((id, published))
 }
@@ -467,12 +540,17 @@ pub fn publish_apply_outcome(
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<(ApplyOutcomeId, PublicationGrade), PublicationRefusal> {
-    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let ReceiptCapabilities {
+        ids,
+        clock,
+        signer,
+        sink,
+    } = caps;
     let projected = project_apply_outcome(dispatched, report, invocation, limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let (_, records, details) = projected.into_parts();
     let id = ApplyOutcomeId::mint(ids);
-    let skeleton = rich_skeleton(id.hex(), records, signer, sealer);
+    let skeleton = rich_skeleton(id.hex(), clock.order_token(), records, signer, sealer);
     let receipt = seal_and_publish::<ApplyOutcome>(
         skeleton,
         &details,
@@ -500,12 +578,23 @@ pub fn publish_plain_apply_outcome(
     limits: &ReceiptLimits,
     caps: ReceiptCapabilities<'_>,
 ) -> Result<(ApplyOutcomeId, PublicationGrade), PublicationRefusal> {
-    let ReceiptCapabilities { ids, signer, sink } = caps;
+    let ReceiptCapabilities {
+        ids,
+        clock,
+        signer,
+        sink,
+    } = caps;
     let projected = project_apply_outcome(dispatched, report, invocation, limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
     let (_, records, _) = projected.into_parts();
-    let (spelled, published) =
-        narrow_and_publish::<ApplyOutcome>(records, "apply-outcome", ids, signer, sink)?;
+    let (spelled, published) = narrow_and_publish::<ApplyOutcome>(
+        records,
+        "apply-outcome",
+        ids,
+        clock.order_token(),
+        signer,
+        sink,
+    )?;
     let id = ApplyOutcomeId::of_hex(&spelled).ok_or(PublicationRefusal::Identity)?;
     Ok((id, published))
 }
@@ -516,4 +605,38 @@ pub fn publish_plain_apply_outcome(
 /// than a variant, so nothing here decides a grade.
 fn grade(account: dorc_core::influence::InfluenceAccount) -> RecordedInfluence {
     RecordedInfluence::of_token(Some(account.label()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::results::RunClock;
+
+    #[test]
+    fn a_ticking_clock_stamps_the_instant_it_read_and_advances() {
+        let mut clock = RunClock::Ticking {
+            at: dorc_core::RunInstant(1_700_000_000_000),
+            step_millis: 5,
+        };
+        let mut order = RunClockOrder::of(&mut clock);
+        let first = order.order_token();
+        let second = order.order_token();
+        assert_eq!(first.spelled(), "00000001700000000000");
+        assert!(
+            first < second,
+            "two documents of one run take two orders, as they would in a store"
+        );
+    }
+
+    #[test]
+    fn a_clock_that_cannot_answer_stamps_the_lowest_order_rather_than_a_moment() {
+        // The direction matters more than the value. A run whose platform could not date it must
+        // not out-sort a dated one in a selection that means "most recent", and the wire has no
+        // spelling for "no order" — so it under-claims instead of inventing a reading.
+        let mut clock = RunClock::Absent;
+        let mut order = RunClockOrder::of(&mut clock);
+        let undated = order.order_token();
+        assert_eq!(undated, ReceiptOrderToken::UNDATED);
+        assert!(undated < ReceiptOrderToken::of_controller_millis(1));
+    }
 }

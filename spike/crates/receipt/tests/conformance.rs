@@ -14,6 +14,14 @@ use dorc_receipt::format::{self, RefusalReason};
 use dorc_receipt::grammar::RecordKind;
 use dorc_receipt::limits::{CountLimit, ReceiptLimits};
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich};
+use dorc_receipt::order::ReceiptOrderToken;
+
+/// The instant every committed vector is stamped with, so a corpus file's order line is a fixed
+/// reviewed byte string rather than something a run happened to observe.
+const FIXTURE_MILLIS: u64 = 1_700_000_000_000;
+
+/// Its one spelling, as the vectors carry it.
+const FIXTURE_ORDER: &str = "00000001700000000000";
 
 /// Vectors of one shape. The corpus holds two: `.skeleton` files are bare skeleton spans, and
 /// `.receipt` files are whole signed documents. Feeding one to the other's reader proves
@@ -200,6 +208,7 @@ fn skeleton_of(
 ) -> format::Skeleton {
     format::Skeleton {
         receipt_id: "a".repeat(64),
+        order: ReceiptOrderToken::of_controller_millis(FIXTURE_MILLIS),
         signing_key_id: "c".repeat(64),
         encryption_key_id: encryption,
         records,
@@ -267,7 +276,7 @@ fn a_plain_skeleton_cannot_carry_an_encryption_provider() {
 /// A one-record plain plan body, spelled literally so the bound tests own their input.
 fn one_record_body(count: &str) -> String {
     format!(
-        "dorc-receipt/1\nspecies plan\nprojection plain\nreceipt-id {}\nsigning-key-id {}\nrecords {count}\nrecord 0 projection-omission species=observation count=0 reason=unminted account=authored-before-contact\nskeleton-end\n",
+        "dorc-receipt/1\nspecies plan\nprojection plain\nreceipt-id {}\norder {FIXTURE_ORDER}\nsigning-key-id {}\nrecords {count}\nrecord 0 projection-omission species=observation count=0 reason=unminted account=authored-before-contact\nskeleton-end\n",
         "a".repeat(64),
         "c".repeat(64)
     )
@@ -371,6 +380,26 @@ const EXPECTED: &[(&str, RefusalReason)] = &[
         RefusalReason::UnknownRecordKind,
     ),
     ("leading-zero.skeleton", RefusalReason::RecordCount),
+    // The order field's four departures, each named for the order and not for a neighbour. They
+    // are separate vectors rather than one, because the field is the format's ONE fixed-width
+    // exception and the three ways to get that wrong — too narrow, too wide, and spelled the way
+    // every other integer here is spelled — are three different mistakes an author makes.
+    (
+        "order-signed.skeleton",
+        RefusalReason::FieldAtom { key: "order" },
+    ),
+    (
+        "order-too-narrow.skeleton",
+        RefusalReason::FieldAtom { key: "order" },
+    ),
+    (
+        "order-too-wide.skeleton",
+        RefusalReason::FieldAtom { key: "order" },
+    ),
+    (
+        "order-without-leading-zeroes.skeleton",
+        RefusalReason::FieldAtom { key: "order" },
+    ),
     (
         "missing-field.skeleton",
         RefusalReason::FieldShape { kind: "invocation" },

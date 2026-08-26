@@ -7,6 +7,7 @@
 use crate::grammar::{self, Field, RecordKind};
 use crate::limits::ReceiptLimits;
 use crate::model::{Projection, Species};
+use crate::order::ReceiptOrderToken;
 
 /// The format's version line.
 pub const VERSION_LINE: &str = "dorc-receipt/1";
@@ -137,6 +138,9 @@ impl SkeletonRecord {
 pub struct Skeleton {
     /// The document's own identity, as spelled.
     pub receipt_id: String,
+    /// The store-selection order, inside the signed body so a filename claiming one can be
+    /// checked against it. Never an identity, a freshness claim, or a graph edge.
+    pub order: ReceiptOrderToken,
     /// The signing provider's identity, as spelled.
     pub signing_key_id: String,
     /// The encryption provider's identity, present exactly when the projection is rich.
@@ -173,6 +177,9 @@ pub fn serialize_skeleton<D: Species, P: Projection>(
     out.push('\n');
     out.push_str("receipt-id ");
     out.push_str(&skeleton.receipt_id);
+    out.push('\n');
+    out.push_str("order ");
+    out.push_str(&skeleton.order.spelled());
     out.push('\n');
     out.push_str("signing-key-id ");
     out.push_str(&skeleton.signing_key_id);
@@ -321,11 +328,15 @@ pub fn locate(
     })
 }
 
+/// How many lines the fixed prefix can hold: version, species, projection, receipt-id, order,
+/// signing-key-id, the rich-only encryption-key-id, and the record count.
+const HEADER_LINES: usize = 8;
+
 /// The value of one header line, read positionally from the skeleton's fixed prefix.
 fn header_value<'a>(skeleton: &'a str, key: &str) -> Option<&'a str> {
     skeleton
         .lines()
-        .take(8)
+        .take(HEADER_LINES)
         .find_map(|line| line.strip_prefix(key)?.strip_prefix(' '))
 }
 
@@ -354,6 +365,10 @@ pub fn parse_skeleton_span<D: Species, P: Projection>(
     if !grammar::is_digest(&receipt_id) {
         return Err(RefusalReason::FieldAtom { key: "receipt-id" });
     }
+    // Fixed width, leading zeroes required — the format's one exception to the no-leading-zero
+    // rule, and the reason a filename claiming an order can be compared to this one as bytes.
+    let order = ReceiptOrderToken::of_spelling(&take_kv(&mut lines, "order")?)
+        .ok_or(RefusalReason::FieldAtom { key: "order" })?;
     let signing_key_id = take_kv(&mut lines, "signing-key-id")?;
     if !grammar::is_digest(&signing_key_id) {
         return Err(RefusalReason::FieldAtom {
@@ -412,6 +427,7 @@ pub fn parse_skeleton_span<D: Species, P: Projection>(
 
     Ok(Skeleton {
         receipt_id,
+        order,
         signing_key_id,
         encryption_key_id,
         records,

@@ -70,6 +70,24 @@ fn authored() -> dorc_core::influence::InfluenceAccount {
 /// system; nothing below the edge reaches for either.
 struct CountingIds(u8);
 
+/// A deterministic order source. The production edge reads a real clock; nothing below the edge
+/// reaches for either. It TICKS, so two documents of one run take two orders exactly as they
+/// would in production, and a test asserting they differ is asserting something.
+struct TickingClock(u64);
+
+impl TickingClock {
+    fn fixture() -> Self {
+        Self(1_700_000_000_000)
+    }
+}
+
+impl dorc_receipt::order::ControllerClock for TickingClock {
+    fn order_token(&mut self) -> dorc_receipt::ReceiptOrderToken {
+        self.0 = self.0.saturating_add(1);
+        dorc_receipt::ReceiptOrderToken::of_controller_millis(self.0)
+    }
+}
+
 impl ReceiptIdSource for CountingIds {
     fn next_receipt_id(&mut self) -> ReceiptId {
         self.0 = self.0.wrapping_add(1);
@@ -201,6 +219,7 @@ fn a_settled_run_publishes_a_document_that_reads_back_naming_the_surface_it_deci
     let (spine, presentation) = settled_run();
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
 
     let grade = publish_plan_receipt(
@@ -208,7 +227,7 @@ fn a_settled_run_publishes_a_document_that_reads_back_naming_the_surface_it_deci
         RecordedInvocationMode::Plan,
         authored(),
         &presentation,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a settled run publishes");
     assert_eq!(grade, PublicationGrade::Volatile);
@@ -246,6 +265,7 @@ fn a_sink_that_places_nothing_publishes_nothing_and_says_so() {
     let (spine, presentation) = settled_run();
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = RefusingSink;
 
     assert_eq!(
@@ -254,7 +274,7 @@ fn a_sink_that_places_nothing_publishes_nothing_and_says_so() {
             RecordedInvocationMode::Plan,
             authored(),
             &presentation,
-            ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+            ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         ),
         Err(PublicationRefusal::Sink)
     );
@@ -282,6 +302,7 @@ fn published_rich() -> (Vec<u8>, FinalPresentation, Ed25519Signer) {
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let (sealer, _) = age_pair();
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     publish_rich_plan_receipt(
         &spine,
@@ -289,7 +310,7 @@ fn published_rich() -> (Vec<u8>, FinalPresentation, Ed25519Signer) {
         authored(),
         &presentation,
         &ReceiptLimits::V1,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         &sealer,
     )
     .expect("a settled run publishes richly");
@@ -533,6 +554,7 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let (sealer, opener) = age_pair();
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     let (intent, image) = prepared_apply_intent(&mut ids);
 
@@ -541,7 +563,7 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
         &apply_invocation(),
         authored(),
         &ReceiptLimits::V1,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         &sealer,
     )
     .expect("a prepared intent publishes richly");
@@ -611,6 +633,7 @@ fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
     // publication even when it reads back perfectly.
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     let (intent, _) = prepared_apply_intent(&mut ids);
 
@@ -619,7 +642,7 @@ fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
         &apply_invocation(),
         authored(),
         &ReceiptLimits::V1,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a prepared intent publishes plainly");
     assert_eq!(grade, PublicationGrade::Volatile);
@@ -664,6 +687,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let (sealer, opener) = age_pair();
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     let (intent, _) = prepared_apply_intent(&mut ids);
 
@@ -672,7 +696,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &apply_invocation(),
         authored(),
         &ReceiptLimits::V1,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         &sealer,
     )
     .expect("a prepared intent publishes richly");
@@ -704,7 +728,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &report,
         &apply_invocation(),
         &ReceiptLimits::V1,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         &sealer,
     )
     .expect("a declared outcome publishes richly");
@@ -752,6 +776,7 @@ fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let (sealer, _) = age_pair();
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = RefusingSink;
     let (intent, _) = prepared_apply_intent(&mut ids);
 
@@ -761,7 +786,7 @@ fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
             &apply_invocation(),
             authored(),
             &ReceiptLimits::V1,
-            ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+            ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
             &sealer,
         )
         .err(),
@@ -779,6 +804,7 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
 
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     let (intent, _) = prepared_apply_intent(&mut ids);
     let phase = IntentPublicationGate::ConfiguredBypass(ConfiguredReceiptBypass::configured())
@@ -807,7 +833,7 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
         &report,
         &apply_invocation(),
         &ReceiptLimits::V1,
-        ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+        ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a declared outcome publishes plainly");
     assert_eq!(grade, PublicationGrade::Volatile);
@@ -856,6 +882,7 @@ fn an_intent_whose_region_a_reader_could_not_open_refuses_before_anything_is_pla
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let (sealer, _) = age_pair();
     let mut ids = CountingIds(0);
+    let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     let (intent, _) = prepared_apply_intent(&mut ids);
 
@@ -865,7 +892,7 @@ fn an_intent_whose_region_a_reader_could_not_open_refuses_before_anything_is_pla
             &apply_invocation(),
             authored(),
             &narrow,
-            ReceiptCapabilities::of(&mut ids, &signer, &mut sink),
+            ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
             &sealer,
         )
         .err(),
@@ -889,7 +916,8 @@ fn an_intent_whose_region_a_reader_could_not_open_refuses_before_anything_is_pla
 /// `calls` are what let the negatives below assert what did NOT happen.
 mod deterministic_apply_route {
     use super::{
-        CountingIds, FIXTURE_SECRET, MemorySink, RefusingSink, age_pair, authored, policy_for,
+        CountingIds, FIXTURE_SECRET, MemorySink, RefusingSink, TickingClock, age_pair, authored,
+        policy_for,
     };
     use dorc_cli::apply::{
         ApplyAuthorization, ApplyPublishingCapabilities, ConsentedApplyRefusal,
@@ -933,6 +961,7 @@ mod deterministic_apply_route {
         let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
         let (sealer, opener) = age_pair();
         let mut ids = CountingIds(0);
+        let mut clock = TickingClock::fixture();
         let mut sink = MemorySink::default();
         let mut driver = host_running(0);
         let destination = destination();
@@ -950,7 +979,7 @@ mod deterministic_apply_route {
             },
             &mut ids,
             ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
-                &signer, &mut sink, &sealer,
+                &mut clock, &signer, &mut sink, &sealer,
             )),
             &mut driver,
         )
@@ -1040,6 +1069,7 @@ mod deterministic_apply_route {
         let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
         let (sealer, _) = age_pair();
         let mut ids = CountingIds(0);
+        let mut clock = TickingClock::fixture();
         let mut sink = RefusingSink;
         let mut driver = host_running(0);
         let destination = destination();
@@ -1057,7 +1087,7 @@ mod deterministic_apply_route {
             },
             &mut ids,
             ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
-                &signer, &mut sink, &sealer,
+                &mut clock, &signer, &mut sink, &sealer,
             )),
             &mut driver,
         )
@@ -1100,6 +1130,7 @@ mod deterministic_apply_route {
         let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
         let (sealer, _) = age_pair();
         let mut ids = CountingIds(0);
+        let mut clock = TickingClock::fixture();
         let mut sink = PlacesTheFirstOnly { placed: 0 };
         let mut driver = host_running(0);
         let destination = destination();
@@ -1117,7 +1148,7 @@ mod deterministic_apply_route {
             },
             &mut ids,
             ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
-                &signer, &mut sink, &sealer,
+                &mut clock, &signer, &mut sink, &sealer,
             )),
             &mut driver,
         )
@@ -1226,6 +1257,7 @@ mod deterministic_apply_route {
         let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
         let (sealer, opener) = age_pair();
         let mut ids = CountingIds(0);
+        let mut clock = TickingClock::fixture();
         let mut sink = MemorySink::default();
         let mut driver = SimDriver::new(vec![SimScript::SeveredAfter {
             stdout: b"partial".to_vec(),
@@ -1245,7 +1277,7 @@ mod deterministic_apply_route {
             },
             &mut ids,
             ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
-                &signer, &mut sink, &sealer,
+                &mut clock, &signer, &mut sink, &sealer,
             )),
             &mut driver,
         )
