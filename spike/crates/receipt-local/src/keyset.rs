@@ -440,16 +440,15 @@ fn initialize(
 ) -> Result<(), KeyAvailability> {
     bootstrap_directory(io, &location.product_root, baseline)?;
 
-    // Generation precedes the keyset path. A platform that cannot answer produces no directory
-    // at all, rather than an empty one a later process would read as somebody's work in progress.
+    // Generation precedes the keyset path: no path is created until both documents are in hand.
     let Some(generated) = generator.generate() else {
         return Err(KeyAvailability::TemporarilyUnavailable);
     };
 
     bootstrap_directory(io, &location.keys_dir, baseline)?;
 
-    // The arbitration point. Exactly one process creates this, and a loser discards what it
-    // generated rather than mixing a key of its own into somebody else's keyset.
+    // The arbitration point: exactly one process creates this, and a loser discards what it
+    // generated.
     match io::create_directory_exclusive(io, location.keyset_dir.as_str()) {
         Ok(()) => {}
         Err(IoFault::AlreadyExists) => return Err(KeyAvailability::IncompleteOrInProgress),
@@ -497,8 +496,7 @@ fn bootstrap_directory(
 ) -> Result<(), KeyAvailability> {
     match io::create_directory_exclusive(io, path.as_str()) {
         // Not synchronized here. Directory synchronization has ONE seat, at the end of the
-        // sequence, where its failure fails the attempt — a best-effort sync beside the create
-        // would be a second seat whose failure nothing reads.
+        // sequence, where its failure fails the attempt.
         Ok(()) => Ok(()),
         // A race is answered by validating the winner, never by assuming it is what was asked
         // for. Every Dorc-owned component is refused if it is a redirect or the wrong kind.
@@ -682,10 +680,8 @@ fn reopen_for_write(
         });
     };
 
-    // The step that catches the interruption a manifest cannot: an attempt that failed at the
-    // trailing directory synchronization leaves a keyset whose manifest is already whole, so
-    // presence proves nothing about reachability. A write open re-synchronizes the documents,
-    // the manifest, and the ancestry, and only a synchronization that SUCCEEDS mints readiness.
+    // A write open re-synchronizes the documents, the manifest, and the ancestry, and only a
+    // synchronization that SUCCEEDS mints readiness. A whole manifest is not the question here.
     for path in [
         location.document(KeyRole::Signing),
         location.document(KeyRole::Encryption),
