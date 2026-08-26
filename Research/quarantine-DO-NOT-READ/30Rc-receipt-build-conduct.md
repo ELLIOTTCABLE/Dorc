@@ -51,7 +51,8 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
 | 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
 | 5 why / correlation / re-derivation | done except its severance — see the blocker |
-| 6 rip the old implementation | not started |
+| 5A `30Rd` D0–D4, the minimal production durable edge | not started; a format/identity repair pass runs first |
+| 6 rip the old implementation (`30Rd` D5) | not started |
 
 ## what is owed
 
