@@ -23,7 +23,10 @@ use dorc_receipt::ids::PlanningInputId;
 use crate::records::{AdmittedHostRecord, AdmittedUnscopedHostRecords};
 
 /// The format tag the encoding is domain-separated under.
-const ENCODING: &str = "dorc-planning-inputs/1";
+pub const ENCODING: &str = "dorc-planning-inputs/1";
+
+/// The line closing it, so a truncation is a different value rather than a shorter complete one.
+pub const TERMINATOR: &str = "inputs-end";
 
 /// The top-level tags this encoding writes, in order — the census every member is checked
 /// against.
@@ -197,7 +200,8 @@ impl<'a> PlanningInputs<'a> {
             }
         }
 
-        out.extend_from_slice(b"inputs-end\n");
+        out.extend_from_slice(TERMINATOR.as_bytes());
+        out.push(b'\n');
         out
     }
 }

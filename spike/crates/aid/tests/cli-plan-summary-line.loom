@@ -16,7 +16,7 @@ hork tune --profile web
 $ dorc plan --book=webhost.sh
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why webhost.sh:N` to query a source line
 dorc: plan-summary sites=4 elide=0 omit=0 guard=0 run=4 may-alias=0
-dorc: decision-digest b6bfc6a87611c7194a1a5f161b5475e59b6f4185b5933aca0510517878188fe6
+dorc: decision-digest c2632ae9b4053e4551f0bfab9488ea4bad576ab6e779756173c88d0564c24b8e
 
 $ dorc-loom --this vars
 case: cli-plan-summary-line

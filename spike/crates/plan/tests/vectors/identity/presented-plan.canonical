@@ -1,11 +1,12 @@
-== plan ==
-leaf=0 ast=0 sh="echo hi" Run
-== probe ==
-== render.probe ==
-#!/bin/sh
+dorc-presented-plan/1
+plan 30 leaf=0 ast=0 sh="echo hi" Run
 
-== render.apply ==
-#!/bin/sh
+regions absent
+probe 0 
+render.probe 10 #!/bin/sh
+
+render.apply 18 #!/bin/sh
 echo hi
 
-== diags ==
+diags 0 
+decision-end

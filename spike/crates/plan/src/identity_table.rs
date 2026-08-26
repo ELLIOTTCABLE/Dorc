@@ -14,8 +14,9 @@
 //! carries it, and writing the framing down per component is the whole point of the table.
 //!
 //! [`PLANNING_INPUT_COMPONENTS`] is length-framed throughout, so no value can reach across into a
-//! neighbour. [`PRESENTED_PLAN_SECTIONS`] is section-delimited, and two of its sections carry bytes
-//! that may spell the delimiter — see the note on that constant.
+//! neighbour. [`PRESENTED_PLAN_COMPONENTS`] is length-framed for the same reason and, since
+//! `ruling-frame-the-presented-plan-sections`, in the same idiom: two of its components carry the
+//! book verbatim, so a delimiter was whatever a book chose to spell.
 
 /// How one component's bytes are separated from its neighbours'.
 ///
@@ -39,8 +40,6 @@ pub enum Framing {
     /// Written anyway rather than omitted, so the day it gains one is a visible change of encoding
     /// instead of a silent widening of what the identity covers.
     AlwaysAbsent,
-    /// A `== <name> ==\n` header line, then the component's bytes up to the next header.
-    SectionDelimited,
 }
 
 /// One component of one identity's canonical encoding.
@@ -126,29 +125,34 @@ pub const PLANNING_INPUT_OPENER: &str = "dorc-planning-inputs/1";
 /// See [`PLANNING_INPUT_OPENER`].
 pub const PLANNING_INPUT_TERMINATOR: &str = "inputs-end";
 
-/// Every section of `PresentedPlanId`'s canonical encoding, in write order.
+/// Every component of `PresentedPlanId`s canonical encoding, in write order.
 ///
-/// KNOWN, MEASURED, AND NOT REPAIRED HERE: this encoding is section-delimited, and `render.probe`
-/// and `render.apply` carry bytes that may contain a line spelling a section header — the apply
-/// render is the book VERBATIM, so a book carrying such a line puts a second copy of that header
-/// into the canon. The split between a section's content and the next section is therefore not
-/// recoverable from the bytes, which is the property length framing gives the sibling table above.
-/// Pinned by `p-x-presented-plan-sections-are-framed`; the interim measurement sits beside it.
-pub const PRESENTED_PLAN_SECTIONS: &[Component] = &[
-    c("== plan ==", Framing::SectionDelimited),
-    c("== regions ==", Framing::SectionDelimited),
-    c("== probe ==", Framing::SectionDelimited),
-    c("== render.probe ==", Framing::SectionDelimited),
-    c("== render.apply ==", Framing::SectionDelimited),
-    c("== diags ==", Framing::SectionDelimited),
+/// LENGTH-FRAMED, exactly as the sibling table above is. Two of these components are the rendered
+/// artifacts and the apply render is the BOOK verbatim, so a separator-delimited encoding ended a
+/// component wherever a book chose to spell one — measured, and repaired by adopting the declared
+/// length. The identity never authorizes, but it IS recompute-and-compare, and a collision there is
+/// a confident wrong answer rather than a missing one.
+pub const PRESENTED_PLAN_COMPONENTS: &[Component] = &[
+    c("plan", Framing::LengthPrefixed),
+    c("regions", Framing::LengthPrefixedOrAbsent),
+    c("probe", Framing::LengthPrefixed),
+    c("render.probe", Framing::LengthPrefixed),
+    c("render.apply", Framing::LengthPrefixed),
+    c("diags", Framing::LengthPrefixed),
 ];
 
-/// The one section that is omitted rather than emitted empty.
+/// The line opening `PresentedPlanId`s encoding, and the line closing it.
+pub const PRESENTED_PLAN_OPENER: &str = "dorc-presented-plan/1";
+
+/// See [`PRESENTED_PLAN_OPENER`].
+pub const PRESENTED_PLAN_TERMINATOR: &str = "decision-end";
+
+/// The one component spelled `absent` rather than emitted empty.
 ///
-/// Its absence is load-bearing: a book with no eligible shared calls keeps the encoding it had
-/// before regions existed, so a rung-0 world stays byte-identical
-/// (`30L:pin-empty-function-world-parity`). Every other section is always written, header and all.
-pub const PRESENTED_PLAN_OMITTED_WHEN_EMPTY: &str = "== regions ==";
+/// The distinction is load-bearing: a book with no eligible shared calls is a different fact from
+/// one whose regions all vanished, and an empty value standing in for absence would merge them
+/// (`30L:pin-empty-function-world-parity`). Every other component is always written.
+pub const PRESENTED_PLAN_ABSENT_WHEN_EMPTY: &str = "regions";
 
 #[cfg(test)]
 mod tests {
@@ -159,12 +163,13 @@ mod tests {
     /// four framing helpers.
     const PLANNING_INPUT_SOURCE: &str = include_str!("planning_input.rs");
 
-    /// Likewise for the section headers.
+    /// The presented-plan encoder. Since `ruling-frame-the-presented-plan-sections` it writes in
+    /// the SAME idiom, so one reader serves both files rather than two readers drifting apart.
     const ERASABILITY_SOURCE: &str = include_str!("erasability.rs");
 
     /// Every `put_*(…, "<tag>", …)` the encoder writes, paired with the helper it went through —
     /// which is what fixes the tag's framing.
-    fn written_tags() -> Vec<(String, Framing)> {
+    fn written_tags(source: &str) -> Vec<(String, Framing)> {
         let mut out: Vec<(String, Framing)> = Vec::new();
         for (helper, framing) in [
             ("put_str", Framing::LengthPrefixed),
@@ -176,7 +181,7 @@ mod tests {
             ("put_bool", Framing::Scalar),
         ] {
             let needle = format!("{helper}(");
-            for piece in PLANNING_INPUT_SOURCE.split(&needle).skip(1) {
+            for piece in source.split(&needle).skip(1) {
                 // A CALL, never the helper's own body: the sink argument comes first, and
                 // requiring it is what stops a literal inside `put_bool` reading as a tag.
                 // Whitespace-insensitive: rustfmt breaks a long call across lines, and a reader
@@ -225,14 +230,15 @@ mod tests {
         }
     }
 
-    #[test]
-    fn the_table_and_the_planner_input_encoder_name_the_same_components() {
-        // Two-way. A component written without a row is absent from a table that claims to be
-        // exhaustive; a row nothing writes is a stale entry describing bytes that do not exist.
-        let written = written_tags();
+    /// Check one table against the encoder that writes it, in BOTH directions.
+    ///
+    /// One helper over both identities, because since the framing repair the two encoders write
+    /// in one idiom — two readers would be two places for the same rule to drift.
+    fn agree(source: &str, table: &[Component], floor: usize, what: &str) {
+        let written = written_tags(source);
         assert!(
-            written.len() > 20,
-            "the lexical read found only {} tags; it is looking for the wrong shape",
+            written.len() >= floor,
+            "{what}: the lexical read found only {} tags; it is looking for the wrong shape",
             written.len()
         );
 
@@ -248,7 +254,7 @@ mod tests {
                 .map(|(_, framing)| *framing)
                 .collect();
             let framing = combine(tag, &seen);
-            match PLANNING_INPUT_COMPONENTS.iter().find(|row| row.tag == tag) {
+            match table.iter().find(|row| row.tag == tag) {
                 None => failures.push(format!("{tag}: written, and the table has no row for it")),
                 Some(row) if row.framing != framing => failures.push(format!(
                     "{tag}: the table says {:?}, the encoder writes {framing:?}",
@@ -257,58 +263,73 @@ mod tests {
                 Some(_) => {}
             }
         }
-        for row in PLANNING_INPUT_COMPONENTS {
+        for row in table {
             if !tags.iter().any(|tag| tag == row.tag) {
                 failures.push(format!("{}: in the table, written nowhere", row.tag));
             }
         }
-        assert!(failures.is_empty(), "{failures:#?}");
+        assert!(failures.is_empty(), "{what}: {failures:#?}");
     }
 
     #[test]
-    fn the_planner_input_encoding_is_opened_and_terminated() {
-        assert!(PLANNING_INPUT_SOURCE.contains(&format!("\"{PLANNING_INPUT_OPENER}\"")));
-        assert!(PLANNING_INPUT_SOURCE.contains(&format!("b\"{PLANNING_INPUT_TERMINATOR}\\n\"")));
+    fn the_table_and_the_planner_input_encoder_name_the_same_components() {
+        // Two-way. A component written without a row is absent from a table that claims to be
+        // exhaustive; a row nothing writes is a stale entry describing bytes that do not exist.
+        agree(
+            PLANNING_INPUT_SOURCE,
+            PLANNING_INPUT_COMPONENTS,
+            20,
+            "planning-input",
+        );
     }
 
     #[test]
-    fn the_table_and_the_presented_plan_encoder_name_the_same_sections() {
-        // Two-way over the section headers, on the same reasoning.
-        let mut failures: Vec<String> = Vec::new();
-        for row in PRESENTED_PLAN_SECTIONS {
-            if !ERASABILITY_SOURCE.contains(&format!("{}\\n\"", row.tag)) {
-                failures.push(format!("{}: in the table, written nowhere", row.tag));
+    fn the_table_and_the_presented_plan_encoder_name_the_same_components() {
+        // The same check over the same idiom, which is the point of the repair: the presented-plan
+        // encoding is no longer a second kind of thing that has to be read a second way.
+        agree(
+            ERASABILITY_SOURCE,
+            PRESENTED_PLAN_COMPONENTS,
+            6,
+            "presented-plan",
+        );
+    }
+
+    #[test]
+    fn both_encodings_are_opened_and_terminated() {
+        // A truncation has to be a different value rather than a shorter complete one, and the
+        // rename moves both together or fails to compile. A `contains` over the source text would
+        // have been satisfied by a comment.
+        assert_eq!(PLANNING_INPUT_OPENER, crate::planning_input::ENCODING);
+        assert_eq!(PLANNING_INPUT_TERMINATOR, crate::planning_input::TERMINATOR);
+        assert_eq!(PRESENTED_PLAN_OPENER, crate::erasability::ENCODING);
+        assert_eq!(PRESENTED_PLAN_TERMINATOR, crate::erasability::TERMINATOR);
+        assert_ne!(
+            PLANNING_INPUT_OPENER, PRESENTED_PLAN_OPENER,
+            "one opener for two encodings would be one encoding"
+        );
+    }
+
+    #[test]
+    fn only_the_regions_component_is_spelled_absent_when_empty() {
+        // The one conditional component, and the reason it is conditional. Every other one is
+        // written unconditionally, so a reader walking the declared lengths knows what it has.
+        let absent_row = PRESENTED_PLAN_COMPONENTS
+            .iter()
+            .find(|row| row.tag == PRESENTED_PLAN_ABSENT_WHEN_EMPTY);
+        assert_eq!(
+            absent_row.map(|row| row.framing),
+            Some(Framing::LengthPrefixedOrAbsent)
+        );
+        for row in PRESENTED_PLAN_COMPONENTS {
+            if row.tag != PRESENTED_PLAN_ABSENT_WHEN_EMPTY {
+                assert_eq!(
+                    row.framing,
+                    Framing::LengthPrefixed,
+                    "{} is conditional and only one component may be",
+                    row.tag
+                );
             }
         }
-        // Every emitted literal carrying a header, however it is spelled — two of the six carry a
-        // leading newline, and matching only the bare opener would have missed exactly those.
-        let written = ERASABILITY_SOURCE
-            .split("out.push_str(\"")
-            .skip(1)
-            .filter(|piece| piece.starts_with("== ") || piece.starts_with("\\n== "))
-            .count();
-        assert_eq!(
-            written,
-            PRESENTED_PLAN_SECTIONS.len(),
-            "the encoder writes {written} section headers and the table names {}",
-            PRESENTED_PLAN_SECTIONS.len()
-        );
-        assert!(failures.is_empty(), "{failures:#?}");
-    }
-
-    #[test]
-    fn only_the_regions_section_is_omitted_when_empty() {
-        // The one conditional section, and the reason it is conditional. Every other header is
-        // unconditional, so a reader counting headers knows what it is looking at.
-        assert!(
-            PRESENTED_PLAN_SECTIONS
-                .iter()
-                .any(|row| row.tag == PRESENTED_PLAN_OMITTED_WHEN_EMPTY)
-        );
-        assert_eq!(
-            ERASABILITY_SOURCE.matches("if !regions.is_empty()").count(),
-            1,
-            "exactly one section is written under a condition"
-        );
     }
 }

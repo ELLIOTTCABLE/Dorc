@@ -471,5 +471,11 @@ fn empty_probe_plan_default_is_inert() {
         dorc_core::influence::InfluenceAccount::authored_before_contact(),
     );
     let canon = canonical_decision(&plan, &probe, "", &ast, &i, &[]);
-    assert!(canon.contains("== plan =="), "well-formed empty canonical");
+    assert!(
+        canon.starts_with(
+            "dorc-presented-plan/1
+"
+        ),
+        "well-formed empty canonical"
+    );
 }

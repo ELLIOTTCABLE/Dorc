@@ -23,8 +23,8 @@ const PLANNING_INPUT: &[u8] = include_bytes!("vectors/identity/planning-input.ca
 const PLANNING_INPUT_SPELLING_A_TAG: &[u8] =
     include_bytes!("vectors/identity/planning-input-value-spells-a-tag.canonical");
 
-/// The canonical presented-plan bytes: every section, in order, with the regions section absent
-/// because the fixture has none.
+/// The canonical presented-plan bytes: every component, in order, each declaring its length,
+/// with `regions` spelled absent because the fixture has none.
 const PRESENTED_PLAN: &[u8] = include_bytes!("vectors/identity/presented-plan.canonical");
 
 #[test]
@@ -42,7 +42,7 @@ fn every_committed_vector_has_exactly_its_committed_identity() {
     );
     assert_eq!(
         PresentedPlanId::of_canonical_decision(PRESENTED_PLAN).hex(),
-        "39f336b88f85db4d564bdb39c72e242bfdb23ec6e9c8b91c728e75ca9fb90626",
+        "fbf2ae3c99ce3c048a3def6a7a46f137be2fe38e80de1048268cc311e3a2fac7",
     );
 }
 

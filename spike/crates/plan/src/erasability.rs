@@ -40,6 +40,15 @@ use dorc_aid::Diag;
 
 use crate::{Derivation, Disposition, GuardLicense, LicenseVia, Plan, ProbePlan, StandIn, Step};
 
+/// The format tag the canonical decision is domain-separated under.
+///
+/// Opener and terminator both, because a truncation has to be a different value rather than a
+/// shorter complete one — the sibling planner-input encoding, byte for byte.
+pub const ENCODING: &str = "dorc-presented-plan/1";
+
+/// See [`ENCODING`].
+pub const TERMINATOR: &str = "decision-end";
+
 /// The CLOSED set of reasons a field is on the **exempt** plane (`22A` concl-2 / ru-12;
 /// modelled on LLVM's named `DebugLoc` absence-reasons). Extend DELIBERATELY: a new reason is
 /// a conscious widening of what may differ between a normal and a receipts-varied run. Used as
@@ -67,6 +76,14 @@ pub enum Exempt {
 /// Build the canonical identity-plane STRING of a whole decision (`plan` + `probe` + their
 /// rendered artifacts + diagnostics) — the single source the digest hashes and the gate
 /// compares. Two runs are decision-identical iff their canonical strings are byte-equal.
+///
+/// LENGTH-FRAMED, on the sibling planner-input encoding: every component declares its byte length,
+/// so no component can reach across into a neighbour whatever bytes it carries. That matters here
+/// more than anywhere, because two components are the rendered artifacts and the apply render is
+/// the BOOK verbatim — under a separator-delimited encoding a book line spelling a component tag
+/// moved the boundary, and two different decisions could present one identity. This identity is
+/// never authority, but it IS recompute-and-compare: a collision is a confident wrong answer to
+/// "is this the same plan", which is the one thing `271:rul-sin-ordering` ranks worst.
 ///
 /// Deterministic by construction (`inv-determinism`): every component is appended in a fixed
 /// order; nothing iterates a hashed collection. `src`/`ast` resolve the rendered artifacts (the
@@ -96,43 +113,78 @@ pub fn canonical_decision(
         // differently-standing inputs DO reproduce identically, which is what the digest asks.
         account: _,
     } = plan;
-    let mut out = String::new();
     // (1) the per-site dispositions (the structured decision).
-    out.push_str("== plan ==\n");
+    let mut sites = String::new();
     for step in steps {
-        out.push_str(&canon_step(step));
-        out.push('\n');
+        sites.push_str(&canon_step(step));
+        sites.push('\n');
     }
-    // (1a) the SHARED region decisions, emitted only when the book has any — so a book with no
-    // eligible calls keeps its pre-region canon (`30L:pin-empty-function-world-parity`).
-    if !regions.is_empty() {
-        out.push_str("== regions ==\n");
+    // (1a) the SHARED region decisions, ABSENT rather than empty where the book has none — so a
+    // book with no eligible calls stays distinguishable from one whose regions all vanished
+    // (`30L:pin-empty-function-world-parity`).
+    let shared = if regions.is_empty() {
+        None
+    } else {
+        let mut text = String::new();
         for region in regions {
-            out.push_str(&canon_region(region));
-            out.push('\n');
+            text.push_str(&canon_region(region));
+            text.push('\n');
         }
-    }
+        Some(text)
+    };
     // (2) the probe plan (site-keyed checks + unresolvable list).
-    out.push_str("== probe ==\n");
-    out.push_str(&canon_probe(probe));
+    let probe_plane = canon_probe(probe);
     // (3) the rendered artifacts — byte-exact, comments included (the ru-12 floor). These
     //     subsume much of (1)/(2) but are compared directly: a render bug that left the
-    //     structured plane intact would still be caught.
-    out.push_str("== render.probe ==\n");
-    // A canonical differential form: the framing is fixed (spike default) so two renders of
-    // the same probe compare byte-identically; the digest is irrelevant to the comparison.
-    out.push_str(&probe.render_sh(&crate::records::Framing::spike(String::new()), interner));
-    out.push_str("\n== render.apply ==\n");
-    out.push_str(&plan.render_apply(src, ast));
+    //     structured plane intact would still be caught. A canonical differential form: the
+    //     framing is fixed (spike default) so two renders of the same probe compare
+    //     byte-identically; the digest is irrelevant to the comparison.
+    let rendered_probe = probe.render_sh(&crate::records::Framing::spike(String::new()), interner);
+    let rendered_apply = plan.render_apply(src, ast);
     // (4) Error-class diagnostics by (code, site, severity) — sorted for order-independence.
-    out.push_str("\n== diags ==\n");
     let mut diag_lines: Vec<String> = diags.iter().filter_map(canon_diag).collect();
     diag_lines.sort();
+    let mut diagnostics = String::new();
     for line in diag_lines {
-        out.push_str(&line);
-        out.push('\n');
+        diagnostics.push_str(&line);
+        diagnostics.push('\n');
     }
+
+    let mut out = String::new();
+    out.push_str(ENCODING);
+    out.push('\n');
+    put_str(&mut out, "plan", &sites);
+    match &shared {
+        Some(text) => put_str(&mut out, "regions", text),
+        None => put_absent(&mut out, "regions"),
+    }
+    put_str(&mut out, "probe", &probe_plane);
+    put_str(&mut out, "render.probe", &rendered_probe);
+    put_str(&mut out, "render.apply", &rendered_apply);
+    put_str(&mut out, "diags", &diagnostics);
+    out.push_str(TERMINATOR);
+    out.push('\n');
     out
+}
+
+/// `<tag> <byte-length> <exact bytes>\n` — the sibling planner-input encoding, byte for byte.
+///
+/// The declared length is the whole point: the rendered artifacts carry the BOOK verbatim, so a
+/// component that ended at a separator would end wherever a book chose to spell one, and the split
+/// between one component and the next would stop being recoverable from the bytes.
+fn put_str(out: &mut String, tag: &str, value: &str) {
+    out.push_str(tag);
+    out.push(' ');
+    out.push_str(&value.len().to_string());
+    out.push(' ');
+    out.push_str(value);
+    out.push('\n');
+}
+
+/// `<tag> absent\n` — never an empty value standing in for absence.
+fn put_absent(out: &mut String, tag: &str) {
+    out.push_str(tag);
+    out.push_str(" absent\n");
 }
 
 /// Mint the approval surface's content identity from the canonical identity plane
@@ -492,7 +544,7 @@ mod tests {
 }
 
 #[cfg(test)]
-mod section_framing {
+mod framing {
     use crate::{NO_ARTIFACT_FORM, Plan, ProbePlan, SurvivalReport};
 
     /// One canonical decision over a book carrying `body`.
@@ -518,29 +570,142 @@ mod section_framing {
         )
     }
 
-    /// How many lines of `canon` are exactly the diagnostics section's header.
-    fn header_lines(canon: &str) -> usize {
-        canon.lines().filter(|line| *line == "== diags ==").count()
+    /// Walk a canonical decision by its DECLARED LENGTHS, answering each component's exact bytes.
+    ///
+    /// A reader rather than an assertion, because recoverability IS the property: if this can take
+    /// the string apart into exactly the components that were put in, then no component reached
+    /// into a neighbour, whatever bytes it carried.
+    fn walk(canon: &str) -> Vec<(String, Option<String>)> {
+        let mut out: Vec<(String, Option<String>)> = Vec::new();
+        let body = canon
+            .strip_prefix(super::ENCODING)
+            .and_then(|rest| rest.strip_prefix('\n'))
+            .expect("the encoding opens with its own tag");
+        let mut cursor = body;
+        loop {
+            if let Some(rest) = cursor.strip_prefix(super::TERMINATOR) {
+                assert_eq!(rest, "\n", "the terminator is followed by end of value");
+                return out;
+            }
+            let (tag, rest) = cursor
+                .split_once(' ')
+                .expect("a component opens with its tag");
+            if let Some(rest) = rest.strip_prefix("absent\n") {
+                out.push((tag.to_owned(), None));
+                cursor = rest;
+                continue;
+            }
+            let (declared, rest) = rest
+                .split_once(' ')
+                .expect("a component declares its length");
+            let length: usize = declared.parse().expect("a canonical decimal length");
+            let value = rest.get(..length).expect("the declared length is present");
+            let after = rest.get(length..).expect("bytes past the value");
+            assert_eq!(
+                after.as_bytes().first(),
+                Some(&b'\n'),
+                "the framing newline sits exactly at the declared length"
+            );
+            out.push((tag.to_owned(), Some(value.to_owned())));
+            cursor = after.get(1..).expect("bytes past the framing newline");
+        }
     }
 
     #[test]
-    fn the_target_is_one_header_line_per_section() {
-        // The identity is a hash of this string, so the string has to say one thing. Today the
-        // apply render carries the book verbatim and the sections are delimited rather than
-        // framed, so a book line spelling a header puts a second one in — and which bytes belong
-        // to which section stops being recoverable. The sibling planner-input encoding answers
-        // this with a declared length per component.
-        internal_tooling::xfail::xfail_until("p-x-presented-plan-sections-are-framed", || {
-            assert_eq!(header_lines(&canon_over("echo hi\n== diags ==\n")), 1);
-        });
+    fn a_canonical_decision_takes_apart_into_exactly_the_components_the_table_names() {
+        // The control for the case below: an ordinary book walks cleanly, so a failure there is
+        // about the spoofing bytes rather than about the walk.
+        let walked = walk(&canon_over("echo hi\n"));
+        let tags: Vec<&str> = walked.iter().map(|(tag, _)| tag.as_str()).collect();
+        let expected: Vec<&str> = crate::identity_table::PRESENTED_PLAN_COMPONENTS
+            .iter()
+            .map(|row| row.tag)
+            .collect();
+        assert_eq!(tags, expected);
+        // The empty book has no shared regions, and that is spelled absent rather than empty.
+        assert_eq!(walked.get(1).map(|(_, value)| value.clone()), Some(None));
     }
 
     #[test]
-    fn interim_a_book_line_spelling_a_header_reaches_the_canon_twice() {
-        // The measurement the pin is against, so the shape is written down where the repair will
-        // land rather than only in a report. The control beside it is what makes the count mean
-        // something: an ordinary book puts exactly one header line in.
-        assert_eq!(header_lines(&canon_over("echo hi\n")), 1, "the control");
-        assert_eq!(header_lines(&canon_over("echo hi\n== diags ==\n")), 2);
+    fn a_book_line_spelling_a_component_cannot_move_a_boundary() {
+        // The repair, measured. Before length framing this book put a SECOND `== diags ==` header
+        // into the canon and the split between the apply render and the diagnostics stopped being
+        // recoverable — two different decisions could present one identity, which for an identity
+        // that is recompute-and-compared is a confident wrong answer to "is this the same plan".
+        //
+        // Now the spoofing bytes are inside the render component's declared length, and the walk
+        // proves it: the component count is unchanged and the line is where the book put it.
+        let spoofing = "echo hi\n== diags ==\ndiags 0 \n";
+        let walked = walk(&canon_over(spoofing));
+        assert_eq!(
+            walked.len(),
+            crate::identity_table::PRESENTED_PLAN_COMPONENTS.len(),
+            "the spoofing bytes did not add a component"
+        );
+        let render = walked
+            .iter()
+            .find(|(tag, _)| tag == "render.apply")
+            .and_then(|(_, value)| value.clone())
+            .expect("the apply render is present");
+        assert!(
+            render.contains("== diags ==\n"),
+            "the book's own line stayed inside the render"
+        );
+        assert!(
+            render.contains("diags 0 \n"),
+            "including a line spelling this encoding's own component form"
+        );
+        let diagnostics = walked
+            .iter()
+            .find(|(tag, _)| tag == "diags")
+            .and_then(|(_, value)| value.clone())
+            .expect("the diagnostics component is present");
+        assert!(
+            diagnostics.is_empty(),
+            "and the diagnostics component is the empty one it should be, not the book's bytes"
+        );
+    }
+
+    #[test]
+    fn two_books_differing_only_where_a_boundary_would_have_fallen_are_two_identities() {
+        // The consequence, stated as identities rather than as bytes. These two differ only in
+        // whether the spoofing line is present, which is exactly the difference a delimiter-ended
+        // component could have swallowed.
+        assert_ne!(
+            super::presented_plan_id(
+                &Plan::decided(
+                    vec![],
+                    Vec::new(),
+                    SurvivalReport::default(),
+                    false,
+                    NO_ARTIFACT_FORM,
+                    "echo hi\n",
+                    &dorc_syntax::parse("echo hi\n").value,
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
+                ),
+                &ProbePlan::default(),
+                "echo hi\n",
+                &dorc_syntax::parse("echo hi\n").value,
+                &dorc_core::Interner::default(),
+                &[],
+            ),
+            super::presented_plan_id(
+                &Plan::decided(
+                    vec![],
+                    Vec::new(),
+                    SurvivalReport::default(),
+                    false,
+                    NO_ARTIFACT_FORM,
+                    "echo hi\n== diags ==\n",
+                    &dorc_syntax::parse("echo hi\n== diags ==\n").value,
+                    dorc_core::influence::InfluenceAccount::authored_before_contact(),
+                ),
+                &ProbePlan::default(),
+                "echo hi\n== diags ==\n",
+                &dorc_syntax::parse("echo hi\n== diags ==\n").value,
+                &dorc_core::Interner::default(),
+                &[],
+            ),
+        );
     }
 }
