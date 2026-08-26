@@ -25,6 +25,7 @@
 - [ ] *just* the streaming-updates part of the TUI (currently deferred as residue, was planned in r26, still deferred as of r30)
 - [ ] better/friendlier handling/surfacing of *SSH errors*. a whole bundle of unrelated errors during my own attempts just surfaced as "transport-session-lost"
 - [ ] fix "doc-tests" dumping a ton of noise into agent-context even when running a single test
+- [ ] merge all the internal tooling into one Cargo binary? (dorc-loom, dorc-verify, dorc-loom, internal-tooling, dorc-coverage ...)
 
 ### Looms / aid
 

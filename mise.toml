@@ -191,6 +191,13 @@ run = [
    "mise run hk-install",
 ]
 
+[tasks.install]
+description = "Install the production binaries to your cargo bin."
+dir = "spike"
+run = [
+   "cargo install --path ./crates/cli --debug --locked --"
+]
+
 # The ONE place a WSL leg is spelled. `run_windows` is mise's own platform switch, so no
 # task below knows this exists and nothing is duplicated per-platform: on *nix `both` is a
 # passthrough, on Windows it runs the task natively and then again under WSL, in series.
