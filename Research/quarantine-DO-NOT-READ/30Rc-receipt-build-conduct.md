@@ -24,7 +24,7 @@ then Stage 6 (D5: the old durable goes). Read *the schedule* below before dispat
 
 | | |
 |---|---|
-| Build branch | `ai/r30-receipt` @ `315ce630`, worktree `.claude/worktrees/r30-receipt` |
+| Build branch | `ai/r30-receipt` @ `b9a0be08`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
 | Base | `ai/main` @ `7693ac6f` — rebased onto it four times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
 | Also standing | `ai/r30-hk-stash` @ `234d0da6`, worktree `.claude/worktrees/r30-hkstash` — a measurement lane's evidence; the human said drop it with the rest at cleanup. |
@@ -51,7 +51,9 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
 | 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
 | 5 why / correlation / re-derivation | done except its severance — see the blocker |
-| 5A `30Rd` D0–D4, the minimal production durable edge | not started; a format/identity repair pass runs first |
+| repair pass (order line · identity table · framing) | done @ `b9a0be08` |
+| 5A `30Rd` D0 crate, names, vectors, I/O model | done |
+| 5A `30Rd` D1–D4 | D1 next |
 | 6 rip the old implementation (`30Rd` D5) | not started |
 
 ## what is owed
@@ -110,6 +112,24 @@ the run does — Stage 5's lane.
 
 **Stage 3 residue, deliberate:** the old whylog writer still stands, and seven overlay slots
 read `uncollected`. Both are explained under *rulings*; neither is an oversight.
+
+**Owed to D4:** refuse to EMIT an undated document at the production composition root, sited
+for trivial removal when stable-format output becomes supported. It cannot live at a lib seam
+— a refusal there would refuse the very runs that want an undated artifact. Also D4's: the
+publication-gate atomicity change, and the `results::replayed_records` severance.
+
+**A fence gap worth closing when something touches it:** a malformed `DORC_FIXTURE_CLOCK_MS`
+is read at the process edge and is NOT structurally test-only, so a production run can be
+handed a fixture clock value. Only the clock, not identity — but it is the shape
+`rul-fixture-identity-never-production` warns about ("environment presence alone never grants
+parser authority").
+
+**Watch, not chased:** one gate run reddened at `pin28-helper-package-entrypoints-discarded`
+(`ap-2-exec`, rendered apply rc=1) inside the real-tools lane, then did not reproduce across an
+isolated re-run, a full real-tools pass (222/222), and two clean full gates. Reported as
+cause-unestablished rather than unrelated — the builder did not prove its change uninvolved.
+Plausible mechanism: the shared `target/` under a multi-task gate with a sibling conductor
+live. If a lane sees this shape again, that recurrence is the signal.
 
 **Arc close, hard:** see the final section. Nothing ships with it outstanding.
 
@@ -427,6 +447,16 @@ refused" passes with the guard removed. Only the assertion naming the exact slug
 regression. The tidying instinct that replaces a slug check with a plain rc check is
 therefore a silent un-testing, and the case now carries that measurement in its own doc so a
 successor knows what they would be deleting.
+
+A sixth: **a structural check spelled lexically is satisfiable by a comment.** The identity
+table's opener/terminator check ran `contains` over encoder source text; it now asserts
+equality against the encoders' own `pub const`s, so a rename moves both or fails to compile.
+And when the presented-plan ambiguity was repaired, its pin was REMOVED rather than flipped —
+its assertion ("exactly one section-header line") becomes meaningless once no header lines
+exist, so it would have passed for the wrong reason. What replaced it is positive: a walker
+that takes a canon apart by its declared lengths, because **recoverability IS injectivity**,
+plus the spoofing case a book can actually construct. Negatives that go vacuous when the
+defect is fixed want replacing with the positive property, not re-pointing.
 
 Countermeasures now in use: **pin every negative to its exact refusal in a committed table** —
 the overlay family fails closed in ways that look alike, so "it was rejected" is satisfied by
