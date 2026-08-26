@@ -639,6 +639,48 @@ fn the_read_back_fence_would_fail_on_a_stale_entry_and_on_a_new_mention() {
 }
 
 #[test]
+fn no_fixture_key_material_reaches_a_production_file() {
+    // The other half of `the_fixture_identity_is_unreachable_from_production`, which searches for
+    // one package's identity spelling and therefore sees nothing on the signing side. These are
+    // the names the key-document corpus binds its fixed and fixture material to; a production
+    // file naming any of them is a fixture secret that has crossed into a shipped path.
+    //
+    // Zero entries and no allow-list, deliberately: a list here would be a thing to add to, and
+    // there is no legitimate production caller of any of them. A new fixture constant joins this
+    // set rather than joining an exemption.
+    for ident in [
+        "RFC_8032_TEST_1_PUBLISHED_SECRET",
+        "RFC_8032_TEST_1_PUBLISHED_PUBLIC",
+        "RFC_8032_TEST_1_PUBLISHED_SIGNATURE",
+        "FIXTURE_SECRET",
+        "FixedSecret",
+    ] {
+        let found = production_naming(ident);
+        assert!(
+            found.is_empty(),
+            "fixture key material reached production: {found:?} names `{ident}`"
+        );
+    }
+    // The walk has to be able to see something, or every assertion above is vacuous.
+    assert!(
+        production_naming("SigningKeyId")
+            .iter()
+            .any(|path| path == "receipt/src/ids.rs"),
+        "the production walk cannot see the crate it is fencing"
+    );
+}
+
+#[test]
+fn the_secret_bytes_constructor_is_reachable_from_one_production_file() {
+    // A key document is otherwise obtained by generating one or by reading one, both of which
+    // answer for where the material came from. The constructor over bare secret bytes answers
+    // for nothing, so it is crate-private AND enumerated: the type keeps it out of other crates,
+    // and this keeps a second seat inside its own crate from appearing quietly. Two-way, on
+    // `of_canonical_image`'s terms — one entry, which both declares it and drives it.
+    fence("of_secret_bytes", &["receipt-crypto/src/key_document.rs"]);
+}
+
+#[test]
 fn the_fixture_signature_stand_in_never_reaches_a_production_file() {
     // The graph corpus signs its documents with an inert deterministic stand-in. It is confined
     // by living in a test target; this asserts that rather than trusting it.
