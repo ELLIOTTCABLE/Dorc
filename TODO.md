@@ -29,8 +29,8 @@
 
 ### Looms / aid
 
+- [ ] *generated* usage-output (flags etc) in the help-loom
 - [ ] marker-version-unrecognized needs its span moved to the actual marker
-- [ ] `dorc-loom compile` needs to make it clearer whether it *failed*, in an unrecoverable way; or whether it *suceeded* in compiling, with a *difference* - i.e. whether a `promote` is possible or whether the failure needs to be addressed before promote is possible.
 - [ ] the clean-tree requirement is *super* annoying, I can't even keep notes in here. any way to restrict it to compile-affecting files - maybe leverage hk, or cargo??
 
 # Preparation-for-agentic-implementation 🤢 phase
