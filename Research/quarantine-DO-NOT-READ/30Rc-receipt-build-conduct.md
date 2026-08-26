@@ -22,9 +22,9 @@ neither sign nor verify, so it writes and reads no receipts — and that blocker
 
 | | |
 |---|---|
-| Build branch | `ai/r30-receipt` @ `aa2eeb89`, worktree `.claude/worktrees/r30-receipt` |
+| Build branch | `ai/r30-receipt` @ `315ce630`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
-| Base | `ai/main` @ `dcf426ad` — rebased onto it three times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
+| Base | `ai/main` @ `7693ac6f` — rebased onto it four times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
 | Also standing | `ai/r30-hk-stash` @ `234d0da6`, worktree `.claude/worktrees/r30-hkstash` — a measurement lane's evidence; the human said drop it with the rest at cleanup. |
 
 **This file's single home is `ai/r30-conduct`.** The copy in the build worktree is a dead
@@ -109,6 +109,37 @@ the run does — Stage 5's lane.
 read `uncollected`. Both are explained under *rulings*; neither is an oversight.
 
 **Arc close, hard:** see the final section. Nothing ships with it outstanding.
+
+## the schedule (conductor-chosen 2026-08-25, human-delegated; HONOR IT)
+
+`30Rd` arrived after Stage 5 and made a minimal production durable edge REQUIRED — the
+binary must be able to persist and read its replacement before the old whylog goes. The
+human delegated scheduling and asked that ambiguous landings be chosen ahead of time rather
+than drifted into. These are those choices:
+
+- **`sched-repair-pass-runs-first`** — the sitting changed things Stages 0–4 already built.
+  The format half repairs BEFORE `30Rd` work starts: the new top-level `order` line and its
+  token type, every committed conformance vector and fixture re-cut, and the exhaustive
+  identity table for the two plan identities (assigned to Stage 0, reviewed before Stage 1,
+  and both IDs already minted in Stage 3 — so the table is written now and the existing mints
+  validated against it). Doing format work after more code depends on the format is strictly
+  worse, and the human leaned this way too.
+- **`sched-gate-atomicity-rides-d-four`** — the publication gate must consume ONE private
+  value binding intent, image witness, policy, and `30Rd`'s publication proof, with the permit
+  minted atomically from it. That proof does not exist until D4, so this cannot repair early.
+- **`sched-severance-lands-in-d-four`** — Stage 5's unmet exit (`results::replayed_records`
+  laundering a durable into live evidence) closes in D4, beside the why-route rewiring, which
+  is the first moment `why` can answer from a receipt and that seat loses its caller. Stage 5
+  is formally complete at D4, not before. **Chosen in advance; do not re-open it later for
+  convenience.**
+- **`sched-five-a-is-d-zero-through-d-four`** — Stage 5A ≡ D0–D4; Stage 6 ≡ D5. `30Rb` reads
+  both ways (5A says "every stage in `30Rd`", which would swallow D5 and leave Stage 6 empty);
+  D5's own "Only after D4 exit" header settles it.
+- **`sched-the-bypass-flag-dies-in-d-four`** — `--dispatch-without-receipt` is kept only while
+  it is load-bearing: it is what keeps `livetest` running until the real route can publish.
+  D4 requires the default real apply path to traverse the concrete gate and says a configured
+  bypass cannot satisfy that exit, so the flag and its `livetest.sh` use are removed there,
+  not carried into Stage 6.
 
 ## rulings that bind
 
