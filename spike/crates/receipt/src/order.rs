@@ -28,9 +28,14 @@ pub struct ReceiptOrderToken([u8; ORDER_DIGITS]);
 impl ReceiptOrderToken {
     /// The lowest token there is: every real reading sorts at or above it.
     ///
-    /// The honest answer for a run whose platform could not date it. It under-claims recency
-    /// rather than over-claiming it, so a run that cannot say when it happened never displaces a
-    /// dated one in a selection that means "the most recent".
+    /// A FIRST-CLASS value, not a degenerate one. An undated receipt is what a stable-format
+    /// artifact wants — a run asking "did this change" cannot have a clock reading in the bytes it
+    /// diffs — so the library, the store, and the reader all carry it natively.
+    ///
+    /// What must not happen is an undated document reaching a store that selects by order: it
+    /// would sort oldest, and a user who just ran something and asked why would be shown the
+    /// PREVIOUS run own answer with nothing saying so. That is refused where a document is
+    /// EMITTED, at the production composition root, rather than by making this unrepresentable.
     pub const UNDATED: Self = Self([b'0'; ORDER_DIGITS]);
 
     /// Mint from a controller-observed instant, in milliseconds.

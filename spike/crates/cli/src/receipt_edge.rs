@@ -187,12 +187,17 @@ impl<'a> ReceiptCapabilities<'a> {
     }
 }
 
-/// The order a document is stamped with, read from a run's own clock.
+/// The order a document is stamped with, read from a run own clock.
 ///
-/// Every published document takes ONE reading, so a run's documents order by when each was
-/// written rather than sharing one moment. An absent clock answers [`ReceiptOrderToken::UNDATED`]:
-/// the token selects a store position and asserts nothing, so a run whose platform could not date
-/// it sorts oldest instead of claiming a moment it never observed.
+/// Every published document takes ONE reading, so a run documents order by when each was written
+/// rather than sharing one moment. An absent clock answers [`ReceiptOrderToken::UNDATED`], which
+/// this adapter carries faithfully — the undated token is a supported value, not a failure.
+///
+/// OWED, and deliberately not sited here: the PRODUCTION composition root must refuse to EMIT an
+/// undated document, so a store that selects by order never has one to sort. This adapter is a
+/// lib seam that a test drives as readily as the binary, so a refusal here would refuse the very
+/// runs that want an undated artifact. The seat is `LocalReceiptEdgeV1`, which does not exist yet;
+/// nothing in the binary publishes today, so there is no live exposure.
 #[derive(Debug)]
 pub struct RunClockOrder<'a>(&'a mut crate::results::RunClock);
 
@@ -629,10 +634,11 @@ mod tests {
     }
 
     #[test]
-    fn a_clock_that_cannot_answer_stamps_the_lowest_order_rather_than_a_moment() {
-        // The direction matters more than the value. A run whose platform could not date it must
-        // not out-sort a dated one in a selection that means "most recent", and the wire has no
-        // spelling for "no order" — so it under-claims instead of inventing a reading.
+    fn a_clock_that_cannot_answer_carries_the_undated_token_faithfully() {
+        // The adapter CARRIES an absent clock rather than inventing a reading, because an undated
+        // receipt is a supported artifact. What stops an undated document reaching a store that
+        // selects by order is a refusal at the production composition root — see this seat own
+        // doc comment for why it does not live here.
         let mut clock = RunClock::Absent;
         let mut order = RunClockOrder::of(&mut clock);
         let undated = order.order_token();
