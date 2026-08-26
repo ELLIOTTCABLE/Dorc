@@ -639,6 +639,64 @@ fn the_read_back_fence_would_fail_on_a_stale_entry_and_on_a_new_mention() {
 }
 
 #[test]
+fn the_crypto_crate_reaches_no_filesystem_environment_clock_or_network() {
+    // The crypto crate answers primitives over values it is handed. Where a key document LIVES,
+    // which root it sits under, and when it was written are the local edge's questions, and the
+    // separation is what lets one crate be exercised entirely without a disk. No type can say
+    // "this crate performs no I/O", so the gate is lexical over its own sources.
+    let src = crates_root().join("receipt-crypto").join("src");
+    let mut checked = 0_u32;
+    for entry in std::fs::read_dir(&src).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if path.extension().is_none_or(|ext| ext != "rs") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap_or_default();
+        for reach in ["fs", "env", "net", "process", "path", "time"] {
+            let module = format!("std::{reach}");
+            assert!(
+                !names_crate(&text, &module),
+                "{} reaches {module}",
+                path.display()
+            );
+            let import = format!("use {module}");
+            assert!(
+                !text
+                    .lines()
+                    .any(|line| line.trim_start().starts_with(&import)),
+                "{} imports {module}",
+                path.display()
+            );
+        }
+        // Named individually because an import can be renamed but a type cannot be used without
+        // being spelled. Deliberately excludes generic English words a parameter might carry —
+        // a fence that fires on `write` is one somebody works around by renaming a closure.
+        for ident in [
+            "File",
+            "OpenOptions",
+            "PathBuf",
+            "SystemTime",
+            "Instant",
+            "read_to_string",
+            "create_dir",
+            "var_os",
+            "current_dir",
+        ] {
+            assert!(
+                !names_identifier(&text, ident),
+                "{} names `{ident}`",
+                path.display()
+            );
+        }
+        checked = checked.saturating_add(1);
+    }
+    assert!(
+        checked >= 2,
+        "the crypto-source walk checked only {checked} files; it is looking in the wrong place"
+    );
+}
+
+#[test]
 fn no_fixture_key_material_reaches_a_production_file() {
     // The other half of `the_fixture_identity_is_unreachable_from_production`, which searches for
     // one package's identity spelling and therefore sees nothing on the signing side. These are
