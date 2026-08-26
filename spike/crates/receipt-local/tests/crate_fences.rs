@@ -176,10 +176,10 @@ fn production_sources() -> Vec<(String, String)> {
             let path = entry.path();
             if path.is_dir() {
                 walk(&path, out);
-            } else if path.extension().is_some_and(|ext| ext == "rs") {
-                if let Ok(text) = std::fs::read_to_string(&path) {
-                    out.push((path.to_string_lossy().replace('\\', "/"), text));
-                }
+            } else if path.extension().is_some_and(|ext| ext == "rs")
+                && let Ok(text) = std::fs::read_to_string(&path)
+            {
+                out.push((path.to_string_lossy().replace('\\', "/"), text));
             }
         }
     }
@@ -212,7 +212,10 @@ fn names_identifier(text: &str, needle: &str) -> bool {
             .checked_sub(1)
             .and_then(|index| text.as_bytes().get(index))
             .copied();
-        let after = text.as_bytes().get(at + needle.len()).copied();
+        let after = at
+            .checked_add(needle.len())
+            .and_then(|index| text.as_bytes().get(index))
+            .copied();
         !before.is_some_and(is_part) && !after.is_some_and(is_part)
     })
 }
