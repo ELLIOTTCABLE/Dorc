@@ -584,6 +584,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dorc-receipt-local"
+version = "0.0.0"
+dependencies = [
+ "dorc-receipt",
+]
+
+[[package]]
 name = "dorc-sparing-reference"
 version = "0.1.0"
 

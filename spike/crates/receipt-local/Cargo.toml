@@ -1,0 +1,40 @@
+[package]
+name = "dorc-receipt-local"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The DEFAULT local durable edge: where a keyset and a receipt store live on one operator's own
+# machine, and nothing else.
+#
+# It stores exact already-signed bytes and supplies already-validated key capabilities. It parses
+# no receipt semantically, mints no trusted or complete receipt state, renders no diagnostic,
+# inspects no host bytes, and selects no algorithm — every one of those lives in `dorc-receipt`
+# or above, so the ordering they depend on is enforced by this crate boundary rather than by call
+# order.
+#
+# The analyzer must never reach it: filesystem and key availability cannot enter an analysis
+# decision, so `dorc-core`, `dorc-analysis`, `dorc-plan`, and `dorc-aid` name it nowhere. Only
+# `dorc-cli` may, and `crate_fences.rs` checks both directions.
+[dependencies]
+dorc-receipt = { path = "../receipt", version = "0.0.0" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "manifest"
+path = "tests/manifest.rs"
+
+[[test]]
+name = "names"
+path = "tests/names.rs"
+
+[[test]]
+name = "crate_fences"
+path = "tests/crate_fences.rs"
+
+[[test]]
+name = "io_model"
+path = "tests/io_model.rs"
