@@ -935,6 +935,48 @@ fn a_store_root_anyone_but_the_owner_may_write_is_refused() {
 }
 
 #[test]
+fn a_product_root_anyone_may_write_refuses_a_store_that_is_itself_fine() {
+    // Both Dorc-owned components are validated, not just the last one. A store reached through a
+    // product root another account may write is a store whose own directory could be replaced
+    // between one attempt and the next, so the component above it is checked too — and the two
+    // open paths check the same pair, or a read would accept what a write refuses.
+    for open_or_create in [false, true] {
+        let mut io = clean(FailureSchedule::intact())
+            .planting(
+                PRODUCT,
+                Node::of(NodeKind::Directory, GroupAndOtherAccess::Writable),
+            )
+            .planting(STORE, Node::private_directory());
+        let outcome = if open_or_create {
+            LocalReceiptStoreV1::open_or_create(&roots(), &mut io, StoreLimits::V1)
+        } else {
+            LocalReceiptStoreV1::open_for_read(&roots(), &mut io, StoreLimits::V1)
+        };
+        assert_eq!(
+            outcome,
+            Err(StoreOpenRefusal::PermissionRefused),
+            "open_or_create={open_or_create}"
+        );
+    }
+
+    // The positive control: narrow the product root and the same store opens both ways.
+    for open_or_create in [false, true] {
+        let mut io = clean(FailureSchedule::intact())
+            .planting(PRODUCT, Node::private_directory())
+            .planting(STORE, Node::private_directory());
+        let outcome = if open_or_create {
+            LocalReceiptStoreV1::open_or_create(&roots(), &mut io, StoreLimits::V1)
+        } else {
+            LocalReceiptStoreV1::open_for_read(&roots(), &mut io, StoreLimits::V1)
+        };
+        assert!(
+            outcome.is_ok(),
+            "open_or_create={open_or_create}: {outcome:?}"
+        );
+    }
+}
+
+#[test]
 fn a_store_root_that_is_a_redirect_or_the_wrong_kind_is_refused_without_being_followed() {
     let mut linked = clean(FailureSchedule::intact())
         .planting(PRODUCT, Node::private_directory())

@@ -805,8 +805,12 @@ impl LocalReceiptStoreV1 {
         io: &mut dyn LocalIo,
         limits: StoreLimits,
     ) -> Result<Self, StoreOpenRefusal> {
-        let root = store_root(roots).ok_or(StoreOpenRefusal::RootUnavailable)?;
+        let (product, root) = locations(roots)?;
         let baseline = roots.platform().baseline();
+        // Both components, exactly as the create-capable path validates them. Validating only the
+        // store itself would accept one reached through a product root somebody else may write,
+        // and the two opens would then disagree about the same profile.
+        validate_directory(io, &product, baseline)?;
         validate_directory(io, &root, baseline)?;
         Ok(Self {
             root,
@@ -825,12 +829,7 @@ impl LocalReceiptStoreV1 {
         io: &mut dyn LocalIo,
         limits: StoreLimits,
     ) -> Result<Self, StoreOpenRefusal> {
-        let product = roots
-            .product_root(RootRole::State)
-            .ok_or(StoreOpenRefusal::RootUnavailable)?;
-        let root = product
-            .child(STORE_DIR)
-            .ok_or(StoreOpenRefusal::RootUnavailable)?;
+        let (product, root) = locations(roots)?;
         let baseline = roots.platform().baseline();
         ensure_directory(io, &product, baseline)?;
         ensure_directory(io, &root, baseline)?;
@@ -1156,6 +1155,19 @@ impl LocalReceiptStoreV1 {
             _ => CleanupFailure::Refused,
         })
     }
+}
+
+/// The two Dorc-owned components a store lives in: the product root, and the store beneath it.
+///
+/// One derivation for both open paths, so neither can validate a component the other does not.
+fn locations(roots: &RootInputs) -> Result<(LocalPath, LocalPath), StoreOpenRefusal> {
+    let product = roots
+        .product_root(RootRole::State)
+        .ok_or(StoreOpenRefusal::RootUnavailable)?;
+    let root = product
+        .child(STORE_DIR)
+        .ok_or(StoreOpenRefusal::RootUnavailable)?;
+    Ok((product, root))
 }
 
 /// A refusal that happened before anything was created, so nothing was left behind.
