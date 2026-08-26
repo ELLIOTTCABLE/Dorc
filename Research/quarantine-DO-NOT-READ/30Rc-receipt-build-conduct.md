@@ -16,9 +16,10 @@ typed identities into a report-only graph. Everything read back is inert by type
 crates: a pure `dorc-receipt`, a `dorc-receipt-crypto` holding the Age/Ed25519 implementations
 of its capability traits, and — added by `30Rd` — a `dorc-receipt-local` owning the default
 key/store I/O. Stages 0–4 are complete and Stage 5 is complete except its severance, which
-`sched-severance-lands-in-d-four` places in D4. What remains is a format/identity repair pass,
-then Stage 5A (`30Rd` D0–D4: the binary must be able to persist and read its own replacement),
-then Stage 6 (D5: the old durable goes). Read *the schedule* below before dispatching.
+`sched-severance-lands-in-d-four` places in D4. The format/identity repair pass and `30Rd` D0
+are done. What remains is D1–D4 (the binary must be able to persist and read its own
+replacement) and then Stage 6 (D5: the old durable goes). Read *the schedule* below before
+dispatching.
 
 ## where the work is
 
