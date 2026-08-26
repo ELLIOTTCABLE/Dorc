@@ -48,10 +48,10 @@
 //! impl dorc_receipt_local::io::LocalIo for MyFilesystem {
 //!     fn perform(
 //!         &mut self,
-//!         _: dorc_receipt_local::io::Op,
+//!         _: dorc_receipt_local::io::Request<'_>,
 //!         _: &str,
-//!     ) -> Result<(), dorc_receipt_local::io::IoFault> {
-//!         Ok(())
+//!     ) -> Result<dorc_receipt_local::io::Answer, dorc_receipt_local::io::IoFault> {
+//!         Ok(dorc_receipt_local::io::Answer::Done)
 //!     }
 //!     fn directory_sync(&self) -> dorc_receipt_local::DirectorySync {
 //!         dorc_receipt_local::DirectorySync::Synchronized
@@ -112,6 +112,7 @@ pub mod limits;
 pub mod manifest;
 pub mod model;
 pub mod names;
+pub mod native;
 pub mod roots;
 pub mod store;
 
@@ -123,6 +124,7 @@ pub use keyset::{
 pub use limits::LocalLimits;
 pub use manifest::{KeyRole, KeysetManifest, ManifestRefusal};
 pub use names::{LocalPath, NameRefusal, NamedSpecies, ReceiptFileName};
+pub use native::NativeIo;
 pub use roots::{RootInputs, RootPlatform, RootRefusal, RootRole};
 pub use store::{
     DirectorySync, EntryStanding, EnumerateFailure, IncompleteState, PlatformBaseline,

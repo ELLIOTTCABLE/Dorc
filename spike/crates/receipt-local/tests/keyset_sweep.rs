@@ -801,3 +801,39 @@ fn the_windows_baseline_is_accepted_and_is_not_the_unix_one() {
         "the unedited keyset must read, or the refusal above proves nothing"
     );
 }
+
+#[test]
+fn the_read_path_cannot_acquire_a_handle_that_could_synchronize() {
+    // The platforms disagree about flushing a handle opened only for reading — one permits it and
+    // one refuses — so the access a handle carries is declared at the open rather than discovered
+    // at the synchronization. The read entry point declares the weaker one everywhere, which is
+    // what stops `dorc why` from holding something that could write, and the model enforces the
+    // stricter platform's rule so this is caught here rather than on one native leg.
+    let mut base = clean(FailureSchedule::intact());
+    assert!(is_ready(&write_open(&mut base, 80)));
+
+    let mut reader = base.restart(FailureSchedule::intact());
+    assert!(matches!(read_open(&mut reader), LocalReadOpenV1::Ready(_)));
+    assert!(
+        !reader
+            .schedule()
+            .arrivals()
+            .iter()
+            .any(|(op, _)| *op == Op::SyncFile),
+        "the read path synchronized nothing"
+    );
+
+    // And the write open, which does have to synchronize, re-opens first: with the very same
+    // material, faulting its re-open refuses rather than quietly flushing a read handle.
+    let mut writer = base.restart(FailureSchedule::faulting_occurrence(
+        Op::OpenExistingNoFollow,
+        Side::Before,
+        6,
+        IoFault::Denied,
+    ));
+    let outcome = write_open(&mut writer, 81);
+    assert!(
+        !is_ready(&outcome),
+        "a write open whose re-open was refused must not publish: {outcome:?}"
+    );
+}

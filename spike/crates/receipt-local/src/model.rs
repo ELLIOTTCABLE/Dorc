@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 
 use crate::io::{
     Answer, BoundedEntries, FailureSchedule, GroupAndOtherAccess, IoFault, LocalIo, ObjectFacts,
-    ObjectKind, OwnerCheck, Request, Sealed, Side,
+    ObjectKind, OpenIntent, OwnerCheck, Request, Sealed, Side,
 };
 use crate::store::DirectorySync;
 
@@ -143,6 +143,10 @@ pub struct ModelIo {
     schedule: FailureSchedule,
     directory_sync: DirectorySync,
     creates_privately: bool,
+    /// What each open handle this attempt holds is able to do. The platforms disagree about
+    /// flushing a read-only handle, so the model enforces the stricter rule and the sweep sees
+    /// the divergence rather than a native run discovering it.
+    handles: BTreeMap<String, OpenIntent>,
 }
 
 impl ModelIo {
@@ -155,6 +159,7 @@ impl ModelIo {
             schedule,
             directory_sync,
             creates_privately: directory_sync == DirectorySync::Synchronized,
+            handles: BTreeMap::new(),
         }
     }
 
@@ -167,6 +172,7 @@ impl ModelIo {
             schedule,
             directory_sync: DirectorySync::UnavailableOnPlatform,
             creates_privately: false,
+            handles: BTreeMap::new(),
         }
     }
 
@@ -198,6 +204,7 @@ impl ModelIo {
             schedule,
             directory_sync: self.directory_sync,
             creates_privately: self.creates_privately,
+            handles: BTreeMap::new(),
         }
     }
 
@@ -241,9 +248,12 @@ impl ModelIo {
                     whole: false,
                 },
             ),
-            Request::OpenExistingNoFollow => match self.nodes.get(path) {
+            Request::OpenExistingNoFollow { intent } => match self.nodes.get(path) {
                 Some(node) if node.redirected => Err(IoFault::Redirect),
-                Some(_) => Ok(Answer::Done),
+                Some(_) => {
+                    self.handles.insert(path.to_owned(), intent);
+                    Ok(Answer::Done)
+                }
                 None => Err(IoFault::NotFound),
             },
             Request::InspectOpened => match self.nodes.get(path) {
@@ -271,6 +281,11 @@ impl ModelIo {
                 },
                 None => Err(IoFault::NotFound),
             },
+            // A handle opened only for reading cannot flush on every platform, so the model
+            // refuses what the stricter one does rather than letting a native run find it.
+            Request::SyncFile if self.handles.get(path) == Some(&OpenIntent::Read) => {
+                Err(IoFault::Denied)
+            }
             Request::SyncFile => match self.nodes.get_mut(path) {
                 Some(node) if matches!(node.kind, NodeKind::File { .. }) => {
                     node.synced = true;
@@ -315,6 +330,8 @@ impl ModelIo {
         if self.nodes.contains_key(path) {
             return Err(IoFault::AlreadyExists);
         }
+        self.handles
+            .insert(path.to_owned(), OpenIntent::ReadAndSynchronize);
         let group_and_other = if self.creates_privately {
             GroupAndOtherAccess::None
         } else {

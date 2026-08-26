@@ -12,7 +12,8 @@
 //! interruption, which a native test cannot economically do.
 
 use dorc_receipt_local::io::{
-    Answer, FailureSchedule, GroupAndOtherAccess, IoFault, LocalIo, ObjectKind, Op, Request, Side,
+    Answer, FailureSchedule, GroupAndOtherAccess, IoFault, LocalIo, ObjectKind, Op, OpenIntent,
+    Request, Side,
 };
 use dorc_receipt_local::model::{ModelIo, Node, NodeKind};
 use dorc_receipt_local::store::DirectorySync;
@@ -142,7 +143,12 @@ fn a_planted_redirect_is_refused_without_being_followed() {
     let mut io =
         empty(FailureSchedule::intact()).planting(DIR, Node::private_directory().redirected());
     assert_eq!(
-        io.perform(Request::OpenExistingNoFollow, DIR),
+        io.perform(
+            Request::OpenExistingNoFollow {
+                intent: OpenIntent::Read
+            },
+            DIR
+        ),
         Err(IoFault::Redirect)
     );
 }

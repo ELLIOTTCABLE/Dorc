@@ -46,3 +46,7 @@ path = "tests/io_model.rs"
 [[test]]
 name = "keyset_sweep"
 path = "tests/keyset_sweep.rs"
+
+[[test]]
+name = "native_keyset"
+path = "tests/native_keyset.rs"

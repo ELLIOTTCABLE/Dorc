@@ -236,7 +236,10 @@ pub enum Request<'a> {
     /// Create a file exclusively, under the same rule.
     CreateFileExclusive,
     /// Open an existing object without following a final-component redirect.
-    OpenExistingNoFollow,
+    OpenExistingNoFollow {
+        /// What the opened handle must be able to do.
+        intent: OpenIntent,
+    },
     /// Read at most `limit` bytes, refusing rather than truncating past it.
     ReadBounded {
         /// The bound.
@@ -269,7 +272,7 @@ impl Request<'_> {
         match self {
             Self::CreateDirectoryExclusive => Op::CreateDirectoryExclusive,
             Self::CreateFileExclusive => Op::CreateFileExclusive,
-            Self::OpenExistingNoFollow => Op::OpenExistingNoFollow,
+            Self::OpenExistingNoFollow { .. } => Op::OpenExistingNoFollow,
             Self::ReadBounded { .. } => Op::ReadBounded,
             Self::WriteAll { .. } => Op::WriteAll,
             Self::SyncFile => Op::SyncFile,
@@ -279,6 +282,20 @@ impl Request<'_> {
             Self::RemoveOwned => Op::RemoveOwned,
         }
     }
+}
+
+/// What an opened handle must be able to do.
+///
+/// Stated at the OPEN rather than discovered at the synchronization, because the platforms
+/// disagree: flushing a handle opened only for reading is permitted on one and refused on the
+/// other. A caller that will synchronize says so when it opens, and a read-only route has no way
+/// to acquire a handle that could.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OpenIntent {
+    /// Read the object. This handle cannot synchronize.
+    Read,
+    /// Read the object and synchronize it.
+    ReadAndSynchronize,
 }
 
 /// What an act answered.
@@ -472,8 +489,12 @@ pub(crate) fn create_file_exclusive(io: &mut dyn LocalIo, path: &str) -> Result<
     done(io, Request::CreateFileExclusive, path)
 }
 
-pub(crate) fn open_existing_no_follow(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
-    done(io, Request::OpenExistingNoFollow, path)
+pub(crate) fn open_existing_no_follow(
+    io: &mut dyn LocalIo,
+    path: &str,
+    intent: OpenIntent,
+) -> Result<(), IoFault> {
+    done(io, Request::OpenExistingNoFollow { intent }, path)
 }
 
 pub(crate) fn write_all(io: &mut dyn LocalIo, path: &str, bytes: &[u8]) -> Result<(), IoFault> {

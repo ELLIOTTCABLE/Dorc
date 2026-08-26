@@ -23,7 +23,7 @@ use dorc_receipt_crypto::{
     SigningPrivateDocument, TrustedEd25519Key,
 };
 
-use crate::io::{self, GroupAndOtherAccess, IoFault, LocalIo, ObjectFacts, ObjectKind};
+use crate::io::{self, GroupAndOtherAccess, IoFault, LocalIo, ObjectFacts, ObjectKind, OpenIntent};
 use crate::limits::LocalLimits;
 use crate::manifest::{KeyRole, KeysetManifest};
 use crate::names::{
@@ -247,7 +247,7 @@ fn probe_store_is_absent_or_empty(
     else {
         return false;
     };
-    match io::open_existing_no_follow(io, store.as_str()) {
+    match io::open_existing_no_follow(io, store.as_str(), OpenIntent::Read) {
         Ok(()) => {}
         Err(IoFault::NotFound) => return true,
         Err(_) => return false,
@@ -410,7 +410,7 @@ pub fn open_or_initialize_for_write(
     };
     let baseline = roots.platform().baseline();
 
-    match io::open_existing_no_follow(io, location.keyset_dir.as_str()) {
+    match io::open_existing_no_follow(io, location.keyset_dir.as_str(), OpenIntent::Read) {
         Ok(()) => return reopen_for_write(&location, io, limits, baseline),
         Err(IoFault::NotFound) => {}
         Err(IoFault::Redirect) => {
@@ -691,7 +691,12 @@ fn reopen_for_write(
         location.document(KeyRole::Encryption),
         location.manifest(),
     ] {
-        if io::sync_file(io, path.as_str()).is_err() {
+        // Re-opened declaring what this handle must be able to do. Validation above read these
+        // through handles that cannot flush, which is deliberate: the read entry point uses the
+        // same helper and must never acquire one that could.
+        if io::open_existing_no_follow(io, path.as_str(), OpenIntent::ReadAndSynchronize).is_err()
+            || io::sync_file(io, path.as_str()).is_err()
+        {
             return LocalWriteOpenV1::Refused(KeyAvailability::TemporarilyUnavailable);
         }
     }
@@ -714,7 +719,7 @@ fn open_and_inspect(
     path: &LocalPath,
     subject: PermissionSubject,
 ) -> Result<ObjectFacts, KeyAvailability> {
-    match io::open_existing_no_follow(io, path.as_str()) {
+    match io::open_existing_no_follow(io, path.as_str(), OpenIntent::Read) {
         Ok(()) => {}
         Err(IoFault::NotFound) => {
             return Err(missing(subject));
