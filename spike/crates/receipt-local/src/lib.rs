@@ -127,6 +127,10 @@ pub use names::{LocalPath, NameRefusal, NamedSpecies, ReceiptFileName};
 pub use native::NativeIo;
 pub use roots::{RootInputs, RootPlatform, RootRefusal, RootRole};
 pub use store::{
-    DirectorySync, EntryStanding, EnumerateFailure, IncompleteState, PlatformBaseline,
-    PublicationProperties, PublishFailure, StoreReadFailure,
+    BoundedReceiptEntries, CleanupFailure, DirectorySync, EntryStanding, EnumerateFailure,
+    GraphAggregateBudget, HeaderClaims, IncompletePublicationOwned, IncompleteState,
+    LocalReceiptStoreV1, LocalRequiredReceiptPolicyV1, MaximumOrderCohort, NameAgreement,
+    NameComponent, OwnedReceiptEntry, PlatformBaseline, PublicationProperties, PublishFailure,
+    PublishRefusal, RequiredLocalPublicationV1, StoreLimits, StoreOpenRefusal, StoreReadFailure,
+    StoredReceiptRead, StoredSpecies, UnrecognizedEntry, store_root,
 };

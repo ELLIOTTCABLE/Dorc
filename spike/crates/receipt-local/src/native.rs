@@ -213,7 +213,12 @@ fn access_of(metadata: &std::fs::Metadata) -> GroupAndOtherAccess {
     use std::os::unix::fs::PermissionsExt as _;
     /// Every read, write, and execute bit outside the owner's own.
     const GROUP_AND_OTHER: u32 = 0o077;
-    if (metadata.permissions().mode() & GROUP_AND_OTHER) != 0 {
+    /// The write bits alone, which are what a store root is refused for.
+    const GROUP_AND_OTHER_WRITE: u32 = 0o022;
+    let mode = metadata.permissions().mode();
+    if (mode & GROUP_AND_OTHER_WRITE) != 0 {
+        GroupAndOtherAccess::Writable
+    } else if (mode & GROUP_AND_OTHER) != 0 {
         GroupAndOtherAccess::Present
     } else {
         GroupAndOtherAccess::None

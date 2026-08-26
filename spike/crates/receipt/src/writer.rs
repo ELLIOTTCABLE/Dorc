@@ -168,6 +168,16 @@ impl<D: Species, P: Projection> SignedReceipt<D, P> {
         &self.bytes
     }
 
+    /// Take the exact document bytes, consuming the document.
+    ///
+    /// The affine hand-off a store needs. A store that took a reference would leave the caller
+    /// holding a document it could hand to a second publication; taking ownership means the one
+    /// signed value reaches exactly one place.
+    #[must_use]
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.bytes
+    }
+
     /// Publish, consuming this document. Only a successful sink answer mints a publication.
     ///
     /// # Errors

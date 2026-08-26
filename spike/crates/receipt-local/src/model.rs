@@ -227,13 +227,19 @@ impl ModelIo {
     }
 
     /// The direct children of `path`, by their own names.
+    ///
+    /// Both separators, because a Windows-shaped disk is spelled with backslashes and a walk that
+    /// knew only one of them would answer "empty" for every such directory — which reads as a
+    /// store with no history rather than as a model that cannot see it.
     fn children(&self, path: &str) -> Vec<String> {
-        let prefix = format!("{path}/");
         self.nodes
             .keys()
-            .filter_map(|candidate| candidate.strip_prefix(&prefix))
-            .filter(|rest| !rest.contains('/'))
-            .map(str::to_owned)
+            .filter_map(|candidate| {
+                let rest = candidate
+                    .strip_prefix(path)
+                    .and_then(|rest| rest.strip_prefix(['/', '\\']))?;
+                (!rest.contains(['/', '\\'])).then(|| rest.to_owned())
+            })
             .collect()
     }
 
@@ -318,8 +324,15 @@ impl ModelIo {
                 Some(_) => Err(IoFault::WrongKind),
                 None => Err(IoFault::NotFound),
             },
-            Request::RemoveOwned => match self.nodes.remove(path) {
-                Some(_) => Ok(Answer::Done),
+            // Ownership is enforced here exactly as the production edge enforces it, or the sweep
+            // would be proving that a removal succeeds rather than that an unowned one cannot.
+            Request::RemoveOwned => match self.nodes.get(path) {
+                Some(node) if !node.created_here => Err(IoFault::Denied),
+                Some(_) => {
+                    self.nodes.remove(path);
+                    self.handles.remove(path);
+                    Ok(Answer::Done)
+                }
                 None => Err(IoFault::NotFound),
             },
         }

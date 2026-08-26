@@ -28,7 +28,7 @@ use crate::limits::LocalLimits;
 use crate::manifest::{KeyRole, KeysetManifest};
 use crate::names::{
     ENCRYPTION_PRIVATE_FILE, KEY_DIR, KEYSET_DIR, KEYSET_MANIFEST_FILE, LocalPath,
-    SIGNING_PRIVATE_FILE, STORE_DIR,
+    SIGNING_PRIVATE_FILE,
 };
 use crate::roots::{RootInputs, RootRole};
 use crate::store::PlatformBaseline;
@@ -241,10 +241,9 @@ fn probe_store_is_absent_or_empty(
     io: &mut dyn LocalIo,
     limits: &LocalLimits,
 ) -> bool {
-    let Some(store) = roots
-        .product_root(RootRole::State)
-        .and_then(|root| root.child(STORE_DIR))
-    else {
+    // The store's own derivation, so the gate and the store cannot disagree about which
+    // directory the question was even about.
+    let Some(store) = crate::store::store_root(roots) else {
         return false;
     };
     match io::open_existing_no_follow(io, store.as_str(), OpenIntent::Read) {

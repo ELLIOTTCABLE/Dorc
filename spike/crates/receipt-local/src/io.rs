@@ -367,17 +367,35 @@ pub enum ObjectKind {
 
 /// Whether anyone but the owner can reach an object.
 ///
-/// Three answers rather than a boolean, because "the platform says nobody else can" and "this
+/// Four answers rather than a boolean, because "the platform says nobody else can" and "this
 /// platform does not answer the question" are different facts and the second must never be read
 /// as the first.
+///
+/// The read/write split exists because the two object families this crate owns have different
+/// rules: a private key document is refused on ANY group or other bit, while a receipt-store root
+/// is refused only where it is group- or other-WRITABLE. One collapsed answer would either admit
+/// a world-readable key document or refuse a store root an operator widened deliberately.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GroupAndOtherAccess {
     /// The platform reports no group or other access.
     None,
-    /// The platform reports some.
+    /// The platform reports some access, and none of it is write.
     Present,
+    /// The platform reports group or other WRITE access.
+    Writable,
     /// The platform exposes no comparable answer. Recorded, never simulated.
     NotInspectable,
+}
+
+impl GroupAndOtherAccess {
+    /// Whether anyone but the owner may WRITE the object.
+    ///
+    /// A platform that does not answer the question answers `false`, which is the explicitly
+    /// weaker Windows baseline and never an equivalence with what Unix reports.
+    #[must_use]
+    pub const fn writable_by_others(self) -> bool {
+        matches!(self, Self::Writable)
+    }
 }
 
 /// What is known about who owns an object.
@@ -543,6 +561,16 @@ pub(crate) fn inspect_opened(io: &mut dyn LocalIo, path: &str) -> Result<ObjectF
         Answer::Facts(facts) => Ok(facts),
         _ => Err(IoFault::Platform),
     }
+}
+
+/// Remove an object this attempt created and still owns.
+///
+/// Both implementations refuse a path this attempt did not create, so this is never a removal by
+/// pathname. Nothing in this crate reaches it on its own initiative: a caller gets here only by
+/// consuming the ownership token a failed publication hands back, which is what keeps removal an
+/// act somebody asked for rather than a cleanup that runs by itself.
+pub(crate) fn remove_owned(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
+    done(io, Request::RemoveOwned, path)
 }
 
 #[cfg(test)]
