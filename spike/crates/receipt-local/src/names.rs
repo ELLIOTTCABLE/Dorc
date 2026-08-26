@@ -17,6 +17,65 @@
 
 use dorc_receipt::order::{ORDER_DIGITS, ReceiptOrderToken};
 
+use crate::roots::RootPlatform;
+
+/// An absolute location this crate is allowed to address.
+///
+/// A validated root, plus fixed single-component names beneath it. The type is what enforces
+/// `30Rd`'s "only fixed, typed, single-component internal names": a component carrying a
+/// separator, a drive letter, or a parent reference is refused rather than joined, so no string a
+/// caller assembles can reach outside the landing it was rooted at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalPath {
+    text: String,
+    separator: char,
+}
+
+impl LocalPath {
+    /// Root at `root`, spelled the way `platform` spells a path.
+    #[must_use]
+    pub fn of_root(platform: RootPlatform, root: &str) -> Self {
+        Self {
+            text: root.to_owned(),
+            separator: match platform {
+                RootPlatform::Windows => '\\',
+                RootPlatform::MacOs | RootPlatform::OtherUnix => '/',
+            },
+        }
+    }
+
+    /// The location of `component` directly beneath this one.
+    ///
+    /// Answers nothing for a component that is not one single ordinary name — which is every
+    /// spelling that could leave the subtree.
+    #[must_use]
+    pub fn child(&self, component: &str) -> Option<Self> {
+        let ordinary = !component.is_empty()
+            && component != "."
+            && component != ".."
+            && !component
+                .chars()
+                .any(|c| matches!(c, '/' | '\\' | ':') || c.is_control());
+        if !ordinary {
+            return None;
+        }
+        Some(Self {
+            text: format!("{}{}{component}", self.text, self.separator),
+            separator: self.separator,
+        })
+    }
+
+    /// The spelling an I/O implementation is handed.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.text
+    }
+}
+
+/// This project's one component beneath a platform base. Everything else is versioned; this is
+/// not, because it names the product rather than an era.
+pub const PRODUCT_DIR: &str = "dorc";
+
 /// The versioned directory holding the local keyset, under the configuration root.
 pub const KEY_DIR: &str = "receipt-keys-v1";
 

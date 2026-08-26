@@ -36,8 +36,6 @@ pub(crate) use sealed::Sealed;
 /// so what the vocabulary distinguishes is exactly what a test can interrupt between.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Op {
-    /// Resolve and validate a root, retaining what the platform gives to keep it addressable.
-    OpenValidatedRoot,
     /// Create a directory exclusively, with the private policy this platform can honour.
     CreateDirectoryExclusive,
     /// Create a file exclusively, with the private policy this platform can honour.
@@ -62,8 +60,7 @@ pub enum Op {
 
 impl Op {
     /// Every operation, in one order — the schedule's own iteration order.
-    pub const ALL: [Self; 11] = [
-        Self::OpenValidatedRoot,
+    pub const ALL: [Self; 10] = [
         Self::CreateDirectoryExclusive,
         Self::CreateFileExclusive,
         Self::OpenExistingNoFollow,
@@ -90,8 +87,7 @@ impl Op {
             | Self::SyncFile
             | Self::SyncDirectory
             | Self::RemoveOwned => true,
-            Self::OpenValidatedRoot
-            | Self::OpenExistingNoFollow
+            Self::OpenExistingNoFollow
             | Self::ReadBounded
             | Self::EnumerateBounded
             | Self::InspectOpened => false,
@@ -175,11 +171,21 @@ impl FailureSchedule {
     /// before it and one failing after it.
     #[must_use]
     pub fn faulting(op: Op, side: Side, fault: IoFault) -> Self {
+        Self::faulting_occurrence(op, side, 0, fault)
+    }
+
+    /// A schedule that faults `op` on `side` the `occurrence`-th time it is reached.
+    ///
+    /// One operation reached several times in one sequence is several different interruptions —
+    /// the trailing directory synchronization is not the one beside a create — so a sweep that
+    /// could only name the first would leave the later ones untested.
+    #[must_use]
+    pub fn faulting_occurrence(op: Op, side: Side, occurrence: usize, fault: IoFault) -> Self {
         Self {
             faults: vec![ScheduledFault {
                 op,
                 side,
-                occurrence: 0,
+                occurrence,
                 fault,
             }],
             reached: Vec::new(),
@@ -217,23 +223,305 @@ impl FailureSchedule {
     }
 }
 
+/// What an act needs in order to happen, beyond the path it happens to.
+///
+/// Paired one-for-one with [`Op`], which stays the CLASSIFICATION the schedule faults on: the
+/// payload rides here so a new operation cannot arrive without a durability answer and a place
+/// in the sweep.
+#[derive(Debug, Clone, Copy)]
+pub enum Request<'a> {
+    /// Create a directory exclusively. The platform's most private policy is applied by the SAME
+    /// call that makes the directory visible, never by a later adjustment.
+    CreateDirectoryExclusive,
+    /// Create a file exclusively, under the same rule.
+    CreateFileExclusive,
+    /// Open an existing object without following a final-component redirect.
+    OpenExistingNoFollow,
+    /// Read at most `limit` bytes, refusing rather than truncating past it.
+    ReadBounded {
+        /// The bound.
+        limit: usize,
+    },
+    /// Write every byte, or fail.
+    WriteAll {
+        /// The bytes.
+        bytes: &'a [u8],
+    },
+    /// Synchronize a file.
+    SyncFile,
+    /// Synchronize a directory, or answer that the platform has no such operation.
+    SyncDirectory,
+    /// Walk a directory, collecting at most `limit` plus one so overflow is observed.
+    EnumerateBounded {
+        /// The bound.
+        limit: usize,
+    },
+    /// Inspect an already-open object.
+    InspectOpened,
+    /// Remove an object this attempt created and still owns.
+    RemoveOwned,
+}
+
+impl Request<'_> {
+    /// Which operation this is, for the schedule.
+    #[must_use]
+    pub const fn op(&self) -> Op {
+        match self {
+            Self::CreateDirectoryExclusive => Op::CreateDirectoryExclusive,
+            Self::CreateFileExclusive => Op::CreateFileExclusive,
+            Self::OpenExistingNoFollow => Op::OpenExistingNoFollow,
+            Self::ReadBounded { .. } => Op::ReadBounded,
+            Self::WriteAll { .. } => Op::WriteAll,
+            Self::SyncFile => Op::SyncFile,
+            Self::SyncDirectory => Op::SyncDirectory,
+            Self::EnumerateBounded { .. } => Op::EnumerateBounded,
+            Self::InspectOpened => Op::InspectOpened,
+            Self::RemoveOwned => Op::RemoveOwned,
+        }
+    }
+}
+
+/// What an act answered.
+///
+/// One shape per act. A caller reaches these through the typed helpers below rather than by
+/// matching, so an implementation answering the wrong shape is a fault at the seam instead of a
+/// surprise at the call site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Answer {
+    /// The act happened and says nothing further.
+    Done,
+    /// Bytes, within the bound the request named.
+    Bytes(Vec<u8>),
+    /// A bounded listing.
+    Entries(BoundedEntries),
+    /// What an opened object turned out to be.
+    Facts(ObjectFacts),
+}
+
+/// A directory walk, and whether it ran out of room.
+///
+/// Overflow is a fact the walk OBSERVED — it collects to the bound plus one — rather than a
+/// silence at the boundary that would read as a complete short listing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BoundedEntries {
+    names: Vec<String>,
+    over_bound: bool,
+}
+
+impl BoundedEntries {
+    /// Record a walk that collected `names`, having asked for at most `limit`.
+    #[must_use]
+    pub fn of(mut names: Vec<String>, limit: usize) -> Self {
+        names.sort_unstable();
+        let over_bound = names.len() > limit;
+        Self { names, over_bound }
+    }
+
+    /// The entries, in one order.
+    #[must_use]
+    pub fn names(&self) -> &[String] {
+        &self.names
+    }
+
+    /// Whether the walk found more than the bound admits.
+    #[must_use]
+    pub const fn over_bound(&self) -> bool {
+        self.over_bound
+    }
+
+    /// Whether the walk found nothing at all, which is different from finding nothing it
+    /// recognized.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.names.is_empty() && !self.over_bound
+    }
+}
+
+/// What an opened object is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ObjectKind {
+    /// A directory.
+    Directory,
+    /// A regular file.
+    RegularFile,
+    /// Something else — a device, a socket, a pipe.
+    Other,
+}
+
+/// Whether anyone but the owner can reach an object.
+///
+/// Three answers rather than a boolean, because "the platform says nobody else can" and "this
+/// platform does not answer the question" are different facts and the second must never be read
+/// as the first.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GroupAndOtherAccess {
+    /// The platform reports no group or other access.
+    None,
+    /// The platform reports some.
+    Present,
+    /// The platform exposes no comparable answer. Recorded, never simulated.
+    NotInspectable,
+}
+
+/// What is known about who owns an object.
+///
+/// Deliberately NOT a boolean, and deliberately carrying an unestablished arm: the effective
+/// user's identity is not reachable from this crate's dependency set, so an object this attempt
+/// did not create cannot be shown to belong to this user. Naming that keeps a reopened keyset
+/// from reading as owner-verified when nothing verified it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OwnerCheck {
+    /// This attempt created the object, so it belongs to whoever this process is.
+    CreatedByThisAttempt,
+    /// Not established. The mode answer above stands on its own and this one does not.
+    NotEstablished,
+}
+
+/// What an inspection of an already-open object found.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ObjectFacts {
+    kind: ObjectKind,
+    redirected: bool,
+    group_and_other: GroupAndOtherAccess,
+    owner: OwnerCheck,
+}
+
+impl ObjectFacts {
+    /// Record what an inspection found. Every field is stated; none defaults.
+    #[must_use]
+    pub const fn of(
+        kind: ObjectKind,
+        redirected: bool,
+        group_and_other: GroupAndOtherAccess,
+        owner: OwnerCheck,
+    ) -> Self {
+        Self {
+            kind,
+            redirected,
+            group_and_other,
+            owner,
+        }
+    }
+
+    /// What it is.
+    #[must_use]
+    pub const fn kind(self) -> ObjectKind {
+        self.kind
+    }
+
+    /// Whether the name is a link, junction, or reparse point.
+    #[must_use]
+    pub const fn redirected(self) -> bool {
+        self.redirected
+    }
+
+    /// What the platform says about group and other access.
+    #[must_use]
+    pub const fn group_and_other(self) -> GroupAndOtherAccess {
+        self.group_and_other
+    }
+
+    /// What is known about ownership.
+    #[must_use]
+    pub const fn owner(self) -> OwnerCheck {
+        self.owner
+    }
+
+    /// Whether this attempt established who owns the object.
+    ///
+    /// Answers what was shown rather than what is hoped: an object this attempt did not create
+    /// carries [`OwnerCheck::NotEstablished`], and no surface may read that as verified.
+    #[must_use]
+    pub const fn ownership_established(self) -> bool {
+        matches!(self.owner, OwnerCheck::CreatedByThisAttempt)
+    }
+}
+
 /// Every act this crate performs against a filesystem, as one surface.
 ///
 /// SEALED: the supertrait is private, so no type outside this crate can implement it. A
 /// production route therefore cannot be handed a modelled filesystem, and the production and
 /// modelled implementations cannot drift into two different vocabularies.
 pub trait LocalIo: Sealed {
-    /// Perform `op` against `path`, or answer the fault that stopped it.
+    /// Perform `request` against `path`, or answer the fault that stopped it.
     ///
     /// The one entry point, so the schedule sees every act. A richer surface — a method per
     /// operation — would be pleasanter to call and would let a new method skip the schedule.
     ///
     /// # Errors
     /// Answers the fault the platform or the schedule produced.
-    fn perform(&mut self, op: Op, path: &str) -> Result<(), IoFault>;
+    fn perform(&mut self, request: Request<'_>, path: &str) -> Result<Answer, IoFault>;
 
     /// What this implementation can say about directory synchronization.
     fn directory_sync(&self) -> DirectorySync;
+}
+
+/// Perform `request` and require it to answer [`Answer::Done`].
+fn done(io: &mut dyn LocalIo, request: Request<'_>, path: &str) -> Result<(), IoFault> {
+    match io.perform(request, path)? {
+        Answer::Done => Ok(()),
+        _ => Err(IoFault::Platform),
+    }
+}
+
+pub(crate) fn create_directory_exclusive(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
+    done(io, Request::CreateDirectoryExclusive, path)
+}
+
+pub(crate) fn create_file_exclusive(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
+    done(io, Request::CreateFileExclusive, path)
+}
+
+pub(crate) fn open_existing_no_follow(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
+    done(io, Request::OpenExistingNoFollow, path)
+}
+
+pub(crate) fn write_all(io: &mut dyn LocalIo, path: &str, bytes: &[u8]) -> Result<(), IoFault> {
+    done(io, Request::WriteAll { bytes }, path)
+}
+
+pub(crate) fn sync_file(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
+    done(io, Request::SyncFile, path)
+}
+
+/// Synchronize a directory, answering what the platform was able to do.
+///
+/// A platform without the operation has not FAILED it, so the two answers are separate: this
+/// returns the platform's standing, and only a real failure comes back as an error.
+pub(crate) fn sync_directory(io: &mut dyn LocalIo, path: &str) -> Result<DirectorySync, IoFault> {
+    let standing = io.directory_sync();
+    done(io, Request::SyncDirectory, path)?;
+    Ok(standing)
+}
+
+pub(crate) fn read_bounded(
+    io: &mut dyn LocalIo,
+    path: &str,
+    limit: usize,
+) -> Result<Vec<u8>, IoFault> {
+    match io.perform(Request::ReadBounded { limit }, path)? {
+        Answer::Bytes(bytes) if bytes.len() <= limit => Ok(bytes),
+        Answer::Bytes(_) => Err(IoFault::OverBound),
+        _ => Err(IoFault::Platform),
+    }
+}
+
+pub(crate) fn enumerate_bounded(
+    io: &mut dyn LocalIo,
+    path: &str,
+    limit: usize,
+) -> Result<BoundedEntries, IoFault> {
+    match io.perform(Request::EnumerateBounded { limit }, path)? {
+        Answer::Entries(entries) => Ok(entries),
+        _ => Err(IoFault::Platform),
+    }
+}
+
+pub(crate) fn inspect_opened(io: &mut dyn LocalIo, path: &str) -> Result<ObjectFacts, IoFault> {
+    match io.perform(Request::InspectOpened, path)? {
+        Answer::Facts(facts) => Ok(facts),
+        _ => Err(IoFault::Platform),
+    }
 }
 
 #[cfg(test)]

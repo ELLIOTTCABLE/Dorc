@@ -26,11 +26,30 @@ pub enum RootPlatform {
     OtherUnix,
 }
 
-/// The two role-typed roots an edge resolved, before validation.
+impl RootPlatform {
+    /// Which honest baseline this platform's objects are validated against.
+    ///
+    /// macOS is grouped with the other Unixes because what differs there is where the roots LAND,
+    /// not what the filesystem can be asked. The Windows arm is explicitly weaker and stays a
+    /// separate answer rather than being folded into a portable one that is true nowhere.
+    #[must_use]
+    pub const fn baseline(self) -> crate::store::PlatformBaseline {
+        match self {
+            Self::Windows => crate::store::PlatformBaseline::Windows,
+            Self::MacOs | Self::OtherUnix => crate::store::PlatformBaseline::UnixLike,
+        }
+    }
+}
+
+/// The two role-typed platform BASES an edge resolved, before validation.
 ///
-/// A pair of strings and the platform they came from. Deliberately not a filesystem type: this
-/// crate holds what it was told, and turning either into a validated handle is the local I/O
-/// layer's act, under its own refusals.
+/// Bases rather than product roots: the edge answers where a platform keeps per-user
+/// configuration and state, and every component below that is this crate's, fixed and typed. That
+/// is what makes `30Rd`'s "only fixed, typed, single-component internal names beneath the
+/// landing" true from the very top rather than from wherever a caller happened to stop joining.
+///
+/// Deliberately not a filesystem type: this crate holds what it was told, and turning either into
+/// a validated location is the local I/O layer's act, under its own refusals.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RootInputs {
     platform: RootPlatform,
@@ -106,13 +125,23 @@ impl RootInputs {
         self.platform
     }
 
-    /// The root for `role`.
+    /// The platform base for `role`, as the edge answered it.
     #[must_use]
-    pub fn root(&self, role: RootRole) -> &str {
+    pub fn base(&self, role: RootRole) -> &str {
         match role {
             RootRole::Configuration => &self.configuration,
             RootRole::State => &self.state,
         }
+    }
+
+    /// The product root for `role`: the base, plus this project's one fixed component.
+    ///
+    /// The single component the bootstrap protocol may have to create, and the landing every
+    /// later child is taken relative to.
+    #[must_use]
+    pub fn product_root(&self, role: RootRole) -> Option<crate::names::LocalPath> {
+        crate::names::LocalPath::of_root(self.platform, self.base(role))
+            .child(crate::names::PRODUCT_DIR)
     }
 }
 
@@ -167,12 +196,35 @@ mod tests {
 
     #[test]
     fn the_two_roles_stay_distinct_even_where_one_path_serves_both() {
-        // The macOS shape. The paths coincide and the roles do not, so nothing may reach for
-        // "the root" and get whichever one it happened to want.
-        let shared = "/Users/x/Library/Application Support/dorc";
+        // The macOS shape. The bases coincide and the roles do not, so nothing may reach for
+        // "the root" and get whichever one it happened to want. Below the shared product root the
+        // two versioned subdirectories keep the roles apart without claiming a path or backup
+        // separation they do not have.
+        let shared = "/Users/x/Library/Application Support";
         let roots = RootInputs::of(RootPlatform::MacOs, shared, shared).expect("absolute");
-        assert_eq!(roots.root(RootRole::Configuration), shared);
-        assert_eq!(roots.root(RootRole::State), shared);
+        assert_eq!(roots.base(RootRole::Configuration), shared);
+        assert_eq!(roots.base(RootRole::State), shared);
+        assert_eq!(
+            roots.product_root(RootRole::Configuration),
+            roots.product_root(RootRole::State)
+        );
         assert_ne!(RootRole::Configuration, RootRole::State);
+    }
+
+    #[test]
+    fn the_product_root_is_the_base_plus_exactly_one_fixed_component() {
+        // The component is this project's and is never supplied, so a base carrying its own
+        // trailing name cannot silently become the product root.
+        let roots = RootInputs::of(RootPlatform::OtherUnix, "/home/x/.config", "/home/x/.state")
+            .expect("absolute");
+        let configuration = roots
+            .product_root(RootRole::Configuration)
+            .expect("one ordinary component");
+        assert_eq!(configuration.as_str(), "/home/x/.config/dorc");
+        let windows = RootInputs::of(RootPlatform::Windows, "C:\\Roaming", "C:\\Local")
+            .expect("absolute")
+            .product_root(RootRole::Configuration)
+            .expect("one ordinary component");
+        assert_eq!(windows.as_str(), "C:\\Roaming\\dorc");
     }
 }

@@ -22,7 +22,11 @@ fn crates_root() -> PathBuf {
 /// no implementation, so the shipped binary cannot sign. The list does not record that distinction,
 /// and must not — it answers which crates may reach the randomness at all, and a dev target reaches
 /// it exactly as a production one would. The entry stays put when the edge becomes ordinary.
-const MAY_NAME_IT: [&str; 1] = ["cli"];
+///
+/// `receipt-local` names it because the local durable edge PERSISTS key documents and the crypto
+/// crate is what produces and reads them. That edge is outside the analyzer graph, which its own
+/// fences check, so the randomness reaching it moves nothing.
+const MAY_NAME_IT: [&str; 2] = ["cli", "receipt-local"];
 
 fn manifests() -> Vec<(String, String)> {
     let root = crates_root();

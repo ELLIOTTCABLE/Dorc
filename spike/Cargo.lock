@@ -589,6 +589,7 @@ name = "dorc-receipt-local"
 version = "0.0.0"
 dependencies = [
  "dorc-receipt",
+ "dorc-receipt-crypto",
 ]
 
 [[package]]

@@ -23,10 +23,10 @@
 //!
 //! # Stage
 //!
-//! This is the contracts stage: names, bounds, states, publication properties, the manifest
-//! grammar, and the deterministic I/O vocabulary with its failure schedule. There is no
-//! production key generation and no production store here, and nothing in this crate can select
-//! one.
+//! The keyset is live: root validation, the exclusive first-use initialization sequence, ordinary
+//! reopen validation, and a read-only open that is a separate entry point rather than a mode of
+//! the write one. There is no receipt store here yet, and nothing in this crate can select a
+//! provider — the one generator is the value a caller hands in.
 //!
 //! # The seals, as compile-fail pins
 //!
@@ -81,6 +81,30 @@
 //! let b = PublicationProperties::of(true, true, true, DirectorySync::UnavailableOnPlatform);
 //! let _stronger = a > b;
 //! ```
+//!
+//! A read open and a write open are separate entry points, and their answers are separate types.
+//! Nothing narrows one into the other, so a route that asked why cannot end up holding something
+//! that publishes:
+//!
+//! ```compile_fail
+//! fn wants(_: dorc_receipt_local::LocalWriteOpenV1) {}
+//! fn give(read: dorc_receipt_local::LocalReadOpenV1) { wants(read); }
+//! ```
+//!
+//! ```compile_fail
+//! fn wants(_: dorc_receipt_local::LocalWriteKeysV1) {}
+//! fn give(read: dorc_receipt_local::LocalReadKeysV1) { wants(read); }
+//! ```
+
+// The dependency-graph fact `dorc-receipt-crypto` already carries, inherited by naming it: `age`
+// reaches two major lines of several hashing crates through separate subtrees, which
+// `-D warnings` then makes fatal. No version choice avoids it, and `deny.toml` sets
+// `multiple-versions = "warn"` for the workspace. `expect`, so it warns once the duplication
+// clears.
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "a transitive-dependency fact; see the note above"
+)]
 
 pub mod io;
 pub mod keyset;
@@ -91,10 +115,14 @@ pub mod names;
 pub mod roots;
 pub mod store;
 
-pub use keyset::KeyAvailability;
+pub use keyset::{
+    KeyAvailability, KeysetLocation, LocalReadKeysV1, LocalReadOpenV1, LocalWriteKeysV1,
+    LocalWriteOpenV1, PermissionSubject, StorePresence, open_for_read,
+    open_or_initialize_for_write,
+};
 pub use limits::LocalLimits;
 pub use manifest::{KeyRole, KeysetManifest, ManifestRefusal};
-pub use names::{NameRefusal, NamedSpecies, ReceiptFileName};
+pub use names::{LocalPath, NameRefusal, NamedSpecies, ReceiptFileName};
 pub use roots::{RootInputs, RootPlatform, RootRefusal, RootRole};
 pub use store::{
     DirectorySync, EntryStanding, EnumerateFailure, IncompleteState, PlatformBaseline,

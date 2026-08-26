@@ -19,6 +19,10 @@ publish = false
 # `dorc-cli` may, and `crate_fences.rs` checks both directions.
 [dependencies]
 dorc-receipt = { path = "../receipt", version = "0.0.0" }
+# The key documents themselves — generation, parsing, and serialization in the encodings their
+# own libraries own. This crate persists what that one produces and decides nothing about what a
+# key IS, which is the whole reason the two are separate crates.
+dorc-receipt-crypto = { path = "../receipt-crypto", version = "0.0.0" }
 
 [lints]
 workspace = true
@@ -38,3 +42,7 @@ path = "tests/crate_fences.rs"
 [[test]]
 name = "io_model"
 path = "tests/io_model.rs"
+
+[[test]]
+name = "keyset_sweep"
+path = "tests/keyset_sweep.rs"
