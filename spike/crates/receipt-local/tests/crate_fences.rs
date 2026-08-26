@@ -145,6 +145,136 @@ fn the_local_edge_names_only_the_receipt_crates() {
     assert!(named > 0, "it names no workspace crate at all");
 }
 
+/// The authority-bearing entry points of this crate: everything that initializes keys, loads
+/// them, publishes a receipt, or removes an object.
+///
+/// Checked below in BOTH directions — that every name here is still defined in this crate, and
+/// that no production file outside it reaches one. A rename that left this list stale would
+/// otherwise leave a fence matching nothing while reading like a fence.
+const AUTHORITY_ENTRY_POINTS: [&str; 5] = [
+    "open_or_initialize_for_write",
+    "open_for_read",
+    "open_or_create",
+    "publish_required_v1",
+    "remove_owned",
+];
+
+/// The production files permitted to reach any of them.
+///
+/// Empty TODAY, and that is the stage rather than an oversight: no production route selects a key
+/// provider or a store yet. The stage that wires the real binary adds its files here, one at a
+/// time, and each addition is a visible edit to this list rather than a call that appeared.
+const MAY_REACH_THE_EDGE: [&str; 0] = [];
+
+/// Every production `.rs` file in the workspace outside this crate, as (path, text).
+///
+/// Production only: `tests/` and `benches/` are excluded, because a fixture reaching the edge is
+/// exactly what the test layers are for.
+fn production_sources() -> Vec<(String, String)> {
+    fn walk(dir: &Path, out: &mut Vec<(String, String)>) {
+        for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, out);
+            } else if path.extension().is_some_and(|ext| ext == "rs") {
+                if let Ok(text) = std::fs::read_to_string(&path) {
+                    out.push((path.to_string_lossy().replace('\\', "/"), text));
+                }
+            }
+        }
+    }
+    let root = crates_root();
+    let mut found = Vec::new();
+    for entry in std::fs::read_dir(&root).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name == "receipt-local" {
+            continue;
+        }
+        walk(&entry.path().join("src"), &mut found);
+    }
+    found.sort_by(|a, b| a.0.cmp(&b.0));
+    assert!(
+        found.len() > 50,
+        "the source walk found {} files; it is looking in the wrong place",
+        found.len()
+    );
+    found
+}
+
+/// Whether `text` carries `needle` as a WHOLE identifier.
+///
+/// Substring matching would count every identifier merely ending in those bytes, which is how a
+/// fence quietly widens into one that matches things nobody meant.
+fn names_identifier(text: &str, needle: &str) -> bool {
+    let is_part = |byte: u8| byte == b'_' || byte.is_ascii_alphanumeric();
+    text.match_indices(needle).any(|(at, _)| {
+        let before = at
+            .checked_sub(1)
+            .and_then(|index| text.as_bytes().get(index))
+            .copied();
+        let after = text.as_bytes().get(at + needle.len()).copied();
+        !before.is_some_and(is_part) && !after.is_some_and(is_part)
+    })
+}
+
+#[test]
+fn every_authority_entry_point_this_fence_names_still_exists() {
+    // The stale half. A rename that left an entry here pointing at nothing would leave the census
+    // below walking for a name no code carries — a fence that passes because it matches nothing.
+    let mut sources = String::new();
+    for entry in std::fs::read_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("src"))
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        sources.push_str(&std::fs::read_to_string(entry.path()).unwrap_or_default());
+    }
+    assert!(
+        !sources.is_empty(),
+        "this crate's own sources were not read"
+    );
+    for entry_point in AUTHORITY_ENTRY_POINTS {
+        assert!(
+            names_identifier(&sources, &format!("fn {entry_point}")),
+            "{entry_point} is named by this fence and defined nowhere in the crate"
+        );
+    }
+}
+
+#[test]
+fn only_the_listed_production_files_reach_an_authority_entry_point() {
+    // The census `30Rd` requires: every production call to key initialization, key loading, or
+    // local receipt publication is enumerated, and adding one is a governed edit rather than
+    // something that appears. A file has to name the crate to call into it, so naming the crate
+    // is the precondition and the entry point is what makes the reach an authority-bearing one.
+    let mut reaching_files: Vec<String> = Vec::new();
+    for (path, text) in production_sources() {
+        if !names_identifier(&text, "dorc_receipt_local") {
+            continue;
+        }
+        let reached: Vec<&str> = AUTHORITY_ENTRY_POINTS
+            .into_iter()
+            .filter(|entry_point| names_identifier(&text, entry_point))
+            .collect();
+        if !reached.is_empty() {
+            reaching_files.push(format!("{path} reaches {reached:?}"));
+        }
+    }
+    for reaching_file in &reaching_files {
+        assert!(
+            MAY_REACH_THE_EDGE
+                .iter()
+                .any(|allowed| reaching_file.starts_with(allowed)),
+            "{reaching_file}, and is not on the list"
+        );
+    }
+    assert_eq!(
+        reaching_files.len(),
+        MAY_REACH_THE_EDGE.len(),
+        "the files reaching an entry point are {reaching_files:?}; the list is {MAY_REACH_THE_EDGE:?}"
+    );
+}
+
 #[test]
 fn the_local_edge_carries_no_cryptographic_package_of_its_own() {
     // The crypto crate owns generation, parsing, and serialization of private key documents. This
