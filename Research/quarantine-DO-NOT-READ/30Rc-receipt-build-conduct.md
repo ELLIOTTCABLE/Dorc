@@ -54,7 +54,8 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 5 why / correlation / re-derivation | done except its severance — see the blocker |
 | repair pass (order line · identity table · framing) | done @ `b9a0be08` |
 | 5A `30Rd` D0 crate, names, vectors, I/O model | done |
-| 5A `30Rd` D1–D4 | D1 next |
+| 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `075d372e` |
+| 5A `30Rd` D3 store · D4 production route | D3 next |
 | 6 rip the old implementation (`30Rd` D5) | not started |
 
 ## what is owed
@@ -118,6 +119,23 @@ read `uncollected`. Both are explained under *rulings*; neither is an oversight.
 for trivial removal when stable-format output becomes supported. It cannot live at a lib seam
 — a refusal there would refuse the very runs that want an undated artifact. Also D4's: the
 publication-gate atomicity change, and the `results::replayed_records` severance.
+
+**Two `tc-*` awaiting the human, one root.** `30Rd` requires the Unix landing be owned by the
+effective user, and the effective uid is **not reachable in safe Rust** from this crate's
+dependency set — `libc::geteuid` is `unsafe fn` and the workspace `forbid`s unsafe, so it
+needs `rustix`/`nix` as a new PRODUCTION dependency of a security-relevant crate, unscouted by
+`30Rd`. `tc-non-following-open-needs-a-platform-call` has the same root: opening an existing
+member is `symlink_metadata`-then-open, so a swap between them stays possible (creation is
+unaffected — exclusive create is one act; and inspect-and-read are on the retained handle, so
+that ordering is real). Interim, and it fails safe: ownership is a typed explicitly-
+unestablished fact (`OwnerCheck::NotEstablished`), so a reopened keyset can never read as
+owner-verified. The mode half is fully implemented. **Does not block D3.**
+
+**Zeroization is partial, and will be mis-summarized if not recorded**: `ed25519` 2.2.3
+declares no `zeroize` feature, so its scrubs of the PKCS#8 intermediate buffer and of
+`KeypairBytes` are unreachable whatever we configure downstream. `30Rd` already disclaims
+memory-erasure guarantees, so nothing is broken — but nobody may later write that the private
+key material is scrubbed.
 
 **A fence gap worth closing when something touches it:** a malformed `DORC_FIXTURE_CLOCK_MS`
 is read at the process edge and is NOT structurally test-only, so a production run can be
@@ -448,6 +466,14 @@ refused" passes with the guard removed. Only the assertion naming the exact slug
 regression. The tidying instinct that replaces a slug check with a plain rc check is
 therefore a silent un-testing, and the case now carries that measurement in its own doc so a
 successor knows what they would be deleting.
+
+A seventh, and the most generalizable of them: **a `compile_fail` test proves only that
+SOMETHING failed to compile.** Unless it pins the exact error it passes for any reason. Two
+mechanisms measured in one lane: a clone-pin whose receiver is a REFERENCE degrades the hard
+`E0599` into a mere lint, which rustdoc scores as a successful compile; and a pin carrying a
+trait signature that has since moved passes on the signature mismatch rather than on the seal
+it claims to test. Demand the property by value; pin the error; verify in the failing
+direction.
 
 A sixth: **a structural check spelled lexically is satisfiable by a comment.** The identity
 table's opener/terminator check ran `contains` over encoder source text; it now asserts
