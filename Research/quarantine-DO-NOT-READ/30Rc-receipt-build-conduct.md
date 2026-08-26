@@ -13,10 +13,12 @@
 Replace the single mutable whylog with three immutable receipt species — a plan receipt, an
 apply intent written before the first mutating dispatch, and an apply outcome — correlated by
 typed identities into a report-only graph. Everything read back is inert by type. Two new
-crates: a pure `dorc-receipt` and a `dorc-receipt-crypto` holding only the Age/Ed25519
-implementations of its capability traits. Stages 0–4 are complete and Stage 5 is complete
-except its severance; Stage 6 is unstarted. Both remainders are one blocker — the binary can
-neither sign nor verify, so it writes and reads no receipts — and that blocker is the human's.
+crates: a pure `dorc-receipt`, a `dorc-receipt-crypto` holding the Age/Ed25519 implementations
+of its capability traits, and — added by `30Rd` — a `dorc-receipt-local` owning the default
+key/store I/O. Stages 0–4 are complete and Stage 5 is complete except its severance, which
+`sched-severance-lands-in-d-four` places in D4. What remains is a format/identity repair pass,
+then Stage 5A (`30Rd` D0–D4: the binary must be able to persist and read its own replacement),
+then Stage 6 (D5: the old durable goes). Read *the schedule* below before dispatching.
 
 ## where the work is
 
