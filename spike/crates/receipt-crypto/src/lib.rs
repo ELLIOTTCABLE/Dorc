@@ -22,6 +22,13 @@
     reason = "a transitive-dependency fact; see the module note above"
 )]
 
+pub mod key_document;
+
+pub use key_document::{
+    EncryptionPrivateDocument, EntropyKeysetGenerator, GeneratedKeysetV1, KeyDocumentBound,
+    KeyDocumentRefusal, KeySecretEntropy, KeysetGenerator, LineDeparture, SigningPrivateDocument,
+};
+
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
 use age::x25519;
 use dorc_receipt::capability::{
@@ -53,6 +60,11 @@ impl Ed25519Signer {
     #[must_use]
     pub fn public_material(&self) -> [u8; 32] {
         self.key.verifying_key().to_bytes()
+    }
+
+    /// The key itself, for the one module that must encode it as a document.
+    pub(crate) const fn key(&self) -> &SigningKey {
+        &self.key
     }
 }
 
@@ -230,6 +242,17 @@ impl AgeOpener {
     #[must_use]
     pub fn recipient_text(&self) -> String {
         self.identity.to_public().to_string()
+    }
+
+    /// The public recipient, so a document holding one of these can hand out a sealer without
+    /// a second copy of the secret half existing anywhere.
+    pub(crate) fn recipient(&self) -> x25519::Recipient {
+        self.identity.to_public()
+    }
+
+    /// The identity itself, for the one module that must encode it as a document.
+    pub(crate) const fn identity(&self) -> &x25519::Identity {
+        &self.identity
     }
 }
 

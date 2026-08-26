@@ -19,10 +19,22 @@ publish = false
 # canonical ASCII armor, so it is named explicitly. `plugin`, `ssh`, `async`, `cli-common`
 # and `unstable` stay off; `ed25519-dalek` takes no key generation, serde, batch, prehash,
 # or hazardous surface.
+#
+# `pkcs8` is what makes the private signing document the LIBRARY's encoding rather than one
+# this project invented, and `zeroize` — off by default once `default-features` is — is what
+# gives the in-memory key its erase-on-drop. `pem` stays off: the stored document is DER, and
+# a second textual encoding would be a second thing a reader might accept.
 [dependencies]
 dorc-receipt = { path = "../receipt", version = "0.0.0" }
 age = { version = "=0.12.1", default-features = false, features = ["armor"] }
-ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
+ed25519-dalek = { version = "=2.2.0", default-features = false, features = [
+   "std",
+   "pkcs8",
+   "zeroize",
+] }
+# For the stack buffer a generated secret passes through on its way into a key. Already in the
+# graph beneath both packages above, so this line adds an edge and no package.
+zeroize = { version = "=1.9.0", default-features = false }
 
 [lints]
 workspace = true

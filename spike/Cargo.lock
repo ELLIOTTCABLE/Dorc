@@ -581,6 +581,7 @@ dependencies = [
  "age",
  "dorc-receipt",
  "ed25519-dalek",
+ "zeroize",
 ]
 
 [[package]]
