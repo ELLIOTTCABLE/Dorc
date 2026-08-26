@@ -198,6 +198,9 @@ pub use settle::{
 };
 use world::{EffectiveAct, Freshness, NoMutationProof};
 
+/// The reviewed statement both plan-side identity encoders are checked against.
+pub mod identity_table;
+
 pub mod planning_input;
 
 pub mod presentation;

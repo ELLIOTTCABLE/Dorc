@@ -1,0 +1,11 @@
+== plan ==
+leaf=0 ast=0 sh="echo hi" Run
+== probe ==
+== render.probe ==
+#!/bin/sh
+
+== render.apply ==
+#!/bin/sh
+echo hi
+
+== diags ==

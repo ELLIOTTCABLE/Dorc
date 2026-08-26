@@ -1,0 +1,17 @@
+dorc-planning-inputs/1
+semantics 34 dorc/test
+host 16 web1.example.net
+host 16 web1.example.net
+attempt 1
+generation absent
+policy-risk-faultless-skips no
+policy-mode 4 plan
+sources 1
+source-ordinal 0
+source-role 4 book
+source-path 10 webhost.sh
+source-digest 64 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+source-bytes 12
+admission 8 admitted
+records 0
+inputs-end

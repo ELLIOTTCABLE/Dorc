@@ -527,6 +527,34 @@ mod tests {
     }
 
     #[test]
+    fn the_five_domains_are_exactly_their_specified_strings() {
+        // Spelled out here rather than only at each declaration. A domain is what makes an
+        // identity an identity OF something, and an edited one silently re-identifies every
+        // document already written while every other test in the file goes on passing — the
+        // separation test below would still hold, because two edited domains still differ.
+        assert_eq!(
+            PLANNING_INPUT_DOMAIN,
+            "application/vnd.dorc.receipt.v1.planning-input"
+        );
+        assert_eq!(
+            PRESENTED_PLAN_DOMAIN,
+            "application/vnd.dorc.receipt.v1.presented-plan"
+        );
+        assert_eq!(
+            APPLY_IMAGE_DOMAIN,
+            "application/vnd.dorc.apply-artifact-image.v1"
+        );
+        assert_eq!(
+            SIGNING_KEY_DOMAIN,
+            "application/vnd.dorc.receipt.v1.signing-key-id"
+        );
+        assert_eq!(
+            ENCRYPTION_KEY_DOMAIN,
+            "application/vnd.dorc.receipt.v1.encryption-key-id"
+        );
+    }
+
+    #[test]
     fn separate_domains_over_one_body_produce_separate_digests() {
         let body = b"identical";
         assert_ne!(

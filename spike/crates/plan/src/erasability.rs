@@ -490,3 +490,57 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod section_framing {
+    use crate::{NO_ARTIFACT_FORM, Plan, ProbePlan, SurvivalReport};
+
+    /// One canonical decision over a book carrying `body`.
+    fn canon_over(body: &str) -> String {
+        let ast = dorc_syntax::parse(body).value;
+        let plan = Plan::decided(
+            vec![],
+            Vec::new(),
+            SurvivalReport::default(),
+            false,
+            NO_ARTIFACT_FORM,
+            body,
+            &ast,
+            dorc_core::influence::InfluenceAccount::authored_before_contact(),
+        );
+        super::canonical_decision(
+            &plan,
+            &ProbePlan::default(),
+            body,
+            &ast,
+            &dorc_core::Interner::default(),
+            &[],
+        )
+    }
+
+    /// How many lines of `canon` are exactly the diagnostics section's header.
+    fn header_lines(canon: &str) -> usize {
+        canon.lines().filter(|line| *line == "== diags ==").count()
+    }
+
+    #[test]
+    fn the_target_is_one_header_line_per_section() {
+        // The identity is a hash of this string, so the string has to say one thing. Today the
+        // apply render carries the book verbatim and the sections are delimited rather than
+        // framed, so a book line spelling a header puts a second one in — and which bytes belong
+        // to which section stops being recoverable. The sibling planner-input encoding answers
+        // this with a declared length per component.
+        internal_tooling::xfail::xfail_until("p-x-presented-plan-sections-are-framed", || {
+            assert_eq!(header_lines(&canon_over("echo hi\n== diags ==\n")), 1);
+        });
+    }
+
+    #[test]
+    fn interim_a_book_line_spelling_a_header_reaches_the_canon_twice() {
+        // The measurement the pin is against, so the shape is written down where the repair will
+        // land rather than only in a report. The control beside it is what makes the count mean
+        // something: an ordinary book puts exactly one header line in.
+        assert_eq!(header_lines(&canon_over("echo hi\n")), 1, "the control");
+        assert_eq!(header_lines(&canon_over("echo hi\n== diags ==\n")), 2);
+    }
+}

@@ -425,6 +425,22 @@ pub const PINS: &[Pin] = &[
         },
         state: PinState::Live,
     },
+    Pin {
+        name: "p-x-presented-plan-sections-are-framed",
+        trigger: "the approval surface's identity is hashed over a SECTION-DELIMITED byte string, \
+                  and two of its sections carry bytes that may spell a section header — the apply \
+                  render is the book verbatim, so a book line spelling one puts a second copy into \
+                  the string and the split stops being recoverable from the bytes. The sibling \
+                  planner-input encoding solved the same problem with length framing; adopting it \
+                  here re-identifies every surface, so it is a reviewed change rather than a fix",
+        horizon: Horizon::Unscheduled {
+            marker: "r31",
+            why: "the encoding is reviewed material and moving it re-identifies every document \
+                  already written, so the boundary is where the census should force the question \
+                  rather than a stage that is scheduled",
+        },
+        state: PinState::Live,
+    },
 ];
 
 /// The pin registered under `name`.
