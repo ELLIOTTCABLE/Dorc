@@ -211,10 +211,12 @@ fn is_redirect(metadata: &std::fs::Metadata) -> bool {
 #[cfg(unix)]
 fn access_of(metadata: &std::fs::Metadata) -> GroupAndOtherAccess {
     use std::os::unix::fs::PermissionsExt as _;
-    if (metadata.permissions().mode() & 0o077) == 0 {
-        GroupAndOtherAccess::None
-    } else {
+    /// Every read, write, and execute bit outside the owner's own.
+    const GROUP_AND_OTHER: u32 = 0o077;
+    if (metadata.permissions().mode() & GROUP_AND_OTHER) != 0 {
         GroupAndOtherAccess::Present
+    } else {
+        GroupAndOtherAccess::None
     }
 }
 
