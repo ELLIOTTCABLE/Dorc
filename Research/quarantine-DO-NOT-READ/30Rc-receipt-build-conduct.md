@@ -584,6 +584,17 @@ Plain-git rider worth knowing regardless: `git commit -- <dir>` commits everythi
 under that directory, and `git commit -- <paths>` commits the WORKTREE content of those
 paths, ignoring what was staged.
 
+**Brief every lane on the gate's SHAPE, not just its name** — two lanes stranded on it. The
+completion gate is ONE `mise run both gate:full-quiet` at the FINAL tip, foreground, Windows
+leg first. Per-leg runs during a lane are fine as private feedback and are NOT the gate: a
+Windows leg green at one commit and a WSL leg green at another verifies neither tip. And the
+Windows-first rule only helps the first pairing — the WSL leg's build cache is what inflates
+the pressure the Windows probe reads, so a *second* Windows run after a WSL run is the one
+that gets refused. When preflight refuses, **retry inside the turn** (it refuses in seconds,
+so a poll is nearly free); ending the turn to wait strands the lane, because the wake-up goes
+to the conductor and nobody is watching the thing being waited on. Never `DORC_PREFLIGHT=skip`
+— that bound exists because this box OOM'd twice.
+
 **Windows relink lock, unresolved and the human's.** `cargo test --no-run` intermittently
 cannot remove `spike/target/debug/dorc.exe` (`Access is denied`). Established: not the build —
 it survives deleting the binary, and only that step trips it. Suspected but NOT proven: a sync
