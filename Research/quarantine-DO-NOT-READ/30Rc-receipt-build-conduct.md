@@ -246,10 +246,15 @@ than drifted into. These are those choices:
   identity never authorizes, but it IS recompute-and-compared, so a collision produces a
   confident wrong explanation — the top of `271:rul-sin-ordering`. Cost of repair is lowest
   before anything external exists; pre-user reshape-in-place governs.
-- **An undated run never silently causes `--last` to select older history.** Sorting an
-  absent-clock order lowest does exactly that. Either the clock is structurally present on the
-  production route and the all-zeroes token is unrepresentable, or absence is an explicit state
-  a reader surfaces — never a silent sort position.
+- **Clocklessness is a REQUIRED capability, not a test artifact** (human-typed 2026-08-25):
+  stable tests need it now, and CI users eventually want a stable-format artifact they can diff
+  to ask "did the whylog change". So clockless support is built right out to the edge, and the
+  refusal to EMIT an undated receipt sits AT the production composition root, sited to be
+  trivially swapped out when stable-format output becomes a supported mode. Because production
+  never emits one, `--last` never sorts one, so the ruled principle holds by construction: an
+  undated run never silently causes older history to be selected. Do not "simplify" this by
+  making the all-zeroes token unrepresentable — that reading was floated by this conductor and
+  corrected by the human. Low priority; no live exposure until the edge emits.
 - **The order token**: a 20-digit value above `u64::MAX` is ADMITTED (the grammar fixes width,
   not range; refusing would make valid-but-large indistinguishable from malformed at the seat
   least able to tell). A REMINT takes the caller's order, never its origin's — a second document
