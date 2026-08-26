@@ -25,8 +25,13 @@
 //!
 //! The keyset is live: root validation, the exclusive first-use initialization sequence, ordinary
 //! reopen validation, and a read-only open that is a separate entry point rather than a mode of
-//! the write one. There is no receipt store here yet, and nothing in this crate can select a
-//! provider — the one generator is the value a caller hands in.
+//! the write one. The store is live beside it: exclusive final-name publication, bounded walks
+//! and reads, typed platform property proofs, and the maximum-order cohort — which is the only
+//! selection it offers, so nothing here can silently answer with older history.
+//!
+//! Nothing in this crate selects a provider; the one generator is the value a caller hands in.
+//! Nothing removes anything on its own initiative, either: the single removal path consumes an
+//! ownership token that only a failed publication hands back.
 //!
 //! # The seals, as compile-fail pins
 //!
@@ -94,6 +99,97 @@
 //! ```compile_fail
 //! fn wants(_: dorc_receipt_local::LocalWriteKeysV1) {}
 //! fn give(read: dorc_receipt_local::LocalReadKeysV1) { wants(read); }
+//! ```
+//!
+//! A publication proof exists because operations succeeded. It is not `Clone`, so no caller can
+//! hold two proofs of one publication — and the species is a type PARAMETER, so a proof of one
+//! document cannot be spent for another:
+//!
+//! ```
+//! use dorc_receipt::model::{Plain, PlanReceipt};
+//! use dorc_receipt_local::RequiredLocalPublicationV1;
+//! fn wants(proof: RequiredLocalPublicationV1<PlanReceipt, Plain>) -> String {
+//!     proof.file_name().spelled()
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! use dorc_receipt::model::{Plain, PlanReceipt};
+//! use dorc_receipt_local::RequiredLocalPublicationV1;
+//! fn twice(proof: RequiredLocalPublicationV1<PlanReceipt, Plain>) {
+//!     let _second: RequiredLocalPublicationV1<PlanReceipt, Plain> = proof.clone();
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! use dorc_receipt::model::{ApplyIntent, Plain, PlanReceipt};
+//! use dorc_receipt_local::RequiredLocalPublicationV1;
+//! fn wants(_: RequiredLocalPublicationV1<ApplyIntent, Plain>) {}
+//! fn give(plan: RequiredLocalPublicationV1<PlanReceipt, Plain>) { wants(plan); }
+//! ```
+//!
+//! A fixture or volatile sink answers the receipt crate's own published state. It is a different
+//! type, with no route to the proof a required publication mints — which is what keeps a required
+//! arm from being satisfied by something held in memory:
+//!
+//! ```compile_fail
+//! use dorc_receipt::model::{Plain, PlanReceipt};
+//! use dorc_receipt::writer::PublishedReceipt;
+//! use dorc_receipt_local::RequiredLocalPublicationV1;
+//! fn wants(_: RequiredLocalPublicationV1<PlanReceipt, Plain>) {}
+//! fn give(fixture: PublishedReceipt<PlanReceipt, Plain>) { wants(fixture); }
+//! ```
+//!
+//! A name is never enough to reach an entry. Reading takes the ownership-bearing handle a walk
+//! produced, so a spelling a caller assembled does not resolve:
+//!
+//! ```compile_fail
+//! use dorc_receipt_local::LocalReceiptStoreV1;
+//! fn by_name(store: &LocalReceiptStoreV1, io: &mut dyn dorc_receipt_local::io::LocalIo) {
+//!     let _ = store.read(io, "plan-v1-00000000000000000000-0000.dorc-receipt");
+//! }
+//! ```
+//!
+//! The required policy is the store's to mint, so no caller can present a weaker platform's rules
+//! to a publication running on this one:
+//!
+//! ```
+//! assert_eq!(
+//!     dorc_receipt_local::LocalRequiredReceiptPolicyV1::IDENTITY,
+//!     "required-local-v1"
+//! );
+//! ```
+//!
+//! ```compile_fail
+//! let _policy = dorc_receipt_local::LocalRequiredReceiptPolicyV1 {
+//!     baseline: dorc_receipt_local::PlatformBaseline::Windows,
+//! };
+//! ```
+//!
+//! Removal is a single act: the ownership token is consumed, so a failed cleanup cannot be
+//! retried into a second removal by the same name.
+//!
+//! ```compile_fail
+//! use dorc_receipt_local::{IncompletePublicationOwned, LocalReceiptStoreV1};
+//! fn twice(
+//!     store: &LocalReceiptStoreV1,
+//!     io: &mut dyn dorc_receipt_local::io::LocalIo,
+//!     owned: IncompletePublicationOwned,
+//! ) {
+//!     let _ = store.remove_owned(io, owned);
+//!     let _ = store.remove_owned(io, owned);
+//! }
+//! ```
+//!
+//! And the set of species a store can file is closed to the receipt crate's own three:
+//!
+//! ```compile_fail
+//! struct Mine;
+//! impl dorc_receipt_local::StoredSpecies for Mine {
+//!     const NAMED: dorc_receipt_local::NamedSpecies = dorc_receipt_local::NamedSpecies::Plan;
+//!     type Id = u8;
+//!     fn id_hex(_: u8) -> String { String::new() }
+//! }
 //! ```
 
 // The dependency-graph fact `dorc-receipt-crypto` already carries, inherited by naming it: `age`
