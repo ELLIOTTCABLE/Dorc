@@ -50,3 +50,11 @@ path = "tests/keyset_sweep.rs"
 [[test]]
 name = "native_keyset"
 path = "tests/native_keyset.rs"
+
+[[test]]
+name = "store_sweep"
+path = "tests/store_sweep.rs"
+
+[[test]]
+name = "native_store"
+path = "tests/native_store.rs"

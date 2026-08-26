@@ -1119,9 +1119,11 @@ impl LocalReceiptStoreV1 {
             _ => StoreReadFailure::ReadFailed,
         })?;
         let byte_length = raw.len();
+        // Measured before the bytes are handed over, because the bounded type exposes none.
+        let truncated_opening = is_truncated_opening(&raw);
         let bytes = BoundedReceiptBytes::of(raw, &self.limits.receipt)
             .map_err(|_| StoreReadFailure::OverReceiptBound)?;
-        let standing = standing_of(&bytes, &self.limits.receipt);
+        let standing = standing_of(&bytes, &self.limits.receipt, truncated_opening);
         Ok(StoredReceiptRead {
             standing,
             byte_length,
@@ -1164,16 +1166,32 @@ const fn before_create(reason: PublishFailure) -> PublishRefusal {
     }
 }
 
+/// Whether the bytes are a PROPER PREFIX of the one line every V1 document opens with.
+///
+/// The distinction that separates the shortest truncations from foreign bytes. A publication
+/// interrupted early leaves a prefix of the opening line — an empty file being the shortest of
+/// them — which the locator can only report as an unknown version, the same answer it gives some
+/// other format entirely. Comparing against the opening is what tells the two apart without a
+/// second parser.
+fn is_truncated_opening(raw: &[u8]) -> bool {
+    let opening = format!("{}\n", dorc_receipt::format::VERSION_LINE);
+    raw.len() < opening.len() && opening.as_bytes().starts_with(raw)
+}
+
 /// What a bounded lexical look says the bytes are.
-fn standing_of(bytes: &BoundedReceiptBytes, limits: &ReceiptLimits) -> EntryStanding {
+fn standing_of(
+    bytes: &BoundedReceiptBytes,
+    limits: &ReceiptLimits,
+    truncated_opening: bool,
+) -> EntryStanding {
+    let incomplete = EntryStanding::IncompletePublication {
+        state: IncompleteState::InProgressOrAbandoned,
+    };
     match bytes.locate(limits) {
         Ok(_) => EntryStanding::CompleteBytes,
         // A span or the trailer being absent is the shape a truncated document always takes.
-        Err(RefusalReason::Structure { .. } | RefusalReason::SignatureShape) => {
-            EntryStanding::IncompletePublication {
-                state: IncompleteState::InProgressOrAbandoned,
-            }
-        }
+        Err(RefusalReason::Structure { .. } | RefusalReason::SignatureShape) => incomplete,
+        Err(RefusalReason::UnsupportedVersion) if truncated_opening => incomplete,
         Err(_) => EntryStanding::Damaged,
     }
 }
