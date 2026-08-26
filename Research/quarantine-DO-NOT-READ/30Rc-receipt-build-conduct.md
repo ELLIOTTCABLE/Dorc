@@ -54,7 +54,7 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 5 why / correlation / re-derivation | done except its severance — see the blocker |
 | repair pass (order line · identity table · framing) | done @ `b9a0be08` |
 | 5A `30Rd` D0 crate, names, vectors, I/O model | done |
-| 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `075d372e` |
+| 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `366822be` |
 | 5A `30Rd` D3 store · D4 production route | D3 next |
 | 6 rip the old implementation (`30Rd` D5) | not started |
 
@@ -285,6 +285,15 @@ than drifted into. These are those choices:
   identity never authorizes, but it IS recompute-and-compared, so a collision produces a
   confident wrong explanation — the top of `271:rul-sin-ordering`. Cost of repair is lowest
   before anything external exists; pre-user reshape-in-place governs.
+- **The opacity line is about US, not about "why" comments.** A comment naming *what goes
+  wrong otherwise* is forbidden when the harm it describes is a fact about our construction,
+  our threat model, or what someone could do to us. A comment naming a documented property of
+  a public primitive — the OS, a library — is ordinary engineering and stays, and stays
+  ESPECIALLY when its job is stopping a future agent from making a change that is on a stop-
+  condition list. Ruled over the sync-never-retried comment in the keyset sequence: the harm
+  it names is a durability misreport by the kernel, which is public lore, and the change it
+  prevents is a named stop condition. Four sibling comments that named OUR partial states were
+  trimmed in the same pass; that asymmetry is the rule.
 - **Clocklessness is a REQUIRED capability, not a test artifact** (human-typed 2026-08-25):
   stable tests need it now, and CI users eventually want a stable-format artifact they can diff
   to ask "did the whylog change". So clockless support is built right out to the edge, and the
@@ -466,6 +475,20 @@ refused" passes with the guard removed. Only the assertion naming the exact slug
 regression. The tidying instinct that replaces a slug check with a plain rc check is
 therefore a silent un-testing, and the case now carries that measurement in its own doc so a
 successor knows what they would be deleting.
+
+**Swept, 2026-08-25, mechanically rather than by eye** — every `compile_fail` in the arc's
+crates was flipped to a plain example and its actual compiler error read, because that error
+is the only evidence of what a pin proves. 33 pins across `receipt`, `receipt-crypto`,
+`receipt-local`, and `plan`. Reference-receiver degradation: no instances beyond the two
+already repaired. Everything else fails on its intended property. Two residues, neither
+repaired: two `receipt` pins fail on *"no method named X"*, which proves the absence of those
+NAMES rather than the property — sound only because each is paired with a structural pin
+carrying the real seal; and one **pre-arc** pin in `plan/src/certifier_trip.rs` fails on
+ARITY (`E0061`), so it proves the function takes more than two arguments, not that the trip
+witness is required — remove the witness, add two other parameters, and it still passes. The
+stronger form is constructing the witness directly, whose private field is immune to arity
+drift. It arrived via `ai/main` and is the sibling conductor's surface, so it was routed, not
+touched.
 
 A seventh, and the most generalizable of them: **a `compile_fail` test proves only that
 SOMETHING failed to compile.** Unless it pins the exact error it passes for any reason. Two
