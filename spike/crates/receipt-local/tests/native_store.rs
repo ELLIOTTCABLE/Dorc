@@ -33,8 +33,8 @@ use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::writer::DraftReceipt;
 use dorc_receipt_crypto::Ed25519Signer;
 use dorc_receipt_local::store::{
-    DirectorySync, EntryStanding, EnumerateFailure, LocalReceiptStoreV1, PublishFailure,
-    PublishRefusal, StoreLimits, StoreOpenRefusal,
+    EntryStanding, EnumerateFailure, LocalReceiptStoreV1, PublishFailure, PublishRefusal,
+    StoreLimits, StoreOpenRefusal,
 };
 use dorc_receipt_local::{LocalLimits, NativeIo, RootInputs, RootPlatform};
 
@@ -414,9 +414,14 @@ fn a_store_entry_that_is_a_link_is_not_followed_on_read() {
         "the NAME is recognized; the object behind it is a separate question"
     );
     let entry = walk.recognized().first().expect("one entry");
+    match store.read(&mut io, entry) {
+        Err(dorc_receipt_local::store::StoreReadFailure::NotARegularFile) => {}
+        other => panic!("a linked entry read as {:?}", other.map(|_| "bytes")),
+    }
     assert_eq!(
-        store.read(&mut io, entry),
-        Err(dorc_receipt_local::store::StoreReadFailure::NotARegularFile)
+        std::fs::read(&elsewhere).expect("it exists"),
+        b"not a receipt",
+        "and the link was not followed"
     );
 }
 
@@ -427,6 +432,7 @@ fn the_windows_baseline_publishes_and_reports_the_operation_it_does_not_have() {
     // completes under the inherited per-user access and that the platform's missing directory
     // synchronization is RECORDED rather than simulated as a success of a stronger kind.
     use dorc_receipt_local::io::LocalIo as _;
+    use dorc_receipt_local::store::DirectorySync;
 
     let sandbox = Sandbox::new("windows");
     let roots = sandbox.roots();
