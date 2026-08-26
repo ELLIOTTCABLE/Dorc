@@ -237,6 +237,23 @@ than drifted into. These are those choices:
 - **The writer-side aggregate bound fails per species**: the intent's required arm REFUSES
   (it binds exact bytes, so omission cannot mint the permit), the outcome OMITS with
   `omitted-limit` (a bounded report is still a true one).
+- **`PresentedPlanId`'s sections are LENGTH-FRAMED**, matching the sibling planner-input
+  encoding. Measured 2026-08-25: the header-delimited form was not injective by construction —
+  two of its sections carry bytes that may spell a section header, and the apply render is the
+  book verbatim, so a book containing a bare `== diags ==` line puts two exact header lines in
+  the canon and the content/next-section split is unrecoverable. The builder found this,
+  declined to repair a governed surface, and pinned it; the deferral was OVERRULED. Ground: the
+  identity never authorizes, but it IS recompute-and-compared, so a collision produces a
+  confident wrong explanation — the top of `271:rul-sin-ordering`. Cost of repair is lowest
+  before anything external exists; pre-user reshape-in-place governs.
+- **An undated run never silently causes `--last` to select older history.** Sorting an
+  absent-clock order lowest does exactly that. Either the clock is structurally present on the
+  production route and the all-zeroes token is unrepresentable, or absence is an explicit state
+  a reader surfaces — never a silent sort position.
+- **The order token**: a 20-digit value above `u64::MAX` is ADMITTED (the grammar fixes width,
+  not range; refusing would make valid-but-large indistinguishable from malformed at the seat
+  least able to tell). A REMINT takes the caller's order, never its origin's — a second document
+  at a second moment, and inheriting would seat two documents at one store position.
 - **`roots` = `plan.sh` at 0, bundle roots appended.** The alternative makes a `root` line
   assert one thing in the one-file case and another once a dependency appears; a durable
   field whose meaning changes shape under a non-trivial population is the drift the
