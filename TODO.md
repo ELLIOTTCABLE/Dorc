@@ -44,6 +44,8 @@
 
     - why, it's unclear, what went wrong, what was the error??
     - "re-run dorc plan to measure" seems very incorrect
+- [ ] why does `site-unresolvable` show `make install`&`ldconfig`, lol
+- [ ] generated plan currently has a worthless comment at the top. replace this with a `dorc why <path to whylog>` aid; and only emit it when emitting to a file/redirected/multiple-files. <https://github.com/ELLIOTTCABLE/Dorc/issues/1>
 
 # Preparation-for-agentic-implementation 🤢 phase
 
