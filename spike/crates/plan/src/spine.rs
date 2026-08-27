@@ -579,9 +579,9 @@ mod tests {
         );
     }
 
-    /// Every workspace source naming `needle`, as `crate/dir/file.rs x<count>`, sorted, EXCLUDING
-    /// the module that defines all three needles — plus how many files were walked, so a fence
-    /// aimed at a wrong root cannot pass by finding nothing (the discovery-floor lesson).
+    /// Every real workspace source naming `needle`, as `crate/dir/file.rs x<count>`, sorted,
+    /// EXCLUDING the module that defines all three needles — plus how many files were walked, so a
+    /// fence aimed at a wrong root cannot pass by finding nothing (the discovery-floor lesson).
     fn sources_naming(needle: &str) -> (Vec<String>, usize) {
         let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -602,7 +602,11 @@ mod tests {
                     stack.push(path);
                     continue;
                 }
-                if path.extension().is_none_or(|ext| ext != "rs") {
+                if path.extension().is_none_or(|ext| ext != "rs")
+                    || path
+                        .file_name()
+                        .is_some_and(|name| name.to_string_lossy().contains(".sync-conflict-"))
+                {
                     continue;
                 }
                 walked += 1;
