@@ -41,7 +41,12 @@ why: 288 rul-help-text-is-loomable: help is product prose, so it gets an editabl
 ---
 -- replay --
 $ dorc --help
-dorc -- spec-mining static-analysis orchestrator (implementation spike)
+dorc: a specification-mining shell-script analyzer, compiler, and orchestrator
+
+Hi. I analyze and run your plain-POSIX shell-scripts. Where possible, I help you
+compile-in runtime idempotence (making sure your commands only run if they need
+to), and even elide converged ones (removing commands entirely when they don't
+actually need to be run.)
 
 usage: dorc [<mode>] --book=<book.sh> [--pre-source <sh>]... [options]
 

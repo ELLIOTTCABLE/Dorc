@@ -255,7 +255,7 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         occurrence: None,
         when_used: "`dorc --help` / `dorc -h` prints this whole page to stdout and exits 0.",
         why: "288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.",
-        words: Some(ProseTier::Slop(&["dorc -- spec-mining static-analysis orchestrator (implementation spike)"])),
+        words: Some(ProseTier::WrittenByHumanOnly(&["dorc: a specification-mining shell-script analyzer, compiler, and orchestrator\n\nHi. I analyze and run your plain-POSIX shell-scripts. Where possible, I help you compile-in runtime idempotence (making sure your commands only run if they need to), and even elide converged ones (removing commands entirely when they don't actually need to be run.)"])),
     },
     ArrangementEntry {
         slug: "cli-decision-digest-line",
