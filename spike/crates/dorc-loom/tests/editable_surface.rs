@@ -10,10 +10,7 @@
     reason = "fixture harness over the committed corpus; the no-panic lints guard untrusted input"
 )]
 
-use dorc_loom::{
-    DorcConsumer, DorcEditableBaseline, DorcSectionEditRefusal, SectionPreview,
-    compile_section_edit,
-};
+use dorc_loom::{DorcConsumer, DorcEditableBaseline, SectionPreview, compile_section_edit};
 use errorloom::{Case, CaseRenderer, RenderComponent, RunEnv};
 
 /// One case, replayed through `consumer`'s own mirror into its editable baseline and transcript.
@@ -234,76 +231,6 @@ fn overtype_placeholder_mints_words() {
             .find(|entry| entry.slug == slug)
             .and_then(|entry| entry.message.clone()),
         Some(dorc_aid::prose::ProseTier::Slop(String::from(words)))
-    );
-}
-
-/// The silent-corruption path this pack closes: a `= help:` line the render never emitted used to
-/// be absorbed into the message register, rewriting somebody's sentence with somebody else's line.
-/// It refuses now, and the refusal names the command that mints the register instead.
-///
-/// A genuine BLANK line (two newlines), not one: read-in normalization (`28L`/`282` §3) collapses a
-/// single embedded newline to a space, so a soft rewrap can no longer trip this refusal — only a
-/// real paragraph break still reads as "a line the render never emitted"
-/// (`prose_re_wrap_compiles_with_no_stored_newline` pins the relaxed half).
-#[test]
-fn added_help_line_refuses_and_names_the_command() {
-    let (_, _, baseline, transcript) =
-        driven(include_str!("../../aid/tests/cli-no-book-given.loom"));
-    // Straight after the message rather than at the end of the render: an invocation error now
-    // closes with the usage synopsis, and a line appended past THAT would land in the chrome.
-    let (message, rest) = transcript
-        .split_once('\n')
-        .expect("an invocation error renders more than one line");
-    let edited = format!("{message}\n\n  = help: pass --book=PATH\n{rest}");
-    let refusal =
-        compile_section_edit(&baseline, &edited).expect_err("an added line is not a prose edit");
-    assert!(
-        matches!(
-            refusal,
-            DorcSectionEditRefusal::AddedLine {
-                laid_out: 0,
-                edited: 2,
-                ..
-            }
-        ),
-        "{refusal:?}"
-    );
-    let explained = refusal.explain(std::path::Path::new(
-        "crates/aid/tests/cli-no-book-given.loom",
-    ));
-    assert!(
-        explained.contains("dorc-loom add-register crates/aid/tests/cli-no-book-given.loom help")
-            && explained.contains("dorc-loom publish crates/aid/tests/cli-no-book-given.loom"),
-        "a blank line reads two ways and the refusal names the repair for both: {explained}"
-    );
-}
-
-/// The other half of the same arithmetic: the RENDER's own wrap is not a laid-out break either.
-/// This register wraps, so the guard used to grant it a break of budget — enough for a genuinely
-/// added line to ride in free on a register the renderer happened to break twice. Both sides are
-/// counted in the stored form now, so a wrapping register reports the same zero a flat one does.
-#[test]
-fn a_wrapping_register_grants_no_added_line_budget() {
-    let (_, _, baseline, transcript) = driven(include_str!(
-        "../../aid/tests/aid-unloaded-sibling-oracle.loom"
-    ));
-    assert!(
-        transcript.contains("but were\nnot loaded"),
-        "the fixture register must still wrap or it proves nothing: {transcript:?}"
-    );
-    let edited = format!("{}\n\nand a second paragraph\n", transcript.trim_end());
-    let refusal =
-        compile_section_edit(&baseline, &edited).expect_err("a blank line is not a prose edit");
-    assert!(
-        matches!(
-            refusal,
-            DorcSectionEditRefusal::AddedLine {
-                laid_out: 0,
-                edited: 2,
-                ..
-            }
-        ),
-        "{refusal:?}"
     );
 }
 

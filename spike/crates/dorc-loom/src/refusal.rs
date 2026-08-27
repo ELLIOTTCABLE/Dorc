@@ -59,11 +59,6 @@ impl DorcSectionEditRefusal {
                 "`{component}` is authored in {owner} — edit it there; this case only renders it. \
                  Undo the change here, make it in {owner}, then: dorc-loom publish {owner}"
             ),
-            Self::AddedLine {
-                section,
-                laid_out,
-                edited,
-            } => added_line(section, *laid_out, *edited, &case),
         }
     }
 }
@@ -142,22 +137,6 @@ fn value_sequence_changed(
          the render put it: {words}. Then: dorc-loom publish {case}",
         quoted(expected),
         quoted(found)
-    )
-}
-
-/// A BLANK line the render never emitted — the only thing that reaches this refusal, since a soft
-/// wrap counts as a break in neither the stored baseline nor the stored edit. Two things are
-/// spelled that way and the tool cannot tell them apart without reading byte shapes
-/// (`28L:rul-editability-is-stamped-never-re-derived`), so it names the next step for both.
-fn added_line(section: &crate::SectionKey, laid_out: usize, edited: usize, case: &str) -> String {
-    format!(
-        "the edit adds a blank line the render did not lay out (`{}` laid out {laid_out}, the edit \
-         has {edited}). A register holds WORDS and the renderer owns where they WRAP — rewording \
-         so the text takes more lines is fine — but a blank line starts something new, and this \
-         version stores one paragraph per register. If you meant a help line, mint the register \
-         and edit its placeholder: dorc-loom add-register {case} help. If you meant a paragraph, \
-         join it back into one and re-run: dorc-loom publish {case}",
-        section.field
     )
 }
 

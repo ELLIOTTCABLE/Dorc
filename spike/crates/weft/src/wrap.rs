@@ -114,8 +114,16 @@ pub(crate) fn wrap<K: Clone>(sink: &mut Sink<K>, runs: &[Run<K>], frame: &Frame)
     while let Some(&token) = tokens.get(index) {
         match token {
             Token::Space(text, provenance) => {
+                if text.bytes().filter(|byte| *byte == b'\n').count() >= 2 {
+                    sink.blank_line();
+                    line = line.saturating_add(2);
+                    pending = None;
+                    placed = false;
+                    index = index.saturating_add(1);
+                    continue;
+                }
                 if placed {
-                    pending = Some((text, provenance));
+                    pending = Some((if text.contains('\n') { " " } else { text }, provenance));
                 }
                 index = index.saturating_add(1);
             }

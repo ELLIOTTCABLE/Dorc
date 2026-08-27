@@ -1055,23 +1055,25 @@ fn line_words(compiled: &crate::CompiledSection) -> Vec<String> {
     words.iter().map(|word| collapse_runs(word)).collect()
 }
 
-/// Whitespace runs to one space. A laid-out line's inter-word whitespace is the RENDERER's, so
-/// storing the wrap it chose at one width would freeze that width into the entry (`282` §3's
-/// read-in normalization). Collapse, never TRIM: a word's own leading or trailing space is what
-/// separates it from the value beside it.
+/// Collapses soft wraps but preserves `\n\n`; never trims edge spaces that may separate a value.
 pub(crate) fn collapse_runs(word: &str) -> String {
     let mut out = String::with_capacity(word.len());
-    let mut spacing = false;
+    let mut run_newlines: Option<usize> = None;
     for character in word.chars() {
         if character.is_whitespace() {
-            if !spacing {
-                out.push(' ');
+            let newlines = run_newlines.get_or_insert(0);
+            if character == '\n' {
+                *newlines = newlines.saturating_add(1);
             }
-            spacing = true;
-        } else {
-            out.push(character);
-            spacing = false;
+            continue;
         }
+        if let Some(newlines) = run_newlines.take() {
+            out.push_str(if newlines >= 2 { "\n\n" } else { " " });
+        }
+        out.push(character);
+    }
+    if let Some(newlines) = run_newlines {
+        out.push_str(if newlines >= 2 { "\n\n" } else { " " });
     }
     out
 }
@@ -2362,11 +2364,7 @@ mod tests {
         );
     }
 
-    /// Read-in normalization (`282` §3, `28L`): a single embedded newline inside a catalog
-    /// register is a soft wrap, not a paragraph break, so it collapses to a space and the
-    /// compiled template stores no literal `\n` — the relaxed half of the tension pinned by
-    /// `added_help_line_refuses_and_names_the_command` (`editable_surface.rs`), which keeps a
-    /// genuine two-newline paragraph break refusing.
+    /// A single newline is a soft wrap and stores as a space (`282` §3).
     #[test]
     fn a_wrapped_register_edit_stores_no_literal_newline() {
         let baseline = baseline(vec![RenderComponent::EditableSection(
