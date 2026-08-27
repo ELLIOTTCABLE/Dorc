@@ -5,8 +5,9 @@ why: AID-NEEDS:law-codes-vary-by-world-not-grammar. One of the two outcomes lice
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh
-error[transport-spawn-refused]: Dorc could not start the session process for
-web1.example.net, so nothing was shipped and the host was never contacted.
+transport: error[transport-spawn-refused]: Dorc could not start the session
+process for web1.example.net, so nothing was shipped and the host was never
+contacted.
 
 $ dorc-loom --this vars
 case: transport-spawn-refused

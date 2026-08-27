@@ -566,6 +566,13 @@ pub enum RunError {
         /// Zero-based block index.
         block: usize,
     },
+    /// The embedding direct driver declined and no fallback was selected.
+    DriverDeclined {
+        /// Zero-based block index.
+        block: usize,
+        /// The exact replay command.
+        command: String,
+    },
     /// A sandbox file exceeded the bounded replay-file ceiling.
     SandboxFileTooLarge {
         /// The case-relative path.
@@ -630,6 +637,9 @@ impl std::fmt::Display for RunError {
             }
             RunError::ProcessStatusUnavailable { block } => {
                 write!(f, "run: block {block} ended without a portable status")
+            }
+            RunError::DriverDeclined { block, command } => {
+                write!(f, "run: block {block} direct driver declined {command:?}")
             }
             RunError::SandboxFileTooLarge { path, limit } => {
                 write!(f, "run: sandbox file {path:?} exceeds limit {limit}")

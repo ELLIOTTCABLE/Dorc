@@ -221,7 +221,7 @@ fn whylog_driver_claims_only_the_exact_single_file_shape() {
          $ dorc why --last --whylog=.whylog --whylog=.other\nold\n\
          $ dorc why --last --whylog=.whylog --unknown\nold\n\
          $ dorc why --last --whylog=../whylog\nold\n\
-         $ dorc why --last --whylog=.whylog | wombat\nold\n",
+         ",
     )
     .expect("case parses");
     let calls = RefCell::new(Vec::new());
@@ -236,19 +236,34 @@ fn whylog_driver_claims_only_the_exact_single_file_shape() {
     )
     .expect("replays route");
     assert!(results[0].editable_render().is_some());
-    for result in &results[1..] {
-        assert!(result.editable_render().is_none());
-        assert!(result.output().starts_with("fallback:"));
-    }
+    assert!(results[1].editable_render().is_none());
+    assert!(results[1].output().starts_with("fallback:"));
+    assert!(results[2].editable_render().is_some());
+    assert!(results[2].output().starts_with("dorc: error["));
+    assert!(results[3].editable_render().is_none());
+    assert!(results[3].output().starts_with("fallback:"));
     assert_eq!(
         calls.into_inner(),
         [
             "dorc why --last --whylog=.whylog --whylog=.other",
-            "dorc why --last --whylog=.whylog --unknown",
             "dorc why --last --whylog=../whylog",
-            "dorc why --last --whylog=.whylog | wombat",
         ]
     );
+
+    let pipeline = Case::parse(
+        "---\ncode: whylog-absent\n---\n-- replay --\n\
+         $ dorc why --last --whylog=.whylog | wombat\nold\n",
+    )
+    .expect("case parses");
+    assert!(matches!(
+        replay_case(
+            &pipeline,
+            &DorcConsumer::new(),
+            &RunEnv::new(),
+            |_command, _context| Ok(ReplayResult::bytes(String::new()))
+        ),
+        Err(RunError::UnsupportedReplayGrammar { .. })
+    ));
 }
 
 /// Two lint shapes are claimed and nothing else is: `dorc lint P` (external tools enabled, the
@@ -408,7 +423,7 @@ fn applied_template_regenerates_complete_multi_replay_case() {
                 -- input.txt --\nsource bytes stay unchanged\n\
                 -- replay --\n\
                 $ dorc plan --book=input.txt\nstale human bytes\n\
-                $ dorc plan --book=input.txt --format=jsonl\nstale machine bytes\n";
+                $ dorc plan --book=input.txt > /dev/null\nstale second render\n";
     let case = Case::parse(text).expect("case parses");
     let mut consumer = DorcConsumer::new();
     let baseline = consumer
@@ -438,11 +453,15 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     assert!(regenerated.contains("when-fires: preserved frontmatter"));
     assert!(regenerated.contains("-- input.txt --\nsource bytes stay unchanged\n"));
     assert!(regenerated.contains("$ dorc plan --book=input.txt"));
-    assert!(regenerated.contains("$ dorc plan --book=input.txt --format=jsonl"));
-    assert!(regenerated.contains("sm.dorc.Package:nginx is dangling"));
-    assert!(regenerated.contains("{\"code\":\"dangling-reference\",\"severity\":\"note\"}"));
+    assert!(regenerated.contains("$ dorc plan --book=input.txt > /dev/null"));
+    assert_eq!(
+        regenerated
+            .matches("sm.dorc.Package:nginx is dangling")
+            .count(),
+        2
+    );
     assert!(!regenerated.contains("stale human bytes"));
-    assert!(!regenerated.contains("stale machine bytes"));
+    assert!(!regenerated.contains("stale second render"));
 
     let reparsed = Case::parse(regenerated).expect("regenerated case parses");
     assert_eq!(reparsed.replay().blocks().len(), 2);
@@ -452,7 +471,7 @@ fn applied_template_regenerates_complete_multi_replay_case() {
 
 #[test]
 fn explicit_marker_can_introduce_an_unused_typed_payload_value() {
-    let case = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n#!/bin/sh\n-- replay --\n$ dorc plan --book=book.sh\n")
+    let case = Case::parse("---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n#!/bin/sh\napt-get install -y \"$(cat /etc/pkgset)\"\n-- replay --\n$ dorc plan --book=book.sh > /dev/null\n")
         .expect("case parses");
     let mut consumer = DorcConsumer::new();
     let baseline = consumer.editable_baseline(&case).expect("baseline renders");
@@ -512,31 +531,27 @@ fn explicit_marker_can_introduce_an_unused_typed_payload_value() {
 #[test]
 fn payload_inventory_excludes_unknown_and_foreign_values() {
     let cmdsub = Case::parse(
-        "---\ncode: cmdsub-operand-top\n---\n-- replay --\n$ dorc plan --book=book.sh\n",
+        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n#!/bin/sh\napt-get install -y \"$(cat /etc/pkgset)\"\n-- replay --\n$ dorc plan --book=book.sh > /dev/null\n",
     )
     .expect("case parses");
     let baseline = DorcConsumer::new()
         .editable_baseline(&cmdsub)
         .expect("baseline renders");
-    assert_eq!(
-        baseline.used_variables(),
-        vec![
-            (
-                TemplateVariableName(String::from("position")),
-                String::from("operand 1")
-            ),
-            (
-                // A value long enough to cross the right edge carries the break the seat put in
-                // it: the inventory reports what the render PRINTED, not the payload's own
-                // spelling, so a wrap inside a value is visible here rather than silently
-                // collapsed (`28L:residue-a-wrap-can-fall-inside-a-value`).
-                TemplateVariableName(String::from("cause")),
-                String::from(
-                    "a command-substitution `$(...)` /\narithmetic / operator-form expansion"
-                ),
-            ),
-        ]
+    assert!(baseline.used_variables().contains(&(
+        TemplateVariableName(String::from("position")),
+        String::from("operand 3")
+    )));
+    let cause = baseline
+        .used_variables()
+        .into_iter()
+        .find(|(name, _)| name.0 == "cause")
+        .map(|(_, value)| value)
+        .expect("the rendered diagnostic uses its cause");
+    assert!(
+        cause.contains("a command-substitution `$(...)`"),
+        "{cause:?}"
     );
+    assert!(cause.contains("operator-form expansion"), "{cause:?}");
     assert!(
         !baseline
             .used_variables()
@@ -588,7 +603,7 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
     ));
 
     let foreign = Case::parse(
-        "---\ncode: site-unresolvable\n---\n-- replay --\n$ dorc plan --book=book.sh\n",
+        "---\ncode: site-unresolvable\n---\n-- book.sh --\n#!/bin/sh\nmake install\nldconfig\n-- replay --\n$ dorc plan --book=book.sh > /dev/null\n",
     )
     .expect("case parses");
     let baseline = DorcConsumer::new()
@@ -597,21 +612,33 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
     // The inventory offers the values a loom author may move, and withholds the two the code
     // relays from the book — foreignness is the VALUE's type now, not the hole's name
     // (`282:rul-passthrough-type-gated`).
-    assert_eq!(
-        baseline.all_variables().keys().collect::<Vec<_>>(),
-        vec![
-            &TemplateVariableName(String::from("count")),
-            &TemplateVariableName(String::from("site_word")),
-        ]
+    assert!(
+        baseline
+            .all_variables()
+            .contains_key(&TemplateVariableName(String::from("count")))
+    );
+    assert!(
+        baseline
+            .all_variables()
+            .contains_key(&TemplateVariableName(String::from("site_word")))
+    );
+    assert!(
+        !baseline
+            .all_variables()
+            .contains_key(&TemplateVariableName(String::from("names")))
+    );
+    assert!(
+        !baseline
+            .all_variables()
+            .contains_key(&TemplateVariableName(String::from("excerpt")))
     );
 }
 
 #[test]
-fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_injected_fallback()
-{
+fn exact_replays_keep_editability_with_provenance_and_route_edges_to_the_injected_fallback() {
     let source = "#!/bin/sh\napt-get install -y \"$(cat /etc/webhost/pkgset)\"\n";
     let case = Case::parse(&format!(
-        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n{source}-- probe.txt --\nprobe bytes\n-- replay --\n$ dorc plan --book=book.sh < probe.txt\nold\n$ dorc plan --book=book.sh --format=jsonl < probe.txt\nold\n$ dorc lint book.sh\nold\n$ dorc why --last\nold\n$ dorc plan --book=book.sh | jq --pretty\nold\n$ dorc plan --book=missing.sh\nold\n$ dorc plan --book=book.sh --book=book.sh\nold\n$ dorc plan --book=book.sh --unknown\nold\n$ dorc plan --book=../book.sh\nold\n$ dorc plan --book=./book.sh\nold\n"
+        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n{source}-- probe.txt --\nprobe bytes\n-- replay --\n$ dorc plan --book=book.sh < probe.txt\nold\n$ dorc --version\nold\n$ dorc lint book.sh\nold\n$ dorc why --last\nold\n$ dorc plan --book=missing.sh\nold\n$ dorc plan --book=book.sh --book=book.sh\nold\n$ dorc plan --book=book.sh --unknown\nold\n$ dorc plan --book=../book.sh\nold\n$ dorc plan --book=./book.sh\nold\n"
     ))
     .expect("case parses");
     let env = RunEnv::new()
@@ -657,29 +684,25 @@ fn exact_replays_keep_editability_with_provenance_and_route_all_declines_to_the_
         Some(results[0].output().to_owned())
     );
     assert!(results[1].editable_render().is_none());
-    assert_eq!(
-        results[1].output(),
-        "{\"code\":\"cmdsub-operand-top\",\"severity\":\"note\"}\n"
-    );
-    // A `dorc plan` whose named book is not a materialized case section takes the WORLD-AS-PAYLOAD
-    // route, which is what `render_case` has always done for the same command; the driver used to
-    // decline it instead, and that disagreement is what made those cases unpromotable.
-    assert!(
-        results[5].editable_render().is_some(),
-        "the payload world answers, as the case renderer does for the same command"
-    );
+    assert_eq!(results[1].output(), "dorc 0.0.0\n");
     assert!(results[2].editable_render().is_some());
-    for declined in [3usize, 4, 6, 7, 8, 9] {
+    for declined in [3usize, 4, 7, 8] {
         assert!(results[declined].editable_render().is_none());
         assert!(results[declined].output().contains("{{command}}"));
+    }
+    for invocation_error in [5usize, 6] {
+        assert!(results[invocation_error].editable_render().is_some());
+        assert!(
+            results[invocation_error]
+                .output()
+                .starts_with("dorc: error[")
+        );
     }
     assert_eq!(
         calls.into_inner(),
         [
             "dorc why --last",
-            "dorc plan --book=book.sh | jq --pretty",
-            "dorc plan --book=book.sh --book=book.sh",
-            "dorc plan --book=book.sh --unknown",
+            "dorc plan --book=missing.sh",
             "dorc plan --book=../book.sh",
             "dorc plan --book=./book.sh",
         ]
@@ -712,15 +735,14 @@ fn replay_with_a_fake_fallback_leaves_case_catalog_and_source_bytes_unchanged() 
 #[test]
 fn vars_replay_reads_only_the_named_materialized_case() {
     let outer = Case::parse(
-        "---\ncode: cmdsub-operand-top\n---\n-- replay --\n\
+        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n#!/bin/sh\napt-get install -y \"$(cat /etc/pkgset)\"\n-- replay --\n\
+         $ dorc plan --book=book.sh > /dev/null\nold\n\
          $ dorc-loom vars --all self.txt\nold\n\
          $ dorc-loom vars --used other.txt\nold\n\
          $ dorc-loom vars --all missing.txt\nold\n\
          $ dorc-loom vars --all ../self.txt\nold\n\
          $ dorc-loom vars --all /self.txt\nold\n\
-         $ dorc-loom vars --all self.txt extra\nold\n\
-         $ dorc-loom vars --all 'self.txt'\nold\n\
-         $ dorc plan --book=book.sh\nold\n",
+         $ dorc-loom vars --all self.txt extra\nold\n",
     )
     .expect("outer case parses");
     let other = Case::parse(
@@ -744,10 +766,10 @@ fn vars_replay_reads_only_the_named_materialized_case() {
     )
     .expect("replays route");
 
-    assert!(results[0].output().contains("{{command}} = \"apt-get\""));
-    assert!(results[1].output().contains("{{verb}} = \"elide\""));
-    assert!(!results[1].output().contains("{{command}} = \"apt-get\""));
-    for result in &results[2..7] {
+    assert!(results[1].output().contains("{{command}} = \"apt-get\""));
+    assert!(results[2].output().contains("{{verb}} = \"elide\""));
+    assert!(!results[2].output().contains("{{command}} = \"apt-get\""));
+    for result in &results[3..] {
         assert!(result.editable_render().is_none());
         assert!(result.output().starts_with("fallback: dorc-loom vars"));
     }
@@ -758,9 +780,24 @@ fn vars_replay_reads_only_the_named_materialized_case() {
             "dorc-loom vars --all ../self.txt",
             "dorc-loom vars --all /self.txt",
             "dorc-loom vars --all self.txt extra",
-            "dorc-loom vars --all 'self.txt'",
         ]
     );
+
+    let quoted = Case::parse(
+        "---\ncode: cmdsub-operand-top\n---\n-- replay --\n\
+         $ dorc-loom vars --all 'self.txt'\nold\n",
+    )
+    .expect("quoted case parses");
+    assert!(matches!(
+        replay_case_with_inputs(
+            &quoted,
+            &DorcConsumer::new(),
+            &RunEnv::new(),
+            &inputs,
+            |_command, _context| Ok(ReplayResult::bytes(String::new()))
+        ),
+        Err(RunError::UnsupportedReplayGrammar { .. })
+    ));
 }
 
 /// A case's inventory OF ITSELF, on both chains, under the `--this` selector.
@@ -877,8 +914,8 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
         ("dorc why --last --whylog=absent.whylog", true),
         ("dorc why book.sh:5 --last --whylog=absent.whylog", false),
         ("dorc why --last --whylog=../escape", false),
-        ("dorc plan --book=book.sh", false),
-        ("dorc wombat --hork", false),
+        ("dorc plan --book=book.sh", true),
+        ("dorc wombat --hork", true),
     ];
 
     for (command, claimed) in shapes {

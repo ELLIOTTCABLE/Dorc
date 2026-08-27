@@ -5,10 +5,10 @@ why: 26A stop-2 plus rul-integrity-failure-withholds-mutation. Absence of output
 ---
 -- replay --
 $ dorc plan --host web1.example.net --book=webhost.sh
-error[transport-session-lost]: The session to web1.example.net ended without its
-completion marker (the session ended without a status; attempts: 3), so Dorc
-cannot tell whether the shipped artifact ran -- re-run `dorc plan` to measure
-what actually happened.
+transport: error[transport-session-lost]: The session to web1.example.net ended
+without its completion marker (the session ended without a status; attempts: 3),
+so Dorc cannot tell whether the shipped artifact ran -- re-run `dorc plan` to
+measure what actually happened.
 
 $ dorc-loom --this vars
 case: transport-session-lost

@@ -14,6 +14,7 @@ mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod defect;
 mod generate;
+mod harness;
 pub use generate::{
     MetadataDrift, Publication, build_publication, generate_arrangement_lock,
     generate_catalog_lock, load_arrangement_corpus, load_corpus_by_slug, metadata_drift,
@@ -89,7 +90,7 @@ pub const ARRANGEMENT_LINE_FIELD: &str = "arrangement-line";
 /// Whether a path is a `SyncThing` conflict copy rather than a case — the corpus lives in a
 /// live-synced tree, and a `foo.sync-conflict-<stamp>.loom` beside `foo.loom` would otherwise
 /// load as a duplicate defining case (it broke the gate twice on 2026-07-31).
-pub(crate) fn is_sync_residue(path: &std::path::Path) -> bool {
+pub fn is_sync_residue(path: &std::path::Path) -> bool {
     path.file_name()
         .and_then(|name| name.to_str())
         .is_some_and(|name| name.contains(".sync-conflict-"))

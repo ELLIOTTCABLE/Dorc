@@ -3,14 +3,33 @@ code: site-unresolvable
 when-fires: a probe could not ship a read-only check for one or more command-sites, so the apply runs each. cli unresolvable_diagnostics (né dq-site-unresolvable).
 why: kFAIL-perform: unsure ⇒ run. The holes are typed: `{count}` and `{site_word}` carry the aggregate label, and `{names}`/`{excerpt}` are book-derived bytes sealed as not-ours at the edge that read them.
 ---
+-- book.sh --
+#!/bin/sh
+make install
+ldconfig
+
 -- replay --
-$ dorc plan --book=book.sh
-note[site-unresolvable]: sm 2 sites run unprobed (no read-only check could be
-shipped): `make install`, `ldconfig` -- run `dorc why` for the per-site detail
-(the apply runs each anyway, to stay safe)
+$ dorc plan --book=book.sh > /dev/null
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `make install`, `ldconfig` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | make install
+     | \__________/
+
    = help:  sm site runs `make install`
+hint: 'make' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest 27bbca4fdee02190
 
 $ dorc-loom --this vars
 case: site-unresolvable
 {{count}} = "2"
 {{site_word}} = "sites"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "2"
+{{v5}} = "0"

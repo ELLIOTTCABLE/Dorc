@@ -5,7 +5,7 @@ when-fires: the --shim-dir materialization edge could not create or write the pe
 why: 274 section 5: shim materialization is session-establishment I/O the wrapped probe needs, so a failure is loud rather than a silently shim-less run that would resolve the wrong guest.
 ---
 -- replay --
-$ dorc plan --book=webhost.sh
+$ dorc plan --book=webhost.sh --shim-dir=/run/dorc/shims
 dorc: error[cli-shim-dir-unwritable]: sm cannot write shim `/run/dorc/shims`:
 Read-only file system (os error 30)
 usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

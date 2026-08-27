@@ -5,4 +5,4 @@ why: 30N:rul-region-refusal-discloses-region-keyed. The refusal predicate is the
 ---
 -- replay --
 $ dorc plan --book=book.sh
-error[render-region-refused]: [unwritten: render-region-refused]
+render: error[render-region-refused]: [unwritten: render-region-refused]

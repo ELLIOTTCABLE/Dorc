@@ -8,7 +8,7 @@ why: law-lineno-identity: the ONE line-number space is the source file's, so an 
 hork tune --profile web
 
 -- replay --
-$ dorc why nosuchcommand --book=book.sh
+$ dorc why nosuchcommand --book=book.sh --results - < /dev/null 2>/dev/null
 dorc why: no analyzed command matched nosuchcommand (an address is a SOURCE line:
 `<book>:<N>` or a bare `<N>`).
 

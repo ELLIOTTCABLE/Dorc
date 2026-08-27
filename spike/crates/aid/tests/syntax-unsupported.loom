@@ -5,6 +5,31 @@ why: inv-top-reject: under-modeling is a loud correctness boundary. The reason i
 owns:
   - syntax-unsupported-background-amp
 ---
+-- book.sh --
+#!/bin/sh
+hork &
+
 -- replay --
-$ dorc plan --book=book.sh
-error[syntax-unsupported]: background/async `&` is not in the modeled subset
+$ dorc plan --book=book.sh > /dev/null
+parse: error[syntax-unsupported]: background/async `&` is not in the modeled
+subset
+      [ book.sh:2:6
+   2 | hork &
+     |      ^
+cfg: error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+un-skippable
+      [ book.sh:2:6
+   2 | hork &
+     |      ^
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork` -- run `dorc why` for the per-site detail (the apply runs
+each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork &
+     | \__/
+
+   = help:  sm site runs `hork`
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 6a5d683f3cb0600e

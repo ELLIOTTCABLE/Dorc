@@ -4,7 +4,7 @@ when-fires: --require-tools was given and a configured external linter is absent
 why: 27R section 4 dir-absent-is-info, inverted by explicit request: absence is advisory by default, and --require-tools is how CI says a partial lint must not read as a pass.
 ---
 -- replay --
-$ dorc plan --book=webhost.sh
+$ dorc lint book.sh --require-tools
 error[lint-required-tools-missing]: `--require-tools` was given, but these lint
 tools are missing from PATH: checkbashisms, shellcheck.
 

@@ -3,7 +3,49 @@ code: script-relative-load-dies-slashless
 when-fires: a BOOK's `.` operand is computed from `$0` by parameter expansion in a way that cannot succeed under a slashless invocation — `${0%/*}` of a `$0` with no `/` is the WHOLE word (the atlas-measured trap), so the operand names a path UNDER the book file itself and the `.` is fatal. analysis/funcenv.rs `load_head` records the site, cli/main.rs `load_head_notices` mints it, one per `.` line, spanned there. Fires only where the SLASHLESS spelling is live at all — the book's own directory is the modelled load cwd — and only where the invoking spelling DOES resolve, so the load itself is EXACT and this run is unaffected. World-as-payload: the mint sits in the binary's own load-edge driver, past everything the in-process book pipeline composes; the end-to-end firing is pinned by the whole-product case `load30-script-relative-lints`.
 why: `30P:model-symbolic-dollar-zero` + `rul-dead-spelling-is-not-unsound`. A spelling under which the `.` cannot succeed is DEAD, not unsound: nothing below a failed `.` runs, so nothing below it can under-execute, and EXACT is decided by the spelling Dorc invokes (`rul-dorc-invokes-in-a-modelled-live-spelling`: `sh ./plan.sh` from the generation root). So this can only ever be a lint, never a refusal and never a withholding. It is worth a WARNING rather than a note because what it costs is the OFF-RAMP — DESIGN.md's "the off-ramp is absolutely trivial" is a product promise, and a book that dies under `sh book.sh` has quietly lost it while Dorc's own runs keep working, which is exactly the failure a user discovers at the worst moment. Stewardship rider (`KNOBS:kLANG`): Dorc must never TEACH the spelling that breaks, so the remediation belongs in the register — the `$(dirname "$0")` and `case $0 in */*)` forms are live under both spellings. Remediation register (help) wanted: name the one edit, and say plainly that this run is unaffected.
 ---
+-- book.sh --
+#!/bin/sh
+. "${0%/*}/helpers.sh"
+hork install nginx
+
+-- helpers.sh --
+helper() { :; }
+
 -- replay --
-$ dorc plan --book=book.sh
-warning[script-relative-load-dies-slashless]: [unwritten:
+$ dorc plan --book=book.sh > /dev/null
+cfg: warning[cfg-errexit-unknown]: Dorc could not tell whether `set -e` is in
+effect at one or more commands (a non-literal `set` argument, or paths that
+disagree), so it plans as though each might abort the book on failure -- the
+cautious reading; it can cost elisions, never correctness.
+loading: warning[script-relative-load-dies-slashless]: [unwritten:
 script-relative-load-dies-slashless]
+      [ book.sh:2:1
+   2 | . "${0%/*}/helpers.sh"
+     | \____________________/
+classify: note[cmdsub-operand-top]: operand 1 is a command-substitution `$(...)`
+/ arithmetic / operator-form expansion, so Dorc cannot know its value until the
+command runs on the host -- there is nothing to resolve and no read-only probe
+to check. Dorc elides a command only when it can prove the command's effect is
+already in place, so this one is left to run on every apply.
+      [ book.sh:2:3
+   2 | . "${0%/*}/helpers.sh"
+     |   \__________________/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `. "${0%/*}/helpers.sh"`, `hork install nginx` -- run `dorc
+why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | . "${0%/*}/helpers.sh"
+     | \____________________/
+
+   = help:  sm site runs `. "${0%/*}/helpers.sh"`
+why: ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 2:1 `. "${0%/*}/helpers.sh"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: '.' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest e5699f8eb20f9c28

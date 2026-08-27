@@ -14,7 +14,7 @@ use std::fs;
 use dorc_aid::RenderCtx;
 use dorc_aid::arrangement::{OwnedArrangement, owned_arrangements};
 use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
-use dorc_aid::diag::{Diag, DiagCode, render_staged_cli_parts};
+use dorc_aid::diag::{Diag, render_cli_parts, render_staged_cli_parts};
 use dorc_aid::prose::{Mint, ProseTier};
 use dorc_core::Interner;
 use errorloom::{
@@ -615,9 +615,7 @@ impl DorcConsumer {
             Verb::Vars(args) => Inventory::Vars(args.breadth()),
             Verb::Sections(_) => Inventory::Sections,
             Verb::Defect => {
-                if invocation.target().ok()? != Target::This
-                    || self_reference == SelfReference::Forbidden
-                {
+                if invocation.target().ok()? != Target::This {
                     return None;
                 }
                 return self.defect_replay(case);
@@ -686,6 +684,9 @@ impl DorcConsumer {
         self_reference: SelfReference,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens: Vec<&str> = command.argv().iter().map(String::as_str).collect();
+        if let Some(replay) = self.harness_replay(case, command) {
+            return Some(replay);
+        }
         if is_help_case(case, &tokens) {
             let parts = dorc_cli::help_parts(&self.render_ctx());
             return Some(ReplayResult::editable(to_editable_render(&parts)));
@@ -697,13 +698,6 @@ impl DorcConsumer {
         }
         if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
             let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
-        }
-        if let Some(why) = parse_direct_why_report(&tokens) {
-            let parts = live_why_parts(&self.render_ctx(), &why, |path| {
-                materialized_source(case, context, path)
-            })
-            .ok()?;
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if let Some(why) = parse_direct_why(&tokens) {
@@ -748,6 +742,59 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         None
+    }
+
+    fn harness_replay(
+        &self,
+        case: &Case,
+        command: &ReplayCommand,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        let scenario =
+            crate::harness::HarnessScenario::from_slug(case.frontmatter().scalar("code")?)?;
+        if !scenario.accepts(command.argv()) {
+            return None;
+        }
+        let event = scenario.event();
+        let (channel, render) = match event.presentation {
+            crate::harness::HarnessPresentation::Invocation => (
+                errorloom::ReplayChannel::Stderr,
+                self.invocation_parts(&event.diagnostic, "dorc"),
+            ),
+            crate::harness::HarnessPresentation::Shim => (
+                errorloom::ReplayChannel::Stderr,
+                self.invocation_parts(&event.diagnostic, "dorc-sh"),
+            ),
+            crate::harness::HarnessPresentation::Body => (
+                errorloom::ReplayChannel::Stdout,
+                render_cli_parts(
+                    &self.render_ctx(),
+                    &event.diagnostic,
+                    "",
+                    "",
+                    &Interner::default(),
+                ),
+            ),
+            crate::harness::HarnessPresentation::Stage(stage) => {
+                let rendered = dorc_cli::engine::diagnostic_event(
+                    &self.render_ctx(),
+                    stage,
+                    &event.diagnostic,
+                    "",
+                    "",
+                );
+                (
+                    errorloom::ReplayChannel::Stderr,
+                    rendered.tagged_parts()?.clone(),
+                )
+            }
+        };
+        Some(ReplayResult::emitted(
+            ReplayStatus::new(event.status),
+            vec![ReplayEmission::editable(
+                channel,
+                to_editable_render(&render),
+            )],
+        ))
     }
 
     fn replay_dorc(
@@ -848,12 +895,49 @@ impl DorcConsumer {
             Some(path) => Some(replay_path(path, stdin.as_deref(), context)?),
             None => None,
         };
-        let evidence = raw_results.map_or(dorc_plan::records::Admission::NoObservation, |raw| {
-            dorc_plan::records::read_host_evidence(
-                std::io::Cursor::new(raw),
-                dorc_plan::records::HostEvidenceLimits::spike_default(),
-            )
-        });
+        let observation = raw_results.map_or(
+            LoomObservation::Controller(dorc_plan::records::Admission::NoObservation),
+            |raw| {
+                if raw.is_empty() {
+                    return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
+                }
+                let evidence = dorc_plan::records::read_host_evidence(
+                    std::io::Cursor::new(&raw),
+                    dorc_plan::records::HostEvidenceLimits::spike_default(),
+                );
+                let is_records_case = case
+                    .frontmatter()
+                    .scalar("code")
+                    .is_some_and(|slug| slug.starts_with("records-"));
+                if is_records_case {
+                    return LoomObservation::Controller(evidence);
+                }
+                let sources = dorc_cli::results::RunSources {
+                    book_name: snapshot.book_path(),
+                    book: snapshot.book_src(),
+                    oracle_paths: snapshot.oracle_paths(),
+                    oracle_sources: snapshot.oracle_srcs(),
+                };
+                let mut clock = dorc_cli::results::RunClock::Absent;
+                let mut interner = Interner::default();
+                match dorc_cli::results::admit_fixture_records(
+                    &sources,
+                    raw.as_bytes(),
+                    &mut clock,
+                    &mut interner,
+                ) {
+                    dorc_plan::records::Admission::Admitted(records) => {
+                        LoomObservation::Fixture(records.scoped.results().clone())
+                    }
+                    dorc_plan::records::Admission::NoObservation => {
+                        LoomObservation::Fixture(dorc_cli::results::SiteResults::default())
+                    }
+                    dorc_plan::records::Admission::Refused(_) => {
+                        LoomObservation::Controller(evidence)
+                    }
+                }
+            },
+        );
         let options = dorc_cli::engine_options_from_args(
             args,
             if command.stdout_is_terminal() {
@@ -865,7 +949,7 @@ impl DorcConsumer {
             false,
         );
         let mut edges = LoomEngineEdges {
-            evidence: Some(evidence),
+            observation: Some(observation),
             clock: dorc_cli::results::RunClock::Absent,
             argv: command.argv().to_vec(),
         };
@@ -892,6 +976,7 @@ impl DorcConsumer {
                 dorc_cli::engine::OutputAction::Flush(_) => None,
             })
             .collect();
+        let mut section_instances = BTreeMap::new();
         let emissions = sink
             .actions
             .into_iter()
@@ -903,7 +988,13 @@ impl DorcConsumer {
                         dorc_cli::engine::OutputChannel::Stderr => errorloom::ReplayChannel::Stderr,
                     };
                     Some(match event.tagged_parts() {
-                        Some(parts) => ReplayEmission::editable(channel, to_editable_render(parts)),
+                        Some(parts) => ReplayEmission::editable(
+                            channel,
+                            rebase_editable_instances(
+                                to_editable_render(parts),
+                                &mut section_instances,
+                            ),
+                        ),
                         None => ReplayEmission::bytes(channel, event.text()),
                     })
                 }
@@ -969,64 +1060,76 @@ impl DorcConsumer {
             .frontmatter()
             .scalar("code")
             .ok_or_else(|| "case has no `code`".to_owned())?;
-        let block = case
-            .replay()
-            .blocks()
-            .first()
-            .ok_or_else(|| "case has no replay".to_owned())?;
-        let command = ReplayCommand::parse(block.command()).map_err(|error| error.to_string())?;
-        let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
-        if words.first() == Some(&LOOM_COMMAND)
-            && matches!(usage::read(words.get(1..).unwrap_or_default()), Reading::Runs(invocation) if matches!(invocation.verb, Verb::Defect))
-        {
-            return crate::defect::DefectScenario::from_slug(slug)
-                .map(crate::defect::DefectScenario::diagnostic)
-                .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
+        if case.replay().blocks().is_empty() {
+            return Err("case has no replay".to_owned());
         }
-        if let Some(section) = case
-            .sections()
-            .iter()
-            .find(|s| s.name().ends_with("oracle.sh"))
-        {
-            if let Ok((diag, _, _)) = fire_lint_case(
-                slug,
-                section.name(),
-                section.content(),
-                declared_lint_tools(case),
-            ) {
+        let scenario = crate::harness::HarnessScenario::from_slug(slug);
+        for block in case.replay().blocks() {
+            let command =
+                ReplayCommand::parse(block.command()).map_err(|error| error.to_string())?;
+            let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
+            if let Some(scenario) = scenario
+                && scenario.accepts(command.argv())
+            {
+                return Ok(scenario.event().diagnostic);
+            }
+            if let Some(diag) = fire_dorc_sh_error(slug, words.get(1..).unwrap_or_default()) {
                 return Ok(diag);
             }
-        }
-        if words.first() == Some(&"dorc") {
-            let argv = command.argv().get(1..).unwrap_or_default().to_vec();
-            match dorc_cli::parse_args_from(argv) {
-                Err(diag) if diag.code.slug() == slug => return Ok(diag),
-                Ok(dorc_cli::Invocation::Analyze(args)) => {
-                    let found = std::cell::RefCell::new(None);
-                    drive_case(case, &RunEnv::new(), |candidate, context| {
-                        if candidate.original() == command.original() && found.borrow().is_none() {
-                            let replay = self
-                                .run_engine(case, &args, candidate, context)
-                                .ok_or(RunError::ShellNotConfigured)?;
-                            *found.borrow_mut() = replay
-                                .diagnostics
-                                .iter()
-                                .find(|diag| diag.code.slug() == slug)
-                                .cloned();
-                            return Ok(replay.result);
-                        }
-                        Ok(ReplayResult::bytes(String::new()))
-                    })
-                    .map_err(|error| error.to_string())?;
-                    if let Some(diag) = found.into_inner() {
-                        return Ok(diag);
-                    }
-                }
-                Ok(_) | Err(_) => {}
+            if words.first() == Some(&LOOM_COMMAND)
+                && matches!(usage::read(words.get(1..).unwrap_or_default()), Reading::Runs(invocation) if matches!(invocation.verb, Verb::Defect))
+            {
+                return crate::defect::DefectScenario::from_slug(slug)
+                    .map(crate::defect::DefectScenario::diagnostic)
+                    .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
             }
-        }
-        if let Ok(diag) = Self::whylog_diagnostic(case) {
-            if diag.code.slug() == slug {
+            if parse_direct_lint(&words).is_some()
+                && let Some(section) = case
+                    .sections()
+                    .iter()
+                    .find(|s| s.name().ends_with("oracle.sh"))
+                && let Ok((diag, _, _)) = fire_lint_case(
+                    slug,
+                    section.name(),
+                    section.content(),
+                    declared_lint_tools(case),
+                )
+            {
+                return Ok(diag);
+            }
+            if words.first() == Some(&"dorc") {
+                let argv = command.argv().get(1..).unwrap_or_default().to_vec();
+                match dorc_cli::parse_args_from(argv) {
+                    Err(diag) if diag.code.slug() == slug => return Ok(diag),
+                    Ok(dorc_cli::Invocation::Analyze(args)) if !args.reads_the_receipt() => {
+                        let found = std::cell::RefCell::new(None);
+                        drive_case(case, &RunEnv::new(), |candidate, context| {
+                            if candidate.original() == command.original()
+                                && found.borrow().is_none()
+                            {
+                                let replay = self
+                                    .run_engine(case, &args, candidate, context)
+                                    .ok_or(RunError::ShellNotConfigured)?;
+                                *found.borrow_mut() = replay
+                                    .diagnostics
+                                    .iter()
+                                    .find(|diag| diag.code.slug() == slug)
+                                    .cloned();
+                                return Ok(replay.result);
+                            }
+                            Ok(ReplayResult::bytes(String::new()))
+                        })
+                        .map_err(|error| error.to_string())?;
+                        if let Some(diag) = found.into_inner() {
+                            return Ok(diag);
+                        }
+                    }
+                    Ok(_) | Err(_) => {}
+                }
+            }
+            if let Ok(diag) = Self::whylog_diagnostic(case, block.command())
+                && diag.code.slug() == slug
+            {
                 return Ok(diag);
             }
         }
@@ -1035,13 +1138,7 @@ impl DorcConsumer {
         ))
     }
 
-    fn whylog_diagnostic(case: &Case) -> Result<Diag, String> {
-        let command = case
-            .replay()
-            .blocks()
-            .first()
-            .map(errorloom::ReplayBlock::command)
-            .ok_or_else(|| "case has no replay".to_owned())?;
+    fn whylog_diagnostic(case: &Case, command: &str) -> Result<Diag, String> {
         let words = exact_words(command).ok_or_else(|| "unsupported whylog replay".to_owned())?;
         let why = parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
         let raw = case
@@ -1201,107 +1298,6 @@ fn drifted_why_parts(
     ))
 }
 
-/// One LIVE `dorc why [<address>] --book=<book> [-o <oracle>]… [--all]` replay: the full report
-/// over a world the case materializes, rather than the degraded receipt a drifted durable yields.
-///
-/// This is what gives the `why-*` chrome an editable home (`28L:rul-full-driver-this-arc`): the
-/// report is driven through the same `dorc_cli::why` seat the binary prints, so the transcript a
-/// human edits IS the render.
-struct DirectWhyReport<'a> {
-    /// The `book.sh:N` / content positional, when the case asked about one site.
-    address: Option<&'a str>,
-    /// The case-relative book.
-    book: &'a str,
-    /// The case-relative oracle sources, in argv order.
-    oracles: Vec<&'a str>,
-    /// `--all`: the deepest pull tier.
-    deepest: bool,
-    /// The `< <path>` probe-results redirect — a MEASURED world, admitted through the real fixture
-    /// intake. Absent ⇒ every fact ⊤ ⇒ every site runs.
-    input: Option<&'a str>,
-    /// Did the invocation consent to the survival tier (`--risk-faultless-skips`)? Read off the
-    /// command rather than the frontmatter, so the world the transcript shows is the world its own
-    /// committed invocation asks for.
-    consented: bool,
-}
-
-fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>> {
-    let mut rest = words.strip_prefix(&["dorc", "why"])?.iter().peekable();
-    let leads = rest.peek().is_some_and(|word| !word.starts_with('-'));
-    let address = leads.then(|| rest.next().copied()).flatten();
-    let mut book = None;
-    let mut oracles = Vec::new();
-    let mut deepest = false;
-    let mut input = None;
-    let mut consented = false;
-    while let Some(word) = rest.next() {
-        if let Some(path) = word.strip_prefix("--book=") {
-            book = Some(path);
-        } else if *word == "--pre-source" {
-            oracles.push(*rest.next()?);
-        } else if *word == "--all" {
-            deepest = true;
-        } else if *word == dorc_cli::CONSENT_FLAG {
-            if consented {
-                return None;
-            }
-            consented = true;
-        } else if *word == "--results" {
-            // As in `parse_direct_plan`: the claim is spelled, and only `-` is recognized.
-            if *rest.next()? != "-" {
-                return None;
-            }
-        } else if *word == "<" {
-            if input.replace(*rest.next()?).is_some() {
-                return None;
-            }
-        } else {
-            return None;
-        }
-    }
-    let book = book?;
-    (case_relative_path(book)
-        && oracles.iter().copied().all(case_relative_path)
-        && input.is_none_or(case_relative_path))
-    .then_some(DirectWhyReport {
-        address,
-        book,
-        oracles,
-        deepest,
-        input,
-        consented,
-    })
-}
-
-/// The LIVE `dorc why` report, rendered in-process over a world the case materializes.
-///
-/// The ONE seat both replay chains go through — they differ only in where a case's bytes come
-/// from, so that is the only thing `source` supplies.
-/// The load snapshot a CASE is: a flat virtual directory whose section NAMES are its paths.
-///
-/// The modeled cwd is that directory's root, so `. ./x.oracle.sh` in a case's book names the
-/// case's own section (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case
-/// into a real directory and runs the real binary standing in it, so the in-process route and the
-/// executed one resolve identically by construction rather than by agreement.
-fn case_snapshot(
-    book_path: &str,
-    book_src: &str,
-    paths: Vec<String>,
-    srcs: Vec<String>,
-) -> dorc_cli::snapshot::StaticLoadSnapshot {
-    let cwd = dorc_core::loadpath::Cwd::default();
-    let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
-    dorc_cli::snapshot::StaticLoadSnapshot::over(
-        cwd,
-        paths,
-        srcs,
-        // A case lists its sources; every one of them is named, so none is an acquired dependency.
-        &dorc_cli::snapshot::LoadPositions::book_sourced(book_sourced),
-        book_path,
-        book_src,
-    )
-}
-
 fn engine_snapshot(
     book_path: &str,
     book_src: &str,
@@ -1335,67 +1331,11 @@ fn engine_snapshot(
     )
 }
 
-fn live_why_parts(
-    ctx: &RenderCtx<'_>,
-    why: &DirectWhyReport<'_>,
-    source: impl Fn(&str) -> Option<String>,
-) -> Result<dorc_aid::tagged::RenderParts, String> {
-    // A `Result`, not an `Option`, so an intake REFUSAL reaches the author verbatim: collapsing it
-    // to "unsupported replay" would hide the one message that names the header they must write
-    // (`28L:rul-refusals-name-the-next-command`).
-    let missing = |path: &str| format!("the case carries no `{path}` section");
-    let book = source(why.book).ok_or_else(|| missing(why.book))?;
-    let oracle_paths: Vec<String> = why.oracles.iter().map(|p| (*p).to_owned()).collect();
-    let oracle_srcs = oracle_paths
-        .iter()
-        .map(|path| source(path).ok_or_else(|| missing(path)))
-        .collect::<Result<Vec<String>, String>>()?;
-    let results = match why.input {
-        Some(path) => admitted_site_results(
-            why.book,
-            &book,
-            &oracle_paths,
-            &oracle_srcs,
-            &source(path).ok_or_else(|| missing(path))?,
-        )?,
-        None => dorc_cli::results::SiteResults::default(),
-    };
-    let world = dorc_cli::world::WhyWorld::analyze_measured(
-        &case_snapshot(why.book, &book, oracle_paths.clone(), oracle_srcs.clone()),
-        &results,
-        why.consented,
-    )
-    .map_err(|diag| format!("shared engine refused the why world: {diag:?}"))?;
-    // Every field is controller-minted, exactly as the binary mints them on a hostless run: the
-    // fixture framing supplies the host, the book supplies its own digest, and there is no clock
-    // (`28F:rul-probe-instants-host-says-no-times` — an undated receipt says so rather than
-    // inventing a moment).
-    let framing = dorc_plan::records::Framing::spike(dorc_plan::invocation::book_digest(&book));
-    let receipt = dorc_cli::Receipt {
-        at: None,
-        replayed: false,
-        host: framing.host().to_owned(),
-        book: why.book.to_owned(),
-        book_digest: framing.book_digest().to_owned(),
-        at_head: None,
-        oracles: oracle_paths,
-        risk_profile: why.consented.then_some(dorc_cli::CONSENT_FLAG),
-        tally: dorc_cli::PlanTally::Derived(world.disposition_counts()),
-        deepest_tier: why.deepest,
-        narratable: true,
-    };
-    Ok(dorc_cli::why::why_report_parts(
-        ctx,
-        &world.report(why.address, &receipt),
-    ))
-}
-
 /// `dorc-sh`'s three errors have no parser to run — the bin decides them inline from its argv and
 /// the filesystem. Only the ARGV-decidable one is honest here; the two I/O failures would need a
 /// real unreadable file and a real missing shell, so their cases stay world-as-payload.
 fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
-    (slug == "dorc-sh-usage" && rest.is_empty())
-        .then(|| Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage)))
+    (slug == "dorc-sh-usage" && rest.is_empty()).then(dorc_cli::shim_usage_error)
 }
 
 /// The `dorc lint` route, and whether the run leaves external tools ENABLED. The bare form is the
@@ -1519,6 +1459,41 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
     fs::read_to_string(context.cwd().join(path)).ok()
 }
 
+fn rebase_editable_instances(
+    render: EditableRender<SectionKey, SectionVariableId>,
+    next: &mut BTreeMap<(String, &'static str), usize>,
+) -> EditableRender<SectionKey, SectionVariableId> {
+    let mut widths: BTreeMap<(String, &'static str), usize> = BTreeMap::new();
+    let components = render
+        .components()
+        .iter()
+        .cloned()
+        .map(|component| match component {
+            RenderComponent::EditableSection(section) => {
+                let mut key = section.id().clone();
+                let group = (key.owner.clone(), key.field);
+                let base = next.get(&group).copied().unwrap_or_default();
+                widths
+                    .entry(group)
+                    .and_modify(|width| *width = (*width).max(key.instance.saturating_add(1)))
+                    .or_insert(key.instance.saturating_add(1));
+                key.instance = key.instance.saturating_add(base);
+                RenderComponent::EditableSection(errorloom::EditableSection::new(
+                    key,
+                    section.fragments().to_vec(),
+                ))
+            }
+            other => other,
+        })
+        .collect();
+    for (group, width) in widths {
+        next.entry(group)
+            .and_modify(|base| *base = base.saturating_add(width))
+            .or_insert(width);
+    }
+    EditableRender::new(components)
+}
+
 fn replay_stdin(command: &ReplayCommand, context: &ReplayContext<'_>) -> Option<Option<String>> {
     match command.input() {
         None => Some(None),
@@ -1563,9 +1538,14 @@ impl dorc_cli::engine::OutputSink for LoomOutputSink<'_> {
 }
 
 struct LoomEngineEdges {
-    evidence: Option<dorc_plan::records::Admission<dorc_plan::records::BoundedHostBytes>>,
+    observation: Option<LoomObservation>,
     clock: dorc_cli::results::RunClock,
     argv: Vec<String>,
+}
+
+enum LoomObservation {
+    Controller(dorc_plan::records::Admission<dorc_plan::records::BoundedHostBytes>),
+    Fixture(dorc_cli::results::SiteResults),
 }
 
 impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
@@ -1578,14 +1558,25 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
         request: &dorc_cli::engine::ObservationRequest<'_>,
         _render_probe: &dyn Fn(&dorc_plan::records::Framing) -> String,
     ) -> Result<dorc_cli::engine::Observation, Box<Diag>> {
-        Ok(dorc_cli::engine::Observation::Controller {
-            framing: request.default_framing.clone(),
-            evidence: self
-                .evidence
+        Ok(
+            match self
+                .observation
                 .take()
-                .unwrap_or(dorc_plan::records::Admission::NoObservation),
-            stderr: Vec::new(),
-        })
+                .unwrap_or(LoomObservation::Controller(
+                    dorc_plan::records::Admission::NoObservation,
+                )) {
+                LoomObservation::Controller(evidence) => {
+                    dorc_cli::engine::Observation::Controller {
+                        framing: request.default_framing.clone(),
+                        evidence,
+                        stderr: Vec::new(),
+                    }
+                }
+                LoomObservation::Fixture(results) => {
+                    dorc_cli::engine::Observation::Fixture { results }
+                }
+            },
+        )
     }
 
     fn clock(&mut self) -> &mut dorc_cli::results::RunClock {
@@ -1749,9 +1740,11 @@ impl CaseRenderer for DorcConsumer {
     type Error = String;
 
     fn render_case(&self, case: &Case) -> Result<String, String> {
-        let outputs = replay_case(case, self, &RunEnv::new(), |command, _| {
-            let _ = command;
-            Err(RunError::ShellNotConfigured)
+        let outputs = replay_case(case, self, &RunEnv::new(), |command, context| {
+            Err(RunError::DriverDeclined {
+                block: context.block(),
+                command: command.to_owned(),
+            })
         })
         .map_err(|error| error.to_string())?
         .into_iter()
@@ -1804,56 +1797,6 @@ fn fire_lint_case(
         provenance.source.clone(),
         filename.to_owned(),
     ))
-}
-
-/// The case's declared `< results` bytes, through the REAL fixture intake
-/// (`28L:rul-records-seam-approved`). All three admission outcomes are honoured, and a REFUSED
-/// stream refuses the whole world rather than degrading to an empty one: a case whose measured
-/// facts rest on a broken channel would render a world nothing measured
-/// (`rul-admission-is-a-closed-outcome`).
-fn admitted_site_results(
-    filename: &str,
-    source: &str,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
-    stream: &str,
-) -> Result<dorc_cli::results::SiteResults, String> {
-    use dorc_plan::records::Admission;
-    let sources = dorc_cli::results::RunSources {
-        book_name: filename,
-        book: source,
-        oracle_paths,
-        oracle_sources: oracle_srcs,
-    };
-    // No clock: a committed transcript must be a fixpoint, and a fixture stream carries no
-    // instants of its own (`inv-determinism`; `seam-tolerated-nondeterminism-stops-at-the-run-log`
-    // leaves a rendered surface no normalizer to hide behind).
-    let mut clock = dorc_cli::results::RunClock::Absent;
-    let mut interner = Interner::default();
-    match dorc_cli::results::admit_fixture_records(
-        &sources,
-        stream.as_bytes(),
-        &mut clock,
-        &mut interner,
-    ) {
-        Admission::Admitted(admitted) => Ok(admitted.scoped.results().clone()),
-        Admission::NoObservation => Ok(dorc_cli::results::SiteResults::default()),
-        // The refusal NAMES the header the stream must carry
-        // (`28L:rul-refusals-name-the-next-command`). A framing mismatch is nearly always a book
-        // edit moving the digest, and "refused" alone leaves the author to recompute a hash by
-        // hand; `sites=` stays theirs to count, so the text says what it counts — a census, never
-        // an id — because the two coincide at one record and diverge at two.
-        Admission::Refused(reason) => Err(format!(
-            "the declared results stream was refused ({}) -- a measured world cannot rest on a \
-             broken channel. Its first line must be:\n  {} sites=<N> {}\nwhere <N> counts the \
-             `site` records that follow, NOT the largest site id among them",
-            reason.spanless_diagnostic().code.slug(),
-            dorc_plan::records::expected_header_prefix(&dorc_plan::records::Framing::spike(
-                dorc_plan::invocation::book_digest(source)
-            )),
-            dorc_plan::records::TERMINAL_TOKEN,
-        )),
-    }
 }
 
 fn editable_variables(

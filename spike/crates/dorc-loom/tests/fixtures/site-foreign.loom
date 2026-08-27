@@ -3,7 +3,9 @@ code: site-unresolvable
 ---
 -- book.sh --
 #!/bin/sh
+make install
+ldconfig
 
 -- replay --
-$ dorc plan --book=book.sh
+$ dorc plan --book=book.sh > /dev/null
 note[site-unresolvable]: {{detail}}

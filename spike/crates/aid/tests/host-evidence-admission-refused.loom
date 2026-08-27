@@ -5,6 +5,7 @@ why: host evidence remains controller-owned and decision-inert until admission s
 ---
 -- replay --
 $ dorc plan --book=book.sh
-error[host-evidence-admission-refused]: Dorc refused this attempt's probe
-records before using them: the stream failed an admission check (framing, size,
-structure, or identity), so none of it became a fact and no plan was produced.
+records: error[host-evidence-admission-refused]: Dorc refused this attempt's
+probe records before using them: the stream failed an admission check (framing,
+size, structure, or identity), so none of it became a fact and no plan was
+produced.

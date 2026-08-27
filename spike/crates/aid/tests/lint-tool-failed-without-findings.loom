@@ -4,7 +4,7 @@ when-fires: an external linter exited nonzero but produced nothing parseable. li
 why: 27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. World-as-payload: replay never runs a foreign tool.
 ---
 -- replay --
-$ dorc plan --book=book.sh
+$ dorc lint book.sh
 warning[lint-tool-failed-without-findings]: `shellcheck` exited with status 2
 without producing any findings Dorc could read, so its checks contributed
 nothing here -- run it directly to see its own report.

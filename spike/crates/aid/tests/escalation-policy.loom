@@ -6,13 +6,41 @@ owns:
   - escalation-policy-capability-root
   - escalation-policy-vouched-only
 ---
+-- book.sh --
+#!/bin/sh
+sudo hork add nginx
+
+-- sudo.oracle.sh --
+# dorc-lang/v0.2
+sudo__predict() { env "$@"; }
+sudo__lend_map() { : lends user; : lends fs-view; : lends netns; "$@"; }
+sudo__enter() { sudo -n "$@"; }
+
 -- replay --
-$ dorc plan --book=book.sh
-note[escalation-policy]: escalation policy: probe re-uses connection authority
-(root) for `tolerates:`-vouched functions only (default); entry forms: sudo -n.
-Forbid with --no-probe-escalation; widen with --escalate-any-probe.
+$ dorc plan --book=book.sh --pre-source sudo.oracle.sh > /dev/null
+escalation: note[escalation-policy]: escalation policy: probe re-uses connection
+authority (root) for `tolerates:`-vouched functions only (default); entry forms:
+sudo -n. Forbid with --no-probe-escalation; widen with --escalate-any-probe.
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sudo hork add nginx` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | sudo hork add nginx
+     | \_________________/
+
+   = help:  sm site runs `sudo hork add nginx`
+hint: 'sudo' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest e84526949c2589b3
 
 $ dorc-loom --this vars
 case: escalation-policy
 {{v0}} = "root"
 {{v1}} = "sudo -n"
+{{count}} = "1"
+{{site_word}} = "site"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

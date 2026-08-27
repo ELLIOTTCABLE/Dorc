@@ -9,11 +9,23 @@ why: y-1 / 21F imp-1: the target is unresolvable so no per-path `file` cell can 
 hork --emit >"$LOG_DEST"
 
 -- replay --
-$ dorc plan --book=book.sh
-note[redir-target-top]: This write-redirect's target cannot be resolved
-statically, so the write cannot be tied to any one file and the command always
-runs (never elided) -- a literal target, or a variable assigned from one, would
-let Dorc track the write.
+$ dorc plan --book=book.sh > /dev/null
+classify: note[redir-target-top]: This write-redirect's target cannot be
+resolved statically, so the write cannot be tied to any one file and the command
+always runs (never elided) -- a literal target, or a variable assigned from one,
+would let Dorc track the write.
       [ book.sh:3:13
    3 | hork --emit >"$LOG_DEST"
      |             \__________/
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork --emit >"$LOG_DEST"` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:3:1
+   3 | hork --emit >"$LOG_DEST"
+     | \______________________/
+
+   = help:  sm site runs `hork --emit >"$LOG_DEST"`
+hint: 'hork' (line 3) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 5e8f10038b5f570b

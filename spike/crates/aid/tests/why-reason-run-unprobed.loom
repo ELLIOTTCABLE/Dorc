@@ -14,7 +14,7 @@ hork tune --profile web
 apt-get install -y nginx
 
 -- replay --
-$ dorc why book.sh:5 --book=book.sh
+$ dorc why book.sh:5 --book=book.sh --results - < /dev/null 2>/dev/null
       [ book.sh, participating lines:
    5 | hork tune --profile web
 

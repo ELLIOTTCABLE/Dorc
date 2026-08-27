@@ -4,7 +4,7 @@ when-fires: an external linter produced non-empty output that no tier of the ada
 why: 27R §4 - upstream drift may cost precision, never a crash and never silence, so the raw bytes ship as one opaque finding rather than being dropped. World-as-payload: replay never runs a foreign tool.
 ---
 -- replay --
-$ dorc plan --book=book.sh
+$ dorc lint book.sh
 warning[lint-tool-output-unparsable]: sm unrecognized `checkbashisms` output
 (raw): possible bashism in - line 4 (should be '.'):
 

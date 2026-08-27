@@ -3,9 +3,16 @@ code: records-headerless-refused
 when-fires: a records stream carried no terminal token anywhere, so it carried no framing at all. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. Static.
 why: 27D E4: a real dorc probe always frames, so a headerless stream is corruption or an alien source — refuse (kFAIL-withhold, the fold is withheld, the host runs).
 ---
+-- book.sh --
+#!/bin/sh
+hork tune --profile web
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
+
 -- replay --
-$ dorc plan --book=book.sh --results - < probe-results.txt
-warning[records-headerless-refused]: sm a records stream carried no
+$ dorc plan --book=book.sh --results - < probe-results.txt > /dev/null
+records: warning[records-headerless-refused]: sm a records stream carried no
 `dorc-records/1` framing at all (headerless -- truncated before the header, or a
 non-dorc source) -- refused on the strict production path, the fold is withheld
 and the host runs (kFAIL-withhold)

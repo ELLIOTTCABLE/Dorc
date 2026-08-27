@@ -510,7 +510,9 @@ fn corpus_cases(roots: &Roots) -> Result<Vec<PathBuf>, String> {
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| format!("read {}: {error}", dir.display()))?
         .into_iter()
-        .filter(|path| path.extension().is_some_and(|kind| kind == "loom"))
+        .filter(|path| {
+            path.extension().is_some_and(|kind| kind == "loom") && !dorc_loom::is_sync_residue(path)
+        })
         .collect();
     if cases.is_empty() {
         return Err(format!("no .loom cases under {}", dir.display()));

@@ -4,10 +4,10 @@ when-fires: a plan/apply/round-trip run finished but its posthoc-why durable did
 why: 28D:must-default-durable-lands-with-its-hardening bills a durable for VISIBLE persistence failure; this write path previously answered all five of its failure modes with a bare return, which 28D names among the whylog's each-looked-local decisions. Error-floor rather than advisory (28F:rul-write-failure-is-error-floor) because the advisory plane is suppressed under `apply`, and an apply whose receipt silently vanished is exactly the run an admin later comes back asking about. The artifact on stdout is unaffected - a postmortem aid failing is loud, never fatal. Remediation register (help) wanted: name what to check for the reported reason, and note that the run itself completed and its artifact is unaffected.
 ---
 -- replay --
-$ dorc plan --book=webhost.sh
-error[whylog-unwritten]: This run completed and its artifact is unaffected, but
-the why-log did not land in /var/lib/dorc/whylog (reason: directory), so `dorc
-why --last` will have nothing to read for it.
+$ dorc plan --book=webhost.sh --whylog-dir=/var/lib/dorc/whylog
+whylog: error[whylog-unwritten]: This run completed and its artifact is
+unaffected, but the why-log did not land in /var/lib/dorc/whylog (reason:
+directory), so `dorc why --last` will have nothing to read for it.
 
 $ dorc-loom --this vars
 case: whylog-unwritten

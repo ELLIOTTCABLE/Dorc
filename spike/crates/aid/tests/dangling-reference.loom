@@ -5,9 +5,9 @@ why: 24F §4: turns a third-party-typo from silent value-loss into a pointed hin
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[dangling-reference]: Coordinate sm.dorc.Package:nginx names an entity its
-kind's resolver does not recognize -- a likely typo or stale name -- so Dorc
-treats it as possibly aliasing anything, and the site runs.
+resolve: note[dangling-reference]: Coordinate sm.dorc.Package:nginx names an
+entity its kind's resolver does not recognize -- a likely typo or stale name --
+so Dorc treats it as possibly aliasing anything, and the site runs.
 
 $ dorc-loom --this vars
 case: dangling-reference

@@ -45,9 +45,7 @@ fn report(diag: &dorc_aid::Diag) {
 fn main() -> ExitCode {
     let mut args = std::env::args_os().skip(1);
     let Some(script) = args.next() else {
-        report(&dorc_aid::Diag::new_spanless_site(
-            dorc_aid::diag::DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage),
-        ));
+        report(&dorc_cli::shim_usage_error());
         return ExitCode::from(2);
     };
     let src = match std::fs::read_to_string(&script) {

@@ -34,10 +34,13 @@ hork__is_converged() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh --pre-source hork.oracle.sh --risk-faultless-skips
-warning[footprint-incoherent]: touches() footprint omits this command's own
-effect coordinate (at-least not-within at-most) -- footprint refused, the site
-walls
-      [ book.sh:2:1
-   2 | hork add nginx
-     | \____________/
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh --risk-faultless-skips > /dev/null
+footprint: warning[footprint-incoherent]: touches() footprint omits this
+command's own effect coordinate (at-least not-within at-most) -- footprint
+refused, the site walls
+      [ :1:1
+   1 | 
+     | ^
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 419a5e6503abeaaf

@@ -10,8 +10,20 @@ set "$SHELL_FLAGS"
 hork --settle
 
 -- replay --
-$ dorc plan --book=book.sh
-warning[cfg-errexit-unknown]: Dorc could not tell whether `set -e` is in effect
-at one or more commands (a non-literal `set` argument, or paths that disagree),
-so it plans as though each might abort the book on failure -- the cautious
-reading; it can cost elisions, never correctness.
+$ dorc plan --book=book.sh > /dev/null
+cfg: warning[cfg-errexit-unknown]: Dorc could not tell whether `set -e` is in
+effect at one or more commands (a non-literal `set` argument, or paths that
+disagree), so it plans as though each might abort the book on failure -- the
+cautious reading; it can cost elisions, never correctness.
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork --settle` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:4:1
+   4 | hork --settle
+     | \___________/
+
+   = help:  sm site runs `hork --settle`
+hint: 'hork' (line 4) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest b4db4a6a8e2db832

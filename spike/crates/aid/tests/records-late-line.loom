@@ -3,10 +3,19 @@ code: records-late-line
 when-fires: a record line arrived after the end-sentinel. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. `{count}` is what was seen before the walk stopped.
 why: 262 §1 pin-late-and-alien-records: material after the close marker means the stream did not end where it said it did.
 ---
+-- book.sh --
+#!/bin/sh
+hork tune --profile web
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=6b796e0c816aa119a94373a3ab99578a69820f243017ce833973242dd6f9a79e sites=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+dorc site 0 effect=holds rc=0 @@dorc@@
+
 -- replay --
-$ dorc plan --book=book.sh --results - < probe-results.txt
-warning[records-late-line]: sm 1 late (after the end-sentinel) record line(s)
-discarded (counted, never folded)
+$ dorc plan --book=book.sh --results - < probe-results.txt > /dev/null
+records: warning[records-late-line]: sm 1 late (after the end-sentinel) record
+line(s) discarded (counted, never folded)
 
 $ dorc-loom --this vars
 case: records-late-line

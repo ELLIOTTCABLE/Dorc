@@ -5,8 +5,8 @@ why: 27C §9: every cross-context elision renders its attribution chain from day
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[carried-across-substrate-axis]: This elision carried across fs-view: Dorc
-proved the verdict body reads nothing beyond the site's own arguments and
+carry: note[carried-across-substrate-axis]: This elision carried across fs-view:
+Dorc proved the verdict body reads nothing beyond the site's own arguments and
 sm_dorc_File (invariant: line at certsync.oracle.sh:12), whose owners vouch that
 state does not divide across fs-view.
 

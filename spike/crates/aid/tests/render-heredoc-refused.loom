@@ -5,7 +5,7 @@ why: kFAIL-perform, arch-1 d-6: substituting the opener span would strand the he
 ---
 -- replay --
 $ dorc plan --book=book.sh
-error[render-heredoc-refused]: Dorc cannot elide `cat <<EOF` as planned:
+render: error[render-heredoc-refused]: Dorc cannot elide `cat <<EOF` as planned:
 rewriting the line would strand the heredoc body below its `<<` opener, so the
 command stays in place and runs verbatim.
    = help:  Move the heredoc's content out of the command -- feed it with printf

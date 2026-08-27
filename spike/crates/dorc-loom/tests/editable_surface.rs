@@ -562,7 +562,11 @@ fn vars_answers_for_every_committed_case() {
     let mut answered = 0usize;
     for entry in std::fs::read_dir(&corpus).expect("the corpus dir is readable") {
         let path = entry.expect("a corpus entry").path();
-        if path.extension().is_none_or(|kind| kind != "loom") {
+        if path.extension().is_none_or(|kind| kind != "loom")
+            || path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().contains(".sync-conflict-"))
+        {
             continue;
         }
         let case = Case::parse(&std::fs::read_to_string(&path).expect("case is readable"))

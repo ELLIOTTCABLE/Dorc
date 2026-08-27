@@ -99,6 +99,12 @@ pub fn shim_error_parts(
     staged_invocation_parts("dorc-sh", ctx, error, interner)
 }
 
+/// The diagnostic produced when `dorc-sh` receives no script.
+#[must_use]
+pub fn shim_usage_error() -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage))
+}
+
 /// `stage` is the seat's own prefix word — not a catalog register, and never editable.
 fn staged_invocation_parts(
     stage: &str,

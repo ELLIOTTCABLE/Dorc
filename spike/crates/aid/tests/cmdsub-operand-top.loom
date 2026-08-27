@@ -16,9 +16,9 @@ apt-get install -y "$(cat /etc/webhost/pkgset)"
 systemctl enable nginx
 
 -- replay --
-$ dorc plan --book=book.sh
-note[cmdsub-operand-top]: operand 3 is a command-substitution `$(...)` /
-arithmetic / operator-form expansion, so Dorc cannot know its value until the
+$ dorc plan --book=book.sh > /dev/null
+classify: note[cmdsub-operand-top]: operand 3 is a command-substitution `$(...)`
+/ arithmetic / operator-form expansion, so Dorc cannot know its value until the
 command runs on the host -- there is nothing to resolve and no read-only probe
 to check. Dorc elides a command only when it can prove the command's effect is
 already in place, so this one is left to run on every apply.
@@ -31,11 +31,39 @@ already in place, so this one is left to run on every apply.
               the command once it has converged. If the value must stay dynamic,
               load an oracle that vouches for this command's convergence, and
               Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-inner-nonleaf]: Dorc cannot elide `cat
+/etc/webhost/pkgset` on its own: it runs inside a `$(...)` substitution as part
+of evaluating its enclosing line, so it runs whenever that line does.
+      [ book.sh:1:1
+   1 | #!/bin/sh
+     | \_______/
+   2 | # pi-webhost provisioning (curated package set from the fleet inventory)
+     | \___________/
+probe: note[site-unresolvable]: sm 3 sites run unprobed (no read-only check
+could be shipped): `apt-get update`, `apt-get install -y "$(cat
+/etc/webhost/pkgset)"`, `systemctl enable nginx` -- run `dorc why` for the
+per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:5:1
+   5 | apt-get update
+     | \____________/
 
-$ dorc plan --book=book.sh --format=jsonl
-{"code":"cmdsub-operand-top","severity":"note"}
+   = help:  sm site runs `apt-get update`
+why: ran because operand 3 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 6:1 `apt-get install -y "$(cat /etc/webhost/pkgset)"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: 'apt-get' (line 5) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 2 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=4 elide=0 omit=0 guard=0 run=4 may-alias=0
+dorc: decision-digest 487ba50dc823d0a0
 
 $ dorc-loom --this vars
 case: cmdsub-operand-top
 {{position}} = "operand 3"
-{{cause}} = "a command-substitution `$(...)` /\narithmetic / operator-form expansion"
+{{cause}} = "a command-substitution `$(...)`\n/ arithmetic / operator-form expansion"
+{{inner}} = "cat\n/etc/webhost/pkgset"
+{{count}} = "3"
+{{site_word}} = "sites"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "4"
+{{v5}} = "0"

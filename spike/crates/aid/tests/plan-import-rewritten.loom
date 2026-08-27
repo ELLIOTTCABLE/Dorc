@@ -5,4 +5,4 @@ why: 30Ng:rul-bundle-at-dorc-lang-boundaries (human-typed) grants Dorc exactly o
 ---
 -- replay --
 $ dorc plan --book=book.sh
-note[plan-import-rewritten]: [unwritten: plan-import-rewritten]
+emission: note[plan-import-rewritten]: [unwritten: plan-import-rewritten]

@@ -6,11 +6,10 @@ why: 260 dec-26-crlf. A CRLF shebang is an exec failure the remote kernel raises
 ---
 -- replay --
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
-dorc: error[transport-crlf-refused]: Dorc refuses to ship webhost.dorc-plan.sh:
-it carries a carriage return (first on line 1), and CRLF bytes fail on the
-remote host before any shell can run -- convert the line endings to LF and
-re-plan.
-usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
+transport: error[transport-crlf-refused]: Dorc refuses to ship
+webhost.dorc-plan.sh: it carries a carriage return (first on line 1), and CRLF
+bytes fail on the remote host before any shell can run -- convert the line
+endings to LF and re-plan.
 
 $ dorc-loom --this vars
 case: transport-crlf-refused

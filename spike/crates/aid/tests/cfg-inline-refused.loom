@@ -11,14 +11,28 @@ retry() { retry; }
 retry
 
 -- replay --
-$ dorc plan --book=book.sh
-warning[cfg-inline-refused]: recursive call to `retry` (direct or transitive
-within the active inline stack); not inlined -- it runs as an ordinary unmodeled
-command
+$ dorc plan --book=book.sh > /dev/null
+cfg: warning[cfg-inline-refused]: recursive call to `retry` (direct or
+transitive within the active inline stack); not inlined -- it runs as an
+ordinary unmodeled command
       [ book.sh:2:11
    2 | retry() { retry; }
      |           \___/
+cfg: warning[cfg-inline-refused]: recursive call to `retry` (direct or
+transitive within the active inline stack); not inlined -- it runs as an
+ordinary unmodeled command
+      [ book.sh:2:11
+   2 | retry() { retry; }
+     |           \___/
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest b4db5b91809c5bc2
 
 $ dorc-loom --this vars
 case: cfg-inline-refused
 {{v0}} = "retry"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

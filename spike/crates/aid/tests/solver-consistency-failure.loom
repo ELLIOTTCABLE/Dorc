@@ -9,5 +9,6 @@ owns:
   - solver-consistency-failure-self-reach
 ---
 -- replay --
-$ dorc plan --book=book.sh
-error[solver-consistency-failure]: [unwritten: solver-consistency-failure]
+$ dorc-loom --this defect
+solve: error[solver-consistency-failure]: [unwritten:
+solver-consistency-failure]
