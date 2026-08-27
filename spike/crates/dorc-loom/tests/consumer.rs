@@ -38,10 +38,8 @@ fn whylog_absent_case() -> Case {
 }
 
 #[test]
-fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
-    // The one real-fired proof (`28A` §2n): a wrong-version marked oracle drives the REAL in-process
-    // marker gate, so the render is SPANNED (a caret frame into the materialized source), not the
-    // spanless world-as-payload path — and it is what the binary actually produces.
+fn source_backed_marker_pilot_fires_the_real_gate() {
+    // A wrong-version oracle must retain source provenance through the production lint route.
     let case_text = "---\ncode: marker-version-unrecognized\n---\n\
                      -- oracle.sh --\n# dorc-lang/v0.1\n\
                      apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }\n\
@@ -49,7 +47,7 @@ fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
     let case = Case::parse(case_text).expect("case parses");
     let rendered = DorcConsumer::new()
         .render_case(&case)
-        .expect("pipeline render");
+        .expect("source-backed render");
     // The SLUG, not the words: prose burn-down must not break a test about the gate firing.
     assert!(
         rendered.contains("error[marker-version-unrecognized]: "),
@@ -69,7 +67,7 @@ fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
     .expect("case parses");
     let rendered = DorcConsumer::new()
         .render_case(&case)
-        .expect("canonical payload renders");
+        .expect("typed edge outcome renders");
     assert_eq!(
         rendered,
         include_str!("../../aid/tests/host-evidence-admission-refused.loom")
@@ -236,16 +234,15 @@ fn whylog_driver_claims_only_the_exact_single_file_shape() {
     )
     .expect("replays route");
     assert!(results[0].editable_render().is_some());
-    assert!(results[1].editable_render().is_none());
-    assert!(results[1].output().starts_with("fallback:"));
-    assert!(results[2].editable_render().is_some());
-    assert!(results[2].output().starts_with("dorc: error["));
-    assert!(results[3].editable_render().is_none());
-    assert!(results[3].output().starts_with("fallback:"));
+    for result in &results[1..] {
+        assert!(result.editable_render().is_none());
+        assert!(result.output().starts_with("fallback:"));
+    }
     assert_eq!(
         calls.into_inner(),
         [
             "dorc why --last --whylog=.whylog --whylog=.other",
+            "dorc why --last --whylog=.whylog --unknown",
             "dorc why --last --whylog=../whylog",
         ]
     );
@@ -686,23 +683,17 @@ fn exact_replays_keep_editability_with_provenance_and_route_edges_to_the_injecte
     assert!(results[1].editable_render().is_none());
     assert_eq!(results[1].output(), "dorc 0.0.0\n");
     assert!(results[2].editable_render().is_some());
-    for declined in [3usize, 4, 7, 8] {
+    for declined in [3usize, 4, 5, 6, 7, 8] {
         assert!(results[declined].editable_render().is_none());
         assert!(results[declined].output().contains("{{command}}"));
-    }
-    for invocation_error in [5usize, 6] {
-        assert!(results[invocation_error].editable_render().is_some());
-        assert!(
-            results[invocation_error]
-                .output()
-                .starts_with("dorc: error[")
-        );
     }
     assert_eq!(
         calls.into_inner(),
         [
             "dorc why --last",
             "dorc plan --book=missing.sh",
+            "dorc plan --book=book.sh --book=book.sh",
+            "dorc plan --book=book.sh --unknown",
             "dorc plan --book=../book.sh",
             "dorc plan --book=./book.sh",
         ]
@@ -915,7 +906,7 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
         ("dorc why book.sh:5 --last --whylog=absent.whylog", false),
         ("dorc why --last --whylog=../escape", false),
         ("dorc plan --book=book.sh", true),
-        ("dorc wombat --hork", true),
+        ("dorc wombat --hork", false),
     ];
 
     for (command, claimed) in shapes {

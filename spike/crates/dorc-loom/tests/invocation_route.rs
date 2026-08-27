@@ -63,8 +63,7 @@ fn each_invocation_case_is_fired_by_its_own_command() {
     }
 }
 
-/// The REFUSAL: point a case's command at an argv that fires a DIFFERENT code and the route must
-/// not render it. Without this the honest route is world-as-payload with extra steps.
+/// A case cannot claim a parser error emitted under a different slug.
 #[test]
 fn a_command_that_fires_another_code_is_refused() {
     let case = read("cli-no-book-given.loom");
@@ -86,14 +85,13 @@ fn a_command_that_fires_another_code_is_refused() {
     );
 }
 
-/// A command that parses CLEANLY is not an invocation error at all, so the route declines and the
-/// case falls through to its ordinary world — which is how the world-as-payload cases still work.
+/// A command that parses cleanly may still select a typed nonportable edge outcome.
 #[test]
-fn a_successful_command_falls_through_to_the_payload_world() {
+fn a_successful_command_reaches_the_typed_edge_controller() {
     let case = read("cli-file-not-found.loom");
     let rendered = DorcConsumer::new()
         .render_case(&case)
-        .expect("the payload world still renders");
+        .expect("the typed edge outcome renders");
     assert!(
         rendered.contains("error[cli-file-not-found]"),
         "an I/O-world code keeps its constructed stand-in: {rendered}"

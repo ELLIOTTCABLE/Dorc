@@ -1,11 +1,5 @@
 //! The Dorc case renderer and compiled-edit applier (`282` §5 · §13), implemented against a mutable
 //! owned-catalog mirror ([`dorc_aid::catalog::OwnedEntry`]).
-//!
-//! World-form dispatch (`283:dec-world-two-forms`): a `-- world --`-only case is WORLD-AS-PAYLOAD (a
-//! canonical constructor keyed by slug — the phase-4 floor for the artificial/expensive-world codes);
-//! a case carrying a materialized oracle/book section is WORLD-AS-PIPELINE (the real in-process kernel
-//! fires the diagnostic — the marker pilot). Phase 4 lands the payload path; the pipeline arm is the
-//! marker-version-unrecognized pilot.
 
 use std::collections::BTreeMap;
 use std::fmt::Write;
@@ -734,7 +728,7 @@ impl DorcConsumer {
         if tokens.first() == Some(&"dorc") {
             return self.replay_dorc(case, command, context);
         }
-        if let Some(diag) = fire_dorc_sh_error(
+        if let Some(diag) = fire_dorc_sh_usage_error(
             case.frontmatter().scalar("code").unwrap_or_default(),
             tokens.get(1..).unwrap_or_default(),
         ) {
@@ -803,10 +797,13 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        let argv = command.argv().get(1..)?.to_vec();
-        let invocation = match dorc_cli::parse_args_from(argv) {
+        let invocation_argv = command.argv().get(1..)?.to_vec();
+        let invocation = match dorc_cli::parse_args_from(invocation_argv) {
             Ok(invocation) => invocation,
             Err(diag) => {
+                if case.frontmatter().scalar("code") != Some(diag.code.slug()) {
+                    return None;
+                }
                 let parts = self.invocation_parts(&diag, "dorc");
                 return Some(
                     ReplayResult::editable(to_editable_render(&parts))
@@ -837,8 +834,8 @@ impl DorcConsumer {
                     &result.human(&self.render_ctx()),
                 )))
             }
-            dorc_cli::Invocation::Analyze(args) => {
-                self.replay_engine(case, &args, command, context)
+            dorc_cli::Invocation::Analyze(analysis_args) => {
+                self.replay_engine(case, &analysis_args, command, context)
             }
             dorc_cli::Invocation::Strip(_) => None,
         }
@@ -873,17 +870,19 @@ impl DorcConsumer {
         }
         let stdin = replay_stdin(command, context)?;
         let book_path = args.book.as_deref()?;
-        let book = replay_path(book_path, stdin.as_deref(), context)?;
+        let book = replay_path(book_path, stdin.bytes(), context)?;
         let mut paths = Vec::new();
         let mut sources = Vec::new();
         for path in &args.pre_sources {
-            sources.push(replay_path(path, stdin.as_deref(), context)?);
+            sources.push(replay_path(path, stdin.bytes(), context)?);
             paths.push(path.clone());
         }
         let ambient = paths.len();
         for section in case.sections() {
             if section.name() != book_path
-                && section.name().ends_with(".sh")
+                && std::path::Path::new(section.name())
+                    .extension()
+                    .is_some_and(|extension| extension.eq_ignore_ascii_case("sh"))
                 && !paths.iter().any(|path| path == section.name())
             {
                 paths.push(section.name().to_owned());
@@ -892,52 +891,10 @@ impl DorcConsumer {
         }
         let snapshot = engine_snapshot(book_path, &book, paths, sources, ambient);
         let raw_results = match args.results.as_deref() {
-            Some(path) => Some(replay_path(path, stdin.as_deref(), context)?),
+            Some(path) => Some(replay_path(path, stdin.bytes(), context)?),
             None => None,
         };
-        let observation = raw_results.map_or(
-            LoomObservation::Controller(dorc_plan::records::Admission::NoObservation),
-            |raw| {
-                if raw.is_empty() {
-                    return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
-                }
-                let evidence = dorc_plan::records::read_host_evidence(
-                    std::io::Cursor::new(&raw),
-                    dorc_plan::records::HostEvidenceLimits::spike_default(),
-                );
-                let is_records_case = case
-                    .frontmatter()
-                    .scalar("code")
-                    .is_some_and(|slug| slug.starts_with("records-"));
-                if is_records_case {
-                    return LoomObservation::Controller(evidence);
-                }
-                let sources = dorc_cli::results::RunSources {
-                    book_name: snapshot.book_path(),
-                    book: snapshot.book_src(),
-                    oracle_paths: snapshot.oracle_paths(),
-                    oracle_sources: snapshot.oracle_srcs(),
-                };
-                let mut clock = dorc_cli::results::RunClock::Absent;
-                let mut interner = Interner::default();
-                match dorc_cli::results::admit_fixture_records(
-                    &sources,
-                    raw.as_bytes(),
-                    &mut clock,
-                    &mut interner,
-                ) {
-                    dorc_plan::records::Admission::Admitted(records) => {
-                        LoomObservation::Fixture(records.scoped.results().clone())
-                    }
-                    dorc_plan::records::Admission::NoObservation => {
-                        LoomObservation::Fixture(dorc_cli::results::SiteResults::default())
-                    }
-                    dorc_plan::records::Admission::Refused(_) => {
-                        LoomObservation::Controller(evidence)
-                    }
-                }
-            },
-        );
+        let observation = loom_observation(case, &snapshot, raw_results);
         let options = dorc_cli::engine_options_from_args(
             args,
             if command.stdout_is_terminal() {
@@ -968,45 +925,7 @@ impl DorcConsumer {
             &mut sink,
         )
         .ok()?;
-        let diagnostics = sink
-            .actions
-            .iter()
-            .filter_map(|action| match action {
-                dorc_cli::engine::OutputAction::Event(event) => event.diagnostic_payload().cloned(),
-                dorc_cli::engine::OutputAction::Flush(_) => None,
-            })
-            .collect();
-        let mut section_instances = BTreeMap::new();
-        let emissions = sink
-            .actions
-            .into_iter()
-            .filter_map(|action| match action {
-                dorc_cli::engine::OutputAction::Flush(_) => None,
-                dorc_cli::engine::OutputAction::Event(event) => {
-                    let channel = match event.channel() {
-                        dorc_cli::engine::OutputChannel::Stdout => errorloom::ReplayChannel::Stdout,
-                        dorc_cli::engine::OutputChannel::Stderr => errorloom::ReplayChannel::Stderr,
-                    };
-                    Some(match event.tagged_parts() {
-                        Some(parts) => ReplayEmission::editable(
-                            channel,
-                            rebase_editable_instances(
-                                to_editable_render(parts),
-                                &mut section_instances,
-                            ),
-                        ),
-                        None => ReplayEmission::bytes(channel, event.text()),
-                    })
-                }
-            })
-            .collect();
-        Some(DorcEngineReplay {
-            result: ReplayResult::emitted(
-                ReplayStatus::new(i32::from(result.status.exit_code())),
-                emissions,
-            ),
-            diagnostics,
-        })
+        Some(dorc_engine_replay(&result, sink.actions))
     }
 
     /// Reattach the payload inventory to renderer-stamped exact provenance.
@@ -1073,7 +992,7 @@ impl DorcConsumer {
             {
                 return Ok(scenario.event().diagnostic);
             }
-            if let Some(diag) = fire_dorc_sh_error(slug, words.get(1..).unwrap_or_default()) {
+            if let Some(diag) = fire_dorc_sh_usage_error(slug, words.get(1..).unwrap_or_default()) {
                 return Ok(diag);
             }
             if words.first() == Some(&LOOM_COMMAND)
@@ -1098,17 +1017,19 @@ impl DorcConsumer {
                 return Ok(diag);
             }
             if words.first() == Some(&"dorc") {
-                let argv = command.argv().get(1..).unwrap_or_default().to_vec();
-                match dorc_cli::parse_args_from(argv) {
+                let invocation_argv = command.argv().get(1..).unwrap_or_default().to_vec();
+                match dorc_cli::parse_args_from(invocation_argv) {
                     Err(diag) if diag.code.slug() == slug => return Ok(diag),
-                    Ok(dorc_cli::Invocation::Analyze(args)) if !args.reads_the_receipt() => {
+                    Ok(dorc_cli::Invocation::Analyze(analysis_args))
+                        if !analysis_args.reads_the_receipt() =>
+                    {
                         let found = std::cell::RefCell::new(None);
                         drive_case(case, &RunEnv::new(), |candidate, context| {
                             if candidate.original() == command.original()
                                 && found.borrow().is_none()
                             {
                                 let replay = self
-                                    .run_engine(case, &args, candidate, context)
+                                    .run_engine(case, &analysis_args, candidate, context)
                                     .ok_or(RunError::ShellNotConfigured)?;
                                 *found.borrow_mut() = replay
                                     .diagnostics
@@ -1331,10 +1252,53 @@ fn engine_snapshot(
     )
 }
 
-/// `dorc-sh`'s three errors have no parser to run — the bin decides them inline from its argv and
-/// the filesystem. Only the ARGV-decidable one is honest here; the two I/O failures would need a
-/// real unreadable file and a real missing shell, so their cases stay world-as-payload.
-fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
+fn loom_observation(
+    case: &Case,
+    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
+    raw_results: Option<String>,
+) -> LoomObservation {
+    let Some(raw) = raw_results else {
+        return LoomObservation::Controller(dorc_plan::records::Admission::NoObservation);
+    };
+    if raw.is_empty() {
+        return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
+    }
+    let evidence = dorc_plan::records::read_host_evidence(
+        std::io::Cursor::new(&raw),
+        dorc_plan::records::HostEvidenceLimits::spike_default(),
+    );
+    if case
+        .frontmatter()
+        .scalar("code")
+        .is_some_and(|slug| slug.starts_with("records-"))
+    {
+        return LoomObservation::Controller(evidence);
+    }
+    let sources = dorc_cli::results::RunSources {
+        book_name: snapshot.book_path(),
+        book: snapshot.book_src(),
+        oracle_paths: snapshot.oracle_paths(),
+        oracle_sources: snapshot.oracle_srcs(),
+    };
+    let mut clock = dorc_cli::results::RunClock::Absent;
+    let mut interner = Interner::default();
+    match dorc_cli::results::admit_fixture_records(
+        &sources,
+        raw.as_bytes(),
+        &mut clock,
+        &mut interner,
+    ) {
+        dorc_plan::records::Admission::Admitted(records) => {
+            LoomObservation::Fixture(records.scoped.results().clone())
+        }
+        dorc_plan::records::Admission::NoObservation => {
+            LoomObservation::Fixture(dorc_cli::results::SiteResults::default())
+        }
+        dorc_plan::records::Admission::Refused(_) => LoomObservation::Controller(evidence),
+    }
+}
+
+fn fire_dorc_sh_usage_error(slug: &str, rest: &[&str]) -> Option<Diag> {
     (slug == "dorc-sh-usage" && rest.is_empty()).then(dorc_cli::shim_usage_error)
 }
 
@@ -1460,7 +1424,7 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
 }
 
 fn rebase_editable_instances(
-    render: EditableRender<SectionKey, SectionVariableId>,
+    render: &EditableRender<SectionKey, SectionVariableId>,
     next: &mut BTreeMap<(String, &'static str), usize>,
 ) -> EditableRender<SectionKey, SectionVariableId> {
     let mut widths: BTreeMap<(String, &'static str), usize> = BTreeMap::new();
@@ -1494,11 +1458,25 @@ fn rebase_editable_instances(
     EditableRender::new(components)
 }
 
-fn replay_stdin(command: &ReplayCommand, context: &ReplayContext<'_>) -> Option<Option<String>> {
+enum ReplayStdin {
+    Absent,
+    Bytes(String),
+}
+
+impl ReplayStdin {
+    fn bytes(&self) -> Option<&str> {
+        match self {
+            Self::Absent => None,
+            Self::Bytes(bytes) => Some(bytes),
+        }
+    }
+}
+
+fn replay_stdin(command: &ReplayCommand, context: &ReplayContext<'_>) -> Option<ReplayStdin> {
     match command.input() {
-        None => Some(None),
-        Some(ReplayInputTarget::Null) => Some(Some(String::new())),
-        Some(ReplayInputTarget::File(path)) => context.read_file(path).map(Some),
+        None => Some(ReplayStdin::Absent),
+        Some(ReplayInputTarget::Null) => Some(ReplayStdin::Bytes(String::new())),
+        Some(ReplayInputTarget::File(path)) => context.read_file(path).map(ReplayStdin::Bytes),
     }
 }
 
@@ -1514,6 +1492,49 @@ fn replay_path(path: &str, stdin: Option<&str>, context: &ReplayContext<'_>) -> 
 struct DorcEngineReplay {
     result: ReplayResult<SectionKey, SectionVariableId>,
     diagnostics: Vec<Diag>,
+}
+
+fn dorc_engine_replay(
+    result: &dorc_cli::engine::EngineResult,
+    actions: Vec<dorc_cli::engine::OutputAction>,
+) -> DorcEngineReplay {
+    let diagnostics = actions
+        .iter()
+        .filter_map(|action| match action {
+            dorc_cli::engine::OutputAction::Event(event) => event.diagnostic_payload().cloned(),
+            dorc_cli::engine::OutputAction::Flush(_) => None,
+        })
+        .collect();
+    let mut section_instances = BTreeMap::new();
+    let emissions = actions
+        .into_iter()
+        .filter_map(|action| match action {
+            dorc_cli::engine::OutputAction::Flush(_) => None,
+            dorc_cli::engine::OutputAction::Event(event) => {
+                let channel = match event.channel() {
+                    dorc_cli::engine::OutputChannel::Stdout => errorloom::ReplayChannel::Stdout,
+                    dorc_cli::engine::OutputChannel::Stderr => errorloom::ReplayChannel::Stderr,
+                };
+                Some(match event.tagged_parts() {
+                    Some(parts) => ReplayEmission::editable(
+                        channel,
+                        rebase_editable_instances(
+                            &to_editable_render(parts),
+                            &mut section_instances,
+                        ),
+                    ),
+                    None => ReplayEmission::bytes(channel, event.text()),
+                })
+            }
+        })
+        .collect();
+    DorcEngineReplay {
+        result: ReplayResult::emitted(
+            ReplayStatus::new(i32::from(result.status.exit_code())),
+            emissions,
+        ),
+        diagnostics,
+    }
 }
 
 struct LoomOutputSink<'a> {
@@ -1767,10 +1788,7 @@ impl CaseRenderer for DorcConsumer {
     }
 }
 
-/// World-as-pipeline for the marker pilot (`28A` §2n): fire the REAL in-process marker gate over the
-/// materialized oracle `source`, returning its (spanned) diagnostic + the source the caret frame
-/// resolves against. Refuses if the gate fired nothing or a different code than the case declares
-/// (the honest-trigger coherence the world-as-pipeline form buys).
+/// Runs the materialized lint source and returns the declared diagnostic with its provenance.
 fn fire_lint_case(
     slug: &str,
     filename: &str,
@@ -1787,11 +1805,11 @@ fn fire_lint_case(
         .findings
         .iter()
         .find(|finding| finding.code == slug)
-        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no diagnostic"))?;
+        .ok_or_else(|| format!("source-backed lint `{slug}` fired no diagnostic"))?;
     let provenance = finding
         .provenance
         .as_ref()
-        .ok_or_else(|| format!("world-as-pipeline `{slug}` lost typed provenance"))?;
+        .ok_or_else(|| format!("source-backed lint `{slug}` lost typed provenance"))?;
     Ok((
         provenance.diag.clone(),
         provenance.source.clone(),

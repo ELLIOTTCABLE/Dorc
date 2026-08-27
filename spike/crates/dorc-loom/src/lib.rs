@@ -90,6 +90,7 @@ pub const ARRANGEMENT_LINE_FIELD: &str = "arrangement-line";
 /// Whether a path is a `SyncThing` conflict copy rather than a case — the corpus lives in a
 /// live-synced tree, and a `foo.sync-conflict-<stamp>.loom` beside `foo.loom` would otherwise
 /// load as a duplicate defining case (it broke the gate twice on 2026-07-31).
+#[must_use]
 pub fn is_sync_residue(path: &std::path::Path) -> bool {
     path.file_name()
         .and_then(|name| name.to_str())

@@ -92,15 +92,14 @@ impl ReplayCommand {
             let redirection = redirection_word(word);
             if let Some((kind, attached)) = redirection {
                 redirected = true;
-                let target = match attached {
-                    Some(path) => path,
-                    None => {
-                        index = index.saturating_add(1);
-                        words
-                            .get(index)
-                            .copied()
-                            .ok_or(ReplayParseError::MissingRedirectionTarget)?
-                    }
+                let target = if let Some(path) = attached {
+                    path
+                } else {
+                    index = index.saturating_add(1);
+                    words
+                        .get(index)
+                        .copied()
+                        .ok_or(ReplayParseError::MissingRedirectionTarget)?
                 };
                 match kind {
                     RedirectionKind::Input => {
@@ -109,30 +108,20 @@ impl ReplayCommand {
                         }
                         input = Some(parse_input_target(target)?);
                     }
-                    RedirectionKind::Stdout => {
-                        if stdout_set {
-                            return Err(ReplayParseError::DescriptorRepeated { descriptor: 1 });
-                        }
-                        stdout_set = true;
-                        let target = parse_output_target(target)?;
-                        remember_open(&target, &mut opened_paths)?;
-                        outputs.push(OutputRedirection::To {
-                            channel: ReplayChannel::Stdout,
-                            target,
-                        });
-                    }
-                    RedirectionKind::Stderr => {
-                        if stderr_set {
-                            return Err(ReplayParseError::DescriptorRepeated { descriptor: 2 });
-                        }
-                        stderr_set = true;
-                        let target = parse_output_target(target)?;
-                        remember_open(&target, &mut opened_paths)?;
-                        outputs.push(OutputRedirection::To {
-                            channel: ReplayChannel::Stderr,
-                            target,
-                        });
-                    }
+                    RedirectionKind::Stdout => push_output_redirection(
+                        ReplayChannel::Stdout,
+                        &mut stdout_set,
+                        target,
+                        &mut opened_paths,
+                        &mut outputs,
+                    )?,
+                    RedirectionKind::Stderr => push_output_redirection(
+                        ReplayChannel::Stderr,
+                        &mut stderr_set,
+                        target,
+                        &mut opened_paths,
+                        &mut outputs,
+                    )?,
                 }
                 index = index.saturating_add(1);
                 continue;
@@ -285,6 +274,27 @@ fn parse_output_target(path: &str) -> Result<RedirectionTarget, ReplayParseError
     }
     safe_path(path)?;
     Ok(RedirectionTarget::File(path.to_owned()))
+}
+
+fn push_output_redirection(
+    channel: ReplayChannel,
+    assigned: &mut bool,
+    path: &str,
+    opened: &mut BTreeSet<String>,
+    outputs: &mut Vec<OutputRedirection>,
+) -> Result<(), ReplayParseError> {
+    if *assigned {
+        let descriptor = match channel {
+            ReplayChannel::Stdout => 1,
+            ReplayChannel::Stderr => 2,
+        };
+        return Err(ReplayParseError::DescriptorRepeated { descriptor });
+    }
+    *assigned = true;
+    let target = parse_output_target(path)?;
+    remember_open(&target, opened)?;
+    outputs.push(OutputRedirection::To { channel, target });
+    Ok(())
 }
 
 fn remember_open(

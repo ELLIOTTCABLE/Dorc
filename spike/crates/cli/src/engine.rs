@@ -378,7 +378,7 @@ pub enum OutputDestination {
         /// Severity controlling terminal styling.
         severity: Severity,
         /// The typed diagnostic represented by the tagged body.
-        diagnostic: Diag,
+        diagnostic: Box<Diag>,
     },
 }
 
@@ -422,7 +422,7 @@ impl OutputEvent {
             destination: OutputDestination::Diagnostic {
                 stage: stage.into(),
                 severity: diagnostic.severity(),
-                diagnostic,
+                diagnostic: Box::new(diagnostic),
             },
             body: OutputBody::Tagged(parts),
         }
@@ -452,7 +452,7 @@ impl OutputEvent {
     #[must_use]
     pub fn diagnostic_payload(&self) -> Option<&Diag> {
         match &self.destination {
-            OutputDestination::Diagnostic { diagnostic, .. } => Some(diagnostic),
+            OutputDestination::Diagnostic { diagnostic, .. } => Some(diagnostic.as_ref()),
             OutputDestination::Plain(_) => None,
         }
     }
