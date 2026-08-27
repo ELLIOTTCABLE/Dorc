@@ -270,6 +270,9 @@ fn parse_argv(words: &[String]) -> Result<Invoked, String> {
             cases: resolve_cases(&roots, &args.cases)?,
         },
         Verb::Keys => Command::Keys,
+        Verb::Defect => {
+            return Err("`defect` resolves only inside a loom replay through --this".to_owned());
+        }
     };
     Ok(Invoked { roots, command })
 }

@@ -95,22 +95,24 @@ pub fn usage_for(verb: &str) -> &'static str {
         "scaffold" => SCAFFOLD_USAGE,
         "add-register" => ADD_REGISTER_USAGE,
         "keys" => KEYS_USAGE,
+        "defect" => DEFECT_USAGE,
         _ => USAGE,
     }
 }
 
 /// The verbs [`usage_for`] has a page for — also what makes `dorc-loom <verb> --help` route to it.
-pub const VERBS: [&str; 6] = [
+pub const VERBS: [&str; 7] = [
     "publish",
     "vars",
     "sections",
     "scaffold",
     "add-register",
     "keys",
+    "defect",
 ];
 
 /// The index.
-pub const USAGE: &str = "usage: dorc-loom [--this] [-C DIR] <publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; for the read-only verbs an omitted list means every crates/aid/tests/*.loom\n       --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal\n       -C also comes before the verb and names the tree to resolve the corpus, both locks and the staging store under; without it, the tree this binary was built in\n       edit a sentence in a case's transcript, then publish it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
+pub const USAGE: &str = "usage: dorc-loom [--this] [-C DIR] <publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys|defect>\n       a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; for the read-only verbs an omitted list means every crates/aid/tests/*.loom\n       --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal\n       -C also comes before the verb and names the tree to resolve the corpus, both locks and the staging store under; without it, the tree this binary was built in\n       edit a sentence in a case's transcript, then publish it; type {{name}} to insert or move one of its values\n       `dorc-loom <subcommand> --help` explains one verb; this page is only the index";
 
 const PUBLISH_USAGE: &str = "usage: dorc-loom [-C DIR] publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]
   Drive every selected case's replays, compile the prose you edited back into template form, print
@@ -181,6 +183,12 @@ const ADD_REGISTER_USAGE: &str = "usage: dorc-loom [-C DIR] add-register CASE he
   `message` exists on every code already. Refuses when the case carries an unpromoted prose edit,
   or when the register is already there.
   next: rebuild, overtype the printed [unwritten: SLUG.help] placeholder, then publish";
+
+const DEFECT_USAGE: &str = "usage: dorc-loom --this defect
+  Loom-only harness route for the three explicitly authorized correctness-critical internal
+  failures that cannot be induced by an external production scenario. It resolves the current
+  case's code through a closed typed list and uses the production diagnostic event renderer.
+  next: use this only in the defining loom for an authorized internal-defect code";
 
 #[cfg(test)]
 mod tests {

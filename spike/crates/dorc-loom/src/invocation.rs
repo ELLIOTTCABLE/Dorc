@@ -82,6 +82,8 @@ pub enum Verb {
     },
     /// Print the closed frontmatter-key vocabulary a case may declare.
     Keys,
+    /// Render the current case's explicitly authorized internal-defect diagnostic.
+    Defect,
 }
 
 /// `publish`' own arguments.
@@ -182,6 +184,10 @@ impl Invocation {
             Verb::Scaffold { .. } => shape("scaffold", &[], false),
             Verb::AddRegister { .. } => shape("add-register", &[], false),
             Verb::Keys => shape("keys", &[], false),
+            Verb::Defect => Shape {
+                bare_means_everything: false,
+                ..shape("defect", &[], true)
+            },
         }
     }
 
@@ -203,6 +209,11 @@ impl Invocation {
             takes_selector,
             bare_means_everything,
         } = self.shape();
+        if matches!(self.verb, Verb::Defect) && !self.this {
+            return Err(format!(
+                "`defect` is a loom-bound harness route and requires {THIS}: `dorc-loom {THIS} defect`"
+            ));
+        }
         if !self.this {
             if cases.is_empty() && !bare_means_everything {
                 return Err(format!(
@@ -246,7 +257,7 @@ const GLOBAL_FLAGS: [(&str, &str); 2] = [
 /// `publish`' whole-corpus opt-in, spelled once.
 pub const ALL: &str = "--all";
 
-const SELECTOR_VERBS: &str = "`vars` and `sections`";
+const SELECTOR_VERBS: &str = "`vars`, `sections`, and the loom-only `defect` route";
 
 /// Parse a `dorc-loom` command line — the program name included, as argv arrives.
 ///
@@ -458,6 +469,13 @@ mod tests {
             parse_words(&["dorc-loom", "keys"]).expect("parses").verb,
             Verb::Keys
         ));
+        assert!(matches!(
+            parse_words(&["dorc-loom", "--this", "defect"])
+                .expect("the loom-only route parses")
+                .verb,
+            Verb::Defect
+        ));
+        assert!(parse_words(&["dorc-loom", "defect"]).is_err());
         let Verb::Publish(args) = parse_words(&[
             "dorc-loom",
             "publish",

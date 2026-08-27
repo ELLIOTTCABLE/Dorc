@@ -36,8 +36,7 @@ use crate::diag::{
     RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
     RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
     ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
-    SlashlessSourceSearchesPath, SolvePass, SolverConsistencyFailure, SolverConsistencyPlanDemoted,
-    SurvivalRederivationDisagreement, SyntaxUnsupported, SyntaxUnsupportedReason,
+    SlashlessSourceSearchesPath, SyntaxUnsupported, SyntaxUnsupportedReason,
     ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
     TransportSessionLost, TransportSpawnRefused, VouchedCompositionNotPresent,
     VouchedCompositionReason, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
@@ -308,32 +307,6 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
                 cell: "dorc-auto:cp@converged".to_owned(),
                 sites: 2,
-            }),
-        ),
-        // An ENGINE DEFECT has no honest book trigger: the certifier refuses only when the solver
-        // itself is broken, which no input can arrange (`303:fnd-refusal-has-no-honest-trigger`).
-        (
-            "solver-consistency-failure",
-            DiagCode::SolverConsistencyFailure(SolverConsistencyFailure {
-                pass: SolvePass::ReachingDefs,
-                failing: "3".to_owned(),
-            }),
-        ),
-        // Its consequence line, defect-shaped for the same reason: no book can arrange for the
-        // trip that evicts the plan's elisions.
-        (
-            "solver-consistency-plan-demoted",
-            DiagCode::SolverConsistencyPlanDemoted(SolverConsistencyPlanDemoted {
-                demoted: "4".to_owned(),
-            }),
-        ),
-        // Likewise defect-shaped: the re-derivation fires only when our own two implementations of
-        // one algebra disagree, which no book can arrange either.
-        (
-            "survival-rederivation-disagreement",
-            DiagCode::SurvivalRederivationDisagreement(SurvivalRederivationDisagreement {
-                site: SiteId::leaf(LeafId(4)),
-                wall: "1".to_owned(),
             }),
         ),
         // The external-linter trio: a replay never runs a foreign tool (`tools_enabled: false`).

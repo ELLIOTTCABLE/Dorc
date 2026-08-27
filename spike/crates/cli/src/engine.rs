@@ -476,6 +476,26 @@ impl OutputEvent {
     }
 }
 
+/// Render one typed diagnostic through the production diagnostic-event path.
+#[must_use]
+pub fn diagnostic_event(
+    ctx: &dorc_aid::RenderCtx<'_>,
+    stage: &str,
+    diagnostic: &Diag,
+    source: &str,
+    filename: &str,
+) -> OutputEvent {
+    let parts = dorc_aid::diag::render_staged_cli_parts(
+        stage,
+        ctx,
+        diagnostic,
+        source,
+        filename,
+        &Interner::default(),
+    );
+    OutputEvent::diagnostic(stage, diagnostic.clone(), parts)
+}
+
 /// A live output boundary for the shared invocation engine.
 pub trait OutputSink {
     /// The prose tables and frame used to construct tagged output.
@@ -3992,19 +4012,11 @@ fn advisory_filter(advisory: bool, diags: &[Diag]) -> Vec<Diag> {
 /// piped is load-bearing: the e2e harness captures stderr to a FILE ⇒ non-tty ⇒ the color vanishes,
 /// so the gate-3/gate-7 needle-matching (and every golden) is byte-identical to the un-colored form.
 fn report(sink: &mut dyn OutputSink, stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
-    // params_of resolves no interned handle at HEAD, so a default interner suffices (`27V`).
-    let interner = Interner::default();
     for d in diags {
         let (filename, src) = source.unwrap_or(("", ""));
-        let parts = dorc_aid::diag::render_staged_cli_parts(
-            stage,
-            &sink.render_ctx(),
-            d,
-            src,
-            filename,
-            &interner,
-        );
-        emit_diagnostic(sink, stage, d, parts);
+        let event = diagnostic_event(&sink.render_ctx(), stage, d, src, filename);
+        sink.emit(event);
+        sink.flush(OutputChannel::Stderr);
     }
 }
 

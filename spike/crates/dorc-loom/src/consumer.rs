@@ -600,10 +600,12 @@ impl DorcConsumer {
         tokens: &[&str],
         self_reference: SelfReference,
         source_of: &dyn Fn(&str) -> Option<String>,
-    ) -> Option<String> {
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let invocation = match usage::read(tokens.get(1..)?) {
-            Reading::Help(page) => return Some(format!("{page}\n")),
-            Reading::Refused(refusal) => return Some(format!("{PROGRAM}: {refusal}\n")),
+            Reading::Help(page) => return Some(ReplayResult::bytes(format!("{page}\n"))),
+            Reading::Refused(refusal) => {
+                return Some(ReplayResult::bytes(format!("{PROGRAM}: {refusal}\n")));
+            }
             Reading::Runs(invocation) => *invocation,
         };
         if invocation.root.is_some() {
@@ -612,6 +614,14 @@ impl DorcConsumer {
         let wanted = match &invocation.verb {
             Verb::Vars(args) => Inventory::Vars(args.breadth()),
             Verb::Sections(_) => Inventory::Sections,
+            Verb::Defect => {
+                if invocation.target().ok()? != Target::This
+                    || self_reference == SelfReference::Forbidden
+                {
+                    return None;
+                }
+                return self.defect_replay(case);
+            }
             _ => return None,
         };
         match invocation.target().ok()? {
@@ -620,14 +630,33 @@ impl DorcConsumer {
                     return None;
                 }
                 self_slug(case)?;
-                self.inventory(wanted, case)
+                self.inventory(wanted, case).map(ReplayResult::bytes)
             }
             Target::Named([one]) if case_relative_path(one) => {
                 let target = Case::parse(&source_of(one)?).ok()?;
-                self.inventory(wanted, &target)
+                self.inventory(wanted, &target).map(ReplayResult::bytes)
             }
             Target::Named(_) => None,
         }
+    }
+
+    fn defect_replay(&self, case: &Case) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        let scenario = crate::defect::DefectScenario::from_slug(self_slug(case)?)?;
+        let diagnostic = scenario.diagnostic();
+        let event = dorc_cli::engine::diagnostic_event(
+            &self.render_ctx(),
+            scenario.stage(),
+            &diagnostic,
+            "",
+            "",
+        );
+        Some(ReplayResult::emitted(
+            ReplayStatus::SUCCESS,
+            vec![ReplayEmission::editable(
+                errorloom::ReplayChannel::Stderr,
+                to_editable_render(event.tagged_parts()?),
+            )],
+        ))
     }
 
     fn inventory(&self, wanted: Inventory, case: &Case) -> Option<String> {
@@ -662,11 +691,9 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if tokens.first() == Some(&LOOM_COMMAND) {
-            return self
-                .loom_replay(case, &tokens, self_reference, &|target| {
-                    context.materialized_input(target).map(str::to_owned)
-                })
-                .map(ReplayResult::bytes);
+            return self.loom_replay(case, &tokens, self_reference, &|target| {
+                context.materialized_input(target).map(str::to_owned)
+            });
         }
         if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
             let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
@@ -935,6 +962,13 @@ impl DorcConsumer {
             .ok_or_else(|| "case has no replay".to_owned())?;
         let command = ReplayCommand::parse(block.command()).map_err(|error| error.to_string())?;
         let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
+        if words.first() == Some(&LOOM_COMMAND)
+            && matches!(usage::read(words.get(1..).unwrap_or_default()), Reading::Runs(invocation) if matches!(invocation.verb, Verb::Defect))
+        {
+            return crate::defect::DefectScenario::from_slug(slug)
+                .map(crate::defect::DefectScenario::diagnostic)
+                .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
+        }
         if let Some(section) = case
             .sections()
             .iter()

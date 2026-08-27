@@ -12,6 +12,7 @@ pub use consumer::{
 };
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
+mod defect;
 mod generate;
 pub use generate::{
     MetadataDrift, Publication, build_publication, generate_arrangement_lock,
