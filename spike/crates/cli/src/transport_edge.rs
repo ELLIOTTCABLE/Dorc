@@ -314,13 +314,11 @@ pub(crate) fn apply_to_host(
     }
 }
 
-/// Surface a probe's freeform stderr.
-///
-/// At v1 the report lane has no remote file home, so an oracle's declines and any tool noise ride
-/// stderr and are captured per host (`260` §4). It is passthrough: never parsed for control, and
-/// nothing on it can influence a verdict.
-pub(crate) fn echo_host_stderr(stream: &[u8]) {
-    echo(stream, true);
+pub(crate) fn encoded_host_lines(stream: &[u8]) -> Vec<String> {
+    String::from_utf8_lossy(stream)
+        .lines()
+        .map(|line| dorc_aid::display::encode_line(line, ECHO_LINE_CAP))
+        .collect()
 }
 
 /// Echo a captured host stream, one encoded line at a time.
@@ -332,8 +330,7 @@ fn echo(stream: &[u8], to_stderr: bool) {
     if stream.is_empty() {
         return;
     }
-    for line in String::from_utf8_lossy(stream).lines() {
-        let safe = dorc_aid::display::encode_line(line, ECHO_LINE_CAP);
+    for safe in encoded_host_lines(stream) {
         if to_stderr {
             eprintln!("{safe}");
         } else {

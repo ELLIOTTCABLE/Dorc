@@ -99,6 +99,62 @@ pub fn flatten_ws(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Aggregate the real unprobeable commands into the plan surface's source-backed diagnostic.
+#[must_use]
+pub fn unresolvable_diagnostics(
+    probe: &dorc_plan::ProbePlan,
+    plan: &dorc_plan::Plan,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+) -> Vec<Diag> {
+    use dorc_aid::diag::{DiagCode, SiteId, SiteUnresolvable};
+
+    let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> = plan
+        .steps()
+        .iter()
+        .map(|step| (step.leaf, step.ast))
+        .collect();
+    let mut real = Vec::new();
+    for &leaf in &probe.unresolvable {
+        let Some(&id) = ast_of_leaf.get(&leaf) else {
+            debug_assert!(false, "an unresolvable site must have a plan step");
+            continue;
+        };
+        let span = ast.node(id).span;
+        let text = book_src
+            .get(span.lo.0 as usize..span.hi.0 as usize)
+            .unwrap_or("<source unavailable>");
+        if !is_structurally_unprobeable(text) {
+            real.push((leaf, span, flatten_ws(text)));
+        }
+    }
+    let Some((first_leaf, first_span, _)) = real.first().cloned() else {
+        return Vec::new();
+    };
+    let names: Vec<String> = real
+        .iter()
+        .map(
+            |(leaf, _, text)| match probe.unresolvable_causes.get(leaf) {
+                Some(cause) => format!("`{text}` ({})", cause.as_str()),
+                None => format!("`{text}`"),
+            },
+        )
+        .collect();
+    let first_text = book_src
+        .get(first_span.lo.0 as usize..first_span.hi.0 as usize)
+        .unwrap_or("<source unavailable>");
+    vec![Diag::new(
+        DiagCode::SiteUnresolvable(SiteUnresolvable {
+            site: SiteId::leaf(first_leaf),
+            count: real.len().to_string(),
+            site_word: if real.len() == 1 { "site" } else { "sites" },
+            names: dorc_aid::ForeignBytes::from_io_edge(&names.join(", ")),
+            excerpt: dorc_aid::ForeignBytes::from_io_edge(first_text),
+        }),
+        first_span,
+    )]
+}
+
 /// Resolve a threaded oracle `(Span, SourceFileId)` to a `path:line` locus (C7 `file:line`;
 /// `law-lineno-identity` — the file id disambiguates WHICH oracle's line-number space, since a
 /// bare span is file-ambiguous once >1 oracle is loaded). `None` when the vouch/claim was

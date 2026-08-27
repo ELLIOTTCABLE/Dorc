@@ -1,11 +1,9 @@
-//! The analyzed world a `dorc why` report is ABOUT, assembled from source alone.
+//! The analyzed world a `dorc why` report is about, retained from the shared engine.
 //!
-//! This is the harness half of the loom seam (`lib-target-is-a-loom-seam`): the binary builds its
-//! world out of files, flags, a clock and a host's records, and every one of those is a QUERY that
-//! stays on its side. What a loom case can hand across is SOURCE — a book, its oracles — so this
-//! seat takes exactly that and runs the same kernel calls in the same order, which is what makes a
-//! committed why transcript an honest render rather than a decoration
-//! (`289:rul-worldless-route-honest-trigger`).
+//! This is the harness projection of the production boundary (`lib-target-is-a-loom-seam`). A loom
+//! supplies an acquired snapshot and admitted results through the fixture controller; production
+//! supplies the same values through its real edges. Both receive this value from
+//! [`crate::engine::run`], so no second pipeline order exists.
 //!
 //! MEASURED worlds arrive through the same intake a run uses. A case's own `dorc-records/1` bytes
 //! are admitted by [`crate::results::admit_fixture_records`] — a second CONTROLLER of its own
@@ -14,11 +12,6 @@
 //! this seat still opens nothing. With no records the fold is ⊤ everywhere and every site runs,
 //! which is the honest unmeasured world rather than a scope cut.
 //!
-//! RESIDUAL SCOPE CUT, stated where it bites (`churn-avoidance-disclosure`): the wrapper PEEL is not
-//! threaded (`peeled` is empty), so a book whose sites sit under a wrapper classifies here as an
-//! ordinary run would classify them unwrapped. A case exercising wrapper adoption belongs on the
-//! diagnostic plane (`crate::survival::survival_diagnostics`) until the peel is threaded through
-//! this seat too.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -27,13 +20,11 @@ use dorc_aid::diag::Diag;
 use dorc_core::{Interner, ProvArena, Symbol};
 
 use crate::Receipt;
-use crate::results::{SiteResults, probe_origins};
+use crate::results::SiteResults;
 use dorc_analysis::load::{LoadControl, LoadStep, LoadTarget, TargetPart};
 
 use crate::snapshot::StaticLoadSnapshot;
-use crate::why::{
-    CascadeAttribution, FirstWallHint, WallStep, WhyReport, collect_wall_steps, first_wall_hint,
-};
+use crate::why::{CascadeAttribution, FirstWallHint, WallStep, WhyReport};
 
 /// Everything a why report reads, owned in one place so a caller can borrow a [`WhyReport`] out of
 /// it without threading seventeen lifetimes of its own.
@@ -41,19 +32,19 @@ pub struct WhyWorld {
     /// The one immutable authored input this world was analysed from (`30I` §3.1). Held whole
     /// rather than shredded into four fields, so the why driver and the run cannot be handed
     /// different worlds (`one-definition-table-two-drivers`).
-    snapshot: StaticLoadSnapshot,
-    interner: Interner,
-    arena: ProvArena,
-    ast: dorc_syntax::ast::Ast,
-    spine: dorc_plan::Spine,
-    plan: dorc_plan::Plan,
-    probe: dorc_plan::ProbePlan,
-    narrative: Vec<CollapseNarrative>,
-    why_diags: Vec<Diag>,
-    refusals: Vec<Diag>,
-    wall_steps: Vec<WallStep>,
-    first_wall: Option<FirstWallHint>,
-    cascades: BTreeMap<dorc_plan::LeafId, CascadeAttribution>,
+    pub(crate) snapshot: StaticLoadSnapshot,
+    pub(crate) interner: Interner,
+    pub(crate) arena: ProvArena,
+    pub(crate) ast: dorc_syntax::ast::Ast,
+    pub(crate) spine: dorc_plan::Spine,
+    pub(crate) plan: dorc_plan::Plan,
+    pub(crate) probe: dorc_plan::ProbePlan,
+    pub(crate) narrative: Vec<CollapseNarrative>,
+    pub(crate) why_diags: Vec<Diag>,
+    pub(crate) refusals: Vec<Diag>,
+    pub(crate) wall_steps: Vec<WallStep>,
+    pub(crate) first_wall: Option<FirstWallHint>,
+    pub(crate) cascades: BTreeMap<dorc_plan::LeafId, CascadeAttribution>,
 }
 
 impl std::fmt::Debug for WhyWorld {
@@ -65,535 +56,151 @@ impl std::fmt::Debug for WhyWorld {
     }
 }
 
-/// The artifact form a why render settles, re-derived from the authored snapshot alone
-/// (`30Qb:dev-why-world-gains-a-selection`).
-///
-/// `StreamPosture::TerminalRender` because that is what a why render is: nothing is being kept to
-/// run later, so the selector is total and this seat needs no refusal path. It opens no file and
-/// contacts nothing — `bundle::project` consumes the snapshot and the loader's account and resolves
-/// nothing (`bundle-projection-is-pre-contact-and-not-placement`).
-fn select_terminal_form(
-    snapshot: &StaticLoadSnapshot,
-    cfg: &dorc_analysis::cfg::Cfg,
-    book: &dorc_syntax::ast::Ast,
-    env: &dorc_analysis::funcenv::FuncEnv,
-) -> crate::artifact::Selection {
-    let projection = crate::bundle::project(snapshot, env.loads())
-        .map(crate::bundle::BundleProjectionOutput::into_projection)
-        .unwrap_or_default();
-    let loads = crate::artifact::book_loads(cfg, book, snapshot.book_src(), &projection, env);
-    crate::artifact::select_for_terminal_render(snapshot, &projection, &loads)
+/// Failure to project a why world from the shared engine.
+#[derive(Debug)]
+pub enum WhyWorldError {
+    /// An injected edge failed.
+    Edge(Box<Diag>),
+    /// The selected mode completed before a world could be built.
+    Incomplete(crate::engine::EngineStatus),
+}
+
+impl std::fmt::Display for WhyWorldError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+
+impl std::error::Error for WhyWorldError {}
+
+struct WhyEngineEdges {
+    results: Option<SiteResults>,
+    clock: crate::results::RunClock,
+}
+
+impl crate::engine::EngineEdges for WhyEngineEdges {
+    fn materialize_shims(&mut self, _files: &BTreeMap<String, String>) -> Result<(), Box<Diag>> {
+        Ok(())
+    }
+
+    fn observe(
+        &mut self,
+        _request: &crate::engine::ObservationRequest<'_>,
+        _render_probe: &dyn Fn(&dorc_plan::records::Framing) -> String,
+    ) -> Result<crate::engine::Observation, Box<Diag>> {
+        Ok(crate::engine::Observation::Fixture {
+            results: self.results.take().unwrap_or_default(),
+        })
+    }
+
+    fn clock(&mut self) -> &mut crate::results::RunClock {
+        &mut self.clock
+    }
+
+    fn source_match(&mut self, _book_name: &str) -> Option<crate::SourceMatch> {
+        None
+    }
+
+    fn publish_artifact(
+        &mut self,
+        _artifact: &crate::artifact::ArtifactSet,
+    ) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn publish_whylog(&mut self, _bytes: &[u8]) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn durable_label(&self) -> &'static str {
+        "<disabled>"
+    }
+
+    fn invocation_record(
+        &mut self,
+        request: crate::engine::InvocationRecordRequest<'_>,
+    ) -> dorc_core::spine::SpineInvocation {
+        dorc_core::spine::SpineInvocation::minted(
+            dorc_core::spine::InvocationMode::WhylogReplay,
+            Vec::new(),
+            dorc_core::spine::SourceClaim {
+                path: request.snapshot.book_path().to_owned(),
+                digest: dorc_plan::invocation::book_digest(request.snapshot.book_src()),
+            },
+            Vec::new(),
+            dorc_core::spine::RunIdentity {
+                nonce: request.framing.nonce().0.clone(),
+                attempt: request.framing.attempt(),
+                host: request.framing.host().to_owned(),
+                started_at: request.started_at,
+            },
+            request.account,
+        )
+    }
 }
 
 impl WhyWorld {
-    /// Analyze `book_src` against `oracle_srcs` with no measurements — every fact ⊤, every site runs.
-    #[must_use]
-    pub fn analyze(snapshot: &StaticLoadSnapshot) -> Self {
+    /// Analyze without measurements through the shared production engine.
+    ///
+    /// # Errors
+    /// Returns the shared engine diagnostic if its harness adapter cannot complete.
+    pub fn analyze(snapshot: &StaticLoadSnapshot) -> Result<Self, WhyWorldError> {
         Self::analyze_measured(snapshot, &SiteResults::default(), false)
     }
 
-    /// Analyze `book_src` against `oracle_srcs` and build the plan a why report explains.
+    /// Analyze admitted fixture results through the shared production engine.
     ///
-    /// The same call sequence the binary runs — lift, parse, CFG, value-flow, classify, vouch,
-    /// compile the probe, fold the records, lift the survival footprints, build the plan. Stage
-    /// diagnostics are DROPPED rather than printed: this seat has no stderr, and a case that wants a
-    /// diagnostic rendered drives the diagnostic route instead.
-    ///
-    /// `results` is the run's ADMITTED records; an empty one is the unmeasured world (⊤ everywhere ⇒
-    /// run), which is what a case with no `< results` redirect asks for. `consented` is
-    /// `--risk-faultless-skips`, and with it off the survival half is not merely quiet but ABSENT:
-    /// no `touches()` is lifted, no footprint exists, and every running mutator is the honest
-    /// Stage-1 total wall (`empty-world-byte-identical`).
-    ///
-    /// The validity fixpoint runs here, the binary's own rounds over the binary's own frozen model
-    /// (`crate::fixpoint`), so a cascaded elision can be explained with the round that caused it
-    /// rather than merely reported.
-    #[must_use]
-    #[expect(
-        clippy::too_many_lines,
-        reason = "one linear pipeline in the binary's own order; splitting it would let the two orders drift, which is the whole thing this seat exists to prevent"
-    )]
+    /// # Errors
+    /// Returns the shared engine diagnostic if its harness adapter cannot complete.
     pub fn analyze_measured(
         snapshot: &StaticLoadSnapshot,
         results: &SiteResults,
         consented: bool,
-    ) -> Self {
-        let mut interner = Interner::default();
-        let mut arena = ProvArena::new();
-        let book_src = snapshot.book_src();
-        let oracle_srcs = snapshot.oracle_srcs();
-        // MODELLED text for the lifts, the same seat the binary takes: a `PlainInclusion` reads
-        // empty, so a why report explains the world the run analysed rather than one that also
-        // read the file Dorc only mirrors.
-        let oracle_refs: Vec<&str> = snapshot.modelled_oracle_refs();
-        // SOURCE-WIDE, exactly as the binary's `source_table` builds it: the oracles in load order,
-        // then the book, which is an ordinary definition source
-        // (`the-book-is-a-definition-source`). This seat used to lift oracle-only vectors and site
-        // the book one PAST them, so a site a book definition owned withheld here while the run
-        // answered it — safe, but a why report that explains a different world than the run is a
-        // decoration, which is the failure `one-definition-table-two-drivers` exists to prevent.
-        let source_srcs = snapshot.source_srcs();
-        let source_refs: Vec<&str> = snapshot.modelled_refs();
-        let source_path_refs: Vec<&str> =
-            snapshot.source_paths().iter().map(String::as_str).collect();
-
-        let parsed = dorc_syntax::parse(book_src);
-        let cfg = dorc_analysis::cfg::build(&parsed.value);
-        let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
-
-        let mut degrades = BTreeMap::new();
-        let mut verdict_lane = BTreeMap::new();
-        let peeled = BTreeMap::new();
-        let definitions = definition_table(snapshot, &parsed.value);
-        let env = {
-            let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-            dorc_analysis::funcenv::analyze(&parsed.value, &cfg.value, &definitions, &plane)
-        };
-        let live = dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions);
-        // The artifact form, mirrored (`one-definition-table-two-drivers`): the placement decisions
-        // are part of what a why report has to explain, and a report answering from a different
-        // carriage than the run's would be a decoration. Authored-before-contact, so it needs no
-        // host; settled under `TerminalRender`, which is what a why render IS — the only posture in
-        // which `auto` never refuses, so this seat stays total.
-        let form_selection = select_terminal_form(snapshot, &cfg.value, &parsed.value, &env);
-        // THE EDGE, mirrored: the widening above is exactly what
-        // `withdrawal-is-applied-once-never-consulted` requires to route through here first, so the
-        // contested fact is minted from the same two calls in the same order the binary uses and
-        // applied ONCE to every lifted set below.
-        let contested = {
-            let shadows =
-                dorc_analysis::funcenv::contests(&parsed.value, &cfg.value, &definitions, &env);
-            let unprovable =
-                dorc_analysis::funcenv::unprovable(&definitions, &env, cfg.value.exit());
-            dorc_core::ContestedFamilies::new(
-                shadows
-                    .iter()
-                    .map(|c| c.name.as_str())
-                    .chain(unprovable.iter().map(String::as_str))
-                    .filter_map(|name| {
-                        dorc_oracle::reserved::role_family(name).map(|(base, _)| base.to_owned())
-                    }),
-            )
-        };
-        let never_live = dorc_analysis::funcenv::never_live(&definitions, &env);
-
-        // One non-role-declaration index per unit, shared by the ship seams and the vouch lift. The
-        // book is the LAST source here too (`one-definition-table-two-drivers`), so the why driver's
-        // custody predicate sees the same census the run's does.
-        // The include-tree, derived from the same vectors by the same rule the binary uses, so the
-        // why driver's custody predicate answers over the run's own closures rather than a
-        // singleton world that would explain suspensions the run never made.
-        let book_index = Some(snapshot.book_index());
-        let include_tree = crate::sourcing::include_tree(snapshot, &env);
-        let helpers = dorc_oracle::closure::HelperIndex::build(&source_refs, book_index)
-            .with_include_tree(
-                dorc_core::CustodyClosures::from_edges(source_refs.len(), &include_tree.edges),
-                include_tree.unresolved,
-            )
-            .with_selection(dorc_core::CustodyClosures::from_edges(
-                source_refs.len(),
-                &include_tree.selected,
-            ));
-        let checks: Vec<dorc_oracle::predict::PredictSet> = source_refs
-            .iter()
-            .map(|src| {
-                dorc_oracle::predict::lift_predicts(&mut interner, src)
-                    .value
-                    .withdrawing(&contested, &interner)
-            })
-            .collect();
-        let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = source_refs
-            .iter()
-            .map(|src| {
-                dorc_oracle::verdict::VerdictSet::lift(&mut interner, src)
-                    .value
-                    .withdrawing(&contested, &interner)
-            })
-            .collect();
-        let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
-        let dead_predicts = never_live_predict_rows(&never_live, &checks, &interner);
-        let idx = dorc_oracle::lift_from_sets(&mut interner, &checks, |file, provider| {
-            !dead_predicts.contains(&(file, provider))
-        })
-        .value
-        .withdrawing(&contested, &interner);
-        // The run's own latch (`302:rul-certifier-trip-guard-only`), threaded through the same
-        // rounds the binary threads it through: a why report built over an un-demoted plan would
-        // explain elisions the run would never have emitted — a decoration, which is exactly what
-        // `one-definition-table-two-drivers` exists to prevent.
-        let mut trip = dorc_analysis::certify::CertifierTrip::default();
-        record_pre_network_trip(&mut trip, &value, &env);
-        let frozen = crate::fixpoint::FrozenModel {
-            cfg: &cfg.value,
-            value: &value,
-            ast: &parsed.value,
-            idx: &idx,
-            checks: &checks,
-            verdicts: &verdicts,
-            peeled: &peeled,
-            live,
-        };
-        let origin = crate::fixpoint::classify_round(
-            &frozen,
-            &dorc_analysis::erase::ErasedSites::none(),
-            &mut interner,
-            &mut arena,
-            &mut degrades,
-            &mut verdict_lane,
-            &mut trip,
-        );
-        let classes = origin.classes.clone();
-        let (kills, kill_coords) = (origin.kills.clone(), origin.kill_coords.clone());
-
-        let (vouch_lift, vouch_aid) = dorc_plan::build_vouches(
-            &source_refs,
-            &source_path_refs,
-            &helpers,
-            &classes,
-            &value,
-            &mut interner,
-            live,
-        );
-        let vouches = vouch_lift.value;
-
-        let ship = |node: dorc_analysis::cfg::CfgNodeId, provider: Symbol, argv: &[Symbol]| {
-            ship_predict_body(
-                source_srcs,
-                &helpers,
-                &checks,
-                &interner,
-                provider,
-                argv,
-                node,
-                live,
-            )
-        };
-        let ship_auto = |node: dorc_analysis::cfg::CfgNodeId,
-                         subjects: &[dorc_core::FactKey],
-                         provider: Symbol,
-                         _: &[Symbol]| {
-            verdict_lane
-                .get(&node)
-                .is_some_and(|measurement| measurement.subjects() == subjects)
-                .then(|| {
-                    ship_verdict_body(
-                        source_srcs,
-                        &helpers,
-                        &verdict_sets,
-                        &interner,
-                        provider,
-                        node,
-                        live,
-                    )
-                })
-                .flatten()
-        };
-        let probe = dorc_plan::compile_probe(
-            &parsed.value,
-            &cfg.value,
-            &value,
-            &classes,
-            &dorc_plan::WrappedProbes::new(),
-            &dorc_plan::ConnectedPipes::default(),
-            ship,
-            ship_auto,
-            |node, fact| vouches.get(node, fact).is_some(),
-        )
-        .with_unresolvable_causes(&parsed.value, &cfg.value, &classes, &degrades);
-
-        // The survival tier, flag-gated exactly as a run is (`rul24-mode-gate`, TC-1): unflagged,
-        // the footprint data does not exist at all, so a running mutator walls totally.
-        // Withdrawn at the edge like every other lifted set. The VECTORS stay oracle-only here and
-        // in the binary alike — the kind-owner trio loads from the ambient prefix by design
-        // (`vocabulary-acts-stay-ambient`), and widening the survival lane's own reach is a
-        // separate dispatch (`one-helper-index-two-lanes`) — but oracle-only is a question about
-        // WHICH files, never about whether the contested fact applies to them.
-        let touches_paired =
-            crate::survival::pair_touches_sets(&oracle_refs, &mut interner, &contested);
-        let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
-        let coord_kinds = crate::survival::collect_coord_kinds(
-            &classes,
-            &kills,
-            &value,
-            &touches_sets,
-            &mut interner,
-            live,
-        );
-        let kind_resolvers = crate::kinds::build_kind_resolvers(
-            oracle_srcs,
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut interner,
-        )
-        .value;
-        let resolver_kinds: BTreeSet<Symbol> = kind_resolvers.resolver_kinds().collect();
-        let kind_reaches = crate::kinds::build_kind_reaches(
-            oracle_srcs,
-            &checks,
-            &touches_paired,
-            &coord_kinds,
-            &mut interner,
-        )
-        .value;
-        let reach_kinds: BTreeSet<Symbol> = kind_reaches.reach_kinds().collect();
-
-        let survival = consented.then(|| {
-            let derivations = {
-                let derive = |n, p, a: &[Symbol]| {
-                    crate::survival::ship_touches_body(
-                        &touches_paired,
-                        &helpers,
-                        &interner,
-                        p,
-                        a,
-                        n,
-                        live,
-                    )
-                };
-                dorc_plan::compile_derivations(
-                    &parsed.value,
-                    &cfg.value,
-                    &value,
-                    &classes,
-                    &kills,
-                    derive,
-                )
-            };
-            let mut footprints = crate::survival::build_survival_footprints(
-                &touches_sets,
-                &classes,
-                &kills,
-                &kill_coords,
-                &value,
-                &cfg.value,
-                &parsed.value,
-                &mut interner,
-                live,
-            )
-            .value;
-            let derived_node_spans: BTreeMap<_, _> = derivations
-                .derivations
-                .iter()
-                .map(|d| (d.node, parsed.value.node(cfg.value.node(d.node).ast).span))
-                .collect();
-            let _ = crate::survival::merge_derived_footprints(
-                &mut footprints,
-                &derivations,
-                results,
-                &classes,
-                &kill_coords,
-                &derived_node_spans,
-                &mut interner,
-            );
-            // The reach EXPANSION must not be skipped: a footprint is an AT-MOST claim, so an
-            // un-widened one looks disjoint from more cells than it is — the under-execute
-            // direction (`inv-kfail`).
-            let reach_node_spans: BTreeMap<_, _> = footprints
-                .nodes()
-                .map(|n| (n, parsed.value.node(cfg.value.node(n).ast).span))
-                .collect();
-            let _ = crate::survival::expand_footprints_via_reaches(
-                &mut footprints,
-                &kind_reaches,
-                &reach_kinds,
-                results,
-                &reach_node_spans,
-                &mut interner,
-            );
-            footprints
-        });
-
-        let resolver_coords = if consented && !resolver_kinds.is_empty() {
-            crate::survival::collect_resolver_coords(
-                &classes,
-                &kills,
-                &value,
-                &touches_sets,
-                &resolver_kinds,
-                &mut interner,
-                live,
-            )
-        } else {
-            BTreeSet::new()
-        };
-        let mut resolutions = crate::survival::build_resolutions(
-            &resolver_coords,
-            &resolver_kinds,
-            results,
-            &mut interner,
-        );
-        // `fence-no-disjoint` (`24L` §7): every verdict provider's auto-cell kind is registered so
-        // the survival tier reads an auto coordinate as MAY-touch. Dropping this would let a
-        // synthetic singleton read as provably-disjoint — a wrong survival.
-        // Whole-unit and deliberately file-blind: registering a kind only makes coordinates read as
-        // MAY-touch, so covering every file's verdict providers errs toward less sparing.
-        let verdict_names: Vec<String> = verdicts
-            .providers()
-            .map(|(_, p)| interner.resolve(p.0).to_owned())
-            .collect();
-        for name in verdict_names {
-            let kind = dorc_core::auto_fact(&mut interner, &name).kind;
-            resolutions.add_auto_kind(kind);
-        }
-
-        // The dialect the survival tier compares selectors within, hoisted so the policy can
-        // borrow it for the whole settlement.
-        let dialect = dorc_oracle::build_dialect(&idx);
-        let policy = match survival.as_ref() {
-            Some(footprints) if consented => dorc_plan::WallPolicy::RiskAccepted {
-                footprints,
-                resolutions: &resolutions,
-                dialect: &dialect,
+    ) -> Result<Self, WhyWorldError> {
+        let options = crate::engine::EngineOptions {
+            mode: crate::Mode::Plan,
+            analysis: crate::engine::AnalysisOptions {
+                survival: if consented {
+                    crate::engine::SurvivalPolicy::RiskAccepted
+                } else {
+                    crate::engine::SurvivalPolicy::HonestWalls
+                },
+                escalation: dorc_core::EscalationDial::VouchedOnly,
+                capability: dorc_core::Capability::Root,
             },
-            _ => dorc_plan::WallPolicy::Honest,
-        };
-        // The SAME census the run builds (`one-definition-table-two-drivers`).
-        let region_universe = dorc_core::region::RegionUniverse::of_book_custody_files(
-            source_refs
-                .iter()
-                .enumerate()
-                .filter(|(_, src)| !dorc_oracle::marker::has_marker(src))
-                .map(|(index, _)| dorc_analysis::funcenv::source_file_of_index(index)),
-        );
-        let string_execution = dorc_plan::region::StringExecutionSites::of_unit(&parsed.value);
-        let definition_vectors = dorc_oracle::closure::definition_vectors(&source_refs);
-        let regions = dorc_plan::region::census(
-            &parsed.value,
-            &cfg.value,
-            &cfg.diags,
-            dorc_plan::region::CensusOpeners::of(
-                &region_universe,
-                env.unresolvable_loads(),
-                &definition_vectors,
-                &string_execution,
-            ),
-            snapshot.book_file(),
-        );
-        let plan_inputs = dorc_plan::SettleInputs {
-            src: book_src,
-            ast: &parsed.value,
-            cfg: &cfg.value,
-            vouches: &vouches,
-            connected: &dorc_plan::ConnectedPipes::default(),
-            policy,
-            regions: &regions,
-            // A why world reads results somebody already admitted, and reaching for host bytes at
-            // all is what makes what follows influenced — so it widens through the one named seat
-            // rather than holding a carrier (`307a:dis-phase-by-free-widening`).
-            world_account: crate::results::account_after_reaching_for_host_bytes(),
-        };
-        // The settlement, to quiescence, over the frozen origin — the binary's own rounds
-        // (`the-fixpoint-owns-the-rounds-and-builds-nothing-else`). Its product beyond the settled
-        // decisions is the round-tagged cascade attribution, which is the only way a why report can
-        // answer for an elision that only became legal once something upstream was proven dead.
-        // The ledger holds CFG SITES (leaves and non-leaves alike) and grows by at least one per
-        // non-quiescent round, so the bound is the node count plus the settling round.
-        let cap =
-            u32::try_from(dorc_analysis::solve::Graph::node_count(&cfg.value).saturating_add(1))
-                .unwrap_or(u32::MAX)
-                .max(1);
-        let settled = crate::fixpoint::settle_world(
-            &frozen,
-            &probe,
-            results,
-            &plan_inputs,
-            cap,
-            &mut interner,
-            &mut arena,
-            &mut trip,
-        );
-        let cascades = crate::fixpoint::attribute_cascades(
-            &cfg.value,
-            &parsed.value,
-            book_src,
-            &settled.round.classes,
-            &settled.ledger,
-            &settled.validity,
-            &settled.origin_validity,
-        );
-        let round = settled.round;
-        let classes = round.classes;
-        let (why_diags, classify_narrative) = (round.why_diags, round.classify_narrative);
-        let (by_fact, merge_narrative) = (settled.by_fact, settled.merge_narrative);
-        let _ = by_fact;
-        let probe_attributions = probe_origins(&probe, results, &mut arena);
-        let mut spine = settled.spine;
-        dorc_plan::attach_spine_probe_provenance(
-            &mut spine,
-            &parsed.value,
-            &probe_attributions,
-            &mut arena,
-        );
-        // The same whole-artifact emission decision the binary makes, by the same rule: a why report
-        // that explained an artifact with different bindings than the run's would be a decoration
-        // (`one-definition-table-two-drivers`).
-        spine.push_render_decision(dorc_core::spine::SpineRenderDecision::minted(
-            None,
-            None,
-            dorc_core::spine::RenderDecision::DefensiveEmission {
-                defensive: !dorc_oracle::closure::definition_vectors(&source_refs).is_empty()
-                    || !env.unresolvable_loads().is_empty(),
+            reporting: crate::engine::ReportingOptions {
+                why_address: None,
+                why_depth: crate::engine::WhyDepth::Curated,
+                argv_readout: crate::engine::ArgvReadout::Hidden,
             },
-            crate::results::account_after_reaching_for_host_bytes(),
-        ));
-        let (_trip_banner, trip_narrative, spent) = demote_on_certifier_trip(
-            &mut spine,
-            trip,
-            &definitions,
-            crate::results::account_after_reaching_for_host_bytes(),
-        );
-        // This world is handed results somebody else already decided about, so the intake authority
-        // is the DRIVER's to hold and the driver's refused path never reaches a why world
-        // (`the_driver_takes_its_authority_from_its_admission`).
-        let plan = dorc_plan::project_plan(
-            &mut spine,
-            book_src,
-            &parsed.value,
-            form_selection.emission(),
-            &dorc_plan::PlanAuthority::without_intake(),
-            &spent,
-            crate::results::account_after_reaching_for_host_bytes(),
-        );
-        let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
-        let narrative: Vec<CollapseNarrative> = classify_narrative
-            .into_iter()
-            .chain(vouch_aid.narrative)
-            .chain(merge_narrative)
-            .chain(plan.survival_report.collapse_narrative().iter().cloned())
-            .chain(trip_narrative)
-            .chain(plan.render_refusal_narratives())
-            .collect();
-        let wall_steps = collect_wall_steps(
-            &plan,
-            &probe,
-            &classes,
-            &cfg.value,
-            &kills,
-            &parsed.value,
-            book_src,
-        );
-        let first_wall = first_wall_hint(&wall_steps);
-
-        WhyWorld {
-            snapshot: snapshot.clone(),
-            interner,
-            arena,
-            ast: parsed.value,
-            spine,
-            plan,
-            probe,
-            narrative,
-            why_diags,
-            refusals,
-            wall_steps,
-            first_wall,
-            cascades,
-        }
+            artifact: crate::engine::ArtifactOptions {
+                form: None,
+                stdout: crate::artifact::StdoutPosture::Interactive,
+                destination: crate::engine::ArtifactDestinationShape::Stdout,
+            },
+            durable: crate::engine::DurableOutput::Disabled,
+        };
+        let mut edges = WhyEngineEdges {
+            results: Some(results.clone()),
+            clock: crate::results::RunClock::Absent,
+        };
+        let mut output = crate::engine::OutputEvents::default();
+        let result = crate::engine::run(
+            &crate::engine::EngineRequest {
+                snapshot,
+                options: &options,
+                replay: None,
+                acquisition_diagnostics: &[],
+            },
+            &mut edges,
+            &mut output,
+        )
+        .map_err(WhyWorldError::Edge)?;
+        result.world.ok_or(WhyWorldError::Incomplete(result.status))
     }
 
-    /// What this world decided, for the receipt's tally row.
     #[must_use]
+    /// The plan's disposition tally.
     pub fn disposition_counts(&self) -> dorc_plan::DispositionCounts {
         self.plan.disposition_counts()
     }

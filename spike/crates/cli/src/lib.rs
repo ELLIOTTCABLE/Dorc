@@ -23,6 +23,7 @@
 
 pub mod artifact;
 pub mod bundle;
+pub mod engine;
 pub mod fixpoint;
 pub mod kinds;
 pub mod provenance;

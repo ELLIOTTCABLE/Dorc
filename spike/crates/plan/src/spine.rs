@@ -522,8 +522,8 @@ mod tests {
             .join("main.rs");
         let text = std::fs::read_to_string(&driver).expect("the driver source is readable");
         assert!(
-            text.contains("build_plan_walled"),
-            "the walk found the wrong file: this must be the driver that plans"
+            text.contains("dorc_cli::engine::run("),
+            "the production driver must delegate planning to the shared engine"
         );
         assert!(
             !text.contains("without_intake"),
@@ -686,6 +686,7 @@ mod tests {
             files,
             [
                 "cli/src/artifact.rs",
+                "cli/src/engine.rs",
                 "cli/src/main.rs",
                 "cli/src/results.rs",
                 "cli/src/world.rs",

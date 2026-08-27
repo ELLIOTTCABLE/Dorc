@@ -218,19 +218,6 @@ pub(crate) fn influence_after_reaching_for_host_bytes() -> InfluencePhase {
     Influenced::authored_before_contact(()).widen()
 }
 
-/// [`influence_after_reaching_for_host_bytes`] as an INFLUENCE ACCOUNT — the driver seat for the
-/// paths that hold no graded carrier (`fnd-two-drivers-compute-one-fact-twice`).
-///
-/// The second of the engine's two phase→account transitions. It stays its own seat because the
-/// why-driver genuinely holds no carrier and its widening is the DEFINITION of where a replay
-/// stands, not a conservative approximation of one (`rul-influence-flattens-at-the-durable`): a
-/// durable's contents are host-shaped by construction, and whether bytes arrived at all is
-/// host-determined.
-#[must_use]
-pub(crate) fn account_after_reaching_for_host_bytes() -> InfluenceAccount {
-    InfluenceAccount::of_phase(influence_after_reaching_for_host_bytes())
-}
-
 /// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —
 /// `inv-site-keyed-results` + task-L2 item-4). One record per (site, member): the reported
 /// Effect [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc
@@ -831,6 +818,19 @@ pub fn no_observation(scope: WidthOneAttemptScope) -> ScopedHostEvidence<SiteRes
             framed: true,
             ..SiteResults::default()
         },
+        influence_after_reaching_for_host_bytes(),
+    )
+}
+
+/// Attach a fixture controller's already-admitted results to its width-one scope.
+pub(crate) fn scope_fixture_results(
+    framing: &Framing,
+    sources: &RunSources<'_>,
+    results: SiteResults,
+) -> ScopedHostEvidence<SiteResults> {
+    ScopedHostEvidence::new(
+        WidthOneAttemptScope::new(framing, sources),
+        results,
         influence_after_reaching_for_host_bytes(),
     )
 }

@@ -132,7 +132,8 @@ fn a_shared_guard_carries_the_source_level_argv_not_a_resolved_operand() {
 /// (`27V:rul-error-authorship-tier`), so what is pinned here is that the STRUCTURE reaches the
 /// surface at all — the words are a conductor/human act against a registered row.
 #[test]
-fn a_why_report_walks_from_a_region_to_its_invocations_and_back() {
+fn a_why_report_walks_from_a_region_to_its_invocations_and_back()
+-> Result<(), Box<dyn std::error::Error>> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("region30-twin-calls-share-one-region");
@@ -153,7 +154,7 @@ fn a_why_report_walks_from_a_region_to_its_invocations_and_back() {
         &book,
     );
     // The UNMEASURED world is enough: a running region is the one a reader most needs explained.
-    let world = dorc_cli::world::WhyWorld::analyze(&snapshot);
+    let world = dorc_cli::world::WhyWorld::analyze(&snapshot)?;
     let framing = dorc_plan::records::Framing::spike(dorc_plan::invocation::book_digest(&book));
     let receipt = dorc_cli::Receipt {
         at: None,
@@ -187,6 +188,7 @@ fn a_why_report_walks_from_a_region_to_its_invocations_and_back() {
         at_call.contains("why-reason-call-executes-shared-regions"),
         "and the call must name the shared edits it executes:\n{at_call}"
     );
+    Ok(())
 }
 
 /// `30L:pin-whole-helper-derived-only` (§8) — when every invocation of a definition elides, the

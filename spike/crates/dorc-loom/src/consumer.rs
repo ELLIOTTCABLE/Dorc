@@ -498,7 +498,8 @@ impl DorcConsumer {
         // (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case into a real
         // directory and runs the real binary there, so the two routes agree by construction.
         let world =
-            dorc_cli::world::WhyWorld::analyze(&case_snapshot(book, source, paths, sources));
+            dorc_cli::world::WhyWorld::analyze(&case_snapshot(book, source, paths, sources))
+                .ok()?;
         Some(dorc_cli::plan_envelope_parts(
             &self.render_ctx(),
             &world,
@@ -1287,7 +1288,8 @@ fn live_why_parts(
         &case_snapshot(why.book, &book, oracle_paths.clone(), oracle_srcs.clone()),
         &results,
         why.consented,
-    );
+    )
+    .map_err(|diag| format!("shared engine refused the why world: {diag:?}"))?;
     // Every field is controller-minted, exactly as the binary mints them on a hostless run: the
     // fixture framing supplies the host, the book supplies its own digest, and there is no clock
     // (`28F:rul-probe-instants-host-says-no-times` — an undated receipt says so rather than
