@@ -58,12 +58,11 @@ stdin:  probe results, one per line -- `site <leafid> effect=<holds|absent|cant-
 exit codes:
   0    success -- the analysis completed and the artifact was emitted
   2    usage error -- a bad/unknown argument, a missing --book, or an unreadable file
-  10   parse error -- the book carries a construct dorc cannot model (a syntax-level
-       ⊤-reject / CFG ⊤-node); the artifact still ships byte-identically, but the exit
+  10   parse error -- the book carries a construct dorc cannot model; the artifact still ships byte-identically, but the exit
        signals partial understanding so a `dorc ... && deploy` chain stops. First of the
        reserved 10..19 dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
 
-  lint exit codes (distinct family -- a ⊤-reject book is a FINDING here, never an exit-10):
+  lint exit codes (distinct family -- a construct dorc cannot model is a FINDING here, never an exit-10):
   0    clean -- no findings at or above --fail-on
   1    findings at or above --fail-on were reported
   3    operational -- the lint itself is compromised (no lintable files, an --expect-files

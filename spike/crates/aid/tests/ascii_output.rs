@@ -39,10 +39,6 @@ use dorc_aid::catalog::CATALOG;
 const ASCII_SWEEP_ALLOWLIST: &[(&str, &str)] = &[
     // ── JARGON: ⊤/⊄ in user prose, awaiting authored words ──
     (
-        "cli-help-page",
-        "JARGON ⊤ (arrangement): `a syntax-level ⊤-reject / CFG ⊤-node`",
-    ),
-    (
         "lint-source-unmodeled-inventory",
         "JARGON ⊤ (arrangement): `book ⊤-wall inventory`",
     ),
