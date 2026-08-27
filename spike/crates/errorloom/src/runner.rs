@@ -15,8 +15,12 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::command::{
+    OutputRedirection, RedirectionTarget, ReplayChannel, ReplayCommand, ReplayInputTarget,
+    ReplayParseError,
+};
 use crate::container::{Case, CaseError, MAX_CASE_BYTES, MAX_SECTION_COUNT};
-use crate::{ConsumerKey, EditableRender};
+use crate::{ConsumerKey, EditableRender, RenderComponent};
 
 /// Maximum combined bytes captured while one generic replay process runs.
 /// Read one additional byte so overflow is refused before result accumulation.
@@ -28,6 +32,7 @@ pub const MAX_CAPTURE_BYTES: usize = 64 * 1024;
 /// handled replay and the configured executor observe the same working tree.
 #[derive(Debug)]
 pub struct ReplayContext<'a> {
+    block: usize,
     cwd: &'a Path,
     scratch: &'a Path,
     env: &'a RunEnv,
@@ -35,6 +40,12 @@ pub struct ReplayContext<'a> {
 }
 
 impl ReplayContext<'_> {
+    /// The zero-based replay block index.
+    #[must_use]
+    pub const fn block(&self) -> usize {
+        self.block
+    }
+
     /// The shared case working directory.
     #[must_use]
     pub fn cwd(&self) -> &Path {
@@ -57,6 +68,12 @@ impl ReplayContext<'_> {
     #[must_use]
     pub fn materialized_input(&self, path: &str) -> Option<&str> {
         self.inputs.get(path).map(String::as_str)
+    }
+
+    /// Read the current bounded contents of a sandbox file.
+    #[must_use]
+    pub fn read_file(&self, path: &str) -> Option<String> {
+        read_bounded_file(self.cwd, path).ok().flatten()
     }
 }
 
@@ -92,31 +109,121 @@ impl ReplayInput {
     }
 }
 
+/// A retained command status. It is observable only through a later `echo $?` replay.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ReplayStatus(i32);
+
+impl ReplayStatus {
+    /// Successful completion.
+    pub const SUCCESS: Self = Self(0);
+
+    /// Retain a driver's exact process-independent status code.
+    #[must_use]
+    pub const fn new(code: i32) -> Self {
+        Self(code)
+    }
+
+    /// The retained integer status.
+    #[must_use]
+    pub const fn code(self) -> i32 {
+        self.0
+    }
+}
+
+/// One ordered direct-driver output emission.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ReplayEmission<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
+    channel: ReplayChannel,
+    render: EditableRender<S, V>,
+    carries_editability: bool,
+}
+
+impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> ReplayEmission<S, V> {
+    /// Construct immutable bytes on one channel.
+    #[must_use]
+    pub fn bytes(channel: ReplayChannel, text: impl Into<String>) -> Self {
+        Self {
+            channel,
+            render: EditableRender::new(vec![RenderComponent::Structure(text.into())]),
+            carries_editability: false,
+        }
+    }
+
+    /// Construct renderer-stamped output on one channel.
+    #[must_use]
+    pub fn editable(channel: ReplayChannel, render: EditableRender<S, V>) -> Self {
+        Self {
+            channel,
+            render,
+            carries_editability: true,
+        }
+    }
+
+    /// The channel this emission used.
+    #[must_use]
+    pub const fn channel(&self) -> ReplayChannel {
+        self.channel
+    }
+
+    /// The exact emitted text.
+    #[must_use]
+    pub fn text(&self) -> String {
+        self.render.text()
+    }
+
+    fn from_components(
+        channel: ReplayChannel,
+        components: Vec<RenderComponent<S, V>>,
+        carries_editability: bool,
+    ) -> Self {
+        Self {
+            channel,
+            render: EditableRender::new(components),
+            carries_editability,
+        }
+    }
+}
+
 /// The exact result of one consumer-driven replay.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ReplayResult<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
     output: String,
     editable: Option<EditableRender<S, V>>,
+    emissions: Vec<ReplayEmission<S, V>>,
+    status: ReplayStatus,
+    routing: Routing,
 }
 
 impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> ReplayResult<S, V> {
     /// Construct a bytes-only result.
     #[must_use]
     pub fn bytes(output: String) -> Self {
-        Self {
-            output,
-            editable: None,
-        }
+        Self::emitted(
+            ReplayStatus::SUCCESS,
+            vec![ReplayEmission::bytes(ReplayChannel::Stdout, output)],
+        )
     }
 
     /// Construct a result whose renderer supplied exact editable provenance.
     #[must_use]
     pub fn editable(editable: EditableRender<S, V>) -> Self {
-        let output = editable.text();
-        Self {
-            output,
-            editable: Some(editable),
-        }
+        Self::emitted(
+            ReplayStatus::SUCCESS,
+            vec![ReplayEmission::editable(ReplayChannel::Stdout, editable)],
+        )
+    }
+
+    /// Construct an ordered direct-driver result.
+    #[must_use]
+    pub fn emitted(status: ReplayStatus, emissions: Vec<ReplayEmission<S, V>>) -> Self {
+        Self::projected(status, emissions, Routing::Controlled)
+    }
+
+    /// Change the retained status without changing any output.
+    #[must_use]
+    pub fn with_status(mut self, status: ReplayStatus) -> Self {
+        self.status = status;
+        self
     }
 
     /// Exact output bytes represented as transcript text.
@@ -130,13 +237,59 @@ impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> ReplayResult<S, V> {
     pub fn editable_render(&self) -> Option<&EditableRender<S, V>> {
         self.editable.as_ref()
     }
+
+    /// The retained status for a later `echo $?` replay.
+    #[must_use]
+    pub const fn status(&self) -> ReplayStatus {
+        self.status
+    }
+
+    fn opaque(output: String, status: ReplayStatus) -> Self {
+        Self::projected(
+            status,
+            vec![ReplayEmission::bytes(ReplayChannel::Stdout, output)],
+            Routing::Opaque,
+        )
+    }
+
+    fn projected(
+        status: ReplayStatus,
+        emissions: Vec<ReplayEmission<S, V>>,
+        routing: Routing,
+    ) -> Self {
+        let output = emissions.iter().map(ReplayEmission::text).collect();
+        let carries_editability = emissions
+            .iter()
+            .any(|emission| emission.carries_editability);
+        let components = emissions
+            .iter()
+            .flat_map(|emission| emission.render.components().iter().cloned())
+            .collect();
+        Self {
+            output,
+            editable: carries_editability.then(|| EditableRender::new(components)),
+            emissions,
+            status,
+            routing,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Routing {
+    Controlled,
+    Opaque,
 }
 
 /// A consumer's exact-shape replay driver.
 pub trait ReplayDriver<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
     /// Declining is explicit: the embedding application decides whether to run a
     /// generic fallback.
-    fn drive(&self, command: &str, context: &ReplayContext<'_>) -> Option<ReplayResult<S, V>>;
+    fn drive(
+        &self,
+        command: &ReplayCommand,
+        context: &ReplayContext<'_>,
+    ) -> Option<ReplayResult<S, V>>;
 }
 
 /// Drive every replay against one materialized context. The caller owns the
@@ -147,7 +300,7 @@ pub trait ReplayDriver<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
 pub fn drive_case<S, V>(
     case: &Case,
     env: &RunEnv,
-    drive: impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
+    drive: impl FnMut(&ReplayCommand, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
 ) -> Result<Vec<ReplayResult<S, V>>, RunError>
 where
     S: ConsumerKey,
@@ -165,7 +318,7 @@ pub fn drive_case_with_inputs<S, V>(
     case: &Case,
     env: &RunEnv,
     inputs: &[ReplayInput],
-    mut drive: impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
+    mut drive: impl FnMut(&ReplayCommand, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
 ) -> Result<Vec<ReplayResult<S, V>>, RunError>
 where
     S: ConsumerKey,
@@ -184,8 +337,16 @@ where
 ///
 /// # Errors
 /// Returns a controlled-executor failure.
-pub fn execute_generic(command: &str, context: &ReplayContext<'_>) -> Result<String, RunError> {
-    run_block(0, command, context.env, context.cwd)
+pub fn execute_generic<S, V>(
+    command: &ReplayCommand,
+    context: &ReplayContext<'_>,
+) -> Result<ReplayResult<S, V>, RunError>
+where
+    S: ConsumerKey,
+    V: Clone + Ord + std::fmt::Debug,
+{
+    let (output, status) = run_block(context.block, command.original(), context.env, context.cwd)?;
+    Ok(ReplayResult::opaque(output, status))
 }
 
 /// A caller-injected execution environment: an explicit shell, exact env table,
@@ -234,6 +395,7 @@ impl RunEnv {
 #[must_use = "a capture holds the outputs to compare or inline"]
 pub struct ReplayCapture {
     outputs: Vec<String>,
+    statuses: Vec<ReplayStatus>,
 }
 
 impl ReplayCapture {
@@ -247,6 +409,12 @@ impl ReplayCapture {
     #[must_use]
     pub fn into_outputs(self) -> Vec<String> {
         self.outputs
+    }
+
+    /// The retained command statuses, one per block.
+    #[must_use]
+    pub fn statuses(&self) -> &[ReplayStatus] {
+        &self.statuses
     }
 }
 
@@ -386,6 +554,32 @@ pub enum RunError {
         /// The maximum number of extra inputs for this case.
         limit: usize,
     },
+    /// A replay command was outside the closed grammar.
+    UnsupportedReplayGrammar {
+        /// Zero-based block index.
+        block: usize,
+        /// The parser's closed refusal.
+        error: ReplayParseError,
+    },
+    /// A generic process ended without a portable integer status.
+    ProcessStatusUnavailable {
+        /// Zero-based block index.
+        block: usize,
+    },
+    /// A sandbox file exceeded the bounded replay-file ceiling.
+    SandboxFileTooLarge {
+        /// The case-relative path.
+        path: String,
+        /// The maximum accepted bytes.
+        limit: usize,
+    },
+    /// A sandbox file was not UTF-8.
+    NonUtf8SandboxFile {
+        /// The case-relative path.
+        path: String,
+        /// A lossy preview of its bytes.
+        preview: String,
+    },
 }
 
 impl std::fmt::Display for RunError {
@@ -428,6 +622,21 @@ impl std::fmt::Display for RunError {
             RunError::ReplayInputCountExceeded { limit } => {
                 write!(f, "run: replay input count exceeds limit {limit}")
             }
+            RunError::UnsupportedReplayGrammar { block, error } => {
+                write!(
+                    f,
+                    "run: block {block} is outside the replay grammar: {error}"
+                )
+            }
+            RunError::ProcessStatusUnavailable { block } => {
+                write!(f, "run: block {block} ended without a portable status")
+            }
+            RunError::SandboxFileTooLarge { path, limit } => {
+                write!(f, "run: sandbox file {path:?} exceeds limit {limit}")
+            }
+            RunError::NonUtf8SandboxFile { path, preview } => {
+                write!(f, "run: sandbox file {path:?} is not UTF-8: {preview:?}")
+            }
         }
     }
 }
@@ -462,21 +671,12 @@ pub fn run_case(case: &Case, env: &RunEnv) -> Result<ReplayCapture, RunError> {
 }
 
 fn run_in(case: &Case, env: &RunEnv, base: &Path) -> Result<ReplayCapture, RunError> {
-    let work = base.join("work");
-    fs::create_dir(&work)?;
-    for (rel, content) in case.materialized_files() {
-        let target = work.join(&rel);
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::write(&target, content)?;
-    }
-
-    let mut outputs: Vec<String> = Vec::new();
-    for (index, block) in case.replay().blocks().iter().enumerate() {
-        let output = run_block(index, block.command(), env, &work)?;
-        outputs.push(output);
-    }
+    let mut generic = |command: &ReplayCommand, context: &ReplayContext<'_>| {
+        execute_generic::<String, String>(command, context)
+    };
+    let results = drive_in(case, env, &[], base, &mut generic)?;
+    let outputs: Vec<String> = results.iter().map(|result| result.output.clone()).collect();
+    let statuses: Vec<ReplayStatus> = results.iter().map(|result| result.status).collect();
 
     let base_str = base.to_string_lossy();
     for (index, output) in outputs.iter().enumerate() {
@@ -489,7 +689,7 @@ fn run_in(case: &Case, env: &RunEnv, base: &Path) -> Result<ReplayCapture, RunEr
             }
         }
     }
-    Ok(ReplayCapture { outputs })
+    Ok(ReplayCapture { outputs, statuses })
 }
 
 fn drive_in<S, V>(
@@ -497,7 +697,7 @@ fn drive_in<S, V>(
     env: &RunEnv,
     inputs: &[ReplayInput],
     base: &Path,
-    drive: &mut impl FnMut(&str, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
+    drive: &mut impl FnMut(&ReplayCommand, &ReplayContext<'_>) -> Result<ReplayResult<S, V>, RunError>,
 ) -> Result<Vec<ReplayResult<S, V>>, RunError>
 where
     S: ConsumerKey,
@@ -512,6 +712,7 @@ where
     fs::create_dir(&work)?;
     fs::create_dir(&scratch)?;
     let mut materialized = BTreeMap::new();
+    let mut tracked = BTreeMap::new();
     let mut paths = BTreeSet::new();
     for (rel, content) in case.materialized_files() {
         let name = rel.to_string_lossy().into_owned();
@@ -522,6 +723,10 @@ where
         }
         fs::write(target, content)?;
         materialized.insert(name, content.to_owned());
+        tracked.insert(
+            rel.to_string_lossy().into_owned(),
+            TrackedFile::from_bytes(content),
+        );
     }
     for input in inputs {
         if !paths.insert(input.path.clone()) {
@@ -535,18 +740,245 @@ where
         }
         fs::write(target, &input.content)?;
         materialized.insert(input.path.clone(), input.content.clone());
+        tracked.insert(input.path.clone(), TrackedFile::from_bytes(&input.content));
     }
-    let context = ReplayContext {
-        cwd: &work,
-        scratch: &scratch,
-        env,
-        inputs: &materialized,
+    let mut last_status = ReplayStatus::SUCCESS;
+    let mut results = Vec::new();
+    for (block_index, block) in case.replay().blocks().iter().enumerate() {
+        let command = ReplayCommand::parse(block.command()).map_err(|error| {
+            RunError::UnsupportedReplayGrammar {
+                block: block_index,
+                error,
+            }
+        })?;
+        require_input(&command, &work)?;
+        let mut routing = RoutingPlan::prepare(&command, &work, &mut tracked)?;
+        let context = ReplayContext {
+            block: block_index,
+            cwd: &work,
+            scratch: &scratch,
+            env,
+            inputs: &materialized,
+        };
+        let result = match builtin(&command, &work, &tracked, last_status)? {
+            Some(result) => result,
+            None => drive(&command, &context)?,
+        };
+        let result = if result.routing == Routing::Opaque {
+            for file in tracked.values_mut() {
+                file.components = None;
+                file.carries_editability = false;
+            }
+            result
+        } else {
+            routing.apply(result, &work, &mut tracked)?
+        };
+        last_status = result.status;
+        results.push(result);
+    }
+    Ok(results)
+}
+
+#[derive(Clone)]
+struct TrackedFile<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
+    components: Option<Vec<RenderComponent<S, V>>>,
+    carries_editability: bool,
+}
+
+impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> TrackedFile<S, V> {
+    fn from_bytes(bytes: &str) -> Self {
+        Self {
+            components: Some(vec![RenderComponent::Structure(bytes.to_owned())]),
+            carries_editability: false,
+        }
+    }
+}
+
+#[derive(Clone)]
+enum Destination {
+    Terminal(ReplayChannel),
+    File(usize),
+    Null,
+}
+
+struct PendingFile<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
+    path: String,
+    components: Vec<RenderComponent<S, V>>,
+    carries_editability: bool,
+}
+
+struct RoutingPlan<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
+    stdout: Destination,
+    stderr: Destination,
+    files: Vec<PendingFile<S, V>>,
+}
+
+impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> RoutingPlan<S, V> {
+    fn prepare(
+        command: &ReplayCommand,
+        work: &Path,
+        tracked: &mut BTreeMap<String, TrackedFile<S, V>>,
+    ) -> Result<Self, RunError> {
+        let mut plan = Self {
+            stdout: Destination::Terminal(ReplayChannel::Stdout),
+            stderr: Destination::Terminal(ReplayChannel::Stderr),
+            files: Vec::new(),
+        };
+        for redirection in command.output_redirections() {
+            match redirection {
+                OutputRedirection::StderrToStdout => plan.stderr = plan.stdout.clone(),
+                OutputRedirection::To { channel, target } => {
+                    let destination = match target {
+                        RedirectionTarget::Null => Destination::Null,
+                        RedirectionTarget::File(path) => {
+                            fs::File::create(work.join(path))?;
+                            tracked.insert(path.clone(), TrackedFile::from_bytes(""));
+                            let index = plan.files.len();
+                            plan.files.push(PendingFile {
+                                path: path.clone(),
+                                components: Vec::new(),
+                                carries_editability: false,
+                            });
+                            Destination::File(index)
+                        }
+                    };
+                    match channel {
+                        ReplayChannel::Stdout => plan.stdout = destination,
+                        ReplayChannel::Stderr => plan.stderr = destination,
+                    }
+                }
+            }
+        }
+        Ok(plan)
+    }
+
+    fn apply(
+        &mut self,
+        result: ReplayResult<S, V>,
+        work: &Path,
+        tracked: &mut BTreeMap<String, TrackedFile<S, V>>,
+    ) -> Result<ReplayResult<S, V>, RunError> {
+        let mut terminal = Vec::new();
+        for emission in result.emissions {
+            let destination = match emission.channel {
+                ReplayChannel::Stdout => self.stdout.clone(),
+                ReplayChannel::Stderr => self.stderr.clone(),
+            };
+            match destination {
+                Destination::Terminal(channel) => terminal.push(ReplayEmission::from_components(
+                    channel,
+                    emission.render.components().to_vec(),
+                    emission.carries_editability,
+                )),
+                Destination::File(index) => {
+                    let Some(file) = self.files.get_mut(index) else {
+                        continue;
+                    };
+                    file.components
+                        .extend(emission.render.components().iter().cloned());
+                    file.carries_editability |= emission.carries_editability;
+                }
+                Destination::Null => {}
+            }
+        }
+        for file in &self.files {
+            let text = EditableRender::new(file.components.clone()).text();
+            fs::write(work.join(&file.path), text)?;
+            tracked.insert(
+                file.path.clone(),
+                TrackedFile {
+                    components: Some(file.components.clone()),
+                    carries_editability: file.carries_editability,
+                },
+            );
+        }
+        Ok(ReplayResult::projected(
+            result.status,
+            terminal,
+            Routing::Controlled,
+        ))
+    }
+}
+
+fn builtin<S, V>(
+    command: &ReplayCommand,
+    work: &Path,
+    tracked: &BTreeMap<String, TrackedFile<S, V>>,
+    last_status: ReplayStatus,
+) -> Result<Option<ReplayResult<S, V>>, RunError>
+where
+    S: ConsumerKey,
+    V: Clone + Ord + std::fmt::Debug,
+{
+    if command.argv() == ["echo", "$?"] {
+        return Ok(Some(ReplayResult::bytes(format!(
+            "{}\n",
+            last_status.code()
+        ))));
+    }
+    let [program, path] = command.argv() else {
+        return Ok(None);
     };
-    case.replay()
-        .blocks()
-        .iter()
-        .map(|block| drive(block.command(), &context))
-        .collect()
+    if program != "cat" {
+        return Ok(None);
+    }
+    if path == "/dev/null" {
+        return Ok(Some(ReplayResult::bytes(String::new())));
+    }
+    if !safe_relative_path(path) {
+        return Err(RunError::UnsafeReplayInput { path: path.clone() });
+    }
+    if let Some(file) = tracked.get(path)
+        && let Some(components) = &file.components
+    {
+        return Ok(Some(ReplayResult::emitted(
+            ReplayStatus::SUCCESS,
+            vec![ReplayEmission::from_components(
+                ReplayChannel::Stdout,
+                components.clone(),
+                file.carries_editability,
+            )],
+        )));
+    }
+    let bytes = read_bounded_file(work, path)?
+        .ok_or_else(|| RunError::UnsafeReplayInput { path: path.clone() })?;
+    Ok(Some(ReplayResult::bytes(bytes)))
+}
+
+fn require_input(command: &ReplayCommand, work: &Path) -> Result<(), RunError> {
+    match command.input() {
+        None | Some(ReplayInputTarget::Null) => Ok(()),
+        Some(ReplayInputTarget::File(path)) => {
+            let _ = read_bounded_file(work, path)?
+                .ok_or_else(|| RunError::UnsafeReplayInput { path: path.clone() })?;
+            Ok(())
+        }
+    }
+}
+
+fn read_bounded_file(work: &Path, path: &str) -> Result<Option<String>, RunError> {
+    if path == "/dev/null" {
+        return Ok(Some(String::new()));
+    }
+    if !safe_relative_path(path) {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(MAX_CAPTURE_BYTES.saturating_add(1));
+    fs::File::open(work.join(path))?
+        .take(u64::try_from(MAX_CAPTURE_BYTES.saturating_add(1)).unwrap_or(u64::MAX))
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > MAX_CAPTURE_BYTES {
+        return Err(RunError::SandboxFileTooLarge {
+            path: path.to_owned(),
+            limit: MAX_CAPTURE_BYTES,
+        });
+    }
+    String::from_utf8(bytes)
+        .map(Some)
+        .map_err(|error| RunError::NonUtf8SandboxFile {
+            path: path.to_owned(),
+            preview: String::from_utf8_lossy(&error.into_bytes()).into_owned(),
+        })
 }
 
 fn safe_relative_path(path: &str) -> bool {
@@ -563,7 +995,7 @@ fn run_block(
     command_line: &str,
     env: &RunEnv,
     work: &Path,
-) -> Result<String, RunError> {
+) -> Result<(String, ReplayStatus), RunError> {
     if command_line.trim().is_empty() {
         return Err(RunError::EmptyCommand { block: index });
     }
@@ -605,11 +1037,15 @@ fn run_block(
             limit: MAX_CAPTURE_BYTES,
         });
     }
-    let _status = child.wait()?;
-    String::from_utf8(bytes).map_err(|error| RunError::NonUtf8Output {
+    let status = child.wait()?;
+    let code = status
+        .code()
+        .ok_or(RunError::ProcessStatusUnavailable { block: index })?;
+    let output = String::from_utf8(bytes).map_err(|error| RunError::NonUtf8Output {
         block: index,
         preview: String::from_utf8_lossy(&error.into_bytes()).into_owned(),
-    })
+    })?;
+    Ok((output, ReplayStatus::new(code)))
 }
 
 /// Run the case and report which blocks diverged from their committed output
@@ -701,7 +1137,7 @@ mod tests {
     }
 
     fn unexpected_driver(
-        _: &str,
+        _: &ReplayCommand,
         _: &ReplayContext<'_>,
     ) -> Result<ReplayResult<String, String>, RunError> {
         Err(RunError::EmptyCommand { block: usize::MAX })

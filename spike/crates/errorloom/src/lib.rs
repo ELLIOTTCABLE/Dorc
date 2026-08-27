@@ -43,6 +43,7 @@ use std::fmt::Debug;
 
 mod address;
 mod bless;
+mod command;
 mod container;
 mod diff;
 mod editable;
@@ -50,6 +51,10 @@ mod runner;
 
 pub use crate::address::{
     DEFAULT_ADDRESS_WORK_CEILING, SectionAddressRefusal, address_sections, address_sections_within,
+};
+pub use crate::command::{
+    OutputRedirection, RedirectionTarget, ReplayChannel, ReplayCommand, ReplayInputTarget,
+    ReplayParseError,
 };
 pub use crate::diff::describe_divergence;
 
@@ -71,9 +76,9 @@ pub use crate::editable::{
     transport_edit_allow_removal_with_limits, transport_edit_with_limits,
 };
 pub use crate::runner::{
-    Drift, MAX_CAPTURE_BYTES, ReplayCapture, ReplayContext, ReplayDriver, ReplayInput,
-    ReplayResult, RunEnv, RunError, RunReport, bless_structure, check_run, drive_case,
-    drive_case_with_inputs, execute_generic, run_case,
+    Drift, MAX_CAPTURE_BYTES, ReplayCapture, ReplayContext, ReplayDriver, ReplayEmission,
+    ReplayInput, ReplayResult, ReplayStatus, RunEnv, RunError, RunReport, bless_structure,
+    check_run, drive_case, drive_case_with_inputs, execute_generic, run_case,
 };
 
 /// What a consumer's opaque field key must satisfy. errorloom groups, sorts, and
