@@ -249,10 +249,13 @@ Severity is uniformly Error with no floor; exit codes are unchanged and never re
 
 Their cases are HONEST-triggered where the world IS the argv (`289:rul-worldless-route-honest-
 trigger`): `dorc-loom` runs the real parser over the case's own replay command through an INTERNAL
-`dorc-cli` lib target and refuses if the declared slug does not fire. The I/O-world members (the
-read-error triple, the shim-dir write, the lint operational trio, `dorc-sh`'s two file/exec
-failures) stay world-as-payload — an honest trigger there would need a real unreadable file, a full
-disk, or an absent `sh`.
+`dorc-cli` lib target and refuses if the declared slug does not fire. Source-, record-, and
+analysis-world cases run the shared production engine over materialized books, oracles, and record
+streams. Nonportable I/O outcomes (the read-error triple, shim publication, lint tool failures,
+transport faults, and `dorc-sh`'s file/exec failures) come from a closed typed loom-only edge-state
+controller, never an arbitrary diagnostic payload. Three internal invariant failures alone use the
+human-authorized `$ dorc-loom --this defect` route; its exact scenario set is fenced in
+`dorc-loom/src/defect.rs`, and production code cannot name that authority.
 
 Surfaces (selection policies over the registry)
 -----------------------------------------------
