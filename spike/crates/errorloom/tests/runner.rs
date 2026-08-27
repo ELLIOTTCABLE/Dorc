@@ -292,6 +292,45 @@ fn native_redirection_and_cat_preserve_exact_editable_provenance() {
 }
 
 #[test]
+fn direct_driver_sees_output_target_before_controlled_redirection() {
+    let case = Case::parse(
+        "---\n---\n-- state.txt --\noriginal\n\n-- replay --\n\
+         $ direct > state.txt\n\
+         $ cat state.txt\nreplacement\n",
+    )
+    .expect("case");
+    let results = drive_case(&case, &RunEnv::new(), |_, context| {
+        assert_eq!(
+            context.read_file("state.txt").as_deref(),
+            Some("original\n")
+        );
+        Ok(ReplayResult::<String, String>::bytes(
+            "replacement\n".to_owned(),
+        ))
+    })
+    .expect("drive");
+
+    assert_eq!(results[0].output(), "");
+    assert_eq!(results[1].output(), "replacement\n");
+}
+
+#[test]
+fn generic_same_input_output_opens_input_before_truncating_output() {
+    let case = Case::parse(
+        "---\n---\n-- state.txt --\noriginal\n\n-- replay --\n\
+         $ loom-mock-tool cat < state.txt > state.txt\n\
+         $ cat state.txt\noriginal\n",
+    )
+    .expect("case");
+    let results: Vec<ReplayResult<String, String>> =
+        drive_case(&case, &env(), execute_generic).expect("drive");
+
+    assert_eq!(results[0].output(), "");
+    assert_eq!(results[1].output(), "original\n");
+    assert!(results[1].editable_render().is_none());
+}
+
+#[test]
 fn status_is_hidden_until_the_exact_echo_builtin() {
     let case =
         Case::parse("---\n---\n-- replay --\n$ tool\n$ echo $?\n7\n$ echo $?\n0\n").expect("case");

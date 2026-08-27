@@ -16,8 +16,7 @@ use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::command::{
-    OutputRedirection, RedirectionTarget, ReplayChannel, ReplayCommand, ReplayInputTarget,
-    ReplayParseError,
+    OutputRedirection, RedirectionTarget, ReplayChannel, ReplayCommand, ReplayParseError,
 };
 use crate::container::{Case, CaseError, MAX_CASE_BYTES, MAX_SECTION_COUNT};
 use crate::{ConsumerKey, EditableRender, RenderComponent};
@@ -761,8 +760,7 @@ where
                 error,
             }
         })?;
-        require_input(&command, &work)?;
-        let mut routing = RoutingPlan::prepare(&command, &work, &mut tracked)?;
+        let mut routing = RoutingPlan::prepare(&command);
         let context = ReplayContext {
             block: block_index,
             cwd: &work,
@@ -824,11 +822,7 @@ struct RoutingPlan<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> {
 }
 
 impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> RoutingPlan<S, V> {
-    fn prepare(
-        command: &ReplayCommand,
-        work: &Path,
-        tracked: &mut BTreeMap<String, TrackedFile<S, V>>,
-    ) -> Result<Self, RunError> {
+    fn prepare(command: &ReplayCommand) -> Self {
         let mut plan = Self {
             stdout: Destination::Terminal(ReplayChannel::Stdout),
             stderr: Destination::Terminal(ReplayChannel::Stderr),
@@ -841,8 +835,6 @@ impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> RoutingPlan<S, V> {
                     let destination = match target {
                         RedirectionTarget::Null => Destination::Null,
                         RedirectionTarget::File(path) => {
-                            fs::File::create(work.join(path))?;
-                            tracked.insert(path.clone(), TrackedFile::from_bytes(""));
                             let index = plan.files.len();
                             plan.files.push(PendingFile {
                                 path: path.clone(),
@@ -859,7 +851,7 @@ impl<S: ConsumerKey, V: Clone + Ord + std::fmt::Debug> RoutingPlan<S, V> {
                 }
             }
         }
-        Ok(plan)
+        plan
     }
 
     fn apply(
@@ -953,17 +945,6 @@ where
     let bytes = read_bounded_file(work, path)?
         .ok_or_else(|| RunError::UnsafeReplayInput { path: path.clone() })?;
     Ok(Some(ReplayResult::bytes(bytes)))
-}
-
-fn require_input(command: &ReplayCommand, work: &Path) -> Result<(), RunError> {
-    match command.input() {
-        None | Some(ReplayInputTarget::Null) => Ok(()),
-        Some(ReplayInputTarget::File(path)) => {
-            let _ = read_bounded_file(work, path)?
-                .ok_or_else(|| RunError::UnsafeReplayInput { path: path.clone() })?;
-            Ok(())
-        }
-    }
 }
 
 fn read_bounded_file(work: &Path, path: &str) -> Result<Option<String>, RunError> {
