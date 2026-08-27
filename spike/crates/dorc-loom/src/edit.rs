@@ -268,9 +268,6 @@ fn refuse_added_lines(
     selected: &SectionKey,
     compiled: &CompiledSection,
 ) -> Result<(), DorcSectionEditRefusal> {
-    if selected.field == crate::ARRANGEMENT_FIELD {
-        return Ok(());
-    }
     let laid_out = render
         .components()
         .iter()

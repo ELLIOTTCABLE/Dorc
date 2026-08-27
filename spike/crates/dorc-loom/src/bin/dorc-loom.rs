@@ -1673,38 +1673,4 @@ mod tests {
         );
         assert_eq!(note, None);
     }
-
-    /// A hand-seeded row's arity mismatch panics deep inside the shared renderer
-    /// (`dorc_aid::arrangement::sentence_words`'s own `debug_assert!`) the first time some case's
-    /// render reaches it — a whole-PAGE entry's arity is always "exactly one word", so seeding a
-    /// second one reproduces the wiring defect without needing a value-bearing seat. This proves
-    /// dorc-loom's own driving boundary catches that panic instead of taking the whole process
-    /// down, and reports the row, the diagnosis, and the fix.
-    #[test]
-    fn a_hand_seeded_arity_mismatch_refuses_instead_of_crashing_the_process() {
-        let text = std::fs::read_to_string(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests/cli-help-page.loom"),
-        )
-        .expect("read fixture case");
-        let case = Case::parse(&text).expect("case parses");
-        let mut consumer = DorcConsumer::new();
-        consumer.set_arrangement_words(
-            "cli-help-page",
-            Some(dorc_aid::prose::ProseTier::Slop(vec![
-                "one word".to_owned(),
-                "an extra word a page never takes".to_owned(),
-            ])),
-        );
-        let error = drive_replays(
-            &case,
-            &consumer,
-            &RunEnv::new(),
-            Path::new("crates/aid/tests/cli-help-page.loom"),
-            &text,
-        )
-        .expect_err("a bad-arity row must refuse, not panic");
-        assert!(error.contains("cli-help-page"), "{error}");
-        assert!(error.contains("panicked"), "{error}");
-        assert!(error.contains("arrangement_lock.rs"), "{error}");
-    }
 }

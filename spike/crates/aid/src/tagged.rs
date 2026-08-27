@@ -63,18 +63,6 @@ pub enum RenderPart {
         /// What structure this run is.
         slug: &'static str,
     },
-    /// A WHOLE PAGE pulled from the arrangement registry: an invocation whose entire output is
-    /// one entry (`288:rul-help-text-is-loomable`).
-    ///
-    /// Kept apart from [`RenderPart::ArrangementWords`] because the whitespace means different
-    /// things: a page's alignment and blank lines are the AUTHOR's and compile back verbatim,
-    /// while a laid-out line's whitespace is the renderer's (`28H` ruling 7).
-    ArrangementPage {
-        /// Rendered bytes.
-        text: String,
-        /// The registry key's arrangement slug.
-        slug: &'static str,
-    },
     /// One run of a chrome LINE the renderer pulled from the ARRANGEMENT REGISTRY
     /// (`289:rul-arrangement-home-is-registry-plus-transcripts`) — chrome with an editable
     /// face. Only [`crate::arrangement::push_arrangement_sentence`] and the weft bridge
@@ -118,7 +106,6 @@ impl RenderPart {
             RenderPart::TemplateLiteral { text, .. }
             | RenderPart::ParamValue { text, .. }
             | RenderPart::Arrangement { text, .. }
-            | RenderPart::ArrangementPage { text, .. }
             | RenderPart::ArrangementWords { text, .. }
             | RenderPart::ArrangementValue { text, .. } => text,
         }

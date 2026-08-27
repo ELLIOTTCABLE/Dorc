@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::fs;
 
-use dorc_aid::arrangement::{OwnedArrangement, arrangement_parts, owned_arrangements};
+use dorc_aid::arrangement::{OwnedArrangement, owned_arrangements};
 use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
 use dorc_aid::diag::{Diag, DiagCode, render_cli_parts, render_staged_cli_parts};
 use dorc_aid::prose::{Mint, ProseTier};
@@ -111,15 +111,8 @@ pub enum DorcApplyRefusal {
     MissingCode(String),
     /// The selected arrangement slug is absent from the registry.
     MissingArrangement(String),
-    /// The selected section is neither a catalog prose field nor the arrangement register.
+    /// The selected section is neither a catalog prose field nor an arrangement line.
     IllegalField(&'static str),
-    /// An edit to a whole-PAGE arrangement carried a `{{name}}` variable, or the entry it lands
-    /// on holds a word SEQUENCE. A page is one entry, laid out by its author; neither a template
-    /// hole nor a re-split has any meaning there (`289` §2o: the registry never grows grammar
-    /// machinery).
-    ArrangementTakesNoVariables(String),
-    /// The edited entry holds a WORD SEQUENCE where the page path expects one word.
-    ArrangementIsSequenceStructured(String),
     /// Two sections of ONE render edited the SAME registry entry to different words.
     ///
     /// Repeated chrome is one entry rendered twice (`28H` ruling 3), so either span is a complete
@@ -315,9 +308,6 @@ impl DorcConsumer {
         key: &SectionKey,
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
-        if key.field == crate::ARRANGEMENT_FIELD {
-            return self.apply_arrangement_page_edit(key, compiled);
-        }
         if key.field == crate::ARRANGEMENT_LINE_FIELD {
             return self.apply_arrangement_line_edit(key, compiled);
         }
@@ -362,44 +352,6 @@ impl DorcConsumer {
                 }
                 params
             });
-        if demoted {
-            self.demoted.push(key.owner.clone());
-        }
-        Ok(())
-    }
-
-    /// Apply one compiled whole-PAGE arrangement section to the registry mirror.
-    ///
-    /// A page is one entry laid out by its author, so it takes no values and its bytes survive
-    /// verbatim: no whitespace normalization, no re-split (`28H` ruling 7).
-    fn apply_arrangement_page_edit(
-        &mut self,
-        key: &SectionKey,
-        compiled: &crate::CompiledSection,
-    ) -> Result<(), DorcApplyRefusal> {
-        if compiled
-            .fragments()
-            .iter()
-            .any(|fragment| matches!(fragment, crate::CompiledFragment::Variable(_)))
-        {
-            return Err(DorcApplyRefusal::ArrangementTakesNoVariables(
-                key.owner.clone(),
-            ));
-        }
-        let words = page_words(compiled);
-        let mint = self.mint;
-        let entry = self.arrangement_entry(key)?;
-        if entry
-            .words
-            .as_ref()
-            .is_some_and(|current| current.text().len() > 1)
-        {
-            return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
-                key.owner.clone(),
-            ));
-        }
-        let demoted = mint.demotes(entry.words.as_ref());
-        entry.words = Some(mint.tier(words));
         if demoted {
             self.demoted.push(key.owner.clone());
         }
@@ -592,7 +544,7 @@ impl DorcConsumer {
         // The generation lag, stated before the driver can only shrug about it: a case naming a
         // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
-            Self::arrangement_row(slug)?;
+            self.require_arrangement_row(slug)?;
         }
         // Declining the case's own inventory block is what makes the block legal to write down.
         let driver = DorcReplayDriver::new(self, case).without_self_reference();
@@ -610,6 +562,18 @@ impl DorcConsumer {
                 .to_owned()
         })?;
         self.baseline_from_render(case, render)
+    }
+
+    fn require_arrangement_row(&self, slug: &str) -> Result<(), String> {
+        self.arrangements
+            .iter()
+            .any(|entry| entry.slug == slug)
+            .then_some(())
+            .ok_or_else(|| {
+                format!(
+                    "arrangement `{slug}` has no registry row yet -- publish the case, then rebuild"
+                )
+            })
     }
 
     /// The `dorc-loom vars` inventory for one case, as bytes.
@@ -753,10 +717,6 @@ impl DorcConsumer {
         self_reference: SelfReference,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens = exact_words(command)?;
-        if let Some(slug) = arrangement_page_slug(case, &tokens) {
-            let parts = self.arrangement_page(slug).ok()?;
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
-        }
         if tokens.first() == Some(&LOOM_COMMAND) {
             return self
                 .loom_replay(case, &tokens, self_reference, &|target| {
@@ -920,34 +880,6 @@ impl DorcConsumer {
         })
     }
 
-    /// The COMMITTED registry's own spelling of `slug`, so a span carries a stable one. A case
-    /// naming a slug with no row yet gets the repair: its row arrives by promotion and the build
-    /// sees it after a rebuild — the same generation lag the catalog has, and the same assertion.
-    ///
-    /// EXISTENCE only. A value-bearing chrome LINE has no whole-page render at all — laying one
-    /// out passes zero values to a seat that interleaves several — so the lag check cannot go
-    /// through [`Self::arrangement_page`].
-    fn arrangement_row(slug: &str) -> Result<&'static str, String> {
-        dorc_aid::arrangement::ARRANGEMENTS
-            .iter()
-            .find(|entry| entry.slug == slug)
-            .map(|entry| entry.slug)
-            .ok_or_else(|| {
-                format!(
-                    "arrangement `{slug}` has no registry row yet -- publish the case, then rebuild"
-                )
-            })
-    }
-
-    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry.
-    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
-        Ok(arrangement_parts(
-            &self.arrangements,
-            Self::arrangement_row(slug)?,
-            None,
-        ))
-    }
-
     /// The defining replay's typed diagnostic for a case — the payload the generated `example` field
     /// and the full inventory read (`28A` §4). World-as-payload/pipeline, with the whylog durable
     /// fallback for `dorc why --last` cases.
@@ -1086,25 +1018,6 @@ impl DorcConsumer {
     }
 }
 
-/// The WHOLE-PAGE arrangement route: an invocation whose entire output is one registry entry
-/// (`288:rul-help-text-is-loomable`; the `289` §2o help pilot). Both the driver and the
-/// re-render seat go through this, so the transcript a human edits and the bytes the fixpoint
-/// re-derives are the same registry read.
-///
-/// The declared-arrangement check is this family's honest trigger
-/// (`289:rul-worldless-route-honest-trigger`): a page case whose command renders some OTHER
-/// page is refused rather than quietly transcribing a page it does not claim.
-fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
-    let slug = match words {
-        ["dorc", "--help" | "-h"] => dorc_cli::HELP_ARRANGEMENT,
-        _ => return None,
-    };
-    match case.frontmatter().scalar("arrangement") {
-        Some(declared) if declared != slug => None,
-        _ => Some(slug),
-    }
-}
-
 /// The words a compiled arrangement section would STORE, or `None` for a catalog register.
 ///
 /// The ONE derivation, shared by the appliers and by the divergence pre-pass, so the pre-pass can
@@ -1113,21 +1026,7 @@ fn stored_words(field: &str, compiled: &crate::CompiledSection) -> Option<Vec<St
     if field == crate::ARRANGEMENT_LINE_FIELD {
         return Some(line_words(compiled));
     }
-    (field == crate::ARRANGEMENT_FIELD).then(|| page_words(compiled))
-}
-
-/// A PAGE's one word: its author's bytes, verbatim (`28H` ruling 7).
-fn page_words(compiled: &crate::CompiledSection) -> Vec<String> {
-    vec![
-        compiled
-            .fragments()
-            .iter()
-            .filter_map(|fragment| match fragment {
-                crate::CompiledFragment::Text(text) => Some(text.as_str()),
-                crate::CompiledFragment::Variable(_) => None,
-            })
-            .collect(),
-    ]
+    None
 }
 
 /// A chrome LINE's word sequence: the compiled fragment series IS the re-split — a `Text` fragment
@@ -1810,9 +1709,6 @@ impl DorcConsumer {
     fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        if let Some(slug) = arrangement_page_slug(case, &words) {
-            return Ok(self.arrangement_page(slug)?.text());
-        }
         if words.first() == Some(&LOOM_COMMAND) {
             return self
                 .loom_replay(case, &words, SelfReference::Allowed, &|target| {
@@ -2892,29 +2788,6 @@ mod tests {
         assert!(!interpretation.contains("foreign"));
     }
 
-    /// A whole-page arrangement section can be a sixty-line help page, and the hunk must be the
-    /// LINE that moved rather than the page around it: identical leading and trailing lines are
-    /// trimmed off both sides before anything is printed.
-    #[test]
-    fn a_multi_line_section_prints_only_the_line_that_moved() {
-        let page = SectionKey {
-            field: crate::ARRANGEMENT_FIELD,
-            ..key(0)
-        };
-        let baseline = baseline(vec![RenderComponent::EditableSection(
-            EditableSection::new(
-                page,
-                vec![EditableFragment::Text(String::from("first\nsecond\nthird"))],
-            ),
-        )]);
-        let preview = compile_preview(&baseline, "first\nsecond changed\nthird")
-            .unwrap_or_else(|error| panic!("{error:?}"));
-        assert_eq!(
-            render_publish_diff(&preview),
-            "section: code.arrangement#0:0\n  - second\n  + second changed"
-        );
-    }
-
     #[test]
     fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
         let section = SectionKey {
@@ -3056,6 +2929,76 @@ mod tests {
                 .find(|entry| entry.slug == "why-receipt-book-drifted")
                 .map(|entry| entry.words.clone()),
             Some(Some(ProseTier::Slop(vec![String::from("agreed words")]))),
+        );
+    }
+
+    #[test]
+    fn two_wrapped_rows_compile_back_without_layout_whitespace() {
+        use dorc_aid::weave::{Face, to_render_parts, words};
+        use weft::{Document, Node, NodeKind, Paragraph, render};
+
+        let row = |slug: &str, text: &str| OwnedArrangement {
+            slug: slug.to_owned(),
+            occurrence: None,
+            when_used: "harness".to_owned(),
+            why: "harness".to_owned(),
+            words: Some(ProseTier::Migrated(vec![text.to_owned()])),
+        };
+        let mut consumer = DorcConsumer {
+            mirror: Vec::new(),
+            arrangements: vec![
+                row("first-row", "first row has enough words to wrap"),
+                row("second-row", "second row has enough words to wrap"),
+            ],
+            mint: Mint::Slop,
+            demoted: Vec::new(),
+        };
+        let document = Document::new(vec![
+            Node::new(NodeKind::Prose(Paragraph {
+                runs: vec![words(
+                    "first row has enough words to wrap",
+                    "first-row",
+                    None,
+                )],
+            })),
+            Node::new(NodeKind::Prose(Paragraph {
+                runs: vec![words(
+                    "second row has enough words to wrap",
+                    "second-row",
+                    None,
+                )],
+            })),
+        ]);
+        let rendered = render::<Face>(&document, 24);
+        assert!(rendered.text().matches('\n').count() > 2);
+        let case = Case::parse("---\narrangement: first-row\n---\n-- replay --\n$ harness\n")
+            .unwrap_or_else(|error| panic!("{error}"));
+        let baseline = consumer
+            .baseline_from_render(&case, to_editable_render(&to_render_parts(&rendered)))
+            .unwrap_or_else(|error| panic!("{error}"));
+        let dirty = rendered
+            .text()
+            .replace("first row", "edited first row")
+            .replace("second row", "edited second row");
+        let preview =
+            compile_preview(&baseline, &dirty).unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(preview.sections().len(), 2);
+
+        consumer
+            .apply_preview(&preview)
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        let stored: Vec<&str> = consumer
+            .arrangements()
+            .iter()
+            .filter_map(|entry| entry.words.as_ref())
+            .flat_map(|tier| tier.text().iter().map(String::as_str))
+            .collect();
+        assert_eq!(
+            stored,
+            [
+                "edited first row has enough words to wrap",
+                "edited second row has enough words to wrap",
+            ]
         );
     }
 

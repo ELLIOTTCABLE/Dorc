@@ -86,16 +86,6 @@ impl DorcApplyRefusal {
                 "`{field}` is not an editable register. Edit the diagnostic's message or help \
                  prose in {case} instead, then: dorc-loom publish {case}"
             ),
-            Self::ArrangementTakesNoVariables(slug) => format!(
-                "chrome `{slug}` is a whole page: its words are laid out by their author and it \
-                 interpolates nothing, so a {{{{name}}}} marker has no meaning there. Remove the \
-                 marker from {case}, then: dorc-loom publish {case}"
-            ),
-            Self::ArrangementIsSequenceStructured(slug) => format!(
-                "chrome `{slug}` stores a sequence of words that a render interleaves values \
-                 between, so it cannot be edited through the whole-page path. Edit it from a \
-                 transcript that renders the line itself, then: dorc-loom publish {case}"
-            ),
             Self::ArrangementEntryEditedTwice {
                 slug,
                 first,

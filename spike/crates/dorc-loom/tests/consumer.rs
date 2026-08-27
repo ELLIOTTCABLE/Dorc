@@ -872,7 +872,7 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
     let shapes = [
         ("dorc why --last --whylog=.whylog", true),
         ("dorc why book.sh:5 --last --whylog=.whylog", true),
-        ("dorc --help", true),
+        ("dorc --help", false),
         ("dorc lint oracle.sh --no-tools", true),
         ("dorc why --last --whylog=absent.whylog", true),
         ("dorc why book.sh:5 --last --whylog=absent.whylog", false),

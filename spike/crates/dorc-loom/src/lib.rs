@@ -71,7 +71,7 @@ pub struct SectionKey {
     /// Who owns the prose: a diagnostic code slug for the catalog registers, an arrangement
     /// slug for the arrangement registry.
     pub owner: String,
-    /// Which register of that owner: `message`/`help` (catalog) or [`ARRANGEMENT_FIELD`].
+    /// Which register of that owner: `message`/`help` (catalog) or `arrangement-line`.
     pub field: &'static str,
     /// The core-emitted field occurrence.
     pub instance: usize,
@@ -79,20 +79,10 @@ pub struct SectionKey {
     pub segment: usize,
 }
 
-/// The [`SectionKey::field`] value naming a WHOLE-PAGE arrangement entry
-/// (`289:rul-arrangement-home-is-registry-plus-transcripts`): its bytes are the author's, laid
-/// out by the author, and compile back VERBATIM. An arrangement section's
-/// [`SectionKey::instance`] is its occurrence — the registry resolves an unclaimed occurrence to
-/// the whole-slug entry, which is what lets repeated chrome share one entry.
-pub const ARRANGEMENT_FIELD: &str = "arrangement";
-
 /// The [`SectionKey::field`] value naming a chrome LINE a renderer laid out.
 ///
-/// Distinct from [`ARRANGEMENT_FIELD`] because the whitespace means different things on the two
-/// paths, and typing the difference is what stops one path's rule reaching the other
-/// (`28H` ruling 7): a laid-out line's inter-word whitespace is the RENDERER's — a wrap it chose
-/// at this width — so it collapses on the way back to storage, while a page's alignment and blank
-/// lines are the author's and survive byte for byte.
+/// A laid-out line's inter-word whitespace is the renderer's, so it collapses on the way back to
+/// storage rather than freezing one frame width into a registry row.
 pub const ARRANGEMENT_LINE_FIELD: &str = "arrangement-line";
 
 /// Whether a path is a `SyncThing` conflict copy rather than a case — the corpus lives in a
@@ -137,7 +127,6 @@ pub fn to_editable_render(parts: &RenderParts) -> EditableRender<SectionKey, Sec
             } => open.catalog_value(code, *field, *instance, param, text),
             RenderPart::ForeignText { text, source } => open.fixed(source, text.as_str()),
             RenderPart::Arrangement { text, .. } => open.structure(text),
-            RenderPart::ArrangementPage { text, slug } => open.page(slug, text),
             RenderPart::ArrangementWords {
                 text,
                 slug,
@@ -325,22 +314,6 @@ impl OpenSections {
             },
             rendered: String::from(text),
         });
-    }
-
-    fn page(&mut self, slug: &'static str, text: &str) {
-        self.flush();
-        let segment = self.next_segment;
-        self.next_segment = segment.saturating_add(1);
-        self.components
-            .push(RenderComponent::EditableSection(EditableSection::new(
-                SectionKey {
-                    owner: String::from(slug),
-                    field: ARRANGEMENT_FIELD,
-                    instance: 0,
-                    segment,
-                },
-                vec![EditableFragment::Text(String::from(text))],
-            )));
     }
 
     fn flush(&mut self) {

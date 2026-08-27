@@ -401,9 +401,7 @@ pub fn to_runs(parts: &RenderParts) -> Vec<Run<Face>> {
                 Instance(u32::try_from(*instance).unwrap_or(u32::MAX)),
             ),
             RenderPart::ForeignText { text, source } => foreign_run(text, source.clone()),
-            RenderPart::Arrangement { text, slug } | RenderPart::ArrangementPage { text, slug } => {
-                mark(text.clone(), slug)
-            }
+            RenderPart::Arrangement { text, slug } => mark(text.clone(), slug),
             RenderPart::ArrangementWords {
                 text,
                 slug,
