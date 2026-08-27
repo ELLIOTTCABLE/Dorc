@@ -790,23 +790,27 @@ impl DorcConsumer {
                     &result.human(&self.render_ctx()),
                 )))
             }
-            dorc_cli::Invocation::Analyze(args) => self.replay_engine(&args, command, context),
+            dorc_cli::Invocation::Analyze(args) => {
+                self.replay_engine(case, &args, command, context)
+            }
             dorc_cli::Invocation::Strip(_) => None,
         }
     }
 
     fn replay_engine(
         &self,
+        case: &Case,
         args: &dorc_cli::Args,
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.run_engine(args, command, context)
+        self.run_engine(case, args, command, context)
             .map(|replay| replay.result)
     }
 
     fn run_engine(
         &self,
+        case: &Case,
         args: &dorc_cli::Args,
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
@@ -829,7 +833,17 @@ impl DorcConsumer {
             sources.push(replay_path(path, stdin.as_deref(), context)?);
             paths.push(path.clone());
         }
-        let snapshot = case_snapshot(book_path, &book, paths, sources);
+        let ambient = paths.len();
+        for section in case.sections() {
+            if section.name() != book_path
+                && section.name().ends_with(".sh")
+                && !paths.iter().any(|path| path == section.name())
+            {
+                paths.push(section.name().to_owned());
+                sources.push(context.read_file(section.name())?);
+            }
+        }
+        let snapshot = engine_snapshot(book_path, &book, paths, sources, ambient);
         let raw_results = match args.results.as_deref() {
             Some(path) => Some(replay_path(path, stdin.as_deref(), context)?),
             None => None,
@@ -992,7 +1006,7 @@ impl DorcConsumer {
                     drive_case(case, &RunEnv::new(), |candidate, context| {
                         if candidate.original() == command.original() && found.borrow().is_none() {
                             let replay = self
-                                .run_engine(&args, candidate, context)
+                                .run_engine(case, &args, candidate, context)
                                 .ok_or(RunError::ShellNotConfigured)?;
                             *found.borrow_mut() = replay
                                 .diagnostics
@@ -1283,6 +1297,39 @@ fn case_snapshot(
         srcs,
         // A case lists its sources; every one of them is named, so none is an acquired dependency.
         &dorc_cli::snapshot::LoadPositions::book_sourced(book_sourced),
+        book_path,
+        book_src,
+    )
+}
+
+fn engine_snapshot(
+    book_path: &str,
+    book_src: &str,
+    paths: Vec<String>,
+    srcs: Vec<String>,
+    ambient: usize,
+) -> dorc_cli::snapshot::StaticLoadSnapshot {
+    let cwd = dorc_core::loadpath::Cwd::default();
+    let reached = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    let mut kept_paths = Vec::new();
+    let mut kept_srcs = Vec::new();
+    let mut kept_reached = std::collections::BTreeSet::new();
+    for (index, (path, source)) in paths.into_iter().zip(srcs).enumerate() {
+        if index >= ambient && !reached.contains(&index) {
+            continue;
+        }
+        let kept = kept_paths.len();
+        kept_paths.push(path);
+        kept_srcs.push(source);
+        if index >= ambient {
+            kept_reached.insert(kept);
+        }
+    }
+    dorc_cli::snapshot::StaticLoadSnapshot::over(
+        cwd,
+        kept_paths,
+        kept_srcs,
+        &dorc_cli::snapshot::LoadPositions::book_sourced(kept_reached),
         book_path,
         book_src,
     )
