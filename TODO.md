@@ -29,7 +29,7 @@
 
 ### Looms / aid
 
-- [ ] *generated* usage-output (flags etc) in the help-loom
+- [.] *generated* usage-output (flags etc) in the help-loom (poked around a bit, currently waiting on v0.10 of bpaf and its Visitor pattern)
 - [ ] marker-version-unrecognized needs its span moved to the actual marker
 - [ ] the clean-tree requirement is *super* annoying, I can't even keep notes in here. any way to restrict it to compile-affecting files - maybe leverage hk, or cargo??
 
