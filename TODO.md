@@ -32,6 +32,18 @@
 - [.] *generated* usage-output (flags etc) in the help-loom (poked around a bit, currently waiting on v0.10 of bpaf and its Visitor pattern)
 - [ ] marker-version-unrecognized needs its span moved to the actual marker
 - [ ] the clean-tree requirement is *super* annoying, I can't even keep notes in here. any way to restrict it to compile-affecting files - maybe leverage hk, or cargo??
+- [ ] running CONTRIBUTING.md, I get:
+
+    ```console
+    $ dorc plan --book=a-book.sh --host linuxserver.io@172.28.0.1:2222
+    transport: error[transport-session-lost]: The session to
+    linuxserver.io@172.28.0.1:2222 ended without its completion marker (ssh exited
+    255; attempts: 3), so Dorc cannot tell whether the shipped artifact ran --
+    re-run `dorc plan` to measure what actually happened.
+    ```
+
+    - why, it's unclear, what went wrong, what was the error??
+    - "re-run dorc plan to measure" seems very incorrect
 
 # Preparation-for-agentic-implementation 🤢 phase
 

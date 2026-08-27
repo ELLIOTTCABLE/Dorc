@@ -151,6 +151,11 @@ point `dorc` at to experiment:
       --ssh-config "<ssh-config-path>"
    ```
 
+4. **Clean up**, if you're into that:
+
+   ```sh
+   wslc container remove dorc-target
+   ```
 
 ## Authorship, prose, and error-messages
 
