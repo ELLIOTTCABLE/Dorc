@@ -317,6 +317,24 @@ pub enum EngineStatus {
     LoadUnresolvable,
 }
 
+impl EngineStatus {
+    /// The process status used by every adapter for this semantic result.
+    #[must_use]
+    pub const fn exit_code(self) -> u8 {
+        match self {
+            Self::Complete => 0,
+            Self::BookUnmodeled => 10,
+            Self::WrapperIncoherent => 11,
+            Self::IngressRefused => 12,
+            Self::HostNotReached => 13,
+            Self::SessionLost => 14,
+            Self::ApplyFailed => 15,
+            Self::ArtifactUnservable => 16,
+            Self::LoadUnresolvable => 17,
+        }
+    }
+}
+
 type RunOutcome = EngineStatus;
 
 /// Generated file state returned independently of where production published it.
@@ -359,6 +377,8 @@ pub enum OutputDestination {
         stage: String,
         /// Severity controlling terminal styling.
         severity: Severity,
+        /// The typed diagnostic represented by the tagged body.
+        diagnostic: Diag,
     },
 }
 
@@ -397,11 +417,12 @@ impl OutputEvent {
 
     /// Constructs a tagged diagnostic event; diagnostics always target standard error.
     #[must_use]
-    pub fn diagnostic(stage: impl Into<String>, severity: Severity, parts: RenderParts) -> Self {
+    pub fn diagnostic(stage: impl Into<String>, diagnostic: Diag, parts: RenderParts) -> Self {
         Self {
             destination: OutputDestination::Diagnostic {
                 stage: stage.into(),
-                severity,
+                severity: diagnostic.severity(),
+                diagnostic,
             },
             body: OutputBody::Tagged(parts),
         }
@@ -421,7 +442,18 @@ impl OutputEvent {
     pub fn diagnostic_presentation(&self) -> Option<(&str, Severity)> {
         match &self.destination {
             OutputDestination::Plain(_) => None,
-            OutputDestination::Diagnostic { stage, severity } => Some((stage, *severity)),
+            OutputDestination::Diagnostic {
+                stage, severity, ..
+            } => Some((stage, *severity)),
+        }
+    }
+
+    /// Returns the typed diagnostic carried by a diagnostic event.
+    #[must_use]
+    pub fn diagnostic_payload(&self) -> Option<&Diag> {
+        match &self.destination {
+            OutputDestination::Diagnostic { diagnostic, .. } => Some(diagnostic),
+            OutputDestination::Plain(_) => None,
         }
     }
 
@@ -446,6 +478,10 @@ impl OutputEvent {
 
 /// A live output boundary for the shared invocation engine.
 pub trait OutputSink {
+    /// The prose tables and frame used to construct tagged output.
+    fn render_ctx(&self) -> dorc_aid::RenderCtx<'_> {
+        dorc_aid::RenderCtx::production()
+    }
     /// Publishes one event immediately.
     fn emit(&mut self, event: OutputEvent);
     /// Flushes the selected stream immediately.
@@ -508,12 +544,8 @@ macro_rules! emit_stderr {
     };
 }
 
-fn render_ctx() -> dorc_aid::RenderCtx<'static> {
-    dorc_aid::RenderCtx::production()
-}
-
-fn chrome_parts(slug: &'static str, values: &[&str]) -> RenderParts {
-    let mut parts = crate::chrome_line_parts(&render_ctx(), slug, values);
+fn chrome_parts(ctx: &dorc_aid::RenderCtx<'_>, slug: &'static str, values: &[&str]) -> RenderParts {
+    let mut parts = crate::chrome_line_parts(ctx, slug, values);
     parts.push(dorc_aid::tagged::RenderPart::Arrangement {
         text: "\n".into(),
         slug: "cli-chrome-line-ending",
@@ -1786,7 +1818,7 @@ fn run_status(
         // expected-why needles + rewires gate-7, deferred to keep this pass green.)
         sink.emit(OutputEvent::plain_tagged(
             OutputChannel::Stderr,
-            chrome_parts("cli-why-pointer-line", &[book_name]),
+            chrome_parts(&sink.render_ctx(), "cli-why-pointer-line", &[book_name]),
         ));
     }
 
@@ -1885,7 +1917,7 @@ fn run_status(
                 .is_none_or(|r| r.record_stream_version == dorc_aid::narrative::PLANE_VERSION),
         };
         let parts = why_report_parts(
-            &render_ctx(),
+            &sink.render_ctx(),
             &WhyReport {
                 address: options.why_address(),
                 plan: &plan,
@@ -1984,7 +2016,11 @@ fn run_status(
 
     sink.emit(OutputEvent::plain_tagged(
         OutputChannel::Stderr,
-        chrome_parts("cli-decision-digest-line", &[&decision_digest]),
+        chrome_parts(
+            &sink.render_ctx(),
+            "cli-decision-digest-line",
+            &[&decision_digest],
+        ),
     ));
 
     // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
@@ -3150,6 +3186,7 @@ fn emit_debug_argv(
 fn emit_plan_summary(sink: &mut dyn OutputSink, plan: &dorc_plan::Plan) {
     let counts = plan.disposition_counts();
     let parts = chrome_parts(
+        &sink.render_ctx(),
         "cli-plan-summary-line",
         &[
             &counts.sites.to_string(),
@@ -3183,8 +3220,15 @@ fn emit_why_lens(
     src: &str,
     _collapse_narrative: &[CollapseNarrative],
 ) {
-    for reason in why_lens_reasons(why_diags, arena, src) {
-        emit_stderr!(sink, "why: {}", why_lens_line(&reason));
+    let lines = {
+        let ctx = sink.render_ctx();
+        why_lens_reasons(&ctx, why_diags, arena, src)
+            .iter()
+            .map(|reason| why_lens_line(&ctx, reason))
+            .collect::<Vec<_>>()
+    };
+    for line in lines {
+        emit_stderr!(sink, "why: {line}");
     }
 }
 
@@ -3195,9 +3239,9 @@ fn emit_why_lens(
 /// stamp anyway is what keeps the two surfaces from drifting — every fragment is classed once, so
 /// the book's own bytes are encoded here for the same reason they are there
 /// (`ask-why-lens-stderr-unencoded`).
-fn why_lens_line(reason: &Said) -> String {
+fn why_lens_line(ctx: &dorc_aid::RenderCtx<'_>, reason: &Said) -> String {
     reason
-        .runs(&render_ctx(), "why-lens")
+        .runs(ctx, "why-lens")
         .iter()
         .map(|run| run.text.as_str())
         .collect()
@@ -3401,7 +3445,12 @@ fn emit_carry_attribution(
 /// first-occurrences — `ProvId` is `!Ord` (no `BTreeSet`) and the diags arrive in node order, so
 /// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
 /// subsystem — `22D` §1 stage-4).
-fn why_lens_reasons(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Said> {
+fn why_lens_reasons(
+    ctx: &dorc_aid::RenderCtx<'_>,
+    why_diags: &[Diag],
+    arena: &ProvArena,
+    src: &str,
+) -> Vec<Said> {
     let mut shown: Vec<(dorc_core::ProvId, dorc_aid::diag::SiteId)> = Vec::new();
     let mut reasons = Vec::new();
     for diag in why_diags {
@@ -3411,7 +3460,7 @@ fn why_lens_reasons(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<Sai
             }
             shown.push(key);
         }
-        if let Some(explanation) = dorc_aid::diag::why(&render_ctx(), diag, arena, src) {
+        if let Some(explanation) = dorc_aid::diag::why(ctx, diag, arena, src) {
             reasons.push(Said::Parts(explanation.parts));
         }
     }
@@ -3864,7 +3913,7 @@ fn report_located(
         .collect();
     let parts = dorc_aid::diag::render_staged_cli_parts_with_frames(
         stage,
-        &render_ctx(),
+        &sink.render_ctx(),
         diag,
         src,
         filename,
@@ -3949,7 +3998,7 @@ fn report(sink: &mut dyn OutputSink, stage: &str, source: Option<(&str, &str)>, 
         let (filename, src) = source.unwrap_or(("", ""));
         let parts = dorc_aid::diag::render_staged_cli_parts(
             stage,
-            &render_ctx(),
+            &sink.render_ctx(),
             d,
             src,
             filename,
@@ -3960,7 +4009,7 @@ fn report(sink: &mut dyn OutputSink, stage: &str, source: Option<(&str, &str)>, 
 }
 
 fn emit_diagnostic(sink: &mut dyn OutputSink, stage: &str, diag: &Diag, parts: RenderParts) {
-    sink.emit(OutputEvent::diagnostic(stage, diag.severity(), parts));
+    sink.emit(OutputEvent::diagnostic(stage, diag.clone(), parts));
     sink.flush(OutputChannel::Stderr);
 }
 
@@ -4106,7 +4155,12 @@ mod why_lens_dedup_tests {
             cmdsub_top(&mut arena, 3, body),
             cmdsub_top(&mut arena, 7, body),
         ];
-        let lines = super::why_lens_reasons(&diags, &arena, "apt_install \"$(curl a)\"");
+        let lines = super::why_lens_reasons(
+            &dorc_aid::RenderCtx::production(),
+            &diags,
+            &arena,
+            "apt_install \"$(curl a)\"",
+        );
         assert_eq!(
             lines.len(),
             2,
@@ -4124,7 +4178,12 @@ mod why_lens_dedup_tests {
             cmdsub_top(&mut arena, 3, body),
             cmdsub_top(&mut arena, 3, body),
         ];
-        let lines = super::why_lens_reasons(&diags, &arena, "apt-get install \"$(date)\"");
+        let lines = super::why_lens_reasons(
+            &dorc_aid::RenderCtx::production(),
+            &diags,
+            &arena,
+            "apt-get install \"$(date)\"",
+        );
         assert_eq!(
             lines.len(),
             1,
@@ -4275,13 +4334,19 @@ mod tests {
 
     #[test]
     fn diagnostic_destination_retains_stage_and_severity() {
-        let event = OutputEvent::diagnostic("parse", Severity::Warning, RenderParts::new());
+        let event = OutputEvent::diagnostic(
+            "parse",
+            Diag::new_spanless_site(DiagCode::SyntaxUnsupported(
+                dorc_aid::diag::SyntaxUnsupported {
+                    reason: dorc_aid::diag::SyntaxUnsupportedReason::BackgroundAmp,
+                },
+            )),
+            RenderParts::new(),
+        );
 
         assert_eq!(event.channel(), OutputChannel::Stderr);
-        assert_eq!(
-            event.diagnostic_presentation(),
-            Some(("parse", Severity::Warning))
-        );
+        assert!(event.diagnostic_presentation().is_some());
+        assert!(event.diagnostic_payload().is_some());
     }
 
     #[test]

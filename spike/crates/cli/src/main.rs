@@ -78,10 +78,8 @@ use dorc_core::{ProvArena, Symbol};
 #[cfg(test)]
 use dorc_cli::engine::reach_arm_fn_name;
 use dorc_cli::engine::{
-    AnalysisOptions, ArgvReadout, ArtifactDestinationShape, ArtifactOptions, DurableOutput,
-    EngineEdges, EngineOptions, EngineRequest, EngineStatus as RunOutcome, InvocationRecordRequest,
-    Observation, ObservationRequest, OutputChannel, OutputEvent, OutputSink,
-    Replay as EngineReplay, ReportingOptions, SurvivalPolicy, WhyDepth,
+    EngineEdges, EngineRequest, EngineStatus as RunOutcome, InvocationRecordRequest, Observation,
+    ObservationRequest, OutputChannel, OutputEvent, OutputSink, Replay as EngineReplay,
 };
 #[cfg(test)]
 use dorc_cli::fixpoint::{FrozenModel, attribute_cascades, classify_round, settle_world};
@@ -127,44 +125,6 @@ use dorc_cli::why::{is_structurally_unprobeable, oracle_locus, unresolvable_diag
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
 const EXIT_USAGE: u8 = 2;
-/// A parse-error / unmodeled book (`inv-top-reject`): the book carries a construct dorc
-/// cannot model. The artifact still ships, but the exit signals partial understanding
-/// (ack-1). First of the reserved 10..=19 dorc-semantic fast-fail range.
-const EXIT_BOOK_UNMODELED: u8 = 10;
-/// A dual-peel incoherent wrapper oracle (`273` §5): a wrapper authoring BOTH `__predict`
-/// (peeling) and `__lend_map` whose `"$@"` reach DIFFERENT tail positions — the
-/// declarations-genuinely-contradict category, a genuine plan-time, pre-network fail-fast
-/// (`rul-proven-mutation-fails-fast` posture). The artifact still ships (the fail-fast is loud,
-/// not a crash); the exit stops a `dorc … && deploy` chain. Second of the 10..=19 range.
-const EXIT_WRAPPER_INCOHERENT: u8 = 11;
-/// Evidence offered to the pipeline failed admission — host records the framing refused, or a
-/// receipt whose book has drifted. Nothing was measured, so no artifact is honest. Third of the
-/// 10..=19 range.
-const EXIT_INGRESS_REFUSED: u8 = 12;
-/// No session process was ever created, so the destination was never contacted. The one transport
-/// exit licensed to claim the host is untouched, which is what makes a bare retry safe.
-const EXIT_HOST_NOT_REACHED: u8 = 13;
-/// A session ran and never reported completion: whether the remote artifact ran is UNKNOWN
-/// (`rul-integrity-failure-withholds-mutation`). Deliberately NOT folded into
-/// [`EXIT_HOST_NOT_REACHED`] — the caller's remedy differs, and a caller that retries this one
-/// blindly may re-apply a mutation that already landed.
-const EXIT_SESSION_LOST: u8 = 14;
-/// A remote apply ran to completion and its artifact exited non-zero. The one KNOWN transport
-/// outcome; the remote status is reported in the diagnostic, never reproduced as our own exit
-/// (a plan exiting 13 must not be read as our "host not reached").
-const EXIT_APPLY_FAILED: u8 = 15;
-/// The invocation NAMED an emission form this book cannot be given, or an artifact set could not
-/// be published (`30I` §7.1 / §7.5). Sixth of the reserved 10..=19 dorc-semantic range, and
-/// pre-network on the refusal arm: nothing was probed, nothing was contacted, nothing was written.
-const EXIT_ARTIFACT_UNSERVABLE: u8 = 16;
-/// A book's `.` operand is built by RUNNING something, so the load plane cannot name the file it
-/// loads (`30P:rul-static-predict-sites-loads` is the sanctioned route and needs a stdlib). The
-/// artifact still ships and the site havocs like any other unknown source; the exit is what stops
-/// a `dorc … && deploy` chain. Seventh of the reserved 10..=19 dorc-semantic range, and the TIER
-/// this outcome moved to: it used to be a whole-book PARSE refusal, which
-/// `30P:rul-floor-valid-text-never-parse-fails` forbids over floor-valid text.
-const EXIT_LOAD_UNRESOLVABLE: u8 = 17;
-
 /// `dorc lint`: findings AT OR ABOVE the `--fail-on` threshold were reported (`27R` §5 exit
 /// trichotomy). Distinct from clean (0) and from operational (below); shares linter convention.
 const EXIT_LINT_FINDINGS: u8 = 1;
@@ -205,15 +165,7 @@ fn main() -> ExitCode {
             let mut sink = ProductionOutputSink;
             let result = run_analysis(&args, &mut sink);
             match result {
-                Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
-                Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
-                Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
-                Ok(RunOutcome::IngressRefused) => ExitCode::from(EXIT_INGRESS_REFUSED),
-                Ok(RunOutcome::HostNotReached) => ExitCode::from(EXIT_HOST_NOT_REACHED),
-                Ok(RunOutcome::SessionLost) => ExitCode::from(EXIT_SESSION_LOST),
-                Ok(RunOutcome::ApplyFailed) => ExitCode::from(EXIT_APPLY_FAILED),
-                Ok(RunOutcome::ArtifactUnservable) => ExitCode::from(EXIT_ARTIFACT_UNSERVABLE),
-                Ok(RunOutcome::LoadUnresolvable) => ExitCode::from(EXIT_LOAD_UNRESOLVABLE),
+                Ok(status) => ExitCode::from(status.exit_code()),
                 Err(diag) => {
                     report_invocation_error(&diag);
                     ExitCode::from(EXIT_USAGE)
@@ -240,7 +192,12 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
 
     let stdout = stdout_posture();
     let durable_dir = durable_destination(args);
-    let options = engine_options_from_args(args, stdout, durable_dir.is_some());
+    let options = dorc_cli::engine_options_from_args(
+        args,
+        stdout,
+        durable_dir.is_some(),
+        durable_dir.is_some(),
+    );
     let cwd = invocation_cwd();
     let ready = match acquire_engine_request(args, &cwd, sink)? {
         AcquiredEngine::Ready(ready) => ready,
@@ -1185,49 +1142,6 @@ fn stdout_posture() -> dorc_cli::artifact::StdoutPosture {
         Some("piped") => StdoutPosture::NonInteractive,
         _ if std::io::stdout().is_terminal() => StdoutPosture::Interactive,
         _ => StdoutPosture::NonInteractive,
-    }
-}
-fn engine_options_from_args(
-    args: &Args,
-    stdout: dorc_cli::artifact::StdoutPosture,
-    durable: bool,
-) -> EngineOptions {
-    EngineOptions {
-        mode: args.mode,
-        analysis: AnalysisOptions {
-            survival: if args.risk_faultless_skips {
-                SurvivalPolicy::RiskAccepted
-            } else {
-                SurvivalPolicy::HonestWalls
-            },
-            escalation: args.dial,
-            capability: args.capability,
-        },
-        reporting: ReportingOptions {
-            why_address: args.why_address.clone(),
-            why_depth: if args.all {
-                WhyDepth::All
-            } else {
-                WhyDepth::Curated
-            },
-            argv_readout: if args.debug_argv {
-                ArgvReadout::Visible
-            } else {
-                ArgvReadout::Hidden
-            },
-        },
-        artifact: ArtifactOptions {
-            form: args.form,
-            stdout,
-            destination: ArtifactDestinationShape::from_directory_requested(
-                args.artifact_dir.is_some(),
-            ),
-        },
-        durable: if durable {
-            DurableOutput::Enabled
-        } else {
-            DurableOutput::Disabled
-        },
     }
 }
 
@@ -3118,7 +3032,7 @@ fn emit_diagnostic(
     diag: &Diag,
     parts: dorc_aid::tagged::RenderParts,
 ) {
-    sink.emit(OutputEvent::diagnostic(stage, diag.severity(), parts));
+    sink.emit(OutputEvent::diagnostic(stage, diag.clone(), parts));
     sink.flush(OutputChannel::Stderr);
 }
 

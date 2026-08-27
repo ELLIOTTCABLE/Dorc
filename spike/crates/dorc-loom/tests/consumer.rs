@@ -930,3 +930,32 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
         );
     }
 }
+
+#[test]
+fn source_backed_plan_replays_the_complete_engine_invocation_and_redirects_its_artifact() {
+    let case = Case::parse(
+        "---\ncode: cmdsub-operand-top\n---\n\
+         -- book.sh --\n#!/bin/sh\nhork \"$(wombat)\"\n\n\
+         -- replay --\n\
+         $ dorc plan --book=book.sh > plan.sh\nold\n\
+         $ cat plan.sh\nold\n",
+    )
+    .expect("case parses");
+
+    let results = replay_case(&case, &DorcConsumer::new(), &RunEnv::new(), |command, _| {
+        panic!("the direct driver declined {command:?}")
+    })
+    .expect("the production engine runs");
+
+    assert!(
+        results[0].output().contains("cmdsub-operand-top"),
+        "stderr stays in the natural transcript: {}",
+        results[0].output()
+    );
+    assert!(results[0].editable_render().is_some());
+    assert!(
+        results[1].output().contains("#!/bin/sh"),
+        "the redirected stdout artifact is observable through native cat"
+    );
+    assert!(!results[1].output().contains("cmdsub-operand-top"));
+}

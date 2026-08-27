@@ -188,6 +188,20 @@ impl ReplayCommand {
         self.input.as_ref()
     }
 
+    /// Whether stdout still points at the terminal after all redirections.
+    #[must_use]
+    pub fn stdout_is_terminal(&self) -> bool {
+        !self.outputs.iter().any(|redirection| {
+            matches!(
+                redirection,
+                OutputRedirection::To {
+                    channel: ReplayChannel::Stdout,
+                    ..
+                }
+            )
+        })
+    }
+
     pub(crate) fn output_redirections(&self) -> &[OutputRedirection] {
         &self.outputs
     }

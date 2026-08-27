@@ -596,6 +596,53 @@ impl Args {
     }
 }
 
+/// Map parser-owned arguments and edge observations into parser-independent engine inputs.
+#[must_use]
+pub fn engine_options_from_args(
+    args: &Args,
+    stdout: artifact::StdoutPosture,
+    artifact_directory: bool,
+    durable: bool,
+) -> engine::EngineOptions {
+    engine::EngineOptions {
+        mode: args.mode,
+        analysis: engine::AnalysisOptions {
+            survival: if args.risk_faultless_skips {
+                engine::SurvivalPolicy::RiskAccepted
+            } else {
+                engine::SurvivalPolicy::HonestWalls
+            },
+            escalation: args.dial,
+            capability: args.capability,
+        },
+        reporting: engine::ReportingOptions {
+            why_address: args.why_address.clone(),
+            why_depth: if args.all {
+                engine::WhyDepth::All
+            } else {
+                engine::WhyDepth::Curated
+            },
+            argv_readout: if args.debug_argv {
+                engine::ArgvReadout::Visible
+            } else {
+                engine::ArgvReadout::Hidden
+            },
+        },
+        artifact: engine::ArtifactOptions {
+            form: args.form,
+            stdout,
+            destination: engine::ArtifactDestinationShape::from_directory_requested(
+                artifact_directory,
+            ),
+        },
+        durable: if durable {
+            engine::DurableOutput::Enabled
+        } else {
+            engine::DurableOutput::Disabled
+        },
+    }
+}
+
 /// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
 /// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
 const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {

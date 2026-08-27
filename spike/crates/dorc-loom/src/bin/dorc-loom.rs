@@ -938,7 +938,13 @@ fn drive_replays(
         .map_err(|error| format!("{}: {error}", path.display()))?;
     catch_arity_panic(path, || {
         replay_case_with_inputs(case, consumer, env, &[input], |command, context| {
-            execute_generic(command, context).map(ReplayResult::bytes)
+            let command = errorloom::ReplayCommand::parse(command).map_err(|error| {
+                RunError::UnsupportedReplayGrammar {
+                    block: context.block(),
+                    error,
+                }
+            })?;
+            execute_generic(&command, context)
         })
         .map_err(|error| match error {
             // The raw refusal names neither the flag that supplies a shell nor the decline that
