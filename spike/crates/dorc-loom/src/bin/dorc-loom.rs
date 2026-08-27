@@ -1,4 +1,4 @@
-//! `dorc-loom` is the read-only transcript-template inspection command.
+//! `dorc-loom` inspects and publishes Dorc's transcript-authored prose.
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -406,10 +406,7 @@ fn scaffold_case(roots: &Roots, slug: &str) -> Result<ExitCode, String> {
     tracing::info!(
         "next: author `when-fires`/`why`, then replace the replay with a command that really fires `{slug}`"
     );
-    tracing::info!(
-        "then: dorc-loom publish {} (orchestrator-only, on a freshly verified binary)",
-        path.display()
-    );
+    tracing::info!("then: dorc-loom publish {}", path.display());
     Ok(ExitCode::SUCCESS)
 }
 
