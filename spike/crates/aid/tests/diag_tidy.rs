@@ -429,7 +429,7 @@ fn crates_dir() -> PathBuf {
         .to_path_buf()
 }
 
-/// Recursively collect every `.rs` file under `dir`.
+/// Recursively collect every real `.rs` source under `dir`.
 fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
@@ -438,7 +438,11 @@ fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
         let path = entry.path();
         if path.is_dir() {
             rs_files(&path, out);
-        } else if path.extension().is_some_and(|e| e == "rs") {
+        } else if path.extension().is_some_and(|e| e == "rs")
+            && path
+                .file_name()
+                .is_none_or(|name| !name.to_string_lossy().contains(".sync-conflict-"))
+        {
             out.push(path);
         }
     }
@@ -493,21 +497,18 @@ fn production_emit_source() -> String {
 
 /// Scanned, but NOT part of the production emit surface. `aid` only DEFINES the codes (its own
 /// match arms and tests would satisfy the grep for every variant — the act-3 vacuity). `dorc-loom`
-/// is the same category one layer out: it reaches the `aid::fixture` stand-in worlds as CASE
-/// FIXTURES, so counting them as emits would mask a dead catalog entry whose real emit died.
+/// is the same category one layer out: its typed edge-state table constructs CASE FIXTURES, so
+/// counting them as emits would mask a dead catalog entry whose real emit died.
 /// Both stay in [`SCANNED_CRATES`] for the scans that legitimately want the whole tree.
 const NON_EMIT_CRATES: &[&str] = &["aid", "dorc-loom"];
 
 /// The FIXTURE FENCE (`rul-fixture-identity-never-production`). `aid::fixture` holds canned
-/// stand-in worlds so a defining case can render a code that has no honest trigger; every value in
-/// it is invented (`webhost.sh`, `web1.example.net`, rc 2). A real diagnostic is built at its emit
-/// site out of the world that site observed, so reaching the canned table from an emit would ship a
-/// fabricated path or host inside a genuine refusal. The fence is that only the crate that DEFINES
-/// the table and the authoring tool that consumes it may name it — comments are not a fence, this
-/// is (`spike/CLAUDE.md`: absence of a constructor is).
+/// stand-in worlds for aid-local tests. A real diagnostic is built at its emit site out of the world
+/// that site observed, so reaching the canned table from an emit would ship a fabricated path or
+/// host inside a genuine refusal. The fence is that only the crate defining the table may name it.
 #[test]
 fn fixture_payloads_are_unreachable_from_production() {
-    const ALLOWED: &[&str] = &["aid", "dorc-loom"];
+    const ALLOWED: &[&str] = &["aid"];
     let crates = crates_dir();
     let entries = std::fs::read_dir(&crates).expect("crates/ is readable");
     let mut scanned = 0usize;
@@ -968,7 +969,7 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
         "sanity: a non-emitted variant is absent from the production basis"
     );
     // The SAME vacuity one layer out: `dorc-loom`'s case fixtures would stand in for dead emits.
-    let loom_only_marker = "fn fire_book_analysis(";
+    let loom_only_marker = "pub(crate) enum HarnessScenario";
     assert!(
         scanned_source().contains(loom_only_marker),
         "precondition: the widened scan set does include dorc-loom's source"
@@ -1079,6 +1080,10 @@ fn foreign_edge_constructor_is_fenced() {
         (
             "cli/src/why.rs",
             "quotes book, oracle and shipped-guard source into the why report",
+        ),
+        (
+            "dorc-loom/src/harness.rs",
+            "constructs typed loom-only stand-ins for nonportable I/O edge outcomes",
         ),
         (
             "lint/src/source_external.rs",

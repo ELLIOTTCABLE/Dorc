@@ -4348,11 +4348,7 @@ mod tests {
     fn diagnostic_destination_retains_stage_and_severity() {
         let event = OutputEvent::diagnostic(
             "parse",
-            Diag::new_spanless_site(DiagCode::SyntaxUnsupported(
-                dorc_aid::diag::SyntaxUnsupported {
-                    reason: dorc_aid::diag::SyntaxUnsupportedReason::BackgroundAmp,
-                },
-            )),
+            Diag::new_spanless_site(DiagCode::CliNoBookGiven(dorc_aid::diag::CliNoBookGiven)),
             RenderParts::new(),
         );
 

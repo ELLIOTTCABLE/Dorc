@@ -195,7 +195,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     let options = dorc_cli::engine_options_from_args(
         args,
         stdout,
-        durable_dir.is_some(),
+        args.artifact_dir.is_some(),
         durable_dir.is_some(),
     );
     let cwd = invocation_cwd();
