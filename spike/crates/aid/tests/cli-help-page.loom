@@ -1,5 +1,41 @@
 ---
 arrangement: cli-help-page
+owns:
+  - cli-help-usage
+  - cli-help-modes-heading
+  - cli-help-mode-bundle
+  - cli-help-mode-probe
+  - cli-help-mode-plan
+  - cli-help-mode-apply
+  - cli-help-mode-why
+  - cli-help-mode-strip
+  - cli-help-mode-lint
+  - cli-help-mode-none
+  - cli-help-options-heading
+  - cli-help-option-book
+  - cli-help-option-pre-source
+  - cli-help-option-oracle-dir
+  - cli-help-option-results
+  - cli-help-option-risk-faultless-skips
+  - cli-help-option-whylog-dir
+  - cli-help-option-no-whylog
+  - cli-help-option-last
+  - cli-help-option-all
+  - cli-help-option-debug-argv
+  - cli-help-option-help
+  - cli-help-option-version
+  - cli-help-receipts-heading
+  - cli-help-receipt-holds
+  - cli-help-receipt-kept
+  - cli-help-stdin
+  - cli-help-exit-codes-heading
+  - cli-help-exit-success
+  - cli-help-exit-usage
+  - cli-help-exit-parse
+  - cli-help-lint-exit-codes-heading
+  - cli-help-lint-exit-clean
+  - cli-help-lint-exit-findings
+  - cli-help-lint-exit-operational
 when-used: `dorc --help` / `dorc -h` prints this whole page to stdout and exits 0.
 why: 288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.
 ---
@@ -10,60 +46,83 @@ dorc -- spec-mining static-analysis orchestrator (implementation spike)
 usage: dorc [<mode>] --book=<book.sh> [--pre-source <sh>]... [options]
 
 modes (an optional leading token; default is the probe-then-apply round-trip):
-  bundle       print loaded dorc-lang sources as a deterministic inert archive; contacts no host
-  probe        emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
-  plan         preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
-  apply        emit the byte-floored, receipt-free shippable apply artifact to stdout
-  why [<addr>] report (to stdout) WHY the run decided as it did -- bare: the run's problems;
-               `book.sh:N`: the site on that source line; free text: matching commands
-  strip <file> print <file> with every dorc dialect construct erased -- runnable stock POSIX sh
-               (the off-ramp cleaner; an unmarked file passes through unchanged)
-  lint <files> the oracle-author doctor/lint grab-bag over the files (no hosts, no probes):
-               parse/cfg diagnostics, unmodeled-wall inventory, verdict-body checks, and
-               shellcheck/checkbashisms when present. Flags: --format=human|jsonl,
-               --fail-on=error|warn|never, --no-tools, --require-tools, --expect-files N,
-               --source NAME (repeatable), --list-sources. Recommended CI line:
-               `dorc lint --format=jsonl --fail-on=warn --require-tools --expect-files N <files>`
-  (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
+
+bundle        print loaded dorc-lang sources as a deterministic inert archive;
+              contacts no host
+probe         emit only the read-only probe artifact (phase 1) to stdout; reads
+              no stdin
+plan          preview the eliding apply on stdout, with the why-lens +
+              diagnostics on stderr
+apply         emit the byte-floored, receipt-free shippable apply artifact to
+              stdout
+why [<addr>]  report (to stdout) WHY the run decided as it did -- bare: the
+              run's problems; `book.sh:N`: the site on that source line; free
+              text: matching commands
+strip <file>  print <file> with every dorc dialect construct erased -- runnable
+              stock POSIX sh (the off-ramp cleaner; an unmarked file passes
+              through unchanged)
+lint <files>  the oracle-author doctor/lint grab-bag over the files (no hosts,
+              no probes): parse/cfg diagnostics, unmodeled-wall inventory,
+              verdict-body checks, and shellcheck/checkbashisms when present.
+              Flags: --format=human|jsonl, --fail-on=error|warn|never,
+              --no-tools, --require-tools, --expect-files N, --source NAME
+              (repeatable), --list-sources. Recommended CI line: `dorc lint
+              --format=jsonl --fail-on=warn --require-tools --expect-files N
+              <files>`
+(none)        the round-trip: probe then apply on stdout, full disclosure on
+              stderr
 
 options:
-  <book.sh>             the one main book to analyze -- a positional path (`dorc plan book.sh`)
-                        or --book=PATH / --book PATH; a second one is a separate program
-  --pre-source <sh>     a file to dot-source before the book, in CLI order (repeatable)
-  --oracle-dir <dir>    pre-source every *.oracle.sh in <dir> (repeatable; glob-sorted)
-  --results <file>      read the probe results from <file>; for `why`, answer from those
-                        records rather than the saved receipt
-  --risk-faultless-skips    opt into the survival tier (default off)
-  --whylog-dir <dir>    where receipts are written and read
-  --no-whylog           write no receipt for this run
-  --last                answer from the most recent receipt (what `why` does anyway)
-  --all                 for `why`, print everything the engine holds: every link,
-                        unselected, plus collapse classes with no narration yet
-  --debug-argv          echo the engine's per-site resolved argv to stderr
-  --help                print this help to stdout and exit 0
-  --version             print the version to stdout and exit 0
+
+<book.sh>               the one main book to analyze -- a positional path (`dorc
+                        plan book.sh`) or --book=PATH / --book PATH; a second
+                        one is a separate program
+--pre-source <sh>       a file to dot-source before the book, in CLI order
+                        (repeatable)
+--oracle-dir <dir>      pre-source every *.oracle.sh in <dir> (repeatable;
+                        glob-sorted)
+--results <file>        read the probe results from <file>; for `why`, answer
+                        from those records rather than the saved receipt
+--risk-faultless-skips  opt into the survival tier (default off)
+--whylog-dir <dir>      where receipts are written and read
+--no-whylog             write no receipt for this run
+--last                  answer from the most recent receipt (what `why` does
+                        anyway)
+--all                   for `why`, print everything the engine holds: every
+                        link, unselected, plus collapse classes with no
+                        narration yet
+--debug-argv            echo the engine's per-site resolved argv to stderr
+--help                  print this help to stdout and exit 0
+--version               print the version to stdout and exit 0
 
 receipts -- every plan/apply/round-trip writes one; `dorc why` reads it:
-  sm  Holds: book path + digest, oracles, flags, probe records, per-line
-  sm  disposition -- never book text, never a command's output.
-  sm  Kept in $XDG_STATE_HOME/dorc (else ~/.local/state/dorc; Windows
-  sm  %LOCALAPPDATA%\dorc). Sensitive: it names your hosts,
-  sm  paths and oracles: unix writes it 0600 in a 0700 directory; Windows has
-  sm  no mode, so there that per-user location is the *only protection.*
 
-stdin:  probe results, one per line -- `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-        (only with --results -); stdout: the selected mode's artifact(s); stderr:
-        diagnostics / why-lens / decision-digest.
+sm Holds:  book path + digest, oracles, flags, probe records, per-line sm
+           disposition -- never book text, never a command's output.
+sm Kept    in $XDG_STATE_HOME/dorc (else ~/.local/state/dorc; Windows sm
+           %LOCALAPPDATA%\dorc). Sensitive: it names your hosts, sm paths and
+           oracles: unix writes it 0600 in a 0700 directory; Windows has sm no
+           mode, so there that per-user location is the *only protection.*
+
+stdin: probe results, one per line -- `site <leafid>
+effect=<holds|absent|cant-tell> rc=<n>` (only with --results -); stdout: the
+selected mode's artifact(s); stderr: diagnostics / why-lens / decision-digest.
 
 exit codes:
-  0    success -- the analysis completed and the artifact was emitted
-  2    usage error -- a bad/unknown argument, a missing --book, or an unreadable file
-  10   parse error -- the book carries a construct dorc cannot model; the artifact still ships byte-identically, but the exit
-       signals partial understanding so a `dorc ... && deploy` chain stops. First of the
-       reserved 10..19 dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
 
-  lint exit codes (distinct family -- a construct dorc cannot model is a FINDING here, never an exit-10):
-  0    clean -- no findings at or above --fail-on
-  1    findings at or above --fail-on were reported
-  3    operational -- the lint itself is compromised (no lintable files, an --expect-files
-       mismatch, or a --require-tools absence): distinct from both clean and findings
+0   success -- the analysis completed and the artifact was emitted
+2   usage error -- a bad/unknown argument, a missing --book, or an unreadable
+    file
+10  parse error -- the book carries a construct dorc cannot model; the artifact
+    still ships byte-identically, but the exit signals partial understanding so
+    a `dorc ... && deploy` chain stops. First of the reserved 10..19
+    dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
+
+lint exit codes (distinct family -- a construct dorc cannot model is a FINDING
+here, never an exit-10):
+
+0  clean -- no findings at or above --fail-on
+1  findings at or above --fail-on were reported
+3  operational -- the lint itself is compromised (no lintable files, an
+   --expect-files mismatch, or a --require-tools absence): distinct from both
+   clean and findings

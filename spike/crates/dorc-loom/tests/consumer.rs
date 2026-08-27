@@ -872,7 +872,7 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
     let shapes = [
         ("dorc why --last --whylog=.whylog", true),
         ("dorc why book.sh:5 --last --whylog=.whylog", true),
-        ("dorc --help", false),
+        ("dorc --help", true),
         ("dorc lint oracle.sh --no-tools", true),
         ("dorc why --last --whylog=absent.whylog", true),
         ("dorc why book.sh:5 --last --whylog=absent.whylog", false),
@@ -882,8 +882,10 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
     ];
 
     for (command, claimed) in shapes {
+        let arrangement = (command == "dorc --help").then_some("arrangement: cli-help-page\n");
         let case = Case::parse(&format!(
-            "---\n---\n{fixtures}-- replay --\n$ {command}\nold\n"
+            "---\n{}---\n{fixtures}-- replay --\n$ {command}\nold\n",
+            arrangement.unwrap_or_default()
         ))
         .expect("case parses");
         let consumer = DorcConsumer::new();

@@ -181,8 +181,178 @@ fn usage_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
 /// and exits 0 (a help request is a success, not a usage error).
 #[must_use]
 pub fn help_text(ctx: &RenderCtx<'_>) -> String {
-    arrangement_text(ctx.arrangements(), HELP_ARRANGEMENT, None)
+    help_parts(ctx).text()
 }
+
+/// Tagged help: computed labels stay immutable while descriptions retain row provenance.
+#[must_use]
+pub fn help_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
+    let paragraph = |slug| registry_paragraph(ctx, slug);
+    let table = |name: &str, rows: &[HelpRow]| {
+        rows.iter()
+            .map(|row| {
+                Node::new(NodeKind::Labeled(LabeledRow {
+                    table: Some(Face::Table(name.to_owned())),
+                    label: vec![dorc_aid::weave::value(
+                        row.label,
+                        "cli-help-label",
+                        WHY_VALUE_CAP,
+                    )],
+                    body: Said::words(row.slug, &[]).runs(ctx, row.slug),
+                    attachments: Vec::new(),
+                }))
+            })
+            .collect::<Vec<_>>()
+    };
+    let mut nodes = vec![
+        paragraph(HELP_ARRANGEMENT),
+        paragraph("cli-help-usage"),
+        paragraph("cli-help-modes-heading"),
+    ];
+    nodes.extend(table("cli-help-modes", HELP_MODE_ROWS));
+    nodes.push(paragraph("cli-help-options-heading"));
+    nodes.extend(table("cli-help-options", HELP_OPTION_ROWS));
+    nodes.push(paragraph("cli-help-receipts-heading"));
+    nodes.extend(table("cli-help-receipts", HELP_RECEIPT_ROWS));
+    nodes.push(paragraph("cli-help-stdin"));
+    nodes.push(paragraph("cli-help-exit-codes-heading"));
+    nodes.extend(table("cli-help-exit-codes", HELP_EXIT_ROWS));
+    nodes.push(paragraph("cli-help-lint-exit-codes-heading"));
+    nodes.extend(table("cli-help-lint-exit-codes", HELP_LINT_EXIT_ROWS));
+    dorc_aid::weave::to_render_parts(&weft::render_framed(&Document::new(nodes), ctx.frame()))
+}
+
+struct HelpRow {
+    label: &'static str,
+    slug: &'static str,
+}
+
+const HELP_MODE_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "bundle",
+        slug: "cli-help-mode-bundle",
+    },
+    HelpRow {
+        label: "probe",
+        slug: "cli-help-mode-probe",
+    },
+    HelpRow {
+        label: "plan",
+        slug: "cli-help-mode-plan",
+    },
+    HelpRow {
+        label: "apply",
+        slug: "cli-help-mode-apply",
+    },
+    HelpRow {
+        label: "why [<addr>]",
+        slug: "cli-help-mode-why",
+    },
+    HelpRow {
+        label: "strip <file>",
+        slug: "cli-help-mode-strip",
+    },
+    HelpRow {
+        label: "lint <files>",
+        slug: "cli-help-mode-lint",
+    },
+    HelpRow {
+        label: "(none)",
+        slug: "cli-help-mode-none",
+    },
+];
+
+const HELP_OPTION_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "<book.sh>",
+        slug: "cli-help-option-book",
+    },
+    HelpRow {
+        label: "--pre-source <sh>",
+        slug: "cli-help-option-pre-source",
+    },
+    HelpRow {
+        label: "--oracle-dir <dir>",
+        slug: "cli-help-option-oracle-dir",
+    },
+    HelpRow {
+        label: "--results <file>",
+        slug: "cli-help-option-results",
+    },
+    HelpRow {
+        label: "--risk-faultless-skips",
+        slug: "cli-help-option-risk-faultless-skips",
+    },
+    HelpRow {
+        label: "--whylog-dir <dir>",
+        slug: "cli-help-option-whylog-dir",
+    },
+    HelpRow {
+        label: "--no-whylog",
+        slug: "cli-help-option-no-whylog",
+    },
+    HelpRow {
+        label: "--last",
+        slug: "cli-help-option-last",
+    },
+    HelpRow {
+        label: "--all",
+        slug: "cli-help-option-all",
+    },
+    HelpRow {
+        label: "--debug-argv",
+        slug: "cli-help-option-debug-argv",
+    },
+    HelpRow {
+        label: "--help",
+        slug: "cli-help-option-help",
+    },
+    HelpRow {
+        label: "--version",
+        slug: "cli-help-option-version",
+    },
+];
+
+const HELP_RECEIPT_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "sm Holds:",
+        slug: "cli-help-receipt-holds",
+    },
+    HelpRow {
+        label: "sm Kept",
+        slug: "cli-help-receipt-kept",
+    },
+];
+
+const HELP_EXIT_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "0",
+        slug: "cli-help-exit-success",
+    },
+    HelpRow {
+        label: "2",
+        slug: "cli-help-exit-usage",
+    },
+    HelpRow {
+        label: "10",
+        slug: "cli-help-exit-parse",
+    },
+];
+
+const HELP_LINT_EXIT_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "0",
+        slug: "cli-help-lint-exit-clean",
+    },
+    HelpRow {
+        label: "1",
+        slug: "cli-help-lint-exit-findings",
+    },
+    HelpRow {
+        label: "3",
+        slug: "cli-help-lint-exit-operational",
+    },
+];
 
 /// `dorc lint --list-sources` as a stamped part stream: one row per registered source, its name
 /// and rung computed, its one-line description read from the registry as WORDS.

@@ -638,12 +638,6 @@ fn vars_answers_for_every_committed_case() {
         if path.extension().is_none_or(|kind| kind != "loom") {
             continue;
         }
-        if path
-            .file_name()
-            .is_some_and(|name| name == "cli-help-page.loom")
-        {
-            continue;
-        }
         let case = Case::parse(&std::fs::read_to_string(&path).expect("case is readable"))
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
         let baseline = consumer

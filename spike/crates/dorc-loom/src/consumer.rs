@@ -718,7 +718,8 @@ impl DorcConsumer {
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens = exact_words(command)?;
         if is_help_case(case, &tokens) {
-            return Some(ReplayResult::bytes(dorc_cli::help_text(&self.render_ctx())));
+            let parts = dorc_cli::help_parts(&self.render_ctx());
+            return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if tokens.first() == Some(&LOOM_COMMAND) {
             return self
@@ -1019,6 +1020,11 @@ impl DorcConsumer {
         .next()
         .ok_or_else(|| "whylog replay produced no diagnostic".to_owned())
     }
+}
+
+fn is_help_case(case: &Case, words: &[&str]) -> bool {
+    matches!(words, ["dorc", "--help" | "-h"])
+        && case.frontmatter().scalar("arrangement") == Some(dorc_cli::HELP_ARRANGEMENT)
 }
 
 /// The words a compiled arrangement section would STORE, or `None` for a catalog register.
@@ -1713,7 +1719,7 @@ impl DorcConsumer {
         let words =
             exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
         if is_help_case(case, &words) {
-            return Ok(dorc_cli::help_text(&self.render_ctx()));
+            return Ok(dorc_cli::help_parts(&self.render_ctx()).text());
         }
         if words.first() == Some(&LOOM_COMMAND) {
             return self
@@ -1835,11 +1841,6 @@ impl DorcConsumer {
         let parts = self.staged_cli_parts("whylog", &diag);
         Ok(parts.text())
     }
-}
-
-fn is_help_case(case: &Case, words: &[&str]) -> bool {
-    matches!(words, ["dorc", "--help" | "-h"])
-        && case.frontmatter().scalar("arrangement") == Some(dorc_cli::HELP_ARRANGEMENT)
 }
 
 /// The compact machine view of a single diagnostic for a `--format=jsonl` replay block (`282` §2

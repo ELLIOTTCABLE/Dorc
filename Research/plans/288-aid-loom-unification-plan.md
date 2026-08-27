@@ -322,8 +322,9 @@ ORDERED WORDS that a seat interleaves with its computed values — and renderer-
 registry entry exactly as catalog prose does. It generalizes the catalog pipeline rather than
 minting a second one: mirror-union generation, both fixpoint gates, one `dorc-loom publish`
 publishing both locks. `282:rul-arrangement-words-exempt-v1` is thereby LIFTED for migrated
-chrome. Help text was the pilot (`$ dorc --help` as a whole-page loom); usage joined as a
-seat-appended entry. Three fences held in the build: the migrated marker is TYPED
+chrome. One help loom owns its page's semantic prose rows; the help seat composes them as weft
+paragraphs and labeled tables, retaining each row's edit provenance while labels and geometry stay
+computed. Three fences hold: the migrated marker is TYPED
 (`Words::Migrated`), never the catalog's in-band `sm ` prefix, because chrome renders verbatim
 into product bytes; artifact-plane strings (every `plan/src/render.rs` emitter) stay hardcoded
 under the byte floor; and layout is not a word (indents, line breaks, punctuation frames stay
@@ -332,7 +333,7 @@ fragments — never split ACROSS sections, whose computed fences would break the
 anchoring for every other prose section in the same render (the 2026-07-24 lesson, preserved).
 The line-field path re-splits an edit on the STAMPED fragment series (landed at the W4 span
 lane; `28H`, `aid/CLAUDE.md` a-chrome-line-is-one-section), so multi-word entries are
-transcript-editable wherever a driven replay stamps them; the page path stays verbatim.
+transcript-editable wherever a driven replay stamps them.
 
 ## §8 — Phases (each one lane; granular; gates green; atomic where marked)
 
