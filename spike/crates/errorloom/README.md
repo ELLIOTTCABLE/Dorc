@@ -136,11 +136,13 @@ $ mytool plan --book=book.sh --format=jsonl < probe-results.txt
  - **File sections** are materialized verbatim to a temp dir before the replay
    runs. Names may be `/`-joined paths; absolute or `..`-climbing names refuse.
  - **The replay section** (always last) is a sequence of `$ `-prefixed command
-    blocks, each followed by exactly what the command printed. Commands run
-    sequentially in one shared temp cwd, so state flows between them by design.
-    A replay command is opaque to generic errorloom. An embedding consumer may
-    handle an exact invocation shape in-process; everything else may be routed
-    explicitly to the generic executor.
+     blocks, each followed by exactly what appeared at the terminal. Commands run
+     sequentially in one shared temp cwd, so files and the last exit status flow
+     between them. Errorloom accepts a deliberately closed, portable command
+     grammar: unquoted argv followed by `<`, `>`, `1>`, `2>`, or `2>&1`
+     redirections. `cat FILE` and `echo $?` are portable builtins. Quoting,
+     expansion, append, compounds, and pipelines refuse rather than approximating
+     shell semantics.
 
 Case/replay admission is deliberately bounded: 256 KiB per case file, 64
 sections, 128 KiB per section, 32 replay blocks, 8 KiB per command, and 64 KiB
@@ -166,10 +168,11 @@ Blunt refusals, all generic, either NYI or out-of-scope:
 
 ## CLI: the generic cram mode
 
-The `errorloom` binary is the fully-generic cram tool. It deliberately selects
-errorloom's generic replay executor; it has no consumer-specific
-in-process driver and grants no catalog-edit authority. The environment is
-entirely caller-injected (`env -i`-style): nothing ambient leaks in.
+The `errorloom` binary is the generic cram tool for that closed replay grammar.
+It deliberately selects errorloom's generic replay executor; it has no
+consumer-specific in-process driver and grants no catalog-edit authority. The
+environment is entirely caller-injected (`env -i`-style): nothing ambient leaks
+in.
 
 ```sh
 errorloom run   --shell=PATH [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
@@ -220,25 +223,28 @@ boundary all exist; the embedding Dorc consumer drives exact-result provenance a
 the durable publish loop built on top. Locating editable output by matching
 rendered contents was rejected and is not a compatibility surface.
 
-Every replay produces exact bytes. An embedding consumer may first try to drive
-the original command text itself, returning either `Decline` or a handled result
-containing those exact bytes plus an optional typed `EditableRender`. Driving a
-command and exposing editable prose are separate capabilities: an in-process
-machine renderer may return bytes only, while a future external driver could
-return provenance if it preserves the mapping explicitly.
+Every replay produces ordered stdout/stderr emissions and an exit status. The
+default transcript merges unredirected emissions in deterministic driver order,
+like a stable terminal view. An embedding consumer may drive the parsed simple
+command in-process and return exact emissions with optional typed
+`EditableRender` provenance. Driving a command and exposing editable prose are
+separate capabilities: an in-process machine renderer may return bytes only,
+while another driver may return provenance only when it preserves the mapping
+explicitly.
 
 The reusable generic executor is a mechanism, not an implicit fallback. The
-embedding application decides whether a decline is fatal or routes it to that
-executor. Thus the standalone `errorloom` CLI chooses generic execution, while a
-consumer-specific tool can compose its in-process driver with a controlled
-fallback. Errorloom itself knows no consumer command names, flags, output formats,
-or template syntax.
+embedding application decides whether a consumer decline is fatal or routes the
+already-admitted simple command to that executor. Thus the standalone
+`errorloom` CLI chooses generic execution, while a consumer-specific tool can
+compose its in-process driver with a controlled fallback. Errorloom itself knows
+no consumer command names, flags, output formats, or template syntax.
 
-For example, a consumer may handle `mytool plan FILE` directly and return editable
-message regions. It may decline `mytool plan FILE | jq --pretty`; the configured
-generic executor still tests the final transformed bytes, but arbitrary
-transformation destroys edit authority unless a future transformation-aware
-driver explicitly preserves it.
+For example, a consumer may handle `mytool plan FILE > plan.sh` directly: the
+controlled redirection preserves any typed provenance in `plan.sh`, and a later
+`cat plan.sh` can expose it unchanged. A pipeline such as `mytool plan FILE | jq`
+is outside the current grammar and refuses before either driver. Supporting one
+later requires a transformation-aware driver that explicitly preserves the
+mapping; output similarity alone never grants edit authority.
 
 
 ## Library API: editable transport
