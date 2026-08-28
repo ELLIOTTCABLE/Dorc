@@ -17,8 +17,17 @@
    zero there; gate-8's six loom cases lose their replay arm; the `--whylog` family goes.
    **A pure-deletion changeset selects ZERO checks**, which is why the discovery floor exists —
    read its line, never the exit code.
-3. **Awaiting the human, non-blocking**: the prose queue; branch/worktree cleanup; and the
-   `ApplyPlanNotDispatchable` split into three codes.
+3. **Split `ApplyPlanNotDispatchable` into three codes** — schedulable, NOT human-gated
+   (human-typed 2026-08-28: conductors may mint codes; only prose is reserved, and it stays
+   `[unwritten: <slug>]`). It currently reports three unrelated world-states under one code —
+   an oversized plan artifact, a malformed assignment set, and a failed publication — which is
+   `spike/CLAUDE.md`'s catalog rule applied backwards: sibling codes come FROM world-state
+   variants, and only *same-world* reasons become enum components. Splitting also improves
+   testability rather than tripling the burden: publication-failed is reachable now that a
+   signer links, assignment-shape becomes reachable at multi-target apply, and only the size
+   bound stays genuinely hard — so the defect-registry member narrows to that one reason, which
+   is what its doc already anticipates.
+4. **Awaiting the human, non-blocking**: the prose queue, and branch/worktree cleanup.
 
 ## the arc in one paragraph
 
