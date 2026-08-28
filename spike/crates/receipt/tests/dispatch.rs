@@ -13,13 +13,14 @@
 
 use dorc_receipt::dispatch::{
     ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, DurableFailure,
-    ExecutionIntegrityFailure, IntentPreparationRefusal, IntentPublicationGate,
-    PendingApplyAssignment, PendingOrigins, PlanOriginOccurrence, PostDispatchFailure,
-    ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext, ResolvedAxis,
+    DurablePublicationProof, ExecutionIntegrityFailure, IntentPreparationRefusal,
+    IntentPublicationGate, IntentPublicationMismatch, PendingApplyAssignment, PendingOrigins,
+    PlanOriginOccurrence, PostDispatchFailure, PublishedApplyIntentV1, ReadyApplyTarget,
+    ReceiptPolicyWitness, ResolvedApplyContext, ResolvedAxis,
 };
 use dorc_receipt::ids::{
-    ApplyGenerationId, ApplySessionId, PlanReceiptId, PresentedPlanId, ReadyApplyTargetId,
-    ReceiptId, ReceiptIdSource,
+    ApplyGenerationId, ApplyIntentId, ApplySessionId, PlanReceiptId, PresentedPlanId,
+    ReadyApplyTargetId, ReceiptId, ReceiptIdSource, Sha256Digest,
 };
 use dorc_receipt::image::{ApplyArtifactImage, ApplyEntryBytes};
 use dorc_receipt::limits::ReceiptLimits;
@@ -405,5 +406,132 @@ fn only_a_durable_failure_narrows_out_of_the_post_dispatch_set() {
         PostDispatchFailure::ExecutionIntegrity(ExecutionIntegrityFailure).durable_only(),
         None,
         "not knowing what executed never narrows to a logging problem"
+    );
+}
+
+/// The four members the required arm binds, minted at one seat that CHECKS their agreement.
+///
+/// The atomicity `30Rb:critical-type-effect-map` demands is not "the caller passed four things at
+/// once" — a caller can always do that with the wrong four. It is that the mint refuses a
+/// pairing: the durability proof must name THIS intent, and the policy must be the required one.
+/// Nothing hands the members back out, so there is no route to re-pairing them afterwards either.
+#[test]
+fn a_publication_proof_earned_for_another_document_cannot_clear_this_intents_gate() {
+    let mut ids = Counter(0);
+    let (ready, target) = session(&mut ids);
+    let prepared = match ready.prepare_intent(
+        vec![assignment(target, 0)],
+        ReceiptPolicyWitness::required_rich(),
+    ) {
+        Ok(prepared) => prepared,
+        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
+    };
+    let Some(only) = prepared.assignments().first() else {
+        panic!("the assignment vector is non-empty by construction");
+    };
+    let exact = only.image().encode().to_vec();
+    let images = |prepared: &dorc_receipt::dispatch::PreparedApplyIntent| {
+        prepared
+            .account_images(
+                &[OverlayEntry::of(
+                    7,
+                    OpaqueFieldTag::ApplyArtifactImage,
+                    exact.clone(),
+                )],
+                &|_: AssignmentOrdinal| Some(7_u64),
+            )
+            .expect("the region carries the image's own bytes")
+    };
+
+    let mine = ApplyIntentId::mint(&mut ids);
+    let somebody_elses = ApplyIntentId::mint(&mut ids);
+    assert_ne!(
+        mine.hex(),
+        somebody_elses.hex(),
+        "two mints, two identities"
+    );
+
+    let proof_for_another = DurablePublicationProof::of_required_placement(
+        somebody_elses.hex(),
+        Sha256Digest::over("fixture-placement", b"bytes"),
+        "required-local-v1",
+    );
+    assert_eq!(
+        PublishedApplyIntentV1::minted(
+            mine,
+            images(&prepared),
+            ReceiptPolicyWitness::required_rich(),
+            proof_for_another,
+        )
+        .err(),
+        Some(IntentPublicationMismatch::ProofNamesAnotherDocument),
+        "a placement earned for another document must not clear this intent's gate"
+    );
+
+    // The positive control, so the refusal above is about the PAIRING rather than about the mint
+    // rejecting everything.
+    let proof_for_mine = DurablePublicationProof::of_required_placement(
+        mine.hex(),
+        Sha256Digest::over("fixture-placement", b"bytes"),
+        "required-local-v1",
+    );
+    let published = PublishedApplyIntentV1::minted(
+        mine,
+        images(&prepared),
+        ReceiptPolicyWitness::required_rich(),
+        proof_for_mine,
+    )
+    .expect("a placement earned for this intent clears its own gate");
+    assert_eq!(published.id().hex(), mine.hex());
+    assert_eq!(
+        IntentPublicationGate::Published(published).policy(),
+        RecordedApplyPolicy::RequiredRich,
+        "the published arm records the required route it took"
+    );
+}
+
+#[test]
+fn a_bypass_policy_cannot_be_carried_into_the_required_arm() {
+    // The two routes to a permit stay unreachable from one another. A caller holding a real
+    // placement and a bypass witness must not be able to assemble the published arm out of them:
+    // the arm records `required-rich`, and a bypass wearing that word would be a false claim
+    // about which route authorized the dispatch.
+    let mut ids = Counter(0);
+    let (ready, target) = session(&mut ids);
+    let prepared = match ready.prepare_intent(
+        vec![assignment(target, 0)],
+        ReceiptPolicyWitness::configured_bypass(),
+    ) {
+        Ok(prepared) => prepared,
+        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
+    };
+    let Some(only) = prepared.assignments().first() else {
+        panic!("the assignment vector is non-empty by construction");
+    };
+    let images = prepared
+        .account_images(
+            &[OverlayEntry::of(
+                7,
+                OpaqueFieldTag::ApplyArtifactImage,
+                only.image().encode().to_vec(),
+            )],
+            &|_: AssignmentOrdinal| Some(7_u64),
+        )
+        .expect("the region carries the image's own bytes");
+    let mine = ApplyIntentId::mint(&mut ids);
+    assert_eq!(
+        PublishedApplyIntentV1::minted(
+            mine,
+            images,
+            ReceiptPolicyWitness::configured_bypass(),
+            DurablePublicationProof::of_required_placement(
+                mine.hex(),
+                Sha256Digest::over("fixture-placement", b"bytes"),
+                "required-local-v1",
+            ),
+        )
+        .err(),
+        Some(IntentPublicationMismatch::PolicyIsNotRequired),
+        "the required arm is for the required policy and no other"
     );
 }

@@ -411,3 +411,42 @@ fn an_apply_that_cannot_publish_its_intent_never_reaches_the_transport() {
         "an apply that published nothing left no store behind"
     );
 }
+
+#[test]
+fn a_run_with_no_clock_publishes_nothing_and_says_so() {
+    // THE UNDATED REFUSAL, at the production composition root and nowhere lower.
+    //
+    // Clocklessness is a supported capability: the library emits an undated document happily,
+    // which is what stable tests need and what a diffable artifact will need. What must never
+    // happen is one reaching a store that SELECTS by order — a document sorting below every dated
+    // one would make `--last` answer with older history. So the refusal lives at the placement,
+    // and this drives the whole binary to prove it is there rather than asserting it at a seam.
+    //
+    // A malformed fixture clock is how a run reaches the edge with no reading at all.
+    let sandbox = ProfileSandbox::new("undated");
+    let scratch = Scratch::new("undated");
+    let stdin = scratch.path.join("records.txt");
+    std::fs::write(&stdin, records()).expect("write the records");
+    let input = std::fs::File::open(&stdin).expect("re-open the records");
+    let out = dorc(&sandbox, &scratch.path)
+        .env("DORC_FIXTURE_CLOCK_MS", "not-a-reading")
+        .args(["plan", "--book=book.sh", "--results", "-"])
+        .stdin(std::process::Stdio::from(input))
+        .output()
+        .expect("the built binary runs");
+
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("durable-receipt-unwritten"),
+        "an undated run must report the durable it did not write; got: {stderr}"
+    );
+    assert!(
+        entries(&store_root(&sandbox)).is_empty(),
+        "and must leave nothing in a store that selects by order"
+    );
+    // The run itself is unaffected: a postmortem aid failing is loud, never fatal.
+    assert!(
+        out.status.success(),
+        "the plan still completed; stderr: {stderr}"
+    );
+}
