@@ -5692,25 +5692,9 @@ impl Plan {
     /// converged mutator would otherwise be invisible). The cli `report()`s these on stderr;
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
     ///
-    /// A refused REGION is disclosed on the same surface at its OWN identity
-    /// (`30N:rul-region-refusal-discloses-region-keyed`): a `render-region-refused` sited at the
-    /// authored span, once, never one row per contributing invocation.
     #[must_use]
     pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
-        use dorc_aid::diag::{DiagCode, RenderHeredocRefused, RenderRegionRefused, SiteId};
-        let regions =
-            self.refused_render_regions()
-                .into_iter()
-                .map(|(region, verb, _cause)| -> Diag {
-                    Diag::new(
-                        DiagCode::RenderRegionRefused(RenderRegionRefused {
-                            verb,
-                            command: command_text_oneline(&region.sh),
-                            routes: region.routes.total(),
-                        }),
-                        ast.node(region.ast).span,
-                    )
-                });
+        use dorc_aid::diag::{DiagCode, RenderHeredocRefused, SiteId};
         self.refused_render_steps()
             .into_iter()
             .map(|(step, verb, _cause)| {
@@ -5729,16 +5713,15 @@ impl Plan {
                     ast.node(step.ast).span,
                 )
             })
-            .chain(regions)
             .collect()
     }
 
     /// The `RenderRefusal` collapse narratives paired one-for-one with
     /// [`render_refusal_diagnostics`](Self::render_refusal_diagnostics)
     /// (`AID-NEEDS:law-collapse-mints-narrative`): refusing a LICENSED elision is a
-    /// safety-narrowing, so it mints a decision-inert record like every other one. Pairing is by
-    /// construction — both walk [`refused_render_steps`](Self::refused_render_steps) — and pinned
-    /// by a cardinality gate, the same posture the merge mint carries.
+    /// safety-narrowing, so it mints a decision-inert record like every other one. Leaf diagnostics
+    /// pair with leaf narratives through [`refused_render_steps`](Self::refused_render_steps); shared
+    /// region refusals remain narrative-only.
     ///
     /// Decision-inert and, today, unconsumed by any render: the push disclosure is the
     /// `render-heredoc-refused` diagnostic, and the narrative exists for the why-chain that does

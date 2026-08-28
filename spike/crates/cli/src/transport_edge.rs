@@ -239,12 +239,7 @@ pub(crate) fn first_carriage_return(bytes: &[u8]) -> Option<usize> {
 
 /// Refuse a shipment whose bytes are not LF-only.
 pub(crate) fn crlf_refusal(which: &str, line: usize) -> Diag {
-    Diag::new_spanless_site(DiagCode::TransportCrlfRefused(
-        dorc_aid::diag::TransportCrlfRefused {
-            which: which.to_owned(),
-            line: line.to_string(),
-        },
-    ))
+    dorc_cli::transport_crlf_error(which, line)
 }
 
 /// How a remote apply ended, once classified.
@@ -355,23 +350,12 @@ pub(crate) fn host_rejected(raw: &str) -> Diag {
 
 /// Report a session that never reported completion.
 pub(crate) fn session_lost(host: &str, attempts: u32, diagnosis: &TransportDiagnosis) -> Diag {
-    Diag::new_spanless_site(DiagCode::TransportSessionLost(
-        dorc_aid::diag::TransportSessionLost {
-            host: host.to_owned(),
-            attempts: attempts.to_string(),
-            diagnosis: describe(diagnosis),
-        },
-    ))
+    dorc_cli::transport_session_lost(host, attempts, diagnosis)
 }
 
 /// Report a remote apply that ran and exited non-zero.
 pub(crate) fn apply_failed(host: &str, status: i32) -> Diag {
-    Diag::new_spanless_site(DiagCode::TransportApplyFailed(
-        dorc_aid::diag::TransportApplyFailed {
-            host: host.to_owned(),
-            status: status.to_string(),
-        },
-    ))
+    dorc_cli::transport_apply_failed(host, status)
 }
 
 /// Report a host that was never contacted, as one of the two worlds that can claim it.
@@ -381,37 +365,9 @@ pub(crate) fn apply_failed(host: &str, status: i32) -> Diag {
 /// boundary and this edge is the first place that can seal them. That is exactly the relay
 /// `from_io_edge` names.
 pub(crate) fn not_attempted(host: &str, why: &NotAttempted) -> Diag {
-    use dorc_aid::diag::{TransportMarkerUnusable, TransportSpawnRefused};
-    let host = host.to_owned();
     match why {
-        NotAttempted::SpawnRefused(platform) => {
-            let detail = dorc_aid::ForeignBytes::from_io_edge(platform);
-            Diag::new_spanless_site(DiagCode::TransportSpawnRefused(TransportSpawnRefused {
-                host,
-                detail,
-            }))
-        }
-        NotAttempted::MarkerUnusable => {
-            Diag::new_spanless_site(DiagCode::TransportMarkerUnusable(TransportMarkerUnusable {
-                host,
-            }))
-        }
-    }
-}
-
-/// A one-line reading of what severed a session, for the operator.
-///
-/// Decision-inert by construction: it is a `String` on a diagnostic payload, reachable from no
-/// license, verdict or plan. Being wrong here costs a less useful sentence and nothing else
-/// (`26A` stop-2 demoted exactly this from classification to diagnosis).
-fn describe(diagnosis: &TransportDiagnosis) -> String {
-    match diagnosis {
-        TransportDiagnosis::TimedOut { after } => format!("timed out after {}s", after.as_secs()),
-        TransportDiagnosis::ChildExited { status: Some(code) } => {
-            format!("ssh exited {code}")
-        }
-        TransportDiagnosis::ChildExited { status: None } => "ssh exited on a signal".to_owned(),
-        TransportDiagnosis::ChildLost => "the session ended without a status".to_owned(),
+        NotAttempted::SpawnRefused(platform) => dorc_cli::transport_spawn_refused(host, platform),
+        NotAttempted::MarkerUnusable => dorc_cli::transport_marker_unusable(host),
     }
 }
 

@@ -1221,6 +1221,159 @@ pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Invoca
     }
 }
 
+/// Map a shim-directory write failure at the production edge.
+#[must_use]
+pub fn shim_write_error(path: &str, error: &std::io::Error) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::CliShimDirUnwritable(
+        dorc_aid::diag::CliShimDirUnwritable {
+            path: path.to_owned(),
+            detail: dorc_aid::ForeignBytes::from_os_error(error),
+        },
+    ))
+}
+
+/// Map a `dorc-sh` script read failure at the production edge.
+#[must_use]
+pub fn shim_script_read_error(path: &str, error: &std::io::Error) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShScriptUnreadable(
+        dorc_aid::diag::DorcShScriptUnreadable {
+            path: path.to_owned(),
+            detail: dorc_aid::ForeignBytes::from_os_error(error),
+        },
+    ))
+}
+
+/// Map a `dorc-sh` process spawn failure at the production edge.
+#[must_use]
+pub fn shim_exec_error(error: &std::io::Error) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShExecFailed(
+        dorc_aid::diag::DorcShExecFailed {
+            detail: dorc_aid::ForeignBytes::from_os_error(error),
+        },
+    ))
+}
+
+/// Map carriage-return detection before transport.
+#[must_use]
+pub fn transport_crlf_error(which: &str, line: usize) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportCrlfRefused(
+        dorc_aid::diag::TransportCrlfRefused {
+            which: which.to_owned(),
+            line: line.to_string(),
+        },
+    ))
+}
+
+/// Map a transport session that exhausted its retries without completion.
+#[must_use]
+pub fn transport_session_lost(
+    host: &str,
+    attempts: u32,
+    diagnosis: &dorc_transport::TransportDiagnosis,
+) -> InvocationError {
+    let diagnosis = match diagnosis {
+        dorc_transport::TransportDiagnosis::TimedOut { after } => {
+            format!("timed out after {}s", after.as_secs())
+        }
+        dorc_transport::TransportDiagnosis::ChildExited { status: Some(code) } => {
+            format!("ssh exited {code}")
+        }
+        dorc_transport::TransportDiagnosis::ChildExited { status: None } => {
+            "ssh exited on a signal".to_owned()
+        }
+        dorc_transport::TransportDiagnosis::ChildLost => {
+            "the session ended without a status".to_owned()
+        }
+    };
+    Diag::new_spanless_site(DiagCode::TransportSessionLost(
+        dorc_aid::diag::TransportSessionLost {
+            host: host.to_owned(),
+            attempts: attempts.to_string(),
+            diagnosis,
+        },
+    ))
+}
+
+/// Map a transport process spawn refusal.
+#[must_use]
+pub fn transport_spawn_refused(host: &str, detail: &str) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportSpawnRefused(
+        dorc_aid::diag::TransportSpawnRefused {
+            host: host.to_owned(),
+            detail: dorc_aid::ForeignBytes::from_io_edge(detail),
+        },
+    ))
+}
+
+/// Map a nonce that cannot form a transport marker.
+#[must_use]
+pub fn transport_marker_unusable(host: &str) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportMarkerUnusable(
+        dorc_aid::diag::TransportMarkerUnusable {
+            host: host.to_owned(),
+        },
+    ))
+}
+
+/// Map a completed remote apply with a non-zero status.
+#[must_use]
+pub fn transport_apply_failed(host: &str, status: i32) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportApplyFailed(
+        dorc_aid::diag::TransportApplyFailed {
+            host: host.to_owned(),
+            status: status.to_string(),
+        },
+    ))
+}
+
+/// Construct the unloaded-sibling advisory from loaded and discovered paths.
+#[must_use]
+pub fn unloaded_sibling_oracle_diagnostics(
+    loaded_paths: &[String],
+    discovered_paths: &[String],
+) -> Vec<Diag> {
+    let loaded: std::collections::BTreeSet<String> = loaded_paths
+        .iter()
+        .map(|path| oracle_path_key(path))
+        .collect();
+    let mut unloaded: Vec<String> = discovered_paths
+        .iter()
+        .map(|path| path.replace('\\', "/"))
+        .filter(|path| path.ends_with(".oracle.sh") && !loaded.contains(&oracle_path_key(path)))
+        .collect();
+    unloaded.sort();
+    unloaded.dedup();
+    if unloaded.is_empty() {
+        return Vec::new();
+    }
+    let oracles = unloaded
+        .iter()
+        .map(|path| format!("`{path}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
+        dorc_aid::diag::AidUnloadedSiblingOracle { oracles },
+    ))]
+}
+
+/// Normalize an oracle path for loaded-versus-discovered comparison without filesystem access.
+#[must_use]
+pub fn oracle_path_key(path: &str) -> String {
+    use std::path::{Component, Path, PathBuf};
+
+    let slash_separated = path.replace('\\', "/");
+    let keyed: PathBuf = Path::new(&slash_separated)
+        .components()
+        .filter(|component| !matches!(component, Component::CurDir))
+        .collect();
+    let keyed = keyed.to_string_lossy().replace('\\', "/");
+    if keyed.is_empty() {
+        ".".to_owned()
+    } else {
+        keyed
+    }
+}
+
 /// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
 #[derive(Debug)]
 pub struct LintArgs {
@@ -1248,6 +1401,47 @@ pub struct LintArgs {
     /// The human render's density (`289:rul-lint-render-split-is-policy`). Default reproduces each
     /// finding's declared shape, so the surface only moves when the admin asks.
     pub verbosity: dorc_lint::render::Verbosity,
+}
+
+/// The lint invocation's operational scope failure, in production precedence order.
+#[must_use]
+pub fn lint_operational_diagnostic(
+    args: &LintArgs,
+    found_files: usize,
+    report: &dorc_lint::LintReport,
+) -> Option<Diag> {
+    if found_files == 0 {
+        return Some(Diag::new_spanless_site(DiagCode::LintNoLintableFiles(
+            dorc_aid::diag::LintNoLintableFiles,
+        )));
+    }
+    if let Some(expected) = args.expect_files
+        && expected != found_files
+    {
+        return Some(Diag::new_spanless_site(DiagCode::LintFileCountDrift(
+            dorc_aid::diag::LintFileCountDrift {
+                expected,
+                found: found_files,
+            },
+        )));
+    }
+    if args.require_tools {
+        let absent = report
+            .coverage
+            .sources
+            .iter()
+            .filter(|source| source.status == dorc_lint::SourceStatus::Absent)
+            .map(|source| source.name)
+            .collect::<Vec<_>>();
+        if !absent.is_empty() {
+            return Some(Diag::new_spanless_site(DiagCode::LintRequiredToolsMissing(
+                dorc_aid::diag::LintRequiredToolsMissing {
+                    tools: absent.join(", "),
+                },
+            )));
+        }
+    }
+    None
 }
 
 /// The `--format` choice (`27R` §5 dir-two-renders-one-model).

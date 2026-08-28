@@ -51,13 +51,9 @@ fn main() -> ExitCode {
     let src = match std::fs::read_to_string(&script) {
         Ok(s) => s,
         Err(e) => {
-            report(&dorc_aid::Diag::new_spanless_site(
-                dorc_aid::diag::DiagCode::DorcShScriptUnreadable(
-                    dorc_aid::diag::DorcShScriptUnreadable {
-                        path: script.to_string_lossy().into_owned(),
-                        detail: dorc_aid::ForeignBytes::from_os_error(&e),
-                    },
-                ),
+            report(&dorc_cli::shim_script_read_error(
+                &script.to_string_lossy(),
+                &e,
             ));
             return ExitCode::from(2);
         }
@@ -77,11 +73,7 @@ fn main() -> ExitCode {
         // A POSIX exit status is 0..=255; `try_from` keeps it lint-clean (no truncating `as`).
         Ok(s) => ExitCode::from(u8::try_from(s.code().unwrap_or(1)).unwrap_or(1)),
         Err(e) => {
-            report(&dorc_aid::Diag::new_spanless_site(
-                dorc_aid::diag::DiagCode::DorcShExecFailed(dorc_aid::diag::DorcShExecFailed {
-                    detail: dorc_aid::ForeignBytes::from_os_error(&e),
-                }),
-            ));
+            report(&dorc_cli::shim_exec_error(&e));
             ExitCode::from(127)
         }
     }

@@ -678,9 +678,6 @@ impl DorcConsumer {
         self_reference: SelfReference,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens: Vec<&str> = command.argv().iter().map(String::as_str).collect();
-        if let Some(replay) = self.harness_replay(case, command) {
-            return Some(replay);
-        }
         if is_help_case(case, &tokens) {
             let parts = dorc_cli::help_parts(&self.render_ctx());
             return Some(ReplayResult::editable(to_editable_render(&parts)));
@@ -714,81 +711,13 @@ impl DorcConsumer {
             let parts = self.staged_cli_parts("whylog", &diag);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
-        if let Some((path, tools_enabled)) = parse_direct_lint(&tokens) {
-            let source = materialized_source(case, context, path)?;
-            let result = dorc_lint::lint_materialized_source(
-                path.to_owned(),
-                source,
-                dorc_lint::SourcePolicy { tools_enabled },
-            );
-            return Some(ReplayResult::editable(to_editable_render(
-                &result.human(&self.render_ctx()),
-            )));
-        }
         if tokens.first() == Some(&"dorc") {
             return self.replay_dorc(case, command, context);
         }
-        if let Some(diag) = fire_dorc_sh_usage_error(
-            case.frontmatter().scalar("code").unwrap_or_default(),
-            tokens.get(1..).unwrap_or_default(),
-        ) {
-            let parts = self.invocation_parts(&diag, "dorc-sh");
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        if tokens.first() == Some(&"dorc-sh") {
+            return self.replay_dorc_sh(case, &tokens, context);
         }
         None
-    }
-
-    fn harness_replay(
-        &self,
-        case: &Case,
-        command: &ReplayCommand,
-    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        let scenario =
-            crate::harness::HarnessScenario::from_slug(case.frontmatter().scalar("code")?)?;
-        if !scenario.accepts(command.argv()) {
-            return None;
-        }
-        let event = scenario.event();
-        let (channel, render) = match event.presentation {
-            crate::harness::HarnessPresentation::Invocation => (
-                errorloom::ReplayChannel::Stderr,
-                self.invocation_parts(&event.diagnostic, "dorc"),
-            ),
-            crate::harness::HarnessPresentation::Shim => (
-                errorloom::ReplayChannel::Stderr,
-                self.invocation_parts(&event.diagnostic, "dorc-sh"),
-            ),
-            crate::harness::HarnessPresentation::Body => (
-                errorloom::ReplayChannel::Stdout,
-                render_cli_parts(
-                    &self.render_ctx(),
-                    &event.diagnostic,
-                    "",
-                    "",
-                    &Interner::default(),
-                ),
-            ),
-            crate::harness::HarnessPresentation::Stage(stage) => {
-                let rendered = dorc_cli::engine::diagnostic_event(
-                    &self.render_ctx(),
-                    stage,
-                    &event.diagnostic,
-                    "",
-                    "",
-                );
-                (
-                    errorloom::ReplayChannel::Stderr,
-                    rendered.tagged_parts()?.clone(),
-                )
-            }
-        };
-        Some(ReplayResult::emitted(
-            ReplayStatus::new(event.status),
-            vec![ReplayEmission::editable(
-                channel,
-                to_editable_render(&render),
-            )],
-        ))
     }
 
     fn replay_dorc(
@@ -797,59 +726,259 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        self.replay_dorc_outcome(case, command, context)
+            .map(|replay| replay.result)
+    }
+
+    fn replay_dorc_outcome(
+        &self,
+        case: &Case,
+        command: &ReplayCommand,
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
         let invocation_argv = command.argv().get(1..)?.to_vec();
         let invocation = match dorc_cli::parse_args_from(invocation_argv) {
             Ok(invocation) => invocation,
-            Err(diag) => {
-                if case.frontmatter().scalar("code") != Some(diag.code.slug()) {
-                    return None;
-                }
-                let parts = self.invocation_parts(&diag, "dorc");
-                return Some(
-                    ReplayResult::editable(to_editable_render(&parts))
-                        .with_status(ReplayStatus::new(2)),
-                );
-            }
+            Err(diagnostic) => return self.invocation_diagnostic(case, diagnostic, "dorc"),
         };
         match invocation {
             dorc_cli::Invocation::Help => {
                 let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
                 is_help_case(case, &words).then(|| {
-                    ReplayResult::editable(to_editable_render(&dorc_cli::help_parts(
-                        &self.render_ctx(),
-                    )))
+                    DorcEngineReplay::without_diagnostic(ReplayResult::editable(
+                        to_editable_render(&dorc_cli::help_parts(&self.render_ctx())),
+                    ))
                 })
             }
-            dorc_cli::Invocation::Version => Some(ReplayResult::bytes("dorc 0.0.0\n".to_owned())),
-            dorc_cli::Invocation::Lint(_) => {
-                let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
-                let (path, tools_enabled) = parse_direct_lint(&words)?;
-                let source = context.read_file(path)?;
-                let result = dorc_lint::lint_materialized_source(
-                    path.to_owned(),
-                    source,
-                    dorc_lint::SourcePolicy { tools_enabled },
-                );
-                Some(ReplayResult::editable(to_editable_render(
-                    &result.human(&self.render_ctx()),
-                )))
-            }
+            dorc_cli::Invocation::Version => Some(DorcEngineReplay::without_diagnostic(
+                ReplayResult::bytes("dorc 0.0.0\n".to_owned()),
+            )),
+            dorc_cli::Invocation::Lint(args) => self.run_lint(case, &args, context),
             dorc_cli::Invocation::Analyze(analysis_args) => {
-                self.replay_engine(case, &analysis_args, command, context)
+                if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
+                    self.run_remote_apply(case, &analysis_args, context)
+                } else {
+                    self.run_engine(case, &analysis_args, command, context)
+                }
             }
             dorc_cli::Invocation::Strip(_) => None,
         }
     }
 
-    fn replay_engine(
+    fn replay_dorc_sh(
+        &self,
+        case: &Case,
+        words: &[&str],
+        context: &ReplayContext<'_>,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        self.replay_dorc_sh_outcome(case, words, context)
+            .map(|replay| replay.result)
+    }
+
+    fn replay_dorc_sh_outcome(
+        &self,
+        case: &Case,
+        words: &[&str],
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+        let diagnostic = match words.get(1..) {
+            Some([]) => dorc_cli::shim_usage_error(),
+            Some([path]) => {
+                if let Some(failure) = fault.as_ref().and_then(|fault| fault.read_failure(path)) {
+                    dorc_cli::shim_script_read_error(path, &failure.error())
+                } else if context.read_file(path).is_none() {
+                    return None;
+                } else if let Some(crate::edge_fault::EdgeFault::ShimExec(failure)) = &fault {
+                    dorc_cli::shim_exec_error(&failure.error())
+                } else {
+                    return None;
+                }
+            }
+            _ => return None,
+        };
+        self.invocation_diagnostic(case, diagnostic, "dorc-sh")
+    }
+
+    fn invocation_diagnostic(
+        &self,
+        case: &Case,
+        diagnostic: Diag,
+        command: &str,
+    ) -> Option<DorcEngineReplay> {
+        if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
+            return None;
+        }
+        let parts = self.invocation_parts(&diagnostic, command);
+        Some(DorcEngineReplay {
+            result: ReplayResult::editable(to_editable_render(&parts))
+                .with_status(ReplayStatus::new(2)),
+            diagnostics: vec![diagnostic],
+        })
+    }
+
+    fn staged_diagnostic(
+        &self,
+        case: &Case,
+        stage: &str,
+        diagnostic: Diag,
+        status: i32,
+    ) -> Option<DorcEngineReplay> {
+        if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
+            return None;
+        }
+        let event =
+            dorc_cli::engine::diagnostic_event(&self.render_ctx(), stage, &diagnostic, "", "");
+        let render = event.tagged_parts()?.clone();
+        Some(DorcEngineReplay {
+            result: ReplayResult::emitted(
+                ReplayStatus::new(status),
+                vec![ReplayEmission::editable(
+                    errorloom::ReplayChannel::Stderr,
+                    to_editable_render(&render),
+                )],
+            ),
+            diagnostics: vec![diagnostic],
+        })
+    }
+
+    fn run_remote_apply(
         &self,
         case: &Case,
         args: &dorc_cli::Args,
-        command: &ReplayCommand,
         context: &ReplayContext<'_>,
-    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.run_engine(case, args, command, context)
-            .map(|replay| replay.result)
+    ) -> Option<DorcEngineReplay> {
+        let host = args.host.as_deref()?;
+        let plan = args.plan.as_deref()?;
+        let fault = crate::edge_fault::EdgeFault::from_case(case)
+            .ok()
+            .flatten()?;
+        let _artifact = context.read_file(plan)?;
+        let (diagnostic, status) = match fault {
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::Crlf { line },
+            ) => (dorc_cli::transport_crlf_error(plan, line), 13),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::SessionLost,
+            ) => (
+                dorc_cli::transport_session_lost(
+                    host,
+                    1,
+                    &dorc_transport::TransportDiagnosis::ChildLost,
+                ),
+                14,
+            ),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::SpawnRefused(detail),
+            ) => (dorc_cli::transport_spawn_refused(host, &detail), 13),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::MarkerUnusable,
+            ) => (dorc_cli::transport_marker_unusable(host), 13),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::ApplyFailed { status },
+            ) => (dorc_cli::transport_apply_failed(host, status), 15),
+            _ => return None,
+        };
+        self.staged_diagnostic(case, "transport", diagnostic, status)
+    }
+
+    fn run_lint(
+        &self,
+        case: &Case,
+        args: &dorc_cli::LintArgs,
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        if !args.oracle_dirs.is_empty() || !args.oracles.is_empty() {
+            return None;
+        }
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+        let inputs = args
+            .files
+            .iter()
+            .map(|path| {
+                context.read_file(path).map(|source| dorc_lint::LintInput {
+                    path: path.clone(),
+                    src: source,
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let runner = LoomToolRunner {
+            fault: fault.as_ref(),
+        };
+        let only = (!args.sources.is_empty()).then_some(args.sources.as_slice());
+        let report = if let [input] = inputs.as_slice()
+            && !args.tools_enabled
+            && only.is_none()
+        {
+            dorc_lint::lint_materialized_source_with_runner(
+                input.path.clone(),
+                input.src.clone(),
+                dorc_lint::SourcePolicy {
+                    tools_enabled: false,
+                },
+                &runner,
+            )
+            .report()
+            .clone()
+        } else {
+            dorc_lint::lint(
+                &inputs,
+                &[],
+                dorc_lint::LintOptions {
+                    tools_enabled: args.tools_enabled,
+                },
+                &runner,
+                only,
+            )
+        };
+        let operational = dorc_cli::lint_operational_diagnostic(args, inputs.len(), &report);
+        let mut diagnostics = report
+            .findings
+            .iter()
+            .filter_map(|finding| {
+                finding
+                    .provenance
+                    .as_ref()
+                    .map(|provenance| provenance.diag.clone())
+            })
+            .collect::<Vec<_>>();
+        let mut emissions = Vec::new();
+        if !inputs.is_empty() {
+            emissions.push(ReplayEmission::editable(
+                errorloom::ReplayChannel::Stdout,
+                to_editable_render(&dorc_lint::render::render_human_parts_at(
+                    &self.render_ctx(),
+                    &report,
+                    args.verbosity,
+                )),
+            ));
+        }
+        let status = if let Some(diagnostic) = operational {
+            if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
+                return None;
+            }
+            let body = to_editable_render(&render_cli_parts(
+                &self.render_ctx(),
+                &diagnostic,
+                "",
+                "",
+                &Interner::default(),
+            ));
+            let mut components = vec![RenderComponent::Structure("dorc: lint: ".to_owned())];
+            components.extend(body.components().iter().cloned());
+            emissions.push(ReplayEmission::editable(
+                errorloom::ReplayChannel::Stderr,
+                EditableRender::new(components),
+            ));
+            diagnostics.push(diagnostic);
+            3
+        } else {
+            i32::from(report.count_at_or_above(args.fail_on) > 0)
+        };
+        Some(DorcEngineReplay {
+            result: ReplayResult::emitted(ReplayStatus::new(status), emissions),
+            diagnostics,
+        })
     }
 
     fn run_engine(
@@ -859,22 +988,25 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
     ) -> Option<DorcEngineReplay> {
-        if args.host.is_some()
-            || args.plan.is_some()
-            || !args.oracle_dirs.is_empty()
-            || args.artifact_dir.is_some()
-            || args.shim_dir.is_some()
-            || args.reads_the_receipt()
-        {
+        if args.plan.is_some() || !args.oracle_dirs.is_empty() || args.reads_the_receipt() {
             return None;
         }
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
         let stdin = replay_stdin(command, context)?;
         let book_path = args.book.as_deref()?;
-        let book = replay_path(book_path, stdin.bytes(), context)?;
+        let book = match replay_source("book", book_path, stdin.bytes(), context, fault.as_ref()) {
+            Ok(book) => book,
+            Err(diagnostic) => return self.invocation_diagnostic(case, *diagnostic, "dorc"),
+        };
         let mut paths = Vec::new();
         let mut sources = Vec::new();
         for path in &args.pre_sources {
-            sources.push(replay_path(path, stdin.bytes(), context)?);
+            let source = match replay_source("oracle", path, stdin.bytes(), context, fault.as_ref())
+            {
+                Ok(source) => source,
+                Err(diagnostic) => return self.invocation_diagnostic(case, *diagnostic, "dorc"),
+            };
+            sources.push(source);
             paths.push(path.clone());
         }
         let ambient = paths.len();
@@ -891,24 +1023,49 @@ impl DorcConsumer {
         }
         let snapshot = engine_snapshot(book_path, &book, paths, sources, ambient);
         let raw_results = match args.results.as_deref() {
-            Some(path) => Some(replay_path(path, stdin.bytes(), context)?),
+            Some(path) => {
+                match replay_source("results", path, stdin.bytes(), context, fault.as_ref()) {
+                    Ok(results) => Some(results),
+                    Err(diagnostic) => {
+                        return self.invocation_diagnostic(case, *diagnostic, "dorc");
+                    }
+                }
+            }
             None => None,
         };
-        let observation = loom_observation(case, &snapshot, raw_results);
+        let controller_results = matches!(
+            command.input(),
+            Some(ReplayInputTarget::File(path)) if path.ends_with("controller-results.txt")
+        );
+        let observation = loom_observation(&snapshot, raw_results, controller_results);
         let options = dorc_cli::engine_options_from_args(
             args,
-            if command.stdout_is_terminal() {
-                dorc_cli::artifact::StdoutPosture::Interactive
-            } else {
-                dorc_cli::artifact::StdoutPosture::NonInteractive
-            },
-            false,
-            false,
+            replay_stdout_posture(command),
+            args.artifact_dir.is_some(),
+            args.whylog_dir.is_some(),
+        );
+        let discovered_oracles = case
+            .sections()
+            .iter()
+            .map(errorloom::Section::name)
+            .filter(|path| path.ends_with(".oracle.sh"))
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        let acquisition_diagnostics = dorc_cli::unloaded_sibling_oracle_diagnostics(
+            snapshot.oracle_paths(),
+            &discovered_oracles,
         );
         let mut edges = LoomEngineEdges {
             observation: Some(observation),
             clock: dorc_cli::results::RunClock::Absent,
             argv: command.argv().to_vec(),
+            fault,
+            shim_dir: args.shim_dir.clone(),
+            durable_label: args
+                .whylog_dir
+                .clone()
+                .unwrap_or_else(|| "<disabled>".to_owned()),
+            host: args.host.clone(),
         };
         let mut sink = LoomOutputSink {
             ctx: self.render_ctx(),
@@ -919,13 +1076,15 @@ impl DorcConsumer {
                 snapshot: &snapshot,
                 options: &options,
                 replay: None,
-                acquisition_diagnostics: &[],
+                acquisition_diagnostics: &acquisition_diagnostics,
             },
             &mut edges,
             &mut sink,
-        )
-        .ok()?;
-        Some(dorc_engine_replay(&result, sink.actions))
+        );
+        match result {
+            Ok(result) => Some(dorc_engine_replay(&result, sink.actions)),
+            Err(diagnostic) => self.invocation_diagnostic(case, *diagnostic, "dorc"),
+        }
     }
 
     /// Reattach the payload inventory to renderer-stamped exact provenance.
@@ -982,19 +1141,10 @@ impl DorcConsumer {
         if case.replay().blocks().is_empty() {
             return Err("case has no replay".to_owned());
         }
-        let scenario = crate::harness::HarnessScenario::from_slug(slug);
         for block in case.replay().blocks() {
             let command =
                 ReplayCommand::parse(block.command()).map_err(|error| error.to_string())?;
             let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
-            if let Some(scenario) = scenario
-                && scenario.accepts(command.argv())
-            {
-                return Ok(scenario.event().diagnostic);
-            }
-            if let Some(diag) = fire_dorc_sh_usage_error(slug, words.get(1..).unwrap_or_default()) {
-                return Ok(diag);
-            }
             if words.first() == Some(&LOOM_COMMAND)
                 && matches!(usage::read(words.get(1..).unwrap_or_default()), Reading::Runs(invocation) if matches!(invocation.verb, Verb::Defect))
             {
@@ -1002,57 +1152,39 @@ impl DorcConsumer {
                     .map(crate::defect::DefectScenario::diagnostic)
                     .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
             }
-            if parse_direct_lint(&words).is_some()
-                && let Some(section) = case
-                    .sections()
-                    .iter()
-                    .find(|s| s.name().ends_with("oracle.sh"))
-                && let Ok((diag, _, _)) = fire_lint_case(
-                    slug,
-                    section.name(),
-                    section.content(),
-                    declared_lint_tools(case),
-                )
-            {
-                return Ok(diag);
-            }
-            if words.first() == Some(&"dorc") {
-                let invocation_argv = command.argv().get(1..).unwrap_or_default().to_vec();
-                match dorc_cli::parse_args_from(invocation_argv) {
-                    Err(diag) if diag.code.slug() == slug => return Ok(diag),
-                    Ok(dorc_cli::Invocation::Analyze(analysis_args))
-                        if !analysis_args.reads_the_receipt() =>
-                    {
-                        let found = std::cell::RefCell::new(None);
-                        drive_case(case, &RunEnv::new(), |candidate, context| {
-                            if candidate.original() == command.original()
-                                && found.borrow().is_none()
-                            {
-                                let replay = self
-                                    .run_engine(case, &analysis_args, candidate, context)
-                                    .ok_or(RunError::ShellNotConfigured)?;
-                                *found.borrow_mut() = replay
-                                    .diagnostics
-                                    .iter()
-                                    .find(|diag| diag.code.slug() == slug)
-                                    .cloned();
-                                return Ok(replay.result);
-                            }
-                            Ok(ReplayResult::bytes(String::new()))
-                        })
-                        .map_err(|error| error.to_string())?;
-                        if let Some(diag) = found.into_inner() {
-                            return Ok(diag);
-                        }
-                    }
-                    Ok(_) | Err(_) => {}
-                }
-            }
             if let Ok(diag) = Self::whylog_diagnostic(case, block.command())
                 && diag.code.slug() == slug
             {
                 return Ok(diag);
             }
+        }
+        let found = std::cell::RefCell::new(None);
+        drive_case(case, &RunEnv::new(), |command, context| {
+            let words = command
+                .argv()
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>();
+            let replay = match words.first() {
+                Some(&"dorc") => self.replay_dorc_outcome(case, command, context),
+                Some(&"dorc-sh") => self.replay_dorc_sh_outcome(case, &words, context),
+                _ => None,
+            };
+            if let Some(replay) = replay {
+                if found.borrow().is_none() {
+                    *found.borrow_mut() = replay
+                        .diagnostics
+                        .iter()
+                        .find(|diagnostic| diagnostic.code.slug() == slug)
+                        .cloned();
+                }
+                return Ok(replay.result);
+            }
+            Ok(ReplayResult::bytes(String::new()))
+        })
+        .map_err(|error| error.to_string())?;
+        if let Some(diagnostic) = found.into_inner() {
+            return Ok(diagnostic);
         }
         Err(format!(
             "case `{slug}` has no externally-triggered diagnostic matching its declared code"
@@ -1253,26 +1385,22 @@ fn engine_snapshot(
 }
 
 fn loom_observation(
-    case: &Case,
     snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
     raw_results: Option<String>,
+    controller_results: bool,
 ) -> LoomObservation {
     let Some(raw) = raw_results else {
         return LoomObservation::Controller(dorc_plan::records::Admission::NoObservation);
     };
-    if raw.is_empty() {
-        return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
-    }
     let evidence = dorc_plan::records::read_host_evidence(
         std::io::Cursor::new(&raw),
         dorc_plan::records::HostEvidenceLimits::spike_default(),
     );
-    if case
-        .frontmatter()
-        .scalar("code")
-        .is_some_and(|slug| slug.starts_with("records-"))
-    {
+    if controller_results || raw.starts_with("dorc-records/") {
         return LoomObservation::Controller(evidence);
+    }
+    if raw.is_empty() {
+        return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
     }
     let sources = dorc_cli::results::RunSources {
         book_name: snapshot.book_path(),
@@ -1282,12 +1410,17 @@ fn loom_observation(
     };
     let mut clock = dorc_cli::results::RunClock::Absent;
     let mut interner = Interner::default();
-    match dorc_cli::results::admit_fixture_records(
-        &sources,
-        raw.as_bytes(),
-        &mut clock,
-        &mut interner,
-    ) {
+    let admitted = if raw.starts_with("dorc-records/") {
+        dorc_cli::results::admit_fixture_records(
+            &sources,
+            raw.as_bytes(),
+            &mut clock,
+            &mut interner,
+        )
+    } else {
+        dorc_cli::results::admit_fixture_inner_records(&sources, &raw, &mut clock, &mut interner)
+    };
+    match admitted {
         dorc_plan::records::Admission::Admitted(records) => {
             LoomObservation::Fixture(records.scoped.results().clone())
         }
@@ -1296,23 +1429,6 @@ fn loom_observation(
         }
         dorc_plan::records::Admission::Refused(_) => LoomObservation::Controller(evidence),
     }
-}
-
-fn fire_dorc_sh_usage_error(slug: &str, rest: &[&str]) -> Option<Diag> {
-    (slug == "dorc-sh-usage" && rest.is_empty()).then(dorc_cli::shim_usage_error)
-}
-
-/// The `dorc lint` route, and whether the run leaves external tools ENABLED. The bare form is the
-/// default invocation, and the injected runner answers every tool absent — a real world reached
-/// with no PATH probe and no process, which is what lets the tool-absence findings replay their own
-/// production surface instead of a `dorc plan` that never fires them.
-fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<(&'a str, bool)> {
-    let (path, tools_enabled) = match words {
-        ["dorc", "lint", path, "--no-tools"] => (path, false),
-        ["dorc", "lint", path] => (path, true),
-        _ => return None,
-    };
-    case_relative_path(path).then_some((path, tools_enabled))
 }
 
 fn exact_words(command: &str) -> Option<Vec<&str>> {
@@ -1480,18 +1596,55 @@ fn replay_stdin(command: &ReplayCommand, context: &ReplayContext<'_>) -> Option<
     }
 }
 
-fn replay_path(path: &str, stdin: Option<&str>, context: &ReplayContext<'_>) -> Option<String> {
-    if path == "-" {
-        return Some(stdin.unwrap_or_default().to_owned());
+fn replay_source(
+    kind: &str,
+    path: &str,
+    stdin: Option<&str>,
+    context: &ReplayContext<'_>,
+    fault: Option<&crate::edge_fault::EdgeFault>,
+) -> Result<String, Box<Diag>> {
+    if let Some(failure) = fault.and_then(|fault| fault.read_failure(path)) {
+        return Err(Box::new(dorc_cli::humane_read_error(
+            kind,
+            path,
+            &failure.error(),
+        )));
     }
-    case_relative_path(path)
-        .then(|| context.read_file(path))
-        .flatten()
+    if path == "-" {
+        return Ok(stdin.unwrap_or_default().to_owned());
+    }
+    if case_relative_path(path)
+        && let Some(source) = context.read_file(path)
+    {
+        return Ok(source);
+    }
+    Err(Box::new(dorc_cli::humane_read_error(
+        kind,
+        path,
+        &std::io::Error::new(std::io::ErrorKind::NotFound, "not found in replay sandbox"),
+    )))
+}
+
+fn replay_stdout_posture(command: &ReplayCommand) -> dorc_cli::artifact::StdoutPosture {
+    if command.stdout_is_terminal() {
+        dorc_cli::artifact::StdoutPosture::Interactive
+    } else {
+        dorc_cli::artifact::StdoutPosture::NonInteractive
+    }
 }
 
 struct DorcEngineReplay {
     result: ReplayResult<SectionKey, SectionVariableId>,
     diagnostics: Vec<Diag>,
+}
+
+impl DorcEngineReplay {
+    fn without_diagnostic(result: ReplayResult<SectionKey, SectionVariableId>) -> Self {
+        Self {
+            result,
+            diagnostics: Vec::new(),
+        }
+    }
 }
 
 fn dorc_engine_replay(
@@ -1542,6 +1695,38 @@ struct LoomOutputSink<'a> {
     actions: Vec<dorc_cli::engine::OutputAction>,
 }
 
+struct LoomToolRunner<'a> {
+    fault: Option<&'a crate::edge_fault::EdgeFault>,
+}
+
+impl dorc_lint::ExternalToolRunner for LoomToolRunner<'_> {
+    fn available(&self, _tool: &str) -> bool {
+        matches!(
+            self.fault,
+            Some(crate::edge_fault::EdgeFault::ToolRun { .. })
+        )
+    }
+
+    fn run(&self, tool: &str, _args: &[&str], _stdin: &[u8]) -> dorc_lint::ToolRun {
+        match self.fault {
+            Some(crate::edge_fault::EdgeFault::ToolRun {
+                tool: fault_tool,
+                rc,
+                stdout,
+            }) if fault_tool == tool => dorc_lint::ToolRun {
+                rc: *rc,
+                stdout: stdout.clone(),
+                stderr: Vec::new(),
+            },
+            _ => dorc_lint::ToolRun {
+                rc: 0,
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            },
+        }
+    }
+}
+
 impl dorc_cli::engine::OutputSink for LoomOutputSink<'_> {
     fn render_ctx(&self) -> RenderCtx<'_> {
         self.ctx.clone()
@@ -1562,6 +1747,10 @@ struct LoomEngineEdges {
     observation: Option<LoomObservation>,
     clock: dorc_cli::results::RunClock,
     argv: Vec<String>,
+    fault: Option<crate::edge_fault::EdgeFault>,
+    shim_dir: Option<String>,
+    durable_label: String,
+    host: Option<String>,
 }
 
 enum LoomObservation {
@@ -1570,7 +1759,15 @@ enum LoomObservation {
 }
 
 impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
-    fn materialize_shims(&mut self, _files: &BTreeMap<String, String>) -> Result<(), Box<Diag>> {
+    fn materialize_shims(&mut self, files: &BTreeMap<String, String>) -> Result<(), Box<Diag>> {
+        if files.is_empty() {
+            return Ok(());
+        }
+        if let Some(crate::edge_fault::EdgeFault::ShimWrite { path, failure }) = &self.fault
+            && self.shim_dir.as_deref() == Some(path)
+        {
+            return Err(Box::new(dorc_cli::shim_write_error(path, &failure.error())));
+        }
         Ok(())
     }
 
@@ -1579,6 +1776,43 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
         request: &dorc_cli::engine::ObservationRequest<'_>,
         _render_probe: &dyn Fn(&dorc_plan::records::Framing) -> String,
     ) -> Result<dorc_cli::engine::Observation, Box<Diag>> {
+        if let Some(crate::edge_fault::EdgeFault::HostEvidence(refusal)) = &self.fault {
+            return Ok(dorc_cli::engine::Observation::Controller {
+                framing: request.default_framing.clone(),
+                evidence: dorc_plan::records::Admission::Refused(*refusal),
+                stderr: Vec::new(),
+            });
+        }
+        if let Some(host) = self.host.as_deref()
+            && let Some(crate::edge_fault::EdgeFault::Transport(failure)) = &self.fault
+        {
+            let (status, diagnostic) = match failure {
+                crate::edge_fault::TransportFailure::SessionLost => (
+                    dorc_cli::engine::EngineStatus::SessionLost,
+                    dorc_cli::transport_session_lost(
+                        host,
+                        3,
+                        &dorc_transport::TransportDiagnosis::ChildLost,
+                    ),
+                ),
+                crate::edge_fault::TransportFailure::SpawnRefused(detail) => (
+                    dorc_cli::engine::EngineStatus::HostNotReached,
+                    dorc_cli::transport_spawn_refused(host, detail),
+                ),
+                crate::edge_fault::TransportFailure::MarkerUnusable => (
+                    dorc_cli::engine::EngineStatus::HostNotReached,
+                    dorc_cli::transport_marker_unusable(host),
+                ),
+                crate::edge_fault::TransportFailure::Crlf { line } => (
+                    dorc_cli::engine::EngineStatus::HostNotReached,
+                    dorc_cli::transport_crlf_error("the plan", *line),
+                ),
+                crate::edge_fault::TransportFailure::ApplyFailed { .. } => {
+                    return Err(Box::new(dorc_cli::transport_apply_failed(host, 2)));
+                }
+            };
+            return Ok(dorc_cli::engine::Observation::Terminal { status, diagnostic });
+        }
         Ok(
             match self
                 .observation
@@ -1612,15 +1846,21 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
         &mut self,
         _artifact: &dorc_cli::artifact::ArtifactSet,
     ) -> Result<(), &'static str> {
+        if let Some(crate::edge_fault::EdgeFault::ArtifactPublish(reason)) = &self.fault {
+            return Err(*reason);
+        }
         Ok(())
     }
 
     fn publish_whylog(&mut self, _bytes: &[u8]) -> Result<(), String> {
+        if let Some(crate::edge_fault::EdgeFault::WhylogPublish(reason)) = &self.fault {
+            return Err(reason.clone());
+        }
         Ok(())
     }
 
-    fn durable_label(&self) -> &'static str {
-        "<disabled>"
+    fn durable_label(&self) -> &str {
+        &self.durable_label
     }
 
     fn invocation_record(
@@ -1788,35 +2028,6 @@ impl CaseRenderer for DorcConsumer {
     }
 }
 
-/// Runs the materialized lint source and returns the declared diagnostic with its provenance.
-fn fire_lint_case(
-    slug: &str,
-    filename: &str,
-    source: &str,
-    tools_enabled: bool,
-) -> Result<(Diag, String, String), String> {
-    let result = dorc_lint::lint_materialized_source(
-        filename.to_owned(),
-        source.to_owned(),
-        dorc_lint::SourcePolicy { tools_enabled },
-    );
-    let finding = result
-        .report()
-        .findings
-        .iter()
-        .find(|finding| finding.code == slug)
-        .ok_or_else(|| format!("source-backed lint `{slug}` fired no diagnostic"))?;
-    let provenance = finding
-        .provenance
-        .as_ref()
-        .ok_or_else(|| format!("source-backed lint `{slug}` lost typed provenance"))?;
-    Ok((
-        provenance.diag.clone(),
-        provenance.source.clone(),
-        filename.to_owned(),
-    ))
-}
-
 fn editable_variables(
     render: &EditableRender<SectionKey, SectionVariableId>,
 ) -> Result<SectionVariables, String> {
@@ -1848,20 +2059,6 @@ fn editable_variables(
         }
     }
     Ok(variables)
-}
-
-/// The `(consented, results)` a case's own first replay declares — the survival flag and the
-/// `< file` section bytes. Read off the invocation rather than the frontmatter so the world a
-/// worldless derivation answers is the world the committed command really asks for.
-/// Whether the case's own first replay leaves external tools enabled — the worldless lint route's
-/// half of `declared_plan_shape`, so `world_of` answers the world the driven render does.
-fn declared_lint_tools(case: &Case) -> bool {
-    case.replay()
-        .blocks()
-        .first()
-        .and_then(|block| exact_words(block.command()))
-        .and_then(|tokens| parse_direct_lint(&tokens).map(|(_, tools)| tools))
-        .unwrap_or(false)
 }
 
 #[cfg(test)]

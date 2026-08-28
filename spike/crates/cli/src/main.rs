@@ -65,7 +65,7 @@ mod source_match;
 mod transport_edge;
 mod whylog_store;
 
-use dorc_aid::diag::{AidUnloadedSiblingOracle, Diag, DiagCode};
+use dorc_aid::diag::{Diag, DiagCode};
 use dorc_aid::{Carrier, Severity};
 #[cfg(test)]
 use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
@@ -527,21 +527,6 @@ fn parse_args() -> Result<Invocation, Diag> {
     parse_args_from(raw)
 }
 
-/// The ONE print seat for an invocation error (`288` §6). Body-only: an argv has no span, so the
-/// framed render would draw a caret at nothing. The `dorc: ` prefix and the usage synopsis are
-/// CHROME the seat owns, never part of a catalog register — which is why 20 codes' prose does not
-/// each carry a copy of the usage text (`291` §5d parks usage/help for the arrangement round).
-/// The `--shim-dir` materialization edge's write failures. The one invocation-surface code the
-/// `291` §5a inventory did not name — it fell out of giving `run` a single error type.
-fn shim_dir_unwritable(path: &str, err: &std::io::Error) -> Diag {
-    Diag::new_spanless_site(DiagCode::CliShimDirUnwritable(
-        dorc_aid::diag::CliShimDirUnwritable {
-            path: path.to_owned(),
-            detail: dorc_aid::ForeignBytes::from_os_error(err),
-        },
-    ))
-}
-
 /// The lint OPERATIONAL print seat (`27R` §5 exit trichotomy): the lint itself is compromised, so
 /// the message rides the `dorc: lint: ` chrome and the caller returns `EXIT_LINT_OPERATIONAL`.
 fn report_lint_operational(diag: &Diag) {
@@ -910,10 +895,6 @@ fn executable_exts() -> Vec<String> {
 /// trichotomy (0 clean / 1 findings-at-or-above / operational distinct from both). Operational checks
 /// take precedence over the findings threshold (a compromised run must not read as a clean/findings
 /// signal — `27R` §8 delta-exit-trichotomy-sharpened).
-#[expect(
-    clippy::too_many_lines,
-    reason = "one linear exit-trichotomy driver: resolve inputs, run, render, then the operational checks in precedence order; splitting it would scatter the ONE precedence the exit codes encode"
-)]
 fn lint_command(args: &LintArgs) -> ExitCode {
     if args.list_sources {
         print!("{}", dorc_cli::lint_sources_parts(&render_ctx()).text());
@@ -968,15 +949,15 @@ fn lint_command(args: &LintArgs) -> ExitCode {
         dorc_lint::lint(&inputs, &oracles, options, &SubprocessRunner, only)
     };
 
-    // Zero lintable files is OPERATIONAL, never clean (`27R` §8b); the jsonl envelope still ships.
+    let operational = dorc_cli::lint_operational_diagnostic(args, inputs.len(), &report);
     if inputs.is_empty() {
         if args.format == LintFormat::Jsonl {
             print!("{}", dorc_lint::render::render_jsonl(&report));
             std::io::stdout().flush().ok();
         }
-        report_lint_operational(&Diag::new_spanless_site(DiagCode::LintNoLintableFiles(
-            dorc_aid::diag::LintNoLintableFiles,
-        )));
+        if let Some(diagnostic) = &operational {
+            report_lint_operational(diagnostic);
+        }
         return ExitCode::from(EXIT_LINT_OPERATIONAL);
     }
 
@@ -989,33 +970,9 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     }
     std::io::stdout().flush().ok();
 
-    if let Some(want) = args.expect_files
-        && inputs.len() != want
-    {
-        report_lint_operational(&Diag::new_spanless_site(DiagCode::LintFileCountDrift(
-            dorc_aid::diag::LintFileCountDrift {
-                expected: want,
-                found: inputs.len(),
-            },
-        )));
+    if let Some(diagnostic) = operational {
+        report_lint_operational(&diagnostic);
         return ExitCode::from(EXIT_LINT_OPERATIONAL);
-    }
-    if args.require_tools {
-        let absent: Vec<&str> = report
-            .coverage
-            .sources
-            .iter()
-            .filter(|s| s.status == dorc_lint::SourceStatus::Absent)
-            .map(|s| s.name)
-            .collect();
-        if !absent.is_empty() {
-            report_lint_operational(&Diag::new_spanless_site(
-                DiagCode::LintRequiredToolsMissing(dorc_aid::diag::LintRequiredToolsMissing {
-                    tools: absent.join(", "),
-                }),
-            ));
-            return ExitCode::from(EXIT_LINT_OPERATIONAL);
-        }
     }
     if report.count_at_or_above(args.fail_on) > 0 {
         return ExitCode::from(EXIT_LINT_FINDINGS);
@@ -1055,7 +1012,7 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
     if files.is_empty() {
         return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
     }
-    std::fs::create_dir_all(dir).map_err(|e| shim_dir_unwritable(dir, &e))?;
+    std::fs::create_dir_all(dir).map_err(|e| dorc_cli::shim_write_error(dir, &e))?;
     let mut staged: Vec<(std::path::PathBuf, std::path::PathBuf)> = Vec::new();
     for (name, content) in files {
         let path = std::path::Path::new(dir).join(name);
@@ -1065,13 +1022,16 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
                 let _ = std::fs::remove_file(temp);
             }
             let _ = std::fs::remove_file(&temp);
-            return Err(shim_dir_unwritable(&path.display().to_string(), &error));
+            return Err(dorc_cli::shim_write_error(
+                &path.display().to_string(),
+                &error,
+            ));
         }
         staged.push((temp, path));
     }
     for (temp, path) in staged {
         std::fs::rename(&temp, &path)
-            .map_err(|e| shim_dir_unwritable(&path.display().to_string(), &e))?;
+            .map_err(|e| dorc_cli::shim_write_error(&path.display().to_string(), &e))?;
     }
     Ok(())
 }
@@ -2877,37 +2837,6 @@ fn parse_results(
     out
 }
 
-/// The comparison key that lets a LOADED oracle path and a DISCOVERED one denote the same file.
-///
-/// `289:rider-sibling-note-false-fires-relative`: the loaded set carries `-o` args verbatim
-/// (`firewall.oracle.sh`) while discovery yields `read_dir` paths (`./firewall.oracle.sh`), so a raw
-/// string compare reported every relatively-named oracle as unloaded. Both spellings converge here
-/// by dropping `.` components and spelling every separator `/`.
-///
-/// The separator fold happens BEFORE the components are read, because `\` is a separator only on
-/// Windows: a Unix `Path` reads `oracles\fw.oracle.sh` as one nameless-parent file whose name
-/// contains a backslash, so folding afterwards would leave a `./` the forward-slash spelling of the
-/// same path never grows (`one-platform-green-is-not-cross-platform-green`).
-///
-/// Deliberately textual, not `canonicalize`: this feeds a HINT, and a hint must not acquire the
-/// power to touch the filesystem or to fail. Two spellings of one path through different symlinks
-/// still miss, which costs a suppressed hint and never a wrong one.
-fn oracle_path_key(path: &str) -> String {
-    use std::path::{Component, Path, PathBuf};
-
-    let slash_separated = path.replace('\\', "/");
-    let keyed: PathBuf = Path::new(&slash_separated)
-        .components()
-        .filter(|c| !matches!(c, Component::CurDir))
-        .collect();
-    let keyed = keyed.to_string_lossy().replace('\\', "/");
-    if keyed.is_empty() {
-        ".".to_string()
-    } else {
-        keyed
-    }
-}
-
 /// The unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
 /// ack-6): scan the directories of the loaded oracles + the book(s) for `*.oracle.sh` files that were
 /// NOT loaded, and disclose them (suggest, never auto-load). A cli-edge disclosure — it reads the
@@ -2917,11 +2846,7 @@ fn oracle_path_key(path: &str) -> String {
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
 fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[String]) -> Vec<Diag> {
     use std::path::Path;
-    // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
-    // Windows) while the loaded set carries the `--pre-source` args verbatim (forward slash), so a raw string
-    // compare would miss every loaded oracle on Windows and falsely report it unloaded.
     let norm = |p: &str| p.replace('\\', "/");
-    let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| oracle_path_key(p)).collect();
     let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
     for p in oracle_paths.iter().map(String::as_str).chain(book) {
         if let Some(parent) = Path::new(p).parent() {
@@ -2934,32 +2859,19 @@ fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[Strin
             dirs.insert(dir);
         }
     }
-    let mut unloaded: Vec<String> = Vec::new();
+    let mut discovered = Vec::new();
     for dir in &dirs {
         let Ok(entries) = std::fs::read_dir(dir) else {
             continue;
         };
         for entry in entries.flatten() {
             let shown = norm(&entry.path().to_string_lossy());
-            let key = oracle_path_key(&shown);
-            if shown.ends_with(".oracle.sh") && !loaded.contains(&key) && !unloaded.contains(&shown)
-            {
-                unloaded.push(shown);
+            if shown.ends_with(".oracle.sh") {
+                discovered.push(shown);
             }
         }
     }
-    if unloaded.is_empty() {
-        return Vec::new();
-    }
-    unloaded.sort();
-    let oracles = unloaded
-        .iter()
-        .map(|p| format!("`{p}`"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
-        AidUnloadedSiblingOracle { oracles },
-    ))]
+    dorc_cli::unloaded_sibling_oracle_diagnostics(oracle_paths, &discovered)
 }
 
 fn report_at(
@@ -3063,6 +2975,7 @@ fn severity_style(severity: Severity) -> (&'static str, anstyle::Style) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dorc_cli::oracle_path_key;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
     #[test]

@@ -807,6 +807,46 @@ pub fn admit_fixture_records(
     }
 }
 
+/// Frame compact fixture records, then admit them through [`admit_fixture_records`].
+#[must_use]
+pub fn admit_fixture_inner_records(
+    sources: &RunSources<'_>,
+    inner: &str,
+    clock: &mut RunClock,
+    interner: &mut Interner,
+) -> Admission<ScopedRecords> {
+    let framing = Framing::spike(book_digest(sources.book));
+    let records = inner
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect::<Vec<_>>();
+    let sites = records
+        .iter()
+        .filter(|line| line.starts_with("site "))
+        .count();
+    let mut stream = format!(
+        "{} sites={sites} {}\n",
+        dorc_plan::records::expected_header_prefix(&framing),
+        dorc_plan::records::TERMINAL_TOKEN,
+    );
+    for record in records {
+        let _ = std::fmt::Write::write_fmt(
+            &mut stream,
+            format_args!("dorc {record} {}\n", dorc_plan::records::TERMINAL_TOKEN),
+        );
+    }
+    let _ = std::fmt::Write::write_fmt(
+        &mut stream,
+        format_args!(
+            "dorc-records-end/1 nonce={} {}\n",
+            framing.nonce().0,
+            dorc_plan::records::TERMINAL_TOKEN
+        ),
+    );
+    admit_fixture_records(sources, stream.as_bytes(), clock, interner)
+}
+
 /// A well-owned attempt that produced no usable fact, scoped exactly as an admitted one is
 /// (`rul-admission-is-a-closed-outcome`: `NoObservation` is ordinary conservative planning, and it
 /// must not lose its attribution on the way to the fold).

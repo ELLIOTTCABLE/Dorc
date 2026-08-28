@@ -13,8 +13,8 @@ pub use consumer::{
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
 mod defect;
+mod edge_fault;
 mod generate;
-mod harness;
 pub use generate::{
     MetadataDrift, Publication, build_publication, generate_arrangement_lock,
     generate_catalog_lock, load_arrangement_corpus, load_corpus_by_slug, metadata_drift,

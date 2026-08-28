@@ -102,4 +102,26 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn only_the_three_authorized_defects_construct_diagnostic_payloads() {
+        let needle = concat!("Diag", "Code::");
+        let source_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        for entry in std::fs::read_dir(source_dir).expect("source directory") {
+            let path = entry.expect("source entry").path();
+            if path.file_name().is_some_and(|name| {
+                name == "defect.rs" || name.to_string_lossy().contains(".sync-conflict-")
+            }) || path.extension().is_none_or(|extension| extension != "rs")
+            {
+                continue;
+            }
+            let source = std::fs::read_to_string(&path).expect("source reads");
+            assert!(
+                !source.contains(needle),
+                "{} directly constructs a diagnostic payload; only defect.rs may do that",
+                path.display()
+            );
+        }
+        assert_eq!(include_str!("defect.rs").matches(needle).count(), 3);
+    }
 }

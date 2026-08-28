@@ -58,7 +58,6 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CmdsubOperandTop",
     "SiteUnresolvable",
     "RenderHeredocRefused",
-    "RenderRegionRefused",
     "ArtifactFormRefused",
     "ArtifactFormFallback",
     "ArtifactPublishRefused",
@@ -178,7 +177,6 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cmdsub-operand-top",
     "site-unresolvable",
     "render-heredoc-refused",
-    "render-region-refused",
     "artifact-form-refused",
     "artifact-form-fallback",
     "artifact-publish-refused",
@@ -969,7 +967,7 @@ fn constructed_scan_negative_control_excludes_aid_diag_arms() {
         "sanity: a non-emitted variant is absent from the production basis"
     );
     // The SAME vacuity one layer out: `dorc-loom`'s case fixtures would stand in for dead emits.
-    let loom_only_marker = "pub(crate) enum HarnessScenario";
+    let loom_only_marker = "pub(crate) enum EdgeFault";
     assert!(
         scanned_source().contains(loom_only_marker),
         "precondition: the widened scan set does include dorc-loom's source"
@@ -1080,10 +1078,6 @@ fn foreign_edge_constructor_is_fenced() {
         (
             "cli/src/why.rs",
             "quotes book, oracle and shipped-guard source into the why report",
-        ),
-        (
-            "dorc-loom/src/harness.rs",
-            "constructs typed loom-only stand-ins for nonportable I/O edge outcomes",
         ),
         (
             "lint/src/source_external.rs",

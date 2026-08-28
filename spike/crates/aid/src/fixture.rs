@@ -1,56 +1,34 @@
-//! Canonical stand-in payloads for the defining-case corpus (`283:dec-world-two-forms`,
-//! world-as-payload).
+//! Typed payload fixtures for catalog structural tests.
 //!
-//! **This table lives here because it constructs the payload types next door.** A Rust author
-//! adding a field to a payload in [`crate::diag`] gets an `E0063 missing field` here — in `aid`,
-//! one file over — and never inside `dorc-loom`, whose internals are not an edit surface for
-//! either persona (`28L:rul-rust-and-loom-are-the-only-edit-surfaces`). Fill the new field with a
-//! plausible constant and the value flows to every loom consumer with no further step.
+//! This table exercises payload construction and render equality. Defining-case replay never reads
+//! it; cases must emit through production semantics or the three authorized defects.
 //!
 //! **Fixture tier, never production** (`rul-fixture-identity-never-production`). These are canned
 //! example worlds: a diagnostic a real run emits is built at its own emit site, from the world it
 //! observed. Nothing under a crate's `src/` outside this module may call into here — that is a
 //! gate, `fixture_payloads_are_unreachable_from_production`, not a comment.
 //!
-//! A slug earns an entry only while it has NO honest firing route. Every consumer tries the real
-//! pipeline first (`289:rul-worldless-route-honest-trigger`), so an entry whose code gains a real
-//! trigger becomes unreachable rather than wrong; the corpus's render fixpoint is what notices.
+//! Entries exist only where structural tests need a typed sample.
 
 use dorc_core::{Capability, EscalationDial, LeafId, TopCause};
 
 use crate::ForeignBytes;
 
 use crate::diag::{
-    AidUnloadedSiblingOracle, ArtifactFormFallback, ArtifactFormRefused, ArtifactPublishRefused,
-    CarriedAcrossSubstrateAxis, CliFileNotFound, CliFilePermissionDenied, CliFileUnreadable,
-    CliShimDirUnwritable, CmdsubOperandTop, CommandName, ComputedSourceOperand, DanglingReference,
-    DiagCode, DorcShExecFailed, DorcShScriptUnreadable, EmittedLineUnsafeForPaste,
-    EscalationPolicy, HelperDeclarationContested, HostEvidenceAdmissionRefused,
-    HostEvidenceRefusalKind, InBookVocabularyRole, LintFileCountDrift, LintNoLintableFiles,
-    LintRequiredToolsMissing, LintToolAbsent, LintToolFailedWithoutFindings,
-    LintToolOutputUnparsable, LoadCarriageWithheldUnderUnknownCwd, MarkHashcolonMalformed,
-    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized,
-    MissingDialectMarker, MungeNameInvalid, OperandPosition, OracleMatchedZeroSites,
-    PasteHygieneHazardReason, PlanImportRewritten, RecordsAlienLine, RecordsFactTruncated,
-    RecordsGluedLine, RecordsHeaderMismatch, RecordsHeaderMissing, RecordsHeaderlessRefused,
-    RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce, RecordsTornLine,
-    RenderHeredocRefused, RenderRegionRefused, RoleDefinedBelowItsSites, RoleFamilyContested,
-    ScriptRelativeLoadDiesSlashless, SharedCellMeasurementsDisagree, SiteId, SiteUnresolvable,
-    SlashlessSourceSearchesPath, SyntaxUnsupported, SyntaxUnsupportedReason,
-    ToleratesUnknownDimension, TransportApplyFailed, TransportCrlfRefused, TransportMarkerUnusable,
-    TransportSessionLost, TransportSpawnRefused, VouchedCompositionNotPresent,
-    VouchedCompositionReason, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogCorruptReason,
-    WhylogUnwritten, WhylogVersionRefused, WrapperPeelIncoherent,
+    ArtifactFormFallback, ArtifactFormRefused, CmdsubOperandTop, CommandName,
+    ComputedSourceOperand, DiagCode, EmittedLineUnsafeForPaste, EscalationPolicy,
+    HelperDeclarationContested, InBookVocabularyRole, LintToolAbsent,
+    LoadCarriageWithheldUnderUnknownCwd, MarkHashcolonMalformed, MarkRcArityExceeded,
+    MarkStandaloneRcConsumer, MarkUnknownVerb, MarkerVersionUnrecognized, MissingDialectMarker,
+    MungeNameInvalid, OperandPosition, OracleMatchedZeroSites, PasteHygieneHazardReason,
+    RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMismatch,
+    RecordsHeaderMissing, RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine,
+    RecordsSentinelNonce, RecordsTornLine, RoleDefinedBelowItsSites, RoleFamilyContested,
+    ScriptRelativeLoadDiesSlashless, SiteId, SiteUnresolvable, SlashlessSourceSearchesPath,
+    SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension,
+    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogCorruptReason, WhylogVersionRefused, WrapperPeelIncoherent,
 };
-
-/// The canonical stand-in payload for `slug`, if one is registered.
-#[must_use]
-pub fn canonical_payload(slug: &str) -> Option<DiagCode> {
-    canonical_payloads()
-        .into_iter()
-        .find(|(registered, _)| *registered == slug)
-        .map(|(_, code)| code)
-}
 
 /// Every registered stand-in, slug-keyed, in table order.
 ///
@@ -84,22 +62,6 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             }),
         ),
         (
-            "render-heredoc-refused",
-            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
-                site: SiteId::leaf(LeafId(7)),
-                verb: "elide",
-                command: "cat <<EOF".to_owned(),
-            }),
-        ),
-        (
-            "render-region-refused",
-            DiagCode::RenderRegionRefused(RenderRegionRefused {
-                verb: "elide",
-                command: "cat <<EOF".to_owned(),
-                routes: 2,
-            }),
-        ),
-        (
             "artifact-form-refused",
             DiagCode::ArtifactFormRefused(ArtifactFormRefused {
                 form: "flattened",
@@ -113,20 +75,6 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 form: "preserved-book-tree",
                 cause: "inlining-unproven",
                 loads: 1,
-            }),
-        ),
-        (
-            "artifact-publish-refused",
-            DiagCode::ArtifactPublishRefused(ArtifactPublishRefused {
-                reason: "directory",
-            }),
-        ),
-        (
-            "plan-import-rewritten",
-            DiagCode::PlanImportRewritten(PlanImportRewritten {
-                verb: "repointed",
-                names: "./wombat.dorc-bundle.sh".to_owned(),
-                reason: "shape-unmeasured",
             }),
         ),
         (
@@ -190,24 +138,11 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
             DiagCode::RecordsLateLine(RecordsLateLine { count: 1 }),
         ),
         (
-            "host-evidence-admission-refused",
-            DiagCode::HostEvidenceAdmissionRefused(HostEvidenceAdmissionRefused {
-                kind: HostEvidenceRefusalKind::Framing,
-            }),
-        ),
-        (
             "escalation-policy",
             DiagCode::EscalationPolicy(EscalationPolicy {
                 dial: EscalationDial::VouchedOnly,
                 capability: Capability::Root,
                 entry_forms: "sudo -n".to_owned(),
-            }),
-        ),
-        (
-            "carried-across-substrate-axis",
-            DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
-                axes: "fs-view".to_owned(),
-                kinds: "sm_dorc_File (invariant: line at certsync.oracle.sh:12)".to_owned(),
             }),
         ),
         (
@@ -218,24 +153,12 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 lend_map_depth: "0".to_owned(),
             }),
         ),
-        (
-            "aid-unloaded-sibling-oracle",
-            DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
-                oracles: "`redis.oracle.sh`".to_owned(),
-            }),
-        ),
         // World-as-payload: reads the run's WHOLE final `Vouches` set, unreachable to a
         // single-file consumer; real firing route: `cli/tests/oracle-matched-zero-sites-round-trip.loom`.
         (
             "oracle-matched-zero-sites",
             DiagCode::OracleMatchedZeroSites(OracleMatchedZeroSites {
                 oracle: "hork.oracle.sh".to_owned(),
-            }),
-        ),
-        (
-            "dangling-reference",
-            DiagCode::DanglingReference(DanglingReference {
-                coord: "sm.dorc.Package:nginx".to_owned(),
             }),
         ),
         // World-as-payload by necessity: the trigger is a whole LOADED UNIT (two files defining one
@@ -301,137 +224,11 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
                 live: String::new(),
             }),
         ),
-        // Read back from a RECORDS stream: a replay drives no host and admits no records.
-        (
-            "shared-cell-measurements-disagree",
-            DiagCode::SharedCellMeasurementsDisagree(SharedCellMeasurementsDisagree {
-                cell: "dorc-auto:cp@converged".to_owned(),
-                sites: 2,
-            }),
-        ),
         // The external-linter trio: a replay never runs a foreign tool (`tools_enabled: false`).
         (
             "lint-tool-absent",
             DiagCode::LintToolAbsent(LintToolAbsent {
                 tool: "shellcheck".to_owned(),
-            }),
-        ),
-        (
-            "lint-tool-output-unparsable",
-            DiagCode::LintToolOutputUnparsable(LintToolOutputUnparsable {
-                tool: "checkbashisms".to_owned(),
-                output: ForeignBytes::from_io_edge("possible bashism in - line 4 (should be '.'):"),
-            }),
-        ),
-        (
-            "lint-tool-failed-without-findings",
-            DiagCode::LintToolFailedWithoutFindings(LintToolFailedWithoutFindings {
-                tool: "shellcheck".to_owned(),
-                rc: 2,
-            }),
-        ),
-        // Worlds that are an I/O FAILURE, not an argv: an honest trigger would need a real
-        // unreadable file, a full disk, or an absent `sh`.
-        (
-            "cli-file-not-found",
-            DiagCode::CliFileNotFound(CliFileNotFound {
-                kind: "book".to_owned(),
-                path: "webhost.sh".to_owned(),
-            }),
-        ),
-        (
-            "cli-file-permission-denied",
-            DiagCode::CliFilePermissionDenied(CliFilePermissionDenied {
-                kind: "oracle".to_owned(),
-                path: "/etc/dorc/nginx.oracle.sh".to_owned(),
-            }),
-        ),
-        (
-            "cli-file-unreadable",
-            DiagCode::CliFileUnreadable(CliFileUnreadable {
-                kind: "results".to_owned(),
-                path: "probe-results.txt".to_owned(),
-                detail: ForeignBytes::from_io_edge("Is a directory (os error 21)"),
-            }),
-        ),
-        (
-            "cli-shim-dir-unwritable",
-            DiagCode::CliShimDirUnwritable(CliShimDirUnwritable {
-                path: "/run/dorc/shims".to_owned(),
-                detail: ForeignBytes::from_io_edge("Read-only file system (os error 30)"),
-            }),
-        ),
-        (
-            "whylog-unwritten",
-            DiagCode::WhylogUnwritten(WhylogUnwritten {
-                dir: "/var/lib/dorc/whylog".to_owned(),
-                reason: "directory".to_owned(),
-            }),
-        ),
-        (
-            "lint-no-lintable-files",
-            DiagCode::LintNoLintableFiles(LintNoLintableFiles),
-        ),
-        (
-            "lint-file-count-drift",
-            DiagCode::LintFileCountDrift(LintFileCountDrift {
-                expected: 12,
-                found: 9,
-            }),
-        ),
-        (
-            "lint-required-tools-missing",
-            DiagCode::LintRequiredToolsMissing(LintRequiredToolsMissing {
-                tools: "checkbashisms, shellcheck".to_owned(),
-            }),
-        ),
-        (
-            "dorc-sh-script-unreadable",
-            DiagCode::DorcShScriptUnreadable(DorcShScriptUnreadable {
-                path: "webhost.sh".to_owned(),
-                detail: ForeignBytes::from_io_edge("No such file or directory (os error 2)"),
-            }),
-        ),
-        (
-            "dorc-sh-exec-failed",
-            DiagCode::DorcShExecFailed(DorcShExecFailed {
-                detail: ForeignBytes::from_io_edge("No such file or directory (os error 2)"),
-            }),
-        ),
-        // A SESSION, not bytes we parsed: the spike opens no sockets.
-        (
-            "transport-crlf-refused",
-            DiagCode::TransportCrlfRefused(TransportCrlfRefused {
-                which: "webhost.dorc-plan.sh".to_owned(),
-                line: "1".to_owned(),
-            }),
-        ),
-        (
-            "transport-session-lost",
-            DiagCode::TransportSessionLost(TransportSessionLost {
-                host: "web1.example.net".to_owned(),
-                attempts: "3".to_owned(),
-                diagnosis: "the session ended without a status".to_owned(),
-            }),
-        ),
-        (
-            "transport-spawn-refused",
-            DiagCode::TransportSpawnRefused(TransportSpawnRefused {
-                host: "web1.example.net".to_owned(),
-                detail: ForeignBytes::from_io_edge("program not found"),
-            }),
-        ),
-        (
-            "transport-marker-unusable",
-            DiagCode::TransportMarkerUnusable(TransportMarkerUnusable {
-                host: "web1.example.net".to_owned(),
-            }),
-        ),
-        (
-            "transport-apply-failed",
-            DiagCode::TransportApplyFailed(TransportApplyFailed {
-                host: "web1.example.net".to_owned(),
-                status: "2".to_owned(),
             }),
         ),
         // Codes with an honest in-corpus trigger. They keep an entry because the render-equality
