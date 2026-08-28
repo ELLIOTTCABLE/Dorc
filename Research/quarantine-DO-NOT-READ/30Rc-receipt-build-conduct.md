@@ -167,6 +167,21 @@ priority, must not redirect D4). Split deliberately:
   Byte-identity is not at risk either way: the trailer is excluded from it by the human's own
   ruling, and the emitted sh is mutable by the user regardless.
 
+**A fence that now guards less than it says — OWED to whichever stage rewires that seat.**
+`the_driver_takes_its_authority_from_its_admission` asserts over `cli/src/main.rs`, and its
+own doc calls that "the one file that answers a live intake". After main's refactor it is not:
+`engine.rs` answers it, and legitimately spells the no-intake mint for its fixture arm. **The
+fence still passes and covers nothing.** Moving or widening it is a governed act and was
+correctly not done mid-merge. Written down rather than remembered, because a passing guard
+that covers nothing is this arc's most recurrent hazard.
+
+**Tooling gap, recorded:** `dorc-loom publish` cannot distinguish an in-progress merge from an
+uncommitted publish and refuses, so a merge that legitimately moves transcripts has to go
+through the dump route instead. The workaround was reported rather than swallowed, and its
+result was made sound by mechanically confirming every refreshed transcript differed in
+exactly one line and that line was the digest. The publisher should learn to recognise a merge
+state; a later tooling lane.
+
 **Owed to D4:** refuse to EMIT an undated document at the production composition root, sited
 for trivial removal when stable-format output becomes supported. It cannot live at a lib seam
 — a refusal there would refuse the very runs that want an undated artifact. Also D4's: the
