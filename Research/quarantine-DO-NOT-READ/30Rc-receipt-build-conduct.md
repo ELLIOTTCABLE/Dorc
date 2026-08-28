@@ -55,7 +55,8 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | repair pass (order line · identity table · framing) | done @ `b9a0be08` |
 | 5A `30Rd` D0 crate, names, vectors, I/O model | done |
 | 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `366822be` |
-| 5A `30Rd` D3 store · D4 production route | D3 next |
+| 5A `30Rd` D3 immutable local store | done @ `f564c7ac`; Windows gate OWED |
+| 5A `30Rd` D4 production route | next, once the gate clears |
 | 6 rip the old implementation (`30Rd` D5) | not started |
 
 ## what is owed
@@ -114,6 +115,32 @@ the run does — Stage 5's lane.
 
 **Stage 3 residue, deliberate:** the old whylog writer still stands, and seven overlay slots
 read `uncollected`. Both are explained under *rulings*; neither is an oversight.
+
+**OWED AND BLOCKING NOTHING BUT HONESTY: a Windows `mise run both gate:full-quiet` at
+`f564c7ac`.** D3's WSL leg is green at the tip; its Windows leg is green two commits earlier
+at `7f4a4106`, and at the tip Windows has `build` + `check-quiet` + `test` (3089 trials) +
+whole-workspace clippy green — which is NOT the completion gate and was not claimed as one.
+The delta is the path-routed checks the gate adds. Blocked on the box: 0.93 GiB free of 31.69,
+preflight wants 4. Not our mess to reap — `vmmemWSL` (5.8 GiB, drains gradually) is the largest
+single holder but the remainder is the human's own workload. Never `DORC_PREFLIGHT=skip`.
+
+**Four `tc-*` from D3, all D4-or-later's:** `dorc_receipt::capability::ReceiptSource` has ZERO
+implementors workspace-wide and is exactly the weak shape `30Rd` says to replace — deleting it
+touches a `30Rb`-reviewed table, so it stands as a trap a D4 builder would otherwise reach for;
+`SignedReceipt::publish(name: &str, …)` likewise survives at two `receipt_edge` seats and D4
+must route production through the typed publication instead; a document over BOTH the aggregate
+and per-document bounds reports the aggregate one (honest — that is the bound that fired — but
+a caller wanting the distinction must re-read); and on macOS both roles resolve to one path
+while the spec gives keys the strict permission rule and the store a weaker one, so a
+group-readable shared root blocks keys but not receipts. That last is the spec's own
+consequence, and macOS validation is deferred regardless.
+
+**D3's `--last` is STRUCTURAL, not behavioural** — worth knowing before anyone "improves" it.
+The maximum-order cohort is the ONLY selection the store offers: there is no newest-complete
+and no next-one-down, so falling back past a damaged newest candidate is not a call any caller
+can make from anything in the API. Every member at the top order is retained and ambiguity is
+reported rather than broken — deliberately no receipt-ID tie-break, since that would pick a
+document by the value least related to when it was written.
 
 **Owed to D4:** refuse to EMIT an undated document at the production composition root, sited
 for trivial removal when stable-format output becomes supported. It cannot live at a lib seam
