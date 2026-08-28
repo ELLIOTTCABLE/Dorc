@@ -878,8 +878,25 @@ pub(crate) fn scope_fixture_results(
 /// The replay path's scoped results: a durable's already-admitted records, re-typed against the
 /// instants that durable recorded. Not an intake — those bytes crossed the boundary in the run that
 /// wrote them, and re-bounding them is `whylog`'s job, done before this is reached.
+///
+/// # This seat is the laundering, and it is CONFINED rather than closed
+///
+/// What it produces is the same admitted-evidence type a LIVE probe intake yields, so below it
+/// replayed bytes and live measurement are indistinguishable: real replace and guard licenses
+/// mint, a real plan is projected, a presented-plan identity is minted. Nothing reaches stdout on
+/// that route, but the licenses are genuinely constructed.
+///
+/// Its one caller is now the OLD durable's replay arm, reachable only when an invocation NAMES
+/// `--whylog` or `--whylog-dir`. Every other `dorc why` answers from the receipt store, where a
+/// document comes back sealed and cannot become a live value at all. So the seat
+/// goes when the old durable does — a deletion, not a refactor — and
+/// `receipt/tests/crate_boundary.rs` counts its callers two ways meanwhile, so a NEW one is a
+/// diff somebody reads rather than a call that appeared.
+///
+/// Crate-private for the same reason: the internal lib is a loom seam, and a laundering seat is
+/// not part of it.
 #[must_use]
-pub fn replayed_records(
+pub(crate) fn replayed_records(
     scope: WidthOneAttemptScope,
     records: Option<&AdmittedUnscopedHostRecords>,
     clock: &mut RunClock,

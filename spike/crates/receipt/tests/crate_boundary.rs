@@ -752,6 +752,41 @@ fn the_secret_bytes_constructor_is_reachable_from_one_production_file() {
 }
 
 #[test]
+fn the_replay_laundering_seat_keeps_exactly_one_caller() {
+    // The seat that turns a DURABLE's record stream into the admitted-evidence type a LIVE probe
+    // yields. Below it the two are indistinguishable, so real licenses mint over replayed bytes.
+    //
+    // It is confined rather than closed: every `dorc why` that does not NAME the old durable now
+    // answers from the receipt store, where a document comes back sealed and cannot become a live
+    // value. What is left is the old durable's own replay arm, and it goes when that durable does.
+    // Counted here so the interim state is mechanical: a second caller is a diff somebody reads,
+    // and the count going to zero is the deletion landing.
+    let definitions: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| text.contains("fn replayed_records("))
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        definitions,
+        vec!["cli/src/results.rs".to_owned()],
+        "the seat has one definition, or this census is counting the wrong thing"
+    );
+    let callers: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(path, text)| {
+            path != "cli/src/results.rs" && names_identifier(text, "replayed_records")
+        })
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        callers,
+        vec!["cli/src/engine.rs".to_owned()],
+        "the laundering seat's callers are {callers:?}; only the old durable's replay arm may \
+         reach it, and nothing new may join it"
+    );
+}
+
+#[test]
 fn a_resolved_destination_is_readable_at_exactly_one_slot() {
     // What an invocation SPELLED and what a standup RESOLVED are different facts, and the row
     // recording the first must never be filled from the second.
