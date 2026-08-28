@@ -24,6 +24,8 @@
     reason = "the fixture helpers sit beside the cases, where the in-tests allowance does not reach them"
 )]
 
+mod support;
+
 use dorc_cli::receipt_edge::{
     CONTROLLER_SEMANTICS, PlacedDocument, PlacedIntent, PlacementFailure, PublicationRefusal,
     ReceiptCapabilities, ReceiptPlacement, invocation_record, planning_mode, publish_apply_intent,
@@ -1578,8 +1580,13 @@ mod deterministic_apply_route {
 fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary() {
     const SLUG: &str = "cli-flag-requires-mode";
 
+    // A throwaway profile: these drive the REAL binary, which writes a durable by default, and
+    // an inherited environment would deposit keys and receipts in whoever ran the suite.
+    let sandbox = support::ProfileSandbox::new("receipt-route");
     for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
-        let refused = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"))
+        let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
+        sandbox.apply(&mut command);
+        let refused = command
             .args([mode, "--last", "book.sh"])
             .output()
             .expect("the built binary runs");
@@ -1598,7 +1605,9 @@ fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary(
 
     // The control: the same flag, on the surface that owns it, is not refused for this reason.
     // Whatever else a durable-less run reports, it must not be this.
-    let explained = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"))
+    let mut control = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
+    sandbox.apply(&mut control);
+    let explained = control
         .args(["why", "--last", "--whylog-dir=no-such-directory"])
         .output()
         .expect("the built binary runs");

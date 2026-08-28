@@ -121,6 +121,13 @@ path = "tests/definition_frames.rs"
 name = "receipt_route"
 path = "tests/receipt_route.rs"
 
+# The production durable route, across process boundaries. Ordinary-harness: it drives the SHIPPED
+# binary in a throwaway per-user profile and asks what the binary itself wrote, which is the one
+# claim no in-process battery can make.
+[[test]]
+name = "durable_route"
+path = "tests/durable_route.rs"
+
 [[test]]
 name = "sh_parity"
 path = "tests/sh_parity.rs"

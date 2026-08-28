@@ -42,9 +42,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use libtest_mimic::{Arguments, Failed, Trial};
 
 use support::{
-    E2eCase, E2eKind, LoomCase, RECORDS_NONCE, RECORDS_TOKEN, Selection, case_from_path,
-    case_roots, discover_e2e, discover_looms, report_path_selection, resolve_selection, spike_root,
-    split_path_selectors,
+    E2eCase, E2eKind, LoomCase, ProfileSandbox, RECORDS_NONCE, RECORDS_TOKEN, Selection,
+    case_from_path, case_roots, discover_e2e, discover_looms, report_path_selection,
+    resolve_selection, spike_root, split_path_selectors,
 };
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
@@ -174,17 +174,13 @@ struct Harness {
     /// The floor binaries gate-9 measures under, in the order named
     /// (`DORC_E2E_FLOOR_SHELLS`); empty ⇒ the lane does not fire.
     floor_shells: Vec<String>,
-    /// The throwaway per-user state root every invocation is pointed at, so default-on receipts
-    /// land here instead of in the developer's real profile directory.
-    state_root: PathBuf,
-}
-
-impl Drop for Harness {
-    /// Take the throwaway state root with us. Default-on means every case leaves receipts, and a
-    /// suite that grows a new litter of them per run is a suite nobody wants to keep running.
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.state_root);
-    }
+    /// The throwaway per-user profile every invocation is pointed at, so default-on keys and
+    /// receipts land here instead of in the developer's real profile directory.
+    ///
+    /// BOTH roles, and that is the fix rather than a tidy-up: pointing only the state root at a
+    /// sandbox left the CONFIGURATION root inherited, so a suite run minted a real keyset in
+    /// whoever's profile ran it (measured r30, on the run that first made the binary publish).
+    profile: ProfileSandbox,
 }
 
 impl Harness {
@@ -214,9 +210,6 @@ impl Harness {
             );
         }
         let (checker_name, checker) = (posix.name.to_owned(), posix.shell);
-        let state_root =
-            std::env::temp_dir().join(format!("dorc-e2e-state-{}", std::process::id()));
-        std::fs::create_dir_all(&state_root).expect("create the harness state root");
         let bless = std::env::var("BLESS").as_deref() == Ok("1");
         let bless_floor = std::env::var(FLOOR_BLESS_ENV).as_deref() == Ok("1");
         let floor_shells: Vec<String> = std::env::var(FLOOR_SHELLS_ENV)
@@ -248,7 +241,7 @@ impl Harness {
             bless,
             bless_floor,
             floor_shells,
-            state_root,
+            profile: ProfileSandbox::new("e2e"),
         }
     }
 
@@ -280,10 +273,7 @@ impl Harness {
         // TERMINAL cell; left to the true answer it would be the kept-stream one, where naming a
         // directory claims the artifact twice and the run refuses before rendering anything.
         command.env(STDOUT_POSTURE_ENV, "interactive");
-        for key in ["XDG_STATE_HOME", "LOCALAPPDATA"] {
-            command.env(key, &self.state_root);
-        }
-        command.env_remove("HOME");
+        self.profile.apply(&mut command);
         // `real-tools-lane-opt-in`: zero external invocations; and no transcript may flip with
         // whether the developer.s TMPDIR sits inside a repository.
         command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
@@ -3251,9 +3241,10 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
         bless: true,
         bless_floor: false,
         floor_shells: Vec::new(),
-        state_root: scratch.path.join("state"),
+        // Its OWN profile: each sandbox removes itself on drop, and sharing the live harness's
+        // would take its receipts down with this specimen.
+        profile: ProfileSandbox::new("foldpass"),
     };
-    std::fs::create_dir_all(&bless.state_root).expect("create specimen state root");
 
     // `if true` with no `fi` is a parse error, so dorc exits non-zero and the crash/empty guard
     // fails the case before any golden is consulted.

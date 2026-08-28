@@ -104,7 +104,13 @@ fn framed_for(dir: &Path) -> Option<String> {
     if !dir.join("probe-results.txt").is_file() {
         return None;
     }
-    let probe = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"))
+    // A throwaway profile per drive: this instrument runs the REAL binary, which writes a
+    // durable by default, and an inherited environment would deposit keys and receipts in
+    // whoever ran it.
+    let sandbox = support::ProfileSandbox::new("spine-baseline");
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
+    sandbox.apply(&mut command);
+    let probe = command
         .arg("probe")
         .arg(format!("--book={}", dir.join("book.sh").display()))
         .args(oracle_args(dir))

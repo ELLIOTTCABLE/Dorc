@@ -530,30 +530,22 @@ fn the_rehydration_floor_is_decided_at_one_seat() {
     );
 }
 
+/// The production files permitted to implement the resolver.
+///
+/// The composition root alone, and the split from the MARKER traits below is the whole argument:
+/// a marker says this material is what controller policy named, and only the implementation crate
+/// may mint one. A resolver merely SELECTS among already-marked material, which is a policy act
+/// and belongs where policy is assembled — its answer cannot upgrade anything, because it has no
+/// way to produce a marker.
+///
+/// Two-way. Until the composition root existed this half of the fence walked an EMPTY set and
+/// passed for that reason, which is the shape a fence must never keep.
+const MAY_RESOLVE_VERIFICATION_MATERIAL: [&str; 1] = ["cli/src/durable.rs"];
+
 #[test]
 fn verification_material_is_supplied_from_one_production_file() {
-    // The resolver is the seam through which a permissive verifier could reach the reader, and a
-    // fence covering only the crypto crate's NAME would not see one written elsewhere: a
-    // resolver returning a verifier that answers yes need never mention that crate.
-    for trait_name in [
-        "VerificationKeyResolver",
-        "TrustedReceiptVerificationKey",
-        "SelfAssertedReceiptVerificationKey",
-    ] {
-        let found: Vec<String> = production_sources()
-            .into_iter()
-            .filter(|(_, text)| implements(text, trait_name))
-            .map(|(path, _)| path)
-            .collect();
-        for path in &found {
-            assert!(
-                path == "receipt-crypto/src/lib.rs",
-                "{path} implements `{trait_name}`; only the implementation crate may"
-            );
-        }
-    }
-    // Two-way: the implementation crate must still carry the two it is allowed to, or the fence
-    // above is guarding a surface that moved.
+    // The two markers are the authority: a fence covering only the crypto crate's NAME would not
+    // see one written elsewhere, since a type answering yes need never mention that crate.
     for trait_name in [
         "TrustedReceiptVerificationKey",
         "SelfAssertedReceiptVerificationKey",
@@ -566,9 +558,23 @@ fn verification_material_is_supplied_from_one_production_file() {
         assert_eq!(
             found,
             vec!["receipt-crypto/src/lib.rs".to_owned()],
-            "the implementation crate must still implement {trait_name}"
+            "only the implementation crate may implement {trait_name}, and it must still do so"
         );
     }
+    let resolvers: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| implements(text, "VerificationKeyResolver"))
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        resolvers,
+        MAY_RESOLVE_VERIFICATION_MATERIAL
+            .iter()
+            .map(|path| (*path).to_owned())
+            .collect::<Vec<_>>(),
+        "the resolver seats are {resolvers:?} and the list is \
+         {MAY_RESOLVE_VERIFICATION_MATERIAL:?}"
+    );
 }
 
 /// Every production file permitted to name the read-back wrapper.
@@ -581,14 +587,17 @@ fn verification_material_is_supplied_from_one_production_file() {
 /// File-narrow rather than crate-narrow: naming a crate would permit every future file inside it,
 /// which is most of what this is for. Two-way, so a stale entry fails as loudly as a new mention.
 ///
-/// Today every entry but one sits inside this crate, and that is the fact worth pinning: nothing
-/// downstream READS a document yet. When the report surface does, its file joins this list.
+/// `cli/src/recorded.rs` is the report surface this list anticipated: it is the ONE seat that
+/// turns a read-back document into lines somebody reads, and every value it touches arrives
+/// sealed. Its neighbours in the binary — the store walk, the read, the graph — hand documents
+/// around without naming the wrapper, which is why they are absent and must stay so.
 ///
-/// The exception, `plan/src/lib.rs`, names the wrapper only inside the doc examples that pin the
-/// seal across the crate seam — this crate cannot host them, seeing neither the live account nor
-/// the live decision they must fail to produce. It is a naming, not a consumption, and the fence
-/// matches names deliberately: one that tried to tell the two apart would be guessing.
-const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 6] = [
+/// The other exception, `plan/src/lib.rs`, names the wrapper only inside the doc examples that pin
+/// the seal across the crate seam — this crate cannot host them, seeing neither the live account
+/// nor the live decision they must fail to produce. It is a naming, not a consumption, and the
+/// fence matches names deliberately: one that tried to tell the two apart would be guessing.
+const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 7] = [
+    "cli/src/recorded.rs",
     "plan/src/lib.rs",
     "receipt/src/graph.rs",
     "receipt/src/lib.rs",

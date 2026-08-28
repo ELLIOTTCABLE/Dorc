@@ -1085,4 +1085,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "durable-receipt-unwritten",
+        when_fires: "a plan/apply/round-trip run settled and its signed receipt did not reach the local store - the state root does not resolve, the keyset is not in a state that may publish, or the store refused the exclusive create, the write, or the synchronization it requires. cli/engine.rs publish_receipt, over the production composition root in cli/durable.rs. {store} is the per-user state base the run files under and {reason} is the closed refusal word.",
+        why: "The receipt is the only thing that survives the run, so a durable that silently vanished is exactly the run somebody comes back asking about; error-floor rather than advisory for the same reason its whylog sibling is (28F:rul-write-failure-is-error-floor - the advisory plane is suppressed under `apply`). The artifact on stdout is unaffected: publication happens BEFORE the artifact is emitted, so a run that reports this emitted no plan naming a durable that does not exist. Remediation register (help) wanted: name what to check for the reported reason, note that the run itself completed and its artifact is unaffected, and say that an incomplete keyset is moved aside by hand rather than repaired by the tool.",
+        params: &[],
+        example: "[unwritten: durable-receipt-unwritten]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
