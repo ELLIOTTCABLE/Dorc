@@ -8,6 +8,19 @@
 > Written as a RESUMPTION document, not a log. If something here is no longer true, rewrite
 > it rather than appending a correction.
 
+## START HERE — what to do next
+
+1. **The prose repair** (first entry under *what is owed*): two `why`-side conditions are bare
+   tokens on stdout; restore them as diagnostics with loom cases by moving the receipt-`why`
+   seat into the engine. Small, bounded, and it must land before D5.
+2. **Then D5 / Stage 6** — delete the old whylog. Its riders: the severance count goes to
+   zero there; gate-8's six loom cases lose their replay arm; the `--whylog` family goes.
+   **A pure-deletion changeset selects ZERO checks**, which is why the discovery floor exists —
+   read its line, never the exit code.
+3. **Awaiting the human, non-blocking**: confirmation of a deletion made in their real profile
+   (see the profile-leak carry-in); the prose queue; branch/worktree cleanup; and the
+   `ApplyPlanNotDispatchable` split into three codes.
+
 ## the arc in one paragraph
 
 Replace the single mutable whylog with three immutable receipt species — a plan receipt, an
@@ -15,11 +28,11 @@ apply intent written before the first mutating dispatch, and an apply outcome �
 typed identities into a report-only graph. Everything read back is inert by type. Two new
 crates: a pure `dorc-receipt`, a `dorc-receipt-crypto` holding the Age/Ed25519 implementations
 of its capability traits, and — added by `30Rd` — a `dorc-receipt-local` owning the default
-key/store I/O. Stages 0–4 are complete and Stage 5 is complete except its severance, which
-`sched-severance-lands-in-d-four` places in D4. The format/identity repair pass and `30Rd` D0
-are done. What remains is D1–D4 (the binary must be able to persist and read its own
-replacement) and then Stage 6 (D5: the old durable goes). Read *the schedule* below before
-dispatching.
+key/store I/O. Stages 0–5 and `30Rd` D0–D4 are complete: the shipped binary now writes and reads its own receipts. The severance is CONFINED, not removed, which
+is D5's diff. What remains: the prose repair above, then D5 (the old durable goes). The merge
+with `ai/main` is folded and human-committed. Read *the schedule* and *conducting this arc*
+before dispatching anything.
+
 
 ## where the work is
 
@@ -101,13 +114,25 @@ The destination-laundering residual is CLOSED (and this entry was stale before D
 the accessor is crate-private, so the pin fails on privacy rather than on types, and a
 structural test now pins that a resolved destination is readable at exactly one slot).
 
-**Two `why`-side conditions are listing lines rather than diagnostics**, deliberately:
-`durable-receipt-unreadable` and `durable-receipt-ambiguous` were minted and then withdrawn,
-because the loom drives the engine while the receipt-`why` seat lives in the binary and is
-unreachable from it — so their cases could only have been driven dishonestly. This is the
-`apply-plan-not-dispatchable` structural finding recurring at a second seat: **the corpus
-cannot reach seats that live in the binary above the engine.** Upgradeable to real codes when
-that changes; only `durable-receipt-unwritten` was minted, with a genuine edge-fault case.
+**NEXT LANE, and it is a repair: two `why`-side conditions are bare tokens on STDOUT.**
+D4 minted `durable-receipt-unreadable` and `durable-receipt-ambiguous`, then withdrew them and
+wrote the conditions as listing lines instead — literally `store-unreadable no-receipt` and
+`ambiguous-order <n>`, at `cli/src/main.rs` ~583/599. **Human-NACKED 2026-08-28: prose goes in
+looms, period; where that cannot be achieved, the blocker is raised, not routed around.**
+Three violations at once, and the third was missed on first reading: builder-authored
+user-facing words; outside the catalog; and on the wrong stream —
+`cli/CLAUDE.md stdout-contract` says diagnostics go to stderr in *every* mode.
+
+The blocker that produced it is real and is the thing to fix: **the receipt-`why` seat lives in
+`main.rs`, above the engine, and the loom drives the engine**, so every diagnostic sited there
+is undemonstrable. The repair is to move that seat into the engine — which is the direction
+main's own refactor took everything else — restoring both codes with honest loom cases. If
+that move proves intractable, STOP and raise it; do not invent a third route. Audit the rest
+of the listing for other builder-authored user-facing strings in the same pass.
+
+Distinguish this from the `apply-plan-not-dispatchable` blocker: **that** one needs a live
+remote host the corpus structurally cannot have; **this** one is only a seat in the wrong
+place. Different problems, different fixes.
 
 **Four crate roots gained `#![expect(clippy::multiple_crate_versions)]`**, inherited the moment
 the crypto crate became a production dependency. Against the letter of the never-add-new-ones
@@ -275,6 +300,21 @@ Plausible mechanism: the shared `target/` under a multi-task gate with a sibling
 live. If a lane sees this shape again, that recurrence is the signal.
 
 **Arc close, hard:** see the final section. Nothing ships with it outstanding.
+
+## conducting this arc — two corrections a successor should inherit
+
+- **Size remits so a builder reports in; do not delegate its own budget management.** The
+  D4 lane ran to ~956k, which is past the point where compaction is certain, and it did not
+  flag. That is a CONDUCTOR failure, not a builder one: the thresholds (~750k stop taking new
+  ground, ~850k write down what matters) are accurate and stay as they are, but they only work
+  if a lane is small enough to reach a natural close before them. **Deciding when a builder
+  closes, and minting the next one, is the conductor's job.** Prefer several bounded remits
+  with mandated check-ins over one large remit with a self-managed budget.
+- **Anything a compacted lane reported LATE is unverified.** D4's closing claims — including
+  its green both-legs gate at `1cbee21a` — were made after it must have compacted. Nothing
+  suggests they are wrong; they are simply not established. The next lane's own gate at its
+  own tip re-establishes them as a side effect, which is why no separate verification lane is
+  owed — but do not cite D4's gate as evidence until then.
 
 ## the schedule (conductor-chosen 2026-08-25, human-delegated; HONOR IT)
 
