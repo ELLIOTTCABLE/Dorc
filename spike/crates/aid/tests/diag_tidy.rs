@@ -253,6 +253,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-absent",
     "whylog-corrupt",
     "whylog-unwritten",
+    "durable-receipt-unwritten",
     "aid-unloaded-sibling-oracle",
     "oracle-matched-zero-sites",
     "unmodeled-wall-inventory",
@@ -350,6 +351,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogAbsent",
     "WhylogCorrupt",
     "WhylogUnwritten",
+    "DurableReceiptUnwritten",
     // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
     "AidUnloadedSiblingOracle",
     // cli/main.rs — a zero-matched-sites verdict is a claim about the whole ORACLE FILE, not any

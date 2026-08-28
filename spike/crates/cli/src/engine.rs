@@ -2050,6 +2050,10 @@ fn run_status(
     // its own durable, but the ordering is what would let one: a trailer naming a path is honest
     // only if the path was already written, and recovering that ordering afterwards is
     // archaeology rather than a change.
+    //
+    // The OLD durable stays where it was, after the summary. Its surface is unchanged until it is
+    // removed, and moving it would churn six committed transcripts for a durable on its way out.
+    let mut durable_arm_recorded = false;
     if options.durable == DurableOutput::Enabled
         && whylog_eligible
         && let Some(records) = admitted_records
@@ -2072,11 +2076,7 @@ fn run_status(
                 presentation: &presentation,
             },
         );
-        // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
-        // decided at one seat, per species, and what it drops is countable there too.
-        if let Some(projection) = dorc_plan::whylog::DurableProjection::project(&spine) {
-            write_whylog(edges, sink, generated, &projection);
-        }
+        durable_arm_recorded = true;
     }
 
     generated.push(GeneratedOutput::Artifact(artifact.clone()));
@@ -2139,6 +2139,13 @@ fn run_status(
         ),
     ));
 
+    // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
+    // decided at one seat, per species, and what it drops is countable there too.
+    if durable_arm_recorded
+        && let Some(projection) = dorc_plan::whylog::DurableProjection::project(&spine)
+    {
+        write_whylog(edges, sink, generated, &projection);
+    }
     *world_out = Some(WhyWorld {
         snapshot: snapshot.clone(),
         interner,

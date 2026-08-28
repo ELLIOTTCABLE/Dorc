@@ -341,16 +341,9 @@ pub enum DiagCode {
     /// later. Error-floor (`28F:rul-write-failure-is-error-floor`): the advisory plane is
     /// suppressed under `apply`, which is exactly the run whose receipt matters most.
     WhylogUnwritten(WhylogUnwritten),
-    /// The run's durable RECEIPT did not reach the local store, so nothing about this run can be
-    /// verified or opened later. Error-floor for the same reason its whylog sibling is.
+    /// The run's durable RECEIPT did not reach the local store, so nothing about this run can
+    /// be verified or opened later. Error-floor for the same reason its whylog sibling is.
     DurableReceiptUnwritten(DurableReceiptUnwritten),
-    /// `dorc why` could not open the local keyset or the local store, so it has no recorded
-    /// content to answer from. It creates nothing to fix that: asking why must never mint an
-    /// identity that cannot open the receipt being asked about.
-    DurableReceiptUnreadable(DurableReceiptUnreadable),
-    /// More than one receipt shares the store's greatest order, so which one is "the last" has no
-    /// answer. Reported as a cohort rather than broken by picking one.
-    DurableReceiptAmbiguous(DurableReceiptAmbiguous),
 
     // ── cli/main.rs (aid hints) — `AID-NEEDS:aid-unloaded-sibling-oracle` (gap-5, ack-6) ──────
     /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
@@ -552,8 +545,6 @@ impl DiagCode {
             DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
             DiagCode::WhylogUnwritten(_) => "whylog-unwritten",
             DiagCode::DurableReceiptUnwritten(_) => "durable-receipt-unwritten",
-            DiagCode::DurableReceiptUnreadable(_) => "durable-receipt-unreadable",
-            DiagCode::DurableReceiptAmbiguous(_) => "durable-receipt-ambiguous",
             DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
             DiagCode::OracleMatchedZeroSites(_) => "oracle-matched-zero-sites",
             DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
@@ -1917,25 +1908,6 @@ pub struct DurableReceiptUnwritten {
     pub reason: String,
 }
 
-/// Payload of [`DiagCode::DurableReceiptUnreadable`]: `dorc why` reached the local durable edge
-/// and it had nothing readable. `{store}` = the per-user state base; `{reason}` = the closed word
-/// for which half was unavailable.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DurableReceiptUnreadable {
-    /// The store that was asked (`{store}`).
-    pub store: String,
-    /// The closed refusal word (`{reason}`).
-    pub reason: String,
-}
-
-/// Payload of [`DiagCode::DurableReceiptAmbiguous`]: several receipts share the greatest order in
-/// the store, so "the last one" names a cohort rather than a document. `{count}` = how many.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DurableReceiptAmbiguous {
-    /// How many documents share the greatest order (`{count}`).
-    pub count: String,
-}
-
 /// Payload of [`DiagCode::AidUnloadedSiblingOracle`] (PASSTHROUGH `{detail}`; `AID-NEEDS:aid-unloaded-
 /// sibling-oracle`, gap-5 / `24H` ack-6): the cli-edge scan builds `detail` listing the sibling
 /// `*.oracle.sh` files found on disk but not loaded (suggest, never auto-load). Spanless.
@@ -3067,18 +3039,6 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // A READ that found nothing is not a failure of the run being asked about, so it warns:
-        // there is no durable to explain, and the repair is the operator's own profile.
-        DiagCode::DurableReceiptUnreadable(_) => CodeSpec {
-            severity: Severity::Warning,
-            floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
-        DiagCode::DurableReceiptAmbiguous(_) => CodeSpec {
-            severity: Severity::Warning,
-            floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
         // The unloaded-sibling hint: a Note (suggest, never auto-load); ProvideModel — the oracle
         // exists on disk, loading it provides the model that would lift the wall.
         DiagCode::AidUnloadedSiblingOracle(_) => CodeSpec {
@@ -3552,12 +3512,6 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::DurableReceiptUnwritten(DurableReceiptUnwritten { store, reason }) => {
             vec![ours("store", store.clone()), ours("reason", reason.clone())]
-        }
-        DiagCode::DurableReceiptUnreadable(DurableReceiptUnreadable { store, reason }) => {
-            vec![ours("store", store.clone()), ours("reason", reason.clone())]
-        }
-        DiagCode::DurableReceiptAmbiguous(DurableReceiptAmbiguous { count }) => {
-            vec![ours("count", count.clone())]
         }
         DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle { oracles }) => {
             vec![ours("oracles", oracles.clone())]

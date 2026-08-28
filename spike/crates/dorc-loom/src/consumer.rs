@@ -1089,7 +1089,7 @@ impl DorcConsumer {
                 .unwrap_or_else(|| "<disabled>".to_owned()),
             // A loom world has no per-user profile, and saying so is the honest label: nothing
             // here resolves a standard root, so no path could be named that a case would recognize.
-            receipt_label: "<disabled>".to_owned(),
+            receipt_label: "<no state root>".to_owned(),
             host: args.host.clone(),
         };
         let mut sink = LoomOutputSink {

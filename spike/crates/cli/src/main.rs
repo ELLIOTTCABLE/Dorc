@@ -546,20 +546,16 @@ fn answers_from_the_receipt_store(args: &Args) -> bool {
 fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunOutcome, Diag> {
     let edge = match production_receipt_edge() {
         Ok(edge) => edge,
-        Err(refusal) => return Ok(report_unreadable(sink, "<no state root>", &refusal)),
+        Err(refusal) => return Ok(emit_listing(sink, &unreadable(refusal.token()))),
     };
     let mut io = dorc_cli::durable::NativeIo::new();
     let open = match edge.open_for_read(&mut io) {
         Ok(open) => open,
-        Err(refusal) => return Ok(report_unreadable(sink, edge.state_base(), &refusal)),
+        Err(refusal) => return Ok(emit_listing(sink, &unreadable(refusal.token()))),
     };
     let store = open.store();
     let Ok(entries) = store.enumerate(&mut io) else {
-        return Ok(report_unreadable_word(
-            sink,
-            edge.state_base(),
-            "walk-failed",
-        ));
+        return Ok(emit_listing(sink, &unreadable("walk-failed")));
     };
 
     // The graph is built over the WHOLE store under its aggregate budget, whatever the listing
@@ -577,24 +573,17 @@ fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunO
     }
 
     let selected = selected_receipt_ids(args, &entries);
+    let mut out = String::new();
+    // The cohort's ambiguity is a LINE on this listing rather than a diagnostic, for the same
+    // reason everything else here is: the answer to "what does the store say" belongs on the
+    // surface that says it. Reported, never resolved — the store offers no tie-break, and
+    // inventing one would pick a document by the value least related to when it was written.
     if let Some(cohort) = entries.maximum_order_cohort()
         && cohort.is_ambiguous()
         && !args.all
     {
-        report_at(
-            sink,
-            true,
-            "receipt",
-            None,
-            &[Diag::new_spanless_site(DiagCode::DurableReceiptAmbiguous(
-                dorc_aid::diag::DurableReceiptAmbiguous {
-                    count: cohort.members().len().to_string(),
-                },
-            ))],
-        );
+        out.push_str(&format!("ambiguous-order {}\n", cohort.members().len()));
     }
-
-    let mut out = String::new();
     for (receipt_id, listing) in &read {
         if selected.iter().any(|wanted| wanted == receipt_id) {
             out.push_str(listing);
@@ -602,15 +591,29 @@ fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunO
     }
     out.push_str(&dorc_cli::recorded::recorded_graph_listing(&graph));
     if out.is_empty() {
-        return Ok(report_unreadable_word(
-            sink,
-            edge.state_base(),
-            "no-receipt",
-        ));
+        return Ok(emit_listing(sink, &unreadable("no-receipt")));
     }
-    sink.emit(OutputEvent::plain_text(OutputChannel::Stdout, out));
-    sink.flush(OutputChannel::Stdout);
+    emit_listing(sink, &out);
     Ok(RunOutcome::Complete)
+}
+
+/// The listing line for a store that answered nothing, in the edge's own closed word.
+fn unreadable(reason: &str) -> String {
+    format!("store-unreadable {reason}\n")
+}
+
+/// Put one listing on stdout.
+///
+/// A mode-owned stdout species (`cli/CLAUDE.md stdout-contract`): `dorc why` over a receipt emits
+/// this and nothing else, so it never interleaves with a plan render. Complete either way — a
+/// store with nothing to say is a report state, not a failed run.
+fn emit_listing(sink: &mut dyn OutputSink, out: &str) -> RunOutcome {
+    sink.emit(OutputEvent::plain_text(
+        OutputChannel::Stdout,
+        out.to_owned(),
+    ));
+    sink.flush(OutputChannel::Stdout);
+    RunOutcome::Complete
 }
 
 /// Which recorded identities this invocation lists.
@@ -678,31 +681,6 @@ fn ingest_recognized(
             Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
         },
     }
-}
-
-/// Report that `dorc why` had nothing readable, in the edge's own closed word.
-fn report_unreadable(
-    sink: &mut dyn OutputSink,
-    store: &str,
-    refusal: &dorc_cli::durable::EdgeRefusal,
-) -> RunOutcome {
-    report_unreadable_word(sink, store, refusal.token())
-}
-
-fn report_unreadable_word(sink: &mut dyn OutputSink, store: &str, reason: &str) -> RunOutcome {
-    report_at(
-        sink,
-        true,
-        "receipt",
-        None,
-        &[Diag::new_spanless_site(DiagCode::DurableReceiptUnreadable(
-            dorc_aid::diag::DurableReceiptUnreadable {
-                store: store.to_owned(),
-                reason: reason.to_owned(),
-            },
-        ))],
-    );
-    RunOutcome::Complete
 }
 
 /// The process's own environment, as the root-resolution rule's one query.
