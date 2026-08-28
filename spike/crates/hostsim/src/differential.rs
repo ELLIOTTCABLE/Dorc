@@ -808,6 +808,27 @@ struct DorcRun {
     stderr: String,
 }
 
+/// Point one driven invocation's per-user roots inside this case's own scratch.
+///
+/// The binary writes a durable BY DEFAULT, so an inherited environment has every seed of this
+/// sweep depositing keys and receipts in whoever ran it — outside the worktree, which no test may
+/// touch. The standard variables are what production resolves, and pointing THOSE is what keeps
+/// the resolution under test the resolution that ships: there is deliberately no Dorc-specific
+/// variable that would select a fixture provider or a weaker policy.
+fn sandbox_profile(cmd: &mut Command, dir: &Path) {
+    let profile = dir.join("profile");
+    let (config, state) = (profile.join("config"), profile.join("state"));
+    let _ = std::fs::create_dir_all(&config);
+    let _ = std::fs::create_dir_all(&state);
+    for key in ["APPDATA", "XDG_CONFIG_HOME"] {
+        cmd.env(key, &config);
+    }
+    for key in ["LOCALAPPDATA", "XDG_STATE_HOME"] {
+        cmd.env(key, &state);
+    }
+    cmd.env("HOME", profile.join("home"));
+}
+
 fn run_dorc(
     tools: &Tools,
     dir: &Path,
@@ -820,6 +841,7 @@ fn run_dorc(
     use std::process::Stdio;
     let mut cmd = Command::new(&tools.dorc);
     cmd.current_dir(dir);
+    sandbox_profile(&mut cmd, dir);
     if probe_only {
         cmd.arg("probe");
     }
