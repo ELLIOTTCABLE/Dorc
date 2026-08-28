@@ -25,7 +25,7 @@ dispatching.
 
 | | |
 |---|---|
-| Build branch | `ai/r30-receipt` @ `b9a0be08`, worktree `.claude/worktrees/r30-receipt` |
+| Build branch | `ai/r30-receipt` @ `1cbee21a`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
 | Base | `ai/main` @ `7693ac6f` — rebased onto it four times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
 | Also standing | `ai/r30-hk-stash` @ `234d0da6`, worktree `.claude/worktrees/r30-hkstash` — a measurement lane's evidence; the human said drop it with the rest at cleanup. |
@@ -55,8 +55,9 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | repair pass (order line · identity table · framing) | done @ `b9a0be08` |
 | 5A `30Rd` D0 crate, names, vectors, I/O model | done |
 | 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `366822be` |
-| 5A `30Rd` D3 immutable local store | done @ `f564c7ac`; Windows gate OWED |
-| 5A `30Rd` D4 production route | next, once the gate clears |
+| 5A `30Rd` D3 immutable local store | done |
+| merge of `ai/main` | done @ `8905a3f7`, human-committed |
+| 5A `30Rd` D4 production route | done @ `1cbee21a`; gate green both legs, D3 debt cleared |
 | 6 rip the old implementation (`30Rd` D5) | not started |
 
 ## what is owed
@@ -96,14 +97,22 @@ route records zero site rows and `ApplySiteReport` is exercised by the fixture b
 Inventing rows would be the different-and-wrong record. The outcome's influence reads
 `untracked` — truthful, and higher than host-influenced so it cannot under-claim.
 
-One residual for whoever unblocks item 4: an invocation's spelled target is now a distinct
-no-conversion type from a resolved destination, but the laundering path that still compiles
-is `Spelled(context.destination().as_bytes().to_vec())`. Closing it means
-`ResolvedApplyContext` no longer handing out a bare `&str` — that type's own lane. What the
-split buys meanwhile is that the mistake requires writing `Spelled` over a resolved answer at
-a named constructor: a false claim rather than an argument-position slip. A two-way lexical
-census over that constructor is the tree's established alternative; minting one was
-deliberately not done at a builder seat.
+The destination-laundering residual is CLOSED (and this entry was stale before D4 measured it:
+the accessor is crate-private, so the pin fails on privacy rather than on types, and a
+structural test now pins that a resolved destination is readable at exactly one slot).
+
+**Two `why`-side conditions are listing lines rather than diagnostics**, deliberately:
+`durable-receipt-unreadable` and `durable-receipt-ambiguous` were minted and then withdrawn,
+because the loom drives the engine while the receipt-`why` seat lives in the binary and is
+unreachable from it — so their cases could only have been driven dishonestly. This is the
+`apply-plan-not-dispatchable` structural finding recurring at a second seat: **the corpus
+cannot reach seats that live in the binary above the engine.** Upgradeable to real codes when
+that changes; only `durable-receipt-unwritten` was minted, with a genuine edge-fault case.
+
+**Four crate roots gained `#![expect(clippy::multiple_crate_versions)]`**, inherited the moment
+the crypto crate became a production dependency. Against the letter of the never-add-new-ones
+rule; the alternative was a red gate on a duplication we do not own. Revisit when upstream
+resolves it.
 
 Three residues from the carriage lane: a diagnostic for a refused planned image (absence is
 truthful but silent; the code is mintable, the defining case reads as diagnostics territory);
@@ -284,11 +293,16 @@ than drifted into. These are those choices:
 - **`sched-gate-atomicity-rides-d-four`** — the publication gate must consume ONE private
   value binding intent, image witness, policy, and `30Rd`'s publication proof, with the permit
   minted atomically from it. That proof does not exist until D4, so this cannot repair early.
-- **`sched-severance-lands-in-d-four`** — Stage 5's unmet exit (`results::replayed_records`
-  laundering a durable into live evidence) closes in D4, beside the why-route rewiring, which
-  is the first moment `why` can answer from a receipt and that seat loses its caller. Stage 5
-  is formally complete at D4, not before. **Chosen in advance; do not re-open it later for
-  convenience.**
+- **`sched-severance-lands-in-d-four` — I got this one wrong, and the correction is D4's.**
+  I scheduled the whole severance into D4. Its LAST MILE is structurally D5's: after D4's
+  rewiring, `results::replayed_records` has exactly one caller, reachable only when an
+  invocation explicitly names `--whylog`/`--whylog-dir`, and it is `pub(crate)` and
+  double-counted. Deleting it outright means deleting the whylog replay route, which is D5's
+  deletion and takes gate-8's six loom cases with it; severing it while KEEPING those cases
+  means building a re-derived report plane with render parity, which is Stage-5-sized work
+  inside D4 to sever a path D5 removes anyway. **Confinement was the right adaptation and the
+  count going to zero is D5's diff.** The scheduling error was mine, made in advance and
+  honoured until it met the ground.
 - **`sched-five-a-is-d-zero-through-d-four`** — Stage 5A ≡ D0–D4; Stage 6 ≡ D5. `30Rb` reads
   both ways (5A says "every stage in `30Rd`", which would swallow D5 and leave Stage 6 empty);
   D5's own "Only after D4 exit" header settles it.
@@ -495,6 +509,21 @@ same-typed fields. **The numbers are the mechanism, not decoration.** What conve
 cross-lane grammar widening from corruption into a test failure is that every row goes out
 through the writer's own emitter, which refuses a row it could not read back — a projection
 hand-building a record bypasses the one thing that caught it.
+
+### The suite was writing real keys into the developer's own profile
+
+Found by hand in D4, twice, and invisible to a green suite both times. The e2e harness
+sandboxed the STATE root but not the CONFIGURATION root, so an ordinary suite run minted a
+live signing and encryption keyset in the developer's real profile directory; and the DST
+differential sweep sandboxed nothing at all. Both closed. The residue those runs created —
+minutes old — was deleted; pre-existing unrelated files were left alone.
+
+The durable lesson is the fence that followed. The obvious per-file census **passed with every
+sandbox call removed**, because the helper's own definition satisfied it — the lexical-check
+hazard this section already names, reproduced by its own author while fixing a leak. What
+landed instead is POSITIONAL: the sandbox call must appear within a bounded distance of the
+process spawn, verified red by deleting one call. **A census over a codebase that contains the
+thing it is looking for must anchor to the seat, not to the file.**
 
 ### A capability bundle that quietly grew a decision
 
