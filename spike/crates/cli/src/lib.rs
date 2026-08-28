@@ -307,6 +307,10 @@ const HELP_OPTION_ROWS: &[HelpRow] = &[
         slug: "cli-help-option-last",
     },
     HelpRow {
+        label: "--receipt <id>",
+        slug: "cli-help-option-receipt",
+    },
+    HelpRow {
         label: "--all",
         slug: "cli-help-option-all",
     },
@@ -525,6 +529,15 @@ pub struct Args {
     /// run decided, and feeding one back into a mode that EMITS an artifact would let a stored
     /// record stream stand where a live measurement belongs.
     pub last: bool,
+    /// `--receipt=ID`: answer about the ONE document carrying that identity.
+    ///
+    /// Retrieval, never a second ranking. The store offers exactly one selection — its
+    /// maximum-order cohort — and a second way to PREFER a candidate is what would reopen the
+    /// fallback past a damaged newest one. An exact identity match prefers nothing: a document
+    /// either carries it or it does not, and nothing is answered when none does.
+    ///
+    /// A `why` flag, on the same footing as `--last`.
+    pub receipt: Option<String>,
     /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
     /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
     ///
@@ -603,7 +616,11 @@ impl Args {
     /// than an interactive one, and it would block on a terminal.
     #[must_use]
     pub const fn reads_the_receipt(&self) -> bool {
-        reads_the_receipt(self.mode, self.last, self.results.is_some())
+        reads_the_receipt(
+            self.mode,
+            self.last || self.receipt.is_some(),
+            self.results.is_some(),
+        )
     }
 }
 
@@ -656,8 +673,12 @@ pub fn engine_options_from_args(
 
 /// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
 /// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
-const fn reads_the_receipt(mode: Mode, last: bool, has_results: bool) -> bool {
-    matches!(mode, Mode::Why) && (last || !has_results)
+///
+/// `names_a_document` folds the two flags that select a stored one — `--last` and `--receipt` —
+/// because they answer the same question about the surface: an invocation naming either is
+/// asking about something already written, whatever else it carries.
+const fn reads_the_receipt(mode: Mode, names_a_document: bool, has_results: bool) -> bool {
+    matches!(mode, Mode::Why) && (names_a_document || !has_results)
 }
 
 /// Every claimant this invocation puts on stdin, in argv order
@@ -746,6 +767,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut whylog_dir: Option<String> = None;
     let mut whylog: Option<String> = None;
     let mut last = false;
+    let mut receipt: Option<String> = None;
     let mut no_whylog = false;
     let mut all = false;
     let mut shim_dir: Option<String> = None;
@@ -876,6 +898,13 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             all = true;
         } else if arg == "--last" {
             last = true;
+        } else if let Some(id) = arg.strip_prefix("--receipt=") {
+            receipt = Some(id.to_owned());
+        } else if arg == "--receipt" {
+            receipt = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--receipt", "a receipt identity"))?,
+            );
         } else if arg == "--no-whylog" {
             no_whylog = true;
         } else if let Some(p) = arg.strip_prefix("--artifact-dir=") {
@@ -974,6 +1003,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--whylog",
                 "--no-whylog",
                 "--last",
+                "--receipt",
                 "--all",
                 "--shim-dir",
                 "--host",
@@ -1013,13 +1043,15 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     // already follows now covers the flag that selects one. Refused HERE, ahead of the book check,
     // because a mode that cannot use the flag should say so rather than complain about a book it
     // would not have needed.
-    if last && mode != Mode::Why {
-        return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
-            dorc_aid::diag::CliFlagRequiresMode {
-                flag: "--last",
-                mode: "dorc why",
-            },
-        )));
+    for (present, flag) in [(last, "--last"), (receipt.is_some(), "--receipt")] {
+        if present && mode != Mode::Why {
+            return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
+                dorc_aid::diag::CliFlagRequiresMode {
+                    flag,
+                    mode: "dorc why",
+                },
+            )));
+        }
     }
     let ships_a_rendered_plan = mode == Mode::Apply && host.is_some();
     if let [first, second, ..] = &books[..] {
@@ -1034,7 +1066,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     if book.is_none()
         && mode != Mode::Bundle
         && !ships_a_rendered_plan
-        && !reads_the_receipt(mode, last, results.is_some())
+        && !reads_the_receipt(mode, last || receipt.is_some(), results.is_some())
     {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
@@ -1142,6 +1174,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         no_whylog,
         whylog,
         last,
+        receipt,
         all,
         host,
         plan,

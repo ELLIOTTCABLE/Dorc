@@ -581,6 +581,7 @@ fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunO
     if let Some(cohort) = entries.maximum_order_cohort()
         && cohort.is_ambiguous()
         && !args.all
+        && args.receipt.is_none()
     {
         out.push_str(&format!("ambiguous-order {}\n", cohort.members().len()));
     }
@@ -618,14 +619,21 @@ fn emit_listing(sink: &mut dyn OutputSink, out: &str) -> RunOutcome {
 
 /// Which recorded identities this invocation lists.
 ///
-/// `--all` lists every recognized entry; everything else lists the maximum-order cohort, which is
-/// the ONE selection the store offers. There is deliberately no newest-complete and no
-/// next-one-down: a fallback past a damaged newest candidate would answer with older history
-/// while looking like an answer about the latest run.
+/// Three answers, and only one of them is a RANKING. `--receipt` is an exact identity match:
+/// a document either carries it or it does not, so it prefers nothing and reopens no fallback.
+/// `--all` enumerates. Everything else takes the maximum-order cohort, which is the ONE selection
+/// the store offers — there is deliberately no newest-complete and no next-one-down, because a
+/// fallback past a damaged newest candidate would answer with older history while looking like an
+/// answer about the latest run.
 fn selected_receipt_ids(
     args: &Args,
     entries: &dorc_cli::durable::BoundedReceiptEntries,
 ) -> Vec<String> {
+    if let Some(wanted) = args.receipt.as_deref() {
+        return dorc_cli::durable::entry_by_receipt_id(entries, wanted)
+            .map(|entry| vec![entry.name().receipt_id().to_owned()])
+            .unwrap_or_default();
+    }
     if args.all {
         return entries
             .recognized()

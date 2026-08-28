@@ -450,3 +450,39 @@ fn a_run_with_no_clock_publishes_nothing_and_says_so() {
         "the plan still completed; stderr: {stderr}"
     );
 }
+
+#[test]
+fn a_receipt_identity_retrieves_its_own_document_and_prefers_nothing() {
+    // RETRIEVAL, not a second ranking. The store offers one selection — its maximum-order cohort
+    // — and a second way to PREFER a candidate is what would reopen the fallback past a damaged
+    // newest one. An exact identity match prefers nothing: it answers about the document carrying
+    // that identity, and about no other, and about none at all when none does.
+    let sandbox = ProfileSandbox::new("by-identity");
+    let scratch = Scratch::new("by-identity");
+    plan(&sandbox, &scratch);
+    plan(&sandbox, &scratch);
+
+    let published = entries(&store_root(&sandbox));
+    assert_eq!(published.len(), 2, "two runs, two documents");
+    let first = receipt_id_of(published.first().expect("two documents"));
+    let second = receipt_id_of(published.get(1).expect("two documents"));
+    assert_ne!(first, second, "two documents never share one identity");
+
+    let listing = why(&sandbox, &scratch, &["--receipt", &first]);
+    assert!(
+        listing.contains(&format!("receipt {first}")),
+        "the named document must be the one answered; got:\n{listing}"
+    );
+    assert!(
+        !listing.contains(&format!("receipt {second}")),
+        "and no other document may ride along; got:\n{listing}"
+    );
+
+    // An identity nothing carries answers about nothing rather than falling back to whatever was
+    // nearest — the property the one-selection rule exists to keep.
+    let absent = why(&sandbox, &scratch, &["--receipt", &"0".repeat(64)]);
+    assert!(
+        !absent.contains("receipt "),
+        "an identity nothing carries must answer about no document; got:\n{absent}"
+    );
+}
