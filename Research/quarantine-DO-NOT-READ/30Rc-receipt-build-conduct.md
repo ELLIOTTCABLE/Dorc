@@ -142,6 +142,31 @@ can make from anything in the API. Every member at the top order is retained and
 reported rather than broken — deliberately no receipt-ID tie-break, since that would pick a
 document by the value least related to when it was written.
 
+**D4 riders for `ELLIOTTCABLE/Dorc#1`** (plan trailer naming its receipt; human-pointed, LOW
+priority, must not redirect D4). Split deliberately:
+
+- **TAKE: retrieval by receipt ID.** The ID already satisfies the ask — controller-minted,
+  opaque (random, so it leaks no hostname, path, or content), stable, and already carried in
+  both the filename and the signed header. Only the lookup is missing, and D4 builds store
+  reads anyway. It does NOT reopen D3's "one selection only" property: that property forbids
+  a second RANKING (a newest-complete, a next-one-down) so partial-newest fallback stays
+  unrepresentable. An exact-match retrieval is not a ranking.
+- **LEAVE A SEAM, BUILD NOTHING: the trailer itself.** Two plumbing constraints only, no
+  surface and no decision: the durable is published BEFORE the artifact is emitted (the issue
+  requires it — a trailer must never name a path that was never made durable), and the
+  publication result carries its own path and ID rather than dropping them on the floor.
+  That reduces the feature to a later render-side lane.
+- **DO NOT decide, and do not let a builder decide:** whether a pointer-trailer is compatible
+  with `spike/CLAUDE.md two-surfaces` (the artifact is "byte-floored and receipt-free"; a
+  trailer is receipt material embedded in it — this is the real design question and it is the
+  human's); the opaque-ID-versus-literal-path config axis (the human has explicitly not
+  decided, and the path leaks homedir/hostname into an artifact that may be committed or
+  attached to a report); and whether a failed durable write refuses the plan or emits it
+  untrailered (also explicitly undecided). The issue's `dorc why --diff` re-read is a NEW
+  reingestion path and sits under `rul-durable-contents-reviewed-before-design`.
+  Byte-identity is not at risk either way: the trailer is excluded from it by the human's own
+  ruling, and the emitted sh is mutable by the user regardless.
+
 **Owed to D4:** refuse to EMIT an undated document at the production composition root, sited
 for trivial removal when stable-format output becomes supported. It cannot live at a lib seam
 — a refusal there would refuse the very runs that want an undated artifact. Also D4's: the
