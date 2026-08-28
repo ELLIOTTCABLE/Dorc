@@ -44,6 +44,15 @@ dorc-lint = { path = "../lint", version = "0.0.0" }
 # implementation crate carrying the randomness is a separate dependency under its own allow-list.
 dorc-receipt = { path = "../receipt", version = "0.0.0" }
 
+# The capability IMPLEMENTATIONS, and the local durable edge that persists what they produce.
+# PRODUCTION dependencies since the shipped binary writes and reads its own receipts: the crypto
+# crate is what signs and seals a document, and the local edge is where the keyset and the store
+# live. Naming either is a governed act — `receipt/tests/crate_boundary.rs` allow-lists the crates
+# that may name the crypto one, and `receipt-local/tests/crate_fences.rs` does the same for this
+# one, both two-way, so these lines and those entries move together.
+dorc-receipt-crypto = { path = "../receipt-crypto", version = "0.0.0" }
+dorc-receipt-local = { path = "../receipt-local", version = "0.0.0" }
+
 # The controller<->host session edge (`260` §2). Depends on std alone, so nothing about
 # reaching a host can leak a dependency inward past this crate.
 dorc-transport = { path = "../transport", version = "0.0.0" }
@@ -87,13 +96,6 @@ internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
 # resolves it, and no non-test build sees it.
 dorc-loom = { path = "../dorc-loom", version = "0.0.0" }
 errorloom = { path = "../errorloom", version = "0.0.0" }
-# The capability IMPLEMENTATIONS, dev-only on purpose. The write route's orchestration takes
-# injected capabilities and links nothing; the fixture signer that satisfies them lives in the
-# battery. So the shipped binary is structurally unable to sign a document rather than merely
-# declining to, and this edge becomes an ordinary dependency on the day a key provider lands.
-# Naming it at all is a governed act: `receipt/tests/crate_boundary.rs` allow-lists the crates
-# that may, two-way and section-blind, so this line and that entry move together.
-dorc-receipt-crypto = { path = "../receipt-crypto", version = "0.0.0" }
 
 [[test]]
 name = "e2e"

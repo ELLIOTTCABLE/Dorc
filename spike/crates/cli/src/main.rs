@@ -189,6 +189,9 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     {
         return ship_consented_apply(sink, args, host);
     }
+    if answers_from_the_receipt_store(args) {
+        return why_from_receipt_store(sink, args);
+    }
 
     let stdout = stdout_posture();
     let durable_dir = durable_destination(args);
@@ -217,6 +220,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         args,
         clock: clock_for_invocation(),
         durable_dir,
+        receipt: production_receipt_edge(),
     };
     dorc_cli::engine::run(
         &EngineRequest {
@@ -323,6 +327,11 @@ struct ProductionEdges<'a> {
     args: &'a Args,
     clock: RunClock,
     durable_dir: Option<String>,
+    /// The production durable edge, or the refusal that stands in its place.
+    ///
+    /// Resolved ONCE at the process boundary, before the engine runs, so root resolution cannot
+    /// happen twice with different answers and cannot happen inside the pipeline at all.
+    receipt: Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal>,
 }
 
 impl EngineEdges for ProductionEdges<'_> {
@@ -446,8 +455,53 @@ impl EngineEdges for ProductionEdges<'_> {
             .map_err(|refusal| refusal.reason().to_owned())
     }
 
+    fn publish_receipt(
+        &mut self,
+        request: &dorc_cli::engine::ReceiptPublicationRequest<'_>,
+    ) -> Result<Option<dorc_cli::receipt_edge::PlacedDocument>, String> {
+        let edge = match &self.receipt {
+            Ok(edge) => edge,
+            Err(refusal) => return Err(refusal.token().to_owned()),
+        };
+        let mut io = dorc_cli::durable::NativeIo::new();
+        let mut generator =
+            dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
+        let open = edge
+            .open_for_write(&mut io, &mut generator)
+            .map_err(|refusal| refusal.token().to_owned())?;
+        let mut ids =
+            dorc_cli::receipt_edge::OsReceiptIdSource::over(dorc_cli::receipt_edge::OsEntropy);
+        let mut order = dorc_cli::receipt_edge::RunClockOrder::of(&mut self.clock);
+        let signer = open.keys().signer();
+        let sealer = open.keys().encryption().sealer();
+        let mut placement = open.placement(&mut io);
+        dorc_cli::receipt_edge::publish_rich_plan_receipt(
+            request.spine,
+            request.mode,
+            request.world,
+            request.presentation,
+            &dorc_receipt::limits::ReceiptLimits::V1,
+            dorc_cli::receipt_edge::ReceiptCapabilities::of(
+                &mut ids,
+                &mut order,
+                signer,
+                &mut placement,
+            ),
+            &sealer,
+        )
+        .map(Some)
+        .map_err(|refusal| refusal.token().to_owned())
+    }
+
     fn durable_label(&self) -> &str {
         self.durable_dir.as_deref().unwrap_or("<whylog>")
+    }
+
+    fn receipt_label(&self) -> &str {
+        self.receipt.as_ref().map_or(
+            "<no state root>",
+            dorc_cli::durable::LocalReceiptEdgeV1::state_base,
+        )
     }
 
     fn invocation_record(
@@ -463,6 +517,216 @@ impl EngineEdges for ProductionEdges<'_> {
             request.account,
         )
     }
+}
+
+/// Whether this invocation answers from the RECEIPT store rather than the old durable.
+///
+/// The discriminator is whether the admin NAMED an old durable. `--whylog=FILE` and
+/// `--whylog-dir=DIR` are the corpus's own deterministic selectors and keep answering from the
+/// old format until it is removed; every other `dorc why` answers from the store this binary
+/// writes. INTERIM by construction: when the old durable goes, so does the condition, and what is
+/// left is a `dorc why` that reads receipts.
+fn answers_from_the_receipt_store(args: &Args) -> bool {
+    args.mode == Mode::Why
+        && args.reads_the_receipt()
+        && args.whylog.is_none()
+        && args.whylog_dir.is_none()
+}
+
+/// Answer `dorc why` from the local receipt store, reading and never creating.
+///
+/// Read-only in every respect that matters: the keyset is opened through the entry point that
+/// cannot generate, the store through the one that cannot create, and no host is contacted. A
+/// missing keyset, a missing store, or a damaged document is a REPORT state — asking why must
+/// never mint an identity that cannot open the receipt being asked about.
+#[expect(
+    clippy::result_large_err,
+    reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
+)]
+fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunOutcome, Diag> {
+    let edge = match production_receipt_edge() {
+        Ok(edge) => edge,
+        Err(refusal) => return Ok(report_unreadable(sink, "<no state root>", &refusal)),
+    };
+    let mut io = dorc_cli::durable::NativeIo::new();
+    let open = match edge.open_for_read(&mut io) {
+        Ok(open) => open,
+        Err(refusal) => return Ok(report_unreadable(sink, edge.state_base(), &refusal)),
+    };
+    let store = open.store();
+    let Ok(entries) = store.enumerate(&mut io) else {
+        return Ok(report_unreadable_word(
+            sink,
+            edge.state_base(),
+            "walk-failed",
+        ));
+    };
+
+    // The graph is built over the WHOLE store under its aggregate budget, whatever the listing
+    // below selects: a correlation is a fact about the record set, and answering "which intent
+    // does this outcome answer" from a one-document read would be answering a different question.
+    let mut graph = dorc_receipt::graph::ReceiptGraph::new();
+    let mut budget = store.graph_budget();
+    let mut read: Vec<(String, String)> = Vec::new();
+    for entry in entries.recognized() {
+        let Ok(bytes) = store.read_into_budget(&mut io, entry, &mut budget) else {
+            continue;
+        };
+        let listing = ingest_recognized(&open, &mut graph, entry, bytes.into_bytes().into_vec());
+        read.push((entry.name().receipt_id().to_owned(), listing));
+    }
+
+    let selected = selected_receipt_ids(args, &entries);
+    if let Some(cohort) = entries.maximum_order_cohort()
+        && cohort.is_ambiguous()
+        && !args.all
+    {
+        report_at(
+            sink,
+            true,
+            "receipt",
+            None,
+            &[Diag::new_spanless_site(DiagCode::DurableReceiptAmbiguous(
+                dorc_aid::diag::DurableReceiptAmbiguous {
+                    count: cohort.members().len().to_string(),
+                },
+            ))],
+        );
+    }
+
+    let mut out = String::new();
+    for (receipt_id, listing) in &read {
+        if selected.iter().any(|wanted| wanted == receipt_id) {
+            out.push_str(listing);
+        }
+    }
+    out.push_str(&dorc_cli::recorded::recorded_graph_listing(&graph));
+    if out.is_empty() {
+        return Ok(report_unreadable_word(
+            sink,
+            edge.state_base(),
+            "no-receipt",
+        ));
+    }
+    sink.emit(OutputEvent::plain_text(OutputChannel::Stdout, out));
+    sink.flush(OutputChannel::Stdout);
+    Ok(RunOutcome::Complete)
+}
+
+/// Which recorded identities this invocation lists.
+///
+/// `--all` lists every recognized entry; everything else lists the maximum-order cohort, which is
+/// the ONE selection the store offers. There is deliberately no newest-complete and no
+/// next-one-down: a fallback past a damaged newest candidate would answer with older history
+/// while looking like an answer about the latest run.
+fn selected_receipt_ids(
+    args: &Args,
+    entries: &dorc_cli::durable::BoundedReceiptEntries,
+) -> Vec<String> {
+    if args.all {
+        return entries
+            .recognized()
+            .iter()
+            .map(|entry| entry.name().receipt_id().to_owned())
+            .collect();
+    }
+    entries
+        .maximum_order_cohort()
+        .map(|cohort| {
+            cohort
+                .members()
+                .iter()
+                .map(|entry| entry.name().receipt_id().to_owned())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Read one recognized entry into the graph, and answer the listing for it.
+///
+/// The species comes from the FILENAME, and the read is species-typed accordingly; a document
+/// whose own header disagrees with its name fails to parse under the species asked for, which is
+/// the disagreement staying a finding rather than being smoothed over.
+fn ingest_recognized(
+    open: &dorc_cli::durable::ReadEdge,
+    graph: &mut dorc_receipt::graph::ReceiptGraph,
+    entry: &dorc_cli::durable::OwnedReceiptEntry,
+    bytes: Vec<u8>,
+) -> String {
+    use dorc_cli::durable::NamedSpecies;
+    use dorc_receipt::reader::ReadRich;
+    match entry.species() {
+        NamedSpecies::Plan => match open.read_plan(bytes) {
+            Ok(ReadRich::Trusted(document)) => {
+                graph.ingest_plan(&document, &[]);
+                dorc_cli::recorded::recorded_plan_listing(&document)
+            }
+            Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
+        },
+        NamedSpecies::ApplyIntent => match open.read_intent(bytes) {
+            Ok(ReadRich::Trusted(document)) => {
+                graph.ingest_intent(&document, &[]);
+                dorc_cli::recorded::recorded_intent_listing(&document)
+            }
+            Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
+        },
+        NamedSpecies::ApplyOutcome => match open.read_outcome(bytes) {
+            Ok(ReadRich::Trusted(document)) => {
+                graph.ingest_outcome(&document, &[]);
+                dorc_cli::recorded::recorded_outcome_listing(&document)
+            }
+            Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
+        },
+    }
+}
+
+/// Report that `dorc why` had nothing readable, in the edge's own closed word.
+fn report_unreadable(
+    sink: &mut dyn OutputSink,
+    store: &str,
+    refusal: &dorc_cli::durable::EdgeRefusal,
+) -> RunOutcome {
+    report_unreadable_word(sink, store, refusal.token())
+}
+
+fn report_unreadable_word(sink: &mut dyn OutputSink, store: &str, reason: &str) -> RunOutcome {
+    report_at(
+        sink,
+        true,
+        "receipt",
+        None,
+        &[Diag::new_spanless_site(DiagCode::DurableReceiptUnreadable(
+            dorc_aid::diag::DurableReceiptUnreadable {
+                store: store.to_owned(),
+                reason: reason.to_owned(),
+            },
+        ))],
+    );
+    RunOutcome::Complete
+}
+
+/// The process's own environment, as the root-resolution rule's one query.
+///
+/// An empty value reads as absent: a variable set to nothing names no directory, and treating it
+/// as one would land the durable at whatever the empty string resolves to.
+struct ProcessEnvironment;
+
+impl dorc_cli::durable::RootEnvironment for ProcessEnvironment {
+    fn var(&self, name: &str) -> Option<String> {
+        std::env::var(name).ok().filter(|value| !value.is_empty())
+    }
+}
+
+/// This invocation's production durable edge, resolved once at the process boundary.
+///
+/// The refusal is CARRIED rather than reported here: whether a run without a per-user root is a
+/// problem depends on what the run was going to do with one, and the seat that knows that is the
+/// seat that later asks for a keyset.
+fn production_receipt_edge()
+-> Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal> {
+    dorc_cli::durable::standard_roots(dorc_cli::durable::host_platform(), &ProcessEnvironment)
+        .map(dorc_cli::durable::LocalReceiptEdgeV1::of)
+        .map_err(dorc_cli::durable::EdgeRefusal::Roots)
 }
 
 struct ProductionOutputSink;

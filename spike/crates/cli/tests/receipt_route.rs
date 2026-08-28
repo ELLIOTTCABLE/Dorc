@@ -25,9 +25,10 @@
 )]
 
 use dorc_cli::receipt_edge::{
-    CONTROLLER_SEMANTICS, PublicationRefusal, ReceiptCapabilities, invocation_record,
-    planning_mode, publish_apply_intent, publish_apply_outcome, publish_plain_apply_intent,
-    publish_plan_receipt, publish_rich_plan_receipt, record_durable_arm,
+    CONTROLLER_SEMANTICS, PlacedDocument, PlacedIntent, PlacementFailure, PublicationRefusal,
+    ReceiptCapabilities, ReceiptPlacement, invocation_record, planning_mode, publish_apply_intent,
+    publish_apply_outcome, publish_plain_apply_intent, publish_plan_receipt,
+    publish_rich_plan_receipt, record_durable_arm,
 };
 use dorc_cli::results::{RunClock, RunSources, SiteResults, admit_fixture_records};
 use dorc_core::Interner;
@@ -35,13 +36,15 @@ use dorc_plan::planning_input::{PlanningInputs, PlanningPolicy};
 use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::records::{Admission, Framing, frame, header_line, sentinel_line};
 use dorc_receipt::capability::{
-    PublicationGrade, ReceiptSigner, ReceiptSink, SelfAssertedReceiptVerificationKey,
+    PublicationGrade, ReceiptSigner, SelfAssertedReceiptVerificationKey,
     TrustedReceiptVerificationKey, VerificationKeyResolver,
 };
+use dorc_receipt::dispatch::DurablePublicationProof;
 use dorc_receipt::format::RefusalReason;
 use dorc_receipt::ids::{ReceiptId, ReceiptIdSource, SigningKeyId};
 use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
 use dorc_receipt::model::PlanReceipt;
+use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::{ReadPlain, read_plain};
 use dorc_receipt::reader::{ReadRich, read_rich};
@@ -82,9 +85,9 @@ impl TickingClock {
 }
 
 impl dorc_receipt::order::ControllerClock for TickingClock {
-    fn order_token(&mut self) -> dorc_receipt::ReceiptOrderToken {
+    fn order_token(&mut self) -> ReceiptOrderToken {
         self.0 = self.0.saturating_add(1);
-        dorc_receipt::ReceiptOrderToken::of_controller_millis(self.0)
+        ReceiptOrderToken::of_controller_millis(self.0)
     }
 }
 
@@ -95,23 +98,172 @@ impl ReceiptIdSource for CountingIds {
     }
 }
 
+/// The fixture destination: documents held in memory, named by species and identity.
+///
+/// A TEST'S OWN VALUE, deliberately. Production has exactly one `ReceiptPlacement` — the local
+/// store's — so a volatile destination is structurally unable to answer a production route, and
+/// the durability proof this mints (which is what lets the route below reach the dispatch gate)
+/// is unspellable from any production file. `crate_boundary.rs` fences the mint's one production
+/// caller two ways.
 #[derive(Default)]
 struct MemorySink(Vec<(String, Vec<u8>)>);
 
-impl ReceiptSink for MemorySink {
-    fn publish(&mut self, name: &str, bytes: &[u8]) -> Option<PublicationGrade> {
-        self.0.push((name.to_owned(), bytes.to_vec()));
-        Some(PublicationGrade::Volatile)
+impl MemorySink {
+    fn keep<D: dorc_receipt::model::Species, P: dorc_receipt::model::Projection>(
+        &mut self,
+        prefix: &str,
+        id_hex: String,
+        receipt: dorc_receipt::writer::SignedReceipt<D, P>,
+    ) -> (PlacedDocument, DurablePublicationProof) {
+        let name = format!("{prefix}-{id_hex}");
+        let bytes = receipt.into_bytes();
+        let digest = dorc_receipt::ids::Sha256Digest::over("fixture-placement", &bytes);
+        self.0.push((name.clone(), bytes));
+        (
+            PlacedDocument::of(id_hex.clone(), name, None, PublicationGrade::Volatile),
+            DurablePublicationProof::of_required_placement(id_hex, digest, "fixture-volatile"),
+        )
     }
 }
 
-/// A sink that places nothing, so a publication failure is a real one rather than a return value
-/// standing in for one.
+impl ReceiptPlacement for MemorySink {
+    fn place_plan(
+        &mut self,
+        id: dorc_receipt::ids::PlanReceiptId,
+        _order: ReceiptOrderToken,
+        receipt: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Rich>,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Ok(self.keep("plan", id.hex(), receipt).0)
+    }
+
+    fn place_plain_plan(
+        &mut self,
+        id: dorc_receipt::ids::PlanReceiptId,
+        _order: ReceiptOrderToken,
+        receipt: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Plain>,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Ok(self.keep("plan", id.hex(), receipt).0)
+    }
+
+    fn place_intent(
+        &mut self,
+        id: dorc_receipt::ids::ApplyIntentId,
+        _order: ReceiptOrderToken,
+        receipt: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyIntent,
+            dorc_receipt::model::Rich,
+        >,
+    ) -> Result<PlacedIntent, PlacementFailure> {
+        let (placed, durability) = self.keep("apply-intent", id.hex(), receipt);
+        Ok(PlacedIntent { placed, durability })
+    }
+
+    fn place_plain_intent(
+        &mut self,
+        id: dorc_receipt::ids::ApplyIntentId,
+        _order: ReceiptOrderToken,
+        receipt: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyIntent,
+            dorc_receipt::model::Plain,
+        >,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Ok(self.keep("apply-intent", id.hex(), receipt).0)
+    }
+
+    fn place_outcome(
+        &mut self,
+        id: dorc_receipt::ids::ApplyOutcomeId,
+        _order: ReceiptOrderToken,
+        receipt: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyOutcome,
+            dorc_receipt::model::Rich,
+        >,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Ok(self.keep("apply-outcome", id.hex(), receipt).0)
+    }
+
+    fn place_plain_outcome(
+        &mut self,
+        id: dorc_receipt::ids::ApplyOutcomeId,
+        _order: ReceiptOrderToken,
+        receipt: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyOutcome,
+            dorc_receipt::model::Plain,
+        >,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Ok(self.keep("apply-outcome", id.hex(), receipt).0)
+    }
+}
+
+/// A placement that places nothing, so a publication failure is a real one rather than a return
+/// value standing in for one.
 struct RefusingSink;
 
-impl ReceiptSink for RefusingSink {
-    fn publish(&mut self, _: &str, _: &[u8]) -> Option<PublicationGrade> {
-        None
+impl ReceiptPlacement for RefusingSink {
+    fn place_plan(
+        &mut self,
+        _: dorc_receipt::ids::PlanReceiptId,
+        _: ReceiptOrderToken,
+        _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Rich>,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Err(PlacementFailure::Declined)
+    }
+
+    fn place_plain_plan(
+        &mut self,
+        _: dorc_receipt::ids::PlanReceiptId,
+        _: ReceiptOrderToken,
+        _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Plain>,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Err(PlacementFailure::Declined)
+    }
+
+    fn place_intent(
+        &mut self,
+        _: dorc_receipt::ids::ApplyIntentId,
+        _: ReceiptOrderToken,
+        _: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyIntent,
+            dorc_receipt::model::Rich,
+        >,
+    ) -> Result<PlacedIntent, PlacementFailure> {
+        Err(PlacementFailure::Declined)
+    }
+
+    fn place_plain_intent(
+        &mut self,
+        _: dorc_receipt::ids::ApplyIntentId,
+        _: ReceiptOrderToken,
+        _: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyIntent,
+            dorc_receipt::model::Plain,
+        >,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Err(PlacementFailure::Declined)
+    }
+
+    fn place_outcome(
+        &mut self,
+        _: dorc_receipt::ids::ApplyOutcomeId,
+        _: ReceiptOrderToken,
+        _: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyOutcome,
+            dorc_receipt::model::Rich,
+        >,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Err(PlacementFailure::Declined)
+    }
+
+    fn place_plain_outcome(
+        &mut self,
+        _: dorc_receipt::ids::ApplyOutcomeId,
+        _: ReceiptOrderToken,
+        _: dorc_receipt::writer::SignedReceipt<
+            dorc_receipt::model::ApplyOutcome,
+            dorc_receipt::model::Plain,
+        >,
+    ) -> Result<PlacedDocument, PlacementFailure> {
+        Err(PlacementFailure::Declined)
     }
 }
 
@@ -223,7 +375,7 @@ fn a_settled_run_publishes_a_document_that_reads_back_naming_the_surface_it_deci
     let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
 
-    let grade = publish_plan_receipt(
+    let placed = publish_plan_receipt(
         &spine,
         RecordedInvocationMode::Plan,
         authored(),
@@ -231,7 +383,7 @@ fn a_settled_run_publishes_a_document_that_reads_back_naming_the_surface_it_deci
         ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a settled run publishes");
-    assert_eq!(grade, PublicationGrade::Volatile);
+    assert_eq!(placed.grade(), PublicationGrade::Volatile);
     assert_eq!(sink.0.len(), 1, "one run publishes one document");
 
     let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
@@ -277,7 +429,7 @@ fn a_sink_that_places_nothing_publishes_nothing_and_says_so() {
             &presentation,
             ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         ),
-        Err(PublicationRefusal::Sink)
+        Err(PublicationRefusal::Placement(PlacementFailure::Declined))
     );
 }
 
@@ -568,8 +720,8 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
         &sealer,
     )
     .expect("a prepared intent publishes richly");
-    assert_eq!(published.grade(), PublicationGrade::Volatile);
-    let announced = published.id();
+    assert_eq!(published.1.grade(), PublicationGrade::Volatile);
+    let announced = published.0.id();
 
     let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
     let readable = String::from_utf8_lossy(&bytes).to_string();
@@ -638,7 +790,7 @@ fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
     let mut sink = MemorySink::default();
     let (intent, _) = prepared_apply_intent(&mut ids);
 
-    let (id, grade) = publish_plain_apply_intent(
+    let (id, placed) = publish_plain_apply_intent(
         &intent,
         &apply_invocation(),
         authored(),
@@ -646,7 +798,7 @@ fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
         ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a prepared intent publishes plainly");
-    assert_eq!(grade, PublicationGrade::Volatile);
+    assert_eq!(placed.grade(), PublicationGrade::Volatile);
 
     let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
     let readable = String::from_utf8_lossy(&bytes).to_string();
@@ -701,9 +853,8 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &sealer,
     )
     .expect("a prepared intent publishes richly");
-    let intent_id = published.id();
-    let (receipt, images) = published.into_gate_parts();
-    let phase = IntentPublicationGate::Published(receipt, images)
+    let intent_id = published.0.id();
+    let phase = IntentPublicationGate::Published(published.0)
         .permit(intent)
         .spend();
 
@@ -724,7 +875,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         host_influenced(),
     );
 
-    let (outcome_id, grade) = publish_apply_outcome(
+    let (outcome_id, placed) = publish_apply_outcome(
         &phase,
         &report,
         &apply_invocation(),
@@ -733,7 +884,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &sealer,
     )
     .expect("a declared outcome publishes richly");
-    assert_eq!(grade, PublicationGrade::Volatile);
+    assert_eq!(placed.grade(), PublicationGrade::Volatile);
     assert_ne!(
         outcome_id.hex(),
         intent_id.hex(),
@@ -791,7 +942,7 @@ fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
             &sealer,
         )
         .err(),
-        Some(PublicationRefusal::Sink)
+        Some(PublicationRefusal::Placement(PlacementFailure::Declined))
     );
 }
 
@@ -829,7 +980,7 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
         host_influenced(),
     );
 
-    let (id, grade) = dorc_cli::receipt_edge::publish_plain_apply_outcome(
+    let (id, placed) = dorc_cli::receipt_edge::publish_plain_apply_outcome(
         &phase,
         &report,
         &apply_invocation(),
@@ -837,7 +988,7 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
         ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a declared outcome publishes plainly");
-    assert_eq!(grade, PublicationGrade::Volatile);
+    assert_eq!(placed.grade(), PublicationGrade::Volatile);
 
     let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
     let readable = String::from_utf8_lossy(&bytes).to_string();
@@ -924,7 +1075,9 @@ mod deterministic_apply_route {
         ApplyAuthorization, ApplyPublishingCapabilities, ConsentedApplyRefusal,
         ConsentedApplyRequest, apply_invocation, consented_apply,
     };
-    use dorc_receipt::capability::PublicationGrade;
+    use dorc_cli::receipt_edge::{
+        PlacedDocument, PlacedIntent, PlacementFailure, ReceiptPlacement,
+    };
     use dorc_receipt::dispatch::{
         AttributionIntegrityFailure, ConfiguredReceiptBypass, DurableFailure,
         ExecutionIntegrityFailure, GenerationIntegrityFailure, MutationIntegrityFailure,
@@ -932,6 +1085,8 @@ mod deterministic_apply_route {
     };
     use dorc_receipt::graph::ReceiptGraph;
     use dorc_receipt::limits::ReceiptLimits;
+    use dorc_receipt::model::PlanReceipt;
+    use dorc_receipt::order::ReceiptOrderToken;
     use dorc_receipt::outcome::OutcomeAvailability;
     use dorc_receipt::reader::{ReadRich, read_rich};
     use dorc_receipt::tokens::{ClosedToken, RecordedApplyPolicy, RecordedTerminalState};
@@ -1116,15 +1271,79 @@ mod deterministic_apply_route {
     /// is narration — reporting it is all that is left, and stopping would restore nothing.
     #[test]
     fn a_durable_failure_past_the_permit_is_reported_and_the_apply_still_ran() {
-        /// Places the first document and refuses every one after it.
-        struct PlacesTheFirstOnly {
-            placed: usize,
-        }
+        /// Places the intent and refuses the outcome that follows it.
+        ///
+        /// Only the two apply methods are reachable from this route; the other four answer the
+        /// refusal rather than a plausible success, so a route that started calling one would
+        /// fail here rather than pass on a stand-in.
+        #[derive(Default)]
+        struct PlacesTheFirstOnly(MemorySink);
 
-        impl dorc_receipt::capability::ReceiptSink for PlacesTheFirstOnly {
-            fn publish(&mut self, _: &str, _: &[u8]) -> Option<PublicationGrade> {
-                self.placed = self.placed.saturating_add(1);
-                (self.placed == 1).then_some(PublicationGrade::Volatile)
+        impl ReceiptPlacement for PlacesTheFirstOnly {
+            fn place_plan(
+                &mut self,
+                _: dorc_receipt::ids::PlanReceiptId,
+                _: ReceiptOrderToken,
+                _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Rich>,
+            ) -> Result<PlacedDocument, PlacementFailure> {
+                Err(PlacementFailure::Declined)
+            }
+
+            fn place_plain_plan(
+                &mut self,
+                _: dorc_receipt::ids::PlanReceiptId,
+                _: ReceiptOrderToken,
+                _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Plain>,
+            ) -> Result<PlacedDocument, PlacementFailure> {
+                Err(PlacementFailure::Declined)
+            }
+
+            fn place_intent(
+                &mut self,
+                id: dorc_receipt::ids::ApplyIntentId,
+                order: ReceiptOrderToken,
+                receipt: dorc_receipt::writer::SignedReceipt<
+                    dorc_receipt::model::ApplyIntent,
+                    dorc_receipt::model::Rich,
+                >,
+            ) -> Result<PlacedIntent, PlacementFailure> {
+                self.0.place_intent(id, order, receipt)
+            }
+
+            fn place_plain_intent(
+                &mut self,
+                _: dorc_receipt::ids::ApplyIntentId,
+                _: ReceiptOrderToken,
+                _: dorc_receipt::writer::SignedReceipt<
+                    dorc_receipt::model::ApplyIntent,
+                    dorc_receipt::model::Plain,
+                >,
+            ) -> Result<PlacedDocument, PlacementFailure> {
+                Err(PlacementFailure::Declined)
+            }
+
+            fn place_outcome(
+                &mut self,
+                _: dorc_receipt::ids::ApplyOutcomeId,
+                _: ReceiptOrderToken,
+                _: dorc_receipt::writer::SignedReceipt<
+                    dorc_receipt::model::ApplyOutcome,
+                    dorc_receipt::model::Rich,
+                >,
+            ) -> Result<PlacedDocument, PlacementFailure> {
+                Err(PlacementFailure::Declined)
+            }
+
+            fn place_plain_outcome(
+                &mut self,
+                _: dorc_receipt::ids::ApplyOutcomeId,
+                _: ReceiptOrderToken,
+                _: dorc_receipt::writer::SignedReceipt<
+                    dorc_receipt::model::ApplyOutcome,
+                    dorc_receipt::model::Plain,
+                >,
+            ) -> Result<PlacedDocument, PlacementFailure> {
+                Err(PlacementFailure::Declined)
             }
         }
 
@@ -1132,7 +1351,7 @@ mod deterministic_apply_route {
         let (sealer, _) = age_pair();
         let mut ids = CountingIds(0);
         let mut clock = TickingClock::fixture();
-        let mut sink = PlacesTheFirstOnly { placed: 0 };
+        let mut sink = PlacesTheFirstOnly::default();
         let mut driver = host_running(0);
         let destination = destination();
         let invocation = apply_invocation(DESTINATION, None);

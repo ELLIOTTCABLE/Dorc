@@ -1087,6 +1087,9 @@ impl DorcConsumer {
                 .whylog_dir
                 .clone()
                 .unwrap_or_else(|| "<disabled>".to_owned()),
+            // A loom world has no per-user profile, and saying so is the honest label: nothing
+            // here resolves a standard root, so no path could be named that a case would recognize.
+            receipt_label: "<disabled>".to_owned(),
             host: args.host.clone(),
         };
         let mut sink = LoomOutputSink {
@@ -1772,6 +1775,7 @@ struct LoomEngineEdges {
     fault: Option<crate::edge_fault::EdgeFault>,
     shim_dir: Option<String>,
     durable_label: String,
+    receipt_label: String,
     host: Option<String>,
 }
 
@@ -1881,8 +1885,24 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
         Ok(())
     }
 
+    /// A loom drive places no document: its world is materialized bytes, not a per-user profile.
+    /// A declared `receipt-publish` fault is how a case exercises the refusal.
+    fn publish_receipt(
+        &mut self,
+        _request: &dorc_cli::engine::ReceiptPublicationRequest<'_>,
+    ) -> Result<Option<dorc_cli::receipt_edge::PlacedDocument>, String> {
+        if let Some(crate::edge_fault::EdgeFault::ReceiptPublish(reason)) = &self.fault {
+            return Err(reason.clone());
+        }
+        Ok(None)
+    }
+
     fn durable_label(&self) -> &str {
         &self.durable_label
+    }
+
+    fn receipt_label(&self) -> &str {
+        &self.receipt_label
     }
 
     fn invocation_record(

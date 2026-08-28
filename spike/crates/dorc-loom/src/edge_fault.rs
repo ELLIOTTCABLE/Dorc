@@ -20,6 +20,7 @@ pub(crate) enum EdgeFault {
     ShimExec(IoFailure),
     ArtifactPublish(&'static str),
     WhylogPublish(String),
+    ReceiptPublish(String),
     HostEvidence(dorc_plan::records::AdmissionRefusal),
     ToolRun {
         tool: String,
@@ -85,6 +86,7 @@ impl EdgeFault {
             ["artifact-publish", "directory"] => Self::ArtifactPublish("directory"),
             ["artifact-publish", "write"] => Self::ArtifactPublish("write"),
             ["whylog-publish", reason] => Self::WhylogPublish((*reason).to_owned()),
+            ["receipt-publish", reason] => Self::ReceiptPublish((*reason).to_owned()),
             ["host-evidence", "invalid-utf8"] => {
                 Self::HostEvidence(dorc_plan::records::AdmissionRefusal::InvalidUtf8)
             }

@@ -24,11 +24,13 @@
 pub mod apply;
 pub mod artifact;
 pub mod bundle;
+pub mod durable;
 pub mod engine;
 pub mod fixpoint;
 pub mod kinds;
 pub mod provenance;
 pub mod receipt_edge;
+pub mod recorded;
 pub mod results;
 pub mod snapshot;
 pub mod sourcing;

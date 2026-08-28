@@ -10,15 +10,14 @@
 //! established it. Nothing here opens a connection, reads an environment, or asks a clock.
 
 use crate::ids::{
-    ApplyGenerationId, ApplySessionId, PlanReceiptId, PresentedPlanId, ReadyApplyTargetId,
+    ApplyGenerationId, ApplyIntentId, ApplySessionId, PlanReceiptId, PresentedPlanId,
+    ReadyApplyTargetId, Sha256Digest,
 };
 use crate::image::ApplyArtifactImage;
-use crate::model::{ApplyIntent, Rich};
 use crate::overlay::OverlayEntry;
 use crate::projection::OpaqueFieldTag;
 use crate::rows::{AssignmentOrdinal, OriginOrdinal};
 use crate::tokens::RecordedApplyPolicy;
-use crate::writer::PublishedReceipt;
 
 /// Where a controller is sending an apply's bytes.
 ///
@@ -632,14 +631,141 @@ impl ConfiguredReceiptBypass {
     }
 }
 
+/// Proof that a durable store placed one exact document at its platform's required baseline.
+///
+/// Carries the three facts a gate has to bind and nothing else: which document identity was
+/// filed, the digest of the exact bytes filed under it, and which policy judged the placement.
+/// Not `Clone`, so one placement funds one gate.
+///
+/// The mint is public because the store that earns one lives in a crate downstream of this one,
+/// and no type can privilege that crate over any other. The fence is therefore lexical and
+/// two-way, in `receipt/tests/crate_boundary.rs`.
+#[derive(Debug)]
+pub struct DurablePublicationProof {
+    receipt_id_hex: String,
+    document_digest: Sha256Digest,
+    policy_identity: &'static str,
+}
+
+impl DurablePublicationProof {
+    /// Record that a store placed `receipt_id_hex`'s document, whose bytes digest to
+    /// `document_digest`, under the policy `policy_identity` names.
+    #[must_use]
+    pub const fn of_required_placement(
+        receipt_id_hex: String,
+        document_digest: Sha256Digest,
+        policy_identity: &'static str,
+    ) -> Self {
+        Self {
+            receipt_id_hex,
+            document_digest,
+            policy_identity,
+        }
+    }
+
+    /// The identity of the document that was placed.
+    #[must_use]
+    pub fn receipt_id_hex(&self) -> &str {
+        &self.receipt_id_hex
+    }
+
+    /// The digest of the exact bytes placed.
+    #[must_use]
+    pub const fn document_digest(&self) -> Sha256Digest {
+        self.document_digest
+    }
+
+    /// Which policy the placement was judged under.
+    #[must_use]
+    pub const fn policy_identity(&self) -> &'static str {
+        self.policy_identity
+    }
+}
+
+/// Why a required publication could not be assembled into one value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IntentPublicationMismatch {
+    /// The durability proof names a document other than this intent.
+    ProofNamesAnotherDocument,
+    /// The requested policy is not the one a required publication answers.
+    PolicyIsNotRequired,
+}
+
+/// One published rich apply intent, with everything the permit mint rests on, bound together.
+///
+/// The four members `30Rb:critical-type-effect-map` names — the exact intent receipt, the
+/// image-account witness, the requested policy, and the durable publication proof — arrive at
+/// ONE mint that CHECKS their agreement rather than trusting it: the proof must name this
+/// intent's own identity, and the policy must be the required one. Nothing hands the members
+/// back out, so a caller cannot pair one intent's publication with another's image witness after
+/// the fact.
+///
+/// Not `Clone`: one publication authorizes one dispatch.
+#[derive(Debug)]
+pub struct PublishedApplyIntentV1 {
+    id: ApplyIntentId,
+    document_digest: Sha256Digest,
+    policy: ReceiptPolicyWitness,
+    #[expect(
+        dead_code,
+        reason = "held to prove the images reached the placed region; there is deliberately no \
+                  accessor, because reading it back would be a second use of a one-use witness"
+    )]
+    images: ExactApplyImagesPresent,
+}
+
+impl PublishedApplyIntentV1 {
+    /// Bind one placement to the intent, images and policy it was earned by.
+    ///
+    /// # Errors
+    /// Refuses a proof naming another document and a policy that is not the required one.
+    pub fn minted(
+        id: ApplyIntentId,
+        images: ExactApplyImagesPresent,
+        policy: ReceiptPolicyWitness,
+        durability: DurablePublicationProof,
+    ) -> Result<Self, IntentPublicationMismatch> {
+        if durability.receipt_id_hex() != id.hex() {
+            return Err(IntentPublicationMismatch::ProofNamesAnotherDocument);
+        }
+        if policy.token() != RecordedApplyPolicy::RequiredRich {
+            return Err(IntentPublicationMismatch::PolicyIsNotRequired);
+        }
+        Ok(Self {
+            id,
+            document_digest: durability.document_digest(),
+            policy,
+            images,
+        })
+    }
+
+    /// The identity of the intent that was published.
+    #[must_use]
+    pub const fn id(&self) -> ApplyIntentId {
+        self.id
+    }
+
+    /// The digest of the exact bytes that were placed.
+    #[must_use]
+    pub const fn document_digest(&self) -> Sha256Digest {
+        self.document_digest
+    }
+
+    /// The policy the publication answered.
+    #[must_use]
+    pub const fn policy(&self) -> ReceiptPolicyWitness {
+        self.policy
+    }
+}
+
 /// How an intent cleared the pre-dispatch boundary.
 ///
 /// The two arms are disjoint and neither converts to the other: there is no route from a
 /// plain publication, an attempted publication, or a failed one into `Published`.
 #[derive(Debug)]
 pub enum IntentPublicationGate {
-    /// A rich intent was published, and every assignment's exact image was in it.
-    Published(PublishedReceipt<ApplyIntent, Rich>, ExactApplyImagesPresent),
+    /// A rich intent was placed durably, and every assignment's exact image was in it.
+    Published(PublishedApplyIntentV1),
     /// An explicit configuration permitted dispatch without required publication.
     ConfiguredBypass(ConfiguredReceiptBypass),
 }
@@ -649,7 +775,7 @@ impl IntentPublicationGate {
     #[must_use]
     pub const fn policy(&self) -> RecordedApplyPolicy {
         match self {
-            Self::Published(_, _) => RecordedApplyPolicy::RequiredRich,
+            Self::Published(_) => RecordedApplyPolicy::RequiredRich,
             Self::ConfiguredBypass(_) => RecordedApplyPolicy::ConfiguredBypass,
         }
     }

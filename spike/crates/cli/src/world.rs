@@ -112,7 +112,20 @@ impl crate::engine::EngineEdges for WhyEngineEdges {
         Ok(())
     }
 
+    /// This driver writes nothing. `Ok(None)` says so: a run with no durable configured is not a
+    /// run whose durable failed.
+    fn publish_receipt(
+        &mut self,
+        _request: &crate::engine::ReceiptPublicationRequest<'_>,
+    ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
+        Ok(None)
+    }
+
     fn durable_label(&self) -> &'static str {
+        "<disabled>"
+    }
+
+    fn receipt_label(&self) -> &'static str {
         "<disabled>"
     }
 

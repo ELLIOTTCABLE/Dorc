@@ -743,6 +743,18 @@ fn the_secret_bytes_constructor_is_reachable_from_one_production_file() {
 }
 
 #[test]
+fn the_durable_publication_proof_is_minted_by_one_production_file() {
+    // The pre-dispatch gate consumes this proof, so whoever can mint one can say a document was
+    // placed durably. The store that EARNS one lives downstream of this crate, and no type can
+    // privilege a downstream crate over any other, so the fence is lexical and two-way — the
+    // shape `sinv-production-fences` prescribes for exactly this case.
+    fence(
+        "of_required_placement",
+        &["receipt-local/src/store.rs", "receipt/src/dispatch.rs"],
+    );
+}
+
+#[test]
 fn the_fixture_signature_stand_in_never_reaches_a_production_file() {
     // The graph corpus signs its documents with an inert deterministic stand-in. It is confined
     // by living in a test target; this asserts that rather than trusting it.

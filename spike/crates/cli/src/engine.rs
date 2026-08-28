@@ -275,13 +275,43 @@ pub trait EngineEdges {
     /// # Errors
     /// Returns a closed refusal description when publication fails.
     fn publish_whylog(&mut self, bytes: &[u8]) -> Result<(), String>;
+    /// Publish this run's durable receipt through the production durable edge.
+    ///
+    /// Called BEFORE the artifact is emitted, so a plan that names its own receipt can only ever
+    /// name one that was already made durable. An edge with no durable configured answers
+    /// `Ok(None)`, which is not a failure: a run may legitimately have nowhere to write.
+    ///
+    /// # Errors
+    /// Returns a closed refusal word when the run had a durable edge and it placed nothing.
+    fn publish_receipt(
+        &mut self,
+        request: &ReceiptPublicationRequest<'_>,
+    ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String>;
     /// Display label for the configured durable destination.
     fn durable_label(&self) -> &str;
+    /// Display label for the receipt store this run would file under.
+    fn receipt_label(&self) -> &str;
     /// Mint the invocation record at the production boundary, where raw process arguments live.
     fn invocation_record(
         &mut self,
         request: InvocationRecordRequest<'_>,
     ) -> dorc_core::spine::SpineInvocation;
+}
+
+/// The settled values one receipt is projected from.
+///
+/// A borrowed request rather than loose arguments, so the seat that holds the keys receives one
+/// coherent description of the run and cannot pair one run's Spine with another's presentation.
+#[derive(Debug)]
+pub struct ReceiptPublicationRequest<'a> {
+    /// The settled decision plane.
+    pub spine: &'a dorc_plan::Spine,
+    /// Which surface the invocation asked for, in the recorded vocabulary.
+    pub mode: dorc_receipt::tokens::RecordedInvocationMode,
+    /// The run's own influence account.
+    pub world: dorc_core::influence::InfluenceAccount,
+    /// The final presentation the identities were minted over.
+    pub presentation: &'a dorc_plan::presentation::FinalPresentation,
 }
 
 /// Typed semantic facts needed to mint a durable invocation record.
@@ -2014,6 +2044,41 @@ fn run_status(
         return Ok(book_outcome);
     }
 
+    // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
+    //
+    // Placed BEFORE the artifact reaches stdout or a directory. Nothing today makes a plan name
+    // its own durable, but the ordering is what would let one: a trailer naming a path is honest
+    // only if the path was already written, and recovering that ordering afterwards is
+    // archaeology rather than a change.
+    if options.durable == DurableOutput::Enabled
+        && whylog_eligible
+        && let Some(records) = admitted_records
+    {
+        crate::receipt_edge::record_durable_arm(
+            &mut spine,
+            invocation,
+            &presentation,
+            results,
+            records,
+            world_account,
+        );
+        publish_receipt(
+            edges,
+            sink,
+            &ReceiptPublicationRequest {
+                spine: &spine,
+                mode: crate::receipt_edge::recorded_mode(mode),
+                world: world_account,
+                presentation: &presentation,
+            },
+        );
+        // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
+        // decided at one seat, per species, and what it drops is countable there too.
+        if let Some(projection) = dorc_plan::whylog::DurableProjection::project(&spine) {
+            write_whylog(edges, sink, generated, &projection);
+        }
+    }
+
     generated.push(GeneratedOutput::Artifact(artifact.clone()));
     sink.emit(OutputEvent::plain_text(
         OutputChannel::Stdout,
@@ -2074,25 +2139,6 @@ fn run_status(
         ),
     ));
 
-    // Default-on: the receipt nobody asked for is the only kind that exists on the bad morning.
-    if options.durable == DurableOutput::Enabled
-        && whylog_eligible
-        && let Some(records) = admitted_records
-    {
-        crate::receipt_edge::record_durable_arm(
-            &mut spine,
-            invocation,
-            &presentation,
-            results,
-            records,
-            world_account,
-        );
-        // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
-        // decided at one seat, per species, and what it drops is countable there too.
-        if let Some(projection) = dorc_plan::whylog::DurableProjection::project(&spine) {
-            write_whylog(edges, sink, generated, &projection);
-        }
-    }
     *world_out = Some(WhyWorld {
         snapshot: snapshot.clone(),
         interner,
@@ -2109,6 +2155,32 @@ fn run_status(
         cascades,
     });
     Ok(book_outcome)
+}
+
+/// Ask the edge to place this run's receipt, and report a durable that did not land.
+///
+/// The answer is discarded on purpose TODAY: nothing on the plan surface names the receipt yet,
+/// and the placement carries its own path and identity so that a later surface can. What is not
+/// discarded is a FAILURE — a run whose durable silently vanished is exactly the run somebody
+/// comes back asking about.
+fn publish_receipt(
+    edges: &mut dyn EngineEdges,
+    sink: &mut dyn OutputSink,
+    request: &ReceiptPublicationRequest<'_>,
+) {
+    if let Err(reason) = edges.publish_receipt(request) {
+        report(
+            sink,
+            "receipt",
+            None,
+            &[Diag::new_spanless_site(DiagCode::DurableReceiptUnwritten(
+                dorc_aid::diag::DurableReceiptUnwritten {
+                    store: edges.receipt_label().to_owned(),
+                    reason,
+                },
+            ))],
+        );
+    }
 }
 
 fn write_whylog(
@@ -4075,7 +4147,18 @@ mod tests {
             Ok(())
         }
 
+        fn publish_receipt(
+            &mut self,
+            _request: &ReceiptPublicationRequest<'_>,
+        ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
+            Ok(None)
+        }
+
         fn durable_label(&self) -> &'static str {
+            "<disabled>"
+        }
+
+        fn receipt_label(&self) -> &'static str {
             "<disabled>"
         }
 

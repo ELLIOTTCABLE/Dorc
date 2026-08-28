@@ -32,6 +32,7 @@
 
 use core::marker::PhantomData;
 
+use dorc_receipt::dispatch::DurablePublicationProof;
 use dorc_receipt::format::RefusalReason;
 use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId, Sha256Digest};
 use dorc_receipt::limits::ReceiptLimits;
@@ -449,6 +450,20 @@ impl<D: StoredSpecies, P: Projection> RequiredLocalPublicationV1<D, P> {
     #[must_use]
     pub const fn properties(&self) -> PublicationProperties {
         self.properties
+    }
+
+    /// The proof a pre-dispatch gate consumes, carrying this exact placement's three facts.
+    ///
+    /// Minted from the publication rather than beside it: reaching this method at all means the
+    /// exclusive create, the complete write, and every synchronization the platform's required
+    /// baseline demands all succeeded, because nothing else produces the value it is called on.
+    #[must_use]
+    pub fn durable_proof(&self) -> DurablePublicationProof {
+        DurablePublicationProof::of_required_placement(
+            D::id_hex(self.receipt_id),
+            self.document_digest,
+            self.policy,
+        )
     }
 }
 

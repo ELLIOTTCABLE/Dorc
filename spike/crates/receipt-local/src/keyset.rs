@@ -153,6 +153,33 @@ impl KeyAvailability {
     pub const fn exposes_write_capability(&self) -> bool {
         matches!(self, Self::ReadyForPublication)
     }
+
+    /// The closed word a report names this state by.
+    ///
+    /// Engine-owned vocabulary, not prose: one token per arm, exhaustive, so a new arm cannot be
+    /// absorbed into a neighbour's word. Roles and subjects are deliberately NOT spelled into the
+    /// token — which document is which is a detail a report renders from its own payload, and a
+    /// token that varied by role would multiply the vocabulary without adding a world-state.
+    #[must_use]
+    pub const fn token(&self) -> &'static str {
+        match self {
+            Self::NotInitialized => "not-initialized",
+            Self::KeysetMissingWithExistingStore => "keyset-missing-with-existing-store",
+            Self::IncompleteOrInProgress => "incomplete",
+            Self::RootUnavailable => "root-unavailable",
+            Self::TemporarilyUnavailable => "temporarily-unavailable",
+            Self::MissingAfterInitialization { .. } => "key-missing",
+            Self::MalformedKeyDocument { .. } => "key-malformed",
+            Self::NonCanonicalKeyDocument { .. } => "key-non-canonical",
+            Self::PermissionRefused { .. } => "permission-refused",
+            Self::ManifestMismatch { .. } => "manifest-mismatch",
+            Self::UnsupportedKeysetVersion => "unsupported-version",
+            Self::UnexpectedObject { .. } => "unexpected-object",
+            Self::VerificationReady => "verification-ready",
+            Self::RichReadReady => "rich-read-ready",
+            Self::ReadyForPublication => "ready-for-publication",
+        }
+    }
 }
 
 /// Where one keyset's objects live under a configuration root.

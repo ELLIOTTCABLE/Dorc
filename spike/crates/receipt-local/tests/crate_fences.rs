@@ -18,12 +18,11 @@ fn crates_root() -> PathBuf {
 
 /// The crates permitted to name this one.
 ///
-/// Empty TODAY, and that is the stage rather than an oversight: nothing selects a production key
-/// provider or store yet, so nothing depends on the crate that will own them. `cli` joins this
-/// list at the stage that wires the production route, and the emptiness is asserted below rather
-/// than assumed — an entry appearing early would read as a fence while permitting a reach nobody
-/// reviewed.
-const MAY_NAME_IT: [&str; 0] = [];
+/// `cli` alone: the production route's composition root is where a keyset and a store are
+/// selected, and nothing else in the workspace has business reaching for either. Checked in both
+/// directions below, so an entry that stopped depending fails as loudly as a crate depending
+/// without one.
+const MAY_NAME_IT: [&str; 1] = ["cli"];
 
 /// The crates that must NEVER name it, whatever else changes.
 ///
@@ -94,8 +93,8 @@ fn the_analyzer_graph_cannot_spell_the_local_edge() {
 
 #[test]
 fn only_the_listed_crates_name_the_local_edge_and_every_listed_one_does() {
-    // Two-way. The list is empty at this stage, which the second half asserts as a fact rather
-    // than leaving as a vacuous pass.
+    // Two-way: a crate naming it without an entry fails, and an entry that stopped naming it
+    // fails too, so the list cannot rot into a description of what used to be true.
     let mut namers: Vec<String> = Vec::new();
     for (name, manifest) in manifests() {
         if name != "receipt-local" && names_local(&manifest) {
@@ -161,25 +160,34 @@ const AUTHORITY_ENTRY_POINTS: [&str; 5] = [
 
 /// The production files permitted to reach any of them.
 ///
-/// Empty TODAY, and that is the stage rather than an oversight: no production route selects a key
-/// provider or a store yet. The stage that wires the real binary adds its files here, one at a
-/// time, and each addition is a visible edit to this list rather than a call that appeared.
-const MAY_REACH_THE_EDGE: [&str; 0] = [];
+/// ONE file: the composition root. Every other production seat that wants a keyset or a store
+/// asks that root for one, so this list stays a single line and a second entry is a governed
+/// review rather than a call that appeared.
+const MAY_REACH_THE_EDGE: [&str; 1] = ["cli/src/durable.rs"];
 
-/// Every production `.rs` file in the workspace outside this crate, as (path, text).
+/// Every production `.rs` file in the workspace outside this crate, keyed by a slash-normalized
+/// CRATE-RELATIVE path.
 ///
 /// Production only: `tests/` and `benches/` are excluded, because a fixture reaching the edge is
 /// exactly what the test layers are for.
+///
+/// Crate-relative rather than absolute, so an allow-list entry is a spelling a person can write
+/// and a diff can be read: an absolute key would embed whoever's checkout produced it, which no
+/// entry could ever match.
 fn production_sources() -> Vec<(String, String)> {
-    fn walk(dir: &Path, out: &mut Vec<(String, String)>) {
+    fn walk(dir: &Path, prefix: &str, out: &mut Vec<(String, String)>) {
         for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
             let path = entry.path();
+            let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+                continue;
+            };
+            let joined = format!("{prefix}/{name}");
             if path.is_dir() {
-                walk(&path, out);
+                walk(&path, &joined, out);
             } else if path.extension().is_some_and(|ext| ext == "rs")
                 && let Ok(text) = std::fs::read_to_string(&path)
             {
-                out.push((path.to_string_lossy().replace('\\', "/"), text));
+                out.push((joined, text));
             }
         }
     }
@@ -190,7 +198,11 @@ fn production_sources() -> Vec<(String, String)> {
         if name == "receipt-local" {
             continue;
         }
-        walk(&entry.path().join("src"), &mut found);
+        walk(
+            &entry.path().join("src"),
+            &format!("{name}/src"),
+            &mut found,
+        );
     }
     found.sort_by(|a, b| a.0.cmp(&b.0));
     assert!(

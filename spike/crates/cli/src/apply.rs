@@ -259,7 +259,7 @@ pub struct ConsentedApplyRequest<'a> {
 pub struct ApplyPublishingCapabilities<'a> {
     clock: &'a mut dyn dorc_receipt::order::ControllerClock,
     signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
-    sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
+    placement: &'a mut dyn crate::receipt_edge::ReceiptPlacement,
     sealer: &'a dyn OverlaySealer,
 }
 
@@ -268,13 +268,13 @@ impl<'a> ApplyPublishingCapabilities<'a> {
     pub fn of(
         clock: &'a mut dyn dorc_receipt::order::ControllerClock,
         signer: &'a dyn dorc_receipt::capability::ReceiptSigner,
-        sink: &'a mut dyn dorc_receipt::capability::ReceiptSink,
+        placement: &'a mut dyn crate::receipt_edge::ReceiptPlacement,
         sealer: &'a dyn OverlaySealer,
     ) -> Self {
         Self {
             clock,
             signer,
-            sink,
+            placement,
             sealer,
         }
     }
@@ -457,23 +457,22 @@ fn published_route(
     let ApplyPublishingCapabilities {
         clock,
         signer,
-        sink,
+        placement,
         sealer,
     } = publication;
     let intent = prepare_intent_for(request, ids, ReceiptPolicyWitness::required_rich())?;
-    let published = publish_apply_intent(
+    let (published, _placed) = publish_apply_intent(
         &intent,
         request.invocation,
         request.standup_account,
         request.limits,
-        ReceiptCapabilities::of(&mut *ids, &mut *clock, signer, &mut *sink),
+        ReceiptCapabilities::of(&mut *ids, &mut *clock, signer, &mut *placement),
         sealer,
     )
     .map_err(ConsentedApplyRefusal::Publication)?;
 
     let intent_id = published.id();
-    let (receipt, images) = published.into_gate_parts();
-    let dispatched = IntentPublicationGate::Published(receipt, images)
+    let dispatched = IntentPublicationGate::Published(published)
         .permit(intent)
         .spend();
 
@@ -493,7 +492,7 @@ fn published_route(
         &report,
         request.invocation,
         request.limits,
-        ReceiptCapabilities::of(&mut *ids, &mut *clock, signer, &mut *sink),
+        ReceiptCapabilities::of(&mut *ids, &mut *clock, signer, &mut *placement),
         sealer,
     );
     let (outcome, durable_failure) = match placed {
@@ -559,13 +558,14 @@ const fn terminal_of(shipped: Option<&SessionOutcome>) -> RecordedTerminalState 
 /// writing a document, so all of them are durable failures and none of them is anything else.
 const fn durable_failure_of(refusal: &PublicationRefusal) -> DurableFailure {
     match refusal {
-        PublicationRefusal::Sink => DurableFailure::Sink,
+        PublicationRefusal::Placement(_) => DurableFailure::Sink,
         PublicationRefusal::Grammar(_) => DurableFailure::Grammar,
         PublicationRefusal::RegionOverBound => DurableFailure::Seal,
         PublicationRefusal::Projection(_)
         | PublicationRefusal::ApplyProjection(_)
         | PublicationRefusal::OverlayAccount
         | PublicationRefusal::ImageAccount
+        | PublicationRefusal::GateMismatch(_)
         | PublicationRefusal::Identity => DurableFailure::Projection,
     }
 }

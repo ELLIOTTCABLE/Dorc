@@ -476,6 +476,7 @@ dependencies = [
  "dorc-plan",
  "dorc-receipt",
  "dorc-receipt-crypto",
+ "dorc-receipt-local",
  "dorc-syntax",
  "dorc-transport",
  "errorloom",

@@ -22,6 +22,17 @@ pub struct BoundedReceiptBytes {
 }
 
 impl BoundedReceiptBytes {
+    /// Take the bytes back, consuming the bound.
+    ///
+    /// The seam between a store that read a file under its own ceiling and a reader that bounds
+    /// again from scratch. Independent re-bounding is required — a writer's cap never proves a
+    /// pre-existing file is bounded — so handing the bytes across gives up nothing: the reader's
+    /// first act is to measure them itself.
+    #[must_use]
+    pub fn into_vec(self) -> Vec<u8> {
+        self.bytes
+    }
+
     /// Accept input within the aggregate bound.
     ///
     /// # Errors
