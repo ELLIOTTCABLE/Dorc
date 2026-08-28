@@ -272,3 +272,142 @@ fn two_clean_profiles_mint_different_identities_and_reopening_one_preserves_them
         "two runs publish two documents, and neither replaces the other"
     );
 }
+
+/// The plan an apply ships: a null command, so the dispatch carries inert bytes.
+///
+/// Deliberately not a book, and deliberately doing nothing. What this battery observes is the
+/// ORCHESTRATION — that an intent was published, that a session carried the bytes, and that the
+/// outcome names the intent that authorized it — not what any command does on the far side.
+const INERT_PLAN: &str = "#!/bin/sh\n:\n";
+
+/// The destination an apply addresses. It is never resolved: the local driver stands in for the
+/// remote shell over the production code path, so this is the name the run attributes to.
+const DESTINATION: &str = "web9.example.net";
+
+/// Point one apply at the local shell instead of ssh, over the production adapter.
+///
+/// Debug-only in the binary, and it announces itself on stderr — a run must never quietly say
+/// "host" and mean "here" (`271:rul-sin-ordering` puts mis-attribution at the top).
+fn through_a_local_shell(command: &mut Command, scratch: &Scratch) {
+    let posix = internal_tooling::Posix::find().expect("this corpus needs a POSIX shell");
+    command.env("DORC_TRANSPORT", format!("local:{}", posix.shell.display()));
+    command.env(
+        "DORC_TRANSPORT_INTERPRETER",
+        if cfg!(windows) {
+            format!("/usr/bin/{}", posix.name)
+        } else {
+            posix.shell.display().to_string()
+        },
+    );
+    // Nothing ambient is reachable from the shipped bytes. The marker protocol uses `printf`
+    // alone, which every shell in the floor carries as a builtin.
+    command.env("PATH", scratch.path.join("no-such-tools"));
+}
+
+/// The store's documents, by species stem.
+fn published_of(sandbox: &ProfileSandbox, stem: &str) -> Vec<String> {
+    entries(&store_root(sandbox))
+        .into_iter()
+        .filter(|name| name.starts_with(stem))
+        .collect()
+}
+
+/// The receipt identity a V1 filename carries: `<species>-v1-<order>-<id>.dorc-receipt`.
+fn receipt_id_of(name: &str) -> String {
+    name.trim_end_matches(".dorc-receipt")
+        .rsplit('-')
+        .next()
+        .expect("a name splits")
+        .to_owned()
+}
+
+#[test]
+fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_reached() {
+    let sandbox = ProfileSandbox::new("apply-why");
+    let scratch = Scratch::new("apply-why");
+    std::fs::write(scratch.path.join("plan.sh"), INERT_PLAN).expect("write the plan");
+
+    let mut command = dorc(&sandbox, &scratch.path);
+    through_a_local_shell(&mut command, &scratch);
+    let out = command
+        .args(["apply", "--host", DESTINATION, "--plan", "plan.sh"])
+        .output()
+        .expect("the built binary runs");
+    assert!(
+        out.status.success(),
+        "the apply must complete for its receipts to mean anything; stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    let intents = published_of(&sandbox, "apply-intent-v1-");
+    let outcomes = published_of(&sandbox, "apply-outcome-v1-");
+    assert_eq!(intents.len(), 1, "one apply publishes one intent");
+    assert_eq!(outcomes.len(), 1, "and records one outcome");
+    let intent_id = receipt_id_of(intents.first().expect("one intent"));
+
+    // The keyset the apply route created on its own first use — this profile never planned, so
+    // the write path reached initialization from the apply side.
+    assert!(
+        keyset_dir(&sandbox)
+            .join("keyset-manifest-v1.txt")
+            .is_file(),
+        "an apply on a clean profile initializes its own keyset"
+    );
+
+    let listing = why(&sandbox, &scratch, &["--all"]);
+    assert!(
+        listing.contains(&format!("answers-intent {intent_id}")),
+        "the outcome must name the intent that authorized it; got:\n{listing}"
+    );
+    assert!(
+        listing
+            .lines()
+            .any(|line| line.starts_with("edge apply-intent ") && line.contains(&intent_id)),
+        "a second process must correlate the two species it read; got:\n{listing}"
+    );
+}
+
+#[test]
+fn an_apply_that_cannot_publish_its_intent_never_reaches_the_transport() {
+    // THE PRE-DISPATCH BOUNDARY, pinned on WHICH refusal fires rather than on the exit status.
+    //
+    // The transport is pointed at a shell that does not exist, so a run that reached it would
+    // report a transport failure and exit in the 13/14 family. A run that refuses FIRST exits on
+    // the invocation path naming the durable. Asserting only "it failed" would pass either way,
+    // which is the vacuous shape this arc keeps finding after the fact.
+    let sandbox = ProfileSandbox::new("apply-refuse");
+    let scratch = Scratch::new("apply-refuse");
+    std::fs::write(scratch.path.join("plan.sh"), INERT_PLAN).expect("write the plan");
+    // A FILE where the configuration root belongs: the keyset cannot be created under it, so the
+    // write open refuses before anything is signed.
+    let blocked = sandbox.config_root().join("dorc");
+    std::fs::write(&blocked, "not a directory").expect("occupy the product root");
+
+    let mut command = dorc(&sandbox, &scratch.path);
+    command.env(
+        "DORC_TRANSPORT",
+        format!("local:{}", scratch.path.join("no-such-shell").display()),
+    );
+    let out = command
+        .args(["apply", "--host", DESTINATION, "--plan", "plan.sh"])
+        .output()
+        .expect("the built binary runs");
+
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("apply-plan-not-dispatchable"),
+        "the refusal must name the durable; got: {stderr}"
+    );
+    // THE DISCRIMINATOR. A run that reached the transport announces the local driver and then
+    // reports a transport failure, so neither word may appear — without this the case would pass
+    // on the strength of a refusal that fired somewhere else entirely, which is the vacuous shape
+    // an exit-status assertion has on every refusal.
+    assert!(
+        !stderr.contains("DORC_TRANSPORT") && !stderr.contains("transport"),
+        "nothing transport-shaped may precede a refused publication; got: {stderr}"
+    );
+    assert!(
+        !store_root(&sandbox).exists(),
+        "an apply that published nothing left no store behind"
+    );
+}

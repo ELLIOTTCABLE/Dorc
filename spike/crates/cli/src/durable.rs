@@ -212,13 +212,24 @@ impl LocalReceiptEdgeV1 {
         io: &mut dyn LocalIo,
         generator: &mut dyn KeysetGenerator,
     ) -> Result<WriteEdge, EdgeRefusal> {
+        // The store is PROBED read-only first — its standing is an input to whether first-use
+        // generation is even a candidate — and CREATED last. A keyset that cannot be opened means
+        // nothing will ever be published, and a run in that state must not leave a store
+        // directory behind as though it had been about to.
         let presence = StorePresence::probe(&self.roots, io, &self.limits);
+        let keys = match open_or_initialize_for_write(
+            &self.roots,
+            io,
+            &self.limits,
+            presence,
+            generator,
+        ) {
+            LocalWriteOpenV1::Ready(keys) => keys,
+            LocalWriteOpenV1::Refused(state) => return Err(EdgeRefusal::Keys(state)),
+        };
         let store = LocalReceiptStoreV1::open_or_create(&self.roots, io, self.store_limits())
             .map_err(EdgeRefusal::Store)?;
-        match open_or_initialize_for_write(&self.roots, io, &self.limits, presence, generator) {
-            LocalWriteOpenV1::Ready(keys) => Ok(WriteEdge { keys, store }),
-            LocalWriteOpenV1::Refused(state) => Err(EdgeRefusal::Keys(state)),
-        }
+        Ok(WriteEdge { keys, store })
     }
 }
 

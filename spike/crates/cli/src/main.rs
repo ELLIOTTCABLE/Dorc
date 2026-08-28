@@ -2775,11 +2775,6 @@ fn ship_consented_apply(
     }
     let destination =
         dorc_transport::HostId::new(host).map_err(|_| transport_edge::host_rejected(host))?;
-    let mut driver = transport_edge::driver_for_invocation(
-        args.connect_timeout,
-        args.accept_new,
-        args.ssh_config.as_deref(),
-    );
     // The apply route stands up no engine, so it holds no clock from one: the reading is this
     // seat's own, taken at the process edge like every other. Dating it `None` unconditionally
     // would be a different claim — that this run had no clock — rather than a missing wire.
@@ -2811,6 +2806,14 @@ fn ship_consented_apply(
     let signer = open.keys().signer();
     let sealer = open.keys().encryption().sealer();
     let mut placement = open.placement(&mut io);
+    // The driver is built only once the durable edge is open. It opens nothing by itself, but a
+    // run that cannot record its intent should not have announced a transport either — the
+    // pre-dispatch boundary is easier to read when nothing transport-shaped precedes it.
+    let mut driver = transport_edge::driver_for_invocation(
+        args.connect_timeout,
+        args.accept_new,
+        args.ssh_config.as_deref(),
+    );
     let reached = dorc_cli::apply::consented_apply(
         &request,
         &mut ids,
