@@ -12,9 +12,26 @@ eval "hork --stub"
 hork --settle
 
 -- replay --
-$ dorc plan --book=book.sh
-error[cfg-top-node]: unsupported construct (unknown): un-probeable and
+$ dorc plan --book=book.sh > /dev/null
+parse: error[syntax-unsupported]: `eval` executes constructed code
+(un-analyzable)
+      [ book.sh:3:1
+   3 | eval "hork --stub"
+     | \__/
+cfg: error[cfg-top-node]: unsupported construct (unknown): un-probeable and
 un-skippable
       [ book.sh:3:1
    3 | eval "hork --stub"
      | \__/
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork --settle` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:4:1
+   4 | hork --settle
+     | \___________/
+
+   = help:  sm site runs `hork --settle`
+hint: 'hork' (line 4) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 33c8e2097615391d93a87ca1c934781398431e0757167c038b555ab29cf436bf

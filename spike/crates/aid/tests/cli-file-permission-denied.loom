@@ -4,8 +4,15 @@ envelope: invocation
 when-fires: an input file exists but this process may not read it. cli/lib.rs humane_read_error, PermissionDenied arm. {kind} and {path}.
 why: the read-error trichotomys second arm: the file is there, so the repair is permissions, not the path - a distinction the raw OS string buries.
 ---
+-- book.sh --
+#!/bin/sh
+hork provision
+
+-- edge-fault --
+read permission-denied /etc/dorc/nginx.oracle.sh
+
 -- replay --
-$ dorc plan --book=webhost.sh
+$ dorc plan --book=book.sh --pre-source /etc/dorc/nginx.oracle.sh
 dorc: error[cli-file-permission-denied]: Dorc found the oracle at
 `/etc/dorc/nginx.oracle.sh`, but is not allowed to read it.
 usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

@@ -3,7 +3,39 @@ code: load-carriage-withheld-under-unknown-cwd
 when-fires: a BOOK's `.` names a file the controller HOLDS — the operand resolved, the bytes were read — but a line above it may have moved the working directory, so which file that operand names on the target is unknown. `analysis/funcenv.rs` `load_sites` records the site with `HavocCause::CwdUnknown { clobbered_at }`, and `cli/main.rs` `load_head_notices` mints this once per such `.` line, spanned there. Two acts land a `.` in that state: a `cd`, and a `.` of a file the controller does not hold (which runs arbitrary sh in the book's own shell and may `cd` inside it). `{line}` carries the 1-based line of that act, because it is the half the caret cannot show — the caret is on the load, the cause is above it. World-as-payload: the mint sits in the binary's own load-edge driver, past everything the in-process book pipeline composes.
 why: `30P:law-no-unsoundness-below-a-blind-act` (human-typed in substance 2026-08-22), the nothing-shipped clause. Below a line whose effect on the shell Dorc cannot see, Dorc claims nothing — and a copy of a file Dorc cannot prove the author's own line will read is engine selection, which `rul-load-head-is-exact-or-havoc` struck. So the artifact carries NO copy of this load's target: not bundled, not mirrored, and the authored `.` is left exactly as written. The consequence the author cannot see from the plan alone is that the published tree has a hole where that dependency would have stood, so an apply may die at this line on the target — which is why this is a WARNING rather than a note, and why the payload names the cause rather than restating the operand. The load's AUTHORITY is separately gone (`rul-havoc-is-pointwise-never-the-stack`), so nothing below it is elided on its account either. Remediation register (help) wanted: the repair is the author's — move the `.` above the act, or make the operand independent of where the run stands.
 ---
+-- book.sh --
+#!/bin/sh
+cd "$SOMEWHERE"
+. ./helpers.sh
+hork install nginx
+
+-- helpers.sh --
+helper() { :; }
+
 -- replay --
 $ dorc plan --book=book.sh
-warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
 load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:3:1
+   3 | . ./helpers.sh
+     | \____________/
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `. ./helpers.sh`, `hork install nginx` -- run `dorc why` for
+the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:3:1
+   3 | . ./helpers.sh
+     | \____________/
+
+   = help:  sm site runs `. ./helpers.sh`
+hint: '.' (line 3) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+cd "$SOMEWHERE"
+. ./helpers.sh
+hork install nginx
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=3 elide=0 omit=0 guard=0 run=3 may-alias=0
+dorc: decision-digest f8786df225349f950f8126eb79005ccd898d880c7e293e25132df9aabd3a0be1

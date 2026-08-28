@@ -35,41 +35,79 @@ fn run() -> Result<ExitCode, String> {
     {
         return run_shell(command);
     }
-    run_directives(&args, Vec::new(), false)
+    let (code, output) = run_directives(&args, Vec::new())?;
+    publish_direct(output)?;
+    Ok(code)
 }
 
 fn run_shell(command: &str) -> Result<ExitCode, String> {
-    let command = command.strip_prefix("exec 2>&1\n").unwrap_or(command);
-    let mut words = command.split_ascii_whitespace().collect::<Vec<_>>();
-    if words.first() != Some(&"loom-mock-tool") {
-        let stdout = io::stdout();
-        writeln!(stdout.lock(), "unsupported shell command {command:?}")
-            .map_err(|e| e.to_string())?;
+    let (command, merged) = command
+        .strip_prefix("exec 2>&1\n")
+        .map_or((command, false), |command| (command, true));
+    let words = command.split_ascii_whitespace().collect::<Vec<_>>();
+    let mut args = Vec::new();
+    let mut stdin = Vec::new();
+    let mut stdout = ShellDestination::Stdout;
+    let mut stderr = if merged {
+        ShellDestination::Stdout
+    } else {
+        ShellDestination::Stderr
+    };
+    let mut index = 0usize;
+    while let Some(word) = words.get(index).copied() {
+        if word == "2>&1" {
+            stderr = stdout.clone();
+            index = index.saturating_add(1);
+            continue;
+        }
+        if let Some((kind, attached)) = shell_redirection(word) {
+            let target = if let Some(target) = attached {
+                target
+            } else {
+                index = index.saturating_add(1);
+                words
+                    .get(index)
+                    .copied()
+                    .ok_or_else(|| format!("missing redirection target in {command:?}"))?
+            };
+            match kind {
+                ShellRedirection::Input => {
+                    stdin = fs::read(target).map_err(|error| error.to_string())?;
+                }
+                ShellRedirection::Stdout => {
+                    fs::File::create(target).map_err(|error| error.to_string())?;
+                    stdout = ShellDestination::File(target.to_owned());
+                }
+                ShellRedirection::Stderr => {
+                    fs::File::create(target).map_err(|error| error.to_string())?;
+                    stderr = ShellDestination::File(target.to_owned());
+                }
+            }
+            index = index.saturating_add(1);
+            continue;
+        }
+        args.push(word.to_owned());
+        index = index.saturating_add(1);
+    }
+    if args.first().map(String::as_str) != Some("loom-mock-tool") {
+        publish_shell(
+            vec![DirectiveOutput::Stderr(
+                format!("unsupported shell command {command:?}\n").into_bytes(),
+            )],
+            &stdout,
+            &stderr,
+        )?;
         return Ok(ExitCode::from(2));
     }
-    words.remove(0);
-    let stdin = if let Some(position) = words.iter().position(|word| *word == "<") {
-        let path = words
-            .get(position.saturating_add(1))
-            .ok_or_else(|| format!("missing stdin path in {command:?}"))?
-            .to_string();
-        words.truncate(position);
-        fs::read(path).map_err(|error| error.to_string())?
-    } else {
-        Vec::new()
-    };
-    run_directives(
-        &words.into_iter().map(String::from).collect::<Vec<_>>(),
-        stdin,
-        true,
-    )
+    let (code, output) = run_directives(args.get(1..).unwrap_or_default(), stdin)?;
+    publish_shell(output, &stdout, &stderr)?;
+    Ok(code)
 }
 
 fn run_directives(
     args: &[String],
     stdin_bytes: Vec<u8>,
-    stderr_to_stdout: bool,
-) -> Result<ExitCode, String> {
+) -> Result<(ExitCode, Vec<DirectiveOutput>), String> {
     let needs_stdin = args.iter().any(|a| a == "cat" || a.starts_with("write:"));
     let stdin_bytes = if needs_stdin && stdin_bytes.is_empty() {
         let mut buf = Vec::new();
@@ -81,46 +119,115 @@ fn run_directives(
         stdin_bytes
     };
 
-    let stdout = io::stdout();
-    let mut out = stdout.lock();
-    let stderr = io::stderr();
-    let mut err = stderr.lock();
+    let mut output = Vec::new();
     let mut exit: u8 = 0;
 
     for arg in args {
         if let Some(text) = arg.strip_prefix("out:") {
-            writeln!(out, "{text}").map_err(|e| e.to_string())?;
+            output.push(DirectiveOutput::Stdout(format!("{text}\n").into_bytes()));
         } else if let Some(text) = arg.strip_prefix("err:") {
-            if stderr_to_stdout {
-                writeln!(out, "{text}").map_err(|e| e.to_string())?;
-            } else {
-                writeln!(err, "{text}").map_err(|e| e.to_string())?;
-            }
+            output.push(DirectiveOutput::Stderr(format!("{text}\n").into_bytes()));
         } else if let Some(count) = arg.strip_prefix("repeat:") {
             let count = count.parse::<usize>().map_err(|e| e.to_string())?;
-            for _ in 0..count {
-                out.write_all(b"x").map_err(|e| e.to_string())?;
-            }
+            output.push(DirectiveOutput::Stdout(vec![b'x'; count]));
         } else if let Some(name) = arg.strip_prefix("env:") {
             let value = env::var(name).unwrap_or_default();
-            writeln!(out, "{value}").map_err(|e| e.to_string())?;
+            output.push(DirectiveOutput::Stdout(format!("{value}\n").into_bytes()));
         } else if let Some(file) = arg.strip_prefix("read:") {
             let content = fs::read(file).map_err(|e| e.to_string())?;
-            out.write_all(&content).map_err(|e| e.to_string())?;
+            output.push(DirectiveOutput::Stdout(content));
         } else if let Some(file) = arg.strip_prefix("write:") {
             fs::write(file, &stdin_bytes).map_err(|e| e.to_string())?;
         } else if arg == "cat" {
-            out.write_all(&stdin_bytes).map_err(|e| e.to_string())?;
+            output.push(DirectiveOutput::Stdout(stdin_bytes.clone()));
         } else if arg == "cwd" {
             let cwd = env::current_dir().map_err(|e| e.to_string())?;
-            writeln!(out, "{}", cwd.display()).map_err(|e| e.to_string())?;
+            output.push(DirectiveOutput::Stdout(
+                format!("{}\n", cwd.display()).into_bytes(),
+            ));
         } else if let Some(code) = arg.strip_prefix("rc:") {
             exit = code.parse::<u8>().map_err(|e| e.to_string())?;
         } else {
             return Err(format!("unknown directive {arg:?}"));
         }
     }
-    out.flush().map_err(|e| e.to_string())?;
-    err.flush().map_err(|e| e.to_string())?;
-    Ok(ExitCode::from(exit))
+    Ok((ExitCode::from(exit), output))
+}
+
+#[derive(Clone)]
+enum ShellDestination {
+    Stdout,
+    Stderr,
+    File(String),
+}
+
+enum DirectiveOutput {
+    Stdout(Vec<u8>),
+    Stderr(Vec<u8>),
+}
+
+#[derive(Clone, Copy)]
+enum ShellRedirection {
+    Input,
+    Stdout,
+    Stderr,
+}
+
+fn shell_redirection(word: &str) -> Option<(ShellRedirection, Option<&str>)> {
+    for (prefix, kind) in [
+        ("2>", ShellRedirection::Stderr),
+        ("1>", ShellRedirection::Stdout),
+        (">", ShellRedirection::Stdout),
+        ("<", ShellRedirection::Input),
+    ] {
+        if let Some(target) = word.strip_prefix(prefix) {
+            return Some((kind, (!target.is_empty()).then_some(target)));
+        }
+    }
+    None
+}
+
+fn publish_direct(output: Vec<DirectiveOutput>) -> Result<(), String> {
+    for event in output {
+        match event {
+            DirectiveOutput::Stdout(bytes) => io::stdout()
+                .lock()
+                .write_all(&bytes)
+                .map_err(|error| error.to_string())?,
+            DirectiveOutput::Stderr(bytes) => io::stderr()
+                .lock()
+                .write_all(&bytes)
+                .map_err(|error| error.to_string())?,
+        }
+    }
+    Ok(())
+}
+
+fn publish_shell(
+    output: Vec<DirectiveOutput>,
+    stdout: &ShellDestination,
+    stderr: &ShellDestination,
+) -> Result<(), String> {
+    for event in output {
+        let (destination, bytes) = match event {
+            DirectiveOutput::Stdout(bytes) => (stdout, bytes),
+            DirectiveOutput::Stderr(bytes) => (stderr, bytes),
+        };
+        match destination {
+            ShellDestination::Stdout => io::stdout()
+                .lock()
+                .write_all(&bytes)
+                .map_err(|error| error.to_string())?,
+            ShellDestination::Stderr => io::stderr()
+                .lock()
+                .write_all(&bytes)
+                .map_err(|error| error.to_string())?,
+            ShellDestination::File(path) => fs::OpenOptions::new()
+                .append(true)
+                .open(path)
+                .and_then(|mut file| file.write_all(&bytes))
+                .map_err(|error| error.to_string())?,
+        }
+    }
+    Ok(())
 }

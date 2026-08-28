@@ -18,14 +18,16 @@
 
 use std::path::Path;
 
+use dorc_aid::RenderCtx;
 use dorc_aid::prose::ProseTier;
 use dorc_loom::{
     DorcConsumer, compile_preview, generate_arrangement_lock, load_arrangement_corpus,
 };
-use errorloom::{Case, CaseRenderer as _};
+use errorloom::{Case, CaseRenderer as _, EditableFragment, RenderComponent};
 
 const CASE: &str = "cli-help-page.loom";
 const SLUG: &str = "cli-help-page";
+const SECOND_SLUG: &str = "cli-help-mode-bundle";
 
 fn corpus_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests")
@@ -35,6 +37,27 @@ fn case() -> Case {
     let text = std::fs::read_to_string(corpus_dir().join(CASE))
         .unwrap_or_else(|e| panic!("read {CASE}: {e}"));
     Case::parse(&text).unwrap_or_else(|e| panic!("parse {CASE}: {e}"))
+}
+
+fn section_text(baseline: &dorc_loom::DorcEditableBaseline, owner: &str) -> String {
+    baseline
+        .render()
+        .components()
+        .iter()
+        .find_map(|component| match component {
+            RenderComponent::EditableSection(section) if section.id().owner == owner => Some(
+                section
+                    .fragments()
+                    .iter()
+                    .map(|fragment| match fragment {
+                        EditableFragment::Text(text)
+                        | EditableFragment::Variable { rendered: text, .. } => text.as_str(),
+                    })
+                    .collect(),
+            ),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no section for {owner}"))
 }
 
 #[test]
@@ -51,16 +74,24 @@ fn an_edited_help_word_reaches_the_lock_and_the_re_rendered_case() {
         "the committed transcript IS the registry's render"
     );
 
-    let edited = committed.replace("spec-mining", "specification-mining");
-    assert_ne!(edited, committed, "the fixture still carries the old word");
+    let first = section_text(&baseline, SLUG);
+    let second = section_text(&baseline, SECOND_SLUG);
+    let first_edit = format!("{first} [first-harness-edit]");
+    let second_edit = format!("{second} [second-harness-edit]");
+    let edited = committed
+        .replacen(&first, &first_edit, 1)
+        .replacen(&second, &second_edit, 1);
 
     let preview = compile_preview(&baseline, &edited).expect("the help-page edit compiles");
-    let section = match preview.sections() {
-        [section] => section.section(),
-        other => panic!("exactly one section changed, got {}", other.len()),
-    };
-    assert_eq!(section.owner, SLUG);
-    assert_eq!(section.field, dorc_loom::ARRANGEMENT_FIELD);
+    let sections = preview.sections();
+    assert_eq!(sections.len(), 2);
+    assert_eq!(sections[0].section().owner, SLUG);
+    assert_eq!(sections[1].section().owner, SECOND_SLUG);
+    assert!(
+        sections
+            .iter()
+            .all(|section| section.section().field == dorc_loom::ARRANGEMENT_LINE_FIELD)
+    );
 
     consumer
         .apply_preview(&preview)
@@ -68,68 +99,48 @@ fn an_edited_help_word_reaches_the_lock_and_the_re_rendered_case() {
     let entry = consumer
         .arrangements()
         .iter()
-        .find(|entry| entry.slug == SLUG)
-        .expect("the pilot entry");
+        .find(|entry| entry.slug == SECOND_SLUG)
+        .expect("the independently edited row");
     match &entry.words {
-        Some(ProseTier::Slop(words)) => assert_eq!(
-            words,
-            std::slice::from_ref(&edited),
-            "the entry now holds exactly the edited page"
-        ),
+        Some(ProseTier::Slop(words)) => {
+            let expected = second_edit.split_whitespace().collect::<Vec<_>>().join(" ");
+            assert_eq!(words, &[expected]);
+        }
         other => panic!("a human edit makes the entry authored, got {other:?}"),
     }
 
     let corpus = load_arrangement_corpus(&corpus_dir()).expect("load arrangement corpus");
     let lock = generate_arrangement_lock(&consumer, &corpus).expect("regenerate the lock");
     assert!(
-        lock.contains("Some(ProseTier::Slop(&[\"dorc -- specification-mining"),
-        "the regenerated lock carries the edited words, no longer marked migrated"
+        lock.contains("first-harness-edit") && lock.contains("second-harness-edit"),
+        "the regenerated lock carries both edited rows"
     );
 
     let rendered = consumer.render_case(&case).expect("re-render the case");
-    assert!(
-        rendered.contains("specification-mining"),
-        "the re-rendered transcript comes back out of the edited registry"
-    );
+    let catalog = dorc_aid::catalog::owned_catalog();
+    let arrangements = consumer.arrangements().to_vec();
+    let command = dorc_cli::help_text(&RenderCtx::new(&catalog, &arrangements));
     assert_eq!(
         Case::parse(&rendered)
             .expect("the re-rendered case parses")
             .replay()
             .blocks()[0]
             .output(),
-        edited,
-        "the published transcript is exactly what the human wrote"
+        command,
+        "the transcript is the command render, not the editor's wrapping"
     );
+    assert!(command.contains("first-harness-edit") && command.contains("second-harness-edit"));
 }
 
-/// The chain fence (`289:rider-arrangement-home-anticipates-chains`): storage is
-/// sequence-shaped, but nothing re-splits an edited string into words, so an edit against a
-/// multi-word entry REFUSES instead of guessing a boundary.
 #[test]
-fn an_edit_against_a_word_sequence_refuses() {
-    let case = case();
-    let mut consumer = DorcConsumer::new();
-    let baseline = consumer
-        .editable_baseline(&case)
-        .expect("the page case renders from the registry");
-    let committed = case.replay().blocks()[0].output();
-    let preview = compile_preview(&baseline, &committed.replace("spec-mining", "spec mining"))
-        .expect("the edit compiles");
+fn help_reflows_from_the_explicit_render_frame() {
+    let wide = dorc_cli::help_text(&RenderCtx::production());
+    let narrow = dorc_cli::help_text(&RenderCtx::production().at_width(40));
 
-    consumer.set_arrangement_words(
-        SLUG,
-        Some(ProseTier::Migrated(vec![
-            "one ".to_owned(),
-            "two".to_owned(),
-        ])),
-    );
-
-    let refusal = consumer
-        .apply_preview(&preview)
-        .expect_err("a multi-word entry refuses the edit");
+    assert_ne!(narrow, wide, "the frame changes the help layout");
     assert_eq!(
-        refusal,
-        dorc_loom::DorcApplyRefusal::ArrangementIsSequenceStructured(SLUG.to_owned())
+        narrow.split_whitespace().collect::<Vec<_>>(),
+        wide.split_whitespace().collect::<Vec<_>>()
     );
 }
 

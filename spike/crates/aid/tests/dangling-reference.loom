@@ -3,12 +3,55 @@ code: dangling-reference
 when-fires: a coordinate resolved DANGLING (no such entity on an enumerable kind). cli/survival.rs dangling_diagnostics. `{coord}` = the rendered coordinate.
 why: 24F §4: turns a third-party-typo from silent value-loss into a pointed hint; the coord rides the may-alias degrade (the site runs). ADVISORY (fail toward run).
 ---
+-- book.sh --
+#!/bin/sh
+apt-get install nginx
+apt-get install nginx-full
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
+}
+sm_dorc_Package__resolve() { dpkg-query -W -f '${Package}\n' -- "$1"; }
+
+-- probe-results.txt --
+site 0 effect=absent rc=1
+site 1 effect=holds rc=0
+resolv sm.dorc.Package:nginx dangling
+resolv sm.dorc.Package:nginx-full canon=nginx-full
+
 -- replay --
-$ dorc plan --book=book.sh
-note[dangling-reference]: Coordinate sm.dorc.Package:nginx names an entity its
-kind's resolver does not recognize -- a likely typo or stale name -- so Dorc
-treats it as possibly aliasing anything, and the site runs.
+$ dorc plan --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt > /dev/null
+resolve: note[dangling-reference]: Coordinate sm.dorc.Package:nginx names an
+entity its kind's resolver does not recognize -- a likely typo or stale name --
+so Dorc treats it as possibly aliasing anything, and the site runs.
+why: site 1 guard [sm.dorc.Package] -- licensed by the sm.dorc.Package oracle's vouch (at package.oracle.sh:18) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest 3096f608657d2d780db1b8e5c084b5916cb6f4bf67a960e9a39fafe8dd96128b
 
 $ dorc-loom --this vars
 case: dangling-reference
 {{coord}} = "sm.dorc.Package:nginx"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "1"
+{{v4}} = "1"
+{{v5}} = "0"

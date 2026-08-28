@@ -152,19 +152,16 @@ impl Repository for GitRepository {
     }
 }
 
-/// A dirty generated lock means a PRIOR promote is still uncommitted, which a reader cannot guess
-/// from the path — nor that `publish` refuses on the same condition, nor that the batched CASE list
-/// avoids the serialization entirely. Nothing else in the tool says either.
+/// A dirty generated lock means a prior publication is still uncommitted. Name the batched CASE
+/// form that avoids serializing independent prose edits through the shared locks.
 fn lock_not_clean(path: &str) -> String {
     format!(
         "the generated lock {path} differs from HEAD, which means an earlier `dorc-loom publish` \
-         has not been committed. Both verbs refuse here: a publish would publish on top of it and \
-         the two changes could no longer be committed apart, and a compile would bind those \
-         uncommitted bytes into its receipt. Three ways on: commit the pending promotion (the lock \
-         and the case it rewrote); or `git restore` both and start over; or, when several cases \
-         are in flight, promote them TOGETHER -- compile and promote each take a CASE list, and \
-         bare they take the whole corpus and narrow to the cases you edited, so one compile and \
-         one promote publish all of them at once."
+         has not been committed. A new publish would layer another generated change on top, and \
+         the two prose edits could no longer be committed apart. Three ways on: commit the pending \
+         publication (the generated locks and cases it rewrote); `git restore` those files and \
+         start over; or, when several cases are in flight, pass them as one CASE list and publish \
+         them TOGETHER with `dorc-loom publish CASE...`, generating the shared locks once."
     )
 }
 

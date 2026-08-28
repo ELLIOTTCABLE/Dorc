@@ -3,7 +3,8 @@
 //! These three could not be written before the root was injectable: reaching the write path meant
 //! writing the real corpus and the real locks, so a green `cargo test` could publish a developer's
 //! in-progress loom edit. The world here is a temp directory holding one case, both locks and a
-//! git repository of its own — everything `publish` reads, and nothing else.
+//! git repository of its own — the full corpus keeps retirement semantics honest, while one case is
+//! selected for rewriting.
 //!
 //! The case is CHOSEN, never named, and its bytes are re-rendered from the current engine rather
 //! than copied: a fixture that named a slug would make this file a second owner of prose the loom
@@ -61,6 +62,22 @@ impl World {
         for lock in [committed.catalog_lock(), committed.arrangement_lock()] {
             let name = lock.file_name().expect("the lock has a filename");
             std::fs::copy(&lock, root.join("crates/aid/src").join(name)).expect("copy the lock");
+        }
+        for entry in std::fs::read_dir(committed.corpus()).expect("read committed corpus") {
+            let path = entry.expect("corpus entry").path();
+            if path.extension().is_none_or(|extension| extension != "loom")
+                || path
+                    .file_name()
+                    .is_some_and(|name| name.to_string_lossy().contains(".sync-conflict-"))
+            {
+                continue;
+            }
+            std::fs::copy(
+                &path,
+                root.join("crates/aid/tests")
+                    .join(path.file_name().expect("case filename")),
+            )
+            .expect("copy committed case");
         }
         let world = Self { root, chosen };
         std::fs::write(world.case_path(), &world.chosen.canonical).expect("seed the case");

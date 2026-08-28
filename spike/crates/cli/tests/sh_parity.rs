@@ -771,16 +771,16 @@ fn one_unshippable_stage_refuses_the_whole_compound() {
 /// THE FENCE that joins the two halves above: the composed-stage ship seat really does consult the
 /// closure, so a `ClosureDenial` really does become the `None` that refuses a compound.
 ///
-/// `ship_predict_stage` is private to the `dorc` binary, so no test can call it. Lexical, like this
+/// `ship_predict_stage` is private to the shared engine, so no test can call it. Lexical, like this
 /// workspace's other cross-crate fences (`plan::erase`'s `licence_mint_has_exactly_one_caller`),
 /// because the property is "this seat asks that question", which no type bound expresses. If the seat
 /// is renamed or stops consulting the closure, the measurement above stops composing and this says so.
 #[test]
 fn the_composed_stage_seat_consults_the_closure() {
-    let main_rs = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+    let engine_rs = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("src")
-        .join("main.rs");
-    let text = std::fs::read_to_string(&main_rs).expect("the driver's source is readable");
+        .join("engine.rs");
+    let text = std::fs::read_to_string(&engine_rs).expect("the engine source is readable");
     let start = text
         .find("fn ship_predict_stage(")
         .expect("the composed-stage ship seat is named `ship_predict_stage`");

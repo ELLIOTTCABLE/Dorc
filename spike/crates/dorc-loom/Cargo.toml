@@ -4,6 +4,7 @@ version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 publish = false
+autotests = false
 
 [[bin]]
 name = "dorc-loom"
@@ -26,6 +27,7 @@ dorc-syntax = { path = "../syntax", version = "0.0.0" }
 dorc-analysis = { path = "../analysis", version = "0.0.0" }
 dorc-plan = { path = "../plan", version = "0.0.0" }
 dorc-lint = { path = "../lint", version = "0.0.0" }
+dorc-transport = { path = "../transport", version = "0.0.0" }
 # The INTERNAL cli lib (`289:rul-worldless-route-honest-trigger`): the loom fires the REAL argument
 # parser so an invocation-error case is honest, not decorative. `cli` does not dep `dorc-loom`, so
 # there is no cycle.
@@ -49,6 +51,58 @@ tracing-subscriber = { version = "0.3.23", default-features = false, features = 
 # map, the part stream, the section, the edit, the entry. Driving the real layout engine is the
 # only way to exercise the wrap the transport has to survive.
 weft = { path = "../weft", version = "0.0.0" }
+
+[[test]]
+name = "arrangement_lines"
+path = "tests/arrangement_lines.rs"
+
+[[test]]
+name = "arrangement_prose"
+path = "tests/arrangement_prose.rs"
+
+[[test]]
+name = "cli"
+path = "tests/cli.rs"
+
+[[test]]
+name = "compact_line_prose"
+path = "tests/compact_line_prose.rs"
+
+[[test]]
+name = "compile"
+path = "tests/compile.rs"
+
+[[test]]
+name = "consumer"
+path = "tests/consumer.rs"
+
+[[test]]
+name = "coverage"
+path = "tests/coverage.rs"
+
+[[test]]
+name = "editable_render"
+path = "tests/editable_render.rs"
+
+[[test]]
+name = "editable_surface"
+path = "tests/editable_surface.rs"
+
+[[test]]
+name = "fixpoint"
+path = "tests/fixpoint.rs"
+
+[[test]]
+name = "invocation_route"
+path = "tests/invocation_route.rs"
+
+[[test]]
+name = "publish_write_path"
+path = "tests/publish_write_path.rs"
+
+[[test]]
+name = "roots"
+path = "tests/roots.rs"
 
 [lints]
 workspace = true

@@ -21,14 +21,23 @@ hork__disturbance_reaches_only() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh --pre-source hork.oracle.sh
-warning[reaches-provider-collision]: `hork__disturbance_reaches_only()` is keyed
-by a command name, but a reach-function belongs to a kind -- as written it
-widens a kind no coordinate can name (a likely mis-key).
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh > /dev/null
+reaches: warning[reaches-provider-collision]: `hork__disturbance_reaches_only()`
+is keyed by a command name, but a reach-function belongs to a kind -- as written
+it widens a kind no coordinate can name (a likely mis-key).
       [ hork.oracle.sh:9:1
    9 | hork__disturbance_reaches_only() {
      | \____________________________/
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 2f3bfe1d4568f995ab001e0db559356bb10b33fed4c1bcfa6f6154738bdeeaef
 
 $ dorc-loom --this vars
 case: reaches-provider-collision
 {{name}} = "hork"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

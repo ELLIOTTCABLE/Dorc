@@ -3,14 +3,36 @@ code: shared-cell-measurements-disagree
 when-fires: two or more probe sites resolved to ONE cell and their records did not agree, so the cross-site meet degraded the cell to unknown and de-licensed every site on it - including sites that reported cleanly. cli/main.rs facts_from_sites, read back at the plan stderr advisory tier. `{cell}` = the shared coordinate, `{sites}` = how many sites measure it.
 why: 26G:fnd-shared-auto-cell-collides - a verdict-only oracle's sites all key one synthesized per-provider cell, so a book that copies six files with one `cp` puts all six on one coordinate. One unreadable destination then de-licenses the other five, and a sibling that merely failed to report does it as readily as one that disagreed, because cant-tell is the default for any site the probe could not answer. The collapse is safety-correct (every site runs) and was entirely silent: the merge minted a decision-inert narrative that no surface consumed. Cell-keyed, ONE line however many sites disagree - the collapse is a property of the cell, and per-pair lines read as N unrelated problems. Spanless: a cell is a cross-site coordinate, and pointing the caret at any one line would blame it for a shared collapse. Remediation register (help) wanted: name the sibling sites, and point at authoring a verdict coordinate as what splits the cell.
 ---
+-- book.sh --
+#!/bin/sh
+cp a.conf /etc/a.conf
+cp b.conf /etc/b.conf
+
+-- cp.oracle.sh --
+# dorc-lang/v0.2
+cp__is_converged() { return 0; }
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
+site 1 effect=absent rc=1
+
 -- replay --
-$ dorc plan --book=book.sh
-note[shared-cell-measurements-disagree]: 2 probe sites all measure one shared
-coordinate (dorc-auto:cp@converged) and their reports did not agree, so Dorc
-holds it unknown and every site on it runs -- the cleanly-reporting ones
+$ dorc plan --book=book.sh --pre-source cp.oracle.sh --results - < probe-results.txt > /dev/null
+records: note[shared-cell-measurements-disagree]: 2 probe sites all measure one
+shared coordinate (dorc-auto:cp@converged) and their reports did not agree, so
+Dorc holds it unknown and every site on it runs -- the cleanly-reporting ones
 included (an authored verdict coordinate would split them apart).
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest a9b6d4226add0579e8a6b144899fbac2462cbcb37a4407e1fc601701eae3fbfd
 
 $ dorc-loom --this vars
 case: shared-cell-measurements-disagree
 {{sites}} = "2"
 {{cell}} = "dorc-auto:cp@converged"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "2"
+{{v5}} = "0"

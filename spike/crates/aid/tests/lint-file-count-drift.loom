@@ -3,12 +3,21 @@ code: lint-file-count-drift
 when-fires: the lintable-file count disagrees with --expect-files. cli/main.rs lint_command. {expected} is the declared count, {found} what the invocation saw.
 why: 27R section 8b: the count is a scope assertion, so drift means the glob silently stopped covering what CI thought it covered - clean-because-empty is the failure it catches.
 ---
+-- book.sh --
+#!/bin/sh
+true
+
 -- replay --
-$ dorc plan --book=webhost.sh
-error[lint-file-count-drift]: `--expect-files` declared 12 lintable files, but
-Dorc saw 9; the lint's scope has drifted.
+$ dorc lint book.sh --expect-files 12 --no-tools
+dorc lint: clean -- nothing found across 1 file, 8 sources.
+dorc: lint: error[lint-file-count-drift]: `--expect-files` declared 12 lintable files, but
+Dorc saw 1; the lint's scope has drifted.
 
 $ dorc-loom --this vars
 case: lint-file-count-drift
+{{v0}} = "1"
+{{v1}} = ""
+{{v2}} = "8"
+{{v3}} = "s"
 {{expected}} = "12"
-{{found}} = "9"
+{{found}} = "1"

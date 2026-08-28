@@ -23,13 +23,22 @@ hork__predict() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh --pre-source hork.oracle.sh
-warning[effect-kind-disagreement]: this verb spells its kind two ways: the
-identity bind declares `sm.dorc.Package` while the mark's own coordinate names
-`sm.dorc.Service` -- Dorc files the fact under the declared `sm.dorc.Package`;
-align the two spellings to clear this.
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh > /dev/null
+classify: warning[effect-kind-disagreement]: this verb spells its kind two ways:
+the identity bind declares `sm.dorc.Package` while the mark's own coordinate
+names `sm.dorc.Service` -- Dorc files the fact under the declared
+`sm.dorc.Package`; align the two spellings to clear this.
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest fc31b1a3ea571036d363283c2de93220d250bbe08e00ff4f711d41afc9bf47fa
 
 $ dorc-loom --this vars
 case: effect-kind-disagreement
 {{annotated}} = "sm.dorc.Package"
 {{effect_map}} = "sm.dorc.Service"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

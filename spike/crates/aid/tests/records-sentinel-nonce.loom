@@ -3,7 +3,16 @@ code: records-sentinel-nonce
 when-fires: the end-sentinel carried a nonce that is not this attempt's. plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. Static.
 why: 306b §6e: the close marker is controller-owned framing like the header, so a wrong one means the stream is not known to have ended — the strict path refuses the whole attempt.
 ---
+-- book.sh --
+#!/bin/sh
+hork tune --profile web
+
+-- controller-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=6b796e0c816aa119a94373a3ab99578a69820f243017ce833973242dd6f9a79e sites=0 @@dorc@@
+dorc-records-end/1 nonce=wrong @@dorc@@
+
 -- replay --
-$ dorc plan --book=book.sh --results - < probe-results.txt
-warning[records-sentinel-nonce]: sm the end-sentinel carried a nonce that is not
-this attempt's -- ignored (the stream's own records are keyed independently)
+$ dorc plan --book=book.sh --results - < controller-results.txt > /dev/null
+records: warning[records-sentinel-nonce]: sm the end-sentinel carried a nonce
+that is not this attempt's -- ignored (the stream's own records are keyed
+independently)

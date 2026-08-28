@@ -3,7 +3,38 @@ code: emitted-line-unsafe-for-paste
 when-fires: a finalized apply artifact's physical RENDERED line reaches the canonical-tty line-discipline cap, or begins `~` -- either way a live human-mediated paste into a tty/ssh session could corrupt or truncate it. `plan::render::paste_hygiene_hazards`, called on the artifact's finalized bytes at the cli emission edge, spanless (the claim is about a RENDERED PHYSICAL LINE, which has no book-AST span).
 why: 30Qe:fruit-emit-hygiene-paste-rules. `KNOBS:kBOOT` names literal human-mediated paste into a live session a permanently-supported floor rung, never probed, inherently outside the attention product -- so the engine's one obligation is to say so rather than ship a line the driver silently drops or splits. `{line}` carries the 1-indexed physical line; `{reason}` carries which rule fired (a typed PasteHygieneHazardReason, `28L:rul-reason-enums-not-sibling-codes`). Detection only (`two-surfaces`): a hazard is a diagnostic, never a rewrite of authored bytes. World-as-payload (`aid/CLAUDE.md` fixture tier): the trigger is minted at cli/main.rs's own `run()`, which the single-file in-process consumer has no seat to drive; the real firing route is proven separately by the whole-product round-trip case `crates/cli/tests/emitted-line-unsafe-for-paste-round-trip.loom`.
 ---
+-- book.sh --
+#!/bin/sh
+~doesnotexist arg
+
 -- replay --
-$ dorc plan --book=book.sh
-warning[emitted-line-unsafe-for-paste]: [unwritten:
+$ dorc plan --book=book.sh > /dev/null
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:2:1
+   2 | ~doesnotexist arg
+     | \___________/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `~doesnotexist arg` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | ~doesnotexist arg
+     | \_______________/
+
+   = help:  sm site runs `~doesnotexist arg`
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 2:1 `~doesnotexist arg`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: '~doesnotexist' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+emission: warning[emitted-line-unsafe-for-paste]: [unwritten:
 emitted-line-unsafe-for-paste]
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 8281b2d5cd6a5abe2c6a8a21c058d95c8b80db3a081fb3775be263993052bc4c

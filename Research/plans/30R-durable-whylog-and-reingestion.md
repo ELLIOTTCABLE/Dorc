@@ -45,13 +45,17 @@ planning, probing, mutation, saved approval, or caching.
 
 ## v1-spike-scope-and-exit
 
-V1 proves the high-lock architecture in one standalone receipt crate and two
-product-spanning DST routes. It includes:
+V1 proves the high-lock architecture in a standalone receipt crate, a sibling
+holding its algorithm-provider implementations, and two product-spanning DST
+routes. The split is a dependency-graph obligation, not taste: the provider
+implementations carry nondeterministic dependencies, and the analyzer kernel's
+graph stays clean of those. Every authority mint stays in the pure crate. It
+includes:
 
 - the three receipt species and graph identities;
 - strict plain and rich format round trips through the selected libraries;
 - one grouped reverse detail region;
-- exact single-stream and multi-file `ApplyImage` round trips;
+- exact single-stream and multi-file `ApplyArtifactImage` round trips;
 - projection, validation, completeness, and recorded/live typestates;
 - injected algorithm/provider and receipt source/sink interfaces;
 - one default local-file provider and immutable per-user receipt store, sufficient
@@ -329,7 +333,7 @@ this v1 order:
 1. Create the standalone receipt crate with the three species, graph identities,
    projection/status/completeness typestates, and recorded/live boundary.
 2. Implement strict skeleton bytes and plain round trips with fixture capabilities.
-3. Implement exact single-stream and multi-file `ApplyImage` receipt round trips.
+3. Implement exact single-stream and multi-file `ApplyArtifactImage` receipt round trips.
 4. Implement reverse detail validation and one rich library round trip.
 5. Route minimal current plan values through receipt write/read and `dorc why`.
 6. Route intent, hostsim/DST execution, outcome or no-outcome, correlation, and why.
@@ -372,10 +376,10 @@ controller crash, invalidation by newline conversion/manual edits, and weak sepa
 when receipts and private provider material co-propagate.
 
 The v1 plan must settle exact grammar tokens, library packages/adapters, exact
-`ApplyImage` receipt encoding, minimal current projection fields, fixture interfaces,
-the default local provider/store, e2e routes, and old-code deletion. Later planning
-owns alternative providers, acceptance UX, policy names, stronger publication grades,
-retention, padding, later retuning/widening of the fixed V1 limits, source
+`ApplyArtifactImage` receipt encoding, minimal current projection fields, fixture
+interfaces, the default local provider/store, e2e routes, and old-code deletion. Later
+planning owns alternative providers, acceptance UX, policy names, stronger publication
+grades, retention, padding, later retuning/widening of the fixed V1 limits, source
 excerpts/archive, and unvalidated render limits.
 
 These details may refine but not silently reopen the receipt graph, single readable

@@ -3,16 +3,61 @@ code: render-heredoc-refused
 when-fires: the leaf-exact render would elide/guard a licensed leaf whose span covers a `<<` heredoc opener (not its body), so the leaf runs verbatim instead.
 why: kFAIL-perform, arch-1 d-6: substituting the opener span would strand the heredoc body — an Error-class give-up (a broken artifact otherwise). `{verb}` = elide/guard.
 ---
+-- book.sh --
+#!/bin/sh
+hork provision
+apt-get install -y nginx <<EOF
+payload
+EOF
+
+-- package.oracle.sh --
+# dorc-lang/v0.2
+apt_get__predict() {
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   case $verb in install) dpkg-query -W "$pkg" : sm.dorc.Package:"$pkg"@installed ;; esac
+}
+apt_get__is_converged() { while [ "${1#-}" != "$1" ]; do shift; done; test "$1" = install; }
+
+-- probe-results.txt --
+site 1 effect=holds rc=0
+
 -- replay --
-$ dorc plan --book=book.sh
-error[render-heredoc-refused]: Dorc cannot elide `cat <<EOF` as planned:
-rewriting the line would strand the heredoc body below its `<<` opener, so the
-command stays in place and runs verbatim.
+$ dorc plan --book=book.sh --pre-source package.oracle.sh --results - < probe-results.txt > /dev/null
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork provision` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork provision
+     | \____________/
+
+   = help:  sm site runs `hork provision`
+why: site 1 guard refused -- the site's structurally-awkward form (a heredoc body, or a non-`/dev/null` output redirect) would corrupt the artifact or suppress an admin-spelled side-effect, so the original bytes RUN VERBATIM (to stay safe), the sm.dorc.Package oracle's vouch that it is already satisfied notwithstanding
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged, and un-wall 1 downstream site
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+render: error[render-heredoc-refused]: Dorc cannot guard `apt-get install -y
+nginx <<EOF` as planned: rewriting the line would strand the heredoc body below
+its `<<` opener, so the command stays in place and runs verbatim.
+      [ book.sh:3:1
+   3 | apt-get install -y nginx <<EOF
+     | \____________________________/
+
    = help:  Move the heredoc's content out of the command -- feed it with printf
             or redirect from a file -- and Dorc can then elide or guard the
             site.
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest 4e63cef19bc11c94bccde38e59d6c17b72e255d5423a3404e83e9fcb3d5914c9
 
 $ dorc-loom --this vars
 case: render-heredoc-refused
-{{verb}} = "elide"
-{{command}} = "cat <<EOF"
+{{count}} = "1"
+{{site_word}} = "site"
+{{v0}} = "book.sh"
+{{verb}} = "guard"
+{{command}} = "apt-get install -y\nnginx <<EOF"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "1"
+{{v4}} = "1"
+{{v5}} = "0"

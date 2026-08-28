@@ -11,7 +11,7 @@ cd /var/tmp
 hork tune --profile web
 
 -- replay --
-$ dorc why book.sh:4 --book=book.sh
+$ dorc why book.sh:4 --book=book.sh --results - < /dev/null 2>/dev/null
       [ book.sh, participating lines:
    4 | cd /var/tmp
 

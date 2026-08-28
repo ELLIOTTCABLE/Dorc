@@ -3,6 +3,18 @@ code: oracle-matched-zero-sites
 when-fires: a LOADED oracle's `__is_converged` verdict never actually vouched a single site this run -- either its command word never appears anywhere in the book, or every invocation's argv declined. cli/main.rs oracle_matched_zero_sites_diagnostics, aggregated from the run's own final `Vouches` (never a second lift).
 why: 30Qe:fruit-oracle-matched-zero-sites. The silent-decline value-evaporation detector (`KNOBS:kWARN` rich, tune-high): loading an oracle that never earns a chance to help is easy to do quietly (a typo'd pre-source path, a stale command word, a book that moved on) and easy to never notice, since nothing breaks. `{oracle}` carries the loaded oracle's own path. World-as-payload (`aid/CLAUDE.md` fixture tier): the trigger reads the run's WHOLE final vouch set, which this single-file consumer has no seat to reconstruct; the real firing route is proven separately by the whole-product round-trip case `crates/cli/tests/oracle-matched-zero-sites-round-trip.loom`.
 ---
+-- book.sh --
+#!/bin/sh
+echo hello
+
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__is_converged() { hork --check "$@"; }
+
 -- replay --
-$ dorc plan --book=book.sh
-warning[oracle-matched-zero-sites]: [unwritten: oracle-matched-zero-sites]
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh > /dev/null
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest b24cbb2d2eee9f1ac4bf56ae4c090bd3ecef3b931957185a449b97a9ab38f1f4

@@ -3,7 +3,27 @@ code: slashless-source-searches-path
 when-fires: a `.`/`source` operand is a plain literal carrying no `/`, which POSIX makes a `PATH` search rather than a lookup in the working directory. analysis/funcenv.rs `load_sites` records the site, cli/main.rs `load_head_notices` mints it, one per `.` line, spanned there. Keyed on the operand's own bytes, so it fires whether or not a file of that name sits beside the book — the point is that the shell would not look there. World-as-payload: the mint sits in the binary's own load-edge driver, past everything the in-process book pipeline composes; the end-to-end firing is pinned by the whole-product case `load30-script-relative-lints`.
 why: `30P`'s slashless paragraph, over `30I:rul-dot-resolves-as-sh`. The cwd search was deliberately removed from the standard over trojan-horse concerns, and the atlas measured a slashless `.` fatal with the cwd off `PATH` — so the operand's referent is a HOST read the controller may not make, the load is unresolvable by the controller-known axis, and the site havocs like any other unknown source. WARNING rather than note because value is genuinely lost here (the file walls, every binding below it is withheld, and the plan is poorer for it), and because the repair is two characters: `./helpers.sh`. Never an error — the book is legal sh that may well work on the target, and refusing it would punish an admin for a spelling the standard still accepts. Remediation register (help) wanted: the `./` edit, and why the shell does not look in the current directory.
 ---
+-- book.sh --
+#!/bin/sh
+. helpers.sh
+hork install nginx
+
 -- replay --
-$ dorc plan --book=book.sh
-warning[slashless-source-searches-path]: [unwritten:
+$ dorc plan --book=book.sh > /dev/null
+loading: warning[slashless-source-searches-path]: [unwritten:
 slashless-source-searches-path]
+      [ book.sh:2:1
+   2 | . helpers.sh
+     | \__________/
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `. helpers.sh`, `hork install nginx` -- run `dorc why` for
+the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | . helpers.sh
+     | \__________/
+
+   = help:  sm site runs `. helpers.sh`
+hint: '.' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest 124b61b6e5dc236da43a7c96031616639052fb81f45274652bc14869d1fcc03c

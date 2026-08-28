@@ -205,11 +205,7 @@ pub fn refuse_foreign_components(
 ) -> Result<(), crate::DorcSectionEditRefusal> {
     for section in preview.sections() {
         let key = section.section();
-        let occurrence = matches!(
-            key.field,
-            crate::ARRANGEMENT_FIELD | crate::ARRANGEMENT_LINE_FIELD
-        )
-        .then_some(key.instance);
+        let occurrence = (key.field == crate::ARRANGEMENT_LINE_FIELD).then_some(key.instance);
         let Some(owner) = ownership.foreign_owner(&key.owner, occurrence, editing) else {
             continue;
         };

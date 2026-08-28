@@ -166,7 +166,7 @@ Registry
 | aid-loaded-oracle-inventory | which oracles/dirs were actually loaded this run | invoc | rev▶ ci▶ | m | `WhylogV2Metadata.oracles` (ordered path+digest, ordinal-checked on read) | B |
 | aid-survives-attribution | whose at-most claim licensed each survival; the disjointness derivation; the resolver involved | facts+topo | rev▶ post◀ | m+c+d | SurvivalWitness; an-attribution-lanes | B |
 | aid-guard-license-attribution | whose check guards each verify line, under whose vouch | facts+topo | rev▶ post◀ | c+d | GuardLicense lane | B |
-| aid-region-edit-disclosure | a shared function-body edit (elision region) shown ONCE at the authored definition, marked universal over its contributing invocations with the route count; `why` walks definition→every licensing invocation and call→the shared edits it executes; a refused region edit is disclosed region-keyed (`render-region-refused`), never smeared across its calls. The two why components render `[unwritten:]` | facts+topo | rev▶ post◀ | m+c+d | `plans/30L` render/why laws; `30N:rul-region-refusal-discloses-region-keyed`; `SpineRegionDecision.routes` complete by directive | B |
+| aid-region-edit-disclosure | a shared function-body edit (elision region) shown ONCE at the authored definition, marked universal over its contributing invocations with the route count; `why` walks definition→every licensing invocation and call→the shared edits it executes. The two why components render `[unwritten:]` | facts+topo | rev▶ post◀ | m+c+d | `plans/30L` render/why laws; `SpineRegionDecision.routes` complete by directive | B |
 | aid-import-rewrite-disclosure | a generated plan's re-pointed or in-place-inlined import (the one edit Dorc reserves over a plan it generated) disclosed at the authored `.` (`plan-import-rewritten`, advisory-routed) and recorded as `RenderDecision::ImportRewritten`; the artifact bytes self-comment the edit. `why` does not yet carry import edits (residue) | text+invoc | rev▶ post◀ | d | `30Ng:rul-bundle-at-dorc-lang-boundaries`; `plan::ImportEdit` as a `Plan::decided` input | B |
 | aid-artifact-form-explanation | which artifact form `auto` settled on and why it fell back (`artifact-form-fallback`); explicit-intent or stream-posture refusals BEFORE network naming the claimants/cause (`artifact-form-refused`, `artifact-publish-refused`); the lifted-section boundary in the artifact itself separates low-attention material from the book. All prose `[unwritten:]`; `--artifact-dir`/`--form` absent from the help page | invoc+text | rev▶ blo▶ | d | `30Ng` §§4–6 (stream posture; two-section review surface); `cli::artifact::Selection` | B |
 | aid-cross-custody-dependency-narration | why a role's ambient helper cannot join its vouch: distinguish source-act-present-but-unaligned (selected dependency vs live binding/guard mismatch) from ambient-or-untraceable (ordinary shell resolution with no attributable selection); name call + live definition + lost capability, and present source/guard as value recovery rather than admission. Both preserve the runnable plan; whole-unit inventory is lint/pull, plan-push only when a reached site loses composition | text+orcl+topo | olo▶ blo▶ rev▶ post◀ | d | `30I:rul-cross-custody-distinction-is-narrative`; vouch-custody suspension | B |
@@ -249,10 +249,13 @@ Severity is uniformly Error with no floor; exit codes are unchanged and never re
 
 Their cases are HONEST-triggered where the world IS the argv (`289:rul-worldless-route-honest-
 trigger`): `dorc-loom` runs the real parser over the case's own replay command through an INTERNAL
-`dorc-cli` lib target and refuses if the declared slug does not fire. The I/O-world members (the
-read-error triple, the shim-dir write, the lint operational trio, `dorc-sh`'s two file/exec
-failures) stay world-as-payload — an honest trigger there would need a real unreadable file, a full
-disk, or an absent `sh`.
+`dorc-cli` lib target and refuses if the declared slug does not fire. Source-, record-, and
+analysis-world cases run the shared production engine over materialized books, oracles, and record
+streams. Nonportable I/O outcomes (the read-error triple, shim publication, lint tool failures,
+transport faults, and `dorc-sh`'s file/exec failures) come from a closed typed loom-only edge-state
+controller, never an arbitrary diagnostic payload. Three internal invariant failures alone use the
+human-authorized `$ dorc-loom --this defect` route; its exact scenario set is fenced in
+`dorc-loom/src/defect.rs`, and production code cannot name that authority.
 
 Surfaces (selection policies over the registry)
 -----------------------------------------------

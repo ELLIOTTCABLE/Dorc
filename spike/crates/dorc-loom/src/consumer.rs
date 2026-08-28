@@ -1,32 +1,26 @@
 //! The Dorc case renderer and compiled-edit applier (`282` §5 · §13), implemented against a mutable
 //! owned-catalog mirror ([`dorc_aid::catalog::OwnedEntry`]).
-//!
-//! World-form dispatch (`283:dec-world-two-forms`): a `-- world --`-only case is WORLD-AS-PAYLOAD (a
-//! canonical constructor keyed by slug — the phase-4 floor for the artificial/expensive-world codes);
-//! a case carrying a materialized oracle/book section is WORLD-AS-PIPELINE (the real in-process kernel
-//! fires the diagnostic — the marker pilot). Phase 4 lands the payload path; the pipeline arm is the
-//! marker-version-unrecognized pilot.
 
 use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::fs;
 
-use dorc_aid::arrangement::{OwnedArrangement, arrangement_parts, owned_arrangements};
+use dorc_aid::RenderCtx;
+use dorc_aid::arrangement::{OwnedArrangement, owned_arrangements};
 use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
-use dorc_aid::diag::{Diag, DiagCode, render_cli_parts, render_staged_cli_parts};
+use dorc_aid::diag::{Diag, render_cli_parts, render_staged_cli_parts};
 use dorc_aid::prose::{Mint, ProseTier};
-use dorc_aid::{RenderCtx, Severity};
-use dorc_core::{Interner, ProvArena};
+use dorc_core::Interner;
 use errorloom::{
-    Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayContext,
-    ReplayDriver, ReplayInput, ReplayResult, RunEnv, RunError, drive_case, drive_case_with_inputs,
+    Case, CaseRenderer, EditableFragment, EditableRender, RenderComponent, ReplayCommand,
+    ReplayContext, ReplayDriver, ReplayEmission, ReplayInput, ReplayInputTarget, ReplayResult,
+    ReplayStatus, RunEnv, RunError, drive_case, drive_case_with_inputs,
 };
 
 use crate::invocation::{Breadth, Target, Verb};
 use crate::usage::{self, PROGRAM, Reading};
 use crate::{
-    DorcSectionEdit, ENVELOPE_INVOCATION, ENVELOPE_KEY, ENVELOPE_STDERR, SectionKey,
-    SectionVariableId, TemplateVariableName, to_editable_render,
+    DorcSectionEdit, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render,
 };
 
 /// Exact current values by editable section and semantic variable name.
@@ -111,15 +105,8 @@ pub enum DorcApplyRefusal {
     MissingCode(String),
     /// The selected arrangement slug is absent from the registry.
     MissingArrangement(String),
-    /// The selected section is neither a catalog prose field nor the arrangement register.
+    /// The selected section is neither a catalog prose field nor an arrangement line.
     IllegalField(&'static str),
-    /// An edit to a whole-PAGE arrangement carried a `{{name}}` variable, or the entry it lands
-    /// on holds a word SEQUENCE. A page is one entry, laid out by its author; neither a template
-    /// hole nor a re-split has any meaning there (`289` §2o: the registry never grows grammar
-    /// machinery).
-    ArrangementTakesNoVariables(String),
-    /// The edited entry holds a WORD SEQUENCE where the page path expects one word.
-    ArrangementIsSequenceStructured(String),
     /// Two sections of ONE render edited the SAME registry entry to different words.
     ///
     /// Repeated chrome is one entry rendered twice (`28H` ruling 3), so either span is a complete
@@ -315,9 +302,6 @@ impl DorcConsumer {
         key: &SectionKey,
         compiled: &crate::CompiledSection,
     ) -> Result<(), DorcApplyRefusal> {
-        if key.field == crate::ARRANGEMENT_FIELD {
-            return self.apply_arrangement_page_edit(key, compiled);
-        }
         if key.field == crate::ARRANGEMENT_LINE_FIELD {
             return self.apply_arrangement_line_edit(key, compiled);
         }
@@ -362,44 +346,6 @@ impl DorcConsumer {
                 }
                 params
             });
-        if demoted {
-            self.demoted.push(key.owner.clone());
-        }
-        Ok(())
-    }
-
-    /// Apply one compiled whole-PAGE arrangement section to the registry mirror.
-    ///
-    /// A page is one entry laid out by its author, so it takes no values and its bytes survive
-    /// verbatim: no whitespace normalization, no re-split (`28H` ruling 7).
-    fn apply_arrangement_page_edit(
-        &mut self,
-        key: &SectionKey,
-        compiled: &crate::CompiledSection,
-    ) -> Result<(), DorcApplyRefusal> {
-        if compiled
-            .fragments()
-            .iter()
-            .any(|fragment| matches!(fragment, crate::CompiledFragment::Variable(_)))
-        {
-            return Err(DorcApplyRefusal::ArrangementTakesNoVariables(
-                key.owner.clone(),
-            ));
-        }
-        let words = page_words(compiled);
-        let mint = self.mint;
-        let entry = self.arrangement_entry(key)?;
-        if entry
-            .words
-            .as_ref()
-            .is_some_and(|current| current.text().len() > 1)
-        {
-            return Err(DorcApplyRefusal::ArrangementIsSequenceStructured(
-                key.owner.clone(),
-            ));
-        }
-        let demoted = mint.demotes(entry.words.as_ref());
-        entry.words = Some(mint.tier(words));
         if demoted {
             self.demoted.push(key.owner.clone());
         }
@@ -491,22 +437,6 @@ impl DorcConsumer {
         RenderCtx::new(&self.mirror, &self.arrangements)
     }
 
-    /// One diagnostic's part stream at the corpus's canonical width.
-    ///
-    /// The ONE seat both answers come from — the provenance answer [`Self::replay`] hands the
-    /// transport, and the bytes [`Self::render_direct_replay`] commits. Two seats is how a
-    /// transcript stops being what the renderer printed
-    /// (`28L:rul-editability-is-stamped-never-re-derived`).
-    fn cli_parts(&self, diag: &Diag, src: &str, filename: &str) -> dorc_aid::tagged::RenderParts {
-        render_cli_parts(
-            &self.render_ctx(),
-            diag,
-            src,
-            filename,
-            &Interner::default(),
-        )
-    }
-
     /// One INVOCATION error, whole — prefix, diagnostic, usage synopsis — through the binary's own
     /// seat, so a case shows the bytes an admin really sees rather than the diagnostic alone.
     ///
@@ -519,51 +449,6 @@ impl DorcConsumer {
             return dorc_cli::shim_error_parts(&ctx, diag, &interner);
         }
         dorc_cli::invocation_error_parts(&ctx, diag, &interner)
-    }
-
-    /// The plan route's stderr ENVELOPE, when the case opted into it with `envelope: stderr`.
-    ///
-    /// The three lines a `dorc plan` closes with are chrome around an ARTIFACT — no diagnostic
-    /// carries them, so no ordinary case ever renders them and their registry entries had no
-    /// editable home. The key is what a case says to be handed the whole stderr envelope instead
-    /// (`28L`, the X2a plan-stderr trio ruling). Oracles come from the case's own `*.oracle.sh`
-    /// sections, in section order, exactly as an admin's `-o` list would.
-    fn plan_envelope(&self, case: &Case, book: &str) -> Option<dorc_aid::tagged::RenderParts> {
-        if case.frontmatter().scalar(ENVELOPE_KEY) != Some(ENVELOPE_STDERR) {
-            return None;
-        }
-        let source = section_source(case, book)?;
-        let oracles: Vec<(String, String)> = case
-            .sections()
-            .iter()
-            .filter(|section| section.name().ends_with(".oracle.sh"))
-            .map(|section| (section.name().to_owned(), section.content().to_owned()))
-            .collect();
-        let paths: Vec<String> = oracles.iter().map(|(path, _)| path.clone()).collect();
-        let sources: Vec<String> = oracles.into_iter().map(|(_, source)| source).collect();
-        // The case is a FLAT virtual directory: its section names are the paths, so the modeled
-        // cwd is the root of that directory and every `./x.oracle.sh` names a section
-        // (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case into a real
-        // directory and runs the real binary there, so the two routes agree by construction.
-        let world =
-            dorc_cli::world::WhyWorld::analyze(&case_snapshot(book, source, paths, sources));
-        Some(dorc_cli::plan_envelope_parts(
-            &self.render_ctx(),
-            &world,
-            book,
-        ))
-    }
-
-    /// The seat a case DECLARES, when the command shape would pick the wrong one. A code `run`
-    /// returns as `Err` prints through the invocation seat whatever the invocation was, so a
-    /// plan-shaped replay under-shows the prefix and the synopsis that come with it.
-    fn declared_seat_parts(
-        &self,
-        case: &Case,
-        diag: &Diag,
-    ) -> Option<dorc_aid::tagged::RenderParts> {
-        (case.frontmatter().scalar(ENVELOPE_KEY) == Some(ENVELOPE_INVOCATION))
-            .then(|| self.invocation_parts(diag, "dorc"))
     }
 
     /// [`Self::cli_parts`] for a source-staged diagnostic.
@@ -592,7 +477,7 @@ impl DorcConsumer {
         // The generation lag, stated before the driver can only shrug about it: a case naming a
         // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
-            Self::arrangement_row(slug)?;
+            self.require_arrangement_row(slug)?;
         }
         // Declining the case's own inventory block is what makes the block legal to write down.
         let driver = DorcReplayDriver::new(self, case).without_self_reference();
@@ -610,6 +495,18 @@ impl DorcConsumer {
                 .to_owned()
         })?;
         self.baseline_from_render(case, render)
+    }
+
+    fn require_arrangement_row(&self, slug: &str) -> Result<(), String> {
+        self.arrangements
+            .iter()
+            .any(|entry| entry.slug == slug)
+            .then_some(())
+            .ok_or_else(|| {
+                format!(
+                    "arrangement `{slug}` has no registry row yet -- publish the case, then rebuild"
+                )
+            })
     }
 
     /// The `dorc-loom vars` inventory for one case, as bytes.
@@ -697,10 +594,12 @@ impl DorcConsumer {
         tokens: &[&str],
         self_reference: SelfReference,
         source_of: &dyn Fn(&str) -> Option<String>,
-    ) -> Option<String> {
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let invocation = match usage::read(tokens.get(1..)?) {
-            Reading::Help(page) => return Some(format!("{page}\n")),
-            Reading::Refused(refusal) => return Some(format!("{PROGRAM}: {refusal}\n")),
+            Reading::Help(page) => return Some(ReplayResult::bytes(format!("{page}\n"))),
+            Reading::Refused(refusal) => {
+                return Some(ReplayResult::bytes(format!("{PROGRAM}: {refusal}\n")));
+            }
             Reading::Runs(invocation) => *invocation,
         };
         if invocation.root.is_some() {
@@ -709,6 +608,12 @@ impl DorcConsumer {
         let wanted = match &invocation.verb {
             Verb::Vars(args) => Inventory::Vars(args.breadth()),
             Verb::Sections(_) => Inventory::Sections,
+            Verb::Defect => {
+                if invocation.target().ok()? != Target::This {
+                    return None;
+                }
+                return self.defect_replay(case);
+            }
             _ => return None,
         };
         match invocation.target().ok()? {
@@ -717,14 +622,45 @@ impl DorcConsumer {
                     return None;
                 }
                 self_slug(case)?;
-                self.inventory(wanted, case)
+                self.inventory(wanted, case).map(ReplayResult::bytes)
             }
             Target::Named([one]) if case_relative_path(one) => {
                 let target = Case::parse(&source_of(one)?).ok()?;
-                self.inventory(wanted, &target)
+                self.inventory(wanted, &target).map(ReplayResult::bytes)
             }
             Target::Named(_) => None,
         }
+    }
+
+    fn defect_replay(&self, case: &Case) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        let scenario = crate::defect::DefectScenario::from_slug(self_slug(case)?)?;
+        let diagnostic = scenario.diagnostic();
+        // The seat comes from the REGISTRY: a bypass render has no invocation whose shape one
+        // could be picked from, and a transcript at the wrong seat shows a render the product
+        // never emits.
+        let (parts, status) = match scenario.seat() {
+            crate::defect::DefectSeat::Staged(stage) => {
+                let event = dorc_cli::engine::diagnostic_event(
+                    &self.render_ctx(),
+                    stage,
+                    &diagnostic,
+                    "",
+                    "",
+                );
+                (event.tagged_parts()?.clone(), ReplayStatus::SUCCESS)
+            }
+            crate::defect::DefectSeat::Invocation { status } => (
+                self.invocation_parts(&diagnostic, "dorc"),
+                ReplayStatus::new(status),
+            ),
+        };
+        Some(ReplayResult::emitted(
+            status,
+            vec![ReplayEmission::editable(
+                errorloom::ReplayChannel::Stderr,
+                to_editable_render(&parts),
+            )],
+        ))
     }
 
     fn inventory(&self, wanted: Inventory, case: &Case) -> Option<String> {
@@ -742,37 +678,29 @@ impl DorcConsumer {
         command: &str,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.replay_within(case, command, context, SelfReference::Allowed)
+        let command = ReplayCommand::parse(command).ok()?;
+        self.replay_within(case, &command, context, SelfReference::Allowed)
     }
 
     fn replay_within(
         &self,
         case: &Case,
-        command: &str,
+        command: &ReplayCommand,
         context: &ReplayContext<'_>,
         self_reference: SelfReference,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        let tokens = exact_words(command)?;
-        if let Some(slug) = arrangement_page_slug(case, &tokens) {
-            let parts = self.arrangement_page(slug).ok()?;
+        let tokens: Vec<&str> = command.argv().iter().map(String::as_str).collect();
+        if is_help_case(case, &tokens) {
+            let parts = dorc_cli::help_parts(&self.render_ctx());
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if tokens.first() == Some(&LOOM_COMMAND) {
-            return self
-                .loom_replay(case, &tokens, self_reference, &|target| {
-                    context.materialized_input(target).map(str::to_owned)
-                })
-                .map(ReplayResult::bytes);
+            return self.loom_replay(case, &tokens, self_reference, &|target| {
+                context.materialized_input(target).map(str::to_owned)
+            });
         }
         if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
             let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
-        }
-        if let Some(why) = parse_direct_why_report(&tokens) {
-            let parts = live_why_parts(&self.render_ctx(), &why, |path| {
-                materialized_source(case, context, path)
-            })
-            .ok()?;
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if let Some(why) = parse_direct_why(&tokens) {
@@ -795,85 +723,390 @@ impl DorcConsumer {
             let parts = self.staged_cli_parts("whylog", &diag);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
-        if let Some((path, tools_enabled)) = parse_direct_lint(&tokens) {
-            let source = materialized_source(case, context, path)?;
-            let result = dorc_lint::lint_materialized_source(
-                path.to_owned(),
-                source,
-                dorc_lint::SourcePolicy { tools_enabled },
-            );
-            return Some(ReplayResult::editable(to_editable_render(
-                &result.human(&self.render_ctx()),
-            )));
+        if tokens.first() == Some(&"dorc") {
+            return self.replay_dorc(case, command, context);
         }
-        if let Some(diag) = fire_invocation_error(case, &tokens) {
-            let parts = self.invocation_parts(&diag, tokens.first().copied().unwrap_or_default());
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        if tokens.first() == Some(&"dorc-sh") {
+            return self.replay_dorc_sh(case, &tokens, context);
         }
-        if parse_direct_remote_apply(&tokens) {
-            let diag = Self::world_of(case).ok()?.0;
-            let parts = self
-                .declared_seat_parts(case, &diag)
-                .unwrap_or_else(|| self.cli_parts(&diag, "", ""));
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
-        }
-        let plan = parse_direct_plan(&tokens)?;
-        if let Some(parts) = self.plan_envelope(case, plan.book) {
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
-        }
-        self.replay_plan(case, context, &plan)
+        None
     }
 
-    /// The `dorc plan` arm of [`Self::replay`], split out because the dispatch above is a table and
-    /// this one arm carries the whole world derivation.
-    fn replay_plan(
+    fn replay_dorc(
         &self,
         case: &Case,
+        command: &ReplayCommand,
         context: &ReplayContext<'_>,
-        plan: &DirectPlan<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        // World-as-payload, the branch `render_direct_replay` has always had. Without it the
-        // driver declined, so no publish ever saw provenance for these cases.
-        let Some(source) = materialized_source(case, context, plan.book) else {
-            let diag = Self::world_of(case).ok()?.0;
-            if plan.machine {
-                return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
-            }
-            let parts = self
-                .declared_seat_parts(case, &diag)
-                .unwrap_or_else(|| self.cli_parts(&diag, "", ""));
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
+        self.replay_dorc_outcome(case, command, context)
+            .map(|replay| replay.result)
+    }
+
+    fn replay_dorc_outcome(
+        &self,
+        case: &Case,
+        command: &ReplayCommand,
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        let invocation_argv = command.argv().get(1..)?.to_vec();
+        let invocation = match dorc_cli::parse_args_from(invocation_argv) {
+            Ok(invocation) => invocation,
+            Err(diagnostic) => return self.invocation_diagnostic(case, diagnostic, "dorc"),
         };
-        let oracles: Vec<(String, String)> = plan
-            .oracles
+        match invocation {
+            dorc_cli::Invocation::Help => {
+                let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
+                is_help_case(case, &words).then(|| {
+                    DorcEngineReplay::without_diagnostic(ReplayResult::editable(
+                        to_editable_render(&dorc_cli::help_parts(&self.render_ctx())),
+                    ))
+                })
+            }
+            dorc_cli::Invocation::Version => Some(DorcEngineReplay::without_diagnostic(
+                ReplayResult::bytes("dorc 0.0.0\n".to_owned()),
+            )),
+            dorc_cli::Invocation::Lint(args) => self.run_lint(case, &args, context),
+            dorc_cli::Invocation::Analyze(analysis_args) => {
+                if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
+                    self.run_remote_apply(case, &analysis_args, context)
+                } else {
+                    self.run_engine(case, &analysis_args, command, context)
+                }
+            }
+            dorc_cli::Invocation::Strip(_) => None,
+        }
+    }
+
+    fn replay_dorc_sh(
+        &self,
+        case: &Case,
+        words: &[&str],
+        context: &ReplayContext<'_>,
+    ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        self.replay_dorc_sh_outcome(case, words, context)
+            .map(|replay| replay.result)
+    }
+
+    fn replay_dorc_sh_outcome(
+        &self,
+        case: &Case,
+        words: &[&str],
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+        let diagnostic = match words.get(1..) {
+            Some([]) => dorc_cli::shim_usage_error(),
+            Some([path]) => {
+                if let Some(failure) = fault.as_ref().and_then(|fault| fault.read_failure(path)) {
+                    dorc_cli::shim_script_read_error(path, &failure.error())
+                } else if context.read_file(path).is_none() {
+                    return None;
+                } else if let Some(crate::edge_fault::EdgeFault::ShimExec(failure)) = &fault {
+                    dorc_cli::shim_exec_error(&failure.error())
+                } else {
+                    return None;
+                }
+            }
+            _ => return None,
+        };
+        self.invocation_diagnostic(case, diagnostic, "dorc-sh")
+    }
+
+    fn invocation_diagnostic(
+        &self,
+        case: &Case,
+        diagnostic: Diag,
+        command: &str,
+    ) -> Option<DorcEngineReplay> {
+        if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
+            return None;
+        }
+        let parts = self.invocation_parts(&diagnostic, command);
+        Some(DorcEngineReplay {
+            result: ReplayResult::emitted(
+                ReplayStatus::new(2),
+                vec![ReplayEmission::editable(
+                    errorloom::ReplayChannel::Stderr,
+                    to_editable_render(&parts),
+                )],
+            ),
+            diagnostics: vec![diagnostic],
+        })
+    }
+
+    fn staged_diagnostic(
+        &self,
+        case: &Case,
+        stage: &str,
+        diagnostic: Diag,
+        status: i32,
+    ) -> Option<DorcEngineReplay> {
+        if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
+            return None;
+        }
+        let event =
+            dorc_cli::engine::diagnostic_event(&self.render_ctx(), stage, &diagnostic, "", "");
+        let render = event.tagged_parts()?.clone();
+        Some(DorcEngineReplay {
+            result: ReplayResult::emitted(
+                ReplayStatus::new(status),
+                vec![ReplayEmission::editable(
+                    errorloom::ReplayChannel::Stderr,
+                    to_editable_render(&render),
+                )],
+            ),
+            diagnostics: vec![diagnostic],
+        })
+    }
+
+    fn run_remote_apply(
+        &self,
+        case: &Case,
+        args: &dorc_cli::Args,
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        // The argv-only refusal is spent before any file is read, so it is answered from the
+        // shared seat rather than re-derived here.
+        if let Some(refusal) = dorc_cli::apply_dispatch_refusal(args) {
+            return self.invocation_diagnostic(case, refusal, "dorc");
+        }
+        let host = args.host.as_deref()?;
+        let plan = args.plan.as_deref()?;
+        let fault = crate::edge_fault::EdgeFault::from_case(case)
+            .ok()
+            .flatten()?;
+        let _artifact = context.read_file(plan)?;
+        let (diagnostic, status) = match fault {
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::Crlf { line },
+            ) => (dorc_cli::transport_crlf_error(plan, line), 13),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::SessionLost,
+            ) => (
+                dorc_cli::transport_session_lost(
+                    host,
+                    1,
+                    &dorc_transport::TransportDiagnosis::ChildLost,
+                ),
+                14,
+            ),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::SpawnRefused(detail),
+            ) => (dorc_cli::transport_spawn_refused(host, &detail), 13),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::MarkerUnusable,
+            ) => (dorc_cli::transport_marker_unusable(host), 13),
+            crate::edge_fault::EdgeFault::Transport(
+                crate::edge_fault::TransportFailure::ApplyFailed { status },
+            ) => (dorc_cli::transport_apply_failed(host, status), 15),
+            _ => return None,
+        };
+        self.staged_diagnostic(case, "transport", diagnostic, status)
+    }
+
+    fn run_lint(
+        &self,
+        case: &Case,
+        args: &dorc_cli::LintArgs,
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        if !args.oracle_dirs.is_empty() || !args.oracles.is_empty() {
+            return None;
+        }
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+        let inputs = args
+            .files
             .iter()
             .map(|path| {
-                Some((
-                    (*path).to_owned(),
-                    materialized_source(case, context, path)?,
-                ))
+                context.read_file(path).map(|source| dorc_lint::LintInput {
+                    path: path.clone(),
+                    src: source,
+                })
             })
-            .collect::<Option<_>>()?;
-        let results = match plan.input {
-            Some(input) => Some(materialized_input(case, context, input)?),
+            .collect::<Option<Vec<_>>>()?;
+        let runner = LoomToolRunner {
+            fault: fault.as_ref(),
+        };
+        let only = (!args.sources.is_empty()).then_some(args.sources.as_slice());
+        let report = if let [input] = inputs.as_slice()
+            && !args.tools_enabled
+            && only.is_none()
+        {
+            dorc_lint::lint_materialized_source_with_runner(
+                input.path.clone(),
+                input.src.clone(),
+                dorc_lint::SourcePolicy {
+                    tools_enabled: false,
+                },
+                &runner,
+            )
+            .report()
+            .clone()
+        } else {
+            dorc_lint::lint(
+                &inputs,
+                &[],
+                dorc_lint::LintOptions {
+                    tools_enabled: args.tools_enabled,
+                },
+                &runner,
+                only,
+            )
+        };
+        let operational = dorc_cli::lint_operational_diagnostic(args, inputs.len(), &report);
+        let mut diagnostics = report
+            .findings
+            .iter()
+            .filter_map(|finding| {
+                finding
+                    .provenance
+                    .as_ref()
+                    .map(|provenance| provenance.diag.clone())
+            })
+            .collect::<Vec<_>>();
+        let mut emissions = Vec::new();
+        if !inputs.is_empty() {
+            emissions.push(ReplayEmission::editable(
+                errorloom::ReplayChannel::Stdout,
+                to_editable_render(&dorc_lint::render::render_human_parts_at(
+                    &self.render_ctx(),
+                    &report,
+                    args.verbosity,
+                )),
+            ));
+        }
+        let status = if let Some(diagnostic) = operational {
+            if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
+                return None;
+            }
+            let body = to_editable_render(&render_cli_parts(
+                &self.render_ctx(),
+                &diagnostic,
+                "",
+                "",
+                &Interner::default(),
+            ));
+            let mut components = vec![RenderComponent::Structure("dorc: lint: ".to_owned())];
+            components.extend(body.components().iter().cloned());
+            emissions.push(ReplayEmission::editable(
+                errorloom::ReplayChannel::Stderr,
+                EditableRender::new(components),
+            ));
+            diagnostics.push(diagnostic);
+            3
+        } else {
+            i32::from(report.count_at_or_above(args.fail_on) > 0)
+        };
+        Some(DorcEngineReplay {
+            result: ReplayResult::emitted(ReplayStatus::new(status), emissions),
+            diagnostics,
+        })
+    }
+
+    fn run_engine(
+        &self,
+        case: &Case,
+        args: &dorc_cli::Args,
+        command: &ReplayCommand,
+        context: &ReplayContext<'_>,
+    ) -> Option<DorcEngineReplay> {
+        if args.plan.is_some() || !args.oracle_dirs.is_empty() || args.reads_the_receipt() {
+            return None;
+        }
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+        let stdin = replay_stdin(command, context)?;
+        let book_path = args.book.as_deref()?;
+        let book = match replay_source("book", book_path, stdin.bytes(), context, fault.as_ref()) {
+            Ok(book) => book,
+            Err(diagnostic) => return self.invocation_diagnostic(case, *diagnostic, "dorc"),
+        };
+        let mut paths = Vec::new();
+        let mut sources = Vec::new();
+        for path in &args.pre_sources {
+            let source = match replay_source("oracle", path, stdin.bytes(), context, fault.as_ref())
+            {
+                Ok(source) => source,
+                Err(diagnostic) => return self.invocation_diagnostic(case, *diagnostic, "dorc"),
+            };
+            sources.push(source);
+            paths.push(path.clone());
+        }
+        let ambient = paths.len();
+        for section in case.sections() {
+            if section.name() != book_path
+                && std::path::Path::new(section.name())
+                    .extension()
+                    .is_some_and(|extension| extension.eq_ignore_ascii_case("sh"))
+                && !paths.iter().any(|path| path == section.name())
+            {
+                paths.push(section.name().to_owned());
+                sources.push(context.read_file(section.name())?);
+            }
+        }
+        let snapshot = engine_snapshot(book_path, &book, paths, sources, ambient);
+        let raw_results = match args.results.as_deref() {
+            Some(path) => {
+                match replay_source("results", path, stdin.bytes(), context, fault.as_ref()) {
+                    Ok(results) => Some(results),
+                    Err(diagnostic) => {
+                        return self.invocation_diagnostic(case, *diagnostic, "dorc");
+                    }
+                }
+            }
             None => None,
         };
-        // The FRAME source is the world's, not the book's: an oracle-side diagnostic's caret points
-        // into the oracle file that raised it.
-        let (diag, framed, filename) = Self::world_of_source(
-            case,
-            plan.book,
-            &source,
-            &oracles,
-            plan.consented,
-            results.as_deref(),
-        )
-        .ok()?;
-        if plan.machine {
-            return Some(ReplayResult::bytes(render_diag_jsonl(&diag)));
+        let controller_results = matches!(
+            command.input(),
+            Some(ReplayInputTarget::File(path)) if path.ends_with("controller-results.txt")
+        );
+        let observation = loom_observation(&snapshot, raw_results, controller_results);
+        let options = dorc_cli::engine_options_from_args(
+            args,
+            replay_stdout_posture(command),
+            args.artifact_dir.is_some(),
+            args.whylog_dir.is_some(),
+        );
+        let discovered_oracles = case
+            .sections()
+            .iter()
+            .map(errorloom::Section::name)
+            .filter(|path| path.ends_with(".oracle.sh"))
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        let acquisition_diagnostics = dorc_cli::unloaded_sibling_oracle_diagnostics(
+            snapshot.oracle_paths(),
+            &discovered_oracles,
+        );
+        let mut edges = LoomEngineEdges {
+            observation: Some(observation),
+            clock: dorc_cli::results::RunClock::Absent,
+            argv: command.argv().to_vec(),
+            fault,
+            shim_dir: args.shim_dir.clone(),
+            durable_label: args
+                .whylog_dir
+                .clone()
+                .unwrap_or_else(|| "<disabled>".to_owned()),
+            host: args.host.clone(),
+        };
+        let mut sink = LoomOutputSink {
+            ctx: self.render_ctx(),
+            actions: Vec::new(),
+        };
+        let result = dorc_cli::engine::run(
+            &dorc_cli::engine::EngineRequest {
+                snapshot: &snapshot,
+                options: &options,
+                replay: None,
+                acquisition_diagnostics: &acquisition_diagnostics,
+            },
+            &mut edges,
+            &mut sink,
+        );
+        match result {
+            Ok(result) => Some(dorc_engine_replay(&result, sink.actions)),
+            Err(diagnostic) => self.invocation_diagnostic(case, *diagnostic, "dorc"),
         }
-        let parts = self.cli_parts(&diag, &framed, &filename);
-        Some(ReplayResult::editable(to_editable_render(&parts)))
     }
 
     /// Reattach the payload inventory to renderer-stamped exact provenance.
@@ -899,9 +1132,7 @@ impl DorcConsumer {
                 all_variables: BTreeMap::new(),
             });
         }
-        let diag = Self::world_of(case)
-            .map(|(diag, _, _)| diag)
-            .or_else(|_| Self::whylog_diagnostic(case))?;
+        let diag = self.case_diag(case)?;
         let interner = Interner::default();
         let all_variables = dorc_aid::diag::params_of(&self.render_ctx(), &diag.code, &interner)
             .into_iter()
@@ -920,148 +1151,69 @@ impl DorcConsumer {
         })
     }
 
-    /// The COMMITTED registry's own spelling of `slug`, so a span carries a stable one. A case
-    /// naming a slug with no row yet gets the repair: its row arrives by promotion and the build
-    /// sees it after a rebuild — the same generation lag the catalog has, and the same assertion.
+    /// The defining replay's typed diagnostic, taken only from the invocation that emitted it.
     ///
-    /// EXISTENCE only. A value-bearing chrome LINE has no whole-page render at all — laying one
-    /// out passes zero values to a seat that interleaves several — so the lag check cannot go
-    /// through [`Self::arrangement_page`].
-    fn arrangement_row(slug: &str) -> Result<&'static str, String> {
-        dorc_aid::arrangement::ARRANGEMENTS
-            .iter()
-            .find(|entry| entry.slug == slug)
-            .map(|entry| entry.slug)
-            .ok_or_else(|| {
-                format!(
-                    "arrangement `{slug}` has no registry row yet -- publish the case, then rebuild"
-                )
-            })
-    }
-
-    /// One whole-page arrangement's part stream, resolved against the COMMITTED registry.
-    fn arrangement_page(&self, slug: &str) -> Result<dorc_aid::tagged::RenderParts, String> {
-        Ok(arrangement_parts(
-            &self.arrangements,
-            Self::arrangement_row(slug)?,
-            None,
+    /// # Errors
+    /// Returns when the case has no externally-triggered diagnostic matching its declared code.
+    pub fn case_diag(&self, case: &Case) -> Result<Diag, String> {
+        let slug = case
+            .frontmatter()
+            .scalar("code")
+            .ok_or_else(|| "case has no `code`".to_owned())?;
+        if case.replay().blocks().is_empty() {
+            return Err("case has no replay".to_owned());
+        }
+        for block in case.replay().blocks() {
+            let command =
+                ReplayCommand::parse(block.command()).map_err(|error| error.to_string())?;
+            let words: Vec<&str> = command.argv().iter().map(String::as_str).collect();
+            if words.first() == Some(&LOOM_COMMAND)
+                && matches!(usage::read(words.get(1..).unwrap_or_default()), Reading::Runs(invocation) if matches!(invocation.verb, Verb::Defect))
+            {
+                return crate::defect::DefectScenario::from_slug(slug)
+                    .map(crate::defect::DefectScenario::diagnostic)
+                    .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
+            }
+            if let Ok(diag) = Self::whylog_diagnostic(case, block.command())
+                && diag.code.slug() == slug
+            {
+                return Ok(diag);
+            }
+        }
+        let found = std::cell::RefCell::new(None);
+        drive_case(case, &RunEnv::new(), |command, context| {
+            let words = command
+                .argv()
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>();
+            let replay = match words.first() {
+                Some(&"dorc") => self.replay_dorc_outcome(case, command, context),
+                Some(&"dorc-sh") => self.replay_dorc_sh_outcome(case, &words, context),
+                _ => None,
+            };
+            if let Some(replay) = replay {
+                if found.borrow().is_none() {
+                    *found.borrow_mut() = replay
+                        .diagnostics
+                        .iter()
+                        .find(|diagnostic| diagnostic.code.slug() == slug)
+                        .cloned();
+                }
+                return Ok(replay.result);
+            }
+            Ok(ReplayResult::bytes(String::new()))
+        })
+        .map_err(|error| error.to_string())?;
+        if let Some(diagnostic) = found.into_inner() {
+            return Ok(diagnostic);
+        }
+        Err(format!(
+            "case `{slug}` has no externally-triggered diagnostic matching its declared code"
         ))
     }
 
-    /// The defining replay's typed diagnostic for a case — the payload the generated `example` field
-    /// and the full inventory read (`28A` §4). World-as-payload/pipeline, with the whylog durable
-    /// fallback for `dorc why --last` cases.
-    ///
-    /// # Errors
-    /// Returns the case-world or whylog-provenance refusal.
-    pub fn case_diag(&self, case: &Case) -> Result<Diag, String> {
-        Self::world_of(case)
-            .map(|(diag, _, _)| diag)
-            .or_else(|_| Self::whylog_diagnostic(case))
-    }
-
-    /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
-    /// carrying a materialized `*.oracle.sh` section is WORLD-AS-PIPELINE: the REAL in-process marker
-    /// gate fires the diagnostic over that source (the one real-fired proof, `28A` §2n) — a spanned
-    /// diag whose caret frame points into it. Otherwise WORLD-AS-PAYLOAD: the canonical constructor
-    /// keyed by the frontmatter `code` (spanless roster codes need no source).
-    fn world_of(case: &Case) -> Result<(Diag, String, String), String> {
-        let slug = case
-            .frontmatter()
-            .scalar("code")
-            .ok_or_else(|| "case has no `code`".to_owned())?;
-        // The BOOK route first: a case carrying both a book and oracles is a `dorc plan` world,
-        // and its oracle sections are that run's loaded set rather than a lint target. The
-        // invocation's own flag and `< results` redirect are read off its first replay, so a
-        // worldless derivation answers the same world the driven one does.
-        let (consented, results) = declared_plan_shape(case);
-        if let Some(section) = case.sections().iter().find(|s| s.name() == "book.sh")
-            && let Ok(world) = fire_book_analysis(
-                slug,
-                section.name(),
-                section.content(),
-                &oracle_sections(case),
-                consented,
-                results,
-            )
-        {
-            return Ok(world);
-        }
-        if let Some(section) = case
-            .sections()
-            .iter()
-            .find(|s| s.name().ends_with("oracle.sh"))
-        {
-            return fire_lint_case(
-                slug,
-                section.name(),
-                section.content(),
-                declared_lint_tools(case),
-            );
-        }
-        if let Some((book, results)) = declared_plan_inputs(case)
-            && let Ok(diag) = fire_records_admission(slug, book, results)
-        {
-            return Ok((diag, String::new(), String::new()));
-        }
-        // Tried BEFORE the payload floor, so a code that can fire for real never settles for a
-        // constructed stand-in (`289:rul-worldless-route-honest-trigger`).
-        if let Some(diag) = case
-            .replay()
-            .blocks()
-            .first()
-            .and_then(|block| exact_words(block.command()))
-            .and_then(|tokens| fire_invocation_error(case, &tokens))
-        {
-            return Ok((diag, String::new(), String::new()));
-        }
-        if let Ok(diag) = Self::whylog_diagnostic(case) {
-            return Ok((diag, String::new(), String::new()));
-        }
-        let diag = canonical_payload(slug)
-            .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
-        Ok((diag, String::new(), String::new()))
-    }
-
-    fn world_of_source(
-        case: &Case,
-        path: &str,
-        source: &str,
-        oracles: &[(String, String)],
-        consented: bool,
-        results: Option<&str>,
-    ) -> Result<(Diag, String, String), String> {
-        let slug = case
-            .frontmatter()
-            .scalar("code")
-            .ok_or_else(|| "case has no `code`".to_owned())?;
-        if path.ends_with("oracle.sh") {
-            let (diag, _, filename) =
-                fire_lint_case(slug, path, source, declared_lint_tools(case))?;
-            return Ok((diag, source.to_owned(), filename));
-        }
-        if path == "book.sh"
-            && let Ok(world) = fire_book_analysis(slug, path, source, oracles, consented, results)
-        {
-            return Ok(world);
-        }
-        if let Some(results) = results
-            && let Ok(diag) = fire_records_admission(slug, source, results)
-        {
-            return Ok((diag, String::new(), String::new()));
-        }
-        let diag = canonical_payload(slug)
-            .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
-        Ok((diag, String::new(), String::new()))
-    }
-
-    fn whylog_diagnostic(case: &Case) -> Result<Diag, String> {
-        let command = case
-            .replay()
-            .blocks()
-            .first()
-            .map(errorloom::ReplayBlock::command)
-            .ok_or_else(|| "case has no replay".to_owned())?;
+    fn whylog_diagnostic(case: &Case, command: &str) -> Result<Diag, String> {
         let words = exact_words(command).ok_or_else(|| "unsupported whylog replay".to_owned())?;
         let why = parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
         let raw = case
@@ -1086,23 +1238,9 @@ impl DorcConsumer {
     }
 }
 
-/// The WHOLE-PAGE arrangement route: an invocation whose entire output is one registry entry
-/// (`288:rul-help-text-is-loomable`; the `289` §2o help pilot). Both the driver and the
-/// re-render seat go through this, so the transcript a human edits and the bytes the fixpoint
-/// re-derives are the same registry read.
-///
-/// The declared-arrangement check is this family's honest trigger
-/// (`289:rul-worldless-route-honest-trigger`): a page case whose command renders some OTHER
-/// page is refused rather than quietly transcribing a page it does not claim.
-fn arrangement_page_slug(case: &Case, words: &[&str]) -> Option<&'static str> {
-    let slug = match words {
-        ["dorc", "--help" | "-h"] => dorc_cli::HELP_ARRANGEMENT,
-        _ => return None,
-    };
-    match case.frontmatter().scalar("arrangement") {
-        Some(declared) if declared != slug => None,
-        _ => Some(slug),
-    }
+fn is_help_case(case: &Case, words: &[&str]) -> bool {
+    matches!(words, ["dorc", "--help" | "-h"])
+        && case.frontmatter().scalar("arrangement") == Some(dorc_cli::HELP_ARRANGEMENT)
 }
 
 /// The words a compiled arrangement section would STORE, or `None` for a catalog register.
@@ -1113,21 +1251,7 @@ fn stored_words(field: &str, compiled: &crate::CompiledSection) -> Option<Vec<St
     if field == crate::ARRANGEMENT_LINE_FIELD {
         return Some(line_words(compiled));
     }
-    (field == crate::ARRANGEMENT_FIELD).then(|| page_words(compiled))
-}
-
-/// A PAGE's one word: its author's bytes, verbatim (`28H` ruling 7).
-fn page_words(compiled: &crate::CompiledSection) -> Vec<String> {
-    vec![
-        compiled
-            .fragments()
-            .iter()
-            .filter_map(|fragment| match fragment {
-                crate::CompiledFragment::Text(text) => Some(text.as_str()),
-                crate::CompiledFragment::Variable(_) => None,
-            })
-            .collect(),
-    ]
+    None
 }
 
 /// A chrome LINE's word sequence: the compiled fragment series IS the re-split — a `Text` fragment
@@ -1147,23 +1271,25 @@ fn line_words(compiled: &crate::CompiledSection) -> Vec<String> {
     words.iter().map(|word| collapse_runs(word)).collect()
 }
 
-/// Whitespace runs to one space. A laid-out line's inter-word whitespace is the RENDERER's, so
-/// storing the wrap it chose at one width would freeze that width into the entry (`282` §3's
-/// read-in normalization). Collapse, never TRIM: a word's own leading or trailing space is what
-/// separates it from the value beside it.
+/// Collapses soft wraps but preserves `\n\n`; never trims edge spaces that may separate a value.
 pub(crate) fn collapse_runs(word: &str) -> String {
     let mut out = String::with_capacity(word.len());
-    let mut spacing = false;
+    let mut run_newlines: Option<usize> = None;
     for character in word.chars() {
         if character.is_whitespace() {
-            if !spacing {
-                out.push(' ');
+            let newlines = run_newlines.get_or_insert(0);
+            if character == '\n' {
+                *newlines = newlines.saturating_add(1);
             }
-            spacing = true;
-        } else {
-            out.push(character);
-            spacing = false;
+            continue;
         }
+        if let Some(newlines) = run_newlines.take() {
+            out.push_str(if newlines >= 2 { "\n\n" } else { " " });
+        }
+        out.push(character);
+    }
+    if let Some(newlines) = run_newlines {
+        out.push_str(if newlines >= 2 { "\n\n" } else { " " });
     }
     out
 }
@@ -1247,201 +1373,84 @@ fn drifted_why_parts(
     ))
 }
 
-/// One LIVE `dorc why [<address>] --book=<book> [-o <oracle>]… [--all]` replay: the full report
-/// over a world the case materializes, rather than the degraded receipt a drifted durable yields.
-///
-/// This is what gives the `why-*` chrome an editable home (`28L:rul-full-driver-this-arc`): the
-/// report is driven through the same `dorc_cli::why` seat the binary prints, so the transcript a
-/// human edits IS the render.
-struct DirectWhyReport<'a> {
-    /// The `book.sh:N` / content positional, when the case asked about one site.
-    address: Option<&'a str>,
-    /// The case-relative book.
-    book: &'a str,
-    /// The case-relative oracle sources, in argv order.
-    oracles: Vec<&'a str>,
-    /// `--all`: the deepest pull tier.
-    deepest: bool,
-    /// The `< <path>` probe-results redirect — a MEASURED world, admitted through the real fixture
-    /// intake. Absent ⇒ every fact ⊤ ⇒ every site runs.
-    input: Option<&'a str>,
-    /// Did the invocation consent to the survival tier (`--risk-faultless-skips`)? Read off the
-    /// command rather than the frontmatter, so the world the transcript shows is the world its own
-    /// committed invocation asks for.
-    consented: bool,
-}
-
-fn parse_direct_why_report<'a>(words: &[&'a str]) -> Option<DirectWhyReport<'a>> {
-    let mut rest = words.strip_prefix(&["dorc", "why"])?.iter().peekable();
-    let leads = rest.peek().is_some_and(|word| !word.starts_with('-'));
-    let address = leads.then(|| rest.next().copied()).flatten();
-    let mut book = None;
-    let mut oracles = Vec::new();
-    let mut deepest = false;
-    let mut input = None;
-    let mut consented = false;
-    while let Some(word) = rest.next() {
-        if let Some(path) = word.strip_prefix("--book=") {
-            book = Some(path);
-        } else if *word == "--pre-source" {
-            oracles.push(*rest.next()?);
-        } else if *word == "--all" {
-            deepest = true;
-        } else if *word == dorc_cli::CONSENT_FLAG {
-            if consented {
-                return None;
-            }
-            consented = true;
-        } else if *word == "--results" {
-            // As in `parse_direct_plan`: the claim is spelled, and only `-` is recognized.
-            if *rest.next()? != "-" {
-                return None;
-            }
-        } else if *word == "<" {
-            if input.replace(*rest.next()?).is_some() {
-                return None;
-            }
-        } else {
-            return None;
-        }
-    }
-    let book = book?;
-    (case_relative_path(book)
-        && oracles.iter().copied().all(case_relative_path)
-        && input.is_none_or(case_relative_path))
-    .then_some(DirectWhyReport {
-        address,
-        book,
-        oracles,
-        deepest,
-        input,
-        consented,
-    })
-}
-
-/// The LIVE `dorc why` report, rendered in-process over a world the case materializes.
-///
-/// The ONE seat both replay chains go through — they differ only in where a case's bytes come
-/// from, so that is the only thing `source` supplies.
-/// The load snapshot a CASE is: a flat virtual directory whose section NAMES are its paths.
-///
-/// The modeled cwd is that directory's root, so `. ./x.oracle.sh` in a case's book names the
-/// case's own section (`30I:rul-dot-resolves-as-sh`). The e2e runner materializes the same case
-/// into a real directory and runs the real binary standing in it, so the in-process route and the
-/// executed one resolve identically by construction rather than by agreement.
-fn case_snapshot(
+fn engine_snapshot(
     book_path: &str,
     book_src: &str,
     paths: Vec<String>,
     srcs: Vec<String>,
+    ambient: usize,
 ) -> dorc_cli::snapshot::StaticLoadSnapshot {
     let cwd = dorc_core::loadpath::Cwd::default();
-    let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    let reached = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    let mut kept_paths = Vec::new();
+    let mut kept_srcs = Vec::new();
+    let mut kept_reached = std::collections::BTreeSet::new();
+    for (index, (path, source)) in paths.into_iter().zip(srcs).enumerate() {
+        if index >= ambient && !reached.contains(&index) {
+            continue;
+        }
+        let kept = kept_paths.len();
+        kept_paths.push(path);
+        kept_srcs.push(source);
+        if index >= ambient {
+            kept_reached.insert(kept);
+        }
+    }
     dorc_cli::snapshot::StaticLoadSnapshot::over(
         cwd,
-        paths,
-        srcs,
-        // A case lists its sources; every one of them is named, so none is an acquired dependency.
-        &dorc_cli::snapshot::LoadPositions::book_sourced(book_sourced),
+        kept_paths,
+        kept_srcs,
+        &dorc_cli::snapshot::LoadPositions::book_sourced(kept_reached),
         book_path,
         book_src,
     )
 }
 
-fn live_why_parts(
-    ctx: &RenderCtx<'_>,
-    why: &DirectWhyReport<'_>,
-    source: impl Fn(&str) -> Option<String>,
-) -> Result<dorc_aid::tagged::RenderParts, String> {
-    // A `Result`, not an `Option`, so an intake REFUSAL reaches the author verbatim: collapsing it
-    // to "unsupported replay" would hide the one message that names the header they must write
-    // (`28L:rul-refusals-name-the-next-command`).
-    let missing = |path: &str| format!("the case carries no `{path}` section");
-    let book = source(why.book).ok_or_else(|| missing(why.book))?;
-    let oracle_paths: Vec<String> = why.oracles.iter().map(|p| (*p).to_owned()).collect();
-    let oracle_srcs = oracle_paths
-        .iter()
-        .map(|path| source(path).ok_or_else(|| missing(path)))
-        .collect::<Result<Vec<String>, String>>()?;
-    let results = match why.input {
-        Some(path) => admitted_site_results(
-            why.book,
-            &book,
-            &oracle_paths,
-            &oracle_srcs,
-            &source(path).ok_or_else(|| missing(path))?,
-        )?,
-        None => dorc_cli::results::SiteResults::default(),
+fn loom_observation(
+    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
+    raw_results: Option<String>,
+    controller_results: bool,
+) -> LoomObservation {
+    let Some(raw) = raw_results else {
+        return LoomObservation::Controller(dorc_plan::records::Admission::NoObservation);
     };
-    let world = dorc_cli::world::WhyWorld::analyze_measured(
-        &case_snapshot(why.book, &book, oracle_paths.clone(), oracle_srcs.clone()),
-        &results,
-        why.consented,
+    let evidence = dorc_plan::records::read_host_evidence(
+        std::io::Cursor::new(&raw),
+        dorc_plan::records::HostEvidenceLimits::spike_default(),
     );
-    // Every field is controller-minted, exactly as the binary mints them on a hostless run: the
-    // fixture framing supplies the host, the book supplies its own digest, and there is no clock
-    // (`28F:rul-probe-instants-host-says-no-times` — an undated receipt says so rather than
-    // inventing a moment).
-    let framing = dorc_plan::records::Framing::spike(dorc_plan::invocation::book_digest(&book));
-    let receipt = dorc_cli::Receipt {
-        at: None,
-        replayed: false,
-        host: framing.host().to_owned(),
-        book: why.book.to_owned(),
-        book_digest: framing.book_digest().to_owned(),
-        at_head: None,
-        oracles: oracle_paths,
-        risk_profile: why.consented.then_some(dorc_cli::CONSENT_FLAG),
-        tally: dorc_cli::PlanTally::Derived(world.disposition_counts()),
-        deepest_tier: why.deepest,
-        narratable: true,
+    if controller_results || raw.starts_with("dorc-records/") {
+        return LoomObservation::Controller(evidence);
+    }
+    if raw.is_empty() {
+        return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
+    }
+    let sources = dorc_cli::results::RunSources {
+        book_name: snapshot.book_path(),
+        book: snapshot.book_src(),
+        oracle_paths: snapshot.oracle_paths(),
+        oracle_sources: snapshot.oracle_srcs(),
     };
-    Ok(dorc_cli::why::why_report_parts(
-        ctx,
-        &world.report(why.address, &receipt),
-    ))
-}
-
-/// The HONEST-TRIGGER invocation route (`289:rul-worldless-route-honest-trigger`; `291` §5a W2).
-///
-/// Runs the REAL argument parser over the case's own replay argv and returns the diagnostic it
-/// actually produced — but only when that diagnostic's slug equals the case's declared `code`. The
-/// refusal on mismatch is the whole value (`291:rule-worldless-route-refuses-on-mismatch`): without
-/// it, a case's command would be decorative and could drift from its code forever, on the surface
-/// humans review errors through. `$ dorc strip` IS the world for this family — no fixture needed.
-///
-/// `None` for anything that parses successfully or whose slug disagrees, so the caller falls
-/// through to the plan/payload routes exactly as before.
-fn fire_invocation_error(case: &Case, tokens: &[&str]) -> Option<Diag> {
-    let slug = case.frontmatter().scalar("code")?;
-    let argv: Vec<String> = match tokens.split_first()? {
-        (&"dorc", rest) => rest.iter().map(|word| (*word).to_owned()).collect(),
-        (&"dorc-sh", rest) => return fire_dorc_sh_error(slug, rest),
-        _ => return None,
+    let mut clock = dorc_cli::results::RunClock::Absent;
+    let mut interner = Interner::default();
+    let admitted = if raw.starts_with("dorc-records/") {
+        dorc_cli::results::admit_fixture_records(
+            &sources,
+            raw.as_bytes(),
+            &mut clock,
+            &mut interner,
+        )
+    } else {
+        dorc_cli::results::admit_fixture_inner_records(&sources, &raw, &mut clock, &mut interner)
     };
-    let diag = dorc_cli::parse_args_from(argv).err()?;
-    (diag.code.slug() == slug).then_some(diag)
-}
-
-/// `dorc-sh`'s three errors have no parser to run — the bin decides them inline from its argv and
-/// the filesystem. Only the ARGV-decidable one is honest here; the two I/O failures would need a
-/// real unreadable file and a real missing shell, so their cases stay world-as-payload.
-fn fire_dorc_sh_error(slug: &str, rest: &[&str]) -> Option<Diag> {
-    (slug == "dorc-sh-usage" && rest.is_empty())
-        .then(|| Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage)))
-}
-
-/// The `dorc lint` route, and whether the run leaves external tools ENABLED. The bare form is the
-/// default invocation, and the injected runner answers every tool absent — a real world reached
-/// with no PATH probe and no process, which is what lets the tool-absence findings replay their own
-/// production surface instead of a `dorc plan` that never fires them.
-fn parse_direct_lint<'a>(words: &[&'a str]) -> Option<(&'a str, bool)> {
-    let (path, tools_enabled) = match words {
-        ["dorc", "lint", path, "--no-tools"] => (path, false),
-        ["dorc", "lint", path] => (path, true),
-        _ => return None,
-    };
-    case_relative_path(path).then_some((path, tools_enabled))
+    match admitted {
+        dorc_plan::records::Admission::Admitted(records) => {
+            LoomObservation::Fixture(records.scoped.results().clone())
+        }
+        dorc_plan::records::Admission::NoObservation => {
+            LoomObservation::Fixture(dorc_cli::results::SiteResults::default())
+        }
+        dorc_plan::records::Admission::Refused(_) => LoomObservation::Controller(evidence),
+    }
 }
 
 fn exact_words(command: &str) -> Option<Vec<&str>> {
@@ -1457,108 +1466,6 @@ fn exact_words(command: &str) -> Option<Vec<&str>> {
         return None;
     }
     Some(words)
-}
-
-struct DirectPlan<'a> {
-    book: &'a str,
-    /// Did the invocation consent to the survival tier (`--risk-faultless-skips`)?
-    consented: bool,
-    /// The `--pre-source <path>` set, in the order the invocation names it — the same order
-    /// `law-lineno-identity` keys oracle file indices by, so a threaded span frames into the
-    /// section the author expects.
-    oracles: Vec<&'a str>,
-    input: Option<&'a str>,
-    machine: bool,
-}
-
-/// `dorc apply --host <dest> --plan <path>`: recognized ONLY to reach the world-as-payload floor.
-///
-/// A remote apply's outcome has no in-process world to drive — this driver opens no sockets — so
-/// there is nothing to execute, only prose to pin against a canonical payload.
-fn parse_direct_remote_apply(words: &[&str]) -> bool {
-    matches!(
-        words,
-        ["dorc", "apply", "--host", _, "--plan", _]
-            | [
-                "dorc",
-                "apply",
-                "--host",
-                _,
-                "--plan",
-                _,
-                "--dispatch-without-receipt"
-            ]
-    )
-}
-
-fn parse_direct_plan<'a>(words: &[&'a str]) -> Option<DirectPlan<'a>> {
-    if words.get(..2) != Some(["dorc", "plan"].as_slice()) {
-        return None;
-    }
-    let mut book = None;
-    let mut oracles = Vec::new();
-    let mut consented = false;
-    let mut input = None;
-    let mut verbose = false;
-    let mut machine = false;
-    let mut index = 2;
-    while let Some(word) = words.get(index) {
-        if let Some(path) = word.strip_prefix("--book=") {
-            if book.replace(path).is_some() || !case_relative_path(path) {
-                return None;
-            }
-        } else if *word == "--pre-source" {
-            index = index.saturating_add(1);
-            let path = *words.get(index)?;
-            if !case_relative_path(path) || oracles.contains(&path) {
-                return None;
-            }
-            oracles.push(path);
-        } else if *word == "--host" {
-            index = index.saturating_add(1);
-            words.get(index)?;
-        } else if *word == dorc_cli::CONSENT_FLAG {
-            if consented {
-                return None;
-            }
-            consented = true;
-        } else if *word == "--verbose" {
-            if verbose {
-                return None;
-            }
-            verbose = true;
-        } else if *word == "--format=jsonl" {
-            if machine {
-                return None;
-            }
-            machine = true;
-        } else if *word == "--results" {
-            // The stdin CLAIM (`30I:owed-no-flag-defaults-to-stdin`): records no longer arrive
-            // implicitly, so an invocation that feeds them says so. Only `-` is recognized, and
-            // the `<` beside it still names the section the driver reads -- a named file here
-            // would be a second way to say the same thing, refused rather than guessed.
-            index = index.saturating_add(1);
-            if *words.get(index)? != "-" {
-                return None;
-            }
-        } else if *word == "<" {
-            let path = *words.get(index.saturating_add(1))?;
-            if input.replace(path).is_some() || !case_relative_path(path) {
-                return None;
-            }
-            index = index.saturating_add(1);
-        } else {
-            return None;
-        }
-        index = index.saturating_add(1);
-    }
-    (!verbose || !machine).then_some(DirectPlan {
-        book: book?,
-        consented,
-        oracles,
-        input,
-        machine,
-    })
 }
 
 /// The program name whose invocations both replay chains answer in-process.
@@ -1654,34 +1561,342 @@ fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> 
     fs::read_to_string(context.cwd().join(path)).ok()
 }
 
-/// Every `*.oracle.sh` section a case carries, in section order — the loaded set for a world
-/// derived without a command to name one ([`DorcConsumer::world_of`]).
-fn oracle_sections(case: &Case) -> Vec<(String, String)> {
-    case.sections()
+fn rebase_editable_instances(
+    render: &EditableRender<SectionKey, SectionVariableId>,
+    next: &mut BTreeMap<(String, &'static str), usize>,
+) -> EditableRender<SectionKey, SectionVariableId> {
+    let mut widths: BTreeMap<(String, &'static str), usize> = BTreeMap::new();
+    let components = render
+        .components()
         .iter()
-        .filter(|section| section.name().ends_with("oracle.sh"))
-        .map(|section| (section.name().to_owned(), section.content().to_owned()))
-        .collect()
-}
-
-/// [`materialized_source`]'s twin for the re-render chain, which has no materialized directory:
-/// the case's own section bytes, under the same case-relative path rule.
-fn section_source<'a>(case: &'a Case, path: &str) -> Option<&'a str> {
-    case_relative_path(path)
-        .then(|| {
-            case.sections()
-                .iter()
-                .find(|section| section.name() == path)
-                .map(errorloom::Section::content)
+        .cloned()
+        .map(|component| match component {
+            RenderComponent::EditableSection(section) => {
+                let mut key = section.id().clone();
+                let group = (key.owner.clone(), key.field);
+                let base = next.get(&group).copied().unwrap_or_default();
+                widths
+                    .entry(group)
+                    .and_modify(|width| *width = (*width).max(key.instance.saturating_add(1)))
+                    .or_insert(key.instance.saturating_add(1));
+                key.instance = key.instance.saturating_add(base);
+                RenderComponent::EditableSection(errorloom::EditableSection::new(
+                    key,
+                    section.fragments().to_vec(),
+                ))
+            }
+            other => other,
         })
-        .flatten()
+        .collect();
+    for (group, width) in widths {
+        next.entry(group)
+            .and_modify(|base| *base = base.saturating_add(width))
+            .or_insert(width);
+    }
+    EditableRender::new(components)
 }
 
-fn materialized_input(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
-    if !materialized_file(case, context, path) {
-        return None;
+enum ReplayStdin {
+    Absent,
+    Bytes(String),
+}
+
+impl ReplayStdin {
+    fn bytes(&self) -> Option<&str> {
+        match self {
+            Self::Absent => None,
+            Self::Bytes(bytes) => Some(bytes),
+        }
     }
-    fs::read_to_string(context.cwd().join(path)).ok()
+}
+
+fn replay_stdin(command: &ReplayCommand, context: &ReplayContext<'_>) -> Option<ReplayStdin> {
+    match command.input() {
+        None => Some(ReplayStdin::Absent),
+        Some(ReplayInputTarget::Null) => Some(ReplayStdin::Bytes(String::new())),
+        Some(ReplayInputTarget::File(path)) => context.read_file(path).map(ReplayStdin::Bytes),
+    }
+}
+
+fn replay_source(
+    kind: &str,
+    path: &str,
+    stdin: Option<&str>,
+    context: &ReplayContext<'_>,
+    fault: Option<&crate::edge_fault::EdgeFault>,
+) -> Result<String, Box<Diag>> {
+    if let Some(failure) = fault.and_then(|fault| fault.read_failure(path)) {
+        return Err(Box::new(dorc_cli::humane_read_error(
+            kind,
+            path,
+            &failure.error(),
+        )));
+    }
+    if path == "-" {
+        return Ok(stdin.unwrap_or_default().to_owned());
+    }
+    if case_relative_path(path)
+        && let Some(source) = context.read_file(path)
+    {
+        return Ok(source);
+    }
+    Err(Box::new(dorc_cli::humane_read_error(
+        kind,
+        path,
+        &std::io::Error::new(std::io::ErrorKind::NotFound, "not found in replay sandbox"),
+    )))
+}
+
+fn replay_stdout_posture(command: &ReplayCommand) -> dorc_cli::artifact::StdoutPosture {
+    if command.stdout_is_terminal() {
+        dorc_cli::artifact::StdoutPosture::Interactive
+    } else {
+        dorc_cli::artifact::StdoutPosture::NonInteractive
+    }
+}
+
+struct DorcEngineReplay {
+    result: ReplayResult<SectionKey, SectionVariableId>,
+    diagnostics: Vec<Diag>,
+}
+
+impl DorcEngineReplay {
+    fn without_diagnostic(result: ReplayResult<SectionKey, SectionVariableId>) -> Self {
+        Self {
+            result,
+            diagnostics: Vec::new(),
+        }
+    }
+}
+
+fn dorc_engine_replay(
+    result: &dorc_cli::engine::EngineResult,
+    actions: Vec<dorc_cli::engine::OutputAction>,
+) -> DorcEngineReplay {
+    let diagnostics = actions
+        .iter()
+        .filter_map(|action| match action {
+            dorc_cli::engine::OutputAction::Event(event) => event.diagnostic_payload().cloned(),
+            dorc_cli::engine::OutputAction::Flush(_) => None,
+        })
+        .collect();
+    let mut section_instances = BTreeMap::new();
+    let emissions = actions
+        .into_iter()
+        .filter_map(|action| match action {
+            dorc_cli::engine::OutputAction::Flush(_) => None,
+            dorc_cli::engine::OutputAction::Event(event) => {
+                let channel = match event.channel() {
+                    dorc_cli::engine::OutputChannel::Stdout => errorloom::ReplayChannel::Stdout,
+                    dorc_cli::engine::OutputChannel::Stderr => errorloom::ReplayChannel::Stderr,
+                };
+                Some(match event.tagged_parts() {
+                    Some(parts) => ReplayEmission::editable(
+                        channel,
+                        rebase_editable_instances(
+                            &to_editable_render(parts),
+                            &mut section_instances,
+                        ),
+                    ),
+                    None => ReplayEmission::bytes(channel, event.text()),
+                })
+            }
+        })
+        .collect();
+    DorcEngineReplay {
+        result: ReplayResult::emitted(
+            ReplayStatus::new(i32::from(result.status.exit_code())),
+            emissions,
+        ),
+        diagnostics,
+    }
+}
+
+struct LoomOutputSink<'a> {
+    ctx: RenderCtx<'a>,
+    actions: Vec<dorc_cli::engine::OutputAction>,
+}
+
+struct LoomToolRunner<'a> {
+    fault: Option<&'a crate::edge_fault::EdgeFault>,
+}
+
+impl dorc_lint::ExternalToolRunner for LoomToolRunner<'_> {
+    fn available(&self, _tool: &str) -> bool {
+        matches!(
+            self.fault,
+            Some(crate::edge_fault::EdgeFault::ToolRun { .. })
+        )
+    }
+
+    fn run(&self, tool: &str, _args: &[&str], _stdin: &[u8]) -> dorc_lint::ToolRun {
+        match self.fault {
+            Some(crate::edge_fault::EdgeFault::ToolRun {
+                tool: fault_tool,
+                rc,
+                stdout,
+            }) if fault_tool == tool => dorc_lint::ToolRun {
+                rc: *rc,
+                stdout: stdout.clone(),
+                stderr: Vec::new(),
+            },
+            _ => dorc_lint::ToolRun {
+                rc: 0,
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            },
+        }
+    }
+}
+
+impl dorc_cli::engine::OutputSink for LoomOutputSink<'_> {
+    fn render_ctx(&self) -> RenderCtx<'_> {
+        self.ctx.clone()
+    }
+
+    fn emit(&mut self, event: dorc_cli::engine::OutputEvent) {
+        self.actions
+            .push(dorc_cli::engine::OutputAction::Event(event));
+    }
+
+    fn flush(&mut self, channel: dorc_cli::engine::OutputChannel) {
+        self.actions
+            .push(dorc_cli::engine::OutputAction::Flush(channel));
+    }
+}
+
+struct LoomEngineEdges {
+    observation: Option<LoomObservation>,
+    clock: dorc_cli::results::RunClock,
+    argv: Vec<String>,
+    fault: Option<crate::edge_fault::EdgeFault>,
+    shim_dir: Option<String>,
+    durable_label: String,
+    host: Option<String>,
+}
+
+enum LoomObservation {
+    Controller(dorc_plan::records::Admission<dorc_plan::records::BoundedHostBytes>),
+    Fixture(dorc_cli::results::SiteResults),
+}
+
+impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
+    fn materialize_shims(&mut self, files: &BTreeMap<String, String>) -> Result<(), Box<Diag>> {
+        if files.is_empty() {
+            return Ok(());
+        }
+        if let Some(crate::edge_fault::EdgeFault::ShimWrite { path, failure }) = &self.fault
+            && self.shim_dir.as_deref() == Some(path)
+        {
+            return Err(Box::new(dorc_cli::shim_write_error(path, &failure.error())));
+        }
+        Ok(())
+    }
+
+    fn observe(
+        &mut self,
+        request: &dorc_cli::engine::ObservationRequest<'_>,
+        _render_probe: &dyn Fn(&dorc_plan::records::Framing) -> String,
+    ) -> Result<dorc_cli::engine::Observation, Box<Diag>> {
+        if let Some(crate::edge_fault::EdgeFault::HostEvidence(refusal)) = &self.fault {
+            return Ok(dorc_cli::engine::Observation::Controller {
+                framing: request.default_framing.clone(),
+                evidence: dorc_plan::records::Admission::Refused(*refusal),
+                stderr: Vec::new(),
+            });
+        }
+        if let Some(host) = self.host.as_deref()
+            && let Some(crate::edge_fault::EdgeFault::Transport(failure)) = &self.fault
+        {
+            let (status, diagnostic) = match failure {
+                crate::edge_fault::TransportFailure::SessionLost => (
+                    dorc_cli::engine::EngineStatus::SessionLost,
+                    dorc_cli::transport_session_lost(
+                        host,
+                        3,
+                        &dorc_transport::TransportDiagnosis::ChildLost,
+                    ),
+                ),
+                crate::edge_fault::TransportFailure::SpawnRefused(detail) => (
+                    dorc_cli::engine::EngineStatus::HostNotReached,
+                    dorc_cli::transport_spawn_refused(host, detail),
+                ),
+                crate::edge_fault::TransportFailure::MarkerUnusable => (
+                    dorc_cli::engine::EngineStatus::HostNotReached,
+                    dorc_cli::transport_marker_unusable(host),
+                ),
+                crate::edge_fault::TransportFailure::Crlf { line } => (
+                    dorc_cli::engine::EngineStatus::HostNotReached,
+                    dorc_cli::transport_crlf_error("the plan", *line),
+                ),
+                crate::edge_fault::TransportFailure::ApplyFailed { .. } => {
+                    return Err(Box::new(dorc_cli::transport_apply_failed(host, 2)));
+                }
+            };
+            return Ok(dorc_cli::engine::Observation::Terminal { status, diagnostic });
+        }
+        Ok(
+            match self
+                .observation
+                .take()
+                .unwrap_or(LoomObservation::Controller(
+                    dorc_plan::records::Admission::NoObservation,
+                )) {
+                LoomObservation::Controller(evidence) => {
+                    dorc_cli::engine::Observation::Controller {
+                        framing: request.default_framing.clone(),
+                        evidence,
+                        stderr: Vec::new(),
+                    }
+                }
+                LoomObservation::Fixture(results) => {
+                    dorc_cli::engine::Observation::Fixture { results }
+                }
+            },
+        )
+    }
+
+    fn clock(&mut self) -> &mut dorc_cli::results::RunClock {
+        &mut self.clock
+    }
+
+    fn source_match(&mut self, _book_name: &str) -> Option<dorc_cli::SourceMatch> {
+        None
+    }
+
+    fn publish_artifact(
+        &mut self,
+        _artifact: &dorc_cli::artifact::ArtifactSet,
+    ) -> Result<(), &'static str> {
+        if let Some(crate::edge_fault::EdgeFault::ArtifactPublish(reason)) = &self.fault {
+            return Err(*reason);
+        }
+        Ok(())
+    }
+
+    fn publish_whylog(&mut self, _bytes: &[u8]) -> Result<(), String> {
+        if let Some(crate::edge_fault::EdgeFault::WhylogPublish(reason)) = &self.fault {
+            return Err(reason.clone());
+        }
+        Ok(())
+    }
+
+    fn durable_label(&self) -> &str {
+        &self.durable_label
+    }
+
+    fn invocation_record(
+        &mut self,
+        request: dorc_cli::engine::InvocationRecordRequest<'_>,
+    ) -> dorc_core::spine::SpineInvocation {
+        dorc_cli::receipt_edge::invocation_record(
+            self.argv.clone(),
+            request.framing,
+            request.snapshot,
+            request.started_at,
+            request.account,
+        )
+    }
 }
 
 /// Consumer-neutral replay dispatch is implemented by this exact-shape Dorc adapter.
@@ -1726,7 +1941,7 @@ impl<'a> DorcReplayDriver<'a> {
 impl ReplayDriver<SectionKey, SectionVariableId> for DorcReplayDriver<'_> {
     fn drive(
         &self,
-        command: &str,
+        command: &ReplayCommand,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         self.consumer
@@ -1754,7 +1969,7 @@ where
     drive_case(case, env, |command, context| {
         match driver.drive(command, context) {
             Some(result) => Ok(result),
-            None => fallback(command, context),
+            None => fallback(command.original(), context),
         }
     })
 }
@@ -1781,7 +1996,7 @@ where
     drive_case_with_inputs(case, env, inputs, |command, context| {
         match driver.drive(command, context) {
             Some(result) => Ok(result),
-            None => fallback(command, context),
+            None => fallback(command.original(), context),
         }
     })
 }
@@ -1790,12 +2005,16 @@ impl CaseRenderer for DorcConsumer {
     type Error = String;
 
     fn render_case(&self, case: &Case) -> Result<String, String> {
-        let outputs = case
-            .replay()
-            .blocks()
-            .iter()
-            .map(|block| self.render_direct_replay(case, block.command()))
-            .collect::<Result<Vec<_>, _>>()?;
+        let outputs = replay_case(case, self, &RunEnv::new(), |command, context| {
+            Err(RunError::DriverDeclined {
+                block: context.block(),
+                command: command.to_owned(),
+            })
+        })
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .map(|result| result.output().to_owned())
+        .collect();
         let mut regenerated = case.clone();
         regenerated.set_replay_outputs(outputs);
         // A rendered line that reads back as a txtar header would silently re-parse into a
@@ -1810,403 +2029,6 @@ impl CaseRenderer for DorcConsumer {
             )
         })?;
         Ok(regenerated.to_text())
-    }
-}
-
-impl DorcConsumer {
-    /// The committed transcript for one replay block.
-    ///
-    /// Every arm here answers with the SAME seat's bytes as [`Self::replay`]'s provenance answer —
-    /// there is one render form, so nothing has to undo a second one before an edit can be
-    /// attributed (`28L:rul-editability-is-stamped-never-re-derived`).
-    fn render_direct_replay(&self, case: &Case, command: &str) -> Result<String, String> {
-        let words =
-            exact_words(command).ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        if let Some(slug) = arrangement_page_slug(case, &words) {
-            return Ok(self.arrangement_page(slug)?.text());
-        }
-        if words.first() == Some(&LOOM_COMMAND) {
-            return self
-                .loom_replay(case, &words, SelfReference::Allowed, &|target| {
-                    section_source(case, target).map(str::to_owned)
-                })
-                .ok_or_else(|| format!("unsupported replay {command:?}"));
-        }
-        if words.as_slice() == ["dorc", "lint", "--list-sources"] {
-            return Ok(dorc_cli::lint_sources_parts(&self.render_ctx()).text());
-        }
-        if let Some(why) = parse_direct_why_report(&words) {
-            return live_why_parts(&self.render_ctx(), &why, |path| {
-                section_source(case, path).map(str::to_owned)
-            })
-            .map(|parts| parts.text());
-        }
-        if let Some(why) = parse_direct_why(&words) {
-            return self.render_direct_why(case, &why, command);
-        }
-        if let Some((path, tools_enabled)) = parse_direct_lint(&words) {
-            let source = case
-                .sections()
-                .iter()
-                .find(|section| section.name() == path)
-                .filter(|_| case_relative_path(path))
-                .map(errorloom::Section::content)
-                .ok_or_else(|| format!("unsupported replay {command:?}"))?;
-            return Ok(dorc_lint::lint_materialized_source(
-                path.to_owned(),
-                source.to_owned(),
-                dorc_lint::SourcePolicy { tools_enabled },
-            )
-            .human(&self.render_ctx())
-            .text());
-        }
-        if let Some(diag) = fire_invocation_error(case, &words) {
-            return Ok(self
-                .invocation_parts(&diag, words.first().copied().unwrap_or_default())
-                .text());
-        }
-        if parse_direct_remote_apply(&words) {
-            let diag = Self::world_of(case)?.0;
-            return Ok(self
-                .declared_seat_parts(case, &diag)
-                .unwrap_or_else(|| self.cli_parts(&diag, "", ""))
-                .text());
-        }
-        let plan =
-            parse_direct_plan(&words).ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        if let Some(parts) = self.plan_envelope(case, plan.book) {
-            return Ok(parts.text());
-        }
-        let Some(source) = case
-            .sections()
-            .iter()
-            .find(|section| section.name() == plan.book)
-            .filter(|_| case_relative_path(plan.book))
-            .map(errorloom::Section::content)
-        else {
-            // World-as-payload: no materialized book ⇒ the canonical spanless diagnostic.
-            let diag = Self::world_of(case)?.0;
-            if plan.machine {
-                return Ok(render_diag_jsonl(&diag));
-            }
-            return Ok(self
-                .declared_seat_parts(case, &diag)
-                .unwrap_or_else(|| self.cli_parts(&diag, "", ""))
-                .text());
-        };
-        let oracles: Vec<(String, String)> = plan
-            .oracles
-            .iter()
-            .map(|path| Some(((*path).to_owned(), section_source(case, path)?.to_owned())))
-            .collect::<Option<_>>()
-            .ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        let results = match plan.input {
-            Some(input) => Some(
-                section_source(case, input)
-                    .ok_or_else(|| format!("unsupported replay {command:?}"))?,
-            ),
-            None => None,
-        };
-        let (diag, framed, filename) =
-            Self::world_of_source(case, plan.book, source, &oracles, plan.consented, results)?;
-        if plan.machine {
-            return Ok(render_diag_jsonl(&diag));
-        }
-        Ok(self.cli_parts(&diag, &framed, &filename).text())
-    }
-
-    /// The re-render half of the `dorc why --last` route: the degraded RECEIPT when the case's
-    /// durable drifted from its book, else the refusal diagnostic. Split out of
-    /// [`Self::render_direct_replay`] so the two answers stay one arm rather than two.
-    fn render_direct_why(
-        &self,
-        case: &Case,
-        why: &DirectWhy<'_>,
-        command: &str,
-    ) -> Result<String, String> {
-        let raw = section_source(case, why.whylog);
-        if let Some(parts) = raw.and_then(|whylog| {
-            drifted_why_parts(&self.render_ctx(), whylog, why.address, |path| {
-                section_source(case, path).map(str::to_owned)
-            })
-        }) {
-            return Ok(parts.text());
-        }
-        if why.address.is_some() {
-            return Err(format!("unsupported replay {command:?}"));
-        }
-        let book = section_source(case, "book.sh");
-        let diag = dorc_plan::whylog::inspect(raw, why.whylog, book, |path| {
-            section_source(case, path).map(str::to_owned)
-        })
-        .into_iter()
-        .next()
-        .ok_or_else(|| format!("unsupported replay {command:?}"))?;
-        let parts = self.staged_cli_parts("whylog", &diag);
-        Ok(parts.text())
-    }
-}
-
-/// The compact machine view of a single diagnostic for a `--format=jsonl` replay block (`282` §2
-/// machine-format replay · `282:rul-multi-replay-per-case`): one JSON object carrying the code slug
-/// (the same-slug coherence gate every replay must pass) and its registry severity word. Both are
-/// bare identifiers — no user text, so no escaping is possible — and it is a tool-corpus surface, not
-/// a product API (`27V:rul-output-form-unwelded`; the machine format is free to churn). Trailing LF so
-/// the block round-trips through the container's `set_replay_outputs`/`to_text` unchanged.
-fn render_diag_jsonl(diag: &Diag) -> String {
-    let severity = match diag.severity() {
-        Severity::Error => "error",
-        Severity::Warning => "warning",
-        Severity::Note => "note",
-    };
-    format!(
-        "{{\"code\":\"{}\",\"severity\":\"{severity}\"}}\n",
-        diag.code.slug(),
-    )
-}
-
-/// The world-as-payload floor (`283:dec-world-two-forms`), for a slug with no honest trigger. The
-/// stand-in payloads themselves live beside the payload TYPES, in [`dorc_aid::fixture`] — a Rust
-/// surface — so adding a payload field never compile-errors inside this crate
-/// (`28L:rul-rust-and-loom-are-the-only-edit-surfaces`).
-///
-/// Every stand-in renders SPANLESS: a code may carry a span in production, but its defining case
-/// pins the frame-less title+body prose registers (the authoring surface), not the caret frame —
-/// that is the world-as-pipeline routes' job.
-fn canonical_payload(slug: &str) -> Option<Diag> {
-    dorc_aid::fixture::canonical_payload(slug).map(Diag::new_spanless_site)
-}
-
-/// World-as-pipeline for the marker pilot (`28A` §2n): fire the REAL in-process marker gate over the
-/// materialized oracle `source`, returning its (spanned) diagnostic + the source the caret frame
-/// resolves against. Refuses if the gate fired nothing or a different code than the case declares
-/// (the honest-trigger coherence the world-as-pipeline form buys).
-fn fire_lint_case(
-    slug: &str,
-    filename: &str,
-    source: &str,
-    tools_enabled: bool,
-) -> Result<(Diag, String, String), String> {
-    let result = dorc_lint::lint_materialized_source(
-        filename.to_owned(),
-        source.to_owned(),
-        dorc_lint::SourcePolicy { tools_enabled },
-    );
-    let finding = result
-        .report()
-        .findings
-        .iter()
-        .find(|finding| finding.code == slug)
-        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no diagnostic"))?;
-    let provenance = finding
-        .provenance
-        .as_ref()
-        .ok_or_else(|| format!("world-as-pipeline `{slug}` lost typed provenance"))?;
-    Ok((
-        provenance.diag.clone(),
-        provenance.source.clone(),
-        filename.to_owned(),
-    ))
-}
-
-/// World-as-pipeline for the cmdsub flagship (`28A` §2n, extended to the analysis kernel): fire the
-/// REAL pipeline over the materialized `book.sh` against the case's own `-o` oracle set, returning
-/// the (spanned) diagnostic whose slug matches the case's `code` + the source its caret frame
-/// resolves against. Refuses if the pipeline fired nothing matching the declared slug
-/// (honest-trigger coherence). The whole path is kernel-pure (`inv-determinism`).
-///
-/// The stage sequence is the binary's own, in the binary's own order (`cli/src/main.rs`'s `run`):
-/// lift the oracles into the effect map + the check sets + the verdict index, then
-/// parse → marker → reserved → CFG → value-flow → classify. Every stage's diagnostics are
-/// searched, because a run reports every stage: searching only the last left every parse/CFG code
-/// unreachable, and loading no oracles left every oracle-dependent code unreachable, so both had to
-/// settle for hand-built stand-ins (`289:rul-worldless-route-honest-trigger`).
-fn fire_book_analysis(
-    slug: &str,
-    filename: &str,
-    source: &str,
-    oracles: &[(String, String)],
-    consented: bool,
-    results: Option<&str>,
-) -> Result<(Diag, String, String), String> {
-    let mut interner = Interner::default();
-    let oracle_refs: Vec<&str> = oracles.iter().map(|(_, src)| src.as_str()).collect();
-    let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
-    let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
-        .iter()
-        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
-        .collect();
-    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
-        .iter()
-        .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
-        .collect();
-    let verdicts = dorc_oracle::verdict::VerdictIndex::from_sets(&mut interner, &verdict_sets);
-
-    let parsed = dorc_syntax::parse(source);
-    let marker = dorc_oracle::marker::check_dialect_marker(&mut interner, source);
-    let reserved = dorc_oracle::reserved::lint_book_reserved_names(&parsed.value);
-    let cfg = dorc_analysis::cfg::build(&parsed.value);
-    let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
-    let mut arena = ProvArena::new();
-    let effect = dorc_analysis::effect::classify(
-        &cfg.value,
-        &value,
-        &parsed.value,
-        &idx,
-        &checks,
-        &verdicts,
-        &mut interner,
-        &mut arena,
-    );
-    // The oracle-side confusability lints are a run's own act over the SAME lifted sets
-    // (`cli::kinds`), not a second implementation: a defining case for one of them therefore pins
-    // what an author's `dorc plan` really prints. Their carets point into an ORACLE, so they carry
-    // their own frame — resolving an oracle's span against the book's bytes drew a caret under
-    // whatever line happened to share the offset.
-    let framed = dorc_cli::kinds::confusability_diagnostics(&checks, &oracle_refs, &mut interner)
-        .into_iter()
-        .map(|(file, diag)| match file.and_then(|i| oracles.get(i)) {
-            Some((name, src)) => (diag, src.clone(), name.clone()),
-            None => (diag, String::new(), String::new()),
-        });
-    // The wrapped-site + survival lanes, over the SAME sources (`cli::survival`). Flag-gated
-    // exactly as a run is: with no `--risk-faultless-skips` in the replay command the survival half
-    // is absent, not quiet.
-    let survival = dorc_cli::survival::survival_diagnostics(
-        source,
-        &oracles
-            .iter()
-            .map(|(name, _)| name.clone())
-            .collect::<Vec<_>>(),
-        &oracles
-            .iter()
-            .map(|(_, src)| src.clone())
-            .collect::<Vec<_>>(),
-        consented,
-        dorc_core::EscalationDial::VouchedOnly,
-        dorc_core::Capability::Root,
-        &match results {
-            Some(stream) => admitted_site_results(
-                filename,
-                source,
-                &oracles
-                    .iter()
-                    .map(|(name, _)| name.clone())
-                    .collect::<Vec<_>>(),
-                &oracles
-                    .iter()
-                    .map(|(_, src)| src.clone())
-                    .collect::<Vec<_>>(),
-                stream,
-            )?,
-            None => dorc_cli::results::SiteResults::default(),
-        },
-    );
-    parsed
-        .diags
-        .into_iter()
-        .chain(marker)
-        .chain(reserved)
-        .chain(cfg.diags)
-        .chain(effect.diags)
-        .chain(survival)
-        .map(|diag| (diag, source.to_owned(), filename.to_owned()))
-        .chain(framed)
-        .find(|(diag, _, _)| diag.code.slug() == slug)
-        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no `{slug}` diagnostic"))
-}
-
-/// The case's declared `< results` bytes, through the REAL fixture intake
-/// (`28L:rul-records-seam-approved`). All three admission outcomes are honoured, and a REFUSED
-/// stream refuses the whole world rather than degrading to an empty one: a case whose measured
-/// facts rest on a broken channel would render a world nothing measured
-/// (`rul-admission-is-a-closed-outcome`).
-fn admitted_site_results(
-    filename: &str,
-    source: &str,
-    oracle_paths: &[String],
-    oracle_srcs: &[String],
-    stream: &str,
-) -> Result<dorc_cli::results::SiteResults, String> {
-    use dorc_plan::records::Admission;
-    let sources = dorc_cli::results::RunSources {
-        book_name: filename,
-        book: source,
-        oracle_paths,
-        oracle_sources: oracle_srcs,
-    };
-    // No clock: a committed transcript must be a fixpoint, and a fixture stream carries no
-    // instants of its own (`inv-determinism`; `seam-tolerated-nondeterminism-stops-at-the-run-log`
-    // leaves a rendered surface no normalizer to hide behind).
-    let mut clock = dorc_cli::results::RunClock::Absent;
-    let mut interner = Interner::default();
-    match dorc_cli::results::admit_fixture_records(
-        &sources,
-        stream.as_bytes(),
-        &mut clock,
-        &mut interner,
-    ) {
-        Admission::Admitted(admitted) => Ok(admitted.scoped.results().clone()),
-        Admission::NoObservation => Ok(dorc_cli::results::SiteResults::default()),
-        // The refusal NAMES the header the stream must carry
-        // (`28L:rul-refusals-name-the-next-command`). A framing mismatch is nearly always a book
-        // edit moving the digest, and "refused" alone leaves the author to recompute a hash by
-        // hand; `sites=` stays theirs to count, so the text says what it counts — a census, never
-        // an id — because the two coincide at one record and diverge at two.
-        Admission::Refused(reason) => Err(format!(
-            "the declared results stream was refused ({}) -- a measured world cannot rest on a \
-             broken channel. Its first line must be:\n  {} sites=<N> {}\nwhere <N> counts the \
-             `site` records that follow, NOT the largest site id among them",
-            reason.spanless_diagnostic().code.slug(),
-            dorc_plan::records::expected_header_prefix(&dorc_plan::records::Framing::spike(
-                dorc_plan::invocation::book_digest(source)
-            )),
-            dorc_plan::records::TERMINAL_TOKEN,
-        )),
-    }
-}
-
-/// The `(book, results)` section bytes a case's own first replay declares through
-/// `dorc plan --book=B < R`. The re-render chain has no materialized directory, so it reads the
-/// case's sections; the driven chain reads the materialized files. Both must answer the same world.
-fn declared_plan_inputs(case: &Case) -> Option<(&str, &str)> {
-    let block = case.replay().blocks().first()?;
-    let tokens = exact_words(block.command())?;
-    let plan = parse_direct_plan(&tokens)?;
-    Some((
-        section_source(case, plan.book)?,
-        section_source(case, plan.input?)?,
-    ))
-}
-
-/// World-as-pipeline for the intake edge: run the REAL bounded host-evidence admission over the
-/// case's declared `< results` bytes, framed exactly as a hostless `dorc plan` over `book` frames
-/// them. The refusal's own spanless diagnostic IS the world, which is what makes the `< file` in a
-/// replay command load-bearing rather than decorative.
-fn fire_records_admission(slug: &str, book: &str, results: &str) -> Result<Diag, String> {
-    use dorc_plan::records::{
-        Admission, Framing, HostEvidenceLimits, admit_unscoped_host_records, read_host_evidence,
-    };
-    let framing = Framing::spike(dorc_plan::invocation::book_digest(book));
-    let limits = HostEvidenceLimits::spike_default();
-    let admitted = match read_host_evidence(results.as_bytes(), limits) {
-        Admission::Admitted(bytes) => admit_unscoped_host_records(&bytes, &framing, limits),
-        Admission::NoObservation => Admission::NoObservation,
-        Admission::Refused(reason) => Admission::Refused(reason),
-    };
-    let Admission::Refused(reason) = admitted else {
-        return Err(format!(
-            "world-as-pipeline `{slug}`: the results stream was admitted, so intake fired nothing"
-        ));
-    };
-    let diag = reason.spanless_diagnostic();
-    if diag.code.slug() == slug {
-        Ok(diag)
-    } else {
-        Err(format!(
-            "world-as-pipeline `{slug}` fired `{}` instead",
-            diag.code.slug()
-        ))
     }
 }
 
@@ -2241,36 +2063,6 @@ fn editable_variables(
         }
     }
     Ok(variables)
-}
-
-/// The `(consented, results)` a case's own first replay declares — the survival flag and the
-/// `< file` section bytes. Read off the invocation rather than the frontmatter so the world a
-/// worldless derivation answers is the world the committed command really asks for.
-/// Whether the case's own first replay leaves external tools enabled — the worldless lint route's
-/// half of `declared_plan_shape`, so `world_of` answers the world the driven render does.
-fn declared_lint_tools(case: &Case) -> bool {
-    case.replay()
-        .blocks()
-        .first()
-        .and_then(|block| exact_words(block.command()))
-        .and_then(|tokens| parse_direct_lint(&tokens).map(|(_, tools)| tools))
-        .unwrap_or(false)
-}
-
-fn declared_plan_shape(case: &Case) -> (bool, Option<&str>) {
-    let Some(block) = case.replay().blocks().first() else {
-        return (false, None);
-    };
-    let Some(tokens) = exact_words(block.command()) else {
-        return (false, None);
-    };
-    let Some(plan) = parse_direct_plan(&tokens) else {
-        return (false, None);
-    };
-    (
-        plan.consented,
-        plan.input.and_then(|path| section_source(case, path)),
-    )
 }
 
 #[cfg(test)]
@@ -2466,11 +2258,7 @@ mod tests {
         );
     }
 
-    /// Read-in normalization (`282` §3, `28L`): a single embedded newline inside a catalog
-    /// register is a soft wrap, not a paragraph break, so it collapses to a space and the
-    /// compiled template stores no literal `\n` — the relaxed half of the tension pinned by
-    /// `added_help_line_refuses_and_names_the_command` (`editable_surface.rs`), which keeps a
-    /// genuine two-newline paragraph break refusing.
+    /// A single newline is a soft wrap and stores as a space (`282` §3).
     #[test]
     fn a_wrapped_register_edit_stores_no_literal_newline() {
         let baseline = baseline(vec![RenderComponent::EditableSection(
@@ -2904,29 +2692,6 @@ mod tests {
         assert!(!interpretation.contains("foreign"));
     }
 
-    /// A whole-page arrangement section can be a sixty-line help page, and the hunk must be the
-    /// LINE that moved rather than the page around it: identical leading and trailing lines are
-    /// trimmed off both sides before anything is printed.
-    #[test]
-    fn a_multi_line_section_prints_only_the_line_that_moved() {
-        let page = SectionKey {
-            field: crate::ARRANGEMENT_FIELD,
-            ..key(0)
-        };
-        let baseline = baseline(vec![RenderComponent::EditableSection(
-            EditableSection::new(
-                page,
-                vec![EditableFragment::Text(String::from("first\nsecond\nthird"))],
-            ),
-        )]);
-        let preview = compile_preview(&baseline, "first\nsecond changed\nthird")
-            .unwrap_or_else(|error| panic!("{error:?}"));
-        assert_eq!(
-            render_publish_diff(&preview),
-            "section: code.arrangement#0:0\n  - second\n  + second changed"
-        );
-    }
-
     #[test]
     fn applying_compiled_markers_preserves_duplicate_empty_and_nul_variables() {
         let section = SectionKey {
@@ -3068,6 +2833,76 @@ mod tests {
                 .find(|entry| entry.slug == "why-receipt-book-drifted")
                 .map(|entry| entry.words.clone()),
             Some(Some(ProseTier::Slop(vec![String::from("agreed words")]))),
+        );
+    }
+
+    #[test]
+    fn two_wrapped_rows_compile_back_without_layout_whitespace() {
+        use dorc_aid::weave::{Face, to_render_parts, words};
+        use weft::{Document, Node, NodeKind, Paragraph, render};
+
+        let row = |slug: &str, text: &str| OwnedArrangement {
+            slug: slug.to_owned(),
+            occurrence: None,
+            when_used: "harness".to_owned(),
+            why: "harness".to_owned(),
+            words: Some(ProseTier::Migrated(vec![text.to_owned()])),
+        };
+        let mut consumer = DorcConsumer {
+            mirror: Vec::new(),
+            arrangements: vec![
+                row("first-row", "first row has enough words to wrap"),
+                row("second-row", "second row has enough words to wrap"),
+            ],
+            mint: Mint::Slop,
+            demoted: Vec::new(),
+        };
+        let document = Document::new(vec![
+            Node::new(NodeKind::Prose(Paragraph {
+                runs: vec![words(
+                    "first row has enough words to wrap",
+                    "first-row",
+                    None,
+                )],
+            })),
+            Node::new(NodeKind::Prose(Paragraph {
+                runs: vec![words(
+                    "second row has enough words to wrap",
+                    "second-row",
+                    None,
+                )],
+            })),
+        ]);
+        let rendered = render::<Face>(&document, 24);
+        assert!(rendered.text().matches('\n').count() > 2);
+        let case = Case::parse("---\narrangement: first-row\n---\n-- replay --\n$ harness\n")
+            .unwrap_or_else(|error| panic!("{error}"));
+        let baseline = consumer
+            .baseline_from_render(&case, to_editable_render(&to_render_parts(&rendered)))
+            .unwrap_or_else(|error| panic!("{error}"));
+        let dirty = rendered
+            .text()
+            .replace("first row", "edited first row")
+            .replace("second row", "edited second row");
+        let preview =
+            compile_preview(&baseline, &dirty).unwrap_or_else(|error| panic!("{error:?}"));
+        assert_eq!(preview.sections().len(), 2);
+
+        consumer
+            .apply_preview(&preview)
+            .unwrap_or_else(|error| panic!("{error:?}"));
+        let stored: Vec<&str> = consumer
+            .arrangements()
+            .iter()
+            .filter_map(|entry| entry.words.as_ref())
+            .flat_map(|tier| tier.text().iter().map(String::as_str))
+            .collect();
+        assert_eq!(
+            stored,
+            [
+                "edited first row has enough words to wrap",
+                "edited second row has enough words to wrap",
+            ]
         );
     }
 

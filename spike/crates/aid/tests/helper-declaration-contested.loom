@@ -2,16 +2,64 @@
 code: helper-declaration-contested
 when-fires: two LOADED sources declare one non-role top-level name — a helper funcdef or a file-level constant — with differing bytes. cli/main.rs helper_conflict_diagnostics, one mint per NAME, spanned at the second declaration, with `{prior}` naming where the first one sits. Byte-IDENTICAL copies across sources are the ordinary vendoring case and fire nothing. Reported at the LOAD edge whether or not any pinned definition reaches the name, because loading both sources already rebound it for every caller.
 why: `28K` §4 rul-pin-by-definition-bytes, with `28M` §8's diamond rider. What the apply artifact and the shipped probe carry is the analysis-resolved definition PLUS its closure — the helpers and file-level constants the funcdef span does not carry — so the closure has to resolve one body per name. sh itself would resolve it by last-definition-wins, which silently rebinds one author's helper to another author's body: the committee-speech hazard `28M` §2 fences, and unlike the role lane there is no admin spelling that selects between two helpers of the same name. So version-skewed copies REFUSE rather than dedup, the pin is withheld, and the affected sites run (`inv-kfail`: every ambiguity resolves toward run). WARNING rather than error, on `role-family-contested`'s footing: the refusal only withholds, and failing the run would punish an admin for a collision two upstream authors caused. The remediation is theirs to spell — load one of the two, or take custody of a merged copy (`28K` §3's vendoring-with-custody).
+owns:
+  - vouched-composition-not-present
 ---
+-- book.sh --
+#!/bin/sh
+wombat sync a.conf
+
+-- a-entry.oracle.sh --
+# dorc-lang/v0.2
+wombat__is_converged() { _wombat_dest "$2"; }
+
+-- b-helper.oracle.sh --
+# dorc-lang/v0.2
+_wombat_dest() { wombat cmp -- "$1" "/etc/wombat/$1"; }
+
+-- c-helper.oracle.sh --
+# dorc-lang/v0.2
+_wombat_dest() { wombat cmp --strict -- "$1" "/etc/wombat/$1"; }
+
 -- replay --
-$ dorc plan --book=book.sh
-warning[helper-declaration-contested]: Two differing declarations of
-`_yum_installed` are loaded (the earlier at vendor/yum.oracle.sh:4), and nothing
-can choose between same-named helpers, so Dorc withholds them all and the sites
-needing `_yum_installed` run -- load a single source, or take custody of a
-merged copy.
+$ dorc plan --book=book.sh --pre-source a-entry.oracle.sh --pre-source b-helper.oracle.sh --pre-source c-helper.oracle.sh > /dev/null
+loading: warning[helper-declaration-contested]: Two differing declarations of
+`_wombat_dest` are loaded (the earlier at b-helper.oracle.sh:2), and nothing can
+choose between same-named helpers, so Dorc withholds them all and the sites
+needing `_wombat_dest` run -- load a single source, or take custody of a merged
+copy.
+      [ c-helper.oracle.sh:2:1
+   2 | _wombat_dest() { wombat cmp --strict -- "$1" "/etc/wombat/$1"; }
+     | \______________________________________________________________/
+vouching: warning[vouched-composition-not-present]: [unwritten:
+vouched-composition-not-present]
+      [ a-entry.oracle.sh:2:1
+   2 | wombat__is_converged() { _wombat_dest "$2"; }
+     | \__________________/
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `wombat sync a.conf` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | wombat sync a.conf
+     | \________________/
+
+   = help:  sm site runs `wombat sync a.conf`
+hint: 'wombat' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 5b3eef6b02f0b97e764ff32134d7f455ff9f76337231de67be018b9a926e72fc
 
 $ dorc-loom --this vars
 case: helper-declaration-contested
-{{name}} = "_yum_installed"
-{{prior}} = "vendor/yum.oracle.sh:4"
+{{name}} = "_wombat_dest"
+{{prior}} = "b-helper.oracle.sh:2"
+{{count}} = "1"
+{{site_word}} = "site"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

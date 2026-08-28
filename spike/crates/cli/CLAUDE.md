@@ -8,9 +8,12 @@ discipline: one rule per bullet, slugged; append to the matching section.
 ## Law
 
 - **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`; widened at the W4
-  drifted-driver fold, `28H`; the loom-final arc moved SIX regions across it — `28L`) — the lib
-  target is the INTERNAL invocation-and-render surface: usage text, `Args`/`LintArgs`/`Mode`, the
-  parsers, `humane_read_error`, the drifted-why seat, and the extracted modules `why.rs`
+   drifted-driver fold, `28H`; the loom-final arc moved SIX regions across it — `28L`) — the lib
+   target is the INTERNAL invocation-and-render surface: usage text, `Args`/`LintArgs`/`Mode`, the
+   parsers, `humane_read_error`, the drifted-why seat, and `engine.rs`: the ONE parser-independent
+   semantic pipeline, with ordered live output events and typed injected edges. Production `main.rs`
+   acquires sources and implements clock/transport/disk/terminal edges, then calls that engine;
+   `WhyWorld` is retained from the same engine result rather than re-analyzing. The other extracted modules are `why.rs`
   (`WhyReport` + `why_report_parts`) · `world.rs` (`WhyWorld::analyze`/`analyze_measured` +
   the shared ship-body helpers) · `kinds.rs` (resolver/reaches) · `survival.rs` (footprints/
   wrapped-analysis/carry) · `results.rs` (the intake segment: scope types, `parse_admitted_results`,

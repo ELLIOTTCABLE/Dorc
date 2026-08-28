@@ -21,7 +21,7 @@ use dorc_aid::said::Said;
 use dorc_aid::weave::{Face, to_render_parts};
 use dorc_loom::{DorcConsumer, compile_preview, to_editable_render};
 use errorloom::Case;
-use weft::{Document, Node, NodeKind, Paragraph, Run, render};
+use weft::{Document, LabeledRow, Node, NodeKind, Paragraph, Run, render};
 
 /// A minimal arrangement case: `baseline_from_render` reads only that the frontmatter declares an
 /// arrangement, which is what says the payload inventory is empty by construction.
@@ -39,8 +39,17 @@ fn laid_out(said: &Said, width: usize) -> (String, dorc_loom::DorcEditableBaseli
 /// The same, from runs the test minted itself — so a fixture that has to be LONG enough to wrap
 /// carries its own length rather than borrowing a registry entry whose prose may be reworded.
 fn laid_out_runs(runs: Vec<Run<Face>>, width: usize) -> (String, dorc_loom::DorcEditableBaseline) {
-    let document = Document::new(vec![Node::new(NodeKind::Prose(Paragraph { runs }))]);
-    let rendered = render(&document, width);
+    laid_out_document(
+        &Document::new(vec![Node::new(NodeKind::Prose(Paragraph { runs }))]),
+        width,
+    )
+}
+
+fn laid_out_document(
+    document: &Document<Face>,
+    width: usize,
+) -> (String, dorc_loom::DorcEditableBaseline) {
+    let rendered = render(document, width);
     let parts = to_render_parts(&rendered);
     assert_eq!(
         parts.text(),
@@ -188,6 +197,28 @@ fn a_reword_across_the_break_point_compiles() {
             assert_eq!(words, vec![longer], "the wrap never reaches storage");
         }
         other => panic!("a reword across the break must compile, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_paragraph_break_round_trips_through_a_wrapped_right_column() {
+    let document = |body: &str| {
+        Document::new(vec![Node::new(NodeKind::Labeled(LabeledRow {
+            table: None,
+            label: vec![dorc_aid::weave::value("--flag", "harness-label", 32)],
+            body: words_only(body),
+            attachments: Vec::new(),
+        }))])
+    };
+    let first = "the first paragraph wraps within the right column";
+    let wanted = format!("{first}\n\nthe second paragraph stays in that column");
+    let (_, baseline) = laid_out_document(&document(first), 40);
+    let edited = render(&document(&wanted), 40).text().to_owned();
+
+    assert!(edited.contains("\n\n        the second"), "{edited:?}");
+    match applied(&baseline, &edited, WORDS_ONLY_SLUG) {
+        Ok(Some(ProseTier::Slop(words))) => assert_eq!(words, vec![wanted]),
+        other => panic!("the paragraph break must survive, got {other:?}"),
     }
 }
 

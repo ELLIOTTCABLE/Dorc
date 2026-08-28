@@ -80,22 +80,6 @@ pub enum DorcSectionEditRefusal {
         /// The case that is its authoring home.
         owner: String,
     },
-    /// The edit laid out MORE lines than the render did.
-    ///
-    /// A catalog register and a chrome line hold WORDS; where those words BREAK is the renderer's
-    /// (`282` §3, `28H` ruling 7). So a transcript line the render never emitted is not a longer
-    /// sentence — it is a request for a register that does not exist yet, and absorbing it into the
-    /// neighbouring one silently rewrote that register with somebody else's line
-    /// (`_loom-final-map:fnd-added-help-is-silently-absorbed`). A whole-PAGE entry is exempt: its
-    /// blank lines ARE the author's.
-    AddedLine {
-        /// The section the added line landed in.
-        section: SectionKey,
-        /// Line breaks the render laid out inside that section.
-        laid_out: usize,
-        /// Line breaks the compiled edit carries.
-        edited: usize,
-    },
 }
 
 /// Compile one dirty transcript edit through the generic transport.
@@ -163,7 +147,6 @@ pub fn compile_section_edit(
         match compile_fragments(&fragments, &values) {
             Ok(compiled) => {
                 refuse_split_field(baseline.render(), section.id())?;
-                refuse_added_lines(baseline.render(), section.id(), &compiled)?;
                 successful.push(DorcSectionEdit {
                     section: section.id().clone(),
                     compiled,
@@ -242,7 +225,6 @@ fn compile_transport(
     let compiled =
         compile_fragments(&fragments, &values).map_err(DorcSectionEditRefusal::Compile)?;
     refuse_split_field(baseline.render(), edit.section())?;
-    refuse_added_lines(baseline.render(), edit.section(), &compiled)?;
     Ok(DorcSectionEdit {
         section: edit.section().clone(),
         compiled,
@@ -250,79 +232,10 @@ fn compile_transport(
     })
 }
 
-/// Refuse an edit that carries more line breaks than the render laid out in that section
-/// (see [`DorcSectionEditRefusal::AddedLine`]).
-///
-/// Both counts come from PROSE only — a value's own bytes are the render's account of the world and
-/// belong to neither side of the arithmetic — so the comparison reads the render's stamped
-/// fragments, never the shape of a rendered line
-/// (`28L:rul-editability-is-stamped-never-re-derived`).
-///
-/// Both sides are counted in the field's STORED form, which is what makes the arithmetic mean
-/// anything: a renderer's soft wrap is a break in neither. Counting the render's own wrap on the
-/// baseline side used to refuse any reword that needed one more laid-out line than the render
-/// happened to produce, and to refuse it by naming the help-register affordance
-/// (`28L:fnd-wrapped-rows-are-chunk-editable`, re-measured — one section, miscounted breaks).
-fn refuse_added_lines(
-    render: &EditableRender<SectionKey, SectionVariableId>,
-    selected: &SectionKey,
-    compiled: &CompiledSection,
-) -> Result<(), DorcSectionEditRefusal> {
-    if selected.field == crate::ARRANGEMENT_FIELD {
-        return Ok(());
-    }
-    let laid_out = render
-        .components()
-        .iter()
-        .filter_map(|component| match component {
-            RenderComponent::EditableSection(section) if section.id() == selected => Some(section),
-            _ => None,
-        })
-        .flat_map(EditableSection::fragments)
-        .filter_map(|fragment| match fragment {
-            EditableFragment::Text(text) => Some(prose_line_breaks(selected.field, text)),
-            EditableFragment::Variable { .. } => None,
-        })
-        .sum();
-    let edited = compiled
-        .fragments()
-        .iter()
-        .filter_map(|fragment| match fragment {
-            crate::CompiledFragment::Text(text) => Some(prose_line_breaks(selected.field, text)),
-            crate::CompiledFragment::Variable(_) => None,
-        })
-        .sum();
-    if edited > laid_out {
-        return Err(DorcSectionEditRefusal::AddedLine {
-            section: selected.clone(),
-            laid_out,
-            edited,
-        });
-    }
-    Ok(())
-}
-
-/// The ONE place this crate decides what a line break in prose is (`28H`'s
-/// named-word-judgment law): the breaks the field's STORED form carries.
-///
-/// A chrome line stores every whitespace run as one space ([`crate::consumer::collapse_runs`]), so
-/// it has no breaks by construction; a catalog register keeps only a paragraph break. Either way a
-/// renderer's soft wrap counts as nothing, on whichever side of the comparison it appears — the
-/// same two normalizers the compile path stores through, never a second judgment.
-fn prose_line_breaks(field: &str, text: &str) -> usize {
-    let stored = if field == crate::ARRANGEMENT_LINE_FIELD {
-        crate::consumer::collapse_runs(text)
-    } else {
-        collapse_paragraph_whitespace(text)
-    };
-    stored.matches('\n').count()
-}
-
 /// Read-in normalization for catalog prose (`282` §3): within a paragraph, whitespace runs
 /// (single newlines included) collapse to one space; two-plus newlines canonicalize to `"\n\n"`;
-/// trailing whitespace trims off the tail. Runs BEFORE `refuse_added_lines`, so a re-wrapped
-/// register only relaxes that check, never trips it. `message`/`help` only — arrangement chrome
-/// has its own always-single-space rule (`collapse_runs`, consumer.rs).
+/// trailing whitespace trims off the tail. `message`/`help` only — arrangement chrome normalizes
+/// through the same paragraph rule when it is split back into stored words.
 pub(crate) fn normalize_register_prose(
     field: &'static str,
     fragments: &[EditableFragment<SectionVariableId>],
@@ -340,7 +253,7 @@ pub(crate) fn normalize_register_prose(
         .enumerate()
         .map(|(index, fragment)| match fragment {
             EditableFragment::Text(text) => {
-                let collapsed = collapse_paragraph_whitespace(text);
+                let collapsed = crate::consumer::collapse_runs(text);
                 let text = if Some(index) == trailing_index {
                     collapsed.trim_end().to_owned()
                 } else {
@@ -351,30 +264,6 @@ pub(crate) fn normalize_register_prose(
             variable @ EditableFragment::Variable { .. } => variable.clone(),
         })
         .collect()
-}
-
-/// One whitespace run collapses to a single space, unless it carries two or more newlines — a
-/// paragraph break — which canonicalizes to exactly `"\n\n"`.
-fn collapse_paragraph_whitespace(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut run_newlines: Option<usize> = None;
-    for character in text.chars() {
-        if character.is_whitespace() {
-            let newlines = run_newlines.get_or_insert(0);
-            if character == '\n' {
-                *newlines = newlines.saturating_add(1);
-            }
-            continue;
-        }
-        if let Some(newlines) = run_newlines.take() {
-            out.push_str(if newlines >= 2 { "\n\n" } else { " " });
-        }
-        out.push(character);
-    }
-    if let Some(newlines) = run_newlines {
-        out.push_str(if newlines >= 2 { "\n\n" } else { " " });
-    }
-    out
 }
 
 /// A catalog register split across several sections cannot be owned by one edit: rewriting one

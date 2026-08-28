@@ -3,16 +3,49 @@ code: wrapper-peel-incoherent
 when-fires: a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. oracle/validate.rs peel_and_entry_coherence. Spanned (the predict name_span).
 why: 273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. The holes are typed: `{wrapper}` plus the two disagreeing depths.
 ---
+-- book.sh --
+#!/bin/sh
+sudo hork add nginx
+
+-- sudo.oracle.sh --
+# dorc-lang/v0.2
+sudo__predict() { shift; "$@"; }
+sudo__lend_map() { : lends user; : lends fs-view; : lends netns; "$@"; }
+
 -- replay --
-$ dorc plan --book=book.sh
-error[wrapper-peel-incoherent]: Wrapper `sudo`'s `__predict` and `__lend_map`
-disagree on where the guest begins: `__predict` reaches `"$@"` after 1 argv
-token(s), `__lend_map` after 0, so the guest would start at a different token
-depending on which member dispatched, and Dorc stops before contacting any host.
-Fix whichever argparse is wrong so both members peel to the same tail.
+$ dorc plan --book=book.sh --pre-source sudo.oracle.sh > /dev/null
+wrapper: error[wrapper-peel-incoherent]: Wrapper `sudo`'s `__predict` and
+`__lend_map` disagree on where the guest begins: `__predict` reaches `"$@"`
+after 1 argv token(s), `__lend_map` after 0, so the guest would start at a
+different token depending on which member dispatched, and Dorc stops before
+contacting any host. Fix whichever argparse is wrong so both members peel to the
+same tail.
+      [ :1:1
+   1 | 
+     | ^
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sudo hork add nginx` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | sudo hork add nginx
+     | \_________________/
+
+   = help:  sm site runs `sudo hork add nginx`
+hint: 'sudo' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 934eb09a686f73681534fe60cc2644838947f89249033b918fc053fa0fbf2198
 
 $ dorc-loom --this vars
 case: wrapper-peel-incoherent
 {{wrapper}} = "sudo"
 {{predict_depth}} = "1"
 {{lend_map_depth}} = "0"
+{{count}} = "1"
+{{site_word}} = "site"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

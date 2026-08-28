@@ -5,8 +5,9 @@
 use std::path::PathBuf;
 
 use errorloom::{
-    Case, MAX_CAPTURE_BYTES, MAX_CASE_BYTES, ReplayInput, RunEnv, RunError, bless_structure,
-    check_run, drive_case_with_inputs, run_case,
+    Case, EditableFragment, EditableRender, EditableSection, MAX_CAPTURE_BYTES, MAX_CASE_BYTES,
+    ReplayChannel, ReplayEmission, ReplayInput, ReplayResult, ReplayStatus, RunEnv, RunError,
+    bless_structure, check_run, drive_case, drive_case_with_inputs, execute_generic, run_case,
 };
 
 /// The directory holding the built `loom-mock-tool`, so it resolves on the
@@ -210,7 +211,7 @@ fn replay_input_refusals_precede_driver_execution() {
         &case,
         &RunEnv::new(),
         &inputs,
-        |_, _| -> Result<errorloom::ReplayResult<String, String>, RunError> {
+        |_, _| -> Result<ReplayResult<String, String>, RunError> {
             drove = true;
             Err(RunError::EmptyCommand { block: usize::MAX })
         },
@@ -223,5 +224,154 @@ fn replay_input_refusals_precede_driver_execution() {
         RunError::DuplicateReplayInput {
             path: "existing.txt".to_owned(),
         }
+    );
+}
+
+#[test]
+fn direct_emissions_interleave_without_channel_headings() {
+    let case = Case::parse("---\n---\n-- replay --\n$ tool\nold\n").expect("case");
+    let results = drive_case(&case, &RunEnv::new(), |_, _| {
+        Ok(ReplayResult::<String, String>::emitted(
+            ReplayStatus::SUCCESS,
+            vec![
+                ReplayEmission::bytes(ReplayChannel::Stderr, "first stderr\n"),
+                ReplayEmission::bytes(ReplayChannel::Stdout, "then stdout\n"),
+                ReplayEmission::bytes(ReplayChannel::Stderr, "last stderr\n"),
+            ],
+        ))
+    })
+    .expect("drive");
+
+    assert_eq!(
+        results[0].output(),
+        "first stderr\nthen stdout\nlast stderr\n"
+    );
+}
+
+#[test]
+fn native_redirection_and_cat_preserve_exact_editable_provenance() {
+    let case = Case::parse(
+        "---\n---\n-- replay --\n\
+         $ tool < seed.txt > rendered.txt 2>/dev/null\n\
+         $ cat rendered.txt\nold\n\
+         -- seed.txt --\ninput\n",
+    );
+    assert!(case.is_err(), "the replay section must stay last");
+    let case = Case::parse(
+        "---\n---\n-- seed.txt --\ninput\n\n-- replay --\n\
+         $ tool < seed.txt > rendered.txt 2>/dev/null\n\
+         $ cat rendered.txt\nold\n",
+    )
+    .expect("case");
+    let results = drive_case(&case, &RunEnv::new(), |command, context| {
+        assert_eq!(context.read_file("seed.txt").as_deref(), Some("input\n"));
+        assert!(command.input().is_some());
+        Ok(ReplayResult::<String, String>::emitted(
+            ReplayStatus::SUCCESS,
+            vec![
+                ReplayEmission::editable(
+                    ReplayChannel::Stdout,
+                    EditableRender::new(vec![errorloom::RenderComponent::EditableSection(
+                        EditableSection::new(
+                            "message".to_owned(),
+                            vec![EditableFragment::<String>::Text(
+                                "editable output\n".to_owned(),
+                            )],
+                        ),
+                    )]),
+                ),
+                ReplayEmission::bytes(ReplayChannel::Stderr, "discarded\n"),
+            ],
+        ))
+    })
+    .expect("drive");
+
+    assert_eq!(results[0].output(), "");
+    assert_eq!(results[1].output(), "editable output\n");
+    assert!(results[1].editable_render().is_some());
+}
+
+#[test]
+fn direct_driver_sees_output_target_before_controlled_redirection() {
+    let case = Case::parse(
+        "---\n---\n-- state.txt --\noriginal\n\n-- replay --\n\
+         $ direct > state.txt\n\
+         $ cat state.txt\nreplacement\n",
+    )
+    .expect("case");
+    let results = drive_case(&case, &RunEnv::new(), |_, context| {
+        assert_eq!(
+            context.read_file("state.txt").as_deref(),
+            Some("original\n")
+        );
+        Ok(ReplayResult::<String, String>::bytes(
+            "replacement\n".to_owned(),
+        ))
+    })
+    .expect("drive");
+
+    assert_eq!(results[0].output(), "");
+    assert_eq!(results[1].output(), "replacement\n");
+}
+
+#[test]
+fn generic_same_input_output_opens_input_before_truncating_output() {
+    let case = Case::parse(
+        "---\n---\n-- state.txt --\noriginal\n\n-- replay --\n\
+         $ loom-mock-tool cat < state.txt > state.txt\n\
+         $ cat state.txt\noriginal\n",
+    )
+    .expect("case");
+    let results: Vec<ReplayResult<String, String>> =
+        drive_case(&case, &env(), execute_generic).expect("drive");
+
+    assert_eq!(results[0].output(), "");
+    assert_eq!(results[1].output(), "original\n");
+    assert!(results[1].editable_render().is_none());
+}
+
+#[test]
+fn status_is_hidden_until_the_exact_echo_builtin() {
+    let case =
+        Case::parse("---\n---\n-- replay --\n$ tool\n$ echo $?\n7\n$ echo $?\n0\n").expect("case");
+    let results = drive_case(&case, &RunEnv::new(), |_, _| {
+        Ok(ReplayResult::<String, String>::bytes(String::new()).with_status(ReplayStatus::new(7)))
+    })
+    .expect("drive");
+
+    assert_eq!(results[0].output(), "");
+    assert_eq!(results[1].output(), "7\n");
+    assert_eq!(results[2].output(), "0\n");
+    assert_eq!(results[0].status().code(), 7);
+}
+
+#[test]
+fn generic_execution_invalidates_equal_file_bytes_without_reauthorizing_them() {
+    let case = Case::parse(
+        "---\n---\n-- replay --\n\
+         $ direct > saved.txt\n\
+         $ loom-mock-tool out:unrelated\nold\n\
+         $ cat saved.txt\nold\n",
+    )
+    .expect("case");
+    let results = drive_case(&case, &env(), |command, context| {
+        if command.argv().first().map(String::as_str) == Some("direct") {
+            return Ok(ReplayResult::<String, String>::editable(
+                EditableRender::new(vec![errorloom::RenderComponent::EditableSection(
+                    EditableSection::new(
+                        "message".to_owned(),
+                        vec![EditableFragment::<String>::Text("same bytes\n".to_owned())],
+                    ),
+                )]),
+            ));
+        }
+        execute_generic(command, context)
+    })
+    .expect("drive");
+
+    assert_eq!(results[2].output(), "same bytes\n");
+    assert!(
+        results[2].editable_render().is_none(),
+        "an external command invalidates identity even when bytes remain equal"
     );
 }

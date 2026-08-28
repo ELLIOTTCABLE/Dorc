@@ -2,7 +2,7 @@
 ---
 -- replay --
 $ dorc-loom --help
-usage: dorc-loom [--this] [-C DIR] <publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys>
+usage: dorc-loom [--this] [-C DIR] <publish [--verbatim] [--all] [--quiet] [--accept-metadata] [--human|--slop] [--shell=PATH] [--path=DIR]... [CASE...]|vars [--used|--all] [CASE...]|scaffold SLUG|add-register CASE help|sections [CASE...]|keys|defect>
        a CASE is a bare slug (`whylog-unwritten`), a filename, or a path; for the read-only verbs an omitted list means every crates/aid/tests/*.loom
        --this comes BEFORE the verb and names the case a replay line is running inside; it resolves only there, never from a terminal
        -C also comes before the verb and names the tree to resolve the corpus, both locks and the staging store under; without it, the tree this binary was built in

@@ -3,8 +3,15 @@ code: records-glued-line
 when-fires: a records line carried bytes after its terminal token (two atomic writes glued). plan/records.rs admit_records (the strict admission path); the forgiving deframer emits it too. Static.
 why: 262 §2: reject the whole read unit, the safe direction (kFAIL-perform).
 ---
+-- book.sh --
+#!/bin/sh
+hork tune --profile web
+
+-- controller-results.txt --
+dorc site 0 effect=holds rc=0 @@dorc@@ tail @@dorc@@
+
 -- replay --
-$ dorc plan --book=book.sh --results - < probe-results.txt
-warning[records-glued-line]: sm a records line carried bytes after its terminal
-token (two writes glued) -- the whole read unit is refused, the host runs
-(kFAIL-perform)
+$ dorc plan --book=book.sh --results - < controller-results.txt > /dev/null
+records: warning[records-glued-line]: sm a records line carried bytes after its
+terminal token (two writes glued) -- the whole read unit is refused, the host
+runs (kFAIL-perform)

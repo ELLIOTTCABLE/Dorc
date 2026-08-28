@@ -49,6 +49,13 @@ Windows (`Access is denied`), where `CARGO_TARGET_DIR` sits inside the synced tr
 
 ## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
 
+**In-flight loom replay replacement (2026-08-27):** `ai/loom-production-path` replaces
+world-as-payload replay with a closed errorloom command grammar and the shared production
+parser/engine/event path. The defining corpus now spells worlds as source and record fixtures;
+nonportable edge outcomes use a closed typed controller, and only the three human-authorized
+internal defects use `$ dorc-loom --this defect`. The 317-case render fixpoint and generated
+catalog lock are green on Windows; fold only after cross-platform acceptance.
+
 **Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
 fold order, the brief riders) and `plans/30P` (THE design for the emission planner, the
 stream forms, and book-load principles — including its review stance on `notes/30Pb` and

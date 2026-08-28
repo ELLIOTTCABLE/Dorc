@@ -25,12 +25,27 @@
 - [ ] *just* the streaming-updates part of the TUI (currently deferred as residue, was planned in r26, still deferred as of r30)
 - [ ] better/friendlier handling/surfacing of *SSH errors*. a whole bundle of unrelated errors during my own attempts just surfaced as "transport-session-lost"
 - [ ] fix "doc-tests" dumping a ton of noise into agent-context even when running a single test
+- [ ] merge all the internal tooling into one Cargo binary? (dorc-loom, dorc-verify, dorc-loom, internal-tooling, dorc-coverage ...)
 
 ### Looms / aid
 
+- [.] *generated* usage-output (flags etc) in the help-loom (poked around a bit, currently waiting on v0.10 of bpaf and its Visitor pattern)
 - [ ] marker-version-unrecognized needs its span moved to the actual marker
-- [ ] `dorc-loom compile` needs to make it clearer whether it *failed*, in an unrecoverable way; or whether it *suceeded* in compiling, with a *difference* - i.e. whether a `promote` is possible or whether the failure needs to be addressed before promote is possible.
 - [ ] the clean-tree requirement is *super* annoying, I can't even keep notes in here. any way to restrict it to compile-affecting files - maybe leverage hk, or cargo??
+- [ ] running CONTRIBUTING.md, I get:
+
+    ```console
+    $ dorc plan --book=a-book.sh --host linuxserver.io@172.28.0.1:2222
+    transport: error[transport-session-lost]: The session to
+    linuxserver.io@172.28.0.1:2222 ended without its completion marker (ssh exited
+    255; attempts: 3), so Dorc cannot tell whether the shipped artifact ran --
+    re-run `dorc plan` to measure what actually happened.
+    ```
+
+    - why, it's unclear, what went wrong, what was the error??
+    - "re-run dorc plan to measure" seems very incorrect
+- [ ] why does `site-unresolvable` show `make install`&`ldconfig`, lol
+- [ ] generated plan currently has a worthless comment at the top. replace this with a `dorc why <path to whylog>` aid; and only emit it when emitting to a file/redirected/multiple-files. <https://github.com/ELLIOTTCABLE/Dorc/issues/1>
 
 # Preparation-for-agentic-implementation 🤢 phase
 

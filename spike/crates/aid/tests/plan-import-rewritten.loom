@@ -3,6 +3,36 @@ code: plan-import-rewritten
 when-fires: the emitted plan's own `.` line names something other than what the book's `.` named — the bundle this run composed (`{verb}` = `repointed`, `{names}` = the artifact-relative path), or nothing at all because the bundle's bytes stand where the load did (`{verb}` = `inlined`, `{names}` empty). Minted per book-sited load the form re-says, spanned at the authored `.`. `{reason}` is the front-lift ladder's own condition word for WHERE this bundle stands (30P:rul-front-lift-is-the-planners-first-consumer) — a reason component beside the one code rather than a sibling code per tier (28L:rul-reason-enums-not-sibling-codes). Today it always names a kept-in-place condition: `ladder-unconsulted` where the ladder has not answered, `shape-unmeasured` where the `.` is outside the absorbable cell, `operand-not-explicit` where a computed operand is not ours to re-say (30P:rul-rewrite-permission-is-derived) — and that last one emits no rewrite at all, so it reaches this code only if a form ever re-says such a line.
 why: 30Ng:rul-bundle-at-dorc-lang-boundaries (human-typed) grants Dorc exactly one rewrite over a plan it generated — where an import points — because a generated plan is a durable but not an OFF-RAMP durable. That grant is narrow, and the thing that keeps it narrow in practice is that every use of it is said out loud: rul-attention-honesty makes a load whose target moved precisely the class of change that must never be silent, and two-surfaces puts the account on the plan surface while the artifact carries the bytes. Note severity with no floor: the plan is exactly what the run intended, and the reader is owed the fact rather than a warning. Remediation register (help) wanted: none — there is nothing to repair; if anything is wanted it is a pointer at the artifact file the import now names.
 ---
+-- book.sh --
+#!/bin/sh
+. ./wombat.dorc.sh
+wombat sync a.conf
+
+-- wombat.dorc.sh --
+# dorc-lang/v0.2
+wombat__is_converged() { wombat status "$2"; }
+
 -- replay --
-$ dorc plan --book=book.sh
-note[plan-import-rewritten]: [unwritten: plan-import-rewritten]
+$ dorc plan --book=book.sh --artifact-dir artifacts
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `. ./wombat.dorc.sh` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | . ./wombat.dorc.sh
+     | \________________/
+
+   = help:  sm site runs `. ./wombat.dorc.sh`
+hint: '.' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+emission: note[plan-import-rewritten]: [unwritten: plan-import-rewritten]
+      [ book.sh:2:3
+   2 | . ./wombat.dorc.sh
+     |   \______________/
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+. './wombat.dorc-bundle.sh'
+wombat sync a.conf
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest 8062ba13ec486a64ecf84a7d6f51a078a67c0253cca786d00fd0f3cd4e6f4f30

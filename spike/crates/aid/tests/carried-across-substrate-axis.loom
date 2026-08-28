@@ -3,14 +3,53 @@ code: carried-across-substrate-axis
 when-fires: a cross-context elision carried a substrate-axis fact via pure-predicate carry. cli/survival.rs build_wrapped_analysis. Spanned (the carried site's span).
 why: 27C §9: every cross-context elision renders its attribution chain from day one. The holes are typed: `{axes}` are the crossed axes and `{kinds}` the read kinds with their invariant loci; the sentence is the code's own register.
 ---
+-- book.sh --
+#!/bin/sh
+chroot /mnt kp ip_forward 1
+
+-- chroot.oracle.sh --
+# dorc-lang/v0.2
+chroot__predict() { shift; "$@"; }
+chroot__lend_map() {
+   printf '%s\n' "$1" : lends fs-view
+   : lends user
+   : lends netns
+   shift
+   "$@"
+}
+
+-- kp.oracle.sh --
+# dorc-lang/v0.2
+kp__is_converged() { kp check "$1" "$2" : sm.dorc.KernelParam:"$1"; }
+sm_dorc_KernelParam__state_stored_only_in() {
+   printf 'kernel-sysctls\n' : stored-in kernel
+   : undivided-by-transit-across fs-view
+}
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
+
 -- replay --
-$ dorc plan --book=book.sh
-note[carried-across-substrate-axis]: This elision carried across fs-view: Dorc
-proved the verdict body reads nothing beyond the site's own arguments and
-sm_dorc_File (invariant: line at certsync.oracle.sh:12), whose owners vouch that
-state does not divide across fs-view.
+$ dorc plan --book=book.sh --pre-source chroot.oracle.sh --pre-source kp.oracle.sh --results - < probe-results.txt > /dev/null
+wrapped: note[carried-across-substrate-axis]: This elision carried across
+fs-view: Dorc proved the verdict body reads nothing beyond the site's own
+arguments and sm.dorc.KernelParam (invariant: line at kp.oracle.sh:5), whose
+owners vouch that state does not divide across fs-view.
+      [ book.sh:2:1
+   2 | chroot /mnt kp ip_forward 1
+     | \_________________________/
+why: site 0 pure-predicate carry across fs-view (unflagged, 27C section 4(a)): sm.dorc.KernelParam (invariant: line at kp.oracle.sh:5) -- each vouched invariant across fs-view by its kind-owner's `invariant:` line (vouch-species); the verdict body is engine-proved read-set-closed
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=1 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest b7c960cf859875cc006e25bf72119e69c1092272d23eb413f1b87f1f6cf709ca
 
 $ dorc-loom --this vars
 case: carried-across-substrate-axis
 {{axes}} = "fs-view"
-{{kinds}} = "sm_dorc_File (invariant: line at certsync.oracle.sh:12)"
+{{kinds}} = "sm.dorc.KernelParam (invariant: line at kp.oracle.sh:5)"
+{{v0}} = "book.sh"
+{{v1}} = "1"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "0"
+{{v5}} = "0"

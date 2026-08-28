@@ -334,22 +334,6 @@ pub fn push_arrangement_sentence(
     component_text(lookup, slug, occurrence, values).push_parts(parts);
 }
 
-/// The whole rendered PAGE for one arrangement key, as a one-span part stream — an invocation
-/// whose entire output is one entry, laid out by its author (`288:rul-help-text-is-loomable`).
-#[must_use]
-pub fn arrangement_parts(
-    lookup: &dyn ArrangementLookup,
-    slug: &'static str,
-    occurrence: Option<usize>,
-) -> RenderParts {
-    let mut parts = RenderParts::new();
-    parts.push(RenderPart::ArrangementPage {
-        text: arrangement_text(lookup, slug, occurrence),
-        slug,
-    });
-    parts
-}
-
 // ===========================================================================
 // The arrangement-lock serializer (the twin of `catalog::serialize_lock`)
 // ===========================================================================

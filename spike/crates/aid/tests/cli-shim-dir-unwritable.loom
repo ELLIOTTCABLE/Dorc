@@ -4,8 +4,40 @@ envelope: invocation
 when-fires: the --shim-dir materialization edge could not create or write the per-run PATH shims. cli/main.rs. {path} and PASSTHROUGH {detail}.
 why: 274 section 5: shim materialization is session-establishment I/O the wrapped probe needs, so a failure is loud rather than a silently shim-less run that would resolve the wrong guest.
 ---
+-- book.sh --
+#!/bin/sh
+horkwall poke
+sudo hork install frob
+
+-- sudo.oracle.sh --
+# dorc-lang/v0.2
+sudo__predict() { env -i HOME=/root "$@"; }
+sudo__lend_map() {
+   target=root
+   while [ "${1#-}" != "$1" ]; do case "$1" in -u) target="$2"; shift 2 ;; *) shift ;; esac; done
+   printf '%s\n' "$target" : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+sudo__enter() { sudo -n "$@"; }
+
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+hork__is_converged() {
+   : safe-across user
+   case "$1" in install) hork query "$2" ;; *) return 2 ;; esac
+}
+
+-- probe-results.txt --
+site 1 effect=holds rc=0
+
+-- edge-fault --
+shim-write other /run/dorc/shims
+Read-only file system (os error 30)
+
 -- replay --
-$ dorc plan --book=webhost.sh
+$ dorc plan --book=book.sh --pre-source sudo.oracle.sh --pre-source hork.oracle.sh --shim-dir=/run/dorc/shims --results - < probe-results.txt
 dorc: error[cli-shim-dir-unwritable]: sm cannot write shim `/run/dorc/shims`:
 Read-only file system (os error 30)
 usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]

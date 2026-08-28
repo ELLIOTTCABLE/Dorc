@@ -737,7 +737,10 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   `DiagCode` catalog is the ONLY diagnostics mechanism; the legacy string-slug
   `Diagnostic` is being removed. Never add new emissions to it.
 - **replay-editability-is-provenance** (`282:rul-replay-editability-is-provenance`)
-  — every errorloom replay is an arbitrary command plus exact result bytes. Prose is
+  — every errorloom replay is a command in the closed structured grammar plus exact result bytes.
+  The grammar admits simple argv, the ruled redirect set, native `cat`, and exact `echo $?`; it
+  refuses quoting, pipelines, compounds, appends, arbitrary fd algebra, unsafe paths, and ambiguous
+  redirects before dispatch. Prose is
   editable ONLY when the embedding consumer's driver returns typed `EditableRender`
   provenance for that exact invocation and result. Command names, flags, output
   formats, JSON/prose shape, prefixes, skeleton similarity, and `{{...}}` bytes grant
@@ -745,12 +748,20 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   capabilities.
 - **replay-executor-ownership** (`282:rul-generic-executor-consumer-dispatch`) —
   generic errorloom owns the consumer-neutral driver/result API and reusable
-  controlled shell/process executor; it knows no Dorc names, formats, or template
+  closed command runner; it knows no Dorc names, formats, or template
   policy. The embedding consumer owns exact-shape in-process dispatch and explicitly
   chooses whether a decline reaches generic execution. Generic fallback returns
   testable bytes only unless an explicit transformation-aware driver preserves
-  provenance. A pipeline such as `dorc plan --format=jsonl | jq --pretty` therefore
-  carries no edit authority by default.
+  provenance. Unsupported shell syntax is a grammar refusal, not a route to a host shell.
+- **dorc-replay-is-production-semantics** — `dorc-loom` runs replayed `dorc` argv through
+  `dorc_cli::parse_args_from`, builds the same immutable snapshot and engine options, injects only
+  typed observation/clock/edge values, calls `engine::run`, and routes its ordered output events.
+  A defining case spells its world with ordinary book/oracle/results sections and redirects; there
+  is no canonical-payload fallback. Nonportable I/O and transport failures use closed typed
+  `dorc-loom::edge_fault::EdgeFault` operation outcomes; the adapter injects those outcomes into
+  production mappings and contains no diagnostic payloads. Internal invariant failures are narrower
+  still: exactly the three scenarios fenced in `dorc-loom::defect`, reachable only as
+  `$ dorc-loom --this defect`; production code cannot name either loom-only authority.
 - **defining-case-catalog** (post-`282`-flip; loom-final as-built — `28L`/`28N`) —
   every code has exactly ONE defining case; the **committed transcript CASE is the
   authoring surface** and the generated locks are DERIVED from it

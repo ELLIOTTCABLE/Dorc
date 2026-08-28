@@ -3,13 +3,41 @@ code: aid-unloaded-sibling-oracle
 when-fires: the cli-edge scan found `*.oracle.sh` files on disk beside the loaded oracles (or the book) that were NOT loaded this run. cli emit_unloaded_sibling_oracles.
 why: 24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). The hole is typed: `{oracles}` is the sorted unloaded-sibling list, joined by the cli.
 ---
+-- book.sh --
+#!/bin/sh
+hork provision
+
+-- redis.oracle.sh --
+# dorc-lang/v0.2
+redis__is_converged() { redis status; }
+
 -- replay --
-$ dorc plan --book=book.sh
-note[aid-unloaded-sibling-oracle]: sibling oracle files exist on disk but were
-not loaded: `redis.oracle.sh`
+$ dorc plan --book=book.sh > /dev/null
+oracle: note[aid-unloaded-sibling-oracle]: sibling oracle files exist on disk
+but were not loaded: `redis.oracle.sh`
    = help:  load them with `--pre-source <file>` (or point `--oracle-dir` at
             their directory); dorc never loads an oracle you did not name
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork provision` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork provision
+     | \____________/
+
+   = help:  sm site runs `hork provision`
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest e6592121bf6ee1abb8b29ca0ef858241b217454718104dade86a8548d507bef8
 
 $ dorc-loom --this vars
 case: aid-unloaded-sibling-oracle
 {{oracles}} = "`redis.oracle.sh`"
+{{count}} = "1"
+{{site_word}} = "site"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

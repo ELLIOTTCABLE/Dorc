@@ -3,15 +3,78 @@ code: role-family-contested
 when-fires: one input unit's definition of a `<family>__<role>` function provably overrode a definition of the same name authored in a DIFFERENT input, in the SAME scope, with no `unset -f` of that name between them. cli/main.rs shadow_diagnostics, one mint per proven shadow, spanned at the SHADOWING definition's name and grouped under the file that holds it; `{prior}` carries the overridden definition's `path:line`, since one report seat threads one source. The whole FAMILY's licenses are withheld — every `__role` member, not just the colliding one — so its sites run.
 why: `28K` §1 rul-silent-shadowing-refuses. sh silently lets the last definition win; a book or a second library can therefore reassign whose judgment governs a tool by appending one `.`-source line, and the admin would never see it (`28K` §6 rej-load-order-as-trust-adjudicator). Dorc changes no runtime behaviour here — it declines to LICENSE off a definition whose selection nobody spelled, which is the only lever that keeps trust exposure for a family at or below the max of the single-provider worlds (`28K` §8). WARNING, not error: the refusal only ever withholds, the book still applies, and one `unset -f` line between the definitions retires it. Evaluated over the abstract function environment, never by guard-shape pattern recognition (`28K` §2 rul-conflict-pass-is-semantic; `271:rul-net-quality-u-curve`), and only on a PROVABLE shadow — a ⊤ prior binding complains not, and licenses not either, which is what makes shipping ahead of the decidable-condition fold sound (`28O:res-polyfill-binding-tops-pending-fold`). A same-FILE redefinition is a different world-state with a different remediation and keeps its own pre-existing refusal (`216` e-1).
 ---
+-- book.sh --
+#!/bin/sh
+foobar__is_converged() { foobar status --certs-current -- "$2"; }
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb=$1; shift
+   case $verb in
+      sync-certs) foobar status --certs-current -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
 -- replay --
-$ dorc plan --book=book.sh
-warning[role-family-contested]: This `yum__is_converged` overrides the
-definition at vendor/yum.oracle.sh:4 with nothing spelling the choice, so Dorc
-withholds every license from the `yum` family and its sites run -- an `unset -f
-yum__is_converged` between the two spells the override as chosen.
+$ dorc plan --book=book.sh --pre-source foobar.oracle.sh > /dev/null
+reserved: warning[reserved-namespace-squat]: Book function
+`foobar__is_converged` sits in the `__is_converged` namespace reserved for
+oracle functions; Dorc treats it as ordinary shell and runs it verbatim, but a
+shipped oracle preamble defining the same name would collide with it. Rename it
+to stay clear of `*__is_converged`.
+      [ book.sh:2:1
+   2 | foobar__is_converged() { foobar status --certs-current -- "$2"; }
+     | \__________________/
+loading: warning[role-family-contested]: This `foobar__is_converged` overrides
+the definition at foobar.oracle.sh:1 with nothing spelling the choice, so Dorc
+withholds every license from the `foobar` family and its sites run -- an `unset
+-f foobar__is_converged` between the two spells the override as chosen.
+      [ book.sh:2:1
+   2 | foobar__is_converged() { foobar status --certs-current -- "$2"; }
+     | \__________________/
+classify: note[cmdsub-operand-top]: operand 4 is an unresolvable positional
+parameter (`$@`/`$*`/`$N`), so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:2:59
+   2 | foobar__is_converged() { foobar status --certs-current -- "$2"; }
+     |                                                           \__/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `foobar sync-certs /etc/nginx/certs` -- run `dorc why` for the
+per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:3:1
+   3 | foobar sync-certs /etc/nginx/certs
+     | \________________________________/
+
+   = help:  sm site runs `foobar sync-certs /etc/nginx/certs`
+why: ran because operand 4 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 2:26 `foobar status --certs-current -- "$2"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: 'foobar' (line 3) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 87ec55fa5d3bbc1a92eece5a8055059be9962101279917cee03df44a1b72f3c1
 
 $ dorc-loom --this vars
 case: role-family-contested
-{{name}} = "yum__is_converged"
-{{prior}} = "vendor/yum.oracle.sh:4"
-{{family}} = "yum"
+{{name}} = "foobar__is_converged"
+{{role}} = "__is_converged"
+{{prior}} = "foobar.oracle.sh:1"
+{{family}} = "foobar"
+{{position}} = "operand 4"
+{{cause}} = "an unresolvable positional\nparameter (`$@`/`$*`/`$N`)"
+{{count}} = "1"
+{{site_word}} = "site"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

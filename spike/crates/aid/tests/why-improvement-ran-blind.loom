@@ -11,7 +11,7 @@ hork tune --profile web
 apt-get install -y nginx
 
 -- replay --
-$ dorc why --book=book.sh
+$ dorc why --book=book.sh --results - < /dev/null 2>/dev/null
 receipt: [unwritten: why-receipt-when-undated], host localhost
    book book.sh (digest 8b371a4bf6c3a5e85489f460efba25f842e9bfd87573a9e4f0e59b8297a23df7)
    oracles:

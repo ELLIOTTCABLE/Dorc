@@ -536,6 +536,7 @@ dependencies = [
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",
+ "dorc-transport",
  "errorloom",
  "tracing",
  "tracing-subscriber",

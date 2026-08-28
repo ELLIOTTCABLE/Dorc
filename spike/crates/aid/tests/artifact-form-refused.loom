@@ -3,6 +3,15 @@ code: artifact-form-refused
 when-fires: an invocation NAMED an emission form (`--form flattened|multipart|preserved-book-tree`) that cannot be served for this book, so the run refuses before network contact and emits no artifact. Minted at the cli's emission-planner edge, spanless, once per run. `{form}` = the form asked for; `{cause}` = the closed reason word (`inlining-unproven`, `dependency-unplaceable`, `no-artifact-stream`); `{loads}` = how many book-sited load occurrences the cause counted.
 why: 30I §7.1's standing rule, and §14 keeps it out of builder latitude: the user asked for a FORM, and silently returning another one is wrong. The three causes are v0 limits rather than book defects — textual inlining at a `.` position is argued and not floor-measured (`30Ib` §5), an absolute or escaping controller dependency path cannot be mirrored under an artifact root (`need-controller-paths-never-cross-hosts`), and a multipart set has nowhere to go when stdout is the artifact stream (`30I` §2.5's collapsed-resource rule). Error severity with a WarnOrDeny floor: no artifact was produced, so a silenced refusal is how somebody applies an artifact this run never wrote. Pre-network by construction — the selector runs before probe emission, so a refusal costs nothing and touches nothing. Remediation register (help) wanted: name the flag that changes each cause, which differs per cause — drop `--form`, give the run an `--artifact-dir`, or move the dependency under the load cwd.
 ---
+-- book.sh --
+#!/bin/sh
+false || . ./wombat.dorc.sh
+wombat sync a.conf
+
+-- wombat.dorc.sh --
+# dorc-lang/v0.2
+wombat__is_converged() { :; }
+
 -- replay --
-$ dorc plan --book=book.sh
-error[artifact-form-refused]: [unwritten: artifact-form-refused]
+$ dorc plan --book=book.sh --form flattened > /dev/null
+emission: error[artifact-form-refused]: [unwritten: artifact-form-refused]

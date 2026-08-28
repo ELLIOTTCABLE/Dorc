@@ -24,6 +24,7 @@
 pub mod apply;
 pub mod artifact;
 pub mod bundle;
+pub mod engine;
 pub mod fixpoint;
 pub mod kinds;
 pub mod provenance;
@@ -98,6 +99,12 @@ pub fn shim_error_parts(
     interner: &dorc_core::Interner,
 ) -> dorc_aid::tagged::RenderParts {
     staged_invocation_parts("dorc-sh", ctx, error, interner)
+}
+
+/// The diagnostic produced when `dorc-sh` receives no script.
+#[must_use]
+pub fn shim_usage_error() -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShUsage(dorc_aid::diag::DorcShUsage))
 }
 
 /// `stage` is the seat's own prefix word — not a catalog register, and never editable.
@@ -183,8 +190,178 @@ fn usage_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
 /// and exits 0 (a help request is a success, not a usage error).
 #[must_use]
 pub fn help_text(ctx: &RenderCtx<'_>) -> String {
-    arrangement_text(ctx.arrangements(), HELP_ARRANGEMENT, None)
+    help_parts(ctx).text()
 }
+
+/// Tagged help: computed labels stay immutable while descriptions retain row provenance.
+#[must_use]
+pub fn help_parts(ctx: &RenderCtx<'_>) -> dorc_aid::tagged::RenderParts {
+    let paragraph = |slug| registry_paragraph(ctx, slug);
+    let table = |name: &str, rows: &[HelpRow]| {
+        rows.iter()
+            .map(|row| {
+                Node::new(NodeKind::Labeled(LabeledRow {
+                    table: Some(Face::Table(name.to_owned())),
+                    label: vec![dorc_aid::weave::value(
+                        row.label,
+                        "cli-help-label",
+                        WHY_VALUE_CAP,
+                    )],
+                    body: Said::words(row.slug, &[]).runs(ctx, row.slug),
+                    attachments: Vec::new(),
+                }))
+            })
+            .collect::<Vec<_>>()
+    };
+    let mut nodes = vec![
+        paragraph(HELP_ARRANGEMENT),
+        paragraph("cli-help-usage"),
+        paragraph("cli-help-modes-heading"),
+    ];
+    nodes.extend(table("cli-help-modes", HELP_MODE_ROWS));
+    nodes.push(paragraph("cli-help-options-heading"));
+    nodes.extend(table("cli-help-options", HELP_OPTION_ROWS));
+    nodes.push(paragraph("cli-help-receipts-heading"));
+    nodes.extend(table("cli-help-receipts", HELP_RECEIPT_ROWS));
+    nodes.push(paragraph("cli-help-stdin"));
+    nodes.push(paragraph("cli-help-exit-codes-heading"));
+    nodes.extend(table("cli-help-exit-codes", HELP_EXIT_ROWS));
+    nodes.push(paragraph("cli-help-lint-exit-codes-heading"));
+    nodes.extend(table("cli-help-lint-exit-codes", HELP_LINT_EXIT_ROWS));
+    dorc_aid::weave::to_render_parts(&weft::render_framed(&Document::new(nodes), ctx.frame()))
+}
+
+struct HelpRow {
+    label: &'static str,
+    slug: &'static str,
+}
+
+const HELP_MODE_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "bundle",
+        slug: "cli-help-mode-bundle",
+    },
+    HelpRow {
+        label: "probe",
+        slug: "cli-help-mode-probe",
+    },
+    HelpRow {
+        label: "plan",
+        slug: "cli-help-mode-plan",
+    },
+    HelpRow {
+        label: "apply",
+        slug: "cli-help-mode-apply",
+    },
+    HelpRow {
+        label: "why [<addr>]",
+        slug: "cli-help-mode-why",
+    },
+    HelpRow {
+        label: "strip <file>",
+        slug: "cli-help-mode-strip",
+    },
+    HelpRow {
+        label: "lint <files>",
+        slug: "cli-help-mode-lint",
+    },
+    HelpRow {
+        label: "(none)",
+        slug: "cli-help-mode-none",
+    },
+];
+
+const HELP_OPTION_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "<book.sh>",
+        slug: "cli-help-option-book",
+    },
+    HelpRow {
+        label: "--pre-source <sh>",
+        slug: "cli-help-option-pre-source",
+    },
+    HelpRow {
+        label: "--oracle-dir <dir>",
+        slug: "cli-help-option-oracle-dir",
+    },
+    HelpRow {
+        label: "--results <file>",
+        slug: "cli-help-option-results",
+    },
+    HelpRow {
+        label: "--risk-faultless-skips",
+        slug: "cli-help-option-risk-faultless-skips",
+    },
+    HelpRow {
+        label: "--whylog-dir <dir>",
+        slug: "cli-help-option-whylog-dir",
+    },
+    HelpRow {
+        label: "--no-whylog",
+        slug: "cli-help-option-no-whylog",
+    },
+    HelpRow {
+        label: "--last",
+        slug: "cli-help-option-last",
+    },
+    HelpRow {
+        label: "--all",
+        slug: "cli-help-option-all",
+    },
+    HelpRow {
+        label: "--debug-argv",
+        slug: "cli-help-option-debug-argv",
+    },
+    HelpRow {
+        label: "--help",
+        slug: "cli-help-option-help",
+    },
+    HelpRow {
+        label: "--version",
+        slug: "cli-help-option-version",
+    },
+];
+
+const HELP_RECEIPT_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "sm Holds:",
+        slug: "cli-help-receipt-holds",
+    },
+    HelpRow {
+        label: "sm Kept",
+        slug: "cli-help-receipt-kept",
+    },
+];
+
+const HELP_EXIT_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "0",
+        slug: "cli-help-exit-success",
+    },
+    HelpRow {
+        label: "2",
+        slug: "cli-help-exit-usage",
+    },
+    HelpRow {
+        label: "10",
+        slug: "cli-help-exit-parse",
+    },
+];
+
+const HELP_LINT_EXIT_ROWS: &[HelpRow] = &[
+    HelpRow {
+        label: "0",
+        slug: "cli-help-lint-exit-clean",
+    },
+    HelpRow {
+        label: "1",
+        slug: "cli-help-lint-exit-findings",
+    },
+    HelpRow {
+        label: "3",
+        slug: "cli-help-lint-exit-operational",
+    },
+];
 
 /// `dorc lint --list-sources` as a stamped part stream: one row per registered source, its name
 /// and rung computed, its one-line description read from the registry as WORDS.
@@ -436,6 +613,53 @@ impl Args {
     #[must_use]
     pub const fn reads_the_receipt(&self) -> bool {
         reads_the_receipt(self.mode, self.last, self.results.is_some())
+    }
+}
+
+/// Map parser-owned arguments and edge observations into parser-independent engine inputs.
+#[must_use]
+pub fn engine_options_from_args(
+    args: &Args,
+    stdout: artifact::StdoutPosture,
+    artifact_directory: bool,
+    durable: bool,
+) -> engine::EngineOptions {
+    engine::EngineOptions {
+        mode: args.mode,
+        analysis: engine::AnalysisOptions {
+            survival: if args.risk_faultless_skips {
+                engine::SurvivalPolicy::RiskAccepted
+            } else {
+                engine::SurvivalPolicy::HonestWalls
+            },
+            escalation: args.dial,
+            capability: args.capability,
+        },
+        reporting: engine::ReportingOptions {
+            why_address: args.why_address.clone(),
+            why_depth: if args.all {
+                engine::WhyDepth::All
+            } else {
+                engine::WhyDepth::Curated
+            },
+            argv_readout: if args.debug_argv {
+                engine::ArgvReadout::Visible
+            } else {
+                engine::ArgvReadout::Hidden
+            },
+        },
+        artifact: engine::ArtifactOptions {
+            form: args.form,
+            stdout,
+            destination: engine::ArtifactDestinationShape::from_directory_requested(
+                artifact_directory,
+            ),
+        },
+        durable: if durable {
+            engine::DurableOutput::Enabled
+        } else {
+            engine::DurableOutput::Disabled
+        },
     }
 }
 
@@ -1030,6 +1254,159 @@ pub fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> Invoca
     }
 }
 
+/// Map a shim-directory write failure at the production edge.
+#[must_use]
+pub fn shim_write_error(path: &str, error: &std::io::Error) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::CliShimDirUnwritable(
+        dorc_aid::diag::CliShimDirUnwritable {
+            path: path.to_owned(),
+            detail: dorc_aid::ForeignBytes::from_os_error(error),
+        },
+    ))
+}
+
+/// Map a `dorc-sh` script read failure at the production edge.
+#[must_use]
+pub fn shim_script_read_error(path: &str, error: &std::io::Error) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShScriptUnreadable(
+        dorc_aid::diag::DorcShScriptUnreadable {
+            path: path.to_owned(),
+            detail: dorc_aid::ForeignBytes::from_os_error(error),
+        },
+    ))
+}
+
+/// Map a `dorc-sh` process spawn failure at the production edge.
+#[must_use]
+pub fn shim_exec_error(error: &std::io::Error) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShExecFailed(
+        dorc_aid::diag::DorcShExecFailed {
+            detail: dorc_aid::ForeignBytes::from_os_error(error),
+        },
+    ))
+}
+
+/// Map carriage-return detection before transport.
+#[must_use]
+pub fn transport_crlf_error(which: &str, line: usize) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportCrlfRefused(
+        dorc_aid::diag::TransportCrlfRefused {
+            which: which.to_owned(),
+            line: line.to_string(),
+        },
+    ))
+}
+
+/// Map a transport session that exhausted its retries without completion.
+#[must_use]
+pub fn transport_session_lost(
+    host: &str,
+    attempts: u32,
+    diagnosis: &dorc_transport::TransportDiagnosis,
+) -> InvocationError {
+    let diagnosis = match diagnosis {
+        dorc_transport::TransportDiagnosis::TimedOut { after } => {
+            format!("timed out after {}s", after.as_secs())
+        }
+        dorc_transport::TransportDiagnosis::ChildExited { status: Some(code) } => {
+            format!("ssh exited {code}")
+        }
+        dorc_transport::TransportDiagnosis::ChildExited { status: None } => {
+            "ssh exited on a signal".to_owned()
+        }
+        dorc_transport::TransportDiagnosis::ChildLost => {
+            "the session ended without a status".to_owned()
+        }
+    };
+    Diag::new_spanless_site(DiagCode::TransportSessionLost(
+        dorc_aid::diag::TransportSessionLost {
+            host: host.to_owned(),
+            attempts: attempts.to_string(),
+            diagnosis,
+        },
+    ))
+}
+
+/// Map a transport process spawn refusal.
+#[must_use]
+pub fn transport_spawn_refused(host: &str, detail: &str) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportSpawnRefused(
+        dorc_aid::diag::TransportSpawnRefused {
+            host: host.to_owned(),
+            detail: dorc_aid::ForeignBytes::from_io_edge(detail),
+        },
+    ))
+}
+
+/// Map a nonce that cannot form a transport marker.
+#[must_use]
+pub fn transport_marker_unusable(host: &str) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportMarkerUnusable(
+        dorc_aid::diag::TransportMarkerUnusable {
+            host: host.to_owned(),
+        },
+    ))
+}
+
+/// Map a completed remote apply with a non-zero status.
+#[must_use]
+pub fn transport_apply_failed(host: &str, status: i32) -> InvocationError {
+    Diag::new_spanless_site(DiagCode::TransportApplyFailed(
+        dorc_aid::diag::TransportApplyFailed {
+            host: host.to_owned(),
+            status: status.to_string(),
+        },
+    ))
+}
+
+/// Construct the unloaded-sibling advisory from loaded and discovered paths.
+#[must_use]
+pub fn unloaded_sibling_oracle_diagnostics(
+    loaded_paths: &[String],
+    discovered_paths: &[String],
+) -> Vec<Diag> {
+    let loaded: std::collections::BTreeSet<String> = loaded_paths
+        .iter()
+        .map(|path| oracle_path_key(path))
+        .collect();
+    let mut unloaded: Vec<String> = discovered_paths
+        .iter()
+        .map(|path| path.replace('\\', "/"))
+        .filter(|path| path.ends_with(".oracle.sh") && !loaded.contains(&oracle_path_key(path)))
+        .collect();
+    unloaded.sort();
+    unloaded.dedup();
+    if unloaded.is_empty() {
+        return Vec::new();
+    }
+    let oracles = unloaded
+        .iter()
+        .map(|path| format!("`{path}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
+        dorc_aid::diag::AidUnloadedSiblingOracle { oracles },
+    ))]
+}
+
+/// Normalize an oracle path for loaded-versus-discovered comparison without filesystem access.
+#[must_use]
+pub fn oracle_path_key(path: &str) -> String {
+    use std::path::{Component, Path, PathBuf};
+
+    let slash_separated = path.replace('\\', "/");
+    let keyed: PathBuf = Path::new(&slash_separated)
+        .components()
+        .filter(|component| !matches!(component, Component::CurDir))
+        .collect();
+    let keyed = keyed.to_string_lossy().replace('\\', "/");
+    if keyed.is_empty() {
+        ".".to_owned()
+    } else {
+        keyed
+    }
+}
+
 /// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
 #[derive(Debug)]
 pub struct LintArgs {
@@ -1057,6 +1434,47 @@ pub struct LintArgs {
     /// The human render's density (`289:rul-lint-render-split-is-policy`). Default reproduces each
     /// finding's declared shape, so the surface only moves when the admin asks.
     pub verbosity: dorc_lint::render::Verbosity,
+}
+
+/// The lint invocation's operational scope failure, in production precedence order.
+#[must_use]
+pub fn lint_operational_diagnostic(
+    args: &LintArgs,
+    found_files: usize,
+    report: &dorc_lint::LintReport,
+) -> Option<Diag> {
+    if found_files == 0 {
+        return Some(Diag::new_spanless_site(DiagCode::LintNoLintableFiles(
+            dorc_aid::diag::LintNoLintableFiles,
+        )));
+    }
+    if let Some(expected) = args.expect_files
+        && expected != found_files
+    {
+        return Some(Diag::new_spanless_site(DiagCode::LintFileCountDrift(
+            dorc_aid::diag::LintFileCountDrift {
+                expected,
+                found: found_files,
+            },
+        )));
+    }
+    if args.require_tools {
+        let absent = report
+            .coverage
+            .sources
+            .iter()
+            .filter(|source| source.status == dorc_lint::SourceStatus::Absent)
+            .map(|source| source.name)
+            .collect::<Vec<_>>();
+        if !absent.is_empty() {
+            return Some(Diag::new_spanless_site(DiagCode::LintRequiredToolsMissing(
+                dorc_aid::diag::LintRequiredToolsMissing {
+                    tools: absent.join(", "),
+                },
+            )));
+        }
+    }
+    None
 }
 
 /// The `--format` choice (`27R` §5 dir-two-renders-one-model).
@@ -1596,6 +2014,21 @@ pub fn drifted_why_parts(
     )
 }
 
+/// Whether a `dorc apply --host` invocation may dispatch at all, decided from argv ALONE.
+///
+/// Answered here rather than at the binary because it is an invocation-level decision and both
+/// drivers must reach the same one (`lib-target-is-a-loom-seam`). It is spent before the plan file
+/// is read, so a refusal touches no file and mints no identity.
+#[must_use]
+pub fn apply_dispatch_refusal(args: &Args) -> Option<InvocationError> {
+    (args.mode == Mode::Apply && args.host.is_some() && !args.dispatch_without_receipt).then(|| {
+        Diag::new_spanless_site(DiagCode::ApplyIntentNotPublishable(
+            dorc_aid::diag::ApplyIntentNotPublishable {
+                flag: "--dispatch-without-receipt",
+            },
+        ))
+    })
+}
 #[cfg(test)]
 mod tests {
     use super::*;

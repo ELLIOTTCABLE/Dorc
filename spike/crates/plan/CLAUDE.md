@@ -245,10 +245,10 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   whose render decisions nothing wrote down cannot exist. A refused edit carries BOTH
   identities and exactly one is populated: `RefusedEdit.leaf` for an execution,
   `RefusedEdit.region` for the one authored edit many executions share
-  (`30N:rul-region-refusal-discloses-region-keyed`). The disclosure surfaces read whichever
-  the refusal wears — `render-heredoc-refused` at a leaf, `render-region-refused` at a
-  region — and NEVER smear one region's refusal across its contributing invocations, which
-  would report N refusals for one edit and point N readers at calls that did nothing wrong
+  (`30N:rul-region-refusal-discloses-region-keyed`). The diagnostic surface reads
+  `render-heredoc-refused` only for leaf refusals; shared-region refusals remain region-keyed
+  narrative records and are NEVER smeared across their contributing invocations, which would
+  report N refusals for one edit and point N readers at calls that did nothing wrong
   (`271:rul-sin-ordering`). An IMPORT EDIT (`30Ng:rul-bundle-at-dorc-lang-boundaries`) is
   decided like every other render answer: `plan::ImportEdit` is an INPUT to `Plan::decided`,
   settled before the plan exists from authored-before-contact inputs, and it reaches the

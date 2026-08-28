@@ -2,7 +2,7 @@
 
 use dorc_aid::{RenderCtx, tagged::RenderParts};
 
-use crate::{LintInput, LintOptions, LintReport, NoToolsRunner, lint, render};
+use crate::{ExternalToolRunner, LintInput, LintOptions, LintReport, NoToolsRunner, lint, render};
 
 /// Explicit policy for a replayable lint source.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -47,6 +47,17 @@ pub fn lint_materialized_source(
     source: String,
     policy: SourcePolicy,
 ) -> ProductionLintResult {
+    lint_materialized_source_with_runner(path, source, policy, &NoToolsRunner)
+}
+
+/// Run the production lint pipeline with an injected external-tool edge.
+#[must_use]
+pub fn lint_materialized_source_with_runner(
+    path: String,
+    source: String,
+    policy: SourcePolicy,
+    runner: &dyn ExternalToolRunner,
+) -> ProductionLintResult {
     let input = LintInput { path, src: source };
     let report = lint(
         std::slice::from_ref(&input),
@@ -54,7 +65,7 @@ pub fn lint_materialized_source(
         LintOptions {
             tools_enabled: policy.tools_enabled,
         },
-        &NoToolsRunner,
+        runner,
         None,
     );
     ProductionLintResult { report }

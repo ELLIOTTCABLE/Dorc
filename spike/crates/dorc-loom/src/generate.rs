@@ -4,14 +4,14 @@
 //! module sources only the case-first fields — frontmatter `when_fires`/`why`, and the `example`
 //! rendered from the defining payload.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use dorc_aid::arrangement::{ARRANGEMENTS, ArrangementRow, serialize_arrangement_lock};
 use dorc_aid::catalog::{CATALOG, LockRow, fill_template, refreshed_params, serialize_lock};
 use dorc_aid::diag::params_of;
 use dorc_core::Interner;
-use errorloom::{Case, CaseRenderer};
+use errorloom::{Case, CaseRenderer, FrontmatterValue};
 
 use crate::DorcConsumer;
 
@@ -77,8 +77,9 @@ pub fn build_publication(
 
 /// Generate the whole `catalog_lock.rs` bytes from the consumer mirror and the defining cases keyed
 /// by slug. Case-owned rows source `when_fires`/`why` from frontmatter and `example` from the
-/// compiled message rendered with the defining payload; ratcheted rows carry their current generated
-/// row verbatim. Deterministic — the output IS the committed bytes under the byte-identity fixpoint.
+/// compiled message rendered with the defining payload. Mirror rows with no owning case are retired;
+/// the defining-case ratchet is empty, so carrying one would preserve a deleted code forever.
+/// Deterministic — the output IS the committed bytes under the byte-identity fixpoint.
 ///
 /// The row list is the UNION of the mirror and the case corpus (`288` §4 mirror-union, sourced from
 /// CASES per `289` §2g flag-7): the mirror is closed over slugs that already have a lock row, so
@@ -94,7 +95,11 @@ pub fn generate_catalog_lock(
     cases: &BTreeMap<String, Case>,
 ) -> Result<String, String> {
     let mut rows = Vec::with_capacity(consumer.mirror().len());
+    let owned = case_owned_slugs(cases);
     for entry in consumer.mirror() {
+        if !owned.contains(&entry.slug) {
+            continue;
+        }
         let message = entry.message.clone();
         let help = entry.help.clone();
         let message_text = message.as_ref().map(|tier| tier.text().as_str());
@@ -147,6 +152,23 @@ pub fn generate_catalog_lock(
         });
     }
     Ok(serialize_lock(&rows))
+}
+
+fn case_owned_slugs(cases: &BTreeMap<String, Case>) -> BTreeSet<String> {
+    let mut owned = cases.keys().cloned().collect::<BTreeSet<_>>();
+    for case in cases.values() {
+        let claims = match case.frontmatter().get(crate::ownership::OWNS_KEY) {
+            Some(FrontmatterValue::Scalar(claim)) => std::slice::from_ref(claim),
+            Some(FrontmatterValue::List(claims)) => claims.as_slice(),
+            _ => &[],
+        };
+        owned.extend(claims.iter().map(|claim| {
+            claim
+                .split_once('@')
+                .map_or_else(|| claim.clone(), |(slug, _)| slug.to_owned())
+        }));
+    }
+    owned
 }
 
 /// Generate the whole `arrangement_lock.rs` bytes — the chrome twin of
@@ -464,5 +486,15 @@ mod tests {
             1,
             "a case-owned slug appears exactly once"
         );
+    }
+
+    #[test]
+    fn a_mirror_row_without_an_owning_case_is_retired() {
+        let consumer = DorcConsumer::new();
+        let cases =
+            load_corpus_by_slug(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests"))
+                .expect("load corpus");
+        let generated = generate_catalog_lock(&consumer, &cases).expect("generate lock");
+        assert!(!generated.contains("slug: \"render-region-refused\","));
     }
 }

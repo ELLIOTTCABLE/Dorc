@@ -29,16 +29,37 @@ sm_dorc_Package__disturbance_reaches_only() {
 }
 
 -- replay --
-$ dorc plan --book=book.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh
-error[reaches-conflict]: Kind `sm_dorc_Package` has 2 reach-functions across the
-loaded oracle files, and `only` is a completeness contract two surveys cannot
-both hold, so Dorc refuses them all -- the kind's footprints stay exactly as
-emitted until one remains.
+$ dorc plan --book=book.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh > /dev/null
+loading: warning[role-family-contested]: This
+`sm_dorc_Package__disturbance_reaches_only` overrides the definition at
+hork.oracle.sh:8 with nothing spelling the choice, so Dorc withholds every
+license from the `sm_dorc_Package` family and its sites run -- an `unset -f
+sm_dorc_Package__disturbance_reaches_only` between the two spells the override
+as chosen.
+      [ wombat.oracle.sh:5:1
+   5 | sm_dorc_Package__disturbance_reaches_only() {
+     | \_______________________________________/
+reaches: error[reaches-conflict]: Kind `sm_dorc_Package` has 2 reach-functions
+across the loaded oracle files, and `only` is a completeness contract two
+surveys cannot both hold, so Dorc refuses them all -- the kind's footprints stay
+exactly as emitted until one remains.
       [ hork.oracle.sh:8:1
    8 | sm_dorc_Package__disturbance_reaches_only() {
      | \_______________________________________/
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 5cb88016939a2309dc117813ee5648a5f80fec4ecfb33b013959ae4f88e287d3
 
 $ dorc-loom --this vars
 case: reaches-conflict
+{{name}} = "sm_dorc_Package__disturbance_reaches_only"
+{{prior}} = "hork.oracle.sh:8"
+{{family}} = "sm_dorc_Package"
 {{kind}} = "sm_dorc_Package"
 {{count}} = "2"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"

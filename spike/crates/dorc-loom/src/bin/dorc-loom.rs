@@ -1,4 +1,4 @@
-//! `dorc-loom` is the read-only transcript-template inspection command.
+//! `dorc-loom` inspects and publishes Dorc's transcript-authored prose.
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -270,6 +270,9 @@ fn parse_argv(words: &[String]) -> Result<Invoked, String> {
             cases: resolve_cases(&roots, &args.cases)?,
         },
         Verb::Keys => Command::Keys,
+        Verb::Defect => {
+            return Err("`defect` resolves only inside a loom replay through --this".to_owned());
+        }
     };
     Ok(Invoked { roots, command })
 }
@@ -406,10 +409,7 @@ fn scaffold_case(roots: &Roots, slug: &str) -> Result<ExitCode, String> {
     tracing::info!(
         "next: author `when-fires`/`why`, then replace the replay with a command that really fires `{slug}`"
     );
-    tracing::info!(
-        "then: dorc-loom publish {} (orchestrator-only, on a freshly verified binary)",
-        path.display()
-    );
+    tracing::info!("then: dorc-loom publish {}", path.display());
     Ok(ExitCode::SUCCESS)
 }
 
@@ -510,7 +510,9 @@ fn corpus_cases(roots: &Roots) -> Result<Vec<PathBuf>, String> {
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| format!("read {}: {error}", dir.display()))?
         .into_iter()
-        .filter(|path| path.extension().is_some_and(|kind| kind == "loom"))
+        .filter(|path| {
+            path.extension().is_some_and(|kind| kind == "loom") && !dorc_loom::is_sync_residue(path)
+        })
         .collect();
     if cases.is_empty() {
         return Err(format!("no .loom cases under {}", dir.display()));
@@ -941,7 +943,13 @@ fn drive_replays(
         .map_err(|error| format!("{}: {error}", path.display()))?;
     catch_arity_panic(path, || {
         replay_case_with_inputs(case, consumer, env, &[input], |command, context| {
-            execute_generic(command, context).map(ReplayResult::bytes)
+            let command = errorloom::ReplayCommand::parse(command).map_err(|error| {
+                RunError::UnsupportedReplayGrammar {
+                    block: context.block(),
+                    error,
+                }
+            })?;
+            execute_generic(&command, context)
         })
         .map_err(|error| match error {
             // The raw refusal names neither the flag that supplies a shell nor the decline that
@@ -1675,39 +1683,5 @@ mod tests {
             &std::collections::BTreeMap::new(),
         );
         assert_eq!(note, None);
-    }
-
-    /// A hand-seeded row's arity mismatch panics deep inside the shared renderer
-    /// (`dorc_aid::arrangement::sentence_words`'s own `debug_assert!`) the first time some case's
-    /// render reaches it — a whole-PAGE entry's arity is always "exactly one word", so seeding a
-    /// second one reproduces the wiring defect without needing a value-bearing seat. This proves
-    /// dorc-loom's own driving boundary catches that panic instead of taking the whole process
-    /// down, and reports the row, the diagnosis, and the fix.
-    #[test]
-    fn a_hand_seeded_arity_mismatch_refuses_instead_of_crashing_the_process() {
-        let text = std::fs::read_to_string(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../aid/tests/cli-help-page.loom"),
-        )
-        .expect("read fixture case");
-        let case = Case::parse(&text).expect("case parses");
-        let mut consumer = DorcConsumer::new();
-        consumer.set_arrangement_words(
-            "cli-help-page",
-            Some(dorc_aid::prose::ProseTier::Slop(vec![
-                "one word".to_owned(),
-                "an extra word a page never takes".to_owned(),
-            ])),
-        );
-        let error = drive_replays(
-            &case,
-            &consumer,
-            &RunEnv::new(),
-            Path::new("crates/aid/tests/cli-help-page.loom"),
-            &text,
-        )
-        .expect_err("a bad-arity row must refuse, not panic");
-        assert!(error.contains("cli-help-page"), "{error}");
-        assert!(error.contains("panicked"), "{error}");
-        assert!(error.contains("arrangement_lock.rs"), "{error}");
     }
 }

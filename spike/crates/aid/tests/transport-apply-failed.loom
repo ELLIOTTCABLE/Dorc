@@ -3,11 +3,18 @@ code: transport-apply-failed
 when-fires: a remote apply ran to completion and its artifact exited non-zero. cli/main.rs ship_consented_apply. {host} is the destination, {status} the status the completion marker carried.
 why: law-lane-discipline. The third world state in the transport family and the only KNOWN one: it ran, it finished, it exited non-zero. The status is reproduced, never interpreted. A zero is equally not a health claim - plans/252 section 8 - which is what a verify re-probe is for.
 ---
+-- webhost.dorc-plan.sh --
+#!/bin/sh
+false
+
+-- edge-fault --
+transport apply-failed 2
+
 -- replay --
-$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
-error[transport-apply-failed]: The apply artifact on web1.example.net ran to
-completion and exited 2; the status is the artifact's own, and a fresh `dorc
-plan` measures what actually converged.
+$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh --dispatch-without-receipt
+transport: error[transport-apply-failed]: The apply artifact on web1.example.net
+ran to completion and exited 2; the status is the artifact's own, and a fresh
+`dorc plan` measures what actually converged.
 
 $ dorc-loom --this vars
 case: transport-apply-failed

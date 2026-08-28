@@ -111,13 +111,12 @@ crate's charter) · `notes/287` (errorloom as-built).
 - **arrangement-words-are-a-sequence-nothing-splits** (`289:rider-arrangement-home-anticipates-chains`;
   re-cut at the W4 span fold, `28H`) — entries store ORDERED WORDS: a chrome line with interpolated
   values stores its fixed runs and the seat interleaves the computed values
-  (`arrangement::sentence_words`, the one arity seat). Nothing ever splits one chrome line across
-  SECTIONS — but WITHIN its one section, the LINE-field path re-splits an edit on the compiled
-  `Text | Variable` fragment series (`apply_arrangement_line_edit`): the value sequence must equal
-  the stamped `v0…v{n-1}`, by name, in order; reorder/drop/duplicate is a narrow refusal. The PAGE
-  path (`apply_arrangement_page_edit`) keeps the verbatim no-re-split contract and
-  `ArrangementIsSequenceStructured`. Word-boundary INFERENCE stays unbuilt — the fragment series is
-  stamped provenance, never guessed.
+  (`arrangement::sentence_words`, the one arity seat). Multi-row surfaces compose those rows as
+  distinct weft nodes; one loom may own all of them through `owns:`. Nothing splits one chrome line
+  across SECTIONS — but WITHIN its one section, `apply_arrangement_line_edit` re-splits on the
+  compiled `Text | Variable` fragments: the value sequence must equal stamped `v0…v{n-1}`, by name
+  and order; reorder/drop/duplicate refuses. Word-boundary inference stays unbuilt — provenance is
+  stamped, never guessed.
 - **a-chrome-line-is-one-section** (né a-chrome-line-is-one-span; amended at the W4 span fold per
   the `28H` adjudication) — a value-bearing chrome line renders as ONE editable SECTION, which may
   hold interleaved `ArrangementWords` + `ArrangementValue` fragments; it is never fragmented into

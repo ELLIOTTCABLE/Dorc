@@ -136,7 +136,7 @@ fn oracle_args(dir: &Path) -> Vec<String> {
 
 #[test]
 #[ignore = "migration scaffolding: `mise run spine:baseline` drives it"]
-fn spine_decision_state_baseline() {
+fn spine_decision_state_baseline() -> Result<(), Box<dyn std::error::Error>> {
     let worlds = corpus_worlds();
     assert!(
         !worlds.is_empty(),
@@ -146,7 +146,7 @@ fn spine_decision_state_baseline() {
     let mut out = String::new();
     let _ = writeln!(out, "dorc-spine-baseline/1 cases={}", worlds.len());
     for world in &worlds {
-        render_case(&mut out, world);
+        render_case(&mut out, world)?;
     }
 
     match std::env::var(DUMP_VAR) {
@@ -159,10 +159,11 @@ fn spine_decision_state_baseline() {
             worlds.len()
         ),
     }
+    Ok(())
 }
 
 /// One case's decision-state, in a fixed field order over sorted rows (`inv-determinism`).
-fn render_case(out: &mut String, world: &CaseWorld) {
+fn render_case(out: &mut String, world: &CaseWorld) -> Result<(), dorc_cli::world::WhyWorldError> {
     let mut interner = Interner::default();
     let sources = RunSources {
         book_name: &world.label,
@@ -190,7 +191,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
         &snapshot_of(&world.paths, &world.srcs, &world.label, &world.book),
         results,
         true,
-    );
+    )?;
     // The world's OWN interner: a `Symbol` resolves only against the one that minted it, and the
     // local interner above belongs to the intake, not to the analysis.
     let (plan, _ast, symbols) = built.plan_ast_and_interner();
@@ -285,6 +286,7 @@ fn render_case(out: &mut String, world: &CaseWorld) {
     for row in demotions {
         let _ = writeln!(out, "{row}");
     }
+    Ok(())
 }
 
 /// A short content digest, for comparing emitted blobs without pinning their bytes.

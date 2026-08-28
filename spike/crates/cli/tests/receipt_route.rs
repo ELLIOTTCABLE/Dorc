@@ -180,7 +180,8 @@ fn settled_run() -> (dorc_plan::Spine, FinalPresentation) {
         BOOK,
     );
     let world =
-        dorc_cli::world::WhyWorld::analyze_measured(&snapshot, admitted.scoped.results(), false);
+        dorc_cli::world::WhyWorld::analyze_measured(&snapshot, admitted.scoped.results(), false)
+            .expect("the shared engine analyses this fixture book");
 
     let framing = Framing::spike(dorc_plan::invocation::book_digest(BOOK));
     let invocation = invocation_record(

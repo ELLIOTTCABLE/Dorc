@@ -13,13 +13,25 @@ cp ./nginx.conf /etc/nginx/nginx.conf
 hork tune --profile web
 
 -- replay --
-$ dorc plan --book=webhost.sh
+$ dorc plan --book=webhost.sh > /dev/null
+probe: note[site-unresolvable]: sm 3 sites run unprobed (no read-only check
+could be shipped): `apt-get update`, `cp ./nginx.conf /etc/nginx/nginx.conf`,
+`hork tune --profile web` -- run `dorc why` for the per-site detail (the apply
+runs each anyway, to stay safe)
+      [ webhost.sh:3:1
+   3 | apt-get update
+     | \____________/
+
+   = help:  sm site runs `apt-get update`
+hint: 'apt-get' (line 3) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 2 more unmodeled walls -- dorc why
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why webhost.sh:N` to query a source line
 dorc: plan-summary sites=4 elide=0 omit=0 guard=0 run=4 may-alias=0
 dorc: decision-digest c2632ae9b4053e4551f0bfab9488ea4bad576ab6e779756173c88d0564c24b8e
 
 $ dorc-loom --this vars
 case: cli-plan-summary-line
+{{count}} = "3"
+{{site_word}} = "sites"
 {{v0}} = "webhost.sh"
 {{v1}} = "0"
 {{v2}} = "0"
