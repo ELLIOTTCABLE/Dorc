@@ -509,24 +509,58 @@ mod tests {
 
     #[test]
     fn the_driver_takes_its_authority_from_its_admission() {
-        // The lexical half of the fence: no type can stop the binary driver reaching for the
-        // intakeless mint after its intake refused, so this asserts it does not. A ZERO-caller
-        // assertion over the one file that answers a live intake, rather than an allow-list — so it
-        // needs no maintenance and cannot be widened by adding a row.
-        let driver = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        // The lexical half of the fence: no type can stop the seat that answers a live intake
+        // reaching for the intakeless mint after its intake refused, so this asserts it does not.
+        //
+        // THE FILE MOVED. This used to assert over `cli/src/main.rs`, which answered a live intake
+        // when it was written and does not any more — `engine.rs` does. A fence naming the wrong
+        // file still PASSES, and guards nothing; it is re-pointed here rather than left reading
+        // like a guard.
+        //
+        // It is no longer a zero-caller assertion either, because there is now one honest caller:
+        // the FIXTURE arm, where an injected harness controller supplies results that were
+        // admitted before the engine was called, so there is no intake of this run's to take
+        // authority from. Production never reaches that arm — `ProductionEdges::observe` cannot
+        // answer `Observation::Fixture` — so the assertion is that the intakeless mint appears
+        // exactly once and inside that arm, which is a fact about position rather than a row
+        // anybody can add.
+        let crates = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
-            .expect("crates/")
-            .join("cli")
-            .join("src")
-            .join("main.rs");
-        let text = std::fs::read_to_string(&driver).expect("the driver source is readable");
+            .expect("crates/");
+        let engine = std::fs::read_to_string(crates.join("cli").join("src").join("engine.rs"))
+            .expect("the engine source is readable");
+        let binary = std::fs::read_to_string(crates.join("cli").join("src").join("main.rs"))
+            .expect("the driver source is readable");
         assert!(
-            text.contains("dorc_cli::engine::run("),
+            binary.contains("dorc_cli::engine::run("),
             "the production driver must delegate planning to the shared engine"
         );
         assert!(
-            !text.contains("without_intake"),
-            "the driver must take its authority from its admission, never from the intakeless mint"
+            !binary.contains("without_intake"),
+            "the binary delegates its planning, so it has no business minting an authority"
+        );
+
+        let mints: Vec<usize> = engine
+            .match_indices("without_intake")
+            .map(|(at, _)| at)
+            .collect();
+        assert_eq!(
+            mints.len(),
+            1,
+            "the intakeless mint has exactly one honest caller; found {} at {mints:?}",
+            mints.len()
+        );
+        let opens = engine
+            .find("if let Some(results) = fixture_results")
+            .expect("the fixture arm is what makes the one call honest");
+        let closes = engine
+            .find("} else if let Some(r) = replay")
+            .expect("the live-intake arms follow the fixture one");
+        let at = mints.first().copied().unwrap_or(0);
+        assert!(
+            opens < at && at < closes,
+            "the intakeless mint sits outside the fixture arm, so a live intake's refusal could \
+             be talked around"
         );
     }
 

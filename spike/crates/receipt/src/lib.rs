@@ -153,8 +153,12 @@
 //! }
 //! ```
 //!
-//! An invocation's own spelling and a destination a standup resolved are different facts, and
-//! no conversion joins them. Both legitimate constructions compile:
+//! An invocation's own spelling and a destination a standup resolved are different facts, and no
+//! conversion joins them. The refusal below fails on `E0624` — the resolved destination's reader
+//! is crate-private — so PRIVACY is the mechanism, and
+//! `crate_boundary.rs`'s `a_resolved_destination_is_readable_at_exactly_one_slot` is what keeps
+//! that true; this pin alone would prove only that something did not compile. Both legitimate
+//! constructions compile:
 //!
 //! ```
 //! use dorc_receipt::project::InvocationTarget;

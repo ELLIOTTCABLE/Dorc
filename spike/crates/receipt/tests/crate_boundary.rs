@@ -752,6 +752,43 @@ fn the_secret_bytes_constructor_is_reachable_from_one_production_file() {
 }
 
 #[test]
+fn a_resolved_destination_is_readable_at_exactly_one_slot() {
+    // What an invocation SPELLED and what a standup RESOLVED are different facts, and the row
+    // recording the first must never be filled from the second.
+    //
+    // MEASURED (r30): the doctest pinning that substitution fails on `E0624: method 'bytes' is
+    // private` — so the mechanism is PRIVACY, not a type mismatch, and a compile-fail test proves
+    // only that something failed to compile. This is the half that says which something. Make the
+    // reader public and this goes red, where the doctest would quietly start failing for a
+    // different reason or stop failing at all.
+    let dispatch = production_sources()
+        .into_iter()
+        .find(|(path, _)| path == "receipt/src/dispatch.rs")
+        .map(|(_, text)| text)
+        .expect("the dispatch chain's own source");
+    assert!(
+        dispatch.contains("pub(crate) fn bytes(&self) -> &[u8]"),
+        "the resolved destination's reader must stay crate-private: that privacy is the whole of \
+         what refuses the substitution"
+    );
+    let readers: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| text.contains(".destination().bytes()"))
+        .map(|(path, _)| path)
+        .collect();
+    // `lib.rs` is the doctest that pins the refusal — a naming, not a reading, and the fence
+    // matches text deliberately: one that tried to tell the two apart would be guessing.
+    assert_eq!(
+        readers,
+        vec![
+            "receipt/src/lib.rs".to_owned(),
+            "receipt/src/project.rs".to_owned()
+        ],
+        "exactly one slot records a destination, and it is the projection's own"
+    );
+}
+
+#[test]
 fn the_durable_publication_proof_is_minted_by_one_production_file() {
     // The pre-dispatch gate consumes this proof, so whoever can mint one can say a document was
     // placed durably. The store that EARNS one lives downstream of this crate, and no type can
