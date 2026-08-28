@@ -167,6 +167,34 @@ priority, must not redirect D4). Split deliberately:
   Byte-identity is not at risk either way: the trailer is excluded from it by the human's own
   ruling, and the emitted sh is mutable by the user regardless.
 
+**BLOCKING THE MERGE COMMIT, and the human's: `apply-plan-not-dispatchable` has no honest
+trigger under 16 MiB.** The case was ours, and it only ever ran because of the
+canonical-payload echo main deleted — so it was never honestly driven. Measured, not assumed:
+`dorc apply --host --plan FILE` hands one opaque stream to `image_of_external_stream`, which
+builds the entry itself with `path: None`, so every path-shaped refusal is structurally
+unreachable rather than merely unused; the other two reason arms are fixed by the
+single-assignment shape and by a binary that links no signer. **The only caller-influenced
+refusals on the whole route are the two size bounds** (16 and 24 MiB).
+
+So the trade is exactly two options and both are bad: a >16 MiB committed fixture, or delete
+the case — which orphans its code, since every code owes exactly one, and deleting the code
+takes a production diagnostic with it. A third option was considered and does NOT survive: a
+tighter route-specific bound on the external stream (16 MiB is mis-sized for a reviewed shell
+script) collapses because any bound small enough for a comfortable fixture is plausibly too
+tight for a real generated plan. Explicitly refused as a route: a new frontmatter key or an
+injected bound — that is the testing-into-production bypass main just spent 82 commits
+removing, and taking it here would make this merge dishonour the thing it merges.
+
+**Consequence: the merge sits UNCOMMITTED** in `.claude/worktrees/r30-receipt`, everything
+staged, pre-commit refusing on that one case. Fragile, and holding it was the deliberate
+choice over laundering a structurally-invalid case into a removal at a conductor seat.
+
+**A defect of ours the bypass was hiding:** our arc put the dispatch gate in front of the
+transport path and never updated `transport-crlf-refused` / `transport-apply-failed`, whose
+invocations can no longer reach a transport diagnostic at all. Repaired in the same lane; the
+loom now models production's ordering. Nothing caught it because the loom's apply driver was
+skipping the gate — the same bypass, hiding our own regression.
+
 **A fence that now guards less than it says — OWED to whichever stage rewires that seat.**
 `the_driver_takes_its_authority_from_its_admission` asserts over `cli/src/main.rs`, and its
 own doc calls that "the one file that answers a live intake". After main's refactor it is not:
