@@ -757,10 +757,11 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   `dorc_cli::parse_args_from`, builds the same immutable snapshot and engine options, injects only
   typed observation/clock/edge values, calls `engine::run`, and routes its ordered output events.
   A defining case spells its world with ordinary book/oracle/results sections and redirects; there
-  is no canonical-payload fallback. Nonportable I/O and transport failures use the closed typed
-  `dorc-loom::harness::HarnessScenario` table. Internal invariant failures are narrower still:
-  exactly the three scenarios fenced in `dorc-loom::defect`, reachable only as
-  `$ dorc-loom --this defect`; production code cannot name either harness authority.
+  is no canonical-payload fallback. Nonportable I/O and transport failures use closed typed
+  `dorc-loom::edge_fault::EdgeFault` operation outcomes; the adapter injects those outcomes into
+  production mappings and contains no diagnostic payloads. Internal invariant failures are narrower
+  still: exactly the three scenarios fenced in `dorc-loom::defect`, reachable only as
+  `$ dorc-loom --this defect`; production code cannot name either loom-only authority.
 - **defining-case-catalog** (post-`282`-flip; loom-final as-built — `28L`/`28N`) —
   every code has exactly ONE defining case; the **committed transcript CASE is the
   authoring surface** and the generated locks are DERIVED from it
