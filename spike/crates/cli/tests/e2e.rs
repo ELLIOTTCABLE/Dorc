@@ -263,6 +263,7 @@ impl Harness {
     /// profile directory — outside the worktree, which no test may touch.
     fn dorc(&self, at: &Path) -> Command {
         let mut command = Command::new(&self.dorc);
+        self.profile.apply(&mut command);
         // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
         // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
         // inherited: cargo sets a test process.s cwd to the PACKAGE root, under which no case.s
@@ -275,7 +276,6 @@ impl Harness {
         // TERMINAL cell; left to the true answer it would be the kept-stream one, where naming a
         // directory claims the artifact twice and the run refuses before rendering anything.
         command.env(STDOUT_POSTURE_ENV, "interactive");
-        self.profile.apply(&mut command);
         // `real-tools-lane-opt-in`: zero external invocations; and no transcript may flip with
         // whether the developer.s TMPDIR sits inside a repository.
         command.env("DORC_FIXTURE_SOURCE_MATCH", "off");

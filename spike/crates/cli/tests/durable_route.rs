@@ -485,3 +485,82 @@ fn a_receipt_identity_retrieves_its_own_document_and_prefers_nothing() {
         "an identity nothing carries must answer about no document; got:\n{absent}"
     );
 }
+
+/// Every file that spawns the shipped binary points its per-user roots somewhere throwaway.
+///
+/// A lexical census, because no type can say "this `Command` had its environment set". It exists
+/// because the shape it catches was found twice by hand in one lane: the corpus harness pointed
+/// only its STATE root at a sandbox and minted a real keyset in the runner's profile, and the
+/// deterministic differential sweep pointed neither. Both were invisible to a green suite — the
+/// runs passed, and the residue was somewhere no assertion looked.
+///
+/// One direction only, and that is the useful one: a file that drives the binary and names no
+/// sandbox seat fails. The walk asserts it found spawners, so a census looking in the wrong place
+/// fails rather than passing over an empty set.
+#[test]
+fn every_seat_that_drives_the_binary_sandboxes_the_profile_it_writes_into() {
+    /// How far after a spawn the sandbox must be spelled.
+    ///
+    /// POSITIONAL, not per-file. Measured: a per-file census passes on the mere presence of the
+    /// helper's own DEFINITION, so removing every CALL leaves it green — the shape that makes a
+    /// lexical check satisfiable by something that is not the property.
+    const WITHIN: usize = 1200;
+    /// How a file reaches the built binary.
+    ///
+    /// The three spellings the tree uses. A fourth would be a new shape somebody wrote
+    /// deliberately, and the non-empty floor below is what says this list still finds the ones
+    /// that exist rather than silently matching nothing.
+    const SPAWNS: [&str; 3] = [
+        "Command::new(env!(\"CARGO_BIN_EXE_dorc\"))",
+        "Command::new(&self.dorc)",
+        "Command::new(&tools.dorc)",
+    ];
+    /// How a spawner points that binary's roots somewhere throwaway.
+    ///
+    /// Spelled as a CALL taking the command by mutable reference, never as a bare name: a name
+    /// alone is satisfied by the helper's own definition sitting elsewhere in the file.
+    const SANDBOXES: [&str; 2] = [".apply(&mut ", "sandbox_profile(&mut "];
+
+    let crates = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("crates/");
+    let mut spawners = 0_usize;
+    let mut unsandboxed: Vec<String> = Vec::new();
+
+    let mut stack = vec![crates.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        for entry in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            if path.extension().is_none_or(|ext| ext != "rs") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path).unwrap_or_default();
+            for needle in SPAWNS {
+                for (at, _) in text.match_indices(needle) {
+                    spawners = spawners.saturating_add(1);
+                    let window = text
+                        .get(at..text.len().min(at.saturating_add(WITHIN)))
+                        .unwrap_or_default();
+                    if !SANDBOXES.iter().any(|seat| window.contains(seat)) {
+                        unsandboxed.push(format!("{} near byte {at}", path.display()));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        spawners > 2,
+        "the census found {spawners} seats driving the binary; it is looking in the wrong place"
+    );
+    assert!(
+        unsandboxed.is_empty(),
+        "these drive the shipped binary without pointing its per-user roots anywhere throwaway, \
+         so a run of them writes keys and receipts into whoever is running the suite: \
+         {unsandboxed:?}"
+    );
+}
