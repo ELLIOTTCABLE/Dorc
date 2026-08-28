@@ -2748,12 +2748,6 @@ fn ship_consented_apply(
     args: &Args,
     host: &str,
 ) -> Result<RunOutcome, Diag> {
-    // Argv alone decides this, so refusing reaches no file. The required arm is unreachable here
-    // by CONSTRUCTION and not by this branch — the binary links no signer and no sealer — so the
-    // only authorization it can build is the bypass, and only when the invocation asked.
-    if let Some(refusal) = dorc_cli::apply_dispatch_refusal(args) {
-        return Err(refusal);
-    }
     // `owed-no-flag-defaults-to-stdin`: the artifact is NAMED or it is nothing. `-` is stdin like
     // any other filename position; absent is refused by the parser, so the `None` arm here is
     // unreachable and says so rather than quietly re-acquiring the stream.
@@ -2789,7 +2783,8 @@ fn ship_consented_apply(
     // The apply route stands up no engine, so it holds no clock from one: the reading is this
     // seat's own, taken at the process edge like every other. Dating it `None` unconditionally
     // would be a different claim — that this run had no clock — rather than a missing wire.
-    let invocation = dorc_cli::apply::apply_invocation(host, clock_for_invocation().now());
+    let mut clock = clock_for_invocation();
+    let invocation = dorc_cli::apply::apply_invocation(host, clock.now());
     let request = dorc_cli::apply::ConsentedApplyRequest {
         plan: &artifact,
         destination: &destination,
@@ -2803,11 +2798,29 @@ fn ship_consented_apply(
     };
     let mut ids =
         dorc_cli::receipt_edge::OsReceiptIdSource::over(dorc_cli::receipt_edge::OsEntropy);
+    // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
+    // nothing here constructs: an apply that cannot publish its intent refuses before the host is
+    // contacted, which is what the pre-dispatch boundary is for.
+    let edge = production_receipt_edge().map_err(|_| intent_not_published())?;
+    let mut io = dorc_cli::durable::NativeIo::new();
+    let mut generator = dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
+    let open = edge
+        .open_for_write(&mut io, &mut generator)
+        .map_err(|_| intent_not_published())?;
+    let mut order = dorc_cli::receipt_edge::RunClockOrder::of(&mut clock);
+    let signer = open.keys().signer();
+    let sealer = open.keys().encryption().sealer();
+    let mut placement = open.placement(&mut io);
     let reached = dorc_cli::apply::consented_apply(
         &request,
         &mut ids,
-        dorc_cli::apply::ApplyAuthorization::ConfiguredBypass(
-            dorc_receipt::dispatch::ConfiguredReceiptBypass::configured(),
+        dorc_cli::apply::ApplyAuthorization::RequiredPublication(
+            dorc_cli::apply::ApplyPublishingCapabilities::of(
+                &mut order,
+                signer,
+                &mut placement,
+                &sealer,
+            ),
         ),
         driver.as_mut(),
     )
@@ -2849,6 +2862,18 @@ fn ship_consented_apply(
             Ok(RunOutcome::HostNotReached)
         }
     }
+}
+
+/// An apply whose intent was not placed, in the one word that says which step did not close.
+///
+/// Every route to it is the same world — the durable edge would not open, or the store would not
+/// take the document — so it is one word rather than three sibling codes.
+fn intent_not_published() -> Diag {
+    Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
+        dorc_aid::diag::ApplyPlanNotDispatchable {
+            reason: "intent-not-published",
+        },
+    ))
 }
 
 /// The diagnostic for an apply that reached no dispatch, in the words of what did not close.

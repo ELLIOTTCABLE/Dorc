@@ -246,16 +246,15 @@ plan_into() {
       --probe-timeout 120 --no-whylog >"$out" 2>"$err"
 }
 
-# `--dispatch-without-receipt` is REQUIRED here, and is the harness declaring itself: this build
-# cannot publish the pre-dispatch intent that authorizes a first mutative dispatch, so a bare
-# `apply --host` refuses. Live acceptance takes the bypass explicitly rather than by any default,
-# and nothing infers it from a terminal or from a receipt write that happened to succeed.
+# The apply publishes its own pre-dispatch intent into the operator's local receipt store, and
+# that publication is what authorizes the first mutative dispatch. There is no flag here and no
+# bypass: an apply that cannot publish refuses before the host is contacted.
 apply_from() {
    plan=$1
    out=$2
    err=$3
    "$dorc" apply --host "$DEST_SPEC" --ssh-config "$RUNDIR/ssh_config" \
-      --plan "$plan" --apply-timeout 600 --no-whylog --dispatch-without-receipt \
+      --plan "$plan" --apply-timeout 600 --no-whylog \
       >"$out" 2>"$err"
 }
 

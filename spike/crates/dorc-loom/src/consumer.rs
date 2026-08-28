@@ -865,11 +865,6 @@ impl DorcConsumer {
         args: &dorc_cli::Args,
         context: &ReplayContext<'_>,
     ) -> Option<DorcEngineReplay> {
-        // The argv-only refusal is spent before any file is read, so it is answered from the
-        // shared seat rather than re-derived here.
-        if let Some(refusal) = dorc_cli::apply_dispatch_refusal(args) {
-            return self.invocation_diagnostic(case, refusal, "dorc");
-        }
         let host = args.host.as_deref()?;
         let plan = args.plan.as_deref()?;
         let fault = crate::edge_fault::EdgeFault::from_case(case)

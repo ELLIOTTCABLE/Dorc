@@ -278,7 +278,6 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cli-mode-needs-flag",
     "cli-flags-mutually-exclusive",
     "cli-flag-requires-mode",
-    "apply-intent-not-publishable",
     "apply-plan-not-dispatchable",
     "cli-file-not-found",
     "cli-file-permission-denied",
@@ -301,6 +300,7 @@ const MIGRATED_SLUGS: &[&str] = &[
 /// codes. Recorded so the git-diff retire-guard reads a rename as intentional, not a silent
 /// deletion (`assert_no_slug_vanished` accepts a committed slug here).
 const RETIRED_SLUGS: &[&str] = &[
+    "apply-intent-not-publishable",
     "unannounced-cross-custody-call",
     "transport-not-attempted",
     "dq-cmdsub-operand-top",
@@ -399,7 +399,6 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "DorcShExecFailed",
     // apply — about an INVOCATION and its authority, not about bytes we parsed. Both are decided
     // before any book is read, and an apply reads none at all, so there is no AST to point at.
-    "ApplyIntentNotPublishable",
     "ApplyPlanNotDispatchable",
     // transport — about a SESSION, not about bytes we parsed. The CRLF refusal can fire on a
     // rendered plan no parser of ours saw, so its line is a payload value, not an AST span.

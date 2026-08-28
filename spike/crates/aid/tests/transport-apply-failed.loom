@@ -11,7 +11,7 @@ false
 transport apply-failed 2
 
 -- replay --
-$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh --dispatch-without-receipt
+$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
 transport: error[transport-apply-failed]: The apply artifact on web1.example.net
 ran to completion and exited 2; the status is the artifact's own, and a fresh
 `dorc plan` measures what actually converged.

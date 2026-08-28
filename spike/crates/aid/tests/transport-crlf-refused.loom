@@ -12,7 +12,7 @@ true
 transport crlf 1
 
 -- replay --
-$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh --dispatch-without-receipt
+$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
 transport: error[transport-crlf-refused]: Dorc refuses to ship
 webhost.dorc-plan.sh: it carries a carriage return (first on line 1), and CRLF
 bytes fail on the remote host before any shell can run -- convert the line
