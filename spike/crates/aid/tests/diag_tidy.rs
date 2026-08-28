@@ -1071,6 +1071,10 @@ fn foreign_edge_constructor_is_fenced() {
         ("aid/src/said.rs", "an inline test's book-line excerpt"),
         ("aid/src/weave.rs", "an inline test's oracle-arm excerpt"),
         (
+            "cli/src/lib.rs",
+            "seals a transport driver's platform spawn-refusal detail at the shared production mapping",
+        ),
+        (
             "cli/src/transport_edge.rs",
             "relays the platform's spawn-refusal words, which cross the dependency-free \
              `dorc-transport` boundary as a `String` and can be sealed no earlier",

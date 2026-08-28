@@ -263,11 +263,9 @@ fn whylog_driver_claims_only_the_exact_single_file_shape() {
     ));
 }
 
-/// Two lint shapes are claimed and nothing else is: `dorc lint P` (external tools enabled, the
-/// injected runner answering every one absent) and `dorc lint P --no-tools`. A flag order, a
-/// repeat, or a path outside the case is somebody else's command.
+/// Every parser-valid spelling reaches the production lint route; an unsafe path still declines.
 #[test]
-fn lint_driver_claims_exactly_two_shapes() {
+fn lint_driver_claims_every_parser_valid_shape() {
     let case = Case::parse(
         "---\ncode: marker-version-unrecognized\n---\n\
          -- oracle.sh --\n# dorc-lang/v0.1\n\
@@ -296,18 +294,14 @@ fn lint_driver_claims_exactly_two_shapes() {
     // Tools enabled reports both configured linters absent; the airgapped spelling reports neither.
     assert!(results[1].output().contains("lint-tool-absent"));
     assert!(!results[0].output().contains("lint-tool-absent"));
-    for result in &results[2..] {
+    for result in &results[2..4] {
+        assert!(result.editable_render().is_some());
+    }
+    for result in &results[4..] {
         assert!(result.editable_render().is_none());
         assert!(result.output().starts_with("fallback:"));
     }
-    assert_eq!(
-        calls.into_inner(),
-        [
-            "dorc lint --no-tools oracle.sh",
-            "dorc lint oracle.sh --no-tools --no-tools",
-            "dorc lint ../oracle.sh --no-tools",
-        ]
-    );
+    assert_eq!(calls.into_inner(), ["dorc lint ../oracle.sh --no-tools",]);
 }
 
 /// The tier an edit MINTS and the demotion it records — stated at the mirror, where the mark is
@@ -416,11 +410,11 @@ fn message_section_text(baseline: &dorc_loom::DorcEditableBaseline) -> String {
 
 #[test]
 fn applied_template_regenerates_complete_multi_replay_case() {
-    let text = "---\ncode: dangling-reference\nwhen-fires: preserved frontmatter\n---\n\
+    let text = "---\ncode: cli-file-not-found\nwhen-fires: preserved frontmatter\n---\n\
                 -- input.txt --\nsource bytes stay unchanged\n\
                 -- replay --\n\
-                $ dorc plan --book=input.txt\nstale human bytes\n\
-                $ dorc plan --book=input.txt > /dev/null\nstale second render\n";
+                $ dorc plan --book=webhost.sh\nstale human bytes\n\
+                $ dorc plan --book=webhost.sh > /dev/null\nstale second render\n";
     let case = Case::parse(text).expect("case parses");
     let mut consumer = DorcConsumer::new();
     let baseline = consumer
@@ -430,33 +424,28 @@ fn applied_template_regenerates_complete_multi_replay_case() {
     // loom-editable, so a literal copy would go stale the first time either moved.
     let original = message_section_text(&baseline);
     assert!(
-        original.contains("sm.dorc.Package:nginx"),
-        "the message section carries the payload's coordinate: {original:?}"
+        original.contains("webhost.sh"),
+        "the message section carries the missing path: {original:?}"
     );
     let dirty = baseline.render().text().replace(
         &original,
-        "{{coord}} is dangling; inspect {{coord}} before applying",
+        "{{path}} is missing; inspect {{path}} before applying",
     );
     let edit = compile_section_edit(&baseline, &dirty).expect("strict markers compile");
     consumer.apply_section_edit(&edit).expect("apply edit");
 
     assert_eq!(
-        message_of(&consumer, "dangling-reference"),
-        "{{coord}} is dangling; inspect {{coord}} before applying"
+        message_of(&consumer, "cli-file-not-found"),
+        "{{path}} is missing; inspect {{path}} before applying"
     );
     let regenerated = consumer.render_cases(&[case]).expect("render cases");
     assert_eq!(regenerated.len(), 1);
     let regenerated = &regenerated[0];
     assert!(regenerated.contains("when-fires: preserved frontmatter"));
     assert!(regenerated.contains("-- input.txt --\nsource bytes stay unchanged\n"));
-    assert!(regenerated.contains("$ dorc plan --book=input.txt"));
-    assert!(regenerated.contains("$ dorc plan --book=input.txt > /dev/null"));
-    assert_eq!(
-        regenerated
-            .matches("sm.dorc.Package:nginx is dangling")
-            .count(),
-        2
-    );
+    assert!(regenerated.contains("$ dorc plan --book=webhost.sh"));
+    assert!(regenerated.contains("$ dorc plan --book=webhost.sh > /dev/null"));
+    assert_eq!(regenerated.matches("webhost.sh is missing").count(), 2);
     assert!(!regenerated.contains("stale human bytes"));
     assert!(!regenerated.contains("stale second render"));
 
@@ -737,7 +726,7 @@ fn vars_replay_reads_only_the_named_materialized_case() {
     )
     .expect("outer case parses");
     let other = Case::parse(
-        "---\ncode: render-heredoc-refused\n---\n-- replay --\n$ dorc plan --book=book.sh\nold\n",
+        "---\ncode: cli-file-not-found\n---\n-- replay --\n$ dorc plan --book=missing.sh\nold\n",
     )
     .expect("other case parses");
     let inputs = [
@@ -758,7 +747,7 @@ fn vars_replay_reads_only_the_named_materialized_case() {
     .expect("replays route");
 
     assert!(results[1].output().contains("{{command}} = \"apt-get\""));
-    assert!(results[2].output().contains("{{verb}} = \"elide\""));
+    assert!(results[2].output().contains("{{kind}} = \"book\""));
     assert!(!results[2].output().contains("{{command}} = \"apt-get\""));
     for result in &results[3..] {
         assert!(result.editable_render().is_none());
@@ -801,8 +790,8 @@ fn vars_replay_reads_only_the_named_materialized_case() {
 fn a_case_answers_its_own_inventory_on_both_chains() {
     for block in ["--this vars", "--this vars --all", "--this sections"] {
         let case = Case::parse(&format!(
-            "---\ncode: render-heredoc-refused\n---\n-- replay --\n\
-             $ dorc plan --book=book.sh\nold\n\
+            "---\ncode: cli-file-not-found\n---\n-- replay --\n\
+             $ dorc plan --book=missing.sh\nold\n\
              $ dorc-loom {block}\nold\n"
         ))
         .expect("case parses");
@@ -813,17 +802,17 @@ fn a_case_answers_its_own_inventory_on_both_chains() {
         .expect("replays route");
         let inventory = results[1].output();
         assert!(
-            inventory.starts_with("case: render-heredoc-refused\n"),
+            inventory.starts_with("case: cli-file-not-found\n"),
             "`{block}`: the header names the case's own slug, never a spelling in the command: \
              {inventory}"
         );
         assert!(
-            inventory.contains("elide"),
+            inventory.contains("book"),
             "`{block}`: the inventory is the payload's, not an empty answer: {inventory}"
         );
         let rendered = consumer.render_case(&case).expect("the case re-renders");
         assert_eq!(
-            rendered.matches("case: render-heredoc-refused").count(),
+            rendered.matches("case: cli-file-not-found").count(),
             1,
             "`{block}`: the fixpoint chain answers the same block once: {rendered}"
         );
@@ -840,9 +829,9 @@ fn a_case_answers_its_own_inventory_on_both_chains() {
 #[test]
 fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
     let case = Case::parse(
-        "---\ncode: render-heredoc-refused\n---\n-- replay --\n\
+        "---\ncode: cli-file-not-found\n---\n-- replay --\n\
          $ dorc-loom --this vars\nold\n\
-         $ dorc plan --book=book.sh\nold\n",
+         $ dorc plan --book=missing.sh\nold\n",
     )
     .expect("case parses");
     let consumer = DorcConsumer::new();
@@ -856,7 +845,7 @@ fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
         baseline
             .used_variables()
             .iter()
-            .any(|(name, _)| name.0 == "verb"),
+            .any(|(name, _)| name.0 == "kind"),
         "the baseline is the plan replay's render, not the declined block's"
     );
 
@@ -864,7 +853,7 @@ fn the_editable_baseline_seat_declines_a_case_s_own_inventory() {
     let answered = consumer
         .vars_inventory(&case, dorc_loom::Breadth::Used)
         .expect("the inventory derives");
-    assert!(answered.contains("{{verb}} = \"elide\""), "{answered}");
+    assert!(answered.contains("{{kind}} = \"book\""), "{answered}");
 }
 
 /// The two chains a case travels — `DorcConsumer::replay` (the EDIT chain, which `publish`

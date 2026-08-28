@@ -811,8 +811,13 @@ impl DorcConsumer {
         }
         let parts = self.invocation_parts(&diagnostic, command);
         Some(DorcEngineReplay {
-            result: ReplayResult::editable(to_editable_render(&parts))
-                .with_status(ReplayStatus::new(2)),
+            result: ReplayResult::emitted(
+                ReplayStatus::new(2),
+                vec![ReplayEmission::editable(
+                    errorloom::ReplayChannel::Stderr,
+                    to_editable_render(&parts),
+                )],
+            ),
             diagnostics: vec![diagnostic],
         })
     }
