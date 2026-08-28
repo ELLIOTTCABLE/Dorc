@@ -1,5 +1,15 @@
 //! dorc-loom — the Dorc editable-render adapter (`282` §4 · §13).
 
+// Inherited through the dev-cycle on `dorc-cli`, which now names the crypto crate as a PRODUCTION
+// dependency: `age` reaches two major lines of several hashing crates through separate subtrees,
+// which `-D warnings` then makes fatal. No version choice avoids it, and `deny.toml` sets
+// `multiple-versions = "warn"` for the workspace. `expect`, so it warns once the duplication
+// clears — the same shape three sibling crates already carry for the same reason.
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "a transitive-dependency fact; see the note above"
+)]
+
 use std::collections::BTreeMap;
 
 use dorc_aid::tagged::{self, RenderPart, RenderParts};

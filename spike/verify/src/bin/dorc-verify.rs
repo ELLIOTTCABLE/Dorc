@@ -1,5 +1,11 @@
 //! `dorc-verify` — the minispec binder's CLI. Reach it through the root config's `verify:*`
 //! tasks, which carry the cwd and the tier each subcommand expects.
+
+// Inherited through this crate's edge on `dorc-loom`; see the library root for the whole note.
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "a transitive-dependency fact; see `dorc_verify`'s library root"
+)]
 #![expect(
     clippy::print_stdout,
     clippy::print_stderr,

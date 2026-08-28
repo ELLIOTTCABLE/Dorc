@@ -24,8 +24,11 @@ use crate::store::DirectorySync;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
     kind: NodeKind,
-    /// Whether the object was created by the attempt currently running.
-    created_here: bool,
+    /// What is known about who owns it.
+    ///
+    /// One field rather than two flags, because the three answers are a state and not a pair of
+    /// independent bits: an object cannot both have been made here and belong to somebody else.
+    owner: OwnerCheck,
     /// What an inspection would say about group and other access.
     group_and_other: GroupAndOtherAccess,
     /// Whether the name is a link, junction, or reparse point.
@@ -74,7 +77,7 @@ impl Node {
     pub fn of(kind: NodeKind, group_and_other: GroupAndOtherAccess) -> Self {
         Self {
             kind,
-            created_here: false,
+            owner: OwnerCheck::EffectiveUser,
             group_and_other,
             redirected: false,
             synced: true,
@@ -85,6 +88,18 @@ impl Node {
     #[must_use]
     pub fn redirected(mut self) -> Self {
         self.redirected = true;
+        self
+    }
+
+    /// The same object, belonging to somebody other than this process's effective user.
+    ///
+    /// The residual an owner comparison closes: a mode-enforcing filesystem already makes `0700`
+    /// plus a successful read transitive proof of ownership for a non-root process, so this is
+    /// the DAC-override case, and it is reachable in the model precisely because it is hard to
+    /// construct natively.
+    #[must_use]
+    pub fn owned_by_another(mut self) -> Self {
+        self.owner = OwnerCheck::AnotherUser;
         self
     }
 
@@ -124,12 +139,7 @@ impl Node {
             NodeKind::File { .. } => ObjectKind::RegularFile,
             NodeKind::Other => ObjectKind::Other,
         };
-        let owner = if self.created_here {
-            OwnerCheck::CreatedByThisAttempt
-        } else {
-            OwnerCheck::NotEstablished
-        };
-        ObjectFacts::of(kind, self.redirected, self.group_and_other, owner)
+        ObjectFacts::of(kind, self.redirected, self.group_and_other, self.owner)
     }
 }
 
@@ -195,7 +205,11 @@ impl ModelIo {
             .iter()
             .map(|(path, node)| {
                 let mut carried = node.clone();
-                carried.created_here = false;
+                // A later process did not make it. The platform can still say whose it is, and
+                // on the modelled disk that is this user unless the case planted otherwise.
+                if carried.owner == OwnerCheck::CreatedByThisAttempt {
+                    carried.owner = OwnerCheck::EffectiveUser;
+                }
                 (path.clone(), carried)
             })
             .collect();
@@ -327,7 +341,9 @@ impl ModelIo {
             // Ownership is enforced here exactly as the production edge enforces it, or the sweep
             // would be proving that a removal succeeds rather than that an unowned one cannot.
             Request::RemoveOwned => match self.nodes.get(path) {
-                Some(node) if !node.created_here => Err(IoFault::Denied),
+                Some(node) if node.owner != OwnerCheck::CreatedByThisAttempt => {
+                    Err(IoFault::Denied)
+                }
                 Some(_) => {
                     self.nodes.remove(path);
                     self.handles.remove(path);
@@ -354,7 +370,7 @@ impl ModelIo {
             path.to_owned(),
             Node {
                 kind,
-                created_here: true,
+                owner: OwnerCheck::CreatedByThisAttempt,
                 group_and_other,
                 redirected: false,
                 synced: false,

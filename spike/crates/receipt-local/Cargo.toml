@@ -58,3 +58,12 @@ path = "tests/store_sweep.rs"
 [[test]]
 name = "native_store"
 path = "tests/native_store.rs"
+
+# The effective user's own identity, which `std` does not answer — the file's owner it does, the
+# PROCESS's does not, and the comparison needs both. Unix only: Windows has nothing comparable to
+# compare against, and says so. Safe API, so `unsafe` stays forbidden workspace-wide.
+#
+# Exact-pinned (wildcards = deny) and already in this workspace's graph, so this edge adds no
+# package. `default-features = false` keeps it to the one call: no std shims, no fs, no net.
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.4", default-features = false, features = ["process"] }

@@ -24,7 +24,7 @@
     reason = "the fixture helpers sit beside the cases, where the in-tests allowance does not reach them"
 )]
 
-mod support;
+mod sandbox;
 
 use dorc_cli::receipt_edge::{
     CONTROLLER_SEMANTICS, PlacedDocument, PlacedIntent, PlacementFailure, PublicationRefusal,
@@ -1582,7 +1582,7 @@ fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary(
 
     // A throwaway profile: these drive the REAL binary, which writes a durable by default, and
     // an inherited environment would deposit keys and receipts in whoever ran the suite.
-    let sandbox = support::ProfileSandbox::new("receipt-route");
+    let sandbox = sandbox::ProfileSandbox::new("receipt-route");
     for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
         let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
         sandbox.apply(&mut command);

@@ -19,6 +19,15 @@
 //! Do not grow this into a general-purpose library. If something here starts wanting a clock, a
 //! file, or an environment read, it belongs on the other side of the seam.
 
+// The dependency-graph fact the crypto crate carries, inherited by naming it as a PRODUCTION
+// dependency: `age` reaches two major lines of several hashing crates through separate subtrees,
+// which `-D warnings` then makes fatal. No version choice avoids it, and `deny.toml` sets
+// `multiple-versions = "warn"` for the workspace. `expect`, so it warns once the duplication
+// clears — the same shape `dorc-receipt-local` already carries for the same reason.
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "a transitive-dependency fact; see the note above"
+)]
 #![forbid(unsafe_code)]
 
 pub mod apply;

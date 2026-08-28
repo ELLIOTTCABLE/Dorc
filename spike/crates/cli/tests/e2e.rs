@@ -30,6 +30,7 @@
     reason = "test harness over the committed corpus: a malformed fixture is a loud abort, and the ported gates keep the sh original's shape"
 )]
 
+mod sandbox;
 mod support;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -41,10 +42,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libtest_mimic::{Arguments, Failed, Trial};
 
+use sandbox::ProfileSandbox;
 use support::{
-    E2eCase, E2eKind, LoomCase, ProfileSandbox, RECORDS_NONCE, RECORDS_TOKEN, Selection,
-    case_from_path, case_roots, discover_e2e, discover_looms, report_path_selection,
-    resolve_selection, spike_root, split_path_selectors,
+    E2eCase, E2eKind, LoomCase, RECORDS_NONCE, RECORDS_TOKEN, Selection, case_from_path,
+    case_roots, discover_e2e, discover_looms, report_path_selection, resolve_selection, spike_root,
+    split_path_selectors,
 };
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor

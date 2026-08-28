@@ -57,6 +57,7 @@
 )]
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 use std::io::Write;
 use std::process::ExitCode;
 
@@ -190,7 +191,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         return ship_consented_apply(sink, args, host);
     }
     if answers_from_the_receipt_store(args) {
-        return why_from_receipt_store(sink, args);
+        return Ok(why_from_receipt_store(sink, args));
     }
 
     let stdout = stdout_posture();
@@ -539,23 +540,19 @@ fn answers_from_the_receipt_store(args: &Args) -> bool {
 /// cannot generate, the store through the one that cannot create, and no host is contacted. A
 /// missing keyset, a missing store, or a damaged document is a REPORT state — asking why must
 /// never mint an identity that cannot open the receipt being asked about.
-#[expect(
-    clippy::result_large_err,
-    reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
-)]
-fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunOutcome, Diag> {
+fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> RunOutcome {
     let edge = match production_receipt_edge() {
         Ok(edge) => edge,
-        Err(refusal) => return Ok(emit_listing(sink, &unreadable(refusal.token()))),
+        Err(refusal) => return emit_listing(sink, &unreadable(refusal.token())),
     };
     let mut io = dorc_cli::durable::NativeIo::new();
     let open = match edge.open_for_read(&mut io) {
         Ok(open) => open,
-        Err(refusal) => return Ok(emit_listing(sink, &unreadable(refusal.token()))),
+        Err(refusal) => return emit_listing(sink, &unreadable(refusal.token())),
     };
     let store = open.store();
     let Ok(entries) = store.enumerate(&mut io) else {
-        return Ok(emit_listing(sink, &unreadable("walk-failed")));
+        return emit_listing(sink, &unreadable("walk-failed"));
     };
 
     // The graph is built over the WHOLE store under its aggregate budget, whatever the listing
@@ -583,7 +580,7 @@ fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunO
         && !args.all
         && args.receipt.is_none()
     {
-        out.push_str(&format!("ambiguous-order {}\n", cohort.members().len()));
+        let _ = writeln!(out, "ambiguous-order {}", cohort.members().len());
     }
     for (receipt_id, listing) in &read {
         if selected.iter().any(|wanted| wanted == receipt_id) {
@@ -592,10 +589,9 @@ fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> Result<RunO
     }
     out.push_str(&dorc_cli::recorded::recorded_graph_listing(&graph));
     if out.is_empty() {
-        return Ok(emit_listing(sink, &unreadable("no-receipt")));
+        return emit_listing(sink, &unreadable("no-receipt"));
     }
-    emit_listing(sink, &out);
-    Ok(RunOutcome::Complete)
+    emit_listing(sink, &out)
 }
 
 /// The listing line for a store that answered nothing, in the edge's own closed word.

@@ -131,9 +131,9 @@ impl EdgeRefusal {
     #[must_use]
     pub const fn token(&self) -> &'static str {
         match self {
-            Self::Roots(RootRefusal::ControllerRootUnavailable { .. }) => "no-controller-root",
+            Self::Roots(RootRefusal::ControllerRootUnavailable { .. })
+            | Self::Store(StoreOpenRefusal::RootUnavailable) => "no-controller-root",
             Self::Roots(RootRefusal::NotAbsolute { .. }) => "controller-root-not-absolute",
-            Self::Store(StoreOpenRefusal::RootUnavailable) => "no-controller-root",
             Self::Store(StoreOpenRefusal::NotInitialized) => "store-not-initialized",
             Self::Store(StoreOpenRefusal::NotADirectory) => "store-not-a-directory",
             Self::Store(StoreOpenRefusal::PermissionRefused) => "store-permission-refused",
@@ -403,7 +403,7 @@ impl StorePlacement<'_> {
         let publication = self
             .store
             .publish_required_v1::<D, P>(self.io, order, id, receipt, policy)
-            .map_err(placement_failure)?;
+            .map_err(|refusal| placement_failure(&refusal))?;
         let name = publication.file_name().spelled();
         let path = self
             .store
@@ -483,7 +483,11 @@ impl ReceiptPlacement for StorePlacement<'_> {
 }
 
 /// The store's own refusal, in the placement's closed words.
-fn placement_failure(refusal: PublishRefusal) -> PlacementFailure {
+///
+/// Borrowed, and the refusal is DROPPED by the caller that maps it: dropping an ownership token
+/// is a legitimate outcome and leaves bounded partial evidence no later writer replaces. Removing
+/// what a failed publication left is a separate, deliberate act.
+fn placement_failure(refusal: &PublishRefusal) -> PlacementFailure {
     match refusal.reason() {
         PublishFailure::OverReceiptBound => PlacementFailure::OverBound,
         PublishFailure::NameAlreadyTaken => PlacementFailure::NameAlreadyTaken,

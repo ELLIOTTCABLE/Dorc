@@ -21,7 +21,6 @@
 //! skeleton-only output could not fake.
 
 #![expect(
-    clippy::panic,
     clippy::expect_used,
     reason = "the fixture helpers sit beside the cases, where the in-tests allowance does not reach them"
 )]
@@ -29,9 +28,9 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-mod support;
+mod sandbox;
 
-use support::ProfileSandbox;
+use sandbox::ProfileSandbox;
 
 /// A book with one unmodeled command, so the run decides one site and records one.
 const BOOK: &str = "#!/bin/sh\nhork tune --profile web\n";

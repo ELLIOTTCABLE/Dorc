@@ -541,6 +541,17 @@ fn a_permissive_or_redirected_member_is_refused_before_its_secret_is_parsed() {
                 role: KeyRole::Signing,
             },
         ),
+        (
+            // The residual the owner comparison closes. `0700` plus a successful read is already
+            // transitive proof of ownership for a non-root process on a mode-enforcing
+            // filesystem, so this is the DAC-override case: a private document belonging to
+            // somebody else, which the mode answer alone would admit.
+            "it belongs to somebody else",
+            Node::private_file(&signing).owned_by_another(),
+            PermissionSubject::KeyDocument {
+                role: KeyRole::Signing,
+            },
+        ),
     ] {
         let mut io = base
             .restart(FailureSchedule::intact())

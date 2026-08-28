@@ -13,7 +13,7 @@
 
 use dorc_receipt_local::io::{
     Answer, FailureSchedule, GroupAndOtherAccess, IoFault, LocalIo, ObjectKind, Op, OpenIntent,
-    Request, Side,
+    OwnerCheck, Request, Side,
 };
 use dorc_receipt_local::model::{ModelIo, Node, NodeKind};
 use dorc_receipt_local::store::DirectorySync;
@@ -112,10 +112,16 @@ fn a_write_leaves_the_bytes_it_was_given_and_a_read_bound_refuses_rather_than_tr
 }
 
 #[test]
-fn a_created_object_reports_that_this_attempt_owns_it_and_a_restart_no_longer_does() {
-    // The honest half of the ownership question. What a process can show is that IT made the
-    // object; a later process finds the same bytes and has shown nothing about who owns them,
-    // and the fact carries that difference rather than flattening it into a boolean.
+fn ownership_is_established_two_ways_and_somebody_elses_object_by_neither() {
+    // THREE answers, and the difference between them is the whole of what the owner comparison
+    // buys. A process can show it MADE the object; failing that, the platform can say the object
+    // belongs to whoever this process is; and where the platform says it belongs to somebody
+    // else, nothing is established and the object is refused.
+    //
+    // The third arm is the residual worth having. On a mode-enforcing filesystem `0700` plus a
+    // successful read is already transitive proof of ownership for a non-root process, so what
+    // this closes is the DAC-override case — which is exactly why it is reachable here and hard
+    // to construct natively.
     let mut io = empty(FailureSchedule::intact());
     assert_eq!(
         io.perform(Request::CreateDirectoryExclusive, DIR),
@@ -124,6 +130,7 @@ fn a_created_object_reports_that_this_attempt_owns_it_and_a_restart_no_longer_do
     let Ok(Answer::Facts(fresh)) = io.perform(Request::InspectOpened, DIR) else {
         panic!("a created directory inspects");
     };
+    assert_eq!(fresh.owner(), OwnerCheck::CreatedByThisAttempt);
     assert!(fresh.ownership_established());
     assert_eq!(fresh.kind(), ObjectKind::Directory);
     assert_eq!(fresh.group_and_other(), GroupAndOtherAccess::None);
@@ -132,9 +139,22 @@ fn a_created_object_reports_that_this_attempt_owns_it_and_a_restart_no_longer_do
     let Ok(Answer::Facts(found)) = later.perform(Request::InspectOpened, DIR) else {
         panic!("the same directory inspects after a restart");
     };
+    assert_eq!(
+        found.owner(),
+        OwnerCheck::EffectiveUser,
+        "a restart loses the making of it, and the platform still answers who owns it"
+    );
+    assert!(found.ownership_established());
+
+    let mut foreign = empty(FailureSchedule::intact())
+        .planting(DIR, Node::private_directory().owned_by_another());
+    let Ok(Answer::Facts(theirs)) = foreign.perform(Request::InspectOpened, DIR) else {
+        panic!("somebody else's directory inspects");
+    };
+    assert_eq!(theirs.owner(), OwnerCheck::AnotherUser);
     assert!(
-        !found.ownership_established(),
-        "a restart genuinely loses the one thing that established ownership"
+        !theirs.ownership_established(),
+        "an object belonging to somebody else establishes nothing, whatever its mode says"
     );
 }
 

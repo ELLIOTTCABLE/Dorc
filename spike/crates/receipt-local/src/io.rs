@@ -400,16 +400,39 @@ impl GroupAndOtherAccess {
 
 /// What is known about who owns an object.
 ///
-/// Deliberately NOT a boolean, and deliberately carrying an unestablished arm: the effective
-/// user's identity is not reachable from this crate's dependency set, so an object this attempt
-/// did not create cannot be shown to belong to this user. Naming that keeps a reopened keyset
-/// from reading as owner-verified when nothing verified it.
+/// Deliberately NOT a boolean, and deliberately keeping an unestablished arm: Windows answers
+/// nothing comparable, and a platform that cannot say must say THAT rather than defaulting either
+/// way. Naming it keeps a reopened keyset from reading as owner-verified when nothing verified it.
+///
+/// What the comparison buys, stated honestly: on a mode-enforcing filesystem, `0700` plus this
+/// process's ability to read the object is already transitive proof of ownership for a
+/// non-root process. The residual it closes is the case where the process holds DAC-override —
+/// where a `0700` directory belonging to somebody else is readable anyway, and only the owner
+/// answer distinguishes it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OwnerCheck {
     /// This attempt created the object, so it belongs to whoever this process is.
     CreatedByThisAttempt,
+    /// The platform said the object's owner is this process's effective user.
+    EffectiveUser,
+    /// The platform said the object's owner is somebody else.
+    AnotherUser,
     /// Not established. The mode answer above stands on its own and this one does not.
     NotEstablished,
+}
+
+impl OwnerCheck {
+    /// Whether this answer shows the object belongs to whoever this process is.
+    ///
+    /// An exhaustive match rather than a comparison at each caller, so a new arm cannot be
+    /// silently absorbed into "not another user, so presumably ours".
+    #[must_use]
+    pub const fn is_this_user(self) -> bool {
+        match self {
+            Self::CreatedByThisAttempt | Self::EffectiveUser => true,
+            Self::AnotherUser | Self::NotEstablished => false,
+        }
+    }
 }
 
 /// What an inspection of an already-open object found.
@@ -462,13 +485,13 @@ impl ObjectFacts {
         self.owner
     }
 
-    /// Whether this attempt established who owns the object.
+    /// Whether this attempt established that the object belongs to whoever this process is.
     ///
-    /// Answers what was shown rather than what is hoped: an object this attempt did not create
-    /// carries [`OwnerCheck::NotEstablished`], and no surface may read that as verified.
+    /// Answers what was SHOWN rather than what is hoped: a platform that cannot say answers
+    /// [`OwnerCheck::NotEstablished`], and no surface may read that as verified.
     #[must_use]
     pub const fn ownership_established(self) -> bool {
-        matches!(self.owner, OwnerCheck::CreatedByThisAttempt)
+        self.owner.is_this_user()
     }
 }
 

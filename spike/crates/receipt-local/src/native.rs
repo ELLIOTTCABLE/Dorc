@@ -84,23 +84,25 @@ impl LocalIo for NativeIo {
                 Ok(Answer::Done)
             }
             Request::InspectOpened => {
-                let owner = if self.created.iter().any(|made| made == path) {
-                    OwnerCheck::CreatedByThisAttempt
-                } else {
-                    OwnerCheck::NotEstablished
-                };
+                let created = self.created.iter().any(|made| made == path);
                 // Through the retained handle where there is one, so a name cannot be swapped
                 // between this answer and the read that follows it.
                 let found = if let Some(file) = self.open.get(path) {
                     let metadata = file.metadata().map_err(|error| fault_of(&error))?;
-                    ObjectFacts::of(kind_of(&metadata), false, access_of(&metadata), owner)
-                } else {
-                    let facts = symlink_facts(path)?;
                     ObjectFacts::of(
-                        facts.kind(),
-                        facts.redirected(),
-                        facts.group_and_other(),
-                        owner,
+                        kind_of(&metadata),
+                        false,
+                        access_of(&metadata),
+                        owner_of(&metadata, created),
+                    )
+                } else {
+                    let metadata =
+                        std::fs::symlink_metadata(path).map_err(|error| fault_of(&error))?;
+                    ObjectFacts::of(
+                        kind_of(&metadata),
+                        is_redirect(&metadata),
+                        access_of(&metadata),
+                        owner_of(&metadata, created),
                     )
                 };
                 Ok(Answer::Facts(found))
@@ -189,8 +191,45 @@ fn symlink_facts(path: &str) -> Result<ObjectFacts, IoFault> {
         kind_of(&metadata),
         is_redirect(&metadata),
         access_of(&metadata),
+        // This look precedes an open, so no attempt owns what it found yet; the ownership
+        // question is asked of the RETAINED handle, where a name cannot be swapped underneath it.
         OwnerCheck::NotEstablished,
     ))
+}
+
+/// Who owns an object, as far as this platform will say.
+///
+/// An object this attempt CREATED belongs to whoever this process is, whatever else is true —
+/// exclusive creation is one act and nothing stood between it and this answer.
+///
+/// For anything else, Unix compares the object's owner against the process's own effective user.
+/// `std` answers the first and not the second, which is the whole reason this crate carries a
+/// syscall dependency at all; the call is safe and the workspace still forbids `unsafe`.
+#[cfg(unix)]
+fn owner_of(metadata: &std::fs::Metadata, created: bool) -> OwnerCheck {
+    use std::os::unix::fs::MetadataExt as _;
+    if created {
+        return OwnerCheck::CreatedByThisAttempt;
+    }
+    if metadata.uid() == rustix::process::geteuid().as_raw() {
+        OwnerCheck::EffectiveUser
+    } else {
+        OwnerCheck::AnotherUser
+    }
+}
+
+/// Windows answers nothing comparable, so it says so.
+///
+/// The baseline there is the per-user profile's inherited access plus the refusal of redirects,
+/// explicitly weaker than what Unix answers and never rendered as equivalent. Reconstructing a
+/// DACL policy would need a maintained safe ACL implementation this crate does not carry.
+#[cfg(windows)]
+fn owner_of(_: &std::fs::Metadata, created: bool) -> OwnerCheck {
+    if created {
+        OwnerCheck::CreatedByThisAttempt
+    } else {
+        OwnerCheck::NotEstablished
+    }
 }
 
 #[cfg(unix)]

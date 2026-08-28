@@ -50,6 +50,7 @@
     reason = "`support`'s selection reporter is compiled into every test binary that uses it, and this instrument reports its own destination to a human running it by hand"
 )]
 
+mod sandbox;
 mod support;
 
 /// The load snapshot a hand-built world is: sources in load order, the book last, and one flat
@@ -107,7 +108,7 @@ fn framed_for(dir: &Path) -> Option<String> {
     // A throwaway profile per drive: this instrument runs the REAL binary, which writes a
     // durable by default, and an inherited environment would deposit keys and receipts in
     // whoever ran it.
-    let sandbox = support::ProfileSandbox::new("spine-baseline");
+    let sandbox = sandbox::ProfileSandbox::new("spine-baseline");
     let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
     sandbox.apply(&mut command);
     let probe = command

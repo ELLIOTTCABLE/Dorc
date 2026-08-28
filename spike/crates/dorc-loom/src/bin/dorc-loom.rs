@@ -1,5 +1,11 @@
 //! `dorc-loom` inspects and publishes Dorc's transcript-authored prose.
 
+// Inherited through this crate's dev-cycle on `dorc-cli`; see the library root for the whole note.
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "a transitive-dependency fact; see `dorc_loom`'s library root"
+)]
+
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;

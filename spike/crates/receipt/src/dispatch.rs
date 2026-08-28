@@ -725,7 +725,14 @@ impl PublishedApplyIntentV1 {
         policy: ReceiptPolicyWitness,
         durability: DurablePublicationProof,
     ) -> Result<Self, IntentPublicationMismatch> {
-        if durability.receipt_id_hex() != id.hex() {
+        // Destructured rather than read through accessors: the proof is SPENT here, and one
+        // placement funds one gate. A borrow would let a single publication clear two.
+        let DurablePublicationProof {
+            receipt_id_hex,
+            document_digest,
+            policy_identity: _,
+        } = durability;
+        if receipt_id_hex != id.hex() {
             return Err(IntentPublicationMismatch::ProofNamesAnotherDocument);
         }
         if policy.token() != RecordedApplyPolicy::RequiredRich {
@@ -733,7 +740,7 @@ impl PublishedApplyIntentV1 {
         }
         Ok(Self {
             id,
-            document_digest: durability.document_digest(),
+            document_digest,
             policy,
             images,
         })

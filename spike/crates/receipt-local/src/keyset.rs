@@ -826,9 +826,15 @@ fn require_directory(
 
 /// The platform's honest posture, applied.
 ///
-/// Unix answers group and other access and the answer is REQUIRED to be none. Windows answers
-/// nothing comparable, and the baseline there rests on the per-user profile's inherited access
-/// plus the refusal of redirects — explicitly weaker, and never rendered as equivalent.
+/// Unix answers TWO things and both are required: group and other access must be none, and the
+/// object must belong to whoever this process is. Windows answers neither comparably, and the
+/// baseline there rests on the per-user profile's inherited access plus the refusal of redirects
+/// — explicitly weaker, and never rendered as equivalent.
+///
+/// The owner half is the narrower of the two. On a mode-enforcing filesystem `0700` plus this
+/// process's ability to read the object is already transitive proof of ownership for a non-root
+/// process; what the comparison closes is the case where the process holds DAC-override, and
+/// only the owner answer distinguishes that from an object of its own.
 fn require_private(
     facts: ObjectFacts,
     baseline: PlatformBaseline,
@@ -838,8 +844,14 @@ fn require_private(
         return Err(KeyAvailability::PermissionRefused { subject });
     }
     match (baseline, facts.group_and_other()) {
-        (PlatformBaseline::UnixLike, GroupAndOtherAccess::None)
-        | (PlatformBaseline::Windows, GroupAndOtherAccess::NotInspectable) => Ok(()),
+        (PlatformBaseline::UnixLike, GroupAndOtherAccess::None) => {
+            if facts.ownership_established() {
+                Ok(())
+            } else {
+                Err(KeyAvailability::PermissionRefused { subject })
+            }
+        }
+        (PlatformBaseline::Windows, GroupAndOtherAccess::NotInspectable) => Ok(()),
         _ => Err(KeyAvailability::PermissionRefused { subject }),
     }
 }

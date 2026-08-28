@@ -21,6 +21,15 @@
 //! zero external toolchains. Evidence that needs Lean, Kani or `cargo-mutants` is recomputed
 //! in the opt-in verify lane at the fold/bless tier. Never a hand-updated cache: a tier that
 //! cannot look says so.
+// Inherited through this crate's edge on `dorc-loom`, which carries a dev-cycle on `dorc-cli`:
+// `age` reaches two major lines of several hashing crates through separate subtrees, which
+// `-D warnings` then makes fatal. No version choice avoids it, and `deny.toml` sets
+// `multiple-versions = "warn"` for the workspace. `expect`, so it warns once the duplication
+// clears.
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "a transitive-dependency fact; see the note above"
+)]
 
 pub mod badge;
 pub mod binding;
