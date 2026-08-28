@@ -40,7 +40,7 @@ before dispatching anything.
 |---|---|
 | Build branch | `ai/r30-receipt` @ `1cbee21a`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
-| Base | `ai/main` @ `7693ac6f` — rebased onto it four times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
+| Base | `ai/main` @ `7c5537a2`, MERGED IN at `8905a3f7` (not rebased — meaningful concurrent work on both sides). Re-check before folding; the sibling is still moving. |
 | Also standing | `ai/r30-hk-stash` @ `234d0da6`, worktree `.claude/worktrees/r30-hkstash` — a measurement lane's evidence; the human said drop it with the rest at cleanup. |
 
 **This file's single home is `ai/r30-conduct`.** The copy in the build worktree is a dead
@@ -64,7 +64,7 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 2A apply image · 2B overlay+Age · 2C models+graph | done, folded in that order |
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
 | 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
-| 5 why / correlation / re-derivation | done except its severance — see the blocker |
+| 5 why / correlation / re-derivation | done; severance CONFINED, completes at D5 |
 | repair pass (order line · identity table · framing) | done @ `b9a0be08` |
 | 5A `30Rd` D0 crate, names, vectors, I/O model | done |
 | 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `366822be` |
@@ -75,8 +75,8 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 
 ## what is owed
 
-**Stage 4 is DONE. Stage 5 is DONE except its severance**, and Stage 6 is unstarted; both
-remainders are the one blocker below and nothing else.
+The key-provider blocker that stalled this arc is RESOLVED and gone: `30Rd` was written, D0–D4
+built, and the binary now persists and reads its own receipts. What follows is the residue.
 
 Landed in Stage 5: the from-nothing replay authority mint deleted and the witness re-derived
 from its admission; the recorded-versus-recomputed comparison sealed so a live disposition
