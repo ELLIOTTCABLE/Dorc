@@ -1,15 +1,33 @@
 ---
 code: lint-tool-failed-without-findings
 when-fires: an external linter exited nonzero but produced nothing parseable. lint/source_external.rs. `{tool}` is the tool, `{rc}` its exit status.
-why: 27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. World-as-payload: replay never runs a foreign tool.
+why: 27R §8 delta-exit-trichotomy-sharpened - the adapter never interprets a foreign tool-rc beyond zero/nonzero (checkbashisms' additive 1|2|4 codes are the named trap), so an unexplained failure is reported as itself. Replay injects a raw process outcome through the lint runner edge.
 ---
+-- book.sh --
+#!/bin/sh
+true
+
+-- edge-fault --
+tool-run shellcheck 2
+
 -- replay --
 $ dorc lint book.sh
-warning[lint-tool-failed-without-findings]: `shellcheck` exited with status 2
-without producing any findings Dorc could read, so its checks contributed
-nothing here -- run it directly to see its own report.
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+book.sh:
+  - warn [shellcheck:lint-tool-failed-without-findings] `shellcheck` exited with status 2 without producing any findings Dorc could read, so its checks contributed nothing here -- run it directly to see its own report. (raw)
+
+dorc lint: 0 errors, 1 warning, 0 infos across 1 file.
 
 $ dorc-loom --this vars
 case: lint-tool-failed-without-findings
 {{tool}} = "shellcheck"
 {{rc}} = "2"
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "1"
+{{v3}} = ""
+{{v4}} = "0"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""

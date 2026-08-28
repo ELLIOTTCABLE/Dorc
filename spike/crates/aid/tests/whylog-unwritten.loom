@@ -3,13 +3,45 @@ code: whylog-unwritten
 when-fires: a plan/apply/round-trip run finished but its posthoc-why durable did not land - the whylog directory is unusable, the serializer refused a whole document, the bytes exceeded the retention cap, or the create/write failed. cli/main.rs write seat, over the cli-local hardened store. {dir} and the closed {reason} word.
 why: 28D:must-default-durable-lands-with-its-hardening bills a durable for VISIBLE persistence failure; this write path previously answered all five of its failure modes with a bare return, which 28D names among the whylog's each-looked-local decisions. Error-floor rather than advisory (28F:rul-write-failure-is-error-floor) because the advisory plane is suppressed under `apply`, and an apply whose receipt silently vanished is exactly the run an admin later comes back asking about. The artifact on stdout is unaffected - a postmortem aid failing is loud, never fatal. Remediation register (help) wanted: name what to check for the reported reason, and note that the run itself completed and its artifact is unaffected.
 ---
+-- book.sh --
+#!/bin/sh
+hork tune --profile web
+
+-- controller-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=6b796e0c816aa119a94373a3ab99578a69820f243017ce833973242dd6f9a79e sites=1 @@dorc@@
+dorc site 0 effect=holds rc=0 @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- edge-fault --
+whylog-publish directory
+
 -- replay --
-$ dorc plan --book=webhost.sh --whylog-dir=/var/lib/dorc/whylog
+$ dorc plan --book=book.sh --results - --whylog-dir=/var/lib/dorc/whylog < controller-results.txt > /dev/null
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork tune --profile web` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork tune --profile web
+     | \_____________________/
+
+   = help:  sm site runs `hork tune --profile web`
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 73966537963aa595
 whylog: error[whylog-unwritten]: This run completed and its artifact is
 unaffected, but the why-log did not land in /var/lib/dorc/whylog (reason:
 directory), so `dorc why --last` will have nothing to read for it.
 
 $ dorc-loom --this vars
 case: whylog-unwritten
+{{count}} = "1"
+{{site_word}} = "site"
+{{v0}} = "book.sh"
+{{v1}} = "0"
+{{v2}} = "0"
+{{v3}} = "0"
+{{v4}} = "1"
+{{v5}} = "0"
 {{dir}} = "/var/lib/dorc/whylog"
 {{reason}} = "directory"

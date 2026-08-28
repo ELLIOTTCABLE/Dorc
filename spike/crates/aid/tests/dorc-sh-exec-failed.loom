@@ -3,6 +3,14 @@ code: dorc-sh-exec-failed
 when-fires: dorc-sh could not exec stock sh. cli/bin/dorc-sh.rs. PASSTHROUGH {detail}.
 why: the strip succeeded and the environment failed: distinguishing that from a script error is the difference between fixing the host and hunting a bug that is not there.
 ---
+-- webhost.sh --
+#!/bin/sh
+true
+
+-- edge-fault --
+shim-exec not-found
+No such file or directory (os error 2)
+
 -- replay --
 $ dorc-sh webhost.sh
 dorc-sh: error[dorc-sh-exec-failed]: sm cannot exec sh: No such file or

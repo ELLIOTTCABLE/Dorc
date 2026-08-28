@@ -3,6 +3,28 @@ code: artifact-publish-refused
 when-fires: an artifact set could not be written to its `--artifact-dir`, so NOTHING was written. Minted at the cli's publication edge, spanless, once per run. `{reason}` = the publisher's own closed reason word (`directory`, `write`, `names-exhausted`, `oversize`).
 why: 30I §7.5: publication is atomic — a fresh staging directory takes every file and only a complete set is moved into place, so a plan can never point at a sidecar from an earlier generation. A partial set is exactly the failure the staging exists to prevent, so the refusal reports rather than salvaging, and the run leaves the destination as it found it. Error severity with a WarnOrDeny floor: a silenced publication failure is how somebody applies yesterday's artifact believing it is today's, which is the worst reading of a stale plan. Remediation register (help) wanted: name the destination and the reason word plainly; the repair is the operator's own filesystem, not the book.
 ---
+-- book.sh --
+#!/bin/sh
+hork provision
+
+-- edge-fault --
+artifact-publish directory
+
 -- replay --
 $ dorc plan --book=book.sh --artifact-dir artifacts
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork provision` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork provision
+     | \____________/
+
+   = help:  sm site runs `hork provision`
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+hork provision
 emission: error[artifact-publish-refused]: [unwritten: artifact-publish-refused]

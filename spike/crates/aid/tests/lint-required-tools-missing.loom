@@ -3,11 +3,31 @@ code: lint-required-tools-missing
 when-fires: --require-tools was given and a configured external linter is absent from PATH. cli/main.rs lint_command. {tools} lists them.
 why: 27R section 4 dir-absent-is-info, inverted by explicit request: absence is advisory by default, and --require-tools is how CI says a partial lint must not read as a pass.
 ---
+-- book.sh --
+#!/bin/sh
+true
+
 -- replay --
 $ dorc lint book.sh --require-tools
-error[lint-required-tools-missing]: `--require-tools` was given, but these lint
-tools are missing from PATH: checkbashisms, shellcheck.
+dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
+
+(run):
+  - info [checkbashisms:lint-tool-absent] Dorc did not find `checkbashisms` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
+  - info [shellcheck:lint-tool-absent] Dorc did not find `shellcheck` on PATH, so none of its checks ran. Install it, pass --no-tools to silence this note, or --require-tools to make a missing tool a hard error. (raw)
+
+dorc lint: 0 errors, 0 warnings, 2 infos across 1 file.
+dorc: lint: error[lint-required-tools-missing]: `--require-tools` was given, but these lint
+tools are missing from PATH: shellcheck, checkbashisms.
 
 $ dorc-loom --this vars
 case: lint-required-tools-missing
-{{tools}} = "checkbashisms, shellcheck"
+{{tool}} = "checkbashisms"
+{{v0}} = "0"
+{{v1}} = "s"
+{{v2}} = "0"
+{{v3}} = "s"
+{{v4}} = "2"
+{{v5}} = "s"
+{{v6}} = "1"
+{{v7}} = ""
+{{tools}} = "shellcheck, checkbashisms"

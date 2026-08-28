@@ -5,5 +5,5 @@ why: 27R section 8b: zero files is OPERATIONAL, never clean - a vacuous pass is 
 ---
 -- replay --
 $ dorc lint
-error[lint-no-lintable-files]: Dorc was given no files to lint; an empty lint
+dorc: lint: error[lint-no-lintable-files]: Dorc was given no files to lint; an empty lint
 counts as a failure, not a clean pass.

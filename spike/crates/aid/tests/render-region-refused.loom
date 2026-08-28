@@ -1,8 +1,0 @@
----
-code: render-region-refused
-when-fires: the span render would land a licensed shared edit on an authored REGION whose span cannot be safely edited — a `<<` heredoc opener, or (for a guard) a blocking output redirect — so the region runs verbatim at every invocation that reaches it. Minted at `plan::render_refusal_diagnostics`, spanned at the authored region, keyed by the region and never by a contributing call.
-why: 30N:rul-region-refusal-discloses-region-keyed. The refusal predicate is the leaf-keyed cousin's, but the SUBJECT is edit identity, not execution identity (`30L:rul-two-identities-never-conflated`): one authored edit that many invocations share owns no leaf, so `render-heredoc-refused` had no row to put it in and the refusal was silently undisclosed (`30Nd:fnd-region-refusal-is-undisclosed`). Disclosing it against the contributing invocations instead would report N refusals for one edit and point N readers at calls that are not the thing that failed — the mis-attribution direction (`271:rul-sin-ordering`). Error severity with a WarnOrDeny floor, matching its cousin: the artifact is valid and safe (every route runs the authored bytes, `kFAIL-perform`), but a licensed elision that silently did not happen must never be silenceable below Warning. `{routes}` = how many invocations shared the edit, which is what says this is not a per-call disclosure. Remediation register (help) wanted: the same repair the cousin names, at the definition rather than the call — move the heredoc body out of the region's command.
----
--- replay --
-$ dorc plan --book=book.sh
-render: error[render-region-refused]: [unwritten: render-region-refused]

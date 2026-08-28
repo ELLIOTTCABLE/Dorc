@@ -12,12 +12,12 @@ owns:
 #!/bin/sh
 hork tune --profile web
 
--- probe-results.txt --
+-- controller-results.txt --
 dorc-records/1 nonce=dorc attempt=1 host=wrong book=6b796e0c816aa119a94373a3ab99578a69820f243017ce833973242dd6f9a79e sites=0 @@dorc@@
 dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- replay --
-$ dorc plan --book=book.sh --results - < probe-results.txt > /dev/null
+$ dorc plan --book=book.sh --results - < controller-results.txt > /dev/null
 records: warning[records-integrity-refused]: sm the records header failed
 integrity on the host field (it names a different host than this invocation
 addressed) -- the whole read unit is refused, the host runs (kFAIL-perform)
