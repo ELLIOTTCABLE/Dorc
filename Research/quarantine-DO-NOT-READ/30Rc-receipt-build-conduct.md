@@ -176,6 +176,26 @@ unreachable rather than merely unused; the other two reason arms are fixed by th
 single-assignment shape and by a binary that links no signer. **The only caller-influenced
 refusals on the whole route are the two size bounds** (16 and 24 MiB).
 
+**THE STRUCTURAL FINDING, which outlives this one case:** a deterministic pre-network apply
+refusal has no honest driver at all. The loom's apply arm reads a plan only to confirm it
+exists, discards it, and renders from a declared `EdgeFault` — which is documented for
+NONDETERMINISTIC edge outcomes, and is therefore the wrong instrument for a decision pure
+production code makes. And the replay harness resolves every case-relative file through one
+bounded reader capped at **64 KiB**, so no case can hand any consumer a file 256× larger than
+that ceiling — generated at run time or committed makes no difference, because the refusal is
+on the READ. The honest route the defect registry's own rule demands is unreachable here not
+because the scenario is hard to construct but because **the harness that would observe it
+refuses inputs three orders of magnitude smaller than the bound under test.**
+
+Two harness changes would close it and neither was made: raising a bounded reader over
+untrusted input by 256×, and teaching the loom's apply arm to drive the real dispatch prelude.
+The second is a smaller step than it sounds — the sibling case was repaired by exactly that
+move at one lib seat — but the first is a governed surface in its own right.
+
+**Note for D4:** `intent-not-published`, one of this code's other reason words, is unreachable
+today only because the binary links no signer. D4 links one. So this diagnostic becomes
+honestly drivable at D4 without any harness change at all.
+
 So the trade is exactly two options and both are bad: a >16 MiB committed fixture, or delete
 the case — which orphans its code, since every code owes exactly one, and deleting the code
 takes a production diagnostic with it. A third option was considered and does NOT survive: a
