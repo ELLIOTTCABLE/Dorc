@@ -17,8 +17,7 @@
    zero there; gate-8's six loom cases lose their replay arm; the `--whylog` family goes.
    **A pure-deletion changeset selects ZERO checks**, which is why the discovery floor exists —
    read its line, never the exit code.
-3. **Awaiting the human, non-blocking**: confirmation of a deletion made in their real profile
-   (see the profile-leak carry-in); the prose queue; branch/worktree cleanup; and the
+3. **Awaiting the human, non-blocking**: the prose queue; branch/worktree cleanup; and the
    `ApplyPlanNotDispatchable` split into three codes.
 
 ## the arc in one paragraph
