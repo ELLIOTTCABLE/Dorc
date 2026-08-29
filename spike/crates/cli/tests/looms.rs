@@ -45,6 +45,14 @@ fn case_of(trial: &str) -> &str {
     trial.split_once(' ').map_or(trial, |(case, _)| case)
 }
 
+/// Is this case's proof the e2e runner's rather than this one's?
+///
+/// One question, two answers that must agree: which trial name a reader sees, and which assertions
+/// this runner may still make about a case it does not execute.
+fn deferred_to_e2e(parsed: &Case) -> bool {
+    parsed.frontmatter().scalar("run").is_some()
+}
+
 /// A `run:`-bearing loom's transcript is proven by `e2e.rs`, not this runner's render fixpoint
 /// (`one-fixpoint-authority-per-case`) — marks that up front so a hygiene-only trial reads
 /// differently from a fixpointed one.
@@ -52,7 +60,7 @@ fn trial_name(case: &LoomCase) -> String {
     let deferred = std::fs::read_to_string(&case.path)
         .ok()
         .and_then(|text| Case::parse(&text).ok())
-        .is_some_and(|parsed| parsed.frontmatter().scalar("run").is_some());
+        .is_some_and(|parsed| deferred_to_e2e(&parsed));
     if deferred {
         format!("{} [deferred to e2e]", case.name)
     } else {
@@ -90,7 +98,12 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
     known_frontmatter_keys(name, &parsed)?;
-    if let Err(error) = parsed.check_hygiene(Some("code")) {
+    // A WHOLE-PRODUCT case's code fires at the REAL BINARY, which is the whole reason it is one,
+    // so the slug it declares cannot be expected in an in-process render. The assertion is not
+    // dropped — it moves to the runner that drives the binary, where the code is proven to have
+    // been emitted for real. The marker-collision half of hygiene binds either way.
+    let surfaced = (!deferred_to_e2e(&parsed)).then_some("code");
+    if let Err(error) = parsed.check_hygiene(surfaced) {
         // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not
         // the fixpoint, is where its author stands when they need the candidate.
         let candidate = DorcConsumer::new().render_case(&parsed).ok();

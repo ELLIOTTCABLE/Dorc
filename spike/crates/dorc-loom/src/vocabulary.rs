@@ -36,8 +36,9 @@ pub const DEFINING_KEYS_NOTE: &str = "a case declares exactly ONE of `code:` or 
 pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
     FrontmatterKey {
         name: "code",
-        read_by: "the diagnostic code this case defines; keys its catalog row",
-        run_lane: false,
+        read_by: "the diagnostic code this case defines; keys its catalog row. On a whole-product \
+                  case it is ALSO the assertion that one of the case's own drives emitted it",
+        run_lane: true,
     },
     FrontmatterKey {
         name: "arrangement",
@@ -47,7 +48,7 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
     FrontmatterKey {
         name: "when-fires",
         read_by: "catalog metadata: when the code fires. Replacing it needs --accept-metadata",
-        run_lane: false,
+        run_lane: true,
     },
     FrontmatterKey {
         name: "when-used",
@@ -57,7 +58,7 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
     FrontmatterKey {
         name: "why",
         read_by: "metadata for either registry: why the entry reads as it does. Same acknowledgement",
-        run_lane: false,
+        run_lane: true,
     },
     FrontmatterKey {
         name: "owns",
@@ -222,7 +223,10 @@ mod tests {
         let run_lane = run_lane_key_names();
         assert!(run_lane.iter().all(|key| is_frontmatter_key(key)));
         assert!(is_run_lane_key("probe-results"));
-        assert!(!is_run_lane_key("code"), "a defining key is not run-lane");
+        assert!(
+            is_run_lane_key("code") && !is_run_lane_key("arrangement"),
+            "a whole-product case may define a CODE, whose e2e run proves it fired; a chrome page has no production drive to prove one"
+        );
         assert!(
             is_run_lane_key("owns"),
             "read by neither runner, but a whole-product case is a real authoring home"
