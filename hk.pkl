@@ -111,8 +111,15 @@ local linters = new Mapping<String, Step> {
 // Case corpora, pre-commit only — deliberately NOT in `linters`, which the `check`/`fix` hooks
 // (and therefore `mise run check`, and therefore every gate) reuse. Tests belong to the gates;
 // what belongs here is the subset a commit's own staged paths make relevant.
+//
+// These three, and only these three, compile product code — which makes them the set a commit
+// may be excused from, and `linters` the floor that no commit is ever excused from. `!commit-floor`
+// spells that: hk skips a step whose `profiles` names an ENABLED profile with a `!`, so a run
+// carrying `--profile commit-floor` is the floor alone, and every ordinary run (which names no
+// profile) is unaffected. `.githooks/pre-commit` is the only caller; see DORC_KNOWN_BROKEN there.
 local corpora = new Mapping<String, Step> {
     ["loom-hygiene"] {
+        profiles = List("!commit-floor")
         glob = List("spike/crates/*/tests/*.loom", "spike/crates/*/tests/*/*.loom")
         // The hygiene tier and nothing more: parse, same-slug, render fixpoint. A whole-product
         // loom's transcript is proven by EXECUTING it, which is the `e2e` step below — so this
@@ -122,6 +129,7 @@ local corpora = new Mapping<String, Step> {
         output_summary = "combined"
     }
     ["minispec"] {
+        profiles = List("!commit-floor")
         // The one corpus outside `spike/**`, so no `linters` step reaches it: a commit touching
         // only a law unit would otherwise draw no check at all. The binder's cheap tier is
         // filesystem-and-parsing only, so this stays inside the budget.
@@ -130,6 +138,7 @@ local corpora = new Mapping<String, Step> {
         output_summary = "combined"
     }
     ["e2e"] {
+        profiles = List("!commit-floor")
         // Both shapes a whole-product case comes in: a case DIR, and a single-file `.loom`
         // carrying `run:`. The loom half is load-bearing and its absence was SILENT — hk prints
         // nothing at all for a glob-missed step, so a commit touching only a whole-product loom
