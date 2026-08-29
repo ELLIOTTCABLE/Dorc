@@ -183,6 +183,13 @@ old work, *especially* in current/live branches - our git-history is
 oft-rebased. If you do, include the full first line of the commit-message, for
 searching.
 
+Your builders, and you, must read the 'commit' skill. (Summary: obey .gitlabels;
+actually *reason* about commit-messages, as they are important investigative
+information, though brief; and commit *granularly* - 'broken' commits in the
+middle of work are expected/encouraged, never wait for work being 'complete' or
+compilation-passing before actually committing, because the history must encode
+failures and mistakes as well.)
+
 ### Git reconciliation
 
 Gently pursue a linear history where trivially possible; but use merges where

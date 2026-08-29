@@ -475,12 +475,24 @@ raw = true
 run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
 
 [tasks.hk-install]
-description = "Install hk's git hooks: the pre-commit lint gate AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions run pre-commit check-only and stash-free (HK_FIX=0 + HK_STASH=none in .claude/settings.json) and get commit-msg in full."
+description = "Install hk's git hooks: the pre-commit lint gate (through .githooks/pre-commit, which adds the DORC_KNOWN_BROKEN ack) AND the commit-msg gitlabels gate (which refuses AI Co-Authored-By/session trailers). WRITES SHARED .git/config (affects main and every worktree) — human-gated; read the round-19 spike note first. Agent sessions run pre-commit check-only and stash-free (HK_FIX=0 + HK_STASH=none in .claude/settings.json) and get commit-msg in full."
 raw = true
 # `--mise` wraps the installed hook in `mise x`, which is what lets a contributor who has never
 # activated mise in their shell still get the pinned toolchain — and what carries HK_MISE into
 # the hook, without which every step's bare `cargo` would be unresolvable.
-run = "hk install --mise"
+#
+# The second line then points the pre-commit event at `.githooks/pre-commit`, which reproduces
+# that generated dispatch and adds the DORC_KNOWN_BROKEN ack. It has to sit outside hk: hk prints
+# a step's full diagnostic only for steps that FAILED, so an ack spelled inside a step would have
+# to make it pass, and eat the compiler output it exists to keep. commit-msg is left as hk
+# installed it. Quoting is the one exception to the no-shell-syntax rule above — `git config`
+# needs the value as a single argument, and a double-quoted word means the same to `sh -c` and
+# to `cmd /c`. A bare `hk install` re-run reverts it: the ack stops working, which is the safe
+# direction, and this task puts it back.
+run = [
+   "hk install --mise",
+   "git config hook.hk-pre-commit.command \"sh .githooks/pre-commit\"",
+]
 
 [tasks.bless]
 description = "ORCHESTRATOR-ONLY: re-bless goldens after the acceptance gate."

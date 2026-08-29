@@ -8,6 +8,27 @@
 > Written as a RESUMPTION document, not a log. If something here is no longer true, rewrite
 > it rather than appending a correction.
 
+## START HERE — what to do next
+
+1. **The prose repair** (first entry under *what is owed*): two `why`-side conditions are bare
+   tokens on stdout; restore them as diagnostics with loom cases by moving the receipt-`why`
+   seat into the engine. Small, bounded, and it must land before D5.
+2. **Then D5 / Stage 6** — delete the old whylog. Its riders: the severance count goes to
+   zero there; gate-8's six loom cases lose their replay arm; the `--whylog` family goes.
+   **A pure-deletion changeset selects ZERO checks**, which is why the discovery floor exists —
+   read its line, never the exit code.
+3. **Split `ApplyPlanNotDispatchable` into three codes** — schedulable, NOT human-gated
+   (human-typed 2026-08-28: conductors may mint codes; only prose is reserved, and it stays
+   `[unwritten: <slug>]`). It currently reports three unrelated world-states under one code —
+   an oversized plan artifact, a malformed assignment set, and a failed publication — which is
+   `spike/CLAUDE.md`'s catalog rule applied backwards: sibling codes come FROM world-state
+   variants, and only *same-world* reasons become enum components. Splitting also improves
+   testability rather than tripling the burden: publication-failed is reachable now that a
+   signer links, assignment-shape becomes reachable at multi-target apply, and only the size
+   bound stays genuinely hard — so the defect-registry member narrows to that one reason, which
+   is what its doc already anticipates.
+4. **Awaiting the human, non-blocking**: the prose queue, and branch/worktree cleanup.
+
 ## the arc in one paragraph
 
 Replace the single mutable whylog with three immutable receipt species — a plan receipt, an
@@ -15,19 +36,19 @@ apply intent written before the first mutating dispatch, and an apply outcome �
 typed identities into a report-only graph. Everything read back is inert by type. Two new
 crates: a pure `dorc-receipt`, a `dorc-receipt-crypto` holding the Age/Ed25519 implementations
 of its capability traits, and — added by `30Rd` — a `dorc-receipt-local` owning the default
-key/store I/O. Stages 0–4 are complete and Stage 5 is complete except its severance, which
-`sched-severance-lands-in-d-four` places in D4. The format/identity repair pass and `30Rd` D0
-are done. What remains is D1–D4 (the binary must be able to persist and read its own
-replacement) and then Stage 6 (D5: the old durable goes). Read *the schedule* below before
-dispatching.
+key/store I/O. Stages 0–5 and `30Rd` D0–D4 are complete: the shipped binary now writes and reads its own receipts. The severance is CONFINED, not removed, which
+is D5's diff. What remains: the prose repair above, then D5 (the old durable goes). The merge
+with `ai/main` is folded and human-committed. Read *the schedule* and *conducting this arc*
+before dispatching anything.
+
 
 ## where the work is
 
 | | |
 |---|---|
-| Build branch | `ai/r30-receipt` @ `b9a0be08`, worktree `.claude/worktrees/r30-receipt` |
+| Build branch | `ai/r30-receipt` @ `1cbee21a`, worktree `.claude/worktrees/r30-receipt` |
 | Conductor branch | `ai/r30-conduct`, worktree `.claude/worktrees/r30-conduct` (this file) |
-| Base | `ai/main` @ `7693ac6f` — rebased onto it four times during the arc, conflict-free each time. Re-check before folding; the sibling is still moving. |
+| Base | `ai/main` @ `7c5537a2`, MERGED IN at `8905a3f7` (not rebased — meaningful concurrent work on both sides). Re-check before folding; the sibling is still moving. |
 | Also standing | `ai/r30-hk-stash` @ `234d0da6`, worktree `.claude/worktrees/r30-hkstash` — a measurement lane's evidence; the human said drop it with the rest at cleanup. |
 
 **This file's single home is `ai/r30-conduct`.** The copy in the build worktree is a dead
@@ -51,18 +72,19 @@ Containment cannot be proved, so `-d` refuses and `-D` is forbidden. Leave them;
 | 2A apply image · 2B overlay+Age · 2C models+graph | done, folded in that order |
 | 3 presented plan + PlanReceipt | substantive; see *owed* below |
 | 4 intent / dispatch / outcome | done — gate green both legs @ `4177a589` |
-| 5 why / correlation / re-derivation | done except its severance — see the blocker |
+| 5 why / correlation / re-derivation | done; severance CONFINED, completes at D5 |
 | repair pass (order line · identity table · framing) | done @ `b9a0be08` |
 | 5A `30Rd` D0 crate, names, vectors, I/O model | done |
 | 5A `30Rd` D1 key documents · D2 keyset state machine | done @ `366822be` |
-| 5A `30Rd` D3 immutable local store | done @ `f564c7ac`; Windows gate OWED |
-| 5A `30Rd` D4 production route | next, once the gate clears |
+| 5A `30Rd` D3 immutable local store | done |
+| merge of `ai/main` | done @ `8905a3f7`, human-committed |
+| 5A `30Rd` D4 production route | done @ `1cbee21a`; gate green both legs, D3 debt cleared |
 | 6 rip the old implementation (`30Rd` D5) | not started |
 
 ## what is owed
 
-**Stage 4 is DONE. Stage 5 is DONE except its severance**, and Stage 6 is unstarted; both
-remainders are the one blocker below and nothing else.
+The key-provider blocker that stalled this arc is RESOLVED and gone: `30Rd` was written, D0–D4
+built, and the binary now persists and reads its own receipts. What follows is the residue.
 
 Landed in Stage 5: the from-nothing replay authority mint deleted and the witness re-derived
 from its admission; the recorded-versus-recomputed comparison sealed so a live disposition
@@ -96,14 +118,34 @@ route records zero site rows and `ApplySiteReport` is exercised by the fixture b
 Inventing rows would be the different-and-wrong record. The outcome's influence reads
 `untracked` — truthful, and higher than host-influenced so it cannot under-claim.
 
-One residual for whoever unblocks item 4: an invocation's spelled target is now a distinct
-no-conversion type from a resolved destination, but the laundering path that still compiles
-is `Spelled(context.destination().as_bytes().to_vec())`. Closing it means
-`ResolvedApplyContext` no longer handing out a bare `&str` — that type's own lane. What the
-split buys meanwhile is that the mistake requires writing `Spelled` over a resolved answer at
-a named constructor: a false claim rather than an argument-position slip. A two-way lexical
-census over that constructor is the tree's established alternative; minting one was
-deliberately not done at a builder seat.
+The destination-laundering residual is CLOSED (and this entry was stale before D4 measured it:
+the accessor is crate-private, so the pin fails on privacy rather than on types, and a
+structural test now pins that a resolved destination is readable at exactly one slot).
+
+**NEXT LANE, and it is a repair: two `why`-side conditions are bare tokens on STDOUT.**
+D4 minted `durable-receipt-unreadable` and `durable-receipt-ambiguous`, then withdrew them and
+wrote the conditions as listing lines instead — literally `store-unreadable no-receipt` and
+`ambiguous-order <n>`, at `cli/src/main.rs` ~583/599. **Human-NACKED 2026-08-28: prose goes in
+looms, period; where that cannot be achieved, the blocker is raised, not routed around.**
+Three violations at once, and the third was missed on first reading: builder-authored
+user-facing words; outside the catalog; and on the wrong stream —
+`cli/CLAUDE.md stdout-contract` says diagnostics go to stderr in *every* mode.
+
+The blocker that produced it is real and is the thing to fix: **the receipt-`why` seat lives in
+`main.rs`, above the engine, and the loom drives the engine**, so every diagnostic sited there
+is undemonstrable. The repair is to move that seat into the engine — which is the direction
+main's own refactor took everything else — restoring both codes with honest loom cases. If
+that move proves intractable, STOP and raise it; do not invent a third route. Audit the rest
+of the listing for other builder-authored user-facing strings in the same pass.
+
+Distinguish this from the `apply-plan-not-dispatchable` blocker: **that** one needs a live
+remote host the corpus structurally cannot have; **this** one is only a seat in the wrong
+place. Different problems, different fixes.
+
+**Four crate roots gained `#![expect(clippy::multiple_crate_versions)]`**, inherited the moment
+the crypto crate became a production dependency. Against the letter of the never-add-new-ones
+rule; the alternative was a red gate on a duplication we do not own. Revisit when upstream
+resolves it.
 
 Three residues from the carriage lane: a diagnostic for a refused planned image (absence is
 truthful but silent; the code is mintable, the defining case reads as diagnostics territory);
@@ -142,6 +184,94 @@ can make from anything in the API. Every member at the top order is retained and
 reported rather than broken — deliberately no receipt-ID tie-break, since that would pick a
 document by the value least related to when it was written.
 
+**D4 riders for `ELLIOTTCABLE/Dorc#1`** (plan trailer naming its receipt; human-pointed, LOW
+priority, must not redirect D4). Split deliberately:
+
+- **TAKE: retrieval by receipt ID.** The ID already satisfies the ask — controller-minted,
+  opaque (random, so it leaks no hostname, path, or content), stable, and already carried in
+  both the filename and the signed header. Only the lookup is missing, and D4 builds store
+  reads anyway. It does NOT reopen D3's "one selection only" property: that property forbids
+  a second RANKING (a newest-complete, a next-one-down) so partial-newest fallback stays
+  unrepresentable. An exact-match retrieval is not a ranking.
+- **LEAVE A SEAM, BUILD NOTHING: the trailer itself.** Two plumbing constraints only, no
+  surface and no decision: the durable is published BEFORE the artifact is emitted (the issue
+  requires it — a trailer must never name a path that was never made durable), and the
+  publication result carries its own path and ID rather than dropping them on the floor.
+  That reduces the feature to a later render-side lane.
+- **DO NOT decide, and do not let a builder decide:** whether a pointer-trailer is compatible
+  with `spike/CLAUDE.md two-surfaces` (the artifact is "byte-floored and receipt-free"; a
+  trailer is receipt material embedded in it — this is the real design question and it is the
+  human's); the opaque-ID-versus-literal-path config axis (the human has explicitly not
+  decided, and the path leaks homedir/hostname into an artifact that may be committed or
+  attached to a report); and whether a failed durable write refuses the plan or emits it
+  untrailered (also explicitly undecided). The issue's `dorc why --diff` re-read is a NEW
+  reingestion path and sits under `rul-durable-contents-reviewed-before-design`.
+  Byte-identity is not at risk either way: the trailer is excluded from it by the human's own
+  ruling, and the emitted sh is mutable by the user regardless.
+
+**BLOCKING THE MERGE COMMIT, and the human's: `apply-plan-not-dispatchable` has no honest
+trigger under 16 MiB.** The case was ours, and it only ever ran because of the
+canonical-payload echo main deleted — so it was never honestly driven. Measured, not assumed:
+`dorc apply --host --plan FILE` hands one opaque stream to `image_of_external_stream`, which
+builds the entry itself with `path: None`, so every path-shaped refusal is structurally
+unreachable rather than merely unused; the other two reason arms are fixed by the
+single-assignment shape and by a binary that links no signer. **The only caller-influenced
+refusals on the whole route are the two size bounds** (16 and 24 MiB).
+
+**THE STRUCTURAL FINDING, which outlives this one case:** a deterministic pre-network apply
+refusal has no honest driver at all. The loom's apply arm reads a plan only to confirm it
+exists, discards it, and renders from a declared `EdgeFault` — which is documented for
+NONDETERMINISTIC edge outcomes, and is therefore the wrong instrument for a decision pure
+production code makes. And the replay harness resolves every case-relative file through one
+bounded reader capped at **64 KiB**, so no case can hand any consumer a file 256× larger than
+that ceiling — generated at run time or committed makes no difference, because the refusal is
+on the READ. The honest route the defect registry's own rule demands is unreachable here not
+because the scenario is hard to construct but because **the harness that would observe it
+refuses inputs three orders of magnitude smaller than the bound under test.**
+
+Two harness changes would close it and neither was made: raising a bounded reader over
+untrusted input by 256×, and teaching the loom's apply arm to drive the real dispatch prelude.
+The second is a smaller step than it sounds — the sibling case was repaired by exactly that
+move at one lib seat — but the first is a governed surface in its own right.
+
+**Note for D4:** `intent-not-published`, one of this code's other reason words, is unreachable
+today only because the binary links no signer. D4 links one. So this diagnostic becomes
+honestly drivable at D4 without any harness change at all.
+
+So the trade is exactly two options and both are bad: a >16 MiB committed fixture, or delete
+the case — which orphans its code, since every code owes exactly one, and deleting the code
+takes a production diagnostic with it. A third option was considered and does NOT survive: a
+tighter route-specific bound on the external stream (16 MiB is mis-sized for a reviewed shell
+script) collapses because any bound small enough for a comfortable fixture is plausibly too
+tight for a real generated plan. Explicitly refused as a route: a new frontmatter key or an
+injected bound — that is the testing-into-production bypass main just spent 82 commits
+removing, and taking it here would make this merge dishonour the thing it merges.
+
+**Consequence: the merge sits UNCOMMITTED** in `.claude/worktrees/r30-receipt`, everything
+staged, pre-commit refusing on that one case. Fragile, and holding it was the deliberate
+choice over laundering a structurally-invalid case into a removal at a conductor seat.
+
+**A defect of ours the bypass was hiding:** our arc put the dispatch gate in front of the
+transport path and never updated `transport-crlf-refused` / `transport-apply-failed`, whose
+invocations can no longer reach a transport diagnostic at all. Repaired in the same lane; the
+loom now models production's ordering. Nothing caught it because the loom's apply driver was
+skipping the gate — the same bypass, hiding our own regression.
+
+**A fence that now guards less than it says — OWED to whichever stage rewires that seat.**
+`the_driver_takes_its_authority_from_its_admission` asserts over `cli/src/main.rs`, and its
+own doc calls that "the one file that answers a live intake". After main's refactor it is not:
+`engine.rs` answers it, and legitimately spells the no-intake mint for its fixture arm. **The
+fence still passes and covers nothing.** Moving or widening it is a governed act and was
+correctly not done mid-merge. Written down rather than remembered, because a passing guard
+that covers nothing is this arc's most recurrent hazard.
+
+**Tooling gap, recorded:** `dorc-loom publish` cannot distinguish an in-progress merge from an
+uncommitted publish and refuses, so a merge that legitimately moves transcripts has to go
+through the dump route instead. The workaround was reported rather than swallowed, and its
+result was made sound by mechanically confirming every refreshed transcript differed in
+exactly one line and that line was the digest. The publisher should learn to recognise a merge
+state; a later tooling lane.
+
 **Owed to D4:** refuse to EMIT an undated document at the production composition root, sited
 for trivial removal when stable-format output becomes supported. It cannot live at a lib seam
 — a refusal there would refuse the very runs that want an undated artifact. Also D4's: the
@@ -179,6 +309,21 @@ live. If a lane sees this shape again, that recurrence is the signal.
 
 **Arc close, hard:** see the final section. Nothing ships with it outstanding.
 
+## conducting this arc — two corrections a successor should inherit
+
+- **Size remits so a builder reports in; do not delegate its own budget management.** The
+  D4 lane ran to ~956k, which is past the point where compaction is certain, and it did not
+  flag. That is a CONDUCTOR failure, not a builder one: the thresholds (~750k stop taking new
+  ground, ~850k write down what matters) are accurate and stay as they are, but they only work
+  if a lane is small enough to reach a natural close before them. **Deciding when a builder
+  closes, and minting the next one, is the conductor's job.** Prefer several bounded remits
+  with mandated check-ins over one large remit with a self-managed budget.
+- **Anything a compacted lane reported LATE is unverified.** D4's closing claims — including
+  its green both-legs gate at `1cbee21a` — were made after it must have compacted. Nothing
+  suggests they are wrong; they are simply not established. The next lane's own gate at its
+  own tip re-establishes them as a side effect, which is why no separate verification lane is
+  owed — but do not cite D4's gate as evidence until then.
+
 ## the schedule (conductor-chosen 2026-08-25, human-delegated; HONOR IT)
 
 `30Rd` arrived after Stage 5 and made a minimal production durable edge REQUIRED — the
@@ -196,11 +341,16 @@ than drifted into. These are those choices:
 - **`sched-gate-atomicity-rides-d-four`** — the publication gate must consume ONE private
   value binding intent, image witness, policy, and `30Rd`'s publication proof, with the permit
   minted atomically from it. That proof does not exist until D4, so this cannot repair early.
-- **`sched-severance-lands-in-d-four`** — Stage 5's unmet exit (`results::replayed_records`
-  laundering a durable into live evidence) closes in D4, beside the why-route rewiring, which
-  is the first moment `why` can answer from a receipt and that seat loses its caller. Stage 5
-  is formally complete at D4, not before. **Chosen in advance; do not re-open it later for
-  convenience.**
+- **`sched-severance-lands-in-d-four` — I got this one wrong, and the correction is D4's.**
+  I scheduled the whole severance into D4. Its LAST MILE is structurally D5's: after D4's
+  rewiring, `results::replayed_records` has exactly one caller, reachable only when an
+  invocation explicitly names `--whylog`/`--whylog-dir`, and it is `pub(crate)` and
+  double-counted. Deleting it outright means deleting the whylog replay route, which is D5's
+  deletion and takes gate-8's six loom cases with it; severing it while KEEPING those cases
+  means building a re-derived report plane with render parity, which is Stage-5-sized work
+  inside D4 to sever a path D5 removes anyway. **Confinement was the right adaptation and the
+  count going to zero is D5's diff.** The scheduling error was mine, made in advance and
+  honoured until it met the ground.
 - **`sched-five-a-is-d-zero-through-d-four`** — Stage 5A ≡ D0–D4; Stage 6 ≡ D5. `30Rb` reads
   both ways (5A says "every stage in `30Rd`", which would swallow D5 and leave Stage 6 empty);
   D5's own "Only after D4 exit" header settles it.
@@ -407,6 +557,21 @@ same-typed fields. **The numbers are the mechanism, not decoration.** What conve
 cross-lane grammar widening from corruption into a test failure is that every row goes out
 through the writer's own emitter, which refuses a row it could not read back — a projection
 hand-building a record bypasses the one thing that caught it.
+
+### The suite was writing real keys into the developer's own profile
+
+Found by hand in D4, twice, and invisible to a green suite both times. The e2e harness
+sandboxed the STATE root but not the CONFIGURATION root, so an ordinary suite run minted a
+live signing and encryption keyset in the developer's real profile directory; and the DST
+differential sweep sandboxed nothing at all. Both closed. The residue those runs created —
+minutes old — was deleted; pre-existing unrelated files were left alone.
+
+The durable lesson is the fence that followed. The obvious per-file census **passed with every
+sandbox call removed**, because the helper's own definition satisfied it — the lexical-check
+hazard this section already names, reproduced by its own author while fixing a leak. What
+landed instead is POSITIONAL: the sandbox call must appear within a bounded distance of the
+process spawn, verified red by deleting one call. **A census over a codebase that contains the
+thing it is looking for must anchor to the seat, not to the file.**
 
 ### A capability bundle that quietly grew a decision
 

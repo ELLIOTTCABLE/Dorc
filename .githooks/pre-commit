@@ -1,0 +1,52 @@
+#!/bin/sh
+# pre-commit — the gate, and the one sanctioned way past a red one.
+#
+# git judges a hook by its exit code alone: 0 lets the commit happen, anything else aborts it.
+# That single number is all this file decides. hk runs either way, and nothing it prints is ever
+# suppressed — `--no-verify` and `HK_SKIP_HOOK` are the silent bypasses this exists to replace.
+#
+# Reached as `sh .githooks/pre-commit`, installed over the command `hk install` generates (see
+# `mise run hk-install`). Not via core.hooksPath: git ignores a hook file that lacks the
+# executable bit, and it does so in silence — the wrong direction for a gate to fail. Same
+# reason `commit-msg` beside it is spelled `sh <file>`.
+#
+# No `set -e`: two of the three hk runs below are judged, not obeyed.
+set -u
+
+# The ack. A REASON rather than a flag, so it says something in a transcript and reads wrong
+# if it is left exported. It excuses the steps that compile product code (hk.pkl's `corpora`,
+# tagged `!commit-floor`) and nothing else: fmt, typos, cargo-deny and the docID lint are the
+# floor, and no commit is excused the floor. `commit-msg` is a separate hook and is untouched.
+ack=${DORC_KNOWN_BROKEN:-}
+
+# The dispatch `hk install --mise` would have written, plus one thing it no longer does: `mise x`
+# resolves the pinned toolchain for anyone who has never activated mise, and an agent session
+# (HK_FIX=0) gets `-q`, dropping hk's step-transition churn from the transcript while keeping
+# every failed-step diagnostic. hk 1.53 generates that branch no longer; we still want it.
+gate() {
+   if [ "${HK_FIX:-}" = "0" ]; then
+      mise x -- hk run -q pre-commit --from-hook "$@"
+   else
+      mise x -- hk run pre-commit --from-hook "$@"
+   fi
+}
+
+if [ -z "$ack" ]; then
+   gate
+   exit $?
+fi
+
+# The floor, alone and blocking. It doubles as the ack path's proof that hk itself is well: a
+# broken config, a stash that will not restore, a crash — all of that fails HERE, where nothing
+# is forgiven, rather than being mistaken for the compile error you asked to be excused.
+gate --profile commit-floor || exit $?
+
+# The whole gate, for its diagnostics; its verdict is the one thing an ack discards. Read-only
+# (`--check --stash none`), because a pass whose answer is about to be thrown away has no
+# business writing the index or moving the worktree — the floor pass above already ran the
+# fixers, against a properly stashed tree.
+gate --check --stash none && exit 0
+
+printf '\n!! pre-commit is RED, and you waved it through: %s\n' "$ack" >&2
+printf '!! the diagnostics above stand; this tree does not build.\n' >&2
+exit 0

@@ -1070,6 +1070,8 @@ no task covers, and consider adding the task instead.
   rewrites. Still run `mise run check` yourself before every commit (`mise run gate` for
   that plus a fresh build and the whole suite) — the hook is the backstop, not the habit.
   Never `--no-verify`.
+- **known-broken-ack** — must commit a tree that will not compile:
+  `DORC_KNOWN_BROKEN="<why>" git commit …`; the lint floor still refuses.
 - **agent-surfaces-forced-plain** (r30, measured twice) — the token-billed spam in
   agent transcripts is hk's append-only fallback minting a fresh line per progress
   state-change, on EVERY commit's hooks; it was never ANSI (zero ESC/CR bytes in
