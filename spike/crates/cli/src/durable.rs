@@ -499,23 +499,6 @@ fn placement_failure(refusal: &PublishRefusal) -> PlacementFailure {
     }
 }
 
-/// The one entry a walk found under `receipt_id`, by exact match.
-///
-/// Retrieval, not a second RANKING: the store offers exactly one selection — its maximum-order
-/// cohort — and adding a way to prefer one candidate over another would reopen the fallback that
-/// property exists to forbid. An exact identity match prefers nothing; a document either carries
-/// that identity or it does not.
-#[must_use]
-pub fn entry_by_receipt_id<'a>(
-    entries: &'a BoundedReceiptEntries,
-    receipt_id: &str,
-) -> Option<&'a OwnedReceiptEntry> {
-    entries
-        .recognized()
-        .iter()
-        .find(|entry| entry.name().receipt_id() == receipt_id)
-}
-
 /// The operating system's randomness, for key generation.
 ///
 /// A second seat asking for randomness beside the receipt-identity one, and deliberately so:
