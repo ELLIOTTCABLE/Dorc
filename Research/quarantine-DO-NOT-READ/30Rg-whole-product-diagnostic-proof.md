@@ -32,15 +32,37 @@ Measured at `f41756be`, not predicted:
 **`code:` on a whole-product case is a declaration AND an assertion.** The key that mints the
 catalog row is the key the e2e runner checks fired, so the owner and the proof have one source.
 That is the mechanical, non-forgeable link: not a filename match, not a comment, not a second
-declaration a author could forget to keep in step. A case declaring a code its own run does not
+declaration an author could forget to keep in step. A case declaring a code its own run does not
 emit is red; a case declaring a dead slug is refused against the generated catalog, exactly as
 `expected-diagnostics` already was.
+
+**The proof recognizes a diagnostic HEADER, never arbitrary stderr.** A substring search for
+`<severity>[<slug>]` is satisfiable by bytes the case itself controls — a book naming a command
+`warning[<slug>]` reaches stderr inside a hint line, a source frame echoes any book line, a
+`{detail}` passthrough can quote somebody else's stderr. `diagnostic_header` instead parses the
+shape the report seat emits at column zero: one or more lowercase-ascii/hyphen stage words, then
+`<severity>[<slug>]:`. Every one of those forgeries lands after a non-stage word, or indented, or
+without the body colon. `code_proof_selftest` drives seven forgeries and four real headers (the
+two-segment `dorc: lint:` and hyphenated `dorc-sh:` prefixes included) and is a FATAL selftest, so
+it runs before any case does; regressing `stderr_fired` to the substring form reddens six of the
+seven, measured. gate-3's declared-must-fire half now reads the same seat — one answer to one
+question — and all 222 e2e cases stayed green across the tightening, so no committed declaration
+was resting on a non-header match.
+
+**The combined form is closed.** `code:` + `run:` without `fixpoint: executed` would leave the
+looms runner render-fixpointing bytes the real binary produced, which can only pass by
+coincidence. `dorc_loom::defining_form_refusal` refuses it, the looms runner applies it to every
+committed case, and `the_combined_defining_form_demands_its_authority` pins both directions —
+code-only and run-only cases are untouched, which is what keeps every existing case byte-for-byte.
+Verified in its failing direction by stripping the key from the ambiguity case.
 
 | piece | seat |
 |---|---|
 | vocabulary | `dorc_loom::FRONTMATTER_KEYS` — `code`/`when-fires`/`why` are `run_lane: true`; `arrangement` deliberately is NOT (a chrome page has no production drive to prove one) |
 | looms deferral | `looms.rs::deferred_to_e2e` — a `run:` case's hygiene keeps the marker-collision half and drops the slug-surfacing half |
-| the proof | `e2e.rs::defined_code_fired` — validates the slug against the generated catalog, then requires it on the stderr of one of the case's own drives, at any severity |
+| the proof | `e2e.rs::defined_code_fired` — validates the slug against the generated catalog, then requires a real diagnostic HEADER naming it on the stderr of one of the case's own drives, at any severity |
+| header recognition | `e2e.rs::diagnostic_header` / `stderr_fired` — `<stage>: [<stage>: …] <severity>[<slug>]:` at column zero, stages lowercase-ascii/hyphen. gate-3's declared-must-fire half reads the same seat |
+| the combined form | `dorc_loom::defining_form_refusal` — `code:` + `run:` demands `fixpoint: executed`; the looms runner refuses every committed case against it |
 | stderr reaches it | `run_replay_block` now CAPTURES stderr (it was `Stdio::null()`), and `run_round_trip` hands block 0's back through a parameter; `ExtraReplays` carries blocks 1..N's |
 | the case's own world | `Harness::dorc` resolves `<case dir>/.dorc-own-profile` when materialization laid one down, else the shared harness profile |
 | publish | `dorc-loom.rs` treats a `run:` case as executed-elsewhere: no edit baseline, no bytes comparison, metadata only |
@@ -86,8 +108,11 @@ with e2e (`fixpoint: executed`). Catalog row published prose-empty: `message: No
   drive exit 0, which is the second half of the same measurement: a nonzero process status is
   neither necessary for the gate to fire nor sufficient to satisfy it — the gate's only input is
   the slug on stderr.
-- **Both runners over both receipt cases**: `mise run test:looms -- durable-receipt` and
-  `mise run test:e2e -- durable-receipt-ambiguous`, green.
+- **The forged-stderr direction, measured.** Regressing `stderr_fired` to the substring form makes
+  `code_proof_selftest` red on six of its seven forgeries, before any case runs.
+- **The combined-form refusal, measured.** Stripping `fixpoint: executed` from the ambiguity case
+  makes the looms runner refuse it by name.
+- **Both runners over the whole corpora**: `test:e2e-quiet` 222/222, `test:looms-quiet` 320/320.
 - **Full suite**: `mise run test` — 3128 run, 3128 passed, 2 skipped.
 - Completion gate: see the report; one `mise run both gate:full-quiet` at the final tip.
 
@@ -108,10 +133,15 @@ with e2e (`fixpoint: executed`). Catalog row published prose-empty: `message: No
 never touched `.githooks/` or `internal-tooling`. `precommit_gate.rs` writes its stand-in `mise`
 with `fs::write` and no exec bit, so unix `PATH` lookup cannot run it: the hook's `mise x` resolves
 nothing, git reads 127, and every case that DRIVES the hook reports "ran hk 0 time(s)". The
-glob and commit-msg cases pass because they never run it. Repaired here with a `#[cfg(unix)]`
-chmod at the write; both legs green after. It arrived with `d47f0cf1`'s own commit and is exactly
-`one-platform-green-is-not-cross-platform-green` — a Windows-only measurement could not see it,
-and the `DORC_KNOWN_BROKEN` ack it guards is now load-bearing for every builder.
+glob and commit-msg cases pass because they never run it. It arrived with `d47f0cf1`'s own commit
+and is exactly `one-platform-green-is-not-cross-platform-green` — a Windows-only measurement could
+not see it, and the `DORC_KNOWN_BROKEN` ack it guards is now load-bearing for every builder.
+
+Repaired with a unix-only chmod whose failure is REPORTED at the setup seat and returns 2, rather
+than degrading into the same misleading "ran hk 0 time(s)" it exists to prevent. There is no
+non-unix stand-in: the `#[cfg(unix)]` sits at the call, because a second definition that always
+answered `Ok` would be a lying seat (and, measured, tripped `clippy::unnecessary_wraps` on the
+Windows leg — the same cross-platform shape one level down).
 
 ## deviations — OPEN for conductor adjudication
 
@@ -128,6 +158,15 @@ and the `DORC_KNOWN_BROKEN` ack it guards is now load-bearing for every builder.
   than threaded through four call sites. It is idiomatic for this harness (`DORC_FLAGS`,
   `ARTIFACT_SET` are marker files) and contained to one `if`, but it IS a filesystem-carried
   signal rather than a typed one. Flagged rather than resolved.
+- **`30Rg:dev-stray-win-label`** — `69865cfb` carries `(AI fix Win)`; `Win` is not in `.gitlabels`
+  and the commit-msg hook warned (allowed-for-now). Recorded for integration rather than rewritten:
+  history is evidence.
+- **`30Rg:dev-header-recognition-trusts-column-zero`** — the recognizer's discriminator is that a
+  real header starts at column zero with lowercase stage words. A rendered diagnostic BODY that
+  wrapped to a line beginning exactly `<stage>: <severity>[<slug>]:` would satisfy it. That needs a
+  case-controlled value to survive the sink encoder AND land at a line start, which nothing in the
+  corpus does; the narrower alternative is a stamped machine-readable marker on the render seat,
+  which is a product surface change and out of this remit.
 - **`30Rg:dev-round-trip-hands-stderr-back-by-parameter`** — `run_round_trip` exits at a dozen
   gate verdicts, so its captured stderr is handed back through an out-parameter rather than the
   return type. The alternative was a `Result<String, Failed>` and an edit at every verdict; the
