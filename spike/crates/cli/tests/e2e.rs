@@ -162,9 +162,8 @@ const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
 
 /// Where a case that owns its own per-user profile keeps it, inside its materialization.
 ///
-/// A directory rather than a flag threaded through four drive seats: the profile a run resolves is
-/// a property of the world the case was materialized into, and the one seat that builds every
-/// command is the one seat that should have to know.
+/// A marker directory rather than a flag threaded through four drive seats: which profile a run
+/// resolves is a property of the world the case was materialized into.
 const OWN_PROFILE_DIR: &str = ".dorc-own-profile";
 
 struct Harness {
@@ -270,11 +269,9 @@ impl Harness {
     /// profile directory — outside the worktree, which no test may touch.
     fn dorc(&self, at: &Path) -> Command {
         let mut command = Command::new(&self.dorc);
-        // A case that DEFINES a code asserts that its own drives emitted it, and a suite-wide
-        // profile makes that a claim about every other case too: the durable store the harness
-        // shares accumulates a document per drive, so a run reading it back is reading the suite.
-        // Such a case therefore gets the profile its materialization laid down beside it, and
-        // every other case keeps the shared one it has always had.
+        // The shared profile is a suite-wide durable: every drive publishes a receipt into it, so
+        // a case reading one back would be reading every other case. One that DEFINES a code takes
+        // the profile its own materialization laid down.
         let own = at.join(OWN_PROFILE_DIR);
         if own.is_dir() {
             sandbox::apply_roots_under(&mut command, &own);
@@ -1505,14 +1502,12 @@ fn drive_extra_replays(
 
 /// A whole-product case's `code:` is an ASSERTION that one of its own drives emitted that code.
 ///
-/// This is what lets a diagnostic whose world only a real run can build own its catalog row: the
-/// key that MINTS the row is the key checked here, so the owner and the proof have one source and
-/// a slug coincidence cannot stand in for either. The declaration is validated against the
-/// generated catalog exactly as `expected-diagnostics` is, so a dead slug is refused rather than
-/// asserting nothing forever.
+/// The key that MINTS the catalog row is the key checked here, so a diagnostic only a real run can
+/// provoke can still own its row and no slug coincidence stands in for the proof. Validated against
+/// the generated catalog as `expected-diagnostics` is, so a dead slug is refused.
 ///
-/// Any severity counts — severity is registry data a case does not restate — and the whole case's
-/// stderr is the haystack, because which drive provokes a diagnostic is the case's business.
+/// Any severity counts (severity is registry data a case does not restate), over the whole case's
+/// stderr — which drive provokes a diagnostic is the case's business.
 fn defined_code_fired(spec: &LoomCaseSpec, stderr: &str) -> Vec<String> {
     let name = &spec.name;
     let Some(slug) = spec.case.frontmatter().scalar("code") else {
@@ -1529,9 +1524,8 @@ fn defined_code_fired(spec: &LoomCaseSpec, stderr: &str) -> Vec<String> {
     {
         return Vec::new();
     }
-    // The stderr comes with the refusal because it is the whole diagnosis: an author looking at
-    // this is asking which diagnostic their world DID produce, and every gate above this one has
-    // already thrown that stream away.
+    // The stderr rides along because every gate above this one discards it, and "which diagnostic
+    // did my world produce instead" is the only question an author has here.
     vec![format!(
         "FAIL  {name}  [code: `{slug}` is what this case DEFINES, and no drive of it emitted that code — a defining case whose own run does not fire it defines a row nothing proves]\n{}",
         indent(&stderr.lines().map(str::to_owned).collect::<Vec<_>>())
@@ -1572,9 +1566,8 @@ fn scratch_path_leaked(output: &str, dir: &Path) -> bool {
 /// The accepted shape is deliberately tiny: a `dorc` invocation, optionally reading the case's
 /// `probe-results.txt` (which resolves to the framed stream the battery feeds, exactly as block
 /// 0's committed `< probe-results.txt` does) and optionally discarding stdout. Only STDOUT is
-/// transcript — `stdout-contract` makes it the product surface — but stderr is kept rather than
-/// dropped, because a diagnostic is a thing a later drive can be the only one to emit, and a gate
-/// that cannot see it is a gate the case can never satisfy.
+/// transcript (`stdout-contract`), but stderr is KEPT: a later drive can be the only one to emit a
+/// diagnostic, and a gate that cannot see it is one the case could never satisfy.
 fn run_replay_block(
     harness: &Harness,
     dir: &Path,
@@ -1812,9 +1805,8 @@ fn run_round_trip(
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()),
     );
-    // Handed back through the parameter rather than the return, because this function exits at a
-    // dozen gate verdicts and the caller's code-fired question is about the DRIVE, not the verdict:
-    // a case whose declared code fired and whose golden then diverged must still say so.
+    // By parameter, not return: this exits at a dozen gate verdicts, and the code-fired question is
+    // about the DRIVE — a case whose code fired and whose golden then diverged must still say so.
     drive_stderr.push_str(&out.stderr);
     let got = strip_trailing_newlines(&strip_cr(&out.stdout));
     if out.code != expected_dorc_exit || got.is_empty() {

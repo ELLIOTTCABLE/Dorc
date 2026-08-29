@@ -571,10 +571,8 @@ fn vars_answers_for_every_committed_case() {
         }
         let case = Case::parse(&std::fs::read_to_string(&path).expect("case is readable"))
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
-        // A WHOLE-PRODUCT case's bytes come from the real binary under the e2e runner, so this
-        // tool has no render to compile an edit against and says so rather than inventing one.
-        // The decline is asserted rather than skipped: a silent skip would let the day this
-        // starts answering pass unnoticed.
+        // Asserted rather than skipped: a silent skip would let the day this starts answering for
+        // a whole-product case pass unnoticed.
         if case.frontmatter().scalar("run").is_some() {
             let refusal = consumer
                 .editable_baseline(&case)

@@ -8,8 +8,8 @@ why: The store's order is when the run was recorded and its ONE selection is by 
 -- book.sh --
 #!/bin/sh
 # One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
-# its intake admitted records, and an empty framed stream is NoObservation rather than an empty
-# observation. What this case is about is the STORE, not this book.
+# its intake ADMITTED records, and a framed stream with none is NoObservation. This case is about
+# the store, not this book.
 foobar sync-certs /etc/nginx/certs
 
 -- foobar.oracle.sh --
@@ -33,7 +33,7 @@ $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9ab243e1a6187608b11606bad6eed8e200521a651fad43ec367c9efcb4c92912 sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8b1e04045b8e3486b38780d87b77c6d36b796a35e2ba5a8c656aee2d829a448f sites=1 @@dorc@@\n'
 # site 0: dorc-auto:foobar@converged
 foobar__is_converged() {
    verb="$1"; shift
@@ -49,8 +49,8 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 
 #!/bin/sh
 # One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
-# its intake admitted records, and an empty framed stream is NoObservation rather than an empty
-# observation. What this case is about is the STORE, not this book.
+# its intake ADMITTED records, and a framed stream with none is NoObservation. This case is about
+# the store, not this book.
 # foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)
 
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt > /dev/null

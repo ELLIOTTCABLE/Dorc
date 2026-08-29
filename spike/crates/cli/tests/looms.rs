@@ -45,10 +45,9 @@ fn case_of(trial: &str) -> &str {
     trial.split_once(' ').map_or(trial, |(case, _)| case)
 }
 
-/// Is this case's proof the e2e runner's rather than this one's?
-///
-/// One question, two answers that must agree: which trial name a reader sees, and which assertions
-/// this runner may still make about a case it does not execute.
+/// Is this case's proof the e2e runner's rather than this one's? One question, two answers that
+/// must agree: the trial name a reader sees, and what this runner may assert about a case it does
+/// not execute.
 fn deferred_to_e2e(parsed: &Case) -> bool {
     parsed.frontmatter().scalar("run").is_some()
 }
@@ -98,10 +97,9 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
     known_frontmatter_keys(name, &parsed)?;
-    // A WHOLE-PRODUCT case's code fires at the REAL BINARY, which is the whole reason it is one,
-    // so the slug it declares cannot be expected in an in-process render. The assertion is not
-    // dropped — it moves to the runner that drives the binary, where the code is proven to have
-    // been emitted for real. The marker-collision half of hygiene binds either way.
+    // A whole-product case's code fires at the REAL BINARY, so no in-process render surfaces it.
+    // The assertion is not dropped, it MOVES to the runner that drives one; marker-collision binds
+    // either way.
     let surfaced = (!deferred_to_e2e(&parsed)).then_some("code");
     if let Err(error) = parsed.check_hygiene(surfaced) {
         // A new replay block is `$ cmd` with no output, which surfaces no slug — so hygiene, not

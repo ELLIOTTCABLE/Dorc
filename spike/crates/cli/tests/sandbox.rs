@@ -65,9 +65,8 @@ impl ProfileSandbox {
 
 /// Point one invocation's standard roots at `root`'s config/state pair.
 ///
-/// Factored out of [`ProfileSandbox::apply`] because a caller can own a throwaway profile without
-/// owning a self-removing value: a case materialized into a scratch dir already has a lifetime,
-/// and giving it a second one only risks the two disagreeing about when to reap.
+/// Separate from [`ProfileSandbox`] so a caller can own a throwaway profile without owning a
+/// self-removing value — a case materialized into a scratch dir already has a lifetime.
 ///
 /// `HOME` is set as well as the XDG pair, because macOS resolves both roles from it and a drive
 /// that left it inherited would write into whoever ran the suite.

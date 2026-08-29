@@ -1040,62 +1040,20 @@ fn inspect_cases(
             .map_err(|error| format!("parse HEAD case {relative_path}: {error}"))?;
         selected.push(relative_path.clone());
         let mut body = Vec::new();
-        let mut previews = Vec::new();
-        let mut case_refusal = None;
         let results = drive_replays(&case, &consumer, env, path, &source)?;
-        // A WHOLE-PRODUCT case's transcript is what the real binary printed, and this tool never
-        // runs the binary — so an in-process render of it is not the case's bytes, and neither
-        // comparing against it nor compiling an edit against it means anything. Publish takes such
-        // a case for its METADATA alone (the lock row's `when-fires`/`why`); its prose, when
-        // somebody has some, is owed a path that reads the executed transcript.
-        let executed_elsewhere = case.frontmatter().scalar("run").is_some();
-        let mut inspected_replays = Vec::new();
-        for (index, ((block, head_block), routed)) in case
-            .replay()
-            .blocks()
-            .iter()
-            .zip(head_case.replay().blocks())
-            .zip(results)
-            .enumerate()
-        {
-            let changed_from_head = block.output() != head_block.output();
-            // The committed bytes ARE the render's bytes, so an edit compiles against them
-            // directly (`28L:rul-editability-is-stamped-never-re-derived`).
-            let dirty = block.output().to_owned();
-            if executed_elsewhere {
-                if !quiet {
-                    writeln!(body, "replay: {index} executed elsewhere")
-                        .map_err(|error| error.to_string())?;
-                }
-            } else if let Some(render) = routed.editable_render().cloned() {
-                let baseline = consumer
-                    .baseline_from_render(&case, render)
-                    .map_err(|error| format!("{}: {error}", path.display()))?;
-                if changed_from_head {
-                    match compile_preview(&baseline, &dirty).and_then(|preview| {
-                        refuse_foreign_components(&ownership, path, &preview).map(|()| preview)
-                    }) {
-                        Ok(preview) => previews.push((index, preview)),
-                        Err(error) => case_refusal = Some((index, error, dirty)),
-                    }
-                }
-            } else {
-                if block.output() != routed.output() || head_block.output() != routed.output() {
-                    case_refusal = Some((
-                        index,
-                        DorcSectionEditRefusal::Unchanged,
-                        "bytes-only replay changed".to_owned(),
-                    ));
-                }
-                // Structure, not a change: a bytes-only replay that actually diverged took the
-                // refusal branch above, so quiet loses nothing by dropping the inventory line.
-                if !quiet {
-                    writeln!(body, "replay: {index} bytes-only")
-                        .map_err(|error| error.to_string())?;
-                }
-            }
-            inspected_replays.push((index, block.command().to_owned(), routed));
-        }
+        let InspectedBlocks {
+            inspected_replays,
+            previews,
+            case_refusal,
+        } = inspect_blocks(
+            &consumer,
+            &ownership,
+            path,
+            (&case, &head_case),
+            results,
+            quiet,
+            &mut body,
+        )?;
         if let Some((index, error, dirty)) = case_refusal {
             refused = refused.saturating_add(1);
             write_refusal(&mut body, path, index, &error, &dirty)?;
@@ -1134,6 +1092,100 @@ fn inspect_cases(
             })
         })
         .map_err(|error| error.to_string())
+}
+
+/// What walking one case's replay blocks found.
+struct InspectedBlocks {
+    inspected_replays: Vec<(usize, String, ReplayResult<SectionKey, SectionVariableId>)>,
+    previews: Vec<(usize, dorc_loom::CompilePreview)>,
+    case_refusal: Option<(usize, DorcSectionEditRefusal, String)>,
+}
+
+/// Walk one case's replay blocks: compile the prose edits, and note the blocks that carry none.
+///
+/// This tool runs no binary, so an in-process render of a WHOLE-PRODUCT case is not that case's
+/// bytes: neither comparing against it nor compiling an edit against it means anything, and
+/// publish takes such a case for its METADATA alone.
+fn inspect_blocks(
+    consumer: &DorcConsumer,
+    ownership: &dorc_loom::CaseOwnership,
+    path: &Path,
+    (case, head_case): (&Case, &Case),
+    results: DrivenReplays,
+    quiet: bool,
+    body: &mut Vec<u8>,
+) -> Result<InspectedBlocks, String> {
+    let executed_elsewhere = case.frontmatter().scalar("run").is_some();
+    let mut found = InspectedBlocks {
+        inspected_replays: Vec::new(),
+        previews: Vec::new(),
+        case_refusal: None,
+    };
+    for (index, ((block, head_block), routed)) in case
+        .replay()
+        .blocks()
+        .iter()
+        .zip(head_case.replay().blocks())
+        .zip(results)
+        .enumerate()
+    {
+        let changed_from_head = block.output() != head_block.output();
+        // The committed bytes ARE the render's bytes, so an edit compiles against them directly
+        // (`28L:rul-editability-is-stamped-never-re-derived`).
+        let dirty = block.output().to_owned();
+        let editable = if executed_elsewhere {
+            None
+        } else {
+            routed.editable_render().cloned()
+        };
+        if let Some(render) = editable {
+            let baseline = consumer
+                .baseline_from_render(case, render)
+                .map_err(|error| format!("{}: {error}", path.display()))?;
+            if changed_from_head {
+                match compiled_edit(ownership, path, &baseline, &dirty) {
+                    Ok(preview) => found.previews.push((index, preview)),
+                    Err(error) => found.case_refusal = Some((index, error, dirty)),
+                }
+            }
+        } else {
+            if !executed_elsewhere
+                && (block.output() != routed.output() || head_block.output() != routed.output())
+            {
+                found.case_refusal = Some((
+                    index,
+                    DorcSectionEditRefusal::Unchanged,
+                    "bytes-only replay changed".to_owned(),
+                ));
+            }
+            // Structure, not a change: a bytes-only replay that actually diverged took the
+            // refusal branch above, so quiet loses nothing by dropping the inventory line.
+            if !quiet {
+                let why = if executed_elsewhere {
+                    "executed elsewhere"
+                } else {
+                    "bytes-only"
+                };
+                writeln!(body, "replay: {index} {why}").map_err(|error| error.to_string())?;
+            }
+        }
+        found
+            .inspected_replays
+            .push((index, block.command().to_owned(), routed));
+    }
+    Ok(found)
+}
+
+/// One block's prose edit, compiled and checked against the corpus's component ownership.
+fn compiled_edit(
+    ownership: &dorc_loom::CaseOwnership,
+    path: &Path,
+    baseline: &dorc_loom::DorcEditableBaseline,
+    dirty: &str,
+) -> Result<dorc_loom::CompilePreview, DorcSectionEditRefusal> {
+    let preview = compile_preview(baseline, dirty)?;
+    refuse_foreign_components(ownership, path, &preview)?;
+    Ok(preview)
 }
 
 /// What a refused case says for itself: the refusal, its class, and the bytes that produced it.
