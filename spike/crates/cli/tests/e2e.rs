@@ -1500,6 +1500,38 @@ fn drive_extra_replays(
     }
 }
 
+/// The `(severity, slug)` a line names, if the line is a real diagnostic HEADER.
+///
+/// The report seat emits `<stage>: [<stage>: …] <severity>[<slug>]: …` at column zero, and every
+/// case-controlled byte reaches stderr somewhere that shape cannot be forged: a source frame is
+/// indented, a hint quotes the command after a non-stage word, foreign text leaves through the
+/// encoder. A bare substring search over stderr had none of that — a book naming a command
+/// `warning[some-slug]` satisfied it.
+fn diagnostic_header(line: &str) -> Option<(&str, &str)> {
+    let mut rest = line;
+    loop {
+        let (stage, tail) = rest.split_once(": ")?;
+        if stage.is_empty() || !stage.chars().all(|c| c.is_ascii_lowercase() || c == '-') {
+            return None;
+        }
+        if let Some((severity, body)) = tail.split_once('[')
+            && matches!(severity, "error" | "warning" | "note")
+            && let Some((slug, after)) = body.split_once(']')
+            && after.starts_with(':')
+        {
+            return Some((severity, slug));
+        }
+        rest = tail;
+    }
+}
+
+/// Did any drive emit `slug` as a diagnostic? Severity is registry data a case does not restate.
+fn stderr_fired(stderr: &str, slug: &str) -> bool {
+    stderr
+        .lines()
+        .any(|line| diagnostic_header(line).is_some_and(|(_, found)| found == slug))
+}
+
 /// A whole-product case's `code:` is an ASSERTION that one of its own drives emitted that code.
 ///
 /// The key that MINTS the catalog row is the key checked here, so a diagnostic only a real run can
@@ -1518,10 +1550,7 @@ fn defined_code_fired(spec: &LoomCaseSpec, stderr: &str) -> Vec<String> {
             "FAIL  {name}  [code: `{slug}` is not a code in the generated catalog — a whole-product case defines a live code, or it defines nothing]"
         )];
     }
-    if ["error", "warning", "note"]
-        .iter()
-        .any(|severity| stderr.contains(&format!("{severity}[{slug}]")))
-    {
+    if stderr_fired(stderr, slug) {
         return Vec::new();
     }
     // The stderr rides along because every gate above this one discards it, and "which diagnostic
@@ -2633,14 +2662,9 @@ fn scan_diagnostics(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<Str
         .collect();
     // Declared-must-fire reads the SLUG at any severity (only the undeclared-noise half below
     // stays error-keyed): severity is registry data a case does not restate.
-    let fired = |slug: &str| {
-        ["error", "warning", "note"]
-            .iter()
-            .any(|severity| stderr.contains(&format!("{severity}[{slug}]")))
-    };
     let unfired: Vec<String> = slugs
         .iter()
-        .filter(|slug| !fired(slug))
+        .filter(|slug| !stderr_fired(stderr, slug))
         .map(|slug| format!("declared but never emitted: [{slug}]"))
         .collect();
     if !unfired.is_empty() {
@@ -3115,6 +3139,77 @@ fn guard_shape_selftest() -> Vec<String> {
     );
     if !mutated.iter().any(|line| line.contains("verbatim")) {
         fails.push("gf-2 (a mutated fall-through — dropped -y — was not caught)".to_owned());
+    }
+    fails
+}
+
+/// Drive the diagnostic-header recognizer on stderr a CASE could author, proving the marker bytes
+/// alone never satisfy `code:` / `expected-diagnostics`.
+///
+/// The forgery this closes is cheap: a book naming a command `warning[<slug>]`, a `{detail}`
+/// passthrough quoting somebody's stderr, a source frame echoing the line. Each puts the exact
+/// bytes a substring search wanted somewhere that is not a diagnostic, and the proof a defining
+/// case rests on has to tell them apart.
+fn code_proof_selftest() -> Vec<String> {
+    const SLUG: &str = "durable-receipt-ambiguous";
+    let mut fails = Vec::new();
+    let forgeries = [
+        (
+            "cp-hint-quotes-the-command",
+            "hint: 'warning[durable-receipt-ambiguous]' (line 2) is unmodeled",
+        ),
+        (
+            "cp-source-frame-is-indented",
+            "   2 | receipt: warning[durable-receipt-ambiguous]: pretend",
+        ),
+        (
+            "cp-no-stage-word",
+            "warning[durable-receipt-ambiguous]: pretend",
+        ),
+        (
+            "cp-stage-is-not-lowercase",
+            "Receipt: warning[durable-receipt-ambiguous]: pretend",
+        ),
+        (
+            "cp-header-has-no-body-colon",
+            "receipt: warning[durable-receipt-ambiguous] pretend",
+        ),
+        (
+            "cp-quoted-inside-a-body",
+            "receipt: note[some-other]: saw `warning[durable-receipt-ambiguous]:` on stderr",
+        ),
+        (
+            "cp-longer-slug-is-not-this-one",
+            "receipt: warning[durable-receipt-ambiguous-2]: real, but another code",
+        ),
+    ];
+    for (name, line) in forgeries {
+        if stderr_fired(line, SLUG) {
+            fails.push(format!("{name} (forged stderr satisfied the proof)"));
+        }
+    }
+    let real = [
+        (
+            "cp-real-header",
+            "receipt: warning[durable-receipt-ambiguous]: [unwritten: durable-receipt-ambiguous]",
+        ),
+        (
+            "cp-real-header-among-noise",
+            "probe: note[site-unresolvable]: sm 1 site\nreceipt: warning[durable-receipt-ambiguous]: body\ndorc: plan-summary sites=1",
+        ),
+        (
+            "cp-two-segment-stage",
+            "dorc: lint: error[durable-receipt-ambiguous]: body",
+        ),
+        (
+            "cp-hyphenated-stage",
+            "dorc-sh: error[durable-receipt-ambiguous]: body",
+        ),
+    ];
+    for (name, stderr) in real {
+        if !stderr_fired(stderr, SLUG) {
+            fails.push(format!("{name} (a real header did not satisfy the proof)"));
+        }
     }
     fails
 }
@@ -3611,6 +3706,13 @@ fn preflight(harness: &Harness, discovered: usize) {
         fatal.push(format!(
             "FATAL  selection_floor_selftest FAILED — path selection does not sort real paths from absent ones:\n  {}",
             selection.join("\n  ")
+        ));
+    }
+    let proof = code_proof_selftest();
+    if !proof.is_empty() {
+        fatal.push(format!(
+            "FATAL  code_proof_selftest FAILED — a case's own bytes can satisfy the diagnostic proof it is meant to earn:\n  {}",
+            proof.join("\n  ")
         ));
     }
     let shapes = case_shape_selftest();
