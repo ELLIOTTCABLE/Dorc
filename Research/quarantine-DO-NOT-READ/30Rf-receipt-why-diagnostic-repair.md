@@ -9,117 +9,160 @@
 |---|---|
 | Worktree | `.claude/worktrees/r30-receipt-why-repair` |
 | Branch | `ai/r30-receipt-why-repair` |
-| Base | `ai/r30-receipt` @ `1cbee21a` |
-| Current tip | `1cbee21a` (ledger only) |
+| Base | `ai/r30-receipt` @ `f98f65a7` |
+| Current tip | `e53e9a93` |
 | Dirt | none |
 
-## the measured seat
+`ai/r30-receipt-loom-code` @ `1144da1b` carries this lane's first seven commits re-applied on the
+pre-merge base; it is the `30Rg` lane and holds no work of its own yet. `30Re` names this lane's
+tip as `d948d651`, which is the same content before `ai/r30-receipt` absorbed `ai/main`.
 
-`dorc why` over the receipt store is `main.rs::why_from_receipt_store`, reached from
-`run_analysis` BEFORE `dorc_cli::engine::run` is ever called
-(`main.rs:193`, gated by `answers_from_the_receipt_store`). It performs the whole route itself:
-resolve roots, `open_for_read`, `enumerate`, per-entry read into `recorded::*_listing`, graph
-build, cohort selection, and stdout emission.
+## the measured seat, as built
 
-Its two decision conditions are emitted as bare stdout text:
+`dorc why` over the receipt store no longer decides anything in `main.rs`. The route is:
 
-| condition | current emission | source |
+| stage | seat | what it does |
 |---|---|---|
-| edge unopenable / unwalkable / empty | `store-unreadable <word>\n` | `main.rs:599` `unreadable()`; words = `EdgeRefusal::token()`, `walk-failed`, `no-receipt` |
-| several documents at the store's greatest order | `ambiguous-order <n>\n` | `main.rs:583` |
+| route | `Args::answers_from_the_receipt_store` (`cli/src/lib.rs`) | `reads_the_receipt() && whylog.is_none() && whylog_dir.is_none()`; the free `reads_the_receipt` already carries `Mode::Why`, so the old duplicate mode test is gone |
+| read | `main.rs::read_receipt_store` | roots → `open_for_read` → `enumerate` → per-entry bounded read → `StoreReading`; `Err` is the edge's own closed word |
+| decide | `engine::report_recorded_store` | selection, the ambiguity report, the empty-listing report, the listing emit |
+| loom | `consumer.rs::run_receipt_store_why` | hands the shared seat `Err("no-controller-root")` — the honest answer for a world with no per-user profile |
 
-`30Re:fnd-why-selection-is-under-tested` is confirmed: `cli/tests/durable_route.rs:228` asserts
-only the `store-unreadable ` PREFIX, and nothing anywhere drives the ambiguity seat.
+Both report conditions are typed diagnostics on stderr through the ordinary `report_at` route,
+filed under one stage word (`engine::RECEIPT_STAGE = "receipt"`, shared with the write side). The
+bare `store-unreadable …` / `ambiguous-order …` stdout tokens are gone.
 
-### the codes existed and were deleted
+| condition | code | payload |
+|---|---|---|
+| edge unopenable / unwalkable / nothing readable | `durable-receipt-unreadable` | `{store}`, `{reason}` |
+| several documents at the store's greatest order | `durable-receipt-ambiguous` | `{count}` |
 
-`durable-receipt-unreadable` and `durable-receipt-ambiguous` were minted at `40977599` with
-payloads, `CodeSpec` rows and `params_of_raw` arms, and DELETED at `1e128fbe` — the same commit
-that added `durable-receipt-unwritten` WITH a defining case. Mechanically that is what a code with
-no defining case costs: `catalog_defining_cases::DEFINING_CASE_RATCHET` is EMPTY and shrink-only,
-so a new code MUST have a case at `crates/aid/tests/<slug>.loom`. Nothing about the two codes was
-wrong; the route they fired from is undrivable by `dorc-loom`, so no honest case could exist.
+Both registers are `None` and render `[unwritten: <slug>]`. No prose was authored.
 
-### why the route is undrivable today
+### coverage
 
-`dorc_loom::consumer::run_engine` returns `None` when `args.reads_the_receipt()`
-(`consumer.rs:1008`). It could not do otherwise: the seat is in `main.rs`, on the far side of the
-`lib-target-is-a-loom-seam` boundary, so `engine::run` never sees the mode at all.
+| seat | proof |
+|---|---|
+| unreadable, real binary, empty profile | `cli/tests/durable_route.rs::asking_why_creates_nothing_and_says_what_it_found` — asserts the CODE on stderr, and an empty stdout |
+| unreadable, in-process | `crates/aid/tests/durable-receipt-unreadable.loom` (rootless loom world) + `dorc-loom/tests/consumer.rs` |
+| ambiguity, real binary | `durable_route.rs::two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name` — two `dorc plan` runs pinned to one `DORC_FIXTURE_CLOCK_MS`, asserting the code fires, that BOTH cohort members are still listed, and that `--receipt=<id>` does NOT fire it |
+| ambiguity, defining case | **owed — see the blocker below** |
 
-## the repair shape
+The closed reason WORD is not assertable at the binary today: an unwritten register renders the
+greppable placeholder and interpolates no parameter. It becomes pinnable the day the code has prose.
 
-Move the store READ to an injected `EngineEdges` edge and the SELECTION/DECISION to the lib, which
-is the shape every other non-hermetic act in this pipeline already has (`observe`,
-`publish_receipt`, `source_match`).
+## the repair shape, and why it is faithful
 
-- new `EngineEdges::read_receipt_store(&mut self) -> Result<StoreReading, String>`; the `Err` is
-  the edge's own closed refusal word, exactly as `publish_receipt`'s is.
-- `StoreReading` is a pure lib value: per-document `(receipt_id, listing)` in store order, the
-  receipt identities sharing the store's greatest order (production's own
-  `maximum_order_cohort()`), and the correlated graph listing.
-- production `ProductionEdges` implements it over `LocalReceiptEdgeV1` + `NativeIo` — the same
-  code that is in `main.rs` today, moved, not rewritten.
-- the lib owns: `--receipt` / `--all` / cohort selection, the ambiguity decision, the empty-listing
-  decision, and the two diagnostic mints through the ordinary `report_at` route.
+The store READ moved to the process edge and the SELECTION/DECISION moved into the lib, which is
+the shape every other non-hermetic act on this pipeline already has. `StoreReading` /
+`RecordedDocument` are pure lib values, so `cli/CLAUDE.md lib-target-is-a-loom-seam` holds (values
+cross, queries do not) and `one-definition-table-two-drivers` gets a second real instance.
 
-This is faithful because it changes no store policy, no grammar, and no reason word: the words the
-diagnostics carry are the edge tokens the listing already prints.
+Nothing about store policy, receipt grammar, key handling or the walk changed. The words the two
+diagnostics carry are the edge tokens the old listing already printed; `RecordedDocument::unread`
+keeps "the store holds this identity" and "this identity had something to say" as separate facts,
+which is what stops a store of unopenable documents from reporting as empty.
 
-## OPEN — the ambiguity defining case (blocking half the remit)
+## OPEN — `durable-receipt-ambiguous` has no defining case (the lane's one red)
 
-`durable-receipt-unreadable` gets an honest in-process loom case for free: a loom world has no
-per-user profile (its own `receipt_label` is already `<no state root>`), so the loom edge refusing
-with the roots-unavailable word is a TRUE statement about its world, not an injected fault. The
-real-binary battery covers a different word (`store-not-initialized`) over a real empty profile.
+`dorc-aid::diag_tidy::every_variant_has_exactly_one_catalog_entry` fails, and only that. The chain
+that produces it is mechanical:
 
-`durable-receipt-ambiguous` has no such route, and the reason is structural:
+1. every `DiagCode` variant needs a `CatalogEntry`;
+2. `catalog_lock.rs` is generated, and `generate::generate_catalog_lock`'s union loop keys new rows
+   off cases loaded BY `code:` — an `owns:`-only claim keeps an existing mirror row alive but mints
+   none;
+3. `code:` is `run_lane: false` in `dorc_loom::FRONTMATTER_KEYS`, so a `code:` case is an
+   in-process loom drive;
+4. an in-process drive is hermetic and profile-less, so `run_receipt_store_why` can only honestly
+   hand the seat `Err(no-controller-root)`. A two-document cohort is not a thing that world has.
 
-1. a defining case must be an in-process loom case — `code` is `run_lane: false` in
-   `dorc_loom::FRONTMATTER_KEYS`, so a whole-product `run:` case is refused if it declares one;
-2. the condition needs a store holding two documents at one order, which the loom cannot have:
-   its drive is hermetic and clockless, key generation is nondeterministic, and
-   `BoundedReceiptEntries` has no constructor outside `LocalReceiptStoreV1::enumerate`;
-3. minting such a constructor would be a fixture intake into a production store type — the exact
-   shape `rul-fixture-identity-never-production` and `sinv-production-fences` fence, and inside the
-   brief's store-policy exclusion.
+`durable-receipt-unreadable` escapes this because the rootless refusal IS true of a loom world.
 
-Candidate routes, for conductor/human ruling:
+Routes, measured:
 
+- **`30Rf:opt-whole-product-code-proof`** — the conductor's own `30Re:rul-whole-product-loom-proves-code`:
+  let a `run:` case declare `code:` and let the real e2e execution own the transcript/code proof.
+  Measured cost beyond the vocabulary flag: NO existing e2e drive reaches this route at all.
+  `scan_why_chain` (gate 8) is the only `dorc why` the runner drives and it passes `--whylog-dir`,
+  which routes to the legacy durable by construction. A receipt-store ambiguity drive needs a
+  sandboxed profile, two plan runs at one pinned clock, and a `dorc why --last` with no
+  `--whylog*` — a new gate, not a flag flip. This is `30Re:sched-enable-whole-product-code-proof`
+  in full, and `30Re` assigns it to `30Rg`, not here.
 - **`30Rf:opt-loom-virtual-store-walk`** — `dorc-loom` implements `dorc_receipt_local::io::LocalIo`
-  (already a public trait; `dorc-cli` takes `&mut dyn LocalIo`), answers the directory walk from a
-  new ordinary case section listing store FILENAMES, and calls production's own
-  `LocalReceiptStoreV1::open_for_read` + `enumerate` + `maximum_order_cohort`. No new production
-  constructor, no fixture selectable from production, and `30Rd:testing-is-part-of-the-security-boundary`
-  layer 3 already sanctions a virtual I/O model — but sited in `dorc-loom` rather than
-  `receipt-local`. Cost: the case's documents are unreadable (no bytes, no keys), so its transcript
-  honestly shows the ambiguity line AND the no-readable-content code together.
-- **`30Rf:opt-real-binary-only`** — land the seat move, `durable-receipt-unreadable`, and real-binary
-  ambiguity coverage in `durable_route.rs` (two `dorc plan` runs under a pinned
-  `DORC_FIXTURE_CLOCK_MS` share one order, so the ambiguity is genuine); leave the ambiguity as a
-  listing line, ledgered as owed. Fails the brief's "restore two typed codes".
-- **`30Rf:opt-stop-the-lane`** — the brief's own stop clause.
+  and answers the walk from a case section listing store filenames. NACKed by
+  `30Re:fnd-whole-product-code-proof-is-missing`; recorded only so the route is not re-derived.
+- **`30Rf:opt-hand-seed-then-own`** — hand-seed the catalog row and have a whole-product case claim
+  the slug via `owns:`. It IS a generator fixpoint (a mirror row whose slug is `owns:`-claimed and
+  has no `code:` case re-reads its carried metadata), but it still needs `opt-whole-product-code-proof`'s
+  new drive to make the code actually FIRE, so it saves nothing and spends an orchestrator-tier
+  hand-edit carve. Not recommended.
+
+Nothing here is doable inside this brief's remit without taking `30Rg`'s assigned work.
 
 ## test state
 
-Nothing changed yet.
+- `mise run test`: 3126 run, 3125 pass, 1 fail — the OPEN above, and nothing else.
+- `mise run check-quiet`: clean.
+- Both-platform completion gate: recorded below once run.
 
 ## commits
 
-- ledger only, so far.
+| | |
+|---|---|
+| `5fe9f2d7` | ledger opened with the measured seat map |
+| `f6d9b4e8` | the two codes, payloads, `CodeSpec` rows, `params_of_raw` arms |
+| `4a50e786` | the seat move: `StoreReading`/`RecordedDocument`, `report_recorded_store`, the loom driver arm |
+| `7ada380d` | the rootless-world loom case |
+| `d943e020` | the `durable-receipt-unreadable` catalog row, prose-empty |
+| `4bab0fbb` | the loom consumer test expects an answer, not a decline |
+| `f8bccd75` | the real-binary ambiguity test, both directions |
+| `3665fa52` | clippy: `unnecessary_wraps` on the loom arm, `doc_lazy_continuation` in the test |
+| `8101835c` | one spelling of the rootless store label (`engine::NO_STATE_ROOT`) |
+| `9fcdb047` | `durable::entry_by_receipt_id` deleted — the moved selection orphaned it |
+| `e53e9a93` | comment pass |
+
+`3665fa52` matters as evidence: the lane's first seven commits had never been through
+`mise run check-quiet`, and two clippy walls were standing.
 
 ## deviations and unresolved `tc-*`
 
-- none yet beyond the OPEN above.
+- **`30Rf:dev-ambiguity-case-not-delivered`** — brief item 3 asks for honest defining cases for
+  BOTH codes; only `durable-receipt-unreadable` has one. OPEN for conductor adjudication; the lane
+  cannot close it without taking `30Rg`'s remit (above).
+- **`30Rf:dev-orphan-deleted`** — `entry_by_receipt_id` was removed rather than ledgered. Its
+  ruling ("retrieval, not a second ranking") survives verbatim on `engine::RecordedSelection`. Two
+  live spellings of one selection rule is the drift this avoids; flagged because deletion is
+  fractionally wider than "repair the moved seat".
+
+## broader findings, NOT repaired here (brief item 5)
+
+- **`30Rf:fnd-debug-spellings-on-the-listing`** — `cli/src/recorded.rs` puts two Rust `Debug`
+  renderings on stdout: `model-unavailable {refusal:?}` (three species arms) and
+  `partial {:?}`. Every other line in that module is a receipt-grammar field name or a closed
+  token, which the module header states as its own law. A `Debug` spelling is neither, and it
+  leaks Rust type names onto a surface the module documents as the document's own words. Not
+  produced by the moved seat, so not repaired: it is D4 listing content and wants either a closed
+  token or a typed report.
 
 ## candidate steering invariants (reported, never written by this lane)
 
 - `30Rd:deterministic-I/O-model` says the local I/O trait "is not exported from the crate". As
   built it IS: `dorc_receipt_local::io::LocalIo` is public because `dorc-cli` passes
-  `&mut dyn LocalIo` into `LocalReceiptEdgeV1::open_for_*`. Whatever is ruled above, that sentence
-  and the tree disagree today.
+  `&mut dyn LocalIo` into `LocalReceiptEdgeV1::open_for_*`. That sentence and the tree disagree.
+- `cli/CLAUDE.md` has no bullet for the receipt-store why route. Candidate, for the conductor to
+  word: the store READ is an edge act and the SELECTION is the lib's, so both drivers report the
+  same two conditions through the typed route — the `one-definition-table-two-drivers` shape, now
+  with a second instance.
+- Candidate rider on `stdout-contract`: a report ABOUT the store is aid on stderr; stdout carries
+  only the recorded listing. The ambiguity seat went untested for exactly as long as one test
+  helper discarded the other stream.
 
 ## remaining pre-D5 work, explicitly outside this lane
 
-- `30Re:sched-migrate-replay-parity`: gate 8's six replay arms onto the receipt store, and the
-  seventh case `whygallery-drifted-book-degraded-receipt.loom`.
-- `30Re:sched-delete-legacy-durable` (D5), `30Re:sched-adjudicate-dispatch-diagnostics`.
+- `30Re:sched-enable-whole-product-code-proof` (`30Rg`) — and it now also owns the missing e2e
+  drive, not just the vocabulary flag.
+- `30Re:sched-migrate-replay-parity` (`30Rh`) — gate 8's six replay arms onto the receipt store,
+  plus the seventh case `whygallery-drifted-book-degraded-receipt.loom`, which carries an old
+  `.whylog` directly and needs its own disposition.
+- `30Re:sched-delete-legacy-durable` (D5) and `30Re:sched-adjudicate-dispatch-diagnostics`.
