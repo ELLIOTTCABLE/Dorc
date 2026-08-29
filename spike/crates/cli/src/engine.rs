@@ -2164,6 +2164,13 @@ fn run_status(
     Ok(book_outcome)
 }
 
+/// The stage word every receipt-durable report is filed under.
+///
+/// One constant because the write side and the read side are the same surface to a reader: a
+/// person who saw `receipt: error[…]` when their run wrote nothing should not have to learn a
+/// second word to find out why nothing can be read back.
+const RECEIPT_STAGE: &str = "receipt";
+
 /// Ask the edge to place this run's receipt, and report a durable that did not land.
 ///
 /// The answer is discarded on purpose TODAY: nothing on the plan surface names the receipt yet,
@@ -2178,7 +2185,7 @@ fn publish_receipt(
     if let Err(reason) = edges.publish_receipt(request) {
         report(
             sink,
-            "receipt",
+            RECEIPT_STAGE,
             None,
             &[Diag::new_spanless_site(DiagCode::DurableReceiptUnwritten(
                 dorc_aid::diag::DurableReceiptUnwritten {
@@ -2188,6 +2195,103 @@ fn publish_receipt(
             ))],
         );
     }
+}
+
+/// Which recorded identities a `dorc why` over the receipt store lists.
+///
+/// Three answers, and only one of them is a RANKING. `--receipt` is an exact identity match: a
+/// document either carries it or it does not, so it prefers nothing and reopens no fallback.
+/// `--all` enumerates. Everything else takes the store's greatest-order cohort, which is the ONE
+/// selection a store offers — there is deliberately no newest-complete and no next-one-down,
+/// because a fallback past a damaged newest candidate would answer with older history while
+/// looking like an answer about the latest run.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RecordedSelection<'a> {
+    /// `--receipt=ID`: the one document carrying that identity, or nothing.
+    Named(&'a str),
+    /// `--all`: every recognized entry.
+    Every,
+    /// The default: whatever shares the store's greatest order.
+    Latest,
+}
+
+impl RecordedSelection<'_> {
+    /// Whether this identity is one of the ones asked for.
+    fn takes(self, receipt_id: &str, cohort: &[String]) -> bool {
+        match self {
+            Self::Named(wanted) => wanted == receipt_id,
+            Self::Every => true,
+            Self::Latest => cohort.iter().any(|member| member == receipt_id),
+        }
+    }
+}
+
+/// Answer `dorc why` from the recorded receipt store.
+///
+/// The store READ — roots, a keyset, a bounded walk, a bounded read per entry — is an edge act and
+/// is already spent when this is called; what is left is the DECISION, and it sits here so that
+/// the binary and the loom driver make it once between them
+/// (`cli/CLAUDE.md one-definition-table-two-drivers`). Both conditions it reports travel the
+/// ordinary typed diagnostic route, because a report about the operator's own profile is aid, not
+/// a line of the listing that the operator is meant to read as recorded content.
+///
+/// Complete either way: a store with nothing to say is a report state, not a failed run.
+pub fn report_recorded_store(
+    reading: Result<crate::recorded::StoreReading, String>,
+    selection: RecordedSelection<'_>,
+    store: &str,
+    sink: &mut dyn OutputSink,
+) -> EngineStatus {
+    let reading = match reading {
+        Ok(reading) => reading,
+        Err(reason) => return report_store_unreadable(sink, store, &reason),
+    };
+    // REPORTED, never resolved: the store offers no tie-break, and inventing one would pick a
+    // document by the value least related to when it was written. It is not a refusal either —
+    // the cohort's members are listed below, and what the run cannot say is which one is last.
+    if matches!(selection, RecordedSelection::Latest) && reading.cohort().len() > 1 {
+        report(
+            sink,
+            RECEIPT_STAGE,
+            None,
+            &[Diag::new_spanless_site(DiagCode::DurableReceiptAmbiguous(
+                dorc_aid::diag::DurableReceiptAmbiguous {
+                    count: reading.cohort().len().to_string(),
+                },
+            ))],
+        );
+    }
+    let mut out = String::new();
+    for document in reading.documents() {
+        if selection.takes(document.receipt_id(), reading.cohort())
+            && let Some(listing) = document.listing()
+        {
+            out.push_str(listing);
+        }
+    }
+    out.push_str(reading.graph());
+    if out.is_empty() {
+        return report_store_unreadable(sink, store, "no-receipt");
+    }
+    sink.emit(OutputEvent::plain_text(OutputChannel::Stdout, out));
+    sink.flush(OutputChannel::Stdout);
+    EngineStatus::Complete
+}
+
+/// Report that the store had nothing to answer with, in the edge's own closed word.
+fn report_store_unreadable(sink: &mut dyn OutputSink, store: &str, reason: &str) -> EngineStatus {
+    report(
+        sink,
+        RECEIPT_STAGE,
+        None,
+        &[Diag::new_spanless_site(DiagCode::DurableReceiptUnreadable(
+            dorc_aid::diag::DurableReceiptUnreadable {
+                store: store.to_owned(),
+                reason: reason.to_owned(),
+            },
+        ))],
+    );
+    EngineStatus::Complete
 }
 
 fn write_whylog(

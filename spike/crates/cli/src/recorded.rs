@@ -233,3 +233,89 @@ fn push_line(out: &mut String, line: &str) {
     out.push_str(line);
     out.push('\n');
 }
+
+/// What one bounded walk of the receipt store produced, as a value.
+///
+/// Every act that needed a filesystem or a key is already spent by the time this exists, which is
+/// what lets the decision above it — which documents this invocation lists, and what it says when
+/// the store cannot answer — be a pure function both drivers run
+/// (`cli/CLAUDE.md lib-target-is-a-loom-seam`: values cross the seam, queries do not).
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct StoreReading {
+    documents: Vec<RecordedDocument>,
+    cohort: Vec<String>,
+    graph: String,
+}
+
+impl StoreReading {
+    /// Bind one walk's documents, the identities sharing its greatest order, and its graph lines.
+    #[must_use]
+    pub const fn of(documents: Vec<RecordedDocument>, cohort: Vec<String>, graph: String) -> Self {
+        Self {
+            documents,
+            cohort,
+            graph,
+        }
+    }
+
+    /// Every recognized document, in the store's own order.
+    #[must_use]
+    pub fn documents(&self) -> &[RecordedDocument] {
+        &self.documents
+    }
+
+    /// The identities sharing the store's greatest order — the ONE selection a store offers.
+    #[must_use]
+    pub fn cohort(&self) -> &[String] {
+        &self.cohort
+    }
+
+    /// The correlations and findings a graph over the whole store produced.
+    #[must_use]
+    pub fn graph(&self) -> &str {
+        &self.graph
+    }
+}
+
+/// One recognized store entry, and what reading it produced.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordedDocument {
+    receipt_id: String,
+    listing: Option<String>,
+}
+
+impl RecordedDocument {
+    /// A document that verified and opened, with the lines it yielded.
+    #[must_use]
+    pub const fn read(receipt_id: String, listing: String) -> Self {
+        Self {
+            receipt_id,
+            listing: Some(listing),
+        }
+    }
+
+    /// A recognized entry that did not yield a trusted document.
+    ///
+    /// Typed absence rather than an empty listing: "the store holds this identity" and "this
+    /// identity had something to say" are different facts, and a caller counting the first from
+    /// the second would report a store as empty because its documents would not open.
+    #[must_use]
+    pub const fn unread(receipt_id: String) -> Self {
+        Self {
+            receipt_id,
+            listing: None,
+        }
+    }
+
+    /// The identity the store filed this entry under.
+    #[must_use]
+    pub fn receipt_id(&self) -> &str {
+        &self.receipt_id
+    }
+
+    /// The lines this document yielded, where it yielded any.
+    #[must_use]
+    pub fn listing(&self) -> Option<&str> {
+        self.listing.as_deref()
+    }
+}

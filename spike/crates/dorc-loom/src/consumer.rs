@@ -769,6 +769,8 @@ impl DorcConsumer {
             dorc_cli::Invocation::Analyze(analysis_args) => {
                 if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
                     self.run_remote_apply(case, &analysis_args, context)
+                } else if analysis_args.answers_from_the_receipt_store() {
+                    self.run_receipt_store_why(&analysis_args)
                 } else {
                     self.run_engine(case, &analysis_args, command, context)
                 }
@@ -998,6 +1000,27 @@ impl DorcConsumer {
         })
     }
 
+    /// Answer a `dorc why` that reads the receipt store, from the world a loom drive has.
+    ///
+    /// A loom world holds no per-user profile: nothing here resolves a standard root, so the
+    /// controller root the production edge asks for is genuinely unavailable and the word handed
+    /// to the shared seat is production's own root refusal. That is this world telling the truth
+    /// about itself, not an injected fault — which is why it carries no `edge-fault` declaration
+    /// and why a case cannot ask for a different answer.
+    fn run_receipt_store_why(&self, args: &dorc_cli::Args) -> Option<DorcEngineReplay> {
+        let mut sink = LoomOutputSink {
+            ctx: self.render_ctx(),
+            actions: Vec::new(),
+        };
+        let status = dorc_cli::engine::report_recorded_store(
+            Err(ROOTLESS_WORLD.to_owned()),
+            args.recorded_selection(),
+            NO_STATE_ROOT,
+            &mut sink,
+        );
+        Some(dorc_engine_replay(status, sink.actions))
+    }
+
     fn run_engine(
         &self,
         case: &Case,
@@ -1084,7 +1107,7 @@ impl DorcConsumer {
                 .unwrap_or_else(|| "<disabled>".to_owned()),
             // A loom world has no per-user profile, and saying so is the honest label: nothing
             // here resolves a standard root, so no path could be named that a case would recognize.
-            receipt_label: "<no state root>".to_owned(),
+            receipt_label: NO_STATE_ROOT.to_owned(),
             host: args.host.clone(),
         };
         let mut sink = LoomOutputSink {
@@ -1102,7 +1125,7 @@ impl DorcConsumer {
             &mut sink,
         );
         match result {
-            Ok(result) => Some(dorc_engine_replay(&result, sink.actions)),
+            Ok(result) => Some(dorc_engine_replay(result.status, sink.actions)),
             Err(diagnostic) => self.invocation_diagnostic(case, *diagnostic, "dorc"),
         }
     }
@@ -1335,6 +1358,16 @@ fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
         whylog: path,
     })
 }
+
+/// The word production's root resolution refuses with when no per-user root can be named.
+///
+/// Spelled here rather than reached for through the production edge because a loom drive never
+/// builds one: what this crate can honestly state is that its world has no root, and this is that
+/// sentence in the edge's own closed vocabulary.
+const ROOTLESS_WORLD: &str = "no-controller-root";
+
+/// The standing label for a world that resolved no state base.
+const NO_STATE_ROOT: &str = "<no state root>";
 
 /// The DEGRADED `dorc why --last` receipt, rendered in-process over a committed durable
 /// (`28F:rul-drift-replay-d1`; `28H:prop-drifted-why-is-the-thin-driver`).
@@ -1668,7 +1701,7 @@ impl DorcEngineReplay {
 }
 
 fn dorc_engine_replay(
-    result: &dorc_cli::engine::EngineResult,
+    status: dorc_cli::engine::EngineStatus,
     actions: Vec<dorc_cli::engine::OutputAction>,
 ) -> DorcEngineReplay {
     let diagnostics = actions
@@ -1702,10 +1735,7 @@ fn dorc_engine_replay(
         })
         .collect();
     DorcEngineReplay {
-        result: ReplayResult::emitted(
-            ReplayStatus::new(i32::from(result.status.exit_code())),
-            emissions,
-        ),
+        result: ReplayResult::emitted(ReplayStatus::new(i32::from(status.exit_code())), emissions),
         diagnostics,
     }
 }

@@ -57,7 +57,6 @@
 )]
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Write as _;
 use std::io::Write;
 use std::process::ExitCode;
 
@@ -190,8 +189,21 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     {
         return ship_consented_apply(sink, args, host);
     }
-    if answers_from_the_receipt_store(args) {
-        return Ok(why_from_receipt_store(sink, args));
+    if args.answers_from_the_receipt_store() {
+        let edge = production_receipt_edge();
+        let label = edge
+            .as_ref()
+            .map_or("<no state root>", |edge| edge.state_base());
+        let reading = match &edge {
+            Ok(edge) => read_receipt_store(edge),
+            Err(refusal) => Err(refusal.token().to_owned()),
+        };
+        return Ok(dorc_cli::engine::report_recorded_store(
+            reading,
+            args.recorded_selection(),
+            label,
+            sink,
+        ));
     }
 
     let stdout = stdout_posture();
@@ -520,124 +532,49 @@ impl EngineEdges for ProductionEdges<'_> {
     }
 }
 
-/// Whether this invocation answers from the RECEIPT store rather than the old durable.
+/// Read the local receipt store, so the shared seat can decide what this invocation says.
 ///
-/// The discriminator is whether the admin NAMED an old durable. `--whylog=FILE` and
-/// `--whylog-dir=DIR` are the corpus's own deterministic selectors and keep answering from the
-/// old format until it is removed; every other `dorc why` answers from the store this binary
-/// writes. INTERIM by construction: when the old durable goes, so does the condition, and what is
-/// left is a `dorc why` that reads receipts.
-fn answers_from_the_receipt_store(args: &Args) -> bool {
-    args.mode == Mode::Why
-        && args.reads_the_receipt()
-        && args.whylog.is_none()
-        && args.whylog_dir.is_none()
-}
-
-/// Answer `dorc why` from the local receipt store, reading and never creating.
+/// Every act here needs a filesystem or a key, which is why it is the only part of this route that
+/// stays at the process edge (`io-at-edges-only`): the SELECTION and the two report states it can
+/// land in are `engine::report_recorded_store`'s, so the binary and the loom driver decide them
+/// once between them.
 ///
 /// Read-only in every respect that matters: the keyset is opened through the entry point that
 /// cannot generate, the store through the one that cannot create, and no host is contacted. A
 /// missing keyset, a missing store, or a damaged document is a REPORT state — asking why must
 /// never mint an identity that cannot open the receipt being asked about.
-fn why_from_receipt_store(sink: &mut dyn OutputSink, args: &Args) -> RunOutcome {
-    let edge = match production_receipt_edge() {
-        Ok(edge) => edge,
-        Err(refusal) => return emit_listing(sink, &unreadable(refusal.token())),
-    };
+fn read_receipt_store(
+    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
+) -> Result<dorc_cli::recorded::StoreReading, String> {
     let mut io = dorc_cli::durable::NativeIo::new();
-    let open = match edge.open_for_read(&mut io) {
-        Ok(open) => open,
-        Err(refusal) => return emit_listing(sink, &unreadable(refusal.token())),
-    };
+    let open = edge
+        .open_for_read(&mut io)
+        .map_err(|refusal| refusal.token().to_owned())?;
     let store = open.store();
-    let Ok(entries) = store.enumerate(&mut io) else {
-        return emit_listing(sink, &unreadable("walk-failed"));
-    };
+    let entries = store
+        .enumerate(&mut io)
+        .map_err(|_| "walk-failed".to_owned())?;
 
-    // The graph is built over the WHOLE store under its aggregate budget, whatever the listing
-    // below selects: a correlation is a fact about the record set, and answering "which intent
+    // The graph is built over the WHOLE store under its aggregate budget, whatever the selection
+    // above it takes: a correlation is a fact about the record set, and answering "which intent
     // does this outcome answer" from a one-document read would be answering a different question.
     let mut graph = dorc_receipt::graph::ReceiptGraph::new();
     let mut budget = store.graph_budget();
-    let mut read: Vec<(String, String)> = Vec::new();
+    let mut documents = Vec::new();
     for entry in entries.recognized() {
+        let id = entry.name().receipt_id().to_owned();
         let Ok(bytes) = store.read_into_budget(&mut io, entry, &mut budget) else {
+            documents.push(dorc_cli::recorded::RecordedDocument::unread(id));
             continue;
         };
-        let listing = ingest_recognized(&open, &mut graph, entry, bytes.into_bytes().into_vec());
-        read.push((entry.name().receipt_id().to_owned(), listing));
+        documents.push(
+            match ingest_recognized(&open, &mut graph, entry, bytes.into_bytes().into_vec()) {
+                Some(listing) => dorc_cli::recorded::RecordedDocument::read(id, listing),
+                None => dorc_cli::recorded::RecordedDocument::unread(id),
+            },
+        );
     }
-
-    let selected = selected_receipt_ids(args, &entries);
-    let mut out = String::new();
-    // The cohort's ambiguity is a LINE on this listing rather than a diagnostic, for the same
-    // reason everything else here is: the answer to "what does the store say" belongs on the
-    // surface that says it. Reported, never resolved — the store offers no tie-break, and
-    // inventing one would pick a document by the value least related to when it was written.
-    if let Some(cohort) = entries.maximum_order_cohort()
-        && cohort.is_ambiguous()
-        && !args.all
-        && args.receipt.is_none()
-    {
-        let _ = writeln!(out, "ambiguous-order {}", cohort.members().len());
-    }
-    for (receipt_id, listing) in &read {
-        if selected.iter().any(|wanted| wanted == receipt_id) {
-            out.push_str(listing);
-        }
-    }
-    out.push_str(&dorc_cli::recorded::recorded_graph_listing(&graph));
-    if out.is_empty() {
-        return emit_listing(sink, &unreadable("no-receipt"));
-    }
-    emit_listing(sink, &out)
-}
-
-/// The listing line for a store that answered nothing, in the edge's own closed word.
-fn unreadable(reason: &str) -> String {
-    format!("store-unreadable {reason}\n")
-}
-
-/// Put one listing on stdout.
-///
-/// A mode-owned stdout species (`cli/CLAUDE.md stdout-contract`): `dorc why` over a receipt emits
-/// this and nothing else, so it never interleaves with a plan render. Complete either way — a
-/// store with nothing to say is a report state, not a failed run.
-fn emit_listing(sink: &mut dyn OutputSink, out: &str) -> RunOutcome {
-    sink.emit(OutputEvent::plain_text(
-        OutputChannel::Stdout,
-        out.to_owned(),
-    ));
-    sink.flush(OutputChannel::Stdout);
-    RunOutcome::Complete
-}
-
-/// Which recorded identities this invocation lists.
-///
-/// Three answers, and only one of them is a RANKING. `--receipt` is an exact identity match:
-/// a document either carries it or it does not, so it prefers nothing and reopens no fallback.
-/// `--all` enumerates. Everything else takes the maximum-order cohort, which is the ONE selection
-/// the store offers — there is deliberately no newest-complete and no next-one-down, because a
-/// fallback past a damaged newest candidate would answer with older history while looking like an
-/// answer about the latest run.
-fn selected_receipt_ids(
-    args: &Args,
-    entries: &dorc_cli::durable::BoundedReceiptEntries,
-) -> Vec<String> {
-    if let Some(wanted) = args.receipt.as_deref() {
-        return dorc_cli::durable::entry_by_receipt_id(entries, wanted)
-            .map(|entry| vec![entry.name().receipt_id().to_owned()])
-            .unwrap_or_default();
-    }
-    if args.all {
-        return entries
-            .recognized()
-            .iter()
-            .map(|entry| entry.name().receipt_id().to_owned())
-            .collect();
-    }
-    entries
+    let cohort = entries
         .maximum_order_cohort()
         .map(|cohort| {
             cohort
@@ -646,7 +583,12 @@ fn selected_receipt_ids(
                 .map(|entry| entry.name().receipt_id().to_owned())
                 .collect()
         })
-        .unwrap_or_default()
+        .unwrap_or_default();
+    Ok(dorc_cli::recorded::StoreReading::of(
+        documents,
+        cohort,
+        dorc_cli::recorded::recorded_graph_listing(&graph),
+    ))
 }
 
 /// Read one recognized entry into the graph, and answer the listing for it.
@@ -659,30 +601,30 @@ fn ingest_recognized(
     graph: &mut dorc_receipt::graph::ReceiptGraph,
     entry: &dorc_cli::durable::OwnedReceiptEntry,
     bytes: Vec<u8>,
-) -> String {
+) -> Option<String> {
     use dorc_cli::durable::NamedSpecies;
     use dorc_receipt::reader::ReadRich;
     match entry.species() {
         NamedSpecies::Plan => match open.read_plan(bytes) {
             Ok(ReadRich::Trusted(document)) => {
                 graph.ingest_plan(&document, &[]);
-                dorc_cli::recorded::recorded_plan_listing(&document)
+                Some(dorc_cli::recorded::recorded_plan_listing(&document))
             }
-            Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
+            Ok(ReadRich::SelfAsserted(_)) | Err(_) => None,
         },
         NamedSpecies::ApplyIntent => match open.read_intent(bytes) {
             Ok(ReadRich::Trusted(document)) => {
                 graph.ingest_intent(&document, &[]);
-                dorc_cli::recorded::recorded_intent_listing(&document)
+                Some(dorc_cli::recorded::recorded_intent_listing(&document))
             }
-            Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
+            Ok(ReadRich::SelfAsserted(_)) | Err(_) => None,
         },
         NamedSpecies::ApplyOutcome => match open.read_outcome(bytes) {
             Ok(ReadRich::Trusted(document)) => {
                 graph.ingest_outcome(&document, &[]);
-                dorc_cli::recorded::recorded_outcome_listing(&document)
+                Some(dorc_cli::recorded::recorded_outcome_listing(&document))
             }
-            Ok(ReadRich::SelfAsserted(_)) | Err(_) => String::new(),
+            Ok(ReadRich::SelfAsserted(_)) | Err(_) => None,
         },
     }
 }

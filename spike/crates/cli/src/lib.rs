@@ -631,6 +631,31 @@ impl Args {
             self.results.is_some(),
         )
     }
+
+    /// Does this invocation answer from the RECEIPT store rather than from the old durable?
+    ///
+    /// The discriminator is whether the admin NAMED an old durable. `--whylog=FILE` and
+    /// `--whylog-dir=DIR` are the corpus's own deterministic selectors and keep answering from the
+    /// old format until it is removed; every other `dorc why` answers from the store this binary
+    /// writes. INTERIM by construction: when the old durable goes, so does the condition, and what
+    /// is left is a `dorc why` that reads receipts.
+    ///
+    /// It lives here, beside the surface fold it refines, because the binary and the loom driver
+    /// both have to route on it and two spellings would be two answers to "which surface am I".
+    #[must_use]
+    pub const fn answers_from_the_receipt_store(&self) -> bool {
+        self.reads_the_receipt() && self.whylog.is_none() && self.whylog_dir.is_none()
+    }
+
+    /// Which recorded identities this invocation's flags ask a receipt store to list.
+    #[must_use]
+    pub fn recorded_selection(&self) -> engine::RecordedSelection<'_> {
+        match (self.receipt.as_deref(), self.all) {
+            (Some(wanted), _) => engine::RecordedSelection::Named(wanted),
+            (None, true) => engine::RecordedSelection::Every,
+            (None, false) => engine::RecordedSelection::Latest,
+        }
+    }
 }
 
 /// Map parser-owned arguments and edge observations into parser-independent engine inputs.
