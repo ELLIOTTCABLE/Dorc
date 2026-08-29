@@ -15,10 +15,11 @@ checkout into an external Opus harness.
 
 - Build source: `ai/r30-receipt` at `1cbee21a`.
 - Diagnostic lane: `ai/r30-receipt-why-repair` in
-  `.claude/worktrees/r30-receipt-why-repair`, clean at `d948d651`; implementation and binary
-  coverage landed, with the ambiguity catalog row deliberately red pending an honest defining case.
+  `.claude/worktrees/r30-receipt-why-repair`, clean at `6c04f632`; implementation, binary coverage,
+  clippy repairs, cleanup, and `30Rf` landed, with the ambiguity catalog row deliberately red pending
+  an honest defining case.
 - Current harness lane: `ai/r30-receipt-loom-code` in
-  `.claude/worktrees/r30-receipt-loom-code`, clean at `d948d651` before dispatch.
+  `.claude/worktrees/r30-receipt-loom-code`, clean at `6c04f632` before dispatch.
 - Conduct branch: `ai/r30-conduct`; this document is its resumption account.
 - The two failed in-process harness dispatches produced no commit and no worktree mutation.
 
@@ -53,8 +54,9 @@ checkout into an external Opus harness.
 
 ## serial schedule
 
-1. **`30Re:sched-repair-why-diagnostics`** — implementation is landed at `d948d651`; completion
-   waits on the honest ambiguity defining case. Builder ledger: quarantine `30Rf`.
+1. **`30Re:sched-repair-why-diagnostics`** — implementation and lane cleanup are landed at
+   `6c04f632`; completion waits on the honest ambiguity defining case. Builder ledger: quarantine
+   `30Rf`.
 2. **`30Re:sched-enable-whole-product-code-proof`** — let a registered diagnostic use a
    whole-product loom whose real e2e execution owns the code/transcript proof; finish the ambiguity
    case without synthetic store state. Builder ledger: quarantine `30Rg`.
