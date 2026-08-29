@@ -193,7 +193,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         let edge = production_receipt_edge();
         let label = edge
             .as_ref()
-            .map_or("<no state root>", |edge| edge.state_base());
+            .map_or(dorc_cli::engine::NO_STATE_ROOT, |edge| edge.state_base());
         let reading = match &edge {
             Ok(edge) => read_receipt_store(edge),
             Err(refusal) => Err(refusal.token().to_owned()),
@@ -512,7 +512,7 @@ impl EngineEdges for ProductionEdges<'_> {
 
     fn receipt_label(&self) -> &str {
         self.receipt.as_ref().map_or(
-            "<no state root>",
+            dorc_cli::engine::NO_STATE_ROOT,
             dorc_cli::durable::LocalReceiptEdgeV1::state_base,
         )
     }

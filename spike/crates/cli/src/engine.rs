@@ -2171,6 +2171,13 @@ fn run_status(
 /// second word to find out why nothing can be read back.
 const RECEIPT_STAGE: &str = "receipt";
 
+/// What names the receipt store when no per-user root resolved.
+///
+/// One spelling because the write side's label and the read side's `{store}` payload are the same
+/// claim about the same world, and a driver that spelled it differently would report a store the
+/// operator cannot match against the one the writer named.
+pub const NO_STATE_ROOT: &str = "<no state root>";
+
 /// Ask the edge to place this run's receipt, and report a durable that did not land.
 ///
 /// The answer is discarded on purpose TODAY: nothing on the plan surface names the receipt yet,

@@ -1015,7 +1015,7 @@ impl DorcConsumer {
         let status = dorc_cli::engine::report_recorded_store(
             Err(ROOTLESS_WORLD.to_owned()),
             args.recorded_selection(),
-            NO_STATE_ROOT,
+            dorc_cli::engine::NO_STATE_ROOT,
             &mut sink,
         );
         dorc_engine_replay(status, sink.actions)
@@ -1107,7 +1107,7 @@ impl DorcConsumer {
                 .unwrap_or_else(|| "<disabled>".to_owned()),
             // A loom world has no per-user profile, and saying so is the honest label: nothing
             // here resolves a standard root, so no path could be named that a case would recognize.
-            receipt_label: NO_STATE_ROOT.to_owned(),
+            receipt_label: dorc_cli::engine::NO_STATE_ROOT.to_owned(),
             host: args.host.clone(),
         };
         let mut sink = LoomOutputSink {
@@ -1365,9 +1365,6 @@ fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
 /// builds one: what this crate can honestly state is that its world has no root, and this is that
 /// sentence in the edge's own closed vocabulary.
 const ROOTLESS_WORLD: &str = "no-controller-root";
-
-/// The standing label for a world that resolved no state base.
-const NO_STATE_ROOT: &str = "<no state root>";
 
 /// The DEGRADED `dorc why --last` receipt, rendered in-process over a committed durable
 /// (`28F:rul-drift-replay-d1`; `28H:prop-drifted-why-is-the-thin-driver`).
