@@ -2223,7 +2223,6 @@ pub enum RecordedSelection<'a> {
 }
 
 impl RecordedSelection<'_> {
-    /// Whether this identity is one of the ones asked for.
     fn takes(self, receipt_id: &str, cohort: &[String]) -> bool {
         match self {
             Self::Named(wanted) => wanted == receipt_id,

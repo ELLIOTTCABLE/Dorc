@@ -672,9 +672,8 @@ fn exact_replays_keep_editability_with_provenance_and_route_edges_to_the_injecte
     assert!(results[1].editable_render().is_none());
     assert_eq!(results[1].output(), "dorc 0.0.0\n");
     assert!(results[2].editable_render().is_some());
-    // `dorc why --last` no longer declines to the generic fallback: it answers from the receipt
-    // store through the shared seat, and a loom world resolves no per-user root, so what it
-    // answers is that report.
+    // `dorc why --last` answers from the receipt store, and a loom world resolves no per-user
+    // root — so it reports that rather than declining to the generic fallback below.
     assert!(results[3].editable_render().is_some());
     assert!(
         results[3]
