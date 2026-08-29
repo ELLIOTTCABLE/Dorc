@@ -60,8 +60,8 @@ pub mod usage;
 pub use usage::{PROGRAM, Reading};
 mod vocabulary;
 pub use vocabulary::{
-    DEFINING_KEYS_NOTE, FRONTMATTER_KEYS, FrontmatterKey, frontmatter_key_names,
-    is_frontmatter_key, is_run_lane_key, run_lane_key_names,
+    DEFINING_KEYS_NOTE, FRONTMATTER_KEYS, FrontmatterKey, defining_form_refusal,
+    frontmatter_key_names, is_frontmatter_key, is_run_lane_key, run_lane_key_names,
 };
 
 /// A semantic template variable name.

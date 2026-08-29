@@ -97,6 +97,13 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
     let parsed = Case::parse(&text)
         .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
     known_frontmatter_keys(name, &parsed)?;
+    if let Some(why) = dorc_loom::defining_form_refusal(
+        parsed.frontmatter().scalar("code").is_some(),
+        deferred_to_e2e(&parsed),
+        parsed.frontmatter().scalar("fixpoint"),
+    ) {
+        return Err(format!("FAIL  {name}  [{why}]").into());
+    }
     // A whole-product case's code fires at the REAL BINARY, so no in-process render surfaces it.
     // The assertion is not dropped, it MOVES to the runner that drives one; marker-collision binds
     // either way.

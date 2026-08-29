@@ -161,6 +161,26 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
     },
 ];
 
+/// Why a case's DEFINING declaration does not hold together, if it does not.
+///
+/// A `code:` case's transcript is what proves its render; a `run:` case's is proven by the e2e
+/// execution instead. Declaring both without saying which authority applies leaves the looms
+/// runner render-fixpointing bytes the real binary produced — a comparison that can only be a
+/// coincidence when it passes. `fixpoint: executed` is what says so, and the looms runner already
+/// refuses that key without `run:`, so this closes the remaining corner.
+#[must_use]
+pub fn defining_form_refusal(
+    has_code: bool,
+    has_run: bool,
+    fixpoint: Option<&str>,
+) -> Option<&'static str> {
+    (has_code && has_run && fixpoint != Some("executed")).then_some(
+        "a case declaring both `code:` and `run:` must declare `fixpoint: executed` — its code \
+         fires at the real binary, so the e2e execution owns the transcript and this runner has \
+         no render to fixpoint against",
+    )
+}
+
 /// The legal keys, spelled, in declaration order — what a refusal lists.
 #[must_use]
 pub fn frontmatter_key_names() -> Vec<&'static str> {
@@ -213,6 +233,29 @@ mod tests {
         assert!(is_frontmatter_key("code") && is_frontmatter_key("arrangement"));
         assert!(DEFINING_KEYS_NOTE.contains("catalog"));
         assert!(DEFINING_KEYS_NOTE.contains("arrangement registry"));
+    }
+
+    /// The combined form is closed in exactly one direction: declaring both defining keys demands
+    /// the authority key. Neither key alone is touched, which is what keeps every committed
+    /// code-only and run-only case byte-for-byte as it was.
+    #[test]
+    fn the_combined_defining_form_demands_its_authority() {
+        assert!(defining_form_refusal(true, true, None).is_some());
+        assert!(defining_form_refusal(true, true, Some("render")).is_some());
+        assert!(defining_form_refusal(true, true, Some("executed")).is_none());
+        assert!(
+            defining_form_refusal(true, false, None).is_none(),
+            "code-only"
+        );
+        assert!(
+            defining_form_refusal(false, true, None).is_none(),
+            "run-only"
+        );
+        assert!(
+            defining_form_refusal(true, true, None)
+                .is_some_and(|why| why.contains("fixpoint: executed")),
+            "the refusal names the key that repairs it"
+        );
     }
 
     /// The run lane is a PROJECTION, never a second list: the looms runner sees whole-product cases
