@@ -99,6 +99,19 @@ with e2e (`fixpoint: executed`). Catalog row published prose-empty: `message: No
   EVERY corpus case; a whole-product case has no in-process render to compile an edit against. It
   now asserts the DECLINE by its exact reason rather than skipping, so the day this starts
   answering is not a silent one.
+- `dorc-loom.rs::inspect_cases` crossed clippy's 100-line wall once the per-block walk grew a
+  branch; the walk is now its own function (`inspect_blocks`) rather than an `expect`.
+
+## `30Rg:fnd-hook-selftest-stub-was-never-executable` — inherited, found by the WSL leg
+
+`mise run test:hooks` failed FIVE cases on the WSL leg and passed on Windows, at a tip whose lane
+never touched `.githooks/` or `internal-tooling`. `precommit_gate.rs` writes its stand-in `mise`
+with `fs::write` and no exec bit, so unix `PATH` lookup cannot run it: the hook's `mise x` resolves
+nothing, git reads 127, and every case that DRIVES the hook reports "ran hk 0 time(s)". The
+glob and commit-msg cases pass because they never run it. Repaired here with a `#[cfg(unix)]`
+chmod at the write; both legs green after. It arrived with `d47f0cf1`'s own commit and is exactly
+`one-platform-green-is-not-cross-platform-green` — a Windows-only measurement could not see it,
+and the `DORC_KNOWN_BROKEN` ack it guards is now load-bearing for every builder.
 
 ## deviations — OPEN for conductor adjudication
 
