@@ -472,8 +472,16 @@ impl DorcConsumer {
     /// than no inventory.
     ///
     /// # Errors
-    /// Returns the replay refusal, or names the case whose first replay carries no editable prose.
+    /// Returns the replay refusal, names the case whose first replay carries no editable prose, or
+    /// declines a case whose bytes this tool does not produce.
     pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        // A WHOLE-PRODUCT case's transcript is what the real binary printed under the e2e runner,
+        // and nothing here runs the binary. An in-process render of it would be a DIFFERENT world's
+        // bytes, and an inventory that disagrees with the compiler is worse than no inventory — the
+        // same reason this function drives the case rather than re-deriving one.
+        if case.frontmatter().scalar("run").is_some() {
+            return Err(EXECUTED_ELSEWHERE.to_owned());
+        }
         // The generation lag, stated before the driver can only shrug about it: a case naming a
         // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
@@ -1365,6 +1373,16 @@ fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
 /// builds one: what this crate can honestly state is that its world has no root, and this is that
 /// sentence in the edge's own closed vocabulary.
 const ROOTLESS_WORLD: &str = "no-controller-root";
+
+/// Why this tool declines to answer for a whole-product case.
+///
+/// One spelling, because the decline reaches an author through two doors — `dorc-loom vars` and
+/// the corpus gate — and a reader meeting either should be told the same thing about where their
+/// case's bytes come from.
+pub const EXECUTED_ELSEWHERE: &str = "this case declares `run:`, so its transcript is what the real binary printed under the e2e \
+     runner; `dorc-loom` runs no binary, and an inventory over a different world's render is one \
+     an edit could not compile against. Its prose surface is owed a path that reads the executed \
+     transcript.";
 
 /// The DEGRADED `dorc why --last` receipt, rendered in-process over a committed durable
 /// (`28F:rul-drift-replay-d1`; `28H:prop-drifted-why-is-the-thin-driver`).
