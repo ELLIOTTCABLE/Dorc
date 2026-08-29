@@ -10,12 +10,19 @@
 | Worktree | `.claude/worktrees/r30-receipt-why-repair` |
 | Branch | `ai/r30-receipt-why-repair` |
 | Base | `ai/r30-receipt` @ `f98f65a7` |
-| Current tip | `e53e9a93` |
+| Current tip | `6c04f632`, plus this ledger commit — ledger-only, no code above it |
 | Dirt | none |
+| Lane status | **INCOMPLETE**, deliberately, pending `30Rg` |
 
 `ai/r30-receipt-loom-code` @ `1144da1b` carries this lane's first seven commits re-applied on the
 pre-merge base; it is the `30Rg` lane and holds no work of its own yet. `30Re` names this lane's
 tip as `d948d651`, which is the same content before `ai/r30-receipt` absorbed `ai/main`.
+
+**The lane closes RED, by conductor ruling (2026-08-29).** `durable-receipt-unreadable` is finished;
+`durable-receipt-ambiguous` has its code, payload, emit seat and real-binary coverage but no
+defining case, so `every_variant_has_exactly_one_catalog_entry` fails. That single failure is
+`30Rg`'s to close (`30Re:sched-enable-whole-product-code-proof`), and `30Rg` owns the next full
+green `mise run both gate:full-quiet`. Nothing here waits on anything else.
 
 ## the measured seat, as built
 
@@ -102,9 +109,16 @@ Nothing here is doable inside this brief's remit without taking `30Rg`'s assigne
 
 ## test state
 
-- `mise run test`: 3126 run, 3125 pass, 1 fail — the OPEN above, and nothing else.
-- `mise run check-quiet`: clean.
-- Both-platform completion gate: recorded below once run.
+- `mise run test` (Windows): 3126 run, 3125 pass, 1 fail — the OPEN above, and nothing else.
+- `mise run both check-quiet`: clean on BOTH legs. This is what proves the Linux compile of the
+  whole workspace, tests included, under `-D warnings` — the `one-platform-green-is-not-cross-platform-green`
+  hazard, which matters here because the receipt store carries a Windows-only rename-backup path.
+  WSL trust is established for this worktree and for the nested `spike/verify/aeneas` config.
+- Both-platform completion gate: **deliberately NOT run** (conductor ruling, 2026-08-29). Spending a
+  full `gate:full-quiet` on both legs to reconfirm an inherited, named catalog-completeness red buys
+  nothing; the focused suite plus both `check-quiet` legs are the handoff evidence for an
+  intermediate branch, and `30Rg` runs the next full green after it supplies the defining case.
+  So this ledger reports NO discovery-floor counts, by ruling rather than by omission.
 
 ## commits
 
@@ -121,19 +135,38 @@ Nothing here is doable inside this brief's remit without taking `30Rg`'s assigne
 | `8101835c` | one spelling of the rootless store label (`engine::NO_STATE_ROOT`) |
 | `9fcdb047` | `durable::entry_by_receipt_id` deleted — the moved selection orphaned it |
 | `e53e9a93` | comment pass |
+| `6c04f632` | this ledger, rewritten from the stale opener to the as-built map |
 
 `3665fa52` matters as evidence: the lane's first seven commits had never been through
 `mise run check-quiet`, and two clippy walls were standing.
 
 ## deviations and unresolved `tc-*`
 
+The first is RULED; the other two are OPEN for conductor adjudication. Neither was resolved locally.
+
 - **`30Rf:dev-ambiguity-case-not-delivered`** — brief item 3 asks for honest defining cases for
-  BOTH codes; only `durable-receipt-unreadable` has one. OPEN for conductor adjudication; the lane
-  cannot close it without taking `30Rg`'s remit (above).
-- **`30Rf:dev-orphan-deleted`** — `entry_by_receipt_id` was removed rather than ledgered. Its
-  ruling ("retrieval, not a second ranking") survives verbatim on `engine::RecordedSelection`. Two
-  live spellings of one selection rule is the drift this avoids; flagged because deletion is
-  fractionally wider than "repair the moved seat".
+  BOTH codes; only `durable-receipt-unreadable` has one. RULED (conductor, 2026-08-29): the lane closes
+  red and `30Rg` supplies the case. The lane could not close it without taking `30Rg`'s remit
+  (measured, above).
+- **`30Rf:dev-orphan-deleted`** — `cli/src/durable.rs`'s `entry_by_receipt_id` was DELETED rather
+  than ledgered. It had no caller left in the tree: the seat move replaced its exact-identity match
+  with `engine::RecordedSelection::Named`, and its ruling ("retrieval, not a second RANKING; the
+  store offers exactly one selection, and a second way to PREFER a candidate would reopen the
+  fallback that property exists to forbid") survives verbatim on that enum's doc. Being `pub` in a
+  `publish = false` crate, it would have drawn no dead-code lint and sat as a second live spelling
+  of one selection rule. Flagged because deletion is fractionally wider than the brief's "repair
+  only strings produced by the same moved seat"; reversible in one commit if the conductor wants it
+  back.
+- **`30Rf:dev-extra-deduplication`** — three repairs beyond the brief's literal remit, all inside
+  the moved seat's own surface, none changing a decision:
+  1. `"<no state root>"` had THREE spellings across two crates (`main.rs` twice, `dorc-loom`'s own
+     const). It is simultaneously the read side's `{store}` payload and the write side's
+     `receipt_label`, so a divergent spelling would report a store the operator cannot match
+     against the one the writer named. Now one `dorc_cli::engine::NO_STATE_ROOT`.
+  2. Two standing clippy walls (`unnecessary_wraps` on the loom arm, `doc_lazy_continuation` on a
+     test doc-comment). The inherited seven commits had never been through `mise run check-quiet`,
+     so the lane could not have committed anything further without clearing them.
+  3. A comment pass: one restating doc-line deleted, one test note de-narrated.
 
 ## broader findings, NOT repaired here (brief item 5)
 
