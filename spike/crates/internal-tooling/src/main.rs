@@ -15,6 +15,7 @@ mod fmt_detached;
 mod hook_selftest;
 mod livetest;
 mod posix_script;
+mod precommit_gate;
 mod preflight;
 mod prose_census;
 mod step_globs;
@@ -22,9 +23,13 @@ mod step_globs;
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
-        // Both batteries always run, and the worse verdict wins: each guards a hook failure the
-        // other cannot see, so stopping at the first would hide the second's answer.
-        Some("hook-selftest") => ExitCode::from(hook_selftest::run().max(step_globs::run())),
+        // Every battery always runs, and the worst verdict wins: each guards a hook failure the
+        // others cannot see, so stopping at the first would hide the rest of the answer.
+        Some("hook-selftest") => ExitCode::from(
+            hook_selftest::run()
+                .max(step_globs::run())
+                .max(precommit_gate::run()),
+        ),
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
         Some("prose-census") => prose_census::run(),
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
