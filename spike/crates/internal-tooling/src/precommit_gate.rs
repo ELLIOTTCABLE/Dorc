@@ -86,6 +86,24 @@ esac
 exit "$DORC_STUB_FULL_RC"
 "#;
 
+/// Give the stub the bit unix `PATH` lookup demands.
+///
+/// Without it every shim case reads "ran hk 0 times": the hook's `mise` resolves to nothing, so
+/// git's own answer — the exit code — is 127 and no case can distinguish a refusal it asked for
+/// from a stub that was never reachable. Invisible from Windows, where the bit is not consulted.
+#[cfg(unix)]
+fn make_executable(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt as _;
+    let mut perms = std::fs::metadata(path)?.permissions();
+    perms.set_mode(perms.mode() | 0o111);
+    std::fs::set_permissions(path, perms)
+}
+
+#[cfg(not(unix))]
+fn make_executable(_path: &Path) -> std::io::Result<()> {
+    Ok(())
+}
+
 /// The phrase the hook prints when, and only when, it forgives a failure.
 const BANNER: &str = "waved it through";
 
@@ -272,6 +290,7 @@ pub(crate) fn run() -> u8 {
     let dir = std::env::temp_dir().join(format!("dorc-precommit-gate-{}", std::process::id()));
     if let Err(why) = std::fs::create_dir_all(&dir)
         .and_then(|()| std::fs::write(dir.join("mise"), STUB))
+        .and_then(|()| make_executable(&dir.join("mise")))
         .map_err(|why| format!("cannot lay out {}: {why}", dir.display()))
     {
         eprintln!("precommit-gate: {why}");
