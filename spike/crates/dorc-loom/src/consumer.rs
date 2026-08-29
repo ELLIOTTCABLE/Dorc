@@ -770,7 +770,7 @@ impl DorcConsumer {
                 if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
                     self.run_remote_apply(case, &analysis_args, context)
                 } else if analysis_args.answers_from_the_receipt_store() {
-                    self.run_receipt_store_why(&analysis_args)
+                    Some(self.run_receipt_store_why(&analysis_args))
                 } else {
                     self.run_engine(case, &analysis_args, command, context)
                 }
@@ -1007,7 +1007,7 @@ impl DorcConsumer {
     /// to the shared seat is production's own root refusal. That is this world telling the truth
     /// about itself, not an injected fault — which is why it carries no `edge-fault` declaration
     /// and why a case cannot ask for a different answer.
-    fn run_receipt_store_why(&self, args: &dorc_cli::Args) -> Option<DorcEngineReplay> {
+    fn run_receipt_store_why(&self, args: &dorc_cli::Args) -> DorcEngineReplay {
         let mut sink = LoomOutputSink {
             ctx: self.render_ctx(),
             actions: Vec::new(),
@@ -1018,7 +1018,7 @@ impl DorcConsumer {
             NO_STATE_ROOT,
             &mut sink,
         );
-        Some(dorc_engine_replay(status, sink.actions))
+        dorc_engine_replay(status, sink.actions)
     }
 
     fn run_engine(

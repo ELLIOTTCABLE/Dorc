@@ -126,9 +126,9 @@ fn why(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> String {
 /// As [`why`], keeping BOTH streams.
 ///
 /// They carry different species: stdout is the recorded listing, and every report ABOUT the store
-/// - that it could not be read, that its greatest order names a cohort - is a typed diagnostic on
-/// stderr. A case asserting one cannot see the other, which is how the ambiguity seat went
-/// untested while its store primitive did not.
+/// — unreadable, or a greatest order naming a cohort — is a typed diagnostic on stderr. A case
+/// asserting one cannot see the other, which is how the ambiguity seat went untested while its
+/// store primitive did not.
 fn why_streams(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> (String, String) {
     let out = dorc(sandbox, &scratch.path)
         .arg("why")
