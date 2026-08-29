@@ -1085,4 +1085,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "durable-receipt-unreadable",
+        when_fires: "a `dorc why` that answers from the local receipt store found nothing it could read there - no per-user root resolved, the keyset is not in a state a read may open, the store is absent or unusable, the bounded walk failed, or nothing the walk recognized verified and opened. cli/engine.rs report_recorded_store, over the reading cli/main.rs acquires from the production composition root in cli/durable.rs. {store} is the per-user state base that was asked, or the standing label where no root resolved, and {reason} is the closed refusal word for which half was unavailable.",
+        why: "Asking why is a READ, and it creates nothing to make itself answerable: a run that minted a fresh keyset here could not open the receipts written under the old one, so an empty answer is the honest one and this is what says so. Warning rather than error, because nothing about the run being asked about failed - there is simply no durable to explain, and the repair is in the operator's own profile rather than in the book. Remediation register (help) wanted: name what to check for the reported reason word, distinguish \"no receipt has ever been written here\" from \"the store is there and would not open\", and say that the tool removes and repairs nothing on this path.",
+        params: &[],
+        example: "[unwritten: durable-receipt-unreadable]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
