@@ -14,10 +14,13 @@ checkout into an external Opus harness.
 ## branch state
 
 - Build source: `ai/r30-receipt` at `1cbee21a`.
-- Current lane: `ai/r30-receipt-why-repair` in
-  `.claude/worktrees/r30-receipt-why-repair`, clean at `1cbee21a` before dispatch.
+- Diagnostic lane: `ai/r30-receipt-why-repair` in
+  `.claude/worktrees/r30-receipt-why-repair`, clean at `d948d651`; implementation and binary
+  coverage landed, with the ambiguity catalog row deliberately red pending an honest defining case.
+- Current harness lane: `ai/r30-receipt-loom-code` in
+  `.claude/worktrees/r30-receipt-loom-code`, clean at `d948d651` before dispatch.
 - Conduct branch: `ai/r30-conduct`; this document is its resumption account.
-- The two failed harness dispatches produced no commit and no worktree mutation.
+- The two failed in-process harness dispatches produced no commit and no worktree mutation.
 
 ## testing adjudication
 
@@ -39,26 +42,38 @@ checkout into an external Opus harness.
 - **`30Re:rul-deletion-must-add-positive-tests`** — a deletion-only diff routes zero checks; D5
   carries its replacement assertions in the same lane and reads the discovery-floor count rather
   than treating refusal or an empty selection as acceptance.
+- **`30Re:fnd-whole-product-code-proof-is-missing`** — a real-binary test now honestly drives the
+  same-order ambiguity, but the loom grammar cannot make that production diagnostic the defining
+  case. A virtual `LocalIo` in `dorc-loom` would entrench an already-wrong public I/O boundary and
+  duplicate store semantics; returning ambiguity to stdout would violate the catalog/stream laws.
+- **`30Re:rul-whole-product-loom-proves-code`** — the repair is a narrow harness capability: a
+  registered code may use a whole-product loom whose transcript/code proof is owned by the real e2e
+  execution, just as whole-product loom transcript fixpoints already are. No diagnostic injection,
+  virtual store, fixture provider, or production parser widening substitutes.
 
 ## serial schedule
 
-1. **`30Re:sched-repair-why-diagnostics`** — move receipt-store why selection into the shared
-   engine seat; restore typed catalog diagnostics and honest defining cases; no legacy deletion.
-   Builder ledger: quarantine `30Rf`.
-2. **`30Re:sched-migrate-replay-parity`** — migrate gate 8's six replay arms to the receipt store,
+1. **`30Re:sched-repair-why-diagnostics`** — implementation is landed at `d948d651`; completion
+   waits on the honest ambiguity defining case. Builder ledger: quarantine `30Rf`.
+2. **`30Re:sched-enable-whole-product-code-proof`** — let a registered diagnostic use a
+   whole-product loom whose real e2e execution owns the code/transcript proof; finish the ambiguity
+   case without synthetic store state. Builder ledger: quarantine `30Rg`.
+3. **`30Re:sched-migrate-replay-parity`** — migrate gate 8's six replay arms to the receipt store,
    adjudicate the seventh drifted-receipt case, and prove the replacement while legacy remains.
-   Builder ledger: quarantine `30Rg`.
-3. **`30Re:sched-delete-legacy-durable`** — D5: delete the old format, writer, reader, flags,
-   fixtures, and laundering caller only after stage 2 is green. Builder ledger: quarantine `30Rh`.
-4. **`30Re:sched-adjudicate-dispatch-diagnostics`** — re-check the proposed three-code split
+   Builder ledger: quarantine `30Rh`.
+4. **`30Re:sched-delete-legacy-durable`** — D5: delete the old format, writer, reader, flags,
+   fixtures, and laundering caller only after stage 3 is green. Builder ledger: quarantine `30Ri`.
+5. **`30Re:sched-adjudicate-dispatch-diagnostics`** — re-check the proposed three-code split
    against `28L:rul-reason-enums-not-sibling-codes` using the post-D5 world and measured reachability;
-   do not inherit the predecessor's conclusion as a ruling. Builder ledger: quarantine `30Ri`.
-5. **`30Re:sched-close-receipt-arc`** — fold serially, reconcile `30R`/status, synthesize steering
+   do not inherit the predecessor's conclusion as a ruling. Builder ledger: quarantine `30Rj`.
+6. **`30Re:sched-close-receipt-arc`** — fold serially, reconcile `30R`/status, synthesize steering
    prose, run the required review gates, then `gate:arc` from the populated branch before folding.
 
 ## current dispatch contract
 
-`30Rf` owns only `30Re:sched-repair-why-diagnostics`. It must not touch gate 8, any of the seven
-legacy-dependent cases, legacy flags, `results::replayed_records`, D5, or the dispatch diagnostic.
-New catalog registers remain prose-empty. The builder records current truth, commits granularly,
-and ends with one both-platform completion gate at one final tip.
+`30Rg` owns only `30Re:sched-enable-whole-product-code-proof`. It must preserve the real-binary
+ambiguity scenario already landed at `d948d651`, add no synthetic store state, and touch neither gate
+8 nor any legacy durable surface. The builder reads the commit skill before work and commits the
+red-first harness proof, implementation, and repairs granularly — intermediate broken commits are
+expected evidence, not something to squash away. It ends with one both-platform completion gate at
+one final tip.
