@@ -160,6 +160,13 @@ const FIXTURE_CLOCK_MS: u64 = 1_769_306_437_000;
 /// pin's own footing: a real, non-hermetic edge fact a subprocess battery has to be able to state.
 const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
 
+/// Where a case that owns its own per-user profile keeps it, inside its materialization.
+///
+/// A directory rather than a flag threaded through four drive seats: the profile a run resolves is
+/// a property of the world the case was materialized into, and the one seat that builds every
+/// command is the one seat that should have to know.
+const OWN_PROFILE_DIR: &str = ".dorc-own-profile";
+
 struct Harness {
     /// The `dorc` binary cargo just built for this test target.
     dorc: PathBuf,
@@ -263,7 +270,17 @@ impl Harness {
     /// profile directory — outside the worktree, which no test may touch.
     fn dorc(&self, at: &Path) -> Command {
         let mut command = Command::new(&self.dorc);
-        self.profile.apply(&mut command);
+        // A case that DEFINES a code asserts that its own drives emitted it, and a suite-wide
+        // profile makes that a claim about every other case too: the durable store the harness
+        // shares accumulates a document per drive, so a run reading it back is reading the suite.
+        // Such a case therefore gets the profile its materialization laid down beside it, and
+        // every other case keeps the shared one it has always had.
+        let own = at.join(OWN_PROFILE_DIR);
+        if own.is_dir() {
+            sandbox::apply_roots_under(&mut command, &own);
+        } else {
+            self.profile.apply(&mut command);
+        }
         // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
         // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
         // inherited: cargo sets a test process.s cwd to the PACKAGE root, under which no case.s
@@ -1356,6 +1373,12 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     std::fs::create_dir_all(&dir).expect("create loom case dir");
     materialize_loom(spec, &dir)
         .map_err(|error| Failed::from(format!("FAIL  {}  [loom: {error}]", spec.name)))?;
+    if spec.case.frontmatter().scalar("code").is_some() {
+        for role in ["config", "state", "home"] {
+            std::fs::create_dir_all(dir.join(OWN_PROFILE_DIR).join(role))
+                .expect("create the case's own profile");
+        }
+    }
 
     let case = E2eCase {
         name: spec.name.clone(),
@@ -1376,11 +1399,14 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
             .into());
         }
     }
+    let mut stderr = String::new();
     let outcome = match spec.run {
-        LoomRun::RoundTrip => run_round_trip(harness, &case),
+        LoomRun::RoundTrip => run_round_trip(harness, &case, &mut stderr),
         LoomRun::Lint => run_lint(harness, &case),
     };
-    let (extra, extra_failures) = drive_extra_replays(harness, spec, &dir);
+    let (extra, mut extra_failures) = drive_extra_replays(harness, spec, &dir);
+    stderr.push_str(&extra.stderr);
+    extra_failures.extend(defined_code_fired(spec, &stderr));
     // A FAILING case folds nothing. Safe because no bless workflow depends on partial folding:
     // every gate that compares against a bless-WRITTEN golden is already bless-aware and cannot
     // fail on staleness — the content diff and the extra-replay compare are `!bless`-guarded,
@@ -1391,7 +1417,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     // write would fold into a case whose transcript a later gate had just failed. XFAIL is
     // untouched: the lens returns `Ok` above, so its deliberate golden-text-blindness survives.
     if harness.bless && outcome.is_ok() {
-        bless_loom(spec, &dir, &extra, harness.bless_floor)?;
+        bless_loom(spec, &dir, &extra.outputs, harness.bless_floor)?;
     }
     match (outcome, extra_failures.is_empty()) {
         (Ok(()), true) => Ok(()),
@@ -1421,10 +1447,10 @@ fn drive_extra_replays(
     harness: &Harness,
     spec: &LoomCaseSpec,
     dir: &Path,
-) -> (Vec<String>, Vec<String>) {
+) -> (ExtraReplays, Vec<String>) {
     let blocks = spec.case.replay().blocks();
     if blocks.len() < 2 {
-        return (Vec::new(), Vec::new());
+        return (ExtraReplays::default(), Vec::new());
     }
     let name = &spec.name;
     let mut failures: Vec<String> = Vec::new();
@@ -1432,7 +1458,7 @@ fn drive_extra_replays(
         Ok(args) => args,
         Err(message) => {
             return (
-                Vec::new(),
+                ExtraReplays::default(),
                 vec![format!("FAIL  {name}  [replay: {message}]")],
             );
         }
@@ -1442,24 +1468,26 @@ fn drive_extra_replays(
     std::fs::write(&framed_path, framed_results(harness, dir, &args)).expect("write framed");
 
     let mut outputs: Vec<String> = Vec::new();
+    let mut stderr = String::new();
     for (index, block) in blocks.iter().enumerate().skip(1) {
         match run_replay_block(harness, dir, &framed_path, block.command()) {
-            Ok(got) if scratch_path_leaked(&got, dir) => failures.push(format!(
+            Ok(got) if scratch_path_leaked(&got.transcript, dir) => failures.push(format!(
                 "FAIL  {name}  [replay {index}: `{}` echoed the throwaway materialization path — a transcript carrying a machine-specific absolute path is not committable (`282` §7); spell the invocation with case-relative paths]",
                 block.command()
             )),
             Ok(got) => {
-                if !harness.bless && got != block.output() {
+                if !harness.bless && got.transcript != block.output() {
                     failures.push(format!(
                         "FAIL  {name}  [replay {index}: `{}` no longer reproduces its committed transcript]\n{}",
                         block.command(),
                         divergence(
                             &strip_trailing_newlines(block.output()),
-                            &strip_trailing_newlines(&got)
+                            &strip_trailing_newlines(&got.transcript)
                         )
                     ));
                 }
-                outputs.push(got);
+                stderr.push_str(&got.stderr);
+                outputs.push(got.transcript);
             }
             Err(message) => failures.push(format!(
                 "FAIL  {name}  [replay {index}: `{}` — {message}]",
@@ -1467,11 +1495,61 @@ fn drive_extra_replays(
             )),
         }
     }
+    let extra = ExtraReplays { outputs, stderr };
     if failures.is_empty() {
-        (outputs, failures)
+        (extra, failures)
     } else {
-        (Vec::new(), failures)
+        (ExtraReplays::default(), failures)
     }
+}
+
+/// A whole-product case's `code:` is an ASSERTION that one of its own drives emitted that code.
+///
+/// This is what lets a diagnostic whose world only a real run can build own its catalog row: the
+/// key that MINTS the row is the key checked here, so the owner and the proof have one source and
+/// a slug coincidence cannot stand in for either. The declaration is validated against the
+/// generated catalog exactly as `expected-diagnostics` is, so a dead slug is refused rather than
+/// asserting nothing forever.
+///
+/// Any severity counts — severity is registry data a case does not restate — and the whole case's
+/// stderr is the haystack, because which drive provokes a diagnostic is the case's business.
+fn defined_code_fired(spec: &LoomCaseSpec, stderr: &str) -> Vec<String> {
+    let name = &spec.name;
+    let Some(slug) = spec.case.frontmatter().scalar("code") else {
+        return Vec::new();
+    };
+    if !catalog_has_slug(slug) {
+        return vec![format!(
+            "FAIL  {name}  [code: `{slug}` is not a code in the generated catalog — a whole-product case defines a live code, or it defines nothing]"
+        )];
+    }
+    if ["error", "warning", "note"]
+        .iter()
+        .any(|severity| stderr.contains(&format!("{severity}[{slug}]")))
+    {
+        return Vec::new();
+    }
+    vec![format!(
+        "FAIL  {name}  [code: `{slug}` is what this case DEFINES, and no drive of it emitted that code — a defining case whose own run does not fire it defines a row nothing proves]"
+    )]
+}
+
+/// What blocks 1..N produced, across the drives.
+#[derive(Default)]
+struct ExtraReplays {
+    /// Per-block stdout, for the bless fold; empty when anything failed.
+    outputs: Vec<String>,
+    /// Every drive's stderr, concatenated — a diagnostic belongs to the CASE, not to whichever
+    /// block happened to provoke it.
+    stderr: String,
+}
+
+/// What one replay drive produced: the bytes its block commits, and the bytes only a gate reads.
+struct ReplayCapture {
+    /// Stdout, as the committed transcript spells it.
+    transcript: String,
+    /// Stderr, which no transcript carries and the code-fired gate needs.
+    stderr: String,
 }
 
 /// Did a render echo back the per-run materialization dir? Renders that quote an argv path
@@ -1484,19 +1562,21 @@ fn scratch_path_leaked(output: &str, dir: &Path) -> bool {
     output.contains(&native) || output.contains(&slashed)
 }
 
-/// Execute one committed replay command and return its stdout as transcript bytes.
+/// Execute one committed replay command and return its stdout as transcript bytes, beside the
+/// stderr it wrote.
 ///
 /// The accepted shape is deliberately tiny: a `dorc` invocation, optionally reading the case's
 /// `probe-results.txt` (which resolves to the framed stream the battery feeds, exactly as block
-/// 0's committed `< probe-results.txt` does) and optionally discarding stdout. stderr is dropped
-/// — `stdout-contract` makes stdout the product surface — so a non-zero exit is the only
-/// tripwire a silently-broken invocation leaves, and it is fatal here.
+/// 0's committed `< probe-results.txt` does) and optionally discarding stdout. Only STDOUT is
+/// transcript — `stdout-contract` makes it the product surface — but stderr is kept rather than
+/// dropped, because a diagnostic is a thing a later drive can be the only one to emit, and a gate
+/// that cannot see it is a gate the case can never satisfy.
 fn run_replay_block(
     harness: &Harness,
     dir: &Path,
     framed: &Path,
     command: &str,
-) -> Result<String, String> {
+) -> Result<ReplayCapture, String> {
     let mut words: Vec<&str> = command.split_whitespace().collect();
     let mut stdin_framed = false;
     let mut discard = false;
@@ -1534,7 +1614,7 @@ fn run_replay_block(
             child
                 .current_dir(dir)
                 .args(rest)
-                .stderr(Stdio::null())
+                .stderr(Stdio::piped())
                 .stdout(if discard {
                     Stdio::null()
                 } else {
@@ -1547,13 +1627,16 @@ fn run_replay_block(
             });
             let out = capture(&mut child);
             if out.code != 0 {
-                return Err(format!("exited rc={}", out.code));
+                return Err(format!("exited rc={}\n{}", out.code, out.stderr));
             }
             let got = strip_trailing_newlines(&strip_cr(&out.stdout));
-            Ok(if got.is_empty() {
-                String::new()
-            } else {
-                format!("{got}\n")
+            Ok(ReplayCapture {
+                transcript: if got.is_empty() {
+                    String::new()
+                } else {
+                    format!("{got}\n")
+                },
+                stderr: out.stderr,
             })
         }
         _ => Err(String::from("not a `dorc` invocation")),
@@ -1659,7 +1742,11 @@ fn args_reading_stdin_records(args: &[String]) -> Vec<String> {
 }
 
 /// Drive one round-trip case through every gate, then apply the XFAIL/BLESS lens.
-fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
+fn run_round_trip(
+    harness: &Harness,
+    case: &E2eCase,
+    drive_stderr: &mut String,
+) -> Result<(), Failed> {
     let dir = &case.dir;
     let name = &case.name;
     // The dir-form seat of the same refusal `run_loom` makes on sections. Loom cases never reach
@@ -1721,6 +1808,10 @@ fn run_round_trip(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()),
     );
+    // Handed back through the parameter rather than the return, because this function exits at a
+    // dozen gate verdicts and the caller's code-fired question is about the DRIVE, not the verdict:
+    // a case whose declared code fired and whose golden then diverged must still say so.
+    drive_stderr.push_str(&out.stderr);
     let got = strip_trailing_newlines(&strip_cr(&out.stdout));
     if out.code != expected_dorc_exit || got.is_empty() {
         return Err(format!(
@@ -3744,7 +3835,7 @@ fn main() {
         let harness = Arc::clone(&harness);
         match case.kind {
             E2eKind::RoundTrip => trials.push(Trial::test(case.name.clone(), move || {
-                run_round_trip(&harness, &case)
+                run_round_trip(&harness, &case, &mut String::new())
             })),
             E2eKind::Lint => trials.push(Trial::test(case.name.clone(), move || {
                 run_lint(&harness, &case)

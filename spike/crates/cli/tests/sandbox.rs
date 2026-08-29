@@ -59,14 +59,26 @@ impl ProfileSandbox {
     /// `HOME` is set as well as the XDG pair, because macOS resolves both roles from it and a
     /// drive that left it inherited would write into whoever ran the suite.
     pub(crate) fn apply(&self, command: &mut std::process::Command) {
-        for key in ["APPDATA", "XDG_CONFIG_HOME"] {
-            command.env(key, self.config_root());
-        }
-        for key in ["LOCALAPPDATA", "XDG_STATE_HOME"] {
-            command.env(key, self.state_root());
-        }
-        command.env("HOME", self.root.join("home"));
+        apply_roots_under(command, &self.root);
     }
+}
+
+/// Point one invocation's standard roots at `root`'s config/state pair.
+///
+/// Factored out of [`ProfileSandbox::apply`] because a caller can own a throwaway profile without
+/// owning a self-removing value: a case materialized into a scratch dir already has a lifetime,
+/// and giving it a second one only risks the two disagreeing about when to reap.
+///
+/// `HOME` is set as well as the XDG pair, because macOS resolves both roles from it and a drive
+/// that left it inherited would write into whoever ran the suite.
+pub(crate) fn apply_roots_under(command: &mut std::process::Command, root: &std::path::Path) {
+    for key in ["APPDATA", "XDG_CONFIG_HOME"] {
+        command.env(key, root.join("config"));
+    }
+    for key in ["LOCALAPPDATA", "XDG_STATE_HOME"] {
+        command.env(key, root.join("state"));
+    }
+    command.env("HOME", root.join("home"));
 }
 
 impl Drop for ProfileSandbox {
