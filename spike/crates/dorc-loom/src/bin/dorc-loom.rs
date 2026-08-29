@@ -1043,6 +1043,12 @@ fn inspect_cases(
         let mut previews = Vec::new();
         let mut case_refusal = None;
         let results = drive_replays(&case, &consumer, env, path, &source)?;
+        // A WHOLE-PRODUCT case's transcript is what the real binary printed, and this tool never
+        // runs the binary — so an in-process render of it is not the case's bytes, and neither
+        // comparing against it nor compiling an edit against it means anything. Publish takes such
+        // a case for its METADATA alone (the lock row's `when-fires`/`why`); its prose, when
+        // somebody has some, is owed a path that reads the executed transcript.
+        let executed_elsewhere = case.frontmatter().scalar("run").is_some();
         let mut inspected_replays = Vec::new();
         for (index, ((block, head_block), routed)) in case
             .replay()
@@ -1056,7 +1062,12 @@ fn inspect_cases(
             // The committed bytes ARE the render's bytes, so an edit compiles against them
             // directly (`28L:rul-editability-is-stamped-never-re-derived`).
             let dirty = block.output().to_owned();
-            if let Some(render) = routed.editable_render().cloned() {
+            if executed_elsewhere {
+                if !quiet {
+                    writeln!(body, "replay: {index} executed elsewhere")
+                        .map_err(|error| error.to_string())?;
+                }
+            } else if let Some(render) = routed.editable_render().cloned() {
                 let baseline = consumer
                     .baseline_from_render(&case, render)
                     .map_err(|error| format!("{}: {error}", path.display()))?;

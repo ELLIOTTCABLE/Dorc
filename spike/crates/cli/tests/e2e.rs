@@ -1529,8 +1529,12 @@ fn defined_code_fired(spec: &LoomCaseSpec, stderr: &str) -> Vec<String> {
     {
         return Vec::new();
     }
+    // The stderr comes with the refusal because it is the whole diagnosis: an author looking at
+    // this is asking which diagnostic their world DID produce, and every gate above this one has
+    // already thrown that stream away.
     vec![format!(
-        "FAIL  {name}  [code: `{slug}` is what this case DEFINES, and no drive of it emitted that code — a defining case whose own run does not fire it defines a row nothing proves]"
+        "FAIL  {name}  [code: `{slug}` is what this case DEFINES, and no drive of it emitted that code — a defining case whose own run does not fire it defines a row nothing proves]\n{}",
+        indent(&stderr.lines().map(str::to_owned).collect::<Vec<_>>())
     )]
 }
 

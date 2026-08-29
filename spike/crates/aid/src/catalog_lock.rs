@@ -1094,4 +1094,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "durable-receipt-ambiguous",
+        when_fires: "a `dorc why` answering from the local receipt store found more than one document sharing the store's greatest order, so \"the last one\" names a cohort rather than a document. cli/engine.rs report_recorded_store, over the reading cli/main.rs acquires from the production composition root in cli/durable.rs. {count} is how many documents share that order.",
+        why: "The store's order is when the run was recorded and its ONE selection is by order, so runs recorded at one moment leave a last it cannot name. Reported rather than resolved: a tie-break on receipt identity would choose a document by the value least related to when it was written, and choosing quietly would be worse. Every member is still listed, so the reader gets the cohort rather than a pick. Remediation register (help) wanted: say that all members are listed below, that `--receipt <id>` retrieves one exactly, and that nothing was chosen on the reader's behalf.",
+        params: &[],
+        example: "[unwritten: durable-receipt-ambiguous]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];

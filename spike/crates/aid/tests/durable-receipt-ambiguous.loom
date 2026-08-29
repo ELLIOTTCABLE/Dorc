@@ -7,11 +7,52 @@ why: The store's order is when the run was recorded and its ONE selection is by 
 ---
 -- book.sh --
 #!/bin/sh
-hork tune --profile web
+# One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
+# its intake admitted records, and an empty framed stream is NoObservation rather than an empty
+# observation. What this case is about is the STORE, not this book.
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
 
 -- replay --
-$ dorc --book=book.sh --results -
+$ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-$ dorc plan --book=book.sh > /dev/null
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9ab243e1a6187608b11606bad6eed8e200521a651fad43ec367c9efcb4c92912 sites=1 @@dorc@@\n'
+# site 0: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
+# its intake admitted records, and an empty framed stream is NoObservation rather than an empty
+# observation. What this case is about is the STORE, not this book.
+# foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)
+
+$ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt > /dev/null
 
 $ dorc why --last > /dev/null
