@@ -90,19 +90,15 @@ exit "$DORC_STUB_FULL_RC"
 ///
 /// Without it every shim case reads "ran hk 0 times": the hook's `mise` resolves to nothing, so
 /// git's own answer — the exit code — is 127 and no case can distinguish a refusal it asked for
-/// from a stub that was never reachable. Invisible from Windows, where the bit is not consulted.
+/// from a stub that was never reachable. Windows never calls this; the bit is not consulted there,
+/// and a stand-in that always answered `Ok` would be a second, lying seat.
 #[cfg(unix)]
-fn make_executable(path: &Path) {
+fn make_executable(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt as _;
-    if let Ok(meta) = std::fs::metadata(path) {
-        let mut perms = meta.permissions();
-        perms.set_mode(perms.mode() | 0o111);
-        let _ = std::fs::set_permissions(path, perms);
-    }
+    let mut perms = std::fs::metadata(path)?.permissions();
+    perms.set_mode(perms.mode() | 0o111);
+    std::fs::set_permissions(path, perms)
 }
-
-#[cfg(not(unix))]
-fn make_executable(_path: &Path) {}
 
 /// The phrase the hook prints when, and only when, it forgives a failure.
 const BANNER: &str = "waved it through";
@@ -295,7 +291,17 @@ pub(crate) fn run() -> u8 {
         eprintln!("precommit-gate: {why}");
         return 2;
     }
-    make_executable(&dir.join("mise"));
+    // Loud HERE, because the alternative is not silence — it is five cases reporting
+    // "ran hk 0 time(s)", which reads as a counting failure and is a reachability one.
+    #[cfg(unix)]
+    if let Err(why) = make_executable(&dir.join("mise")) {
+        eprintln!(
+            "precommit-gate: cannot make the stub executable at {}: {why}",
+            dir.join("mise").display()
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+        return 2;
+    }
 
     let mut failures = 0_u32;
     for case in SHIMS {
