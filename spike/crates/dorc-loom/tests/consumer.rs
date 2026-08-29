@@ -672,14 +672,22 @@ fn exact_replays_keep_editability_with_provenance_and_route_edges_to_the_injecte
     assert!(results[1].editable_render().is_none());
     assert_eq!(results[1].output(), "dorc 0.0.0\n");
     assert!(results[2].editable_render().is_some());
-    for declined in [3usize, 4, 5, 6, 7, 8] {
+    // `dorc why --last` no longer declines to the generic fallback: it answers from the receipt
+    // store through the shared seat, and a loom world resolves no per-user root, so what it
+    // answers is that report.
+    assert!(results[3].editable_render().is_some());
+    assert!(
+        results[3]
+            .output()
+            .contains("warning[durable-receipt-unreadable]")
+    );
+    for declined in [4usize, 5, 6, 7, 8] {
         assert!(results[declined].editable_render().is_none());
         assert!(results[declined].output().contains("{{command}}"));
     }
     assert_eq!(
         calls.into_inner(),
         [
-            "dorc why --last",
             "dorc plan --book=missing.sh",
             "dorc plan --book=book.sh --book=book.sh",
             "dorc plan --book=book.sh --unknown",

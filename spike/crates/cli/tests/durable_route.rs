@@ -93,10 +93,19 @@ fn dorc(sandbox: &ProfileSandbox, at: &Path) -> Command {
 
 /// Run a plan over [`BOOK`], feeding it the records above on stdin.
 fn plan(sandbox: &ProfileSandbox, scratch: &Scratch) -> String {
+    plan_at(sandbox, scratch, None)
+}
+
+/// As [`plan`], with the controller clock reading this run records its document under.
+fn plan_at(sandbox: &ProfileSandbox, scratch: &Scratch, clock: Option<&str>) -> String {
     let stdin = scratch.path.join("records.txt");
     std::fs::write(&stdin, records()).expect("write the records");
     let input = std::fs::File::open(&stdin).expect("re-open the records");
-    let out = dorc(sandbox, &scratch.path)
+    let mut command = dorc(sandbox, &scratch.path);
+    if let Some(millis) = clock {
+        command.env("DORC_FIXTURE_CLOCK_MS", millis);
+    }
+    let out = command
         .args(["plan", "--book=book.sh", "--results", "-"])
         .stdin(std::process::Stdio::from(input))
         .output()
@@ -111,17 +120,27 @@ fn plan(sandbox: &ProfileSandbox, scratch: &Scratch) -> String {
 
 /// Ask a SECOND process what the store holds.
 fn why(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> String {
+    why_streams(sandbox, scratch, args).0
+}
+
+/// As [`why`], keeping BOTH streams.
+///
+/// They carry different species: stdout is the recorded listing, and every report ABOUT the store
+/// - that it could not be read, that its greatest order names a cohort - is a typed diagnostic on
+/// stderr. A case asserting one cannot see the other, which is how the ambiguity seat went
+/// untested while its store primitive did not.
+fn why_streams(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> (String, String) {
     let out = dorc(sandbox, &scratch.path)
         .arg("why")
         .args(args)
         .output()
         .expect("the built binary runs");
+    let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
     assert!(
         out.status.success(),
-        "asking why is a read; stderr: {}",
-        String::from_utf8_lossy(&out.stderr)
+        "asking why is a read; stderr: {stderr}"
     );
-    String::from_utf8_lossy(&out.stdout).into_owned()
+    (String::from_utf8_lossy(&out.stdout).into_owned(), stderr)
 }
 
 /// Every file directly under one directory, sorted.
@@ -223,10 +242,18 @@ fn asking_why_creates_nothing_and_says_what_it_found() {
     let sandbox = ProfileSandbox::new("why-only");
     let scratch = Scratch::new("why-only");
 
-    let listing = why(&sandbox, &scratch, &["--last"]);
+    let (listing, stderr) = why_streams(&sandbox, &scratch, &["--last"]);
     assert!(
-        listing.starts_with("store-unreadable "),
-        "an empty profile answers with what it found: {listing}"
+        stderr.contains("warning[durable-receipt-unreadable]"),
+        "an empty profile must report WHICH state it found, by code; got: {stderr}"
+    );
+    assert!(
+        stderr.contains("store-not-initialized"),
+        "and name the closed word for the half that was unavailable; got: {stderr}"
+    );
+    assert!(
+        listing.is_empty(),
+        "a store with nothing to say puts no listing on stdout; got: {listing}"
     );
     assert!(
         !sandbox.config_root().join("dorc").exists(),
@@ -562,5 +589,59 @@ fn every_seat_that_drives_the_binary_sandboxes_the_profile_it_writes_into() {
         "these drive the shipped binary without pointing its per-user roots anywhere throwaway, \
          so a run of them writes keys and receipts into whoever is running the suite: \
          {unsandboxed:?}"
+    );
+}
+
+/// The instant two runs are pinned to share, so their documents land at one store order.
+///
+/// Pinned rather than raced: the order IS the controller's clock reading, so at real wall-clock
+/// two runs differ by however long a process takes, and a case built on that would pass or fail
+/// with the machine. A round number in 2026, on the corpus harness's own footing, so a reader can
+/// tell at a glance that the moment is fixture.
+const ONE_MOMENT_MS: &str = "1769306437000";
+
+#[test]
+fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
+    // THE AMBIGUITY SEAT, through the shipped binary. The store's ONE selection is its
+    // maximum-order cohort, and its order is when the run was recorded — so two runs recorded at
+    // one moment are a store that genuinely cannot say which of them is last. What must happen is
+    // that it SAYS so and lists both: a tie-break on receipt identity would choose a document by
+    // the value least related to when it was written, and choosing quietly is worse still.
+    let sandbox = ProfileSandbox::new("ambiguous-last");
+    let scratch = Scratch::new("ambiguous-last");
+    plan_at(&sandbox, &scratch, Some(ONE_MOMENT_MS));
+    plan_at(&sandbox, &scratch, Some(ONE_MOMENT_MS));
+
+    let published = entries(&store_root(&sandbox));
+    assert_eq!(published.len(), 2, "two runs publish two documents");
+    let first = receipt_id_of(published.first().expect("two documents"));
+    let second = receipt_id_of(published.get(1).expect("two documents"));
+    assert_ne!(first, second, "two documents never share one identity");
+
+    let (listing, stderr) = why_streams(&sandbox, &scratch, &["--last"]);
+    assert!(
+        stderr.contains("warning[durable-receipt-ambiguous]"),
+        "an unnameable last must be reported by code; got: {stderr}"
+    );
+    // REPORTED, never resolved: both members are still answered about, so the reader has the
+    // cohort rather than one document the tool picked for them.
+    assert!(
+        listing.contains(&format!("receipt {first}"))
+            && listing.contains(&format!("receipt {second}")),
+        "every member of the cohort must still be listed; got:\n{listing}"
+    );
+
+    // THE FAILING DIRECTION. Naming one identity is retrieval, not a ranking, so there is no
+    // greatest-order question left to be ambiguous about — and a case that only ever saw the
+    // warning fire could not tell this seat from one that reports it unconditionally.
+    let (named, quiet) = why_streams(&sandbox, &scratch, &["--receipt", &first]);
+    assert!(
+        !quiet.contains("durable-receipt-ambiguous"),
+        "retrieval by identity asks no ordering question; got: {quiet}"
+    );
+    assert!(
+        named.contains(&format!("receipt {first}"))
+            && !named.contains(&format!("receipt {second}")),
+        "and answers about the named document alone; got:\n{named}"
     );
 }
