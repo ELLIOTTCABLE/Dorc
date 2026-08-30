@@ -63,13 +63,30 @@ loaded-source locator composition (named uncollected V1 residue).
   `30Mc:finding-transitive-pre-source-replays-as-root`.
 - `d3388076` review synthesis ledger → strict subset of `notes/30Mc`, which
   carries citations/worlds/slugs the orphan lacks.
-- Residue builder: IN FLIGHT on `ai/r30-receipt` from `7b398f51`; item-1
-  shapes pinned from the prior arc's handoff ledger (site newtype →
-  `rows::RecordedSite`; order string → carry the typed `ReceiptOrderToken`;
-  closure membership → minted by a question-directed `ReceiptGraph` walk).
-  Mandatory breakpoint after item 2 (holds for the human).
-- Why-surface spec: drafted, `notes/30Vb` — awaiting human adjudication
-  before the render lane dispatches.
+- Residue lane: COMPLETE — `ai/r30-receipt` at `4414af7a` (14 commits,
+  +729/−4971), `mise run both gate:full-quiet` green both legs, tree clean,
+  builder ledger `notes/30Rk`. Old whylog fully cut over (census: no live
+  code, no loom replay, no flag table); report-API tidy landed; receipt flag
+  family mechanics + selector-exclusion tests landed; the fence turned out
+  never to apply (the mode field reaches no durable — breakpoint claim
+  corrected in `30Rk`) and the acked rename landed as `Unstated` anyway.
+- Standing rulings pending (human): the root-identity fold into closure and
+  the ancestors-only closure walk (both stand as built); whether the now
+  dead-ended `SpineInvocation::mode()` (zero callers) should die outright.
+- Conductor fold-time queue: steering edits (stale whylog-era blocks in
+  `spike/CLAUDE.md`, the receipt/receipt-local contract rows `30Rj` left
+  stale, `core/src/spine.rs`'s `ExcludedContent` doc-cite, re-homing the
+  account-export expectation at a future receipt-side seat) · xfail pin
+  `p-x-durable-account-export-is-enabled` disposition (parked `Reserved`) ·
+  prose massage (five unwritten receipt-flag help rows; two receipt
+  placeholders; six stale `why:` metadata citations in the generated locks) ·
+  an orphan-arrangement-rows census (rider for the render lane —
+  `30Rk:the-arrangement-mirror-is-its-own-lock`) · LIVING_STATUS refresh ·
+  `gate:arc` · end-of-work review per root `AGENTS.md` · worktree cleanup.
+- Why-surface design: state-space axes + flagship-moment exploration
+  delivered in-chat (2026-08-30) — HELD for human adjudication; `notes/30Vb`
+  demoted to acceptance-probe material by human direction (strawmen will be
+  standalone files; first-person register; denser CFGs; width-responsive).
 
 ## Ack-ledger (only what the human has TYPED counts)
 
