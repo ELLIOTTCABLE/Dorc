@@ -205,11 +205,15 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
 
     let stdout = stdout_posture();
     let durable_dir = durable_destination(args);
+    // Publication is gated on the admin's REFUSAL, never on whether they named a store: the store
+    // has a standard per-user default and `28F:rul-w3-default-on-aim-high` makes a receipt the
+    // thing you get without asking. Gating on a named directory would make default-on mean
+    // default-off for every invocation that did not spell one.
     let options = dorc_cli::engine_options_from_args(
         args,
         stdout,
         args.artifact_dir.is_some(),
-        durable_dir.is_some(),
+        !args.no_receipt,
     );
     let cwd = invocation_cwd();
     let ready = acquire_engine_request(args, &cwd)?;

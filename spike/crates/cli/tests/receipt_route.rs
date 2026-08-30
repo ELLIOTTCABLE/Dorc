@@ -1599,19 +1599,19 @@ fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary(
         let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
         sandbox.apply(&mut command);
         let refused = command
-            .args([mode, "--last", "book.sh"])
+            .args([mode, "--receipt-last", "book.sh"])
             .output()
             .expect("the built binary runs");
         assert!(
             !refused.status.success(),
-            "`dorc {mode} --last` must not proceed: a stored record stream would stand where a \
-             live measurement belongs"
+            "`dorc {mode} --receipt-last` must not proceed: a stored record stream would stand \
+             where a live measurement belongs"
         );
         let stderr = String::from_utf8_lossy(&refused.stderr);
         assert!(
-            stderr.contains(SLUG) && stderr.contains("--last"),
-            "`dorc {mode} --last` must refuse by naming the flag and the mode it belongs to, \
-             rather than by any other refusal that happens to fire first; got: {stderr}"
+            stderr.contains(SLUG) && stderr.contains("--receipt-last"),
+            "`dorc {mode} --receipt-last` must refuse by naming the flag and the mode it belongs \
+             to, rather than by any other refusal that happens to fire first; got: {stderr}"
         );
     }
 
@@ -1620,12 +1620,12 @@ fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary(
     let mut control = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
     sandbox.apply(&mut control);
     let explained = control
-        .args(["why", "--last", "--whylog-dir=no-such-directory"])
+        .args(["why", "--receipt-last", "--receipts=no-such-directory"])
         .output()
         .expect("the built binary runs");
     let stderr = String::from_utf8_lossy(&explained.stderr);
     assert!(
         !stderr.contains(SLUG),
-        "`dorc why --last` is the one invocation the flag is for; got: {stderr}"
+        "`dorc why --receipt-last` is the one invocation the flag is for; got: {stderr}"
     );
 }

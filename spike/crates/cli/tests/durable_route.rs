@@ -208,7 +208,7 @@ fn a_clean_profile_publishes_a_receipt_a_second_process_verifies_and_opens() {
         "the old durable has its own destination and this route does not write one there"
     );
 
-    let listing = why(&sandbox, &scratch, &["--last"]);
+    let listing = why(&sandbox, &scratch, &["--receipt-last"]);
     let signing = line_starting(&listing, "signing-key").expect("the listing names its key");
     assert!(
         signing.len() > "signing-key ".len(),
@@ -242,7 +242,7 @@ fn asking_why_creates_nothing_and_says_what_it_found() {
     let sandbox = ProfileSandbox::new("why-only");
     let scratch = Scratch::new("why-only");
 
-    let (listing, stderr) = why_streams(&sandbox, &scratch, &["--last"]);
+    let (listing, stderr) = why_streams(&sandbox, &scratch, &["--receipt-last"]);
     assert!(
         stderr.contains("warning[durable-receipt-unreadable]"),
         "an empty profile must report WHICH state it found, by code; got: {stderr}"
@@ -275,9 +275,9 @@ fn two_clean_profiles_mint_different_identities_and_reopening_one_preserves_them
 
     plan(&first, &scratch);
     plan(&second, &scratch);
-    let one = line_starting(&why(&first, &scratch, &["--last"]), "signing-key")
+    let one = line_starting(&why(&first, &scratch, &["--receipt-last"]), "signing-key")
         .expect("the first profile names its key");
-    let two = line_starting(&why(&second, &scratch, &["--last"]), "signing-key")
+    let two = line_starting(&why(&second, &scratch, &["--receipt-last"]), "signing-key")
         .expect("the second profile names its key");
     assert_ne!(
         one, two,
@@ -285,7 +285,7 @@ fn two_clean_profiles_mint_different_identities_and_reopening_one_preserves_them
     );
 
     plan(&first, &scratch);
-    let reopened = line_starting(&why(&first, &scratch, &["--all"]), "signing-key")
+    let reopened = line_starting(&why(&first, &scratch, &["--receipt-last"]), "signing-key")
         .expect("the reopened profile names its key");
     assert_eq!(
         one, reopened,
@@ -379,7 +379,12 @@ fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_re
         "an apply on a clean profile initializes its own keyset"
     );
 
-    let listing = why(&sandbox, &scratch, &["--all"]);
+    // ROOTED at the newest document, not enumerated: `--all` no longer selects store entries
+    // (`30R:receipt-rooted-attention-and-cli`), so what reaches this listing is the outcome the
+    // last-selection derived plus the typed edges the graph correlated. That is the stronger
+    // statement — a union of every history would have shown the same lines without proving the
+    // outcome was reachable FROM anything.
+    let listing = why(&sandbox, &scratch, &["--receipt-last"]);
     assert!(
         listing.contains(&format!("answers-intent {intent_id}")),
         "the outcome must name the intent that authorized it; got:\n{listing}"
@@ -493,7 +498,7 @@ fn a_receipt_identity_retrieves_its_own_document_and_prefers_nothing() {
     let second = receipt_id_of(published.get(1).expect("two documents"));
     assert_ne!(first, second, "two documents never share one identity");
 
-    let listing = why(&sandbox, &scratch, &["--receipt", &first]);
+    let listing = why(&sandbox, &scratch, &["--receipt-id", &first]);
     assert!(
         listing.contains(&format!("receipt {first}")),
         "the named document must be the one answered; got:\n{listing}"
@@ -505,7 +510,7 @@ fn a_receipt_identity_retrieves_its_own_document_and_prefers_nothing() {
 
     // An identity nothing carries answers about nothing rather than falling back to whatever was
     // nearest — the property the one-selection rule exists to keep.
-    let absent = why(&sandbox, &scratch, &["--receipt", &"0".repeat(64)]);
+    let absent = why(&sandbox, &scratch, &["--receipt-id", &"0".repeat(64)]);
     assert!(
         !absent.contains("receipt "),
         "an identity nothing carries must answer about no document; got:\n{absent}"
@@ -617,7 +622,7 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
     let second = receipt_id_of(published.get(1).expect("two documents"));
     assert_ne!(first, second, "two documents never share one identity");
 
-    let (listing, stderr) = why_streams(&sandbox, &scratch, &["--last"]);
+    let (listing, stderr) = why_streams(&sandbox, &scratch, &["--receipt-last"]);
     assert!(
         stderr.contains("warning[durable-receipt-ambiguous]"),
         "an unnameable last must be reported by code; got: {stderr}"
@@ -633,7 +638,7 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
     // THE FAILING DIRECTION. Naming one identity is retrieval, not a ranking, so there is no
     // greatest-order question left to be ambiguous about — and a case that only ever saw the
     // warning fire could not tell this seat from one that reports it unconditionally.
-    let (named, quiet) = why_streams(&sandbox, &scratch, &["--receipt", &first]);
+    let (named, quiet) = why_streams(&sandbox, &scratch, &["--receipt-id", &first]);
     assert!(
         !quiet.contains("durable-receipt-ambiguous"),
         "retrieval by identity asks no ordering question; got: {quiet}"
