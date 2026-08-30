@@ -310,7 +310,7 @@ command's output.
   reached body lies wholly in the pure decidable set and its argv is controller-known (the
   symbolic `$0` counts); the engine evaluates it at plan time, ON THE CONTROLLER,
   SPECULATIVELY, once per modelled invocation shape — the static half of the split the
-  kind-owner roles already have (`disturbance_reaches_only`'s static line vs its `dpkg -L`
+  kind-owner roles already have (`disturbance_reaches`'s static line vs its `dpkg -L`
   line), no host, no capture lane, no runtime `$0`. Obligations: (a) runtime confirmation
   is owed at probe STANDUP (`mech-two-standups`), never through `30D`'s per-record OOB lane —
   `reject-missing-expected-confirmation` does not apply to a statically-consumed record;

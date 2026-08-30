@@ -411,11 +411,13 @@ stays custody-free — the ecosystem's on-ramp.
 **Totalism and the kind members** — kind-member contest-immunity comes from
 single-occupancy in an owned namespace (§3), not from completeness; `only` is an
 authoring-completeness contract (born-total vs arm-incremental), orthogonal to
-plurality — `cmd__disturbs` is arm-incremental and
-decline-calibrated. Within the `only` pair: a wrong `reaches_only` fails soft
-(over-walls); a wrong `state_stored_only_in`/invariance mark fails sharp (grants
-carry). Totals rot, and pre-MH2 contest-or-custody are the only displacement
-paths — contest-inertness would make rot permanent-until-fork.
+plurality — `cmd__disturbs` AND `kind__disturbance_reaches` (née `_only`; re-cut
+`plans/30U`) are arm-incremental and decline-calibrated. The failure grading:
+wrong reach EMISSIONS fail soft (over-wall); the sharp failures are a reached
+`disturbs nothing-else` record written before its definition is truly finished
+(grants cross-kind sparing) and a wrong `state_stored_only_in`/invariance mark
+(grants carry). Totals rot, and pre-MH2 contest-or-custody are the only
+displacement paths — contest-inertness would make rot permanent-until-fork.
 
 **The consumption ladder** [ACKED general; fit unsettled] — unconsumed <
 rc-consumed (a constrained integral set; one consumer's branch) <

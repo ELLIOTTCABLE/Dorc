@@ -318,7 +318,7 @@ What the pattern actually wanted survives intact, relocated:
 - One `apt_get__predict` body may mint cells of *many kinds* (marks are per-line; nothing
   ties one function to one kind). The two-kind fixture content merges into one body in
   one file — a mechanical fixture edit, inventoried below.
-- Kind-*ownership* families (`sm_dorc_PkgIndex__resolve`, `…__disturbance_reaches_only`)
+- Kind-*ownership* families (`sm_dorc_PkgIndex__resolve`, `…__disturbance_reaches`)
   remain separate, separately-publishable files — untouched by this plan. Independent
   publication is recovered at the kind level, where ownership actually lives.
 - Two independent upstream repos both describing `apt-get` is genuine plurality:

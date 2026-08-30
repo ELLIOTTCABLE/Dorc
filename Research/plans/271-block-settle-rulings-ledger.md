@@ -209,11 +209,16 @@ the **flat three-place `(kind, entity, selector)`**.
 - **rul-binds-entity-only-provisional (typed, SOFT — ~GUESS both sides).** Binds
   name entities, never cells; facts about cells attach via marks on
   probing/emitting commands. Door open on counterexample.
-- **rul-kind-or-selector-is-a-behaviour-choice (typed).** Kind vs selector minting
-  is a user-facing behaviour selection, not ontology. The menu: **kind = isolation**
-  (cross-kind disjoint by construction, `reaches()`-bridged only; claim-only usable)
-  vs **selector = coupling** (same-entity collide-by-default; subscription to the
-  entity's kill-traffic both directions). Rides the stdlib quality-bar.
+- **rul-kind-or-selector-is-a-behaviour-choice (typed; menu re-derived 2026-08-29
+  under `plans/30U`).** Kind vs selector minting is a user-facing behaviour
+  selection, not ontology. The menu: **kind = a separate conversation** (cross-kind
+  pairs answer `unrelated` ⇒ collide for sparing until the claimed kind's owner
+  finishes its definition — the reached `disturbs nothing-else` record; disjointness
+  across vocabularies is earned speech, never construction; claim-only usable) vs
+  **selector = coupling** (same-entity collide-by-default; subscription to the
+  entity's kill-traffic both directions). A fresh kind therefore defaults
+  conservative in BOTH directions — it buys namespace and ownership, never free
+  isolation. Rides the stdlib quality-bar.
 - **rul-selector-disjointness-dialect-scoped (TYPED 2026-07-10 — dictated "as ruled
   for now, and see where the spike goes with it"; spike-provisional).** When
   token-inequality may be read as cell-disjointness (the survival license):
@@ -325,13 +330,17 @@ goalpost is SUPERIOR to imperfect mechanical nets.
 ### rul-at-most-family-names  (2026-07-11; TYPED — "I like the naming. Let's bake
 that moving forward")
 Ratified: **`cmd__disturbs()`** (no `only` — at-most per MATCHED INVOCATION-SHAPE,
-gradual across shapes) · **`kind__disturbance_reaches_only()`** ·
+gradual across shapes) · **`kind__disturbance_reaches()`** (née
+`disturbance_reaches_only`; arm-incremental since `plans/30U` — totality moved off
+the name into the reached `disturbs nothing-else` record, which finishes the
+kind's definition and licenses cross-kind sparing) ·
 **`kind__state_stored_only_in()`** (earns `only` most — its key consumer reads the
-emission's negative space). The general rule: **`only` in a role name =
+emission's negative space). The general rule stands: **`only` in a role name =
 complete-by-contract, totalistic-survey-before-authoring; absence =
 arm-incremental.** The chain teaching-sentence: a command DISTURBS cells; that
-DISTURBANCE REACHES ONLY what the kind-owner enumerated; a kind's STATE is STORED
-ONLY IN the substrates its owner declared. Rides the corpus-respell brief.
+DISTURBANCE REACHES what the kind-owner enumerated — and past the owner's
+`disturbs nothing-else`, nothing else; a kind's STATE is STORED ONLY IN the
+substrates its owner declared.
 Unruled remainder: `predict`/`resolve` menus (delivered in-chat 2026-07-11, low
 urgency); wrapper-member names were task 5's (since ruled).
 

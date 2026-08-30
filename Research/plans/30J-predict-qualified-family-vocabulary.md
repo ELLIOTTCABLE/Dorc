@@ -427,7 +427,8 @@ bound it; they do not remove it.
 
 Qualification feeds survival sparing only. It does not feed coordinate identity,
 transport, context carry, fact generation, resolver equivalence, or any other
-consumer. The ternary compare consumer map remains unchanged: dialect-derived
+consumer. The compare consumer map remains unchanged (quaternary since `plans/30U` —
+`unrelated` added; the point here about dialect-derived disjointness stands): dialect-derived
 disjointness is inadmissible for transport.
 
 ### 6.5 Cross-family use
