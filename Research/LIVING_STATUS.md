@@ -56,16 +56,22 @@ closure, source comparison, authentication/completeness/influence state, explici
 re-derivation, and encoder-mediated arbitrary-value exit. CLI remains the I/O and future aid/weft
 composition root; `dorc-aid` stays receipt-unaware and the correctness kernel is unchanged.
 
-**Review/repair residue:** close three report-API items (site newtype, parsed order token,
-graph-derived closure membership), curate receipt exports/steering, finish D5's singular
-provider/store/reader/writer census, and run the owed full gates. Loaded-source locator composition
-remains explicit uncollected V1 residue rather than a guessed chain. Human review may remit one
-focused repair before closure.
+**Security review closed:** prepared intent→publication→permit is one ownership chain with no bypass;
+receipt-core signature validity cannot mint local trust; opaque read-back has one class-aware encoder
+exit; Unix object opens are handle-relative/non-following and store ownership is checked. Production
+cleanup declines on both platforms when removal cannot be conditioned on object identity, leaving an
+explicit bounded partial file rather than unlinking an uncertain name.
 
-**Transition after secure close:** recorded-why arrangement/render and replacement user-facing cases
-belong to a new non-quarantined conductor over the sealed model. Report-only kernel re-derivation
-remains a separate authorized round. The current conductor has closed its ledger and dispatches no
-further work.
+**Transition residue:** three report-API tidy items (site newtype, parsed order token, graph-derived
+closure membership), inert D5 whylog/replayed-record deletion, CLI vocabulary/help failures, final
+singular-implementation census, and full gates remain. Loaded-source locator composition remains
+explicit uncollected V1 residue. These are governed by the new receipt-family crate contracts and no
+longer require quarantined reasoning.
+
+**Out-quarantine handoff:** a new conductor owns the remaining crate/D5 cleanup plus recorded-why
+arrangement/render and replacement user-facing cases over the sealed model. Report-only kernel
+re-derivation remains a separate authorized round. The security conductor has closed its ledger and
+dispatches no further work.
 
 ## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
 
