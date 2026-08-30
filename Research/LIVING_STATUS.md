@@ -54,23 +54,23 @@ DAG in the exact acquired-byte domain (LF indexes lines; CR in CRLF remains data
 withhold source/locator detail. The source/locator API and focused tests are committed; the builder
 is stopped as scheduled before the recorded renderer.
 
-**Secure remainder:** derive the pure public `dorc-receipt::report::RecordedWhyFacts` model from
-rooted graph/source/locator state, close the receipt crate's curated producer/read/report API and
-steering, finish D5's singular provider/store/reader/writer census, then run one both-platform
-completion gate. CLI remains the I/O and aid/weft composition root; `dorc-aid` stays receipt-unaware.
-A current `path:N` compares only the same physical line's exact bytes — never moved-line inference —
-and ambiguity refuses that specific answer while unrelated best-effort facts remain available. The
-correctness kernel is frozen: report-only kernel re-derivation remains a 30R target for a later
-authorized round, not work in this arc.
+**Secure remainder:** the pure public `dorc-receipt::report::RecordedWhyFacts` model is built and
+integrated from the real reading route, preserving rooted closure, exact source/locator addressing,
+authentication/completeness/influence state, and explicit pending re-derivation. Arbitrary values
+leave only through an encoder-mediated API; CLI remains the I/O and later aid/weft composition root,
+and `dorc-aid` stays receipt-unaware. Remaining secure work is to close three narrow API residues
+(site newtype, parsed order token, graph-derived closure membership), curate receipt exports/steering,
+finish D5's singular provider/store/reader/writer census, and run one both-platform completion gate.
+The correctness kernel remains frozen; report-only kernel re-derivation is a later authorized round.
 
 **Known narrow residue:** site locators currently carry the authored book span; loaded-source stages
 remain representable but need loader-provided per-site source identity before they can be populated.
 Unavailable locators stay explicitly uncollected rather than guessed.
 
-**Next synthesis point:** once the sealed facts boundary and D5 are green, the secure durable
+**Next synthesis point:** once the curated receipt crate and D5 are green, the secure durable
 subsystem is whole enough to advance `ai/main`. A new non-quarantined conductor then owns ordinary
 why arrangement/render and replacement user-facing cases over the sealed model; it does not reopen
-receipt trust, graph, source, locator, or authority. Arc close still owes current-truth reconciliation,
+receipt parsing, graph, source, locator, or authority. Arc close still owes current-truth reconciliation,
 steering synthesis, and conductor `gate:arc` from the populated branch. `gate:full-quiet` starts with
 a discovery floor; read its selected-check count across the deletion-heavy close.
 
