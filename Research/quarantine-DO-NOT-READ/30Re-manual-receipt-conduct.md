@@ -64,8 +64,9 @@ checkout into an external Opus harness.
 
 `30Rh` owns `30Re:sched-integrated-durable-close` in the reused receipt worktree. The receipt
 vocabulary and old-ladder deletion are already committed; the address-directed report exposed the
-missing source custody/locator projection. The same warm builder now adds exact general-sh custody,
-the durable existing-locator projection, and the recorded why render, then completes the seven-case
-transition and D5. It does not chase `30Rg`'s deviations, the recorded-listing Debug spellings, the
+missing source custody/locator projection. The builder first adds exact general-sh custody and the
+durable existing-locator projection, then MUST STOP with focused format/projection tests green.
+Only after explicit resume does it build the recorded why render, complete the seven-case transition,
+and finish D5. It does not chase `30Rg`'s deviations, the recorded-listing Debug spellings, the
 dispatch-diagnostic split, corruption-parser expansion, or new test backstops. It commits granularly
-and ends with one both-platform completion gate at one final tip.
+and runs one both-platform completion gate only at the final tip.
