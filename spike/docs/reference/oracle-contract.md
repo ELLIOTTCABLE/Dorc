@@ -330,12 +330,13 @@ recently shifted; the spellings below are current):
   and the record deliberately trails the bytes it vouches for: its arrival is
   the completion witness, so a body that dies partway leaves an unclaimed,
   unusable channel rather than a half-true one.
-- A shape the body does not model is refused out-of-band, with the decline
-  record (section 6a) - `printf 'decline unmodeled %s\n' "$1"
-  >>"${DREP_V1:-/dev/null}"` - and these are the first lines to write, not the
-  last: fence every unexplored shape before modeling any. A predict never
-  spells refusal through its status; a `return 2` here is nothing but a
-  prediction that the tool exits 2.
+- A shape the body does not model is refused out-of-band, with the whole-shape
+  decline record - `printf 'predicts none unmodeled %s\n' "$1"
+  >>"${DREP_V1:-/dev/null}"` - where `none` declines every channel at once
+  (sugar over the per-channel vocabulary; the tail is free reason text). These
+  are the first lines to write, not the last: fence every unexplored shape
+  before modeling any. A predict never spells refusal through its status; a
+  `return 2` here is nothing but a prediction that the tool exits 2.
 - Delegation of the real (read-only) tool remains the natural body shape; the
   channel claims are still yours to speak, channel by channel.
 
@@ -352,8 +353,8 @@ body whose `"$@"` runs its own argument-slot) classifies the tool a wrapper.
 A predict never licenses eliding anything by itself.
 
 Author holds true:
-- That every unexplored shape is fenced with a decline record before any shape
-  is modeled; refusal never rides the status.
+- That every unexplored shape is fenced with a `predicts none` record before
+  any shape is modeled; refusal never rides the status.
 - That every claimed channel is faithful for every matched shape, on hosts
   unlike theirs.
 - That no matched shape mutates.
@@ -655,14 +656,14 @@ engine acts on - while free tails and unrecognized lines are annotation only,
 never read by anything that decides. The verb vocabulary is engine-owned and
 append-only; three verbs exist today:
 
-- `decline <class> <tail>` - the author's refusal of a shape. In a predict
-  body this is THE decline - load-bearing, since a predict's status is
-  reserved wholly for prediction and refusal must travel out-of-band; in a
-  verdict body it classes and explains an in-band `return 2`. Either way,
-  fencing the unexplored is among the first and most primary things an author
-  writes.
-- `predicts <channel-set>` - a predict body's positive channel claims (section
-  5b). Load-bearing: a claim licenses substitution.
+- `decline <class> <tail>` - the classed refusal accompanying a verdict body's
+  in-band `return 2`, naming which of the four kinds of no this is.
+- `predicts <channel-set>` and `predicts none <reason>` - a predict body's
+  channel speech (section 5b). Load-bearing both ways: a positive claim
+  licenses substitution, and `predicts none` is the whole-shape refusal - a
+  predict's only refusal, its status being reserved wholly for prediction.
+  Fencing the unexplored with these is among the first and most primary things
+  a predict author writes.
 - `disturbs nothing-else` - the completion witness of dynamic at-most bodies
   and the finished-definition act of reach bodies (sections 5c and 5h).
   Load-bearing: it is the license for cross-kind sparing.
@@ -689,8 +690,8 @@ it vouches for, so its arrival proves the body reached it.
   most verbose pull; default surfaces stay ruthlessly selected. Verbosity is the
   admission gate, not existence. Nothing you emit is lost.
 
-The classed-decline record. In a verdict body it accompanies the declining
-path's `return 2`; in a predict body it stands alone as the refusal itself:
+The classed-decline record, emitted on a verdict body's declining path before
+its `return 2`:
 
     printf 'decline unsound %s is a write-only trigger key\n' "$key" \
        >>"${DREP_V1:-/dev/null}"
@@ -710,22 +711,22 @@ path's `return 2`; in a predict body it stands alone as the refusal itself:
   format defeats static reading and demotes the class to a runtime-only fact,
   recovered only when the arm actually executes during a probe. Prefer literal
   formats.
-- The class part routes attention only: whichever class explains a refusal, the
+- The class routes attention only: whichever class explains a refusal, the
   refused shape walls the same. A wrong class misdirects attention (a wrong
   `unsound` silences deserved enhancement pressure), attributed to the arm's
-  file:line; it can never under- or over-execute a line. In a verdict body,
-  classing is enhancement and a silent `return 2` stays exactly as legal and as
-  safe; in a predict body the record itself is load-bearing - without it, an
-  unmodeled shape has no refusal at all - and only the class stays advisory.
+  file:line; it can never under- or over-execute a line. Classing is
+  enhancement; a silent `return 2` stays exactly as legal and as safe. (A
+  predict body's refusals are a different record entirely - `predicts none`,
+  section 5b - and those are load-bearing, not enhancement.)
 - The comment on the arm is display material. When `dorc why` inlines a declined
   arm, the arm's adjacent comment is shown to the admin as authored text - never
   parsed, never load-bearing on a decision. Write it for the operator reading
   their plan.
 
 When to reach for a class, and the modeling-crutch caution. Class a decline
-whenever you can state which of the four it is; in a verdict body,
-genuinely-ambiguous or unremarkable declines may stay silent (`return 2`
-alone). Before reaching for a warning about a shape you can
+whenever you can state which of the four it is; genuinely-ambiguous or
+unremarkable verdict declines may stay silent (`return 2` alone), and a
+predict's `predicts none` tails stay free reason text, unclassed. Before reaching for a warning about a shape you can
 actually answer, ask the sharper question: should the model be richer instead?
 The recurring example is a tool whose live value and persisted value can differ
 (a `sysctl` key set for the running kernel but not written to the boot config).
@@ -786,10 +787,10 @@ Before publishing, walk the file once against each line:
 - Wrapper families: every dimension enumerated in `lend_map`; peel positions
   coherent between members; entry form non-interactive, siting-verified or
   declining; `safe-across` only on bodies re-audited for shifted execution.
-- Every predict: unexplored shapes fenced with decline records, first - never
-  through the status; channels claimed positively (`predicts` records), every
-  claim record trailing the bytes it vouches for; statuses predicted, never
-  answered.
+- Every predict: unexplored shapes fenced with `predicts none` records, first
+  - never through the status; channels claimed positively (`predicts`
+  records), every claim record trailing the bytes it vouches for; statuses
+  predicted, never answered.
 - Footprints and kind members: matched shapes surveyed to completion;
   unsure-cells included; unsurveyed shapes unmatched; dynamic emission bodies
   ending every completing matched path with their completion record, exactly
