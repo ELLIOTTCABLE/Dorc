@@ -1431,8 +1431,8 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
 
 /// Drive replay blocks 1..N — the SAME input-state seen through other invocations
 /// (`282:rul-multi-replay-per-case`) — sequentially in the one materialized dir that block 0's
-/// battery just ran in. Sequential-in-one-dir is the whole point: a `--whylog-dir` run and the
-/// `dorc why … --last` that replays it are two blocks sharing scratch state.
+/// battery just ran in. Sequential-in-one-dir is the whole point: blocks that share scratch state
+/// — a run that publishes, and the later invocation that reads what it published — must see it.
 ///
 /// Each command is driven with `cwd` = the case dir and its committed words verbatim, so the
 /// invocation a reader sees IS the one that ran, and every path a render echoes back stays
@@ -2747,8 +2747,11 @@ fn scan_hint(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<String>) {
     }
 }
 
-/// gate-8: the why-chain PAIR — `dorc why <n>` live and `dorc why <n> --last` replayed
-/// through the whylog must both land the same needles.
+/// gate-8: `dorc why <n>` must land the declared needles.
+///
+/// The REPLAY half is gone with the durable it replayed: it drove `--last`/`--whylog-dir` through
+/// the retired reader, and a receipt-rooted `why` does not yet explain (`30Rh` names the recorded-why
+/// presentation as the next round). What survives is the live assertion, unchanged.
 fn scan_why_chain(
     harness: &Harness,
     name: &str,
@@ -2782,45 +2785,13 @@ fn scan_why_chain(
     )
     .stdout;
 
-    let scratch = Scratch::new("whylog");
-    let whylog = scratch.path.join("log");
-    std::fs::create_dir_all(&whylog).expect("create whylog dir");
-    let _ = capture(
-        harness
-            .dorc(dir)
-            .arg(&book)
-            .args(args_reading_stdin_records(args))
-            .arg(format!("--whylog-dir={}", whylog.display()))
-            .stdin(Stdio::from(std::fs::File::open(framed).unwrap()))
-            .stdout(Stdio::null())
-            .stderr(Stdio::null()),
-    );
-    let replay = capture(
-        harness
-            .dorc(dir)
-            .arg("why")
-            .arg(&addr)
-            .arg("--last")
-            .arg(&book)
-            .args(args)
-            .arg(format!("--whylog-dir={}", whylog.display()))
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null()),
-    )
-    .stdout;
-
     let missing_live = needles_missing(&strip_trailing_newlines(&live), &decl);
-    let missing_replay = needles_missing(&strip_trailing_newlines(&replay), &decl);
-    if missing_live.is_empty() && missing_replay.is_empty() {
+    if missing_live.is_empty() {
         return;
     }
     let mut detail = String::new();
     for pattern in &missing_live {
-        let _ = writeln!(detail, "      missing (live): {pattern}");
-    }
-    for pattern in &missing_replay {
-        let _ = writeln!(detail, "      missing (replay): {pattern}");
+        let _ = writeln!(detail, "      missing: {pattern}");
     }
     failures.push(format!(
         "FAIL  {name}  [gate-8: why-chain needle(s) missing — fix the walker, or update expected-why-chain]\n{}",

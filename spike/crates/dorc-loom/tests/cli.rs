@@ -133,15 +133,18 @@ fn all_inventory_excludes_foreign_detail() {
 
 /// Only `--this` may behave differently inside a loom (`30C` item 1), so every other seat's stdout
 /// is the same bytes at a terminal as in a replay block -- no preamble, no absolute path, the
-/// case's own declared slug. The committed block in `whylog-absent.loom` is the other half of this
-/// pin: it is what the driver prints, and the render fixpoint holds it.
+/// case's own declared slug. The committed block in `cli-unknown-flag.loom` is the other half of
+/// this pin: it is what the driver prints, and the render fixpoint holds it.
 #[test]
 fn a_terminal_inventory_is_byte_identical_to_the_in_loom_block() {
-    let output = run(&["vars", "whylog-absent"]);
+    let output = run(&["vars", "cli-unknown-flag"]);
     let stdout =
         String::from_utf8(output.stdout).unwrap_or_else(|error| panic!("stdout is UTF-8: {error}"));
     assert!(output.status.success(), "{stdout}");
-    assert_eq!(stdout, "case: whylog-absent\n{{dir}} = \".whylog\"\n");
+    assert_eq!(
+        stdout,
+        "case: cli-unknown-flag\n{{flag}} = \"--boook=webhost.sh\"\n"
+    );
 }
 
 #[test]

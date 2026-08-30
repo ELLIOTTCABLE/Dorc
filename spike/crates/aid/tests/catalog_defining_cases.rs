@@ -24,7 +24,7 @@
 )]
 
 use dorc_aid::RenderCtx;
-use dorc_aid::diag::{self, Diag, DiagCode, DurableReceiptUnwritten};
+use dorc_aid::diag::{self, CliUnknownFlag, Diag, DiagCode};
 use dorc_aid::fixture::canonical_payloads;
 use dorc_aid::tagged::RenderPart;
 use dorc_core::{BytePos, Interner, Span};
@@ -63,9 +63,8 @@ fn defining_case_parts_match_product_renders() {
 #[test]
 fn body_parts_keep_empty_parameter_identity() {
     let diag = Diag::new(
-        DiagCode::DurableReceiptUnwritten(DurableReceiptUnwritten {
-            store: String::new(),
-            reason: String::new(),
+        DiagCode::CliUnknownFlag(CliUnknownFlag {
+            flag: String::new(),
         }),
         Span::new(BytePos(0), BytePos(1)),
     );
@@ -75,7 +74,7 @@ fn body_parts_keep_empty_parameter_identity() {
         part,
         RenderPart::ParamValue {
             text,
-            param: "found",
+            param: "flag",
             ..
         } if text.is_empty()
     )));

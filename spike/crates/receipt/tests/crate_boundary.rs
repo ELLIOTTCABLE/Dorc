@@ -816,37 +816,20 @@ fn the_secret_bytes_constructor_is_reachable_from_one_production_file() {
 }
 
 #[test]
-fn the_replay_laundering_seat_keeps_exactly_one_caller() {
-    // The seat that turns a DURABLE's record stream into the admitted-evidence type a LIVE probe
-    // yields. Below it the two are indistinguishable, so real licenses mint over replayed bytes.
-    //
-    // It is confined rather than closed: every `dorc why` that does not NAME the old durable now
-    // answers from the receipt store, where a document comes back sealed and cannot become a live
-    // value. What is left is the old durable's own replay arm, and it goes when that durable does.
-    // Counted here so the interim state is mechanical: a second caller is a diff somebody reads,
-    // and the count going to zero is the deletion landing.
-    let definitions: Vec<String> = production_sources()
+fn the_replay_laundering_seat_is_gone_and_stays_gone() {
+    // The seat that turned a DURABLE's record stream into the admitted-evidence type a LIVE probe
+    // yields: below it the two were indistinguishable, so real licenses minted over replayed bytes.
+    // It went with the durable it served, and the census that counted its callers is now the one
+    // that proves it has none — re-minting it is a diff somebody reads.
+    let named: Vec<String> = production_sources()
         .into_iter()
-        .filter(|(_, text)| text.contains("fn replayed_records("))
+        .filter(|(_, text)| names_identifier(text, "replayed_records"))
         .map(|(path, _)| path)
         .collect();
-    assert_eq!(
-        definitions,
-        vec!["cli/src/results.rs".to_owned()],
-        "the seat has one definition, or this census is counting the wrong thing"
-    );
-    let callers: Vec<String> = production_sources()
-        .into_iter()
-        .filter(|(path, text)| {
-            path != "cli/src/results.rs" && names_identifier(text, "replayed_records")
-        })
-        .map(|(path, _)| path)
-        .collect();
-    assert_eq!(
-        callers,
-        vec!["cli/src/engine.rs".to_owned()],
-        "the laundering seat's callers are {callers:?}; only the old durable's replay arm may \
-         reach it, and nothing new may join it"
+    assert!(
+        named.is_empty(),
+        "the replay laundering seat is named again by {named:?}; a durable's bytes reaching the \
+         live-evidence type is the hole its deletion closed"
     );
 }
 

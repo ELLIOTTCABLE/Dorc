@@ -436,7 +436,7 @@ fn payload_inventory_excludes_unknown_and_foreign_values() {
 fn exact_replays_keep_editability_with_provenance_and_route_edges_to_the_injected_fallback() {
     let source = "#!/bin/sh\napt-get install -y \"$(cat /etc/webhost/pkgset)\"\n";
     let case = Case::parse(&format!(
-        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n{source}-- probe.txt --\nprobe bytes\n-- replay --\n$ dorc plan --book=book.sh < probe.txt\nold\n$ dorc --version\nold\n$ dorc lint book.sh\nold\n$ dorc why --last\nold\n$ dorc plan --book=missing.sh\nold\n$ dorc plan --book=book.sh --book=book.sh\nold\n$ dorc plan --book=book.sh --unknown\nold\n$ dorc plan --book=../book.sh\nold\n$ dorc plan --book=./book.sh\nold\n"
+        "---\ncode: cmdsub-operand-top\n---\n-- book.sh --\n{source}-- probe.txt --\nprobe bytes\n-- replay --\n$ dorc plan --book=book.sh < probe.txt\nold\n$ dorc --version\nold\n$ dorc lint book.sh\nold\n$ dorc why --receipt-last\nold\n$ dorc plan --book=missing.sh\nold\n$ dorc plan --book=book.sh --book=book.sh\nold\n$ dorc plan --book=book.sh --unknown\nold\n$ dorc plan --book=../book.sh\nold\n$ dorc plan --book=./book.sh\nold\n"
     ))
     .expect("case parses");
     let env = RunEnv::new()
@@ -484,7 +484,7 @@ fn exact_replays_keep_editability_with_provenance_and_route_edges_to_the_injecte
     assert!(results[1].editable_render().is_none());
     assert_eq!(results[1].output(), "dorc 0.0.0\n");
     assert!(results[2].editable_render().is_some());
-    // `dorc why --last` answers from the receipt store, and a loom world resolves no per-user
+    // `dorc why --receipt-last` answers from the receipt store, and a loom world resolves no per-user
     // root — so it reports that rather than declining to the generic fallback below.
     assert!(results[3].editable_render().is_some());
     assert!(

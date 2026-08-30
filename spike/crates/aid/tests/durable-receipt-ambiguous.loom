@@ -55,4 +55,4 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt > /dev/null
 
-$ dorc why --last > /dev/null
+$ dorc why --receipt-last > /dev/null

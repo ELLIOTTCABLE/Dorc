@@ -244,10 +244,10 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
         "../../aid/tests/cli-unknown-flag-did-you-mean.loom"
     ));
     assert!(
-        transcript.contains("--wat"),
+        transcript.contains("--boook"),
         "the fixture must interpolate its flag value: {transcript:?}"
     );
-    let preview = dorc_loom::compile_preview(&baseline, &transcript.replace("--wat", "--wut"))
+    let preview = dorc_loom::compile_preview(&baseline, &transcript.replace("--boook", "--wut"))
         .expect("overtyping a value is an ordinary edit");
     let dropped: Vec<String> = preview
         .sections()
@@ -260,7 +260,7 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
         rendered.contains("- ") && rendered.contains("{{flag}}"),
         "the diff must show the hole leaving the register: {rendered}"
     );
-    // Replacing the value with a DIFFERENT one is not a bake-in: `--wat` is gone from the section,
+    // Replacing the value with a DIFFERENT one is not a bake-in: `--boook` is gone from the section,
     // so there is nothing frozen for a warning to point at.
     assert!(
         preview
@@ -275,7 +275,7 @@ fn overtyping_a_value_discloses_the_dropped_variable() {
 /// The bake-in the human asked to be warned about (`30C` item 2), and its exact evidence: the
 /// variable is gone AND its rendered bytes are still sitting in the section as text.
 ///
-/// Stripping the backticks around `--wat` destroys the anchors the transport aligns a variable by,
+/// Stripping the backticks around `--boook` destroys the anchors the transport aligns a variable by,
 /// so the only interpretation left removes the occurrence — while the value the author retyped
 /// stays put. That is the shape a plain reword can reach by accident, which is why it is disclosed.
 #[test]
@@ -283,7 +283,7 @@ fn a_value_retyped_where_its_variable_stood_is_flagged_as_baked_in() {
     let (_, _, baseline, transcript) = driven(include_str!(
         "../../aid/tests/cli-unknown-flag-did-you-mean.loom"
     ));
-    let edited = transcript.replace("`--wat`", "--wat");
+    let edited = transcript.replace("`--boook`", "--boook");
     assert_ne!(edited, transcript, "the fixture must carry the anchors");
     let preview = dorc_loom::compile_preview(&baseline, &edited).expect("the removal interprets");
     let baked: Vec<String> = preview
@@ -505,18 +505,18 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
 #[test]
 fn a_reason_inside_a_sentence_stays_a_value() {
     let case =
-        Case::parse(include_str!("../../aid/tests/cfg-inline-refused.loom")).expect("parses");
+        Case::parse(include_str!("../../aid/tests/deriv-family-incomplete.loom")).expect("parses");
     let consumer = DorcConsumer::new();
     let (baseline, _) = drive(&consumer, &case);
     let sections = sections(&baseline);
     assert!(
-        sections.contains(&(String::from("cfg-inline-refused"), "message")),
+        sections.contains(&(String::from("deriv-family-incomplete"), "message")),
         "the code's own register owns the section: {sections:?}"
     );
     assert!(
         !sections
             .iter()
-            .any(|(owner, _)| owner.starts_with("cfg-inline-refused-")),
+            .any(|(owner, _)| owner.starts_with("deriv-family-incomplete-")),
         "no component fences the register into pieces: {sections:?}"
     );
 }

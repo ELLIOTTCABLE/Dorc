@@ -554,8 +554,8 @@ mod tests {
             .find("if let Some(results) = fixture_results")
             .expect("the fixture arm is what makes the one call honest");
         let closes = engine
-            .find("} else if let Some(r) = replay")
-            .expect("the live-intake arms follow the fixture one");
+            .find("let admitted = match evidence {")
+            .expect("the live-intake arm follows the fixture one");
         let at = mints.first().copied().unwrap_or(0);
         assert!(
             opens < at && at < closes,
@@ -740,7 +740,6 @@ mod tests {
                 "plan/src/region.rs",
                 "plan/src/settle.rs",
                 "plan/src/spine.rs",
-                "plan/src/whylog.rs",
                 "plan/tests/erasability.rs",
                 "plan/tests/receipt_projection.rs",
                 "plan/tests/receipt_source_custody.rs",
@@ -781,7 +780,6 @@ mod tests {
         const INVENTORY: &[&str] = &[
             "cli/src/apply.rs",
             "plan/src/region.rs",
-            "plan/src/whylog.rs",
             "plan/tests/region.rs",
         ];
 
