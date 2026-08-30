@@ -39,8 +39,7 @@ use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::receipt::RecordedInputs;
 use dorc_plan::records::{Admission, Framing, frame, header_line, sentinel_line};
 use dorc_receipt::capability::{
-    PublicationGrade, ReceiptSigner, SelfAssertedReceiptVerificationKey,
-    TrustedReceiptVerificationKey, VerificationKeyResolver,
+    PublicationGrade, ReceiptSigner, ReceiptVerificationKey, VerificationKeyResolver,
 };
 use dorc_receipt::dispatch::RequiredPlacementLanding;
 use dorc_receipt::format::RefusalReason;
@@ -49,12 +48,9 @@ use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
 use dorc_receipt::model::PlanReceipt;
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::projection::OpaqueFieldTag;
-use dorc_receipt::reader::{ReadPlain, read_plain};
-use dorc_receipt::reader::{ReadRich, read_rich};
+use dorc_receipt::reader::{read_plain, read_rich};
 use dorc_receipt::tokens::RecordedInvocationMode;
-use dorc_receipt_crypto::{
-    AgeOpener, AgeSealer, Ed25519Signer, Ed25519Verifier, TrustedEd25519Key,
-};
+use dorc_receipt_crypto::{AgeOpener, AgeSealer, Ed25519Signer, Ed25519Verifier};
 
 /// A signing identity that exists only in this target. No age material is involved: a plain
 /// document carries no sealed region, so this route needs a signer and nothing else.
@@ -272,14 +268,12 @@ impl ReceiptPlacement for RefusingSink {
     }
 }
 
-struct PolicyNames(TrustedEd25519Key);
+struct PolicyNames(Ed25519Verifier);
 
 impl VerificationKeyResolver for PolicyNames {
-    fn trusted(&self, id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
-        (self.0.signing_key_id() == id).then_some(&self.0 as &dyn TrustedReceiptVerificationKey)
-    }
-    fn self_asserted(&self, _: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
-        None
+    fn material(&self, id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
+        (ReceiptVerificationKey::signing_key_id(&self.0) == id)
+            .then_some(&self.0 as &dyn ReceiptVerificationKey)
     }
 }
 
@@ -398,9 +392,9 @@ fn a_settled_run_publishes_a_document_that_reads_back_naming_the_surface_it_deci
     let (_, bytes) = sink.0.into_iter().next().expect("the sink placed one");
     let material = Ed25519Verifier::of_public_material(signer.public_material())
         .expect("the fixture material loads");
-    let policy = PolicyNames(TrustedEd25519Key::of(material));
+    let policy = PolicyNames(material);
     let recorded = match read_plain::<PlanReceipt>(bytes, &ReceiptLimits::V1, &policy) {
-        Ok(ReadPlain::Trusted(recorded)) => recorded,
+        Ok(recorded) => recorded,
         other => panic!("a document this controller signed must read trusted: {other:?}"),
     };
 
@@ -490,7 +484,7 @@ fn published_rich() -> (Vec<u8>, FinalPresentation, Ed25519Signer) {
 fn policy_for(signer: &Ed25519Signer) -> PolicyNames {
     let material = Ed25519Verifier::of_public_material(signer.public_material())
         .expect("the fixture material loads");
-    PolicyNames(TrustedEd25519Key::of(material))
+    PolicyNames(material)
 }
 
 #[test]
@@ -523,7 +517,7 @@ fn a_rich_document_carries_its_held_values_in_the_region_and_never_in_the_skelet
 
     let recorded =
         match read_rich::<PlanReceipt>(bytes, &ReceiptLimits::V1, &policy_for(&signer), &opener) {
-            Ok(ReadRich::Trusted(recorded)) => recorded,
+            Ok(recorded) => recorded,
             Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
             Ok(other) => panic!("expected a trusted read: {other:?}"),
         };
@@ -737,9 +731,7 @@ fn spent_permit(ids: &mut CountingIds) -> dorc_receipt::dispatch::MutationDispat
 /// Every value answering one tag anywhere in a document, so an assertion names the value rather
 /// than a record position it would have to hard-code.
 fn details_for<D: dorc_receipt::Species>(
-    recorded: &dorc_receipt::Reingested<
-        dorc_receipt::Receipt<D, dorc_receipt::model::Rich, dorc_receipt::TrustedReceiptSigner>,
-    >,
+    recorded: &dorc_receipt::Reingested<dorc_receipt::Receipt<D, dorc_receipt::model::Rich>>,
     tag: OpaqueFieldTag,
 ) -> Vec<Vec<u8>> {
     (0..u64::try_from(recorded.record_count()).unwrap_or(0))
@@ -798,7 +790,7 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
         &policy_for(&signer),
         &opener,
     ) {
-        Ok(ReadRich::Trusted(recorded)) => recorded,
+        Ok(recorded) => recorded,
         Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
         Ok(other) => panic!("expected a trusted read: {other:?}"),
     };
@@ -863,7 +855,7 @@ fn a_plain_intent_withholds_the_image_it_has_no_region_to_carry() {
         &ReceiptLimits::V1,
         &policy_for(&signer),
     ) {
-        Ok(ReadPlain::Trusted(recorded)) => recorded,
+        Ok(recorded) => recorded,
         other => panic!("a document this controller signed must read trusted: {other:?}"),
     };
     assert_eq!(recorded.receipt_id(), Some(id));
@@ -950,7 +942,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
         &policy_for(&signer),
         &opener,
     ) {
-        Ok(ReadRich::Trusted(recorded)) => recorded,
+        Ok(recorded) => recorded,
         Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
         Ok(other) => panic!("expected a trusted read: {other:?}"),
     };
@@ -1045,7 +1037,7 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
         &ReceiptLimits::V1,
         &policy_for(&signer),
     ) {
-        Ok(ReadPlain::Trusted(recorded)) => recorded,
+        Ok(recorded) => recorded,
         other => panic!("a document this controller signed must read trusted: {other:?}"),
     };
     assert_eq!(recorded.receipt_id(), Some(id));
@@ -1130,7 +1122,7 @@ mod deterministic_apply_route {
     use dorc_receipt::model::PlanReceipt;
     use dorc_receipt::order::ReceiptOrderToken;
     use dorc_receipt::outcome::OutcomeAvailability;
-    use dorc_receipt::reader::{ReadRich, read_rich};
+    use dorc_receipt::reader::read_rich;
     use dorc_receipt::tokens::{ClosedToken, RecordedApplyPolicy, RecordedTerminalState};
     use dorc_receipt_crypto::Ed25519Signer;
     use dorc_transport::sim::{SimDriver, SimScript};
@@ -1212,6 +1204,9 @@ mod deterministic_apply_route {
         );
 
         let mut graph = ReceiptGraph::new();
+        // The word the INGESTING seat supplies: this battery holds the material it signed with,
+        // which is what a validated local keyset would be.
+        let trust = dorc_receipt::tokens::RecordedSignerTrust::Trusted;
         for (name, bytes) in &sink.0 {
             if name.starts_with("apply-intent-") {
                 match read_rich::<dorc_receipt::model::ApplyIntent>(
@@ -1220,7 +1215,7 @@ mod deterministic_apply_route {
                     &policy_for(&signer),
                     &opener,
                 ) {
-                    Ok(ReadRich::Trusted(document)) => graph.ingest_intent(&document, bytes),
+                    Ok(document) => graph.ingest_intent(&document, trust, bytes),
                     other => panic!("the intent must read trusted: {other:?}"),
                 }
             } else {
@@ -1230,7 +1225,7 @@ mod deterministic_apply_route {
                     &policy_for(&signer),
                     &opener,
                 ) {
-                    Ok(ReadRich::Trusted(document)) => graph.ingest_outcome(&document, bytes),
+                    Ok(document) => graph.ingest_outcome(&document, trust, bytes),
                     other => panic!("the outcome must read trusted: {other:?}"),
                 }
             }
@@ -1542,7 +1537,7 @@ mod deterministic_apply_route {
             &policy_for(&signer),
             &opener,
         ) {
-            Ok(ReadRich::Trusted(recorded)) => recorded,
+            Ok(recorded) => recorded,
             other => panic!("the outcome must read trusted: {other:?}"),
         };
         assert_eq!(

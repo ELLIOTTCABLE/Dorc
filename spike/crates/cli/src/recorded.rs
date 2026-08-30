@@ -23,8 +23,9 @@
 //! (`sinv-sink-encoding`). The skeleton's own fields are closed tokens, digests and counts, which
 //! have no other spelling to escape.
 
+use crate::durable::LocallyAuthenticated;
 use dorc_receipt::graph::{GraphFinding, ReceiptEdge, ReceiptGraph};
-use dorc_receipt::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Rich, TrustedReceiptSigner};
+use dorc_receipt::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Rich};
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::Receipt;
 use dorc_receipt::reingested::Reingested;
@@ -38,14 +39,16 @@ const FIELD_DISPLAY_CAP: usize = 240;
 
 /// The recorded plan document, as lines.
 ///
-/// The document is TRUSTED here by type — the signature checked against material controller
-/// policy named — and that is the only tier this seat renders. An untrusted or partial read is a
-/// different answer and its caller reports it as one, because promoting a field because it looked
-/// plausible is exactly what the reader's states exist to refuse.
+/// The document arrives LOCALLY AUTHENTICATED by type — it came back from a read under this
+/// controller's own validated keyset — and that is the only tier this seat renders. A read under
+/// somebody else's material or a partial one is a different answer and its caller reports it as
+/// one, because promoting a field because it looked plausible is exactly what the reader's states
+/// exist to refuse.
 #[must_use]
 pub fn recorded_plan_listing(
-    document: &Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    document: &LocallyAuthenticated<Reingested<Receipt<PlanReceipt, Rich>>>,
 ) -> String {
+    let document = document.document();
     let mut out = String::new();
     push_line(&mut out, &format!("receipt {}", document.receipt_id_hex()));
     push_line(
@@ -102,9 +105,7 @@ pub fn recorded_plan_listing(
 /// range-checked and never sense-checked, so pairing them would let a wrong ordinal enrich
 /// whichever row shared its integer while the listing still read cleanly. These lines say which
 /// record they came from and let a reader do the joining.
-fn opaque_lines(
-    document: &Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
-) -> Vec<String> {
+fn opaque_lines(document: &Reingested<Receipt<PlanReceipt, Rich>>) -> Vec<String> {
     let mut lines = Vec::new();
     for record in 0..u64::try_from(document.record_count()).unwrap_or(0) {
         for tag in OpaqueFieldTag::ALL {
@@ -123,8 +124,9 @@ fn opaque_lines(
 /// The recorded apply intent, as lines.
 #[must_use]
 pub fn recorded_intent_listing(
-    document: &Reingested<Receipt<ApplyIntent, Rich, TrustedReceiptSigner>>,
+    document: &LocallyAuthenticated<Reingested<Receipt<ApplyIntent, Rich>>>,
 ) -> String {
+    let document = document.document();
     let mut out = String::new();
     push_line(&mut out, &format!("receipt {}", document.receipt_id_hex()));
     push_line(
@@ -149,8 +151,9 @@ pub fn recorded_intent_listing(
 /// The recorded apply outcome, as lines.
 #[must_use]
 pub fn recorded_outcome_listing(
-    document: &Reingested<Receipt<ApplyOutcome, Rich, TrustedReceiptSigner>>,
+    document: &LocallyAuthenticated<Reingested<Receipt<ApplyOutcome, Rich>>>,
 ) -> String {
+    let document = document.document();
     let mut out = String::new();
     push_line(&mut out, &format!("receipt {}", document.receipt_id_hex()));
     push_line(

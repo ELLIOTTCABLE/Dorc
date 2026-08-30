@@ -32,8 +32,7 @@ pub use key_document::{
 use age::armor::{ArmoredReader, ArmoredWriter, Format};
 use age::x25519;
 use dorc_receipt::capability::{
-    OverlayOpener, OverlaySealer, ReceiptSigner, ReceiptVerifier,
-    SelfAssertedReceiptVerificationKey, TrustedReceiptVerificationKey,
+    OverlayOpener, OverlaySealer, ReceiptSigner, ReceiptVerificationKey, ReceiptVerifier,
 };
 use dorc_receipt::ids::{EncryptionKeyId, SigningKeyId};
 use ed25519_dalek::{Signature, Signer as _, SigningKey, VerifyingKey};
@@ -107,51 +106,15 @@ impl ReceiptVerifier for Ed25519Verifier {
     }
 }
 
-/// Verification material whose provider controller policy names.
-#[derive(Debug)]
-pub struct TrustedEd25519Key(Ed25519Verifier);
-
-/// Verification material whose provider controller policy does not name.
-#[derive(Debug)]
-pub struct SelfAssertedEd25519Key(Ed25519Verifier);
-
-impl TrustedEd25519Key {
-    /// Mark material as named by controller policy.
-    #[must_use]
-    pub const fn of(verifier: Ed25519Verifier) -> Self {
-        Self(verifier)
-    }
-}
-
-impl SelfAssertedEd25519Key {
-    /// Mark material as not named by controller policy.
-    #[must_use]
-    pub const fn of(verifier: Ed25519Verifier) -> Self {
-        Self(verifier)
-    }
-}
-
-impl ReceiptVerifier for TrustedEd25519Key {
-    fn verify(&self, body: &[u8], signature: &[u8; 64]) -> bool {
-        self.0.verify(body, signature)
-    }
-}
-
-impl TrustedReceiptVerificationKey for TrustedEd25519Key {
+/// Public material, answering for the provider it derives from and for nothing else.
+///
+/// There were two wrappers here — one labelled trusted and one self-asserted — and both were
+/// public, so labelling material as the controller's was an act any crate could perform. The
+/// label is gone. What a verifier answers is whether a signature is valid under this key; who
+/// the key belongs to is decided where a keyset is opened.
+impl ReceiptVerificationKey for Ed25519Verifier {
     fn signing_key_id(&self) -> SigningKeyId {
-        self.0.id()
-    }
-}
-
-impl ReceiptVerifier for SelfAssertedEd25519Key {
-    fn verify(&self, body: &[u8], signature: &[u8; 64]) -> bool {
-        self.0.verify(body, signature)
-    }
-}
-
-impl SelfAssertedReceiptVerificationKey for SelfAssertedEd25519Key {
-    fn signing_key_id(&self) -> SigningKeyId {
-        self.0.id()
+        self.id()
     }
 }
 

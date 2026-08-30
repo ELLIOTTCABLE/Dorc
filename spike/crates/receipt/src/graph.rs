@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 
 use crate::apply::RecordedApplyIntent;
 use crate::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId};
-use crate::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Projection, SignerTrust};
+use crate::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Projection};
 use crate::outcome::{MissingOutcome, OutcomeAvailability, RecordedApplyOutcome};
 use crate::plan::RecordedPlanReceipt;
 use crate::projection::{SameIdentityPair, same_identity_pair};
@@ -186,7 +186,12 @@ impl<M: RecordedType> GraphNode<M> {
         &self.model
     }
 
-    /// Where the verification material came from.
+    /// What the seat that read this document said about its verification material.
+    ///
+    /// A word the INGESTING seat supplied, and reporting only. This crate can say a signature
+    /// checked under a key; whether the key is this controller's own is a fact about a keyset on
+    /// disk, and it arrives here as a statement from wherever that keyset was opened rather than
+    /// being derived from a type nobody could constrain.
     #[must_use]
     pub const fn signer(&self) -> RecordedSignerTrust {
         self.signer
@@ -210,10 +215,6 @@ pub struct ReceiptGraph {
     faults: Vec<ModelRefusal>,
 }
 
-fn provenance<T: SignerTrust>() -> RecordedSignerTrust {
-    RecordedSignerTrust::of_token(T::TOKEN).unwrap_or(RecordedSignerTrust::SelfAsserted)
-}
-
 impl ReceiptGraph {
     /// An empty graph.
     #[must_use]
@@ -226,9 +227,10 @@ impl ReceiptGraph {
     /// The image is required because a second claimant to one identity is classified by
     /// [`same_identity_pair`], not by comparing models: two models can agree while the bytes
     /// they were read from do not.
-    pub fn ingest_plan<P: Projection, T: SignerTrust>(
+    pub fn ingest_plan<P: Projection>(
         &mut self,
-        document: &Reingested<Receipt<PlanReceipt, P, T>>,
+        document: &Reingested<Receipt<PlanReceipt, P>>,
+        signer: RecordedSignerTrust,
         image: &[u8],
     ) {
         let Some(id) = document.receipt_id() else {
@@ -249,7 +251,7 @@ impl ReceiptGraph {
                         id,
                         GraphNode {
                             model,
-                            signer: provenance::<T>(),
+                            signer,
                             projection: P::TOKEN,
                             image: image.to_vec(),
                         },
@@ -261,9 +263,10 @@ impl ReceiptGraph {
     }
 
     /// Take one apply intent, with the exact bytes it was read from.
-    pub fn ingest_intent<P: Projection, T: SignerTrust>(
+    pub fn ingest_intent<P: Projection>(
         &mut self,
-        document: &Reingested<Receipt<ApplyIntent, P, T>>,
+        document: &Reingested<Receipt<ApplyIntent, P>>,
+        signer: RecordedSignerTrust,
         image: &[u8],
     ) {
         let Some(id) = document.receipt_id() else {
@@ -284,7 +287,7 @@ impl ReceiptGraph {
                         id,
                         GraphNode {
                             model,
-                            signer: provenance::<T>(),
+                            signer,
                             projection: P::TOKEN,
                             image: image.to_vec(),
                         },
@@ -296,9 +299,10 @@ impl ReceiptGraph {
     }
 
     /// Take one apply outcome, with the exact bytes it was read from.
-    pub fn ingest_outcome<P: Projection, T: SignerTrust>(
+    pub fn ingest_outcome<P: Projection>(
         &mut self,
-        document: &Reingested<Receipt<ApplyOutcome, P, T>>,
+        document: &Reingested<Receipt<ApplyOutcome, P>>,
+        signer: RecordedSignerTrust,
         image: &[u8],
     ) {
         let Some(id) = document.receipt_id() else {
@@ -319,7 +323,7 @@ impl ReceiptGraph {
                         id,
                         GraphNode {
                             model,
-                            signer: provenance::<T>(),
+                            signer,
                             projection: P::TOKEN,
                             image: image.to_vec(),
                         },

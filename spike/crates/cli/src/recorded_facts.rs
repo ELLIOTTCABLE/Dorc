@@ -11,7 +11,8 @@
 //! path, and produces the model for all three root selectors, which is what the next builder needs
 //! in order to start from something real.
 
-use dorc_receipt::model::{PlanReceipt, Rich, TrustedReceiptSigner};
+use crate::durable::LocallyAuthenticated;
+use dorc_receipt::model::{PlanReceipt, Rich};
 use dorc_receipt::plan::RecordedPlanReceipt;
 use dorc_receipt::reader::Receipt;
 use dorc_receipt::reingested::Reingested;
@@ -28,7 +29,7 @@ use dorc_receipt::report::{
 #[derive(Debug)]
 pub struct SelectedRoot {
     /// The document, decoded and sealed.
-    pub receipt: Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    pub receipt: LocallyAuthenticated<Reingested<Receipt<PlanReceipt, Rich>>>,
     /// Its own model.
     pub model: Reingested<RecordedPlanReceipt>,
     /// Its identity.
@@ -69,7 +70,7 @@ pub fn facts_for(
     address: Option<RequestedAddress>,
 ) -> RecordedWhyFacts {
     derive(&WhyFactsInput {
-        root: &root.receipt,
+        root: root.receipt.document(),
         model: &root.model,
         identity: root.identity.clone(),
         order: root.order.clone(),

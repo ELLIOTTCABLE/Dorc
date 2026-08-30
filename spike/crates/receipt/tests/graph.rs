@@ -20,8 +20,7 @@ use dorc_receipt::RefusalReason;
 use dorc_receipt::apply::{RecordedApplyAssignment, RecordedApplyIntentRow, RecordedPlanOrigin};
 use dorc_receipt::capability::PublicationGrade;
 use dorc_receipt::capability::{
-    ReceiptSigner, ReceiptVerifier, SelfAssertedReceiptVerificationKey,
-    TrustedReceiptVerificationKey, VerificationKeyResolver,
+    ReceiptSigner, ReceiptVerificationKey, ReceiptVerifier, VerificationKeyResolver,
 };
 use dorc_receipt::format::{Skeleton, SkeletonRecord};
 use dorc_receipt::graph::{GraphFinding, GraphSpecies, ReceiptEdge, ReceiptGraph};
@@ -32,7 +31,7 @@ use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Species
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::outcome::{OutcomeAvailability, RecordedApplyOutcomeRow, RecordedSiteOutcome};
 use dorc_receipt::plan::{RecordedSource, SourceSlots};
-use dorc_receipt::reader::{PartialReceipt, ReadPlain, read_plain};
+use dorc_receipt::reader::{PartialReceipt, read_plain};
 use dorc_receipt::reingested::RecordedInfluence;
 use dorc_receipt::rows::{
     AssignmentOrdinal, OriginOrdinal, RecordedInvocation, RecordedLeaf, RecordedRow, RecordedSite,
@@ -80,13 +79,7 @@ impl ReceiptVerifier for InertKey {
     }
 }
 
-impl TrustedReceiptVerificationKey for InertKey {
-    fn signing_key_id(&self) -> SigningKeyId {
-        fixture_key_id()
-    }
-}
-
-impl SelfAssertedReceiptVerificationKey for InertKey {
+impl ReceiptVerificationKey for InertKey {
     fn signing_key_id(&self) -> SigningKeyId {
         fixture_key_id()
     }
@@ -95,11 +88,8 @@ impl SelfAssertedReceiptVerificationKey for InertKey {
 struct PolicyNames(InertKey);
 
 impl VerificationKeyResolver for PolicyNames {
-    fn trusted(&self, _id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
+    fn material(&self, _id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
         Some(&self.0)
-    }
-    fn self_asserted(&self, _id: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
-        None
     }
 }
 
@@ -253,21 +243,22 @@ enum Kind {
 fn feed(graph: &mut ReceiptGraph, documents: &[(Kind, Vec<u8>)]) {
     let limits = ReceiptLimits::V1;
     let resolver = PolicyNames(InertKey);
+    // The fixture resolver IS this battery own keyset, so the word it reports is the one a
+    // seat holding a validated keyset would report. It is a value the ingesting seat supplies,
+    // never a property the read derived.
+    let trust = dorc_receipt::tokens::RecordedSignerTrust::Trusted;
     for (kind, bytes) in documents {
         match kind {
             Kind::Plan => match read_plain::<PlanReceipt>(bytes.clone(), &limits, &resolver) {
-                Ok(ReadPlain::Trusted(document)) => graph.ingest_plan(&document, bytes),
-                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_plan(&document, bytes),
+                Ok(document) => graph.ingest_plan(&document, trust, bytes),
                 Err(partial) => graph.ingest_partial(partial),
             },
             Kind::Intent => match read_plain::<ApplyIntent>(bytes.clone(), &limits, &resolver) {
-                Ok(ReadPlain::Trusted(document)) => graph.ingest_intent(&document, bytes),
-                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_intent(&document, bytes),
+                Ok(document) => graph.ingest_intent(&document, trust, bytes),
                 Err(partial) => graph.ingest_partial(partial),
             },
             Kind::Outcome => match read_plain::<ApplyOutcome>(bytes.clone(), &limits, &resolver) {
-                Ok(ReadPlain::Trusted(document)) => graph.ingest_outcome(&document, bytes),
-                Ok(ReadPlain::SelfAsserted(document)) => graph.ingest_outcome(&document, bytes),
+                Ok(document) => graph.ingest_outcome(&document, trust, bytes),
                 Err(partial) => graph.ingest_partial(partial),
             },
         }
@@ -665,13 +656,7 @@ fn a_document_signed_by_unheld_material_never_completes() {
     // hold keeps it out entirely rather than admitting it unchecked.
     struct PolicyHoldsNothing;
     impl VerificationKeyResolver for PolicyHoldsNothing {
-        fn trusted(&self, _id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
-            None
-        }
-        fn self_asserted(
-            &self,
-            _id: SigningKeyId,
-        ) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
+        fn material(&self, _id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
             None
         }
     }

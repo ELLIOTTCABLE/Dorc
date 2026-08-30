@@ -3,6 +3,15 @@
 //! Bytes are bounded, then located, then checked, then parsed — in that order, with no path
 //! that reaches a later state without passing every earlier one. A partial result never
 //! converts to a complete one, in either direction.
+//!
+//! # What a checked document claims, and what it does not
+//!
+//! It claims exactly one thing: the signature is VALID under the material the resolver held for
+//! the provider the document names. It does not claim the material is this controller's own —
+//! nothing here can know that, and a state that said so would be saying whatever the resolver
+//! said. Local authentication is the composition root's statement, made where a validated
+//! keyset is held, and it travels in that seat's own envelope rather than in a type parameter
+//! any crate could fill.
 
 use core::marker::PhantomData;
 
@@ -10,9 +19,7 @@ use crate::capability::VerificationKeyResolver;
 use crate::format::{self, LocatedReceiptEnvelope, RefusalReason, Skeleton};
 use crate::ids::{SigningKeyId, from_hex_32};
 use crate::limits::ReceiptLimits;
-use crate::model::{
-    Projection, SelfAssertedReceiptSigner, SignerTrust, Species, TrustedReceiptSigner, payload_type,
-};
+use crate::model::{Projection, Species, payload_type};
 
 /// Input that has passed the aggregate bound, before anything is parsed or allocated from
 /// a value the document declared.
@@ -56,18 +63,18 @@ impl BoundedReceiptBytes {
     }
 }
 
-/// A document whose signature checked, under material whose provenance is `T`.
+/// A document whose signature checked under the material the resolver held.
 ///
-/// Still unparsed, and not a statement that anything it says is so.
+/// Still unparsed, and not a statement that anything it says is so — nor that the key belongs to
+/// anybody in particular.
 #[derive(Debug)]
-pub struct ReceiptSignatureChecked<T: SignerTrust> {
+pub struct ReceiptSignatureChecked {
     body: Vec<u8>,
     skeleton: Vec<u8>,
     armor: Option<String>,
-    trust: PhantomData<T>,
 }
 
-impl<T: SignerTrust> ReceiptSignatureChecked<T> {
+impl ReceiptSignatureChecked {
     /// The exact span that was checked, which is the span parsing consumes.
     #[must_use]
     pub fn body(&self) -> &[u8] {
@@ -87,56 +94,31 @@ impl<T: SignerTrust> ReceiptSignatureChecked<T> {
     }
 }
 
-/// Check a located document against material the resolver supplies.
+/// Check a located document against the material the resolver holds for its named provider.
 ///
-/// The provenance marker comes from which resolver answer was taken; a caller has no type
-/// parameter with which to ask for one. Both concrete answers are tried in a fixed order,
-/// and the trusted answer is preferred where policy names the provider.
+/// One answer. There used to be two, sorted by whether the resolver called its own material
+/// "trusted", and the sorting was worth nothing: the resolver said which. What is left is the
+/// question this crate can decide from the bytes in front of it.
 ///
 /// # Errors
 /// Refuses a misshaped signature, a failed check, or material the resolver does not hold.
 pub fn check_signature<D: Species, P: Projection>(
     located: &LocatedReceiptEnvelope,
     resolver: &dyn VerificationKeyResolver,
-) -> Result<Checked, RefusalReason> {
+) -> Result<ReceiptSignatureChecked, RefusalReason> {
     let id = SigningKeyId::of_hex(&located.signing_key_id).ok_or(RefusalReason::SignatureShape)?;
     let signature = signature_bytes(&located.signature_hex)?;
     let input = crate::ids::pae(&payload_type::<D, P>(), &located.body);
 
-    if let Some(key) = resolver.trusted(id) {
-        return if key.verify(&input, &signature) {
-            Ok(Checked::Trusted(ReceiptSignatureChecked {
-                body: located.body.clone(),
-                skeleton: located.skeleton.clone(),
-                armor: located.armor.clone(),
-                trust: PhantomData,
-            }))
-        } else {
-            Err(RefusalReason::SignatureCheck)
-        };
+    let key = resolver.material(id).ok_or(RefusalReason::KeyUnavailable)?;
+    if !key.verify(&input, &signature) {
+        return Err(RefusalReason::SignatureCheck);
     }
-    if let Some(key) = resolver.self_asserted(id) {
-        return if key.verify(&input, &signature) {
-            Ok(Checked::SelfAsserted(ReceiptSignatureChecked {
-                body: located.body.clone(),
-                skeleton: located.skeleton.clone(),
-                armor: located.armor.clone(),
-                trust: PhantomData,
-            }))
-        } else {
-            Err(RefusalReason::SignatureCheck)
-        };
-    }
-    Err(RefusalReason::KeyUnavailable)
-}
-
-/// Which provenance a check landed on. The two arms are separate types, never a flag.
-#[derive(Debug)]
-pub enum Checked {
-    /// Checked under material controller policy names.
-    Trusted(ReceiptSignatureChecked<TrustedReceiptSigner>),
-    /// Checked under material controller policy does not name.
-    SelfAsserted(ReceiptSignatureChecked<SelfAssertedReceiptSigner>),
+    Ok(ReceiptSignatureChecked {
+        body: located.body.clone(),
+        skeleton: located.skeleton.clone(),
+        armor: located.armor.clone(),
+    })
 }
 
 fn signature_bytes(hex: &str) -> Result<[u8; 64], RefusalReason> {
@@ -155,22 +137,21 @@ fn signature_bytes(hex: &str) -> Result<[u8; 64], RefusalReason> {
 
 /// A checked document parsed under its species and projection grammar.
 #[derive(Debug)]
-pub struct ParsedReceiptSkeleton<D: Species, P: Projection, T: SignerTrust> {
+pub struct ParsedReceiptSkeleton<D: Species, P: Projection> {
     skeleton: Skeleton,
     armor: Option<String>,
     species: PhantomData<D>,
     projection: PhantomData<P>,
-    trust: PhantomData<T>,
 }
 
-impl<D: Species, P: Projection, T: SignerTrust> ParsedReceiptSkeleton<D, P, T> {
+impl<D: Species, P: Projection> ParsedReceiptSkeleton<D, P> {
     /// Parse the checked span. The species and projection parsed out must equal the ones the
     /// signature domain was selected with, or the document is refused rather than coerced.
     ///
     /// # Errors
     /// Refuses a grammar departure or a region presence the projection disagrees with.
     pub fn of(
-        checked: &ReceiptSignatureChecked<T>,
+        checked: &ReceiptSignatureChecked,
         limits: &ReceiptLimits,
     ) -> Result<Self, RefusalReason> {
         let skeleton = format::parse_skeleton_span::<D, P>(checked.skeleton(), limits)?;
@@ -182,7 +163,6 @@ impl<D: Species, P: Projection, T: SignerTrust> ParsedReceiptSkeleton<D, P, T> {
             armor: checked.armor().map(str::to_owned),
             species: PhantomData,
             projection: PhantomData,
-            trust: PhantomData,
         })
     }
 
@@ -201,58 +181,37 @@ impl<D: Species, P: Projection, T: SignerTrust> ParsedReceiptSkeleton<D, P, T> {
 
 /// A format-complete receipt for its projection.
 ///
-/// Complete means the document parsed whole under its own grammar. It does not mean what the
-/// document says is so, that it is current, or that it may be shared.
+/// Complete means the document parsed whole under its own grammar, and its signature checked
+/// under material somebody supplied. It does not mean what the document says is so, that it is
+/// current, that it may be shared, or that the key was this controller's.
 #[derive(Debug)]
-pub struct Receipt<D: Species, P: Projection, T: SignerTrust> {
+pub struct Receipt<D: Species, P: Projection> {
     skeleton: Skeleton,
     region: P::Region,
     species: PhantomData<D>,
     projection: PhantomData<P>,
-    trust: PhantomData<T>,
 }
 
-impl<D: Species, T: SignerTrust> Receipt<D, crate::model::Plain, T> {
+impl<D: Species> Receipt<D, crate::model::Plain> {
     /// Complete a plain document. A plain projection carries no region, so there is nothing
     /// further to validate.
     #[must_use]
-    pub fn of_plain(parsed: ParsedReceiptSkeleton<D, crate::model::Plain, T>) -> Self {
+    pub fn of_plain(parsed: ParsedReceiptSkeleton<D, crate::model::Plain>) -> Self {
         Self {
             skeleton: parsed.skeleton,
             region: crate::model::NoOpaqueOverlay,
             species: PhantomData,
             projection: PhantomData,
-            trust: PhantomData,
         }
     }
 }
 
-impl<D: Species, P: Projection, T: SignerTrust> Receipt<D, P, T> {
+impl<D: Species, P: Projection> Receipt<D, P> {
     /// The document's records.
     #[must_use]
     pub const fn skeleton(&self) -> &Skeleton {
         &self.skeleton
     }
-
-    /// The word a report renders for this document's provenance.
-    #[must_use]
-    pub const fn signer_provenance(&self) -> &'static str {
-        T::TOKEN
-    }
-}
-
-/// A completed plain read, carrying which provenance its material had.
-///
-/// Two arms rather than a flag, so a consumer that only accepts policy-named material
-/// cannot be handed the other by mistake.
-#[derive(Debug)]
-pub enum ReadPlain<D: Species> {
-    /// Read under material controller policy names.
-    Trusted(crate::reingested::Reingested<Receipt<D, crate::model::Plain, TrustedReceiptSigner>>),
-    /// Read under material controller policy does not name.
-    SelfAsserted(
-        crate::reingested::Reingested<Receipt<D, crate::model::Plain, SelfAssertedReceiptSigner>>,
-    ),
 }
 
 /// Read one plain document end to end: bound, locate, check, parse, seal.
@@ -267,35 +226,19 @@ pub fn read_plain<D: Species>(
     bytes: Vec<u8>,
     limits: &ReceiptLimits,
     resolver: &dyn VerificationKeyResolver,
-) -> Result<ReadPlain<D>, PartialReceipt> {
+) -> Result<crate::reingested::Reingested<Receipt<D, crate::model::Plain>>, PartialReceipt> {
     let bounded = BoundedReceiptBytes::of(bytes, limits).map_err(PartialReceipt::of)?;
     let located = bounded.locate(limits).map_err(PartialReceipt::of)?;
     if located.armor.is_some() {
         return Err(PartialReceipt::of(RefusalReason::OverlayPresence));
     }
-    match check_signature::<D, crate::model::Plain>(&located, resolver)
-        .map_err(PartialReceipt::of)?
-    {
-        Checked::Trusted(checked) => {
-            let parsed = ParsedReceiptSkeleton::<D, crate::model::Plain, TrustedReceiptSigner>::of(
-                &checked, limits,
-            )
-            .map_err(PartialReceipt::of)?;
-            Ok(ReadPlain::Trusted(crate::reingested::Reingested::seal(
-                Receipt::of_plain(parsed),
-            )))
-        }
-        Checked::SelfAsserted(checked) => {
-            let parsed =
-                ParsedReceiptSkeleton::<D, crate::model::Plain, SelfAssertedReceiptSigner>::of(
-                    &checked, limits,
-                )
-                .map_err(PartialReceipt::of)?;
-            Ok(ReadPlain::SelfAsserted(
-                crate::reingested::Reingested::seal(Receipt::of_plain(parsed)),
-            ))
-        }
-    }
+    let checked = check_signature::<D, crate::model::Plain>(&located, resolver)
+        .map_err(PartialReceipt::of)?;
+    let parsed = ParsedReceiptSkeleton::<D, crate::model::Plain>::of(&checked, limits)
+        .map_err(PartialReceipt::of)?;
+    Ok(crate::reingested::Reingested::seal(Receipt::of_plain(
+        parsed,
+    )))
 }
 
 /// Why a document is being reported rather than used.
@@ -336,13 +279,13 @@ impl PartialReceipt {
     }
 }
 
-impl<D: Species, T: SignerTrust> Receipt<D, crate::model::Rich, T> {
+impl<D: Species> Receipt<D, crate::model::Rich> {
     /// Complete a rich document from a region that has already validated.
     ///
     /// Private to the crate and reachable only from [`read_rich`], so a rich receipt cannot
     /// exist without a region that was checked against this document's own skeleton.
     fn of_rich(
-        parsed: ParsedReceiptSkeleton<D, crate::model::Rich, T>,
+        parsed: ParsedReceiptSkeleton<D, crate::model::Rich>,
         region: crate::overlay::ValidatedOpaqueOverlay,
     ) -> Self {
         Self {
@@ -350,7 +293,6 @@ impl<D: Species, T: SignerTrust> Receipt<D, crate::model::Rich, T> {
             region,
             species: PhantomData,
             projection: PhantomData,
-            trust: PhantomData,
         }
     }
 
@@ -367,17 +309,6 @@ impl<D: Species, T: SignerTrust> Receipt<D, crate::model::Rich, T> {
     }
 }
 
-/// A completed rich read, carrying which provenance its material had.
-#[derive(Debug)]
-pub enum ReadRich<D: Species> {
-    /// Read under material controller policy names.
-    Trusted(crate::reingested::Reingested<Receipt<D, crate::model::Rich, TrustedReceiptSigner>>),
-    /// Read under material controller policy does not name.
-    SelfAsserted(
-        crate::reingested::Reingested<Receipt<D, crate::model::Rich, SelfAssertedReceiptSigner>>,
-    ),
-}
-
 /// Read one rich document end to end: bound, locate, check, parse, open, validate, seal.
 ///
 /// The order is the point and it is not negotiable at a call site. Opening cannot begin until
@@ -392,49 +323,29 @@ pub fn read_rich<D: Species>(
     limits: &ReceiptLimits,
     resolver: &dyn VerificationKeyResolver,
     opener: &dyn crate::capability::OverlayOpener,
-) -> Result<ReadRich<D>, PartialReceipt> {
+) -> Result<crate::reingested::Reingested<Receipt<D, crate::model::Rich>>, PartialReceipt> {
     let bounded = BoundedReceiptBytes::of(bytes, limits).map_err(PartialReceipt::of)?;
     let located = bounded.locate(limits).map_err(PartialReceipt::of)?;
     if located.armor.is_none() {
         return Err(PartialReceipt::of(RefusalReason::OverlayPresence));
     }
-    match check_signature::<D, crate::model::Rich>(&located, resolver)
-        .map_err(PartialReceipt::of)?
-    {
-        Checked::Trusted(checked) => {
-            let parsed = ParsedReceiptSkeleton::<D, crate::model::Rich, TrustedReceiptSigner>::of(
-                &checked, limits,
-            )
-            .map_err(PartialReceipt::of)?;
-            let region =
-                open_and_validate::<D, TrustedReceiptSigner>(&checked, &parsed, limits, opener)?;
-            Ok(ReadRich::Trusted(crate::reingested::Reingested::seal(
-                Receipt::of_rich(parsed, region),
-            )))
-        }
-        Checked::SelfAsserted(checked) => {
-            let parsed =
-                ParsedReceiptSkeleton::<D, crate::model::Rich, SelfAssertedReceiptSigner>::of(
-                    &checked, limits,
-                )
-                .map_err(PartialReceipt::of)?;
-            let region = open_and_validate::<D, SelfAssertedReceiptSigner>(
-                &checked, &parsed, limits, opener,
-            )?;
-            Ok(ReadRich::SelfAsserted(crate::reingested::Reingested::seal(
-                Receipt::of_rich(parsed, region),
-            )))
-        }
-    }
+    let checked =
+        check_signature::<D, crate::model::Rich>(&located, resolver).map_err(PartialReceipt::of)?;
+    let parsed = ParsedReceiptSkeleton::<D, crate::model::Rich>::of(&checked, limits)
+        .map_err(PartialReceipt::of)?;
+    let region = open_and_validate::<D>(&checked, &parsed, limits, opener)?;
+    Ok(crate::reingested::Reingested::seal(Receipt::of_rich(
+        parsed, region,
+    )))
 }
 
 /// Open the region and validate it against the skeleton that was signed.
 ///
 /// Takes the checked state by reference so the span it digests is the span the signature
 /// covered, not a re-read of anything.
-fn open_and_validate<D: Species, T: SignerTrust>(
-    checked: &ReceiptSignatureChecked<T>,
-    parsed: &ParsedReceiptSkeleton<D, crate::model::Rich, T>,
+fn open_and_validate<D: Species>(
+    checked: &ReceiptSignatureChecked,
+    parsed: &ParsedReceiptSkeleton<D, crate::model::Rich>,
     limits: &ReceiptLimits,
     opener: &dyn crate::capability::OverlayOpener,
 ) -> Result<crate::overlay::ValidatedOpaqueOverlay, PartialReceipt> {

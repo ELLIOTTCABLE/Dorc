@@ -532,11 +532,12 @@ fn the_rehydration_floor_is_decided_at_one_seat() {
 
 /// The production files permitted to implement the resolver.
 ///
-/// The composition root alone, and the split from the MARKER traits below is the whole argument:
-/// a marker says this material is what controller policy named, and only the implementation crate
-/// may mint one. A resolver merely SELECTS among already-marked material, which is a policy act
-/// and belongs where policy is assembled — its answer cannot upgrade anything, because it has no
-/// way to produce a marker.
+/// The composition root alone. This is a HYGIENE census and NOT an authority fence, and the
+/// difference is worth stating: neither the marker trait nor the resolver decides trust any more.
+/// A resolver answers material, a checked read says the signature is valid under it, and the
+/// statement that the material is this controller's own lives in `cli/src/durable.rs`'s
+/// private-field envelope. What the list still buys is that a second seat assembling key policy
+/// is a diff somebody reads.
 ///
 /// Two-way. Until the composition root existed this half of the fence walked an EMPTY set and
 /// passed for that reason, which is the shape a fence must never keep.
@@ -544,22 +545,40 @@ const MAY_RESOLVE_VERIFICATION_MATERIAL: [&str; 1] = ["cli/src/durable.rs"];
 
 #[test]
 fn verification_material_is_supplied_from_one_production_file() {
-    // The two markers are the authority: a fence covering only the crypto crate's NAME would not
-    // see one written elsewhere, since a type answering yes need never mention that crate.
-    for trait_name in [
+    // ONE marker now. There were two — trusted and self-asserted — and both were public traits,
+    // so "trusted" meant whatever an implementor said; the fence below could enumerate who wrote
+    // one and could not stop the word from being a claim anybody could make. The trait that
+    // survives makes no claim about whose material it is, so this is a census of where key
+    // plumbing lives rather than a gate on authority.
+    let found: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| implements(text, "ReceiptVerificationKey"))
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        found,
+        vec!["receipt-crypto/src/lib.rs".to_owned()],
+        "only the implementation crate implements the verification marker, and it must still do so"
+    );
+    // The retired names must stay retired: a re-introduced "trusted" marker would be the whole
+    // hole coming back, and it would come back looking like an ordinary capability.
+    for retired in [
         "TrustedReceiptVerificationKey",
         "SelfAssertedReceiptVerificationKey",
     ] {
-        let found: Vec<String> = production_sources()
-            .into_iter()
-            .filter(|(_, text)| implements(text, trait_name))
-            .map(|(path, _)| path)
-            .collect();
-        assert_eq!(
-            found,
-            vec!["receipt-crypto/src/lib.rs".to_owned()],
-            "only the implementation crate may implement {trait_name}, and it must still do so"
+        let named = production_naming(retired);
+        assert!(
+            named.is_empty(),
+            "`{retired}` is back in {named:?}; a caller-implementable trust label is what the \
+             local-authentication envelope replaced"
         );
+    }
+    // The provenance PARAMETER is named in exactly one production file and only inside the
+    // compile-fail pin that proves it is gone — a naming rather than a definition, the same
+    // carve `a_resolved_destination_is_readable_at_exactly_one_slot` makes. Two-way, so the pin
+    // going missing fails here rather than passing silently.
+    for retired in ["SignerTrust", "TrustedReceiptSigner"] {
+        fence(retired, &["receipt/src/lib.rs"]);
     }
     let resolvers: Vec<String> = production_sources()
         .into_iter()
@@ -574,6 +593,36 @@ fn verification_material_is_supplied_from_one_production_file() {
             .collect::<Vec<_>>(),
         "the resolver seats are {resolvers:?} and the list is \
          {MAY_RESOLVE_VERIFICATION_MATERIAL:?}"
+    );
+}
+
+#[test]
+fn local_authentication_is_minted_at_one_seat_with_no_public_constructor() {
+    // The claim `dorc-receipt` cannot make lives HERE, and it is carried by a private field: the
+    // envelope's only values are the ones `ReadEdge`'s three reads produce, and a `ReadEdge`
+    // exists only where the local keyset validated. Asserted over the file's own text rather
+    // than as a roster of callers, because the property is about the type's shape.
+    let durable = production_sources()
+        .into_iter()
+        .find(|(path, _)| path == "cli/src/durable.rs")
+        .map(|(_, text)| text)
+        .expect("the composition root's own source");
+    assert!(
+        durable.contains("pub struct LocallyAuthenticated<T>(T);"),
+        "the envelope's single unnamed field must stay private; a named or public one would let \
+         any module in the binary state what only a validated keyset may"
+    );
+    let minters: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| {
+            text.contains("LocallyAuthenticated(") || text.contains(".map(LocallyAuthenticated)")
+        })
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        minters,
+        vec!["cli/src/durable.rs".to_owned()],
+        "the mint is a struct literal, so only this module can write one; the seats are {minters:?}"
     );
 }
 
@@ -602,7 +651,13 @@ fn verification_material_is_supplied_from_one_production_file() {
 /// `cli/src/recorded_facts.rs` is the edge seat that hands one selected root over. Each is a
 /// genuine consumer and each was a deliberate entry rather than a widening: the derivation reads
 /// sealed values and yields report values, and no arm of it converts.
-const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 10] = [
+///
+/// `cli/src/durable.rs` joined when local authentication moved there: the envelope its three
+/// reads answer with WRAPS a sealed value, so the module names the wrapper in a type and never
+/// unwraps one. That is the same kind of entry as its neighbours — a seat that has looked at
+/// recorded material — and it is the seat that decides which reads are the controller's own.
+const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 11] = [
+    "cli/src/durable.rs",
     "cli/src/recorded.rs",
     "cli/src/recorded_facts.rs",
     "plan/src/lib.rs",

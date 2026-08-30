@@ -19,8 +19,8 @@
 //! what a caller reads to learn whether asking for one is even sensible.
 
 use dorc_receipt_crypto::{
-    EncryptionPrivateDocument, KeyDocumentBound, KeyDocumentRefusal, KeysetGenerator,
-    SigningPrivateDocument, TrustedEd25519Key,
+    Ed25519Verifier, EncryptionPrivateDocument, KeyDocumentBound, KeyDocumentRefusal,
+    KeysetGenerator, SigningPrivateDocument,
 };
 
 use crate::io::{self, GroupAndOtherAccess, IoFault, LocalIo, ObjectFacts, ObjectKind, OpenIntent};
@@ -330,12 +330,16 @@ pub struct KeysetSynchronizedForPublicationV1(());
 
 /// Material validated for reading, and nothing more.
 ///
-/// Role-specific: a valid signing document with a matching manifest identity exposes trusted
-/// verification even where the encryption document is missing or damaged, because a receipt whose
+/// Role-specific: a valid signing document with a matching manifest identity exposes verification
+/// material even where the encryption document is missing or damaged, because a receipt whose
 /// opaque half cannot be opened is still a receipt whose authorship can be checked.
+///
+/// The material carries no label. What makes a read under it LOCALLY AUTHENTICATED is that this
+/// value exists at all — it comes from a validated keyset under this controller's own roots — and
+/// that statement belongs to the seat holding one, not to a marker travelling with the key.
 #[derive(Debug)]
 pub struct LocalReadKeysV1 {
-    verifier: TrustedEd25519Key,
+    verifier: Ed25519Verifier,
     opener: Option<EncryptionPrivateDocument>,
     status: KeyAvailability,
 }
@@ -343,9 +347,9 @@ pub struct LocalReadKeysV1 {
 impl LocalReadKeysV1 {
     /// Verification material this controller's policy selected by validating this keyset.
     ///
-    /// Trusted because policy chose the keyset, never because a document named its identity.
+    /// Selected because policy chose the keyset, never because a document named its identity.
     #[must_use]
-    pub const fn verifier(&self) -> &TrustedEd25519Key {
+    pub const fn verifier(&self) -> &Ed25519Verifier {
         &self.verifier
     }
 
@@ -370,7 +374,7 @@ impl LocalReadKeysV1 {
 pub struct LocalWriteKeysV1 {
     signing: SigningPrivateDocument,
     encryption: EncryptionPrivateDocument,
-    verifier: TrustedEd25519Key,
+    verifier: Ed25519Verifier,
     readiness: KeysetSynchronizedForPublicationV1,
 }
 
@@ -389,7 +393,7 @@ impl LocalWriteKeysV1 {
 
     /// Verification material for this keyset's own signing identity.
     #[must_use]
-    pub const fn verifier(&self) -> &TrustedEd25519Key {
+    pub const fn verifier(&self) -> &Ed25519Verifier {
         &self.verifier
     }
 
@@ -574,7 +578,7 @@ fn synchronize_ancestry(
 struct LoadedKeyset {
     signing: Option<SigningPrivateDocument>,
     encryption: Option<EncryptionPrivateDocument>,
-    verifier: TrustedEd25519Key,
+    verifier: Ed25519Verifier,
 }
 
 impl LoadedKeyset {
@@ -646,11 +650,11 @@ fn load_validated(
             role: KeyRole::Signing,
         });
     }
-    let verifier = signing.verifier().map(TrustedEd25519Key::of).ok_or(
-        KeyAvailability::MalformedKeyDocument {
+    let verifier = signing
+        .verifier()
+        .ok_or(KeyAvailability::MalformedKeyDocument {
             role: KeyRole::Signing,
-        },
-    )?;
+        })?;
 
     // The encryption role is allowed to be unavailable without taking the signing role with it:
     // a receipt whose opaque half cannot be opened is still one whose authorship can be checked.

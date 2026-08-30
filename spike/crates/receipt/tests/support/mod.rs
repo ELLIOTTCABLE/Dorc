@@ -22,19 +22,19 @@
 )]
 
 use dorc_receipt::capability::{
-    OverlayOpener, OverlaySealer, ReceiptSigner, ReceiptVerifier,
-    SelfAssertedReceiptVerificationKey, TrustedReceiptVerificationKey, VerificationKeyResolver,
+    OverlayOpener, OverlaySealer, ReceiptSigner, ReceiptVerificationKey, ReceiptVerifier,
+    VerificationKeyResolver,
 };
 use dorc_receipt::durable_locator::{DurableLocator, DurableStage, RecordedStageKind};
 use dorc_receipt::format::{Skeleton, SkeletonRecord};
 use dorc_receipt::ids::{EncryptionKeyId, PlanReceiptId, ReceiptId, ReceiptIdSource, SigningKeyId};
 use dorc_receipt::limits::ReceiptLimits;
-use dorc_receipt::model::{PlanReceipt, Rich, TrustedReceiptSigner};
+use dorc_receipt::model::{PlanReceipt, Rich};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::overlay::DocumentRows;
 use dorc_receipt::plan::{RecordedPlanReceipt, RecordedSiteDecision, RecordedSource, SourceSlots};
 use dorc_receipt::projection::OpaqueFieldTag;
-use dorc_receipt::reader::{ReadRich, Receipt, read_rich};
+use dorc_receipt::reader::{Receipt, read_rich};
 use dorc_receipt::reingested::{RecordedInfluence, Reingested};
 use dorc_receipt::rows::{
     RecordedAst, RecordedInvocation, RecordedLeaf, RecordedSite, SourceOrdinal,
@@ -83,27 +83,18 @@ impl ReceiptVerifier for InertSigner {
     }
 }
 
-impl TrustedReceiptVerificationKey for InertSigner {
+impl ReceiptVerificationKey for InertSigner {
     fn signing_key_id(&self) -> SigningKeyId {
         SigningKeyId::of_public_material(&[1_u8; 32])
     }
 }
 
-impl SelfAssertedReceiptVerificationKey for InertSigner {
-    fn signing_key_id(&self) -> SigningKeyId {
-        SigningKeyId::of_public_material(&[1_u8; 32])
-    }
-}
-
-/// A resolver that names the fixture provider as trusted.
+/// A resolver holding the fixture provider material.
 struct TrustingResolver(InertSigner);
 
 impl VerificationKeyResolver for TrustingResolver {
-    fn trusted(&self, _id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
+    fn material(&self, _id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
         Some(&self.0)
-    }
-    fn self_asserted(&self, _id: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
-        None
     }
 }
 
@@ -172,7 +163,7 @@ impl ReceiptIdSource for Counting {
 
 /// One published document, read back and sealed, plus the identities it was filed under.
 pub(crate) struct DocumentUnderTest {
-    pub(crate) receipt: Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    pub(crate) receipt: Reingested<Receipt<PlanReceipt, Rich>>,
     pub(crate) model: Reingested<RecordedPlanReceipt>,
     pub(crate) id: PlanReceiptId,
     pub(crate) order: ReceiptOrderToken,
@@ -300,9 +291,7 @@ pub(crate) fn publish_with_locator(
         &HexArmor,
     )
     .expect("the fixture document reads back");
-    let ReadRich::Trusted(receipt) = read else {
-        panic!("the fixture resolver names its provider trusted");
-    };
+    let receipt = read;
     let model = receipt.model().expect("its records close over themselves");
     DocumentUnderTest {
         receipt,

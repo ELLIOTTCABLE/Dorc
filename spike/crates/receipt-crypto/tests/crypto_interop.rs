@@ -15,7 +15,7 @@
 
 use dorc_receipt::capability::{
     OverlayOpener, OverlaySealer, PublicationGrade, ReceiptSigner, ReceiptSink,
-    SelfAssertedReceiptVerificationKey, TrustedReceiptVerificationKey, VerificationKeyResolver,
+    ReceiptVerificationKey, VerificationKeyResolver,
 };
 use dorc_receipt::format::{Skeleton, SkeletonRecord};
 use dorc_receipt::grammar::RecordKind;
@@ -25,11 +25,9 @@ use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Rich, S
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::overlay::OverlayEntry;
 use dorc_receipt::projection::OpaqueFieldTag;
-use dorc_receipt::reader::{ReadPlain, ReadRich, read_plain, read_rich};
+use dorc_receipt::reader::{read_plain, read_rich};
 use dorc_receipt::writer::{DraftReceipt, OverlayPlaintext};
-use dorc_receipt_crypto::{
-    AgeOpener, AgeSealer, Ed25519Signer, Ed25519Verifier, SelfAssertedEd25519Key, TrustedEd25519Key,
-};
+use dorc_receipt_crypto::{AgeOpener, AgeSealer, Ed25519Signer, Ed25519Verifier};
 
 /// A fixed secret, so the corpus is reproducible. Test-only by construction: an integration
 /// test is not compiled into the library.
@@ -60,34 +58,18 @@ impl ReceiptIdSource for CountingIds {
     }
 }
 
-struct PolicyNames(TrustedEd25519Key);
-struct PolicyDoesNotName(SelfAssertedEd25519Key);
+struct PolicyNames(Ed25519Verifier);
 struct PolicyHoldsNothing;
 
 impl VerificationKeyResolver for PolicyNames {
-    fn trusted(&self, id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
-        (self.0.signing_key_id() == id).then_some(&self.0 as &dyn TrustedReceiptVerificationKey)
-    }
-    fn self_asserted(&self, _: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
-        None
-    }
-}
-
-impl VerificationKeyResolver for PolicyDoesNotName {
-    fn trusted(&self, _: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
-        None
-    }
-    fn self_asserted(&self, id: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
-        (self.0.signing_key_id() == id)
-            .then_some(&self.0 as &dyn SelfAssertedReceiptVerificationKey)
+    fn material(&self, id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
+        (ReceiptVerificationKey::signing_key_id(&self.0) == id)
+            .then_some(&self.0 as &dyn ReceiptVerificationKey)
     }
 }
 
 impl VerificationKeyResolver for PolicyHoldsNothing {
-    fn trusted(&self, _: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
-        None
-    }
-    fn self_asserted(&self, _: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
+    fn material(&self, _: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
         None
     }
 }
@@ -182,29 +164,28 @@ fn round_trip<D: Species>(name: &str, failures: &mut Vec<String>) {
         failures.push(format!("{name}: fixture material did not load"));
         return;
     };
-    let named = PolicyNames(TrustedEd25519Key::of(named_material));
+    let named = PolicyNames(named_material);
     match read_plain::<D>(bytes.clone(), &limits, &named) {
-        Ok(ReadPlain::Trusted(recorded)) => {
-            if recorded.signer_provenance() != "trusted" || recorded.record_count() != 1 {
-                failures.push(format!("{name}: a trusted read reported wrongly"));
+        Ok(recorded) => {
+            if recorded.record_count() != 1 {
+                failures.push(format!("{name}: the read reported wrongly"));
             }
         }
-        _ => failures.push(format!("{name}: expected a trusted read")),
+        Err(_) => failures.push(format!("{name}: expected a completed read")),
     }
 
-    // The same bytes under material policy does not name land in the other arm. The document
-    // is identical; only the provenance of the material differs, and the type says so.
-    let Some(unnamed_material) = material() else {
-        return;
-    };
-    let unnamed = PolicyDoesNotName(SelfAssertedEd25519Key::of(unnamed_material));
-    match read_plain::<D>(bytes, &limits, &unnamed) {
-        Ok(ReadPlain::SelfAsserted(recorded)) => {
-            if recorded.signer_provenance() != "self-asserted" {
-                failures.push(format!("{name}: a self-asserted read reported wrongly"));
+    // The same bytes under material the resolver does not hold do not read at all. There is no
+    // second, differently-labelled arm to land in: whose key it is is not a question this crate
+    // answers, so "held" and "not held" is the whole of the distinction.
+    match read_plain::<D>(bytes, &limits, &PolicyHoldsNothing) {
+        Err(partial) => {
+            if *partial.reason() != dorc_receipt::RefusalReason::KeyUnavailable {
+                failures.push(format!(
+                    "{name}: unheld material refused for the wrong reason"
+                ));
             }
         }
-        _ => failures.push(format!("{name}: expected a self-asserted read")),
+        Ok(_) => failures.push(format!("{name}: unheld material must not read")),
     }
 }
 
@@ -245,7 +226,7 @@ fn one_flipped_body_byte_fails_the_check() {
     let held = material();
     assert!(held.is_some(), "fixture material did not load");
     let Some(held) = held else { return };
-    let named = PolicyNames(TrustedEd25519Key::of(held));
+    let named = PolicyNames(held);
     assert!(
         read_plain::<PlanReceipt>(bytes, &ReceiptLimits::V1, &named).is_err(),
         "a mutated body must not read"
@@ -295,7 +276,7 @@ fn one_edited_order_digit_fails_the_check() {
     let held = material();
     assert!(held.is_some(), "fixture material did not load");
     let Some(held) = held else { return };
-    let named = PolicyNames(TrustedEd25519Key::of(held));
+    let named = PolicyNames(held);
     // The positive control, so the refusal below is caused by the edit rather than by the
     // fixture never having read in the first place.
     assert!(
@@ -329,7 +310,7 @@ fn a_document_signed_for_one_species_does_not_read_as_another() {
     assert!(held.is_some(), "fixture material did not load");
     let Some(held) = held else { return };
 
-    let named = PolicyNames(TrustedEd25519Key::of(held));
+    let named = PolicyNames(held);
     let limits = ReceiptLimits::V1;
     assert!(read_plain::<PlanReceipt>(bytes.clone(), &limits, &named).is_ok());
     assert!(
@@ -457,7 +438,7 @@ fn a_rich_document_round_trips_through_both_real_packages() {
     let Some(verifier) = material() else {
         panic!("the fixture verification material is well formed")
     };
-    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+    let resolver = PolicyNames(verifier);
 
     let mut ids = CountingIds(70);
     let skeleton = rich_skeleton(
@@ -495,7 +476,7 @@ fn a_rich_document_round_trips_through_both_real_packages() {
     );
 
     match read_rich::<PlanReceipt>(bytes, &ReceiptLimits::V1, &resolver, &opener) {
-        Ok(ReadRich::Trusted(_)) => {}
+        Ok(_) => {}
         other => panic!("the rich document did not read back: {other:?}"),
     }
 }
@@ -518,7 +499,7 @@ fn rich_document(seed: u8, argv: &[u8]) -> (Vec<u8>, AgeOpener, PolicyNames) {
     let opener = AgeOpener::of(identity);
     let signer = signing_key();
     let verifier = material().expect("the fixture verification material is well formed");
-    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+    let resolver = PolicyNames(verifier);
 
     let mut ids = CountingIds(seed);
     let skeleton = rich_skeleton(
@@ -613,7 +594,7 @@ fn a_damaged_region_under_a_matching_signature_is_refused_by_the_opener() {
     let opener = AgeOpener::of(identity);
     let signer = signing_key();
     let verifier = material().expect("the fixture verification material is well formed");
-    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+    let resolver = PolicyNames(verifier);
 
     let mut ids = CountingIds(85);
     let skeleton = rich_skeleton(
@@ -688,7 +669,7 @@ fn rich_narrows_to_plain_by_reminting_and_never_by_stripping_text() {
     let sealer = AgeSealer::of(identity.to_public());
     let signer = signing_key();
     let verifier = material().expect("the fixture verification material is well formed");
-    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+    let resolver = PolicyNames(verifier);
 
     let mut ids = CountingIds(90);
     let rich = rich_skeleton(
@@ -799,7 +780,7 @@ fn every_committed_rich_vector_reads_back_whole_under_the_fixture_material() {
         .expect("the fixture identity parses");
     let opener = AgeOpener::of(identity);
     let verifier = material().expect("the fixture verification material is well formed");
-    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+    let resolver = PolicyNames(verifier);
 
     let mut failures: Vec<String> = Vec::new();
     for (name, bytes) in committed_rich_vectors() {
@@ -912,7 +893,7 @@ fn a_rich_document_and_its_plain_remint_are_two_nodes_and_no_finding() {
     let opener = AgeOpener::of(identity);
     let signer = signing_key();
     let verifier = material().expect("the fixture verification material is well formed");
-    let resolver = PolicyNames(TrustedEd25519Key::of(verifier));
+    let resolver = PolicyNames(verifier);
 
     let mut ids = CountingIds(150);
     let rich = rich_skeleton(
@@ -950,22 +931,15 @@ fn a_rich_document_and_its_plain_remint_are_two_nodes_and_no_finding() {
     );
 
     let mut graph = dorc_receipt::graph::ReceiptGraph::new();
-    match read_rich::<PlanReceipt>(rich_bytes.clone(), &ReceiptLimits::V1, &resolver, &opener)
-        .expect("the rich document reads")
-    {
-        ReadRich::Trusted(document) => {
-            graph.ingest_plan(&document, &rich_bytes);
-        }
-        ReadRich::SelfAsserted(document) => {
-            graph.ingest_plan(&document, &rich_bytes);
-        }
-    }
-    match read_plain::<PlanReceipt>(plain_bytes.clone(), &ReceiptLimits::V1, &resolver)
-        .expect("the reminted document reads")
-    {
-        ReadPlain::Trusted(document) => graph.ingest_plan(&document, &plain_bytes),
-        ReadPlain::SelfAsserted(document) => graph.ingest_plan(&document, &plain_bytes),
-    }
+    let trust = dorc_receipt::tokens::RecordedSignerTrust::Trusted;
+    let rich_document =
+        read_rich::<PlanReceipt>(rich_bytes.clone(), &ReceiptLimits::V1, &resolver, &opener)
+            .expect("the rich document reads");
+    graph.ingest_plan(&rich_document, trust, &rich_bytes);
+    let plain_document =
+        read_plain::<PlanReceipt>(plain_bytes.clone(), &ReceiptLimits::V1, &resolver)
+            .expect("the reminted document reads");
+    graph.ingest_plan(&plain_document, trust, &plain_bytes);
 
     assert_eq!(
         graph.plans().len(),

@@ -30,28 +30,27 @@ pub trait ReceiptVerifier {
     fn verify(&self, body: &[u8], signature: &[u8; 64]) -> bool;
 }
 
-/// Verification material whose provider controller policy names.
-pub trait TrustedReceiptVerificationKey: ReceiptVerifier {
-    /// Which signing provider this is.
-    fn signing_key_id(&self) -> SigningKeyId;
-}
-
-/// Verification material whose provider controller policy does not name.
-pub trait SelfAssertedReceiptVerificationKey: ReceiptVerifier {
+/// Verification material, and the provider identity it answers for.
+///
+/// ONE marker, and it makes NO claim about whose material this is. It used to be two —
+/// "named by controller policy" and "not named" — and that split was a claim this crate cannot
+/// support: both traits were public, so any crate could label its own material as the
+/// controller's and the state that came back said `trusted`. What this crate can honestly say
+/// is that a signature is VALID UNDER A KEY. Whether the key is this controller's own is a
+/// question about a keyset on somebody's disk, and it is answered where that keyset is opened.
+pub trait ReceiptVerificationKey: ReceiptVerifier {
     /// Which signing provider this is.
     fn signing_key_id(&self) -> SigningKeyId;
 }
 
 /// Turn a provider identity into verification material.
 ///
-/// Two concrete answers rather than one generic one: a caller cannot ask for the provenance
-/// it would prefer, because there is no type parameter to ask with.
+/// One answer, because there is only one thing to answer: material, or none. A resolver that
+/// offered a second, better-labelled answer would be offering to decide trust, which is exactly
+/// what an implementation cannot be permitted to do from outside this crate.
 pub trait VerificationKeyResolver {
-    /// Material this controller's policy names.
-    fn trusted(&self, id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey>;
-
-    /// Material this controller's policy does not name.
-    fn self_asserted(&self, id: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey>;
+    /// Material for `id`, if this policy holds any.
+    fn material(&self, id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey>;
 }
 
 /// Seal one overlay plaintext into one armored region.

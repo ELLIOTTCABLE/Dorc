@@ -66,8 +66,7 @@
 //! let _crossed: PresentedPlanId = image;
 //! ```
 //!
-//! The species, projection and provenance traits are sealed, so no outside type joins the
-//! set:
+//! The species and projection traits are sealed, so no outside type joins the set:
 //!
 //! ```compile_fail
 //! #[derive(Debug, Clone, Copy)]
@@ -78,11 +77,13 @@
 //! }
 //! ```
 //!
+//! There is no third, provenance parameter to seal. A completed read says the signature is valid
+//! under material the resolver held, and says nothing about whose material that is — so there is
+//! no "trusted" state for an outside crate to reach by supplying its own key:
+//!
 //! ```compile_fail
-//! #[derive(Debug, Clone, Copy)]
-//! struct MyTrust;
-//! impl dorc_receipt::SignerTrust for MyTrust {
-//!     const TOKEN: &'static str = "mine";
+//! fn name_it() -> &'static str {
+//!     <dorc_receipt::TrustedReceiptSigner as dorc_receipt::SignerTrust>::TOKEN
 //! }
 //! ```
 //!
@@ -194,12 +195,10 @@
 //!
 //! ```compile_fail
 //! use dorc_receipt::reader::ReceiptSignatureChecked;
-//! use dorc_receipt::TrustedReceiptSigner;
-//! let _forged: ReceiptSignatureChecked<TrustedReceiptSigner> = ReceiptSignatureChecked {
+//! let _forged = ReceiptSignatureChecked {
 //!     body: Vec::new(),
 //!     skeleton: Vec::new(),
 //!     armor: None,
-//!     trust: core::marker::PhantomData,
 //! };
 //! ```
 //!
@@ -310,14 +309,9 @@ pub use format::{RefusalReason, Skeleton, SkeletonRecord};
 pub use grammar::{FieldType, RecordKind};
 pub use image::{ApplyArtifactImage, ApplyImageEntry, ImageRefusal, RecordedApplyPath};
 pub use limits::ReceiptLimits;
-pub use model::{
-    ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Projection, Rich, SelfAssertedReceiptSigner,
-    SignerTrust, Species, TrustedReceiptSigner,
-};
+pub use model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Projection, Rich, Species};
 pub use order::{ControllerClock, ReceiptOrderToken};
-pub use reader::{
-    BoundedReceiptBytes, PartialReceipt, ReadPlain, ReadRich, Receipt, read_plain, read_rich,
-};
+pub use reader::{BoundedReceiptBytes, PartialReceipt, Receipt, read_plain, read_rich};
 pub use reingested::{
     ReDerived, ReDerivedDisposition, RecordedCurrent, RecordedInfluence, Reingested,
 };

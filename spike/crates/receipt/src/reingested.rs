@@ -12,7 +12,7 @@
 
 use crate::apply::RecordedApplyIntent;
 use crate::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId, PresentedPlanId};
-use crate::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Projection, SignerTrust, Species};
+use crate::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Projection, Species};
 use crate::outcome::RecordedApplyOutcome;
 use crate::plan::{RecordedPlanReceipt, RecordedSiteDecision, RecordedSource};
 use crate::reader::Receipt;
@@ -95,8 +95,8 @@ impl ReDerivedDisposition {
     }
 }
 
-impl<D: Species, P: Projection, T: SignerTrust> sealed::RecordedType for Receipt<D, P, T> {}
-impl<D: Species, P: Projection, T: SignerTrust> RecordedType for Receipt<D, P, T> {}
+impl<D: Species, P: Projection> sealed::RecordedType for Receipt<D, P> {}
+impl<D: Species, P: Projection> RecordedType for Receipt<D, P> {}
 
 impl sealed::RecordedType for RecordedPlanReceipt {}
 impl RecordedType for RecordedPlanReceipt {}
@@ -143,13 +143,7 @@ impl<T: RecordedType + Clone> Clone for Reingested<T> {
     }
 }
 
-impl<D: Species, P: Projection, T: SignerTrust> Reingested<Receipt<D, P, T>> {
-    /// The word a report renders for this document's provenance.
-    #[must_use]
-    pub const fn signer_provenance(&self) -> &'static str {
-        T::TOKEN
-    }
-
+impl<D: Species, P: Projection> Reingested<Receipt<D, P>> {
     /// How many records the document carries.
     #[must_use]
     pub fn record_count(&self) -> usize {
@@ -169,7 +163,7 @@ impl<D: Species, P: Projection, T: SignerTrust> Reingested<Receipt<D, P, T>> {
     }
 }
 
-impl<P: Projection, T: SignerTrust> Reingested<Receipt<PlanReceipt, P, T>> {
+impl<P: Projection> Reingested<Receipt<PlanReceipt, P>> {
     /// The typed model of this document.
     ///
     /// # Errors
@@ -185,7 +179,7 @@ impl<P: Projection, T: SignerTrust> Reingested<Receipt<PlanReceipt, P, T>> {
     }
 }
 
-impl<P: Projection, T: SignerTrust> Reingested<Receipt<ApplyIntent, P, T>> {
+impl<P: Projection> Reingested<Receipt<ApplyIntent, P>> {
     /// The typed model of this document.
     ///
     /// # Errors
@@ -201,7 +195,7 @@ impl<P: Projection, T: SignerTrust> Reingested<Receipt<ApplyIntent, P, T>> {
     }
 }
 
-impl<P: Projection, T: SignerTrust> Reingested<Receipt<ApplyOutcome, P, T>> {
+impl<P: Projection> Reingested<Receipt<ApplyOutcome, P>> {
     /// The typed model of this document.
     ///
     /// # Errors
@@ -282,7 +276,7 @@ impl Reingested<RecordedPlanReceipt> {
     }
 }
 
-impl<D: Species, T: SignerTrust> Reingested<Receipt<D, crate::model::Rich, T>> {
+impl<D: Species> Reingested<Receipt<D, crate::model::Rich>> {
     /// The bytes filling one slot of one record, as the validated region carried them.
     ///
     /// A report-only scalar, like every other decomposition here: the seal forbids handing out the
@@ -584,7 +578,7 @@ impl RecordedInfluence {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{Plain, TrustedReceiptSigner};
+    use crate::model::Plain;
 
     #[test]
     fn an_unreadable_grade_reads_at_the_most_influenced_point() {
@@ -626,10 +620,8 @@ mod tests {
 
     #[test]
     fn only_disagreement_is_a_finding() {
-        let current: RecordedCurrent<
-            Receipt<PlanReceipt, Plain, TrustedReceiptSigner>,
-            ReDerivedDisposition,
-        > = RecordedCurrent::CurrentOnly(ReDerivedDisposition::run());
+        let current: RecordedCurrent<Receipt<PlanReceipt, Plain>, ReDerivedDisposition> =
+            RecordedCurrent::CurrentOnly(ReDerivedDisposition::run());
         assert!(!current.is_finding());
         assert_eq!(current.token(), "current-only");
     }

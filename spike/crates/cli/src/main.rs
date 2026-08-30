@@ -557,28 +557,30 @@ fn ingest_recognized(
     bytes: Vec<u8>,
 ) -> Option<String> {
     use dorc_cli::durable::NamedSpecies;
-    use dorc_receipt::reader::ReadRich;
+    // The three reads answer a LOCALLY-AUTHENTICATED envelope or nothing; there is no
+    // self-asserted arm to discard here, because this edge holds exactly one keyset and a
+    // document naming another provider is a read that did not happen.
     match entry.species() {
         NamedSpecies::Plan => match open.read_plan(bytes) {
-            Ok(ReadRich::Trusted(document)) => {
-                graph.ingest_plan(&document, &[]);
+            Ok(document) => {
+                graph.ingest_plan(document.document(), document.signer_trust(), &[]);
                 Some(dorc_cli::recorded::recorded_plan_listing(&document))
             }
-            Ok(ReadRich::SelfAsserted(_)) | Err(_) => None,
+            Err(_) => None,
         },
         NamedSpecies::ApplyIntent => match open.read_intent(bytes) {
-            Ok(ReadRich::Trusted(document)) => {
-                graph.ingest_intent(&document, &[]);
+            Ok(document) => {
+                graph.ingest_intent(document.document(), document.signer_trust(), &[]);
                 Some(dorc_cli::recorded::recorded_intent_listing(&document))
             }
-            Ok(ReadRich::SelfAsserted(_)) | Err(_) => None,
+            Err(_) => None,
         },
         NamedSpecies::ApplyOutcome => match open.read_outcome(bytes) {
-            Ok(ReadRich::Trusted(document)) => {
-                graph.ingest_outcome(&document, &[]);
+            Ok(document) => {
+                graph.ingest_outcome(document.document(), document.signer_trust(), &[]);
                 Some(dorc_cli::recorded::recorded_outcome_listing(&document))
             }
-            Ok(ReadRich::SelfAsserted(_)) | Err(_) => None,
+            Err(_) => None,
         },
     }
 }

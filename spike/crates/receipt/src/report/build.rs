@@ -17,7 +17,7 @@ use super::{
     SiteFacts, SourceFacts, StageFacts,
 };
 use crate::durable_locator::{DurableLocator, RecordedStageKind, StageTextKind};
-use crate::model::{PlanReceipt, Rich, TrustedReceiptSigner};
+use crate::model::{PlanReceipt, Rich};
 use crate::plan::RecordedPlanReceipt;
 use crate::projection::OpaqueFieldTag;
 use crate::reader::Receipt;
@@ -80,7 +80,7 @@ pub struct SourceObservation {
 #[derive(Debug)]
 pub struct WhyFactsInput<'a> {
     /// The selected root document, decoded and sealed.
-    pub root: &'a Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    pub root: &'a Reingested<Receipt<PlanReceipt, Rich>>,
     /// Its own model, closed over itself.
     pub model: &'a Reingested<RecordedPlanReceipt>,
     /// Its identity and store order.
@@ -214,7 +214,7 @@ fn source_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<SourceFac
 /// copies disagreed, every enrichment would land on whichever row shared its integer, with the
 /// document still validating cleanly.
 fn ordinals_of(
-    root: &Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    root: &Reingested<Receipt<PlanReceipt, Rich>>,
     kind: crate::grammar::RecordKind,
 ) -> Vec<u64> {
     root.record_kinds()
@@ -277,7 +277,7 @@ fn site_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<SiteFacts> 
 }
 
 fn decoded_locator(
-    root: &Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    root: &Reingested<Receipt<PlanReceipt, Rich>>,
     record: u64,
 ) -> Option<DurableLocator> {
     let bytes = root.detail(record, OpaqueFieldTag::SiteLocator)?;
@@ -309,7 +309,7 @@ fn chain_facts(locator: &DurableLocator) -> Vec<StageFacts> {
 }
 
 fn detail_value(
-    root: &Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    root: &Reingested<Receipt<PlanReceipt, Rich>>,
     record: u64,
     tag: OpaqueFieldTag,
     class: ValueClass,

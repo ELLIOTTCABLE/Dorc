@@ -21,17 +21,17 @@
 //! `dorc why` takes only that one, so asking why can never bring into being an identity that
 //! cannot open the receipt being read.
 
-use dorc_receipt::capability::{
-    SelfAssertedReceiptVerificationKey, TrustedReceiptVerificationKey, VerificationKeyResolver,
-};
+use dorc_receipt::capability::{ReceiptVerificationKey, VerificationKeyResolver};
 use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId, SigningKeyId};
 use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Projection, Rich};
 use dorc_receipt::order::ReceiptOrderToken;
-use dorc_receipt::reader::{ReadRich, read_rich};
+use dorc_receipt::reader::{Receipt, read_rich};
+use dorc_receipt::reingested::Reingested;
+use dorc_receipt::tokens::RecordedSignerTrust;
 use dorc_receipt::writer::SignedReceipt;
 use dorc_receipt_crypto::{
-    EntropyKeysetGenerator, KeySecretEntropy, KeysetGenerator, TrustedEd25519Key,
+    Ed25519Verifier, EntropyKeysetGenerator, KeySecretEntropy, KeysetGenerator,
 };
 use dorc_receipt_local::io::LocalIo;
 use dorc_receipt_local::keyset::{
@@ -263,8 +263,8 @@ impl ReadEdge {
     pub fn read_plan(
         &self,
         bytes: Vec<u8>,
-    ) -> Result<ReadRich<PlanReceipt>, dorc_receipt::reader::PartialReceipt> {
-        let policy = ControllerNamedKey(self.keys.verifier());
+    ) -> Result<LocallyAuthenticatedRead<PlanReceipt>, dorc_receipt::reader::PartialReceipt> {
+        let policy = ControllerKeyset(self.keys.verifier());
         let Some(opener) = self.keys.opener() else {
             // No encryption role: the signature could still be checked, but this V1 read wants
             // the region, and a reader that quietly answered a skeleton-only document would look
@@ -274,6 +274,7 @@ impl ReadEdge {
             ));
         };
         read_rich::<PlanReceipt>(bytes, &ReceiptLimits::V1, &policy, opener)
+            .map(LocallyAuthenticated)
     }
 
     /// Read one apply intent back.
@@ -283,14 +284,15 @@ impl ReadEdge {
     pub fn read_intent(
         &self,
         bytes: Vec<u8>,
-    ) -> Result<ReadRich<ApplyIntent>, dorc_receipt::reader::PartialReceipt> {
-        let policy = ControllerNamedKey(self.keys.verifier());
+    ) -> Result<LocallyAuthenticatedRead<ApplyIntent>, dorc_receipt::reader::PartialReceipt> {
+        let policy = ControllerKeyset(self.keys.verifier());
         let Some(opener) = self.keys.opener() else {
             return Err(dorc_receipt::reader::PartialReceipt::of(
                 dorc_receipt::format::RefusalReason::RegionUnopenable,
             ));
         };
         read_rich::<ApplyIntent>(bytes, &ReceiptLimits::V1, &policy, opener)
+            .map(LocallyAuthenticated)
     }
 
     /// Read one apply outcome back.
@@ -300,32 +302,88 @@ impl ReadEdge {
     pub fn read_outcome(
         &self,
         bytes: Vec<u8>,
-    ) -> Result<ReadRich<ApplyOutcome>, dorc_receipt::reader::PartialReceipt> {
-        let policy = ControllerNamedKey(self.keys.verifier());
+    ) -> Result<LocallyAuthenticatedRead<ApplyOutcome>, dorc_receipt::reader::PartialReceipt> {
+        let policy = ControllerKeyset(self.keys.verifier());
         let Some(opener) = self.keys.opener() else {
             return Err(dorc_receipt::reader::PartialReceipt::of(
                 dorc_receipt::format::RefusalReason::RegionUnopenable,
             ));
         };
         read_rich::<ApplyOutcome>(bytes, &ReceiptLimits::V1, &policy, opener)
+            .map(LocallyAuthenticated)
     }
 }
 
-/// The verification material controller policy names, as a resolver.
+/// One rich document read under this controller's own validated keyset.
+///
+/// THE local-authentication statement, and the only place it is made. `dorc-receipt` can say a
+/// signature is valid under a key; it cannot say the key is this controller's, because no Rust
+/// type there can privilege one downstream crate's material over another's — that is exactly the
+/// hole a public "trusted" marker trait left open.
+///
+/// So the claim lives here instead, as a private field with no public constructor and no `From`.
+/// The only values of this type are the ones [`ReadEdge`]'s three reads produce, and a `ReadEdge`
+/// exists only where [`LocalReceiptEdgeV1::open_for_read`] opened and VALIDATED the keyset under
+/// this controller's own standard roots. Reading the document out is free; MINTING one is what is
+/// closed, and that is the half that carries the meaning.
+///
+/// The pin, from outside the crate — the field is private, so no material anybody assembles can
+/// be labelled as this controller's. MEASURED un-fenced: `E0423`, a tuple struct with private
+/// fields, which is the refusal this is claiming and not merely some refusal.
+///
+/// ```compile_fail
+/// use dorc_cli::durable::LocallyAuthenticated;
+/// fn label<T>(anything: T) -> LocallyAuthenticated<T> {
+///     LocallyAuthenticated(anything)
+/// }
+/// ```
+///
+/// The positive control, so the refusal above is about the FIELD rather than about the path: the
+/// type itself is nameable from outside.
+///
+/// ```
+/// fn takes_one<T>(_: &dorc_cli::durable::LocallyAuthenticated<T>) {}
+/// ```
+pub struct LocallyAuthenticated<T>(T);
+
+/// The shape every one of the three reads answers with.
+pub type LocallyAuthenticatedRead<D> = LocallyAuthenticated<Reingested<Receipt<D, Rich>>>;
+
+impl<T> LocallyAuthenticated<T> {
+    /// The document itself.
+    pub const fn document(&self) -> &T {
+        &self.0
+    }
+
+    /// The word a report renders for material this seat validated.
+    ///
+    /// Answered from the TYPE rather than from a field, because there is no other value this
+    /// type could carry: holding one means the local keyset checked the signature.
+    pub const fn signer_trust(&self) -> RecordedSignerTrust {
+        RecordedSignerTrust::Trusted
+    }
+}
+
+impl<T> core::fmt::Debug for LocallyAuthenticated<T> {
+    /// Names the type and no material: a decoded rich document holds host-shaped plaintext, and
+    /// a derived `Debug` here would be a second exit for it.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("LocallyAuthenticated")
+    }
+}
+
+/// This controller's own validated keyset, as a resolver.
 ///
 /// One key and no discovery: a document naming any other signing identity is UNKNOWN here, and
 /// nothing about that answer scans a directory, imports embedded public material, or tries
-/// another provider. The trusted marker is minted because policy selected and validated THIS
-/// keyset, never because a receipt named its identity.
-struct ControllerNamedKey<'a>(&'a TrustedEd25519Key);
+/// another provider. What the resolver answers is material; that the material is the
+/// controller's is said by the envelope the read is wrapped in, at the seat that validated it.
+struct ControllerKeyset<'a>(&'a Ed25519Verifier);
 
-impl VerificationKeyResolver for ControllerNamedKey<'_> {
-    fn trusted(&self, id: SigningKeyId) -> Option<&dyn TrustedReceiptVerificationKey> {
-        (self.0.signing_key_id() == id).then_some(self.0 as &dyn TrustedReceiptVerificationKey)
-    }
-
-    fn self_asserted(&self, _: SigningKeyId) -> Option<&dyn SelfAssertedReceiptVerificationKey> {
-        None
+impl VerificationKeyResolver for ControllerKeyset<'_> {
+    fn material(&self, id: SigningKeyId) -> Option<&dyn ReceiptVerificationKey> {
+        (ReceiptVerificationKey::signing_key_id(self.0) == id)
+            .then_some(self.0 as &dyn ReceiptVerificationKey)
     }
 }
 

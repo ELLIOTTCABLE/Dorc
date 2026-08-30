@@ -1,9 +1,13 @@
-//! The sealed type parameters: which document a receipt is, which projection it carries,
-//! and where its verification material came from.
+//! The sealed type parameters: which document a receipt is, and which projection it carries.
 //!
-//! All three traits are sealed by a private supertrait, so the set of species, projections
-//! and provenance markers is closed to this crate. An outside type cannot implement one,
-//! and a caller cannot ask for a marker by type parameter.
+//! Both traits are sealed by a private supertrait, so the set of species and projections is
+//! closed to this crate. An outside type cannot implement one.
+//!
+//! There is deliberately no PROVENANCE parameter. A third marker used to ride here saying
+//! whether the verification material was "named by controller policy", and it was minted from
+//! two public traits any crate could implement — so the state meant only that somebody had said
+//! so. This crate answers whether a signature is valid under a key; who owns the key is a
+//! question about a keyset on disk, answered by the seat that opened one.
 
 use crate::grammar::RecordKind;
 
@@ -30,12 +34,6 @@ pub trait Projection: sealed::Sealed + core::fmt::Debug + Copy {
     const HAS_OVERLAY: bool;
     /// What this projection carries where a region would be.
     type Region: core::fmt::Debug;
-}
-
-/// Where the verification material for a checked document came from.
-pub trait SignerTrust: sealed::Sealed + core::fmt::Debug + Copy {
-    /// The word a report renders for this provenance.
-    const TOKEN: &'static str;
 }
 
 /// The primary record of one planning invocation.
@@ -120,24 +118,6 @@ impl Projection for Rich {
     const TOKEN: &'static str = "rich";
     const HAS_OVERLAY: bool = true;
     type Region = crate::overlay::ValidatedOpaqueOverlay;
-}
-
-/// The verification material was named by controller policy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TrustedReceiptSigner;
-
-/// The verification material was not named by controller policy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SelfAssertedReceiptSigner;
-
-impl sealed::Sealed for TrustedReceiptSigner {}
-impl SignerTrust for TrustedReceiptSigner {
-    const TOKEN: &'static str = "trusted";
-}
-
-impl sealed::Sealed for SelfAssertedReceiptSigner {}
-impl SignerTrust for SelfAssertedReceiptSigner {
-    const TOKEN: &'static str = "self-asserted";
 }
 
 /// The fixed payload type for one species and projection pair.

@@ -20,7 +20,6 @@ use std::process::Command;
 use dorc_cli::durable::{LocalReceiptEdgeV1, NamedSpecies, NativeIo, ReadEdge};
 use dorc_cli::recorded_facts::{ObservedSource, SelectedRoot, facts_for};
 use dorc_receipt::ids::PlanReceiptId;
-use dorc_receipt::reader::ReadRich;
 use dorc_receipt::report::{
     AuthenticationState, ClosureCompleteness, CurrentSourceReading, CurrentSourceState,
     DetailState, MaterialState, ReDerivationState, RecordedDocumentId, RecordedSpecies,
@@ -122,18 +121,21 @@ fn selected_roots(open: &ReadEdge, io: &mut NativeIo) -> Vec<SelectedRoot> {
         let bytes = store
             .read_into_budget(io, entry, &mut budget)
             .expect("the document reads");
-        let Ok(ReadRich::Trusted(receipt)) = open.read_plan(bytes.into_bytes().into_vec()) else {
-            panic!("a document this profile wrote reads back trusted");
+        let Ok(receipt) = open.read_plan(bytes.into_bytes().into_vec()) else {
+            panic!("a document this profile wrote reads back under its own keyset");
         };
-        let model = receipt.model().expect("its records close over themselves");
+        let model = receipt
+            .document()
+            .model()
+            .expect("its records close over themselves");
         let id = PlanReceiptId::of_hex(entry.name().receipt_id()).expect("a well-formed identity");
         found.push(SelectedRoot {
             receipt,
             model,
             identity: RecordedDocumentId::Plan(id),
             order: entry.name().order().spelled(),
-            // The edge established both: the read returned the TRUSTED arm, and it returned at all
-            // only because the region validated.
+            // The edge established both: the read came back inside the local-authentication
+            // envelope, and it came back at all only because the region validated.
             authentication: AuthenticationState::Trusted,
             detail: DetailState::Available,
         });

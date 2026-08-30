@@ -965,12 +965,16 @@ impl ClosedToken for RecordedSiteStatus {
 /// provenance, which is a property of the material the reader resolved.
 pub const SIGNER_TRUST: &[&str] = &["trusted", "self-asserted"];
 
-/// Where the verification material for a read document came from.
+/// What the seat that read a document said about the material it checked under.
+///
+/// Supplied by that seat, never derived here. `Trusted` is a statement only a composition root
+/// holding a validated local keyset is in a position to make; this crate can say a signature is
+/// valid under a key and stops there.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordedSignerTrust {
-    /// Controller policy named the provider.
+    /// The reading seat's own validated keyset held the provider.
     Trusted,
-    /// Controller policy did not name the provider.
+    /// The material was supplied from somewhere else and asserts only itself.
     SelfAsserted,
 }
 
@@ -988,7 +992,6 @@ impl ClosedToken for RecordedSignerTrust {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{SelfAssertedReceiptSigner, SignerTrust, TrustedReceiptSigner};
 
     /// Both directions, for one vocabulary: every variant spells a token the grammar declares, and
     /// every token the grammar declares is spelled by some variant.
@@ -1049,17 +1052,13 @@ mod tests {
     }
 
     #[test]
-    fn the_signer_trust_tokens_are_the_ones_the_marker_types_spell() {
-        // Two spellings of one vocabulary would let a report and a document disagree about a
-        // provenance neither of them can re-derive.
-        assert_eq!(
-            RecordedSignerTrust::Trusted.token(),
-            TrustedReceiptSigner::TOKEN
-        );
-        assert_eq!(
-            RecordedSignerTrust::SelfAsserted.token(),
-            SelfAssertedReceiptSigner::TOKEN
-        );
+    fn the_signer_trust_vocabulary_stays_the_two_words_a_report_renders() {
+        // Spelled out here rather than only at the declaration: these two words are what a report
+        // says about a document's material, and an edited one re-labels every listing already
+        // written while the census above goes on passing (it compares two lists that moved
+        // together).
+        assert_eq!(RecordedSignerTrust::Trusted.token(), "trusted");
+        assert_eq!(RecordedSignerTrust::SelfAsserted.token(), "self-asserted");
     }
 
     #[test]
