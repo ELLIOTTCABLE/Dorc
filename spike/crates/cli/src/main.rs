@@ -187,7 +187,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         return ship_consented_apply(sink, args, host);
     }
     if args.reads_the_receipt() {
-        let edge = production_receipt_edge(args.receipts.as_deref());
+        let edge = production_receipt_edge(args);
         let label = edge
             .as_ref()
             .map_or(dorc_cli::engine::NO_STATE_ROOT, |edge| edge.state_base());
@@ -221,7 +221,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         args,
         clock: clock_for_invocation(),
         durable_dir,
-        receipt: production_receipt_edge(args.receipts.as_deref()),
+        receipt: production_receipt_edge(args),
     };
     dorc_cli::engine::run(
         &EngineRequest {
@@ -607,12 +607,12 @@ impl dorc_cli::durable::RootEnvironment for ProcessEnvironment {
 /// bytes, source text, receipt contents and TTY state reach none of it. The KEY root is untouched
 /// by construction — `RootInputs` offers no way for a store root to reach the configuration role.
 fn production_receipt_edge(
-    receipts: Option<&str>,
+    args: &Args,
 ) -> Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal> {
     let roots =
         dorc_cli::durable::standard_roots(dorc_cli::durable::host_platform(), &ProcessEnvironment)
             .map_err(dorc_cli::durable::EdgeRefusal::Roots)?;
-    let roots = match receipts {
+    let roots = match args.receipts.as_deref() {
         Some(folder) => roots
             .with_store_root(&absolute_controller_path(folder))
             .map_err(dorc_cli::durable::EdgeRefusal::Roots)?,
@@ -632,9 +632,10 @@ fn absolute_controller_path(folder: &str) -> String {
     if path.is_absolute() {
         return folder.to_owned();
     }
-    std::env::current_dir()
-        .map(|cwd| cwd.join(path).to_string_lossy().into_owned())
-        .unwrap_or_else(|_| folder.to_owned())
+    std::env::current_dir().map_or_else(
+        |_| folder.to_owned(),
+        |cwd| cwd.join(path).to_string_lossy().into_owned(),
+    )
 }
 
 struct ProductionOutputSink;
@@ -2494,8 +2495,7 @@ fn ship_consented_apply(
     // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
     // nothing here constructs: an apply that cannot publish its intent refuses before the host is
     // contacted, which is what the pre-dispatch boundary is for.
-    let edge =
-        production_receipt_edge(args.receipts.as_deref()).map_err(|_| intent_not_published())?;
+    let edge = production_receipt_edge(args).map_err(|_| intent_not_published())?;
     let mut io = dorc_cli::durable::NativeIo::new();
     let mut generator = dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
     let open = edge
