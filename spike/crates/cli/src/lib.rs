@@ -1287,6 +1287,12 @@ fn seconds_value(flag: &str, v: &str) -> Result<u64, InvocationError> {
 /// A candidate EQUAL to the word is refused: reaching here means the tables and the parse arms
 /// disagree, and "did you mean `--whylog`?" for `--whylog` teaches nothing while hiding the gap.
 fn nearest<'a>(word: &str, candidates: &[&'a str]) -> Option<&'a str> {
+    // A word the table already holds is spelled correctly, so there is nothing to mean instead.
+    // Skipping only distance-0 would leave the NEIGHBOUR one edit away as the best remaining
+    // candidate, which is how `--receipt` came to suggest `--receipts`.
+    if candidates.contains(&word) {
+        return None;
+    }
     candidates
         .iter()
         .map(|c| (levenshtein(word, c), *c))
@@ -2079,9 +2085,9 @@ mod tests {
     }
 
     /// `289:rider-why-last-address-order`: in `why` mode the address is the first bare word wherever
-    /// it sits. The old reading only took it when it LED, so `dorc why --last book.sh:9` filed the
-    /// address as a positional book and answered the unargumented aggregate at rc 0 — the user asked
-    /// about one line and silently got the whole-run surface, with nothing to notice.
+    /// it sits. The old reading only took it when it LED, so `dorc why --receipt-last book.sh:9`
+    /// filed the address as a positional book and answered the unargumented aggregate at rc 0 — the
+    /// user asked about one line and silently got the whole-run surface, with nothing to notice.
     #[test]
     fn a_why_address_is_found_after_a_flag() {
         let args =
@@ -2092,7 +2098,7 @@ mod tests {
         let leading = args(&["why", "book.sh:9", "--book=book.sh"]);
         assert_eq!(leading.why_address.as_deref(), Some("book.sh:9"));
 
-        let after_last = args(&["why", "--last", "book.sh:9"]);
+        let after_last = args(&["why", "--receipt-last", "book.sh:9"]);
         assert_eq!(
             after_last.why_address.as_deref(),
             Some("book.sh:9"),
