@@ -6,8 +6,8 @@
 //!
 //! The injected capabilities are INERT and deliberately so: `capability.rs` exists precisely so a
 //! deterministic test can drive the real states without reaching for cryptography, and none of
-//! these implementations can promote its own output — the trusted/self-asserted states are minted
-//! inside the crate from a bare boolean.
+//! these implementations can promote its own output — a verifier answers a bare boolean and the
+//! states it feeds are minted inside the crate.
 
 #![allow(
     dead_code,
@@ -15,7 +15,6 @@
 )]
 #![expect(
     clippy::expect_used,
-    clippy::panic,
     clippy::arithmetic_side_effects,
     reason = "a fixture module is an ordinary module to clippy, so the central allow-in-tests keys \
               do not reach it; see spike/clippy.toml"

@@ -66,6 +66,17 @@ enum CreatedIdentity {
     },
 }
 
+/// What this attempt created at one path.
+///
+/// The KIND rides beside the identity because the two creates are different acts and only one of
+/// them is removable: this crate's single removal unlinks a FILE, and a request naming a
+/// directory it made is refused rather than reaching a call that would fail obscurely.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CreatedObject {
+    kind: ObjectKind,
+    identity: CreatedIdentity,
+}
+
 /// The real filesystem.
 ///
 /// Holds the handles this attempt opened and the identities of the objects it created. Both are
@@ -74,7 +85,7 @@ enum CreatedIdentity {
 #[derive(Debug, Default)]
 pub struct NativeIo {
     open: BTreeMap<String, File>,
-    created: BTreeMap<String, CreatedIdentity>,
+    created: BTreeMap<String, CreatedObject>,
 }
 
 impl NativeIo {
@@ -109,6 +120,32 @@ impl NativeIo {
     fn leaf(path: &str) -> Option<&str> {
         Path::new(path).file_name()?.to_str()
     }
+
+    /// What the object at `path` turns out to be.
+    ///
+    /// Through the RETAINED handle where there is one, so a name cannot be swapped between this
+    /// answer and the read that follows it. The name-shaped branch is what a platform that
+    /// retains no handle for the object gets — Windows, for a directory — and it is the only
+    /// branch where the redirect answer is a fact about the name rather than about the object.
+    fn inspect(&self, path: &str) -> Result<ObjectFacts, IoFault> {
+        let created = self.created.contains_key(path);
+        if let Some(file) = self.open.get(path) {
+            let metadata = file.metadata().map_err(|error| fault_of(&error))?;
+            return Ok(ObjectFacts::of(
+                kind_of(&metadata),
+                false,
+                access_of(&metadata),
+                owner_of(&metadata, created),
+            ));
+        }
+        let metadata = std::fs::symlink_metadata(path).map_err(|error| fault_of(&error))?;
+        Ok(ObjectFacts::of(
+            kind_of(&metadata),
+            is_redirect(&metadata),
+            access_of(&metadata),
+            owner_of(&metadata, created),
+        ))
+    }
 }
 
 impl Sealed for NativeIo {}
@@ -118,15 +155,26 @@ impl LocalIo for NativeIo {
         match request {
             Request::CreateDirectoryExclusive => {
                 create_directory(self, path)?;
-                self.created
-                    .insert(path.to_owned(), CreatedIdentity::Unnamed);
+                self.created.insert(
+                    path.to_owned(),
+                    CreatedObject {
+                        kind: ObjectKind::Directory,
+                        identity: CreatedIdentity::Unnamed,
+                    },
+                );
                 Ok(Answer::Done)
             }
             Request::CreateFileExclusive => {
                 let file = create_file(self, path)?;
                 let identity = created_identity(&file);
                 self.open.insert(path.to_owned(), file);
-                self.created.insert(path.to_owned(), identity);
+                self.created.insert(
+                    path.to_owned(),
+                    CreatedObject {
+                        kind: ObjectKind::RegularFile,
+                        identity,
+                    },
+                );
                 Ok(Answer::Done)
             }
             Request::OpenExistingNoFollow { intent } => {
@@ -138,30 +186,7 @@ impl LocalIo for NativeIo {
                 }
                 Ok(Answer::Done)
             }
-            Request::InspectOpened => {
-                let created = self.created.contains_key(path);
-                // Through the retained handle where there is one, so a name cannot be swapped
-                // between this answer and the read that follows it.
-                let found = if let Some(file) = self.open.get(path) {
-                    let metadata = file.metadata().map_err(|error| fault_of(&error))?;
-                    ObjectFacts::of(
-                        kind_of(&metadata),
-                        false,
-                        access_of(&metadata),
-                        owner_of(&metadata, created),
-                    )
-                } else {
-                    let metadata =
-                        std::fs::symlink_metadata(path).map_err(|error| fault_of(&error))?;
-                    ObjectFacts::of(
-                        kind_of(&metadata),
-                        is_redirect(&metadata),
-                        access_of(&metadata),
-                        owner_of(&metadata, created),
-                    )
-                };
-                Ok(Answer::Facts(found))
-            }
+            Request::InspectOpened => Ok(Answer::Facts(self.inspect(path)?)),
             Request::ReadBounded { limit } => {
                 use std::io::Read as _;
                 let file = self.handle(path)?;
@@ -202,11 +227,14 @@ impl LocalIo for NativeIo {
             // Only the OBJECT this attempt created, re-identified immediately before it goes. A
             // removal by pathname alone is how a failure handler deletes somebody else's work.
             Request::RemoveOwned => {
-                let Some(identity) = self.created.get(path).copied() else {
+                let Some(made) = self.created.get(path).copied() else {
                     return Err(IoFault::Denied);
                 };
+                if made.kind != ObjectKind::RegularFile {
+                    return Err(IoFault::WrongKind);
+                }
                 self.open.remove(path);
-                remove_created(self, path, identity)?;
+                remove_created(self, path, made.identity)?;
                 self.created.remove(path);
                 Ok(Answer::Done)
             }

@@ -820,7 +820,7 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
         agreements_for(
             &recorded,
             OpaqueFieldTag::ApplyArtifactImage,
-            &image.encode()
+            image.encode()
         ),
         vec![ByteAgreement::Identical],
         "exactly one record carries the image, and it is this assignment's canonical bytes"

@@ -687,7 +687,7 @@ pub fn publish_apply_intent(
     // Taken over the bytes about to be handed over, so what comes back can be compared against
     // what went in: a placement that filed some other document is a refusal rather than a
     // publication naming bytes nobody wrote.
-    let sealed = dorc_receipt::ids::Sha256Digest::over(
+    let placed_digest = dorc_receipt::ids::Sha256Digest::over(
         dorc_receipt::dispatch::REQUIRED_PLACEMENT_DIGEST_DOMAIN,
         document.bytes(),
     );
@@ -695,7 +695,7 @@ pub fn publish_apply_intent(
     // will record. There is no route by which a publication value exists without this call
     // having happened, which is the whole of what replaced a separately-mintable proof.
     accounted
-        .publish_through(id, sealed, |id| {
+        .publish_through(id, placed_digest, |id| {
             placement
                 .place_intent(id, order, document)
                 .map(|PlacedIntent { placed, landing }| (landing, placed))
