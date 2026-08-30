@@ -54,13 +54,14 @@ DAG in the exact acquired-byte domain (LF indexes lines; CR in CRLF remains data
 withhold source/locator detail. The source/locator API and focused tests are committed; the builder
 is stopped as scheduled before the recorded renderer.
 
-**Secure remainder:** give `--receipts` its real store-root seat; derive a sealed report-only
-`RecordedWhyFacts` model from rooted graph/source/locator state; finish D5's singular
-provider/store/reader/writer census; then run one both-platform completion gate. A current `path:N`
-compares only the same physical line's exact bytes — never moved-line inference — and ambiguity
-refuses that specific answer while unrelated best-effort facts remain available. The correctness
-kernel is frozen: report-only kernel re-derivation remains a 30R target for a later authorized round,
-not work in this arc.
+**Secure remainder:** derive the pure public `dorc-receipt::report::RecordedWhyFacts` model from
+rooted graph/source/locator state, close the receipt crate's curated producer/read/report API and
+steering, finish D5's singular provider/store/reader/writer census, then run one both-platform
+completion gate. CLI remains the I/O and aid/weft composition root; `dorc-aid` stays receipt-unaware.
+A current `path:N` compares only the same physical line's exact bytes — never moved-line inference —
+and ambiguity refuses that specific answer while unrelated best-effort facts remain available. The
+correctness kernel is frozen: report-only kernel re-derivation remains a 30R target for a later
+authorized round, not work in this arc.
 
 **Known narrow residue:** site locators currently carry the authored book span; loaded-source stages
 remain representable but need loader-provided per-site source identity before they can be populated.
