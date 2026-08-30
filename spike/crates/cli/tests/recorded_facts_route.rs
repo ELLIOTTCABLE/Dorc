@@ -213,7 +213,7 @@ fn an_address_resolves_or_refuses_against_the_real_recorded_source() {
         .sources()
         .iter()
         .find(|source| source.content() == MaterialState::Held)
-        .map(|source| source.ordinal())
+        .map(dorc_receipt::report::SourceFacts::ordinal)
         .expect("the book's bytes are in the document");
 
     let unchanged = facts_for(

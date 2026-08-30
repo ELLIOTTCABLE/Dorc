@@ -128,6 +128,12 @@ path = "tests/receipt_route.rs"
 name = "durable_route"
 path = "tests/durable_route.rs"
 
+# The recorded-facts seat, over documents the shipped binary published. Ordinary-harness for the
+# same reason its neighbour is: the model has to be derivable from material a real run wrote.
+[[test]]
+name = "recorded_facts_route"
+path = "tests/recorded_facts_route.rs"
+
 [[test]]
 name = "sh_parity"
 path = "tests/sh_parity.rs"

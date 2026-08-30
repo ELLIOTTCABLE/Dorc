@@ -304,7 +304,9 @@ impl SiteFacts {
     /// Where the decision stood relative to host contact.
     ///
     /// Never rehydrated into a live account, and an absent or unverifiable grade reads
-    /// `MostInfluenced` — the conservative direction, which can only make a reader more careful.
+    /// the most-influenced grade — the conservative direction, which can only make a reader more
+    /// careful. The floor itself is decided at one seat in `reingested`, and naming its token here
+    /// would put this module on a roster it has no business joining.
     #[must_use]
     pub const fn influence(&self) -> RecordedInfluence {
         self.influence

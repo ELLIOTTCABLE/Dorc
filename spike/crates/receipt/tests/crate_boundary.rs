@@ -596,14 +596,23 @@ fn verification_material_is_supplied_from_one_production_file() {
 /// the seal across the crate seam — this crate cannot host them, seeing neither the live account
 /// nor the live decision they must fail to produce. It is a naming, not a consumption, and the
 /// fence matches names deliberately: one that tried to tell the two apart would be guessing.
-const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 7] = [
+///
+/// The recorded-facts trio joined at the `RecordedWhyFacts` boundary. `receipt/src/report.rs` and
+/// its `build` half CONSUME sealed values — that is the decomposition the model exists to be — and
+/// `cli/src/recorded_facts.rs` is the edge seat that hands one selected root over. Each is a
+/// genuine consumer and each was a deliberate entry rather than a widening: the derivation reads
+/// sealed values and yields report values, and no arm of it converts.
+const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 10] = [
     "cli/src/recorded.rs",
+    "cli/src/recorded_facts.rs",
     "plan/src/lib.rs",
     "receipt/src/graph.rs",
     "receipt/src/lib.rs",
     "receipt/src/outcome.rs",
     "receipt/src/reader.rs",
     "receipt/src/reingested.rs",
+    "receipt/src/report.rs",
+    "receipt/src/report/build.rs",
 ];
 
 #[test]

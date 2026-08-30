@@ -45,6 +45,7 @@ pub struct SelectedRoot {
 ///
 /// The digest comparison stays the CALLER's: it owns the hash, and handing the answer over rather
 /// than the function is what keeps a digest implementation off the pure model's path.
+#[derive(Debug)]
 pub struct ObservedSource {
     /// Which acquired source, by ordinal.
     pub ordinal: u32,
