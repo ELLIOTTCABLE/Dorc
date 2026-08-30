@@ -220,3 +220,46 @@ than left for a reader to assume. The atomicity is carried by `O_NOFOLLOW` being
 **Falsified.** Removing the identity check turns the removal case from `Err(Denied)` into
 `Ok(Done)` — it deletes the replacement. Removing the ownership check turns the store case from
 `PermissionRefused` into an opened store. Both were re-run red before the checks were restored.
+
+## Handoff
+
+All four `30Ri` blockers have a code repair and a failing-direction test at the boundary each
+names. Every mechanism is carried by a type — ownership, privacy, an exhaustive match, a sealed
+vocabulary — except where a type genuinely cannot reach, and each of those is named above as a
+residual rather than papered over with a roster.
+
+**Lexical fences: one retired, one narrowed, none added.**
+`the_durable_publication_proof_is_minted_by_one_production_file` is GONE — the property it stood
+in for is now the mint's privacy, asserted directly over one file's own text.
+`verification_material_is_supplied_from_one_production_file` survives as a HYGIENE census and says
+so in its own words: it no longer gates authority, because neither the marker nor the resolver
+decides trust. Two new assertions are over a file's own shape (the publication mint is private;
+the local-authentication envelope's field is private and written in one place), not over rosters
+of permitted callers.
+
+**Residuals, all disclosed in code as well as here.**
+1. A placement's truthfulness is an injected capability. What types now carry is that a
+   publication exists only where an accounted intent moved through a placement call, and that the
+   landing's digest matches the bytes the caller sealed.
+2. `LocallyAuthenticated`'s mint is closed to code outside `dorc-cli`; inside it, Rust offers no
+   finer visibility for a tuple-struct literal, so the crate is the perimeter and one lexical
+   assertion names the file that writes one.
+3. Unix removal re-identifies the object immediately before `unlinkat`, and no portable
+   unlink-by-descriptor closes the last window.
+4. The `O_NOFOLLOW` atomicity is not testable without a race; the redirect case pins the refusal
+   and says in its own comment that it does not pin the atomicity.
+
+**Not touched, deliberately.** Receipt grammar, species, source custody, locators, graph
+semantics, algorithms, retention, why arrangement, help prose, kernel re-derivation, provider UX,
+the three `RecordedWhyFacts` API-close residues `30Ri` does not name, and every `spike/**/CLAUDE.md`
+(steering was out of this builder's remit; the one drift found is named under the trusted-signer
+section).
+
+**PRE-EXISTING RED at the handoff tip, not this repair's.** Three `dorc-cli --lib` cases
+(`a_flag_never_suggests_the_word_that_was_typed`, `a_why_address_is_found_after_a_flag`,
+`only_an_unnamed_record_source_reads_the_receipt`), eight `test:e2e` cases and seven `test:looms`
+cases fail at `d52eea29` exactly as they fail here — verified by running both corpora at that
+commit in a throwaway worktree and comparing the failure sets. The cause is flag-table drift:
+`--last`, `--whylog` and `--whylog-dir` are not in `parse_args_from`'s known set, and `nearest`
+suggests a candidate equal to the word typed. `cli/src/lib.rs` is byte-identical to the tip, and
+the CLI surface is on this brief's exclusion list, so nothing here touches it.
