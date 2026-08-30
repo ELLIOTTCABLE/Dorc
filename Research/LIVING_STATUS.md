@@ -34,38 +34,42 @@ ANALYZER-NEEDS, KNOBS, `271`, `28M`, `281`, `28K`, `28Q`, `30J`, `30P`. Implemen
 entirely unscheduled (`30U` §10 is a pending-successor sketch). USER_STORY's stage-5/7
 re-cut and `30T` sit UNCOMMITTED pending human review; the rest landed on `ai/main`.
 
-## CURRENT STATE (2026-08-25 — the durable receipt family is IN FLIGHT on `ai/r30-receipt`; a fresh conductor resumes from `quarantine/30Rc`)
+## CURRENT STATE (2026-08-29 — durable receipts reached the source-custody/locator midpoint on `ai/r30-receipt`)
 
-**Where to start:** `plans/30R` is the conductor-facing design. `quarantine/30Rc` is the live
-conductor state — branch tips, what binds, what is owed, and an invariant corpus awaiting a
-steering-prose synthesis. Read `30Rc` in full before dispatching anything; it carries the
-carry-ins builders must not rediscover.
+**Where to start:** `plans/30R` is the complete conductor-facing design; quarantine `30Ra` is its
+extended superset. The branch-local quarantined conduct account and compact current builder ledger
+carry the live handoff. Prior builder ledgers are not onboarding reads unless a concrete code
+question points there.
 
-**Branch state:** `ai/r30-receipt` (worktree `.claude/worktrees/r30-receipt`) carries the arc
-linearly — two new crates (a dependency-light receipt crate plus a sibling holding its provider
-implementations), the exact grammar and its record families, recorded models, the report-only
-graph, the plan-side projection, and the pre-dispatch authority chain. It is 85 commits over
-`ai/main` and **8 behind it**; rebase before folding. `ai/r30-conduct` carries the ledger only.
-Five folded lane branches/worktrees resist `-d` because the build branch was rebased mid-arc and
-their commits are now copies — left for the human, do not force.
+**What is whole:** the production binary initializes/reopens the local keyset, publishes/reads the
+immutable receipt store, gates apply intent before dispatch, records outcomes, and reads receipts
+across process restart. The coherent surface is `--receipts <folder>`, `--receipt <file>`,
+`--receipt-id <id>`, `--receipt-last`, and `--no-receipt`; `--all` is explanation depth only. The
+old replay ladder and old flag spellings are removed on the branch.
 
-**Dispatch state:** stages 0–2 done; stage 3 substantive; **stage 4 partial** (authority chain
-built — intent/outcome projection, the deterministic apply route, and gating the ship path are
-owed); stages 5–6 unstarted. No lane is open; every builder stopped deliberately at a commit
-boundary.
+**Mandatory midpoint reached:** exact bytes for acquired general-sh sources that lack a valid
+`dorc-lang` marker now ride rich plan receipts; marked `dorc-lang` source retains identity/digest
+but not full bytes. Recorded sites carry a bounded receipt-owned encoding of the existing locator
+DAG in the exact acquired-byte domain (LF indexes lines; CR in CRLF remains data). Plain receipts
+withhold source/locator detail. The source/locator API and focused tests are committed; the builder
+is stopped as scheduled before the recorded renderer.
 
-**Owed at close, hard:** the six why-chain e2e cases whose replay arm the old writer's removal
-will empty (restored verbatim — and neither "disable" instrument reaches them); a steering-prose
-synthesis from `30Rc`'s invariant corpus, since builders authored none this arc by ruling;
-`plans/30R` reconciliation; `gate:arc`. Four departures await the human as the top entry of
-`TODO-ADDTL`.
+**After explicit resume:** give `--receipts` its real store-root seat; build address-directed,
+report-only recorded `why` over exact source plus durable locators; move the six existing
+live/replay pairs onto receipts; disposition the seventh drifted old-format case; seed the new help
+rows; finish D5's singular provider/store/reader/writer census; then run one both-platform completion
+gate. A current `path:N` compares only the same physical line's exact bytes — never moved-line
+inference — and ambiguity refuses that specific answer while unrelated best-effort reporting
+continues.
 
-**One tooling change landed for everyone:** `gate:full-quiet` now opens with `gate:floor`, which
-refuses a run that would check nothing. It exists because the gate was measured returning success
-having executed zero checks — and a **pure-deletion changeset selects zero checks**, which matters
-for any deletion-shaped stage. Read the floor's line, never the exit code alone. Unresolved and
-the human's: `cargo test --no-run` intermittently cannot replace `spike/target/debug/dorc.exe` on
-Windows (`Access is denied`), where `CARGO_TARGET_DIR` sits inside the synced tree.
+**Known narrow residue:** site locators currently carry the authored book span; loaded-source stages
+remain representable but need loader-provided per-site source identity before they can be populated.
+Unavailable locators stay explicitly uncollected rather than guessed.
+
+**Next synthesis point:** once the resumed renderer/D5 work is green, the product is whole enough to
+advance `ai/main` before later prose/hardening work. Arc close still owes current-truth reconciliation,
+steering synthesis, and conductor `gate:arc` from the populated branch. `gate:full-quiet` starts with
+a discovery floor; read its selected-check count across the deletion-heavy close.
 
 ## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
 
