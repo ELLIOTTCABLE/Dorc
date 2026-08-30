@@ -17,8 +17,9 @@ use crate::rows::{
 use crate::tokens::{
     ClosedToken, OpaqueState, RecordedAdmissionOutcome, RecordedDisposition,
     RecordedLicenseCustody, RecordedLicenseVerb, RecordedLoadOutcome, RecordedNarrativeKind,
-    RecordedRenderKind, RecordedShipLane, RecordedSiteClass, RecordedSolvePass, RecordedSourceRole,
-    RecordedSpeechAct, RecordedSurvivalOutcome, RenderSubjectAxis, bool_token,
+    RecordedRenderKind, RecordedShipLane, RecordedSiteClass, RecordedSolvePass,
+    RecordedSourceClass, RecordedSourceRole, RecordedSpeechAct, RecordedSurvivalOutcome,
+    RenderSubjectAxis, bool_token,
 };
 
 /// One file the run acquired.
@@ -30,6 +31,8 @@ pub struct RecordedSource {
     bytes: u64,
     path: OpaqueState,
     excerpt: OpaqueState,
+    class: RecordedSourceClass,
+    content: OpaqueState,
     account: RecordedInfluence,
 }
 
@@ -43,11 +46,15 @@ impl RecordedSource {
         bytes: u64,
         path: OpaqueState,
         excerpt: OpaqueState,
+        class: RecordedSourceClass,
+        content: OpaqueState,
         account: RecordedInfluence,
     ) -> Self {
         Self {
             ordinal,
             role,
+            class,
+            content,
             digest,
             bytes,
             path,
@@ -92,6 +99,18 @@ impl RecordedSource {
         self.excerpt
     }
 
+    /// Which dialect the run accepted this source as.
+    #[must_use]
+    pub const fn class(&self) -> RecordedSourceClass {
+        self.class
+    }
+
+    /// Whether this source's exact bytes are in the document, and if not, why not.
+    #[must_use]
+    pub const fn content(&self) -> OpaqueState {
+        self.content
+    }
+
     /// Where this record stood relative to host contact.
     #[must_use]
     pub const fn account(&self) -> RecordedInfluence {
@@ -110,6 +129,8 @@ impl RecordedRow for RecordedSource {
             self.bytes.to_string(),
             self.path.token().to_owned(),
             self.excerpt.token().to_owned(),
+            self.class.token().to_owned(),
+            self.content.token().to_owned(),
             self.account.token().to_owned(),
         ]
     }
@@ -123,6 +144,8 @@ impl RecordedRow for RecordedSource {
             rows::wide(record, "bytes")?,
             rows::closed(record, "path")?,
             rows::closed(record, "excerpt")?,
+            rows::closed(record, "class")?,
+            rows::closed(record, "content")?,
             rows::account(record),
         ))
     }
@@ -294,6 +317,7 @@ pub struct RecordedSiteDecision {
     ast: RecordedAst,
     disposition: RecordedDisposition,
     shell: OpaqueState,
+    locator: OpaqueState,
     account: RecordedInfluence,
 }
 
@@ -305,6 +329,7 @@ impl RecordedSiteDecision {
         ast: RecordedAst,
         disposition: RecordedDisposition,
         shell: OpaqueState,
+        locator: OpaqueState,
         account: RecordedInfluence,
     ) -> Self {
         Self {
@@ -312,6 +337,7 @@ impl RecordedSiteDecision {
             ast,
             disposition,
             shell,
+            locator,
             account,
         }
     }
@@ -340,6 +366,12 @@ impl RecordedSiteDecision {
         self.shell
     }
 
+    /// Whether this site's provenance DAG is in the document, and if not, why not.
+    #[must_use]
+    pub const fn locator(&self) -> OpaqueState {
+        self.locator
+    }
+
     /// Where this record stood relative to host contact.
     #[must_use]
     pub const fn account(&self) -> RecordedInfluence {
@@ -357,6 +389,7 @@ impl RecordedRow for RecordedSiteDecision {
             self.ast.get().to_string(),
             self.disposition.token().to_owned(),
             self.shell.token().to_owned(),
+            self.locator.token().to_owned(),
             self.account.token().to_owned(),
         ]
     }
@@ -368,6 +401,7 @@ impl RecordedRow for RecordedSiteDecision {
             RecordedAst::of(rows::count(record, "ast")?),
             rows::closed(record, "disposition")?,
             rows::closed(record, "shell")?,
+            rows::closed(record, "locator")?,
             rows::account(record),
         ))
     }

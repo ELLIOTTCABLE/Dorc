@@ -192,6 +192,31 @@ impl ClosedToken for RecordedAdmissionOutcome {
     }
 }
 
+/// Which dialect a source was accepted as.
+///
+/// The boundary that decides byte custody (`30Ra:planning-book-bytes-and-durable-locators`):
+/// general sh may mutate and its exact bytes ride the rich receipt, while valid `dorc-lang` is
+/// mutation-pure by contract and keeps identity without content. Mechanical, never the
+/// book/oracle naming — a file is what the dialect gate said it was.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordedSourceClass {
+    /// Accepted as valid `dorc-lang`.
+    DorcLang,
+    /// Everything else the run acquired.
+    GeneralSh,
+}
+
+impl ClosedToken for RecordedSourceClass {
+    const TOKENS: &'static [&'static str] = grammar::SOURCE_CLASS;
+    const ALL: &'static [Self] = &[Self::DorcLang, Self::GeneralSh];
+    fn token(self) -> &'static str {
+        match self {
+            Self::DorcLang => "dorc-lang",
+            Self::GeneralSh => "general-sh",
+        }
+    }
+}
+
 /// The per-site and per-region plan outcome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordedDisposition {

@@ -581,6 +581,7 @@ mod tests {
             RecordedAst::of(0),
             disposition,
             crate::tokens::OpaqueState::Uncollected,
+            crate::tokens::OpaqueState::Uncollected,
             RecordedInfluence::MostInfluenced,
         ))
     }

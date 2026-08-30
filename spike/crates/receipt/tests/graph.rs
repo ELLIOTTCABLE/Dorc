@@ -41,7 +41,8 @@ use dorc_receipt::rows::{
 use dorc_receipt::tokens::ClosedToken;
 use dorc_receipt::tokens::{
     ImageState, OpaqueState, RecordedApplyPolicy, RecordedDurableState, RecordedInvocationMode,
-    RecordedOriginState, RecordedSiteStatus, RecordedSourceRole, RecordedTerminalState,
+    RecordedOriginState, RecordedSiteStatus, RecordedSourceClass, RecordedSourceRole,
+    RecordedTerminalState,
 };
 use dorc_receipt::writer::DraftReceipt;
 
@@ -150,6 +151,8 @@ fn plan_bytes(tag: &str, flavour: char) -> Vec<u8> {
         1,
         OpaqueState::WithheldPlain,
         OpaqueState::Uncollected,
+        RecordedSourceClass::DorcLang,
+        OpaqueState::WithheldPlain,
         RecordedInfluence::AuthoredBeforeContact,
     )
     .to_record()

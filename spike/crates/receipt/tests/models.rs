@@ -40,8 +40,8 @@ use dorc_receipt::tokens::{
     RecordedDurableState, RecordedInvocationMode, RecordedLicenseCustody, RecordedLicenseVerb,
     RecordedLoadOutcome, RecordedNarrativeKind, RecordedOmissionReason, RecordedOriginState,
     RecordedRenderKind, RecordedShipLane, RecordedSiteClass, RecordedSiteStatus, RecordedSolvePass,
-    RecordedSourceRole, RecordedSpeechAct, RecordedSpineSpecies, RecordedSurvivalOutcome,
-    RecordedTerminalState,
+    RecordedSourceClass, RecordedSourceRole, RecordedSpeechAct, RecordedSpineSpecies,
+    RecordedSurvivalOutcome, RecordedTerminalState,
 };
 
 fn digest_of(seed: char) -> String {
@@ -83,6 +83,8 @@ fn every_plan_row_survives_its_own_round_trip_with_distinct_same_typed_fields() 
         4096,
         OpaqueState::Captured,
         OpaqueState::Uncollected,
+        RecordedSourceClass::GeneralSh,
+        OpaqueState::Captured,
         RecordedInfluence::AuthoredBeforeContact,
     ));
     round_trip(&RecordedAdmission::of(
@@ -103,6 +105,7 @@ fn every_plan_row_survives_its_own_round_trip_with_distinct_same_typed_fields() 
         site(4, 5),
         RecordedAst::of(6),
         RecordedDisposition::Guard,
+        OpaqueState::Captured,
         OpaqueState::Captured,
         RecordedInfluence::HostInfluenced,
     ));
@@ -237,6 +240,7 @@ fn the_round_trip_preserves_which_count_went_in_which_slot() {
         RecordedAst::of(6),
         RecordedDisposition::Run,
         OpaqueState::Unavailable,
+        OpaqueState::Unavailable,
         RecordedInfluence::AuthoredBeforeContact,
     );
     let back = RecordedSiteDecision::of_record(&row.to_record().unwrap()).unwrap();
@@ -354,6 +358,8 @@ fn source_record(ordinal: u32) -> SkeletonRecord {
         1,
         OpaqueState::WithheldPlain,
         OpaqueState::Uncollected,
+        RecordedSourceClass::DorcLang,
+        OpaqueState::WithheldPlain,
         RecordedInfluence::AuthoredBeforeContact,
     )
     .to_record()

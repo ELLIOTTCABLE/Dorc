@@ -23,6 +23,14 @@ pub enum OpaqueFieldTag {
     SourcePath,
     /// A bounded excerpt of a recorded source.
     SourceExcerpt,
+    /// One general-sh source's exact acquired bytes.
+    ///
+    /// A distinct tag rather than a large excerpt, because the two answer different questions and
+    /// a reader must be able to tell them apart: an excerpt is a region somebody chose, and this
+    /// is the whole file as the run held it (`30Rb:book-content-and-locator-projection`).
+    SourceContent,
+    /// One recorded site's encoded provenance DAG.
+    SiteLocator,
     /// The admitted record stream exact accounted bytes.
     RecordStream,
     /// Shell text.
@@ -53,11 +61,13 @@ pub enum OpaqueFieldTag {
 
 impl OpaqueFieldTag {
     /// Every tag, in canonical order.
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 19] = [
         Self::Argv,
         Self::TargetName,
         Self::SourcePath,
         Self::SourceExcerpt,
+        Self::SourceContent,
+        Self::SiteLocator,
         Self::RecordStream,
         Self::Shell,
         Self::Fact,
@@ -81,6 +91,8 @@ impl OpaqueFieldTag {
             Self::TargetName => "target-name",
             Self::SourcePath => "source-path",
             Self::SourceExcerpt => "source-excerpt",
+            Self::SourceContent => "source-content",
+            Self::SiteLocator => "site-locator",
             Self::RecordStream => "record-stream",
             Self::Shell => "shell",
             Self::Fact => "fact",
@@ -133,9 +145,20 @@ const INVOCATION_SLOTS: &[OpaqueSlot] = &[
 const SOURCE_SLOTS: &[OpaqueSlot] = &[
     s("path", OpaqueFieldTag::SourcePath),
     s("excerpt", OpaqueFieldTag::SourceExcerpt),
+    s("content", OpaqueFieldTag::SourceContent),
 ];
 const ADMISSION_SLOTS: &[OpaqueSlot] = &[s("stream", OpaqueFieldTag::RecordStream)];
 const SHELL_SLOTS: &[OpaqueSlot] = &[s("shell", OpaqueFieldTag::Shell)];
+/// A site decision carries its shell text AND its provenance DAG.
+///
+/// Split from [`SHELL_SLOTS`], which a region decision still takes: a region is one authored edit
+/// many executions share, so it has no single site locator to carry and giving it the slot would
+/// invite one instance's provenance to stand for all of them
+/// (`30N:rul-region-refusal-discloses-region-keyed`, one level up).
+const SITE_DECISION_SLOTS: &[OpaqueSlot] = &[
+    s("shell", OpaqueFieldTag::Shell),
+    s("locator", OpaqueFieldTag::SiteLocator),
+];
 const LOAD_SLOTS: &[OpaqueSlot] = &[
     s("name", OpaqueFieldTag::ImportPath),
     s("custody", OpaqueFieldTag::Custody),
@@ -165,7 +188,8 @@ pub const fn opaque_slots(kind: RecordKind) -> &'static [OpaqueSlot] {
         RecordKind::Invocation => INVOCATION_SLOTS,
         RecordKind::Source => SOURCE_SLOTS,
         RecordKind::Admission => ADMISSION_SLOTS,
-        RecordKind::SiteDecision | RecordKind::RegionDecision => SHELL_SLOTS,
+        RecordKind::SiteDecision => SITE_DECISION_SLOTS,
+        RecordKind::RegionDecision => SHELL_SLOTS,
         RecordKind::LoadDecision => LOAD_SLOTS,
         RecordKind::ProbeShip => PROBE_SHIP_SLOTS,
         RecordKind::Survival => SURVIVAL_SLOTS,

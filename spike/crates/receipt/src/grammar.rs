@@ -45,6 +45,16 @@ pub const SOURCE_ROLE: &[&str] = &[
     "plain-inclusion",
 ];
 
+/// Which dialect a source was accepted as, which is what decides whether its bytes are kept.
+///
+/// MECHANICAL, and deliberately not the user-facing book/oracle gloss
+/// (`30Ra:planning-book-bytes-and-durable-locators`): the question is whether the file was accepted
+/// as valid `dorc-lang`, not what anybody called it. A book carrying a `# dorc-lang/v0.2` marker
+/// and passing is `dorc-lang`; an oracle-shaped file that did not pass is general sh. The gloss
+/// beneath it — general source may mutate, `dorc-lang` is mutation-pure by contract — is what makes
+/// that the right boundary for byte custody.
+pub const SOURCE_CLASS: &[&str] = &["dorc-lang", "general-sh"];
+
 /// The closed intake answer. `refused` is representable here and unreachable at the current
 /// writer, because a refusal returns before the recording seat.
 pub const ADMISSION_OUTCOME: &[&str] = &["admitted", "no-observation", "refused"];
@@ -354,6 +364,8 @@ const SOURCE_FIELDS: &[Field] = &[
     f("bytes", FieldType::Wide),
     f("path", FieldType::Closed(OPAQUE_STATE)),
     f("excerpt", FieldType::Closed(OPAQUE_STATE)),
+    f("class", FieldType::Closed(SOURCE_CLASS)),
+    f("content", FieldType::Closed(OPAQUE_STATE)),
     ACCOUNT_FIELD,
 ];
 
@@ -378,6 +390,7 @@ const SITE_DECISION_FIELDS: &[Field] = &[
     f("ast", FieldType::Count),
     f("disposition", FieldType::Closed(DISPOSITION)),
     f("shell", FieldType::Closed(OPAQUE_STATE)),
+    f("locator", FieldType::Closed(OPAQUE_STATE)),
     ACCOUNT_FIELD,
 ];
 

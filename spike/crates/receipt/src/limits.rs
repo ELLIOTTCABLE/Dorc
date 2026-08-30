@@ -102,6 +102,20 @@ pub struct ReceiptLimits {
     pub excerpt_bytes: ByteLimit,
     /// Every source excerpt together.
     pub excerpt_aggregate_bytes: ByteLimit,
+    /// One general-sh source's exact bytes.
+    pub source_content_bytes: ByteLimit,
+    /// Every general-sh source's exact bytes together.
+    ///
+    /// Separate from the per-source bound because the failure they guard differs: one enormous
+    /// book is a different shape from a thousand ordinary ones, and a document that admitted the
+    /// second because each member passed the first is how an aggregate budget gets lost.
+    pub source_content_aggregate_bytes: ByteLimit,
+    /// One recorded site's encoded locator payload.
+    pub locator_bytes: ByteLimit,
+    /// Stages in one locator.
+    pub locator_stages: CountLimit,
+    /// Origin edges on one stage.
+    pub locator_origins: CountLimit,
     /// The admitted record block.
     pub admitted_records_bytes: ByteLimit,
     /// Admitted host output, together.
@@ -130,6 +144,14 @@ impl ReceiptLimits {
         source_identities: CountLimit::of(32_768),
         excerpt_bytes: ByteLimit::of(64 * KIB),
         excerpt_aggregate_bytes: ByteLimit::of(MIB),
+        // Sized against what a book IS rather than against the transport: ops shell that runs past
+        // a few megabytes is not a book anyone reads, and a bound generous enough to hold one is
+        // generous enough to hold every book this tool was built for.
+        source_content_bytes: ByteLimit::of(4 * MIB),
+        source_content_aggregate_bytes: ByteLimit::of(16 * MIB),
+        locator_bytes: ByteLimit::of(256 * KIB),
+        locator_stages: CountLimit::of(1_024),
+        locator_origins: CountLimit::of(64),
         admitted_records_bytes: ByteLimit::of(4 * MIB),
         host_output_bytes: ByteLimit::of(4 * MIB),
     };

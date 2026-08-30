@@ -216,6 +216,7 @@ pub mod apply;
 pub mod capability;
 pub mod context;
 pub mod dispatch;
+pub mod durable_locator;
 pub mod format;
 pub mod grammar;
 pub mod graph;

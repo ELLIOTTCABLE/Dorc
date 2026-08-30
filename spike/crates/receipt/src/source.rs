@@ -183,7 +183,7 @@ mod tests {
     use super::*;
     use crate::reingested::RecordedInfluence;
     use crate::rows::SourceOrdinal;
-    use crate::tokens::RecordedSourceRole;
+    use crate::tokens::{RecordedSourceClass, RecordedSourceRole};
 
     const RECORDED: &str = "aa";
 
@@ -195,6 +195,8 @@ mod tests {
             2,
             OpaqueState::Captured,
             excerpt,
+            RecordedSourceClass::GeneralSh,
+            OpaqueState::Captured,
             RecordedInfluence::AuthoredBeforeContact,
         )
     }
