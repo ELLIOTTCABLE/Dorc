@@ -16,8 +16,9 @@ checkout into an external Opus harness.
 - Build source: `ai/r30-receipt` at `1cbee21a`.
 - Diagnostic/harness work is complete on `ai/r30-receipt-loom-code` at `6c1f8024`; `30Rf` and
   `30Rg` carry the account, and the both-platform completion gate is green.
-- Current close lane: `ai/r30-receipt-d5` in `.claude/worktrees/r30-receipt-d5`, clean at
-  `6c1f8024` before dispatch.
+- Current close lane reuses `ai/r30-receipt` in `.claude/worktrees/r30-receipt`; the receipt
+  vocabulary/attention ruling is committed at `a493aaa6`. The temporary D5 worktree/branch was
+  removed.
 - Conduct branch: `ai/r30-conduct`; this document is its resumption account.
 - The two failed in-process harness dispatches produced no commit and no worktree mutation.
 
@@ -38,6 +39,10 @@ checkout into an external Opus harness.
 - **`30Re:rul-deletion-must-add-positive-tests`** — a deletion-only diff routes zero checks; D5
   carries its replacement assertions in the same lane and reads the discovery-floor count rather
   than treating refusal or an empty selection as acceptance.
+- **`30Re:rul-receipt-root-is-attention-root`** — one selected root receipt plus the causally
+  required graph closure approximates the human's run. Disconnected DAGs never merge. The surface is
+  `--receipts <folder>` for store location, and why's mutually exclusive `--receipt <file>`,
+  `--receipt-id <id>`, `--receipt-last` root selectors. `--all` controls explanation depth only.
 
 ## serial schedule
 
@@ -52,8 +57,9 @@ checkout into an external Opus harness.
 
 ## current dispatch contract
 
-`30Rh` owns `30Re:sched-integrated-durable-close`. It adapts existing acceptance rather than adding
-new harness layers, and preserves only behavior the replacement can truthfully support. It does not
-chase `30Rg`'s deviations, the recorded-listing Debug spellings, the dispatch-diagnostic split, or
-new test backstops. It commits the transition and deletion granularly and ends with one both-platform
-completion gate at one final tip.
+`30Rh` owns `30Re:sched-integrated-durable-close` in the reused receipt worktree. It implements the
+ruled receipt vocabulary and rooted graph semantics while adapting existing acceptance, then deletes
+the old durable. It reads the focused specs and this conductor-routed contract rather than inheriting
+prior ledgers wholesale. It does not chase `30Rg`'s deviations, the recorded-listing Debug spellings,
+the dispatch-diagnostic split, or new test backstops. It commits the transition and deletion
+granularly and ends with one both-platform completion gate at one final tip.
