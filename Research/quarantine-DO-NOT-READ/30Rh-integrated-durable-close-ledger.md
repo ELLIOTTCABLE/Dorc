@@ -99,6 +99,15 @@ equivalence. Nothing normalizes, transcodes, or reserializes on the way in.
   `=== OUTCOME ===` needle every gate-8 case asserts is the live why triptych's panel header. So
   the address-directed recorded renderer (item 4) is the substance of what is left, and it must
   reach it without the live decision kernel or `results::replayed_records`.
+- **`30Rh:owed-help-rows-for-the-new-vocabulary`** — the vocabulary cutover minted five help slugs
+  (`cli-help-option-receipts` · `-no-receipt` · `-receipt-last` · `-receipt-id` · `-receipt`) and
+  orphaned the four they replace; `arrangement_lock.rs` still carries the old rows and none of the
+  new. So `cli-help-page` renders `[unwritten:]` and its fixpoint is red. Seeding unwritten `None`
+  rows is builder-legal (`aid/CLAUDE.md arrangement-lock-is-generated-too`), but closing it needs a
+  `dorc-loom publish` + rebuild + e2e bless cycle, and the corpus churns wholesale at item 6 — so
+  it is NAMED here for the conductor to sequence rather than published twice. This is the one
+  surface this lane broke that items 4–6 do not otherwise visit.
+
 - Item 5's authentication posture: do not encode an early-stop/no-explanation invariant.
 - Item 6: the six gate-8 pairs onto the recorded renderer, the seventh case's disposition, and the
   rest of the D5 census — old whylog implementation/flags/fixtures/codes/consumers gone,
