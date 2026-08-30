@@ -848,7 +848,13 @@ locally.
 Required core records:
 
 - invocation identity and policy;
-- ordered source identities: role, ordinal, digest, byte length, location state;
+- ordered source identities: role, ordinal, digest, byte length, location state, and an
+  explicit source class and content state; rich captures exact bytes for acquired
+  general-sh sources not accepted as valid `dorc-lang`, while valid `dorc-lang`
+  content is withheld;
+- one receipt-owned durable projection of each recorded site's existing source locator
+  DAG, including stage kinds, document source/stage ordinals, byte spans, bounded
+  origins, head, and explicit availability state;
 - admitted record-stream identity, count, arrival instants, and exact accounted
   bytes in rich;
 - `PlanningInputId`, `PresentedPlanId`, and planned
@@ -883,6 +889,7 @@ Skeleton:
 
 - receipt and semantic IDs/digests;
 - counts, ordinals, byte lengths, timestamps;
+- source content-state and site locator-state words;
 - full `SiteId` numeric components and `AstId`;
 - closed disposition/classification/admission/ship/survival/render/narrative tags;
 - closed influence labels and omission states.
@@ -891,7 +898,10 @@ Rich overlay:
 
 - argv;
 - source/target/controller paths and names;
-- exact bounded source excerpts;
+- exact acquired general-sh (non-`dorc-lang`) source bytes under a distinct
+  full-content tag; valid `dorc-lang` source bytes are never placed there;
+- exact bounded source excerpts where separately useful;
+- a fixed, bounded receipt encoding of `aid::locator::Locator` per recorded site;
 - exact admitted records block and accounted report tails;
 - shell/source snippets;
 - coordinates/facts/kinds/selectors;
@@ -903,13 +913,37 @@ Never persist in V1:
 - unaccounted stdout/stderr that was not already transported;
 - live claim/license/PlanAuthority values;
 - working lattice/fixpoint state or process-local handles;
-- full planning sources by default;
+- full valid-`dorc-lang` sources;
+- any source bytes not already acquired for analysis;
 - private keys or provider paths;
 - a value newly read only to enrich the receipt.
 
 Every nonzero existing semantic population omitted from PlanReceipt mints an
 explicit projection-omission record. The projection census must fail when a new
 Spine species lands until it is classified.
+
+### Book content and locator projection
+
+The source row's content state and the site-decision row's locator state each fund
+exactly one accounted rich overlay slot. Full general-sh content is binary-safe exact input:
+no CRLF/LF conversion, Unicode normalization, or source reserialization occurs. It
+consumes the existing one-field and decrypted-overlay aggregate budgets before release;
+over-limit content records omission rather than allocating or silently truncating.
+Plain projection records `withheld-plain`.
+
+The durable locator is a receipt-owned inert mirror, not serde over the live type.
+Its fixed encoding covers the closed stage vocabulary, source ordinals/generated
+artifact values, exact byte spans, ordered bounded origins, and one head. Every stage
+and edge is count/bounds/acyclicity checked before construction; unknown stages or
+missing/dangling heads make the locator unavailable as a whole. Source/artifact/claim
+bytes use their destination-specific opaque fields. No API converts a recorded locator
+back into the live locator or any authority input.
+
+Address resolution uses the recorded locator span against recorded exact book bytes.
+A current `path:N` may address the recorded site only when current physical line N and
+recorded physical line N are byte-identical. No moved-line/content-similarity mapping
+exists. Other book drift stays visible and conservatively qualifies analysis-derived
+narration. Address refusal does not suppress unrelated best-effort receipt reporting.
 
 ## 30Rb:apply-intent-and-outcome-content
 

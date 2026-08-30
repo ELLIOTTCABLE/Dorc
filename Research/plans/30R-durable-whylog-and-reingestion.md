@@ -117,13 +117,20 @@ admitted records, disposition, decision digest, recorded influence, and enough
 location/narrative data for its plan/why e2e. Broader species are later enrichment
 and do not appear as empty v1 promises.
 
-Complete planning files are not copied by value by default. Record their path/role,
-digest, length, ordering, and stable locations, plus bounded exact explanatory
-excerpts in rich receipts. `dorc why` prefers a current digest-matching file, then
-an optional configured content archive, then the recorded excerpt, then semantic
-records alone. Archive presence never affects receipt validity or action. V1 records
-existing identities and may carry one excerpt required by its e2e; general excerpt
-and archive policy is later.
+Rich plan receipts keep the exact bytes of every acquired general-sh source that
+was not accepted as `dorc-lang`, once per source identity, alongside path, source
+class, digest, length, and order. Valid `dorc-lang` sources keep those identities
+and provenance but not their full bytes. These mechanical classes are what the
+user-facing “book” (general/possibly-mutative) and “oracle” (mutation-pure by
+`dorc-lang` contract) glosses denote. Plain receipts mark general-sh bytes withheld
+rather than exposing them. Persistence reads no file merely because source or argv
+named it: only bytes already acquired for planning qualify.
+
+Each recorded site carries a receipt projection of the existing source locator DAG,
+including its authored/loaded/generated stages, exact byte spans, fan-in, and head.
+Process-local source/stage ids become receipt ordinals; no new line-only locator is
+introduced. Exact book bytes plus an authored byte span recover the historical physical
+line without reconstructing the syntax arena.
 
 `ApplyIntent` binds non-empty ordered admin-owned assignments, each with one exact
 by-value apply image: every stream and file that assignment will use, the original
@@ -173,6 +180,26 @@ later apply attempt merely because all share a connected component.
 There is no whole-store explanation mode. The implementation may enumerate a
 bounded store to find typed reverse edges, but that is graph discovery, not a
 user-visible union of histories.
+
+A source address always means the same physical path and line number in the current
+and recorded book; Dorc never guesses that a moved line is semantically the same
+operation. If that line's exact bytes differ, the address-specific answer refuses
+pending an explicit current-versus-recorded selector. It still renders every unrelated
+receipt fact it can and shows both source states. If the line bytes match but other book
+bytes differ, the recorded answer remains available under a book-drift warning; until a
+precise dependency comparison exists, analysis-derived explanation is labeled historical
+rather than claimed unaffected. Exact source bytes are never newline-normalized: locator
+spans and the existing source-map line table use the acquired byte domain, so CRLF/LF
+changes are source changes.
+
+Damaged, partial, or unauthenticated receipts never yield an authenticated explanation,
+but aid does not stop merely because trust was lost. Bounded recoverable structure
+continues through report-only derivation with the break attached; nothing recovered that
+way may authorize action or silently fill a missing graph edge.
+
+Inline encrypted book custody is the V1 placement. A later dislocated/deduplicated
+store may replace that placement if designed, without changing these recorded/current
+and locator semantics.
 
 ## recorded-versus-rederived
 

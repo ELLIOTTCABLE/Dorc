@@ -281,38 +281,61 @@ that cannot be reconstructed, or account for a projection loss. Working lattice
 state, process-local handles, live licenses, and aspirational empty fields are not
 durable content.
 
-## planning-input-bytes-reconstruct-best-effort
+## planning-book-bytes-and-durable-locators
 
-**[ACKED, SOFT; LATER EXCEPT IDENTITIES]** `PlanReceipt` does not copy complete planning files by value by
-default. For every book, oracle, inclusion, and other file Dorc actually acquired,
-record its original path/role, collision-resistant content digest, byte length,
-ordering, and stable source locations. Store bounded exact excerpts for source regions
-that directly participate in explanations, once per distinct span, inside the rich
-overlay. Store exact invocation argv under the independent aggregate receipt cap.
+**[ACKED]** A rich `PlanReceipt` carries the exact bytes Dorc already acquired for every
+general-sh source not accepted as valid `dorc-lang`, once per source identity. Valid
+`dorc-lang` sources carry their ordered identity, path, digest, length, source class,
+and provenance but not full source bytes. This is the mechanical boundary beneath the
+user-facing book/oracle gloss: general source may mutate; `dorc-lang` is mutation-pure by
+contract. Plain receipts mark general-sh content withheld. A source omitted by a receipt
+bound remains explicit and
+makes later source-dependent explanation partial; it does not invalidate unrelated
+recorded conclusions.
 
-At `dorc why` time, source material resolves in this order:
+Persistence expands no observation: only bytes already acquired for analysis qualify.
+A path or argv value never licenses a new read. Exact bytes enter the grouped encrypted
+overlay under the receipt's existing field and aggregate budgets, with a distinct full
+book-content tag rather than masquerading as an excerpt. They are neither normalized
+nor transcoded. The source-map and durable locator use the same acquired byte domain:
+LF indexes physical lines and a CR in CRLF remains an input byte, so newline conversion
+is drift rather than invisible equivalence.
 
-1. current file whose digest still matches;
-2. a configured dislocated content archive containing that digest;
-3. the bounded exact excerpt in the receipt; and
-4. recorded semantic conclusions and location only.
+Every durable site decision carries a receipt-owned projection of
+`aid::locator::Locator`, not a flattened line pair and not deserialization into the live
+type. The fixed V1 projection preserves:
 
-Every result retains its source state: current-matching, archived-by-value,
-recorded-excerpt, drifted, absent, unreadable, or omitted-by-limit. A later source
-never replaces the historical conclusion.
+- the closed stage kind (`Authored`, `Loaded`, `Copied`, `Generated`, `Claimed`);
+- source ordinals or generated-artifact identity;
+- exact byte spans;
+- bounded origin edges and the locator head; and
+- explicit withheld/omitted/damaged state.
 
-Persistence performs no new observation. A file merely named by argv is not opened or
-copied. Non-sh bytes may be projected only when Dorc already held them for planning;
-otherwise the receipt records only the value/path it actually held.
+`SourceFileId` and `StageId` are process-local and become document ordinals. Locator
+payloads are report-only, bounded, and complete-or-partial by type; no recorded locator
+converts into a live `Locator`, `ProvId`, license, plan input, or authority. Exact book
+bytes plus an authored span recover the historical physical line without reparsing into
+an identical syntax arena. Oracle loci remain useful as path/digest/span attribution;
+matching current oracle bytes may enrich display, while absent or drifted oracle bytes
+do not erase the recorded conclusion.
 
-A future encrypted, deduplicated content archive is optional, report-only, and
-best-effort. Existing content digests are its lookup keys; receipt validity and
-authority never depend on archive presence. It is an archive rather than a cache or
-source of action, and its publication, retention, equality leakage, keying, and cleanup
-require a separate design before implementation.
+A current `path:N` is compared only with historical physical line N of the same source.
+Dorc never infers that a moved line is the same operation. Exact line bytes permit the
+recorded address; differing/missing bytes refuse only that specific address pending a
+future explicit current-versus-recorded selector. The rest of the receipt still renders
+best-effort. Any other book drift produces a finding and labels analysis-derived links
+historical until a later dependency comparison can narrow that qualification.
 
-V1 records existing path/role/digest/length values and may route one bounded excerpt
-needed by the plan/why e2e. General excerpt selection and archive lookup are later.
+Authentication, structural recovery, and authority remain independent. Failed outer
+verification releases no authenticated receipt and no opaque value whose binding is not
+independently established. The aid plane may still carry bounded lexical/strictly
+recoverable structural fragments into maximally degraded report nodes, preserving where
+corruption prevented further derivation. Such nodes never enter graph authority or
+action, and uncertainty propagates rather than being rounded away.
+
+Inline encrypted book custody is V1's do-now placement. A future dislocated/deduplicated
+encrypted source store, if designed, may replace that placement while preserving the
+same content identities, locator projection, and explicit unavailable states.
 
 ## apply-intent-content
 
@@ -1157,10 +1180,13 @@ documents keep publication, damage, and correlation simpler while the product is
 
 ## rationale-planning-input-byte-custody
 
-Planning sources and apply bytes have different durability obligations. Plan source bytes support
-explanation and replay comparison; recorded conclusions remain valid when those bytes are unavailable.
-Path, digest, stable locations, and bounded excerpts therefore provide a useful self-contained floor,
-while a later deduplicated archive can improve full-source recovery without entering receipt validity.
+Planning sources and apply bytes have different durability obligations. Exact acquired general-sh
+(non-`dorc-lang`) bytes support historical addressing and drift comparison and therefore ride the
+rich PlanReceipt; valid `dorc-lang` bytes do not, because their ordered identities/digests usually
+recover matching current material without multiplying the durable corpus. Recorded conclusions remain useful when either
+class is unavailable, with source-dependent explanation explicitly degraded. The durable projection
+of the existing locator DAG preserves byte-level source/generated provenance without creating a
+second line-only location model.
 
 Apply bytes are the object of the authority spend. They may arrive as stdin, one generated stream,
 multipart plans, unbundled books plus generated bundles, or a transitive `.sh` tree. Their exact bytes
