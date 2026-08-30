@@ -52,14 +52,19 @@ checkout into an external Opus harness.
   report-only kernel remains a 30R target, but the correctness kernel is frozen in this arc. The
   secure close seals `RecordedWhyFacts`; a later kernel-authorized round supplies re-derivation.
   Why arrangement over the sealed model is rehomed outside quarantine.
+- **`30Re:rul-receipt-crate-is-the-boundary`** — `dorc-receipt::report` owns the pure sealed facts
+  API and encoder-mediated arbitrary-value exit. CLI composes I/O and aid/weft rendering;
+  `dorc-aid` remains receipt-unaware. The security arc closes the crate's curated internal-public
+  surface and steering before handing it to ordinary Dorc work.
 
 ## serial schedule
 
 1. **`30Re:sched-repair-why-diagnostics`** — complete at `6c1f8024`; builder ledgers quarantine
    `30Rf`/`30Rg`.
-2. **`30Re:sched-secure-durable-close`** — finish explicit store siting, rooted graph/source
-   comparison, sealed `RecordedWhyFacts`, D5 deletion, and the singular-implementation census.
-   Builder ledger: quarantine `30Rh`.
+2. **`30Re:sched-secure-durable-close`** — finish rooted graph/source comparison, sealed
+   `dorc-receipt::report::RecordedWhyFacts`, curated receipt producer/read/report exports, crate
+   steering, D5 deletion, and the singular-implementation census. Builder ledger: quarantine
+   `30Rh`.
 3. **`30Re:sched-close-receipt-security-arc`** — reconcile current truth, synthesize only durable
    steering that earns a permanent seat, run the required review and `gate:arc`, then offer the
    populated branch as the `ai/main` synthesis point. The dispatch-diagnostic split is not included.
