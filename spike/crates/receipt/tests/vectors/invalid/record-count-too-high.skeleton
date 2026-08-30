@@ -6,6 +6,6 @@ order 00000001700000000000
 signing-key-id cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 records 4
 record 0 invocation mode=plan started=1700000000000 argv=withheld-plain target=withheld-plain attempt=1 account=authored-before-contact
-record 1 source ordinal=0 role=book digest=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bytes=128 path=withheld-plain excerpt=uncollected account=authored-before-contact
+record 1 source ordinal=0 role=book digest=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bytes=128 path=withheld-plain excerpt=uncollected class=general-sh content=withheld-plain account=authored-before-contact
 record 2 projection-omission species=observation count=0 reason=unminted account=authored-before-contact
 skeleton-end

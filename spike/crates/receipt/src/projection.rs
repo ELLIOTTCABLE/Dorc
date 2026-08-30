@@ -371,4 +371,33 @@ mod tests {
             }
         }
     }
+
+    /// A site decision carries a locator slot; a region decision deliberately does not.
+    ///
+    /// The two shared one slot table before the locator existed, and re-merging them is the easy
+    /// tidy-up to reach for. It would be wrong: a region is ONE authored edit many executions
+    /// share (`30N:rul-region-refusal-discloses-region-keyed`), so there is no single site
+    /// provenance to carry, and giving it the slot would invite one instance's locator to stand
+    /// for every other invocation of the same body.
+    #[test]
+    fn a_locator_rides_a_site_decision_and_never_a_region_decision() {
+        let has_locator = |kind: RecordKind| {
+            opaque_slots(kind)
+                .iter()
+                .any(|slot| slot.tag == OpaqueFieldTag::SiteLocator)
+        };
+        assert!(has_locator(RecordKind::SiteDecision));
+        assert!(!has_locator(RecordKind::RegionDecision));
+        // Both still carry their shell text, so the split is about the locator alone rather than
+        // one kind having quietly lost its detail capability.
+        for kind in [RecordKind::SiteDecision, RecordKind::RegionDecision] {
+            assert!(
+                opaque_slots(kind)
+                    .iter()
+                    .any(|slot| slot.tag == OpaqueFieldTag::Shell),
+                "{} still carries its shell",
+                kind.token()
+            );
+        }
+    }
 }

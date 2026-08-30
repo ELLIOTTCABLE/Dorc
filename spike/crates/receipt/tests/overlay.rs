@@ -59,6 +59,8 @@ fn skeleton() -> Skeleton {
                     "12",
                     "captured",
                     "captured",
+                    "general-sh",
+                    "uncollected",
                     "authored-before-contact",
                 ],
             ),

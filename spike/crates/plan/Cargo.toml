@@ -79,5 +79,9 @@ name = "receipt_projection"
 path = "tests/receipt_projection.rs"
 
 [[test]]
+name = "receipt_source_custody"
+path = "tests/receipt_source_custody.rs"
+
+[[test]]
 name = "identity_vectors"
 path = "tests/identity_vectors.rs"
