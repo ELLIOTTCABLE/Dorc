@@ -1,10 +1,10 @@
 # 30Rk — durable-transition residue: lane report
 
 > Tier: builder ledger for the out-quarantine residue named in `plans/30R` and in the
-> 2026-08-29 LIVING_STATUS entry — the report-API tidy, the D5 deletion, the
-> singular-implementation census. Current state and open items only; git carries the
-> chronology. Nothing quarantined is reproduced here; where a quarantined ledger is
-> load-bearing it is named by filename alone.
+> 2026-08-29 LIVING_STATUS entry — the report-API tidy, the D5 deletion, the CLI receipt
+> vocabulary, the singular-implementation census. Current state and open items only; git
+> carries the chronology. Nothing quarantined is reproduced here; where a quarantined
+> ledger is load-bearing it is named by filename alone.
 
 ## report-api-close: what the three tidy items became
 
@@ -23,10 +23,7 @@ re-derived.
   residue calls for a re-parsed `ReceiptOrderToken`; the edge turned out to already HOLD
   one (`receipt-local`'s `EntryName::order()`), and the `String` was a `.spelled()` hop
   the CLI seat took on the way in. So the token is carried end to end and nothing
-  re-parses: `SelectedRoot::order`, `WhyFactsInput::order` and `RootFacts::order` are all
-  `ReceiptOrderToken`. A renderer that wants the digits still asks `spelled()`.
-  DEVIATION, disclosed: this is stronger than the recorded item, which assumed the edge
-  had only a spelling. There is no parse and therefore no unparseable state to type.
+  re-parses. There is no parse and therefore no unparseable state to type.
 
 - **`30Rk:closure-membership-is-the-graphs-answer`** — `ClosureFacts::of` took
   `reached: Vec<RecordedDocumentId>`, so a caller could name a document the graph never
@@ -37,15 +34,14 @@ re-derived.
   literally. Only documents the graph HOLDS are reached; the root is the one exception,
   because it may have been opened as an explicit file outside any store, and a required
   sibling the graph cannot hold stays `SiblingState`'s to report.
-  DEVIATION, disclosed: `WhyFactsInput::identity` and `SelectedRoot::identity` are GONE.
-  The closure carries the root, so the root is named once; keeping a second field beside
-  it would re-open the same can-disagree hole one level up. `facts_for` lost an argument
-  as a result.
+  `WhyFactsInput::identity` and `SelectedRoot::identity` are GONE: the closure carries the
+  root, so the root is named once. Both this and the ancestors-only walk direction are
+  BUILT AS DESCRIBED and awaiting human adjudication; neither is to be reworked meanwhile.
 
 Behaviour change worth naming: the retired `Vec` shape let a plan-rooted question be told
 it reached a later intent and outcome. The replacement cannot say that, and the case that
-asserted it is rewritten to pin the rule instead. Nothing in production supplied a
-non-empty vector, so no shipped answer moved.
+asserted it now pins the rule instead. Nothing in production supplied a non-empty vector,
+so no shipped answer moved.
 
 ## d5: what the deletion took
 
@@ -59,95 +55,115 @@ Deleted outright, with no adapter and no alias
   `serialize_refusal_reason`, the `publish_whylog` and `durable_label` edge members, and
   `GeneratedOutput::Whylog`.
 - The whole REPLAY lane: `engine::Replay`, `EngineRequest::replay`, the engine's
-  replay-admission arm, `results::replayed_records` (the laundering seat, whose own
-  module doc said it goes when the durable does), `results::replay_scope`,
-  `WidthOneAttemptScope::matches_claims`, and the loom consumer's `--whylog=` replay
-  chain, its `parse_direct_why`, and the `whylog-publish` edge fault.
+  replay-admission arm, `results::replayed_records` (the laundering seat, whose own module
+  doc said it goes when the durable does), `results::replay_scope`,
+  `WidthOneAttemptScope::matches_claims`, the loom consumer's `--whylog=` replay chain and
+  its `parse_direct_why`, the `whylog-publish` edge fault, and gate-8's replay half.
 - The drifted-render lane: `cli::DriftedReceipt`, `drifted_receipt`, `recorded_tally`,
   `drifted_why_parts`, and `PlanTally` — which collapsed to `dorc_plan::DispositionCounts`
   once its drifted arm went, taking `is_drifted` and the drift row with it.
-- `Receipt::replayed` and `Receipt::narratable`, both dead-constant with no replay to
-  vary them, and `aid::narrative::PLANE_VERSION`, whose only purpose was the replay
+- `Receipt::replayed` and `Receipt::narratable`, both dead-constant with no replay to vary
+  them, and `aid::narrative::PLANE_VERSION`, whose only purpose was the replay
   version-coupling `narratable` carried.
 - Five diagnostic codes (`whylog-version-refused` · `-book-desync` · `-absent` ·
-  `-corrupt` · `-unwritten`), their payloads, `WhylogCorruptReason` and its four
-  registry sentences, their fixture rows, and their census entries.
-- Eleven cases: the eight `whylog-*` looms, the two `why-drift-*` looms, and
-  `whygallery-drifted-book-degraded-receipt.loom` — the seventh case `30Rh` left owed,
-  which rode the drifted-replay path and was unbacked from the moment that path went.
+  `-corrupt` · `-unwritten`), their payloads, `WhylogCorruptReason`, their fixture rows,
+  their census entries, and their six orphaned arrangement rows.
+- Thirteen cases: the eight `whylog-*` looms, the two `why-drift-*` looms,
+  `whygallery-drifted-book-degraded-receipt.loom` (the seventh case `30Rh` left owed), and
+  the retired replay pair inside `whygallery-survive-trusted-footprint.loom`.
 
-Three loom-pipeline tests were reading a whylog case as a convenient fixture rather than
-as their subject; they now read `dangling-reference.loom`, and two editable-surface tests
-moved to `cfg-inline-refused.loom` and `why-claims-payload.loom` for the same reason.
+Cases and tests that used a retired case merely as a convenient fixture were re-pointed at
+live ones rather than deleted.
 
-## the blocker, and why it is not this lane's to fix
+## the cli receipt vocabulary
 
-**`30Rk:the-lock-regeneration-is-gated-on-the-flag-table`** — both generated locks
-(`aid/src/{catalog,arrangement}_lock.rs`) still carry rows for the retired codes, and
-neither `dorc-loom publish --all` nor a scoped publish can regenerate them: the run
-aborts on `cli-flag-requires-mode.loom`, whose replay is
-`$ dorc plan --whylog=run.whylog --book=webhost.sh`. That case's SUBJECT is a live,
-whylog-free code — "this flag is only valid with that mode" — and `--whylog` is merely
-the example it happens to use. Retargeting it (`--host` outside plan/apply is the
-obvious live pair) changes bytes outside the replay-output islands, which `publish`
-refuses as a non-prose change; the sanctioned route is the `DORC_LOOM_DUMP` loop.
+`--whylog` / `--whylog-dir` / `--last` were already out of `parse_args_from`; what
+remained was every surface still SPELLING them, which is what kept the corpus red.
 
-So the corpus half of D5 is welded to the CLI vocabulary work. The two were briefed as
-separate items and are not separable in this direction: the flag table has to lose
-`--whylog`/`--whylog-dir`/`--last` before the locks can be regenerated without the
-retired codes, and until the locks regenerate the byte-identity gates stay red.
+- **`30Rk:a-known-flag-suggests-nothing`** — `nearest` skipped only distance-0, so a word
+  the table already held fell through to its nearest NEIGHBOUR: `--receipt` answered "did
+  you mean `--receipt`s?". A word the table holds is spelled correctly, so it now suggests
+  nothing at all.
+- **`30Rk:loom-publication-followed-the-named-store`** — the loom driver passed
+  `args.receipts.is_some()` as its durable gate while production passes `!args.no_receipt`.
+  This is `30Rh:fnd-publication-was-gated-on-a-named-store` surviving in the second driver:
+  naming a store moves WHERE a receipt lands, never WHETHER one is written, so under the
+  loom every case that named no store silently published nothing. It is also a
+  `dorc-replay-is-production-semantics` breach — the loom is required to run production's
+  own semantics — and it is what made `durable-receipt-unwritten` stop firing its own code.
+- The three root selectors were already mutually exclusive across all three pairs, and
+  `--receipts` already orthogonal and legal in every mode; nothing pinned either. Both are
+  now pinned per pair, including `--receipts` beside each selector and outside `why`.
+- The five help rows for the new vocabulary render, seeded UNWRITTEN.
 
-## STOPPED at the fence: the invocation mode is a durable content question
+## the invocation mode, renamed under a narrow human ack
 
-**`30Rk:the-recorded-mode-token-still-says-replay`** — `cli::receipt_edge::invocation_record`
-stamps EVERY live invocation with `core::spine::InvocationMode::WhylogReplay`, whose wire
-token is `whylog-replay`, and that field reaches the new receipt durable and is read back.
-The name is stale twice over: it names a lane that no longer exists, and it says "replay"
-about runs that are not replays.
+**`30Rk:the-recorded-mode-token-said-replay`** — `core::spine::InvocationMode::WhylogReplay`
+(token `whylog-replay`) stamped every live invocation. It is now `Unstated` / `unstated`.
 
-NOT TOUCHED. Correcting it changes what the durable persists and what re-ingestion
-consumes, which is `spike/CLAUDE.md:rul-durable-contents-reviewed-before-design` exactly.
-It is named here for the conductor to route, not fixed locally.
+CORRECTION to this lane's own earlier reading: that value never reached the durable. The
+receipt records `tokens::RecordedInvocationMode` (plan / apply / round-trip), minted at the
+publication seat from the CLI's mode and passed to `invocation_row` beside the Spine
+record, which never reads `SpineInvocation::mode()` — a method with no caller in the
+workspace. The rename is therefore in-memory only and moves no durable byte.
 
-## census: what still names the old format
+## census: one live implementation
 
-Grep-level, over `crates/` and `verify/`, excluding the two generated locks:
-
-- the CLI vocabulary itself — `--whylog`, `--whylog-dir`, `--last` — in
-  `cli/tests/e2e.rs`'s durable case, `cli-flag-requires-mode.loom`,
-  `cli-flags-mutually-exclusive.loom`, `cli-help-page.loom`,
-  `durable-receipt-unwritten.loom`, and four other looms' replay commands;
-- `InvocationMode::WhylogReplay`, above, and its four test call sites;
-- `dorc-loom`'s usage text and three unit tests that name a retired slug as an example
-  argument (`whylog-unwritten`, `whylog-absent`) — cosmetic, and cheapest to change in
-  the same pass that fixes the cases;
-- `durable_route.rs`'s assertion that no `whylog` directory appears under the state root,
-  which is a NEGATIVE and is now trivially true — it should either go or be re-aimed;
-- the two generated locks, which regenerate once the blocker above clears.
-
-Compile-level: `cargo check --workspace --all-targets` is clean with zero warnings, so
-nothing reaches the deleted module or its types by any path a build can see.
+- Code, excluding generated locks and comments: `whylog` appears nowhere in `crates/` or
+  `verify/`.
+- Generated locks: `catalog_lock.rs` retains four mentions and `arrangement_lock.rs` two,
+  all inside `why:` METADATA prose of live rows (historical citations such as "its whylog
+  sibling", "the whylog is a deterministic reproducer"). Prose is not this lane's to
+  rewrite; listed under owed prose.
+- Corpus: no `.loom` case drives a retired flag.
+- Compile-level: `cargo check --workspace --all-targets` clean with zero warnings, and the
+  whole workspace suite green, so nothing reaches the deleted module by any path a build or
+  a test can see.
+- `crate_boundary.rs`'s laundering-seat census is inverted: it counted the seat's callers
+  down to one, and now proves it has none.
 
 ## open items
 
-- `30Rk:the-account-export-died-with-its-lane` — `ACCOUNT_EXPORT` was the built-whole,
-  switched-off influence-account durable export, and `internal_tooling::xfail`'s live pin
-  `p-x-durable-account-export-is-enabled` still names it in its trigger, horizon
-  `r31:kernel-punt-glance`. Deleting the old durable deleted the export. Nothing shipped
-  changed (the switch was off, so it moved no byte), and the new durable already carries a
-  per-site recorded influence GRADE — but the richer per-row account export would have to
-  be rebuilt against the receipt durable, which is itself a durable-contents question. The
-  pin now describes something that does not exist; retiring or re-horizoning it is a
-  conductor act.
-- `30Rk:steering-lines-that-name-the-deleted-module` — `spike/CLAUDE.md`'s
-  `influence-is-carried-by-the-object` cites `plan::whylog::ACCOUNT_EXPORT` and the
-  `p-x-durable-account-export-is-enabled` round-trip pin; `whylog-write-only-replay` and
-  `probe-tape-not-a-cache` describe the retired durable; `core/src/spine.rs`'s
-  `ExcludedContent` doc cites the same const. Steering is the conductor's seat, so these
-  are named rather than edited.
-- `30Rk:collision-detection-is-inert-in-production` — found in passing, not this lane's:
-  `cli/src/main.rs`'s `ingest_recognized` passes `&[]` as every document's image to
-  `ReceiptGraph::ingest_*`, so `same_identity_pair` compares two empty slices and
-  `GraphFinding::IdentityCollision` can never fire on a real store walk. The graph's own
-  battery covers the mechanism with real images, so this is a wiring gap at the edge
-  rather than a broken correlator.
+- **`30Rk:the-account-export-died-with-its-lane`** — `ACCOUNT_EXPORT` was the built-whole,
+  switched-off influence-account durable export. Deleting the old durable deleted it.
+  Nothing shipped changed (the switch was off) and the receipt durable already carries a
+  per-site influence GRADE, but the richer per-row ACCOUNT export would have to be rebuilt
+  against the receipt durable, which is itself a durable-contents question. The xfail pin
+  `p-x-durable-account-export-is-enabled` is therefore `Reserved` rather than `Live` — the
+  census's own word for deliberately-unbuilt — with its trigger corrected to stop naming a
+  deleted const. Retiring or re-horizoning it is a conductor act.
+- **`30Rk:steering-lines-that-name-the-deleted-module`** — `spike/CLAUDE.md`'s
+  `influence-is-carried-by-the-object` cites `plan::whylog::ACCOUNT_EXPORT`;
+  `whylog-write-only-replay` and `probe-tape-not-a-cache` describe the retired durable;
+  `core/src/spine.rs`'s `ExcludedContent` doc cites the same const. Also standing from
+  `30Rj`: `receipt/CLAUDE.md`'s `inv-reader-writer-states-only-narrow` lists a "trust"
+  reader state that no longer exists, and `receipt-local/CLAUDE.md`'s
+  `inv-owned-handles-authorize-operations` ends with a cleanup clause that is no longer
+  true. Steering is the conductor's seat.
+- **`30Rk:the-arrangement-mirror-is-its-own-lock`** — `aid::arrangement` re-exports
+  `ARRANGEMENTS` FROM `arrangement_lock.rs`, so the generator's mirror-union reads its own
+  output: a row whose owner disappears has no declaring source to drop it, and persists
+  until removed by hand. Six orphans were removed that way here and the byte-identity gate
+  accepted the result, but the shape means orphan rows accrue silently. A census of rows no
+  source declares would catch them; not built.
+- **`30Rk:the-recorded-why-surface-is-the-next-round`** — a receipt-rooted `why` still
+  LISTS rather than explains (`30Rh:fnd-store-route-lists-it-does-not-explain`). Gate-8's
+  replay half asserted the retired renderer's chain and is deleted rather than re-aimed;
+  its live half is untouched. The sealed model exists and reaches the real reading path,
+  but joining it to aid/weft is the next conductor's work, so no case asserts a
+  receipt-rooted explanation today.
+
+## owed prose
+
+Builder-authored prose is zero. What is owed, all rendering `[unwritten: <slug>]` or
+carrying stale citations:
+
+- the five help rows the vocabulary cutover minted: `cli-help-option-receipts` ·
+  `-no-receipt` · `-receipt-last` · `-receipt-id` · `-receipt`, seeded `words: None` in
+  `arrangement_lock.rs` and rendered by `cli-help-page.loom`. A case may `own` each once it
+  has words.
+- `durable-receipt-unwritten` and `durable-receipt-unreadable` still render
+  `[unwritten: <slug>]` as their message (pre-existing, not caused here).
+- `catalog_lock.rs` and `arrangement_lock.rs` `why:` metadata still cites the whylog as a
+  live reproducer in six rows; `cli-flag-requires-mode`'s `why` lost its `tc-whylog-…`
+  clause when its case was retargeted.
