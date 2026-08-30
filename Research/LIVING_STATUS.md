@@ -34,45 +34,38 @@ ANALYZER-NEEDS, KNOBS, `271`, `28M`, `281`, `28K`, `28Q`, `30J`, `30P`. Implemen
 entirely unscheduled (`30U` §10 is a pending-successor sketch). USER_STORY's stage-5/7
 re-cut and `30T` sit UNCOMMITTED pending human review; the rest landed on `ai/main`.
 
-## CURRENT STATE (2026-08-29 — durable receipts reached the source-custody/locator midpoint on `ai/r30-receipt`)
+## CURRENT STATE (2026-08-29 — secure durables unified for human review on `ai/r30-receipt`)
 
 **Where to start:** `plans/30R` is the complete conductor-facing design; quarantine `30Ra` is its
-extended superset. The branch-local quarantined conduct account and compact current builder ledger
-carry the live handoff. Prior builder ledgers are not onboarding reads unless a concrete code
-question points there.
+extended superset. The unified branch-local conduct account and compact current builder ledger carry
+the review handoff; prior builder ledgers are not onboarding reads unless a concrete code question
+points there.
 
-**What is whole:** the production binary initializes/reopens the local keyset, publishes/reads the
-immutable receipt store, gates apply intent before dispatch, records outcomes, and reads receipts
-across process restart. The coherent surface is `--receipts <folder>`, `--receipt <file>`,
-`--receipt-id <id>`, `--receipt-last`, and `--no-receipt`; `--all` is explanation depth only. The
-old replay ladder and old flag spellings are removed on the branch.
+**Unified tip:** `ai/r30-receipt` and `ai/r30-conduct` point together, parallel to `ai/main`, and
+include the current `ai/main` line by merge. Nothing has been upstreamed and no worktrees were
+cleaned. The production binary initializes/reopens the local keyset, publishes/reads the immutable
+store, gates apply intent before dispatch, records outcomes, and reads receipts across process
+restart. The coherent surface is `--receipts <folder>`, `--receipt <file>`, `--receipt-id <id>`,
+`--receipt-last`, and `--no-receipt`; `--all` is explanation depth only.
 
-**Mandatory midpoint reached:** exact bytes for acquired general-sh sources that lack a valid
-`dorc-lang` marker now ride rich plan receipts; marked `dorc-lang` source retains identity/digest
-but not full bytes. Recorded sites carry a bounded receipt-owned encoding of the existing locator
-DAG in the exact acquired-byte domain (LF indexes lines; CR in CRLF remains data). Plain receipts
-withhold source/locator detail. The source/locator API and focused tests are committed; the builder
-is stopped as scheduled before the recorded renderer.
+**Built secure boundary:** rich plan receipts retain exact acquired general-sh bytes while valid
+`dorc-lang` source remains identity/digest-only; recorded sites carry the bounded receipt-owned
+locator DAG projection in the exact input-byte domain. The pure public
+`dorc-receipt::report::RecordedWhyFacts` model is integrated from the real reading route with rooted
+closure, source comparison, authentication/completeness/influence state, explicit pending
+re-derivation, and encoder-mediated arbitrary-value exit. CLI remains the I/O and future aid/weft
+composition root; `dorc-aid` stays receipt-unaware and the correctness kernel is unchanged.
 
-**Secure remainder:** the pure public `dorc-receipt::report::RecordedWhyFacts` model is built and
-integrated from the real reading route, preserving rooted closure, exact source/locator addressing,
-authentication/completeness/influence state, and explicit pending re-derivation. Arbitrary values
-leave only through an encoder-mediated API; CLI remains the I/O and later aid/weft composition root,
-and `dorc-aid` stays receipt-unaware. Remaining secure work is to close three narrow API residues
-(site newtype, parsed order token, graph-derived closure membership), curate receipt exports/steering,
-finish D5's singular provider/store/reader/writer census, and run one both-platform completion gate.
-The correctness kernel remains frozen; report-only kernel re-derivation is a later authorized round.
+**Review/repair residue:** close three report-API items (site newtype, parsed order token,
+graph-derived closure membership), curate receipt exports/steering, finish D5's singular
+provider/store/reader/writer census, and run the owed full gates. Loaded-source locator composition
+remains explicit uncollected V1 residue rather than a guessed chain. Human review may remit one
+focused repair before closure.
 
-**Known narrow residue:** site locators currently carry the authored book span; loaded-source stages
-remain representable but need loader-provided per-site source identity before they can be populated.
-Unavailable locators stay explicitly uncollected rather than guessed.
-
-**Next synthesis point:** once the curated receipt crate and D5 are green, the secure durable
-subsystem is whole enough to advance `ai/main`. A new non-quarantined conductor then owns ordinary
-why arrangement/render and replacement user-facing cases over the sealed model; it does not reopen
-receipt parsing, graph, source, locator, or authority. Arc close still owes current-truth reconciliation,
-steering synthesis, and conductor `gate:arc` from the populated branch. `gate:full-quiet` starts with
-a discovery floor; read its selected-check count across the deletion-heavy close.
+**Transition after secure close:** recorded-why arrangement/render and replacement user-facing cases
+belong to a new non-quarantined conductor over the sealed model. Report-only kernel re-derivation
+remains a separate authorized round. The current conductor has closed its ledger and dispatches no
+further work.
 
 ## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
 
