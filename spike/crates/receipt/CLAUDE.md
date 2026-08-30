@@ -6,8 +6,9 @@ and the public report API. No filesystem, environment, provider implementation, 
 - **`inv-literal-document-bytes`** — verification and parsing consume the same immutable byte
   slices. Never normalize, reserialize, recover unknown fields, or accept alternate spellings.
 - **`inv-reader-writer-states-only-narrow`** — advance only through the private typestate
-  transitions. Keep trust, completeness, species, projection, and detail availability separate;
-  partial never becomes complete by conversion.
+  transitions. Keep cryptographic validity, completeness, species, projection, and detail
+  availability separate; local-policy trust belongs outside this crate, and partial never becomes
+  complete by conversion.
 - **`inv-plain-rich-shapes-differ`** — plain cannot represent opaque detail. Rich owns exactly one
   fully-accounted reverse overlay; validate every slot in both directions before releasing detail.
 - **`inv-recorded-values-stay-recorded`** — `Reingested`, recorded influence, dispositions,
@@ -27,6 +28,6 @@ and the public report API. No filesystem, environment, provider implementation, 
 - **`inv-format-changes-are-one-cutover`** — this is unpublished: reshape writer, reader, vectors,
   limits, and all callers together; add no compatibility parser or alias.
 
-Changes to grammar/content, trust or projection states, authority-capable mints, graph semantics,
+Changes to grammar/content, verification or projection states, authority-capable mints, graph semantics,
 or arbitrary-value exits require explicit human direction and quarantined review. Stop rather than
 locally widening one to unblock a caller.
