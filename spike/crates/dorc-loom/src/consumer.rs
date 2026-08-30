@@ -3,12 +3,11 @@
 
 use std::collections::BTreeMap;
 use std::fmt::Write;
-use std::fs;
 
 use dorc_aid::RenderCtx;
 use dorc_aid::arrangement::{OwnedArrangement, owned_arrangements};
 use dorc_aid::catalog::{HelpRegister, OwnedEntry, owned_catalog, parse_template};
-use dorc_aid::diag::{Diag, render_cli_parts, render_staged_cli_parts};
+use dorc_aid::diag::{Diag, render_cli_parts};
 use dorc_aid::prose::{Mint, ProseTier};
 use dorc_core::Interner;
 use errorloom::{
@@ -451,18 +450,6 @@ impl DorcConsumer {
         dorc_cli::invocation_error_parts(&ctx, diag, &interner)
     }
 
-    /// [`Self::cli_parts`] for a source-staged diagnostic.
-    fn staged_cli_parts(&self, stage: &str, diag: &Diag) -> dorc_aid::tagged::RenderParts {
-        render_staged_cli_parts(
-            stage,
-            &self.render_ctx(),
-            diag,
-            "",
-            "",
-            &Interner::default(),
-        )
-    }
-
     /// The editable baseline of a case's FIRST replay — what `dorc-loom vars` reports.
     ///
     /// It drives the case exactly as `publish` does rather than re-deriving a world of its own
@@ -708,26 +695,6 @@ impl DorcConsumer {
         }
         if tokens.as_slice() == ["dorc", "lint", "--list-sources"] {
             let parts = dorc_cli::lint_sources_parts(&self.render_ctx());
-            return Some(ReplayResult::editable(to_editable_render(&parts)));
-        }
-        if let Some(why) = parse_direct_why(&tokens) {
-            let raw = context.materialized_input(why.whylog);
-            if let Some(parts) = raw.and_then(|whylog| {
-                drifted_why_parts(&self.render_ctx(), whylog, why.address, |path| {
-                    materialized_source(case, context, path)
-                })
-            }) {
-                return Some(ReplayResult::editable(to_editable_render(&parts)));
-            }
-            if why.address.is_some() {
-                return None;
-            }
-            let book = materialized_source(case, context, "book.sh");
-            let inspected = dorc_plan::whylog::inspect(raw, why.whylog, book.as_deref(), |path| {
-                materialized_source(case, context, path)
-            });
-            let diag = inspected.into_iter().next()?;
-            let parts = self.staged_cli_parts("whylog", &diag);
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if tokens.first() == Some(&"dorc") {
@@ -1108,10 +1075,6 @@ impl DorcConsumer {
             argv: command.argv().to_vec(),
             fault,
             shim_dir: args.shim_dir.clone(),
-            durable_label: args
-                .receipts
-                .clone()
-                .unwrap_or_else(|| "<disabled>".to_owned()),
             // A loom world has no per-user profile, and saying so is the honest label: nothing
             // here resolves a standard root, so no path could be named that a case would recognize.
             receipt_label: dorc_cli::engine::NO_STATE_ROOT.to_owned(),
@@ -1125,7 +1088,6 @@ impl DorcConsumer {
             &dorc_cli::engine::EngineRequest {
                 snapshot: &snapshot,
                 options: &options,
-                replay: None,
                 acquisition_diagnostics: &acquisition_diagnostics,
             },
             &mut edges,
@@ -1202,11 +1164,6 @@ impl DorcConsumer {
                     .map(crate::defect::DefectScenario::diagnostic)
                     .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
             }
-            if let Ok(diag) = Self::whylog_diagnostic(case, block.command())
-                && diag.code.slug() == slug
-            {
-                return Ok(diag);
-            }
         }
         let found = std::cell::RefCell::new(None);
         drive_case(case, &RunEnv::new(), |command, context| {
@@ -1239,30 +1196,6 @@ impl DorcConsumer {
         Err(format!(
             "case `{slug}` has no externally-triggered diagnostic matching its declared code"
         ))
-    }
-
-    fn whylog_diagnostic(case: &Case, command: &str) -> Result<Diag, String> {
-        let words = exact_words(command).ok_or_else(|| "unsupported whylog replay".to_owned())?;
-        let why = parse_direct_why(&words).ok_or_else(|| "unsupported whylog replay".to_owned())?;
-        let raw = case
-            .sections()
-            .iter()
-            .find(|section| section.name() == why.whylog)
-            .map(errorloom::Section::content);
-        let book = case
-            .sections()
-            .iter()
-            .find(|section| section.name() == "book.sh")
-            .map(errorloom::Section::content);
-        dorc_plan::whylog::inspect(raw, why.whylog, book, |path| {
-            case.sections()
-                .iter()
-                .find(|section| section.name() == path)
-                .map(|section| section.content().to_owned())
-        })
-        .into_iter()
-        .next()
-        .ok_or_else(|| "whylog replay produced no diagnostic".to_owned())
     }
 }
 
@@ -1341,31 +1274,6 @@ fn arrangement_index(
         })
 }
 
-/// One `dorc why --last --whylog=<file>` replay: which durable, and which question of it.
-struct DirectWhy<'a> {
-    /// The `book.sh:N` positional, when the case asked about a line rather than the whole run.
-    /// LEADING only — the parser also takes it after a flag (`289:rider-why-last-address-order`),
-    /// but a case's replay line is written by hand and the canonical spelling is the leading one.
-    address: Option<&'a str>,
-    /// The case-relative durable to replay.
-    whylog: &'a str,
-}
-
-fn parse_direct_why<'a>(words: &[&'a str]) -> Option<DirectWhy<'a>> {
-    let (address, whylog) = match words {
-        ["dorc", "why", "--last", whylog] => (None, whylog),
-        ["dorc", "why", address, "--last", whylog] if !address.starts_with('-') => {
-            (Some(*address), whylog)
-        }
-        _ => return None,
-    };
-    let path = whylog.strip_prefix("--whylog=")?;
-    case_relative_path(path).then_some(DirectWhy {
-        address,
-        whylog: path,
-    })
-}
-
 /// The word production's root resolution refuses with when no per-user root can be named.
 ///
 /// Spelled here rather than reached for through the production edge because a loom drive never
@@ -1379,41 +1287,6 @@ pub const EXECUTED_ELSEWHERE: &str = "this case declares `run:`, so its transcri
      runner; `dorc-loom` runs no binary, and an inventory over a different world's render is one \
      an edit could not compile against. Its prose surface is owed a path that reads the executed \
      transcript.";
-
-/// The DEGRADED `dorc why --last` receipt, rendered in-process over a committed durable
-/// (`28F:rul-drift-replay-d1`; `28H:prop-drifted-why-is-the-thin-driver`).
-///
-/// The ONE seat both replay chains go through, which is what keeps them from disagreeing: the two
-/// differ only in where a case's bytes come from, so that is the only thing `source` supplies.
-///
-/// `None` — falling through to the refusal-diagnostic route — for anything that is not a drifted
-/// v2 durable: an unadmissible durable, a durable naming a book the case does not carry, or a book
-/// that still digests to what the run recorded. Drift is the ONLY state this route answers, because
-/// it is the only one whose answer is a report rather than a diagnostic.
-fn drifted_why_parts(
-    ctx: &RenderCtx<'_>,
-    whylog: &str,
-    address: Option<&str>,
-    source: impl Fn(&str) -> Option<String>,
-) -> Option<dorc_aid::tagged::RenderParts> {
-    let dorc_plan::records::Admission::Admitted(envelope) =
-        dorc_plan::whylog::admit_unscoped_whylog(
-            whylog.as_bytes(),
-            dorc_plan::whylog::WhylogLimits::spike_default(),
-        )
-    else {
-        return None;
-    };
-    let book = source(envelope.recorded_book_path().as_str())?;
-    if dorc_plan::invocation::book_digest(&book) == envelope.claims().book_digest() {
-        return None;
-    }
-    Some(dorc_cli::drifted_why_parts(
-        ctx,
-        address,
-        &dorc_cli::drifted_receipt(&envelope),
-    ))
-}
 
 fn engine_snapshot(
     book_path: &str,
@@ -1495,21 +1368,6 @@ fn loom_observation(
     }
 }
 
-fn exact_words(command: &str) -> Option<Vec<&str>> {
-    if command.is_empty()
-        || command.contains([
-            '\'', '"', '`', '$', '|', ';', '&', '>', '(', ')', '\\', '\n', '\r',
-        ])
-    {
-        return None;
-    }
-    let words: Vec<_> = command.split_ascii_whitespace().collect();
-    if words.is_empty() {
-        return None;
-    }
-    Some(words)
-}
-
 /// The program name whose invocations both replay chains answer in-process.
 const LOOM_COMMAND: &str = "dorc-loom";
 
@@ -1588,19 +1446,6 @@ fn case_relative_path(path: &str) -> bool {
         && path
             .split('/')
             .all(|component| !matches!(component, "" | "." | ".."))
-}
-
-fn materialized_file(case: &Case, context: &ReplayContext<'_>, path: &str) -> bool {
-    case_relative_path(path)
-        && case.sections().iter().any(|section| section.name() == path)
-        && context.cwd().join(path).is_file()
-}
-
-fn materialized_source(case: &Case, context: &ReplayContext<'_>, path: &str) -> Option<String> {
-    if !materialized_file(case, context, path) {
-        return None;
-    }
-    fs::read_to_string(context.cwd().join(path)).ok()
 }
 
 fn rebase_editable_instances(
@@ -1810,7 +1655,6 @@ struct LoomEngineEdges {
     argv: Vec<String>,
     fault: Option<crate::edge_fault::EdgeFault>,
     shim_dir: Option<String>,
-    durable_label: String,
     receipt_label: String,
     host: Option<String>,
 }
@@ -1914,13 +1758,6 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
         Ok(())
     }
 
-    fn publish_whylog(&mut self, _bytes: &[u8]) -> Result<(), String> {
-        if let Some(crate::edge_fault::EdgeFault::WhylogPublish(reason)) = &self.fault {
-            return Err(reason.clone());
-        }
-        Ok(())
-    }
-
     /// A loom drive places no document: its world is materialized bytes, not a per-user profile.
     /// A declared `receipt-publish` fault is how a case exercises the refusal.
     fn publish_receipt(
@@ -1931,10 +1768,6 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
             return Err(reason.clone());
         }
         Ok(None)
-    }
-
-    fn durable_label(&self) -> &str {
-        &self.durable_label
     }
 
     fn receipt_label(&self) -> &str {

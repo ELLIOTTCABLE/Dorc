@@ -63,7 +63,6 @@ use std::process::ExitCode;
 mod artifact_store;
 mod source_match;
 mod transport_edge;
-mod whylog_store;
 
 use dorc_aid::Severity;
 use dorc_aid::diag::{Diag, DiagCode};
@@ -79,7 +78,7 @@ use dorc_core::{ProvArena, Symbol};
 use dorc_cli::engine::reach_arm_fn_name;
 use dorc_cli::engine::{
     EngineEdges, EngineRequest, EngineStatus as RunOutcome, InvocationRecordRequest, Observation,
-    ObservationRequest, OutputChannel, OutputEvent, OutputSink, Replay as EngineReplay,
+    ObservationRequest, OutputChannel, OutputEvent, OutputSink,
 };
 #[cfg(test)]
 use dorc_cli::fixpoint::{FrozenModel, attribute_cascades, classify_round, settle_world};
@@ -98,7 +97,6 @@ use dorc_cli::world::{ship_predict_body, ship_verdict_body};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
-use dorc_cli::PlanTally;
 #[cfg(test)]
 use dorc_cli::fixpoint::SettledFixpoint;
 #[cfg(test)]
@@ -204,7 +202,6 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     }
 
     let stdout = stdout_posture();
-    let durable_dir = durable_destination(args);
     // Publication is gated on the admin's REFUSAL, never on whether they named a store: the store
     // has a standard per-user default and `28F:rul-w3-default-on-aim-high` makes a receipt the
     // thing you get without asking. Gating on a named directory would make default-on mean
@@ -220,14 +217,12 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     let mut edges = ProductionEdges {
         args,
         clock: clock_for_invocation(),
-        durable_dir,
         receipt: production_receipt_edge(args),
     };
     dorc_cli::engine::run(
         &EngineRequest {
             snapshot: &ready.snapshot,
             options: &options,
-            replay: ready.replay.as_ref(),
             acquisition_diagnostics: &ready.acquisition_diagnostics,
         },
         &mut edges,
@@ -239,7 +234,6 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
 
 struct AcquiredReady {
     snapshot: dorc_cli::snapshot::StaticLoadSnapshot,
-    replay: Option<EngineReplay>,
     acquisition_diagnostics: Vec<Diag>,
 }
 
@@ -284,7 +278,6 @@ fn acquire_engine_request(
     );
     Ok(Box::new(AcquiredReady {
         snapshot,
-        replay: None,
         acquisition_diagnostics,
     }))
 }
@@ -292,7 +285,6 @@ fn acquire_engine_request(
 struct ProductionEdges<'a> {
     args: &'a Args,
     clock: RunClock,
-    durable_dir: Option<String>,
     /// The production durable edge, or the refusal that stands in its place.
     ///
     /// Resolved ONCE at the process boundary, before the engine runs, so root resolution cannot
@@ -412,15 +404,6 @@ impl EngineEdges for ProductionEdges<'_> {
         publish_artifact(dir, artifact).map_err(artifact_store::PublishRefusal::reason)
     }
 
-    fn publish_whylog(&mut self, bytes: &[u8]) -> Result<(), String> {
-        let Some(dir) = self.durable_dir.as_deref() else {
-            return Ok(());
-        };
-        whylog_store::publish(dir, bytes, WHYLOG_CAP, WHYLOG_KEEP)
-            .map(|_| ())
-            .map_err(|refusal| refusal.reason().to_owned())
-    }
-
     fn publish_receipt(
         &mut self,
         request: &dorc_cli::engine::ReceiptPublicationRequest<'_>,
@@ -453,10 +436,6 @@ impl EngineEdges for ProductionEdges<'_> {
         )
         .map(Some)
         .map_err(|refusal| refusal.token().to_owned())
-    }
-
-    fn durable_label(&self) -> &str {
-        self.durable_dir.as_deref().unwrap_or("<whylog>")
     }
 
     fn receipt_label(&self) -> &str {
@@ -1276,20 +1255,6 @@ fn system_clock() -> RunClock {
         })
 }
 
-/// Whylog retention: keep the newest [`WHYLOG_KEEP`] durables by run-index; cap each at
-/// [`WHYLOG_CAP`] bytes. Deterministic (index order, no clock — `inv-determinism` at the edge).
-///
-/// INTERIM, and disclosed as such (`churn-avoidance-disclosure`). The real retention design —
-/// what is durable, for how long, at what permissions, classified how — is ONE decision that
-/// `28D:must-retention-is-one-decision` puts ahead of the whole forensic tier, and it is r30's.
-/// These two numbers are not that decision; they are what keeps default-on honest until it lands.
-///
-/// Sized against the promise rather than a guess: `USER_STORY` says "ask tomorrow; ask next week",
-/// and the shape that has to survive is nightly cron applies plus a firefighting day's re-runs.
-/// The old keep-5 could not survive one bad morning; these can hold a week of them.
-const WHYLOG_KEEP: usize = 64;
-const WHYLOG_CAP: usize = 4_000_000;
-
 /// Publish a whole artifact set under `dir`, atomically (`30I` §7.5).
 ///
 /// # Errors
@@ -1304,17 +1269,6 @@ fn publish_artifact(
             .map(|file| (file.path.as_str(), file.bytes.as_str())),
     )
     .map(|_| ())
-}
-
-/// Where the OLD whylog goes: nowhere, now that the flag that sited it is gone.
-///
-/// `--whylog-dir` was its only destination surface and the vocabulary cutover deleted it. The lane
-/// is therefore inert until D5 removes it outright, and saying so here is what keeps it from
-/// following `--receipts` into the RECEIPT store — where its `whylog-NNNN.txt` files would land
-/// among the typed receipt names and be counted against the store's own bounded walk as unknown
-/// entries. Two durables sharing one directory is not a smaller change than none.
-const fn durable_destination(_args: &Args) -> Option<String> {
-    None
 }
 
 #[cfg(test)]
@@ -3044,32 +2998,6 @@ mod tests {
             assert!(parts.parts().len() > 1);
         }
     }
-    #[test]
-    fn a_refusal_beats_a_named_directory() {
-        let args = |argv: &[&str]| match parse_args_from(
-            argv.iter().map(|word| (*word).to_owned()).collect(),
-        )
-        .expect("invocation parses")
-        {
-            Invocation::Analyze(parsed) => parsed,
-            other => panic!("expected an analysis invocation, got {other:?}"),
-        };
-        assert_eq!(
-            durable_destination(&args(&["plan", "book.sh", "--whylog-dir=logs"])).as_deref(),
-            Some("logs"),
-            "a named directory is used as given"
-        );
-        assert_eq!(
-            durable_destination(&args(&[
-                "plan",
-                "book.sh",
-                "--whylog-dir=logs",
-                "--no-whylog"
-            ])),
-            None,
-            "and is still refused when the admin says no receipt"
-        );
-    }
 
     /// `289:rider-sibling-note-false-fires-relative`: the loaded `-o` spelling and the `read_dir`
     /// spelling of ONE file must key alike, or the unloaded-sibling hint accuses every relatively
@@ -3660,41 +3588,6 @@ mod tests {
                 pair[1]
             );
         }
-    }
-
-    /// `28F:rul-drift-replay-d1`: a drifted receipt's ONLY count comes from the durable's stored
-    /// disposition WORDS, so this fold is the whole tally. Two things worth pinning: the word
-    /// keying (rename a tag at the writer and a silently-zeroed tally is what a reader would see —
-    /// the drifted receipt has no second source to disagree with), and that an unrecognized word
-    /// lands in no bucket rather than a guessed one, so the tally under-reports rather than
-    /// mis-reports (`271:rul-sin-ordering`). `omit` is absent from the render by design: the
-    /// receipt tally has always been ran/guarded/skipped.
-    #[test]
-    fn a_drifted_tally_counts_the_stored_words_and_guesses_at_none() {
-        let line = |leaf: u32, disposition: &str| dorc_plan::whylog::ApplyLine {
-            leaf,
-            disposition: disposition.to_owned(),
-            predicted: true,
-            account: dorc_plan::whylog::DurableAccount::of_decision(
-                dorc_core::influence::InfluenceAccount::authored_before_contact(),
-            ),
-        };
-        let tally = dorc_cli::recorded_tally(&[
-            line(0, "run"),
-            line(1, "replace"),
-            line(2, "replace"),
-            line(3, "guard"),
-            line(4, "omit"),
-            line(5, "a-word-no-writer-emits"),
-        ]);
-        let PlanTally::DriftedUnsplit { run, guard, elide } = tally else {
-            panic!("a recorded tally is always the unsplit, drifted shape");
-        };
-        assert_eq!((run, guard, elide), (1, 1, 2));
-        assert!(
-            tally.is_drifted(),
-            "the unsplit tally IS the receipt's drift state — nothing else carries it"
-        );
     }
 
     /// [`probe1`] but ENTRY-bearing (a wrapped-context site): the runtime-EntryFailure input.

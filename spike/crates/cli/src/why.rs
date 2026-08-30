@@ -1046,13 +1046,7 @@ fn guard_chain(
 /// about the surface's own coverage, and putting it on the default surface would spend the
 /// firefighter's attention on dorc's gaps rather than on their host.
 ///
-/// `narratable` carries the version coupling. On a replay it is false when the durable's record
-/// stream and this binary's narrative plane disagree, because the census would then be a confident
-/// claim about a run whose class set this binary never held.
-fn unnarrated_lines(narrative: &[CollapseNarrative], narratable: bool) -> Vec<String> {
-    if !narratable {
-        return Vec::new();
-    }
+fn unnarrated_lines(narrative: &[CollapseNarrative]) -> Vec<String> {
     let mut classes: Vec<&'static str> = Vec::new();
     for record in narrative {
         let rendered = matches!(
@@ -1724,7 +1718,7 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
     } = *report;
     let declines = authored_declines(narrative);
     let unnarrated = if receipt.deepest_tier {
-        unnarrated_lines(narrative, receipt.narratable)
+        unnarrated_lines(narrative)
     } else {
         Vec::new()
     };
@@ -2858,7 +2852,7 @@ mod not_ours_bytes_tests {
     //! fixtures drive real dangerous input through the real render, and the last one pins the
     //! byte-floored artifact plane OUT of all of it.
     use super::*;
-    use crate::PlanTally;
+
     use dorc_core::{Observable, Verdict};
 
     /// Bytes that must never reach a terminal as themselves, plus one plain non-ASCII sequence.
@@ -2979,14 +2973,14 @@ mod not_ours_bytes_tests {
         };
         let receipt = Receipt {
             at: None,
-            replayed: false,
+
             host: hostile_line(1),
             book: hostile_line(2),
             book_digest: hostile_line(3),
             at_head: None,
             oracles: vec![hostile_line(4), hostile_line(5)],
             risk_profile: Some(CONSENT_FLAG),
-            tally: PlanTally::Derived(dorc_plan::DispositionCounts {
+            tally: (dorc_plan::DispositionCounts {
                 sites: 2,
                 elide: 1,
                 elide_by_proof: 0,
@@ -2996,7 +2990,6 @@ mod not_ours_bytes_tests {
                 run: 1,
             }),
             deepest_tier: true,
-            narratable: true,
         };
         let mut nodes = vec![
             receipt_banner(&RenderCtx::production(), &receipt),
@@ -3036,11 +3029,10 @@ mod not_ours_bytes_tests {
             book: receipt.book.clone(),
             book_digest: receipt.book_digest.clone(),
             at: receipt.at,
-            replayed: receipt.replayed,
+
             risk_profile: receipt.risk_profile,
             tally: receipt.tally,
             deepest_tier: receipt.deepest_tier,
-            narratable: receipt.narratable,
         }
     }
 

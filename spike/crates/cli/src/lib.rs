@@ -1817,12 +1817,8 @@ pub fn registry_paragraph(ctx: &RenderCtx<'_>, slug: &'static str) -> Node<Face>
 /// none of it, including the instant (`28F:rul-probe-instants-host-says-no-times`, human-typed).
 #[derive(Debug)]
 pub struct Receipt {
-    /// The durable's own start instant on a `--last` replay, this invocation's on a live one, and
-    /// `None` when the edge had no clock. A replay carries the ORIGINAL run's instant, never this
-    /// moment's — reading a replay's clock here would date the receipt to when it was read.
+    /// This invocation's start instant, or `None` when the edge had no clock.
     pub at: Option<dorc_core::RunInstant>,
-    /// Whether this report replays a durable rather than reporting the run that just happened.
-    pub replayed: bool,
     /// The session host id.
     pub host: String,
     /// The analyzed book's path.
@@ -1838,48 +1834,9 @@ pub struct Receipt {
     /// The consent flag in force, or `None` for a flagless run.
     pub risk_profile: Option<&'static str>,
     /// What the run decided, as much of it as this receipt can honestly state.
-    pub tally: PlanTally,
+    pub tally: dorc_plan::DispositionCounts,
     /// `--all`: the reader asked for the deepest pull tier.
     pub deepest_tier: bool,
-    /// Whether the `[unnarrated:]` census may be asserted over this report at all — the version
-    /// coupling (`28E:prop-unnarrated-is-visible`'s caveat). False when a replayed durable's
-    /// record stream is not the one this binary's narrative plane was built against.
-    pub narratable: bool,
-}
-
-/// How much of the plan tally a receipt can honestly state.
-///
-/// The skipped-count SPLIT is the line the reader needs most — an `elide_by_trusted_claim` skip
-/// rests on an author's at-most claim rather than on anything measured, and the two carry different
-/// risk — but it is a LICENSE-plane derivation, re-derived through the kernel from the book. A
-/// drifted replay (`28F:rul-drift-replay-d1`) has no kernel run behind it: the thin durable stores
-/// one disposition word per leaf and nothing else, so there the split is not zero, it is unknown,
-/// and rendering the two alike would put a proof-claim on a receipt that holds none.
-/// The two states are also the receipt's drift state, deliberately: the split is missing for
-/// exactly the reason the chain is, so nothing can set one without the other. D2 — storing the
-/// chain so a drifted receipt could still name lines — is REJECTED, which is what makes the
-/// coupling permanent rather than a convenience.
-#[derive(Debug, Clone, Copy)]
-pub enum PlanTally {
-    /// A live run or a clean replay: the counts the plan itself produced.
-    Derived(dorc_plan::DispositionCounts),
-    /// A drifted replay: the durable's own per-leaf dispositions, split unknown.
-    DriftedUnsplit {
-        /// Leaves the durable recorded as `run`.
-        run: usize,
-        /// Leaves the durable recorded as `guard`.
-        guard: usize,
-        /// Leaves the durable recorded as `replace`.
-        elide: usize,
-    },
-}
-
-impl PlanTally {
-    /// Whether this receipt reports on a run whose book is no longer the file at its path.
-    #[must_use]
-    pub const fn is_drifted(self) -> bool {
-        matches!(self, PlanTally::DriftedUnsplit { .. })
-    }
 }
 
 /// The receipt header as one banner: the run's identity, then the indented record of what it read
@@ -1890,19 +1847,16 @@ impl PlanTally {
 /// go wrong the first time someone rewrote one.
 #[must_use]
 pub fn receipt_banner(ctx: &RenderCtx<'_>, receipt: &Receipt) -> Node<Face> {
-    let when = match (receipt.at, receipt.replayed) {
-        (Some(at), false) => Said::words(
+    let when = match receipt.at {
+        Some(at) => Said::words(
             "why-receipt-when-live",
             &[&dorc_aid::instant::date_time_text(at)],
         ),
-        (Some(at), true) => Said::words(
-            "why-receipt-when-replayed",
-            &[&dorc_aid::instant::date_time_text(at)],
-        ),
-        (None, _) => Said::words("why-receipt-when-undated", &[]),
+        None => Said::words("why-receipt-when-undated", &[]),
     };
-    let tally = match receipt.tally {
-        PlanTally::Derived(counts) if counts.elide_by_trusted_claim == 0 => Said::words(
+    let counts = receipt.tally;
+    let tally = if counts.elide_by_trusted_claim == 0 {
+        Said::words(
             "why-receipt-plan-tally-by-proof",
             &[
                 &counts.run.to_string(),
@@ -1910,8 +1864,9 @@ pub fn receipt_banner(ctx: &RenderCtx<'_>, receipt: &Receipt) -> Node<Face> {
                 &counts.elide.to_string(),
                 &counts.elide_by_proof.to_string(),
             ],
-        ),
-        PlanTally::Derived(counts) => Said::words(
+        )
+    } else {
+        Said::words(
             "why-receipt-plan-tally",
             &[
                 &counts.run.to_string(),
@@ -1920,11 +1875,7 @@ pub fn receipt_banner(ctx: &RenderCtx<'_>, receipt: &Receipt) -> Node<Face> {
                 &counts.elide_by_proof.to_string(),
                 &counts.elide_by_trusted_claim.to_string(),
             ],
-        ),
-        PlanTally::DriftedUnsplit { run, guard, elide } => Said::words(
-            "why-receipt-plan-tally-unsplit",
-            &[&run.to_string(), &guard.to_string(), &elide.to_string()],
-        ),
+        )
     };
     let risk = receipt.risk_profile.map_or_else(
         || Said::words("why-receipt-risk-profile-none", &[]),
@@ -1939,13 +1890,6 @@ pub fn receipt_banner(ctx: &RenderCtx<'_>, receipt: &Receipt) -> Node<Face> {
         None => Said::words("why-receipt-book", &[&receipt.book, &receipt.book_digest]),
     };
     let mut body = vec![receipt_row(ctx, &book_row)];
-    if receipt.tally.is_drifted() {
-        // Adjacent to the row it qualifies: the digest above is the RUN's, not the file's now.
-        body.push(receipt_row(
-            ctx,
-            &Said::words("why-receipt-book-drifted", &[]),
-        ));
-    }
     body.extend([
         receipt_row(
             ctx,
@@ -1985,129 +1929,6 @@ pub fn receipt_row(ctx: &RenderCtx<'_>, said: &Said) -> Node<Face> {
         body: said.runs(ctx, "why-receipt"),
         attachments: Vec::new(),
     }))
-}
-
-/// Everything a drifted receipt renders, and NOTHING that came from the current filesystem.
-///
-/// `28F:rul-drift-replay-d1`. Once the recorded book digest disagrees with the file at the recorded
-/// path, every downstream read of that file is a read of somebody else's book: the kernel would
-/// re-derive a chain for lines the run never saw, and naming them would be `271:rul-sin-ordering`'s
-/// pope-sin — a mis-attribution — rather than a missing answer. So the drifted path collects the
-/// durable's own scalars HERE and the render is structurally unable to reach anything else.
-///
-/// D2 (storing the chain so a drifted receipt could still name lines) is REJECTED: the thin durable
-/// never carries book structure, and the git line cannot rescue line-naming under the
-/// annotation-tier fence.
-#[derive(Debug)]
-pub struct DriftedReceipt {
-    /// The session host id the durable recorded.
-    pub host: String,
-    /// The book path the durable recorded.
-    pub book_path: String,
-    /// The digest the RUN was keyed on — not the file's digest now.
-    pub book_digest: String,
-    /// The oracle paths the durable recorded, in argv order.
-    pub oracle_paths: Vec<String>,
-    /// The consent flag as the ORIGINAL invocation spelled it, read back off the recorded argv.
-    pub risk_profile: Option<&'static str>,
-    /// The instant the recorded run started.
-    pub started_at: Option<dorc_core::RunInstant>,
-    /// The per-leaf predicted dispositions the durable stored, folded to a tally.
-    pub tally: PlanTally,
-}
-
-/// Collect a drifted receipt out of an admitted durable, and out of NOTHING else.
-///
-/// The one constructor, shared by the live `dorc why --last` edge and the loom driver, so a
-/// committed transcript proves the render the binary prints rather than a re-derivation of it.
-#[must_use]
-pub fn drifted_receipt(envelope: &dorc_plan::whylog::UnscopedWhylogEnvelope) -> DriftedReceipt {
-    DriftedReceipt {
-        host: envelope.claims().host().to_owned(),
-        book_path: envelope.recorded_book_path().as_str().to_owned(),
-        book_digest: envelope.claims().book_digest().to_owned(),
-        oracle_paths: envelope
-            .recorded_oracles()
-            .iter()
-            .map(|oracle| oracle.path().as_str().to_owned())
-            .collect(),
-        risk_profile: envelope
-            .argv()
-            .iter()
-            .any(|word| word == CONSENT_FLAG)
-            .then_some(CONSENT_FLAG),
-        started_at: envelope.claims().started_at(),
-        tally: recorded_tally(envelope.apply()),
-    }
-}
-
-/// Fold a durable's recorded apply report into the tally a drifted receipt may state.
-///
-/// Keyed on the stored WORD, which is the only shape the durable has — the typed `Disposition` it
-/// came from is unreachable here (re-deriving it needs the book). An unrecognized word is counted
-/// nowhere rather than guessed into a bucket: the tally under-reports instead of mis-reporting
-/// (`271:rul-sin-ordering`), and the parser's own `disposition_valid` already refuses the case.
-#[must_use]
-pub fn recorded_tally(apply: &[dorc_plan::whylog::ApplyLine]) -> PlanTally {
-    let count = |tag: &str| apply.iter().filter(|line| line.disposition == tag).count();
-    PlanTally::DriftedUnsplit {
-        run: count("run"),
-        guard: count("guard"),
-        elide: count("replace"),
-    }
-}
-
-/// The DEGRADED `dorc why` render for a replay whose book has drifted (`28F:rul-drift-replay-d1`).
-///
-/// The bad morning's worst case is the admin who edited the book before asking why, and the answer
-/// they used to get was a refusal with nothing behind it. The receipt itself survives drift — it is
-/// header, inventory and tally, all minted by the controller and stored — so it renders, with the
-/// drift stated in it. What cannot survive is everything keyed to SOURCE: the chain re-derives
-/// through the kernel from the book, and leaf-to-line needs the AST, so ANALYSIS and every chain
-/// are suppressed and say so in their place.
-///
-/// An ADDRESSED query gets only the explanation, matching the un-drifted addressed form, which also
-/// renders no banner: the reader asked about a line, and the honest answer names no line at all.
-/// No footer either — its "filtered for presumed relevance" is a claim about selection, and nothing
-/// here was selected.
-#[must_use]
-pub fn drifted_why_parts(
-    ctx: &RenderCtx<'_>,
-    address: Option<&str>,
-    drifted: &DriftedReceipt,
-) -> dorc_aid::tagged::RenderParts {
-    if let Some(address) = address {
-        return why_parts(
-            vec![paragraph(
-                ctx,
-                &Said::words("why-drift-address-unanswerable", &[address]),
-                "why-drift-address-unanswerable",
-            )],
-            0,
-        );
-    }
-    let receipt = Receipt {
-        at: drifted.started_at,
-        replayed: true,
-        host: drifted.host.clone(),
-        book: drifted.book_path.clone(),
-        book_digest: drifted.book_digest.clone(),
-        // Never resolved under drift: the git line answers for the file on disk, and saying that
-        // file matches HEAD would attach a provenance claim to bytes the run never read.
-        at_head: None,
-        oracles: drifted.oracle_paths.clone(),
-        risk_profile: drifted.risk_profile,
-        tally: drifted.tally,
-        deepest_tier: false,
-        narratable: false,
-    };
-    why_parts(
-        vec![
-            receipt_banner(ctx, &receipt),
-            registry_paragraph(ctx, "why-drift-analysis-suppressed"),
-        ],
-        0,
-    )
 }
 
 #[cfg(test)]

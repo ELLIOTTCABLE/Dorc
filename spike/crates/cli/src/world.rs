@@ -108,10 +108,6 @@ impl crate::engine::EngineEdges for WhyEngineEdges {
         Ok(())
     }
 
-    fn publish_whylog(&mut self, _bytes: &[u8]) -> Result<(), String> {
-        Ok(())
-    }
-
     /// This driver writes nothing. `Ok(None)` says so: a run with no durable configured is not a
     /// run whose durable failed.
     fn publish_receipt(
@@ -119,10 +115,6 @@ impl crate::engine::EngineEdges for WhyEngineEdges {
         _request: &crate::engine::ReceiptPublicationRequest<'_>,
     ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
         Ok(None)
-    }
-
-    fn durable_label(&self) -> &'static str {
-        "<disabled>"
     }
 
     fn receipt_label(&self) -> &'static str {
@@ -193,7 +185,6 @@ impl WhyWorld {
             &crate::engine::EngineRequest {
                 snapshot,
                 options: &options,
-                replay: None,
                 acquisition_diagnostics: &[],
             },
             &mut edges,

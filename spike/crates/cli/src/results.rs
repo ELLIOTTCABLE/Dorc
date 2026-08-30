@@ -682,42 +682,6 @@ impl WidthOneAttemptScope {
     pub fn book_digest(&self) -> &str {
         &self.book.1
     }
-
-    /// Does a durable's recorded frame agree with what this controller minted?
-    ///
-    /// The CHECK half of `rul-attribution-is-controller-minted` — "a payload frame may be CHECKED
-    /// against expected controller values; it never mints them". It lives on the scope, beside the
-    /// private fields, so no caller ever needs to read one out to compare it.
-    #[must_use]
-    pub fn matches_claims(&self, envelope: &dorc_plan::whylog::UnscopedWhylogEnvelope) -> bool {
-        let claims = envelope.claims();
-        claims.nonce() == self.nonce
-            && claims.attempt() == self.attempt
-            && claims.host() == self.host
-            && claims.target() == "width-one"
-            && claims.generation() == "width-one"
-            && envelope.mode() == "whylog-replay"
-            && envelope.recorded_book_path().as_str() == self.book.0
-            && claims.book_digest() == self.book.1
-            && envelope.recorded_oracles().len() == self.sources.len()
-            && envelope
-                .recorded_oracles()
-                .iter()
-                .zip(&self.sources)
-                .enumerate()
-                .all(|(ordinal, (recorded, current))| {
-                    recorded.ordinal() == ordinal
-                        && recorded.path().as_str() == current.0
-                        && recorded.digest() == current.1
-                })
-    }
-}
-
-/// Mint the controller scope for a replayed durable, which needs the scope BEFORE it has records
-/// (the drift and claims checks run first, and a mismatch means no records are read at all).
-#[must_use]
-pub fn replay_scope(framing: &Framing, sources: &RunSources<'_>) -> WidthOneAttemptScope {
-    WidthOneAttemptScope::new(framing, sources)
 }
 
 /// One admitted attempt: the grammar-checked wire records (the durable writer's input) and the
@@ -851,9 +815,12 @@ pub fn admit_fixture_inner_records(
 /// (`rul-admission-is-a-closed-outcome`: `NoObservation` is ordinary conservative planning, and it
 /// must not lose its attribution on the way to the fold).
 #[must_use]
-pub fn no_observation(scope: WidthOneAttemptScope) -> ScopedHostEvidence<SiteResults> {
+pub fn no_observation(
+    framing: &Framing,
+    sources: &RunSources<'_>,
+) -> ScopedHostEvidence<SiteResults> {
     ScopedHostEvidence::new(
-        scope,
+        WidthOneAttemptScope::new(framing, sources),
         SiteResults {
             framed: true,
             ..SiteResults::default()
@@ -873,43 +840,6 @@ pub(crate) fn scope_fixture_results(
         results,
         influence_after_reaching_for_host_bytes(),
     )
-}
-
-/// The replay path's scoped results: a durable's already-admitted records, re-typed against the
-/// instants that durable recorded. Not an intake — those bytes crossed the boundary in the run that
-/// wrote them, and re-bounding them is `whylog`'s job, done before this is reached.
-///
-/// # This seat is the laundering, and it is CONFINED rather than closed
-///
-/// What it produces is the same admitted-evidence type a LIVE probe intake yields, so below it
-/// replayed bytes and live measurement are indistinguishable: real replace and guard licenses
-/// mint, a real plan is projected, a presented-plan identity is minted. Nothing reaches stdout on
-/// that route, but the licenses are genuinely constructed.
-///
-/// Its one caller is now the OLD durable's replay arm, reachable only when an invocation NAMES
-/// `--whylog` or `--whylog-dir`. Every other `dorc why` answers from the receipt store, where a
-/// document comes back sealed and cannot become a live value at all. So the seat
-/// goes when the old durable does — a deletion, not a refactor — and
-/// `receipt/tests/crate_boundary.rs` counts its callers two ways meanwhile, so a NEW one is a
-/// diff somebody reads rather than a call that appeared.
-///
-/// Crate-private for the same reason: the internal lib is a loom seam, and a laundering seat is
-/// not part of it.
-#[must_use]
-pub(crate) fn replayed_records(
-    scope: WidthOneAttemptScope,
-    records: Option<&AdmittedUnscopedHostRecords>,
-    clock: &mut RunClock,
-    interner: &mut Interner,
-) -> ScopedHostEvidence<SiteResults> {
-    let results = records.map_or_else(
-        || SiteResults {
-            framed: true,
-            ..SiteResults::default()
-        },
-        |records| parse_admitted_results(records, clock, interner),
-    );
-    ScopedHostEvidence::new(scope, results, influence_after_reaching_for_host_bytes())
 }
 
 // ---- moved verbatim from `main.rs` (the records fold + its probe-origin mint) ----

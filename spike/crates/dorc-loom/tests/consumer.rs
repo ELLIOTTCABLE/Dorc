@@ -8,7 +8,6 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 
-use dorc_aid::diag::render_staged_cli_parts;
 use dorc_aid::prose::{Mint, ProseTier};
 use dorc_loom::{
     DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
@@ -33,8 +32,10 @@ fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
         .expect("mirror has the code's message")
 }
 
-fn whylog_absent_case() -> Case {
-    Case::parse(include_str!("../../aid/tests/whylog-absent.loom")).expect("case parses")
+/// A whylog-free code case, so the pipeline tests below exercise publish/bless rather than any
+/// one code family.
+fn pipeline_case() -> Case {
+    Case::parse(include_str!("../../aid/tests/dangling-reference.loom")).expect("case parses")
 }
 
 #[test]
@@ -72,195 +73,6 @@ fn host_evidence_admission_refusal_case_renders_the_unwritten_placeholder() {
         rendered,
         include_str!("../../aid/tests/host-evidence-admission-refused.loom")
     );
-}
-
-#[test]
-fn editable_baseline_renders_a_defining_case_with_help() {
-    let case =
-        Case::parse(include_str!("../../aid/tests/whylog-book-desync.loom")).expect("case parses");
-    let consumer = DorcConsumer::new();
-    let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
-        panic!("exact whylog replay must not fall back")
-    })
-    .expect("exact replay")
-    .into_iter()
-    .rev()
-    .find(|result| result.editable_render().is_some())
-    .expect("an editable replay");
-    let baseline = consumer
-        .baseline_from_render(
-            &case,
-            replay
-                .editable_render()
-                .cloned()
-                .expect("editable provenance"),
-        )
-        .expect("editable baseline");
-    assert!(baseline.render().text().contains("= help:"));
-    assert!(
-        baseline
-            .render()
-            .components()
-            .iter()
-            .filter_map(|component| match component {
-                errorloom::RenderComponent::EditableSection(section) => Some(section.id().field),
-                _ => None,
-            })
-            .any(|field| field == "message")
-    );
-    assert!(
-        baseline
-            .render()
-            .components()
-            .iter()
-            .filter_map(|component| match component {
-                errorloom::RenderComponent::EditableSection(section) => Some(section.id().field),
-                _ => None,
-            })
-            .any(|field| field == "help")
-    );
-    // The `{which}` hole carries the case's own diverged input. Since the durable grammars merged,
-    // the case renders the ORACLE arm — a book-drifted durable that ADMITS takes the degraded-receipt
-    // route instead (`28F:rul-drift-replay-d1`), so the book arm is unreachable from `--last`.
-    assert!(baseline.variables().values().any(|variables| {
-        variables.get(&TemplateVariableName(String::from("which")))
-            == Some(&String::from("oracle firewall.oracle.sh"))
-    }));
-}
-
-#[test]
-fn whylog_cases_use_exact_fixture_bytes_and_production_provenance() {
-    for text in [
-        include_str!("../../aid/tests/whylog-absent.loom"),
-        include_str!("../../aid/tests/whylog-corrupt.loom"),
-        include_str!("../../aid/tests/whylog-version-refused.loom"),
-        include_str!("../../aid/tests/whylog-book-desync.loom"),
-    ] {
-        let case = Case::parse(text).expect("case parses");
-        let consumer = DorcConsumer::new();
-        // The FIRST block: a case is free to carry further ones after its whylog render.
-        let replay = replay_case(&case, &consumer, &RunEnv::new(), |_command, _context| {
-            panic!("exact whylog replay must not fall back")
-        })
-        .expect("case replays")
-        .into_iter()
-        .next()
-        .expect("a replay");
-        let raw = case
-            .sections()
-            .iter()
-            .find(|section| section.name() == ".whylog")
-            .map(errorloom::Section::content);
-        let book = case
-            .sections()
-            .iter()
-            .find(|section| section.name() == "book.sh")
-            .map(errorloom::Section::content);
-        let diag = dorc_plan::whylog::inspect(raw, ".whylog", book, |path| {
-            case.sections()
-                .iter()
-                .find(|section| section.name() == path)
-                .map(|section| section.content().to_owned())
-        })
-        .into_iter()
-        .next()
-        .expect("fixture produces one whylog diagnostic");
-        let interner = dorc_core::Interner::default();
-        assert_eq!(
-            replay.output(),
-            render_staged_cli_parts(
-                "whylog",
-                &dorc_aid::RenderCtx::production(),
-                &diag,
-                "",
-                "",
-                &interner,
-            )
-            .text()
-        );
-        assert_eq!(
-            replay
-                .editable_render()
-                .map(errorloom::EditableRender::text),
-            Some(replay.output().to_owned())
-        );
-        let prefix = replay
-            .editable_render()
-            .and_then(|render| render.components().first());
-        assert!(
-            matches!(prefix, Some(errorloom::RenderComponent::Structure(text)) if text == "whylog: ")
-        );
-        let baseline = consumer
-            .baseline_from_render(
-                &case,
-                replay
-                    .editable_render()
-                    .cloned()
-                    .expect("editable provenance"),
-            )
-            .expect("editable baseline");
-        let rejected_prefix_edit = replay.output().replacen("whylog: ", "rewrite: ", 1);
-        assert!(
-            compile_section_edit(&baseline, &rejected_prefix_edit).is_err(),
-            "the source-stage prefix is immutable structure, not editable prose"
-        );
-        assert_eq!(
-            consumer.render_case(&case).expect("case regenerates"),
-            case.to_text()
-        );
-    }
-}
-
-#[test]
-fn whylog_driver_claims_only_the_exact_single_file_shape() {
-    let case = Case::parse(
-        "---\ncode: whylog-absent\n---\n-- replay --\n\
-         $ dorc why --last --whylog=.whylog\nold\n\
-         $ dorc why --last --whylog=.whylog --whylog=.other\nold\n\
-         $ dorc why --last --whylog=.whylog --unknown\nold\n\
-         $ dorc why --last --whylog=../whylog\nold\n\
-         ",
-    )
-    .expect("case parses");
-    let calls = RefCell::new(Vec::new());
-    let results = replay_case(
-        &case,
-        &DorcConsumer::new(),
-        &RunEnv::new(),
-        |command, _context| {
-            calls.borrow_mut().push(command.to_owned());
-            Ok(ReplayResult::bytes(format!("fallback: {command}\n")))
-        },
-    )
-    .expect("replays route");
-    assert!(results[0].editable_render().is_some());
-    for result in &results[1..] {
-        assert!(result.editable_render().is_none());
-        assert!(result.output().starts_with("fallback:"));
-    }
-    assert_eq!(
-        calls.into_inner(),
-        [
-            "dorc why --last --whylog=.whylog --whylog=.other",
-            "dorc why --last --whylog=.whylog --unknown",
-            "dorc why --last --whylog=../whylog",
-        ]
-    );
-
-    let pipeline = Case::parse(
-        "---\ncode: whylog-absent\n---\n-- replay --\n\
-         $ dorc why --last --whylog=.whylog | wombat\nold\n",
-    )
-    .expect("case parses");
-    assert!(matches!(
-        replay_case(
-            &pipeline,
-            &DorcConsumer::new(),
-            &RunEnv::new(),
-            |_command, _context| Ok(ReplayResult::bytes(String::new()))
-        ),
-        Err(RunError::UnsupportedReplayGrammar { .. })
-    ));
 }
 
 /// Every parser-valid spelling reaches the production lint route; an unsafe path still declines.
@@ -310,10 +122,10 @@ fn lint_driver_claims_every_parser_valid_shape() {
 fn an_edit_mints_its_tier_and_names_what_it_re_marked() {
     const BEFORE: &str = "a sentence somebody typed";
     const AFTER: &str = "a sentence somebody reworked";
-    let case = whylog_absent_case();
+    let case = pipeline_case();
     let overtyped = |mint: Mint, start: ProseTier<String>| {
         let mut consumer = DorcConsumer::new().minting(mint);
-        consumer.set_message("whylog-absent", Some(start));
+        consumer.set_message("dangling-reference", Some(start));
         let baseline = consumer
             .editable_baseline(&case)
             .expect("editable baseline");
@@ -325,7 +137,7 @@ fn an_edit_mints_its_tier_and_names_what_it_re_marked() {
         let tier = consumer
             .mirror()
             .iter()
-            .find(|entry| entry.slug == "whylog-absent")
+            .find(|entry| entry.slug == "dangling-reference")
             .and_then(|entry| entry.message.clone())
             .expect("the mirror carries the register");
         (tier, consumer.demoted().to_vec())
@@ -334,7 +146,7 @@ fn an_edit_mints_its_tier_and_names_what_it_re_marked() {
 
     let (tier, demoted) = overtyped(Mint::Slop, human());
     assert_eq!(tier, ProseTier::Slop(AFTER.to_owned()));
-    assert_eq!(demoted, ["whylog-absent"]);
+    assert_eq!(demoted, ["dangling-reference"]);
 
     let (tier, demoted) = overtyped(Mint::Human, human());
     assert_eq!(tier, ProseTier::WrittenByHumanOnly(AFTER.to_owned()));
@@ -350,13 +162,13 @@ fn an_edit_mints_its_tier_and_names_what_it_re_marked() {
 
 #[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
-    let case = whylog_absent_case();
+    let case = pipeline_case();
     let committed = DorcConsumer::new()
         .render_case(&case)
         .expect("case renders");
     let mut consumer = DorcConsumer::new();
     consumer.set_message(
-        "whylog-absent",
+        "dangling-reference",
         Some(ProseTier::Migrated("sm tampered message".to_owned())),
     );
     let corpus = vec![CaseFile::new(CASE_PATH, committed)];
@@ -366,7 +178,7 @@ fn fixpoint_gate_catches_a_catalog_hand_edit() {
 
 #[test]
 fn structure_bless_regenerates_a_dorc_case() {
-    let case = whylog_absent_case();
+    let case = pipeline_case();
     let committed = DorcConsumer::new()
         .render_case(&case)
         .expect("case renders");
@@ -880,27 +692,12 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
     let fixtures = concat!(
         "-- book.sh --\n#!/bin/sh\nprintf '%s\\n' current\n\n",
         "-- oracle.sh --\n# dorc-lang/v0.1\nfoo__predict() { pkg : sm.dorc.Package = \"$1\"; }\n\n",
-        "-- .whylog --\n",
-        "dorc-whylog/2 nonce=dorc attempt=0 host=web1 target=width-one generation=width-one",
-        " mode=whylog-replay started=1784944837000 @@dorc@@\n",
-        "book digest=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        " path=book.sh @@dorc@@\n",
-        "argv value=dorc @@dorc@@\n",
-        "digest decision=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb @@dorc@@\n",
-        "apply leaf=0 disposition=run predicted=1 @@dorc@@\n",
-        "results bytes=0 @@dorc@@\n",
-        "dorc-whylog-end/2 @@dorc@@\n\n",
     );
 
     // (invocation, both chains claim it)
     let shapes = [
-        ("dorc why --last --whylog=.whylog", true),
-        ("dorc why book.sh:5 --last --whylog=.whylog", true),
         ("dorc --help", true),
         ("dorc lint oracle.sh --no-tools", true),
-        ("dorc why --last --whylog=absent.whylog", true),
-        ("dorc why book.sh:5 --last --whylog=absent.whylog", false),
-        ("dorc why --last --whylog=../escape", false),
         ("dorc plan --book=book.sh", true),
         ("dorc wombat --hork", false),
     ];

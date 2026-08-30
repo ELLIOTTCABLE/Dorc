@@ -159,8 +159,6 @@ pub mod erase;
 
 pub mod records;
 
-pub mod whylog;
-
 /// The pure, adapter-facing plan invocation boundary (`io-at-edges-only`).
 pub mod invocation;
 

@@ -158,16 +158,15 @@ fn a_why_report_walks_from_a_region_to_its_invocations_and_back()
     let framing = dorc_plan::records::Framing::spike(dorc_plan::invocation::book_digest(&book));
     let receipt = dorc_cli::Receipt {
         at: None,
-        replayed: false,
+
         host: framing.host().to_owned(),
         book: "book.sh".to_owned(),
         book_digest: framing.book_digest().to_owned(),
         at_head: None,
         oracles: oracle_paths,
         risk_profile: None,
-        tally: dorc_cli::PlanTally::Derived(world.disposition_counts()),
+        tally: world.disposition_counts(),
         deepest_tier: true,
-        narratable: true,
     };
     let ctx = dorc_aid::RenderCtx::production();
     let line_of = |needle: &str| {

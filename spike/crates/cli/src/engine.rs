@@ -21,7 +21,7 @@ use crate::world::{
     WhyWorld, definition_table, demote_on_certifier_trip, never_live_predict_rows,
     record_pre_network_trip, ship_predict_body, ship_verdict_body, shipping_source,
 };
-use crate::{CONSENT_FLAG, Mode, PlanTally, Receipt, SourceMatch};
+use crate::{CONSENT_FLAG, Mode, Receipt, SourceMatch};
 use dorc_aid::diag::{
     Diag, DiagCode, EmittedLineUnsafeForPaste, EscalationPolicy, OracleMatchedZeroSites,
     PasteHygieneHazardReason,
@@ -179,24 +179,6 @@ impl EngineOptions {
     }
 }
 
-/// A replay admitted and acquired by the production boundary.
-#[derive(Debug)]
-pub struct Replay {
-    /// The digest the recorded decision must reproduce.
-    pub decision_digest: String,
-    /// The original run's start instant.
-    pub started_at: Option<dorc_core::RunInstant>,
-    /// The recorded narrative stream version.
-    pub record_stream_version: u32,
-    /// Recorded per-record instants.
-    pub instants: BTreeMap<u64, dorc_core::RunInstant>,
-    /// The already-admitted record stream, when one existed.
-    pub records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
-    /// The licence to produce an authority-bearing projection, carried from the durable's own
-    /// admission rather than asserted where one is wanted.
-    pub authority: dorc_plan::PlanAuthority,
-}
-
 /// One acquired semantic invocation.
 #[derive(Debug)]
 pub struct EngineRequest<'a> {
@@ -204,8 +186,6 @@ pub struct EngineRequest<'a> {
     pub snapshot: &'a StaticLoadSnapshot,
     /// Parsed and edge-observed semantic choices.
     pub options: &'a EngineOptions,
-    /// An admitted replay, or `None` for a live run.
-    pub replay: Option<&'a Replay>,
     /// Diagnostics produced by source acquisition at the filesystem edge.
     pub acquisition_diagnostics: &'a [Diag],
 }
@@ -270,11 +250,6 @@ pub trait EngineEdges {
     /// # Errors
     /// Returns a closed refusal word when publication fails.
     fn publish_artifact(&mut self, artifact: &ArtifactSet) -> Result<(), &'static str>;
-    /// Publish generated whylog bytes.
-    ///
-    /// # Errors
-    /// Returns a closed refusal description when publication fails.
-    fn publish_whylog(&mut self, bytes: &[u8]) -> Result<(), String>;
     /// Publish this run's durable receipt through the production durable edge.
     ///
     /// Called BEFORE the artifact is emitted, so a plan that names its own receipt can only ever
@@ -287,8 +262,6 @@ pub trait EngineEdges {
         &mut self,
         request: &ReceiptPublicationRequest<'_>,
     ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String>;
-    /// Display label for the configured durable destination.
-    fn durable_label(&self) -> &str;
     /// Display label for the receipt store this run would file under.
     fn receipt_label(&self) -> &str;
     /// Mint the invocation record at the production boundary, where raw process arguments live.
@@ -365,8 +338,6 @@ type RunOutcome = EngineStatus;
 pub enum GeneratedOutput {
     /// The complete executable artifact set.
     Artifact(ArtifactSet),
-    /// A serialized whylog durable.
-    Whylog(Vec<u8>),
 }
 
 /// The shared engine's complete process-independent result.
@@ -626,7 +597,6 @@ fn run_status(
     world_out: &mut Option<WhyWorld>,
 ) -> Result<EngineStatus, Box<Diag>> {
     let options = request.options;
-    let replay = request.replay;
     let snapshot = request.snapshot;
     let mut interner = Interner::default();
     let mode = options.mode;
@@ -1360,17 +1330,13 @@ fn run_status(
         oracle_paths,
         oracle_sources: oracle_srcs,
     };
-    let observation = if replay.is_none() {
-        Some(edges.observe(
-            &ObservationRequest {
-                sources: run_sources,
-                default_framing: &framing,
-            },
-            &render_probe_artifact,
-        )?)
-    } else {
-        None
-    };
+    let observation = Some(edges.observe(
+        &ObservationRequest {
+            sources: run_sources,
+            default_framing: &framing,
+        },
+        &render_probe_artifact,
+    )?);
     let (framing, evidence, fixture_results) = match observation {
         None => (framing, dorc_plan::records::Admission::NoObservation, None),
         Some(Observation::Controller {
@@ -1396,7 +1362,6 @@ fn run_status(
             return Ok(status);
         }
     };
-    let scope = crate::results::replay_scope(&framing, &run_sources);
     // The authority to produce an authority-bearing projection rides out of the intake beside the
     // records (`306b:rul-report-only-output-cannot-plan`). It is a value rather than a check: the
     // refusal arm below returns, and no arm that continues can reach a plan without holding one.
@@ -1408,17 +1373,6 @@ fn run_status(
                 false,
                 dorc_plan::PlanAuthority::without_intake(),
             )
-        } else if let Some(r) = replay.as_ref() {
-            let scoped = crate::results::replayed_records(
-                scope,
-                r.records.as_ref(),
-                &mut RunClock::Recorded(r.instants.clone()),
-                &mut interner,
-            );
-            // The durable's own admission minted this, upstream, in the same match that decided
-            // the replay load. Carried rather than re-minted here: a licence minted where one is
-            // wanted is a fact about where a call sits, not about what any admission answered.
-            (None, scoped, false, r.authority)
         } else {
             let admitted = match evidence {
                 dorc_plan::records::Admission::Admitted(bytes) => {
@@ -1443,7 +1397,7 @@ fn run_status(
                 }
                 dorc_plan::Authorised::NoObservation(authority) => (
                     None,
-                    crate::results::no_observation(scope),
+                    crate::results::no_observation(&framing, &run_sources),
                     false,
                     authority,
                 ),
@@ -1961,36 +1915,16 @@ fn run_status(
     // It runs the full pipeline above so it reports on the CURRENT run's real dispositions.
     if mode == Mode::Why {
         // `--last` belt-and-suspenders: a diverged decision digest (same inputs) ⇒ refuse, not narrate.
-        if let Some(r) = replay
-            && presented_plan.hex() != r.decision_digest
-        {
-            report_at(
-                sink,
-                advisory,
-                "whylog",
-                None,
-                &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
-                    dorc_aid::diag::WhylogBookDesync {
-                        which: "decision-digest".to_owned(),
-                    },
-                ))],
-            );
-            return Ok(book_outcome);
-        }
         let receipt = Receipt {
-            at: replay.map_or_else(|| edges.clock().now(), |r| r.started_at),
-            replayed: replay.is_some(),
+            at: edges.clock().now(),
             host: framing.host().to_owned(),
             book: book_name.to_owned(),
             book_digest: book_digest(&book_src),
             at_head: edges.source_match(book_name),
             oracles: oracle_paths.to_vec(),
             risk_profile: options.risk_faultless_skips().then_some(CONSENT_FLAG),
-            tally: PlanTally::Derived(plan.disposition_counts()),
+            tally: plan.disposition_counts(),
             deepest_tier: options.all(),
-            // Only a replay can disagree, and it declares its stream rather than being assumed.
-            narratable: replay
-                .is_none_or(|r| r.record_stream_version == dorc_aid::narrative::PLANE_VERSION),
         };
         let parts = why_report_parts(
             &sink.render_ctx(),
@@ -2040,10 +1974,6 @@ fn run_status(
     // its own durable, but the ordering is what would let one: a trailer naming a path is honest
     // only if the path was already written, and recovering that ordering afterwards is
     // archaeology rather than a change.
-    //
-    // The OLD durable stays where it was, after the summary. Its surface is unchanged until it is
-    // removed, and moving it would churn six committed transcripts for a durable on its way out.
-    let mut durable_arm_recorded = false;
     if options.durable == DurableOutput::Enabled
         && whylog_eligible
         && let Some(records) = admitted_records
@@ -2073,7 +2003,6 @@ fn run_status(
                 limits: &dorc_receipt::limits::ReceiptLimits::V1,
             },
         );
-        durable_arm_recorded = true;
     }
 
     generated.push(GeneratedOutput::Artifact(artifact.clone()));
@@ -2136,13 +2065,6 @@ fn run_status(
         ),
     ));
 
-    // The durable is a PROJECTION of what the run decided (`309` §0), so what reaches disk is
-    // decided at one seat, per species, and what it drops is countable there too.
-    if durable_arm_recorded
-        && let Some(projection) = dorc_plan::whylog::DurableProjection::project(&spine)
-    {
-        write_whylog(edges, sink, generated, &projection);
-    }
     *world_out = Some(WhyWorld {
         snapshot: snapshot.clone(),
         interner,
@@ -2305,58 +2227,6 @@ fn report_store_unreadable(sink: &mut dyn OutputSink, store: &str, reason: &str)
         ))],
     );
     EngineStatus::Complete
-}
-
-fn write_whylog(
-    edges: &mut dyn EngineEdges,
-    sink: &mut dyn OutputSink,
-    generated: &mut Vec<GeneratedOutput>,
-    projection: &dorc_plan::whylog::DurableProjection<'_>,
-) {
-    let write = dorc_plan::whylog::WhylogV2Write::of_projection(projection);
-    let bytes = match dorc_plan::whylog::try_serialize_v2(
-        &write,
-        dorc_plan::whylog::WhylogLimits::spike_default(),
-    ) {
-        Ok(bytes) => bytes,
-        Err(refusal) => {
-            report_whylog_unwritten(
-                sink,
-                edges.durable_label(),
-                serialize_refusal_reason(refusal),
-            );
-            return;
-        }
-    };
-    generated.push(GeneratedOutput::Whylog(bytes.clone()));
-    if let Err(reason) = edges.publish_whylog(&bytes) {
-        report_whylog_unwritten(sink, edges.durable_label(), &reason);
-    }
-}
-
-fn report_whylog_unwritten(sink: &mut dyn OutputSink, destination: &str, reason: &str) {
-    report(
-        sink,
-        "whylog",
-        None,
-        &[Diag::new_spanless_site(DiagCode::WhylogUnwritten(
-            dorc_aid::diag::WhylogUnwritten {
-                dir: destination.to_owned(),
-                reason: reason.to_owned(),
-            },
-        ))],
-    );
-}
-
-const fn serialize_refusal_reason(refusal: dorc_plan::whylog::WhylogWriteRefusal) -> &'static str {
-    use dorc_plan::whylog::WhylogWriteRefusal as R;
-    match refusal {
-        R::Limit => "limit",
-        R::Grammar => "grammar",
-        R::Numeric => "numeric",
-        R::Digest => "digest",
-        R::ArithmeticOverflow => "overflow",
-    }
 }
 
 /// Decide this run's emission form from authored inputs alone (`30I` §7.1).
@@ -4267,19 +4137,11 @@ mod tests {
             Ok(())
         }
 
-        fn publish_whylog(&mut self, _bytes: &[u8]) -> Result<(), String> {
-            Ok(())
-        }
-
         fn publish_receipt(
             &mut self,
             _request: &ReceiptPublicationRequest<'_>,
         ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
             Ok(None)
-        }
-
-        fn durable_label(&self) -> &'static str {
-            "<disabled>"
         }
 
         fn receipt_label(&self) -> &'static str {
@@ -4433,7 +4295,6 @@ mod tests {
             &EngineRequest {
                 snapshot: &snapshot,
                 options: &options,
-                replay: None,
                 acquisition_diagnostics: &[],
             },
             &mut edges,

@@ -603,10 +603,6 @@ impl HostEvidenceLimits {
             numeric_digits,
         }
     }
-
-    pub(crate) const fn stream_bytes(self) -> usize {
-        self.stream_bytes
-    }
 }
 
 /// Bytes admitted under the stream ceiling, before text or record ownership exists.
@@ -624,15 +620,6 @@ impl BoundedHostBytes {
             backing,
             admitted: 0..end,
         }
-    }
-
-    /// Narrows the admitted view without reconstructing or copying the backing bytes.
-    pub(crate) fn with_admitted_range(mut self, admitted: Range<usize>) -> Option<Self> {
-        if admitted.start > admitted.end || admitted.end > self.backing.len() {
-            return None;
-        }
-        self.admitted = admitted;
-        Some(self)
     }
 
     fn admitted_bytes(&self) -> Option<&[u8]> {
@@ -849,10 +836,6 @@ pub enum AdmittedHostRecord<'a> {
 }
 
 impl AdmittedUnscopedHostRecords {
-    /// The exact bounded wire range, retained only for sibling durable serialization.
-    pub(crate) fn admitted_wire_bytes(&self) -> &[u8] {
-        &self.wire
-    }
     /// Borrows validated records without exposing their owning representation or a raw byte route.
     pub fn iter(&self) -> impl Iterator<Item = AdmittedHostRecord<'_>> {
         self.records.iter().map(|record| match record {
