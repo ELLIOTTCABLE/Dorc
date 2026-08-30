@@ -187,7 +187,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         return ship_consented_apply(sink, args, host);
     }
     if args.reads_the_receipt() {
-        let edge = production_receipt_edge();
+        let edge = production_receipt_edge(args.receipts.as_deref());
         let label = edge
             .as_ref()
             .map_or(dorc_cli::engine::NO_STATE_ROOT, |edge| edge.state_base());
@@ -221,7 +221,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         args,
         clock: clock_for_invocation(),
         durable_dir,
-        receipt: production_receipt_edge(),
+        receipt: production_receipt_edge(args.receipts.as_deref()),
     };
     dorc_cli::engine::run(
         &EngineRequest {
@@ -600,11 +600,41 @@ impl dorc_cli::durable::RootEnvironment for ProcessEnvironment {
 /// The refusal is CARRIED rather than reported here: whether a run without a per-user root is a
 /// problem depends on what the run was going to do with one, and the seat that knows that is the
 /// seat that later asks for a keyset.
-fn production_receipt_edge()
--> Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal> {
-    dorc_cli::durable::standard_roots(dorc_cli::durable::host_platform(), &ProcessEnvironment)
-        .map(dorc_cli::durable::LocalReceiptEdgeV1::of)
-        .map_err(dorc_cli::durable::EdgeRefusal::Roots)
+///
+/// `--receipts` is resolved to an absolute controller path HERE and nowhere else
+/// (`30Rd:controller-root-resolution`): this is the one seat that may consult the process's own
+/// working directory, so a store root settled anywhere downstream could move with a `cd`. Host
+/// bytes, source text, receipt contents and TTY state reach none of it. The KEY root is untouched
+/// by construction — `RootInputs` offers no way for a store root to reach the configuration role.
+fn production_receipt_edge(
+    receipts: Option<&str>,
+) -> Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal> {
+    let roots =
+        dorc_cli::durable::standard_roots(dorc_cli::durable::host_platform(), &ProcessEnvironment)
+            .map_err(dorc_cli::durable::EdgeRefusal::Roots)?;
+    let roots = match receipts {
+        Some(folder) => roots
+            .with_store_root(&absolute_controller_path(folder))
+            .map_err(dorc_cli::durable::EdgeRefusal::Roots)?,
+        None => roots,
+    };
+    Ok(dorc_cli::durable::LocalReceiptEdgeV1::of(roots))
+}
+
+/// One admin-typed folder, as an absolute controller path.
+///
+/// A relative spelling is joined to the process's working directory ONCE, here. Lexical rather
+/// than canonicalizing: `canonicalize` requires the directory to already exist, and the
+/// create-capable path is entitled to make it — resolving through the filesystem would make a
+/// first run refuse the folder it was about to create.
+fn absolute_controller_path(folder: &str) -> String {
+    let path = std::path::Path::new(folder);
+    if path.is_absolute() {
+        return folder.to_owned();
+    }
+    std::env::current_dir()
+        .map(|cwd| cwd.join(path).to_string_lossy().into_owned())
+        .unwrap_or_else(|_| folder.to_owned())
 }
 
 struct ProductionOutputSink;
@@ -1274,17 +1304,15 @@ fn publish_artifact(
     .map(|_| ())
 }
 
-/// Where this run's receipt goes: the admin's `--receipts`, else the per-user state directory.
+/// Where the OLD whylog goes: nowhere, now that the flag that sited it is gone.
 ///
-/// `None` on two very different grounds, and the difference is why this returns an Option rather
-/// than a path: `--no-receipt` is a REFUSAL the admin typed, and an unresolvable state root is an
-/// environment with nowhere to put anything. Neither is a persistence failure, so neither reports
-/// one — the failures are what happens once a destination exists (`whylog-unwritten`).
-fn durable_destination(args: &Args) -> Option<String> {
-    if args.no_receipt {
-        return None;
-    }
-    args.receipts.clone()
+/// `--whylog-dir` was its only destination surface and the vocabulary cutover deleted it. The lane
+/// is therefore inert until D5 removes it outright, and saying so here is what keeps it from
+/// following `--receipts` into the RECEIPT store — where its `whylog-NNNN.txt` files would land
+/// among the typed receipt names and be counted against the store's own bounded walk as unknown
+/// entries. Two durables sharing one directory is not a smaller change than none.
+const fn durable_destination(_args: &Args) -> Option<String> {
+    None
 }
 
 #[cfg(test)]
@@ -2466,7 +2494,8 @@ fn ship_consented_apply(
     // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
     // nothing here constructs: an apply that cannot publish its intent refuses before the host is
     // contacted, which is what the pre-dispatch boundary is for.
-    let edge = production_receipt_edge().map_err(|_| intent_not_published())?;
+    let edge =
+        production_receipt_edge(args.receipts.as_deref()).map_err(|_| intent_not_published())?;
     let mut io = dorc_cli::durable::NativeIo::new();
     let mut generator = dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
     let open = edge

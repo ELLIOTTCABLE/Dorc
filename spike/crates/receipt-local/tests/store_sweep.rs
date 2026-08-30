@@ -33,7 +33,7 @@ use dorc_receipt_local::store::{
     LocalReceiptStoreV1, NameComponent, PublishFailure, PublishRefusal, StoreLimits,
     StoreOpenRefusal, StoreReadFailure, StoredSpecies,
 };
-use dorc_receipt_local::{LocalLimits, RootInputs, RootPlatform};
+use dorc_receipt_local::{LocalLimits, RootInputs, RootPlatform, RootRole};
 
 const CONFIG_BASE: &str = "/cfg";
 const STATE_BASE: &str = "/state";
@@ -1005,4 +1005,102 @@ fn a_store_root_that_is_a_redirect_or_the_wrong_kind_is_refused_without_being_fo
         "asking created {:?}",
         absent.paths()
     );
+}
+
+// ---------------------------------------------------------------------------
+// the explicit store root: the location moves, the contract does not
+
+/// Where an admin-named folder sits in this model's world, and the roots that name it.
+const NAMED: &str = "/elsewhere/receipts";
+
+fn named_roots() -> RootInputs {
+    roots()
+        .with_store_root(NAMED)
+        .expect("an absolute folder is a store root")
+}
+
+/// The named folder IS the root: one owned component, and nothing appended beneath it.
+///
+/// The default selection owns two components and the explicit one owns exactly itself — nothing
+/// above an admin's folder is Dorc's to create. A `receipts-v1` beneath it would put the documents
+/// one level below the directory the admin named.
+#[test]
+fn an_explicit_root_creates_exactly_the_named_folder() {
+    let mut io = clean(FailureSchedule::intact()).planting("/elsewhere", Node::private_directory());
+    let store = LocalReceiptStoreV1::open_or_create(&named_roots(), &mut io, StoreLimits::V1)
+        .expect("the named folder opens");
+
+    assert_eq!(store.root().as_str(), NAMED);
+    assert!(io.at(NAMED).is_some(), "the folder was created");
+    assert!(
+        io.at("/elsewhere/receipts/receipts-v1").is_none(),
+        "no component is appended beneath the folder the admin named"
+    );
+    assert!(
+        io.at(STORE).is_none() && io.at(PRODUCT).is_none(),
+        "and the standard store is untouched: {:?}",
+        io.paths()
+    );
+}
+
+/// The explicit root is validated exactly as the standard one is.
+///
+/// The point of routing both through one seat: an admin-named folder is not a weaker landing, so
+/// a redirect, a non-directory, and a world-writable root are refused there for the same reasons
+/// and with the same words.
+#[test]
+fn an_explicit_root_is_refused_for_every_reason_the_standard_one_is() {
+    let mut linked = clean(FailureSchedule::intact())
+        .planting("/elsewhere", Node::private_directory())
+        .planting(NAMED, Node::private_directory().redirected());
+    assert_eq!(
+        LocalReceiptStoreV1::open_for_read(&named_roots(), &mut linked, StoreLimits::V1),
+        Err(StoreOpenRefusal::PermissionRefused)
+    );
+
+    let mut file = clean(FailureSchedule::intact())
+        .planting("/elsewhere", Node::private_directory())
+        .planting(NAMED, Node::private_file(b"not a store"));
+    assert_eq!(
+        LocalReceiptStoreV1::open_for_read(&named_roots(), &mut file, StoreLimits::V1),
+        Err(StoreOpenRefusal::NotADirectory)
+    );
+}
+
+/// Read-only opening never creates the named folder.
+///
+/// `dorc why` reaches the store only through this path, and an admin-named folder is the easiest
+/// place to get it wrong: the path is right there, and creating it would look like helpfulness.
+#[test]
+fn a_read_only_open_of_an_explicit_root_creates_nothing() {
+    let mut io = clean(FailureSchedule::intact()).planting("/elsewhere", Node::private_directory());
+    assert_eq!(
+        LocalReceiptStoreV1::open_for_read(&named_roots(), &mut io, StoreLimits::V1),
+        Err(StoreOpenRefusal::NotInitialized)
+    );
+    assert!(io.at(NAMED).is_none(), "asking created {:?}", io.paths());
+}
+
+/// A relative or empty folder is refused: the CLI edge resolves argv to an absolute path, so a
+/// spelling that is absolute on neither family means that resolution did not happen.
+#[test]
+fn a_store_root_that_is_not_absolute_is_refused() {
+    for folder in ["", "receipts", "./receipts", ".."] {
+        assert!(
+            roots().with_store_root(folder).is_err(),
+            "`{folder}` would move with a process's working directory"
+        );
+    }
+}
+
+/// Naming a store never moves the KEY root (`30Rd`: no custom key root in V1).
+#[test]
+fn an_explicit_store_root_leaves_the_configuration_root_alone() {
+    let named = named_roots();
+    assert_eq!(
+        named.base(RootRole::Configuration),
+        roots().base(RootRole::Configuration),
+        "custody stays where it was; only the store moved"
+    );
+    assert_eq!(named.base(RootRole::State), roots().base(RootRole::State));
 }

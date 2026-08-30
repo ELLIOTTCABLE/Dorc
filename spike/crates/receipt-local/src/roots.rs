@@ -50,11 +50,20 @@ impl RootPlatform {
 ///
 /// Deliberately not a filesystem type: this crate holds what it was told, and turning either into
 /// a validated location is the local I/O layer's act, under its own refusals.
+/// Deliberately carries the explicit store root too. `--receipts` is a controller-supplied path
+/// resolved once at the CLI edge, exactly as the two platform bases are, so it belongs beside them
+/// rather than being threaded separately past every seat that would then have to remember it.
+///
+/// It is what makes `30Rd:controller-root-resolution`'s "it never changes the standard
+/// configuration/key root" structural rather than reviewed: the keyset reads
+/// [`RootRole::Configuration`] through [`base`](RootInputs::base) and there is no spelling by which
+/// an explicit STORE root could reach it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RootInputs {
     platform: RootPlatform,
     configuration: String,
     state: String,
+    store: Option<String>,
 }
 
 /// Why an edge could not present usable roots.
@@ -116,7 +125,42 @@ impl RootInputs {
             platform,
             configuration: configuration.to_owned(),
             state: state.to_owned(),
+            store: None,
         })
+    }
+
+    /// Point the receipt STORE at exactly `folder`, leaving both platform bases alone.
+    ///
+    /// The folder is the store root itself: no `receipts-v1` component is appended beneath it
+    /// (`30R:receipt-rooted-attention-and-cli`). It is subject to every validation, exclusive
+    /// creation, synchronization and no-replace rule the standard root is — the location moves, the
+    /// contract does not.
+    ///
+    /// # Errors
+    /// Refuses an empty or non-absolute folder, under the state role: the argv value is resolved to
+    /// an absolute controller path at the CLI edge, so a relative one here means that resolution
+    /// did not happen and the store would move with a process's working directory.
+    pub fn with_store_root(mut self, folder: &str) -> Result<Self, RootRefusal> {
+        if folder.is_empty() {
+            return Err(RootRefusal::ControllerRootUnavailable {
+                role: RootRole::State,
+            });
+        }
+        if !is_absolute(folder) {
+            return Err(RootRefusal::NotAbsolute {
+                role: RootRole::State,
+            });
+        }
+        self.store = Some(folder.to_owned());
+        Ok(self)
+    }
+
+    /// The admin-named store root, where one was named.
+    #[must_use]
+    pub fn explicit_store(&self) -> Option<crate::names::LocalPath> {
+        self.store
+            .as_deref()
+            .map(|folder| crate::names::LocalPath::of_root(self.platform, folder))
     }
 
     /// The platform these were resolved against.

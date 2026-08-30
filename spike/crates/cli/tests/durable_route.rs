@@ -98,6 +98,16 @@ fn plan(sandbox: &ProfileSandbox, scratch: &Scratch) -> String {
 
 /// As [`plan`], with the controller clock reading this run records its document under.
 fn plan_at(sandbox: &ProfileSandbox, scratch: &Scratch, clock: Option<&str>) -> String {
+    plan_with(sandbox, scratch, clock, &[])
+}
+
+/// As [`plan_at`], with extra argv — the seat every store-selection case drives through.
+fn plan_with(
+    sandbox: &ProfileSandbox,
+    scratch: &Scratch,
+    clock: Option<&str>,
+    extra: &[&str],
+) -> String {
     let stdin = scratch.path.join("records.txt");
     std::fs::write(&stdin, records()).expect("write the records");
     let input = std::fs::File::open(&stdin).expect("re-open the records");
@@ -107,6 +117,7 @@ fn plan_at(sandbox: &ProfileSandbox, scratch: &Scratch, clock: Option<&str>) -> 
     }
     let out = command
         .args(["plan", "--book=book.sh", "--results", "-"])
+        .args(extra)
         .stdin(std::process::Stdio::from(input))
         .output()
         .expect("the built binary runs");
@@ -647,5 +658,138 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
         named.contains(&format!("receipt {first}"))
             && !named.contains(&format!("receipt {second}")),
         "and answers about the named document alone; got:\n{named}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// `--receipts <folder>`: the exact store root, and what it must NOT move
+
+/// The folder the admin names IS the store root, with nothing appended beneath it.
+///
+/// The whole point of the flag is that an operator can say where their receipts go and then find
+/// them there. A silent `receipts-v1` component beneath the named folder would put them one level
+/// down from the directory the operator was looking at.
+#[test]
+fn an_explicit_store_receives_the_receipt_at_exactly_the_named_folder() {
+    let sandbox = ProfileSandbox::new("explicit-store");
+    let scratch = Scratch::new("explicit-store");
+    let named = scratch.path.join("elsewhere");
+
+    plan_with(
+        &sandbox,
+        &scratch,
+        None,
+        &[&format!("--receipts={}", named.display())],
+    );
+
+    let published = entries(&named);
+    assert_eq!(published.len(), 1, "the named folder holds the document");
+    assert!(
+        published
+            .first()
+            .is_some_and(|name| name.starts_with("plan-v1-")),
+        "and it is a typed receipt name: {published:?}"
+    );
+    assert!(
+        !named.join("receipts-v1").exists(),
+        "no second component is appended beneath the folder the admin named"
+    );
+
+    // THE OTHER HALF, and the one a passing first half would hide: the default store did not also
+    // receive it. A run that wrote to both would satisfy every assertion above.
+    assert!(
+        !store_root(&sandbox).exists(),
+        "an explicit store is the store, not an additional one"
+    );
+
+    // KEYS STAY STANDARD (`30Rd`: no custom key root). The store moved; custody did not.
+    assert!(
+        keyset_dir(&sandbox)
+            .join("keyset-manifest-v1.txt")
+            .is_file(),
+        "the keyset is still under the standard configuration root"
+    );
+}
+
+/// A second process reads the same explicit store, and the two stores never cross-read.
+#[test]
+fn a_second_process_reads_the_explicit_store_and_neither_store_sees_the_other() {
+    let sandbox = ProfileSandbox::new("explicit-read");
+    let scratch = Scratch::new("explicit-read");
+    let named = scratch.path.join("elsewhere");
+    let flag = format!("--receipts={}", named.display());
+
+    // One document in the DEFAULT store, one in the explicit store, from two runs.
+    plan(&sandbox, &scratch);
+    plan_with(&sandbox, &scratch, None, &[&flag]);
+
+    let explicit = why(&sandbox, &scratch, &["--receipt-last", &flag]);
+    let default = why(&sandbox, &scratch, &["--receipt-last"]);
+
+    let identity = |listing: &str| {
+        line_starting(listing, "receipt").expect("a listing names the document it read")
+    };
+    assert_ne!(
+        identity(&explicit),
+        identity(&default),
+        "each selection answered from its own store; one reading both would agree here"
+    );
+}
+
+/// Read-only `why` creates nothing, including an explicit folder that is not there.
+///
+/// `dorc why` must never bring a store into being for the answer to be read out of, and an
+/// admin-named folder is exactly where that is easiest to get wrong — the path is right there in
+/// argv, and creating it would look like helpfulness.
+#[test]
+fn a_read_only_why_never_creates_the_explicit_store() {
+    let sandbox = ProfileSandbox::new("explicit-read-only");
+    let scratch = Scratch::new("explicit-read-only");
+    let absent = scratch.path.join("never-made");
+
+    let (_, stderr) = why_streams(
+        &sandbox,
+        &scratch,
+        &[
+            "--receipt-last",
+            &format!("--receipts={}", absent.display()),
+        ],
+    );
+
+    assert!(
+        !absent.exists(),
+        "asking why created the store it was asked about"
+    );
+    assert!(
+        stderr.contains("durable-receipt-unreadable"),
+        "and reports the store it could not read; got: {stderr}"
+    );
+}
+
+/// `--no-receipt` suppresses publication under either store selection.
+///
+/// Both arms, because the gate and the location are independent answers: a gate that consulted the
+/// location would let naming a folder turn publication back on.
+#[test]
+fn no_receipt_suppresses_publication_under_either_store_selection() {
+    let sandbox = ProfileSandbox::new("suppressed");
+    let scratch = Scratch::new("suppressed");
+    let named = scratch.path.join("elsewhere");
+
+    plan_with(&sandbox, &scratch, None, &["--no-receipt"]);
+    assert!(
+        !store_root(&sandbox).exists(),
+        "a refused receipt writes nothing to the default store"
+    );
+
+    plan_with(
+        &sandbox,
+        &scratch,
+        None,
+        &["--no-receipt", &format!("--receipts={}", named.display())],
+    );
+    assert!(
+        !named.exists(),
+        "and nothing to a named one: the refusal is the only thing that decides"
     );
 }

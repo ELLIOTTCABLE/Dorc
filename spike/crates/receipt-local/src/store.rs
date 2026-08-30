@@ -273,12 +273,16 @@ pub enum IncompleteState {
 ///
 /// One seat rather than two spellings: the first-use gate probes this location read-only and the
 /// store publishes into it, and two independently assembled paths would let those two disagree
-/// about which directory the question was even about.
+/// about which directory the question was even about. An admin-named folder is the root EXACTLY,
+/// with no component beneath it, so that agreement covers both selections.
 #[must_use]
 pub fn store_root(roots: &RootInputs) -> Option<LocalPath> {
-    roots
-        .product_root(RootRole::State)
-        .and_then(|root| root.child(STORE_DIR))
+    match roots.explicit_store() {
+        Some(folder) => Some(folder),
+        None => roots
+            .product_root(RootRole::State)
+            .and_then(|root| root.child(STORE_DIR)),
+    }
 }
 
 /// The complete bound policy one store is opened under.
@@ -820,13 +824,18 @@ impl LocalReceiptStoreV1 {
         io: &mut dyn LocalIo,
         limits: StoreLimits,
     ) -> Result<Self, StoreOpenRefusal> {
-        let (product, root) = locations(roots)?;
+        let owned = locations(roots)?;
         let baseline = roots.platform().baseline();
-        // Both components, exactly as the create-capable path validates them. Validating only the
-        // store itself would accept one reached through a product root somebody else may write,
-        // and the two opens would then disagree about the same profile.
-        validate_directory(io, &product, baseline)?;
-        validate_directory(io, &root, baseline)?;
+        // EVERY owned component, exactly as the create-capable path validates them. Validating
+        // only the store itself would accept one reached through a product root somebody else may
+        // write, and the two opens would then disagree about the same profile.
+        for component in &owned {
+            validate_directory(io, component, baseline)?;
+        }
+        let root = owned
+            .into_iter()
+            .next_back()
+            .ok_or(StoreOpenRefusal::RootUnavailable)?;
         Ok(Self {
             root,
             baseline,
@@ -844,13 +853,23 @@ impl LocalReceiptStoreV1 {
         io: &mut dyn LocalIo,
         limits: StoreLimits,
     ) -> Result<Self, StoreOpenRefusal> {
-        let (product, root) = locations(roots)?;
+        let owned = locations(roots)?;
         let baseline = roots.platform().baseline();
-        ensure_directory(io, &product, baseline)?;
-        ensure_directory(io, &root, baseline)?;
-        for directory in [&root, &product] {
-            io::sync_directory(io, directory.as_str()).map_err(|_| StoreOpenRefusal::SyncFailed)?;
+        // Outermost first: a component is created only once the one containing it exists and has
+        // been validated, which is the bootstrap protocol's own order
+        // (`30Rd:clean-profile-root-bootstrap`).
+        for component in &owned {
+            ensure_directory(io, component, baseline)?;
         }
+        // Innermost first: the entry that makes a directory reachable lives in its parent, so
+        // syncing the child before the parent is what makes the pair durable together.
+        for component in owned.iter().rev() {
+            io::sync_directory(io, component.as_str()).map_err(|_| StoreOpenRefusal::SyncFailed)?;
+        }
+        let root = owned
+            .into_iter()
+            .next_back()
+            .ok_or(StoreOpenRefusal::RootUnavailable)?;
         validate_directory(io, &root, baseline)?;
         Ok(Self {
             root,
@@ -1172,17 +1191,26 @@ impl LocalReceiptStoreV1 {
     }
 }
 
-/// The two Dorc-owned components a store lives in: the product root, and the store beneath it.
+/// The Dorc-owned components a store lives in, OUTERMOST FIRST, and the store root last.
 ///
 /// One derivation for both open paths, so neither can validate a component the other does not.
-fn locations(roots: &RootInputs) -> Result<(LocalPath, LocalPath), StoreOpenRefusal> {
+/// The standard selection owns two — the product root and the store beneath it — while an
+/// admin-named folder owns exactly one, itself: nothing above it is Dorc's to validate or create,
+/// and appending a component beneath it would put the store somewhere the admin did not name.
+///
+/// Ordered rather than a pair, because that is the only difference between the two selections and
+/// keeping it a length lets every caller walk one list instead of branching.
+fn locations(roots: &RootInputs) -> Result<Vec<LocalPath>, StoreOpenRefusal> {
+    if let Some(folder) = roots.explicit_store() {
+        return Ok(vec![folder]);
+    }
     let product = roots
         .product_root(RootRole::State)
         .ok_or(StoreOpenRefusal::RootUnavailable)?;
     let root = product
         .child(STORE_DIR)
         .ok_or(StoreOpenRefusal::RootUnavailable)?;
-    Ok((product, root))
+    Ok(vec![product, root])
 }
 
 /// A refusal that happened before anything was created, so nothing was left behind.
