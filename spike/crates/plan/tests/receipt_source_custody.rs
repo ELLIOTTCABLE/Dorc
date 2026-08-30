@@ -38,7 +38,7 @@ const BOOK: &str = "";
 /// Two acquired sources, so the partition has both sides to land on.
 fn invocation_over(paths: [&str; 2]) -> SpineInvocation {
     SpineInvocation::minted(
-        InvocationMode::WhylogReplay,
+        InvocationMode::Unstated,
         vec![String::from("dorc"), String::from("plan")],
         paths
             .iter()

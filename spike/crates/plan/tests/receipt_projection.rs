@@ -35,7 +35,7 @@ const BASELINE_BOOK: &str = "";
 
 fn invocation() -> SpineInvocation {
     SpineInvocation::minted(
-        InvocationMode::WhylogReplay,
+        InvocationMode::Unstated,
         vec![String::from("dorc"), String::from("plan")],
         vec![SourceClaim {
             path: String::from("book.sh"),

@@ -403,32 +403,31 @@ pub struct SourceClaim {
     pub bytes: u64,
 }
 
-/// What mode a reader should REPLAY a durable under — deliberately NOT a claim about the
-/// invocation that produced it (`30N` §4's `stop-spine-mode-is-durable`, ruled human-typed).
+/// Deliberately NOT a claim about the invocation that produced this record
+/// (`30N` §4's `stop-spine-mode-is-durable`, ruled human-typed).
 ///
-/// The field this replaces was a `String` whose sole writer hard-coded `"whylog-replay"` on the
-/// LIVE plan/apply path, so it described neither producing invocation (`30Mc` F3) — and its own doc
-/// had to say so, because the type let it look like a mode report. Narrowing to a closed enum with
-/// ONE inhabitant makes the false claim unspellable instead: there is no `Plan` or `Apply` arm to
-/// mis-write, so nothing can assert a producing mode it does not know.
+/// The field this replaces was a `String` whose sole writer hard-coded one word on the LIVE
+/// plan/apply path, so it described neither producing invocation (`30Mc` F3) — and its own doc had
+/// to say so, because the type let it look like a mode report. Narrowing to a closed enum with ONE
+/// inhabitant makes the false claim unspellable instead: there is no `Plan` or `Apply` arm to
+/// mis-write, so nothing can assert a producing mode it does not know. Writing the truthful
+/// producing mode is a later, reviewed, one-arm widening.
 ///
-/// Zero durable bytes move. [`token`](Self::token) is exactly what the writer wrote before, the
-/// durable's own grammar check still accepts the four historical words on the READ side, and the
-/// replay claims check is untouched. Writing the truthful producing mode becomes a later, reviewed,
-/// one-arm widening — which is the point of narrowing rather than "fixing" it here.
+/// The receipt durable's OWN mode vocabulary is `dorc_receipt::tokens::RecordedInvocationMode`
+/// (plan / apply / round-trip), minted at the publication seat from the CLI's mode and passed to
+/// the projection beside this record. Nothing reads this value, and no arm of it is persisted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum InvocationMode {
-    /// The durable is to be replayed through `dorc why --last`.
-    WhylogReplay,
+    /// The producing mode is not stated.
+    Unstated,
 }
 
 impl InvocationMode {
-    /// The durable's word for this mode. Referent-agnostic: for the wire and for display, never
-    /// branched on.
+    /// The word for this mode. Referent-agnostic: for display, never branched on.
     #[must_use]
     pub const fn token(self) -> &'static str {
         match self {
-            Self::WhylogReplay => "whylog-replay",
+            Self::Unstated => "unstated",
         }
     }
 }

@@ -427,7 +427,7 @@ mod tests {
 
     fn identity_of(fixture: &Fixture) -> PlanningInputId {
         let invocation = SpineInvocation::minted(
-            InvocationMode::WhylogReplay,
+            InvocationMode::Unstated,
             vec![String::from("dorc"), String::from("plan")],
             fixture.sources.clone(),
             fixture.identity.clone(),
@@ -528,7 +528,7 @@ mod tests {
         // whose tag nothing writes, fails here rather than being caught by nobody.
         let fixture = baseline();
         let invocation = SpineInvocation::minted(
-            InvocationMode::WhylogReplay,
+            InvocationMode::Unstated,
             vec![String::from("dorc")],
             fixture.sources.clone(),
             fixture.identity.clone(),

@@ -65,7 +65,7 @@ pub fn invocation_record(
     world_account: dorc_core::influence::InfluenceAccount,
 ) -> dorc_core::spine::SpineInvocation {
     dorc_core::spine::SpineInvocation::minted(
-        dorc_core::spine::InvocationMode::WhylogReplay,
+        dorc_core::spine::InvocationMode::Unstated,
         argv,
         source_claims(snapshot),
         dorc_core::spine::RunIdentity {
