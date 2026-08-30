@@ -529,6 +529,11 @@ fn read_receipt_store(
 /// The species comes from the FILENAME, and the read is species-typed accordingly; a document
 /// whose own header disagrees with its name fails to parse under the species asked for, which is
 /// the disagreement staying a finding rather than being smoothed over.
+///
+/// The EXACT bytes go in beside each document: an identity is minted per document, so two of them
+/// claiming one identity is a finding only if the graph can compare what they were read from.
+/// Handing it an empty slice made every pair compare equal, which silenced
+/// `GraphFinding::IdentityCollision` for every real store walk.
 fn ingest_recognized(
     open: &dorc_cli::durable::ReadEdge,
     graph: &mut dorc_receipt::graph::ReceiptGraph,
@@ -536,26 +541,27 @@ fn ingest_recognized(
     bytes: Vec<u8>,
 ) -> Option<String> {
     use dorc_cli::durable::NamedSpecies;
+    let image = bytes.clone();
     // no self-asserted arm: this edge holds one keyset, so another provider is a read that did
     // not happen
     match entry.species() {
         NamedSpecies::Plan => match open.read_plan(bytes) {
             Ok(document) => {
-                graph.ingest_plan(document.document(), document.signer_trust(), &[]);
+                graph.ingest_plan(document.document(), document.signer_trust(), &image);
                 Some(dorc_cli::recorded::recorded_plan_listing(&document))
             }
             Err(_) => None,
         },
         NamedSpecies::ApplyIntent => match open.read_intent(bytes) {
             Ok(document) => {
-                graph.ingest_intent(document.document(), document.signer_trust(), &[]);
+                graph.ingest_intent(document.document(), document.signer_trust(), &image);
                 Some(dorc_cli::recorded::recorded_intent_listing(&document))
             }
             Err(_) => None,
         },
         NamedSpecies::ApplyOutcome => match open.read_outcome(bytes) {
             Ok(document) => {
-                graph.ingest_outcome(document.document(), document.signer_trust(), &[]);
+                graph.ingest_outcome(document.document(), document.signer_trust(), &image);
                 Some(dorc_cli::recorded::recorded_outcome_listing(&document))
             }
             Err(_) => None,
@@ -1269,6 +1275,39 @@ fn publish_artifact(
             .map(|file| (file.path.as_str(), file.bytes.as_str())),
     )
     .map(|_| ())
+}
+
+#[cfg(test)]
+mod the_store_walk_hands_the_graph_real_documents {
+    /// Every store-walk ingest passes the document's EXACT bytes, never a stand-in.
+    ///
+    /// `ReceiptGraph` classifies a second claimant to one identity by comparing what the two were
+    /// READ FROM, so an empty slice makes every pair compare equal and `IdentityCollision` becomes
+    /// unfirable on a real walk — green, silent, and wrong in the direction that hides a finding.
+    /// Lexical because the property is about what the CALL SITE hands over: the graph's own battery
+    /// already proves the classifier with real images, and could not have caught this.
+    #[test]
+    fn no_ingest_call_site_passes_a_stand_in_image() {
+        let src = include_str!("main.rs");
+        for species in ["ingest_plan", "ingest_intent", "ingest_outcome"] {
+            let needle = format!("{species}(");
+            let calls: Vec<&str> = src
+                .lines()
+                .map(str::trim)
+                .filter(|line| line.contains(&needle) && !line.starts_with("///"))
+                .collect();
+            assert!(
+                !calls.is_empty(),
+                "no `{species}` call site found, so this census is counting the wrong thing"
+            );
+            for call in calls {
+                assert!(
+                    !call.contains("&[]"),
+                    "`{species}` is handed a stand-in image: {call}"
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]
