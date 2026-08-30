@@ -2003,6 +2003,49 @@ mod tests {
         );
     }
 
+    /// The three ROOT selectors are mutually exclusive and `--receipts` is orthogonal to all of
+    /// them (`30R:receipt-rooted-attention-and-cli`).
+    ///
+    /// Every PAIR, not one sample: each selector names one attention root, so any two of them ask
+    /// two questions, and a rule that caught two pairs of three would rank the survivors by
+    /// accident. `--receipts` moves WHERE a root is looked up and never WHETHER one was named, so
+    /// it must sit beside each selector and outside `why` entirely — the same distinction that made
+    /// naming a store silently mean writing no receipt.
+    #[test]
+    fn the_root_selectors_exclude_each_other_and_the_store_is_orthogonal() {
+        let refusal_of = |argv: &[&str]| -> Option<String> {
+            parse_args_from(argv.iter().map(|word| (*word).to_owned()).collect())
+                .err()
+                .map(|diag| diag.code.slug().to_owned())
+        };
+        let selectors = [
+            "--receipt=r.dorc-receipt",
+            "--receipt-id=abc",
+            "--receipt-last",
+        ];
+        for (left, right) in [(0, 1), (0, 2), (1, 2)] {
+            assert_eq!(
+                refusal_of(&["why", selectors[left], selectors[right]]).as_deref(),
+                Some("cli-flags-mutually-exclusive"),
+                "{} beside {} must refuse as a collision",
+                selectors[left],
+                selectors[right]
+            );
+        }
+        for selector in selectors {
+            assert_eq!(
+                refusal_of(&["why", "--receipts=store", selector]),
+                None,
+                "--receipts sites the lookup for {selector}; it is not a fourth selector"
+            );
+        }
+        assert_eq!(
+            refusal_of(&["plan", "--receipts=store", "book.sh"]),
+            None,
+            "a plan PUBLISHES into the store it names, so the flag is legal outside `why`"
+        );
+    }
+
     /// Both spellings of a value-taking flag parse, and nothing in the table can suggest itself:
     /// a flag with only the `=` form answers "did you mean `--receipt`?" to `--receipt`.
     ///
