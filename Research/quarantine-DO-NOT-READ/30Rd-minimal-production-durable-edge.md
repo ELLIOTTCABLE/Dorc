@@ -22,8 +22,8 @@
 **[ACKED]** V1 ends with a usable durable path, not a cryptographic demonstration.
 The shipped binary can:
 
-1. resolve role-typed per-user configuration and state roots (which may share an
-   OS parent on platforms without distinct standard locations);
+1. resolve the role-typed per-user configuration root and either the standard
+   per-user receipt store or the exact admin-selected `--receipts <folder>` store;
 2. initialize exactly one local V1 keyset containing independently generated
    Ed25519 signing and Age X25519 encryption identities;
 3. reopen and validate that keyset without replacing, repairing, or regenerating
@@ -31,7 +31,7 @@ The shipped binary can:
 4. publish signed plain and signed rich immutable receipts into one versioned
    local store;
 5. restart, enumerate that store under bounds, verify/decrypt receipts with the
-   local keyset, and answer `dorc why`/`dorc why --last`; and
+   local keyset, and answer `dorc why`/`dorc why --receipt-last`; and
 6. gate the first potentially mutative dispatch on the required rich
    `ApplyIntent`, while retaining the ruled post-dispatch durable failure direction.
 
@@ -76,7 +76,8 @@ complete key-management product.
 
 ### Required in V1
 
-- one local V1 keyset and one local V1 receipt store;
+- one local V1 keyset and one local V1 receipt store, at the standard location or
+  an exact admin-selected `--receipts <folder>`;
 - automatic non-interactive first-use key generation on a write path;
 - read-only opening that never initializes or mutates key state;
 - separate signing and encryption key material, IDs, adapters, and file formats;
@@ -100,7 +101,7 @@ complete key-management product.
   organization-managed verification keys;
 - automatic recovery, cleanup, or repair of an incomplete or damaged keyset;
 - automatic receipt retention or deletion;
-- custom/symlinked receipt roots beyond the standard per-user roots;
+- custom key roots or key/store provider selection;
 - source archive, key escrow, secure deletion, cryptographic erase, or backup
   automation;
 - multi-process locking beyond exclusive creation and explicit conflict states;
@@ -217,7 +218,7 @@ receipt-keys-v1/
 
 ### Receipt paths
 
-Under the resolved Dorc state root:
+Under the resolved Dorc state root by default:
 
 ```text
 receipts-v1/
@@ -226,6 +227,10 @@ receipts-v1/
   apply-outcome-v1-<order>-<receipt-id>.dorc-receipt
 ```
 
+With `--receipts <folder>`, `<folder>` is the exact store directory: Dorc appends no
+second `receipts-v1` component. The administrator-chosen directory name is not a Dorc
+namespace; every Dorc-owned filename and contained format still carries V1.
+
 `<order>` is exactly 20 decimal digits encoding the controller-observed Unix
 millisecond. The same `ReceiptOrderToken` is inside the signed V1 receipt header and
 must equal the filename token. `<receipt-id>` is exactly 64 lowercase hexadecimal
@@ -233,11 +238,12 @@ characters. The filename alphabet is ASCII, lowercase, and case-fold/normalizati
 invariant [A-basu-name-collisions-case-2023].
 
 The ordering component is authenticated store metadata, not authority, world
-freshness, attribution, or part of the receipt ID. `dorc why --last` uses it to
-select the newest local candidate only after filename/header agreement. Clock
-rollback can change local selection order and must not change graph edges or semantic
-narration. Multiple receipts at the maximum order form an ambiguity cohort: report
-the cohort deterministically rather than selecting one by random receipt ID.
+freshness, attribution, or part of the receipt ID. `dorc why --receipt-last` uses it
+to derive the newest root only after filename/header agreement. Clock rollback can
+change local selection order and must not change graph edges or semantic narration.
+Multiple receipts at the maximum order form a cohort: graph predecessors collapse
+beneath a terminal member, while several incomparable terminal members report
+ambiguity rather than receiving a random receipt-ID tie-break.
 
 No hostname, username, target, source path, policy name, argv, or opaque-derived
 value enters a V1 filename. Directory listings reveal receipt count, species, and
@@ -274,10 +280,13 @@ weaker policy.
 
 ### Root redirection and validation
 
-V1 has no custom receipt/key-root flag. A standard OS root may itself traverse a
-user-managed symlink, junction, mount, or roaming profile. The implementation:
+V1 has no custom key-root flag. `--receipts <folder>` is the one explicit store-root
+surface: it is controller argv, resolved once to an absolute path at the CLI edge;
+it never changes the standard configuration/key root. A standard OS root or the
+explicit store landing may traverse a user-managed symlink, junction, mount, or
+roaming profile. The implementation:
 
-1. resolves the product root once;
+1. resolves the selected product/store root once;
 2. rejects a non-directory landing;
 3. on Unix, requires the landing to be owned by the effective user and not writable
    by group/other;
@@ -320,8 +329,9 @@ by `why` never creates a missing directory. The create-capable path:
    reachable where the platform provides directory synchronization; and
 7. returns the validated product-root handle/value used by all later child operations.
 
-This protocol owns creation of the Dorc product roots, `receipt-keys-v1`, and
-`receipts-v1`. `keyset-v1` retains its stricter one-winner initialization semantics.
+This protocol owns creation of the Dorc product roots, `receipt-keys-v1`, and the
+standard `receipts-v1` or exact explicit store directory. `keyset-v1` retains its
+stricter one-winner initialization semantics.
 On Windows, directory synchronization is recorded unavailable rather than simulated.
 
 On Unix, every Dorc-owned configuration/state/key/store directory is created with
@@ -751,15 +761,25 @@ confidentiality claim:
 - compare internal version/species/order/receipt ID against the filename after
   signature verification/parsing, retaining mismatch as a report finding.
 
-`dorc why --last` selects the greatest recognized filename order and attempts to read
-the complete maximum-order cohort. If a member is partial, damaged, unknown-key, or
-otherwise unreadable, the command reports that state; it does not silently fall back
-to an older complete receipt. An incomplete direct-final member is
-`InProgressOrAbandoned`, not proof of failure. Multiple members remain an explicit
-ordering ambiguity rather than a random-ID tie-break.
+`dorc why --receipt-last` derives a root from the greatest recognized filename order.
+After bounded verification and parsing, maximum-order members that are typed graph
+predecessors of another cohort member collapse beneath that member. One remaining
+terminal root is selected; several incomparable terminal roots report ambiguity rather
+than receiving a random-ID or species tie-break. A partial, damaged, unknown-key, or
+otherwise unreadable maximum-order member remains a report state and never triggers
+fallback to an older complete root. An incomplete direct-final member is
+`InProgressOrAbandoned`, not proof of failure.
 
-Graph-building modes may read every recognized entry under aggregate count/byte limits.
-Unknown or partial entries remain beside graph findings and never mint edges.
+`--receipt-id <id>` retrieves one exact root from the selected/default store.
+`--receipt <file>` admits one explicit report-only root file. `--receipts <folder>`
+selects the store used for lookup or publication and may resolve typed siblings for an
+explicit file. The three root selectors are mutually exclusive. With no selector,
+receipt-reading `why` uses `--receipt-last` semantics.
+
+The engine automatically follows only typed edges needed by the rooted explanation.
+It may enumerate the bounded store to discover reverse edges, but disconnected receipt
+DAGs never join the answer. Missing/unknown/partial required siblings remain graph
+findings. `--all` changes explanation depth only and never selects store entries.
 
 ## 30Rd:product-assembly-and-policy
 
@@ -782,7 +802,9 @@ fixed IDs, in-memory stores, or static keys from environment, receipt bytes, com
 shape, or TTY presence.
 
 Library/e2e drivers receive explicit roots as values. The real binary resolves the
-standard roots and then calls the same assembly and publication functions.
+standard key root and the standard or `--receipts` store root, then calls the same
+assembly and publication functions. `--receipt <file>` enters only the report reader
+and never this publication assembly.
 
 ### Plan and why behavior
 
@@ -901,7 +923,7 @@ At least one acceptance case runs:
 
 ```text
 process 1: plan -> initialize keyset -> publish rich PlanReceipt
-process 2: why --last -> reopen keyset -> verify -> decrypt -> explain
+process 2: why --receipt-last -> reopen keyset -> verify -> decrypt -> explain
 ```
 
 And one apply acceptance runs through the actual binary under inert transport mocks:
@@ -909,7 +931,7 @@ And one apply acceptance runs through the actual binary under inert transport mo
 ```text
 process 1: prepare exact image -> publish rich ApplyIntent -> consume permit
            -> SimDriver/hostsim -> publish ApplyOutcome
-process 2: why --last/all -> reopen -> correlate three species -> explain
+process 2: why --receipt-last [--all] -> reopen -> correlate the rooted species -> explain
 ```
 
 The acceptance asserts the concrete receipt files and concrete versioned key files
@@ -1105,7 +1127,8 @@ on Windows and Unix.
 - Implement typed V1 filename mint/parse.
 - Replace/wrap the weak generic sink/source calls with bounded ownership-bearing APIs.
 - Implement exclusive final-name publication and independent read/enumeration bounds.
-- Implement platform publication property proofs and `--last` partial-candidate behavior.
+- Implement platform publication property proofs, the explicit `--receipts` root, and
+  `--receipt-last` partial-candidate/root-derivation behavior.
 - Reuse tested old-store mechanisms only where they satisfy this document; do not carry
   old indexing, retention, flags, or format assumptions forward.
 

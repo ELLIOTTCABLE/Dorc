@@ -74,8 +74,8 @@ coherent shape that forces the difficult and retrofit-hostile decisions:
 - report-only recorded types with no authority conversion;
 - minimal projection of values that already exist in the current whylog path;
 - injected fixture signer/sealer and receipt sink/source interfaces;
-- one minimal production local-file key provider and immutable per-user receipt store,
-  specified exclusively by `30Rd`;
+- one minimal production local-file key provider and immutable receipt store — standard
+  per-user by default or explicitly sited by the admin — specified exclusively by `30Rd`;
 - the first-dispatch permit and failure-direction state represented and exercised under
   DST and through the concrete local durable edge; and
 - one or two full product routes that write, read, correlate, and explain all three
@@ -92,7 +92,7 @@ V1 exits when these routes are green, the crate boundaries and typestates are in
 the selected libraries interoperate in ordinary round trips, strict malformed/truncated
 inputs are covered, and the old format, reader, writer, fixtures, and live paths are
 entirely removed. It does not wait for every semantic species, alternative/platform/
-hardware key providers, rotation/import/export, profiles, retention, custom roots,
+hardware key providers, rotation/import/export, profiles, retention, custom key roots,
 broad multi-host execution, source archives, or the full defense-in-depth verification
 programme.
 
@@ -202,6 +202,50 @@ The reader has explicit states for:
 
 Missing graph edges are incompleteness. They never synthesize history or imply
 success, failure, or no mutation.
+
+## receipt-rooted-attention-and-selection
+
+**[ACKED]** A `why` question has one receipt as its attention root. The reader follows
+only the typed graph edges needed to answer that rooted question; disconnected graphs
+in the same store never merge into one explanation. Graph closure is automatic, not a
+user-selected breadth. A missing, unreadable, untrusted, damaged, or disagreeing
+required sibling leaves the answer explicitly partial and never substitutes another
+history.
+
+The user-facing vocabulary is fixed as follows:
+
+- `--receipts <folder>` selects the exact receipt-store directory used by plan/apply
+  publication and by why graph lookup. Absent, the standard per-user store applies.
+  It never changes key custody.
+- `--receipt <file>` admits one explicit root receipt file to `why`. It is report-only
+  and cannot mint publication, trust, approval, or action.
+- `--receipt-id <id>` selects one exact root from the selected/default store.
+- `--receipt-last` derives the newest root from the selected/default store.
+- `--all` selects the deepest explanation register only; it never enumerates unrelated
+  receipt histories.
+
+The root selectors are mutually exclusive; `--receipts` is orthogonal and may supply
+typed sibling lookup for an explicit file. Sibling acquisition uses authenticated typed
+identities against the bounded selected store, never a receipt-provided pathname,
+plugin, provider, or arbitrary adjacent-file scan.
+
+The last-root derivation first takes the maximum-order cohort, then collapses members
+that are graph predecessors of another cohort member. One remaining terminal root is
+usable; several incomparable terminal roots are an ambiguity. No random receipt-ID
+or species ordering breaks the tie, and damaged newest material never falls back to an
+older complete root.
+
+The closure is question-directed rather than the entire undirected component. An
+outcome may require its intent and originating plans; selecting one plan does not pull
+all later apply attempts. Store enumeration needed to discover reverse typed edges is
+an implementation act and never a semantic “all receipts” answer.
+
+`--receipts` is a controller-supplied path resolved once at the CLI edge. The local
+store validates and owns that root under the same platform-specific publication rules
+as the default store. Host bytes, receipt content, source text, TTY state, and fallback
+logic cannot site it. `--receipt` is independently byte/count bounded and verified
+before semantic rendering; selecting an external file grants neither signer trust nor
+permission to discover a backend.
 
 ## plan-receipt-content
 
@@ -1328,7 +1372,7 @@ local key/store baseline. The remaining later product questions are:
 - exact bounded excerpt budgets and optional source-archive design;
 - how much bounded unauthenticated structure `dorc why` renders after signature failure;
 - whether an independent recognizer ships before publication or later; and
-- key rotation, recovery, alternative providers, custom roots, and native macOS validation.
+- key rotation, recovery, alternative providers, custom key roots, and native macOS validation.
 
 None may reopen the ruled topology silently. A contradiction discovered during implementation returns
 here for review rather than being solved by a local compatibility path, unsigned mode, inline ciphertext,

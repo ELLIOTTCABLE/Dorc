@@ -1353,8 +1353,11 @@ Delete:
 - `PlanAuthority::of_admitted_replay`;
 - `Replay`, `ReplayLoad`, old `DriftedReceipt`, old digest-only disagreement,
   and old receipt rendering structs where superseded;
-- old `--whylog`, `--whylog-dir`, `--no-whylog` parsing after the new exact
-  receipt-selection/output flags land; no aliases or dual spelling;
+- old `--whylog`, `--whylog-dir`, `--no-whylog` parsing after the coherent receipt
+  surface lands: `--receipts <folder>` selects the read/write store, while why's
+  mutually-exclusive root selectors are `--receipt <file>`, `--receipt-id <id>`, and
+  `--receipt-last`; no aliases or dual spelling. `--all` remains explanation depth
+  only and MUST NOT select disconnected store entries;
 - every old whylog fixture, loom, parser test, and format token;
 - direct old-format consumers in `dorc-loom/src/consumer.rs`,
   `dorc-loom/tests/{consumer,editable_surface,coverage}.rs`, and old whylog

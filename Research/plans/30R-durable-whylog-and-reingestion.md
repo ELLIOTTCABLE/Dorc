@@ -58,14 +58,15 @@ includes:
 - exact single-stream and multi-file `ApplyArtifactImage` round trips;
 - projection, validation, completeness, and recorded/live typestates;
 - injected algorithm/provider and receipt source/sink interfaces;
-- one default local-file provider and immutable per-user receipt store, sufficient
-  for the shipped binary to persist and reopen the new format;
+- one default local-file provider and immutable per-user receipt store, plus an
+  explicit admin-selected receipt-store folder, sufficient for the shipped binary
+  to persist and reopen the new format;
 - the smallest current plan values needed by one plan/why route;
 - the dispatch-state seam exercised under DST; and
 - plan/why plus apply/why e2e coverage.
 
 V1 does not include alternative provider/configuration surfaces, convenience or
-hardening actions, rotation/import/export, custom roots, full store hardening,
+hardening actions, rotation/import/export, custom key roots, full store hardening,
 retention, source archive, every semantic species, complete executor/multi-host
 wiring, or the deeper pre-publication verification programme.
 
@@ -139,6 +140,39 @@ intent correlation and explicit no-outcome.
 
 Correlation joins immutable identities for explanation only. It never joins world
 freshness, host generations, influence, or authority.
+
+## receipt-rooted-attention-and-cli
+
+The user-facing unit is one selected **root receipt**, plus the causally relevant
+receipt-graph closure needed by the question. A disconnected receipt graph never
+contributes to that answer. Traversal is automatic rather than an option: a required
+missing, unreadable, or disagreeing sibling makes the answer explicitly partial.
+
+The receipt vocabulary has one meaning per spelling:
+
+- `--receipts <folder>` selects the immutable receipt store used for publication
+  or graph lookup across plan, apply, and why. Without it Dorc uses the standard
+  per-user store.
+- `--receipt <file>` selects one explicit root receipt file for `why`; it never
+  publishes and never authorizes action.
+- `--receipt-id <id>` selects one exact root document from the selected/default
+  store.
+- `--receipt-last` derives the most recent root from the selected/default store.
+  With equal-order documents, graph ancestors collapse beneath terminal members;
+  one terminal root is selected, while multiple incomparable roots report
+  ambiguity rather than receiving an arbitrary tie-break.
+- `--all` controls explanation depth only. It never selects unrelated receipts.
+
+The three root selectors are mutually exclusive. `--receipts` is orthogonal: it
+also gives an explicitly named receipt file a bounded place to resolve graph
+siblings by typed identity. Starting from a receipt follows only edges relevant to
+the requested explanation. For example, an outcome reaches its intent and the
+intent's originating plans; selecting one historical plan does not pull every
+later apply attempt merely because all share a connected component.
+
+There is no whole-store explanation mode. The implementation may enumerate a
+bounded store to find typed reverse edges, but that is graph discovery, not a
+user-visible union of histories.
 
 ## recorded-versus-rederived
 
