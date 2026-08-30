@@ -600,9 +600,9 @@ pub(crate) fn inspect_opened(io: &mut dyn LocalIo, path: &str) -> Result<ObjectF
 /// consuming the ownership token a failed publication hands back, which is what keeps removal an
 /// act somebody asked for rather than a cleanup that runs by itself.
 ///
-/// A platform that cannot condition the removal on the created object's identity answers
-/// [`IoFault::Unavailable`] and leaves the object standing — see `native`'s module documentation
-/// for which platforms can and what the incomplete file is then worth.
+/// No platform this crate runs on can condition a removal on the created object's identity, so
+/// the production edge answers [`IoFault::Unavailable`] and leaves the object standing on both.
+/// `native`'s module documentation carries why, and what the stranded file costs.
 pub(crate) fn remove_owned(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
     done(io, Request::RemoveOwned, path)
 }

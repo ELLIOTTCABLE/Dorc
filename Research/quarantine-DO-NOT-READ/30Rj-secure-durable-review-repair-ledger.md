@@ -177,22 +177,29 @@ through the retained handle immediately afterwards either way.
 - **Enumeration stays by path, deliberately.** A name a walk produces carries no authority: every
   entry is re-opened, non-following and parent-relative, before a byte of it is read. Said in the
   module header rather than left to be inferred.
-- **Removal DECLINES on Unix.** `unlink` and `unlinkat` both name an object by its path, and this
-  dependency set offers no way to condition either on which object the path currently holds.
-  Re-opening the name and comparing device and inode first only moves the window: the comparison
-  answers about its own instant, and the unlink that follows still removes whatever holds the name
-  by then. So `RemoveOwned` returns `IoFault::Unavailable` — a new arm meaning NOTHING WAS
-  ATTEMPTED, distinct from every arm reporting what a real attempt met — and the store surfaces it
-  as `CleanupFailure::Unavailable`. Ownership and kind are still checked FIRST, so an unowned path
-  answers `Denied` for the reason it is unowned rather than for the platform's shortfall.
+- **Removal DECLINES, on BOTH platforms.** `unlink`, `unlinkat` and `remove_file` all name an
+  object by its path, and this dependency set offers no way to condition any of them on which
+  object the path currently holds. Re-opening the name and comparing device and inode first only
+  moves the window: the comparison answers about its own instant, and the unlink that follows
+  still removes whatever holds the name by then. So `RemoveOwned` returns `IoFault::Unavailable` —
+  a new arm meaning NOTHING WAS ATTEMPTED, distinct from every arm reporting what a real attempt
+  met — and the store surfaces it as `CleanupFailure::Unavailable`. Ownership and kind are still
+  checked FIRST, so an unowned path answers `Denied` for the reason it is unowned rather than for
+  the platform's shortfall. There is no per-platform removal function left; the `cfg` split is
+  gone with it.
+- **Why Windows is at parity here and nowhere else.** Weaker VALIDATION is a posture the Windows
+  baseline is allowed to take. Deleting an object whose identity is uncertain is not weaker
+  validation — it is the dangerous act itself — so the weaker platform is the last one that
+  should be permitted it, and leaving it name-deleting would have put the more dangerous behaviour
+  on the less-checked side.
 - **Store ownership.** `validate_directory` now requires `ownership_established()` on a Unix
   landing, for every Dorc-owned component. The separately-ruled read-permission posture is
   untouched: a group- or other-READABLE root still opens, and only WRITE is refused.
 - **Windows unchanged and explicitly weaker.** Its open keeps the pre-check shape (`std` follows
   the final component and this dependency set carries no safe non-following open for the
-  platform), a directory retains no handle and answers `None`, ownership is not answered, and
-  removal is by name. Every one of those is stated where it happens rather than simulated. See the
-  OPEN below: the Unix decline leaves this asymmetric in the uncomfortable direction.
+  platform), a directory retains no handle and answers `None`, and ownership is not answered. Every
+  one of those is stated where it happens rather than simulated. Removal is the one line that left
+  this list, per the bullet above.
 - **The sealed vocabulary did not move.** Production and the deterministic model still implement
   the same `LocalIo` `Request`/`Answer` set, so the failure sweep exercises the shipped state
   machine; the only structural change is that `open_existing` answers `Option<File>` internally,
@@ -204,25 +211,26 @@ the pin and the offline build are unmoved. `std` is named because the handles cr
 are `std::fs::File`s.
 
 **CARRIED DEFECT, disclosed in the module header as well as here.** The decline strands every
-interrupted publication: a partial file nothing collects, in a store with no retention, forever.
+interrupted publication on every platform: a partial file nothing collects, in a store with no
+retention, forever.
 This is not a desirable resting state and the code says so in those words — it is taken only
 because the one alternative on offer is unlinking a name, which is how a failure handler deletes
 somebody else's work, and `30Rd` rules that worse than the litter. No remedy is scheduled. A
 future one chooses between a platform-specific identity-conditioned removal and a store that can
 sweep its own leavings; neither is restoring something this repair took away.
 
-**Tests.** Three native Unix cases in a `native_store::object_identity` module driving the I/O
+**Tests.** Two native Unix cases in a `native_store::object_identity` module driving the I/O
 vocabulary directly, because a store-level case cannot interleave a swap between two acts: the
-handle still reads its own object after the name is replaced; a removal of an object this attempt
-DID create declines and leaves it standing, with the unowned path beside it still answering
-`Denied`; and a redirected final component is refused with nothing behind it reached. One model
-case in `store_sweep` drives the ownership refusal across both admitted modes and both
-components, with the positive control beside it.
+handle still reads its own object after the name is replaced, and a redirected final component is
+refused with nothing behind it reached. One model case in `store_sweep` drives the ownership
+refusal across both admitted modes and both components, with the positive control beside it.
 
-The removal case deliberately pins the CLEAN path rather than the swapped one. A case that only
-checks the swapped name passes against the shape this replaced — check-then-unlink removes
-correctly right up until a swap lands inside the window the check opened, which is precisely what
-no test can stage.
+The removal case is NOT platform-gated and sits outside that module, because the decline is not a
+platform fact any more: on either platform, an object this attempt did create declines and is left
+standing, and the unowned path beside it still answers `Denied`. It pins the CLEAN path
+deliberately — a case that only checks a swapped name passes against the shape this replaced,
+since check-then-unlink removes correctly right up until a swap lands inside the window the check
+opened, which is precisely what no test can stage.
 
 **Honest about what a test cannot show.** The redirect case pins the refusal and the untouched
 target; it does NOT distinguish the atomic open from the pre-check, because both answer
@@ -263,20 +271,31 @@ of permitted callers.
 2. `LocallyAuthenticated`'s mint is closed to code outside `dorc-cli`; inside it, Rust offers no
    finer visibility for a tuple-struct literal, so the crate is the perimeter and one lexical
    assertion names the file that writes one.
-3. Unix cannot remove an object by anything but its name, so it removes nothing at all and the
-   incomplete file is stranded — a carried defect, detailed under the local section.
+3. Neither platform can remove an object by anything but its name, so neither removes anything at
+   all and the incomplete file is stranded — a carried defect, detailed under the local section.
 4. The `O_NOFOLLOW` atomicity is not testable without a race; the redirect case pins the refusal
    and says in its own comment that it does not pin the atomicity.
 
-**OPEN — Windows still removes by name, and wants a ruling.** By the same predicate that makes
-Unix decline, Windows has no identity-conditioned removal either, so it deletes an object of
-uncertain identity: exactly what `30Rd` prefers not to do. It was left alone because the brief
-says keep the weaker baseline "otherwise unchanged", and because Windows never CLAIMED identity
-binding — it documents removal-by-name, so it was honest where Unix was not, and `30Ri` does not
-name it. The result is nonetheless the stronger platform declining while the weaker one deletes.
-Making Windows decline too is a small edit; making it safe instead needs a handle-based deletion
-(`FILE_FLAG_DELETE_ON_CLOSE` / `SetFileInformationByHandle`) that this dependency set cannot spell
-and this brief forbids adding.
+**DEVIATION from the brief's "Windows otherwise unchanged", ruled in.** The brief scopes the
+Windows baseline to unchanged, and Windows removal by name is what changed. It changed on an
+explicit conductor ruling, on the ground above: the weaker baseline licenses weaker validation,
+not the dangerous act. A safe Windows removal instead of a declining one would need handle-based
+deletion (`FILE_FLAG_DELETE_ON_CLOSE` / `SetFileInformationByHandle`), which this dependency set
+cannot spell and the brief forbids adding, so parity is the temporary shape and the defect above
+is what both platforms now carry.
+
+**NOTE — the model still removes, and production no longer does.** `ModelIo` succeeds at
+`RemoveOwned` because a model node IS an object identity, so the operation is identity-conditioned
+there by construction and the sweep keeps exercising interrupted-cleanup schedules. The sealed
+vocabulary is unmoved and the contract is honoured on both sides, but the model's SUCCESS path now
+describes an outcome production cannot reach on any platform. Left as-is deliberately — narrowing
+the model would delete sweep coverage of a shape a future identity-conditioned removal restores —
+and named here because it weakens the module header's one-state-machine claim by exactly that arm.
+
+**NOTE — one steering line is now stale, and steering was out of remit.**
+`receipt-local/CLAUDE.md`'s `inv-owned-handles-authorize-operations` still ends "cleanup consumes
+only the object identity this attempt still owns". Cleanup consumes the token and removes nothing.
+The invariant's intent survives; its last clause does not.
 
 **Not touched, deliberately.** Receipt grammar, species, source custody, locators, graph
 semantics, algorithms, retention, why arrangement, help prose, kernel re-derivation, provider UX,

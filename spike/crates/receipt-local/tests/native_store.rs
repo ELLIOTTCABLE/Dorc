@@ -32,11 +32,16 @@ use dorc_receipt::model::{Plain, PlanReceipt};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::writer::DraftReceipt;
 use dorc_receipt_crypto::Ed25519Signer;
+use dorc_receipt_local::io::{IoFault, LocalIo as _, Request};
 use dorc_receipt_local::store::{
     EntryStanding, EnumerateFailure, LocalReceiptStoreV1, PublishFailure, PublishRefusal,
     StoreLimits, StoreOpenRefusal,
 };
 use dorc_receipt_local::{LocalLimits, NativeIo, RootInputs, RootPlatform};
+
+fn spelled(path: &std::path::Path) -> String {
+    path.to_string_lossy().into_owned()
+}
 
 /// Distinguishes concurrent cases inside one process; the process id distinguishes the runs.
 static NEXT: AtomicU32 = AtomicU32::new(0);
@@ -295,6 +300,48 @@ fn two_attempts_racing_one_name_produce_one_document_and_one_refusal() {
     );
 }
 
+#[test]
+fn a_removal_declines_on_every_platform_and_leaves_the_object_where_it_is() {
+    // Deliberately NOT platform-gated. Neither platform can condition a removal on which object a
+    // path holds, so both decline, and the one place the weaker baseline is not weaker is the one
+    // place the weaker act would be the dangerous one.
+    //
+    // It pins the CLEAN path on purpose. A case that only checks a swapped name passes against the
+    // shape this replaced — re-open, compare device and inode, unlink — which removes correctly
+    // right up until a swap lands inside the window the comparison opened, and that is exactly
+    // what no test can stage.
+    let sandbox = Sandbox::new("declineremove");
+    let mine = sandbox.root.join("incomplete");
+    let mine_name = spelled(&mine);
+
+    let mut io = NativeIo::new();
+    io.perform(Request::CreateFileExclusive, &mine_name)
+        .expect("an exclusive create");
+
+    assert_eq!(
+        io.perform(Request::RemoveOwned, &mine_name),
+        Err(IoFault::Unavailable),
+        "a removal conditioned on a name is not a removal of the object this attempt created"
+    );
+    assert!(
+        mine.exists(),
+        "the incomplete file is left standing rather than removed by name"
+    );
+
+    // And ownership is still answered first, so a path nobody created is refused for being
+    // unowned rather than for the platform's shortfall.
+    let strangers = sandbox.root.join("not-mine");
+    std::fs::write(&strangers, b"somebody else's work").expect("a file this attempt did not make");
+    assert_eq!(
+        io.perform(Request::RemoveOwned, &spelled(&strangers)),
+        Err(IoFault::Denied)
+    );
+    assert_eq!(
+        std::fs::read(&strangers).expect("it survives"),
+        b"somebody else's work"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn every_object_the_store_creates_is_reachable_only_by_its_owner() {
@@ -425,19 +472,15 @@ fn a_store_entry_that_is_a_link_is_not_followed_on_read() {
     );
 }
 
-/// The three cases below drive the I/O vocabulary DIRECTLY rather than through the store,
+/// The two cases below drive the I/O vocabulary DIRECTLY rather than through the store,
 /// because what they measure is the seam itself: whether an act reaches the object this attempt
-/// opened or created, or merely the name it stood at. A store-level case cannot interleave a
-/// swap between one act and the next, and the swap is the whole subject.
+/// opened, or merely the name it stood at. A store-level case cannot interleave a swap between
+/// one act and the next, and the swap is the whole subject.
 #[cfg(unix)]
 mod object_identity {
-    use super::Sandbox;
+    use super::{Sandbox, spelled};
     use dorc_receipt_local::NativeIo;
     use dorc_receipt_local::io::{Answer, IoFault, LocalIo as _, ObjectKind, OpenIntent, Request};
-
-    fn spelled(path: &std::path::Path) -> String {
-        path.to_string_lossy().into_owned()
-    }
 
     #[test]
     fn an_object_swapped_after_it_was_opened_is_still_read_through_the_handle() {
@@ -475,46 +518,6 @@ mod object_identity {
             ),
             other => panic!("the retained handle did not read: {other:?}"),
         }
-    }
-
-    #[test]
-    fn a_removal_declines_and_leaves_the_object_where_it_is() {
-        // Unix can only unlink a NAME, so cleanup here is not a removal that happens to be
-        // guarded — it is a removal that never happens. This pins the decline itself, because the
-        // shape it replaced (re-open, compare device and inode, then unlink) also passes a test
-        // that only checks the swapped case: it removes correctly right up until the swap lands
-        // in the window the comparison opened.
-        let sandbox = Sandbox::new("declineremove");
-        let mine = sandbox.root.join("incomplete");
-        let mine_name = spelled(&mine);
-
-        let mut io = NativeIo::new();
-        io.perform(Request::CreateFileExclusive, &mine_name)
-            .expect("an exclusive create");
-
-        assert_eq!(
-            io.perform(Request::RemoveOwned, &mine_name),
-            Err(IoFault::Unavailable),
-            "an unlink conditioned on a name is not a removal of the object this attempt created"
-        );
-        assert!(
-            mine.exists(),
-            "the incomplete file is left standing rather than removed by name"
-        );
-
-        // And the ownership questions are still asked first, so a path nobody created answers why
-        // it was refused rather than reporting the platform's shortfall.
-        let strangers = sandbox.root.join("not-mine");
-        std::fs::write(&strangers, b"somebody else's work")
-            .expect("a file this attempt did not make");
-        assert_eq!(
-            io.perform(Request::RemoveOwned, &spelled(&strangers)),
-            Err(IoFault::Denied)
-        );
-        assert_eq!(
-            std::fs::read(&strangers).expect("it survives"),
-            b"somebody else's work"
-        );
     }
 
     #[test]

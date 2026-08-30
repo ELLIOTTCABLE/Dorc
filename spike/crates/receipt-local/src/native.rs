@@ -26,28 +26,31 @@
 //! refused by inspecting the name before the open, ownership is not answered at all, and neither
 //! is ever rendered as equivalent to what Unix answers.
 //!
-//! # Why Unix removes nothing
+//! # Why nothing is removed, on either platform
 //!
-//! Every removal this crate can express names an object by its PATH, and no Unix in this
-//! dependency set can condition the unlink on which object that path currently holds. Re-opening
-//! the name and re-reading its device and inode first does not close that: the answer is stale
-//! the instant it is read, and the unlink that follows still removes whatever holds the name a
-//! moment later. So the Unix removal DECLINES — it reports [`IoFault::Unavailable`] without
-//! touching anything, and the incomplete file stays where it is.
+//! Every removal this crate can express names an object by its PATH, and neither platform in this
+//! dependency set can condition the act on which object that path currently holds — Unix `unlink`
+//! and `unlinkat` name a name, and `remove_file` names a name. Re-opening first and comparing a
+//! device and inode does not close that: the answer is stale the instant it is read, and the
+//! unlink that follows still removes whatever holds the name a moment later. So `RemoveOwned`
+//! DECLINES — it reports [`IoFault::Unavailable`] without touching anything, and the incomplete
+//! file stays where it is.
+//!
+//! This is the one place the two baselines are the SAME, and deliberately so. Everywhere else
+//! Windows is explicitly weaker, and weaker validation is a posture it is allowed to take; but
+//! deleting an object whose identity is uncertain is not weaker validation, it is the dangerous
+//! act itself, and the weaker platform is the last one that should be permitted it.
 //!
 //! This is a DEFECT that is being carried, not a resting state anybody wants. An interrupted
 //! publication now strands a partial file that nothing collects, in a store with no retention,
 //! forever. It is carried because the only other option on offer is unlinking a name, which is
 //! how a failure handler deletes somebody else's work, and `30Rd` rules that worse than the
 //! litter. No remedy is scheduled; whoever schedules one is choosing between a platform-specific
-//! capability and a store that can sweep its own leavings, not restoring something that was lost.
+//! identity-conditioned removal and a store that can sweep its own leavings, not restoring
+//! something that was lost.
 //!
 //! The identity a check-then-unlink would have compared is not recorded at all, because recording
 //! it would say this crate binds a removal it cannot bind.
-//!
-//! Windows removes by name under the explicitly weaker baseline, unchanged and never rendered as
-//! equivalent: it answers no ownership, retains no directory handle, and its `remove_file` reaches
-//! an object this attempt created inside a directory the per-user profile owns.
 
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -196,8 +199,8 @@ impl LocalIo for NativeIo {
                 }
                 Ok(Answer::Entries(BoundedEntries::of(names, limit)))
             }
-            // The ownership questions are asked before the platform is, so a platform that
-            // declines outright still refuses an unowned path for the reason it is unowned.
+            // Ownership and kind are answered before the decline, so an unowned path is refused
+            // for the reason it is unowned rather than for the reason removal does not exist.
             Request::RemoveOwned => {
                 let Some(made) = self.created.get(path).copied() else {
                     return Err(IoFault::Denied);
@@ -205,9 +208,7 @@ impl LocalIo for NativeIo {
                 if made != ObjectKind::RegularFile {
                     return Err(IoFault::WrongKind);
                 }
-                remove_created(self, path)?;
-                self.created.remove(path);
-                Ok(Answer::Done)
+                Err(IoFault::Unavailable)
             }
         }
     }
@@ -461,29 +462,4 @@ fn sync_directory(io: &NativeIo, path: &str) -> Result<Answer, IoFault> {
 )]
 const fn sync_directory(_: &NativeIo, _: &str) -> Result<Answer, IoFault> {
     Ok(Answer::Done)
-}
-
-/// Decline, without touching anything.
-///
-/// Unix removes by NAME — `unlink` and `unlinkat` both do — and offers no way to say "only if this
-/// path still holds the object I created". Re-opening the name and comparing its device and inode
-/// first would answer about the instant of the comparison and not about the instant of the unlink,
-/// so the removal it licenses is still a removal of whatever holds the name by then.
-///
-/// So this hands back a refusal and strands the incomplete file — the carried defect the module
-/// note describes, taken over deleting an object whose identity is uncertain.
-#[cfg(unix)]
-fn remove_created(_: &mut NativeIo, _: &str) -> Result<(), IoFault> {
-    Err(IoFault::Unavailable)
-}
-
-/// Windows removes by name under the weaker baseline, unchanged: no identity is available to bind
-/// to, and the object is one this attempt created inside a directory the per-user profile owns.
-///
-/// The retained handle goes first, because a file this attempt still holds open is not one the
-/// platform reliably unlinks.
-#[cfg(windows)]
-fn remove_created(io: &mut NativeIo, path: &str) -> Result<(), IoFault> {
-    io.open.remove(path);
-    std::fs::remove_file(path).map_err(|error| fault_of(&error))
 }
