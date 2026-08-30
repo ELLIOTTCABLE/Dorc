@@ -11,6 +11,13 @@
 > deferments; never per-turn chatter. Keep it NARROW: only in-flight work and what a
 > near-future conductor must know; when an arc closes, its entry collapses to one pointer and
 > its account moves to the README round-map. Reverse-chronological, always.
+>
+> *Never* update this file in a worktree; apply your edits directly in the
+> project root, and if possible, commit it there by pathspec (check for
+> tree-dirty status and/or recent commits.) This is effectively cross-arc
+> collaboration, so be defensive about concurrent edits, and yield where
+> appropriate. It need not be edited every time anything small changes; target
+> end-of-arc and/or substantial-redirects.
 
 ---
 
