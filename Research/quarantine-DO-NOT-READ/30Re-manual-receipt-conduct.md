@@ -6,9 +6,9 @@
 
 ## current objective
 
-Review the unified secure-durables tip, route at most one focused repair, then close the receipt
-crate/D5 boundary for handoff to the non-quarantined why conductor. Work remains serial and all
-worktrees stay standing until review/repair is adjudicated.
+Conductor work is closed. The human owns review of the unified secure-durables tip and may remit one
+focused repair afterward. No further work is dispatched from this ledger; all worktrees remain
+standing until the human rules review/repair complete.
 
 ## branch state
 
@@ -51,26 +51,29 @@ worktrees stay standing until review/repair is adjudicated.
   `dorc-aid` remains receipt-unaware. The security arc closes the crate's curated internal-public
   surface and steering before handing it to ordinary Dorc work.
 
-## serial schedule
+## durable handoff
 
-1. **`30Re:sched-repair-why-diagnostics`** — complete at `6c1f8024`; builder ledgers quarantine
-   `30Rf`/`30Rg`.
-2. **`30Re:sched-secure-durable-close`** — rooted graph/source comparison and sealed
-   `dorc-receipt::report::RecordedWhyFacts` are built. Remaining: close the curated receipt
-   producer/read/report API, write crate steering, execute D5 deletion, and prove the singular
-   provider/store/reader/writer census. Builder ledger: quarantine `30Rh`.
-3. **`30Re:sched-close-receipt-security-arc`** — reconcile current truth, synthesize only durable
-   steering that earns a permanent seat, run the required review and `gate:arc`, then offer the
-   populated branch as the `ai/main` synthesis point. The dispatch-diagnostic split is not included.
-4. **`30Re:sched-rehome-why-surface`** — after synthesis, a new non-quarantined conductor arranges
-   and renders sealed recorded facts. Report-only kernel re-derivation is a separate deferred round.
+Built and unified:
 
-## current dispatch contract
+- local keyset/provider and immutable receipt store, including explicit `--receipts` siting;
+- plan/intent/outcome receipt species, exact grammar, rich/plain projection, graph, and rooted
+  selectors;
+- exact general-sh source custody, valid-`dorc-lang` withholding, and durable locator projection;
+- sealed pure `dorc-receipt::report::RecordedWhyFacts` integrated from the real receipt-reading
+  route with encoder-mediated arbitrary-value exit;
+- coherent receipt CLI vocabulary and `--no-receipt` suppression;
+- living analyzer/aid/research registers and the complete `30R` / extended `30Ra` target.
 
-The sealed facts boundary is complete. Its API-close residue is narrow and security-relevant:
-replace the bare site tuple and order string with receipt newtypes, derive closure membership from the
-receipt graph rather than caller input, and preserve the encoder-mediated byte exit. Loaded-source
-locator composition remains explicit V1 residue rather than a guessed locator. A fresh secure builder
-may then close public exports/steering and D5 in one reviewed lane. Final why arrangement and the
-six-plus-one user-facing cases are outside this arc. Kernel work, recorded-listing polish, the
-dispatch split, corruption-parser expansion, and new test backstops remain excluded.
+Review/repair residue, not silently complete:
+
+- three report-API close items from `30Rh`: site newtype, parsed order token, and graph-derived
+  closure membership;
+- receipt crate public-export/steering close and final D5 deletion/singular implementation census;
+- loaded-source locator composition remains explicit uncollected V1 residue;
+- full recorded-why arrangement and replacement user-facing cases are rehomed outside quarantine;
+- report-only kernel re-derivation remains a separate kernel-authorized round;
+- final builder completion and conductor `gate:arc` have not run at this unified tip.
+
+Unified branches `ai/r30-receipt` and `ai/r30-conduct` point together, include the current `ai/main`
+line by merge, and have not been upstreamed. Worktrees and earlier lane branches are intentionally
+left untouched for post-review repair.
