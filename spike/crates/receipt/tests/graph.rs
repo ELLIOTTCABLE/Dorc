@@ -33,6 +33,7 @@ use dorc_receipt::outcome::{OutcomeAvailability, RecordedApplyOutcomeRow, Record
 use dorc_receipt::plan::{RecordedSource, SourceSlots};
 use dorc_receipt::reader::{PartialReceipt, read_plain};
 use dorc_receipt::reingested::RecordedInfluence;
+use dorc_receipt::report::RecordedDocumentId;
 use dorc_receipt::rows::{
     AssignmentOrdinal, OriginOrdinal, RecordedInvocation, RecordedLeaf, RecordedRow, RecordedSite,
     SiteOutcomeOrdinal, SourceOrdinal,
@@ -697,6 +698,83 @@ fn a_publication_grade_is_not_a_correlation_input() {
         shape_of(&graph_of(&[(Kind::Plan, plan_bytes("p", 'a'))])),
         Shape::expected((1, 0, 0, 0, 0), vec![], vec![])
     );
+}
+
+/// The rooted closure follows CAUSES and stops: an outcome reaches its intent and that intent's
+/// originating plans, and a plan reaches nothing later
+/// (`30R:receipt-rooted-attention-and-cli`).
+///
+/// One world, three roots, so the direction is pinned by the CONTRAST rather than by three
+/// separately-arranged fixtures agreeing with themselves. The plan case is the load-bearing one:
+/// `p` is an ancestor of both later documents, so a closure that walked the connected component
+/// would answer three here.
+#[test]
+fn a_rooted_closure_walks_to_causes_and_never_forward_to_later_attempts() {
+    let graph = graph_of(&[
+        (Kind::Plan, plan_bytes("p", 'a')),
+        (Kind::Intent, intent_bytes("i", &["p"])),
+        (
+            Kind::Outcome,
+            outcome_bytes("o", "i", RecordedTerminalState::Complete),
+        ),
+    ]);
+
+    assert_eq!(
+        graph
+            .closure_from(&RecordedDocumentId::ApplyOutcome(outcome_id("o")))
+            .documents(),
+        [
+            RecordedDocumentId::ApplyOutcome(outcome_id("o")),
+            RecordedDocumentId::ApplyIntent(intent_id("i")),
+            RecordedDocumentId::Plan(plan_id("p")),
+        ],
+        "an outcome reaches its intent and that intent's originating plans, root first"
+    );
+    assert_eq!(
+        graph
+            .closure_from(&RecordedDocumentId::ApplyIntent(intent_id("i")))
+            .documents(),
+        [
+            RecordedDocumentId::ApplyIntent(intent_id("i")),
+            RecordedDocumentId::Plan(plan_id("p")),
+        ],
+        "an intent reaches its origins and not the outcome that answered it"
+    );
+    assert_eq!(
+        graph
+            .closure_from(&RecordedDocumentId::Plan(plan_id("p")))
+            .documents(),
+        [RecordedDocumentId::Plan(plan_id("p"))],
+        "and a plan pulls no later apply attempt, though both share its component"
+    );
+}
+
+/// A closure never names a document the graph does not hold — the root excepted, because the root
+/// is the question's own subject and may have been opened as an explicit file outside any store.
+#[test]
+fn a_closure_names_only_held_documents_and_always_its_own_root() {
+    // The intent names `p` as an origin, and no plan was fed.
+    let graph = graph_of(&[(Kind::Intent, intent_bytes("i", &["p"]))]);
+    assert_eq!(
+        graph
+            .closure_from(&RecordedDocumentId::ApplyIntent(intent_id("i")))
+            .documents(),
+        [RecordedDocumentId::ApplyIntent(intent_id("i"))],
+        "an absent origin is the sibling report's to make, never a closure member"
+    );
+    assert_eq!(
+        graph.findings(),
+        vec![GraphFinding::OriginatingPlanAbsent {
+            intent: intent_id("i"),
+            plan: plan_id("p"),
+        }],
+        "and the absence is still surfaced, so nothing went quiet"
+    );
+
+    let root = RecordedDocumentId::Plan(plan_id("elsewhere"));
+    let empty = ReceiptGraph::new().closure_from(&root);
+    assert_eq!(empty.root(), &root);
+    assert_eq!(empty.documents(), [root]);
 }
 
 #[test]

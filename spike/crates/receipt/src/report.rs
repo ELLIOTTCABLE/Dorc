@@ -43,15 +43,17 @@ pub use states::{
 pub use value::{ByteAgreement, RecordedValue, ValueClass, ValueEncoder};
 
 use crate::durable_locator::RecordedStageKind;
+use crate::graph::ReachedClosure;
+use crate::order::ReceiptOrderToken;
 use crate::reingested::RecordedInfluence;
-use crate::rows::RecordedAst;
+use crate::rows::{RecordedAst, RecordedSite};
 use crate::tokens::{RecordedDisposition, RecordedSourceClass, RecordedSpineSpecies};
 
 /// The selected root, as the question found it.
 #[derive(Debug, Clone)]
 pub struct RootFacts {
     document: RecordedDocumentId,
-    order: String,
+    order: ReceiptOrderToken,
     authentication: AuthenticationState,
     projection: ProjectionState,
     detail: DetailState,
@@ -62,7 +64,7 @@ impl RootFacts {
     #[must_use]
     pub const fn of(
         document: RecordedDocumentId,
-        order: String,
+        order: ReceiptOrderToken,
         authentication: AuthenticationState,
         projection: ProjectionState,
         detail: DetailState,
@@ -88,10 +90,14 @@ impl RootFacts {
         self.document.species()
     }
 
-    /// The store order it was filed under, as spelled.
+    /// The store order it was filed under.
+    ///
+    /// The token the store already holds, never a spelling re-parsed here: a `String` on this seat
+    /// was substitutable with any other text and could reach a render as one
+    /// (`30Rh:open-report-api-close-residue`).
     #[must_use]
-    pub fn order(&self) -> &str {
-        &self.order
+    pub const fn order(&self) -> ReceiptOrderToken {
+        self.order
     }
 
     /// What outer verification said.
@@ -118,9 +124,9 @@ impl RootFacts {
 /// QUESTION-DIRECTED, never the whole undirected component: an outcome reaches its intent and that
 /// intent's originating plans, and selecting one plan does not pull every later apply attempt that
 /// happens to share a component. A disconnected DAG contributes nothing at all.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ClosureFacts {
-    reached: Vec<RecordedDocumentId>,
+    reached: ReachedClosure,
     completeness: ClosureCompleteness,
     siblings: Vec<SiblingState>,
 }
@@ -128,11 +134,13 @@ pub struct ClosureFacts {
 impl ClosureFacts {
     /// Bind what the closure reached and what it could not.
     ///
-    /// Completeness is DERIVED from the sibling states rather than passed: a caller that could
-    /// declare a closure complete while naming a missing sibling would be able to say two things
-    /// at once, and the sibling list is the one that carries evidence.
+    /// Membership arrives as a [`ReachedClosure`], whose one mint is the graph's own walk, so a
+    /// caller cannot name a document the graph never reached. Completeness is DERIVED from the
+    /// sibling states rather than passed: a caller that could declare a closure complete while
+    /// naming a missing sibling would be able to say two things at once, and the sibling list is
+    /// the one that carries evidence.
     #[must_use]
-    pub fn of(reached: Vec<RecordedDocumentId>, siblings: Vec<SiblingState>) -> Self {
+    pub fn of(reached: ReachedClosure, siblings: Vec<SiblingState>) -> Self {
         let completeness = if siblings.is_empty() {
             ClosureCompleteness::Complete
         } else {
@@ -148,7 +156,7 @@ impl ClosureFacts {
     /// Every document the rooted question reached, root included.
     #[must_use]
     pub fn reached(&self) -> &[RecordedDocumentId] {
-        &self.reached
+        self.reached.documents()
     }
 
     /// Whether the closure was assembled whole.
@@ -265,8 +273,7 @@ impl StageFacts {
 /// One recorded site decision, and what the document says about where it came from.
 #[derive(Debug, Clone)]
 pub struct SiteFacts {
-    leaf: u32,
-    member: Option<u32>,
+    site: RecordedSite,
     ast: RecordedAst,
     disposition: RecordedDisposition,
     influence: RecordedInfluence,
@@ -277,16 +284,14 @@ pub struct SiteFacts {
 }
 
 impl SiteFacts {
-    /// The leaf this site executes at.
+    /// Which site this is — the leaf, with its in-loop member index where it has one.
+    ///
+    /// One value rather than two integers, because the pair is otherwise substitutable with any
+    /// other pair and two same-command sites must not collapse
+    /// (`spike/CLAUDE.md:inv-site-keyed-results`).
     #[must_use]
-    pub const fn leaf(&self) -> u32 {
-        self.leaf
-    }
-
-    /// Its member index, where the site is one member of an in-loop family.
-    #[must_use]
-    pub const fn member(&self) -> Option<u32> {
-        self.member
+    pub const fn site(&self) -> RecordedSite {
+        self.site
     }
 
     /// The syntax node it came from, as the document numbered them.
@@ -428,9 +433,7 @@ impl RecordedWhyFacts {
     #[must_use]
     pub fn addressed_site(&self) -> Option<&SiteFacts> {
         let resolved = self.address.as_ref()?.resolved_site()?;
-        self.sites
-            .iter()
-            .find(|site| site.leaf == resolved.0 && site.member == resolved.1)
+        self.sites.iter().find(|site| site.site == resolved)
     }
 }
 

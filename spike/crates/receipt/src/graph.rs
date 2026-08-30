@@ -18,6 +18,7 @@ use crate::plan::RecordedPlanReceipt;
 use crate::projection::{SameIdentityPair, same_identity_pair};
 use crate::reader::{PartialReceipt, Receipt};
 use crate::reingested::{RecordedType, Reingested};
+use crate::report::RecordedDocumentId;
 use crate::rows::ModelRefusal;
 use crate::tokens::RecordedSignerTrust;
 
@@ -61,6 +62,34 @@ pub enum ReceiptEdge {
         /// The outcome that answered it.
         outcome: ApplyOutcomeId,
     },
+}
+
+/// Every document one rooted question causally required, root first.
+///
+/// Private field, and the ONE mint is [`ReceiptGraph::closure_from`]: membership is a fact about
+/// typed edges the graph holds, so a caller cannot name a document the graph never reached
+/// (`30Rh:open-report-api-close-residue`).
+#[derive(Debug, Clone)]
+pub struct ReachedClosure {
+    root: RecordedDocumentId,
+    documents: Vec<RecordedDocumentId>,
+}
+
+impl ReachedClosure {
+    /// The document the question is rooted at.
+    ///
+    /// Held beside the membership rather than read off its head, so a closure with no root is
+    /// unrepresentable instead of being an indexing question.
+    #[must_use]
+    pub const fn root(&self) -> &RecordedDocumentId {
+        &self.root
+    }
+
+    /// Root first, then every document reached from it.
+    #[must_use]
+    pub fn documents(&self) -> &[RecordedDocumentId] {
+        &self.documents
+    }
 }
 
 /// Something a report must surface about the correlation.
@@ -370,6 +399,51 @@ impl ReceiptGraph {
         out
     }
 
+    /// The causal closure one rooted question needs, root first.
+    ///
+    /// QUESTION-DIRECTED, and that direction is toward CAUSES: an outcome reaches its intent and
+    /// that intent's originating plans, while a plan reaches nothing further — selecting one
+    /// historical plan must not pull every later apply attempt that happens to share a connected
+    /// component (`30R:receipt-rooted-attention-and-cli`).
+    ///
+    /// Only documents the graph HOLDS are reached. The root itself is the one exception, because it
+    /// is the question's own subject and may have been named as an explicit file outside any store;
+    /// a required sibling the graph cannot hold is `SiblingState`'s to report, never a member here.
+    #[must_use]
+    pub fn closure_from(&self, root: &RecordedDocumentId) -> ReachedClosure {
+        let mut documents = vec![root.clone()];
+        match root {
+            RecordedDocumentId::Plan(_) => {}
+            RecordedDocumentId::ApplyIntent(intent) => self.push_origins(*intent, &mut documents),
+            RecordedDocumentId::ApplyOutcome(outcome) => {
+                if let Some(intent) = self
+                    .outcomes
+                    .get(outcome)
+                    .and_then(|node| node.model().intent())
+                    .filter(|intent| self.intents.contains_key(intent))
+                {
+                    push_unique(&mut documents, RecordedDocumentId::ApplyIntent(intent));
+                    self.push_origins(intent, &mut documents);
+                }
+            }
+        }
+        ReachedClosure {
+            root: root.clone(),
+            documents,
+        }
+    }
+
+    fn push_origins(&self, intent: ApplyIntentId, out: &mut Vec<RecordedDocumentId>) {
+        let Some(node) = self.intents.get(&intent) else {
+            return;
+        };
+        for plan in node.model().origin_receipts() {
+            if self.plans.contains_key(&plan) {
+                push_unique(out, RecordedDocumentId::Plan(plan));
+            }
+        }
+    }
+
     /// Everything a report must surface, in a stable order.
     #[must_use]
     pub fn findings(&self) -> Vec<GraphFinding> {
@@ -469,5 +543,15 @@ impl ReceiptGraph {
     #[must_use]
     pub fn faults(&self) -> &[ModelRefusal] {
         &self.faults
+    }
+}
+
+/// Append `id` unless it is already a member.
+///
+/// A document may name one originating plan twice; a closure that carried it twice would be counted
+/// twice by every consumer that asks how many documents a question needed.
+fn push_unique(out: &mut Vec<RecordedDocumentId>, id: RecordedDocumentId) {
+    if !out.contains(&id) {
+        out.push(id);
     }
 }

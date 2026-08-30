@@ -12,13 +12,15 @@
 //! in order to start from something real.
 
 use crate::durable::LocallyAuthenticated;
+use dorc_receipt::graph::ReachedClosure;
 use dorc_receipt::model::{PlanReceipt, Rich};
+use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::plan::RecordedPlanReceipt;
 use dorc_receipt::reader::Receipt;
 use dorc_receipt::reingested::Reingested;
 use dorc_receipt::report::{
-    AuthenticationState, CurrentSourceReading, DetailState, RecordedDocumentId, RecordedWhyFacts,
-    RequestedAddress, SiblingState, SourceObservation, WhyFactsInput, derive,
+    AuthenticationState, CurrentSourceReading, DetailState, RecordedWhyFacts, RequestedAddress,
+    SiblingState, SourceObservation, WhyFactsInput, derive,
 };
 
 /// One decoded plan document, with everything the edge learned about it.
@@ -32,10 +34,13 @@ pub struct SelectedRoot {
     pub receipt: LocallyAuthenticated<Reingested<Receipt<PlanReceipt, Rich>>>,
     /// Its own model.
     pub model: Reingested<RecordedPlanReceipt>,
-    /// Its identity.
-    pub identity: RecordedDocumentId,
-    /// The store order it was filed under, as spelled.
-    pub order: String,
+    /// This root's causal closure, from the graph the edge built.
+    ///
+    /// Carries the root identity, so selecting a root and settling which documents its question
+    /// needs are one act: a separate `identity` field beside this could disagree with it.
+    pub closure: ReachedClosure,
+    /// The store order it was filed under.
+    pub order: ReceiptOrderToken,
     /// What outer verification said.
     pub authentication: AuthenticationState,
     /// Whether the grouped detail region opened.
@@ -58,13 +63,12 @@ pub struct ObservedSource {
 
 /// Derive the inert model for one rooted question.
 ///
-/// `reached` and `siblings` come from the graph the edge already built: this seat performs no
-/// traversal of its own, because a second traversal is a second answer to which documents the
-/// question needed.
+/// The closure is the graph's own walk and `siblings` the edge's account of what it could not hold:
+/// this seat performs no traversal, because a second traversal is a second answer to which
+/// documents the question needed.
 #[must_use]
 pub fn facts_for(
     root: &SelectedRoot,
-    reached: Vec<RecordedDocumentId>,
     siblings: Vec<SiblingState>,
     observations: Vec<ObservedSource>,
     address: Option<RequestedAddress>,
@@ -72,11 +76,10 @@ pub fn facts_for(
     derive(&WhyFactsInput {
         root: root.receipt.document(),
         model: &root.model,
-        identity: root.identity.clone(),
-        order: root.order.clone(),
+        order: root.order,
         authentication: root.authentication,
         detail: root.detail,
-        reached,
+        reached: root.closure.clone(),
         siblings,
         observations: observations
             .into_iter()

@@ -9,7 +9,7 @@
 use super::address::{self, AuthoredPlacement};
 use super::states::{
     AuthenticationState, CurrentSourceState, DetailState, MaterialState, ProjectionState,
-    RecordedDocumentId, SiblingState,
+    SiblingState,
 };
 use super::value::{RecordedValue, ValueClass};
 use super::{
@@ -17,7 +17,9 @@ use super::{
     SiteFacts, SourceFacts, StageFacts,
 };
 use crate::durable_locator::{DurableLocator, RecordedStageKind, StageTextKind};
+use crate::graph::ReachedClosure;
 use crate::model::{PlanReceipt, Rich};
+use crate::order::ReceiptOrderToken;
 use crate::plan::RecordedPlanReceipt;
 use crate::projection::OpaqueFieldTag;
 use crate::reader::Receipt;
@@ -102,16 +104,17 @@ pub struct WhyFactsInput<'a> {
     pub root: &'a Reingested<Receipt<PlanReceipt, Rich>>,
     /// Its own model, closed over itself.
     pub model: &'a Reingested<RecordedPlanReceipt>,
-    /// Its identity and store order.
-    pub identity: RecordedDocumentId,
-    /// The order token it was filed under, as spelled.
-    pub order: String,
+    /// The order token it was filed under.
+    pub order: ReceiptOrderToken,
     /// What outer verification said.
     pub authentication: AuthenticationState,
     /// Whether its grouped detail region opened.
     pub detail: DetailState,
-    /// Every other document the rooted question reached, in graph order.
-    pub reached: Vec<RecordedDocumentId>,
+    /// The rooted question's causal closure, minted by the graph's own walk.
+    ///
+    /// Carries the ROOT identity too, so the root is named exactly once: an `identity` field beside
+    /// this one could disagree with the closure it was supposed to be the head of.
+    pub reached: ReachedClosure,
     /// What is wrong with each required sibling that is not in hand.
     pub siblings: Vec<SiblingState>,
     /// Per-source current-tree observations, for the sources the edge looked at.
@@ -128,7 +131,7 @@ impl core::fmt::Debug for WhyFactsInput<'_> {
             "WhyFactsInput({:?}, {:?}, {} reached, {} siblings, {} observations)",
             self.authentication,
             self.detail,
-            self.reached.len(),
+            self.reached.documents().len(),
             self.siblings.len(),
             self.observations.len()
         )
@@ -160,13 +163,10 @@ pub fn derive(input: &WhyFactsInput<'_>) -> RecordedWhyFacts {
         )
     });
 
-    let mut reached = vec![input.identity.clone()];
-    reached.extend(input.reached.iter().cloned());
-
     RecordedWhyFacts {
         root: RootFacts::of(
-            input.identity.clone(),
-            input.order.clone(),
+            input.reached.root().clone(),
+            input.order,
             input.authentication,
             match detail {
                 DetailState::NotCarried => ProjectionState::Plain,
@@ -174,7 +174,7 @@ pub fn derive(input: &WhyFactsInput<'_>) -> RecordedWhyFacts {
             },
             detail,
         ),
-        closure: ClosureFacts::of(reached, input.siblings.clone()),
+        closure: ClosureFacts::of(input.reached.clone(), input.siblings.clone()),
         address,
         sites,
         sources,
@@ -192,7 +192,7 @@ fn placements(sites: &[SiteFacts]) -> Vec<AuthoredPlacement> {
         .filter_map(|site| {
             let authored = site.authored_origin()?;
             Some(AuthoredPlacement {
-                site: (site.leaf(), site.member()),
+                site: site.site(),
                 source: authored.source()?,
                 span: authored.span()?,
             })
@@ -278,8 +278,7 @@ fn site_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<SiteFacts> 
                 .map(|locator| chain_facts(&locator))
                 .unwrap_or_default();
             SiteFacts {
-                leaf: site.site().leaf().get(),
-                member: site.site().member().map(crate::rows::RecordedMember::get),
+                site: site.site(),
                 ast: site.ast(),
                 disposition: site.disposition(),
                 influence: site.account(),

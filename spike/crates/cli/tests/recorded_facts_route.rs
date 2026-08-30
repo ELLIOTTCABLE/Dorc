@@ -19,6 +19,7 @@ use std::process::Command;
 
 use dorc_cli::durable::{LocalReceiptEdgeV1, NamedSpecies, NativeIo, ReadEdge};
 use dorc_cli::recorded_facts::{ObservedSource, SelectedRoot, facts_for};
+use dorc_receipt::graph::ReceiptGraph;
 use dorc_receipt::ids::PlanReceiptId;
 use dorc_receipt::report::{
     AuthenticationState, ClosureCompleteness, CurrentSourceReading, CurrentSourceState,
@@ -132,8 +133,10 @@ fn selected_roots(open: &ReadEdge, io: &mut NativeIo) -> Vec<SelectedRoot> {
         found.push(SelectedRoot {
             receipt,
             model,
-            identity: RecordedDocumentId::Plan(id),
-            order: entry.name().order().spelled(),
+            // The graph is empty here because this store holds one plan and a plan root reaches
+            // nothing further; the walk itself is pinned in the receipt crate's own graph battery.
+            closure: ReceiptGraph::new().closure_from(&RecordedDocumentId::Plan(id)),
+            order: entry.name().order(),
             // The edge established both: the read came back inside the local-authentication
             // envelope, and it came back at all only because the region validated.
             authentication: AuthenticationState::Trusted,
@@ -163,7 +166,7 @@ fn a_document_the_binary_published_derives_recorded_facts_when_reopened() {
     assert_eq!(roots.len(), 1, "one run published one plan document");
     let root = &roots[0];
 
-    let facts = facts_for(root, Vec::new(), Vec::new(), Vec::new(), None);
+    let facts = facts_for(root, Vec::new(), Vec::new(), None);
 
     assert_eq!(facts.root().species(), RecordedSpecies::Plan);
     assert_eq!(facts.root().authentication(), AuthenticationState::Trusted);
@@ -211,7 +214,7 @@ fn an_address_resolves_or_refuses_against_the_real_recorded_source() {
     let roots = selected_roots(&open, &mut io);
     let root = &roots[0];
 
-    let book_source = facts_for(root, Vec::new(), Vec::new(), Vec::new(), None)
+    let book_source = facts_for(root, Vec::new(), Vec::new(), None)
         .sources()
         .iter()
         .find(|source| source.content() == MaterialState::Held)
@@ -220,7 +223,6 @@ fn an_address_resolves_or_refuses_against_the_real_recorded_source() {
 
     let unchanged = facts_for(
         root,
-        Vec::new(),
         Vec::new(),
         vec![ObservedSource {
             ordinal: book_source,
@@ -236,7 +238,6 @@ fn an_address_resolves_or_refuses_against_the_real_recorded_source() {
     let moved = format!("#!/bin/sh\necho inserted\n{}", &BOOK[10..]);
     let drifted = facts_for(
         root,
-        Vec::new(),
         Vec::new(),
         vec![ObservedSource {
             ordinal: book_source,

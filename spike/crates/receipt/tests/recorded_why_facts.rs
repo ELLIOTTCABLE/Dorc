@@ -5,6 +5,7 @@
 //! locator payloads still line up after a round trip. A hand-built model agrees with itself.
 
 use dorc_receipt::durable_locator::RecordedStageKind;
+use dorc_receipt::graph::{ReachedClosure, ReceiptGraph};
 use dorc_receipt::ids::{PlanReceiptId, ReceiptId, ReceiptIdSource};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::report::{
@@ -13,6 +14,7 @@ use dorc_receipt::report::{
     RecordedSpecies, RequestedAddress, SiblingState, SourceObservation, UnresolvedReason,
     ValueClass, ValueEncoder, WhyFactsInput, derive,
 };
+use dorc_receipt::rows::{RecordedLeaf, RecordedSite};
 
 mod support;
 
@@ -42,6 +44,20 @@ impl Spy {
 /// The address every exact-line case asks about: the book's second physical line.
 const ADDRESSED_LINE: u32 = 2;
 
+/// The site the fixture document records — leaf 0, no in-loop member.
+fn recorded_site() -> RecordedSite {
+    RecordedSite::of(RecordedLeaf::of(0), None)
+}
+
+/// The closure a plan-rooted question gets, from the graph rather than from this test.
+///
+/// The graph is empty on purpose: a plan root reaches nothing further whatever the store holds
+/// (`30R:receipt-rooted-attention-and-cli`), and a helper that hand-built the membership would be
+/// exercising a route the API no longer has.
+fn closure(document: &DocumentUnderTest) -> ReachedClosure {
+    ReceiptGraph::new().closure_from(&RecordedDocumentId::Plan(document.id))
+}
+
 fn input(
     document: &DocumentUnderTest,
     observations: Vec<SourceObservation>,
@@ -50,11 +66,10 @@ fn input(
     WhyFactsInput {
         root: &document.receipt,
         model: &document.model,
-        identity: RecordedDocumentId::Plan(document.id),
-        order: document.order.spelled(),
+        order: document.order,
         authentication: AuthenticationState::Trusted,
         detail: DetailState::Available,
-        reached: Vec::new(),
+        reached: closure(document),
         siblings: Vec::new(),
         observations,
         address,
@@ -85,7 +100,7 @@ fn a_byte_identical_line_resolves_to_the_site_recorded_there() {
     let AddressResolution::Resolved { site } = *address.resolution() else {
         panic!("an identical line resolves; got {:?}", address.resolution());
     };
-    assert_eq!(site, (0, None));
+    assert_eq!(site, recorded_site());
     assert!(
         facts.addressed_site().is_some(),
         "and the model can hand back the site it resolved to"
@@ -120,7 +135,7 @@ fn a_changed_line_refuses_the_address_and_never_looks_for_it_elsewhere() {
     };
     assert_eq!(
         recorded_site,
-        Some((0, None)),
+        Some(self::recorded_site()),
         "what the RECORDED line carried is still true about the past"
     );
     assert_eq!(
@@ -156,7 +171,7 @@ fn an_absent_current_source_yields_a_qualified_recorded_only_answer() {
             address.resolution()
         );
     };
-    assert_eq!(recorded_site, Some((0, None)));
+    assert_eq!(recorded_site, Some(self::recorded_site()));
     assert_eq!(why, CurrentSourceState::Absent);
     assert_eq!(
         address.resolved_site(),
@@ -194,32 +209,36 @@ fn an_unavailable_detail_region_yields_explicitly_partial_material() {
     );
 }
 
-/// The causal closure is what the question reached, and its completeness is derived from the
-/// siblings it could not.
+/// Closure membership is the GRAPH's answer, and its completeness is derived from the siblings the
+/// question could not reach.
+///
+/// The shape this refuses is the one it replaced: a caller handed `reached` a hand-built vector, so
+/// a plan-rooted question could be told it reached a later intent and outcome — the exact
+/// pull-every-later-attempt reading `30R:receipt-rooted-attention-and-cli` forbids, and unfalsifiable
+/// besides, since nothing checked those documents existed.
 #[test]
-fn the_closure_records_what_it_reached_and_what_it_could_not() {
+fn closure_membership_comes_from_the_graph_and_a_plan_reaches_nothing_later() {
     let document = published();
     let intent = dorc_receipt::ids::ApplyIntentId::mint(&mut Counting(9));
-    let outcome = dorc_receipt::ids::ApplyOutcomeId::mint(&mut Counting(11));
 
-    let mut whole = input(&document, Vec::new(), None);
-    whole.reached = vec![
-        RecordedDocumentId::ApplyIntent(intent),
-        RecordedDocumentId::ApplyOutcome(outcome),
-    ];
-    let facts = derive(&whole);
+    let facts = derive(&input(&document, Vec::new(), None));
     assert_eq!(
         facts.closure().completeness(),
         ClosureCompleteness::Complete
     );
     assert_eq!(
         facts.closure().reached().len(),
-        3,
-        "the root plus the two it reached"
+        1,
+        "a plan root reaches itself and no later apply attempt"
     );
     assert_eq!(
         facts.closure().reached()[0].species(),
         RecordedSpecies::Plan
+    );
+    assert_eq!(
+        facts.root().document(),
+        &facts.closure().reached()[0],
+        "the root is named once — the closure's head IS the document the facts are about"
     );
 
     let mut broken = input(&document, Vec::new(), None);

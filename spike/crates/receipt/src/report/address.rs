@@ -22,6 +22,7 @@
 
 use super::states::CurrentSourceState;
 use super::value::{ByteAgreement, RecordedValue};
+use crate::rows::RecordedSite;
 
 /// The address a question asked about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,21 +73,21 @@ pub enum UnresolvedReason {
 pub enum AddressResolution {
     /// Current and recorded line N are byte-identical, and this site is the one recorded there.
     Resolved {
-        /// The site, by leaf and optional member.
-        site: (u32, Option<u32>),
+        /// The site recorded there.
+        site: RecordedSite,
     },
     /// Both lines exist and differ. The address-specific answer is refused pending an explicit
     /// current-versus-recorded selector; both source states remain available, and no moved-line
     /// equivalence is inferred.
     ChangedLine {
         /// The site the RECORDED line carries, which is still a true statement about the past.
-        recorded_site: Option<(u32, Option<u32>)>,
+        recorded_site: Option<RecordedSite>,
     },
     /// The current source could not be compared. A recorded-only answer may still stand, qualified
     /// by the comparison that did not happen.
     ComparisonUnavailable {
         /// The site the recorded line carries.
-        recorded_site: Option<(u32, Option<u32>)>,
+        recorded_site: Option<RecordedSite>,
         /// Why no comparison was made.
         why: CurrentSourceState,
     },
@@ -139,7 +140,7 @@ impl AddressFacts {
     /// them admits it as the answer to the address — that is the whole distinction, so it lives in
     /// the method rather than in a caller's `match`.
     #[must_use]
-    pub const fn resolved_site(&self) -> Option<(u32, Option<u32>)> {
+    pub const fn resolved_site(&self) -> Option<RecordedSite> {
         match self.resolution {
             AddressResolution::Resolved { site } => Some(site),
             AddressResolution::ChangedLine { .. }
@@ -151,7 +152,7 @@ impl AddressFacts {
 
 /// One recorded site's authored placement, as the resolver needs it.
 pub(crate) struct AuthoredPlacement {
-    pub(crate) site: (u32, Option<u32>),
+    pub(crate) site: RecordedSite,
     pub(crate) source: u32,
     pub(crate) span: (u64, u64),
 }
