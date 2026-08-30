@@ -376,24 +376,24 @@ The names are TYPE LEAN; the effects are REQUIRED.
 
 | Type family | Required effect and forbidden state |
 |---|---|
-| `Receipt<D,P,T>` | The only complete reader result. `D`, `P`, and `T` implement private sealed traits; `D` supplies its exact associated recorded model and projection capabilities. Exact signature checked, exact species/projection parsed, and rich overlay completely validated where applicable. No `CompleteReceipt` sibling. |
+| `Receipt<D,P>` | The only complete receipt-core reader result. `D` and `P` implement private sealed traits. Exact signature validity checked under supplied material, exact species/projection parsed, and rich overlay completely validated where applicable. Local controller-policy authentication is a separate private-field CLI envelope. No `CompleteReceipt` sibling. |
 | `PartialReceipt<R>` | Distinct damaged/unavailable state. No conversion to `Receipt`; no field-level selective promotion. |
 | `Reingested<T>` | Marks every durable read-back value. `T` must implement a private sealed recorded-type trait, and no public generic constructor exists. No `Deref`, `AsRef<T>`, `Borrow<T>`, generic `map`, `into_inner`, or raw accessor. Species-specific decomposition returns another `Reingested<U>` or a report-only scalar. |
 | `ReceiptGraph` | Holds only reingested receipts/partials and graph findings. No authority methods or conversion to live types. |
 | `Plain` / `Rich` | Sealed projection parameters with associated overlay shape. `Plain -> NoOpaqueOverlay`; `Rich -> ExactlyOne<EncryptedOpaqueOverlay>`. |
-| `ReceiptSignatureChecked<T>` | Exact DSSE-PAE body verified with a controller-supplied key already carrying sealed trust marker `T`. Private fields and constructors; still unparsed and not truth. |
-| `TrustedReceiptSigner` / `SelfAssertedReceiptSigner` | Private sealed markers for controller policy provenance of the verification key. The key resolver's two private mints are the only constructors; receipt bytes and generic callers cannot select or upgrade the marker. |
+| `ReceiptSignatureChecked` | Exact DSSE-PAE body verified under supplied material. Private fields and constructors; still unparsed, self-asserted, and not local-policy authentication. |
+| `LocallyAuthenticated<T>` | CLI private-field envelope minted only by the validated local-keyset read edge. Receipt-core validity cannot construct or upgrade it. |
 | `BoundedReceiptBytes` | Aggregate input bound enforced before parsing/allocation. |
 | `ReceiptOrderToken` | Exactly 20 authenticated decimal digits from the injected controller clock. Store selection only: no authority, freshness, graph edge, or receipt-ID conversion. A local filename must match it. |
 | `LocatedReceiptEnvelope` | Only exact byte spans and bounded prefix tokens located. No semantic fields interpreted. |
-| `ParsedReceiptSkeleton<D,P,T>` | Exact checked body parsed under the species/projection grammar used for signature domain. |
+| `ParsedReceiptSkeleton<D,P>` | Exact checked body parsed under the species/projection grammar used for signature domain. |
 | `OpaqueOverlay` family | Opaque values inaccessible until Age authentication and complete reverse-overlay validation. |
 | `ApplyArtifactImage` | Non-empty exact image, paths/bytes/topology owned by value. Its private `ApplyArtifactImageId` is computed only from the validated canonical image encoding in the same constructor; callers never supply the ID. No digest-only or archive reference constructor. |
 | `RecordedApplyPath` | Exact target-relative path bytes, never a controller path or a file-open capability. |
 | `ApplyTopology` | Entrypoints, roots, entries, and dependency edges validated in both directions. No dangling IDs or implicit dedup. |
 | `ApplySessionReady` | One aggregate per `dorc apply` invocation, containing a non-empty set of fully resolved target/session/context records. Not one per target. |
 | `PreparedApplyIntent` | Exact image assignments, origins, policy, controller semantics, session, target context, and generation frozen. |
-| `IntentPublicationGate` | Closed `Published` or explicit `ConfiguredBypass`; attempted/failed publication is neither. The local `Published` arm consumes one private value binding exact intent receipt, image-account witness, requested policy, and `30Rd` required local publication proof; callers cannot pair these after the fact. |
+| `PublishedApplyIntentV1` | Private ownership state produced only by moving one accounted prepared intent through placement. It retains the exact intent, image accounting, policy, document identity, and landing digest; no caller pairs these after publication. V1 has no bypass arm. |
 | `MutationDispatchPermit` | Non-`Clone`, one use, minted atomically from the complete publication-gate value and consumed immediately before the first potentially mutative dispatch globally. |
 | `MutationDispatched` | Authority-spent phase after permit consumption. Durable-only failure no longer aborts coherent orchestration. |
 | `ReceiptSigner`, `ReceiptVerifier`, `OverlaySealer`, `OverlayOpener`, `ReceiptSink`, `ReceiptSource` | One-purpose injected capabilities. No generic crypto/store provider, key acquisition, algorithm selection, fallback, or environment lookup. The concrete local implementations narrow through `30Rd`'s typed name, bound, ownership, and publication-proof APIs rather than exposing the weak raw string/`Vec` trait shapes at the CLI. |
@@ -414,12 +414,11 @@ publication, overlay-release, reingestion, or dispatch types:
 
 Compile-fail tests must pin the most tempting violations across a real crate seam.
 
-The sealed species trait owns the exact associated model for each projection. In
-particular, `ApplyIntent`'s rich model carries a private
-`ExactApplyImagesPresent` capability minted by complete image-slot accounting;
-the plain model has no such associated capability. Required dispatch consumes
-that capability from a published rich intent. A generic
-`Receipt<ApplyIntent, P, T>` is never sufficient by itself.
+The sealed species trait owns the exact associated model for each projection. Complete
+image-slot accounting consumes the prepared intent and returns one private accounted
+intent. Required dispatch moves that value through rich publication and then consumes
+the resulting `PublishedApplyIntentV1`. A bare `Receipt<ApplyIntent, P>` is never
+sufficient by itself.
 
 ## 30Rb:writer-state-map
 
@@ -457,30 +456,28 @@ TYPE LEAN:
 ```text
 BoundedReceiptBytes
   -> LocatedReceiptEnvelope
-  -> ReceiptSignatureChecked<SignerTrust>
-  -> ParsedReceiptSkeleton<Species, Projection, SignerTrust>
-  -> Receipt<Species, Projection, SignerTrust>
+  -> ReceiptSignatureChecked
+  -> ParsedReceiptSkeleton<Species, Projection>
+  -> Receipt<Species, Projection>
 ```
 
 Rich inserts:
 
 ```text
-ParsedReceiptSkeleton<D, Rich, T>
+ParsedReceiptSkeleton<D, Rich>
   -> DecryptedOpaqueOverlay
   -> ValidatedOpaqueOverlay
-  -> Receipt<D, Rich, T>
+  -> Receipt<D, Rich>
 ```
 
 Required reader behavior:
 
 - The locator may read only the fixed prefix/trailer and locate bounded spans.
-- It may use `KeyId` to query an injected resolver. The returned key already
-  carries `TrustedReceiptSigner` or `SelfAssertedReceiptSigner`.
-- The trust trait and both markers are private/sealed. The resolver exposes two
-  concrete result types (`TrustedReceiptVerificationKey` and
-  `SelfAssertedReceiptVerificationKey`), not `resolve<T>()`; generic callers
-  cannot request their preferred trust marker. The receipt crate alone converts
-  either concrete key into the matching checked state after strict verification.
+- It may use `KeyId` to query supplied verification material. Receipt core records only
+  cryptographic validity and never accepts a caller-selected trust marker.
+- Imported/fixed/debug verification remains self-asserted. The validated local-keyset
+  read edge alone wraps a complete receipt in `LocallyAuthenticated`; no public resolver
+  or verifier constructor can produce that envelope.
 - Unknown key, unavailable key, missing signature, invalid signature, unsupported
   version, malformed armor, truncation, and overlay mismatch remain distinct
   partial reasons.
@@ -494,7 +491,7 @@ Required reader behavior:
 - A partial receipt may expose only one bounded structural report under one global
   unauthenticated/damaged status. It cannot promote plausible-looking fields.
 
-`Receipt<D,P,T>` means format-complete for that projection. It does not mean true,
+`Receipt<D,P>` means format-complete for that projection. It does not mean true,
 fresh, safe to share, or authorized. A complete plain ApplyIntent remains unable to
 satisfy required mutation gating because it contains no exact apply image.
 
@@ -956,17 +953,15 @@ planned mapping:
 - `OriginatingPlans` per assignment;
 - actual policy and controller semantics;
 - generation and invocation identity;
-- requested publication policy and exact prepared pre-publication state; and
-- requested publication grade and configured-bypass provenance in the receipt model;
-  achieved publication proof remains an ephemeral typed result and is never inferred
-  from finding the file later.
+- requested publication policy and exact prepared pre-publication state.
 
-A plain ApplyIntent records IDs, topology/count summaries, and
-`withheld-plain`; it cannot mint a required publication witness. In V1, a signed
-plain intent may be emitted only as report data on the explicit
-`ConfiguredBypass` route. That route's bypass witness, not the plain receipt,
-permits dispatch. Later product policy may choose when such a bypass is
-configurable; V1 does not treat plain publication as satisfying required policy.
+Achieved publication remains an owned transition and is never inferred from finding the
+file later.
+
+A plain ApplyIntent records IDs, topology/count summaries, and `withheld-plain`; it
+cannot mint required publication or dispatch. V1 has no configured bypass. A future
+product policy must introduce any bypass as a separately reviewed feature rather than
+recovering it from a plain or fixture publication.
 
 ApplyOutcome records only what execution knows:
 
@@ -984,7 +979,7 @@ model makes that absence explicit:
 
 ```rust
 enum OutcomeAvailability {
-    Recorded(Reingested<Receipt<ApplyOutcome, Projection, SignerTrust>>),
+    Recorded(Reingested<Receipt<ApplyOutcome, Projection>>),
     Missing { intent: ApplyIntentId },
 }
 ```
@@ -1000,27 +995,17 @@ The V1 transition is:
 NonEmpty<ReadyApplyTarget>
   -> ApplySessionReady
   -> PreparedApplyIntent
-  -> IntentPublicationGate::Published(
-       PublishedReceipt<ApplyIntent, Rich, Grade>,
-       ExactApplyImagesPresent
-     )
+  -> AccountedApplyIntent
+  -> PublishedApplyIntentV1
   -> MutationDispatchPermit
   -> MutationDispatched
   -> ApplyOutcome attempt or explicit graph absence
 ```
 
-The only second route is disjoint:
-
-```text
-PreparedApplyIntent
-  + ConfiguredReceiptBypass
-  -> IntentPublicationGate::ConfiguredBypass
-  -> MutationDispatchPermit
-```
-
-It may separately attempt a signed plain report, but neither success nor failure
-of that attempt is an input to the bypass mint. There is no generic conversion
-from plain publication to `Published`.
+Every transition owns its predecessor. Placement receives the document identity and
+returns a primitive landing report; the accounted intent verifies that the landing
+digest names the exact sealed bytes. No second/bypass route exists, and no generic
+conversion from plain or fixture publication reaches `PublishedApplyIntentV1`.
 
 `ApplySessionReady` is one aggregate per `dorc apply` invocation. A per-target
 standup record does not itself license intent publication or mutation.
@@ -1109,7 +1094,7 @@ pub struct Reingested<T: sealed::RecordedType>(T); // private field and mint
 pub struct WhyPhase { /* private CLI/aid witness */ }
 
 fn describe_plan(
-    value: Reingested<Receipt<PlanReceipt, Rich, TrustedReceiptSigner>>,
+    value: Reingested<Receipt<PlanReceipt, Rich>>,
     phase: &WhyPhase,
 ) -> ReceiptReport;
 ```
@@ -1168,9 +1153,9 @@ TYPE LEAN:
 
 ```rust
 struct ReceiptGraph {
-    plans: BTreeMap<PlanReceiptId, Reingested<Receipt<PlanReceipt, P, T>>>,
-    intents: BTreeMap<ApplyIntentId, Reingested<Receipt<ApplyIntent, P, T>>>,
-    outcomes: BTreeMap<ApplyOutcomeId, Reingested<Receipt<ApplyOutcome, P, T>>>,
+    plans: BTreeMap<PlanReceiptId, Reingested<Receipt<PlanReceipt, P>>>,
+    intents: BTreeMap<ApplyIntentId, Reingested<Receipt<ApplyIntent, P>>>,
+    outcomes: BTreeMap<ApplyOutcomeId, Reingested<Receipt<ApplyOutcome, P>>>,
     edges: Vec<ReceiptEdge>,
     findings: Vec<GraphFinding>,
     partials: Vec<PartialReceipt<PartialReason>>,
@@ -1262,7 +1247,7 @@ Build:
 - IDs and domain-separated SHA-256 encoders;
 - typed limits/budgets;
 - sealed species/projection/trust markers;
-- `Receipt<D,P,T>`, partials, reader/writer states;
+- `Receipt<D,P>`, partials, reader/writer states;
 - exact skeleton grammar and locator;
 - DSSE PAE in `receipt`; Ed25519 signing/strict verification in `receipt-crypto`
   behind the receipt capability traits;
@@ -1457,9 +1442,9 @@ Prove:
 - `Rich` cannot serialize without exactly one sealed overlay;
 - partial cannot call complete-only APIs;
 - `Reingested<Disposition>` cannot satisfy a live consumer;
-- an external type cannot implement the recorded/species/trust marker traits or
-  construct `Reingested<T>`/`ReceiptSignatureChecked<T>`;
-- a generic caller cannot request `TrustedReceiptSigner` from the key resolver;
+- an external type cannot implement the recorded/species marker traits or
+  construct `Reingested<T>`/`ReceiptSignatureChecked`;
+- arbitrary verification material cannot construct the CLI's `LocallyAuthenticated` envelope;
 - recorded influence cannot become `InfluenceAccount`;
 - receipt IDs cannot cross species;
 - signing and encryption key IDs/capabilities cannot alias or convert;

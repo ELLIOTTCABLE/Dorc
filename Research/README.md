@@ -304,10 +304,12 @@ and carries the license-contamination map.
   conduct ledger is `notes/30Q`. The subsequent durable-receipt family is designed in
   **`plans/30R`** and built on `ai/r30-receipt`: immutable plan/intent/outcome receipts, local
   key/store production routes, exact general-sh source, durable locators, rooted graph selection,
-  and sealed `dorc-receipt::report::RecordedWhyFacts` are built. The remaining secure close is the
-  curated receipt API/steering plus D5 old-implementation deletion/census; recorded-why
-  arrangement is rehomed to a later non-quarantined conductor, and report-only kernel
-  re-derivation remains a separate deferred round. Current state: `LIVING_STATUS.md`.
+  and sealed `dorc-receipt::report::RecordedWhyFacts` are built. The in-flight security review's
+  four boundaries (intent/publication ownership, local authentication, opaque-value exit, and local
+  object handling) are repaired; the receipt-family crate contracts now govern ordinary callers.
+  Remaining D5/API/help cleanup and recorded-why arrangement are rehomed to a non-quarantined
+  conductor, while report-only kernel re-derivation remains a separate deferred round. Current
+  state: `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the

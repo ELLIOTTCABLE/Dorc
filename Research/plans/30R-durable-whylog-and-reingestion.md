@@ -250,7 +250,7 @@ parser.
 
 ## plain-and-rich-projections
 
-The plain trusted type cannot represent a rich detail region or detail-value field.
+The plain projection type cannot represent a rich detail region or detail-value field.
 The runtime plain grammar independently rejects rich-only content. Rich-to-plain is
 a typed semantic projection that serializes and validates a new document, never a
 textual strip operation.
@@ -284,9 +284,9 @@ V1 fixes the algorithms, their roles, encodings, and domain labels. Use maintain
 implementations through narrow adapters and disable unused optional surfaces.
 
 The document-validation input binds receipt version, species, projection, body
-length, readable skeleton, and encoded rich region. Validation status and provider
-acceptance remain distinct states. A provider identifier in a receipt aids lookup
-under controller policy and never selects an implementation or grants acceptance.
+length, readable skeleton, and encoded rich region. Cryptographic signature validity
+and local controller-policy authentication remain distinct states. A provider identifier
+in a receipt aids lookup and never selects an implementation or grants acceptance.
 
 Plain and rich both require the final validation record. Rich additionally repeats
 document identity and literal-skeleton digest inside the decoded detail region.
@@ -358,11 +358,12 @@ Tunnel standup remains pre-dispatch and fail-fast. The apply then prepares and
 publishes the exact `ApplyIntent` under active policy before committing to the first
 potentially mutative book command.
 
-The mutation-dispatch permit is an affine capability minted only from tunnel-ready
-state, prepared intent, policy witness, and either required publication or an
-explicit configured bypass. It is consumed by first mutative dispatch. A plan
-receipt, attempted write, TTY, durable read-back, or failed required publication
-cannot substitute.
+The mutation-dispatch permit is an affine capability minted only by moving the exact
+prepared intent through required publication. Publication, image accounting, policy,
+and intent remain one ownership chain; callers cannot pair them after the fact. The
+permit is consumed by first mutative dispatch. A plan receipt, attempted write, TTY,
+durable read-back, fixture landing, or failed required publication cannot substitute.
+V1 has no bypass route.
 
 After first dispatch commitment, durable-only failure no longer aborts otherwise
 coherent orchestration. Transport, execution, target attribution, generation, and
@@ -375,11 +376,12 @@ while the intent remains.
 
 ## receipt-store-contract
 
-V1 includes a per-user immutable store with private exclusive creation, explicit
-bounds, no-replace publication, named platform-specific synchronization results,
-unselectable incomplete content, bounded enumeration, filename/internal-identity
+V1 includes a per-user or explicitly-sited immutable store with private exclusive
+creation, explicit bounds, no-replace publication, named platform-specific synchronization
+results, unselectable incomplete content, bounded enumeration, filename/internal-identity
 agreement, and injected filesystem/clock/randomness. It adds no automatic cleanup,
-custom-root policy, mutable `latest` pointer, or sidecar database.
+mutable `latest` pointer, or sidecar database. Where production cannot condition removal
+on object identity, cleanup declines and leaves the partial file visible to bounded reads.
 
 ## target-crate-boundaries
 

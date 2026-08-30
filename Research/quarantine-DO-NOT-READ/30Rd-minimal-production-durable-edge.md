@@ -555,9 +555,10 @@ The normal open path validates before exposing any capability:
    identity.
 8. Derive both public materials and IDs and compare them to the manifest.
 9. Construct role-specific read availability. A valid signing document + matching
-   manifest ID may expose trusted verification even when the Age identity is missing
-   or damaged; decryption remains unavailable. Neither role-specific read state can
-   sign, seal, publish, initialize, or mint a dispatch witness.
+   manifest ID exposes local verification material even when the Age identity is missing
+   or damaged; decryption remains unavailable. Only the CLI read edge that owns this
+   validated local keyset may wrap a checked receipt as locally authenticated. Neither
+   role-specific read state can sign, seal, publish, initialize, or mint dispatch.
 10. On a write open, require both roles and successfully synchronize the validated
     key documents/manifest/required directory ancestry before constructing
     `ReadyForPublication`.
@@ -594,14 +595,14 @@ receipts or keys.
 
 ```rust
 pub struct LocalReadKeysV1 {
-    verifier: TrustedEd25519Key,
+    verifier: Ed25519Verifier,
     opener: Option<AgeOpener>,
     status: LocalReadKeyStatusV1,
 }
 
 pub struct LocalWriteKeysV1 {
     signer: Ed25519Signer,
-    verifier: TrustedEd25519Key,
+    verifier: Ed25519Verifier,
     sealer: AgeSealer,
     opener: AgeOpener,
     readiness: KeysetSynchronizedForPublicationV1,
@@ -614,11 +615,11 @@ material. Required effects:
 - no public fields or raw secret access;
 - no `Clone`, serde, `Default`, equality, ordering, or hash implementation;
 - redacted `Debug` naming only the type and public key IDs if needed;
-- read-only opening can return a trusted verifier without an opener; write readiness
-  remains all-or-nothing and requires both roles plus synchronization;
-- the trusted verification marker is minted because controller policy selected and
-  validated this local keyset, never because a receipt named its ID;
-- an unknown receipt signing ID does not become trusted and does not cause provider
+- read-only opening can return local verification material without an opener; write
+  readiness remains all-or-nothing and requires both roles plus synchronization;
+- receipt core treats supplied verification material as self-asserted; local-policy
+  authentication is the private CLI envelope minted only after this keyset validates;
+- an unknown receipt signing ID does not become locally authenticated and does not cause provider
   discovery;
 - key ID lookup never selects a plugin, process, command, path, network call, or
   alternate algorithm; and
@@ -713,9 +714,11 @@ not uniformly reachable. A crash may leave a partial file; the reader reports it
 it. Mere presence cannot prove which side of that distinction occurred.
 
 If write or synchronization fails, publication fails. Do not retry `fsync`; a retry may
-report success after dirty pages were discarded. The implementation may remove an
-incomplete file only while it retains sufficient ownership/identity to prove it is the
-same object created by this attempt. Otherwise it remains as bounded partial evidence.
+report success after dirty pages were discarded. Available production removal APIs act
+by name rather than conditionally on object identity, so cleanup returns unavailable on
+both platforms and leaves the incomplete file as bounded partial evidence. The
+deterministic model may exercise successful cleanup because its node identity genuinely
+conditions the operation; production does not claim that outcome.
 
 ### Publication grades are not one ordered enum
 
@@ -828,19 +831,15 @@ The data model must preserve the distinction regardless of prose.
 
 - Required rich `ApplyIntent` publication uses the concrete local keyset and local
   store.
-- `MutationDispatchPermit` is minted only from the store's typed required-grade proof
-  plus the existing exact-image capability.
+- `MutationDispatchPermit` is minted only by moving the exact prepared intent through
+  image accounting and required local publication; the published value owns that chain.
 - Key initialization, key opening, sealing, signing, store creation, write, or required
   synchronization failure before permit consumption refuses mutation.
 - A plain receipt never satisfies the required arm.
-- The existing `ConfiguredReceiptBypass` type remains disjoint. V1 does not infer it
-  from key failure, store failure, TTY, CI, environment, or a plain publication.
-- No new user-facing bypass spelling is authorized here. That remains a human product
-  ruling. Tests may exercise the already-ruled injected bypass type directly.
-- A current real-SSH route that cannot mint `ApplySessionReady` under `30Rb` cannot
-  count a configured bypass as completion of this baseline. The default production
-  apply route must either acquire the genuine standup identity required by `30Rb` or
-  refuse before mutation; resolving the transport mechanism remains `30Rb`'s work.
+- V1 has no configured or fixture bypass. Tests exercise private transitions or earn
+  required publication through the deterministic model/native throwaway store.
+- The default production apply route must acquire the genuine standup identity required
+  by `30Rb` and required publication or refuse before mutation.
 - Once the permit is consumed, durable-only failure to publish `ApplyOutcome` is
   reported and does not abort otherwise coherent execution.
 - Transport, execution, target, attribution, generation, and mutation-integrity
@@ -1144,7 +1143,7 @@ Exit: native and modeled store tests are green; no automatic deletion exists.
 - Ensure the default real apply path obtains `30Rb`'s genuine ready-session identity,
   traverses the concrete required-publication gate, and dispatches through that same
   held session under inert e2e transport. Safe refusal remains required for failure
-  cases but cannot satisfy this exit; `ConfiguredReceiptBypass` cannot satisfy it.
+  cases but cannot satisfy this exit; no bypass route exists.
 - Add separate-process plan/why and apply/why acceptance cases.
 
 Exit: the shipped binary writes and reads V1 receipts without fixture receipt

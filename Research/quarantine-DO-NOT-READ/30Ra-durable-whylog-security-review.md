@@ -669,10 +669,12 @@ The signature binds:
 Per-field signatures are excluded. They do not prove completeness, multiply key and
 format operations, and earn nothing absent independently portable selective disclosure.
 
-Signature validity and signer trust are separate types and render states. A public key
-embedded in or named by a receipt is self-asserted until controller policy or an
-explicit caller supplies trust. The file may name a key identifier; it never selects
-a key backend or grants trust.
+Signature validity and local controller-policy authentication are separate render
+states. `dorc-receipt` validates signatures under supplied material but claims no trust;
+the validated local-keyset read edge wraps a receipt in a private-field
+`LocallyAuthenticated` envelope. Imported or arbitrary verification material stays
+self-asserted. The file may name a key identifier; it never selects a key backend or
+grants authentication.
 
 ## signing-and-encryption-keys-are-separated
 
@@ -732,10 +734,11 @@ The reader follows one monotone state machine:
 ```text
 BoundedBytes
   -> LocatedEnvelope
-  -> SignatureChecked<SignerTrust>
+  -> SignatureChecked
   -> ParsedSkeleton<Document, Projection>
   -> OverlayState<Absent | Unavailable | Authenticated>
   -> CompleteReceipt | PartialReceipt
+  -> LocalPolicyAuthentication | SelfAssertedValidity
   -> SinkEncodedRender
 ```
 
@@ -800,14 +803,16 @@ The one-way control type is:
 ```text
 TunnelReady
   + ApplyIntentPrepared
-  + ReceiptPolicyWitness
-  + PublishedIntentOrConfiguredBypass
+  -> AccountedApplyIntent
+  -> PublishedApplyIntentV1
   -> MutationDispatchPermit
 ```
 
 `MutationDispatchPermit` is affine and consumed by the first potentially mutative
-dispatch. It cannot be minted from a failed strict publication, a plan receipt, an
-outcome, a durable read-back value, or TTY presence.
+dispatch. The published value owns the exact prepared intent, image accounting, policy,
+and landing digest; no caller pairs those values after publication. It cannot be minted
+from a failed publication, fixture landing, plan receipt, outcome, durable read-back, or
+TTY presence. V1 has no bypass route.
 
 After consumption, the apply enters `MutationDispatched`. Durable-only failure no
 longer withholds mutation. This transition occurs even if delivery or remote outcome
@@ -843,10 +848,13 @@ forfeited value, not an accidental claim that no commands ran.
 ## storage-and-publication-contract
 
 The store is a per-user collection of immutable independently identified receipt files,
-not a mutable database, cache, or `latest` pointer. Required publication is a typed
-runtime fact and is never reconstructed merely because complete receipt bytes are later
-found. Incomplete material never reads complete, and platform guarantees remain explicit
-rather than being normalized into false parity.
+not a mutable database, cache, or `latest` pointer. Required publication is an owned
+transition of the exact accounted intent and is never reconstructed merely because
+complete receipt bytes are later found. Incomplete material never reads complete, and
+platform guarantees remain explicit rather than being normalized into false parity.
+Production cleanup declines on both platforms because available removal APIs act by name,
+not object identity; interrupted files remain bounded incomplete entries until a future
+identity-conditioned removal or retention design exists.
 
 `30Rd` is the sole V1 mechanism specification for roots, names, publication,
 synchronization, enumeration, incomplete files, platform differences, and testing.
@@ -866,8 +874,8 @@ Use sealed newtypes for:
 - `SkeletonBytes`, `SignedBodyBytes`, `AgeArmorBytes`, and `SignatureBytes`;
 - `RecordId`, `OpaqueFieldTag`, and `OverlaySlotKey`;
 - every byte/count/depth/line/allocation limit;
-- trusted versus self-asserted signer identity;
-- authenticated versus unauthenticated versus damaged material;
+- cryptographic validity versus local-policy authentication;
+- authenticated versus self-asserted versus damaged material;
 - complete versus partial receipt;
 - live versus recorded influence;
 - publication grade; and
@@ -884,15 +892,10 @@ Receipt species should be sealed type parameters or distinct concrete types, not
 at mutation-sensitive constructors. Signature domains derive from the type and cannot be caller
 selected.
 
-Reader trust should remain a type parameter:
-
-```text
-SignatureChecked<TrustedSigner>
-SignatureChecked<SelfAssertedSigner>
-SignatureUnavailable
-```
-
-Only the trusted/complete path may render authenticated claims. All paths remain report-only.
+Receipt-core signature checking carries no caller-mintable trust parameter. Generic
+verification yields self-asserted cryptographic validity; only the validated local-keyset
+read edge may construct the local-authentication envelope. Authenticated and self-asserted
+paths remain report-only, and both preserve completeness/detail state independently.
 
 Use Rust move semantics as affine enforcement for:
 

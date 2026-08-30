@@ -14,9 +14,9 @@ validated capabilities; it does not interpret receipt semantics, render aid, or 
   repair, or deletion.
 - **`inv-store-is-immutable`** — the store mints typed final names and creates without replacement.
   No append, mutable latest pointer, fallback name, automatic retention, or unrelated cleanup.
-- **`inv-owned-handles-authorize-operations`** — a pathname string is never enough to read, replace,
-  or remove an entry. Use retained validated handles/owned-entry tokens; cleanup consumes only the
-  object identity this attempt still owns.
+- **`inv-owned-handles-authorize-operations`** — a pathname string is never enough to read or
+  replace an entry. Use retained validated handles/owned-entry tokens. Production cleanup declines
+  when removal cannot be conditioned on object identity, leaving the incomplete file recorded.
 - **`inv-every-io-act-is-injected`** — production and deterministic model implement the same sealed
   `LocalIo` operation vocabulary. Keep create, write, sync, inspect, enumerate, read, and owned
   removal separately faultable; add no convenience filesystem bypass.

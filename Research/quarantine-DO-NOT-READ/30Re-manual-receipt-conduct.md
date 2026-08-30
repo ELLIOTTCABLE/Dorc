@@ -64,16 +64,30 @@ Built and unified:
 - coherent receipt CLI vocabulary and `--no-receipt` suppression;
 - living analyzer/aid/research registers and the complete `30R` / extended `30Ra` target.
 
-Review/repair residue, not silently complete:
+Security review repair is complete:
 
-- three report-API close items from `30Rh`: site newtype, parsed order token, and graph-derived
-  closure membership;
-- receipt crate public-export/steering close and final D5 deletion/singular implementation census;
+- prepared intent, image accounting, required publication, and permit are one ownership chain; the
+  production/fixture bypass is deleted;
+- receipt core claims cryptographic validity only; local-policy authentication is a private CLI
+  envelope minted by the validated local-keyset edge;
+- validated opaque detail has one class-aware encoder exit and no raw/revealing convenience path;
+- Unix opens are handle-relative/non-following with ownership checks; cleanup declines on both
+  platforms when removal cannot be conditioned on object identity, leaving bounded partial files.
+
+Accepted carried limitations:
+
+- production cannot clean interrupted files until an identity-conditioned removal or retention
+  design exists; the deterministic model retains that success path because its node identity is real;
 - loaded-source locator composition remains explicit uncollected V1 residue;
-- full recorded-why arrangement and replacement user-facing cases are rehomed outside quarantine;
-- report-only kernel re-derivation remains a separate kernel-authorized round;
-- final builder completion and conductor `gate:arc` have not run at this unified tip.
+- three report-API close items from `30Rh` (site newtype, parsed order token, graph-derived closure)
+  remain ordinary engineering work;
+- recorded-why arrangement/help/cases are rehomed outside quarantine, and report-only kernel
+  re-derivation remains a separate kernel-authorized round.
 
-Unified branches `ai/r30-receipt` and `ai/r30-conduct` point together, include the current `ai/main`
-line by merge, and have not been upstreamed. Worktrees and earlier lane branches are intentionally
-left untouched for post-review repair.
+Transition is permitted, but not falsely green: the inert old whylog/replayed-record implementation
+still awaits D5 deletion and the pre-existing CLI vocabulary/help failure set still blocks the full
+gate. Both are now governed by the receipt crate contracts and can be completed without reopening
+quarantined reasoning. Final completion and `gate:arc` remain owed by the successor.
+
+`ai/r30-receipt` carries the repair commits; `ai/r30-conduct` must fast-forward to its final handoff
+tip. Nothing is upstreamed. Worktrees and earlier lane branches remain intentionally standing.
