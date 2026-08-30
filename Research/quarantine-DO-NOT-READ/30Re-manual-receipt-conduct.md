@@ -17,8 +17,8 @@ checkout into an external Opus harness.
 - Diagnostic/harness work is complete on `ai/r30-receipt-loom-code` at `6c1f8024`; `30Rf` and
   `30Rg` carry the account, and the both-platform completion gate is green.
 - Current close lane reuses `ai/r30-receipt` in `.claude/worktrees/r30-receipt`; the receipt
-  vocabulary/attention ruling is committed at `a493aaa6`. The temporary D5 worktree/branch was
-  removed.
+  vocabulary/attention ruling, old-ladder cut, and exact-general-source/durable-locator ruling are
+  committed through `cc8fd3c2`. The temporary D5 worktree/branch was removed.
 - Conduct branch: `ai/r30-conduct`; this document is its resumption account.
 - The two failed in-process harness dispatches produced no commit and no worktree mutation.
 
@@ -43,6 +43,11 @@ checkout into an external Opus harness.
   required graph closure approximates the human's run. Disconnected DAGs never merge. The surface is
   `--receipts <folder>` for store location, and why's mutually exclusive `--receipt <file>`,
   `--receipt-id <id>`, `--receipt-last` root selectors. `--all` controls explanation depth only.
+- **`30Re:rul-general-source-bytes-and-locator`** — rich plan receipts retain exact acquired
+  general-sh bytes that were not accepted as valid `dorc-lang`; valid `dorc-lang` bytes are omitted.
+  Recorded sites project the existing locator DAG with exact byte spans instead of gaining a
+  line-only locator. Current and historical `path:N` compare only the same physical line and never
+  infer moved-line equivalence.
 
 ## serial schedule
 
@@ -57,9 +62,10 @@ checkout into an external Opus harness.
 
 ## current dispatch contract
 
-`30Rh` owns `30Re:sched-integrated-durable-close` in the reused receipt worktree. It implements the
-ruled receipt vocabulary and rooted graph semantics while adapting existing acceptance, then deletes
-the old durable. It reads the focused specs and this conductor-routed contract rather than inheriting
-prior ledgers wholesale. It does not chase `30Rg`'s deviations, the recorded-listing Debug spellings,
-the dispatch-diagnostic split, or new test backstops. It commits the transition and deletion
-granularly and ends with one both-platform completion gate at one final tip.
+`30Rh` owns `30Re:sched-integrated-durable-close` in the reused receipt worktree. The receipt
+vocabulary and old-ladder deletion are already committed; the address-directed report exposed the
+missing source custody/locator projection. The same warm builder now adds exact general-sh custody,
+the durable existing-locator projection, and the recorded why render, then completes the seven-case
+transition and D5. It does not chase `30Rg`'s deviations, the recorded-listing Debug spellings, the
+dispatch-diagnostic split, corruption-parser expansion, or new test backstops. It commits granularly
+and ends with one both-platform completion gate at one final tip.
