@@ -1,164 +1,106 @@
 # 30Rh — integrated durable close: builder ledger
 
-> Tier: quarantined builder ledger for `30Re:sched-integrated-durable-close`. Current state, not
-> chronology. Owner: this lane's builder. Conductor-facing account is `30Re`.
+> Tier: quarantined builder ledger for `30Re:sched-integrated-durable-close`, continued under the
+> source-custody redirect. Rationale, findings, deviations, and handoff only — no tip hashes, no
+> per-test status, no commit lists (git carries those).
 
-## lane identity
+## the settled source-class boundary
 
-- Worktree: `.claude/worktrees/r30-receipt`
-- Branch: `ai/r30-receipt`
-- Base tip at dispatch: `a493aaa62548701f25cfcdd5682e0d3600f5895b` (clean, verified)
-- Current tip: `2f661ace` — RED, `DORC_KNOWN_BROKEN`-acked (mid-cutover; see `30Rh:state-of-the-build`)
-- Dirt: none
+A source is `dorc-lang` iff `dorc_oracle::marker::has_marker` accepts it — the `# dorc-lang/v0.2`
+version marker, and nothing else. Everything else the run acquired is `general-sh`, and its exact
+acquired bytes ride the rich overlay under `OpaqueFieldTag::SourceContent`.
 
-## commits
+Deliberately NOT `sourcing::satisfies_the_contract`, which additionally demands load-inertness.
+That is the contract a `.` OPERAND must meet — a different question from which dialect a file was
+accepted as — and folding the two would withhold the bytes of a marked file that merely runs
+something at load time. The marker alone is also what `snapshot::role_of` already splits
+`BookSourced` from `PlainInclusion` on, so there is one answer to "which dialect is this file"
+rather than two.
 
-| Tip | What it did |
-|---|---|
-| `7b5a2c28` | This ledger, opened with the as-built census |
-| `2f661ace` | Section A's vocabulary cutover + the old replay ladder's deletion (RED) |
+Custody follows the class and nothing else: `general-sh` captures, `dorc-lang` reads
+`uncollected`, plain narrowing turns either captured slot into `withheld-plain`, and a source over
+either bound reads `omitted-limit` while allocating nothing. A source the caller described nothing
+about defaults to `dorc-lang`-shaped, so an absent entry persists nothing — there is no branch that
+could turn a path into a read.
 
-## brief deviations found while reading
+## the durable locator shape
 
-- **`30Rh:dev-four-crates-have-no-steering`** — the brief directs a full read of crate steering for
-  `plan`, `cli`, `aid`, `dorc-loom`, `receipt`, `receipt-crypto`, and `receipt-local`. Only
-  `aid`, `analysis`, `cli`, `core`, `hostsim`, `oracle`, `plan`, `syntax`, `weft` carry a
-  `CLAUDE.md`; `dorc-loom`, `receipt`, `receipt-crypto`, and `receipt-local` have none. Read what
-  exists; authored no steering for the four (the brief forbids steering edits).
+`dorc-receipt-locator/1`, a receipt-owned inert mirror in `receipt::durable_locator` — not serde
+over `aid::locator::Locator`, because that type holds process-local `SourceFileId`s and `StageId`s
+and deserializing it would hand a reader back a LIVE locator. There is no conversion back, no
+accessor yielding a `SourceFileId`, and nothing in the module reaches a `ProvId`, an arena, or an
+authority input.
 
-## as-built census — the old surface this lane removes
+It preserves the closed five-stage vocabulary (`authored`/`loaded`/`copied`/`generated`/`claimed`),
+source ordinals or generated-artifact identity, exact byte spans, ordered bounded origins, and one
+head. Wire form is ASCII structural lines with LENGTH-PREFIXED raw runs, so an artifact label or a
+bundle claim carrying any byte — a newline, invalid UTF-8, a control sequence — round-trips exactly
+without an escape alphabet to get wrong. Validation is at the CONSTRUCTOR, so an invalid locator is
+unrepresentable rather than merely unrendered; an origin must be STRICTLY EARLIER than the stage
+citing it, which makes acyclicity structural rather than a walk.
 
-### CLI flags (`cli/src/lib.rs`)
+The slot is per-SITE and never per-region: a region is one authored edit many executions share, so
+it has no single provenance to carry, and giving it the slot would invite one instance's locator to
+stand for every other invocation of the same body.
 
-| Current spelling | Field | Meaning today | Target |
-|---|---|---|---|
-| `--whylog-dir <dir>` | `whylog_dir` | durable write destination + `--last` read root | `--receipts <folder>` |
-| `--whylog <file>` | `whylog` | exact old durable to replay (`why` only) | DELETE |
-| `--no-whylog` | `no_whylog` | write no durable this run | OPEN — see `30Rh:open-suppression-spelling` |
-| `--receipt <id>` | `receipt` | exact recorded identity in the store | `--receipt-id <id>` |
-| `--last` | `last` | replay newest durable in `--whylog-dir` | `--receipt-last` |
-| (none) | — | — | NEW `--receipt <file>`, explicit report-only root |
-| `--all` | `all` | `RecordedSelection::Every` — whole-store enumeration | depth only; `Every` deleted |
+## the byte domain
 
-Selection seat: `Args::recorded_selection` → `engine::RecordedSelection{Named,Every,Latest}`
-(`cli/src/engine.rs:2207-2233`). `Every` is the arm the brief deletes.
+Spans index the ACQUIRED bytes, unnormalized. LF indexes physical lines and a CR in CRLF is an
+input byte like any other, so a newline conversion is source DRIFT rather than an invisible
+equivalence. Nothing normalizes, transcodes, or reserializes on the way in.
 
-### The six gate-8 replay-pair cases (`crates/cli/tests/`)
+## deviations and open items
 
-All six declare `run: round-trip` + `fixpoint: executed` + `why-addr:` + `expect-why-chain:`, and
-every one of them asserts exactly ONE needle — `=== OUTCOME ===`. The remaining
-`expect-why-chain` lines in `survivebite27` are `#`-comments, which `needles_missing`
-(`e2e.rs:644`) skips.
+- **`30Rh:dev-four-crates-have-no-steering`** — the first brief directed a full read of crate
+  steering for `dorc-loom`, `receipt`, `receipt-crypto`, and `receipt-local`; none of the four
+  carries a `CLAUDE.md`. Read what exists; authored no steering (the brief forbids it).
 
-1. `survivebite27-naked-trust-chain.loom` (addr 12, `--risk-faultless-skips`)
-2. `whygallery-decline-unsound-arm.loom` (addr 9)
-3. `whygallery-elide-and-hand-guard.loom` (addr 8)
-4. `whygallery-survive-trusted-footprint.loom` (addr 10, `--risk-faultless-skips`)
-5. `whygallery-wall-guards-downstream.loom` (addr 9)
-6. `whygallery-webhost-whole.loom` (addr 14, `--risk-faultless-skips`)
+- **`30Rh:open-suppression-spelling`** — RULED, human, ACK: `--no-whylog` renames in place to
+  `--no-receipt` and stays. `AID-NEEDS:law-whylog-is-sensitive` requires a typeable refusal and
+  `30Rd:v1-acceptance-and-exit` #16 keeps writing default-on, so deleting it outright would remove
+  the only way to say no.
 
-Gate: `e2e.rs::scan_why_chain` (`e2e.rs:2752`). Today its replay arm writes with
-`--whylog-dir=<scratch>` and reads with `--last --whylog-dir=<scratch>`.
+- **`30Rh:open-seventh-case`** — `whygallery-drifted-book-degraded-receipt.loom` embeds an old
+  `.whylog` and rides the drifted-replay path. That path (`AcquiredEngine::Drifted`,
+  `dorc_cli::drifted_receipt`) went out with the replay ladder, so the case is currently unbacked
+  and its disposition is load-bearing rather than tidy-up. Owed at item 6.
 
-### The seventh case
+- **`30Rh:fnd-receipts-flag-has-no-store-seat`** — `--receipts <folder>` parses and gates nothing
+  yet. `receipt-local`'s `store::store_root` and its private `locations` both derive the root as
+  `roots.product_root(RootRole::State).child(STORE_DIR)`, so the flag cannot name an exact store.
+  Honouring the ruled spelling needs an explicit-root override on `LocalReceiptEdgeV1` threaded
+  into both store opens, leaving the KEY root standard. In scope, NOT yet built — and until it is,
+  the flag is accepted and ignored, which is the one live dishonesty in the surface.
 
-`whygallery-drifted-book-degraded-receipt.loom` — carries a committed `.whylog` inline and pins the
-drifted-replay degrade path (`28F:rul-drift-replay-d1`). Outside gate-8 (no `expect-why-chain`).
-Disposition owed; see `30Rh:open-seventh-case`.
+- **`30Rh:fnd-recorded-sites-carry-no-line`** — a `RecordedSiteDecision` carries `RecordedSite`,
+  a `RecordedAst` ARENA INDEX, disposition, shell text, and influence. No line number, by design:
+  the durable locator's authored span plus the recorded exact bytes are what recover a historical
+  physical line. Recording a line instead would be a durable-content change behind
+  `rul-durable-contents-reviewed-before-design`, and is not this lane's to take.
 
-### `results::replayed_records`
+- **`30Rh:dev-site-locators-are-book-authored-only`** — `custody::site_locators` builds a
+  one-stage `Authored` locator per site from the book's own AST span. A site whose bytes arrived
+  through a `.` would compose a `Loaded` stage above it, and the representation carries that shape
+  already; what is missing is the per-site SOURCE identity to build it from, which lives in the
+  loader rather than in `SpineDisposition`. Sites the book's arena cannot answer are ABSENT from
+  the map rather than carrying a guessed span — the projection reads absence as uncollected, and an
+  uncollected locator is a slot a reader knows to distrust.
 
-One production caller — `cli/src/engine.rs:1422`. One census entry —
-`receipt/tests/crate_boundary.rs:766,777`. D5 requires caller count zero.
+- **`30Rh:fnd-publication-was-gated-on-a-named-store`** — introduced and fixed inside this lane,
+  recorded because the shape recurs: `durable_destination` fed BOTH the old whylog write path and
+  the `DurableOutput` gate, so re-pointing it at `--receipts` silently turned default-on
+  publication off for every run that named no store. Publication is now gated on `--no-receipt`,
+  the admin's refusal, which is the only thing that should ever decide it.
 
-## findings that shape section B
+## remaining work
 
 - **`30Rh:fnd-store-route-lists-it-does-not-explain`** — a receipt-reading `why` routes to
-  `main.rs::read_receipt_store` → `engine::report_recorded_store`, which emits a recorded LISTING
-  (`sites 1`, `signing-key …`, `opaque … source-path book.sh`) and **takes no why address**. The
-  `=== OUTCOME ===` needle every gate-8 case asserts is the live why triptych's panel header,
-  rendered from `cli/src/why.rs`. So `dorc why <address> --receipt-last` cannot land the existing
-  needle today: the receipt-backed arm needs an address-directed, report-only render over the
-  RECORDED model. It may not reach it by re-running the kernel off recorded bytes — the brief and
-  `plan/CLAUDE.md inv-reingested-material-never-authorizes-action` both forbid that, and
-  `results::replayed_records` is on the deletion list.
-
-  This is the substance of section B and the largest single piece of the lane. It is NOT a
-  `30Rd` STOP condition: it needs no second format, no compatibility reader, no authority
-  conversion, and no new observation — only a report projection over material the receipt
-  already carries.
-
-- **`30Rh:fnd-recorded-sites-carry-no-line`** — and the constraint that shapes how. A
-  `RecordedSiteDecision` (`receipt/src/plan.rs:292`) carries `RecordedSite{leaf, member}`, a
-  `RecordedAst` **arena index** (`receipt/src/rows.rs:292` — an index into the parsed syntax arena,
-  NOT a line), the disposition, the site's shell text as `OpaqueState`, and a `RecordedInfluence`.
-  There is no line number anywhere in the projection. So `dorc why 12` cannot be answered from the
-  document alone. Two routes exist and only one is a builder's to take:
-
-  1. **Re-parse the CURRENT book** (its path is in the encrypted region), resolve line 12 to a
-     leaf, and look up the RECORDED disposition by leaf id. Sound exactly when the recorded source
-     digest matches — which is the drift check that already exists — and degraded when it does not.
-     Nothing recorded drives an action; the parse is over current source, and
-     `receipt/src/reingested.rs`'s `RecordedCurrent`/`ReDerivedDisposition` is already built to keep
-     the recorded and re-derived arms distinct.
-  2. **Record the line in the receipt.** A durable-content change, so
-     `spike/CLAUDE.md rul-durable-contents-reviewed-before-design` puts it behind opaque review
-     BEFORE the design settles. Not available to this lane.
-
-  PROCEEDING ON 1, because 2 is closed to a builder. Reported to the human 2026-08-29 with the
-  option to halt the lane and take the durable-content question to review instead; no halt ruled.
-
-- **`30Rh:fnd-receipts-flag-has-no-store-seat`** — `--receipts <folder>` must be the EXACT store
-  root, and no such seat exists. `receipt-local`'s `store::store_root` and its private `locations`
-  both derive the root as `roots.product_root(RootRole::State).child(STORE_DIR)`, i.e. always
-  `<state>/dorc/receipts-v1`. Honouring the ruled spelling needs an explicit-root override carried
-  on `LocalReceiptEdgeV1` and threaded into both store opens, leaving the KEY root standard
-  (`30Rd:controller-root-resolution`: "it never changes the standard configuration/key root").
-  In scope, not yet built.
-
-## rulings and open items
-
-- **`30Rh:open-suppression-spelling`** — RULED, human, 2026-08-29: **ACK**. `--no-whylog` renames
-  in place to `--no-receipt`. The brief's D5 list deletes the old parsing/help and section A named
-  no successor, but `AID-NEEDS:law-whylog-is-sensitive` holds that a receipt is host metadata
-  written unprompted, so refusing one must be typeable, and `30Rd:v1-acceptance-and-exit` #16 keeps
-  writing default-on — deleting outright would remove the only typed refusal. A rename, not an
-  alias, so `rul-strawman-formats-no-compat` is satisfied. LANDED at `2f661ace`.
-
-- **`30Rh:open-seventh-case`** — pending inspection of what the embedded `.whylog` actually pins
-  versus what the recorded source-standing model can express. Note that `2f661ace` already removed
-  the drifted-replay path this case rides (`AcquiredEngine::Drifted`, `dorc_cli::drifted_receipt`),
-  so the case is currently unbacked and its disposition is now load-bearing rather than tidy-up.
-
-## state-of-the-build
-
-- **Section A — LANDED at `2f661ace`, tree RED.** `--whylog-dir`→`--receipts`,
-  `--receipt <id>`→`--receipt-id`, `--last`→`--receipt-last`, new `--receipt <file>`,
-  `--whylog <file>` deleted, `--no-whylog`→`--no-receipt`, the three root selectors made mutually
-  exclusive, `RecordedSelection::Every` (the `--all` whole-store arm) deleted so `--all` is depth
-  only. `RecordedSelection` → `engine::ReceiptRoot{File,Id,Last}`; `Args::recorded_selection` →
-  `Args::receipt_root`; `Args::answers_from_the_receipt_store` deleted (with `--whylog*` gone every
-  receipt-reading `why` is store-answering, which is what its own doc comment said would happen).
-  `StoreReading::cohort` → `terminal`, with `recorded::collapse_predecessors` implementing
-  `30Rd:store-enumeration-and-last-selection`'s collapse: within the maximum-order cohort, members
-  that are typed graph predecessors of another member drop out; a sole survivor is selectable,
-  several incomparable survivors stay the ambiguity report, never a tie-break.
-- **D5, partially executed early** (forced by the rename, not scope creep): `load_whylog_replay`,
-  `read_replay_source`, `refuse_replay`, `receipt_has_nowhere_to_read`, the `Replay`/`ReplayLoad`
-  types' use, the `AcquiredEngine::Drifted` arm, and — the one that matters —
-  `PlanAuthority::authorise(dorc_plan::whylog::admit_unscoped_whylog_replay(…))`, the replay plan
-  authority `30Rb:reingestion-and-why` requires deleted.
-- **Why the tree is RED:** `durable_destination` now reads `--receipts`, but that value still feeds
-  the OLD `whylog_store` write path rather than the receipt edge; `dorc-loom/src/consumer.rs` still
-  names `answers_from_the_receipt_store`, `recorded_selection` and `whylog_dir`; and
-  `main.rs::read_receipt_store` does not yet pass edges to `StoreReading::of`. Next commit.
-- **Not started:** the `--receipts` store seat (`30Rh:fnd-receipts-flag-has-no-store-seat`), the
-  address-directed recorded render (section B), the gate-8 rewrite, the seventh case (section C),
-  the rest of D5's census, `results::replayed_records`' removal.
-- **Reading complete:** root `README`/`DESIGN`/`IMPLEMENTATION`, `spike/CLAUDE.md`,
-  `plan`/`cli`/`aid` crate steering, quarantine `AGENTS.for-builders-only.md`, `30Re`, `30R`,
-  `30Ra:receipt-rooted-attention-and-selection`, `30Rb` (reingestion-and-why, Stage 5, Stage 5A,
-  Stage 6, DST/product routes, verification tooling, stop conditions),
-  `30Rd` (controller-root-resolution, store-enumeration-and-last-selection, D4, D5,
-  v1-acceptance-and-exit, test-and-fixture-fences, stop conditions).
-- **Tests/gate:** none run yet — the tree does not compile.
+  `engine::report_recorded_store`, which emits a recorded LISTING and takes no why address. The
+  `=== OUTCOME ===` needle every gate-8 case asserts is the live why triptych's panel header. So
+  the address-directed recorded renderer (item 4) is the substance of what is left, and it must
+  reach it without the live decision kernel or `results::replayed_records`.
+- Item 5's authentication posture: do not encode an early-stop/no-explanation invariant.
+- Item 6: the six gate-8 pairs onto the recorded renderer, the seventh case's disposition, and the
+  rest of the D5 census — old whylog implementation/flags/fixtures/codes/consumers gone,
+  `results::replayed_records` caller count zero, one production provider/store/reader/writer.
+- `--receipts` still needs its store seat before any of that is honest.
