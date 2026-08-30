@@ -50,49 +50,67 @@ collide as a distinct name would) errs safe, and delegating to the tool's own
 authoritative query - as above - beats reimplementing its aliasing rules. A
 resolver body is a probe body; the page-three contract applies whole.
 
-## What touching an entity drags along: reach
+## What touching an entity entails: reach, and the finished definition
 
-The footprint machinery compares within kinds. Here is the gap that leaves,
-replayed from the admin's seat: some colleague's oracle honestly declares that
-`hork tune` disturbs `sm.dorc.Package:nginx` - meaning, in their head, the whole
-package, files included. But `sm.dorc.Package:nginx` and
-`sm.dorc.File:/etc/nginx/nginx.conf` are different kinds, so a downstream
-file-fact sails over that wall untouched. And the colleague cannot fix it: which
-files a package owns is the package system's knowledge, not theirs. The owner
-says it once, for everyone:
+The footprint machinery compares within kinds, and across kinds it is
+deliberately mute: a claim spelled in one vocabulary relates, by itself, to
+nothing in any other. Here is what that leaves, replayed from the admin's seat:
+some colleague's oracle honestly declares that `hork tune` disturbs
+`sm.dorc.Package:nginx` - meaning, in their head, the whole package, files
+included. Below that running wall a file-fact or a service-fact guards rather
+than elides - safe, and blunter than the world, because someone does hold the
+missing knowledge. Not the colleague: which files a package owns is the package
+system's knowledge, not theirs. The owner says it once, for everyone:
 
 ```sh
-sm_dorc_Package__disturbance_reaches_only() {
+sm_dorc_Package__disturbance_reaches() {
    printf '%s\n' "$1"   : disturbs sm.dorc.Service
    dpkg -L "$1" 2>/dev/null   : disturbs sm.dorc.File
+   printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"
 }
 ```
 
-Read: a disturbance to a package, of any provenance, reaches at most the
-same-named service, and exactly the files the package installed. The engine
-applies this to every footprint coordinate of the kind, whoever emitted it - the
-colleague's claim now covers nginx's files without the colleague learning
-anything. Emission lines follow the footprint grammar: entities on stdout, the
-kind riding a `: disturbs` mark (the same verb the footprint member uses; a
-reach is a disturbance the kind implies). The first line is static knowledge,
-resolved at
-plan time; the second is a host question, run read-only at probe time, because
-the true payload lives only on the host. Both shapes live in one body, and a line
-can migrate between them as the kind's needs change.
+Two acts live in that body, on two rungs, and your judgment governs each
+separately.
 
-Reach only ever widens claims - it makes footprints touch more, never less - so
-its failure direction is the safe one: an over-broad reach walls too much; it
-never licenses a skip. That is also why it applies to footprints only. A fact's
-backing stays exactly what its probe read; nothing here inflates what a fact
-claims for itself.
+The emission lines are the *entailment* - part of what the word "Package" means
+is that touching one touches its files and its unit. The engine applies them to
+every footprint coordinate of the kind, whoever emitted it - the colleague's
+claim now covers nginx's files without the colleague learning anything. They
+follow the footprint grammar: entities on stdout, the kind riding a `: disturbs`
+mark (the same verb the footprint member uses; a reach is a disturbance the kind
+implies). The first line is static knowledge, resolved at plan time; the second
+is a host question, run read-only at probe time, because the true payload lives
+only on the host. Both shapes live in one body, and a line can migrate between
+them as the kind's needs change. Emissions only ever widen claims - they make
+footprints touch more, never less - so their failure direction is the safe one:
+an over-broad or half-finished set of emission lines walls too much and never
+licenses a skip. Write them from partial knowledge, any time; include when
+unsure.
 
-The member's long name is deliberate, and it introduces a naming convention that
-now governs your judgment: `only` in a role name means complete-by-contract. A
-member with `only` in its name is a survey, not a contribution - authoring it
-asserts you have enumerated the whole answer, and consumers will act on its
-negative space (everything you did not emit is thereby declared unreachable).
-Survey totalistically before authoring one; members without `only` grow arm by
-arm, members with it are all-or-nothing per invocation.
+The last line is the other rung, and it is the one dangerous sentence in your
+file. `disturbs nothing-else` says *the definition is finished*: disturbing an
+entity of this kind entails the emitted cells and nothing else - in any
+vocabulary, including ones you have never heard of. Only past that sentence will
+the engine find one of your kind's claims disjoint from another kind's fact and
+let an elision survive the wall; without it, cross-kind pairs answer unrelated
+and guard. The spelling is load-bearing: a runtime emission in tail position
+means its *arrival* proves the body ran to completion - a dying `dpkg -L` means
+no sentence, no license, total wall - and its absence is simply the informative
+rung: safer, never wrong. Write it per case-arm, only for the shapes you have
+genuinely finished thinking about.
+
+Reach applies to footprints only. A fact's backing stays exactly what its probe
+read; nothing here inflates what a fact claims for itself.
+
+The member has no `only` in its name, and that is deliberate (`plans/30U`): the
+completeness contract lives in the reached sentence, not the name, so the member
+itself grows arm by arm exactly as `disturbs` does. The naming convention still
+governs the rest of your judgment: `only` in a role name means
+complete-by-contract - a survey, not a contribution - and consumers act on its
+negative space (everything you did not emit is thereby declared out). Survey
+totalistically before authoring one; the store member below is the one that
+earns its `only` most.
 
 ## Where state lives: the store member
 

@@ -259,10 +259,13 @@ artifact, not a style issue:
   shape unmatched when the enumeration itself is unsure. A wrong footprint
   silently breaks OTHER people's lines - the sharpest knife in the system.
 - WRAPPER MEMBERS (`__lend_map`, entry forms) and KIND MEMBERS (`__resolve`,
-  `__disturbance_reaches_only`, `__state_stored_only_in`): do not author from
+  `__disturbance_reaches`, `__state_stored_only_in`): do not author from
   this skill's summary - read oracle-contract 5d-5i and
   `08-wrappers-and-contexts.md` / `09-owning-a-kind.md` first, every time.
-  `only`-named members demand a totalistic survey before authoring.
+  `only`-named members demand a totalistic survey before authoring; the
+  `disturbs nothing-else` tail record (reach bodies; dynamic `disturbs` bodies)
+  is a completeness claim of the same weight - one line, the sharpest in the
+  file.
 - NAMES ARE PERMANENT. Function and kind names are a compatibility surface;
   choose once, evolve additively.
 
