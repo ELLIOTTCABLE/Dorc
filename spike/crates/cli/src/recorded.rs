@@ -243,17 +243,28 @@ fn push_line(out: &mut String, line: &str) {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct StoreReading {
     documents: Vec<RecordedDocument>,
-    cohort: Vec<String>,
+    terminal: Vec<String>,
     graph: String,
 }
 
 impl StoreReading {
-    /// Bind one walk's documents, the identities sharing its greatest order, and its graph lines.
+    /// Bind one walk's documents, its greatest-order cohort collapsed to terminals, and its graph.
+    ///
+    /// The collapse is the second half of `30Rd:store-enumeration-and-last-selection` and it
+    /// happens HERE, not at the edge: taking a maximum-order cohort is a fact about FILENAMES, and
+    /// deciding which of its members is last is a fact about the typed GRAPH. A plan and the intent
+    /// that cites it can share an order, and the plan is then not the last thing that happened —
+    /// it is an ancestor of something that also happened.
     #[must_use]
-    pub const fn of(documents: Vec<RecordedDocument>, cohort: Vec<String>, graph: String) -> Self {
+    pub fn of(
+        documents: Vec<RecordedDocument>,
+        cohort: Vec<String>,
+        edges: &[dorc_receipt::graph::ReceiptEdge],
+        graph: String,
+    ) -> Self {
         Self {
             documents,
-            cohort,
+            terminal: collapse_predecessors(cohort, edges),
             graph,
         }
     }
@@ -264,16 +275,60 @@ impl StoreReading {
         &self.documents
     }
 
-    /// The identities sharing the store's greatest order — the ONE selection a store offers.
+    /// The greatest-order cohort's TERMINAL members — the ONE selection a store offers.
+    ///
+    /// More than one means several incomparable roots shared the newest order and none is an
+    /// ancestor of another, which is reported as ambiguity and never tie-broken.
     #[must_use]
-    pub fn cohort(&self) -> &[String] {
-        &self.cohort
+    pub fn terminal(&self) -> &[String] {
+        &self.terminal
     }
 
     /// The correlations and findings a graph over the whole store produced.
     #[must_use]
     pub fn graph(&self) -> &str {
         &self.graph
+    }
+}
+
+/// Drop cohort members that are typed graph predecessors of another cohort member.
+///
+/// Only edges whose BOTH endpoints share the cohort collapse anything: an intent outside the
+/// newest order says nothing about which of the newest documents is last. Order is preserved, so
+/// the survivors read in the store's own order rather than an incidental one.
+///
+/// Deliberately one hop, not a transitive closure. The receipt graph is plan → intent → outcome,
+/// so a chain wholly inside one cohort collapses anyway — the plan loses to the intent and the
+/// intent loses to the outcome — and computing a closure would only add a way to be wrong about a
+/// species relation the graph does not have.
+fn collapse_predecessors(
+    cohort: Vec<String>,
+    edges: &[dorc_receipt::graph::ReceiptEdge],
+) -> Vec<String> {
+    use dorc_receipt::graph::ReceiptEdge;
+    let in_cohort = |id: &str| cohort.iter().any(|member| member == id);
+    let mut superseded: Vec<String> = Vec::new();
+    for edge in edges {
+        let (from, to) = match edge {
+            ReceiptEdge::PlanToIntent { plan, intent } => (plan.hex(), intent.hex()),
+            ReceiptEdge::IntentToOutcome { intent, outcome } => (intent.hex(), outcome.hex()),
+        };
+        if in_cohort(&from) && in_cohort(&to) {
+            superseded.push(from);
+        }
+    }
+    let survivors: Vec<String> = cohort
+        .iter()
+        .filter(|member| !superseded.contains(member))
+        .cloned()
+        .collect();
+    // A cohort that collapsed to nothing would be a cycle, which this graph's species ordering
+    // cannot express; keeping the cohort is the honest answer if one ever appears, because
+    // answering with an empty selection would silently explain nothing.
+    if survivors.is_empty() {
+        cohort
+    } else {
+        survivors
     }
 }
 

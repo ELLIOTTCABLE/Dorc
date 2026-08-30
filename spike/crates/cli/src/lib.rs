@@ -304,19 +304,23 @@ const HELP_OPTION_ROWS: &[HelpRow] = &[
         slug: "cli-help-option-risk-faultless-skips",
     },
     HelpRow {
-        label: "--whylog-dir <dir>",
-        slug: "cli-help-option-whylog-dir",
+        label: "--receipts <folder>",
+        slug: "cli-help-option-receipts",
     },
     HelpRow {
-        label: "--no-whylog",
-        slug: "cli-help-option-no-whylog",
+        label: "--no-receipt",
+        slug: "cli-help-option-no-receipt",
     },
     HelpRow {
-        label: "--last",
-        slug: "cli-help-option-last",
+        label: "--receipt-last",
+        slug: "cli-help-option-receipt-last",
     },
     HelpRow {
-        label: "--receipt <id>",
+        label: "--receipt-id <id>",
+        slug: "cli-help-option-receipt-id",
+    },
+    HelpRow {
+        label: "--receipt <file>",
         slug: "cli-help-option-receipt",
     },
     HelpRow {
@@ -513,42 +517,58 @@ pub struct Args {
     /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
     /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
     pub capability: dorc_core::Capability,
-    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the posthoc-why durable is written to (on a
-    /// plan/apply/round-trip run) and read from (`dorc why`). Unset ⇒ the per-user state directory
-    /// (`dorc_cli`'s caller resolves it), because the promise is zero-setup: `USER_STORY` has
-    /// `dorc why` working "with nothing you had to set up beforehand", and a receipt nobody
+    /// `--receipts=FOLDER` (`30R:receipt-rooted-attention-and-cli`): the receipt STORE this run
+    /// publishes into and `dorc why` looks up graph siblings in. Unset ⇒ the standard per-user
+    /// store (`dorc_cli`'s caller resolves it), because the promise is zero-setup: `USER_STORY`
+    /// has `dorc why` working "with nothing you had to set up beforehand", and a receipt nobody
     /// remembered to ask for is the only kind that exists on the bad morning.
-    pub whylog_dir: Option<String>,
-    /// `--no-whylog`: write no durable for this run.
+    ///
+    /// The folder is the store root EXACTLY — no `receipts-v1` component is appended beneath it —
+    /// and it never moves the standard KEY root (`30Rd:controller-root-resolution`: V1 has no
+    /// custom key-root surface). Orthogonal to the three root selectors below: it says WHICH
+    /// store, they say which document within it.
+    pub receipts: Option<String>,
+    /// `--no-receipt`: write no receipt for this run.
     ///
     /// The escape hatch default-on owes: a receipt is host metadata written unprompted
     /// (`AID-NEEDS:law-whylog-is-sensitive`), so refusing one must be typeable. Per-invocation and
     /// subtractive-only, which is the shape `28D:pay-levers-are-subtractive` demands of anything in
     /// this family — there is no widening sibling and never will be.
-    pub no_whylog: bool,
-    /// `--whylog=FILE`: the exact durable to replay (`why --last` only).
-    pub whylog: Option<String>,
-    /// `--last` (`27V` Lane B): replay the most recent durable in `--whylog-dir` through the SAME
-    /// kernel instead of the live pipeline (determinism is the replay license).
+    pub no_receipt: bool,
+    /// `--receipt-last`: derive the root from the store's newest recognized document.
     ///
-    /// Since `28E:lean-why-is-whylog-reconciliation` this is what `dorc why` does ANYWAY when no
-    /// record source was named ([`Args::reads_the_receipt`]); the flag survives as a spelling
-    /// rather than a switch, because it is printed in committed transcripts and typed in muscle
-    /// memory. It is a `why` flag and refuses on every other mode: a durable answers what a past
-    /// run decided, and feeding one back into a mode that EMITS an artifact would let a stored
-    /// record stream stand where a live measurement belongs.
-    pub last: bool,
-    /// `--receipt=ID`: answer about the ONE document carrying that identity.
+    /// Also the no-selector DEFAULT for a receipt-reading `why`
+    /// (`30Rd:store-enumeration-and-last-selection`); the flag survives as a spelling rather than a
+    /// switch, because it is printed in committed transcripts and typed in muscle memory. A `why`
+    /// flag, refusing on every other mode: a receipt answers what a PAST run decided, and feeding
+    /// one into a mode that EMITS an artifact would let a recorded stream stand where a live
+    /// measurement belongs.
     ///
-    /// Retrieval, never a second ranking. The store offers exactly one selection — its
+    /// Derivation is cohort-then-collapse, never a tie-break: the maximum-order cohort is taken,
+    /// members that are typed graph PREDECESSORS of another member collapse beneath it, and a sole
+    /// surviving terminal root is the answer. Several incomparable terminals report ambiguity, and
+    /// a damaged newest candidate never falls back to an older complete one.
+    pub receipt_last: bool,
+    /// `--receipt-id=ID`: the ONE document in the selected store carrying that identity.
+    ///
+    /// Retrieval, never a second ranking. The store offers exactly one DERIVED selection — its
     /// maximum-order cohort — and a second way to PREFER a candidate is what would reopen the
     /// fallback past a damaged newest one. An exact identity match prefers nothing: a document
     /// either carries it or it does not, and nothing is answered when none does.
+    pub receipt_id: Option<String>,
+    /// `--receipt=FILE`: one explicit report-only root document, named by path.
     ///
-    /// A `why` flag, on the same footing as `--last`.
-    pub receipt: Option<String>,
-    /// `--all`: the DEEPEST pull tier — every `dorc why` footer already points here, so the flag
-    /// exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
+    /// Report-only in the strong sense (`30Ra:receipt-rooted-attention-and-selection`): naming a
+    /// file mints no publication, trust, approval, or action, and grants no permission to discover
+    /// a backend. `--receipts` stays orthogonal beside it, supplying the bounded store in which
+    /// this root's typed siblings may be resolved.
+    pub receipt_file: Option<String>,
+    /// `--all`: the DEEPEST explanation register — every `dorc why` footer already points here, so
+    /// the flag exists to make that pointer copy-paste-true (`28E` §7 held-placement-reread).
+    ///
+    /// DEPTH ONLY (`30R:receipt-rooted-attention-and-cli`). It never selects store entries: graph
+    /// closure is automatic and question-directed, so there is no whole-store explanation mode and
+    /// disconnected receipt DAGs never join one answer.
     ///
     /// What it carries today is the `[unnarrated: <class>]` census
     /// (`28E:prop-unnarrated-is-visible`): the aid plane fails toward narration, so a narrative
@@ -617,8 +637,7 @@ impl Args {
     /// The surface fold (`28E:lean-why-is-whylog-reconciliation`, phased by `plans/28G` §1 W3):
     /// `dorc why` is receipt-reconciliation by DEFAULT -- "why did that happen" is the question
     /// people actually ask, and it is asked with nothing in hand. Records-from-argv survives as the
-    /// harness/tooling posture, and it is now EXPLICIT: naming `--results` (or `--whylog`, which
-    /// names an exact durable) is what selects it.
+    /// harness/tooling posture, and it is now EXPLICIT: naming `--results` is what selects it.
     ///
     /// Deliberately not "is stdin a pipe": that would be an ambient read at a seat sworn off them
     /// (`io-at-edges-only`), it would make a CI `dorc why` silently answer a different question
@@ -627,33 +646,30 @@ impl Args {
     pub const fn reads_the_receipt(&self) -> bool {
         reads_the_receipt(
             self.mode,
-            self.last || self.receipt.is_some(),
+            self.names_a_receipt_root(),
             self.results.is_some(),
         )
     }
 
-    /// Does this invocation answer from the RECEIPT store rather than from the old durable?
-    ///
-    /// The discriminator is whether the admin NAMED an old durable. `--whylog=FILE` and
-    /// `--whylog-dir=DIR` are the corpus's own deterministic selectors and keep answering from the
-    /// old format until it is removed; every other `dorc why` answers from the store this binary
-    /// writes. INTERIM by construction: when the old durable goes, so does the condition, and what
-    /// is left is a `dorc why` that reads receipts.
-    ///
-    /// It lives here, beside the surface fold it refines, because the binary and the loom driver
-    /// both have to route on it and two spellings would be two answers to "which surface am I".
+    /// Did this invocation name one of the three mutually-exclusive root selectors?
     #[must_use]
-    pub const fn answers_from_the_receipt_store(&self) -> bool {
-        self.reads_the_receipt() && self.whylog.is_none() && self.whylog_dir.is_none()
+    pub const fn names_a_receipt_root(&self) -> bool {
+        self.receipt_last || self.receipt_id.is_some() || self.receipt_file.is_some()
     }
 
-    /// Which recorded identities this invocation's flags ask a receipt store to list.
+    /// Which root receipt this invocation's flags select.
+    ///
+    /// Three spellings, one root (`30R:receipt-rooted-attention-and-cli`). The graph closure the
+    /// answer needs is derived from that root and is never a flag: `--all` changes explanation
+    /// DEPTH and selects nothing, so there is no arm here for a whole-store union.
     #[must_use]
-    pub fn recorded_selection(&self) -> engine::RecordedSelection<'_> {
-        match (self.receipt.as_deref(), self.all) {
-            (Some(wanted), _) => engine::RecordedSelection::Named(wanted),
-            (None, true) => engine::RecordedSelection::Every,
-            (None, false) => engine::RecordedSelection::Latest,
+    pub fn receipt_root(&self) -> engine::ReceiptRoot<'_> {
+        match (self.receipt_file.as_deref(), self.receipt_id.as_deref()) {
+            (Some(path), _) => engine::ReceiptRoot::File(path),
+            (None, Some(id)) => engine::ReceiptRoot::Id(id),
+            // `--receipt-last` and the no-selector default are ONE answer, not two: a bare
+            // `dorc why` asks about the last run, which is what the flag spells explicitly.
+            (None, None) => engine::ReceiptRoot::Last,
         }
     }
 }
@@ -708,9 +724,9 @@ pub fn engine_options_from_args(
 /// [`Args::reads_the_receipt`] over the parts, so the parser can apply the same rule before it has
 /// an `Args` to ask. Two spellings of this predicate would be two answers to "which surface am I".
 ///
-/// `names_a_document` folds the two flags that select a stored one — `--last` and `--receipt` —
-/// because they answer the same question about the surface: an invocation naming either is
-/// asking about something already written, whatever else it carries.
+/// `names_a_document` folds the three root selectors — `--receipt-last`, `--receipt-id` and
+/// `--receipt` — because they answer the same question about the surface: an invocation naming any
+/// of them is asking about something already written, whatever else it carries.
 const fn reads_the_receipt(mode: Mode, names_a_document: bool, has_results: bool) -> bool {
     matches!(mode, Mode::Why) && (names_a_document || !has_results)
 }
@@ -798,11 +814,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut why_address: Option<String> = None;
     let mut dial = dorc_core::EscalationDial::VouchedOnly;
     let mut capability = dorc_core::Capability::Root;
-    let mut whylog_dir: Option<String> = None;
-    let mut whylog: Option<String> = None;
-    let mut last = false;
-    let mut receipt: Option<String> = None;
-    let mut no_whylog = false;
+    let mut receipts: Option<String> = None;
+    let mut receipt_last = false;
+    let mut receipt_id: Option<String> = None;
+    let mut receipt_file: Option<String> = None;
+    let mut no_receipt = false;
     let mut all = false;
     let mut shim_dir: Option<String> = None;
     let mut artifact_dir: Option<String> = None;
@@ -914,33 +930,33 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                     ));
                 }
             };
-        } else if let Some(p) = arg.strip_prefix("--whylog-dir=") {
-            whylog_dir = Some(p.to_string());
-        } else if arg == "--whylog-dir" {
-            whylog_dir = Some(
+        } else if let Some(p) = arg.strip_prefix("--receipts=") {
+            receipts = Some(p.to_string());
+        } else if arg == "--receipts" {
+            receipts = Some(
                 it.next()
-                    .ok_or_else(|| flag_needs_value("--whylog-dir", "a directory"))?,
-            );
-        } else if let Some(path) = arg.strip_prefix("--whylog=") {
-            whylog = Some(path.to_owned());
-        } else if arg == "--whylog" {
-            whylog = Some(
-                it.next()
-                    .ok_or_else(|| flag_needs_value("--whylog", "a durable path"))?,
+                    .ok_or_else(|| flag_needs_value("--receipts", "a store folder"))?,
             );
         } else if arg == "--all" {
             all = true;
-        } else if arg == "--last" {
-            last = true;
-        } else if let Some(id) = arg.strip_prefix("--receipt=") {
-            receipt = Some(id.to_owned());
-        } else if arg == "--receipt" {
-            receipt = Some(
+        } else if arg == "--receipt-last" {
+            receipt_last = true;
+        } else if let Some(id) = arg.strip_prefix("--receipt-id=") {
+            receipt_id = Some(id.to_owned());
+        } else if arg == "--receipt-id" {
+            receipt_id = Some(
                 it.next()
-                    .ok_or_else(|| flag_needs_value("--receipt", "a receipt identity"))?,
+                    .ok_or_else(|| flag_needs_value("--receipt-id", "a receipt identity"))?,
             );
-        } else if arg == "--no-whylog" {
-            no_whylog = true;
+        } else if let Some(path) = arg.strip_prefix("--receipt=") {
+            receipt_file = Some(path.to_owned());
+        } else if arg == "--receipt" {
+            receipt_file = Some(
+                it.next()
+                    .ok_or_else(|| flag_needs_value("--receipt", "a receipt file"))?,
+            );
+        } else if arg == "--no-receipt" {
+            no_receipt = true;
         } else if let Some(p) = arg.strip_prefix("--artifact-dir=") {
             artifact_dir = Some(p.to_string());
         } else if arg == "--artifact-dir" {
@@ -1033,10 +1049,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--probe-escalation",
                 "--escalate-any-probe",
                 "--probe-capability",
-                "--whylog-dir",
-                "--whylog",
-                "--no-whylog",
-                "--last",
+                "--receipts",
+                "--no-receipt",
+                "--receipt-last",
+                "--receipt-id",
                 "--receipt",
                 "--all",
                 "--shim-dir",
@@ -1071,13 +1087,17 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             books.push(arg);
         }
     }
-    // Reading a durable is an EXPLAIN act, so the flag that asks for one belongs to the explain
-    // surface and nowhere else. It used to replay on the plan-producing modes too, which turned a
-    // stored record stream back into the inputs of an emitted artifact; the same rule `--whylog`
-    // already follows now covers the flag that selects one. Refused HERE, ahead of the book check,
-    // because a mode that cannot use the flag should say so rather than complain about a book it
-    // would not have needed.
-    for (present, flag) in [(last, "--last"), (receipt.is_some(), "--receipt")] {
+    // Reading a receipt is an EXPLAIN act, so the flags that select a root belong to the explain
+    // surface and nowhere else. They used to replay on the plan-producing modes too, which turned a
+    // stored record stream back into the inputs of an emitted artifact. Refused HERE, ahead of the
+    // book check, because a mode that cannot use the flag should say so rather than complain about
+    // a book it would not have needed. `--receipts` is deliberately absent: it names the store
+    // plan and apply PUBLISH into, so it is legal in every mode.
+    for (present, flag) in [
+        (receipt_last, "--receipt-last"),
+        (receipt_id.is_some(), "--receipt-id"),
+        (receipt_file.is_some(), "--receipt"),
+    ] {
         if present && mode != Mode::Why {
             return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
                 dorc_aid::diag::CliFlagRequiresMode {
@@ -1085,6 +1105,39 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                     mode: "dorc why",
                 },
             )));
+        }
+    }
+    // The three root selectors are MUTUALLY EXCLUSIVE (`30R:receipt-rooted-attention-and-cli`):
+    // each names one attention root, and ranking two against each other would be inventing a
+    // preference the design refuses to have. Reported as the first colliding pair in argv-independent
+    // order, because naming all three would not tell the reader anything the pair does not.
+    for (first, first_present, second, second_present) in [
+        (
+            "--receipt",
+            receipt_file.is_some(),
+            "--receipt-id",
+            receipt_id.is_some(),
+        ),
+        (
+            "--receipt",
+            receipt_file.is_some(),
+            "--receipt-last",
+            receipt_last,
+        ),
+        (
+            "--receipt-id",
+            receipt_id.is_some(),
+            "--receipt-last",
+            receipt_last,
+        ),
+    ] {
+        if first_present && second_present {
+            return Err(Diag::new_spanless_site(
+                DiagCode::CliFlagsMutuallyExclusive(dorc_aid::diag::CliFlagsMutuallyExclusive {
+                    first,
+                    second,
+                }),
+            ));
         }
     }
     let ships_a_rendered_plan = mode == Mode::Apply && host.is_some();
@@ -1100,7 +1153,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     if book.is_none()
         && mode != Mode::Bundle
         && !ships_a_rendered_plan
-        && !reads_the_receipt(mode, last || receipt.is_some(), results.is_some())
+        && !reads_the_receipt(
+            mode,
+            receipt_last || receipt_id.is_some() || receipt_file.is_some(),
+            results.is_some(),
+        )
     {
         return Err(Diag::new_spanless_site(DiagCode::CliNoBookGiven(
             dorc_aid::diag::CliNoBookGiven,
@@ -1177,22 +1234,6 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             )));
         }
     }
-    if whylog.is_some() && whylog_dir.is_some() {
-        return Err(Diag::new_spanless_site(
-            DiagCode::CliFlagsMutuallyExclusive(dorc_aid::diag::CliFlagsMutuallyExclusive {
-                first: "--whylog",
-                second: "--whylog-dir",
-            }),
-        ));
-    }
-    if whylog.is_some() && mode != Mode::Why {
-        return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
-            dorc_aid::diag::CliFlagRequiresMode {
-                flag: "--whylog",
-                mode: "dorc why",
-            },
-        )));
-    }
     Ok(Invocation::Analyze(Box::new(Args {
         mode,
         book,
@@ -1204,11 +1245,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         why_address,
         dial,
         capability,
-        whylog_dir,
-        no_whylog,
-        whylog,
-        last,
-        receipt,
+        receipts,
+        no_receipt,
+        receipt_last,
+        receipt_id,
+        receipt_file,
         all,
         host,
         plan,

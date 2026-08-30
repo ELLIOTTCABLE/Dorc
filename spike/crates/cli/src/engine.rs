@@ -2204,30 +2204,39 @@ fn publish_receipt(
     }
 }
 
-/// Which recorded identities a `dorc why` over the receipt store lists.
+/// Which ROOT receipt a `dorc why` answers about (`30R:receipt-rooted-attention-and-cli`).
 ///
-/// Three answers, and only one of them is a RANKING. `--receipt` is an exact identity match: a
-/// document either carries it or it does not, so it prefers nothing and reopens no fallback.
-/// `--all` enumerates. Everything else takes the store's greatest-order cohort, which is the ONE
-/// selection a store offers — there is deliberately no newest-complete and no next-one-down,
-/// because a fallback past a damaged newest candidate would answer with older history while
-/// looking like an answer about the latest run.
+/// Three spellings, and only one of them DERIVES anything. `--receipt <file>` and
+/// `--receipt-id <id>` are exact matches: a document either is that file / carries that identity or
+/// it does not, so they prefer nothing and reopen no fallback. `--receipt-last` takes the store's
+/// greatest-order cohort and collapses graph predecessors within it, which is the ONE selection a
+/// store offers — there is deliberately no newest-complete and no next-one-down, because a fallback
+/// past a damaged newest candidate would answer with older history while looking like an answer
+/// about the latest run.
+///
+/// There is no whole-store arm. `--all` is explanation DEPTH; a union of disconnected histories is
+/// not an explanation of anything.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RecordedSelection<'a> {
-    /// `--receipt=ID`: the one document carrying that identity, or nothing.
-    Named(&'a str),
-    /// `--all`: every recognized entry.
-    Every,
-    /// The default: whatever shares the store's greatest order.
-    Latest,
+pub enum ReceiptRoot<'a> {
+    /// `--receipt=FILE`: one explicit report-only root document, named by path.
+    File(&'a str),
+    /// `--receipt-id=ID`: the one stored document carrying that identity, or nothing.
+    Id(&'a str),
+    /// `--receipt-last`, and the no-selector default: the store's sole terminal newest root.
+    Last,
 }
 
-impl RecordedSelection<'_> {
-    fn takes(self, receipt_id: &str, cohort: &[String]) -> bool {
+impl ReceiptRoot<'_> {
+    /// Is `receipt_id` the root this selection names, given the store's derived `terminal` set?
+    ///
+    /// The `File` arm answers `false` for every stored entry on purpose: an explicit file is
+    /// admitted by PATH at the edge and is never matched against store contents, so a store
+    /// entry that happens to carry the same identity is still not the document the admin named.
+    fn takes(self, receipt_id: &str, terminal: &[String]) -> bool {
         match self {
-            Self::Named(wanted) => wanted == receipt_id,
-            Self::Every => true,
-            Self::Latest => cohort.iter().any(|member| member == receipt_id),
+            Self::File(_) => false,
+            Self::Id(wanted) => wanted == receipt_id,
+            Self::Last => terminal.iter().any(|member| member == receipt_id),
         }
     }
 }
@@ -2244,7 +2253,7 @@ impl RecordedSelection<'_> {
 /// Complete either way: a store with nothing to say is a report state, not a failed run.
 pub fn report_recorded_store(
     reading: Result<crate::recorded::StoreReading, String>,
-    selection: RecordedSelection<'_>,
+    selection: ReceiptRoot<'_>,
     store: &str,
     sink: &mut dyn OutputSink,
 ) -> EngineStatus {
@@ -2252,24 +2261,25 @@ pub fn report_recorded_store(
         Ok(reading) => reading,
         Err(reason) => return report_store_unreadable(sink, store, &reason),
     };
-    // REPORTED, never resolved: the store offers no tie-break, and inventing one would pick a
-    // document by the value least related to when it was written. It is not a refusal either —
-    // the cohort's members are listed below, and what the run cannot say is which one is last.
-    if matches!(selection, RecordedSelection::Latest) && reading.cohort().len() > 1 {
+    // REPORTED, never resolved: several incomparable terminal roots leave the store with no
+    // tie-break, and inventing one would pick a document by the value least related to when it was
+    // written. It is not a refusal either — the survivors are listed below, and what the run cannot
+    // say is which one is last.
+    if matches!(selection, ReceiptRoot::Last) && reading.terminal().len() > 1 {
         report(
             sink,
             RECEIPT_STAGE,
             None,
             &[Diag::new_spanless_site(DiagCode::DurableReceiptAmbiguous(
                 dorc_aid::diag::DurableReceiptAmbiguous {
-                    count: reading.cohort().len().to_string(),
+                    count: reading.terminal().len().to_string(),
                 },
             ))],
         );
     }
     let mut out = String::new();
     for document in reading.documents() {
-        if selection.takes(document.receipt_id(), reading.cohort())
+        if selection.takes(document.receipt_id(), reading.terminal())
             && let Some(listing) = document.listing()
         {
             out.push_str(listing);

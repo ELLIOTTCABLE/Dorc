@@ -270,34 +270,14 @@ fn acquire_engine_request(
     cwd: &dorc_core::loadpath::Cwd,
     sink: &mut dyn OutputSink,
 ) -> Result<AcquiredEngine, Diag> {
-    let advisory = args.mode != Mode::Apply;
-    let loaded_replay = if args.mode != Mode::Bundle && args.reads_the_receipt() {
-        let loaded = load_whylog_replay(args)?;
-        report_at(sink, advisory, "whylog", None, &loaded.diags);
-        match loaded.value {
-            ReplayLoad::Admitted(replay) | ReplayLoad::NoObservation(replay) => Some(replay),
-            ReplayLoad::Drifted(receipt) => return Ok(AcquiredEngine::Drifted(receipt)),
-            ReplayLoad::Refused => return Ok(AcquiredEngine::Refused),
-        }
-    } else {
-        None
-    };
-
-    let oracle_paths = match &loaded_replay {
-        Some(replay) => replay.oracle_paths.clone(),
-        None => resolve_pre_sources(&args.pre_sources, &args.oracle_dirs)?,
-    };
+    let oracle_paths = resolve_pre_sources(&args.pre_sources, &args.oracle_dirs)?;
     let oracle_srcs: Vec<String> = oracle_paths
         .iter()
         .map(|path| read_input("pre-source", path))
         .collect::<Result<_, _>>()?;
     let (oracle_paths, oracle_srcs, load_dependencies) =
         read_sourced_oracles(cwd, oracle_paths, oracle_srcs);
-    let book_path = loaded_replay
-        .as_ref()
-        .map_or(args.book.as_deref(), |replay| {
-            Some(replay.book_path.as_str())
-        });
+    let book_path = args.book.as_deref();
     let book_src = match book_path {
         Some(path) => read_input("book", path)?,
         None => String::new(),
@@ -321,17 +301,9 @@ fn acquire_engine_request(
         book_name,
         &book_src,
     );
-    let replay = loaded_replay.map(|replay| EngineReplay {
-        decision_digest: replay.decision_digest,
-        started_at: replay.started_at,
-        record_stream_version: replay.record_stream_version,
-        instants: replay.instants,
-        records: replay.records,
-        authority: replay.authority,
-    });
     Ok(AcquiredEngine::Ready(Box::new(AcquiredReady {
         snapshot,
-        replay,
+        replay: None,
         acquisition_diagnostics,
     })))
 }
@@ -1332,205 +1304,6 @@ enum ReplayLoad {
 const WHYLOG_KEEP: usize = 64;
 const WHYLOG_CAP: usize = 4_000_000;
 
-/// [`durable_destination`] answers `None` on two unrelated grounds — a typed `--no-whylog`, and an
-/// environment with no default state directory — and one hardcoded "only valid with dorc why"
-/// answered both while being true of neither (`--last` replays under plan/apply/probe too).
-fn receipt_has_nowhere_to_read(args: &Args) -> Diag {
-    match (args.no_whylog, args.last) {
-        (true, true) => Diag::new_spanless_site(DiagCode::CliFlagsMutuallyExclusive(
-            dorc_aid::diag::CliFlagsMutuallyExclusive {
-                first: "--no-whylog",
-                second: "--last",
-            },
-        )),
-        // `--no-whylog` suppresses WRITING a receipt, so under a read-only mode it is the flag in
-        // the wrong invocation rather than half of a contradiction.
-        (true, false) => Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
-            dorc_aid::diag::CliFlagRequiresMode {
-                flag: "--no-whylog",
-                mode: "dorc plan or dorc apply",
-            },
-        )),
-        (false, _) => Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
-            dorc_aid::diag::CliFlagRequiresMode {
-                flag: if args.last { "--last" } else { "dorc why" },
-                mode: "--whylog-dir=DIR",
-            },
-        )),
-    }
-}
-
-#[expect(
-    clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
-)]
-#[expect(
-    clippy::too_many_lines,
-    reason = "one linear admission ladder: select the durable, bound it, read back the book and oracles it names, check the framing, then admit the records. Every rung answers on its own terms — refusing, or in the book-digest rung's case degrading — and splitting it would scatter the ONE place a replay's inputs are validated"
-)]
-fn load_whylog_replay(args: &Args) -> Result<Carrier<ReplayLoad>, Diag> {
-    // Exact-file `--whylog=` selection (the deterministic single-file corpus flag) feeds r29's
-    // admission unchanged; otherwise fall back to newest-in-`--whylog-dir`.
-    let path = if let Some(exact) = args.whylog.as_deref() {
-        std::path::PathBuf::from(exact)
-    } else {
-        let dir = durable_destination(args).ok_or_else(|| receipt_has_nowhere_to_read(args))?;
-        let dir = dir.as_str();
-        let Some(path) = whylog_store::newest(dir) else {
-            return Ok(Carrier::new(
-                ReplayLoad::Refused,
-                vec![Diag::new_spanless_site(DiagCode::WhylogAbsent(
-                    dorc_aid::diag::WhylogAbsent {
-                        dir: dir.to_owned(),
-                    },
-                ))],
-            ));
-        };
-        path
-    };
-    let Ok(file) = std::fs::File::open(&path) else {
-        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
-    };
-    let envelope = match dorc_plan::whylog::admit_unscoped_whylog(
-        file,
-        dorc_plan::whylog::WhylogLimits::spike_default(),
-    ) {
-        dorc_plan::records::Admission::Admitted(envelope) => envelope,
-        dorc_plan::records::Admission::NoObservation => {
-            return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
-        }
-        dorc_plan::records::Admission::Refused(reason) => {
-            return Ok(refuse_replay(reason));
-        }
-    };
-    let book_path = envelope.recorded_book_path().as_str().to_owned();
-    let oracle_paths: Vec<String> = envelope
-        .recorded_oracles()
-        .iter()
-        .map(|oracle| oracle.path().as_str().to_owned())
-        .collect();
-    let Ok(book) = read_replay_source(&book_path) else {
-        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
-    };
-    let oracle_sources: Vec<String> = match oracle_paths.iter().map(read_replay_source).collect() {
-        Ok(sources) => sources,
-        Err(()) => {
-            return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
-        }
-    };
-    let framing = dorc_plan::records::Framing::spike(book_digest(&book));
-    let scope = dorc_cli::results::replay_scope(
-        &framing,
-        &dorc_cli::results::RunSources {
-            book_name: &book_path,
-            book: &book,
-            oracle_paths: &oracle_paths,
-            oracle_sources: &oracle_sources,
-        },
-    );
-    // An edited book is the ordinary mismatch, so it is NAMED rather than reported as generic
-    // framing — and it is the ENTRY to the degraded receipt (`28F:rul-drift-replay-d1`) rather than
-    // a dead end. The diag still fires: drift loud on the report lane, receipt on stdout.
-    if envelope.claims().book_digest() != scope.book_digest() {
-        return Ok(Carrier::new(
-            ReplayLoad::Drifted(Box::new(dorc_cli::drifted_receipt(&envelope))),
-            vec![Diag::new_spanless_site(DiagCode::WhylogBookDesync(
-                dorc_aid::diag::WhylogBookDesync {
-                    which: "book".to_owned(),
-                },
-            ))],
-        ));
-    }
-    if !scope.matches_claims(&envelope) {
-        return Ok(refuse_replay(dorc_plan::records::AdmissionRefusal::Framing));
-    }
-    let decision_digest = envelope.claims().decision_digest().to_owned();
-    let started_at = envelope.claims().started_at();
-    let record_stream_version = envelope.record_stream_version();
-    let instants: BTreeMap<u64, dorc_core::RunInstant> =
-        envelope.recorded_instants().iter().copied().collect();
-    // The authority rides out of the SAME match that decides the outcome, exactly as the live
-    // intake's does. It used to be dropped here and re-minted from nothing where the projection
-    // wanted one, which made a durable's licence to plan a fact about where a call sat rather than
-    // about what any admission answered — and a positional licence is one a later edit can move
-    // without anything noticing.
-    match dorc_plan::PlanAuthority::authorise(dorc_plan::whylog::admit_unscoped_whylog_replay(
-        envelope,
-        &framing,
-        dorc_plan::records::HostEvidenceLimits::spike_default(),
-    )) {
-        dorc_plan::Authorised::Admitted(replay, authority) => {
-            Ok(Carrier::pure(ReplayLoad::Admitted(Replay {
-                book_path,
-                oracle_paths,
-                decision_digest,
-                started_at,
-                record_stream_version,
-                instants: instants.clone(),
-                records: Some(replay.records().clone()),
-                authority,
-            })))
-        }
-        dorc_plan::Authorised::NoObservation(authority) => {
-            Ok(Carrier::pure(ReplayLoad::NoObservation(Replay {
-                book_path,
-                oracle_paths,
-                decision_digest,
-                started_at,
-                record_stream_version,
-                instants: instants.clone(),
-                records: None,
-                authority,
-            })))
-        }
-        dorc_plan::Authorised::Refused(reason) => Ok(refuse_replay(reason)),
-    }
-}
-
-/// The ceiling on a source file a DURABLE named, as opposed to one the admin typed
-/// (`rul-host-bytes-bounded-before-admission`: limits are injectable policy, not timeless truth —
-/// this is the cli-local policy value, sibling to [`WHYLOG_CAP`]).
-const REPLAY_SOURCE_CAP: u64 = 16 * 1024 * 1024;
-
-/// Read one book or oracle a durable NAMED, bounded and regular-file-only.
-///
-/// `28F:rul-path-hint-must-match-its-doc`. `RecordedSourcePathHint` says it is never a
-/// source-loading capability, and this is the one seat that comes closest to making it one: the
-/// digest comparison that decides whether the named file is the run's file happens AFTER the read,
-/// so the read itself has to be safe on its own terms. Two ways it was not:
-///
-/// * unbounded — `/dev/zero` or a huge file at the named path was slurped whole before any check;
-/// * unfiltered — a FIFO at the named path blocks the replay forever, which no timeout would catch
-///   because nothing here has one.
-///
-/// So: `symlink_metadata` (never a following stat) must say regular file, the size must be under
-/// [`REPLAY_SOURCE_CAP`], and the read is `take`-bounded anyway rather than trusting the stat it
-/// just did. The result is still only a CANDIDATE — `replay_claims_match` remains the thing that
-/// decides it is the run's book, and a mismatch refuses.
-fn read_replay_source(path: impl AsRef<std::path::Path>) -> Result<String, ()> {
-    use std::io::Read as _;
-
-    let path = path.as_ref();
-    let metadata = std::fs::symlink_metadata(path).map_err(|_| ())?;
-    if !metadata.is_file() || metadata.len() > REPLAY_SOURCE_CAP {
-        return Err(());
-    }
-    let file = std::fs::File::open(path).map_err(|_| ())?;
-    let mut source = String::new();
-    let read = file
-        .take(REPLAY_SOURCE_CAP.saturating_add(1))
-        .read_to_string(&mut source)
-        .map_err(|_| ())?;
-    if read as u64 > REPLAY_SOURCE_CAP {
-        return Err(());
-    }
-    Ok(source)
-}
-
-fn refuse_replay(reason: dorc_plan::records::AdmissionRefusal) -> Carrier<ReplayLoad> {
-    Carrier::new(ReplayLoad::Refused, vec![reason.spanless_diagnostic()])
-}
-
 /// Publish a whole artifact set under `dir`, atomically (`30I` §7.5).
 ///
 /// # Errors
@@ -1547,20 +1320,17 @@ fn publish_artifact(
     .map(|_| ())
 }
 
-/// Where this run's receipt goes: the admin's `--whylog-dir`, else the per-user state directory.
+/// Where this run's receipt goes: the admin's `--receipts`, else the per-user state directory.
 ///
 /// `None` on two very different grounds, and the difference is why this returns an Option rather
-/// than a path: `--no-whylog` is a REFUSAL the admin typed, and an unresolvable state root is an
+/// than a path: `--no-receipt` is a REFUSAL the admin typed, and an unresolvable state root is an
 /// environment with nowhere to put anything. Neither is a persistence failure, so neither reports
 /// one — the failures are what happens once a destination exists (`whylog-unwritten`).
 fn durable_destination(args: &Args) -> Option<String> {
-    if args.no_whylog {
+    if args.no_receipt {
         return None;
     }
-    match &args.whylog_dir {
-        Some(named) => Some(named.clone()),
-        None => whylog_store::default_root().map(|root| root.to_string_lossy().into_owned()),
-    }
+    args.receipts.clone()
 }
 
 #[cfg(test)]
