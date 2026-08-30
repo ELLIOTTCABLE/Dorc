@@ -413,10 +413,15 @@ mod tests {
     /// spellings, and where the candidate lands.
     #[test]
     fn the_dump_rescue_names_the_case_and_both_shell_spellings() {
-        let hint = dump_rescue_hint("whylog-unwritten");
-        assert!(hint.contains("DORC_LOOM_DUMP=<dir> mise run test:looms -- whylog-unwritten"));
+        let hint = dump_rescue_hint("durable-receipt-unwritten");
+        assert!(
+            hint.contains("DORC_LOOM_DUMP=<dir> mise run test:looms -- durable-receipt-unwritten")
+        );
         assert!(hint.contains("$env:DORC_LOOM_DUMP="), "{hint}");
-        assert!(hint.contains("<dir>/whylog-unwritten.loom"), "{hint}");
+        assert!(
+            hint.contains("<dir>/durable-receipt-unwritten.loom"),
+            "{hint}"
+        );
     }
 
     /// The filename is the default singleton and needs no key: an existing single-owner case keeps

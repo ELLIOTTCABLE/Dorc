@@ -194,7 +194,7 @@ fn resolve_case(roots: &Roots, arg: &str) -> Result<PathBuf, String> {
         return Ok(found.clone());
     }
     Err(format!(
-        "no case `{arg}`. A CASE is its bare slug (`whylog-unwritten`), its filename, or a path \
+        "no case `{arg}`. A CASE is its bare slug (`durable-receipt-unwritten`), its filename, or a path \
          relative to the current directory or to `spike/`; these were tried, in order: {}. \
          The collection is {} — `dorc-loom sections` with no arguments lists every case in it",
         tried
@@ -1604,10 +1604,10 @@ mod tests {
                 .collect()
         };
 
-        let one = selected(&["crates/aid/tests/whylog-absent.loom"]);
+        let one = selected(&["crates/aid/tests/durable-receipt-unreadable.loom"]);
         let note = nothing_moved_note(true, &one).expect("a no-op run says so");
         assert!(note.contains("this publish changed nothing"), "{note}");
-        assert!(note.contains("whylog-absent.loom"), "{note}");
+        assert!(note.contains("durable-receipt-unreadable.loom"), "{note}");
         assert!(note.contains("worktree"), "{note}");
 
         let many = selected(&["a.loom", "b.loom", "c.loom"]);

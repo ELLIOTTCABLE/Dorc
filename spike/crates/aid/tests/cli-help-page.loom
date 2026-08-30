@@ -17,9 +17,6 @@ owns:
   - cli-help-option-oracle-dir
   - cli-help-option-results
   - cli-help-option-risk-faultless-skips
-  - cli-help-option-whylog-dir
-  - cli-help-option-no-whylog
-  - cli-help-option-last
   - cli-help-option-all
   - cli-help-option-debug-argv
   - cli-help-option-help

@@ -214,11 +214,6 @@ fn a_clean_profile_publishes_a_receipt_a_second_process_verifies_and_opens() {
     // Everything the run wrote is INSIDE the sandbox — the assertion that makes this case a
     // statement about where a real invocation puts things rather than about a directory a test
     // happened to look in.
-    assert!(
-        !sandbox.state_root().join("dorc").join("whylog").is_dir(),
-        "the old durable has its own destination and this route does not write one there"
-    );
-
     let listing = why(&sandbox, &scratch, &["--receipt-last"]);
     let signing = line_starting(&listing, "signing-key").expect("the listing names its key");
     assert!(

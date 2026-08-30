@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn a_bare_vars_means_used() {
         for spelling in [
-            ["dorc-loom", "vars", "whylog-absent"],
+            ["dorc-loom", "vars", "durable-receipt-unreadable"],
             ["dorc-loom", "vars", "--used"],
         ] {
             let Verb::Vars(args) = parse_words(&spelling).expect("parses").verb else {
@@ -443,9 +443,9 @@ mod tests {
     /// with no target has nothing for a selector to select.
     #[test]
     fn the_selector_refuses_a_second_target_and_a_targetless_verb() {
-        let both = parse_words(&["dorc-loom", "--this", "vars", "whylog-absent"])
+        let both = parse_words(&["dorc-loom", "--this", "vars", "durable-receipt-unreadable"])
             .expect_err("two targets refuse");
-        assert!(both.contains("whylog-absent"), "{both}");
+        assert!(both.contains("durable-receipt-unreadable"), "{both}");
 
         let keys = parse_words(&["dorc-loom", "--this", "keys"]).expect_err("keys takes no target");
         assert!(keys.contains("vars"), "{keys}");
