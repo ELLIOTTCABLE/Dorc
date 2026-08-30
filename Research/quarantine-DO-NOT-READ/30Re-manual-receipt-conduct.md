@@ -48,25 +48,30 @@ checkout into an external Opus harness.
   Recorded sites project the existing locator DAG with exact byte spans instead of gaining a
   line-only locator. Current and historical `path:N` compare only the same physical line and never
   infer moved-line equivalence.
+- **`30Re:rul-kernel-rederivation-is-deferred-not-deleted`** — replaying original inputs through a
+  report-only kernel remains a 30R target, but the correctness kernel is frozen in this arc. The
+  secure close seals `RecordedWhyFacts`; a later kernel-authorized round supplies re-derivation.
+  Why arrangement over the sealed model is rehomed outside quarantine.
 
 ## serial schedule
 
 1. **`30Re:sched-repair-why-diagnostics`** — complete at `6c1f8024`; builder ledgers quarantine
    `30Rf`/`30Rg`.
-2. **`30Re:sched-integrated-durable-close`** — in one lane, move the six existing replay-parity
-   cases to the receipt store, disposition the seventh drifted old-format case, then execute D5's
-   deletion and singular-implementation census. Builder ledger: quarantine `30Rh`.
-3. **`30Re:sched-close-receipt-arc`** — fold, reconcile `30R`/status, synthesize only durable
-   steering that earns a permanent seat, run the required review, then `gate:arc` from the populated
-   branch before folding. The proposed dispatch-diagnostic split is not part of this close.
+2. **`30Re:sched-secure-durable-close`** — finish explicit store siting, rooted graph/source
+   comparison, sealed `RecordedWhyFacts`, D5 deletion, and the singular-implementation census.
+   Builder ledger: quarantine `30Rh`.
+3. **`30Re:sched-close-receipt-security-arc`** — reconcile current truth, synthesize only durable
+   steering that earns a permanent seat, run the required review and `gate:arc`, then offer the
+   populated branch as the `ai/main` synthesis point. The dispatch-diagnostic split is not included.
+4. **`30Re:sched-rehome-why-surface`** — after synthesis, a new non-quarantined conductor arranges
+   and renders sealed recorded facts. Report-only kernel re-derivation is a separate deferred round.
 
 ## current dispatch contract
 
-`30Rh` owns `30Re:sched-integrated-durable-close` in the reused receipt worktree. The receipt
-vocabulary and old-ladder deletion are already committed; the address-directed report exposed the
-missing source custody/locator projection. The builder first adds exact general-sh custody and the
-durable existing-locator projection, then MUST STOP with focused format/projection tests green.
-Only after explicit resume does it build the recorded why render, complete the seven-case transition,
-and finish D5. It does not chase `30Rg`'s deviations, the recorded-listing Debug spellings, the
-dispatch-diagnostic split, corruption-parser expansion, or new test backstops. It commits granularly
-and runs one both-platform completion gate only at the final tip.
+`30Rh` owns the secure durable close in the reused receipt worktree. Source custody and durable
+locators reached their planned checkpoint. Remaining handoffs are sized interactively rather than
+encoded as fixed builder phases: explicit store siting, sealed recorded fact extraction, then D5 and
+census. Final why arrangement and the six-plus-one user-facing replay cases are outside this security
+arc. The builder does not chase `30Rg` deviations, recorded-listing Debug spellings, the dispatch
+split, corruption-parser expansion, kernel work, or new test backstops. One both-platform completion
+gate runs only at the secure arc's final tip.
