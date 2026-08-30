@@ -54,20 +54,22 @@ DAG in the exact acquired-byte domain (LF indexes lines; CR in CRLF remains data
 withhold source/locator detail. The source/locator API and focused tests are committed; the builder
 is stopped as scheduled before the recorded renderer.
 
-**After explicit resume:** give `--receipts` its real store-root seat; build address-directed,
-report-only recorded `why` over exact source plus durable locators; move the six existing
-live/replay pairs onto receipts; disposition the seventh drifted old-format case; seed the new help
-rows; finish D5's singular provider/store/reader/writer census; then run one both-platform completion
-gate. A current `path:N` compares only the same physical line's exact bytes — never moved-line
-inference — and ambiguity refuses that specific answer while unrelated best-effort reporting
-continues.
+**Secure remainder:** give `--receipts` its real store-root seat; derive a sealed report-only
+`RecordedWhyFacts` model from rooted graph/source/locator state; finish D5's singular
+provider/store/reader/writer census; then run one both-platform completion gate. A current `path:N`
+compares only the same physical line's exact bytes — never moved-line inference — and ambiguity
+refuses that specific answer while unrelated best-effort facts remain available. The correctness
+kernel is frozen: report-only kernel re-derivation remains a 30R target for a later authorized round,
+not work in this arc.
 
 **Known narrow residue:** site locators currently carry the authored book span; loaded-source stages
 remain representable but need loader-provided per-site source identity before they can be populated.
 Unavailable locators stay explicitly uncollected rather than guessed.
 
-**Next synthesis point:** once the resumed renderer/D5 work is green, the product is whole enough to
-advance `ai/main` before later prose/hardening work. Arc close still owes current-truth reconciliation,
+**Next synthesis point:** once the sealed facts boundary and D5 are green, the secure durable
+subsystem is whole enough to advance `ai/main`. A new non-quarantined conductor then owns ordinary
+why arrangement/render and replacement user-facing cases over the sealed model; it does not reopen
+receipt trust, graph, source, locator, or authority. Arc close still owes current-truth reconciliation,
 steering synthesis, and conductor `gate:arc` from the populated branch. `gate:full-quiet` starts with
 a discovery floor; read its selected-check count across the deletion-heavy close.
 
