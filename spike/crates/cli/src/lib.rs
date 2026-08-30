@@ -1968,10 +1968,6 @@ mod tests {
             "naming records is what selects the harness posture"
         );
         assert!(
-            analyzed(&["why", "--whylog=run.whylog"]).reads_the_receipt(),
-            "naming an exact durable is still reading a receipt"
-        );
-        assert!(
             !analyzed(&["plan", "book.sh"]).reads_the_receipt(),
             "plan is a live analysis, untouched by the fold"
         );

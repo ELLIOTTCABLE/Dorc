@@ -1365,7 +1365,7 @@ fn run_status(
     // The authority to produce an authority-bearing projection rides out of the intake beside the
     // records (`306b:rul-report-only-output-cannot-plan`). It is a value rather than a check: the
     // refusal arm below returns, and no arm that continues can reach a plan without holding one.
-    let (admitted_records, scoped_results, whylog_eligible, authority) =
+    let (admitted_records, scoped_results, receipt_eligible, authority) =
         if let Some(results) = fixture_results {
             (
                 None,
@@ -1975,7 +1975,7 @@ fn run_status(
     // only if the path was already written, and recovering that ordering afterwards is
     // archaeology rather than a change.
     if options.durable == DurableOutput::Enabled
-        && whylog_eligible
+        && receipt_eligible
         && let Some(records) = admitted_records
     {
         crate::receipt_edge::record_durable_arm(
