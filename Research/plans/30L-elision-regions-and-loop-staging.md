@@ -654,6 +654,8 @@ The stage is complete only when all hold:
   shared-edit-before-erasure and no-specialization;
 - `28Q`/`30I` status: the exact stage boundary relative to artifact-form closure.
 
+No root human-authored document changes are implied without human authorship.
+
 ## 14. Footnotes: paths not taken, and scheduling
 
 Paths not taken, each deliberately: per-invocation specialization and call-site

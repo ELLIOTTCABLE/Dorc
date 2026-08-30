@@ -207,8 +207,12 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   saying otherwise mis-attributes (`271:rul-sin-ordering`). Two things this is NOT: a verdict
   rc (`rul-rc-partition` binds verdict functions; this is a binary did-the-body-finish, spelled
   `body-rc=` so it can never be read as the site record's `rc=`), and a completion signal —
-  a body that truncates and exits 0 stays invisible, and that residue is human-owned design
-  (`ANALYZER-NEEDS:an-atmost-completion-signal`). Do not build toward it.
+  a body that truncates and exits 0 stays invisible to `body-rc`. That witness is now RULED
+  (`plans/30U` §5; `ANALYZER-NEEDS:an-atmost-completion-signal`): the authored tail-position
+  `disturbs nothing-else` report-lane record — mandatory where licensure rides runtime
+  emission (dynamic `disturbs` bodies; the finished-definition act in
+  `disturbance_reaches`), absent by design for collide-only emissions. Build rides the
+  `30U` §10 sketch, unscheduled.
 - **rederivation-is-demote-only** (r30; `notes/300` §2b) — before a plan ships, every
   standalone OR aggregate-member survival re-derives through the naive reference model
   (`dorc-sparing-reference`) inside effective freshness, before any replacement witness

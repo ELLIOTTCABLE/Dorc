@@ -1,434 +1,448 @@
-# 30T — Authored file semantics: redirect routing, referent identity, and the ask-the-world architecture
+# 30T — Authored file semantics: redirect routing, the filesystem binder, and the ask-the-world discipline
 
-> Tier: EXPLORATION/PROPOSAL — LLM-authored (Fable; the `r30-design-duck-file-paths-and-redirects`
-> sitting, 2026-08-25; human present and steering throughout). This is a design-duck REPORT, not a
-> rulings ledger: NOTHING herein is ruled. Grades: **[SESSION]** the human said/typed it in this
-> sitting (steering, not a ruling) · **[PRIOR]** already ruled elsewhere, cited · **[PROPOSED]**
-> this report's own synthesis, awaiting a sitting and/or adversarial review. Cite no commitments
-> from this document. Subordinate to the root docs, `spike/CLAUDE.md`, `KNOBS.md`, `plans/30I`,
-> `plans/30P`. Registers (FORFEITS/ANALYZER-NEEDS/KNOBS) are deliberately UNTOUCHED by this
-> report; §12 lists what adoption would owe them. Written for possible adversarial review;
-> uncommitted by instruction.
->
-> Plain language throughout, per the human's standing instruction for this topic. All sh is
-> STRAWMAN — conversation-grade, deliberately dialect-sloppy (rc-arity crimes, GNU `stat -c`
-> where BSD spells `stat -f`; the platform variance living in authored files is the point).
+> Design of record for redirect routing, filesystem binding, and file-identity discipline.
+> Subordinate to the root docs, `spike/CLAUDE.md`, `KNOBS.md`, `plans/30I`, and
+> `plans/30P`; read with `plans/30U`, which defines the cross-kind finished-definition
+> gate consumed here. Sections 0–9 state product semantics and deliberate limitations;
+> §10 records implementation components and dependencies. Shell examples are illustrative;
+> the language and role specifications govern exact dialect details and portable spellings.
 
-## §1 the-problem — writes that live outside argv
+## §0 the-design-in-one-screen
 
-Revives `26K:sit-redirect-routing-composes-oracle-channels`; the surviving open content is
-`26Lb:cell-write-elision-needs-a-vouch-holder`. The founding finding
-(`finding-redirect-writes-live-outside-argv`, r26 glue round):
+- **`rul-routing-is-the-third-edge`** — the shell's plumbing connects command channels to
+  three kinds of target. Channel→channel (pipes) composes authored predict bodies along the
+  edge (`rul-only-oracle-bytes-ship`). Channel→value (`$(…)`, `read`) follows the capture
+  lane (`275`). Channel→world (`> f`, `>> f`, heredoc writes) follows this component. A file
+  named in argv (`tee f`) needs nothing additional — that is tool semantics, already
+  oracle territory. The redirect is the case where *the shell, not the tool*, places the bytes.
+- **`rul-locators-are-parsed-coordinates-are-authored`** — the engine's parse yields a
+  structural *locator*: (target word, cwd-state at that line, open mode). POSIX warrants it;
+  no author does. Turning a locator into a *claim* (`disturbs sm.dorc.File:<entity>`) is a
+  vocabulary act, and it is authored: a filesystem role member receives the locator and
+  answers or declines, exactly as argv flows through a tool oracle's argparse
+  (`rul-argv-flows-bytes-do-not`, generalized: structure flows through authored interpreters;
+  the engine transports).
+- **`rul-silence-walls-decline-walls`** — no binder loaded, binder declines, unknown cwd,
+  unknown filesystem type, fd-state weirdness: the write is an unmodeled mutation and a total
+  wall. Binding only ever *narrows* walls; an empty oracle world remains byte-identical
+  (`empty-world-byte-identical`).
+- **`rul-binder-claims-are-whole-entity`** — a binder claim names the whole entity
+  (`sm.dorc.File:<path>`, selector-less, which the algebra reads as ⊤-selector: collides with
+  every cell of that entity). Why §3.4 explains: a tool can mutate *through* its routed channel
+  in ways neither speaker can name per-selector (an `fchmod` of stdout). Per-selector
+  refinement therefore requires channel-relative tool speech (§9).
+- **`rul-engine-holds-no-world-facts`** — no platform-conditional fact about the world is
+  load-bearing in engine code, in this domain or any it touches. The engine's verbs are:
+  *parse* (sh structure), *compile questions*, *fold answers* (the algebra), *act and verify
+  its own mutations*, and *arrange geometry* so authored sh stays true (`30P` mirroring).
+  Never: interpret the world. What the engine may know about paths is path *syntax*; every
+  path *semantic* is authored speech or a phase-time measured answer (§5).
+- **`rul-questions-route-to-latest-phase`** — every world-question has a latest sound phase:
+  plan-time analysis may speculate only inside the one audited decidable set (falsified at
+  probe standup, `mech-two-standups`); the probe measures; a guard re-measures at apply, in
+  sequence, staleness-free by construction. {elide, guard, run} is this rule's canonical
+  instance: elide = answered at probe; guard = deferred to apply; run = never answered.
 
-The oracle contract is argv-keyed by law (`identity-declared-never-inferred`) — and a redirect
-target never reaches argv. `cat >f <<EOF`, `printf … >f`, `cmd >>f`: the single most common way
-shell mutates a file is structurally invisible to the mechanism that describes mutations. An
-fs-stdlib author cannot write a `cat__disturbs` naming the target, because `cat`'s argv on that
-line is empty. Consequence: every such write is an unmodeled mutation ⇒ a total wall, and the
-careful admin's write-if-changed idiom *self-walls* — building the candidate file poisons every
-fact below it. `26K` billed the repair "possibly the highest-value single analyzer increment"
-(billing tempered in §10, `risk-billing-correction`).
+## §1 the-problem — the mutation argv cannot see
 
-`30D` [PRIOR] closed only the *channel-claim* leg (what an oracle may say about a command's
-stdout/stderr). Unruled: routing (where claimed bytes go), File-coordinate binding, and who
-authors the convergence compare.
+The oracle contract is argv-keyed by law (`identity-declared-never-inferred`): the engine
+parses no tool argv; the oracle's own argparse is the sole entity-resolver. A redirect target
+never reaches argv. `cat >f <<EOF`, `printf … >f`, `sed … >f.new` — the single most common
+way shell mutates a file is structurally invisible to the mechanism that describes mutations.
+An fs-stdlib author cannot write a `cat__disturbs` naming the target; `cat`'s argv on that
+line is empty.
 
-## §2 the-teachability-artifact — user-facing description
+Without a binder answer, such a write is an unmodeled mutation and a total wall, so
+everything below it guards or runs. This makes the careful admin's write-if-changed idiom
+self-wall: building the candidate file invalidates every downstream fact, including facts
+about unrelated state. The filesystem binder gives that routing effect an authored,
+bounded name while leaving the admin's own comparison live.
 
-Included per the human's test [SESSION]: "if we can't teach this to a user, it's the wrong
-design." Draft register; capabilities and caveats only; no engine internals.
+## §2 what-the-user-sees
 
----
+This is the user-facing capability boundary.
 
-**How Dorc handles files.** Dorc reads shell, so it can see *that* your book writes a file.
-What it cannot see, and deliberately never guesses, is what that path *means*: whether two
-spellings name the same file, whether "already has these bytes" counts as done, or whether a
-path is an ordinary file at all (on Linux, writing to certain paths under `/proc` reboots the
-machine). Filesystems differ too much — case-insensitive disks, symlinks and bind mounts,
-SELinux labels, network mounts — for built-in opinions to be safe anywhere but the machine in
-question. A wrong opinion here commits the one sin Dorc refuses: skipping a command that
-needed to run.
+**Dorc knows shell; it does not know filesystems.** It can see *that* your book writes a
+file. What it cannot see, and deliberately never guesses, is what that path *means*: whether
+two spellings name the same file, whether "already has these bytes" counts as done, or
+whether a path is an ordinary file at all (on Linux, writing to some paths under `/proc`
+reboots the machine). Filesystems differ too much — case-insensitive disks, symlinks and bind
+mounts, SELinux labels, network mounts — for built-in opinions to be safe anywhere but the
+machine in question, and a wrong opinion commits the one sin Dorc refuses: skipping a command
+that needed to run.
 
 So Dorc holds no opinions about files. Every file question is answered one of three ways:
 
 1. **An oracle answers, on the machine in question.** The filesystem oracle in the standard
-   library is ordinary sh: small functions answering "are these two names the same file?" or
-   "does this file already match — contents, and whatever else matters here (labels,
-   ownership)?" Dorc runs them where the answer lives: on the target host, during the
-   read-only probe, or as a check placed immediately in front of your own command at apply
-   time. Because the answers come from your actual filesystem rather than a model of one,
-   they are automatically right for *that* machine — including machines nobody designed for.
-2. **Dorc verifies its own work instead of predicting it.** When Dorc itself places files on
-   a host (your plan, and the oracle files it travels with), it copies, then checks every
-   file landed exactly, before the first line of your book runs. A host that disagrees with
-   the plan's assumptions stops the run cleanly; it never bends it.
+   library is ordinary sh, run where the answer lives: on the target host during the
+   read-only probe, or as a check directly in front of your own command at apply time.
+   Answers are evaluated by the actual filesystem rather than translated through a controller
+   model, so platform behavior comes from that machine. Their semantic correctness remains
+   the named oracle author's contract, like every other authored answer.
+2. **Dorc verifies its own work instead of predicting it.** When Dorc places files on a host
+   (your plan, and the oracle files it travels with), it copies, then checks — every file
+   present, byte-exact, and *as many distinct files as intended* — before your book's first
+   line runs. A host that disagrees stops the run; it never bends it.
 3. **Nobody answers → the line stays.** A write nobody can speak for is treated as touching
-   *something unknown*: it runs, and everything below it stays in your plan — running, or
-   guarded by a fresh check. Silence never removes a line; only an answer with a name
-   attached can.
+   something unknown: it runs, and everything below it stays in your plan, running or
+   guarded. Silence never removes a line; only an answer with a name attached can.
 
-*What this buys you:* the most common mutation in real shell — writing a file — stops
-costing you the rest of your plan. If you already write careful scripts, you have been
-feeding this machinery all along: `cmp -s conf.new conf || cp conf.new conf` is exactly the
-check-then-act shape Dorc lifts.
+**What this buys you, stated exactly.** Writing a file stops costing you *the rest of* your
+plan. Your own `cmp -s conf.new conf || cp conf.new conf` stays in the plan — it reads the
+file the write produces, so no honest tool can remove it, and it is already the correct
+guard — but the unrelated lines *below* it (the service enable, the firewall rule, the
+package check) recover their elisions where `30U`'s finished definitions license the
+cross-kind comparisons, instead of drowning behind the write. On a converged host the
+honest render is "a few to run, most skipped", not "everything vanished."
 
-*What it asks of oracle authors:* answer what you know in plain sh; `return 2` what you
-don't; *decline* the strange corners of the path namespace (`/proc`, `/dev`, network mounts)
-rather than guessing — a declined path just means that write stays in the plan.
+**Caveats.** Everything fails toward running — missing knowledge costs attention, never
+correctness. Files that don't exist yet often answer can't-say. And any elision kept past a
+command that really runs rests on named authors' at-most claims and sits behind
+`--risk-faultless-skips`, exactly like every other trust of that shape.
 
-*Caveats:* everything fails toward running (missing knowledge costs attention, never
-correctness) · files that don't exist yet often answer can't-say · "these are different
-files" is the sharpest sentence in the system — a wrong "different" is how a needed command
-gets skipped; such answers are always attributed by name, and any removal resting on one
-past a command that actually ran additionally sits behind `--risk-faultless-skips`.
+## §3 the-two-speakers — authorship territories
 
----
+A redirected line has two describers, and they are different people: whoever wrote what the
+*tool* means, and whoever wrote what the *shell construct* means. Input separation keeps them
+from becoming a committee.
 
-## §3 the-design-in-one-screen
+### §3.1 the tool oracle's side
 
-- **`prop-engine-holds-no-world-facts`** [PROPOSED; the candidate invariant] — no
-  platform-conditional fact about the world may be load-bearing in engine code; it may exist
-  only as authored speech (oracle/kind-owner sh) or as a phase-time measured answer. The
-  engine's verbs are: *parse* (sh structure), *compile questions*, *fold answers* (the
-  algebra), *act-and-verify its own mutations*, and *arrange geometry* so authored sh is true
-  (`30P`'s mirroring). Never: interpret the world.
-- **`prop-routing-graph-third-edge`** — the shell's plumbing connects channels to three
-  target types. channel→channel (pipes): built — composed predicts
-  (`rul-only-oracle-bytes-ship`). channel→value (`$(…)`): designed — the capture lane
-  (`275`). channel→world (`> f`): the gap this design fills. `tee f` needs nothing: a file
-  named in argv is tool semantics, already oracle territory.
-- **`prop-locators-not-coordinates`** — the engine's parse yields structural *locators*
-  ("stdout of site S routes to word W, truncate-mode, under cwd-state C"), warranted by
-  POSIX, not by any author. Binding a locator into a *coordinate* (`sm.dorc.File:…@contents`)
-  is a vocabulary act and is AUTHORED — a kind-owner body receiving the locator, exactly as
-  argv flows through an oracle's argparse (`rul-argv-flows-bytes-do-not`, generalized:
-  structure flows through authored interpreters). Precedent for the species: `272`'s
-  "addresses are never coordinates"; `kind__state_stored_only_in()` already *emits* this
-  same locator species.
-- **`prop-decline-is-the-authored-value`** — the strongest reason binding is authored is not
-  override (thin; §6) but *decline*: which path-prefixes are not-really-files is
-  world-taxonomy, platform-conditional, and the corpus already ruled such lists are
-  platform-oracle speech, never an engine denylist (`30S` precedent). A declined locator
-  claims nothing; the wall stands; safe.
-- **`prop-questions-route-to-phases`** — every world-question has a *latest sound phase*:
-  analysis may speculate only inside the audited decidable set (checked at probe standup);
-  the probe measures; a guard re-measures at apply, in sequence, staleness-free by
-  construction. Read {elide, guard, run} as the existing instance: elide = answered at
-  probe; guard = deferred to apply; run = never answered. The engine defers what it cannot
-  answer; it never invents an answer.
-- **`prop-identity-is-measured-relationally`** — file identity is answered by live pairwise
-  host questions (`-ef`/inode-class), not by modeling fold/symlink/mount rules: the kernel
-  answering subsumes every aliasing mechanism, including unforeseen ones. Future (not yet
-  existing) referents are sited by *anchoring*: living-canonicalize the parent, look up the
-  exact name (the lookup is fold-aware for free — the kernel folds), and let the engine's
-  CFG screen ("no other line targets this path in between") cover the program half. A
-  future referent can only come to alias an existing one if some *agent* creates the alias,
-  and agents are either in-book (engine-visible, wallable) or out-of-book drift (excluded
-  by the identified-cause TOCTOU scope, `toctou-scope`) [SESSION — the anchoring insight is
-  the human's; the closure argument is the sitting's elaboration of it].
+The tool author follows the ordinary role contract: `predict` models the command's own
+behaviour per channel (stdout default-declined, claimed by authored DREP speech — `30D`);
+`is_converged` is the vouch; `disturbs` is the argv-keyed at-most write-set. Nothing about
+redirects appears in any of it, and nothing *can*: the tool oracle's functions receive the
+site's argv, and the routing information is not in it. A tool author cannot overreach into
+routing territory even by error — the claim is unspellable from their inputs.
 
-## §4 the-walkthrough — one book, two authored functions, every phase
+The canonical idiom makes one contract discipline especially visible:
+**`req-verdict-marks-every-read-cell`** — a verdict body must mark every world cell whose
+state its exit status reads. The `cmp`-shaped verdict reads *both* operands and must mark
+both; marking only the destination leaves the source out of the fact's backing, and a fact
+whose backing omits a cell an upstream line writes can be wrongly spared past that line.
+The backing carries no completeness burden with respect to the *world*
+(`an-backing-selfframing` — adequacy is priced at the vouch); this requirement is about the
+body's own *visible reads*, and it is mechanically detectable: a falsification-first
+detector (never a gate — `rul-unprovable-rides-the-vouch`) warns when a body's path-bearing
+operand reads exceed its marks. Oracle authorship includes this read-to-mark contract.
 
-The strawman book and fs-stdlib file (dialect-sloppy; see header):
+### §3.2 the filesystem binder's side
+
+One kind-species role member receives structural locators. Its contract:
+
+- **Answer or decline, per locator.** An emission is an at-most claim ("this routing act
+  disturbs at most this entity — whatever else, I answer for"); no emission is no claim, and
+  the wall stands total. Declining is ordinary control flow and always safe.
+- **Whole-entity claims only** (`rul-binder-claims-are-whole-entity`). The claim names
+  `sm.dorc.File:<entity>`; never a selector.
+- **Taxonomy is measured, not enumerated.** An existing target binds only when its resolved
+  object is an ordinary regular file on a filesystem from a small authored allowlist of
+  persistent filesystems (ext4/xfs/btrfs/apfs/…). An absent target binds only when its create
+  parent and redirect mode establish the corresponding regular-file creation; dangling or
+  ambiguous routes decline. FIFOs, devices, sockets, directories, procfs, sysfs, devtmpfs,
+  FUSE, network filesystems, and every unknown object or filesystem type decline and retain
+  the wall. Path-prefix denylists are not a conservative closure; object type and filesystem
+  type are measured inside the shipped authored body. The allowlist is platform-oracle
+  content, never an engine table (`30S`).
+- **The standing emission discipline applies whole**: the completion sentinel on every
+  completing path (`an-atmost-completion-signal`), body-death refuses the whole footprint,
+  the report-lane idiom for declines. The binder ships on the same rails `disturbs` bodies
+  ship on (`an-derived-footprint`): strip-only, read-only, stdout-emitting, all-or-nothing
+  readback.
+- **Attribution**: every claim carries the binder author's name; every survival it licenses
+  cites it; `dorc why` shows the arm.
+
+Entity spelling: the locator's target word resolved against the modeled cwd at that line.
+An unresolvable word or ⊤ cwd (including everything below a blind act —
+`law-no-unsoundness-below-a-blind-act`) never reaches the binder: the locator is ⊤ and the
+wall is total before any authored code is consulted.
+
+### §3.3 why the speakers cannot collide
+
+The mutation surface of a simple command partitions along sh syntax itself: argv-side
+effects belong to the tool's author; routing-side effects belong to the shell, whose meaning
+the filesystem author holds; shell-*state* effects (assignments, `cd`, options) belong to
+the engine's sh-parity model. The partition is enforced by **input separation**, not by
+discipline: tool functions receive argv (no routing info); the binder receives the locator
+(no argv). There is nothing shared to disagree about, so no coherence check is needed —
+compare the wrapper surface, where two speakers parse one shared argv and the dual-peel
+check must fail-fast on disagreement (`wrapper-law`). And at the vocabulary level the binder
+has no committee power by construction: claims and disturbs emissions never mint selector
+dialect (`an-selector-dialect` — claims contribute tokens only, interpreted at the backing's
+closure). Two authors, one line, zero pooled speech.
+
+The composed line's footprint is the union of the two territories' claims, and the
+universal-meet consumers already treat unions correctly: sparing requires every member
+provably disjoint from every backing member (`set-lifting-universal-meet`), and a wrong
+survival cites the specific member that licensed it — singly authored, singly named.
+
+### §3.4 residue, and why whole-entity is the floor
+
+At-most claims carry residue ("whatever else, I answer for"), and a two-speaker line has one
+structural residue class worth naming: a tool can act on the *open file description* the
+shell handed it in ways beyond writing bytes — `fchmod` of stdout being the sharp case,
+which mutates the target's mode. The tool author cannot name the cell (no vocabulary for
+"whatever my stdout resolves to"); the binder cannot know the tool does it. A per-selector
+binder claim (`@contents`) would therefore under-claim in a way *neither diligent author*
+could repair. Whole-entity claims close the class: the claim collides with every cell of the
+written entity, so a fact about that entity's mode, label, or anything else correctly
+refuses to be spared past its write. The cost is same-entity precision — a fact about the
+written file itself can never survive its write — which is almost always the correct answer
+anyway. Per-selector refinement uses channel-relative tool speech ("I mutate at most my
+stdout's target"), composed by the engine through the routing graph the same way pipes
+compose; §9 records its absence from the base tier as deliberate non-capture.
+
+What residue remains is ordinary authored incompleteness on each side of a clean boundary,
+with one honest note: an unexplained under-execution on a composed line names *two* suspects
+where a plain line names one. Both are named (`271:rul-sin-ordering`: attributed class), the
+territories tell the investigator which side to read first, and the known structural
+instance is closed by the whole-entity rule.
+
+## §4 how-a-line-decides — phases and the canonical shape
+
+The canonical book shape has this behavior:
 
 ```sh
-#!/bin/sh
-# harden.sh
-set -eu
-CONF=/etc/ssh/sshd_config
-sed 's/^#PasswordAuth.*/PasswordAuthentication no/' "$CONF.dist" > "$CONF.new"  # A: candidate, always runs
-cmp -s "$CONF.new" "$CONF" || cp "$CONF.new" "$CONF"                            # B: admin's write-if-changed
-systemctl reload ssh                                                            # C
+cat > /run/web1.conf.new <<EOF
+…rendered config…
+EOF
+cmp -s /run/web1.conf.new "$CONF" || cp /run/web1.conf.new "$CONF"
+systemctl enable --now nginx
+ufw allow 443/tcp
 ```
 
-```sh
-# fs.oracle.sh   # dorc-lang/v0.2  (STRAWMAN)
-sm_dorc_File__same() {                  # pairwise identity, host-run
-   [ -e "$1" ] && [ -e "$2" ] || return 2
-   [ "$1" -ef "$2" ]                    # 0 = same referent; 1 = distinct
-}
-cp__is_converged() {
-   [ "$#" -eq 2 ] || return 2
-   cmp -s -- "$1" "$2" || return 1                                : sm.dorc.File:"$2"@contents
-   if command -v getenforce >/dev/null 2>&1; then                 # platform dispatch, in sh
-      [ "$(stat -c %C -- "$2")" = "$(matchpathcon -n -- "$2")" ] \
-         || return 1                                              : sm.dorc.File:"$2"@seclabel
-   fi
-   return 0
-}
-```
+- The `cat` line **always runs**: no vouch exists for a bare write (whether re-writing
+  identical bytes is acceptable churn is a judgment — converged≠no-op — and nobody has
+  authored it at this tier). Its wall, with the binder loaded and answering: at most
+  `File:/run/web1.conf.new`.
+- The `cmp || cp` line **stays and guards** — correctly, permanently, at this tier. Its
+  verdict reads the file the wall writes, so its backing contains the wall's claimed entity,
+  the universal meet collides, and no honest machinery can spare it. It is also already the
+  right runtime behaviour: the admin's own in-sequence check, re-measured live after the
+  write, at zero added attention.
+- The `systemctl` and `ufw` lines — backed in other kinds — **survive** under the admin's
+  flag when the File kind's finished definition licenses those cross-kind comparisons
+  (`30U`; §7), which is where the attention payoff lives.
+- With an unmodeled producer in the `cat` seat, its own ⊤ keeps the wall total regardless of
+  the binder: binder value is conditional on modeled producers, by construction.
 
-The SELinux knowledge is *generative*, not defensive: on an enforcing host,
-bytes-equal-but-mislabeled answers diverged ⇒ the `cp` RUNS (a naive content-match would
-wrongly elide the line whose whole point was the label repair); on a converged enforcing
-host both dimensions pass ⇒ elide. Dorc never learns what a label is.
+The phase behavior is:
 
-| phase | runs where | what happens to the authored fs code |
+| phase | where | what happens |
 |---|---|---|
-| analysis | controller (pure text) | *abstract* calls only: role recognition by name; the tracer walks `cp__is_converged` with `$1/$2` bound to site B's value-flowed argv, asking ONLY structure — is a verdict-marked path reachable (vouch)? which cells do reached marks name (backing)? does the effect-falsifier see provable mutation? `cmp`/`getenforce` are opaque, never evaluated. The binder's `case` arm over site A's literal redirect word is traced (decidable-set-only) ⇒ footprint claim `File:….new`, attributed to the fs stdlib. The engine also *mints questions it cannot answer*: A always runs ⇒ wall; B-below-A ⇒ a pair-question `same('….new','…config')?` joins the probe want-list |
-| probe standup | target host sh | engine scaffolding: capability handshake; falsification of anything the tracer pre-evaluated (the binder arm) — host runs the same authored arm, disagreement ⇒ Refused pre-consent. Checks the tracer's reading of the author's sh, never the world |
-| probe | target host sh | shipped stripped bodies run with site argv: the verdict (platform branch decided by the host at runtime) and the pairwise `__same` answering the engine's routed question. rc's return through bounded intake; the host answered multiple-choice and minted no vocabulary |
-| plan mint | controller | folds only: vouch + measured-converged + (pair-answer = distinct) + the typed flag ⇒ B elides although A runs. No calls |
-| apply standup | target host sh | artifact integrity: manifest byte-match, cwd parity, `$0` shape. Mismatch ⇒ stop before line one |
-| apply | target host sh | the latest-phase spelling of any unanswered question: an inserted guard `( check ) || original` for guarded sites — same authored bytes, freshest ask. Site B needs no insertion ever: the admin's `cmp || cp` IS the guard (no-double-guard) |
-| `dorc why` | controller | bodies displayed, never run: the reached arm inlined (show-the-code), the chain typed measured/vouched/measured/consented with names |
+| analysis | controller (pure text) | parse mints the locator (word + cwd-state + mode); routing state is EXACT-or-havoc — `exec >f`, fd-dups, `>|`, unresolvable words all decline-to-bind ⇒ total wall; the binder's reached arm is traced only where it lies wholly in THE decidable set, else deferred to probe; the tool oracle's verdict is traced structurally (reached arm, marks, argv flow — opaque commands never evaluated); the read-vs-marks detector runs |
+| probe standup | target host sh | engine-owned expectation checks: capability handshake; falsification of anything the tracer pre-evaluated (host runs the same authored arm; disagreement ⇒ Refused pre-consent — checking the tracer's reading of the author's sh, never the world) |
+| probe | target host sh | shipped stripped bodies run with site values: the binder body (its own fstype measurement inside), verdict bodies; rc's and emissions return through bounded intake; the host answers multiple-choice and mints no vocabulary |
+| plan mint | controller | pure folding: vouches + measurements + claim unions through the universal meet; the flag gates survival; render reasons name every licensor |
+| apply standup | target host sh | artifact integrity: every shipped file present, byte-exact, and *injective* — N manifest paths measure as N distinct filesystem objects, so a case-folding target that collapses two authored paths into one object stops the run before line one, byte-identical contents included |
+| apply | target host sh | unanswered questions get their latest spelling: inserted guards (`( check ) || original`) for guarded sites; the admin's own hand guard ships untouched (no-double-guard) |
+| `dorc why` | controller | nothing runs; the chain renders measured/vouched/claimed/consented with names; reached arms shown as code |
 
-## §5 the-farm-out-map — what routes to authored code, what stays
+## §5 the-world-knowledge-law
 
-**Farms out** (authored bodies, phase-answered): referent identity (living pairwise +
-anchored future-siting) · convergence adequacy and its selectors (@contents/@seclabel/@xattr
-— an engine-frozen Rust definition of "File converged" would be permanently wrong on
-SELinux/xattr hosts) · path-taxonomy declines (/proc, /sys, /dev, tmpfs, network mounts) ·
-volatility judgments · cross-kind topology (`state_stored_only_in`) · content-cell minting
-(the `cmp`/heredoc establish side — the same seam as
-`FORFEITS:forfeit-file-content-facts-from-exact-checks` and
-`forfeit-content-establishment-by-known-write`).
+**Syntax vs semantics.** Path *syntax* — component structure, prefix decomposition, word
+expansion, dot-resolution — is language, POSIX-specified, platform-invariant, and lives once,
+in the engine, falsified by the floor differential and the standups. Path *semantics* — what
+a path denotes, which names co-refer, what a write means on this platform, what convergence
+requires here — is world, and lives in authored bodies evaluated on hosts. The one deliberate
+overlap is the decidable-set tracer: a Rust evaluation of a closed sh subset, mandatory only
+where a phase-zero answer is structurally required (the load plane: "what program am I
+analyzing" must be answered before any phase exists), optional speculation everywhere else,
+and in all cases falsified per-host at standup and grown by-name at license-review tier
+(`30P:the-load-plane-stays-correct`). **One decidable set, one fence** — this component
+consumes that list and never mints a second, laxer one.
 
-**Stays engine, all platform-free** [PROPOSED as the complete residue]:
-1. the algebra — lattices, the compare chokepoint and its unknown-safe-bottom, claim tiers,
-   phase placement, conservative defaults;
-2. question compilation — the locator parse; deriving which pairs are worth asking; batching
-   into the single probe shot;
-3. the bounded-intake edge (`rul-host-bytes-bounded-before-admission`);
-4. the CFG interference screen — reaching-defs over path cells; the one question no host or
-   author can see;
-5. the first-contact bootstrap (the `kBOOT` floor: the first question cannot arrive via the
-   machinery it establishes).
+**Measure, act, arrange.** The engine's three ways of touching filesystems, none
+interpretive: *measure* — compile a question, ship it to the phase where somebody knows
+(authored bodies on hosts; the standup checks); *act* — for its own resources, do the thing
+and verify the outcome (open the authored spelling and let the kernel resolve it, identify
+files by content digest and open-time identity, never by lexically-normalized path strings;
+create owned scratch and degrade on failure); *arrange* — construct geometry so authored
+expressions stay true (the mirrored tree that makes `$(dirname "$0")/x` land, `30I`/`30P`).
 
-**The split, one line per cell:** *language* semantics (word expansion, dot-resolution,
-errexit) exist once, in Rust, falsified by the floor differential and the standups;
-*controller* filesystem = acts (open the authored spelling, identify by digest — never
-lexically normalize for identity); *host* filesystem = phases and authored bodies;
-*geometry* = arranged (mirroring makes `$(dirname "$0")` true), never interpreted.
+**Expectation-setting corners.** Where the engine's own operation depends on file reality —
+loading, artifact placement, scratch — it sets expectations controller-side from what it
+holds, checks them host-side, and treats the host's influence as strictly boolean: stop,
+never steer (`30P`'s controller-expectation/host-check pattern; `rul-admission-is-a-closed-outcome`).
+The injectivity check of §4 belongs to this family.
 
-**The one genuine dual-implementation tax**, named honestly [the human's core objection this
-sitting; SESSION]: the decidable-set tracer is a Rust implementation of an sh subset. It is
-*mandatory only in the load plane*, which is phase-zero-captive — "what program am I
-analyzing" must be answered before any phase exists, so deferral has a floor and the load
-plane sits on it. The tax is bounded three ways ([PRIOR], `30P:the-load-plane-stays-correct`):
-closed set, growth by-name at license-review-tier, per-host standup falsification. Everywhere
-else, Rust pre-evaluation of authored bodies is an *optional* speculation under the same
-falsification, added only where profiling demands.
+## §6 file-identity — semantics and the v0 floor
 
-**Trust typing** [PROPOSED obligation]: every routed question is classified by its consumer's
-failure direction before it may route. Degradation-grade answers (handshake-style: absent ⇒
-less value; a lying host hurts only itself) may feed unflagged machinery; identity/disjointness
-answers feed flag-gated, claim-tiered consumers (`an-host-as-adversary` standing). Forgetting
-the classification once is a soundness hole; it wants to be typed, not conventional.
+File identity is *measured, per-aspect, and perishable* — three properties that together
+dictate a very conservative floor.
 
-## §6 the-critical-examination — what fell, what survived
+**Per-aspect.** "Same file" is not one relation. Same-for-contents is referent identity (two
+hardlinked names, one inode: `[ a -ef b ]` answers yes, and a write through either changes
+both). Same-for-existence is directory-entry identity (`rm a` removes *a* and leaves *b*
+standing — the referent answer is exactly wrong for the existence cell). Opened descriptions
+are a third subject (`exec 3>p` holds a description that later `p` mutations do not touch).
+The identity tier therefore carries an authored per-aspect relation mapping —
+which relation each selector's comparisons consult — declared by the kind's owner like every
+other vocabulary act, with the name-bias law applied (`an-name-as-contract`: spell members so
+the lazy answer errs safe — a `same()` whose 0 means *same* over-collides when incomplete;
+"provably distinct", the dangerous claim, must be the deliberate arm).
 
-Conducted at the human's direction [SESSION], three questions.
+**Measured, including resolvable unborn referents.** Living questions subsume the platform
+taxonomy: `-ef`-class checks answer hardlinks, symlinks, bind mounts, and case-folding
+without knowing which mechanism is in play, because the kernel answers. A path that does not
+exist yet is sited by *anchoring*: living-canonicalize its parent, look up the exact future
+name (the lookup inherits the directory's folding semantics for free — the kernel folds),
+and let the engine's CFG answer the program half ("does any line between here and there
+target this path"). A future referent can only come to alias an existing one if some agent
+creates the alias, and agents are either in-book (engine-visible, wallable) or out-of-book
+drift (outside scope by `toctou-scope`, as everywhere). When two absent spellings cannot be
+distinguished by parent anchoring and lookup, the answer is unknown rather than distinct.
 
-- **Override value is thin.** The argument that made *oracles* authored does not transfer:
-  tool semantics are plural and distributed; redirect semantics are singular and spec-fixed.
-  A rival fs kind would fragment the coordinate space (cross-kind compare does not exist), so
-  dissent destroys value rather than expressing taste. The genuine authored value is
-  *decline* (world-taxonomy in sh, per-platform, patchable) and repair-without-release. The
-  attribution argument is remedy-shaped, not blame-shaped [SESSION — the human's correction:
-  a `dorc why` pointing at a folder of sh is trivially patchable and PR-able; better for the
-  user, marginally; not carrying the day].
-- **Single-inhabitant, as charged.** The v1 census of a general "locator registry" is one
-  subscriber (fs) and one-and-a-half members. `redirect-in` is worthless by ruled design
-  (reads don't kill facts); cwd needs no kind hook; heredoc-payload's consumer is a forfeited
-  capture path. Resolution: build narrow (one fs role member, no registry), let the second
-  *kind*-subscriber force generalization (rule-of-three);
-  `rul-strawman-formats-no-compat` makes the later rename free. The human's condition
-  [SESSION]: a general mechanism is *preferred* if it pays for itself — the shared-currency
-  case is that `state_stored_only_in` emits and the reflexive-inertness falsifier consumes
-  the same locator species; both, honestly, are unbuilt.
-- **The hardcode stays on the table.** Engine-minted File coordinates (one blessed
-  vocabulary act + an engine-resident decline list) may genuinely be cheaper; the sitting
-  should compare it undismissed. ~SUSPECT narrow-authored wins on the decline-taxonomy
-  point alone; it is a close call, not a slam dunk.
+**Perishable.** An identity answer is a point observation whose truth depends on every
+directory entry, symlink, and mount used to resolve both operands. A later in-book `mv`,
+`rm`, or `ln` can silently invalidate it — renaming a directory changes what every
+descendant path denotes without touching their inodes. So no identity answer is ever
+timeless: any consumer must either carry the answer as a backed fact invalidated by the
+effective-world reach of namespace mutations, or refuse to consume answers across them.
 
-## §7 the-platform-wedges — how bad the paths space is
+**The v0 floor:** entry-mutating verbs (`mv`, `rm`,
+`ln`, `rmdir`, `mkdir`-over) make **no at-most claims** — their oracles decline `disturbs`
+entirely, so any such line is a total wall and every identity question below it is moot.
+Same-kind path-distinct comparisons answer unknown ⇒ collide (no pairwise machinery is
+consulted, because none exists). The floor forfeits same-kind sparing and all
+namespace-tolerant precision, recorded in §9 with reds, and remains conservative.
 
-Six classes; the fix-location verdict per class:
+## §7 rul-binder-claims-are-ordinary — cross-kind handling
 
-1. `wedge-writes-are-actions` — /proc/sys (sysctl), /sys knobs (`/sys/power/state`: write
-   "mem", the machine suspends; `/proc/sysrq-trigger`: write "b", it reboots), /dev/kmsg,
-   raw block devices. Platform-conditional existence: macOS and OpenBSD have no procfs;
-   FreeBSD's is deprecated; Cygwin fakes one *including `/proc/registry`*. → authored
-   declines / future re-kinding. Farms out.
-2. `wedge-paths-that-are-channels` — /dev/stdout, /dev/fd/N, /proc/self/fd/N: path-shaped
-   spellings of routing edges; binding them as File is category error. The engine/author
-   boundary is not clean along path syntax. → decline-list pragmatically; arguably engine
-   (fd semantics). Small.
-3. `wedge-identity-is-relational` — symlink farms (/etc/resolv.conf → systemd-resolved's
-   stub), Debian alternatives, usrmerge (`/bin/sh` ≡ `/usr/bin/sh` on merged distros only),
-   hardlinks (no canonical name exists; only pairwise dev+inode answers), bind mounts
-   (realpath gives different canonicals for one referent), macOS firmlinks; case: APFS/HFS+
-   and NTFS case-insensitive by default, ext4 casefold and NTFS case-sensitivity
-   *per-directory*; Unicode normalization (HFS+ NFD; APFS normalization-insensitive
-   ~SUSPECT on fine detail). → farms out via living pairwise questions; the taxonomy
-   collapses when the kernel answers. The largest class.
-4. `wedge-identity-is-contextual` — mount namespaces (systemd `PrivateTmp=yes`: "the same
-   /tmp" is two referents), chroot, containers, WSL /mnt/c ↔ C:\. → the coordinate's
-   context slot + `27C` context-entry; engine-keyed, authored-answered; already designed.
-5. `wedge-cross-kind-shadowing` — a unit drop-in under /etc/systemd/… changes the *Service*
-   entity; ld.so.cache; PATH. Not solved by either design; the designed counter-mechanism
-   is the Service kind declaring where its state lives (`state_stored_only_in`), which
-   *consumes File coordinates* — this design is its prerequisite feeder.
-6. `wedge-adequacy-and-volatility` — setcap/xattr and SELinux contexts make cmp-equal ≠
-   converged; tmpfs lifetime; NFS close-to-open (a "local" File that is secretly cross-host
-   state, `an-cross-host-kind`); automounts, where a probe's *stat* mutates mount state
-   (through `hermeticity-precondition`). → authored selectors and declines. Farms out.
+Binder-minted claims are ordinary authored at-most claims, the same species a hand-written
+`disturbs()` body mints. They enter the existing survival machinery with no binder-specific
+trust class or comparison rule.
 
-Verdict [the sitting's honest sizing]: the abstraction buys out the taxonomy and adequacy
-fiddle entirely, and the identity fiddle *almost* entirely (via §3's relational re-cut —
-this corrects an earlier within-sitting "identity is neutral" claim, which had scored
-engine-manhours where the human's stated metric was blessed engine semantics [SESSION]).
-The genuinely-owed engine work that remains — pairwise question plumbing, pair enumeration,
-context keying — is generic and platform-free.
+Cross-kind sparing follows `30U`. Without the footprint kind's reached finished definition,
+the comparison answers *unrelated* and collides. `kind__disturbance_reaches` widens the
+claim-side footprint; `kind__state_stored_only_in` adds backing-side collisions; the reached
+`disturbs nothing-else` record is the completeness act that licenses cross-kind disjointness.
+A redirect-derived File claim therefore spares a Service, Firewall, Package, or other
+backing only when the File kind's finished definition is present and neither the reach nor
+store relations add a collision. The admin's `--risk-faultless-skips` flag remains the
+separate consent gate over that authored completeness claim.
 
-## §8 the-identity-residues — where can't-say genuinely remains
+## §8 invariants
 
-- `residue-two-future-spellings` — `D/Foo` and `D/foo`, neither exists: folding is
-  undecidable without directory-attribute reads (`lsattr` casefold on ext4; ~SUSPECT
-  pathconf-style answers on macOS) — authorable, platform-oracle content, ugly; resting at
-  can't-say is safe and narrow.
-- `residue-second-exchange` — pairs involving a *dynamically-derived* footprint are not
-  known until first-round results return; asking them is a second host exchange, squarely
-  behind `rul-repeated-probing-reviewed-before-design`. The static majority ships in the
-  ordinary single shot; the dynamic cell opens as collide-until-reviewed.
-- `residue-floor-membership` — `test -ef` is a common extension, -GUESS on posh∩dash floor
-  membership; must be *measured* (atlas-style) before any stdlib body leans on it; a
-  fallback spelling (`stat` inode compare) has its own portability sludge, which is exactly
-  platform-oracle content.
+1. **`inv-no-world-facts-in-engine`** — platform-conditional world-facts are never
+   load-bearing in engine code; authored speech or phase-answers supply them.
+2. **`inv-routing-territories-stay-partitioned`** — a simple command's mutation surface partitions by
+   sh syntax: argv-side to the tool's author, routing-side to the filesystem author,
+   shell-state to the engine. Enforced by input separation (tool functions see argv only;
+   the binder sees locators only); no function ever receives both.
+3. **`inv-binding-is-authored`** — the engine never mints world coordinates from parse.
+   The locator→claim act is authored, declining, and attributed.
+4. **`inv-binder-claims-stay-whole-entity`** — binder claims are selector-less without
+   channel-relative tool speech; per-selector refinement never comes from engine assumption.
+5. **`inv-identity-answers-are-perishable`** — no identity answer is consumed as timeless;
+   consumers bound answers by the effective-world reach of namespace mutations or refuse
+   across them.
+6. **`inv-book-sites-feed-facts`** — only book sites feed the fact plane. Oracle-body
+   redirects route to the reflexive-inertness falsifier (falsification-first, never a
+   completeness gate); the report sink is exempt by construction, its value being
+   engine-supplied (`rul-probe-writes-only-what-it-owns`).
+7. **`inv-routing-is-exact-or-havoc`** — routing state (fd table, `exec` redirects,
+   clobber modes) is modeled exactly or the site declines to bind; no middle
+   (`30P:rul-load-head-is-exact-or-havoc`'s sibling, one plane over).
+8. **`inv-taxonomy-is-measured-and-authored`** — ordinary-file classification is a measured
+   object-type and filesystem-type allowlist inside authored bodies; unknown types fail safe.
+   An engine path table or prefix denylist never forms the safety boundary.
+9. **`inv-placement-is-injective`** — artifact integrity includes distinctness of
+   placed files, not only per-path byte equality.
+10. **`inv-one-decidable-set`** — every static speculation over authored bodies in
+     this domain rides THE decidable set and its standup falsification; no second list.
 
-## §9 integration-with-r30 — cwd, loading, bundling
+## §9 deliberate-non-capture
 
-Read against `plans/30I` + `plans/30P` (this sitting):
+These are deliberate limitations. Their extension paths belong in FORFEITS with reds
+(`30P:rul-forfeits-carry-reds`); none changes the base semantics above.
 
-- **The load plane is the built prototype, not a counterexample.** `mech-two-standups` +
-  the controller-expectation/host-check pattern (host influence strictly boolean: stop,
-  never steer) IS the ask-the-world architecture, already ruled. And
-  `rul-static-predict-sites-loads` already *breaches* the naive "license-plane never farms"
-  wall in exactly the gated form this design wants: an authored stdlib body (`dirname`)
-  sites loads, engine-evaluated (P-static), call-graph-blessed by name (P-blessed),
-  standup-verified, why-cited, priced as a named trust edge. The redirect/identity work
-  should copy this gate, not invent one.
-- **cwd stays engine** — shell state, not world state (`rul-unsure-falls-toward-sh-parity`).
-  The binder consumes cwd-state as an input: a locator is *(word, cwd-state, mode)*, and
-  `law-no-unsoundness-below-a-blind-act` bounds it for free — below a havoc, cwd is ⊤ ⇒ the
-  derived File coordinate is ⊤ ⇒ the wall stays total. State this explicitly in any binder
-  ruling so nobody recovers a coordinate from the literal word below a havoc.
-- **Bundling needs no target-fs model.** The wedge: tree-mirror ships authored paths, so
-  two paths differing only by case silently collide on an APFS/NTFS/drvfs target. The
-  design already holds the answer: the apply-standup manifest check (every file present and
-  byte-matching) is the falsifier — one of the two fails byte-match ⇒ stop before line one.
-  Cost of not-modeling is only *lateness*; the cheap recovery is an aid-tier collision scan
-  for early warning, zero soundness role.
-- **Controller fs by acts** — the `30Pb` builder-check (lexical `..` vs the real open under
-  symlinks/case-folding) resolves by act-don't-model: open the authored spelling (the
-  kernel resolves symlinks), identify by content digest and open-time identity; never
-  lexically normalize a path for identity. Same sentence the host-side pairwise design
-  produced — evidence the principle is load-bearing rather than local.
-- **Arrange-the-world is the third leg** — `rul-rewrite-permission-is-derived`'s mirroring
-  keeps `$(dirname "$0")/x` verbatim and constructs geometry so it lands (`30P` spots the
-  same move in PyInstaller). Measure / act / arrange: the engine's complete fs repertoire,
-  none of it interpretive.
-- **Sequencing** — the binder inherits whatever cwd precision `lane-load-plane-precision`'s
-  residue lands (`an-cwd-state` full book-flow still owed, `30I` §3.2); scheduling the
-  redirect work after it is free correctness.
+- **Same-kind sparing** — a fact on `File:X` below a wall on `File:Y` collides even when
+  the two are genuinely distinct files. Capture: the identity tier (§6's per-aspect
+  relations + perishable answers). The corresponding red is a boothook-shaped XFAIL
+  asserting the cross-path survival.
+- **Namespace-tolerant precision** — everything below an entry-mutating verb walls totally.
+  Capture: at-most claims for `mv`/`rm`-class verbs *plus* prefix-aware collision or
+  answer-lifetime machinery, together (either alone is unsound).
+- **Same-entity selector precision** — a fact about the written file's other aspects cannot
+  survive its write (whole-entity claims). Capture: channel-relative tool speech composed
+  through the routing graph, extending `30D`'s channel vocabulary.
+- **The idiom's own elision** — `cat >f <<EOF` never elides on content-match at this tier;
+  the semantically identical `cp f.new f` can, via its argv-keyed oracle. Capture: the
+  content-establishment work already registered
+  (`FORFEITS:forfeit-content-establishment-by-known-write`,
+  `forfeit-file-content-facts-from-exact-checks`) plus owned-scratch payload staging and a
+  structural-site convergence judgment-holder — one design problem, and every erased
+  contributor (producer effect and routing effect) requires its own vouch
+  (`rul-every-erased-establish-is-vouched`).
+- **Dynamically-derived pair questions** — identity questions whose operands emerge from
+  first-round results require a second host exchange and therefore rest at collide. The
+  repeated-probing review gate governs enabling that exchange
+  (`rul-repeated-probing-reviewed-before-design`).
 
-## §10 the-risk-register
+## §10 components-and-interdependencies
 
-1. `risk-cross-kind-referent-aliasing` — the sharpest: `sysctl -w net.ipv4.ip_forward=1`
-   (Sysctl-kind via its oracle) and `printf 1 > /proc/sys/net/ipv4/ip_forward` (File-bound
-   via the binder) are one referent in two kinds; per stage-7 semantics cross-kind
-   footprint-vs-backing reads survival-compatible ⇒ a File-bound wall can spare a
-   Sysctl-backed fact it really mutated. Under-execution, flag-gated; within-kind
-   `resolve()` cannot see it. Mitigation is authored declines of the known special
-   namespaces; the safe spelling is backwards from instinct (an allowlist of "boring paths"
-   is unwritable, so it is denylist-plus-claim-the-rest, which fails unsafe on unknown
-   special namespaces). The residue must be priced at the sitting.
-2. `risk-resolver-goes-hot-path` — every `>` in every book mints a File coordinate; the fs
-   identity machinery becomes load-bearing at book scale. Probe-lane cost plus a much wider
-   aliasing-knife surface.
-3. `risk-oracle-body-scoping` — resolved in-principle this sitting, must be ruled: the
-   parse applies everywhere, but consumers split along the ownership split
-   (`rul-probe-mutation-ownership-split`): book sites → the fact plane; oracle-body
-   redirects → the reflexive-inertness falsifier (falsification-first, never a completeness
-   gate; vouched residue otherwise). `DREP_V1` is exempt *by construction*, not by grammar:
-   the sink value is engine-supplied, so the target is an engine-owned resource. Without
-   the split, every emitting oracle's `>>"${DREP_V1:-/dev/null}"` would mint File
-   disturbances inside probe bodies.
-4. `risk-exec-redirect-routing-state` — `exec > f` makes routing persistent CFG-carried
-   state; fd-dup chains ride the deferred `an-fd-state`; group redirects, `>|`, noclobber.
-   The sitting must carve an EXACT-or-havoc boundary for routing, mirroring
-   `30P:rul-load-head-is-exact-or-havoc`, or the routing fact is quietly wrong below an
-   `exec`-redirect.
-5. `risk-decidable-set-governance` — one decidable set, one fence: the redirect work and
-   any fs-oracle static tier must feed the same by-name, license-review-tier list
-   (`30P`/`30Q` §5g posture), never mint a sibling set with laxer review. The standing
-   temptation is widening the tracer without the standup check, because it is faster and
-   usually right.
-6. `risk-billing-correction` — `26K`'s "highest-value single analyzer increment" needs
-   tempering: the sparing value requires modeled-producer ∧ flag-on ∧ fs-kind-loaded ∧
-   identity-adequate; an unmodeled producer's own ⊤ keeps its wall total regardless. The
-   unconditional part is kill-side conservatism plus the attention story for modeled
-   producers. Still likely the right next increment; -GUESS no longer obviously the
-   highest-value one.
-7. `risk-wall-license-conflation` — a phrasing trap caught by the human [SESSION]: "can
-   only narrow a wall, never license an elision" conflates causal accounting (narrower
-   walls DO yield more surviving elisions — the point) with license-source accounting (the
-   derived coordinate participates only on the wall side of the disjointness compare; every
-   survival still rests on its own vouch + measurement + flag). Any ruling text must keep
-   the two ledgers separate or it will be argued against successfully.
+Implementation work is decomposed below by dependency. This section records no schedule.
+"Rides built rails" means no new transport or substrate.
 
-## §11 candidate-rulings-and-asks — for a sitting or review
+- **`comp-routing-locator`** — the locator parse (word + cwd-state + mode) and the
+  routing EXACT-or-havoc carve (`inv-routing-is-exact-or-havoc`). Pure kernel
+  (syntax/analysis); redirects already parse as mutation sites (`an-redirection-effect`),
+  this re-exposes them bindable. Self-contained. Everything else here consumes it.
+- **`comp-fs-binder-member`** — role recognition, arm trace, claim mint, ship-and-readback
+  on the derived-footprint rails (built: `an-derived-footprint`). Requires
+  `comp-routing-locator`; consumes §7. Touches oracle + analysis + core claim
+  surfaces. The authored fs stdlib file itself is stdlib-arc work, not engine work — but the
+  *contract* it is written against is this unit.
+- **`comp-claim-consumption`** — the settle/wall seat accepts binder claims into footprint
+  unions; render reasons name the binder. The union/render half is a small delta on existing
+  seats (`an-wall-topology`); the cross-kind gating of each footprint×backing pair on the
+  footprint kind's finished definition is `plans/30U`'s machinery, consumed here, not
+  re-derived. Requires `comp-fs-binder-member`. Until it exists, binder claims are inert and the
+  authored surface cannot be meaningfully tested: any oracle-authorship exercised against
+  the binder contract before this unit lands is authorship without feedback.
+- **`comp-backing-detector`** — the read-vs-marks falsification detector
+  (`req-verdict-marks-every-read-cell`). Analysis-plane, independent of every other unit,
+  and general: it detects under-backed verdict bodies in every domain, not only fs.
+  Oracle authorship performed before it exists will systematically under-mark (the
+  `cmp`-shaped two-operand verdict is the natural mistake) and churn when it lands.
+- **`comp-artifact-injectivity`** — the apply-standup distinctness check
+  (`inv-placement-is-injective`). Engine scaffolding, independent of every unit here;
+  naturally part of the multipart/artifact lane, whose integrity story is incomplete until
+  it exists (identical-bytes case-fold collapse passes today's per-path byte checks).
+- **`comp-identity-tier`** — the pairwise per-aspect members, the relation mapping, the
+  chokepoint's relational consultation, and perishability (answers as backed facts under
+  effective-world reach). Requires `comp-fs-binder-member` (claims worth comparing exist)
+  and the engine-question transport that the load plane's standup verification also
+  requires (`mech-two-standups`) — the two consumers share plumbing and seats, and building
+  either without awareness of the other churns the same code. Until this unit exists, §6's
+  v0 floor stands with zero identity machinery consulted.
+- **`comp-channel-relative-speech`** — tool vocabulary for "at most my stdout's target",
+  composed through the routing graph. Extends `30D`'s channel algebra; requires nothing
+  above; permits relaxing `inv-binder-claims-stay-whole-entity`. Without it the whole-entity rule
+  stands indefinitely, correct and blunt.
+- **`comp-content-establishment`** — the registered FORFEITS capture (known-write contents
+  cells, payload staging in owned scratch, the structural-site convergence judgment-holder).
+  Interacts with `comp-fs-binder-member` (the establish side of the same locator species)
+  and with `rul-every-erased-establish-is-vouched` (two contributors per erased site).
+  Separable from everything above; the only route to §9's "idiom's own elision."
 
-1. `ask-adopt-no-world-facts-invariant` — adopt §3's `prop-engine-holds-no-world-facts` as
-   steering law, with §5's five-item residue list as the complete permitted exceptions
-   (future work argues against the list, never quietly grows it).
-2. `ask-question-species-census` — enumerate the closed set of authored answer surfaces
-   (the `277:an-generator-registry` concept, generalized): verdict-rc · mark→cell ·
-   emission→footprint · locator→claim · pairwise-identity · the blessed lift. Authors fill
-   surfaces; only the engine mints a new species. The census's size and generality is the
-   design core; everything in §1–§8 is evidence about which surfaces earn existence.
-3. `ask-binder-narrow-vs-registry` — one narrowly-named fs role member now vs the locator
-   registry; rule-of-three governs generalization; the engine-hardcode compared undismissed
-   (§6).
-4. `ask-pairwise-identity-member` — the `kind__same()` shape: name-bias per
-   `an-name-as-contract` (0 = same, the lazy-safe direction; "distinct" must be the
-   deliberate claim); floor membership of `-ef` measured first (§8).
-5. `ask-kind-species-verdict-member` — structural sites (redirect/heredoc writes) need a
-   convergence judgment-holder that is not argv-reachable: a KIND-species verdict member,
-   by-new-name. This is `26Lb:cell-write-elision-needs-a-vouch-holder`'s answer-shape: the
-   authorship menu (lifted admin idiom / tool oracle / kind verdict) is not a choice — all
-   three coexist as rungs of the standard gradient.
-6. `ask-oracle-body-scoping-rule` — rule §10's split-routed-consumers shape explicitly.
-7. `ask-exec-redirect-carve` — the routing EXACT-or-havoc boundary (§10 item 4).
-8. `ask-second-exchange-posture` — dynamic-pair questions open as collide-until-reviewed
-   behind `rul-repeated-probing-reviewed-before-design` (§8).
-9. `ask-phase-provenance-field` — record which phase answered each consumed answer
-   (extends the `SpeechAct`/`Knowability` seat: "measured-at-probe, screened" vs
-   "live-at-guard"); cheap, and `dorc why` gets honester.
-10. `ask-case-collision-red` — an e2e case pinning "apply standup stops on a case-folded
-    manifest collision" when the multipart lane next opens; the cell greens silently on
-    every Linux CI box and bites the first macOS target.
-11. `ask-payload-staging-sitting` — where candidate payload bytes live when a kind verdict
-    compares them on-host (`rul-probe-writes-only-what-it-owns` permits owned scratch; the
-    staging story is unexamined).
+External couplings, both directions:
 
-## §12 register-impact-if-adopted (nothing edited by this report)
-
-- **FORFEITS** — `forfeit-file-content-facts-from-exact-checks` and
-  `forfeit-content-establishment-by-known-write` sit on this seam (the establish side of
-  the same routing edge); adopting the design rewrites their CAPTURE paths through the
-  locator/binder machinery. No new rows owed until a sitting declines something.
-- **ANALYZER-NEEDS** — candidate rows: `an-routing-locators` (the structural species; note
-  `state_stored_only_in` as its existing emitter) · `an-pairwise-referent-identity` (the
-  relational compare generator; pair enumeration; the second-exchange gate) ·
-  `an-structural-site-convergence` (the kind-species verdict). §D's
-  `an-redirection-effect` row gains the routed-coordinate consumer.
-- **KNOBS** — no new tension claimed. One candidate worth checking against the registry
-  rule (report, don't mint): phase-routing purity vs phase-zero diagnostic quality (lint
-  mode knows less under this design than under a Rust world-model that guesses) — possibly
-  a genuine A-vs-B, possibly just `kPRECISION` wearing new clothes.
-- **USER_STORY** — unaffected; stage 1's guard-lift continuity bet is exactly what the
-  write-if-changed story extends. The `cp`-elides-but-`cat >f`-cannot asymmetry (identical
-  semantics, different authored homes) is the crispest motivating example for any future
-  stage-text, if the human ever wants one.
+- **Producer predicts (the stdlib arc, behind the `30D`/`30J` predict-contract work)** —
+  binder value is inert against unmodeled producers (their ⊤ keeps walls total). In the
+  reverse direction: fs-stdlib authorship performed before `comp-fs-binder-member` +
+  `comp-claim-consumption` + `comp-backing-detector` exist is authored against a laxer
+  contract than the one that will bind it, and will churn when they land — the engine
+  surface is part of what makes stdlib authorship a real test.
+- **The cwd/load-plane precision residue (`an-cwd-state` full book flow, `30I` §3.2)** —
+  the binder consumes cwd-state as locator input; it functions before that work lands
+  (⊤-cwd locators decline, safely) and gains precision automatically after; no hard
+  dependency, pure value coupling.
+- **The loader standup work (`30P:mech-two-standups`)** — shares the engine-question
+  transport with `comp-identity-tier`, per above; also the falsification pattern every
+  traced binder arm relies on.
+- **hostsim / DST** — each unit that ships host-answered questions adds an injectable
+  answer species to the host fault model (forged, dropped, flapping answers); the sim never
+  needs a filesystem model, only answer streams. This is a standing benefit of the
+  measure-don't-model posture, and a test-surface obligation on every unit above.

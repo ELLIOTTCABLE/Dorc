@@ -128,7 +128,7 @@ semantics live in the cited specs:
 | verb | payload | member / spec / meaning |
 |---|---|---|
 | `safe-across`                 | dimension token | context vouch, `plans/27C` §2 — the body is read-only when executed shifted along the dimension |
-| `disturbs`                    | kind            | **both** `cmd__disturbs()` and `kind__disturbance_reaches_only()` — one verb; the member fixes first-order footprint vs transitive reach |
+| `disturbs`                    | kind            | **both** `cmd__disturbs()` and `kind__disturbance_reaches()` — one verb; the member fixes first-order footprint vs transitive reach |
 | `lends`                       | dimension token | `cmd__lend_map()`, `273` |
 | `stored-in`                   | substrate token | `kind__state_stored_only_in()`, `272` — the kind's state lives in this substrate |
 | `undivided-by-transit-across` | axis token      | axis-invariance, `277` §4e — the kind's store is not forked by transit across the axis, so a fact travels without entry |
@@ -140,8 +140,9 @@ Two structural rulings, both decided by the orthogonality test
   (a command's direct footprint; a kind's transitive reach). The enclosing member is the
   *receiver* (command vs kind), not a hidden meaning-flip, so one verb loses nothing; there is
   no inhabitable oracle where the two want to point differently. The member name
-  (`disturbs` vs `disturbance_reaches_only`) still carries first-vs-second-order and the
-  `only`/completeness contract.
+  (`disturbs` vs `disturbance_reaches`) still carries first-vs-second-order; the
+  completeness contract rides the `disturbs nothing-else` report-lane record (`plans/30U`),
+  never the name.
 - **`safe-across` and `undivided-by-transit-across` are deliberately distinct** (and
   deliberately spelled unlike). They both concern a dimension but are orthogonal relations
   with different licenses: `safe-across` licenses entering-and-executing a body; invariance

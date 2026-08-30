@@ -207,12 +207,17 @@ prompt you write:
   (derived; safe; license-free re-indexing that can only block transport) vs
   **partitioned** (declared-only; knife-tier). Declared separation across
   context-values does not exist at all at v1.
-- **ternary-compare-consumer-map** (`277` §2) — `compare(cellA@ctx, cellB@ctx)` ∈
-  {same | provably-disjoint | unknown}. *same* feeds transport only;
-  *provably-disjoint* feeds survival-sparing only (flag-gated); *unknown* is the safe
-  bottom for BOTH consumers. It is ternary because of the safety inversion:
-  believed-no-overlap is safe for the transport consumer and dangerous for the
-  kill-traffic consumer, and vice versa — no binary default is safe for both.
+- **compare-consumer-map** (née ternary-compare-consumer-map; `277` §2 · `30U`) —
+  `compare(cellA@ctx, cellB@ctx)` ∈ {same | provably-disjoint | unrelated | unknown}.
+  *same* feeds transport only; *provably-disjoint* feeds survival-sparing only
+  (flag-gated); *unknown* AND *unrelated* are safe bottoms for BOTH consumers
+  (*unrelated* = no generator ever spoke — the distinct label keeps the weakest
+  inference out of the strongest one's clothes). Cross-kind pairs answer *unrelated*
+  unless the claimed kind's FINISHED DEFINITION (its reached `disturbs nothing-else`
+  record — `plans/30U`) licenses provably-disjoint through the widened at-most. The
+  safety inversion stands: believed-no-overlap is safe for the transport consumer and
+  dangerous for the kill-traffic consumer, and vice versa — no binary default is safe
+  for both.
 - **rul-flag-is-razor-residue** — claims own what lines can say; the admin flag
   (`--risk-faultless-skips`) owns what no line can say (the open-world at-most
   residue: the frame problem's "and nothing else"). Per-invocation, never a default;
@@ -595,11 +600,15 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   valued `printf … : lends DIM` = mapped lend; a MISSING dimension = ⊤, walls (the
   enumerate-every-dimension law; absent-means-full-lend is REJECTED).
   `kind__resolve()`: entity canonicalization within its kind.
-  `kind__disturbance_reaches_only()` (emits `: disturbs KIND`, the UNIFIED verb —
-  `281` §5) · `kind__state_stored_only_in()` (`: stored-in <substrate>` emission
+  `kind__disturbance_reaches()` (née disturbance_reaches_only; arm-incremental
+  entailment, emits `: disturbs KIND` — collide-adding, licenses nothing alone; its
+  reached tail-position `disturbs nothing-else` DREP record is the FINISHED
+  DEFINITION licensing cross-kind sparing — `plans/30U`) ·
+  `kind__state_stored_only_in()` (`: stored-in <substrate>` emission
   lines + the `: undivided-by-transit-across <axis>` invariance mark; whole-member
   scope). Naming law: `only` in a role name = complete-by-contract, totalistic-
-  survey-before-authoring; absence = arm-incremental.
+  survey-before-authoring; absence = arm-incremental (which is why
+  `disturbance_reaches` lost its `only`: totality moved into the record).
 - **coordinate-semantics** — the flat three-place `(kind, entity, selector)` +
   a context slot (recursive coordinate shapes DECLINED —
   `271:rul-coordinate-shape-flat-three-place`; structure lives in kind-owner
@@ -854,7 +863,10 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   the tail annotates the decision and is aid-only — placed last so overrun cannot reach a
   decision and freeform cannot be mistaken for structure. The rc-partition stays a flat
   sink; silent declines stay legal; classing is enhancement. The at-most completion
-  sentinel (`ANALYZER-NEEDS:an-atmost-completion-signal`) is a verb on this lane.
+  witness is the `disturbs nothing-else` record on this lane
+  (`ANALYZER-NEEDS:an-atmost-completion-signal`, ruled at `plans/30U` §5: mandatory
+  tail for dynamic `disturbs` bodies; the finished-definition act in
+  `disturbance_reaches`; absent by design for collide-only emissions).
   Noise-tolerant (`27W:rul-report-noise-tolerant`): ingestion never silently drops
   author emissions — unrecognized/free-form lines are retained (sanitized, capped,
   attributed) and print in full at max verbosity; default surfaces stay selected.

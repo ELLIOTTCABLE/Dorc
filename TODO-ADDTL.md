@@ -8,22 +8,25 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 > Notes by me, the human, in >-blockquote.
 
+## Known-scheduled / in-flight (NOT this document's job; do not re-add below; prune freely)
+
+- 30R receipt arc, finishing (stage 4+)
+- r30 round-close ceremony (human's gate)
+- 30D, dropping return-2 (charter owes the §4.3 typed-consequence ruling)
+- 30J, the family-dialect repair
+
 ## Stands between Dorc and *useful* live use
 
 *(The 2026-07-27 trio — ssh executor, live-acceptance gate, CRLF gate — is BUILT and folded on `ai/r26-unify`; Dorc has now run for real against a VPS and a container. What stands now:)*
 
-* [ ] **four unruled departures in the durable-receipt build (`30R`; adjudication in
-  `quarantine/30Rc1`)** — an outside-lineage spec-compliance pass graded these as genuine
-  departures the specification does not license, needing a human ruling rather than a
-  conductor's. Each is BUILT and standing. (1) The source-ordering fix: the receipt's source
-  ordinal means load order, which the two-category invocation model cannot express truthfully —
-  but collapsing those categories restructures a live model beyond the latitude `30R` names.
-  Carries a gentle, explicitly-unwelded ack and wants outside grounding. (2) The presented-plan
-  identity: `30R` names one identity on the decide-plane; as built, that binding carries an
-  aggregate of three. (3) Two content-identity mints stand unfenced until a later boundary
-  supplies their callers — the fence corpus is required complete and admits no staged
-  exception. (4) Shared constructors renamed after the stage freeze that existed to stop
-  parallel lanes renegotiating them; the lanes have since folded, so the ruling is procedural.
+* [ ] **the acquired-source model restructuring is UNWELDED (`30R`)** — the receipt's source
+  rows want a truthful ordinal, which the invocation model's two source categories could not
+  carry, so they were collapsed into one ordered role-carrying vector. Ruled and built: the
+  ordinal is deterministic acquired-source table position, not dynamic load-occurrence order,
+  and the role is table classification only. The ack on the restructuring itself is explicitly
+  temporary and wants grounding from outside this arc before it welds — repeated/multi-role/
+  multi-target source semantics still belong to `30I`'s occurrence account, and a decision to
+  keep it is a decision about where that account's boundary sits.
 
 * [ ] **the render↔spine feedback shape (`30Ng:attn-render-refusal-feeds-the-spine`)** —
   human-flagged 2026-08-21, unruled: render-refusal ("won't elide: required syntax") is a
@@ -36,11 +39,22 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
   a proven closed set, it changes no resolution and needs no settlement re-modelling —
   human-directed 2026-08-21, its own lane.)
 
-* [ ] **post-kernel predict-contract arc (`30D` + `30J`)** — after the current kernel/loading
-  push quiesces, replace `return 2`-as-predict-decline atomically with exact Status plus
-  authored DREP channel speech, then implement predict-qualified family vocabulary. This
-  must land before the starter stdlib, a real survival-authoring trial, or third-party
-  oracle publication; the current kernel owes only `30Da`'s narrow preservation rider.
+* [ ] **the taught decline idiom silently defeats elision** — builder-measured 2026-08-24
+  (the `30S` pin lane): `[ "$2" = "" ] || return 2` immediately after a predict's entity
+  bind classifies fine but always renders Run, zero diagnostic — while the `if …; then …;
+  fi` spelling elides (bisected against `observable_matrix.rs`). The `||`-form is the
+  USER_STORY stage-3 taught idiom, so either the tracer has a guard-recognition bug or
+  intended rc-consumption semantics are silently eating the taught shape; un-adjudicated,
+  and the silent-no-diagnostic part is the real offense either way. Adjudicate BEFORE any
+  real verdict-authoring starts — it is the taught first-hour shape.
+
+* [ ] **write-elision needs a vouch-holder (`26K:sit-redirect-routing`; surviving half
+  banked `26Lb` §3)** — `30D` closed the channel-claim leg only: routing, File-coordinate
+  binding, and who authors the compare (fs-kind stdlib verdict / tool oracle / lifted
+  admin idiom only) stay unruled, and the engine may never synthesize the compare guard
+  (rul-ternary-verdict) nor elide a bare `> file` on byte-equality. Unlocks sh's most
+  common mutation idiom (write-if-changed); channel-adjacent, so the predict arc must
+  either sit it or explicitly reserve its seat.
 
 * [ ] **the `command -v` load model (`30I:pin-command-v-load-model`)** — `command -v` stays a meaningful, idiomatic, supported dorc-lang route for asking what a shell resolves under a name, and is explicitly NOT forfeited; it is simply not the basis for exact-package guard recognition, which now rides the variable sentinel. Owed: which shell categories and floor/run-target variations the load model represents, and when that wider question may participate in exact guarded-source recognition. Evidence and floor measurements: `notes/30Ic` (output-slash classification measured-refuted — `PATH=:` makes both pinned floors print a bare name for an external; aliases can carry slashes; posh exposes neither aliases nor reserved words).
 
@@ -50,7 +64,8 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 ## Demoted (real; does not block live testing)
 
-* starter-oracle-stdlib — zero non-fixture oracles exist; important-and-pending, NOT blocking (human-ruled 2026-07-27: stdlib/multihost/first-blood ceremony have mostly stood in the way of experimenting; scrappy hand-written oracles are part of the experiment itself). On-ramp when picked up → `27Q` (§2 preconditions discharged); authoring trap: converged≠no-op adequacy, unmeasured → `24U` §2.
+* starter-oracle-stdlib — zero non-fixture oracles exist; important-and-pending, NOT blocking (human-ruled 2026-07-27: stdlib/multihost/first-blood ceremony have mostly stood in the way of experimenting; scrappy hand-written oracles are part of the experiment itself). The verdict-only tier is authorable against in-tree mechanisms once the taught-decline idiom (above) adjudicates; predict-bearing families wait for the scheduled `30D`/`30J`. On-ramp when picked up → `27Q` (§2 preconditions discharged); authoring trap: converged≠no-op adequacy, unmeasured → `24U` §2.
+* slow-planner-cost-model — foreign convergence/preview checks can take minutes, and planning-duration is itself staleness; no design exists; must be sat before the terraform/ansible-class delegation oracles are authored → `26L` §11, `KNOBS:kPROBING` (check-tax).
 * book-acceptance-carve — the value-ladder for accepting unmarked/bash/zsh-ish *runbooks* (never oracles) is undesigned/unowned; design inputs banked → `276:rul-kwhichsh-oracle-scoped`, `276`.
 * probe-safety-backstop — seccomp `socket(AF_INET)` observe + `--faithful` one-leaf-one-exec, both unowned; probe honesty rides author discipline until then → `077`, `24O` item-13.
 * posh-leg-of-the-floor-is-unexercised — `printf` is not a posh 0.14.1 builtin, so under the corpus's `PATH=mocks-only` rail no shipped oracle body's emissions have ever run under posh: the corpus half of the `kWHICHSH` weld's "dash ∩ posh identically" promise is dash-shaped. The opt-in `mise run test:floor` lane (r28) proves six sentinel manifests only; corpus-wide posh coverage of emitter bodies is unowned → `spike/CLAUDE.md` floor-differential-lane-opt-in, `28P`.

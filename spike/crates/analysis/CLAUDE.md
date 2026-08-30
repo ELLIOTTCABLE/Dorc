@@ -127,7 +127,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   instrument/hint lanes. Never re-derive positionality from spans or argv — it is a fact about the
   CFG node.
 - **vocabulary-acts-stay-ambient** (`28M` §5.3) — the kind-owner trio (`__resolve`,
-  `__disturbance_reaches_only`, `__state_stored_only_in`) is the ONE exception: single-occupancy,
+  `__disturbance_reaches`, `__state_stored_only_in`) is the ONE exception: single-occupancy,
   loaded from the ambient prefix, never routed through the positional oracle. They canonicalize and
   type for OTHER authors' sites, so answering differently at different lines of somebody's book is
   incoherent. The species test is `oracle::reserved::is_vocabulary_role`, keyed on the SUFFIX
