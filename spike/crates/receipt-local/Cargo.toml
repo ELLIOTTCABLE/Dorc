@@ -59,11 +59,31 @@ path = "tests/store_sweep.rs"
 name = "native_store"
 path = "tests/native_store.rs"
 
-# The effective user's own identity, which `std` does not answer — the file's owner it does, the
-# PROCESS's does not, and the comparison needs both. Unix only: Windows has nothing comparable to
-# compare against, and says so. Safe API, so `unsafe` stays forbidden workspace-wide.
+# Two things `std` will not answer, both load-bearing here.
+#
+# `process`: the effective user's own identity. `std` answers a file's owner and never the
+# process's, and the ownership comparison needs both.
+#
+# `fs`: handle-relative, non-following filesystem acts. `std::fs::OpenOptions` always follows the
+# final component, so a redirect check followed by an ordinary open is a name check with a swap
+# window between it and the object — which is precisely what an operation called
+# `OpenExistingNoFollow` must not be. `openat`/`mkdirat`/`unlinkat` plus `O_NOFOLLOW` close it,
+# and let an act be performed against a retained directory handle rather than re-walked by name.
+#
+# Unix only: Windows has no comparable answer to either question and says so, which is the
+# explicitly weaker baseline `30Rd` describes. Safe API both times, so `unsafe` stays forbidden
+# workspace-wide.
+#
+# `std` is named because the handles crossing this seam are `std::fs::File`s: without it the
+# package uses its own polyfilled descriptor types and every `openat` here would need a
+# conversion nobody can write safely. It is a feature of a package already in the graph, never a
+# new dependency.
 #
 # Exact-pinned (wildcards = deny) and already in this workspace's graph, so this edge adds no
-# package. `default-features = false` keeps it to the one call: no std shims, no fs, no net.
+# package. `default-features = false` keeps it to those three: no net, no unrelated surfaces.
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.4", default-features = false, features = ["process"] }
+rustix = { version = "=1.1.4", default-features = false, features = [
+  "fs",
+  "process",
+  "std",
+] }

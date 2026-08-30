@@ -935,6 +935,43 @@ fn a_store_root_anyone_but_the_owner_may_write_is_refused() {
 }
 
 #[test]
+fn a_unix_store_landing_belonging_to_somebody_else_is_refused_whatever_its_mode_says() {
+    // `30Rd:controller-root-resolution`'s ownership half, and it is a SEPARATE question from the
+    // mode: a directory belonging to another account can be `0700` and still readable by a
+    // process holding DAC-override, and landing a receipt in it would be publishing into
+    // somebody else's tree. Every mode the rule otherwise ADMITS is driven here, so the refusal
+    // is about ownership rather than about something the access check would have caught anyway.
+    for access in [GroupAndOtherAccess::None, GroupAndOtherAccess::Present] {
+        for (component, other) in [(PRODUCT, STORE), (STORE, PRODUCT)] {
+            let mut io = clean(FailureSchedule::intact())
+                .planting(other, Node::private_directory())
+                .planting(
+                    component,
+                    Node::of(NodeKind::Directory, access).owned_by_another(),
+                );
+            assert_eq!(
+                LocalReceiptStoreV1::open_for_read(&roots(), &mut io, StoreLimits::V1),
+                Err(StoreOpenRefusal::PermissionRefused),
+                "{component} owned by another under {access:?}"
+            );
+        }
+    }
+
+    // The positive control: the same disk, both components this user's, opens under both of the
+    // admitted modes — so the refusals above are the ownership answer and not a sandbox that had
+    // already gone wrong.
+    for access in [GroupAndOtherAccess::None, GroupAndOtherAccess::Present] {
+        let mut io = clean(FailureSchedule::intact())
+            .planting(PRODUCT, Node::of(NodeKind::Directory, access))
+            .planting(STORE, Node::of(NodeKind::Directory, access));
+        assert!(
+            LocalReceiptStoreV1::open_for_read(&roots(), &mut io, StoreLimits::V1).is_ok(),
+            "this user's own store under {access:?}"
+        );
+    }
+}
+
+#[test]
 fn a_product_root_anyone_may_write_refuses_a_store_that_is_itself_fine() {
     // Both Dorc-owned components are validated, not just the last one. A store reached through a
     // product root another account may write is a store whose own directory could be replaced

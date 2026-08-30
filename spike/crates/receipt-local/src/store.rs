@@ -1276,6 +1276,12 @@ fn ensure_directory(
 /// readability has not made it a place another account can plant entries — which is the property
 /// this validation is actually about. A Unix landing that answers nothing is refused, because
 /// there the answer is required; only the explicitly weaker Windows baseline accepts it.
+///
+/// OWNERSHIP is required on Unix too (`30Rd:controller-root-resolution`), and it is a separate
+/// question from the mode: a directory belonging to somebody else can still be `0700` and still
+/// be readable by a process holding DAC-override, and landing a receipt in it would be publishing
+/// into another account's tree. The read-permission posture above is untouched — a widened READ
+/// bit is still accepted; what is refused is a landing somewhere this process does not own.
 fn validate_directory(
     io: &mut dyn LocalIo,
     path: &LocalPath,
@@ -1295,6 +1301,9 @@ fn validate_directory(
         return Err(StoreOpenRefusal::NotADirectory);
     }
     if facts.redirected() {
+        return Err(StoreOpenRefusal::PermissionRefused);
+    }
+    if baseline == PlatformBaseline::UnixLike && !facts.ownership_established() {
         return Err(StoreOpenRefusal::PermissionRefused);
     }
     match (baseline, facts.group_and_other()) {

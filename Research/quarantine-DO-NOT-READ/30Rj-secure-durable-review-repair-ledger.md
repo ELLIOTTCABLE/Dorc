@@ -148,3 +148,67 @@ redacted `Debug`, or by an exhaustive match.
 separate, and `inv-identities-never-cross-domains` reads as though a provenance newtype survives.
 Both are now describing a parameter that no longer exists. Steering files were out of this
 builder's remit, so they are unedited and named here instead.
+
+## `30Ri:fnd-local-nofollow-contract-remains-unimplemented`
+
+**Shape: make the Unix operation do what its name says, and leave Windows alone.**
+
+`OpenExistingNoFollow` was `symlink_metadata` then `OpenOptions::open`, which follows. It is now
+one `rustix` `open`/`openat` carrying `O_NOFOLLOW`, so the refusal IS the open's verdict and there
+is no window between deciding a name is not a link and resolving it. `O_NONBLOCK` rides along, so
+a planted FIFO in a store directory cannot park the reader on the open; the kind is checked
+through the retained handle immediately afterwards either way.
+
+- **Handle-relative.** `NativeIo` retains directory handles as well as file handles, and every
+  create, open, sync and unlink goes through the retained PARENT handle where this attempt holds
+  one — `openat`, `mkdirat`, `unlinkat`. So no ancestor is re-walked between the directory this
+  attempt validated and the entry it reaches inside it. Absence of a parent handle falls back to
+  the absolute name, still non-following; in both the store and the keyset the containing
+  directory is opened before its members, so the fallback is the unusual path rather than the
+  usual one.
+- **Enumeration stays by path, deliberately.** A name a walk produces carries no authority: every
+  entry is re-opened, non-following and parent-relative, before a byte of it is read. Said in the
+  module header rather than left to be inferred.
+- **Removal is bound to the OBJECT.** An exclusive create records the device and inode `fstat`
+  answered through the handle it returned; `RemoveOwned` re-opens non-following, re-reads that
+  identity, and refuses if it moved. A create whose identity could not be read refuses rather than
+  removing by name — the incomplete file is left, which is `30Rd`'s ruled answer.
+- **Store ownership.** `validate_directory` now requires `ownership_established()` on a Unix
+  landing, for every Dorc-owned component. The separately-ruled read-permission posture is
+  untouched: a group- or other-READABLE root still opens, and only WRITE is refused.
+- **Windows unchanged and explicitly weaker.** Its open keeps the pre-check shape (`std` follows
+  the final component and this dependency set carries no safe non-following open for the
+  platform), a directory retains no handle and answers `None`, ownership is not answered, and
+  removal is by name. Every one of those is stated where it happens rather than simulated.
+- **The sealed vocabulary did not move.** Production and the deterministic model still implement
+  the same `LocalIo` `Request`/`Answer` set, so the failure sweep exercises the shipped state
+  machine; the only structural change is that `open_existing` answers `Option<File>` internally,
+  which never crosses the trait.
+
+**Dependency.** `rustix` gains `fs` and `std` on the existing `cfg(unix)` entry. No new package —
+every one of its dependencies is already in the lockfile, and features are not recorded there, so
+the pin and the offline build are unmoved. `std` is named because the handles crossing this seam
+are `std::fs::File`s.
+
+**RESIDUAL, disclosed in the module header as well as here.** There is no portable
+unlink-by-descriptor, so a window remains between the identity check and the `unlinkat`. It is
+narrower than the name-only removal it replaced by exactly the part that was unbounded, and the
+alternative — never removing anything — strands every interrupted publication, which `30Rd` rules
+worse.
+
+**Tests.** Three native Unix cases in a `native_store::object_identity` module driving the I/O
+vocabulary directly, because a store-level case cannot interleave a swap between two acts: the
+handle still reads its own object after the name is replaced; a removal refuses once the name
+holds a different object (with the positive control that an object still this attempt's does go);
+and a redirected final component is refused with nothing behind it reached. One model case in
+`store_sweep` drives the ownership refusal across both admitted modes and both components, with
+the positive control beside it.
+
+**Honest about what a test cannot show.** The redirect case pins the refusal and the untouched
+target; it does NOT distinguish the atomic open from the pre-check, because both answer
+`Redirect` and only an interleaving separates them. That is said in the case's own comment rather
+than left for a reader to assume. The atomicity is carried by `O_NOFOLLOW` being on the open.
+
+**Falsified.** Removing the identity check turns the removal case from `Err(Denied)` into
+`Ok(Done)` — it deletes the replacement. Removing the ownership check turns the store case from
+`PermissionRefused` into an opened store. Both were re-run red before the checks were restored.

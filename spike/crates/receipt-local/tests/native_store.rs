@@ -425,6 +425,140 @@ fn a_store_entry_that_is_a_link_is_not_followed_on_read() {
     );
 }
 
+/// The three cases below drive the I/O vocabulary DIRECTLY rather than through the store,
+/// because what they measure is the seam itself: whether an act reaches the object this attempt
+/// opened or created, or merely the name it stood at. A store-level case cannot interleave a
+/// swap between one act and the next, and the swap is the whole subject.
+#[cfg(unix)]
+mod object_identity {
+    use super::Sandbox;
+    use dorc_receipt_local::NativeIo;
+    use dorc_receipt_local::io::{Answer, IoFault, LocalIo as _, ObjectKind, OpenIntent, Request};
+
+    fn spelled(path: &std::path::Path) -> String {
+        path.to_string_lossy().into_owned()
+    }
+
+    #[test]
+    fn an_object_swapped_after_it_was_opened_is_still_read_through_the_handle() {
+        // `30Rd`'s inspect-the-open-handle-before-reading, measured against a real swap. Between
+        // the open and the read there is no name to resolve a second time, so a replacement at
+        // that name reaches nothing: the inspection and the bytes are the object's own.
+        let sandbox = Sandbox::new("swapread");
+        let path = sandbox.root.join("entry");
+        std::fs::write(&path, b"the original object").expect("a real file");
+        let name = spelled(&path);
+
+        let mut io = NativeIo::new();
+        io.perform(
+            Request::OpenExistingNoFollow {
+                intent: OpenIntent::Read,
+            },
+            &name,
+        )
+        .expect("the object opens");
+
+        std::fs::remove_file(&path).expect("the fixture's own file to unlink");
+        std::fs::write(&path, b"a replacement nobody vouched for").expect("a second file");
+
+        match io.perform(Request::InspectOpened, &name) {
+            Ok(Answer::Facts(facts)) => {
+                assert_eq!(facts.kind(), ObjectKind::RegularFile);
+                assert!(!facts.redirected());
+            }
+            other => panic!("the retained handle did not inspect: {other:?}"),
+        }
+        match io.perform(Request::ReadBounded { limit: 4096 }, &name) {
+            Ok(Answer::Bytes(bytes)) => assert_eq!(
+                bytes, b"the original object",
+                "the read followed the NAME to the replacement"
+            ),
+            other => panic!("the retained handle did not read: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_removal_refuses_once_the_name_holds_a_different_object() {
+        // Cleanup is bound to the object this attempt CREATED, not to the pathname it remembered.
+        // A failure handler that removed by name would delete whatever had since taken the name,
+        // which is somebody else's work.
+        let sandbox = Sandbox::new("swapremove");
+        let taken = sandbox.root.join("incomplete");
+        let taken_name = spelled(&taken);
+
+        let mut io = NativeIo::new();
+        io.perform(Request::CreateFileExclusive, &taken_name)
+            .expect("an exclusive create");
+        std::fs::remove_file(&taken).expect("the fixture's own file to unlink");
+        std::fs::write(&taken, b"somebody else's work").expect("a replacement at that name");
+
+        assert_eq!(
+            io.perform(Request::RemoveOwned, &taken_name),
+            Err(IoFault::Denied),
+            "a name this attempt created and somebody else replaced is not this attempt's to remove"
+        );
+        assert_eq!(
+            std::fs::read(&taken).expect("it survives"),
+            b"somebody else's work"
+        );
+
+        // The positive control: an object still the one this attempt made does go, so the refusal
+        // above is about identity rather than about removal being broken.
+        let mine = sandbox.root.join("mine");
+        let mine_name = spelled(&mine);
+        io.perform(Request::CreateFileExclusive, &mine_name)
+            .expect("a second exclusive create");
+        assert_eq!(
+            io.perform(Request::RemoveOwned, &mine_name),
+            Ok(Answer::Done)
+        );
+        assert!(!mine.exists(), "the object this attempt owns was removed");
+    }
+
+    #[test]
+    fn a_redirected_final_component_is_refused_and_nothing_behind_it_is_reached() {
+        // What this DOES pin: the refusal, and that the target is untouched.
+        //
+        // What no test can pin, and this one does not claim: that the refusal is now the OPEN's
+        // own verdict rather than a metadata pre-check followed by a following open. Both shapes
+        // answer `Redirect` here; they differ only in whether a swap between the two acts can slip
+        // through, and observing that needs a race rather than an assertion. The property is
+        // carried by `O_NOFOLLOW` being on the open itself — see `native.rs` — and this case is
+        // the ordinary-conditions floor beneath it.
+        let sandbox = Sandbox::new("openlink");
+        let elsewhere = sandbox.root.join("elsewhere");
+        std::fs::write(&elsewhere, b"not ours").expect("a real file");
+        let link = sandbox.root.join("link");
+        std::os::unix::fs::symlink(&elsewhere, &link).expect("a link at the name");
+
+        let mut io = NativeIo::new();
+        assert_eq!(
+            io.perform(
+                Request::OpenExistingNoFollow {
+                    intent: OpenIntent::Read
+                },
+                &spelled(&link),
+            ),
+            Err(IoFault::Redirect)
+        );
+        assert_eq!(
+            std::fs::read(&elsewhere).expect("it exists"),
+            b"not ours",
+            "and nothing behind the link was reached"
+        );
+
+        // The positive control: the same open against a real file succeeds, so the refusal is the
+        // redirect rather than the sandbox.
+        io.perform(
+            Request::OpenExistingNoFollow {
+                intent: OpenIntent::Read,
+            },
+            &spelled(&elsewhere),
+        )
+        .expect("an ordinary file opens");
+    }
+}
+
 #[cfg(windows)]
 #[test]
 fn the_windows_baseline_publishes_and_reports_the_operation_it_does_not_have() {
