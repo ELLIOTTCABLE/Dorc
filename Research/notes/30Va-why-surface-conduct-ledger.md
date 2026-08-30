@@ -31,9 +31,38 @@ loaded-source locator composition (named uncollected V1 residue).
 
 - Worktree/branch cleanup: DONE (sonnet lane, 2026-08-30) — 9 worktrees
   removed, 12 dead branches deleted, 76 dead-husk directories dumped
-  (human-authorized). Declined, real unmerged commits, left for the human:
-  `ai/r30-lane-fruit`(3) · `ai/r30-lane-fruit-2`(4) · `ai/r30-lane-load`(1
-  red-pin test) · `review-verify-adv`(2) · `review-verify-neutral`(3).
+  (human-authorized). The five survivors were then triaged (opus lane, same
+  day): ALL-DIE, per-commit supersession evidence below; nothing salvaged;
+  `ai/r30-salvage-sweep` minted empty and deleted. Deleting the five is the
+  human's act (`-D` is hook-blocked for agents): `ai/r30-lane-fruit` ·
+  `ai/r30-lane-fruit-2` · `ai/r30-lane-load` · `review-verify-adv` ·
+  `review-verify-neutral`. The `30N` §4 hold on `review-verify-adv` is
+  discharged and annotated in place.
+
+### banked-branch-triage-dispositions (2026-08-30; every unique commit → DIE)
+
+- `85808626` brace-range catalog entry → `DiagCode::ForLoopBraceRangeRunsOnce`
+  + published lock + loom + lint case in main, which also absorbed the lane's
+  own later oracle-shape fix and re-derived the lock.
+- `73f34fce` zero-site-oracle warning → `DiagCode::OracleMatchedZeroSites` +
+  loom + a whole-product round-trip case the lane never had.
+- `f32ae2a3` lock re-publish → subsumed by the above re-derivation.
+- `461b220a` paste-hygiene diagnostic → `DiagCode::EmittedLineUnsafeForPaste`
+  + `plan::render::paste_hygiene_hazards` + cases, all in main.
+- `3b2e72d4` five red pins (unknown-source/`$0`/computed operand) → all five
+  PROMOTED in main (behavior built, tests green, each marked "né p-x-…,
+  promoted").
+- `176e0818` sentinel-literal drift demo → landed green with a corrected
+  expectation (see the `30N` §4 annotation).
+- `1dbca1ab` discarded certifier trips → built + fenced
+  (`plan/CLAUDE.md certifier-trip-cleanup-runs-in-every-driver`, `TripSpent`
+  witness, lexical producer roster).
+- `5e614861` lost sourced assignments demo → same test in main, correctly
+  re-housed under `xfail_until("p-x-book-level-dot-locals", …)`.
+- `c304dc99` replayed pre-source authority demo → green in main, citing
+  `30Mc:finding-transitive-pre-source-replays-as-root`.
+- `d3388076` review synthesis ledger → strict subset of `notes/30Mc`, which
+  carries citations/worlds/slugs the orphan lacks.
 - Residue builder: IN FLIGHT on `ai/r30-receipt` from `7b398f51`; item-1
   shapes pinned from the prior arc's handoff ledger (site newtype →
   `rows::RecordedSite`; order string → carry the typed `ReceiptOrderToken`;

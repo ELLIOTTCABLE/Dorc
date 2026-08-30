@@ -438,6 +438,12 @@ literal and branch; the separate authorship gloss intentionally retains only the
 direct-constant origin, guarded-source, and helper co-resolution. Implementation
 remains builder latitude. Test `176e0818` still waits on
 `worktree-sol-adversarial-30M`; do NOT `-D` that branch before it is recovered.
+<!-- superseded 2026-08-30: DISCHARGED — the demonstration landed in ai/main as
+funcenv.rs a_mismatched_sentinel_literal_takes_the_source_arm, green, with a
+CORRECTED expectation (the lane's red version omitted the book's own
+`. ./alpha.sh` from the expected order, so it was wrong on its own terms).
+review-verify-adv and its worktree are safe to delete; triage record in
+`30Va:banked-branch-triage-dispositions`. -->
 
 **`30N:closed-spine-influence-boundary` [HUMAN-RULED 2026-08-21]** — the former
 third item, `30M:ask-spine-grade-boundary`, is CLOSED in design. Durable authority:
