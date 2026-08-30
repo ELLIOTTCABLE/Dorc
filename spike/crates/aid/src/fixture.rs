@@ -26,8 +26,7 @@ use crate::diag::{
     RecordsSentinelNonce, RecordsTornLine, RoleDefinedBelowItsSites, RoleFamilyContested,
     ScriptRelativeLoadDiesSlashless, SiteId, SiteUnresolvable, SlashlessSourceSearchesPath,
     SyntaxUnsupported, SyntaxUnsupportedReason, ToleratesUnknownDimension,
-    VouchedCompositionNotPresent, VouchedCompositionReason, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogCorruptReason, WhylogVersionRefused, WrapperPeelIncoherent,
+    VouchedCompositionNotPresent, VouchedCompositionReason, WrapperPeelIncoherent,
 };
 
 /// Every registered stand-in, slug-keyed, in table order.
@@ -278,30 +277,6 @@ pub fn canonical_payloads() -> Vec<(&'static str, DiagCode)> {
         (
             "mark-hashcolon-malformed",
             DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
-        ),
-        (
-            "whylog-version-refused",
-            DiagCode::WhylogVersionRefused(WhylogVersionRefused {
-                found: "dorc-whylog/2".to_owned(),
-            }),
-        ),
-        (
-            "whylog-book-desync",
-            DiagCode::WhylogBookDesync(WhylogBookDesync {
-                which: "book".to_owned(),
-            }),
-        ),
-        (
-            "whylog-absent",
-            DiagCode::WhylogAbsent(WhylogAbsent {
-                dir: "./.dorc/whylog".to_owned(),
-            }),
-        ),
-        (
-            "whylog-corrupt",
-            DiagCode::WhylogCorrupt(WhylogCorrupt {
-                reason: WhylogCorruptReason::EndSentinelMissing,
-            }),
         ),
     ]
 }

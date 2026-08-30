@@ -591,7 +591,7 @@ pub enum CollapseKind {
     /// travels as its own greppable name and the count as a scalar; the dropped RECORDS never do
     /// (`operands-are-pure-and-capped`), which is the whole reason this is admissible at all.
     ProjectionDrop {
-        /// Which projection narrowed — `whylog` today, one name per authority-exit later.
+        /// Which projection narrowed — `receipt` today, one name per authority-exit later.
         projection: &'static str,
         /// The Spine species whose records did not survive it.
         species: &'static str,
@@ -660,16 +660,6 @@ impl CollapseKind {
         }
     }
 }
-
-/// The narrative plane's version, which MUST move in lockstep with the whylog's record-stream
-/// version (`dorc_plan::whylog::WHYLOG_V2_TAG`).
-///
-/// The coupling is what keeps `[unnarrated: <class>]` honest across a replay
-/// (`28E:prop-unnarrated-is-visible`'s in-sitting caveat). The census is a claim about which
-/// classes THIS binary's renders consume; asserted over a durable written by a binary whose plane
-/// held different classes, it would be a confident statement about a run it cannot see. Keyed on
-/// the durable's declared version, a mismatch withholds the census instead of lying about it.
-pub const PLANE_VERSION: u32 = 2;
 
 /// One decision-inert narrative record minted at a safety-narrowing collapse (`27V` Lane A). Pure
 /// data (see module docs): a [`SpeechAct`] plus the [`CollapseKind`] carrying the collapse's

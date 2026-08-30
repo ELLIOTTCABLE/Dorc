@@ -326,23 +326,8 @@ pub enum DiagCode {
     /// A wrapper's `__predict` and `__lend_map` disagree on the peel tail — static incoherence.
     WrapperPeelIncoherent(WrapperPeelIncoherent),
 
-    // ── cli/main.rs + plan/whylog.rs (`dorc why --last` durable reader — `27V` Lane B) ──────
-    /// `dorc why --last` found a durable written by a format version this binary does not
-    /// understand — refuse politely (never replay a format we cannot parse).
-    WhylogVersionRefused(WhylogVersionRefused),
-    /// The durable's recorded book/oracle digest (or its stored decision digest) diverges from
-    /// the current on-disk inputs — the replay would not reconstruct the recorded run.
-    WhylogBookDesync(WhylogBookDesync),
-    /// `dorc why --last` found no durable to replay in the whylog directory.
-    WhylogAbsent(WhylogAbsent),
-    /// A durable was found but is truncated / unparseable — diagnostics, never a panic.
-    WhylogCorrupt(WhylogCorrupt),
-    /// The run's durable could not be persisted, so no receipt exists for it to be asked about
-    /// later. Error-floor (`28F:rul-write-failure-is-error-floor`): the advisory plane is
-    /// suppressed under `apply`, which is exactly the run whose receipt matters most.
-    WhylogUnwritten(WhylogUnwritten),
     /// The run's durable RECEIPT did not reach the local store, so nothing about this run can
-    /// be verified or opened later. Error-floor for the same reason its whylog sibling is.
+    /// be verified or opened later. Error-floor: the advisory plane is suppressed under `apply`, which is exactly the run whose receipt matters most.
     DurableReceiptUnwritten(DurableReceiptUnwritten),
     /// `dorc why` reached the local durable edge and it had nothing readable: no per-user root,
     /// no keyset it may open, no store, or no document that verified. It creates nothing to fix
@@ -545,11 +530,6 @@ impl DiagCode {
             DiagCode::ReachesProviderCollision(_) => "reaches-provider-collision",
             DiagCode::WrapperEntryIncoherent(_) => "wrapper-entry-incoherent",
             DiagCode::WrapperPeelIncoherent(_) => "wrapper-peel-incoherent",
-            DiagCode::WhylogVersionRefused(_) => "whylog-version-refused",
-            DiagCode::WhylogBookDesync(_) => "whylog-book-desync",
-            DiagCode::WhylogAbsent(_) => "whylog-absent",
-            DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
-            DiagCode::WhylogUnwritten(_) => "whylog-unwritten",
             DiagCode::DurableReceiptUnwritten(_) => "durable-receipt-unwritten",
             DiagCode::DurableReceiptUnreadable(_) => "durable-receipt-unreadable",
             DiagCode::DurableReceiptAmbiguous(_) => "durable-receipt-ambiguous",
@@ -1844,66 +1824,6 @@ pub struct WrapperPeelIncoherent {
     pub lend_map_depth: String,
 }
 
-/// Payload of [`DiagCode::WhylogVersionRefused`] (`27V` Lane B): the durable's format-version tag
-/// this binary could not parse. `{found}` = the tag read from the file's header.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WhylogVersionRefused {
-    /// The `dorc-whylog/N` tag found in the durable's header (`{found}`).
-    pub found: String,
-}
-
-/// Payload of [`DiagCode::WhylogBookDesync`] (`27V` Lane B; the `22F` book-identity/desync guard):
-/// which recorded digest diverged from the current on-disk inputs. `{which}` = `book` / an oracle
-/// path / `decision-digest`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WhylogBookDesync {
-    /// The diverged input's description (`{which}`).
-    pub which: String,
-}
-
-/// Payload of [`DiagCode::WhylogAbsent`] (`27V` Lane B): `dorc why --last` found no durable to
-/// replay. `{dir}` = the whylog directory searched.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WhylogAbsent {
-    /// The whylog directory searched (`{dir}`).
-    pub dir: String,
-}
-
-/// Payload of [`DiagCode::WhylogCorrupt`] (`27V` Lane B; `inv-no-throw`): a durable was found but is
-/// truncated / unparseable.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WhylogCorrupt {
-    /// Which parse check refused the durable.
-    pub reason: WhylogCorruptReason,
-}
-
-/// Which parse check refused a durable (see [`CfgTopNodeReason`] for why the reason enums live in
-/// this crate).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WhylogCorruptReason {
-    /// The file is empty, or its first line is not a header.
-    Headerless,
-    /// The header line does not carry the format tag.
-    HeaderTagMissing,
-    /// The records block declares more bytes than the file holds.
-    ResultsBlockOverruns,
-    /// The end sentinel never arrived.
-    EndSentinelMissing,
-}
-
-/// Payload of [`DiagCode::WhylogUnwritten`] (`28D:must-default-durable-lands-with-its-hardening`,
-/// the visible-persistence-failure item): the run finished but its durable did not land. `{dir}` =
-/// the whylog directory; `{reason}` = the closed refusal word (`directory` / `names-exhausted` /
-/// `oversize` / `write` from the store, or `limit` / `grammar` / `numeric` / `digest` / `overflow`
-/// from the serializer).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WhylogUnwritten {
-    /// The whylog directory the durable was to land in (`{dir}`).
-    pub dir: String,
-    /// The closed refusal word (`{reason}`).
-    pub reason: String,
-}
-
 /// Payload of [`DiagCode::DurableReceiptUnwritten`]: the run finished but its signed receipt did
 /// not reach the local store. `{store}` = the per-user state base it files under; `{reason}` =
 /// the closed refusal word.
@@ -3021,34 +2941,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::ProvideModel,
         },
-        // `dorc why --last` refusals: pull-surface disclosures ⇒ Warning + Floor::None.
-        DiagCode::WhylogVersionRefused(_) => CodeSpec {
-            severity: Severity::Warning,
-            floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
-        DiagCode::WhylogBookDesync(_) => CodeSpec {
-            severity: Severity::Warning,
-            floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
-        DiagCode::WhylogAbsent(_) => CodeSpec {
-            severity: Severity::Warning,
-            floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
-        DiagCode::WhylogCorrupt(_) => CodeSpec {
-            severity: Severity::Warning,
-            floor: Floor::None,
-            remediation: RemediationClass::Structural,
-        },
-        DiagCode::WhylogUnwritten(_) => CodeSpec {
-            severity: Severity::Error,
-            floor: Floor::WarnOrDeny,
-            remediation: RemediationClass::Structural,
-        },
-        // Same floor as its whylog sibling, for the same reason: the advisory plane is suppressed
-        // under `apply`, which is exactly the run whose receipt matters most.
+        // The advisory plane is suppressed under `apply`, which is exactly the run whose receipt
+        // matters most.
         DiagCode::DurableReceiptUnwritten(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
@@ -3525,19 +3419,6 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             ours("predict_depth", predict_depth.clone()),
             ours("lend_map_depth", lend_map_depth.clone()),
         ],
-        DiagCode::WhylogVersionRefused(WhylogVersionRefused { found }) => {
-            vec![ours("found", found.clone())]
-        }
-        DiagCode::WhylogBookDesync(WhylogBookDesync { which }) => {
-            vec![ours("which", which.clone())]
-        }
-        DiagCode::WhylogAbsent(WhylogAbsent { dir }) => vec![ours("dir", dir.clone())],
-        DiagCode::WhylogCorrupt(WhylogCorrupt { reason }) => {
-            vec![component("reason", whylog_corrupt_text(ctx, *reason))]
-        }
-        DiagCode::WhylogUnwritten(WhylogUnwritten { dir, reason }) => {
-            vec![ours("dir", dir.clone()), ours("reason", reason.clone())]
-        }
         DiagCode::DurableReceiptUnwritten(DurableReceiptUnwritten { store, reason }) => {
             vec![ours("store", store.clone()), ours("reason", reason.clone())]
         }
@@ -4791,17 +4672,6 @@ fn predict_unterminated_text(
         PredictUnterminatedReason::IfThen => ("predict-unterminated-if-then", none),
     };
     component_text(ctx.arrangements(), slug, None, &values)
-}
-
-/// The registry sentence for one [`WhylogCorruptReason`].
-fn whylog_corrupt_text(ctx: &RenderCtx<'_>, reason: WhylogCorruptReason) -> ComponentText {
-    let slug = match reason {
-        WhylogCorruptReason::Headerless => "whylog-corrupt-headerless",
-        WhylogCorruptReason::HeaderTagMissing => "whylog-corrupt-header-tag-missing",
-        WhylogCorruptReason::ResultsBlockOverruns => "whylog-corrupt-results-block-overruns",
-        WhylogCorruptReason::EndSentinelMissing => "whylog-corrupt-end-sentinel-missing",
-    };
-    component_text(ctx.arrangements(), slug, None, &[])
 }
 
 /// The registry sentence disclosing the escalation policy at one [`EscalationDial`].

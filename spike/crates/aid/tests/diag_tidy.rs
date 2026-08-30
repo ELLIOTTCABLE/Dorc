@@ -128,11 +128,6 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "ReachesProviderCollision",
     "WrapperEntryIncoherent",
     "WrapperPeelIncoherent",
-    // plan/whylog.rs + cli/main.rs (`dorc why --last` durable reader — `27V` Lane B)
-    "WhylogVersionRefused",
-    "WhylogBookDesync",
-    "WhylogAbsent",
-    "WhylogCorrupt",
     // cli/main.rs (aid hint) — AID-NEEDS:aid-unloaded-sibling-oracle (gap-5 / 24H ack-6)
     "AidUnloadedSiblingOracle",
     // lint — the lane-local namespace retired (`288` §5)
@@ -248,11 +243,6 @@ const MIGRATED_SLUGS: &[&str] = &[
     "reaches-provider-collision",
     "wrapper-entry-incoherent",
     "wrapper-peel-incoherent",
-    "whylog-version-refused",
-    "whylog-book-desync",
-    "whylog-absent",
-    "whylog-corrupt",
-    "whylog-unwritten",
     "durable-receipt-unwritten",
     "durable-receipt-unreadable",
     "durable-receipt-ambiguous",
@@ -347,12 +337,6 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "SharedCellMeasurementsDisagree",
     "DanglingReference", // the dangling coord's book-origin site is not in the emit scope (deferred, not synthesized)
     "EscalationPolicy",
-    // plan/whylog.rs + cli/main.rs — `--last` reader refusals: about the durable FILE ⇒ spanless.
-    "WhylogVersionRefused",
-    "WhylogBookDesync",
-    "WhylogAbsent",
-    "WhylogCorrupt",
-    "WhylogUnwritten",
     "DurableReceiptUnwritten",
     "DurableReceiptUnreadable",
     "DurableReceiptAmbiguous",

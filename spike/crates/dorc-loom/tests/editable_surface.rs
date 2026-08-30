@@ -504,18 +504,19 @@ fn a_lone_reason_hole_edits_at_the_components_own_entry() {
 /// are edited through the case that homes them.
 #[test]
 fn a_reason_inside_a_sentence_stays_a_value() {
-    let case = Case::parse(include_str!("../../aid/tests/whylog-corrupt.loom")).expect("parses");
+    let case =
+        Case::parse(include_str!("../../aid/tests/cfg-inline-refused.loom")).expect("parses");
     let consumer = DorcConsumer::new();
     let (baseline, _) = drive(&consumer, &case);
     let sections = sections(&baseline);
     assert!(
-        sections.contains(&(String::from("whylog-corrupt"), "message")),
+        sections.contains(&(String::from("cfg-inline-refused"), "message")),
         "the code's own register owns the section: {sections:?}"
     );
     assert!(
         !sections
             .iter()
-            .any(|(owner, _)| owner.starts_with("whylog-corrupt-")),
+            .any(|(owner, _)| owner.starts_with("cfg-inline-refused-")),
         "no component fences the register into pieces: {sections:?}"
     );
 }
@@ -525,10 +526,8 @@ fn a_reason_inside_a_sentence_stays_a_value() {
 /// the re-render reads the same context the edit landed in, not the compiled-in table.
 #[test]
 fn one_step_why_row_edit() {
-    let case = Case::parse(include_str!(
-        "../../aid/tests/why-drift-analysis-suppressed.loom"
-    ))
-    .expect("parses");
+    let case =
+        Case::parse(include_str!("../../aid/tests/why-claims-payload.loom")).expect("parses");
     let mut consumer = DorcConsumer::new();
     let (baseline, transcript) = drive(&consumer, &case);
     let edited = transcript.replace("   oracles: firewall", "   loaded oracles: firewall");
@@ -553,7 +552,7 @@ fn one_step_why_row_edit() {
 }
 
 /// `vars` reports the render an edit compiles against, for every committed case — including the
-/// whylog, lint and invocation-error shapes the old second world-derivation could not reach at all
+/// lint and invocation-error shapes the old second world-derivation could not reach at all
 /// (`_loom-final-map` §2c). A floor, never a count: the corpus drifts.
 #[test]
 fn vars_answers_for_every_committed_case() {
@@ -597,28 +596,6 @@ fn vars_answers_for_every_committed_case() {
         answered > 50,
         "the corpus discovery floor: {answered} cases"
     );
-}
-
-/// The four whylog cases specifically: their render is the STAGED one, which the retired
-/// second derivation had no arm for.
-#[test]
-fn vars_answers_the_whylog_cases() {
-    for text in [
-        include_str!("../../aid/tests/whylog-absent.loom"),
-        include_str!("../../aid/tests/whylog-corrupt.loom"),
-        include_str!("../../aid/tests/whylog-version-refused.loom"),
-        include_str!("../../aid/tests/whylog-book-desync.loom"),
-    ] {
-        let case = Case::parse(text).expect("case parses");
-        let baseline = DorcConsumer::new()
-            .editable_baseline(&case)
-            .expect("a whylog case has an inventory");
-        assert!(
-            baseline.render().text().starts_with("whylog: "),
-            "the inventory reads the STAGED render: {:?}",
-            baseline.render().text()
-        );
-    }
 }
 
 /// The four things an author does to a value, on ONE committed case (`282` §13): move it by

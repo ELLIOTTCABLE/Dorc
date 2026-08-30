@@ -145,7 +145,7 @@ fn constructible_classes() -> Vec<CollapseKind> {
             reason: dorc_aid::diag::VouchedCompositionReason::BookRedefinesHelper,
         },
         CollapseKind::ProjectionDrop {
-            projection: "whylog",
+            projection: "receipt",
             species: "SpineSurvival",
             dropped: 2,
         },

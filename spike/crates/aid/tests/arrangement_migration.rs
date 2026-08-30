@@ -114,7 +114,7 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         PredictOutOfDialect, PredictOutOfDialectReason, PredictUnterminated,
         PredictUnterminatedReason, RecordsHeaderMismatch, RecordsIntegrityRefused, SyntaxMalformed,
         SyntaxMalformedReason, SyntaxUnsupported, SyntaxUnsupportedReason, UnmodeledWriteRedirect,
-        WhylogCorrupt, WhylogCorruptReason, render_body,
+        render_body,
     };
     use dorc_core::{BytePos, Capability, EscalationDial, Interner, Span};
 
@@ -179,14 +179,6 @@ fn every_migrated_reason_renders_words_not_a_placeholder() {
         codes.push(DiagCode::RecordsIntegrityRefused(RecordsIntegrityRefused {
             which,
         }));
-    }
-    for reason in [
-        WhylogCorruptReason::Headerless,
-        WhylogCorruptReason::HeaderTagMissing,
-        WhylogCorruptReason::ResultsBlockOverruns,
-        WhylogCorruptReason::EndSentinelMissing,
-    ] {
-        codes.push(DiagCode::WhylogCorrupt(WhylogCorrupt { reason }));
     }
     for dial in [
         EscalationDial::NoEscalation,
