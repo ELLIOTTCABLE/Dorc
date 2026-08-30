@@ -817,10 +817,8 @@ fn the_secret_bytes_constructor_is_reachable_from_one_production_file() {
 
 #[test]
 fn the_replay_laundering_seat_is_gone_and_stays_gone() {
-    // The seat that turned a DURABLE's record stream into the admitted-evidence type a LIVE probe
-    // yields: below it the two were indistinguishable, so real licenses minted over replayed bytes.
-    // It went with the durable it served, and the census that counted its callers is now the one
-    // that proves it has none — re-minting it is a diff somebody reads.
+    // The seat that turned a DURABLE.s records into the admitted-evidence type a LIVE probe yields:
+    // below it the two were indistinguishable, so real licenses minted over replayed bytes.
     let named: Vec<String> = production_sources()
         .into_iter()
         .filter(|(_, text)| names_identifier(text, "replayed_records"))

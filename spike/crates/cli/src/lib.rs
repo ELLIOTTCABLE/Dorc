@@ -1287,9 +1287,8 @@ fn seconds_value(flag: &str, v: &str) -> Result<u64, InvocationError> {
 /// A candidate EQUAL to the word is refused: reaching here means the tables and the parse arms
 /// disagree, and "did you mean `--whylog`?" for `--whylog` teaches nothing while hiding the gap.
 fn nearest<'a>(word: &str, candidates: &[&'a str]) -> Option<&'a str> {
-    // A word the table already holds is spelled correctly, so there is nothing to mean instead.
-    // Skipping only distance-0 would leave the NEIGHBOUR one edit away as the best remaining
-    // candidate, which is how `--receipt` came to suggest `--receipts`.
+    // A word the table holds is spelled correctly. Skipping only distance-0 left the NEIGHBOUR
+    // one edit away as best-remaining, which is how `--receipt` suggested `--receipts`.
     if candidates.contains(&word) {
         return None;
     }

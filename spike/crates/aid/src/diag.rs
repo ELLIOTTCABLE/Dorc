@@ -2941,8 +2941,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::ProvideModel,
         },
-        // The advisory plane is suppressed under `apply`, which is exactly the run whose receipt
-        // matters most.
+        // The advisory plane is suppressed under `apply` — the run whose receipt matters most.
         DiagCode::DurableReceiptUnwritten(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,

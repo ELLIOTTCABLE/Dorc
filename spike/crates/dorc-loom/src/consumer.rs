@@ -1052,9 +1052,8 @@ impl DorcConsumer {
             Some(ReplayInputTarget::File(path)) if path.ends_with("controller-results.txt")
         );
         let observation = loom_observation(&snapshot, raw_results, controller_results);
-        // Gated on the admin's REFUSAL, exactly as `main.rs` does: naming a store moves WHERE a
-        // receipt lands, never WHETHER one is written, so reading `--receipts` here made default-on
-        // mean default-off for every case that named no store (`dorc-replay-is-production-semantics`).
+        // The admin.s REFUSAL, as `main.rs` gates it: naming a store moves WHERE a receipt lands,
+        // never WHETHER one is written (`dorc-replay-is-production-semantics`).
         let options = dorc_cli::engine_options_from_args(
             args,
             replay_stdout_posture(command),

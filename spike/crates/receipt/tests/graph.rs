@@ -753,7 +753,6 @@ fn a_rooted_closure_walks_to_causes_and_never_forward_to_later_attempts() {
 /// is the question's own subject and may have been opened as an explicit file outside any store.
 #[test]
 fn a_closure_names_only_held_documents_and_always_its_own_root() {
-    // The intent names `p` as an origin, and no plan was fed.
     let graph = graph_of(&[(Kind::Intent, intent_bytes("i", &["p"]))]);
     assert_eq!(
         graph

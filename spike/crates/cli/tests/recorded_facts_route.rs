@@ -133,8 +133,7 @@ fn selected_roots(open: &ReadEdge, io: &mut NativeIo) -> Vec<SelectedRoot> {
         found.push(SelectedRoot {
             receipt,
             model,
-            // The graph is empty here because this store holds one plan and a plan root reaches
-            // nothing further; the walk itself is pinned in the receipt crate's own graph battery.
+            // Empty graph: a plan root reaches nothing further, and the walk is pinned in `receipt`.
             closure: ReceiptGraph::new().closure_from(&RecordedDocumentId::Plan(id)),
             order: entry.name().order(),
             // The edge established both: the read came back inside the local-authentication
