@@ -12,8 +12,8 @@ standing until the human rules review/repair complete.
 
 ## branch state
 
-- `ai/r30-receipt` and `ai/r30-conduct` both point to unified tip `e2a2e80d`, parallel to
-  `ai/main`; the tip includes the current `ai/main` line through its explicit merge plus all receipt
+- `ai/r30-receipt` and `ai/r30-conduct` point to the same unified review tip, parallel to
+  `ai/main`; it includes the current `ai/main` line through its explicit merge plus all receipt
   implementation, living-register, and conduct-ledger work.
 - The unified tip carries the explicit store root and sealed
   `dorc-receipt::report::RecordedWhyFacts` boundary. It has not been upstreamed.
