@@ -6,18 +6,18 @@
 
 ## current objective
 
-Finish the receipt family without trusting the predecessor's final deletion sequence. Work remains
-serial. Each builder receives one `.claude/worktrees/*` lane and maintains a quarantined sibling
-ledger (`30Rf`, `30Rg`, …). The human manually carries `_tmp-*.prompt.md` briefs from the primary
-checkout into an external Opus harness.
+Review the unified secure-durables tip, route at most one focused repair, then close the receipt
+crate/D5 boundary for handoff to the non-quarantined why conductor. Work remains serial and all
+worktrees stay standing until review/repair is adjudicated.
 
 ## branch state
 
-- `ai/r30-receipt` in `.claude/worktrees/r30-receipt` carries all implementation through the
-  explicit store root and sealed `dorc-receipt::report::RecordedWhyFacts` boundary.
-- `ai/r30-conduct` in `.claude/worktrees/r30-conduct` carries this conductor account; it folds into
-  the final receipt tip before review.
-- Earlier diagnostic/harness lanes are fully represented in the receipt branch. Their worktrees stay
+- `ai/r30-receipt` and `ai/r30-conduct` both point to unified tip `01f4b885`, parallel to
+  `ai/main`; the tip includes the current `ai/main` line through its explicit merge plus all receipt
+  implementation, living-register, and conduct-ledger work.
+- The unified tip carries the explicit store root and sealed
+  `dorc-receipt::report::RecordedWhyFacts` boundary. It has not been upstreamed.
+- Earlier diagnostic/harness lanes are fully represented in the unified branch. Their worktrees stay
   standing until post-review repair is ruled complete.
 
 ## testing adjudication
