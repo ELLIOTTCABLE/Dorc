@@ -43,6 +43,34 @@ The slot is per-SITE and never per-region: a region is one authored edit many ex
 it has no single provenance to carry, and giving it the slot would invite one instance's locator to
 stand for every other invocation of the same body.
 
+## the settled store root
+
+The explicit store root lives on `RootInputs`, beside the two platform bases, reached by
+`with_store_root` and read back by `explicit_store`. It is a ROOT — controller-supplied, resolved
+once — so it belongs where the other roots are rather than threaded past every seat that would
+then have to remember it. That siting is also what makes `30Rd`'s "never changes the standard
+configuration/key root" structural: the keyset reads `RootRole::Configuration` through `base`, and
+no spelling lets a store root reach it.
+
+`store::locations` answers an ORDERED list of Dorc-owned components, outermost first, store root
+last: two for the standard selection (product root, then `receipts-v1` beneath it), and exactly ONE
+for an explicit folder — itself. Nothing above an admin's folder is Dorc's to validate or create,
+and nothing is appended beneath it. Both opens walk that one list, so neither can validate a
+component the other does not; `open_or_create` ensures outermost-first (a component is created only
+inside a validated parent) and syncs innermost-first (the entry that makes a directory reachable
+lives in its parent). `store_root` answers the explicit folder where there is one, so the first-use
+gate probes the store the run will actually use.
+
+Resolution to an absolute controller path happens at exactly one seat,
+`main::absolute_controller_path`, called only from `production_receipt_edge` — the one place
+entitled to consult the process's working directory. It is LEXICAL, not `canonicalize`:
+canonicalizing demands the directory already exist, which would make a first run refuse the folder
+it was about to create. A relative or empty folder is refused at `with_store_root` under the state
+role, because the edge is supposed to have resolved it.
+
+Publication remains gated solely by `--no-receipt`. Naming or omitting a store moves WHERE, never
+WHETHER.
+
 ## the byte domain
 
 Spans index the ACQUIRED bytes, unnormalized. LF indexes physical lines and a CR in CRLF is an
@@ -65,13 +93,6 @@ equivalence. Nothing normalizes, transcodes, or reserializes on the way in.
   `dorc_cli::drifted_receipt`) went out with the replay ladder, so the case is currently unbacked
   and its disposition is load-bearing rather than tidy-up. Owed at item 6.
 
-- **`30Rh:fnd-receipts-flag-has-no-store-seat`** — `--receipts <folder>` parses and gates nothing
-  yet. `receipt-local`'s `store::store_root` and its private `locations` both derive the root as
-  `roots.product_root(RootRole::State).child(STORE_DIR)`, so the flag cannot name an exact store.
-  Honouring the ruled spelling needs an explicit-root override on `LocalReceiptEdgeV1` threaded
-  into both store opens, leaving the KEY root standard. In scope, NOT yet built — and until it is,
-  the flag is accepted and ignored, which is the one live dishonesty in the surface.
-
 - **`30Rh:fnd-recorded-sites-carry-no-line`** — a `RecordedSiteDecision` carries `RecordedSite`,
   a `RecordedAst` ARENA INDEX, disposition, shell text, and influence. No line number, by design:
   the durable locator's authored span plus the recorded exact bytes are what recover a historical
@@ -85,6 +106,14 @@ equivalence. Nothing normalizes, transcodes, or reserializes on the way in.
   loader rather than in `SpineDisposition`. Sites the book's arena cannot answer are ABSENT from
   the map rather than carrying a guessed span — the projection reads absence as uncollected, and an
   uncollected locator is a slot a reader knows to distrust.
+
+- **`30Rh:fnd-the-old-whylog-followed-the-receipt-flag`** — found while seating the store. The
+  vocabulary cutover left `durable_destination` feeding the OLD whylog writer from `--receipts`, so
+  naming a store would have dropped `whylog-NNNN.txt` files into the receipt store, where the
+  bounded walk counts them as unknown entries against its own budget. `durable_destination` now
+  answers `None` unconditionally: `--whylog-dir` was the lane's only destination surface and it is
+  gone, so the lane is inert until D5 deletes it. Two durables sharing one directory is not a
+  smaller change than none.
 
 - **`30Rh:fnd-publication-was-gated-on-a-named-store`** — introduced and fixed inside this lane,
   recorded because the shape recurs: `durable_destination` fed BOTH the old whylog write path and
@@ -112,4 +141,4 @@ equivalence. Nothing normalizes, transcodes, or reserializes on the way in.
 - Item 6: the six gate-8 pairs onto the recorded renderer, the seventh case's disposition, and the
   rest of the D5 census — old whylog implementation/flags/fixtures/codes/consumers gone,
   `results::replayed_records` caller count zero, one production provider/store/reader/writer.
-- `--receipts` still needs its store seat before any of that is honest.
+- The old whylog write lane is inert but still present; D5 deletes it outright.
