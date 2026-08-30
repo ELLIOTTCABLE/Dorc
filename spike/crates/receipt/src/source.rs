@@ -181,6 +181,7 @@ pub fn resolve_source(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::plan::SourceSlots;
     use crate::reingested::RecordedInfluence;
     use crate::rows::SourceOrdinal;
     use crate::tokens::{RecordedSourceClass, RecordedSourceRole};
@@ -193,10 +194,12 @@ mod tests {
             RecordedSourceRole::Book,
             RECORDED.to_owned(),
             2,
-            OpaqueState::Captured,
-            excerpt,
+            SourceSlots {
+                path: OpaqueState::Captured,
+                excerpt,
+                content: OpaqueState::Captured,
+            },
             RecordedSourceClass::GeneralSh,
-            OpaqueState::Captured,
             RecordedInfluence::AuthoredBeforeContact,
         )
     }

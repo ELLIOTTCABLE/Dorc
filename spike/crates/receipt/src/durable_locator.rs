@@ -459,13 +459,18 @@ fn text_kind_of(token: &str) -> Option<StageTextKind> {
 }
 
 /// One LF-terminated line, consumed from the front. An unterminated tail is malformed.
+///
+/// Every index goes through `get`, and the cursor advance is checked: this is a parser over bytes
+/// a managed host's document may carry, so a panic here would be a denial of service rather than a
+/// refusal (`rul-host-bytes-bounded-before-admission`).
 fn take_line<'a>(rest: &mut &'a [u8]) -> Result<&'a [u8], LocatorRefusal> {
     let end = rest
         .iter()
         .position(|byte| *byte == b'\n')
         .ok_or(LocatorRefusal::Malformed)?;
-    let line = &rest[..end];
-    *rest = &rest[end + 1..];
+    let line = rest.get(..end).ok_or(LocatorRefusal::Malformed)?;
+    let after = end.checked_add(1).ok_or(LocatorRefusal::Malformed)?;
+    *rest = rest.get(after..).ok_or(LocatorRefusal::Malformed)?;
     Ok(line)
 }
 
@@ -517,12 +522,14 @@ fn decode_stage(rest: &mut &[u8], limits: &ReceiptLimits) -> Result<DurableStage
     if u64::try_from(text_len).unwrap_or(u64::MAX) > limits.locator_bytes.get() {
         return Err(LocatorRefusal::OverLimit);
     }
-    if rest.len() < text_len + 1 {
-        return Err(LocatorRefusal::Malformed);
-    }
-    let text = rest[..text_len].to_vec();
-    *rest = &rest[text_len..];
-    if take_line(rest)? != b"" {
+    let text = rest
+        .get(..text_len)
+        .ok_or(LocatorRefusal::Malformed)?
+        .to_vec();
+    *rest = rest.get(text_len..).ok_or(LocatorRefusal::Malformed)?;
+    // The run is length-prefixed and then LF-terminated, so this consumes exactly the separator.
+    // A non-empty line here means the declared length disagreed with what was written.
+    if !take_line(rest)?.is_empty() {
         return Err(LocatorRefusal::Malformed);
     }
     let origins = match origins {

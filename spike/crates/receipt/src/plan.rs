@@ -22,6 +22,22 @@ use crate::tokens::{
     RenderSubjectAxis, bool_token,
 };
 
+/// What one source row holds in each of its three detail-capable slots.
+///
+/// One value rather than three parameters, and it is the row's own slot table
+/// (`projection::SOURCE_SLOTS`) spelled as a type: three same-typed states side by side in an
+/// argument list are swappable without a compile error, and swapping `excerpt` with `content`
+/// would say a source's whole bytes were carried when only a region was.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceSlots {
+    /// Whether the path is in the document.
+    pub path: OpaqueState,
+    /// Whether a bounded excerpt is.
+    pub excerpt: OpaqueState,
+    /// Whether the source's exact acquired bytes are.
+    pub content: OpaqueState,
+}
+
 /// One file the run acquired.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordedSource {
@@ -44,21 +60,19 @@ impl RecordedSource {
         role: RecordedSourceRole,
         digest: String,
         bytes: u64,
-        path: OpaqueState,
-        excerpt: OpaqueState,
+        slots: SourceSlots,
         class: RecordedSourceClass,
-        content: OpaqueState,
         account: RecordedInfluence,
     ) -> Self {
         Self {
             ordinal,
             role,
             class,
-            content,
+            content: slots.content,
             digest,
             bytes,
-            path,
-            excerpt,
+            path: slots.path,
+            excerpt: slots.excerpt,
             account,
         }
     }
@@ -142,10 +156,12 @@ impl RecordedRow for RecordedSource {
             rows::closed(record, "role")?,
             rows::digest(record, "digest")?,
             rows::wide(record, "bytes")?,
-            rows::closed(record, "path")?,
-            rows::closed(record, "excerpt")?,
+            SourceSlots {
+                path: rows::closed(record, "path")?,
+                excerpt: rows::closed(record, "excerpt")?,
+                content: rows::closed(record, "content")?,
+            },
             rows::closed(record, "class")?,
-            rows::closed(record, "content")?,
             rows::account(record),
         ))
     }

@@ -452,6 +452,43 @@ impl PublicationRefusal {
     }
 }
 
+/// One run, as the two plan-receipt publications read it.
+///
+/// A borrowed request rather than loose arguments, so the seat holding the keys receives one
+/// coherent description and cannot pair one run's Spine with another's presentation or inputs.
+/// Both projections read the same value, which is what keeps plain a NARROWING of rich rather than
+/// a second assembly that could collect differently.
+#[derive(Debug)]
+pub struct RecordedRun<'a> {
+    /// The settled decision plane.
+    pub spine: &'a dorc_plan::Spine,
+    /// Which surface the invocation asked for, in the recorded vocabulary.
+    pub mode: RecordedInvocationMode,
+    /// The run's own influence account.
+    pub world: dorc_core::influence::InfluenceAccount,
+    /// The final presentation the identities were minted over.
+    pub presentation: &'a FinalPresentation,
+    /// Exact general-sh source bytes, and one locator per decided site.
+    pub inputs: &'a dorc_plan::receipt::RecordedInputs<'a>,
+    /// The bounds every projection and seal is spent against.
+    pub limits: &'a ReceiptLimits,
+}
+
+impl RecordedRun<'_> {
+    /// Project this run's rows, in the one vocabulary both publications use.
+    fn project(&self) -> Result<dorc_plan::receipt::ProjectedPlan, PublicationRefusal> {
+        dorc_plan::receipt::project(
+            self.spine,
+            self.mode,
+            self.world,
+            self.presentation,
+            self.inputs,
+            self.limits,
+        )
+        .map_err(PublicationRefusal::Projection)
+    }
+}
+
 /// Narrow and sign one PLAIN document, and answer its own reminted identity beside its bytes.
 ///
 /// PLAIN is a statement rather than a shortcut: a projection marks a slot `captured` wherever the
@@ -555,10 +592,7 @@ fn rich_skeleton(
 /// Refuses a Spine that does not project, a row outside the grammar, a narrowed document whose
 /// identity is not a receipt identity, or a placement that declines.
 pub fn publish_plan_receipt(
-    spine: &dorc_plan::Spine,
-    mode: RecordedInvocationMode,
-    world: dorc_core::influence::InfluenceAccount,
-    presentation: &FinalPresentation,
+    run: &RecordedRun<'_>,
     caps: ReceiptCapabilities<'_>,
 ) -> Result<PlacedDocument, PublicationRefusal> {
     let ReceiptCapabilities {
@@ -567,8 +601,10 @@ pub fn publish_plan_receipt(
         signer,
         placement,
     } = caps;
-    let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
-        .map_err(PublicationRefusal::Projection)?;
+    // The plain path projects the SAME rows the rich one would and then narrows them: a plain
+    // document says `withheld-plain` where the run held a value, which is a statement about
+    // custody rather than a projection that collected less.
+    let projected = run.project()?;
     let (_, records, _) = projected.into_parts();
     let order = clock.order_token();
     let (spelled, document) = narrow_and_sign::<PlanReceipt>(records, ids, order, signer)?;
@@ -584,11 +620,7 @@ pub fn publish_plan_receipt(
 /// Refuses a Spine that does not project, a row outside the grammar, a region that does not
 /// account for the skeleton exactly, a sealer that declines, or a placement that declines.
 pub fn publish_rich_plan_receipt(
-    spine: &dorc_plan::Spine,
-    mode: RecordedInvocationMode,
-    world: dorc_core::influence::InfluenceAccount,
-    presentation: &FinalPresentation,
-    limits: &ReceiptLimits,
+    run: &RecordedRun<'_>,
     caps: ReceiptCapabilities<'_>,
     sealer: &dyn OverlaySealer,
 ) -> Result<PlacedDocument, PublicationRefusal> {
@@ -598,13 +630,12 @@ pub fn publish_rich_plan_receipt(
         signer,
         placement,
     } = caps;
-    let projected = dorc_plan::receipt::project(spine, mode, world, presentation)
-        .map_err(PublicationRefusal::Projection)?;
+    let projected = run.project()?;
     let (_, records, details) = projected.into_parts();
     let id = PlanReceiptId::mint(ids);
     let order = clock.order_token();
     let skeleton = rich_skeleton(id.hex(), order, records, signer, sealer);
-    let document = seal_and_sign::<PlanReceipt>(skeleton, &details, limits, signer, sealer)?;
+    let document = seal_and_sign::<PlanReceipt>(skeleton, &details, run.limits, signer, sealer)?;
     placement
         .place_plan(id, order, document)
         .map_err(PublicationRefusal::Placement)

@@ -28,14 +28,15 @@ mod sandbox;
 
 use dorc_cli::receipt_edge::{
     CONTROLLER_SEMANTICS, PlacedDocument, PlacedIntent, PlacementFailure, PublicationRefusal,
-    ReceiptCapabilities, ReceiptPlacement, invocation_record, planning_mode, publish_apply_intent,
-    publish_apply_outcome, publish_plain_apply_intent, publish_plan_receipt,
+    ReceiptCapabilities, ReceiptPlacement, RecordedRun, invocation_record, planning_mode,
+    publish_apply_intent, publish_apply_outcome, publish_plain_apply_intent, publish_plan_receipt,
     publish_rich_plan_receipt, record_durable_arm,
 };
 use dorc_cli::results::{RunClock, RunSources, SiteResults, admit_fixture_records};
 use dorc_core::Interner;
 use dorc_plan::planning_input::{PlanningInputs, PlanningPolicy};
 use dorc_plan::presentation::FinalPresentation;
+use dorc_plan::receipt::RecordedInputs;
 use dorc_plan::records::{Admission, Framing, frame, header_line, sentinel_line};
 use dorc_receipt::capability::{
     PublicationGrade, ReceiptSigner, SelfAssertedReceiptVerificationKey,
@@ -378,10 +379,14 @@ fn a_settled_run_publishes_a_document_that_reads_back_naming_the_surface_it_deci
     let mut sink = MemorySink::default();
 
     let placed = publish_plan_receipt(
-        &spine,
-        RecordedInvocationMode::Plan,
-        authored(),
-        &presentation,
+        &RecordedRun {
+            spine: &spine,
+            mode: RecordedInvocationMode::Plan,
+            world: authored(),
+            presentation: &presentation,
+            inputs: &RecordedInputs::default(),
+            limits: &ReceiptLimits::V1,
+        },
         ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
     )
     .expect("a settled run publishes");
@@ -425,10 +430,14 @@ fn a_sink_that_places_nothing_publishes_nothing_and_says_so() {
 
     assert_eq!(
         publish_plan_receipt(
-            &spine,
-            RecordedInvocationMode::Plan,
-            authored(),
-            &presentation,
+            &RecordedRun {
+                spine: &spine,
+                mode: RecordedInvocationMode::Plan,
+                world: authored(),
+                presentation: &presentation,
+                inputs: &RecordedInputs::default(),
+                limits: &ReceiptLimits::V1,
+            },
             ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         ),
         Err(PublicationRefusal::Placement(PlacementFailure::Declined))
@@ -460,11 +469,14 @@ fn published_rich() -> (Vec<u8>, FinalPresentation, Ed25519Signer) {
     let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
     publish_rich_plan_receipt(
-        &spine,
-        RecordedInvocationMode::Plan,
-        authored(),
-        &presentation,
-        &ReceiptLimits::V1,
+        &RecordedRun {
+            spine: &spine,
+            mode: RecordedInvocationMode::Plan,
+            world: authored(),
+            presentation: &presentation,
+            inputs: &RecordedInputs::default(),
+            limits: &ReceiptLimits::V1,
+        },
         ReceiptCapabilities::of(&mut ids, &mut clock, &signer, &mut sink),
         &sealer,
     )

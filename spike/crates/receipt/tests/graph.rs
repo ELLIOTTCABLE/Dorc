@@ -31,7 +31,7 @@ use dorc_receipt::ids::{
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Plain, PlanReceipt, Species};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::outcome::{OutcomeAvailability, RecordedApplyOutcomeRow, RecordedSiteOutcome};
-use dorc_receipt::plan::RecordedSource;
+use dorc_receipt::plan::{RecordedSource, SourceSlots};
 use dorc_receipt::reader::{PartialReceipt, ReadPlain, read_plain};
 use dorc_receipt::reingested::RecordedInfluence;
 use dorc_receipt::rows::{
@@ -149,10 +149,12 @@ fn plan_bytes(tag: &str, flavour: char) -> Vec<u8> {
         RecordedSourceRole::Book,
         digest_of(flavour),
         1,
-        OpaqueState::WithheldPlain,
-        OpaqueState::Uncollected,
+        SourceSlots {
+            path: OpaqueState::WithheldPlain,
+            excerpt: OpaqueState::Uncollected,
+            content: OpaqueState::WithheldPlain,
+        },
         RecordedSourceClass::DorcLang,
-        OpaqueState::WithheldPlain,
         RecordedInfluence::AuthoredBeforeContact,
     )
     .to_record()

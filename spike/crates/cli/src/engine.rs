@@ -300,19 +300,9 @@ pub trait EngineEdges {
 
 /// The settled values one receipt is projected from.
 ///
-/// A borrowed request rather than loose arguments, so the seat that holds the keys receives one
-/// coherent description of the run and cannot pair one run's Spine with another's presentation.
-#[derive(Debug)]
-pub struct ReceiptPublicationRequest<'a> {
-    /// The settled decision plane.
-    pub spine: &'a dorc_plan::Spine,
-    /// Which surface the invocation asked for, in the recorded vocabulary.
-    pub mode: dorc_receipt::tokens::RecordedInvocationMode,
-    /// The run's own influence account.
-    pub world: dorc_core::influence::InfluenceAccount,
-    /// The final presentation the identities were minted over.
-    pub presentation: &'a dorc_plan::presentation::FinalPresentation,
-}
+/// One name for the request the edge already owns (`receipt_edge::RecordedRun`), so the engine and
+/// the publication seat cannot drift into two descriptions of one run.
+pub type ReceiptPublicationRequest<'a> = crate::receipt_edge::RecordedRun<'a>;
 
 /// Typed semantic facts needed to mint a durable invocation record.
 #[derive(Debug)]
@@ -2074,6 +2064,13 @@ fn run_status(
                 mode: crate::receipt_edge::recorded_mode(mode),
                 world: world_account,
                 presentation: &presentation,
+                inputs: &crate::custody::recorded_inputs(
+                    request.snapshot,
+                    &spine,
+                    &parsed.value,
+                    &dorc_receipt::limits::ReceiptLimits::V1,
+                ),
+                limits: &dorc_receipt::limits::ReceiptLimits::V1,
             },
         );
         durable_arm_recorded = true;

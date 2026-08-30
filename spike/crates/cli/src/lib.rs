@@ -33,6 +33,7 @@
 pub mod apply;
 pub mod artifact;
 pub mod bundle;
+pub mod custody;
 pub mod durable;
 pub mod engine;
 pub mod fixpoint;
@@ -2162,40 +2163,46 @@ mod tests {
         for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
             let refusal = parse_args_from(vec![
                 mode.to_owned(),
-                "--last".to_owned(),
+                "--receipt-last".to_owned(),
                 "book.sh".to_owned(),
             ])
-            .expect_err("--last belongs to dorc why");
+            .expect_err("--receipt-last belongs to dorc why");
             assert_eq!(
                 refusal.code.slug(),
                 "cli-flag-requires-mode",
-                "{mode} --last must name the mode the flag belongs to"
+                "{mode} --receipt-last must name the mode the flag belongs to"
             );
         }
         assert!(
-            parse_args_from(vec!["why".to_owned(), "--last".to_owned()]).is_ok(),
+            parse_args_from(vec!["why".to_owned(), "--receipt-last".to_owned()]).is_ok(),
             "the explain surface still takes it"
         );
     }
 
     /// Both spellings of a value-taking flag parse, and nothing in the table can suggest itself:
-    /// `--whylog` had only the `=` form, so the space form answered "did you mean `--whylog`?".
+    /// a flag with only the `=` form answers "did you mean `--receipt`?" to `--receipt`.
+    ///
+    /// `--receipt` / `--receipts` is the sharpest pair to hold this over — one letter apart, both
+    /// live, and meaning two different things — so a suggestion that fired on an exact match would
+    /// land on the flag beside the one typed.
     #[test]
     fn a_flag_never_suggests_the_word_that_was_typed() {
         assert_eq!(
-            analyzed(&["why", "--whylog", "run.whylog"])
-                .whylog
+            analyzed(&["why", "--receipt", "run.dorc-receipt"])
+                .receipt_file
                 .as_deref(),
-            Some("run.whylog")
+            Some("run.dorc-receipt")
         );
         assert_eq!(
-            analyzed(&["why", "--whylog=run.whylog"]).whylog.as_deref(),
-            Some("run.whylog")
+            analyzed(&["why", "--receipt=run.dorc-receipt"])
+                .receipt_file
+                .as_deref(),
+            Some("run.dorc-receipt")
         );
-        assert_eq!(nearest("--whylog", &["--whylog", "--whylog-dir"]), None);
+        assert_eq!(nearest("--receipt", &["--receipt", "--receipts"]), None);
         assert_eq!(
-            nearest("--whylo", &["--whylog", "--book"]),
-            Some("--whylog")
+            nearest("--receip", &["--receipt", "--book"]),
+            Some("--receipt")
         );
     }
 

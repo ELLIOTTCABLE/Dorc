@@ -18,7 +18,7 @@ use dorc_receipt::plan::{
     RecordedAdmission, RecordedLicensor, RecordedLoadDecision, RecordedNarrative,
     RecordedPlanReceipt, RecordedPresentedPlan, RecordedProbeShip, RecordedRegionDecision,
     RecordedRenderDecision, RecordedSiteClassification, RecordedSiteDecision,
-    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject,
+    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject, SourceSlots,
 };
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::rows::{
@@ -30,8 +30,8 @@ use dorc_receipt::tokens::{
     ClosedToken, OpaqueState, RecordedAdmissionOutcome, RecordedDisposition,
     RecordedInvocationMode, RecordedLicenseCustody, RecordedLicenseVerb, RecordedLoadOutcome,
     RecordedNarrativeKind, RecordedOmissionReason, RecordedRenderKind, RecordedShipLane,
-    RecordedSiteClass, RecordedSolvePass, RecordedSourceRole, RecordedSpeechAct,
-    RecordedSpineSpecies, RecordedSurvivalOutcome,
+    RecordedSiteClass, RecordedSolvePass, RecordedSourceClass, RecordedSourceRole,
+    RecordedSpeechAct, RecordedSpineSpecies, RecordedSurvivalOutcome,
 };
 use dorc_receipt::{RecordedInfluence, RefusalReason, SkeletonRecord};
 
@@ -60,6 +60,77 @@ pub enum ProjectionRefusal {
     PresentationMismatch,
 }
 
+/// What one acquired source may contribute to a document beyond its identity.
+///
+/// The class is the whole of the custody decision (`30Ra:planning-book-bytes-and-durable-locators`):
+/// general sh may mutate, so its exact bytes are what a later reader needs to address a historical
+/// line; valid `dorc-lang` is mutation-pure by contract and its ordered identity plus digest
+/// usually recovers matching current material without multiplying the durable corpus.
+///
+/// The bytes are BORROWED from what the run already acquired. That is the shape the
+/// no-new-observation rule takes at the type level: this value cannot be built from a path, so a
+/// projection cannot read a file to fill it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceCustody<'bytes> {
+    class: RecordedSourceClass,
+    acquired: &'bytes str,
+}
+
+impl<'bytes> SourceCustody<'bytes> {
+    /// A source the dialect gate accepted; its bytes stay out of the document.
+    #[must_use]
+    pub const fn dorc_lang() -> Self {
+        Self {
+            class: RecordedSourceClass::DorcLang,
+            acquired: "",
+        }
+    }
+
+    /// A source the dialect gate did not accept; its exact acquired bytes ride the rich overlay.
+    #[must_use]
+    pub const fn general_sh(acquired: &'bytes str) -> Self {
+        Self {
+            class: RecordedSourceClass::GeneralSh,
+            acquired,
+        }
+    }
+}
+
+/// The run's own inputs, as much of them as a document may carry.
+///
+/// Handed to [`project`] rather than read off the Spine, because neither half is a Spine record:
+/// the acquired bytes belong to the loader and the locators belong to the describe plane. Passing
+/// them keeps the projection a pure function of what it was given.
+#[derive(Debug, Clone, Default)]
+pub struct RecordedInputs<'bytes> {
+    sources: Vec<SourceCustody<'bytes>>,
+    locators: BTreeMap<dorc_core::SiteId, dorc_receipt::durable_locator::DurableLocator>,
+}
+
+impl<'bytes> RecordedInputs<'bytes> {
+    /// Bind per-source custody, in the invocation's own source order, and per-site locators.
+    #[must_use]
+    pub fn of(
+        sources: Vec<SourceCustody<'bytes>>,
+        locators: BTreeMap<dorc_core::SiteId, dorc_receipt::durable_locator::DurableLocator>,
+    ) -> Self {
+        Self { sources, locators }
+    }
+
+    /// The custody of the source at `ordinal`.
+    ///
+    /// A source the caller said nothing about is `dorc-lang`-shaped rather than general: the
+    /// content slot then reads uncollected, which is the answer that persists nothing. Falling the
+    /// other way would have an absent entry mean "write these bytes", and the bytes are not there
+    /// to write.
+    fn custody(&self, ordinal: usize) -> SourceCustody<'bytes> {
+        self.sources
+            .get(ordinal)
+            .copied()
+            .unwrap_or_else(SourceCustody::dorc_lang)
+    }
+}
+
 /// Project the recorded plan-receipt model from the Spine.
 ///
 /// `mode` comes from the command dispatch seat rather than the Spine: `core`'s own invocation mode
@@ -79,6 +150,8 @@ pub fn project(
     mode: RecordedInvocationMode,
     world: dorc_core::influence::InfluenceAccount,
     presentation: &FinalPresentation,
+    inputs: &RecordedInputs<'_>,
+    limits: &dorc_receipt::limits::ReceiptLimits,
 ) -> Result<ProjectedPlan, ProjectionRefusal> {
     let mut rows = DocumentRows::default();
     let invocation = spine.invocation().ok_or(ProjectionRefusal::NoInvocation)?;
@@ -101,13 +174,7 @@ pub fn project(
             held_bytes(&identity_host(invocation)),
         )],
     )?;
-    for (ordinal, claim) in invocation.sources().iter().enumerate() {
-        push(
-            &mut rows,
-            &source_row(ordinal, claim, invocation.account()),
-            &[(OpaqueFieldTag::SourcePath, held_bytes(&claim.path))],
-        )?;
-    }
+    push_source_rows(&mut rows, invocation, inputs, limits)?;
     if let Some(row) = admission_row(spine) {
         push(&mut rows, &row, &[])?;
     }
@@ -117,10 +184,22 @@ pub fn project(
         &[],
     )?;
     for record in spine.dispositions() {
+        let locator = inputs
+            .locators
+            .get(&record.site())
+            .map(dorc_receipt::durable_locator::DurableLocator::encode);
         push(
             &mut rows,
-            &site_row(record),
-            &[(OpaqueFieldTag::Shell, held_bytes(record.sh()))],
+            &site_row(
+                record,
+                locator
+                    .as_ref()
+                    .map_or(OpaqueState::Uncollected, |_| OpaqueState::Captured),
+            ),
+            &[
+                (OpaqueFieldTag::Shell, held_bytes(record.sh())),
+                (OpaqueFieldTag::SiteLocator, locator),
+            ],
         )?;
     }
     // ONE WALK numbers the regions and feeds the render rows that reference them. The model
@@ -292,10 +371,71 @@ fn invocation_row(
     )
 }
 
+/// Emit one row per acquired source, spending the content budget across the walk.
+///
+/// Its own seat because the aggregate is CUMULATIVE: the running total has to thread through every
+/// iteration, and a caller that reset it per source would spend the aggregate bound once per file.
+fn push_source_rows(
+    rows: &mut DocumentRows,
+    invocation: &dorc_core::spine::SpineInvocation,
+    inputs: &RecordedInputs<'_>,
+    limits: &dorc_receipt::limits::ReceiptLimits,
+) -> Result<(), ProjectionRefusal> {
+    let mut spent: u64 = 0;
+    for (ordinal, claim) in invocation.sources().iter().enumerate() {
+        let custody = inputs.custody(ordinal);
+        let (content, bytes) = source_content(custody, limits, &mut spent);
+        push(
+            rows,
+            &source_row(ordinal, claim, invocation.account(), custody.class, content),
+            &[
+                (OpaqueFieldTag::SourcePath, held_bytes(&claim.path)),
+                (OpaqueFieldTag::SourceContent, bytes),
+            ],
+        )?;
+    }
+    Ok(())
+}
+
+/// Whether one source's exact bytes fit, and the bytes themselves where they do.
+///
+/// Two bounds, spent in order, and the aggregate is CUMULATIVE across the walk — which is why this
+/// takes the running total by reference rather than answering per source in isolation. A document
+/// that admitted every source because each passed the per-source bound is exactly the failure the
+/// aggregate exists to stop.
+///
+/// Over either bound records `omitted-limit` and allocates nothing: the state word is the answer, so
+/// a reader learns a bound fired rather than seeing a silently shortened file
+/// (`30Rb:book-content-and-locator-projection` — never truncate).
+fn source_content(
+    custody: SourceCustody<'_>,
+    limits: &dorc_receipt::limits::ReceiptLimits,
+    spent: &mut u64,
+) -> (OpaqueState, Option<Vec<u8>>) {
+    if custody.class == RecordedSourceClass::DorcLang {
+        return (OpaqueState::Uncollected, None);
+    }
+    let bytes = custody.acquired.as_bytes();
+    let len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    if len > limits.source_content_bytes.get() {
+        return (OpaqueState::OmittedLimit, None);
+    }
+    let Some(after) = spent.checked_add(len) else {
+        return (OpaqueState::OmittedLimit, None);
+    };
+    if after > limits.source_content_aggregate_bytes.get() {
+        return (OpaqueState::OmittedLimit, None);
+    }
+    *spent = after;
+    (OpaqueState::Captured, Some(bytes.to_vec()))
+}
+
 fn source_row(
     ordinal: usize,
     claim: &dorc_core::spine::SourceClaim,
     account: dorc_core::influence::InfluenceAccount,
+    class: RecordedSourceClass,
+    content: OpaqueState,
 ) -> RecordedSource {
     RecordedSource::of(
         SourceOrdinal::of(count(ordinal)),
@@ -308,10 +448,14 @@ fn source_row(
         },
         claim.digest.clone(),
         claim.bytes,
-        held(!claim.path.is_empty()),
-        // V1 selects no source excerpts, so the value exists and this projection did not collect
-        // it — which is a different state from the run never having held one.
-        OpaqueState::Uncollected,
+        SourceSlots {
+            path: held(!claim.path.is_empty()),
+            // V1 selects no source excerpts, so the value exists and this projection did not
+            // collect it — a different state from the run never having held one.
+            excerpt: OpaqueState::Uncollected,
+            content,
+        },
+        class,
         // A source is a field of the invocation record, so it stands exactly where that record
         // does rather than at a floor nothing computed.
         grade(account),
@@ -361,12 +505,16 @@ const fn disposition_of(decision: &Disposition) -> RecordedDisposition {
     }
 }
 
-fn site_row(record: &dorc_core::spine::SpineDisposition<PlanPlane>) -> RecordedSiteDecision {
+fn site_row(
+    record: &dorc_core::spine::SpineDisposition<PlanPlane>,
+    locator: OpaqueState,
+) -> RecordedSiteDecision {
     RecordedSiteDecision::of(
         site_of(record.site()),
         RecordedAst::of(record.ast().0),
         disposition_of(record.decision()),
         held(!record.sh().is_empty()),
+        locator,
         grade(record.account()),
     )
 }

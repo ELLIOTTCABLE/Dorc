@@ -16,8 +16,9 @@ use dorc_core::spine::{
 use dorc_core::{AstId, BytePos, DefinitionId, Interner, SourceFileId, SourceRole, Span};
 use dorc_plan::planning_input::{PlanningInputs, PlanningMode, PlanningPolicy};
 use dorc_plan::presentation::FinalPresentation;
-use dorc_plan::receipt::{ProjectionRefusal, project};
+use dorc_plan::receipt::{ProjectionRefusal, RecordedInputs, project};
 use dorc_plan::{Disposition, NO_ARTIFACT_FORM, Plan, ProbePlan, Spine, SurvivalReport};
+use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::plan::RenderSubject;
 use dorc_receipt::rows::RecordedProjectionOmission;
 use dorc_receipt::tokens::{
@@ -144,8 +145,15 @@ fn a_render_row_names_the_region_the_run_decided_and_not_its_neighbour() {
         authored(),
     ));
 
-    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
-        .expect("the Spine projects");
+    let projected = project(
+        &spine,
+        RecordedInvocationMode::Plan,
+        authored(),
+        &witness(),
+        &RecordedInputs::default(),
+        &ReceiptLimits::V1,
+    )
+    .expect("the Spine projects");
     let model = projected.model();
     let rendered = model.renders();
     assert_eq!(rendered.len(), 1, "one refusal was recorded");
@@ -184,8 +192,15 @@ fn every_species_the_projection_declines_states_its_population() {
         authored(),
     ));
 
-    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
-        .expect("the Spine projects");
+    let projected = project(
+        &spine,
+        RecordedInvocationMode::Plan,
+        authored(),
+        &witness(),
+        &RecordedInputs::default(),
+        &ReceiptLimits::V1,
+    )
+    .expect("the Spine projects");
     let model = projected.model();
     let omitted: Vec<RecordedSpineSpecies> = model
         .omissions()
@@ -249,7 +264,7 @@ fn every_species_the_projection_declines_states_its_population() {
 fn a_witness_naming_an_image_carries_its_identity_into_the_row() {
     let image = dorc_receipt::image::ApplyArtifactImage::of_external_stream(
         dorc_receipt::image::ApplyEntryBytes::of(b"#!/bin/sh\n:\n".to_vec()),
-        &dorc_receipt::limits::ReceiptLimits::V1,
+        &ReceiptLimits::V1,
     )
     .expect("a single stream is within bounds");
 
@@ -284,6 +299,8 @@ fn a_witness_naming_an_image_carries_its_identity_into_the_row() {
         RecordedInvocationMode::Plan,
         authored(),
         &witness,
+        &RecordedInputs::default(),
+        &ReceiptLimits::V1,
     )
     .expect("the spine projects")
     .model()
@@ -307,7 +324,14 @@ fn a_spine_with_no_invocation_has_no_document_to_write() {
     // projection refuses rather than emitting a shape whose required singleton is missing.
     let spine = Spine::new();
     assert_eq!(
-        project(&spine, RecordedInvocationMode::Plan, authored(), &witness()),
+        project(
+            &spine,
+            RecordedInvocationMode::Plan,
+            authored(),
+            &witness(),
+            &RecordedInputs::default(),
+            &ReceiptLimits::V1,
+        ),
         Err(ProjectionRefusal::NoInvocation)
     );
 }
@@ -325,8 +349,15 @@ fn a_licensed_verb_is_attributed_and_an_unlicensed_one_mints_nothing() {
         authored(),
     ));
 
-    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
-        .expect("the Spine projects");
+    let projected = project(
+        &spine,
+        RecordedInvocationMode::Plan,
+        authored(),
+        &witness(),
+        &RecordedInputs::default(),
+        &ReceiptLimits::V1,
+    )
+    .expect("the Spine projects");
     let model = projected.model();
     assert_eq!(model.sites().len(), 1, "the decision itself is recorded");
     assert!(
@@ -350,7 +381,14 @@ fn a_witness_from_another_surface_cannot_supply_this_one_s_identities() {
     );
     let spine = spine_with_invocation();
     assert_eq!(
-        project(&spine, RecordedInvocationMode::Plan, authored(), &other),
+        project(
+            &spine,
+            RecordedInvocationMode::Plan,
+            authored(),
+            &other,
+            &RecordedInputs::default(),
+            &ReceiptLimits::V1,
+        ),
         Err(ProjectionRefusal::PresentationMismatch)
     );
 }
@@ -363,7 +401,14 @@ fn a_run_that_recorded_no_surface_has_nothing_for_a_witness_to_answer_to() {
     let mut spine = Spine::new();
     spine.set_invocation(invocation());
     assert_eq!(
-        project(&spine, RecordedInvocationMode::Plan, authored(), &witness()),
+        project(
+            &spine,
+            RecordedInvocationMode::Plan,
+            authored(),
+            &witness(),
+            &RecordedInputs::default(),
+            &ReceiptLimits::V1,
+        ),
         Err(ProjectionRefusal::NoPresentedPlan)
     );
 }
@@ -391,8 +436,15 @@ fn the_projected_order_is_the_canonical_one() {
         authored(),
     ));
 
-    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
-        .expect("the Spine projects");
+    let projected = project(
+        &spine,
+        RecordedInvocationMode::Plan,
+        authored(),
+        &witness(),
+        &RecordedInputs::default(),
+        &ReceiptLimits::V1,
+    )
+    .expect("the Spine projects");
     assert_eq!(
         projected.records(),
         projected
@@ -418,8 +470,15 @@ fn a_detail_is_offered_for_every_slot_the_row_marked_captured_and_no_other() {
         authored(),
     ));
 
-    let projected = project(&spine, RecordedInvocationMode::Plan, authored(), &witness())
-        .expect("the Spine projects");
+    let projected = project(
+        &spine,
+        RecordedInvocationMode::Plan,
+        authored(),
+        &witness(),
+        &RecordedInputs::default(),
+        &ReceiptLimits::V1,
+    )
+    .expect("the Spine projects");
     let skeleton = dorc_receipt::format::Skeleton {
         receipt_id: "a".repeat(64),
         order: dorc_receipt::ReceiptOrderToken::of_controller_millis(1_700_000_000_000),

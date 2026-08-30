@@ -65,8 +65,8 @@ mod source_match;
 mod transport_edge;
 mod whylog_store;
 
+use dorc_aid::Severity;
 use dorc_aid::diag::{Diag, DiagCode};
-use dorc_aid::{Carrier, Severity};
 #[cfg(test)]
 use dorc_aid::{CollapseKind, CollapseNarrative, SpeechAct};
 use dorc_core::Interner;
@@ -110,10 +110,7 @@ use dorc_cli::results::{
 };
 #[cfg(test)]
 use dorc_cli::survival::own_wall_coord;
-use dorc_cli::{
-    Args, DriftedReceipt, Invocation, LintArgs, LintFormat, Mode, humane_read_error,
-    parse_args_from,
-};
+use dorc_cli::{Args, Invocation, LintArgs, LintFormat, Mode, humane_read_error, parse_args_from};
 #[cfg(test)]
 use dorc_core::{Observable, Verdict};
 #[cfg(test)]
@@ -189,7 +186,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     {
         return ship_consented_apply(sink, args, host);
     }
-    if args.answers_from_the_receipt_store() {
+    if args.reads_the_receipt() {
         let edge = production_receipt_edge();
         let label = edge
             .as_ref()
@@ -200,7 +197,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         };
         return Ok(dorc_cli::engine::report_recorded_store(
             reading,
-            args.recorded_selection(),
+            args.receipt_root(),
             label,
             sink,
         ));
@@ -215,20 +212,7 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         durable_dir.is_some(),
     );
     let cwd = invocation_cwd();
-    let ready = match acquire_engine_request(args, &cwd, sink)? {
-        AcquiredEngine::Ready(ready) => ready,
-        AcquiredEngine::Drifted(receipt) if args.mode == Mode::Why => {
-            sink.emit(OutputEvent::plain_tagged(
-                OutputChannel::Stdout,
-                dorc_cli::drifted_why_parts(&render_ctx(), args.why_address.as_deref(), &receipt),
-            ));
-            sink.flush(OutputChannel::Stdout);
-            return Ok(RunOutcome::Complete);
-        }
-        AcquiredEngine::Drifted(_) | AcquiredEngine::Refused => {
-            return Ok(RunOutcome::IngressRefused);
-        }
-    };
+    let ready = acquire_engine_request(args, &cwd)?;
     let mut edges = ProductionEdges {
         args,
         clock: clock_for_invocation(),
@@ -249,12 +233,6 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     .map(|result| result.status)
 }
 
-enum AcquiredEngine {
-    Ready(Box<AcquiredReady>),
-    Drifted(Box<DriftedReceipt>),
-    Refused,
-}
-
 struct AcquiredReady {
     snapshot: dorc_cli::snapshot::StaticLoadSnapshot,
     replay: Option<EngineReplay>,
@@ -268,8 +246,7 @@ struct AcquiredReady {
 fn acquire_engine_request(
     args: &Args,
     cwd: &dorc_core::loadpath::Cwd,
-    sink: &mut dyn OutputSink,
-) -> Result<AcquiredEngine, Diag> {
+) -> Result<Box<AcquiredReady>, Diag> {
     let oracle_paths = resolve_pre_sources(&args.pre_sources, &args.oracle_dirs)?;
     let oracle_srcs: Vec<String> = oracle_paths
         .iter()
@@ -301,11 +278,11 @@ fn acquire_engine_request(
         book_name,
         &book_src,
     );
-    Ok(AcquiredEngine::Ready(Box::new(AcquiredReady {
+    Ok(Box::new(AcquiredReady {
         snapshot,
         replay: None,
         acquisition_diagnostics,
-    })))
+    }))
 }
 
 struct ProductionEdges<'a> {
@@ -461,11 +438,7 @@ impl EngineEdges for ProductionEdges<'_> {
         let sealer = open.keys().encryption().sealer();
         let mut placement = open.placement(&mut io);
         dorc_cli::receipt_edge::publish_rich_plan_receipt(
-            request.spine,
-            request.mode,
-            request.world,
-            request.presentation,
-            &dorc_receipt::limits::ReceiptLimits::V1,
+            request,
             dorc_cli::receipt_edge::ReceiptCapabilities::of(
                 &mut ids,
                 &mut order,
@@ -556,9 +529,14 @@ fn read_receipt_store(
                 .collect()
         })
         .unwrap_or_default();
+    // The edges go in BESIDE the cohort rather than being re-derived from the listing: the
+    // collapse that turns a cohort into terminals is a fact about the typed graph, and a second
+    // derivation of it from rendered text would be a parser over our own output.
+    let edges = graph.edges();
     Ok(dorc_cli::recorded::StoreReading::of(
         documents,
         cohort,
+        &edges,
         dorc_cli::recorded::recorded_graph_listing(&graph),
     ))
 }
@@ -1260,34 +1238,6 @@ fn system_clock() -> RunClock {
             at: dorc_core::RunInstant(millis),
             step_millis: 0,
         })
-}
-
-struct Replay {
-    book_path: String,
-    oracle_paths: Vec<String>,
-    decision_digest: String,
-    /// The instant the ORIGINAL run started, as the durable recorded it. The receipt dates itself
-    /// by this and never by the replay's own clock — a replay reports on a moment that has already
-    /// passed, and re-dating it to now would present a reading as a running.
-    started_at: Option<dorc_core::RunInstant>,
-    /// Which record-stream version this durable declared — the key the `[unnarrated:]` census is
-    /// gated on, so it can never make a coverage claim about a stream this binary's narrative
-    /// plane was not built against.
-    record_stream_version: u32,
-    /// The instants the ORIGINAL run recorded for its probe records, by arrival ordinal.
-    instants: BTreeMap<u64, dorc_core::RunInstant>,
-    records: Option<dorc_plan::records::AdmittedUnscopedHostRecords>,
-    /// The licence to produce an authority-bearing projection, carried from the durable's own
-    /// admission rather than asserted where one is wanted.
-    authority: dorc_plan::PlanAuthority,
-}
-
-enum ReplayLoad {
-    Admitted(Replay),
-    NoObservation(Replay),
-    /// The recorded book digest disagrees with the file now at that path: answerable, degraded.
-    Drifted(Box<DriftedReceipt>),
-    Refused,
 }
 
 /// Whylog retention: keep the newest [`WHYLOG_KEEP`] durables by run-index; cap each at
@@ -2707,15 +2657,6 @@ fn static_decline_notes(
     lines
 }
 
-/// A deterministic content digest binding the records stream to the exact analyzed book bytes
-/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). Hand-rolled SHA-256 in the kernel
-/// (`28F:rul-digest-lands-now` retired the FNV-1a-64 stand-in; the kernel stays dependency-clean
-/// per `inv-determinism`, so it is written out rather than pulled in). Computed at the I/O edge
-/// (`io-at-edges-only`), never in the kernel.
-fn book_digest(book_src: &str) -> String {
-    dorc_plan::invocation::book_digest(book_src)
-}
-
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]
 /// (`inv-site-keyed-results`). One line form; blank lines and `#` comments are ignored
 /// (so the probe's own `# site …` provenance echo can be piped back), and any
@@ -3641,28 +3582,50 @@ mod tests {
         );
     }
 
+    /// An explicit root file parses, and the store that may resolve its siblings is ORTHOGONAL to
+    /// it (`30R:receipt-rooted-attention-and-cli`).
+    ///
+    /// The pair `--receipt` / `--receipts` is one letter apart and means two unrelated things —
+    /// which document, versus which store — so the thing worth pinning is that naming both is
+    /// ordinary rather than a collision. The old surface refused the analogous pair, and carrying
+    /// that refusal forward would have made the orthogonality unspellable.
     #[test]
-    fn whylog_exact_file_is_parsed_and_excludes_directory_selection() {
+    fn an_explicit_root_file_parses_beside_the_store_that_resolves_its_siblings() {
         let parsed = parse_args_from(vec![
             "why".to_owned(),
-            "--last".to_owned(),
-            "--whylog=.whylog".to_owned(),
+            "--receipt=run.dorc-receipt".to_owned(),
+            "--receipts=durables".to_owned(),
         ])
-        .expect("exact whylog input parses");
+        .expect("an explicit root beside a store parses");
         let Invocation::Analyze(args) = parsed else {
             panic!("expected analysis invocation");
         };
-        assert_eq!(args.whylog.as_deref(), Some(".whylog"));
-        assert!(args.whylog_dir.is_none());
-        assert!(
-            parse_args_from(vec![
-                "why".to_owned(),
-                "--last".to_owned(),
-                "--whylog=.whylog".to_owned(),
-                "--whylog-dir=durables".to_owned(),
-            ])
-            .is_err()
-        );
+        assert_eq!(args.receipt_file.as_deref(), Some("run.dorc-receipt"));
+        assert_eq!(args.receipts.as_deref(), Some("durables"));
+        assert!(args.receipt_id.is_none() && !args.receipt_last);
+    }
+
+    /// The three ROOT selectors are mutually exclusive, in every pairing.
+    ///
+    /// Each names one attention root, and ranking two against each other would be inventing a
+    /// preference the design refuses to have. Exhaustive over the pairs rather than one sample:
+    /// the refusal is a three-arm table, and a table with one arm tested is a table with two arms
+    /// nobody checked.
+    #[test]
+    fn the_three_root_selectors_refuse_one_another() {
+        for pair in [
+            ["--receipt=a".to_owned(), "--receipt-id=b".to_owned()],
+            ["--receipt=a".to_owned(), "--receipt-last".to_owned()],
+            ["--receipt-id=b".to_owned(), "--receipt-last".to_owned()],
+        ] {
+            let argv = vec!["why".to_owned(), pair[0].clone(), pair[1].clone()];
+            assert!(
+                parse_args_from(argv).is_err(),
+                "{} and {} both name a root",
+                pair[0],
+                pair[1]
+            );
+        }
     }
 
     /// `28F:rul-drift-replay-d1`: a drifted receipt's ONLY count comes from the durable's stored

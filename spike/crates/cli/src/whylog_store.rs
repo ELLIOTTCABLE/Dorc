@@ -47,31 +47,6 @@ const NAME_ATTEMPTS: u64 = 16;
 /// `why`, and a directory someone filled should cost a refusal rather than an allocation.
 const MAX_ENTRIES: usize = 4096;
 
-/// The per-user state directory receipts land in when the admin named none.
-///
-/// Unix follows the XDG state convention (`$XDG_STATE_HOME/dorc`, else `~/.local/state/dorc`);
-/// Windows uses `%LOCALAPPDATA%\dorc`. `None` when the environment names neither -- a stripped
-/// environment is not a persistence FAILURE, it is an absence of anywhere to persist to, and the
-/// caller distinguishes the two.
-///
-/// # This reads the environment, and `rul-scratch-root-never-read-from-host` says not to
-///
-/// That law binds ENGINE SCRATCH ON A MANAGED HOST: a host-chosen parent there voids the exclusive
-/// create the probe lane rests on, so host-configurability is forbidden rather than unimplemented.
-/// This is the CONTROLLER's own state directory on the operator's own machine, read at the cli edge
-/// (`io-at-edges-only`) like every other environment value. The two are one keystroke apart in a
-/// grep and worlds apart in consequence; do not merge them.
-#[must_use]
-pub(crate) fn default_root() -> Option<PathBuf> {
-    let from = |key: &str| std::env::var_os(key).filter(|value| !value.is_empty());
-    if cfg!(windows) {
-        return from("LOCALAPPDATA").map(|base| PathBuf::from(base).join("dorc"));
-    }
-    from("XDG_STATE_HOME")
-        .map(|base| PathBuf::from(base).join("dorc"))
-        .or_else(|| from("HOME").map(|home| PathBuf::from(home).join(".local/state/dorc")))
-}
-
 /// Why a durable was not persisted. Closed, and each arm is separately reportable.
 ///
 /// `28F:rul-write-failure-is-error-floor`: these reach the user rather than vanishing. The write
@@ -157,11 +132,6 @@ pub(crate) fn entries(dir: &Path) -> Vec<(u64, PathBuf)> {
         .collect();
     found.sort_by_key(|(index, _)| *index);
     found
-}
-
-/// The newest durable in `dir` (highest run-index), or `None`.
-pub(crate) fn newest(dir: &str) -> Option<PathBuf> {
-    entries(Path::new(dir)).pop().map(|(_, path)| path)
 }
 
 /// `whylog-<NNNN>.txt` for a run-index.

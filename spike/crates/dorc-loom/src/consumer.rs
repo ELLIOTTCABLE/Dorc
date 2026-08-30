@@ -776,7 +776,7 @@ impl DorcConsumer {
             dorc_cli::Invocation::Analyze(analysis_args) => {
                 if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
                     self.run_remote_apply(case, &analysis_args, context)
-                } else if analysis_args.answers_from_the_receipt_store() {
+                } else if analysis_args.reads_the_receipt() {
                     Some(self.run_receipt_store_why(&analysis_args))
                 } else {
                     self.run_engine(case, &analysis_args, command, context)
@@ -1021,7 +1021,7 @@ impl DorcConsumer {
         };
         let status = dorc_cli::engine::report_recorded_store(
             Err(ROOTLESS_WORLD.to_owned()),
-            args.recorded_selection(),
+            args.receipt_root(),
             dorc_cli::engine::NO_STATE_ROOT,
             &mut sink,
         );
@@ -1089,7 +1089,7 @@ impl DorcConsumer {
             args,
             replay_stdout_posture(command),
             args.artifact_dir.is_some(),
-            args.whylog_dir.is_some(),
+            args.receipts.is_some(),
         );
         let discovered_oracles = case
             .sections()
@@ -1109,7 +1109,7 @@ impl DorcConsumer {
             fault,
             shim_dir: args.shim_dir.clone(),
             durable_label: args
-                .whylog_dir
+                .receipts
                 .clone()
                 .unwrap_or_else(|| "<disabled>".to_owned()),
             // A loom world has no per-user profile, and saying so is the honest label: nothing

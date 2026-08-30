@@ -27,7 +27,7 @@ use dorc_receipt::plan::{
     RecordedAdmission, RecordedLicensor, RecordedLoadDecision, RecordedNarrative,
     RecordedPlanReceipt, RecordedPresentedPlan, RecordedProbeShip, RecordedRegionDecision,
     RecordedRenderDecision, RecordedSiteClassification, RecordedSiteDecision,
-    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject,
+    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject, SourceSlots,
 };
 use dorc_receipt::reingested::RecordedInfluence;
 use dorc_receipt::rows::{
@@ -81,10 +81,12 @@ fn every_plan_row_survives_its_own_round_trip_with_distinct_same_typed_fields() 
         RecordedSourceRole::BookSourced,
         digest_of('b'),
         4096,
-        OpaqueState::Captured,
-        OpaqueState::Uncollected,
+        SourceSlots {
+            path: OpaqueState::Captured,
+            excerpt: OpaqueState::Uncollected,
+            content: OpaqueState::Captured,
+        },
         RecordedSourceClass::GeneralSh,
-        OpaqueState::Captured,
         RecordedInfluence::AuthoredBeforeContact,
     ));
     round_trip(&RecordedAdmission::of(
@@ -356,10 +358,12 @@ fn source_record(ordinal: u32) -> SkeletonRecord {
         RecordedSourceRole::Book,
         digest_of('b'),
         1,
-        OpaqueState::WithheldPlain,
-        OpaqueState::Uncollected,
+        SourceSlots {
+            path: OpaqueState::WithheldPlain,
+            excerpt: OpaqueState::Uncollected,
+            content: OpaqueState::WithheldPlain,
+        },
         RecordedSourceClass::DorcLang,
-        OpaqueState::WithheldPlain,
         RecordedInfluence::AuthoredBeforeContact,
     )
     .to_record()

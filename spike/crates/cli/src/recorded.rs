@@ -259,7 +259,7 @@ impl StoreReading {
     pub fn of(
         documents: Vec<RecordedDocument>,
         cohort: Vec<String>,
-        edges: &[dorc_receipt::graph::ReceiptEdge],
+        edges: &[ReceiptEdge],
         graph: String,
     ) -> Self {
         Self {
@@ -301,11 +301,7 @@ impl StoreReading {
 /// so a chain wholly inside one cohort collapses anyway — the plan loses to the intent and the
 /// intent loses to the outcome — and computing a closure would only add a way to be wrong about a
 /// species relation the graph does not have.
-fn collapse_predecessors(
-    cohort: Vec<String>,
-    edges: &[dorc_receipt::graph::ReceiptEdge],
-) -> Vec<String> {
-    use dorc_receipt::graph::ReceiptEdge;
+fn collapse_predecessors(cohort: Vec<String>, edges: &[ReceiptEdge]) -> Vec<String> {
     let in_cohort = |id: &str| cohort.iter().any(|member| member == id);
     let mut superseded: Vec<String> = Vec::new();
     for edge in edges {
