@@ -291,6 +291,24 @@ impl<D: Species, T: SignerTrust> Reingested<Receipt<D, crate::model::Rich, T>> {
     pub fn detail(&self, record: u64, tag: crate::projection::OpaqueFieldTag) -> Option<&[u8]> {
         self.0.detail(record, tag)
     }
+
+    /// The KIND of every record, in the document's own order.
+    ///
+    /// Kinds and nothing else: no atoms, no payload. It exists so a consumer can find the record
+    /// ORDINAL a detail entry is keyed by, by walking the same stream those entries were keyed
+    /// against. The alternative — deriving an ordinal by counting which record species the
+    /// projection emits first — makes every consumer a second copy of the projection's ordering,
+    /// and a detail entry keyed by position enriches whichever row shares its integer when those
+    /// two copies disagree.
+    #[must_use]
+    pub fn record_kinds(&self) -> Vec<crate::grammar::RecordKind> {
+        self.0
+            .skeleton()
+            .records
+            .iter()
+            .map(crate::format::SkeletonRecord::kind)
+            .collect()
+    }
 }
 
 impl Reingested<RecordedSource> {
@@ -317,13 +335,55 @@ impl Reingested<RecordedSource> {
     pub const fn bytes(&self) -> u64 {
         self.0.bytes()
     }
+
+    /// Which dialect the run accepted this source as.
+    #[must_use]
+    pub const fn class(&self) -> crate::tokens::RecordedSourceClass {
+        self.0.class()
+    }
+
+    /// Whether the source's exact bytes are in the document, and if not, why not.
+    #[must_use]
+    pub const fn content(&self) -> crate::tokens::OpaqueState {
+        self.0.content()
+    }
+
+    /// Whether the source's path is in the document.
+    #[must_use]
+    pub const fn path(&self) -> crate::tokens::OpaqueState {
+        self.0.path()
+    }
 }
 
 impl Reingested<RecordedSiteDecision> {
+    /// Which site this decided, as the document identifies it.
+    #[must_use]
+    pub const fn site(&self) -> crate::rows::RecordedSite {
+        self.0.site()
+    }
+
+    /// Which syntax node the site came from.
+    #[must_use]
+    pub const fn ast(&self) -> crate::rows::RecordedAst {
+        self.0.ast()
+    }
+
     /// What the document says the plan did with the site.
     #[must_use]
     pub const fn disposition(&self) -> RecordedDisposition {
         self.0.disposition()
+    }
+
+    /// Whether the site's own shell text is in the document.
+    #[must_use]
+    pub const fn shell(&self) -> crate::tokens::OpaqueState {
+        self.0.shell()
+    }
+
+    /// Whether the site's provenance DAG is in the document.
+    #[must_use]
+    pub const fn locator(&self) -> crate::tokens::OpaqueState {
+        self.0.locator()
     }
 
     /// Where this record stood relative to host contact.

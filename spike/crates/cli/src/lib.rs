@@ -41,6 +41,7 @@ pub mod kinds;
 pub mod provenance;
 pub mod receipt_edge;
 pub mod recorded;
+pub mod recorded_facts;
 pub mod results;
 pub mod snapshot;
 pub mod sourcing;

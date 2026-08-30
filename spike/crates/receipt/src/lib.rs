@@ -232,6 +232,7 @@ pub mod project;
 pub mod projection;
 pub mod reader;
 pub mod reingested;
+pub mod report;
 pub mod rows;
 pub mod source;
 pub mod tokens;
