@@ -211,6 +211,74 @@
 //!     let _second = signed.clone();
 //! }
 //! ```
+//!
+//! # The pre-dispatch chain, as compile-fail pins
+//!
+//! One publication authorizes one dispatch OF THE INTENT IT WAS EARNED FOR, and that is carried by
+//! ownership rather than by a check: accounting consumes the intent, the publication owns the
+//! accounting, and the permit takes no second argument. So the failures below are compile errors
+//! rather than refusals a runtime test could observe.
+//!
+//! MEASURED, each against its un-fenced form, because "it did not compile" is not on its own a
+//! statement about what was refused: `E0061` (an argument with nowhere to go), `E0451` twice (a
+//! private field), and `E0433`/`E0425` (a name that is gone). The positive control at the end is
+//! what says the module and its public spellings still resolve.
+//!
+//! Publication A cannot dispatch intent B, because `permit` has nowhere to put a B:
+//!
+//! ```compile_fail
+//! use dorc_receipt::dispatch::{PreparedApplyIntent, PublishedApplyIntentV1};
+//! fn cross(published: PublishedApplyIntentV1, other: PreparedApplyIntent) {
+//!     let _permit = published.permit(other);
+//! }
+//! ```
+//!
+//! An image witness cannot be lifted off one intent and set beside another, because there is no
+//! witness value apart from the intent it accounted:
+//!
+//! ```compile_fail
+//! use dorc_receipt::dispatch::{AccountedApplyIntent, PreparedApplyIntent};
+//! fn relabel(accounted: AccountedApplyIntent, other: PreparedApplyIntent) -> AccountedApplyIntent {
+//!     AccountedApplyIntent { intent: other }
+//! }
+//! ```
+//!
+//! No caller can mint a publication without a placement having been called through it — the mint
+//! is private and the only entry is the consuming one:
+//!
+//! ```compile_fail
+//! use dorc_receipt::dispatch::{AccountedApplyIntent, PublishedApplyIntentV1, RequiredPlacementLanding};
+//! use dorc_receipt::ids::ApplyIntentId;
+//! fn forge(accounted: AccountedApplyIntent, id: ApplyIntentId, landing: RequiredPlacementLanding)
+//!     -> PublishedApplyIntentV1
+//! {
+//!     PublishedApplyIntentV1 { id, landing, accounted }
+//! }
+//! ```
+//!
+//! And there is no second route to a permit at all — the bypass capability and the two-armed gate
+//! are gone, not merely unused:
+//!
+//! ```compile_fail
+//! fn bypass() -> dorc_receipt::dispatch::ConfiguredReceiptBypass {
+//!     dorc_receipt::dispatch::ConfiguredReceiptBypass::configured()
+//! }
+//! ```
+//!
+//! The positive control for all four, so they fail for the stated reason rather than because the
+//! module moved: the chain's own public spellings resolve.
+//!
+//! ```
+//! use dorc_receipt::dispatch::{
+//!     AccountedApplyIntent, PreparedApplyIntent, PublishedApplyIntentV1, RequiredPlacementLanding,
+//! };
+//! use dorc_receipt::ids::Sha256Digest;
+//! let landing = RequiredPlacementLanding::of(
+//!     Sha256Digest::over("doc", b"bytes"),
+//!     "required-local-v1",
+//! );
+//! assert_eq!(landing.policy_identity(), "required-local-v1");
+//! ```
 
 pub mod apply;
 pub mod capability;

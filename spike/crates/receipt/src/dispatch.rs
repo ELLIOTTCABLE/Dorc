@@ -1,10 +1,15 @@
-//! The pre-dispatch authority chain: standup, prepared intent, publication gate, and the
+//! The pre-dispatch authority chain: standup, prepared intent, required publication, and the
 //! one-use permit the first potentially mutative dispatch consumes.
 //!
-//! Every state here is affine and privately constructed. The chain exists so that "we spent
-//! authority to mutate a host" is a thing a type records rather than a thing a call site
-//! remembers to do, and so that the two routes to a permit — required publication of a rich
-//! intent, and an explicit configured bypass — cannot be reached from one another.
+//! Every state here is affine and privately constructed, and each one OWNS its predecessor.
+//! That ownership is the whole mechanism: a permit is reached only by moving one exact prepared
+//! intent through image accounting and through a publication, so there is no signature anywhere
+//! that pairs one intent's publication with another intent. A caller cannot supply the binding
+//! identity, because no step takes one.
+//!
+//! There is ONE route, and it is required publication. A configured bypass is not part of this
+//! V1 surface: the words for it exist in the recorded vocabulary a document may spell, and
+//! nothing here mints authority under them.
 //!
 //! The crate stays pure: a session's resolved identity arrives as VALUES from whatever edge
 //! established it. Nothing here opens a connection, reads an environment, or asks a clock.
@@ -507,17 +512,24 @@ impl ApplySessionReady {
 }
 
 /// Which publication policy an apply is running under.
+///
+/// A RECORDED WORD, not authority. [`Self::configured_bypass`] exists because the document
+/// vocabulary can spell that posture and a projection has to be able to write the row; there is
+/// deliberately no route from an intent wearing it to a permit, and
+/// [`AccountedApplyIntent::publish_through`] refuses one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReceiptPolicyWitness(RecordedApplyPolicy);
 
 impl ReceiptPolicyWitness {
-    /// The default posture: a rich intent is published before dispatch or nothing dispatches.
+    /// The V1 posture, and the only one that dispatches: a rich intent is published before
+    /// dispatch or nothing dispatches.
     #[must_use]
     pub const fn required_rich() -> Self {
         Self(RecordedApplyPolicy::RequiredRich)
     }
 
-    /// The explicitly configured posture that permits dispatch without required publication.
+    /// The posture a document may RECORD for an apply that ran with no durable intent behind
+    /// it. No route in this crate turns one into a permit.
     #[must_use]
     pub const fn configured_bypass() -> Self {
         Self(RecordedApplyPolicy::ConfiguredBypass)
@@ -532,7 +544,9 @@ impl ReceiptPolicyWitness {
 
 /// An intent whose assignments, session, generation and policy are frozen.
 ///
-/// Not `Clone`: an intent is prepared once and either reaches a gate or is dropped.
+/// Not `Clone`: an intent is prepared once and is either MOVED through accounting and
+/// publication or dropped. Every state past this one owns it, so there is no borrow a second
+/// publication could be built against.
 #[derive(Debug)]
 pub struct PreparedApplyIntent {
     session: ApplySessionId,
@@ -580,21 +594,22 @@ impl PreparedApplyIntent {
         }
     }
 
-    /// Prove that every assignment's exact image reached the region about to be published.
+    /// Account every assignment's exact image against the region about to be published,
+    /// CONSUMING this intent into the accounted state.
     ///
     /// The accounting is a byte comparison against each assignment's own canonical image
-    /// encoding, keyed by the record the assignment occupies. A caller cannot hand over the
-    /// capability, and cannot obtain one by declaring the images present: the entries checked
-    /// here are the entries that will be sealed.
+    /// encoding, keyed by the record the assignment occupies. It takes `self` by value so the
+    /// witness cannot be separated from the intent it was earned for: what comes back OWNS this
+    /// exact intent, and a caller holding two intents cannot account one and publish the other.
     ///
     /// `record_of` answers which skeleton record an assignment ordinal occupies, because that
     /// numbering belongs to the document being assembled rather than to this type.
     #[must_use]
     pub fn account_images(
-        &self,
+        self,
         entries: &[OverlayEntry],
         record_of: &dyn Fn(AssignmentOrdinal) -> Option<u64>,
-    ) -> Option<ExactApplyImagesPresent> {
+    ) -> Option<AccountedApplyIntent> {
         for assignment in &self.assignments {
             let record = record_of(assignment.ordinal)?;
             let carried = entries.iter().find(|entry| {
@@ -604,80 +619,57 @@ impl PreparedApplyIntent {
                 return None;
             }
         }
-        Some(ExactApplyImagesPresent(()))
+        Some(AccountedApplyIntent { intent: self })
     }
 }
 
-/// Proof that a published rich intent carried every assignment's exact image by value.
+/// One prepared intent whose every assignment's exact image was found in the region about to be
+/// sealed.
 ///
-/// Minted only by [`PreparedApplyIntent::account_images`]. Not `Clone`, and its field is a
-/// private unit, so there is no literal spelling of it outside this module.
+/// Minted only by [`PreparedApplyIntent::account_images`], which consumes the intent, so the
+/// accounting and the intent are one value. Not `Clone`, and its field is private, so there is
+/// no literal spelling of it outside this module and no way to swap the intent inside one.
 #[derive(Debug)]
-pub struct ExactApplyImagesPresent(());
-
-/// An explicitly configured decision to dispatch without required publication.
-///
-/// Not `Clone`, and deliberately verbose to construct: this is the one value that lets a
-/// mutation proceed with no durable intent behind it, so a reader grepping for it finds every
-/// site that spends it.
-#[derive(Debug)]
-pub struct ConfiguredReceiptBypass(());
-
-impl ConfiguredReceiptBypass {
-    /// Declare that this invocation is configured to dispatch without required publication.
-    #[must_use]
-    pub const fn configured() -> Self {
-        Self(())
-    }
+pub struct AccountedApplyIntent {
+    intent: PreparedApplyIntent,
 }
 
-/// Proof that a durable store placed one exact document at its platform's required baseline.
+/// What a placement answered about one required landing.
 ///
-/// Carries the three facts a gate has to bind and nothing else: which document identity was
-/// filed, the digest of the exact bytes filed under it, and which policy judged the placement.
-/// Not `Clone`, so one placement funds one gate.
+/// A REPORT and never authority: it says what a placement claims it did, in primitives, and the
+/// gate value is minted from it inside [`AccountedApplyIntent::publish_through`]. Holding one
+/// authorizes nothing, because the scarce half of a publication is the accounted intent, which
+/// nothing outside this crate can build.
 ///
-/// The mint is public because the store that earns one lives in a crate downstream of this one,
-/// and no type can privilege that crate over any other. The fence is therefore lexical and
-/// two-way, in `receipt/tests/crate_boundary.rs`.
-#[derive(Debug)]
-pub struct DurablePublicationProof {
-    receipt_id_hex: String,
+/// That is the honest boundary and it is worth stating plainly: no Rust type can prove a file
+/// reached a disk in a crate this one does not know about. What the type system carries is that
+/// a publication value exists only where an accounted intent was moved through a placement call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RequiredPlacementLanding {
     document_digest: Sha256Digest,
     policy_identity: &'static str,
 }
 
-impl DurablePublicationProof {
-    /// Record that a store placed `receipt_id_hex`'s document, whose bytes digest to
-    /// `document_digest`, under the policy `policy_identity` names.
+impl RequiredPlacementLanding {
+    /// Report that a placement landed the document, whose bytes digest to `document_digest`,
+    /// under the policy `policy_identity` names.
     #[must_use]
-    pub const fn of_required_placement(
-        receipt_id_hex: String,
-        document_digest: Sha256Digest,
-        policy_identity: &'static str,
-    ) -> Self {
+    pub const fn of(document_digest: Sha256Digest, policy_identity: &'static str) -> Self {
         Self {
-            receipt_id_hex,
             document_digest,
             policy_identity,
         }
     }
 
-    /// The identity of the document that was placed.
+    /// The digest of the exact bytes the placement says it wrote.
     #[must_use]
-    pub fn receipt_id_hex(&self) -> &str {
-        &self.receipt_id_hex
-    }
-
-    /// The digest of the exact bytes placed.
-    #[must_use]
-    pub const fn document_digest(&self) -> Sha256Digest {
+    pub const fn document_digest(self) -> Sha256Digest {
         self.document_digest
     }
 
     /// Which policy the placement was judged under.
     #[must_use]
-    pub const fn policy_identity(&self) -> &'static str {
+    pub const fn policy_identity(self) -> &'static str {
         self.policy_identity
     }
 }
@@ -685,125 +677,107 @@ impl DurablePublicationProof {
 /// Why a required publication could not be assembled into one value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IntentPublicationMismatch {
-    /// The durability proof names a document other than this intent.
-    ProofNamesAnotherDocument,
-    /// The requested policy is not the one a required publication answers.
+    /// The intent's own policy is not the one a required publication answers.
     PolicyIsNotRequired,
+}
+
+/// Why publishing an accounted intent did not produce a gate value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PublicationThrough<E> {
+    /// The placement itself refused, in its own words.
+    Placement(E),
+    /// The placement answered, and the intent it answered for is not publishable this way.
+    Mismatch(IntentPublicationMismatch),
+}
+
+impl AccountedApplyIntent {
+    /// Publish this exact intent through `place`, minting the gate value from what the
+    /// placement answered.
+    ///
+    /// The mint of [`PublishedApplyIntentV1`] is private to this module and lives inside this
+    /// call, so no code anywhere can hold a publication value that no placement produced. The
+    /// document identity is handed TO the placement rather than taken from it, which is what
+    /// keeps the identity a publication records and the identity a placement filed the same
+    /// one.
+    ///
+    /// `T` is whatever the placement wants to carry back out beside its landing — where the
+    /// document went, typically — so a caller needs no side channel out of the closure.
+    ///
+    /// # Errors
+    /// Answers the placement's own refusal, and a policy that is not the required one.
+    pub fn publish_through<T, E>(
+        self,
+        id: ApplyIntentId,
+        place: impl FnOnce(ApplyIntentId) -> Result<(RequiredPlacementLanding, T), E>,
+    ) -> Result<(PublishedApplyIntentV1, T), PublicationThrough<E>> {
+        if self.intent.policy.token() != RecordedApplyPolicy::RequiredRich {
+            return Err(PublicationThrough::Mismatch(
+                IntentPublicationMismatch::PolicyIsNotRequired,
+            ));
+        }
+        let (landing, carried) = place(id).map_err(PublicationThrough::Placement)?;
+        Ok((
+            PublishedApplyIntentV1 {
+                id,
+                landing,
+                accounted: self,
+            },
+            carried,
+        ))
+    }
 }
 
 /// One published rich apply intent, with everything the permit mint rests on, bound together.
 ///
-/// The four members `30Rb:critical-type-effect-map` names — the exact intent receipt, the
-/// image-account witness, the requested policy, and the durable publication proof — arrive at
-/// ONE mint that CHECKS their agreement rather than trusting it: the proof must name this
-/// intent's own identity, and the policy must be the required one. Nothing hands the members
-/// back out, so a caller cannot pair one intent's publication with another's image witness after
-/// the fact.
+/// The members `30Rb:critical-type-effect-map` names — the exact prepared intent, the
+/// image-account witness, the policy, the published identity and the landing's digest — are one
+/// value here because each OWNS the one below it. Nothing hands the members back out and
+/// nothing takes a second intent, so pairing one intent's publication with another's witness is
+/// not an error a caller can make: it is not spellable.
 ///
 /// Not `Clone`: one publication authorizes one dispatch.
 #[derive(Debug)]
 pub struct PublishedApplyIntentV1 {
     id: ApplyIntentId,
-    document_digest: Sha256Digest,
-    policy: ReceiptPolicyWitness,
-    #[expect(
-        dead_code,
-        reason = "held to prove the images reached the placed region; there is deliberately no \
-                  accessor, because reading it back would be a second use of a one-use witness"
-    )]
-    images: ExactApplyImagesPresent,
+    landing: RequiredPlacementLanding,
+    accounted: AccountedApplyIntent,
 }
 
 impl PublishedApplyIntentV1 {
-    /// Bind one placement to the intent, images and policy it was earned by.
-    ///
-    /// # Errors
-    /// Refuses a proof naming another document and a policy that is not the required one.
-    pub fn minted(
-        id: ApplyIntentId,
-        images: ExactApplyImagesPresent,
-        policy: ReceiptPolicyWitness,
-        durability: DurablePublicationProof,
-    ) -> Result<Self, IntentPublicationMismatch> {
-        // Destructured rather than read through accessors: the proof is SPENT here, and one
-        // placement funds one gate. A borrow would let a single publication clear two.
-        let DurablePublicationProof {
-            receipt_id_hex,
-            document_digest,
-            policy_identity: _,
-        } = durability;
-        if receipt_id_hex != id.hex() {
-            return Err(IntentPublicationMismatch::ProofNamesAnotherDocument);
-        }
-        if policy.token() != RecordedApplyPolicy::RequiredRich {
-            return Err(IntentPublicationMismatch::PolicyIsNotRequired);
-        }
-        Ok(Self {
-            id,
-            document_digest,
-            policy,
-            images,
-        })
-    }
-
     /// The identity of the intent that was published.
     #[must_use]
     pub const fn id(&self) -> ApplyIntentId {
         self.id
     }
 
-    /// The digest of the exact bytes that were placed.
+    /// The digest of the exact bytes the placement reported writing.
     #[must_use]
     pub const fn document_digest(&self) -> Sha256Digest {
-        self.document_digest
+        self.landing.document_digest()
     }
 
     /// The policy the publication answered.
     #[must_use]
     pub const fn policy(&self) -> ReceiptPolicyWitness {
-        self.policy
-    }
-}
-
-/// How an intent cleared the pre-dispatch boundary.
-///
-/// The two arms are disjoint and neither converts to the other: there is no route from a
-/// plain publication, an attempted publication, or a failed one into `Published`.
-#[derive(Debug)]
-pub enum IntentPublicationGate {
-    /// A rich intent was placed durably, and every assignment's exact image was in it.
-    Published(PublishedApplyIntentV1),
-    /// An explicit configuration permitted dispatch without required publication.
-    ConfiguredBypass(ConfiguredReceiptBypass),
-}
-
-impl IntentPublicationGate {
-    /// The closed word describing which route was taken.
-    #[must_use]
-    pub const fn policy(&self) -> RecordedApplyPolicy {
-        match self {
-            Self::Published(_) => RecordedApplyPolicy::RequiredRich,
-            Self::ConfiguredBypass(_) => RecordedApplyPolicy::ConfiguredBypass,
-        }
+        self.accounted.intent.policy
     }
 
-    /// Mint the one-use permit, consuming BOTH the gate and the intent it cleared.
+    /// Mint the one-use permit, consuming the publication that earned it.
     ///
-    /// The intent is spent rather than borrowed so one prepared intent cannot clear two
-    /// gates: publication runs against a borrow, and the value itself ends here. What
-    /// survives into the permit is the DECLARED assignment set, because an outcome may only
-    /// name an assignment this intent actually declared.
+    /// There is no second argument, and that absence is the repair: the intent this permit is
+    /// for is the one this publication has owned since it was accounted. What survives into the
+    /// permit is the DECLARED assignment set, because an outcome may only name an assignment
+    /// this intent actually declared.
     #[must_use]
-    pub fn permit(self, intent: PreparedApplyIntent) -> MutationDispatchPermit {
-        let policy = self.policy();
+    pub fn permit(self) -> MutationDispatchPermit {
         let PreparedApplyIntent {
             session,
             generation,
             assignments,
-            policy: _,
-        } = intent;
-        MutationDispatchPermit {
             policy,
+        } = self.accounted.intent;
+        MutationDispatchPermit {
+            policy: policy.token(),
             session,
             generation,
             declared: assignments
@@ -817,8 +791,8 @@ impl IntentPublicationGate {
 /// The authority to dispatch the first potentially mutative command of one apply.
 ///
 /// Not `Clone`, and spent by value. There is no constructor: the sole mint is
-/// [`IntentPublicationGate::permit`], so a permit cannot exist without a gate having been
-/// cleared, and cannot be spent twice.
+/// [`PublishedApplyIntentV1::permit`], so a permit cannot exist without a publication of THIS
+/// intent having happened, and cannot be spent twice.
 #[derive(Debug)]
 pub struct MutationDispatchPermit {
     policy: RecordedApplyPolicy,

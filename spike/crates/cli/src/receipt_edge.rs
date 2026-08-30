@@ -20,8 +20,8 @@ use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::records::{AdmittedUnscopedHostRecords, Framing};
 use dorc_receipt::capability::{OverlaySealer, PublicationGrade, ReceiptSigner};
 use dorc_receipt::dispatch::{
-    DurablePublicationProof, IntentPublicationMismatch, MutationDispatched, PreparedApplyIntent,
-    PublishedApplyIntentV1,
+    IntentPublicationMismatch, MutationDispatched, PreparedApplyIntent, PublicationThrough,
+    PublishedApplyIntentV1, RequiredPlacementLanding,
 };
 use dorc_receipt::format::{Skeleton, serialize_skeleton};
 use dorc_receipt::ids::{
@@ -252,13 +252,13 @@ impl PlacedDocument {
     }
 }
 
-/// One placed rich intent: where it went, and the durability its placement proved.
+/// One placed rich intent: where it went, and what its placement reported landing.
 #[derive(Debug)]
 pub struct PlacedIntent {
     /// Where the document went.
     pub placed: PlacedDocument,
-    /// The proof a pre-dispatch gate consumes.
-    pub durability: DurablePublicationProof,
+    /// What the placement reports about the landing, which a required publication reads.
+    pub landing: RequiredPlacementLanding,
 }
 
 /// Where this run's signed documents are placed.
@@ -294,7 +294,10 @@ pub trait ReceiptPlacement {
         receipt: SignedReceipt<PlanReceipt, Plain>,
     ) -> Result<PlacedDocument, PlacementFailure>;
 
-    /// Place one rich apply intent, answering the durability the placement proved.
+    /// Place one rich apply intent, answering what its landing reports.
+    ///
+    /// The identity is handed IN by the required publication rather than chosen here, so a
+    /// document is filed under the identity the publication will record and no other.
     ///
     /// # Errors
     /// Answers the closed word for what the placement refused.
@@ -426,7 +429,7 @@ pub enum PublicationRefusal {
     ImageAccount,
     /// The published document's own identity is not a receipt identity.
     Identity,
-    /// The placement's proof and the intent it was earned for do not agree.
+    /// The intent's own policy is not one a required publication answers.
     GateMismatch(IntentPublicationMismatch),
 }
 
@@ -648,18 +651,17 @@ pub fn publish_rich_plan_receipt(
 /// means: a document published without it would say `captured` over a region whose bytes nobody
 /// compared to the images the apply will run.
 ///
-/// What comes back is the ONE value the gate consumes. The image witness, the policy, the
-/// placement's durability proof and the intent's own identity are bound together here, at the
-/// seat that produced all four, so no caller can pair one intent's publication with another's
-/// witness afterwards.
+/// The intent arrives BY VALUE and is never handed back. It is consumed into the accounted
+/// state and then into the publication, so what comes back owns the exact intent it was earned
+/// for and the caller has nothing left to pair a second publication with.
 ///
 /// # Errors
 /// Refuses an intent that does not project, a region that does not carry every assignment's own
 /// image, a row outside the grammar, a region that does not account for the skeleton exactly, a
-/// sealer that declines, a placement that declines, and a placement whose proof does not name
-/// this intent.
+/// sealer that declines, a placement that declines, and an intent whose own policy is not the
+/// required one.
 pub fn publish_apply_intent(
-    intent: &PreparedApplyIntent,
+    intent: PreparedApplyIntent,
     invocation: &ApplyInvocation,
     resolved: dorc_core::influence::InfluenceAccount,
     limits: &ReceiptLimits,
@@ -672,9 +674,9 @@ pub fn publish_apply_intent(
         signer,
         placement,
     } = caps;
-    let projected = project_apply_intent(intent, invocation, grade(resolved), limits)
+    let projected = project_apply_intent(&intent, invocation, grade(resolved), limits)
         .map_err(PublicationRefusal::ApplyProjection)?;
-    let images = intent
+    let accounted = intent
         .account_images(projected.details(), &|ordinal| projected.record_of(ordinal))
         .ok_or(PublicationRefusal::ImageAccount)?;
     let (_, records, details) = projected.into_parts();
@@ -682,12 +684,19 @@ pub fn publish_apply_intent(
     let order = clock.order_token();
     let skeleton = rich_skeleton(id.hex(), order, records, signer, sealer);
     let document = seal_and_sign::<ApplyIntent>(skeleton, &details, limits, signer, sealer)?;
-    let PlacedIntent { placed, durability } = placement
-        .place_intent(id, order, document)
-        .map_err(PublicationRefusal::Placement)?;
-    let published = PublishedApplyIntentV1::minted(id, images, intent.policy(), durability)
-        .map_err(PublicationRefusal::GateMismatch)?;
-    Ok((published, placed))
+    // The placement is CALLED FROM INSIDE the publication, with the identity the publication
+    // will record. There is no route by which a publication value exists without this call
+    // having happened, which is the whole of what replaced a separately-mintable proof.
+    accounted
+        .publish_through(id, |id| {
+            placement
+                .place_intent(id, order, document)
+                .map(|PlacedIntent { placed, landing }| (landing, placed))
+        })
+        .map_err(|through| match through {
+            PublicationThrough::Placement(failure) => PublicationRefusal::Placement(failure),
+            PublicationThrough::Mismatch(mismatch) => PublicationRefusal::GateMismatch(mismatch),
+        })
 }
 
 /// Project, narrow, sign, and place one PLAIN apply intent.

@@ -833,14 +833,39 @@ fn a_resolved_destination_is_readable_at_exactly_one_slot() {
 }
 
 #[test]
-fn the_durable_publication_proof_is_minted_by_one_production_file() {
-    // The pre-dispatch gate consumes this proof, so whoever can mint one can say a document was
-    // placed durably. The store that EARNS one lives downstream of this crate, and no type can
-    // privilege a downstream crate over any other, so the fence is lexical and two-way — the
-    // shape `sinv-production-fences` prescribes for exactly this case.
-    fence(
-        "of_required_placement",
-        &["receipt-local/src/store.rs", "receipt/src/dispatch.rs"],
+fn the_publication_mint_is_private_to_the_dispatch_chain_and_needs_no_roster() {
+    // This fence USED to enumerate who could mint a stand-alone durability proof, because a
+    // separately-mintable proof plus any prepared intent produced a permit. There is no such
+    // value now: `PublishedApplyIntentV1` has private fields and its ONE mint is
+    // `AccountedApplyIntent::publish_through`, which consumes an accounted intent nothing outside
+    // this crate can build. A roster is what you write when the type cannot carry the property,
+    // and here it can — so this asserts the mint's privacy directly and no list is kept.
+    let dispatch = production_sources()
+        .into_iter()
+        .find(|(path, _)| path == "receipt/src/dispatch.rs")
+        .map(|(_, text)| text)
+        .expect("the dispatch chain's own source");
+    assert!(
+        dispatch.contains("pub struct PublishedApplyIntentV1 {"),
+        "the publication's shape moved; this fence is describing something else"
+    );
+    for spelling in [
+        "pub fn minted(",
+        "pub const fn minted(",
+        "pub struct ConfiguredReceiptBypass",
+        "pub enum IntentPublicationGate",
+    ] {
+        assert!(
+            !dispatch.contains(spelling),
+            "`{spelling}` is back: a public mint or a second permit route is exactly what the \
+             ownership chain replaced"
+        );
+    }
+    // Two-way: the walk has to be able to see the file it is asserting over.
+    assert!(
+        dispatch.contains("pub fn publish_through<T, E>("),
+        "the one mint went missing, so every assertion above is about a file that no longer \
+         carries the chain"
     );
 }
 

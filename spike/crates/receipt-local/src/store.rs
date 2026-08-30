@@ -32,7 +32,7 @@
 
 use core::marker::PhantomData;
 
-use dorc_receipt::dispatch::DurablePublicationProof;
+use dorc_receipt::dispatch::RequiredPlacementLanding;
 use dorc_receipt::format::RefusalReason;
 use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId, Sha256Digest};
 use dorc_receipt::limits::ReceiptLimits;
@@ -456,18 +456,18 @@ impl<D: StoredSpecies, P: Projection> RequiredLocalPublicationV1<D, P> {
         self.properties
     }
 
-    /// The proof a pre-dispatch gate consumes, carrying this exact placement's three facts.
+    /// What this placement REPORTS to a required publication.
     ///
-    /// Minted from the publication rather than beside it: reaching this method at all means the
+    /// Answered from the publication rather than beside it: reaching this method at all means the
     /// exclusive create, the complete write, and every synchronization the platform's required
     /// baseline demands all succeeded, because nothing else produces the value it is called on.
+    ///
+    /// It carries no document identity, and that absence is deliberate: the identity a
+    /// publication records is the one `dorc-receipt` handed the placement, so there is no
+    /// second spelling of it for the two to disagree about.
     #[must_use]
-    pub fn durable_proof(&self) -> DurablePublicationProof {
-        DurablePublicationProof::of_required_placement(
-            D::id_hex(self.receipt_id),
-            self.document_digest,
-            self.policy,
-        )
+    pub const fn landing(&self) -> RequiredPlacementLanding {
+        RequiredPlacementLanding::of(self.document_digest, self.policy)
     }
 }
 

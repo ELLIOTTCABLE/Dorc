@@ -15,10 +15,9 @@
 use dorc_receipt::apply::OriginatingPlans;
 use dorc_receipt::context::{RecordedApplyContext, RecordedAxis};
 use dorc_receipt::dispatch::{
-    ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, IntentPublicationGate,
-    MutationDispatched, PendingApplyAssignment, PendingOrigins, PlanOriginOccurrence,
-    PreparedApplyIntent, ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext,
-    ResolvedAxis,
+    ApplyDestination, ApplySessionReady, MutationDispatched, PendingApplyAssignment,
+    PendingOrigins, PlanOriginOccurrence, PreparedApplyIntent, ReadyApplyTarget,
+    ReceiptPolicyWitness, RequiredPlacementLanding, ResolvedApplyContext, ResolvedAxis,
 };
 use dorc_receipt::ids::{
     ApplyGenerationId, ApplyIntentId, ApplySessionId, PlanReceiptId, PresentedPlanId,
@@ -134,12 +133,35 @@ fn one_assignment(ids: &mut Counter) -> PreparedApplyIntent {
     }
 }
 
-/// The phase an outcome projection is checked against, reached through the bypass arm because
-/// this battery is about the PROJECTION and not about which route cleared the gate.
-fn dispatched(intent: PreparedApplyIntent) -> MutationDispatched {
-    IntentPublicationGate::ConfiguredBypass(ConfiguredReceiptBypass::configured())
-        .permit(intent)
-        .spend()
+/// The phase an outcome projection is checked against.
+///
+/// Driven through the one real route — account, publish, permit, spend — with a modelled
+/// placement, because there is no shortcut into a permit and this battery should not pretend
+/// there is. What it models is the STORE answering; everything above that is production code.
+fn dispatched(ids: &mut Counter) -> MutationDispatched {
+    let intent = one_assignment(ids);
+    let projected =
+        match project_apply_intent(&intent, &invocation(), authored(), &ReceiptLimits::V1) {
+            Ok(projected) => projected,
+            Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+        };
+    let Some(accounted) =
+        intent.account_images(projected.details(), &|ordinal| projected.record_of(ordinal))
+    else {
+        panic!("the projection carries every assignment's own image")
+    };
+    match accounted.publish_through(ApplyIntentId::mint(ids), |_| {
+        Ok::<_, ()>((
+            RequiredPlacementLanding::of(
+                dorc_receipt::ids::Sha256Digest::over("fixture-placement", b"bytes"),
+                "required-local-v1",
+            ),
+            (),
+        ))
+    }) {
+        Ok((published, ())) => published.permit().spend(),
+        Err(through) => panic!("a modelled placement clears the route: {through:?}"),
+    }
 }
 
 #[test]
@@ -176,6 +198,8 @@ fn the_recorded_map_is_the_one_the_image_accounting_answers_to() {
     // THE reason the projection hands back a map at all. The capability is a byte comparison
     // keyed by record, so a map naming the wrong row makes the accounting refuse — and a caller
     // that guessed the offset instead would mint a capability against a row it never checked.
+    // Each arm rebuilds the intent, because accounting CONSUMES one: a caller cannot retry an
+    // accounting that refused, which is why the negatives below cannot share a fixture.
     let mut ids = Counter(0);
     let intent = one_assignment(&mut ids);
     let projected =
@@ -195,13 +219,13 @@ fn the_recorded_map_is_the_one_the_image_accounting_answers_to() {
         .record_of(AssignmentOrdinal::of(0))
         .unwrap_or_else(|| panic!("the assignment was emitted"));
     assert!(
-        intent
+        one_assignment(&mut ids)
             .account_images(projected.details(), &|_| Some(recorded.saturating_add(1)))
             .is_none(),
         "a map naming a neighbouring row accounts for nothing"
     );
     assert!(
-        intent
+        one_assignment(&mut ids)
             .account_images(projected.details(), &|_| None)
             .is_none(),
         "an assignment the map cannot place accounts for nothing"
@@ -426,7 +450,7 @@ fn an_outcome_naming_an_assignment_the_intent_never_declared_refuses_at_that_ord
     // from outside, and recording the row anyway would attribute execution to a target nobody
     // authorized.
     let mut ids = Counter(0);
-    let phase = dispatched(one_assignment(&mut ids));
+    let phase = dispatched(&mut ids);
     assert!(phase.declares(AssignmentOrdinal::of(0)));
 
     let report = ApplyOutcomeReport::of(
@@ -446,7 +470,7 @@ fn an_outcome_naming_an_assignment_the_intent_never_declared_refuses_at_that_ord
 #[test]
 fn an_outcome_projects_the_order_its_own_model_re_emits_and_numbers_its_sites_from_zero() {
     let mut ids = Counter(0);
-    let phase = dispatched(one_assignment(&mut ids));
+    let phase = dispatched(&mut ids);
     let intent = ApplyIntentId::of_hex(&"b".repeat(64))
         .unwrap_or_else(|| panic!("the fixture identity parses"));
     let report = ApplyOutcomeReport::of(
@@ -485,7 +509,7 @@ fn a_site_holding_no_output_records_unavailable_and_carries_no_entry() {
     // declining to carry what it has — and a slot marked captured with no entry produces a
     // document this crate's own reader refuses, so the two halves are asserted together.
     let mut ids = Counter(0);
-    let phase = dispatched(one_assignment(&mut ids));
+    let phase = dispatched(&mut ids);
     let report = ApplyOutcomeReport::of(
         ApplyIntentId::of_hex(&"d".repeat(64))
             .unwrap_or_else(|| panic!("the fixture identity parses")),
@@ -624,7 +648,7 @@ fn a_channel_past_the_run_budget_records_omitted_and_carries_nothing() {
         ..ReceiptLimits::V1
     };
     let mut ids = Counter(0);
-    let phase = dispatched(one_assignment(&mut ids));
+    let phase = dispatched(&mut ids);
     let report = ApplyOutcomeReport::of(
         ApplyIntentId::of_hex(&"e".repeat(64))
             .unwrap_or_else(|| panic!("the fixture identity parses")),

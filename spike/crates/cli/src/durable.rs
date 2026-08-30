@@ -376,8 +376,7 @@ impl core::fmt::Debug for StorePlacement<'_> {
 }
 
 impl StorePlacement<'_> {
-    /// File one document, answering where it went and — where the species asks for it — the
-    /// durability the placement proved.
+    /// File one document, answering where it went and what the landing reports.
     fn file<D: StoredSpecies, P: Projection>(
         &mut self,
         id: D::Id,
@@ -386,7 +385,7 @@ impl StorePlacement<'_> {
     ) -> Result<
         (
             PlacedDocument,
-            dorc_receipt::dispatch::DurablePublicationProof,
+            dorc_receipt::dispatch::RequiredPlacementLanding,
         ),
         PlacementFailure,
     > {
@@ -416,7 +415,7 @@ impl StorePlacement<'_> {
             path,
             dorc_receipt::capability::PublicationGrade::Synchronized,
         );
-        Ok((placed, publication.durable_proof()))
+        Ok((placed, publication.landing()))
     }
 }
 
@@ -448,7 +447,7 @@ impl ReceiptPlacement for StorePlacement<'_> {
         receipt: SignedReceipt<ApplyIntent, Rich>,
     ) -> Result<PlacedIntent, PlacementFailure> {
         self.file::<ApplyIntent, Rich>(id, order, receipt)
-            .map(|(placed, durability)| PlacedIntent { placed, durability })
+            .map(|(placed, landing)| PlacedIntent { placed, landing })
     }
 
     fn place_plain_intent(

@@ -12,11 +12,11 @@
 //! wrong reason would still pass a test that only asked whether it refused.
 
 use dorc_receipt::dispatch::{
-    ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, DurableFailure,
-    DurablePublicationProof, ExecutionIntegrityFailure, IntentPreparationRefusal,
-    IntentPublicationGate, IntentPublicationMismatch, PendingApplyAssignment, PendingOrigins,
-    PlanOriginOccurrence, PostDispatchFailure, PublishedApplyIntentV1, ReadyApplyTarget,
-    ReceiptPolicyWitness, ResolvedApplyContext, ResolvedAxis,
+    ApplyDestination, ApplySessionReady, DurableFailure, ExecutionIntegrityFailure,
+    IntentPreparationRefusal, IntentPublicationMismatch, PendingApplyAssignment, PendingOrigins,
+    PlanOriginOccurrence, PostDispatchFailure, PreparedApplyIntent, PublicationThrough,
+    ReadyApplyTarget, ReceiptPolicyWitness, RequiredPlacementLanding, ResolvedApplyContext,
+    ResolvedAxis,
 };
 use dorc_receipt::ids::{
     ApplyGenerationId, ApplyIntentId, ApplySessionId, PlanReceiptId, PresentedPlanId,
@@ -85,6 +85,35 @@ fn assignment(target: ReadyApplyTargetId, ordinal: u32) -> PendingApplyAssignmen
         target,
         image(b"#!/bin/sh\nufw allow 443/tcp\n"),
         PendingOrigins::Unavailable,
+    )
+}
+
+/// One fresh prepared intent under `policy`, over one session and one assignment.
+///
+/// Rebuilt per use rather than shared, because every state past this one CONSUMES its
+/// predecessor: an intent accounted once is gone, which is exactly the property under test.
+fn prepared_under(ids: &mut Counter, policy: ReceiptPolicyWitness) -> PreparedApplyIntent {
+    let (ready, target) = session(ids);
+    match ready.prepare_intent(vec![assignment(target, 0)], policy) {
+        Ok(prepared) => prepared,
+        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
+    }
+}
+
+/// The canonical image bytes one prepared intent's only assignment carries.
+fn only_image_bytes(prepared: &PreparedApplyIntent) -> Vec<u8> {
+    let Some(only) = prepared.assignments().first() else {
+        panic!("the assignment vector is non-empty by construction");
+    };
+    only.image().encode().to_vec()
+}
+
+/// A landing a fixture placement reports. Carries no authority of its own — the publication is
+/// minted inside `publish_through`, which is the point.
+fn landing() -> RequiredPlacementLanding {
+    RequiredPlacementLanding::of(
+        Sha256Digest::over("fixture-placement", b"bytes"),
+        "required-local-v1",
     )
 }
 
@@ -276,23 +305,17 @@ fn image_accounting_answers_only_when_the_regions_bytes_are_the_images_own() {
     // The capability is a BYTE comparison, not a declaration. A region carrying some other
     // image's bytes under the right tag is exactly the shape a caller would reach for to get a
     // permit it has not earned.
+    //
+    // Each arm rebuilds the intent because accounting CONSUMES it: an intent that survived a
+    // refused accounting would be an intent a caller could try again with different entries.
     let mut ids = Counter(0);
-    let (ready, target) = session(&mut ids);
-    let prepared = match ready.prepare_intent(
-        vec![assignment(target, 0)],
-        ReceiptPolicyWitness::required_rich(),
-    ) {
-        Ok(prepared) => prepared,
-        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
-    };
-    let Some(only) = prepared.assignments().first() else {
-        panic!("the assignment vector is non-empty by construction");
-    };
-    let exact = only.image().encode().to_vec();
     let record_of = |_: AssignmentOrdinal| Some(7_u64);
+    let required = ReceiptPolicyWitness::required_rich;
 
+    let intent = prepared_under(&mut ids, required());
+    let exact = only_image_bytes(&intent);
     assert!(
-        prepared
+        intent
             .account_images(
                 &[OverlayEntry::of(
                     7,
@@ -311,7 +334,7 @@ fn image_accounting_answers_only_when_the_regions_bytes_are_the_images_own() {
         "the fixture cousin really is different bytes"
     );
     assert!(
-        prepared
+        prepared_under(&mut ids, required())
             .account_images(
                 &[OverlayEntry::of(
                     7,
@@ -325,7 +348,7 @@ fn image_accounting_answers_only_when_the_regions_bytes_are_the_images_own() {
     );
 
     assert!(
-        prepared
+        prepared_under(&mut ids, required())
             .account_images(
                 &[OverlayEntry::of(7, OpaqueFieldTag::Argv, exact.clone())],
                 &record_of,
@@ -335,7 +358,7 @@ fn image_accounting_answers_only_when_the_regions_bytes_are_the_images_own() {
     );
 
     assert!(
-        prepared
+        prepared_under(&mut ids, required())
             .account_images(
                 &[OverlayEntry::of(
                     9,
@@ -349,33 +372,48 @@ fn image_accounting_answers_only_when_the_regions_bytes_are_the_images_own() {
     );
 
     assert!(
-        prepared.account_images(&[], &record_of).is_none(),
+        prepared_under(&mut ids, required())
+            .account_images(&[], &record_of)
+            .is_none(),
         "an empty region cannot account for an assignment"
     );
 }
 
 #[test]
-fn a_bypass_permit_records_the_bypass_and_never_the_required_route() {
-    // The two routes reach one permit and the permit remembers WHICH. A bypass that recorded
-    // itself as required publication would put a policy word in the durable that no publication
-    // backs.
+fn a_permit_carries_the_session_and_the_declared_set_of_the_intent_that_was_published() {
+    // The permit is minted from the publication and takes no second argument, so the session and
+    // the declared assignment set it reports are this intent's own by construction rather than
+    // by a caller having passed the matching pair.
     let mut ids = Counter(0);
-    let (ready, target) = session(&mut ids);
-    let prepared = match ready.prepare_intent(
-        vec![assignment(target, 0)],
-        ReceiptPolicyWitness::configured_bypass(),
-    ) {
-        Ok(prepared) => prepared,
-        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
-    };
-    let session_id = prepared.session();
-    let gate = IntentPublicationGate::ConfiguredBypass(ConfiguredReceiptBypass::configured());
-    assert_eq!(gate.policy(), RecordedApplyPolicy::ConfiguredBypass);
+    let intent = prepared_under(&mut ids, ReceiptPolicyWitness::required_rich());
+    let session_id = intent.session();
+    let exact = only_image_bytes(&intent);
+    let accounted = intent
+        .account_images(
+            &[OverlayEntry::of(
+                7,
+                OpaqueFieldTag::ApplyArtifactImage,
+                exact,
+            )],
+            &|_: AssignmentOrdinal| Some(7_u64),
+        )
+        .expect("the region carries the image's own bytes");
 
-    let dispatched = gate.permit(prepared).spend();
+    let id = ApplyIntentId::mint(&mut ids);
+    let (published, filed) = accounted
+        .publish_through(id, |handed| Ok::<_, ()>((landing(), handed)))
+        .expect("a placement that answered clears the publication");
+    assert_eq!(
+        filed.hex(),
+        id.hex(),
+        "the placement is handed the identity the publication records, not one of its own"
+    );
+    assert_eq!(published.id().hex(), id.hex());
+
+    let dispatched = published.permit().spend();
     assert_eq!(
         dispatched.policy(),
-        RecordedApplyPolicy::ConfiguredBypass,
+        RecordedApplyPolicy::RequiredRich,
         "the spent phase carries the route that authorized it"
     );
     assert_eq!(
@@ -390,6 +428,37 @@ fn a_bypass_permit_records_the_bypass_and_never_the_required_route() {
     assert!(
         !dispatched.declares(AssignmentOrdinal::of(1)),
         "and declared nothing else, so an outcome cannot name a second target"
+    );
+}
+
+#[test]
+fn a_placement_that_refuses_produces_no_publication_and_therefore_no_permit() {
+    // The other half of the route: a refusal comes back in the placement's OWN words and there
+    // is no partially-published value left over for a caller to salvage a permit from.
+    let mut ids = Counter(0);
+    let intent = prepared_under(&mut ids, ReceiptPolicyWitness::required_rich());
+    let exact = only_image_bytes(&intent);
+    let accounted = intent
+        .account_images(
+            &[OverlayEntry::of(
+                7,
+                OpaqueFieldTag::ApplyArtifactImage,
+                exact,
+            )],
+            &|_: AssignmentOrdinal| Some(7_u64),
+        )
+        .expect("the region carries the image's own bytes");
+
+    let id = ApplyIntentId::mint(&mut ids);
+    let refused = accounted
+        .publish_through(id, |_| {
+            Err::<(RequiredPlacementLanding, ()), _>("the store declined")
+        })
+        .err();
+    assert_eq!(
+        refused,
+        Some(PublicationThrough::Placement("the store declined")),
+        "the placement's own refusal survives rather than becoming a generic mismatch"
     );
 }
 
@@ -409,129 +478,51 @@ fn only_a_durable_failure_narrows_out_of_the_post_dispatch_set() {
     );
 }
 
-/// The four members the required arm binds, minted at one seat that CHECKS their agreement.
+/// A publication and the intent it is for are ONE value, so the pairing has no failure mode.
 ///
-/// The atomicity `30Rb:critical-type-effect-map` demands is not "the caller passed four things at
-/// once" — a caller can always do that with the wrong four. It is that the mint refuses a
-/// pairing: the durability proof must name THIS intent, and the policy must be the required one.
-/// Nothing hands the members back out, so there is no route to re-pairing them afterwards either.
+/// The atomicity `30Rb:critical-type-effect-map` demands is no longer "the mint refuses a bad
+/// pairing" — a mint that checks a pairing can be handed the wrong four values and has to notice.
+/// It is that a wrong pairing is unspellable: accounting consumes the intent, the publication owns
+/// the accounting, and `permit` takes no second argument. The compile-fail pins in
+/// `receipt/src/lib.rs` are where that unspellability is asserted, because a runtime test cannot
+/// express code that does not compile.
+///
+/// What remains checkable at runtime is the ONE thing still decided from a value: the policy.
 #[test]
-fn a_publication_proof_earned_for_another_document_cannot_clear_this_intents_gate() {
+fn a_bypass_policy_intent_cannot_be_published_through_the_required_route() {
+    // A caller holding a real placement and an intent prepared under the bypass word must not be
+    // able to assemble a publication out of them: the route records `required-rich`, and an
+    // intent wearing the other word would be a false claim about what authorized the dispatch.
     let mut ids = Counter(0);
-    let (ready, target) = session(&mut ids);
-    let prepared = match ready.prepare_intent(
-        vec![assignment(target, 0)],
-        ReceiptPolicyWitness::required_rich(),
-    ) {
-        Ok(prepared) => prepared,
-        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
-    };
-    let Some(only) = prepared.assignments().first() else {
-        panic!("the assignment vector is non-empty by construction");
-    };
-    let exact = only.image().encode().to_vec();
-    let images = |prepared: &dorc_receipt::dispatch::PreparedApplyIntent| {
-        prepared
-            .account_images(
-                &[OverlayEntry::of(
-                    7,
-                    OpaqueFieldTag::ApplyArtifactImage,
-                    exact.clone(),
-                )],
-                &|_: AssignmentOrdinal| Some(7_u64),
-            )
-            .expect("the region carries the image's own bytes")
-    };
-
-    let mine = ApplyIntentId::mint(&mut ids);
-    let somebody_elses = ApplyIntentId::mint(&mut ids);
-    assert_ne!(
-        mine.hex(),
-        somebody_elses.hex(),
-        "two mints, two identities"
-    );
-
-    let proof_for_another = DurablePublicationProof::of_required_placement(
-        somebody_elses.hex(),
-        Sha256Digest::over("fixture-placement", b"bytes"),
-        "required-local-v1",
-    );
-    assert_eq!(
-        PublishedApplyIntentV1::minted(
-            mine,
-            images(&prepared),
-            ReceiptPolicyWitness::required_rich(),
-            proof_for_another,
-        )
-        .err(),
-        Some(IntentPublicationMismatch::ProofNamesAnotherDocument),
-        "a placement earned for another document must not clear this intent's gate"
-    );
-
-    // The positive control, so the refusal above is about the PAIRING rather than about the mint
-    // rejecting everything.
-    let proof_for_mine = DurablePublicationProof::of_required_placement(
-        mine.hex(),
-        Sha256Digest::over("fixture-placement", b"bytes"),
-        "required-local-v1",
-    );
-    let published = PublishedApplyIntentV1::minted(
-        mine,
-        images(&prepared),
-        ReceiptPolicyWitness::required_rich(),
-        proof_for_mine,
-    )
-    .expect("a placement earned for this intent clears its own gate");
-    assert_eq!(published.id().hex(), mine.hex());
-    assert_eq!(
-        IntentPublicationGate::Published(published).policy(),
-        RecordedApplyPolicy::RequiredRich,
-        "the published arm records the required route it took"
-    );
-}
-
-#[test]
-fn a_bypass_policy_cannot_be_carried_into_the_required_arm() {
-    // The two routes to a permit stay unreachable from one another. A caller holding a real
-    // placement and a bypass witness must not be able to assemble the published arm out of them:
-    // the arm records `required-rich`, and a bypass wearing that word would be a false claim
-    // about which route authorized the dispatch.
-    let mut ids = Counter(0);
-    let (ready, target) = session(&mut ids);
-    let prepared = match ready.prepare_intent(
-        vec![assignment(target, 0)],
-        ReceiptPolicyWitness::configured_bypass(),
-    ) {
-        Ok(prepared) => prepared,
-        Err(refusal) => panic!("a well-formed assignment should prepare: {refusal:?}"),
-    };
-    let Some(only) = prepared.assignments().first() else {
-        panic!("the assignment vector is non-empty by construction");
-    };
-    let images = prepared
+    let intent = prepared_under(&mut ids, ReceiptPolicyWitness::configured_bypass());
+    let exact = only_image_bytes(&intent);
+    let accounted = intent
         .account_images(
             &[OverlayEntry::of(
                 7,
                 OpaqueFieldTag::ApplyArtifactImage,
-                only.image().encode().to_vec(),
+                exact,
             )],
             &|_: AssignmentOrdinal| Some(7_u64),
         )
         .expect("the region carries the image's own bytes");
-    let mine = ApplyIntentId::mint(&mut ids);
+
+    let mut placement_was_called = false;
+    let refused = accounted
+        .publish_through(ApplyIntentId::mint(&mut ids), |_| {
+            placement_was_called = true;
+            Ok::<_, ()>((landing(), ()))
+        })
+        .err();
     assert_eq!(
-        PublishedApplyIntentV1::minted(
-            mine,
-            images,
-            ReceiptPolicyWitness::configured_bypass(),
-            DurablePublicationProof::of_required_placement(
-                mine.hex(),
-                Sha256Digest::over("fixture-placement", b"bytes"),
-                "required-local-v1",
-            ),
-        )
-        .err(),
-        Some(IntentPublicationMismatch::PolicyIsNotRequired),
-        "the required arm is for the required policy and no other"
+        refused,
+        Some(PublicationThrough::Mismatch(
+            IntentPublicationMismatch::PolicyIsNotRequired
+        )),
+        "the required route is for the required policy and no other"
+    );
+    assert!(
+        !placement_was_called,
+        "the policy is judged BEFORE the placement, so a refused intent writes nothing"
     );
 }

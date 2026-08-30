@@ -42,7 +42,7 @@ use dorc_receipt::capability::{
     PublicationGrade, ReceiptSigner, SelfAssertedReceiptVerificationKey,
     TrustedReceiptVerificationKey, VerificationKeyResolver,
 };
-use dorc_receipt::dispatch::DurablePublicationProof;
+use dorc_receipt::dispatch::RequiredPlacementLanding;
 use dorc_receipt::format::RefusalReason;
 use dorc_receipt::ids::{ReceiptId, ReceiptIdSource, SigningKeyId};
 use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
@@ -104,10 +104,12 @@ impl ReceiptIdSource for CountingIds {
 /// The fixture destination: documents held in memory, named by species and identity.
 ///
 /// A TEST'S OWN VALUE, deliberately. Production has exactly one `ReceiptPlacement` — the local
-/// store's — so a volatile destination is structurally unable to answer a production route, and
-/// the durability proof this mints (which is what lets the route below reach the dispatch gate)
-/// is unspellable from any production file. `crate_boundary.rs` fences the mint's one production
-/// caller two ways.
+/// store's — so a volatile destination cannot be handed to a production composition root.
+///
+/// What it reports back is a [`RequiredPlacementLanding`], which carries NO authority: a required
+/// publication is minted inside `dorc-receipt`, from an accounted intent this target cannot
+/// build, so a fixture landing lets a battery drive the route and never lets one manufacture a
+/// permit. That is the difference from the separately-mintable proof this replaced.
 #[derive(Default)]
 struct MemorySink(Vec<(String, Vec<u8>)>);
 
@@ -117,14 +119,14 @@ impl MemorySink {
         prefix: &str,
         id_hex: String,
         receipt: dorc_receipt::writer::SignedReceipt<D, P>,
-    ) -> (PlacedDocument, DurablePublicationProof) {
+    ) -> (PlacedDocument, RequiredPlacementLanding) {
         let name = format!("{prefix}-{id_hex}");
         let bytes = receipt.into_bytes();
         let digest = dorc_receipt::ids::Sha256Digest::over("fixture-placement", &bytes);
         self.0.push((name.clone(), bytes));
         (
-            PlacedDocument::of(id_hex.clone(), name, None, PublicationGrade::Volatile),
-            DurablePublicationProof::of_required_placement(id_hex, digest, "fixture-volatile"),
+            PlacedDocument::of(id_hex, name, None, PublicationGrade::Volatile),
+            RequiredPlacementLanding::of(digest, "fixture-volatile"),
         )
     }
 }
@@ -157,8 +159,8 @@ impl ReceiptPlacement for MemorySink {
             dorc_receipt::model::Rich,
         >,
     ) -> Result<PlacedIntent, PlacementFailure> {
-        let (placed, durability) = self.keep("apply-intent", id.hex(), receipt);
-        Ok(PlacedIntent { placed, durability })
+        let (placed, landing) = self.keep("apply-intent", id.hex(), receipt);
+        Ok(PlacedIntent { placed, landing })
     }
 
     fn place_plain_intent(
@@ -699,6 +701,39 @@ fn prepared_apply_intent(
     }
 }
 
+/// The post-dispatch phase, driven through the ONE route that reaches it.
+///
+/// There is no shortcut into a permit any more, so a battery that only wants the phase drives
+/// the real chain — project, account, publish through a modelled landing, permit, spend — rather
+/// than reaching for a second arm that no longer exists.
+fn spent_permit(ids: &mut CountingIds) -> dorc_receipt::dispatch::MutationDispatched {
+    let (intent, _) = prepared_apply_intent(ids);
+    let projected = match dorc_receipt::project::project_apply_intent(
+        &intent,
+        &apply_invocation(),
+        dorc_receipt::RecordedInfluence::of_token(Some("authored-before-contact")),
+        &ReceiptLimits::V1,
+    ) {
+        Ok(projected) => projected,
+        Err(refusal) => panic!("a prepared intent projects: {refusal:?}"),
+    };
+    let Some(accounted) =
+        intent.account_images(projected.details(), &|ordinal| projected.record_of(ordinal))
+    else {
+        panic!("the projection carries the assignment's own image")
+    };
+    let landing = RequiredPlacementLanding::of(
+        dorc_receipt::ids::Sha256Digest::over("fixture-placement", b"bytes"),
+        "fixture-volatile",
+    );
+    match accounted.publish_through(dorc_receipt::ids::ApplyIntentId::mint(ids), |_| {
+        Ok::<_, ()>((landing, ()))
+    }) {
+        Ok((published, ())) => published.permit().spend(),
+        Err(through) => panic!("a modelled landing clears the route: {through:?}"),
+    }
+}
+
 /// Every value answering one tag anywhere in a document, so an assertion names the value rather
 /// than a record position it would have to hard-code.
 fn details_for<D: dorc_receipt::Species>(
@@ -726,7 +761,7 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
     let (intent, image) = prepared_apply_intent(&mut ids);
 
     let published = publish_apply_intent(
-        &intent,
+        intent,
         &apply_invocation(),
         authored(),
         &ReceiptLimits::V1,
@@ -848,7 +883,6 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
     // The whole required-publication chain in one case: publish the rich intent, build the gate
     // from what publication answered, spend the permit, then record what execution reached. The
     // outcome names the identity the publication minted rather than one a caller supplied.
-    use dorc_receipt::dispatch::IntentPublicationGate;
     use dorc_receipt::project::{ApplyOutcomeReport, ApplySiteReport};
 
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
@@ -859,7 +893,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
     let (intent, _) = prepared_apply_intent(&mut ids);
 
     let published = publish_apply_intent(
-        &intent,
+        intent,
         &apply_invocation(),
         authored(),
         &ReceiptLimits::V1,
@@ -868,9 +902,7 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
     )
     .expect("a prepared intent publishes richly");
     let intent_id = published.0.id();
-    let phase = IntentPublicationGate::Published(published.0)
-        .permit(intent)
-        .spend();
+    let phase = published.0.permit().spend();
 
     let tail = b"E: Unable to locate package\n".to_vec();
     let report = ApplyOutcomeReport::of(
@@ -948,7 +980,7 @@ fn an_intent_a_sink_will_not_place_refuses_as_a_sink_failure() {
 
     assert_eq!(
         publish_apply_intent(
-            &intent,
+            intent,
             &apply_invocation(),
             authored(),
             &ReceiptLimits::V1,
@@ -965,17 +997,13 @@ fn a_plain_outcome_withholds_every_byte_channel_it_has_no_region_to_carry() {
     // The degraded terminal report: sealing failed or no material was configured, and the run can
     // still say what it reached. The states must narrow — a plain document claiming `captured`
     // would promise a region it does not have, which is a document its own reader refuses.
-    use dorc_receipt::dispatch::{ConfiguredReceiptBypass, IntentPublicationGate};
     use dorc_receipt::project::{ApplyOutcomeReport, ApplySiteReport};
 
     let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
     let mut ids = CountingIds(0);
     let mut clock = TickingClock::fixture();
     let mut sink = MemorySink::default();
-    let (intent, _) = prepared_apply_intent(&mut ids);
-    let phase = IntentPublicationGate::ConfiguredBypass(ConfiguredReceiptBypass::configured())
-        .permit(intent)
-        .spend();
+    let phase = spent_permit(&mut ids);
 
     let report = ApplyOutcomeReport::of(
         dorc_receipt::ids::ApplyIntentId::of_hex(&"f".repeat(64))
@@ -1054,7 +1082,7 @@ fn an_intent_whose_region_a_reader_could_not_open_refuses_before_anything_is_pla
 
     assert_eq!(
         publish_apply_intent(
-            &intent,
+            intent,
             &apply_invocation(),
             authored(),
             &narrow,
@@ -1093,9 +1121,9 @@ mod deterministic_apply_route {
         PlacedDocument, PlacedIntent, PlacementFailure, ReceiptPlacement,
     };
     use dorc_receipt::dispatch::{
-        AttributionIntegrityFailure, ConfiguredReceiptBypass, DurableFailure,
-        ExecutionIntegrityFailure, GenerationIntegrityFailure, MutationIntegrityFailure,
-        PostDispatchFailure, TargetIntegrityFailure, TransportIntegrityFailure,
+        AttributionIntegrityFailure, DurableFailure, ExecutionIntegrityFailure,
+        GenerationIntegrityFailure, MutationIntegrityFailure, PostDispatchFailure,
+        TargetIntegrityFailure, TransportIntegrityFailure,
     };
     use dorc_receipt::graph::ReceiptGraph;
     use dorc_receipt::limits::ReceiptLimits;
@@ -1401,45 +1429,19 @@ mod deterministic_apply_route {
         );
     }
 
-    /// The bypass arm dispatches, and publishes nothing at all.
+    /// The bypass word survives in the RECORDED vocabulary and authorizes nothing.
     ///
-    /// It reaches a permit by a route with no publication in it, which is why the two arms must
-    /// stay unreachable from one another: a failed publication is not a bypass, and a bypass is
-    /// not a publication that happened to work.
+    /// A document may spell a route that dispatched with no durable behind it — that is a fact
+    /// about some other run, or some other version. What this V1 surface offers is one
+    /// authorization arm, so there is no capability that reaches a permit without a placement
+    /// having answered, and the compile-fail pins in `receipt/src/lib.rs` are where that is
+    /// asserted.
     #[test]
-    fn the_bypass_arm_ships_and_places_no_document() {
-        let mut ids = CountingIds(0);
-        let mut driver = host_running(0);
-        let destination = destination();
-        let invocation = apply_invocation(DESTINATION, None);
-
-        let reached = consented_apply(
-            &ConsentedApplyRequest {
-                plan: PLAN,
-                destination: &destination,
-                nonce: "r0",
-                timeout: None,
-                invocation: &invocation,
-                limits: &ReceiptLimits::V1,
-                standup_account: authored(),
-            },
-            &mut ids,
-            ApplyAuthorization::ConfiguredBypass(ConfiguredReceiptBypass::configured()),
-            &mut driver,
-        )
-        .expect("an explicitly configured bypass dispatches");
-
-        assert_eq!(driver.calls.len(), 1);
-        assert_eq!(reached.intent, None, "no intent document exists to name");
-        assert_eq!(reached.outcome, None);
-        assert_eq!(
-            reached.durable_failure, None,
-            "nothing failed: this invocation asked for no durable at all"
-        );
+    fn the_bypass_route_is_a_recorded_word_and_not_an_authorization_arm() {
         assert_eq!(
             RecordedApplyPolicy::ConfiguredBypass.token(),
             "configured-bypass",
-            "the word a document would record for this route, had one been written"
+            "the word a document may record, for a route this build does not offer"
         );
     }
 
@@ -1453,7 +1455,11 @@ mod deterministic_apply_route {
             image_entry_bytes: dorc_receipt::limits::ByteLimit::of(4),
             ..ReceiptLimits::V1
         };
+        let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
+        let (sealer, _) = age_pair();
         let mut ids = CountingIds(0);
+        let mut clock = TickingClock::fixture();
+        let mut sink = MemorySink::default();
         let mut driver = host_running(0);
         let destination = destination();
         let invocation = apply_invocation(DESTINATION, None);
@@ -1469,7 +1475,9 @@ mod deterministic_apply_route {
                 standup_account: authored(),
             },
             &mut ids,
-            ApplyAuthorization::ConfiguredBypass(ConfiguredReceiptBypass::configured()),
+            ApplyAuthorization::RequiredPublication(ApplyPublishingCapabilities::of(
+                &mut clock, &signer, &mut sink, &sealer,
+            )),
             &mut driver,
         )
         .expect_err("bytes no image can hold bind nothing");
@@ -1480,6 +1488,10 @@ mod deterministic_apply_route {
              otherwise resembles: {refusal:?}"
         );
         assert!(driver.calls.is_empty(), "and nothing was shipped");
+        assert!(
+            sink.0.is_empty(),
+            "and the refusal landed before anything was placed"
+        );
     }
 
     /// A lost session records UNKNOWN, and the permit is still spent.

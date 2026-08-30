@@ -50,10 +50,9 @@ use std::time::Duration;
 use dorc_receipt::RecordedInfluence;
 use dorc_receipt::capability::OverlaySealer;
 use dorc_receipt::dispatch::{
-    ApplyDestination, ApplySessionReady, ConfiguredReceiptBypass, DurableFailure,
-    IntentPreparationRefusal, IntentPublicationGate, PendingApplyAssignment, PendingOrigins,
-    PostDispatchFailure, ReadyApplyTarget, ReceiptPolicyWitness, ResolvedApplyContext,
-    ResolvedAxis,
+    ApplyDestination, ApplySessionReady, DurableFailure, IntentPreparationRefusal,
+    PendingApplyAssignment, PendingOrigins, PostDispatchFailure, ReadyApplyTarget,
+    ReceiptPolicyWitness, ResolvedApplyContext, ResolvedAxis,
 };
 use dorc_receipt::ids::{
     ApplyGenerationId, ApplyIntentId, ApplyOutcomeId, ApplySessionId, ReadyApplyTargetId,
@@ -282,14 +281,12 @@ impl<'a> ApplyPublishingCapabilities<'a> {
 
 /// How one apply invocation was authorized to spend mutation authority.
 ///
-/// Two arms, and the routes below them share no step that mints a permit: an invocation that
-/// cannot build the first cannot reach a permit by way of the second's machinery, and a failed
-/// publication is not a bypass.
+/// ONE arm, and it is required publication. A configured bypass is not part of this V1 surface:
+/// there is no capability that mints a permit without a placement having answered, so a failed
+/// publication dispatches nothing rather than falling back to a weaker route.
 pub enum ApplyAuthorization<'a> {
-    /// The default posture: publish a rich intent binding the exact bytes, or dispatch nothing.
+    /// The only posture: publish a rich intent binding the exact bytes, or dispatch nothing.
     RequiredPublication(ApplyPublishingCapabilities<'a>),
-    /// The invocation explicitly configured dispatch with no durable intent behind it.
-    ConfiguredBypass(ConfiguredReceiptBypass),
 }
 
 impl core::fmt::Debug for ConsentedApplyRequest<'_> {
@@ -311,7 +308,6 @@ impl core::fmt::Debug for ApplyAuthorization<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(match *self {
             Self::RequiredPublication(_) => "RequiredPublication",
-            Self::ConfiguredBypass(_) => "ConfiguredBypass",
         })
     }
 }
@@ -349,13 +345,13 @@ pub struct ConsentedApply {
 ///
 /// The whole pre-dispatch sequence lives here so the binary and the deterministic route drive
 /// ONE of it: the bytes are bounded and identified into an exact image, a session addresses one
-/// destination, the image is bound to that session as an assignment, a gate is cleared, and only
-/// then is a permit minted and immediately spent.
+/// destination, the image is bound to that session as an assignment, that exact intent is
+/// published, and only then is a permit minted and immediately spent.
 ///
 /// # Errors
 /// Refuses bytes carrying a carriage return, bytes that cannot be recorded exactly, a session
-/// that cannot bind its assignment, and — on the required arm alone — a publication that did not
-/// place a document. Every one of those returns before any shipment.
+/// that cannot bind its assignment, and a publication that did not place a document. Every one
+/// of those returns before any shipment.
 pub fn consented_apply(
     request: &ConsentedApplyRequest<'_>,
     ids: &mut dyn ReceiptIdSource,
@@ -363,7 +359,6 @@ pub fn consented_apply(
     driver: &mut dyn SessionDriver,
 ) -> Result<ConsentedApply, ConsentedApplyRefusal> {
     match authorization {
-        ApplyAuthorization::ConfiguredBypass(bypass) => bypass_route(request, ids, bypass, driver),
         ApplyAuthorization::RequiredPublication(publication) => {
             published_route(request, ids, publication, driver)
         }
@@ -427,26 +422,6 @@ fn prepare_intent_for(
         .map_err(ConsentedApplyRefusal::Preparation)
 }
 
-/// Dispatch without a durable intent, because the invocation said to.
-fn bypass_route(
-    request: &ConsentedApplyRequest<'_>,
-    ids: &mut dyn ReceiptIdSource,
-    bypass: ConfiguredReceiptBypass,
-    driver: &mut dyn SessionDriver,
-) -> Result<ConsentedApply, ConsentedApplyRefusal> {
-    let intent = prepare_intent_for(request, ids, ReceiptPolicyWitness::configured_bypass())?;
-    let _spent: dorc_receipt::dispatch::MutationDispatched =
-        IntentPublicationGate::ConfiguredBypass(bypass)
-            .permit(intent)
-            .spend();
-    Ok(ConsentedApply {
-        shipped: ship_once(request, driver),
-        intent: None,
-        outcome: None,
-        durable_failure: None,
-    })
-}
-
 /// Publish the intent first, and dispatch only if that placed a document.
 fn published_route(
     request: &ConsentedApplyRequest<'_>,
@@ -462,7 +437,7 @@ fn published_route(
     } = publication;
     let intent = prepare_intent_for(request, ids, ReceiptPolicyWitness::required_rich())?;
     let (published, _placed) = publish_apply_intent(
-        &intent,
+        intent,
         request.invocation,
         request.standup_account,
         request.limits,
@@ -472,9 +447,7 @@ fn published_route(
     .map_err(ConsentedApplyRefusal::Publication)?;
 
     let intent_id = published.id();
-    let dispatched = IntentPublicationGate::Published(published)
-        .permit(intent)
-        .spend();
+    let dispatched = published.permit().spend();
 
     let shipped = ship_once(request, driver);
     let report = ApplyOutcomeReport::of(
