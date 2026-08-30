@@ -13,14 +13,12 @@ checkout into an external Opus harness.
 
 ## branch state
 
-- Build source: `ai/r30-receipt` at `1cbee21a`.
-- Diagnostic/harness work is complete on `ai/r30-receipt-loom-code` at `6c1f8024`; `30Rf` and
-  `30Rg` carry the account, and the both-platform completion gate is green.
-- Current close lane reuses `ai/r30-receipt` in `.claude/worktrees/r30-receipt`; the receipt
-  vocabulary/attention ruling, old-ladder cut, and exact-general-source/durable-locator ruling are
-  committed through `cc8fd3c2`. The temporary D5 worktree/branch was removed.
-- Conduct branch: `ai/r30-conduct`; this document is its resumption account.
-- The two failed in-process harness dispatches produced no commit and no worktree mutation.
+- `ai/r30-receipt` in `.claude/worktrees/r30-receipt` carries all implementation through the
+  explicit store root and sealed `dorc-receipt::report::RecordedWhyFacts` boundary.
+- `ai/r30-conduct` in `.claude/worktrees/r30-conduct` carries this conductor account; it folds into
+  the final receipt tip before review.
+- Earlier diagnostic/harness lanes are fully represented in the receipt branch. Their worktrees stay
+  standing until post-review repair is ruled complete.
 
 ## testing adjudication
 
@@ -28,17 +26,13 @@ checkout into an external Opus harness.
   real binary across process restart with sandboxed standard roots, real local key/store I/O, and
   real receipt read-back. D4's central route has meaningful acceptance coverage even though its
   late builder gate report is not evidence.
-- **`30Re:fnd-gate-eight-is-legacy-only`** — gate 8's live/replay pair writes and reads the old
-  whylog through `--whylog-dir`; none of its six replay arms exercises the receipt store.
-- **`30Re:fnd-seven-cases-depend-on-legacy`** — the six gate-8 cases are not the full deletion
-  account. `whygallery-drifted-book-degraded-receipt.loom` directly carries an old `.whylog` and
-  requires its own explicit disposition.
-- **`30Re:rul-parity-migrates-before-deletion`** — D5 cannot begin until the six why-chain replay
-  arms have a receipt-backed replacement and the seventh drift case has an explicit disposition.
-  The diagnostic-seat repair is useful but does not substitute for replay parity.
-- **`30Re:rul-deletion-must-add-positive-tests`** — a deletion-only diff routes zero checks; D5
-  carries its replacement assertions in the same lane and reads the discovery-floor count rather
-  than treating refusal or an empty selection as acceptance.
+- **`30Re:fnd-seven-cases-were-why-surface-tests`** — six gate-8 replay pairs and the drifted
+  seventh case exercised the retired whylog renderer, not the secure receipt boundary. Their
+  replacement is rehomed with recorded-why presentation outside quarantine; D5 may remove the old
+  fixtures without pretending the sealed facts API is a finished user render.
+- **`30Re:rul-deletion-must-select-real-checks`** — the deletion-heavy D5 diff must still route
+  substantive existing receipt/CLI checks and report the discovery-floor count; no new meta-gate is
+  added merely to count deletions.
 - **`30Re:rul-receipt-root-is-attention-root`** — one selected root receipt plus the causally
   required graph closure approximates the human's run. Disconnected DAGs never merge. The surface is
   `--receipts <folder>` for store location, and why's mutually exclusive `--receipt <file>`,
@@ -61,10 +55,10 @@ checkout into an external Opus harness.
 
 1. **`30Re:sched-repair-why-diagnostics`** — complete at `6c1f8024`; builder ledgers quarantine
    `30Rf`/`30Rg`.
-2. **`30Re:sched-secure-durable-close`** — finish rooted graph/source comparison, sealed
-   `dorc-receipt::report::RecordedWhyFacts`, curated receipt producer/read/report exports, crate
-   steering, D5 deletion, and the singular-implementation census. Builder ledger: quarantine
-   `30Rh`.
+2. **`30Re:sched-secure-durable-close`** — rooted graph/source comparison and sealed
+   `dorc-receipt::report::RecordedWhyFacts` are built. Remaining: close the curated receipt
+   producer/read/report API, write crate steering, execute D5 deletion, and prove the singular
+   provider/store/reader/writer census. Builder ledger: quarantine `30Rh`.
 3. **`30Re:sched-close-receipt-security-arc`** — reconcile current truth, synthesize only durable
    steering that earns a permanent seat, run the required review and `gate:arc`, then offer the
    populated branch as the `ai/main` synthesis point. The dispatch-diagnostic split is not included.
@@ -73,10 +67,10 @@ checkout into an external Opus harness.
 
 ## current dispatch contract
 
-`30Rh` owns the secure durable close in the reused receipt worktree. Source custody and durable
-locators reached their planned checkpoint. Remaining handoffs are sized interactively rather than
-encoded as fixed builder phases: explicit store siting, sealed recorded fact extraction, then D5 and
-census. Final why arrangement and the six-plus-one user-facing replay cases are outside this security
-arc. The builder does not chase `30Rg` deviations, recorded-listing Debug spellings, the dispatch
-split, corruption-parser expansion, kernel work, or new test backstops. One both-platform completion
-gate runs only at the secure arc's final tip.
+The sealed facts boundary is complete. Its API-close residue is narrow and security-relevant:
+replace the bare site tuple and order string with receipt newtypes, derive closure membership from the
+receipt graph rather than caller input, and preserve the encoder-mediated byte exit. Loaded-source
+locator composition remains explicit V1 residue rather than a guessed locator. A fresh secure builder
+may then close public exports/steering and D5 in one reviewed lane. Final why arrangement and the
+six-plus-one user-facing cases are outside this arc. Kernel work, recorded-listing polish, the
+dispatch split, corruption-parser expansion, and new test backstops remain excluded.
