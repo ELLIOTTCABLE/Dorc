@@ -344,12 +344,27 @@ never substitute for one another. Every consumer preserves recorded-only, re-der
 both-agreeing, and both-disagreeing states. Unavailable inputs and controller-version
 differences remain explicit comparison context.
 
-The do-now durable boundary seals a report-only `RecordedWhyFacts` model from verified or
-partial receipt state, rooted graph closure, recorded decisions, exact general-sh source,
-and durable locators. It carries explicit authentication/completeness/influence state and
-only sink-safe or type-sealed source display values. It exposes no raw receipt payload,
-provider/key choice, live `Disposition`, claim, license, `PlanAuthority`, operation endpoint,
-or conversion back into planning/probing/apply.
+The do-now durable boundary is the public `dorc-receipt::report` surface. It seals a
+report-only `RecordedWhyFacts` model from verified or partial receipt state, rooted graph
+closure, recorded decisions, exact general-sh source, durable locators, and typed
+current-source observations supplied as data. The pure receipt crate performs no I/O. It
+carries explicit authentication/completeness/influence state and exposes no raw receipt
+payload, provider/key choice, live `Disposition`, claim, license, `PlanAuthority`, operation
+endpoint, or conversion back into planning/probing/apply.
+
+Arbitrary recorded source/detail values stay private behind receipt-owned typed handles.
+They have no bare byte/string accessor and no revealing `Display`, `Debug`, serde, equality,
+ordering, or hash implementation. Their one public exit is an encoder-mediated method: a
+consumer supplies an explicit value-class-aware encoder, making every byte release a named
+review seat rather than a convenient formatting call. The CLI adapter implements that exit
+through the existing destination-specific aid encoders.
+
+CLI remains the composition root: it acquires current source and receipt/store material,
+calls the pure report API, and later joins facts with aid/weft. `dorc-aid` stays generic and
+MUST NOT depend on `dorc-receipt`; otherwise receipt persistence enters analysis/oracle/syntax
+transitively through the describe plane. No new crate is required. A dependency or signature
+from `dorc-receipt::report` to filesystem, provider, key implementation, `dorc-plan`,
+`dorc-aid`, weft, or CLI is a boundary violation.
 
 Report-only kernel re-derivation over original inputs remains an intended capability: it
 will populate `ReDerivedDisposition` and the four-way recorded/current comparison and

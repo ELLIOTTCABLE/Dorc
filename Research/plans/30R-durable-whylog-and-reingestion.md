@@ -208,14 +208,22 @@ semantics never substitute for one another. Every consumer preserves recorded-on
 re-derived-only, both-agreeing, and both-disagreeing states. Unavailable inputs and
 controller-version differences remain explicit comparison context.
 
-The do-now durable boundary seals a report-only `RecordedWhyFacts` model from verified/
-partial receipt state, rooted graph closure, recorded decisions, exact general-sh source,
-and durable locators. It contains no raw receipt authority and no route to plan/apply.
-Building the report-only kernel re-derivation that populates the re-derived arms requires a
-separate correctness-kernel round and is deliberately deferred; the kernel stays frozen in
-this arc. Recorded-only explanation remains the fallback, not a replacement for that target.
-The user-facing arrangement/render over the sealed model is ordinary why-surface work and
-need not remain in the quarantined durable implementation phase.
+The do-now durable boundary is the public `dorc-receipt::report` surface. It seals a
+report-only `RecordedWhyFacts` model from verified/partial receipt state, rooted graph
+closure, recorded decisions, exact general-sh source, durable locators, and typed
+current-source observations supplied as data. The pure receipt crate performs no I/O and
+contains no raw receipt authority or route to plan/apply. Arbitrary recorded values leave
+this API only through an encoder-mediated value interface; no bare byte/string, revealing
+`Display`, or revealing `Debug` convenience crosses the boundary.
+
+CLI remains the composition root: it acquires current source and receipts, calls the report
+API, and later joins its facts with aid/weft presentation. `dorc-aid` stays generic and does
+not depend on receipts. Building the report-only kernel re-derivation that populates the
+re-derived arms requires a separate correctness-kernel round and is deliberately deferred;
+the kernel stays frozen in this arc. Recorded-only explanation remains the fallback, not a
+replacement for that target. The user-facing arrangement/render over the sealed model is
+ordinary why-surface work and need not remain in the quarantined durable implementation
+phase.
 
 ## canonical-readable-envelope
 

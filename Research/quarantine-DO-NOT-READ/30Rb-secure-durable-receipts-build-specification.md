@@ -1357,21 +1357,30 @@ Build now:
 - `Reingested<T>` / `WhyPhase` non-extractability;
 - rooted M:N receipt-graph correlation, trust/completeness/missing-edge states;
 - exact general-sh source, durable locator, same-coordinate source comparison;
-- one sealed `RecordedWhyFacts` product carrying recorded decisions, graph/source state,
-  influence/omissions, sink-safe display values, and explicit re-derivation availability;
-- type/lexical fences proving the model cannot reach plan/probe/apply, provider choice,
-  raw receipt payload, or unencoded foreign bytes.
+- one public `dorc-receipt::report::RecordedWhyFacts` product carrying recorded decisions,
+  graph/source state, influence/omissions, typed current-source comparison, and explicit
+  re-derivation availability;
+- receipt-owned private arbitrary-value handles with no raw/string accessor or revealing
+  formatting/serde/comparison traits; values exit only through an explicit class-aware
+  encoder supplied by the caller;
+- CLI-only composition that performs I/O, supplies typed current-source outcomes, and adapts
+  encoded report values to aid/weft; `dorc-aid` remains receipt-unaware;
+- type/dependency fences proving the report module cannot name filesystem/provider/key
+  implementations, plan/analysis/kernel types, aid/weft/CLI, operation endpoints, raw
+  receipt payload, or unencoded arbitrary bytes.
 
 Deferred beyond this secure stage:
 
 - the report-only kernel producer of `ReDerivedDisposition` and four-way comparison;
 - final why arrangement, density, and transcript/prose work over `RecordedWhyFacts`.
 
-Exit: real receipt routes can produce the sealed recorded fact model; receipt bytes
-cannot reach any operation endpoint. The secure durable implementation may complete
-D5 and synthesize to `ai/main` at this boundary. A following non-quarantined conductor
-completes user-facing recorded why; a separate kernel-authorized round later supplies
-re-derivation.
+Exit: real receipt routes can produce the sealed recorded fact model through the
+curated receipt report API; receipt bytes cannot reach any operation endpoint. Public
+receipt exports are grouped into reviewed producer/read/report surfaces rather than
+module-wide convenience access. The secure durable implementation may complete D5 and
+synthesize to `ai/main` at this boundary. A following non-quarantined conductor completes
+user-facing recorded why in CLI without entering receipt internals; a separate
+kernel-authorized round later supplies re-derivation.
 
 ### Stage 5A - minimal production durable edge (serial integration)
 
