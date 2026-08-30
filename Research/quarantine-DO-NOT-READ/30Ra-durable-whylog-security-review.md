@@ -337,6 +337,33 @@ Inline encrypted book custody is V1's do-now placement. A future dislocated/dedu
 encrypted source store, if designed, may replace that placement while preserving the
 same content identities, locator projection, and explicit unavailable states.
 
+## recorded-versus-rederived-and-frozen-kernel
+
+Historical conclusions and conclusions reconstructed under current inputs and semantics
+never substitute for one another. Every consumer preserves recorded-only, re-derived-only,
+both-agreeing, and both-disagreeing states. Unavailable inputs and controller-version
+differences remain explicit comparison context.
+
+The do-now durable boundary seals a report-only `RecordedWhyFacts` model from verified or
+partial receipt state, rooted graph closure, recorded decisions, exact general-sh source,
+and durable locators. It carries explicit authentication/completeness/influence state and
+only sink-safe or type-sealed source display values. It exposes no raw receipt payload,
+provider/key choice, live `Disposition`, claim, license, `PlanAuthority`, operation endpoint,
+or conversion back into planning/probing/apply.
+
+Report-only kernel re-derivation over original inputs remains an intended capability: it
+will populate `ReDerivedDisposition` and the four-way recorded/current comparison and
+allow a later Dorc version to say where its answer changed. The existing correctness-kernel
+is frozen for this arc, so factorizing calculation from authority minting is DEFERRED to a
+separate kernel-authorized round. Running the authority-bearing operation kernel and merely
+hiding its plan output is not a substitute.
+
+Recorded-only facts remain the fallback whenever re-derivation is unavailable. Once the
+sealed facts boundary exists, arranging and rendering those facts is ordinary why-surface
+work: it may proceed outside quarantine without reopening receipt parsing, trust, graph
+selection, source custody, or authority. A non-security-focused consumer receives only the
+sealed model and ordinary steering; it never needs the rationale in this document.
+
 ## apply-intent-content
 
 `ApplyIntent` is semantically narrow:

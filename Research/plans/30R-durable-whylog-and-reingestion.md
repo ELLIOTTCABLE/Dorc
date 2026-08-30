@@ -208,6 +208,15 @@ semantics never substitute for one another. Every consumer preserves recorded-on
 re-derived-only, both-agreeing, and both-disagreeing states. Unavailable inputs and
 controller-version differences remain explicit comparison context.
 
+The do-now durable boundary seals a report-only `RecordedWhyFacts` model from verified/
+partial receipt state, rooted graph closure, recorded decisions, exact general-sh source,
+and durable locators. It contains no raw receipt authority and no route to plan/apply.
+Building the report-only kernel re-derivation that populates the re-derived arms requires a
+separate correctness-kernel round and is deliberately deferred; the kernel stays frozen in
+this arc. Recorded-only explanation remains the fallback, not a replacement for that target.
+The user-facing arrangement/render over the sealed model is ordinary why-surface work and
+need not remain in the quarantined durable implementation phase.
+
 ## canonical-readable-envelope
 
 The replacement is the `dorc-receipt/1` family. Exact grammar tokens belong to the

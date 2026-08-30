@@ -1093,6 +1093,14 @@ The continuation function accepts `DurableFailure` directly; it does not accept
 Delete `PlanAuthority::of_admitted_replay()` and every equivalent route. This is a
 required architectural change, not a rename.
 
+**CURRENT SCOPE AMENDMENT — correctness kernel frozen:** the secure durable close builds
+and seals `RecordedWhyFacts` from reingested receipts but does not alter the correctness
+kernel or implement report-only kernel re-derivation. The four-way recorded/re-derived
+types and capability remain required architecture; their producer is DEFERRED to a
+separate kernel-authorized round. Running the authority-bearing kernel and hiding its
+plan output is forbidden. User-facing arrangement/render over sealed recorded facts is
+rehomed to the following non-quarantined why-surface conductor.
+
 TYPE LEAN:
 
 ```rust
@@ -1338,30 +1346,32 @@ only after receipt module APIs freeze. The CLI integration is serial: both stage
 rewrite `cli/main.rs`, so fold Stage 3 first and rebase Stage 4 rather than claiming
 independently compilable orchestration lanes or hand-merging two rewrites.
 
-### Stage 5 - why, correlation, and report-only re-derivation (serial integration)
+### Stage 5 - secure recorded-why boundary (serial integration)
 
-Touch:
+Touch receipt/CLI graph, selection, source/locator, and report-model seams only. The
+correctness kernel and settlement remain untouched.
 
-- `plan/src/spine.rs` and settlement seams needed to separate calculation from
-  authority minting;
-- `cli/src/{why.rs,world.rs,lib.rs,main.rs,results.rs,source_match.rs}`;
-- `dorc-loom/src/consumer.rs`, its direct-why parser, and consumer/editable-surface
-  tests that currently call `dorc_plan::whylog` or embed old receipt bytes;
-- `aid` report-model/loom cases without builder-authored prose.
+Build now:
 
-Build:
+- delete replay plan authority and every recorded-to-live adapter;
+- `Reingested<T>` / `WhyPhase` non-extractability;
+- rooted M:N receipt-graph correlation, trust/completeness/missing-edge states;
+- exact general-sh source, durable locator, same-coordinate source comparison;
+- one sealed `RecordedWhyFacts` product carrying recorded decisions, graph/source state,
+  influence/omissions, sink-safe display values, and explicit re-derivation availability;
+- type/lexical fences proving the model cannot reach plan/probe/apply, provider choice,
+  raw receipt payload, or unencoded foreign bytes.
 
-- delete replay plan authority;
-- `Reingested<T>` and `WhyPhase` report projection;
-- source resolution states and bounded excerpt fallback;
-- recorded/re-derived four-way comparisons;
-- M:N ReceiptGraph narration for all three species;
-- signer trust, projection, partial/completeness, missing edge, and disagreement
-  report states;
-- destination-specific sink encoding for every arbitrary value.
+Deferred beyond this secure stage:
 
-Exit: both product routes end in `dorc why`; receipt bytes cannot reach any operation
-endpoint.
+- the report-only kernel producer of `ReDerivedDisposition` and four-way comparison;
+- final why arrangement, density, and transcript/prose work over `RecordedWhyFacts`.
+
+Exit: real receipt routes can produce the sealed recorded fact model; receipt bytes
+cannot reach any operation endpoint. The secure durable implementation may complete
+D5 and synthesize to `ai/main` at this boundary. A following non-quarantined conductor
+completes user-facing recorded why; a separate kernel-authorized round later supplies
+re-derivation.
 
 ### Stage 5A - minimal production durable edge (serial integration)
 
