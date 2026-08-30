@@ -29,7 +29,8 @@ suspended and never traded against performance.
 - Silence licenses nothing. An unmodeled command, verb, flag, dimension, or kind
   is unknown - a wall - never a permissive default. Adding description only ever
   adds capability at your own tool's sites; it cannot weaken anyone else's
-  safety. (The one deliberate exception: a wrong at-most claim, section 5c.)
+  safety. (The one deliberate exception: wrong at-most speech - a footprint, or
+  a finished definition - sections 5c and 5h.)
 - Only oracle bytes execute during probing. Book commands never ship; a site's
   arguments flow into your functions through your own argument parsing, but the
   admin's written command-position bytes are never executed by the probe lane.
@@ -66,13 +67,15 @@ mean something different. Current per-command roles:
 
 Current per-kind roles:
 - `kind__resolve()`,
-- `kind__disturbance_reaches_only()`,
+- `kind__disturbance_reaches()`,
 - `kind__state_stored_only_in()`.
 
 The `only` naming convention binds authorship posture: *a role with `only` in
 its name is complete-by-contract* - consumers act on its negative space, so
 authoring it requires a totalistic survey first. A role without `only` grows arm
-by arm, each matched arm complete for its own shape only.
+by arm, each matched arm complete for its own shape only. The reach member lost
+its `only` deliberately: its completeness contract is a spelled act inside the
+body (section 5h), not a property of the name.
 
 ## 3. The answer channel: exit-status law
 
@@ -87,7 +90,9 @@ fixed, permanent table:
 
 Only 0 and 1 ever carry a verdict; 2 communicates "I cannot meaningfully speak
 for this" (collapsing error-states, NYI, instability, and so on). Everything at
-2 and above is currently one flat "confused" sink, semantically flat.
+2 and above is currently one flat "confused" sink, semantically flat. The table
+binds verdict-bearing members alone: a predict's exit status is a prediction of
+its tool's status, never an answer read against this table (section 5b).
 
 - Stray away from 'flattening' shell-vocab operators like `||` that will paper
   over exit-status-semantics; and *extremely avoid shell-flipping-and-flattening
@@ -206,11 +211,14 @@ The rules on marks:
   obligatory for honesty. Write one, as its own statement, whenever your verdict
   consults state beyond the cell it answers for.
 - Emission members type what they emit with a verb-led mark. `cmd__disturbs()`
-  and `kind__disturbance_reaches_only()` write `: disturbs KIND` or
+  and `kind__disturbance_reaches()` write `: disturbs KIND` or
   `: disturbs KIND@SELECTOR`; `cmd__lend_map()` writes `: lends DIMENSION`;
   `kind__state_stored_only_in()` writes `: stored-in SUBSTRATE` plus, per whole
   member, `: undivided-by-transit-across AXIS`. All these token vocabularies are
-  engine-owned and closed; authors never invent tokens.
+  engine-owned and closed; authors never invent tokens. (The reach member's
+  finished-definition sentence is not a mark at all - it is a report-stream
+  record, section 6a - because it must witness runtime completion, which no
+  annotation can.)
 - Brace alternation is a general shortcut for "several payloads, or one payload
   with a varying part": `@{enabled,active}` expands to one selector each,
   `safe-across {user,fs-view}` to one mark per dimension. It is legal wherever
@@ -310,10 +318,23 @@ Failure modes:
 
 Invoked with an invocation's arguments. Stands in for the command inside probe
 constructs: its stdout, stderr, and exit status are consumed as the command's
-predicted observables, per the claim vocabulary - delegation of the real
-(read-only) tool claims all channels faithfully; `printf` claims stdout;
-`return N` claims the status; redirecting a channel to `/dev/null` declines
-that channel; `return 2` up front declines the shape.
+predicted observables. The channel rules (this is the surface that most
+recently shifted; the spellings below are current):
+
+- Status is always predicted, and every value of it: the body's ordinary exit
+  status simply is the prediction, whatever it is. There is no reserved
+  decline status here; section 3's table belongs to verdict members alone.
+- Stdout and stderr are declined by default. A body claims one positively by
+  writing a `predicts` record to the report stream (section 6a) after the
+  modeled output - `printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"` -
+  and the record deliberately trails the bytes it vouches for: its arrival is
+  the completion witness, so a body that dies partway leaves an unclaimed,
+  unusable channel rather than a half-true one.
+- A shape the body cannot model is declined in the same stream - `printf
+  'predicts none unmodeled-arity\n' >>"${DREP_V1:-/dev/null}"` - with the
+  body's exit status still read as nothing more than a predicted status.
+- Delegation of the real (read-only) tool remains the natural body shape; the
+  channel claims are still yours to speak, channel by channel.
 
 Write it when your tool appears inside constructs rather than alone on lines:
 pipelines and compounds cannot probe without a stand-in for every participant,
@@ -349,6 +370,17 @@ complete at-most claim: this invocation disturbs
 at most these cells, and anything omitted is declared untouched. An unmatched
 shape emits nothing and claims nothing.
 
+A body whose emissions come from host questions (a dynamic footprint - the
+package manager asked for its real payload) carries one more obligation: every
+completing matched path ends with the completion record, exactly once -
+
+    printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"
+
+The record trails the emissions it vouches for, so its arrival proves the
+survey ran to completion; a body that dies or silently truncates leaves no
+record, and the whole claim is refused - the wall stands total. (A purely
+static body's emissions are read from source and need no witness.)
+
 Write it when your tool is the wall that costs drifted-day books their shape:
 churn-heavy, early-in-book commands (index refreshes, cache warms, log
 rotations) whose effects you can genuinely enumerate. Do not write it
@@ -357,8 +389,12 @@ rarely runs mid-book earns little from a footprint.
 
 Licenses: under the admin's explicit risk flag only - survival of downstream
 proven facts past this command actually running, wherever fact-backing and
-claimed footprint are provably disjoint. Never consumed outside the flag;
-never able to manufacture separation the comparison machinery cannot prove.
+claimed footprint are provably disjoint. Disjointness within your claim's own
+kind is the comparison machinery's to prove (names, resolvers); across kinds
+it exists only where the claimed kind's owner has published a finished
+definition (section 5h) - absent one, your claim walls, whatever it says.
+Never consumed outside the flag; never able to manufacture separation the
+comparison machinery cannot prove.
 
 Author holds true:
 - The survey: match a shape only after genuinely enumerating that shape's
@@ -492,31 +528,59 @@ Failure modes:
 - A wrong split re-opens the silent-skip hole the resolver exists to close -
   under-execution at some consumer's line, attributed to the resolver.
 
-### 5h. `kind__disturbance_reaches_only()` - reach
+### 5h. `kind__disturbance_reaches()` - reach, and the finished definition
 
 Invoked per footprint coordinate of its kind, whoever emitted it; emits the
 implied coordinates in other kinds (footprint emission grammar; static lines
-and read-only host-question lines both welcome).
+and read-only host-question lines both welcome). Two acts live in one body, on
+two rungs:
 
-Write it when disturbing an entity of your kind implies effects in other kinds
-that emitters cannot know from their seat - the package-to-its-files case. The
-knowledge must be the kind's own, derivable from its substrate; a guess about
-particular tools' behavior belongs in those tools' `disturbs`, not here.
+- The emission lines are the entailment - part of what the kind's word means.
+  They widen every footprint of the kind to cover what touching such an entity
+  drags along, which only ever adds collisions: the safe direction, writable
+  from partial knowledge, arm by arm. This is why the member's name carries no
+  `only`.
+- The finished-definition record, in tail position on a path whose survey is
+  truly total, exactly once per completing path:
 
-Licenses: widening of every footprint of the kind to cover what touching such
-an entity drags along. Footprints only; never widens what any fact claims for
-its own backing.
+      printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"
+
+  It says: disturbing an entity of this kind entails the emitted cells and
+  nothing else, in any vocabulary, including ones this file has never heard
+  of. Its arrival is also the execution witness - a dying host-question line
+  means no record, no license, total wall.
+
+Write the emissions when disturbing an entity of your kind implies effects in
+other kinds that emitters cannot know from their seat - the
+package-to-its-files case. The knowledge must be the kind's own, derivable
+from its substrate; a guess about particular tools' behavior belongs in those
+tools' `disturbs`, not here. Write the record only where you have genuinely
+finished the survey for that shape; a body (or an arm) without it is the
+informative rung - it contributes collisions and licenses nothing, and that is
+a legal, useful resting state.
+
+Licenses: the emissions widen footprints (footprints only; never what any fact
+claims for its own backing). The record is what licenses cross-kind sparing at
+all: only past it will the engine find one of this kind's claims disjoint from
+another kind's fact and let an elision survive a running wall. Without it,
+cross-kind pairs answer unrelated, and the facts behind the wall guard - safe,
+blunter than the world.
 
 Author holds true:
-- The `only` contract: a totalistic survey, before authoring, of what
-  disturbance of this kind can reach.
-- Include when unsure - over-breadth only walls.
+- Emissions: include when unsure - over-breadth only walls; partial knowledge
+  is welcome, any time.
+- The record: a totalistic survey first, per matched shape; when unsure the
+  enumeration is complete, leave the record off that path and keep the
+  emissions.
 
 Failure modes:
-- An omitted edge re-opens exactly the cross-kind gap the member exists to
-  close: a fact in the unreached kind survives a wall that really touched its
-  referent. Attributed to this member.
-- Over-breadth merely walls (safe, value-losing).
+- The record written early is this member's knife, and it is the sharp one: a
+  fact in a kind you never heard of survives a wall that really touched its
+  referent - someone else's line, silently un-run, behind the admin's flag.
+  Attributed to the record's own line.
+- An omitted emission edge without the record merely walls (safe,
+  value-losing). Over-breadth merely walls. A dying survey merely walls - the
+  missing record refuses the claim whole.
 
 ### 5i. `kind__state_stored_only_in()` - the store member
 
@@ -532,6 +596,9 @@ this member.
 
 Licenses:
 - Substrate keying of the kind's facts.
+- Collision: a claimed footprint landing inside a declared store collides with
+  this kind's facts - the safe direction, so an incomplete emission set here
+  loses protection, never correctness.
 - Per invariance line, cross-context carry of the kind's facts along that
   dimension: unflagged for substrate dimensions (the engine independently
   verifies each carried verdict body read nothing beyond its arguments and
@@ -564,8 +631,10 @@ What a body may assume when it runs:
   "this only runs at plan time".
 - Entered bodies run in shifted contexts exactly when their vouches and the
   dial align.
-- Its exit status is the entire in-band answer. Dorc's own signalling travels
-  out-of-band; no exit code means "unknown" except as section 3 defines.
+- Its exit status is the entire in-band answer - read against section 3's
+  table for a verdict member, consumed as the predicted status for a predict.
+  Dorc's own signalling travels out-of-band; no exit code means "unknown"
+  except as section 3 defines.
 - Its stdout and stderr are consumed only where a contract says so (predict
   channels, emission grammars); verdict bodies should run quiet.
 - Refusal breadcrumbs and classed declines go to the report stream (subsection
@@ -574,9 +643,24 @@ What a body may assume when it runs:
 
 ### 6a. The report stream and authored declines
 
-The report stream is a write-only side channel a body may append to; it never
-affects an answer (the exit status is the entire in-band answer, section 3), and
-nothing in it is ever read by the license plane.
+The report stream is a write-only side channel a body may append to. Its
+records are verb-led: a short, closed-grammar structured head, then a free
+tail. Heads are real speech - several record kinds below carry claims the
+engine acts on - while free tails and unrecognized lines are annotation only,
+never read by anything that decides. The verb vocabulary is engine-owned and
+append-only; three verbs exist today:
+
+- `decline <class> <tail>` - a classed refusal breadcrumb (below). Aid-plane
+  only: it routes attention and can never change what runs.
+- `predicts <channel-set>` and `predicts none <reason>` - a predict body's
+  channel claims and declines (section 5b). Load-bearing: a claim licenses
+  substitution.
+- `disturbs nothing-else` - the completion witness of dynamic at-most bodies
+  and the finished-definition act of reach bodies (sections 5c and 5h).
+  Load-bearing: it is the license for cross-kind sparing.
+
+For every load-bearing record, position is part of the meaning: it trails what
+it vouches for, so its arrival proves the body reached it.
 
 - Sink. A body writes with `>>"${DREP_V1:-/dev/null}"`. The probe lane sets the
   variable to a file inside a scratch directory it created exclusively for this
@@ -597,14 +681,13 @@ nothing in it is ever read by the license plane.
   most verbose pull; default surfaces stay ruthlessly selected. Verbosity is the
   admission gate, not existence. Nothing you emit is lost.
 
-The classed-decline record. The one recognized grammar today is
-`<verb> <class> <free tail>`, emitted on a declining path before its `return 2`:
+The classed-decline record, emitted on a declining path before its `return 2`:
 
     printf 'decline unsound %s is a write-only trigger key\n' "$key" \
        >>"${DREP_V1:-/dev/null}"
 
-- The verb and class vocabularies are engine-owned and append-only. v1 ships one
-  verb, `decline`, and four classes: `unsound` (permanently unanswerable -
+- The class vocabulary is engine-owned and append-only. Four classes ship:
+  `unsound` (permanently unanswerable -
   write-only triggers, nondeterministic reads); `unmodeled` (a better oracle
   could answer; not yet built); `interactive` (prompts by construction;
   unprobeable headless); `hazard` (the author's editorial claim about the admin's
@@ -653,11 +736,13 @@ Worst first, with the repair path that attribution buys:
    verdicts about a context the site does not denote; can under- or
    over-execute. Repair: decline-on-unverifiable siting; the static
    peel-coherence check; attribution to the wrapper family.
-3. Wrong at-most claim (disturbs omission; reach omission; false invariance;
-   resolver split). Silent under-execution of someone else's line, behind the
-   admin's risk flag (or the carry machinery, for invariance). Repair: fully
-   attributed to the claiming line; next plan re-measures and self-heals; fix
-   the one file, every consumer heals.
+3. Wrong at-most speech (a disturbs omission; a finished-definition record
+   written before its survey was truly total; a false invariance; a resolver
+   split). Silent under-execution of someone else's line, behind the admin's
+   risk flag (or the carry machinery, for invariance). Repair: fully
+   attributed to the claiming line or record; next plan re-measures and
+   self-heals; fix the one file, every consumer heals. (A reach body's omitted
+   edge without the record is not in this class: it merely walls.)
 4. Wrong yes (verdict 0 that should not have been). Under-execution at your
    own tool's site; attributed to your function. Repair: fix the arm; consider
    whether the verb belonged in the decline column all along.
@@ -689,9 +774,15 @@ Before publishing, walk the file once against each line:
 - Wrapper families: every dimension enumerated in `lend_map`; peel positions
   coherent between members; entry form non-interactive, siting-verified or
   declining; `safe-across` only on bodies re-audited for shifted execution.
+- Every predict: channels claimed positively (`predicts` records) or
+  deliberately declined; every claim record trailing the bytes it vouches for;
+  statuses predicted, never answered.
 - Footprints and kind members: matched shapes surveyed to completion;
-  unsure-cells included; unsurveyed shapes unmatched; `only` members authored
-  from a total survey or not at all.
+  unsure-cells included; unsurveyed shapes unmatched; dynamic emission bodies
+  ending every completing matched path with their completion record, exactly
+  once; the finished-definition record written only where the survey is truly
+  total, arm by arm; `only` members authored from a total survey or not at
+  all.
 - The file as a shipped artifact: header comment stating coverage, declines,
   and judgment rationale; kinds documented; names treated as permanent.
 
@@ -702,4 +793,6 @@ Before publishing, walk the file once against each line:
      277 sections 1-6; 278 whole; 276 dialect rulings; plans/27C sections
      1-7; 23O settled law; USER_STORY.md bought-unsoundness; 27Q quality bars;
      27W:rul-emission-grammar-v1, rul-versioned-entry, rul-report-noise-tolerant,
-     rul-advise-verb-deferred (modeling-crutch) -->
+     rul-advise-verb-deferred (modeling-crutch); plans/30U (finished-definition
+     gate; disturbs nothing-else; witness-iff-licensure); notes/30D
+     (predict channel claims; predicts records; verdict-partition-stays-separate) -->
