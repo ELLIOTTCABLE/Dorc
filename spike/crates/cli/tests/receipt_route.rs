@@ -119,7 +119,13 @@ impl MemorySink {
     ) -> (PlacedDocument, RequiredPlacementLanding) {
         let name = format!("{prefix}-{id_hex}");
         let bytes = receipt.into_bytes();
-        let digest = dorc_receipt::ids::Sha256Digest::over("fixture-placement", &bytes);
+        // The SAME domain the real store takes its landing digest under, because the required
+        // publication compares the two: a fixture with a private domain would refuse every
+        // publication, and the battery would be exercising the mismatch arm forever.
+        let digest = dorc_receipt::ids::Sha256Digest::over(
+            dorc_receipt::dispatch::REQUIRED_PLACEMENT_DIGEST_DOMAIN,
+            &bytes,
+        );
         self.0.push((name.clone(), bytes));
         (
             PlacedDocument::of(id_hex, name, None, PublicationGrade::Volatile),
@@ -718,11 +724,14 @@ fn spent_permit(ids: &mut CountingIds) -> dorc_receipt::dispatch::MutationDispat
     else {
         panic!("the projection carries the assignment's own image")
     };
-    let landing = RequiredPlacementLanding::of(
-        dorc_receipt::ids::Sha256Digest::over("fixture-placement", b"bytes"),
-        "fixture-volatile",
+    // One digest on both sides: the required route compares them, so a fixture answering a
+    // different value would drive the mismatch arm rather than the ordinary route.
+    let sealed = dorc_receipt::ids::Sha256Digest::over(
+        dorc_receipt::dispatch::REQUIRED_PLACEMENT_DIGEST_DOMAIN,
+        b"the modelled document",
     );
-    match accounted.publish_through(dorc_receipt::ids::ApplyIntentId::mint(ids), |_| {
+    let landing = RequiredPlacementLanding::of(sealed, "fixture-volatile");
+    match accounted.publish_through(dorc_receipt::ids::ApplyIntentId::mint(ids), sealed, |_| {
         Ok::<_, ()>((landing, ()))
     }) {
         Ok((published, ())) => published.permit().spend(),

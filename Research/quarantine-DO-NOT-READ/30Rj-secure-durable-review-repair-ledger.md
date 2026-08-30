@@ -24,6 +24,14 @@ authority — and the publication is minted INSIDE
 `AccountedApplyIntent::publish_through(id, place)`, which calls the placement and hands it the
 identity the publication will record. The mint has private fields and no public constructor.
 
+**The one thing still CHECKED about the placement's answer.** `publish_through` takes the digest
+of the exact bytes the caller sealed, under a domain `dorc-receipt` names
+(`REQUIRED_PLACEMENT_DIGEST_DOMAIN`) and the local store now takes its own answer under, and
+refuses a landing that reports other bytes (`LandingNamesOtherBytes`). So a store that filed some
+other document cannot produce a publication naming bytes nobody wrote — which is the "wrong
+digest cannot clear the gate" cell. Two spellings of the domain would make every comparison fail,
+so there is one, and the fixture placements were moved onto it.
+
 **RESIDUAL, stated plainly.** No Rust type can prove a file reached a disk in a crate this one
 does not know about. What the types now carry is: a publication value exists only where an
 accounted intent — unforgeable outside `dorc-receipt` — was moved through a placement call. The

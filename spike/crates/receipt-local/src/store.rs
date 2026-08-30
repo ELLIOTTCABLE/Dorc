@@ -32,7 +32,7 @@
 
 use core::marker::PhantomData;
 
-use dorc_receipt::dispatch::RequiredPlacementLanding;
+use dorc_receipt::dispatch::{REQUIRED_PLACEMENT_DIGEST_DOMAIN, RequiredPlacementLanding};
 use dorc_receipt::format::RefusalReason;
 use dorc_receipt::ids::{ApplyIntentId, ApplyOutcomeId, PlanReceiptId, Sha256Digest};
 use dorc_receipt::limits::ReceiptLimits;
@@ -368,11 +368,10 @@ const fn wire_token_of(species: NamedSpecies) -> &'static str {
     }
 }
 
-/// The domain the publication proof's document digest is taken under.
-///
-/// Its own domain, and never a bare digest: the value identifies WHICH BYTES this publication
-/// placed, and one computed under another domain must not be substitutable for it.
-const PUBLICATION_DIGEST_DOMAIN: &str = "application/vnd.dorc.receipt.v1.local-publication";
+// The domain this store's landing digest is taken under is `dorc-receipt`'s
+// `REQUIRED_PLACEMENT_DIGEST_DOMAIN`, not one spelled here: the required publication compares
+// this answer against a digest IT computed over the bytes it sealed, and two spellings would make
+// every comparison fail — or, if one were ever widened, make one pass that should not.
 
 /// What the fixed V1 production publication demands.
 ///
@@ -984,7 +983,7 @@ impl LocalReceiptStoreV1 {
             receipt_id,
             order,
             file_name,
-            document_digest: Sha256Digest::over(PUBLICATION_DIGEST_DOMAIN, &bytes),
+            document_digest: Sha256Digest::over(REQUIRED_PLACEMENT_DIGEST_DOMAIN, &bytes),
             policy: LocalRequiredReceiptPolicyV1::IDENTITY,
             properties,
             species: PhantomData,

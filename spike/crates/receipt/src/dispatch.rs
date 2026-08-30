@@ -634,6 +634,15 @@ pub struct AccountedApplyIntent {
     intent: PreparedApplyIntent,
 }
 
+/// The domain a required landing's document digest is taken under.
+///
+/// ONE spelling, named here rather than at either end, because the publisher computes it over the
+/// bytes it sealed and the placement computes it over the bytes it wrote, and the whole value of
+/// the comparison is that the two are asking the same question. A digest under another domain is
+/// not substitutable for this one.
+pub const REQUIRED_PLACEMENT_DIGEST_DOMAIN: &str =
+    "application/vnd.dorc.receipt.v1.local-publication";
+
 /// What a placement answered about one required landing.
 ///
 /// A REPORT and never authority: it says what a placement claims it did, in primitives, and the
@@ -679,6 +688,8 @@ impl RequiredPlacementLanding {
 pub enum IntentPublicationMismatch {
     /// The intent's own policy is not the one a required publication answers.
     PolicyIsNotRequired,
+    /// The placement reported landing bytes other than the ones that were sealed.
+    LandingNamesOtherBytes,
 }
 
 /// Why publishing an accounted intent did not produce a gate value.
@@ -700,14 +711,21 @@ impl AccountedApplyIntent {
     /// keeps the identity a publication records and the identity a placement filed the same
     /// one.
     ///
+    /// `sealed` is the digest of the exact document bytes the caller is handing over, taken under
+    /// [`REQUIRED_PLACEMENT_DIGEST_DOMAIN`]. The landing's own digest is compared against it, so a
+    /// placement that filed some other bytes is a refusal rather than a publication naming a
+    /// document nobody wrote.
+    ///
     /// `T` is whatever the placement wants to carry back out beside its landing — where the
     /// document went, typically — so a caller needs no side channel out of the closure.
     ///
     /// # Errors
-    /// Answers the placement's own refusal, and a policy that is not the required one.
+    /// Answers the placement's own refusal, a policy that is not the required one, and a landing
+    /// over bytes other than the ones sealed.
     pub fn publish_through<T, E>(
         self,
         id: ApplyIntentId,
+        sealed: Sha256Digest,
         place: impl FnOnce(ApplyIntentId) -> Result<(RequiredPlacementLanding, T), E>,
     ) -> Result<(PublishedApplyIntentV1, T), PublicationThrough<E>> {
         if self.intent.policy.token() != RecordedApplyPolicy::RequiredRich {
@@ -716,6 +734,11 @@ impl AccountedApplyIntent {
             ));
         }
         let (landing, carried) = place(id).map_err(PublicationThrough::Placement)?;
+        if landing.document_digest() != sealed {
+            return Err(PublicationThrough::Mismatch(
+                IntentPublicationMismatch::LandingNamesOtherBytes,
+            ));
+        }
         Ok((
             PublishedApplyIntentV1 {
                 id,

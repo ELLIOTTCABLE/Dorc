@@ -151,12 +151,16 @@ fn dispatched(ids: &mut Counter) -> MutationDispatched {
     else {
         panic!("the projection carries every assignment's own image")
     };
-    match accounted.publish_through(ApplyIntentId::mint(ids), |_| {
+    // One digest on both sides: the required route COMPARES what the placement reports against
+    // what the caller sealed, so a fixture must answer the same value to drive the ordinary route
+    // rather than the mismatch arm.
+    let sealed = dorc_receipt::ids::Sha256Digest::over(
+        dorc_receipt::dispatch::REQUIRED_PLACEMENT_DIGEST_DOMAIN,
+        b"the modelled document",
+    );
+    match accounted.publish_through(ApplyIntentId::mint(ids), sealed, |_| {
         Ok::<_, ()>((
-            RequiredPlacementLanding::of(
-                dorc_receipt::ids::Sha256Digest::over("fixture-placement", b"bytes"),
-                "required-local-v1",
-            ),
+            RequiredPlacementLanding::of(sealed, "required-local-v1"),
             (),
         ))
     }) {

@@ -15,8 +15,8 @@ use dorc_receipt::dispatch::{
     ApplyDestination, ApplySessionReady, DurableFailure, ExecutionIntegrityFailure,
     IntentPreparationRefusal, IntentPublicationMismatch, PendingApplyAssignment, PendingOrigins,
     PlanOriginOccurrence, PostDispatchFailure, PreparedApplyIntent, PublicationThrough,
-    ReadyApplyTarget, ReceiptPolicyWitness, RequiredPlacementLanding, ResolvedApplyContext,
-    ResolvedAxis,
+    REQUIRED_PLACEMENT_DIGEST_DOMAIN, ReadyApplyTarget, ReceiptPolicyWitness,
+    RequiredPlacementLanding, ResolvedApplyContext, ResolvedAxis,
 };
 use dorc_receipt::ids::{
     ApplyGenerationId, ApplyIntentId, ApplySessionId, PlanReceiptId, PresentedPlanId,
@@ -108,13 +108,18 @@ fn only_image_bytes(prepared: &PreparedApplyIntent) -> Vec<u8> {
     only.image().encode().to_vec()
 }
 
+/// The digest of the bytes this battery pretends to have sealed and placed.
+///
+/// One value on both sides, because the required route COMPARES them: a fixture answering a
+/// different digest would be exercising the mismatch arm rather than the ordinary route.
+fn sealed_digest() -> Sha256Digest {
+    Sha256Digest::over(REQUIRED_PLACEMENT_DIGEST_DOMAIN, b"the sealed document")
+}
+
 /// A landing a fixture placement reports. Carries no authority of its own — the publication is
 /// minted inside `publish_through`, which is the point.
 fn landing() -> RequiredPlacementLanding {
-    RequiredPlacementLanding::of(
-        Sha256Digest::over("fixture-placement", b"bytes"),
-        "required-local-v1",
-    )
+    RequiredPlacementLanding::of(sealed_digest(), "required-local-v1")
 }
 
 #[test]
@@ -401,7 +406,9 @@ fn a_permit_carries_the_session_and_the_declared_set_of_the_intent_that_was_publ
 
     let id = ApplyIntentId::mint(&mut ids);
     let (published, filed) = accounted
-        .publish_through(id, |handed| Ok::<_, ()>((landing(), handed)))
+        .publish_through(id, sealed_digest(), |handed| {
+            Ok::<_, ()>((landing(), handed))
+        })
         .expect("a placement that answered clears the publication");
     assert_eq!(
         filed.hex(),
@@ -451,7 +458,7 @@ fn a_placement_that_refuses_produces_no_publication_and_therefore_no_permit() {
 
     let id = ApplyIntentId::mint(&mut ids);
     let refused = accounted
-        .publish_through(id, |_| {
+        .publish_through(id, sealed_digest(), |_| {
             Err::<(RequiredPlacementLanding, ()), _>("the store declined")
         })
         .err();
@@ -475,6 +482,48 @@ fn only_a_durable_failure_narrows_out_of_the_post_dispatch_set() {
         PostDispatchFailure::ExecutionIntegrity(ExecutionIntegrityFailure).durable_only(),
         None,
         "not knowing what executed never narrows to a logging problem"
+    );
+}
+
+#[test]
+fn a_landing_over_other_bytes_than_the_ones_sealed_clears_no_gate() {
+    // The one thing the placement's answer is still CHECKED for. A store that filed some other
+    // document — or reported a digest it did not compute over what it was handed — would
+    // otherwise produce a publication naming bytes nobody wrote, and the outcome document would
+    // point a later reader at them.
+    let mut ids = Counter(0);
+    let intent = prepared_under(&mut ids, ReceiptPolicyWitness::required_rich());
+    let exact = only_image_bytes(&intent);
+    let accounted = intent
+        .account_images(
+            &[OverlayEntry::of(
+                7,
+                OpaqueFieldTag::ApplyArtifactImage,
+                exact,
+            )],
+            &|_: AssignmentOrdinal| Some(7_u64),
+        )
+        .expect("the region carries the image's own bytes");
+
+    let elsewhere = RequiredPlacementLanding::of(
+        Sha256Digest::over(REQUIRED_PLACEMENT_DIGEST_DOMAIN, b"some other document"),
+        "required-local-v1",
+    );
+    assert_ne!(
+        elsewhere.document_digest(),
+        sealed_digest(),
+        "the two fixture documents really do digest differently"
+    );
+    assert_eq!(
+        accounted
+            .publish_through(ApplyIntentId::mint(&mut ids), sealed_digest(), |_| {
+                Ok::<_, ()>((elsewhere, ()))
+            })
+            .err(),
+        Some(PublicationThrough::Mismatch(
+            IntentPublicationMismatch::LandingNamesOtherBytes
+        )),
+        "a landing over other bytes is a refusal, not a publication"
     );
 }
 
@@ -509,7 +558,7 @@ fn a_bypass_policy_intent_cannot_be_published_through_the_required_route() {
 
     let mut placement_was_called = false;
     let refused = accounted
-        .publish_through(ApplyIntentId::mint(&mut ids), |_| {
+        .publish_through(ApplyIntentId::mint(&mut ids), sealed_digest(), |_| {
             placement_was_called = true;
             Ok::<_, ()>((landing(), ()))
         })
