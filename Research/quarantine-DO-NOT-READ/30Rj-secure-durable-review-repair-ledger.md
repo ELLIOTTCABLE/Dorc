@@ -177,17 +177,22 @@ through the retained handle immediately afterwards either way.
 - **Enumeration stays by path, deliberately.** A name a walk produces carries no authority: every
   entry is re-opened, non-following and parent-relative, before a byte of it is read. Said in the
   module header rather than left to be inferred.
-- **Removal is bound to the OBJECT.** An exclusive create records the device and inode `fstat`
-  answered through the handle it returned; `RemoveOwned` re-opens non-following, re-reads that
-  identity, and refuses if it moved. A create whose identity could not be read refuses rather than
-  removing by name — the incomplete file is left, which is `30Rd`'s ruled answer.
+- **Removal DECLINES on Unix.** `unlink` and `unlinkat` both name an object by its path, and this
+  dependency set offers no way to condition either on which object the path currently holds.
+  Re-opening the name and comparing device and inode first only moves the window: the comparison
+  answers about its own instant, and the unlink that follows still removes whatever holds the name
+  by then. So `RemoveOwned` returns `IoFault::Unavailable` — a new arm meaning NOTHING WAS
+  ATTEMPTED, distinct from every arm reporting what a real attempt met — and the store surfaces it
+  as `CleanupFailure::Unavailable`. Ownership and kind are still checked FIRST, so an unowned path
+  answers `Denied` for the reason it is unowned rather than for the platform's shortfall.
 - **Store ownership.** `validate_directory` now requires `ownership_established()` on a Unix
   landing, for every Dorc-owned component. The separately-ruled read-permission posture is
   untouched: a group- or other-READABLE root still opens, and only WRITE is refused.
 - **Windows unchanged and explicitly weaker.** Its open keeps the pre-check shape (`std` follows
   the final component and this dependency set carries no safe non-following open for the
   platform), a directory retains no handle and answers `None`, ownership is not answered, and
-  removal is by name. Every one of those is stated where it happens rather than simulated.
+  removal is by name. Every one of those is stated where it happens rather than simulated. See the
+  OPEN below: the Unix decline leaves this asymmetric in the uncomfortable direction.
 - **The sealed vocabulary did not move.** Production and the deterministic model still implement
   the same `LocalIo` `Request`/`Answer` set, so the failure sweep exercises the shipped state
   machine; the only structural change is that `open_existing` answers `Option<File>` internally,
@@ -198,28 +203,42 @@ every one of its dependencies is already in the lockfile, and features are not r
 the pin and the offline build are unmoved. `std` is named because the handles crossing this seam
 are `std::fs::File`s.
 
-**RESIDUAL, disclosed in the module header as well as here.** There is no portable
-unlink-by-descriptor, so a window remains between the identity check and the `unlinkat`. It is
-narrower than the name-only removal it replaced by exactly the part that was unbounded, and the
-alternative — never removing anything — strands every interrupted publication, which `30Rd` rules
-worse.
+**CARRIED DEFECT, disclosed in the module header as well as here.** The decline strands every
+interrupted publication: a partial file nothing collects, in a store with no retention, forever.
+This is not a desirable resting state and the code says so in those words — it is taken only
+because the one alternative on offer is unlinking a name, which is how a failure handler deletes
+somebody else's work, and `30Rd` rules that worse than the litter. No remedy is scheduled. A
+future one chooses between a platform-specific identity-conditioned removal and a store that can
+sweep its own leavings; neither is restoring something this repair took away.
 
 **Tests.** Three native Unix cases in a `native_store::object_identity` module driving the I/O
 vocabulary directly, because a store-level case cannot interleave a swap between two acts: the
-handle still reads its own object after the name is replaced; a removal refuses once the name
-holds a different object (with the positive control that an object still this attempt's does go);
-and a redirected final component is refused with nothing behind it reached. One model case in
-`store_sweep` drives the ownership refusal across both admitted modes and both components, with
-the positive control beside it.
+handle still reads its own object after the name is replaced; a removal of an object this attempt
+DID create declines and leaves it standing, with the unowned path beside it still answering
+`Denied`; and a redirected final component is refused with nothing behind it reached. One model
+case in `store_sweep` drives the ownership refusal across both admitted modes and both
+components, with the positive control beside it.
+
+The removal case deliberately pins the CLEAN path rather than the swapped one. A case that only
+checks the swapped name passes against the shape this replaced — check-then-unlink removes
+correctly right up until a swap lands inside the window the check opened, which is precisely what
+no test can stage.
 
 **Honest about what a test cannot show.** The redirect case pins the refusal and the untouched
 target; it does NOT distinguish the atomic open from the pre-check, because both answer
 `Redirect` and only an interleaving separates them. That is said in the case's own comment rather
 than left for a reader to assume. The atomicity is carried by `O_NOFOLLOW` being on the open.
 
-**Falsified.** Removing the identity check turns the removal case from `Err(Denied)` into
-`Ok(Done)` — it deletes the replacement. Removing the ownership check turns the store case from
-`PermissionRefused` into an opened store. Both were re-run red before the checks were restored.
+**Falsified.** Restoring any name-based unlink turns the removal case from `Err(Unavailable)` with
+the file standing into `Ok(Done)` with it gone. Removing the ownership check turns the store case
+from `PermissionRefused` into an opened store.
+
+**Consequence taken deliberately.** With no removal conditioned on identity, the recorded identity
+conditioned nothing, so `CreatedIdentity` and `created_identity` are DELETED and `NativeIo`
+remembers only the kind it created at each path. Keeping a field named `identity` that binds no
+act would be the same untruthful-surface class `30Ri` was about. This is ~35 lines beyond the
+literal decline and is a judgement call: the state is recoverable from git if a later round wants
+it dormant.
 
 ## Handoff
 
@@ -244,10 +263,20 @@ of permitted callers.
 2. `LocallyAuthenticated`'s mint is closed to code outside `dorc-cli`; inside it, Rust offers no
    finer visibility for a tuple-struct literal, so the crate is the perimeter and one lexical
    assertion names the file that writes one.
-3. Unix removal re-identifies the object immediately before `unlinkat`, and no portable
-   unlink-by-descriptor closes the last window.
+3. Unix cannot remove an object by anything but its name, so it removes nothing at all and the
+   incomplete file is stranded — a carried defect, detailed under the local section.
 4. The `O_NOFOLLOW` atomicity is not testable without a race; the redirect case pins the refusal
    and says in its own comment that it does not pin the atomicity.
+
+**OPEN — Windows still removes by name, and wants a ruling.** By the same predicate that makes
+Unix decline, Windows has no identity-conditioned removal either, so it deletes an object of
+uncertain identity: exactly what `30Rd` prefers not to do. It was left alone because the brief
+says keep the weaker baseline "otherwise unchanged", and because Windows never CLAIMED identity
+binding — it documents removal-by-name, so it was honest where Unix was not, and `30Ri` does not
+name it. The result is nonetheless the stronger platform declining while the weaker one deletes.
+Making Windows decline too is a small edit; making it safe instead needs a handle-based deletion
+(`FILE_FLAG_DELETE_ON_CLOSE` / `SetFileInformationByHandle`) that this dependency set cannot spell
+and this brief forbids adding.
 
 **Not touched, deliberately.** Receipt grammar, species, source custody, locators, graph
 semantics, algorithms, retention, why arrangement, help prose, kernel re-derivation, provider UX,
@@ -263,3 +292,10 @@ commit in a throwaway worktree and comparing the failure sets. The cause is flag
 `--last`, `--whylog` and `--whylog-dir` are not in `parse_args_from`'s known set, and `nearest`
 suggests a candidate equal to the word typed. `cli/src/lib.rs` is byte-identical to the tip, and
 the CLI surface is on this brief's exclusion list, so nothing here touches it.
+
+**Gate state.** `gate:full-quiet` at the final repair tip fails ONLY that set, on both legs, with
+the failure set identical to the one the handoff tip produces. The Windows leg was run standalone
+rather than through `both`, because `both` aborts before its second leg once the first exits on
+that inherited red; the Unix-only cases and the `cfg`-gated edit were covered by running the
+`dorc-receipt-local` and `dorc-cli` packages under WSL at the same tip, where receipt-local is
+fully green and every failure belongs to the flag-table family above.
