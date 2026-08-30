@@ -89,11 +89,11 @@ options:
 --results <file>        read the probe results from <file>; for `why`, answer
                         from those records rather than the saved receipt
 --risk-faultless-skips  opt into the survival tier (default off)
---whylog-dir <dir>      where receipts are written and read
---no-whylog             write no receipt for this run
---last                  answer from the most recent receipt (what `why` does
-                        anyway)
---receipt <id>          [unwritten: cli-help-option-receipt]
+--receipts <folder>     [unwritten: cli-help-option-receipts]
+--no-receipt            [unwritten: cli-help-option-no-receipt]
+--receipt-last          [unwritten: cli-help-option-receipt-last]
+--receipt-id <id>       [unwritten: cli-help-option-receipt-id]
+--receipt <file>        [unwritten: cli-help-option-receipt]
 --all                   for `why`, print everything the engine holds: every
                         link, unselected, plus collapse classes with no
                         narration yet

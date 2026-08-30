@@ -4,12 +4,12 @@ when-fires: two flags that cannot both hold were both given. cli/lib.rs parse_ar
 why: declarations-genuinely-contradict: a pre-network fail-fast rather than a precedence rule, because either silent winner would be a guess at intent.
 ---
 -- replay --
-$ dorc why --last --whylog=run.whylog --whylog-dir=logs
-dorc: error[cli-flags-mutually-exclusive]: The `--whylog` and `--whylog-dir`
-flags cannot both be given.
+$ dorc why --receipt-last --receipt-id=0123456789abcdef
+dorc: error[cli-flags-mutually-exclusive]: The `--receipt-id` and
+`--receipt-last` flags cannot both be given.
 usage: dorc [probe|plan|apply] --book=<book.sh> [--pre-source <sh>]... [--debug-argv]
 
 $ dorc-loom --this vars
 case: cli-flags-mutually-exclusive
-{{first}} = "--whylog"
-{{second}} = "--whylog-dir"
+{{first}} = "--receipt-id"
+{{second}} = "--receipt-last"

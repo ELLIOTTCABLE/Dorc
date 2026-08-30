@@ -4,6 +4,6 @@ when-fires: a `dorc why` that answers from the local receipt store found nothing
 why: Asking why is a READ, and it creates nothing to make itself answerable: a run that minted a fresh keyset here could not open the receipts written under the old one, so an empty answer is the honest one and this is what says so. Warning rather than error, because nothing about the run being asked about failed - there is simply no durable to explain, and the repair is in the operator's own profile rather than in the book. Remediation register (help) wanted: name what to check for the reported reason word, distinguish "no receipt has ever been written here" from "the store is there and would not open", and say that the tool removes and repairs nothing on this path.
 ---
 -- replay --
-$ dorc why --last
+$ dorc why --receipt-last
 receipt: warning[durable-receipt-unreadable]: [unwritten:
 durable-receipt-unreadable]
