@@ -116,6 +116,13 @@ pub enum IoFault {
     OverBound,
     /// Some bytes moved and some did not.
     Partial,
+    /// The platform has no operation that conditions this act on the object's identity, so
+    /// NOTHING WAS ATTEMPTED and the object is exactly as it was.
+    ///
+    /// Distinct from every arm above, which report what a real attempt met. This one reports that
+    /// no attempt was made, which is the only honest answer where acting would mean acting on a
+    /// name and hoping it still holds the object it named.
+    Unavailable,
     /// The platform refused for a reason this vocabulary does not distinguish.
     ///
     /// The one open arm, and it is deliberately unhelpful: a caller cannot branch usefully on it,
@@ -588,10 +595,14 @@ pub(crate) fn inspect_opened(io: &mut dyn LocalIo, path: &str) -> Result<ObjectF
 
 /// Remove an object this attempt created and still owns.
 ///
-/// Both implementations refuse a path this attempt did not create, so this is never a removal by
+/// Every implementation refuses a path this attempt did not create, so this is never a removal by
 /// pathname. Nothing in this crate reaches it on its own initiative: a caller gets here only by
 /// consuming the ownership token a failed publication hands back, which is what keeps removal an
 /// act somebody asked for rather than a cleanup that runs by itself.
+///
+/// A platform that cannot condition the removal on the created object's identity answers
+/// [`IoFault::Unavailable`] and leaves the object standing — see `native`'s module documentation
+/// for which platforms can and what the incomplete file is then worth.
 pub(crate) fn remove_owned(io: &mut dyn LocalIo, path: &str) -> Result<(), IoFault> {
     done(io, Request::RemoveOwned, path)
 }

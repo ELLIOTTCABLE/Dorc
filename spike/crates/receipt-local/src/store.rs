@@ -217,6 +217,13 @@ pub enum CleanupFailure {
     NotOwned,
     /// It is already gone.
     Vanished,
+    /// The platform cannot remove an object by anything but its NAME, so nothing was attempted
+    /// and the incomplete file is still there — permanently, since nothing else collects it.
+    ///
+    /// Not a degraded `Refused`: a refusal reports an attempt the platform turned down, and this
+    /// reports an attempt deliberately not made. Nor is it a satisfactory outcome; it is a
+    /// carried defect, described where it is implemented in `native`.
+    Unavailable,
     /// The platform refused.
     Refused,
 }
@@ -473,7 +480,8 @@ impl<D: StoredSpecies, P: Projection> RequiredLocalPublicationV1<D, P> {
 /// crate calls.
 ///
 /// Dropping one is a legitimate outcome: what it leaves is bounded partial evidence that no later
-/// writer replaces.
+/// writer replaces. Spending one reaches the same disk on a platform that cannot express an
+/// identity-conditioned removal — [`CleanupFailure::Unavailable`], and the file stays.
 #[derive(Debug)]
 pub struct IncompletePublicationOwned {
     root: LocalPath,
@@ -1165,9 +1173,13 @@ impl LocalReceiptStoreV1 {
     /// replaces. The underlying operation refuses any path this attempt did not create, so a
     /// failure here is reported and never broadened into removal by pathname.
     ///
+    /// Spending the token is not the same as removing anything: where the platform can only reach
+    /// an object by its name, the answer is [`CleanupFailure::Unavailable`] and the incomplete
+    /// file is left exactly as the token described it.
+    ///
     /// # Errors
     /// Refuses a token from another store, an object this attempt does not own, one already gone,
-    /// and a removal the platform refused.
+    /// a removal the platform refused, and one the platform cannot express safely at all.
     pub fn remove_owned(
         &self,
         io: &mut dyn LocalIo,
@@ -1180,6 +1192,7 @@ impl LocalReceiptStoreV1 {
         io::remove_owned(io, path.as_str()).map_err(|fault| match fault {
             IoFault::Denied => CleanupFailure::NotOwned,
             IoFault::NotFound => CleanupFailure::Vanished,
+            IoFault::Unavailable => CleanupFailure::Unavailable,
             _ => CleanupFailure::Refused,
         })
     }

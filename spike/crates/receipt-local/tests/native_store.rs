@@ -478,41 +478,43 @@ mod object_identity {
     }
 
     #[test]
-    fn a_removal_refuses_once_the_name_holds_a_different_object() {
-        // Cleanup is bound to the object this attempt CREATED, not to the pathname it remembered.
-        // A failure handler that removed by name would delete whatever had since taken the name,
-        // which is somebody else's work.
-        let sandbox = Sandbox::new("swapremove");
-        let taken = sandbox.root.join("incomplete");
-        let taken_name = spelled(&taken);
+    fn a_removal_declines_and_leaves_the_object_where_it_is() {
+        // Unix can only unlink a NAME, so cleanup here is not a removal that happens to be
+        // guarded — it is a removal that never happens. This pins the decline itself, because the
+        // shape it replaced (re-open, compare device and inode, then unlink) also passes a test
+        // that only checks the swapped case: it removes correctly right up until the swap lands
+        // in the window the comparison opened.
+        let sandbox = Sandbox::new("declineremove");
+        let mine = sandbox.root.join("incomplete");
+        let mine_name = spelled(&mine);
 
         let mut io = NativeIo::new();
-        io.perform(Request::CreateFileExclusive, &taken_name)
-            .expect("an exclusive create");
-        std::fs::remove_file(&taken).expect("the fixture's own file to unlink");
-        std::fs::write(&taken, b"somebody else's work").expect("a replacement at that name");
-
-        assert_eq!(
-            io.perform(Request::RemoveOwned, &taken_name),
-            Err(IoFault::Denied),
-            "a name this attempt created and somebody else replaced is not this attempt's to remove"
-        );
-        assert_eq!(
-            std::fs::read(&taken).expect("it survives"),
-            b"somebody else's work"
-        );
-
-        // The positive control: an object still the one this attempt made does go, so the refusal
-        // above is about identity rather than about removal being broken.
-        let mine = sandbox.root.join("mine");
-        let mine_name = spelled(&mine);
         io.perform(Request::CreateFileExclusive, &mine_name)
-            .expect("a second exclusive create");
+            .expect("an exclusive create");
+
         assert_eq!(
             io.perform(Request::RemoveOwned, &mine_name),
-            Ok(Answer::Done)
+            Err(IoFault::Unavailable),
+            "an unlink conditioned on a name is not a removal of the object this attempt created"
         );
-        assert!(!mine.exists(), "the object this attempt owns was removed");
+        assert!(
+            mine.exists(),
+            "the incomplete file is left standing rather than removed by name"
+        );
+
+        // And the ownership questions are still asked first, so a path nobody created answers why
+        // it was refused rather than reporting the platform's shortfall.
+        let strangers = sandbox.root.join("not-mine");
+        std::fs::write(&strangers, b"somebody else's work")
+            .expect("a file this attempt did not make");
+        assert_eq!(
+            io.perform(Request::RemoveOwned, &spelled(&strangers)),
+            Err(IoFault::Denied)
+        );
+        assert_eq!(
+            std::fs::read(&strangers).expect("it survives"),
+            b"somebody else's work"
+        );
     }
 
     #[test]

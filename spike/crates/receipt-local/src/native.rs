@@ -26,15 +26,28 @@
 //! refused by inspecting the name before the open, ownership is not answered at all, and neither
 //! is ever rendered as equivalent to what Unix answers.
 //!
-//! # What ownership binds, and where it stops
+//! # Why Unix removes nothing
 //!
-//! An object this attempt CREATED is remembered by its identity — on Unix the device and inode
-//! `fstat` answered through the handle the exclusive create returned — and a removal re-opens
-//! non-following, re-reads that identity, and refuses if it moved. DISCLOSED residual: there is
-//! no portable unlink-by-descriptor, so a window remains between that check and the `unlinkat`.
-//! It is narrower than the name-only removal it replaced by exactly the part that was
-//! unbounded, and the alternative — never removing anything — would strand every interrupted
-//! publication, which `30Rd` rules worse.
+//! Every removal this crate can express names an object by its PATH, and no Unix in this
+//! dependency set can condition the unlink on which object that path currently holds. Re-opening
+//! the name and re-reading its device and inode first does not close that: the answer is stale
+//! the instant it is read, and the unlink that follows still removes whatever holds the name a
+//! moment later. So the Unix removal DECLINES — it reports [`IoFault::Unavailable`] without
+//! touching anything, and the incomplete file stays where it is.
+//!
+//! This is a DEFECT that is being carried, not a resting state anybody wants. An interrupted
+//! publication now strands a partial file that nothing collects, in a store with no retention,
+//! forever. It is carried because the only other option on offer is unlinking a name, which is
+//! how a failure handler deletes somebody else's work, and `30Rd` rules that worse than the
+//! litter. No remedy is scheduled; whoever schedules one is choosing between a platform-specific
+//! capability and a store that can sweep its own leavings, not restoring something that was lost.
+//!
+//! The identity a check-then-unlink would have compared is not recorded at all, because recording
+//! it would say this crate binds a removal it cannot bind.
+//!
+//! Windows removes by name under the explicitly weaker baseline, unchanged and never rendered as
+//! equivalent: it answers no ownership, retains no directory handle, and its `remove_file` reaches
+//! an object this attempt created inside a directory the per-user profile owns.
 
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -47,45 +60,18 @@ use crate::io::{
 };
 use crate::store::DirectorySync;
 
-/// The identity of an object this attempt created.
-///
-/// What a later removal must still be looking at. Unix answers a device and an inode through the
-/// handle the create returned; Windows exposes no comparable answer through this crate's
-/// dependency set and says so rather than defaulting either way.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CreatedIdentity {
-    /// The platform could not name the object beyond its path.
-    Unnamed,
-    /// The device and inode this attempt's own create produced.
-    #[cfg(unix)]
-    Unix {
-        /// Which filesystem.
-        device: u64,
-        /// Which object on it.
-        inode: u64,
-    },
-}
-
-/// What this attempt created at one path.
-///
-/// The KIND rides beside the identity because the two creates are different acts and only one of
-/// them is removable: this crate's single removal unlinks a FILE, and a request naming a
-/// directory it made is refused rather than reaching a call that would fail obscurely.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CreatedObject {
-    kind: ObjectKind,
-    identity: CreatedIdentity,
-}
-
 /// The real filesystem.
 ///
-/// Holds the handles this attempt opened and the identities of the objects it created. Both are
-/// per-attempt, which is what lets ownership be answered honestly: an object this attempt made is
-/// one it can say it owns, and an object it merely found is not.
+/// Holds the handles this attempt opened and the KIND it created at each path it created. Both
+/// are per-attempt, which is what lets ownership be answered honestly: an object this attempt
+/// made is one it can say it owns, and an object it merely found is not. The kind is what is
+/// remembered because the two creates are different acts and only one of them is ever removable:
+/// a request naming a directory this attempt made is refused rather than reaching a call that
+/// would fail obscurely.
 #[derive(Debug, Default)]
 pub struct NativeIo {
     open: BTreeMap<String, File>,
-    created: BTreeMap<String, CreatedObject>,
+    created: BTreeMap<String, ObjectKind>,
 }
 
 impl NativeIo {
@@ -155,26 +141,14 @@ impl LocalIo for NativeIo {
         match request {
             Request::CreateDirectoryExclusive => {
                 create_directory(self, path)?;
-                self.created.insert(
-                    path.to_owned(),
-                    CreatedObject {
-                        kind: ObjectKind::Directory,
-                        identity: CreatedIdentity::Unnamed,
-                    },
-                );
+                self.created.insert(path.to_owned(), ObjectKind::Directory);
                 Ok(Answer::Done)
             }
             Request::CreateFileExclusive => {
                 let file = create_file(self, path)?;
-                let identity = created_identity(&file);
                 self.open.insert(path.to_owned(), file);
-                self.created.insert(
-                    path.to_owned(),
-                    CreatedObject {
-                        kind: ObjectKind::RegularFile,
-                        identity,
-                    },
-                );
+                self.created
+                    .insert(path.to_owned(), ObjectKind::RegularFile);
                 Ok(Answer::Done)
             }
             Request::OpenExistingNoFollow { intent } => {
@@ -222,17 +196,16 @@ impl LocalIo for NativeIo {
                 }
                 Ok(Answer::Entries(BoundedEntries::of(names, limit)))
             }
-            // re-identified immediately before it goes: a removal by pathname alone is how a
-            // failure handler deletes somebody else's work
+            // The ownership questions are asked before the platform is, so a platform that
+            // declines outright still refuses an unowned path for the reason it is unowned.
             Request::RemoveOwned => {
                 let Some(made) = self.created.get(path).copied() else {
                     return Err(IoFault::Denied);
                 };
-                if made.kind != ObjectKind::RegularFile {
+                if made != ObjectKind::RegularFile {
                     return Err(IoFault::WrongKind);
                 }
-                self.open.remove(path);
-                remove_created(self, path, made.identity)?;
+                remove_created(self, path)?;
                 self.created.remove(path);
                 Ok(Answer::Done)
             }
@@ -338,23 +311,6 @@ fn access_of(metadata: &std::fs::Metadata) -> GroupAndOtherAccess {
 #[cfg(windows)]
 fn access_of(_: &std::fs::Metadata) -> GroupAndOtherAccess {
     GroupAndOtherAccess::NotInspectable
-}
-
-/// The identity of a file this attempt just created, for binding its own removal to it.
-#[cfg(unix)]
-fn created_identity(file: &File) -> CreatedIdentity {
-    use std::os::unix::fs::MetadataExt as _;
-    file.metadata()
-        .map_or(CreatedIdentity::Unnamed, |metadata| CreatedIdentity::Unix {
-            device: metadata.dev(),
-            inode: metadata.ino(),
-        })
-}
-
-/// Windows names an object by its path here and says so; see the module note on the baseline.
-#[cfg(windows)]
-const fn created_identity(_: &File) -> CreatedIdentity {
-    CreatedIdentity::Unnamed
 }
 
 /// What a `rustix` failure means in this crate's vocabulary.
@@ -507,32 +463,27 @@ const fn sync_directory(_: &NativeIo, _: &str) -> Result<Answer, IoFault> {
     Ok(Answer::Done)
 }
 
-/// Remove the object this attempt created, and only if it is still that object.
+/// Decline, without touching anything.
 ///
-/// The name is re-opened non-following and its identity re-read before the unlink, so a name this
-/// attempt created and somebody else replaced is a refusal rather than a deletion of their work.
+/// Unix removes by NAME — `unlink` and `unlinkat` both do — and offers no way to say "only if this
+/// path still holds the object I created". Re-opening the name and comparing its device and inode
+/// first would answer about the instant of the comparison and not about the instant of the unlink,
+/// so the removal it licenses is still a removal of whatever holds the name by then.
+///
+/// So this hands back a refusal and strands the incomplete file — the carried defect the module
+/// note describes, taken over deleting an object whose identity is uncertain.
 #[cfg(unix)]
-fn remove_created(io: &NativeIo, path: &str, identity: CreatedIdentity) -> Result<(), IoFault> {
-    use rustix::fs::AtFlags;
-    let CreatedIdentity::Unix { device, inode } = identity else {
-        // unprovable identity leaves the object rather than removing by name
-        return Err(IoFault::Denied);
-    };
-    let opened = open_existing(io, path, OpenIntent::Read)?.ok_or(IoFault::Platform)?;
-    if created_identity(&opened) != (CreatedIdentity::Unix { device, inode }) {
-        return Err(IoFault::Denied);
-    }
-    drop(opened);
-    match (io.parent_handle(path), NativeIo::leaf(path)) {
-        (Some(parent), Some(name)) => rustix::fs::unlinkat(parent, name, AtFlags::empty()),
-        _ => rustix::fs::unlink(path),
-    }
-    .map_err(errno_of)
+fn remove_created(_: &mut NativeIo, _: &str) -> Result<(), IoFault> {
+    Err(IoFault::Unavailable)
 }
 
-/// Windows removes by name under the weaker baseline: no identity is available to bind to, and
-/// the object is one this attempt created inside a directory the per-user profile owns.
+/// Windows removes by name under the weaker baseline, unchanged: no identity is available to bind
+/// to, and the object is one this attempt created inside a directory the per-user profile owns.
+///
+/// The retained handle goes first, because a file this attempt still holds open is not one the
+/// platform reliably unlinks.
 #[cfg(windows)]
-fn remove_created(_: &NativeIo, path: &str, _: CreatedIdentity) -> Result<(), IoFault> {
+fn remove_created(io: &mut NativeIo, path: &str) -> Result<(), IoFault> {
+    io.open.remove(path);
     std::fs::remove_file(path).map_err(|error| fault_of(&error))
 }
