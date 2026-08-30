@@ -557,9 +557,8 @@ fn ingest_recognized(
     bytes: Vec<u8>,
 ) -> Option<String> {
     use dorc_cli::durable::NamedSpecies;
-    // The three reads answer a LOCALLY-AUTHENTICATED envelope or nothing; there is no
-    // self-asserted arm to discard here, because this edge holds exactly one keyset and a
-    // document naming another provider is a read that did not happen.
+    // no self-asserted arm: this edge holds one keyset, so another provider is a read that did
+    // not happen
     match entry.species() {
         NamedSpecies::Plan => match open.read_plan(bytes) {
             Ok(document) => {

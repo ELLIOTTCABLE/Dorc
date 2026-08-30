@@ -178,9 +178,7 @@ impl LocalIo for NativeIo {
                 Ok(Answer::Done)
             }
             Request::OpenExistingNoFollow { intent } => {
-                // `None` is the Windows baseline for a directory: the platform has no handle to
-                // retain for one, so the inspection below answers from the NAME there and says so
-                // through `ObjectFacts`. On Unix every open retains.
+                // `None` only on Windows, for a directory: no handle to retain
                 if let Some(file) = open_existing(self, path, intent)? {
                     self.open.insert(path.to_owned(), file);
                 }
@@ -224,8 +222,8 @@ impl LocalIo for NativeIo {
                 }
                 Ok(Answer::Entries(BoundedEntries::of(names, limit)))
             }
-            // Only the OBJECT this attempt created, re-identified immediately before it goes. A
-            // removal by pathname alone is how a failure handler deletes somebody else's work.
+            // re-identified immediately before it goes: a removal by pathname alone is how a
+            // failure handler deletes somebody else's work
             Request::RemoveOwned => {
                 let Some(made) = self.created.get(path).copied() else {
                     return Err(IoFault::Denied);
@@ -517,9 +515,7 @@ const fn sync_directory(_: &NativeIo, _: &str) -> Result<Answer, IoFault> {
 fn remove_created(io: &NativeIo, path: &str, identity: CreatedIdentity) -> Result<(), IoFault> {
     use rustix::fs::AtFlags;
     let CreatedIdentity::Unix { device, inode } = identity else {
-        // A create whose identity could not be read is a create this attempt cannot prove it
-        // still owns. Leaving the object is the ruled answer: bounded partial evidence no later
-        // writer replaces, rather than a removal by name.
+        // unprovable identity leaves the object rather than removing by name
         return Err(IoFault::Denied);
     };
     let opened = open_existing(io, path, OpenIntent::Read)?.ok_or(IoFault::Platform)?;

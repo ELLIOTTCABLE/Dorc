@@ -1053,10 +1053,8 @@ mod tests {
 
     #[test]
     fn the_signer_trust_vocabulary_stays_the_two_words_a_report_renders() {
-        // Spelled out here rather than only at the declaration: these two words are what a report
-        // says about a document's material, and an edited one re-labels every listing already
-        // written while the census above goes on passing (it compares two lists that moved
-        // together).
+        // the census above compares two lists that move together, so an edited word passes it
+        // while re-labelling every listing already written
         assert_eq!(RecordedSignerTrust::Trusted.token(), "trusted");
         assert_eq!(RecordedSignerTrust::SelfAsserted.token(), "self-asserted");
     }

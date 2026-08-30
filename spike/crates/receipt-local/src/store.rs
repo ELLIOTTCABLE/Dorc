@@ -368,11 +368,6 @@ const fn wire_token_of(species: NamedSpecies) -> &'static str {
     }
 }
 
-// The domain this store's landing digest is taken under is `dorc-receipt`'s
-// `REQUIRED_PLACEMENT_DIGEST_DOMAIN`, not one spelled here: the required publication compares
-// this answer against a digest IT computed over the bytes it sealed, and two spellings would make
-// every comparison fail — or, if one were ever widened, make one pass that should not.
-
 /// What the fixed V1 production publication demands.
 ///
 /// Private field, and the only mint is [`LocalReceiptStoreV1::required_policy`]: the baseline a

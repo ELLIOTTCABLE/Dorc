@@ -684,16 +684,10 @@ pub fn publish_apply_intent(
     let order = clock.order_token();
     let skeleton = rich_skeleton(id.hex(), order, records, signer, sealer);
     let document = seal_and_sign::<ApplyIntent>(skeleton, &details, limits, signer, sealer)?;
-    // Taken over the bytes about to be handed over, so what comes back can be compared against
-    // what went in: a placement that filed some other document is a refusal rather than a
-    // publication naming bytes nobody wrote.
     let placed_digest = dorc_receipt::ids::Sha256Digest::over(
         dorc_receipt::dispatch::REQUIRED_PLACEMENT_DIGEST_DOMAIN,
         document.bytes(),
     );
-    // The placement is CALLED FROM INSIDE the publication, with the identity the publication
-    // will record. There is no route by which a publication value exists without this call
-    // having happened, which is the whole of what replaced a separately-mintable proof.
     accounted
         .publish_through(id, placed_digest, |id| {
             placement
