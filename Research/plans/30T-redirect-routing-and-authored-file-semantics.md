@@ -1,48 +1,46 @@
 # 30T — Authored file semantics: redirect routing, the filesystem binder, and the ask-the-world discipline
 
-> Tier: LLM-authored PROPOSAL (Fable; minted from the `r30-design-duck-file-paths-and-redirects`
-> sittings, 2026-08-25). Nothing here is ruled except where a grade says so:
-> `rul-binder-claims-are-ordinary` (§7) is human-typed. Subordinate to the root docs, `spike/CLAUDE.md`,
-> `KNOBS.md`, `plans/30I`, `plans/30P`. Registers (FORFEITS / ANALYZER-NEEDS / KNOBS) are
-> untouched by this document; §9–§10 name what adoption would owe them. Plain language
-> throughout. All sh is STRAWMAN: conversation-grade, deliberately loose in fine dialect detail
-> (rc-arity on marked lines; GNU `stat` spellings where BSD differs — platform variance living
-> in authored files is the point, not an oversight).
+> Design of record for redirect routing, filesystem binding, and file-identity discipline.
+> Subordinate to the root docs, `spike/CLAUDE.md`, `KNOBS.md`, `plans/30I`, and
+> `plans/30P`; read with `plans/30U`, which defines the cross-kind finished-definition
+> gate consumed here. Sections 0–9 state product semantics and deliberate limitations;
+> §10 records implementation components and dependencies. Shell examples are illustrative;
+> the language and role specifications govern exact dialect details and portable spellings.
 
 ## §0 the-design-in-one-screen
 
-- **`prop-routing-is-the-third-edge`** — the shell's plumbing connects command channels to
-  three kinds of target. channel→channel (pipes): built — the engine composes authored predict
-  bodies along the edge (`rul-only-oracle-bytes-ship`). channel→value (`$(…)`, `read`):
-  designed — the capture lane (`275`). channel→world (`> f`, `>> f`, heredoc writes): this
-  design. A file named in argv (`tee f`) needs nothing new — that is tool semantics, already
+- **`rul-routing-is-the-third-edge`** — the shell's plumbing connects command channels to
+  three kinds of target. Channel→channel (pipes) composes authored predict bodies along the
+  edge (`rul-only-oracle-bytes-ship`). Channel→value (`$(…)`, `read`) follows the capture
+  lane (`275`). Channel→world (`> f`, `>> f`, heredoc writes) follows this component. A file
+  named in argv (`tee f`) needs nothing additional — that is tool semantics, already
   oracle territory. The redirect is the case where *the shell, not the tool*, places the bytes.
-- **`prop-locators-are-parsed-coordinates-are-authored`** — the engine's parse yields a
+- **`rul-locators-are-parsed-coordinates-are-authored`** — the engine's parse yields a
   structural *locator*: (target word, cwd-state at that line, open mode). POSIX warrants it;
   no author does. Turning a locator into a *claim* (`disturbs sm.dorc.File:<entity>`) is a
   vocabulary act, and it is authored: a filesystem role member receives the locator and
   answers or declines, exactly as argv flows through a tool oracle's argparse
   (`rul-argv-flows-bytes-do-not`, generalized: structure flows through authored interpreters;
   the engine transports).
-- **`prop-silence-walls-decline-walls`** — no binder loaded, binder declines, unknown cwd,
+- **`rul-silence-walls-decline-walls`** — no binder loaded, binder declines, unknown cwd,
   unknown filesystem type, fd-state weirdness: the write is an unmodeled mutation and a total
-  wall, exactly as today. The mechanism only ever *narrows* walls; absence of the mechanism is
-  the current behaviour, byte-identical (`empty-world-byte-identical`).
-- **`prop-claims-are-whole-entity`** — a binder claim names the whole entity
+  wall. Binding only ever *narrows* walls; an empty oracle world remains byte-identical
+  (`empty-world-byte-identical`).
+- **`rul-binder-claims-are-whole-entity`** — a binder claim names the whole entity
   (`sm.dorc.File:<path>`, selector-less, which the algebra reads as ⊤-selector: collides with
   every cell of that entity). Why §3.4 explains: a tool can mutate *through* its routed channel
-  in ways neither speaker can name per-selector (an `fchmod` of stdout), so per-selector
-  refinement is unsound until tools have channel-relative speech (§9).
-- **`prop-engine-holds-no-world-facts`** — no platform-conditional fact about the world is
+  in ways neither speaker can name per-selector (an `fchmod` of stdout). Per-selector
+  refinement therefore requires channel-relative tool speech (§9).
+- **`rul-engine-holds-no-world-facts`** — no platform-conditional fact about the world is
   load-bearing in engine code, in this domain or any it touches. The engine's verbs are:
   *parse* (sh structure), *compile questions*, *fold answers* (the algebra), *act and verify
   its own mutations*, and *arrange geometry* so authored sh stays true (`30P` mirroring).
   Never: interpret the world. What the engine may know about paths is path *syntax*; every
   path *semantic* is authored speech or a phase-time measured answer (§5).
-- **`prop-questions-route-to-latest-phase`** — every world-question has a latest sound phase:
+- **`rul-questions-route-to-latest-phase`** — every world-question has a latest sound phase:
   plan-time analysis may speculate only inside the one audited decidable set (falsified at
   probe standup, `mech-two-standups`); the probe measures; a guard re-measures at apply, in
-  sequence, staleness-free by construction. {elide, guard, run} is this rule's oldest
+  sequence, staleness-free by construction. {elide, guard, run} is this rule's canonical
   instance: elide = answered at probe; guard = deferred to apply; run = never answered.
 
 ## §1 the-problem — the mutation argv cannot see
@@ -54,17 +52,15 @@ way shell mutates a file is structurally invisible to the mechanism that describ
 An fs-stdlib author cannot write a `cat__disturbs` naming the target; `cat`'s argv on that
 line is empty.
 
-Consequence: every such write is an unmodeled mutation ⇒ a total wall ⇒ everything below it
-guards or runs. The careful admin's write-if-changed idiom *self-walls*: building the
-candidate file poisons every fact below it, including facts about entirely unrelated state.
-That idiom is not exotic; it is how disciplined people write config from shell, and it is the
-canonical stage-1 material of the whole product (USER_STORY: the hand-written guard is
-"exactly the shape the analyzer lifts").
+Without a binder answer, such a write is an unmodeled mutation and a total wall, so
+everything below it guards or runs. This makes the careful admin's write-if-changed idiom
+self-wall: building the candidate file invalidates every downstream fact, including facts
+about unrelated state. The filesystem binder gives that routing effect an authored,
+bounded name while leaving the admin's own comparison live.
 
 ## §2 what-the-user-sees
 
-(The design's teachability surface; capabilities and caveats only. If this section cannot be
-taught, the design is wrong.)
+This is the user-facing capability boundary.
 
 **Dorc knows shell; it does not know filesystems.** It can see *that* your book writes a
 file. What it cannot see, and deliberately never guesses, is what that path *means*: whether
@@ -80,8 +76,9 @@ So Dorc holds no opinions about files. Every file question is answered one of th
 1. **An oracle answers, on the machine in question.** The filesystem oracle in the standard
    library is ordinary sh, run where the answer lives: on the target host during the
    read-only probe, or as a check directly in front of your own command at apply time.
-   Answers come from your actual filesystem, not a model of one, so they are automatically
-   right for that machine — including machines nobody designed for.
+   Answers are evaluated by the actual filesystem rather than translated through a controller
+   model, so platform behavior comes from that machine. Their semantic correctness remains
+   the named oracle author's contract, like every other authored answer.
 2. **Dorc verifies its own work instead of predicting it.** When Dorc places files on a host
    (your plan, and the oracle files it travels with), it copies, then checks — every file
    present, byte-exact, and *as many distinct files as intended* — before your book's first
@@ -94,8 +91,9 @@ So Dorc holds no opinions about files. Every file question is answered one of th
 plan. Your own `cmp -s conf.new conf || cp conf.new conf` stays in the plan — it reads the
 file the write produces, so no honest tool can remove it, and it is already the correct
 guard — but the unrelated lines *below* it (the service enable, the firewall rule, the
-package check) recover their elisions instead of drowning behind the write. On a converged
-host the honest render is "a few to run, most skipped", not "everything vanished."
+package check) recover their elisions where `30U`'s finished definitions license the
+cross-kind comparisons, instead of drowning behind the write. On a converged host the
+honest render is "a few to run, most skipped", not "everything vanished."
 
 **Caveats.** Everything fails toward running — missing knowledge costs attention, never
 correctness. Files that don't exist yet often answer can't-say. And any elision kept past a
@@ -105,19 +103,19 @@ command that really runs rests on named authors' at-most claims and sits behind
 ## §3 the-two-speakers — authorship territories
 
 A redirected line has two describers, and they are different people: whoever wrote what the
-*tool* means, and whoever wrote what the *shell construct* means. The design keeps them from
-ever being a committee.
+*tool* means, and whoever wrote what the *shell construct* means. Input separation keeps them
+from becoming a committee.
 
-### §3.1 the tool oracle's side (unchanged)
+### §3.1 the tool oracle's side
 
-The tool's author owes exactly what they owe today: `predict` models the command's own
+The tool author follows the ordinary role contract: `predict` models the command's own
 behaviour per channel (stdout default-declined, claimed by authored DREP speech — `30D`);
 `is_converged` is the vouch; `disturbs` is the argv-keyed at-most write-set. Nothing about
 redirects appears in any of it, and nothing *can*: the tool oracle's functions receive the
 site's argv, and the routing information is not in it. A tool author cannot overreach into
 routing territory even by error — the claim is unspellable from their inputs.
 
-One discipline this design sharpens, because its canonical idiom punishes the violation:
+The canonical idiom makes one contract discipline especially visible:
 **`req-verdict-marks-every-read-cell`** — a verdict body must mark every world cell whose
 state its exit status reads. The `cmp`-shaped verdict reads *both* operands and must mark
 both; marking only the destination leaves the source out of the fact's backing, and a fact
@@ -126,27 +124,26 @@ The backing carries no completeness burden with respect to the *world*
 (`an-backing-selfframing` — adequacy is priced at the vouch); this requirement is about the
 body's own *visible reads*, and it is mechanically detectable: a falsification-first
 detector (never a gate — `rul-unprovable-rides-the-vouch`) warns when a body's path-bearing
-operand reads exceed its marks. Authoring against that detector is part of the contract this
-design adds.
+operand reads exceed its marks. Oracle authorship includes this read-to-mark contract.
 
-### §3.2 the filesystem binder's side (new authored surface)
+### §3.2 the filesystem binder's side
 
-One new role member, kind-species, receiving structural locators. Its contract:
+One kind-species role member receives structural locators. Its contract:
 
 - **Answer or decline, per locator.** An emission is an at-most claim ("this routing act
   disturbs at most this entity — whatever else, I answer for"); no emission is no claim, and
   the wall stands total. Declining is ordinary control flow and always safe.
-- **Whole-entity claims only** (`prop-claims-are-whole-entity`). The claim names
+- **Whole-entity claims only** (`rul-binder-claims-are-whole-entity`). The claim names
   `sm.dorc.File:<entity>`; never a selector.
-- **Taxonomy is measured, not enumerated.** Whether a path is an ordinary file is answered
-  by the *mount's measured filesystem type* against a small authored allowlist of boring
-  persistent filesystems (ext4/xfs/btrfs/apfs/…), checked inside the shipped body at probe
-  time. procfs, sysfs, devtmpfs, FUSE, network filesystems, and every *unknown* type
-  decline ⇒ wall. This is deliberately an allowlist at the granularity where allowlisting is
-  possible: path-prefix denylists cannot be a conservative closure (the binder cannot
-  decline a category it failed to recognize), but an unknown *fstype* fails safe by
-  construction. The list is authored platform-oracle content, never an engine table
-  (the `30S` posture: platform taxonomies are oracle speech, never an engine denylist).
+- **Taxonomy is measured, not enumerated.** An existing target binds only when its resolved
+  object is an ordinary regular file on a filesystem from a small authored allowlist of
+  persistent filesystems (ext4/xfs/btrfs/apfs/…). An absent target binds only when its create
+  parent and redirect mode establish the corresponding regular-file creation; dangling or
+  ambiguous routes decline. FIFOs, devices, sockets, directories, procfs, sysfs, devtmpfs,
+  FUSE, network filesystems, and every unknown object or filesystem type decline and retain
+  the wall. Path-prefix denylists are not a conservative closure; object type and filesystem
+  type are measured inside the shipped authored body. The allowlist is platform-oracle
+  content, never an engine table (`30S`).
 - **The standing emission discipline applies whole**: the completion sentinel on every
   completing path (`an-atmost-completion-signal`), body-death refuses the whole footprint,
   the report-lane idiom for declines. The binder ships on the same rails `disturbs` bodies
@@ -191,9 +188,9 @@ could repair. Whole-entity claims close the class: the claim collides with every
 written entity, so a fact about that entity's mode, label, or anything else correctly
 refuses to be spared past its write. The cost is same-entity precision — a fact about the
 written file itself can never survive its write — which is almost always the correct answer
-anyway. Per-selector refinement has exactly one sound future route: channel-relative tool
-speech ("I mutate at most my stdout's target"), composed by the engine through the routing
-graph the same way pipes compose; §9 records it as deliberate non-capture.
+anyway. Per-selector refinement uses channel-relative tool speech ("I mutate at most my
+stdout's target"), composed by the engine through the routing graph the same way pipes
+compose; §9 records its absence from the base tier as deliberate non-capture.
 
 What residue remains is ordinary authored incompleteness on each side of a clean boundary,
 with one honest note: an unexplained under-execution on a composed line names *two* suspects
@@ -203,7 +200,7 @@ instance is closed by the whole-entity rule.
 
 ## §4 how-a-line-decides — phases and the canonical shape
 
-The canonical book shape, and the outcome the design owes it:
+The canonical book shape has this behavior:
 
 ```sh
 cat > /run/web1.conf.new <<EOF
@@ -224,12 +221,12 @@ ufw allow 443/tcp
   right runtime behaviour: the admin's own in-sequence check, re-measured live after the
   write, at zero added attention.
 - The `systemctl` and `ufw` lines — backed in other kinds — **survive** under the admin's
-  flag (§7), which is where the attention payoff lives.
+  flag when the File kind's finished definition licenses those cross-kind comparisons
+  (`30U`; §7), which is where the attention payoff lives.
 - With an unmodeled producer in the `cat` seat, its own ⊤ keeps the wall total regardless of
-  the binder: the design's value is conditional on modeled producers, by construction.
+  the binder: binder value is conditional on modeled producers, by construction.
 
-Who runs what, where, per phase — the engine behaviours this design owes are exactly this
-table's machinery:
+The phase behavior is:
 
 | phase | where | what happens |
 |---|---|---|
@@ -252,8 +249,8 @@ overlap is the decidable-set tracer: a Rust evaluation of a closed sh subset, ma
 where a phase-zero answer is structurally required (the load plane: "what program am I
 analyzing" must be answered before any phase exists), optional speculation everywhere else,
 and in all cases falsified per-host at standup and grown by-name at license-review tier
-(`30P:the-load-plane-stays-correct`). **One decidable set, one fence** — this design adds
-consumers to that list; it never mints a second, laxer one.
+(`30P:the-load-plane-stays-correct`). **One decidable set, one fence** — this component
+consumes that list and never mints a second, laxer one.
 
 **Measure, act, arrange.** The engine's three ways of touching filesystems, none
 interpretive: *measure* — compile a question, ship it to the phase where somebody knows
@@ -267,26 +264,25 @@ expressions stay true (the mirrored tree that makes `$(dirname "$0")/x` land, `3
 loading, artifact placement, scratch — it sets expectations controller-side from what it
 holds, checks them host-side, and treats the host's influence as strictly boolean: stop,
 never steer (`30P`'s controller-expectation/host-check pattern; `rul-admission-is-a-closed-outcome`).
-The injectivity check of §4 is a member of this family, not a new idea.
+The injectivity check of §4 belongs to this family.
 
-## §6 file-identity — the design and its v0 floor
+## §6 file-identity — semantics and the v0 floor
 
-The identity of files is the sharpest knowledge in this domain, and the design's position is
-that it is *measured, per-aspect, and perishable* — three properties that together dictate a
-very conservative floor.
+File identity is *measured, per-aspect, and perishable* — three properties that together
+dictate a very conservative floor.
 
 **Per-aspect.** "Same file" is not one relation. Same-for-contents is referent identity (two
 hardlinked names, one inode: `[ a -ef b ]` answers yes, and a write through either changes
 both). Same-for-existence is directory-entry identity (`rm a` removes *a* and leaves *b*
 standing — the referent answer is exactly wrong for the existence cell). Opened descriptions
 are a third subject (`exec 3>p` holds a description that later `p` mutations do not touch).
-Any future identity machinery therefore carries an authored per-aspect relation mapping —
+The identity tier therefore carries an authored per-aspect relation mapping —
 which relation each selector's comparisons consult — declared by the kind's owner like every
 other vocabulary act, with the name-bias law applied (`an-name-as-contract`: spell members so
 the lazy answer errs safe — a `same()` whose 0 means *same* over-collides when incomplete;
 "provably distinct", the dangerous claim, must be the deliberate arm).
 
-**Measured, including for unborn referents.** Living questions subsume the platform
+**Measured, including resolvable unborn referents.** Living questions subsume the platform
 taxonomy: `-ef`-class checks answer hardlinks, symlinks, bind mounts, and case-folding
 without knowing which mechanism is in play, because the kernel answers. A path that does not
 exist yet is sited by *anchoring*: living-canonicalize its parent, look up the exact future
@@ -294,7 +290,8 @@ name (the lookup inherits the directory's folding semantics for free — the ker
 and let the engine's CFG answer the program half ("does any line between here and there
 target this path"). A future referent can only come to alias an existing one if some agent
 creates the alias, and agents are either in-book (engine-visible, wallable) or out-of-book
-drift (outside scope by `toctou-scope`, as everywhere).
+drift (outside scope by `toctou-scope`, as everywhere). When two absent spellings cannot be
+distinguished by parent anchoring and lookup, the answer is unknown rather than distinct.
 
 **Perishable.** An identity answer is a point observation whose truth depends on every
 directory entry, symlink, and mount used to resolve both operands. A later in-book `mv`,
@@ -303,87 +300,67 @@ descendant path denotes without touching their inodes. So no identity answer is 
 timeless: any consumer must either carry the answer as a backed fact invalidated by the
 effective-world reach of namespace mutations, or refuse to consume answers across them.
 
-**The v0 floor, which needs none of the machinery above:** entry-mutating verbs (`mv`, `rm`,
+**The v0 floor:** entry-mutating verbs (`mv`, `rm`,
 `ln`, `rmdir`, `mkdir`-over) make **no at-most claims** — their oracles decline `disturbs`
 entirely, so any such line is a total wall and every identity question below it is moot.
 Same-kind path-distinct comparisons answer unknown ⇒ collide (no pairwise machinery is
 consulted, because none exists). The floor forfeits same-kind sparing and all
-namespace-tolerant precision — recorded in §9 with reds — and is exactly as safe as today.
+namespace-tolerant precision, recorded in §9 with reds, and remains conservative.
 
-## §7 rul-binder-claims-are-ordinary — no special cross-kind handling
+## §7 rul-binder-claims-are-ordinary — cross-kind handling
 
-**[HUMAN-TYPED 2026-08-25]** — binder-minted claims are ordinary authored at-most claims,
-the same species a hand-written `disturbs()` mints, riding the existing survival machinery
-unchanged. The `systemctl`/`ufw` lines of §4 survive under the flag; the attention payoff
-exists in full.
+Binder-minted claims are ordinary authored at-most claims, the same species a hand-written
+`disturbs()` body mints. They enter the existing survival machinery with no binder-specific
+trust class or comparison rule.
 
-The ground is *consistency, not safety-optimism*. The cross-kind intersection of danger is a
-standing, general hole that predates this design: a `Package:nginx` mutation has always been
-able to imply `File:`-space stomping, and there is currently no clean, universal, shared way
-to express such interactions — the best a diligent oracle author can do today is express
-every interaction they can find, across every kind they can find information on, overlaps
-included. Redirect-derived claims add traffic through that hole; they do not create it, and
-demoting them (cross-kind ⇒ unknown ⇒ collide, for this one claim family only) would fix the
-standing danger *for one corner only*, at the price of the corner's entire value and a
-special case in the trust model. Consistency trumps a corner-local fix. The flag's contract
-sentence covers the ordinary posture with no new trust class (the binder body is authored,
-its author named), and the fstype gate is a measured decline discipline hand-written
-disturbs bodies do not even have.
+Cross-kind sparing follows `30U`. Without the footprint kind's reached finished definition,
+the comparison answers *unrelated* and collides. `kind__disturbance_reaches` widens the
+claim-side footprint; `kind__state_stored_only_in` adds backing-side collisions; the reached
+`disturbs nothing-else` record is the completeness act that licenses cross-kind disjointness.
+A redirect-derived File claim therefore spares a Service, Firewall, Package, or other
+backing only when the File kind's finished definition is present and neither the reach nor
+store relations add a collision. The admin's `--risk-faultless-skips` flag remains the
+separate consent gate over that authored completeness claim.
 
-The expressivity this ground once treated as a distant curiosity — kind owners distributing
-danger onward on other authors' behalf — is designed at `plans/30U` (the finished-definition
-gate): `kind__disturbance_reaches` carries the entailment claim-side,
-`kind__state_stored_only_in` complements backing-side, and the `disturbs nothing-else`
-record is the completeness act that licenses cross-kind sparing at all. This section's
-ruling composes with it unchanged: binder claims are ordinary, and "ordinary" includes
-being gated by the File kind's own finished definition exactly as every kind is gated by
-its own — still no special case.
+## §8 invariants
 
-## §8 invariants-adopted — what this design locks in
-
-Adopting this design binds the project to the following; each is retrofit-hostile in the
-direction noted.
-
-1. **`inv-adopt-no-world-facts-in-engine`** — platform-conditional world-facts are never
-   load-bearing in engine code; authored speech or phase-answers only. (Locks future fs
-   features onto the authored/measured route; reverting means Rust platform tables.)
-2. **`inv-adopt-territory-partition`** — a simple command's mutation surface partitions by
+1. **`inv-no-world-facts-in-engine`** — platform-conditional world-facts are never
+   load-bearing in engine code; authored speech or phase-answers supply them.
+2. **`inv-routing-territories-stay-partitioned`** — a simple command's mutation surface partitions by
    sh syntax: argv-side to the tool's author, routing-side to the filesystem author,
    shell-state to the engine. Enforced by input separation (tool functions see argv only;
    the binder sees locators only); no function ever receives both.
-3. **`inv-adopt-binding-is-authored`** — the engine never mints world coordinates from
-   parse. The locator→claim act is authored, declining, attributed. (Forecloses the
-   engine-hardcoded File mint once any oracle is written against the authored surface.)
-4. **`inv-adopt-whole-entity-claims`** — binder claims are selector-less until tools gain
-   channel-relative speech; per-selector refinement never arrives by engine assumption.
-5. **`inv-adopt-identity-is-perishable`** — no identity answer is consumed as timeless;
+3. **`inv-binding-is-authored`** — the engine never mints world coordinates from parse.
+   The locator→claim act is authored, declining, and attributed.
+4. **`inv-binder-claims-stay-whole-entity`** — binder claims are selector-less without
+   channel-relative tool speech; per-selector refinement never comes from engine assumption.
+5. **`inv-identity-answers-are-perishable`** — no identity answer is consumed as timeless;
    consumers bound answers by the effective-world reach of namespace mutations or refuse
-   across them. (Forecloses ever building a naive timeless pairwise cache.)
-6. **`inv-adopt-book-sites-only`** — only book sites feed the fact plane. Oracle-body
+   across them.
+6. **`inv-book-sites-feed-facts`** — only book sites feed the fact plane. Oracle-body
    redirects route to the reflexive-inertness falsifier (falsification-first, never a
    completeness gate); the report sink is exempt by construction, its value being
    engine-supplied (`rul-probe-writes-only-what-it-owns`).
-7. **`inv-adopt-routing-exact-or-havoc`** — routing state (fd table, `exec` redirects,
+7. **`inv-routing-is-exact-or-havoc`** — routing state (fd table, `exec` redirects,
    clobber modes) is modeled exactly or the site declines to bind; no middle
    (`30P:rul-load-head-is-exact-or-havoc`'s sibling, one plane over).
-8. **`inv-adopt-taxonomy-is-measured-allowlist`** — "is this path an ordinary file" is a
-   measured fstype allowlist inside authored bodies; unknown types fail safe; never an
-   engine path table, never a prefix denylist as the safety boundary.
-9. **`inv-adopt-placement-is-injective`** — artifact integrity includes distinctness of
+8. **`inv-taxonomy-is-measured-and-authored`** — ordinary-file classification is a measured
+   object-type and filesystem-type allowlist inside authored bodies; unknown types fail safe.
+   An engine path table or prefix denylist never forms the safety boundary.
+9. **`inv-placement-is-injective`** — artifact integrity includes distinctness of
    placed files, not only per-path byte equality.
-10. **`inv-adopt-one-decidable-set`** — every static speculation over authored bodies in
-    this domain rides THE decidable set and its standup falsification; no second list.
+10. **`inv-one-decidable-set`** — every static speculation over authored bodies in
+     this domain rides THE decidable set and its standup falsification; no second list.
 
 ## §9 deliberate-non-capture
 
-What this design knowingly does not buy, each a forfeit-flavoured residue that adoption
-would record in FORFEITS with reds (`30P:rul-forfeits-carry-reds`); none is pending design —
-each has a stated capture path and no schedule.
+These are deliberate limitations. Their extension paths belong in FORFEITS with reds
+(`30P:rul-forfeits-carry-reds`); none changes the base semantics above.
 
 - **Same-kind sparing** — a fact on `File:X` below a wall on `File:Y` collides even when
   the two are genuinely distinct files. Capture: the identity tier (§6's per-aspect
-  relations + perishable answers). Red: an XFAIL boothook-shaped case asserting the
-  cross-path survival.
+  relations + perishable answers). The corresponding red is a boothook-shaped XFAIL
+  asserting the cross-path survival.
 - **Namespace-tolerant precision** — everything below an entry-mutating verb walls totally.
   Capture: at-most claims for `mv`/`rm`-class verbs *plus* prefix-aware collision or
   answer-lifetime machinery, together (either alone is unsound).
@@ -394,27 +371,27 @@ each has a stated capture path and no schedule.
   the semantically identical `cp f.new f` can, via its argv-keyed oracle. Capture: the
   content-establishment work already registered
   (`FORFEITS:forfeit-content-establishment-by-known-write`,
-  `forfeit-file-content-facts-from-exact-checks`) plus owned-scratch payload staging plus a
+  `forfeit-file-content-facts-from-exact-checks`) plus owned-scratch payload staging and a
   structural-site convergence judgment-holder — one design problem, and every erased
-  contributor (producer effect and routing effect) owes its own vouch
+  contributor (producer effect and routing effect) requires its own vouch
   (`rul-every-erased-establish-is-vouched`).
 - **Dynamically-derived pair questions** — identity questions whose operands emerge from
-  first-round results would need a second host exchange; they rest at collide until the
-  repeated-probing review gate is cleared (`rul-repeated-probing-reviewed-before-design`).
+  first-round results require a second host exchange and therefore rest at collide. The
+  repeated-probing review gate governs enabling that exchange
+  (`rul-repeated-probing-reviewed-before-design`).
 
 ## §10 components-and-interdependencies
 
-Units of coherent work that would make this document true, with their dependency structure.
-No phasing, no schedule; exposition only. "Rides built rails" means no new transport or
-substrate.
+Implementation work is decomposed below by dependency. This section records no schedule.
+"Rides built rails" means no new transport or substrate.
 
 - **`comp-routing-locator`** — the locator parse (word + cwd-state + mode) and the
-  routing EXACT-or-havoc carve (`inv-adopt-routing-exact-or-havoc`). Pure kernel
+  routing EXACT-or-havoc carve (`inv-routing-is-exact-or-havoc`). Pure kernel
   (syntax/analysis); redirects already parse as mutation sites (`an-redirection-effect`),
   this re-exposes them bindable. Self-contained. Everything else here consumes it.
 - **`comp-fs-binder-member`** — role recognition, arm trace, claim mint, ship-and-readback
   on the derived-footprint rails (built: `an-derived-footprint`). Requires
-  `comp-routing-locator`; the §7 posture is ruled. Touches oracle + analysis + core claim
+  `comp-routing-locator`; consumes §7. Touches oracle + analysis + core claim
   surfaces. The authored fs stdlib file itself is stdlib-arc work, not engine work — but the
   *contract* it is written against is this unit.
 - **`comp-claim-consumption`** — the settle/wall seat accepts binder claims into footprint
@@ -430,7 +407,7 @@ substrate.
   Oracle authorship performed before it exists will systematically under-mark (the
   `cmp`-shaped two-operand verdict is the natural mistake) and churn when it lands.
 - **`comp-artifact-injectivity`** — the apply-standup distinctness check
-  (`inv-adopt-placement-is-injective`). Engine scaffolding, independent of every unit here;
+  (`inv-placement-is-injective`). Engine scaffolding, independent of every unit here;
   naturally part of the multipart/artifact lane, whose integrity story is incomplete until
   it exists (identical-bytes case-fold collapse passes today's per-path byte checks).
 - **`comp-identity-tier`** — the pairwise per-aspect members, the relation mapping, the
@@ -442,7 +419,7 @@ substrate.
   v0 floor stands with zero identity machinery consulted.
 - **`comp-channel-relative-speech`** — tool vocabulary for "at most my stdout's target",
   composed through the routing graph. Extends `30D`'s channel algebra; requires nothing
-  above; unlocks relaxing `inv-adopt-whole-entity-claims`. Without it the whole-entity rule
+  above; permits relaxing `inv-binder-claims-stay-whole-entity`. Without it the whole-entity rule
   stands indefinitely, correct and blunt.
 - **`comp-content-establishment`** — the registered FORFEITS capture (known-write contents
   cells, payload staging in owned scratch, the structural-site convergence judgment-holder).
