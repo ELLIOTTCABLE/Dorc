@@ -331,8 +331,9 @@ fn a_spine_with_no_invocation_has_no_document_to_write() {
             &witness(),
             &RecordedInputs::default(),
             &ReceiptLimits::V1,
-        ),
-        Err(ProjectionRefusal::NoInvocation)
+        )
+        .err(),
+        Some(ProjectionRefusal::NoInvocation)
     );
 }
 
@@ -388,8 +389,9 @@ fn a_witness_from_another_surface_cannot_supply_this_one_s_identities() {
             &other,
             &RecordedInputs::default(),
             &ReceiptLimits::V1,
-        ),
-        Err(ProjectionRefusal::PresentationMismatch)
+        )
+        .err(),
+        Some(ProjectionRefusal::PresentationMismatch)
     );
 }
 
@@ -408,8 +410,9 @@ fn a_run_that_recorded_no_surface_has_nothing_for_a_witness_to_answer_to() {
             &witness(),
             &RecordedInputs::default(),
             &ReceiptLimits::V1,
-        ),
-        Err(ProjectionRefusal::NoPresentedPlan)
+        )
+        .err(),
+        Some(ProjectionRefusal::NoPresentedPlan)
     );
 }
 

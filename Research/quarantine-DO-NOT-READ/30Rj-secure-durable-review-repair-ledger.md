@@ -101,6 +101,48 @@ the two binaries, so the crate boundary is the real perimeter.
 **Falsified.** The envelope's compile-fail pin re-run un-fenced: `E0423`, a tuple struct with
 private fields.
 
+## `30Ri:fnd-opaque-plaintext-remains-extractable`
+
+**Shape: split the writer's input from the reader's storage, and leave the reader one exit.**
+
+- `OverlayEntry` is now explicitly the WRITER-side value. A caller building one already holds the
+  bytes, so offering them is not a release. Its `bytes()` is crate-private; `Debug` is redacted;
+  `PartialEq`/`Eq` are gone; `agrees_with` answers a `ByteAgreement`.
+- `ValidatedOpaqueOverlay` is the READER-side storage. `entries()` is gone, `value()` is
+  crate-private, `Debug` is redacted, `PartialEq`/`Eq` are gone. What survives publicly is
+  `slots()` — record ordinals and closed tags, structure and never content — and `agrees_with`.
+- `Receipt::{detail,region}` and `Reingested::detail` are crate-private.
+- THE EXIT: `Reingested::recorded_details()` / `recorded_detail()` answer `RecordedDetail`, which
+  carries a `RecordedValue` sealed under `ValueClass::of_tag(tag)`. `ValueClass` grew from five
+  names to eleven and the tag→class map is TOTAL and exhaustively matched, so a new tag cannot
+  land unclassified and take a neighbour's encoding.
+- The listing adapter (`cli::recorded::opaque_lines`) walks that exit through a
+  `TerminalEncoder` matching every class BY NAME. Today every class answers one question; the
+  exhaustive match is what makes a twelfth class a red build rather than a silent default.
+- The `RecordedWhyFacts` builder was already class-aware; what it gained is the crate-private
+  `detail` it now reads through, plus redacted `Debug` on `CurrentSourceReading` and
+  `WhyFactsInput`, both of which were printing a whole source file.
+
+**Comparison, not equality.** `RecordedValue::agrees_with` became public alongside the two new
+ones. All three are all-or-nothing and say nothing about WHERE two runs differ, so a caller cannot
+walk a value out of them; a derived `PartialEq` would compose into orderings and hashes, which do
+leak structure, and none of the three plaintext-bearing types has one.
+
+**Ripple, named.** `ProjectedPlan`, `ProjectedApplyIntent` and `ProjectedApplyOutcome` lost their
+derived `PartialEq`/`Eq` (they hold details). Four batteries that compared bytes now compare
+verdicts, and each gained a NEGATIVE arm — a cousin image, a transposed context, a normalized
+CRLF, a truncated excerpt — because a verdict comparison is only worth as much as its ability to
+say no.
+
+**Sentinel.** `recorded_why_facts.rs`'s `no_debug_or_report_surface_carries_the_recorded_bytes`
+asks five surfaces — the read-back document, its sealed model, the model input, the derived facts,
+and a current-source reading — for a run of the fixture book, with a non-vacuity floor on each and
+the encoder as the positive control. FALSIFIED: with the region's `Debug` restored to a derived
+one, it fails on the first surface and prints the book's own shell text, which is the leak.
+
+**No lexical fence added.** Nothing here is a roster; every property is carried by privacy, by a
+redacted `Debug`, or by an exhaustive match.
+
 **OPEN, for the conductor.** `spike/crates/receipt/CLAUDE.md`'s
 `inv-reader-writer-states-only-narrow` still lists "trust" among the states the reader keeps
 separate, and `inv-identities-never-cross-domains` reads as though a provenance newtype survives.

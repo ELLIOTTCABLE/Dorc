@@ -19,7 +19,7 @@ use crate::projection::{SameIdentityPair, same_identity_pair};
 use crate::reader::{PartialReceipt, Receipt};
 use crate::reingested::{RecordedType, Reingested};
 use crate::rows::ModelRefusal;
-use crate::tokens::{ClosedToken, RecordedSignerTrust};
+use crate::tokens::RecordedSignerTrust;
 
 /// Which species an identity belongs to, for a finding that names one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

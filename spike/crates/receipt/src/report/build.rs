@@ -27,7 +27,7 @@ use crate::reingested::Reingested;
 ///
 /// Mirrors `source::CurrentSource` in shape, owned rather than borrowed, because the model outlives
 /// the read: the edge opens a file, hands over what it found, and closes it.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum CurrentSourceReading {
     /// The edge read something at the recorded path; these are its exact bytes.
     Read(Vec<u8>),
@@ -37,6 +37,22 @@ pub enum CurrentSourceReading {
     Unreadable,
     /// No path was recorded, or none was looked for.
     NotLookedFor,
+}
+
+/// Names the arm and, for the one that holds bytes, how many — never the bytes.
+///
+/// Hand-written for [`super::RecordedValue`]'s reason: these are a whole source file off somebody's
+/// filesystem, and a derived `Debug` would put them into a panic message, a log line, or a test
+/// failure, none of which is a destination encoder.
+impl core::fmt::Debug for CurrentSourceReading {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Read(bytes) => write!(f, "Read({} bytes)", bytes.len()),
+            Self::Absent => f.write_str("Absent"),
+            Self::Unreadable => f.write_str("Unreadable"),
+            Self::NotLookedFor => f.write_str("NotLookedFor"),
+        }
+    }
 }
 
 impl CurrentSourceReading {
@@ -77,7 +93,10 @@ pub struct SourceObservation {
 ///
 /// A struct rather than a long argument list, because five of these are `Vec`s and two are
 /// `Option`s: an argument order somebody has to remember is an argument order somebody transposes.
-#[derive(Debug)]
+///
+/// `Debug` is redacted rather than derived: this value holds the decoded document AND the current
+/// source readings, so a derived one would print both halves of everything the model exists to
+/// release only through an encoder.
 pub struct WhyFactsInput<'a> {
     /// The selected root document, decoded and sealed.
     pub root: &'a Reingested<Receipt<PlanReceipt, Rich>>,
@@ -99,6 +118,21 @@ pub struct WhyFactsInput<'a> {
     pub observations: Vec<SourceObservation>,
     /// The address the question asked about, where it asked about one.
     pub address: Option<RequestedAddress>,
+}
+
+/// Names the type and the shape of what it carries, never the material.
+impl core::fmt::Debug for WhyFactsInput<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "WhyFactsInput({:?}, {:?}, {} reached, {} siblings, {} observations)",
+            self.authentication,
+            self.detail,
+            self.reached.len(),
+            self.siblings.len(),
+            self.observations.len()
+        )
+    }
 }
 
 /// Decompose one rooted question's material into the inert model.

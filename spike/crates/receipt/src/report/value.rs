@@ -38,6 +38,51 @@ pub enum ValueClass {
     /// What a generated artifact CLAIMED about where its bytes came from. Narrative, never
     /// identity — the claim is somebody else's text and is interpreted by nothing.
     OriginClaim,
+    /// One invocation's argument vector, as the run held it.
+    Argv,
+    /// A host destination, as somebody spelled it.
+    TargetName,
+    /// Bytes a managed HOST produced. The class `sinv-host-evidence-ingress` is about, and the
+    /// one an encoder should treat most warily.
+    HostOutput,
+    /// An interned coordinate, kind, entity, selector, or custody description.
+    ///
+    /// Its own class because `sinv-sink-encoding` forbids DIRECT display of these: a renderer
+    /// that wanted one would be resolving interned text for provenance rather than printing it.
+    Coordinate,
+    /// A receipt-owned binary encoding — a locator DAG, an exact apply image, a resolved
+    /// context, an accounted record stream. Structure rather than text; not display-shaped.
+    EncodedStructure,
+    /// An operand or tail a diagnostic carried.
+    DiagnosticDetail,
+}
+
+impl ValueClass {
+    /// The sink question one detail slot poses.
+    ///
+    /// TOTAL over the tag table and matched exhaustively, so a new tag cannot land without a
+    /// class: an unclassified value would otherwise have to take a neighbour's encoding, which is
+    /// the exact substitution the class exists to refuse. Several tags share a class where they
+    /// genuinely pose one question — three kinds of path are one path question — and none shares
+    /// with a tag that poses a different one.
+    #[must_use]
+    pub const fn of_tag(tag: crate::projection::OpaqueFieldTag) -> Self {
+        use crate::projection::OpaqueFieldTag as Tag;
+        match tag {
+            Tag::Argv => Self::Argv,
+            Tag::TargetName => Self::TargetName,
+            Tag::SourcePath | Tag::ImportPath => Self::SourcePath,
+            Tag::SourceExcerpt | Tag::SourceContent => Self::SourceText,
+            Tag::SiteLocator | Tag::RecordStream | Tag::ApplyArtifactImage | Tag::ApplyContext => {
+                Self::EncodedStructure
+            }
+            Tag::Shell => Self::ShellText,
+            Tag::Fact | Tag::Locator | Tag::Custody => Self::Coordinate,
+            Tag::EmittedName => Self::ArtifactLabel,
+            Tag::DiagnosticOperand | Tag::ErrorDetail => Self::DiagnosticDetail,
+            Tag::Stdout | Tag::Stderr => Self::HostOutput,
+        }
+    }
 }
 
 /// Bytes a document carried, with no exit but an encoder.
@@ -128,7 +173,13 @@ pub enum ByteAgreement {
 
 impl RecordedValue {
     /// Whether this value's bytes are exactly `other`.
-    pub(crate) fn agrees_with(&self, other: &[u8]) -> ByteAgreement {
+    ///
+    /// The one comparison, and it is ALL-OR-NOTHING by construction: it says the two runs differ
+    /// and never where, so a caller cannot walk a value out of it a position at a time. That is
+    /// what makes it safe to offer publicly while `PartialEq` stays absent — a derived equality
+    /// would compose into orderings and hashes, and those do leak structure.
+    #[must_use]
+    pub fn agrees_with(&self, other: &[u8]) -> ByteAgreement {
         if self.bytes == other {
             ByteAgreement::Identical
         } else {

@@ -30,6 +30,7 @@ use dorc_receipt::project::{
     project_apply_intent, project_apply_outcome,
 };
 use dorc_receipt::projection::OpaqueFieldTag;
+use dorc_receipt::report::ByteAgreement;
 use dorc_receipt::rows::{
     AssignmentOrdinal, OriginOrdinal, RecordedLeaf, RecordedMember, RecordedSite,
 };
@@ -248,34 +249,45 @@ fn an_assignments_destination_and_its_remaining_axes_ride_one_record() {
         .record_of(AssignmentOrdinal::of(0))
         .unwrap_or_else(|| panic!("the assignment was emitted"));
 
-    let detail = |tag: OpaqueFieldTag| {
+    // Asked as a VERDICT: a detail is plaintext-bearing, so a battery proves exactness by
+    // comparing against the encoding it expects rather than reading the bytes back out.
+    let agrees = |tag: OpaqueFieldTag, expected: &[u8]| {
         projected
             .details()
             .iter()
             .find(|entry| entry.record() == record && entry.tag() == tag)
-            .map(|entry| entry.bytes().to_vec())
+            .map(|entry| entry.agrees_with(expected))
     };
     assert_eq!(
-        detail(OpaqueFieldTag::TargetName),
-        Some(b"web1.example.net".to_vec())
+        agrees(OpaqueFieldTag::TargetName, b"web1.example.net"),
+        Some(ByteAgreement::Identical)
     );
 
-    let carried = detail(OpaqueFieldTag::ApplyContext)
-        .unwrap_or_else(|| panic!("the assignment captured its context"));
-    let decoded = match RecordedApplyContext::decode(&carried, &ReceiptLimits::V1) {
-        Ok(decoded) => decoded,
-        Err(fault) => panic!("the projection wrote a block its own reader refuses: {fault:?}"),
-    };
+    let expected_context = RecordedApplyContext::of(
+        RecordedAxis::Established(b"deploy".to_vec()),
+        RecordedAxis::Established(b"netns-blue".to_vec()),
+        RecordedAxis::Established(b"/srv/app".to_vec()),
+        RecordedAxis::Established(b"inherited-minus-ssh".to_vec()),
+        RecordedAxis::Established(b"agent-forwarded".to_vec()),
+    );
     assert_eq!(
-        decoded,
-        RecordedApplyContext::of(
-            RecordedAxis::Established(b"deploy".to_vec()),
-            RecordedAxis::Established(b"netns-blue".to_vec()),
-            RecordedAxis::Established(b"/srv/app".to_vec()),
-            RecordedAxis::Established(b"inherited-minus-ssh".to_vec()),
-            RecordedAxis::Established(b"agent-forwarded".to_vec()),
-        ),
+        agrees(OpaqueFieldTag::ApplyContext, &expected_context.encode()),
+        Some(ByteAgreement::Identical),
         "each axis arrives carrying the answer the standup gave for IT"
+    );
+    // Six DISTINCT fixture answers, so a transposed pair really would differ: an expectation
+    // built from one repeated value would agree with a writer that swapped two of them.
+    let transposed = RecordedApplyContext::of(
+        RecordedAxis::Established(b"netns-blue".to_vec()),
+        RecordedAxis::Established(b"deploy".to_vec()),
+        RecordedAxis::Established(b"/srv/app".to_vec()),
+        RecordedAxis::Established(b"inherited-minus-ssh".to_vec()),
+        RecordedAxis::Established(b"agent-forwarded".to_vec()),
+    );
+    assert_eq!(
+        agrees(OpaqueFieldTag::ApplyContext, &transposed.encode()),
+        Some(ByteAgreement::Differing),
+        "and the comparison would notice a swap"
     );
 }
 
@@ -322,34 +334,30 @@ fn a_session_that_entered_no_context_records_that_and_not_five_empty_answers() {
     let record = projected
         .record_of(AssignmentOrdinal::of(0))
         .unwrap_or_else(|| panic!("the assignment was emitted"));
-    let Some(carried) = projected
-        .details()
-        .iter()
-        .find(|entry| entry.record() == record && entry.tag() == OpaqueFieldTag::ApplyContext)
-        .map(|entry| entry.bytes().to_vec())
-    else {
-        panic!("a thin assignment still captures its context")
+    let agrees = |tag: OpaqueFieldTag, expected: &[u8]| {
+        projected
+            .details()
+            .iter()
+            .find(|entry| entry.record() == record && entry.tag() == tag)
+            .map(|entry| entry.agrees_with(expected))
     };
-
+    let unentered = RecordedApplyContext::of(
+        RecordedAxis::NotEstablished,
+        RecordedAxis::NotEstablished,
+        RecordedAxis::NotEstablished,
+        RecordedAxis::NotEstablished,
+        RecordedAxis::NotEstablished,
+    );
     assert_eq!(
-        RecordedApplyContext::decode(&carried, &ReceiptLimits::V1),
-        Ok(RecordedApplyContext::of(
-            RecordedAxis::NotEstablished,
-            RecordedAxis::NotEstablished,
-            RecordedAxis::NotEstablished,
-            RecordedAxis::NotEstablished,
-            RecordedAxis::NotEstablished,
-        ))
+        agrees(OpaqueFieldTag::ApplyContext, &unentered.encode()),
+        Some(ByteAgreement::Identical),
+        "a thin assignment still captures its context, and every axis says unentered"
     );
     // The destination is a different question and is still answered: a thin session knows where
     // it addressed, and only the five context axes are unentered.
     assert_eq!(
-        projected
-            .details()
-            .iter()
-            .find(|entry| entry.record() == record && entry.tag() == OpaqueFieldTag::TargetName)
-            .map(|entry| entry.bytes().to_vec()),
-        Some(b"web1.example.net".to_vec())
+        agrees(OpaqueFieldTag::TargetName, b"web1.example.net"),
+        Some(ByteAgreement::Identical)
     );
 }
 
@@ -462,8 +470,8 @@ fn an_outcome_naming_an_assignment_the_intent_never_declared_refuses_at_that_ord
         influenced(),
     );
     assert_eq!(
-        project_apply_outcome(&phase, &report, &invocation(), &ReceiptLimits::V1),
-        Err(ApplyProjectionRefusal::UndeclaredAssignment { assignment: 4 })
+        project_apply_outcome(&phase, &report, &invocation(), &ReceiptLimits::V1).err(),
+        Some(ApplyProjectionRefusal::UndeclaredAssignment { assignment: 4 })
     );
 }
 
@@ -676,15 +684,15 @@ fn a_channel_past_the_run_budget_records_omitted_and_carries_nothing() {
         "a channel the run never held still says so, beside one a bound stopped"
     );
 
-    let carried: Vec<Vec<u8>> = projected
+    let carried: Vec<ByteAgreement> = projected
         .details()
         .iter()
         .filter(|entry| entry.tag() == OpaqueFieldTag::Stdout)
-        .map(|entry| entry.bytes().to_vec())
+        .map(|entry| entry.agrees_with(b"123456"))
         .collect();
     assert_eq!(
         carried,
-        vec![b"123456".to_vec()],
-        "the omitted channel carries no entry at all"
+        vec![ByteAgreement::Identical],
+        "the omitted channel carries no entry at all, and the one that rode is exact"
     );
 }

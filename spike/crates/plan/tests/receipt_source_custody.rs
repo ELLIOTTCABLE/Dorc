@@ -22,9 +22,9 @@ use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::receipt::{ProjectedPlan, RecordedInputs, SourceCustody, project};
 use dorc_plan::{NO_ARTIFACT_FORM, Plan, ProbePlan, Spine, SurvivalReport};
 use dorc_receipt::limits::{ByteLimit, ReceiptLimits};
-use dorc_receipt::overlay::OverlayEntry;
 use dorc_receipt::plan::RecordedSource;
 use dorc_receipt::projection::OpaqueFieldTag;
+use dorc_receipt::report::ByteAgreement;
 use dorc_receipt::tokens::{OpaqueState, RecordedInvocationMode, RecordedSourceClass};
 
 fn authored() -> InfluenceAccount {
@@ -169,17 +169,29 @@ fn exact_source_bytes_ride_the_overlay_without_newline_normalization() {
         &ReceiptLimits::V1,
     );
 
-    let content: Vec<&[u8]> = document
+    // Asked as a VERDICT: a detail hands out no plaintext, so exactness is proved by comparing
+    // against the bytes this case supplied rather than by reading them back.
+    let content: Vec<ByteAgreement> = document
         .details()
         .iter()
         .filter(|entry| entry.tag() == OpaqueFieldTag::SourceContent)
-        .map(OverlayEntry::bytes)
+        .map(|entry| entry.agrees_with(crlf.as_bytes()))
         .collect();
     assert_eq!(content.len(), 1, "one general-sh source, one content entry");
     assert_eq!(
-        content[0],
-        crlf.as_bytes(),
+        content,
+        vec![ByteAgreement::Identical],
         "every CR survives: a newline conversion is drift, not an equivalence"
+    );
+    let normalized = crlf.replace("\r\n", "\n");
+    assert_eq!(
+        document
+            .details()
+            .iter()
+            .find(|entry| entry.tag() == OpaqueFieldTag::SourceContent)
+            .map(|entry| entry.agrees_with(normalized.as_bytes())),
+        Some(ByteAgreement::Differing),
+        "and the comparison would notice the conversion this case exists to refuse"
     );
 }
 

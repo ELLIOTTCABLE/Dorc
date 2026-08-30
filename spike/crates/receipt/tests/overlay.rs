@@ -24,6 +24,7 @@ use dorc_receipt::overlay::{
     serialize,
 };
 use dorc_receipt::projection::OpaqueFieldTag;
+use dorc_receipt::report::ByteAgreement;
 
 const RECEIPT: &str = "aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00ee11ff22aa33bb44cc55dd66";
 
@@ -78,12 +79,23 @@ fn span() -> Vec<u8> {
         .into_bytes()
 }
 
-fn entries() -> Vec<OverlayEntry> {
+/// The fixture region, as PARTS.
+///
+/// The bytes live here rather than being read back out of an `OverlayEntry`: an entry hands out
+/// no plaintext, so a fixture that re-emits a region emits from its own source of truth.
+fn entry_parts() -> Vec<(u64, OpaqueFieldTag, Vec<u8>)> {
     vec![
-        OverlayEntry::of(0, OpaqueFieldTag::Argv, b"dorc plan book.sh".to_vec()),
-        OverlayEntry::of(1, OpaqueFieldTag::SourcePath, b"/etc/book.sh".to_vec()),
-        OverlayEntry::of(1, OpaqueFieldTag::SourceExcerpt, b"set -eu\n".to_vec()),
+        (0, OpaqueFieldTag::Argv, b"dorc plan book.sh".to_vec()),
+        (1, OpaqueFieldTag::SourcePath, b"/etc/book.sh".to_vec()),
+        (1, OpaqueFieldTag::SourceExcerpt, b"set -eu\n".to_vec()),
     ]
+}
+
+fn entries() -> Vec<OverlayEntry> {
+    entry_parts()
+        .into_iter()
+        .map(|(record, tag, bytes)| OverlayEntry::of(record, tag, bytes))
+        .collect()
 }
 
 fn good() -> Vec<u8> {
@@ -119,22 +131,29 @@ fn replace_line(bytes: &[u8], prefix: &str, with: &str) -> Vec<u8> {
 
 #[test]
 fn a_canonical_region_validates_and_yields_exactly_what_was_put_in() {
+    // Asked as a VERDICT rather than by reading bytes back: the region hands nothing out, so
+    // exactness is proved by the closed comparison and absence by there being no slot at all.
     let validated = validate(good()).expect("the canonical region validates");
     assert_eq!(
-        validated.value(0, OpaqueFieldTag::Argv),
-        Some(b"dorc plan book.sh".as_slice())
+        validated.agrees_with(0, OpaqueFieldTag::Argv, b"dorc plan book.sh"),
+        Some(ByteAgreement::Identical)
     );
     assert_eq!(
-        validated.value(1, OpaqueFieldTag::SourceExcerpt),
-        Some(b"set -eu\n".as_slice()),
+        validated.agrees_with(1, OpaqueFieldTag::SourceExcerpt, b"set -eu\n"),
+        Some(ByteAgreement::Identical),
         "a payload containing a newline frames on its declared length, not on the newline"
     );
     assert_eq!(
-        validated.value(0, OpaqueFieldTag::TargetName),
-        None,
-        "a slot the skeleton withheld has no value to read"
+        validated.agrees_with(1, OpaqueFieldTag::SourceExcerpt, b"set -eu"),
+        Some(ByteAgreement::Differing),
+        "and the comparison is byte-exact, so a truncated probe disagrees"
     );
-    assert_eq!(validated.entries().len(), 3);
+    assert_eq!(
+        validated.agrees_with(0, OpaqueFieldTag::TargetName, b""),
+        None,
+        "a slot the skeleton withheld has no value to compare against"
+    );
+    assert_eq!(validated.slots().count(), 3);
 }
 
 #[test]
@@ -154,15 +173,18 @@ fn the_captured_account_is_computed_from_the_skeleton_alone() {
 #[test]
 fn a_region_naming_another_document_or_species_releases_nothing() {
     let other = serialize(&"9".repeat(64), PlanReceipt::TOKEN, &span(), &entries());
-    assert_eq!(validate(other), Err(OverlayFault::DocumentMismatch));
+    assert_eq!(validate(other).err(), Some(OverlayFault::DocumentMismatch));
 
     let wrong_species = serialize(RECEIPT, "apply-intent", &span(), &entries());
-    assert_eq!(validate(wrong_species), Err(OverlayFault::DocumentMismatch));
+    assert_eq!(
+        validate(wrong_species).err(),
+        Some(OverlayFault::DocumentMismatch)
+    );
 
     let wrong_projection = replace_line(&good(), "projection ", "projection plain");
     assert_eq!(
-        validate(wrong_projection),
-        Err(OverlayFault::DocumentMismatch)
+        validate(wrong_projection).err(),
+        Some(OverlayFault::DocumentMismatch)
     );
 }
 
@@ -172,8 +194,8 @@ fn a_region_bound_to_a_different_skeleton_releases_nothing() {
     // which is the case the outer signature alone cannot distinguish.
     let elsewhere = serialize(RECEIPT, PlanReceipt::TOKEN, b"some other span", &entries());
     assert_eq!(
-        validate(elsewhere),
-        Err(OverlayFault::SkeletonDigestMismatch)
+        validate(elsewhere).err(),
+        Some(OverlayFault::SkeletonDigestMismatch)
     );
 }
 
@@ -181,7 +203,7 @@ fn a_region_bound_to_a_different_skeleton_releases_nothing() {
 fn a_missing_entry_releases_nothing_rather_than_enriching_partially() {
     let short: Vec<OverlayEntry> = entries().into_iter().take(2).collect();
     let region = serialize(RECEIPT, PlanReceipt::TOKEN, &span(), &short);
-    assert_eq!(validate(region), Err(OverlayFault::MissingRequired));
+    assert_eq!(validate(region).err(), Some(OverlayFault::MissingRequired));
 }
 
 #[test]
@@ -195,7 +217,7 @@ fn an_entry_the_skeleton_does_not_account_for_is_refused() {
         b"web1".to_vec(),
     ));
     let region = serialize(RECEIPT, PlanReceipt::TOKEN, &span(), &extra);
-    assert_eq!(validate(region), Err(OverlayFault::Unaccounted));
+    assert_eq!(validate(region).err(), Some(OverlayFault::Unaccounted));
 }
 
 #[test]
@@ -207,7 +229,7 @@ fn a_duplicate_key_is_refused_rather_than_letting_the_second_win() {
         b"something else".to_vec(),
     ));
     let region = serialize(RECEIPT, PlanReceipt::TOKEN, &span(), &aliased);
-    assert_eq!(validate(region), Err(OverlayFault::DuplicateKey));
+    assert_eq!(validate(region).err(), Some(OverlayFault::DuplicateKey));
 }
 
 #[test]
@@ -215,8 +237,8 @@ fn an_entry_naming_a_record_or_field_that_is_not_there_is_refused() {
     let mut dangling = entries();
     dangling.push(OverlayEntry::of(9, OpaqueFieldTag::Argv, b"x".to_vec()));
     assert_eq!(
-        validate(serialize(RECEIPT, PlanReceipt::TOKEN, &span(), &dangling)),
-        Err(OverlayFault::DanglingRecord)
+        validate(serialize(RECEIPT, PlanReceipt::TOKEN, &span(), &dangling)).err(),
+        Some(OverlayFault::DanglingRecord)
     );
 
     let mut wrong_field = entries();
@@ -227,18 +249,19 @@ fn an_entry_naming_a_record_or_field_that_is_not_there_is_refused() {
             PlanReceipt::TOKEN,
             &span(),
             &wrong_field
-        )),
-        Err(OverlayFault::WrongFieldForKind)
+        ))
+        .err(),
+        Some(OverlayFault::WrongFieldForKind)
     );
 }
 
 #[test]
 fn a_declared_count_that_disagrees_with_the_entries_present_is_refused() {
     let high = replace_line(&good(), "entries ", "entries 4");
-    assert_eq!(validate(high), Err(OverlayFault::EntryCount));
+    assert_eq!(validate(high).err(), Some(OverlayFault::EntryCount));
 
     let low = replace_line(&good(), "entries ", "entries 2");
-    assert_eq!(validate(low), Err(OverlayFault::EntryCount));
+    assert_eq!(validate(low).err(), Some(OverlayFault::EntryCount));
 }
 
 #[test]
@@ -260,7 +283,7 @@ fn a_payload_shorter_or_longer_than_its_declared_length_is_refused() {
 fn bytes_after_the_terminator_are_refused_rather_than_ignored() {
     let mut trailing = good();
     trailing.extend_from_slice(b"extra\n");
-    assert_eq!(validate(trailing), Err(OverlayFault::Trailing));
+    assert_eq!(validate(trailing).err(), Some(OverlayFault::Trailing));
 }
 
 #[test]
@@ -290,8 +313,9 @@ fn a_zero_length_payload_is_legal_and_distinct_from_an_absent_one() {
     let validated = validate(serialize(RECEIPT, PlanReceipt::TOKEN, &span(), &empty))
         .expect("empty payloads are legal where the schema allows them");
     assert_eq!(
-        validated.value(0, OpaqueFieldTag::Argv),
-        Some(b"".as_slice())
+        validated.agrees_with(0, OpaqueFieldTag::Argv, b""),
+        Some(ByteAgreement::Identical),
+        "an empty payload is a slot that is PRESENT and carries nothing"
     );
 }
 
@@ -306,8 +330,8 @@ fn a_region_past_a_bound_is_refused_before_it_is_read() {
         &narrow,
     );
     assert_eq!(
-        refused,
-        Err(OverlayFault::OverBound {
+        refused.err(),
+        Some(OverlayFault::OverBound {
             what: "overlay-entries"
         })
     );
@@ -315,13 +339,10 @@ fn a_region_past_a_bound_is_refused_before_it_is_read() {
     let mut tiny = ReceiptLimits::V1;
     tiny.overlay_bytes = dorc_receipt::limits::ByteLimit::of(8);
     assert_eq!(
-        DecryptedOpaqueOverlay::of(good()).validate(
-            &skeleton(),
-            &span(),
-            PlanReceipt::TOKEN,
-            &tiny
-        ),
-        Err(OverlayFault::OverBound {
+        DecryptedOpaqueOverlay::of(good())
+            .validate(&skeleton(), &span(), PlanReceipt::TOKEN, &tiny)
+            .err(),
+        Some(OverlayFault::OverBound {
             what: "overlay-bytes"
         })
     );
@@ -343,7 +364,7 @@ fn the_canonical_serializer_orders_entries_however_they_were_supplied() {
 /// The framing is written here rather than recovered by splitting a canonical region on
 /// newlines: a payload may itself contain newlines, so splitting one is not the inverse of
 /// writing one.
-fn emit_in_order(order: &[OverlayEntry]) -> Vec<u8> {
+fn emit_in_order(order: &[(u64, OpaqueFieldTag, Vec<u8>)]) -> Vec<u8> {
     let canonical = good();
     let header_end = canonical
         .iter()
@@ -358,15 +379,15 @@ fn emit_in_order(order: &[OverlayEntry]) -> Vec<u8> {
     out.extend_from_slice(b"entries ");
     out.extend_from_slice(order.len().to_string().as_bytes());
     out.push(b'\n');
-    for entry in order {
+    for (record, tag, bytes) in order {
         out.extend_from_slice(b"entry ");
-        out.extend_from_slice(entry.record().to_string().as_bytes());
+        out.extend_from_slice(record.to_string().as_bytes());
         out.push(b' ');
-        out.extend_from_slice(entry.tag().token().as_bytes());
+        out.extend_from_slice(tag.token().as_bytes());
         out.push(b' ');
-        out.extend_from_slice(entry.bytes().len().to_string().as_bytes());
+        out.extend_from_slice(bytes.len().to_string().as_bytes());
         out.push(b'\n');
-        out.extend_from_slice(entry.bytes());
+        out.extend_from_slice(bytes);
         out.push(b'\n');
     }
     out.extend_from_slice(b"overlay-end\n");
@@ -378,16 +399,16 @@ fn entries_out_of_canonical_order_are_refused_even_when_the_set_is_right() {
     // The canonical order is part of the form. Accepting a permuted region would be a second
     // grammar carrying the same values, and byte equality would stop being document equality.
     assert_eq!(
-        emit_in_order(&entries()),
+        emit_in_order(&entry_parts()),
         good(),
         "emitting in canonical order reproduces the canonical region"
     );
 
-    let mut reversed = entries();
+    let mut reversed = entry_parts();
     reversed.reverse();
     assert_eq!(
-        validate(emit_in_order(&reversed)),
-        Err(OverlayFault::Ordering)
+        validate(emit_in_order(&reversed)).err(),
+        Some(OverlayFault::Ordering)
     );
 }
 
@@ -396,11 +417,11 @@ fn a_region_repeating_one_slot_is_refused_before_the_second_can_win() {
     // Adjacent duplicates are ordering-equal rather than ordering-decreasing, so they need
     // their own arm; a bare monotonicity check would let them through.
     let doubled = vec![
-        OverlayEntry::of(0, OpaqueFieldTag::Argv, b"first".to_vec()),
-        OverlayEntry::of(0, OpaqueFieldTag::Argv, b"second".to_vec()),
+        (0, OpaqueFieldTag::Argv, b"first".to_vec()),
+        (0, OpaqueFieldTag::Argv, b"second".to_vec()),
     ];
     assert_eq!(
-        validate(emit_in_order(&doubled)),
-        Err(OverlayFault::DuplicateKey)
+        validate(emit_in_order(&doubled)).err(),
+        Some(OverlayFault::DuplicateKey)
     );
 }

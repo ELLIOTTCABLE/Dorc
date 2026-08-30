@@ -276,13 +276,83 @@ impl Reingested<RecordedPlanReceipt> {
     }
 }
 
+/// One detail a validated region carried, sealed under the sink question its slot poses.
+///
+/// The ONE public exit for a reingested document's plaintext. It carries a
+/// [`RecordedValue`](crate::report::RecordedValue), which has no accessor and a redacted `Debug`,
+/// so the bytes leave only through a destination encoder — and the class rides along because the
+/// encoder needs to know which question it is answering.
+#[derive(Debug)]
+pub struct RecordedDetail {
+    record: u64,
+    tag: crate::projection::OpaqueFieldTag,
+    value: crate::report::RecordedValue,
+}
+
+impl RecordedDetail {
+    /// Which record this enriches.
+    #[must_use]
+    pub const fn record(&self) -> u64 {
+        self.record
+    }
+
+    /// Which slot it fills.
+    #[must_use]
+    pub const fn tag(&self) -> crate::projection::OpaqueFieldTag {
+        self.tag
+    }
+
+    /// The sealed value.
+    #[must_use]
+    pub const fn value(&self) -> &crate::report::RecordedValue {
+        &self.value
+    }
+}
+
 impl<D: Species> Reingested<Receipt<D, crate::model::Rich>> {
+    /// Every detail the validated region carried, in canonical order, each sealed under its own
+    /// class.
+    ///
+    /// THE exit. It replaced a public `detail()` answering `&[u8]`, which was the easier of two
+    /// routes out and the one a listing adapter had already taken — so the class-aware exit was
+    /// sound only for a caller that chose it. There is no second route now.
+    #[must_use]
+    pub fn recorded_details(&self) -> Vec<RecordedDetail> {
+        self.0
+            .region()
+            .slots()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .filter_map(|(record, tag)| self.recorded_detail(record, tag))
+            .collect()
+    }
+
+    /// One detail, where the region carried that slot.
+    #[must_use]
+    pub fn recorded_detail(
+        &self,
+        record: u64,
+        tag: crate::projection::OpaqueFieldTag,
+    ) -> Option<RecordedDetail> {
+        self.0.detail(record, tag).map(|bytes| RecordedDetail {
+            record,
+            tag,
+            value: crate::report::RecordedValue::sealed(
+                crate::report::ValueClass::of_tag(tag),
+                bytes.to_vec(),
+            ),
+        })
+    }
+
     /// The bytes filling one slot of one record, as the validated region carried them.
     ///
-    /// A report-only scalar, like every other decomposition here: the seal forbids handing out the
-    /// recorded VALUE, not the bytes of a field a report renders.
-    #[must_use]
-    pub fn detail(&self, record: u64, tag: crate::projection::OpaqueFieldTag) -> Option<&[u8]> {
+    /// Crate-private: the report decomposition seals these under a class immediately, and a
+    /// public reader answering raw bytes is exactly the exit that made the sealed model optional.
+    pub(crate) fn detail(
+        &self,
+        record: u64,
+        tag: crate::projection::OpaqueFieldTag,
+    ) -> Option<&[u8]> {
         self.0.detail(record, tag)
     }
 

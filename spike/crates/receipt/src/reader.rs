@@ -297,14 +297,20 @@ impl<D: Species> Receipt<D, crate::model::Rich> {
     }
 
     /// The bytes filling one slot of one record.
-    #[must_use]
-    pub fn detail(&self, record: u64, tag: crate::projection::OpaqueFieldTag) -> Option<&[u8]> {
+    ///
+    /// Crate-private, and the two readers below are the whole of what reaches the region: the
+    /// public exit is `Reingested::recorded_details`, which seals every value under its slot's
+    /// class. A public `&[u8]` here was the easier of two routes out (`30Ri`).
+    pub(crate) fn detail(
+        &self,
+        record: u64,
+        tag: crate::projection::OpaqueFieldTag,
+    ) -> Option<&[u8]> {
         self.region.value(record, tag)
     }
 
     /// The validated region.
-    #[must_use]
-    pub const fn region(&self) -> &crate::overlay::ValidatedOpaqueOverlay {
+    pub(crate) const fn region(&self) -> &crate::overlay::ValidatedOpaqueOverlay {
         &self.region
     }
 }

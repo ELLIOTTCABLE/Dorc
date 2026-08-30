@@ -62,8 +62,14 @@ pub enum OverlayFault {
     Trailing,
 }
 
-/// One region entry: which record, which field, which exact bytes.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// One region entry a WRITER offers: which record, which field, which exact bytes.
+///
+/// The writer side and the reader side are deliberately different types. A caller building one of
+/// these already holds the bytes it is putting in, so offering them is not a release; a caller
+/// holding a document that came BACK does not, and what it gets is [`ValidatedOpaqueOverlay`],
+/// whose values leave only through the class-aware encoder exit. That split is why `bytes` here
+/// is crate-private rather than a public reader.
+#[derive(Clone)]
 pub struct OverlayEntry {
     record: u64,
     tag: OpaqueFieldTag,
@@ -89,15 +95,56 @@ impl OverlayEntry {
         self.tag
     }
 
-    /// The exact bytes.
+    /// How many bytes this carries. A length is not the content.
     #[must_use]
-    pub fn bytes(&self) -> &[u8] {
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    /// Whether this entry carries nothing.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.bytes.is_empty()
+    }
+
+    /// Whether this entry's bytes are exactly `expected`.
+    ///
+    /// A typed verdict rather than the bytes, so a caller that needs to prove exactness — a
+    /// projection battery, most of all — proves it without a reader that hands plaintext out.
+    #[must_use]
+    pub fn agrees_with(&self, expected: &[u8]) -> crate::report::ByteAgreement {
+        if self.bytes == expected {
+            crate::report::ByteAgreement::Identical
+        } else {
+            crate::report::ByteAgreement::Differing
+        }
+    }
+
+    /// The exact bytes, for the seats inside this crate that serialize or account for them.
+    pub(crate) fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
     /// The canonical sort key: record first, then the tag table's order.
     fn key(&self) -> (u64, usize) {
         (self.record, self.tag.order())
+    }
+}
+
+/// Says which slot it fills and how much it is holding, and nothing about the content.
+///
+/// Hand-written rather than derived, on [`crate::report::RecordedValue`]'s reasoning: a derived
+/// `Debug` puts the bytes into a panic message, a log line, or a test failure, all of which are
+/// places `sinv-sink-encoding` says host- and author-shaped bytes may not arrive unencoded.
+impl core::fmt::Debug for OverlayEntry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "OverlayEntry(record {}, {}, {} bytes)",
+            self.record,
+            self.tag.token(),
+            self.bytes.len()
+        )
     }
 }
 
@@ -506,26 +553,63 @@ impl DecryptedOpaqueOverlay {
 
 /// A region that validated completely against its skeleton.
 ///
-/// The only value a detail byte can be read from. Reaching one means the region named this
-/// document, this species, this skeleton, and exactly the slots the skeleton accounts for.
-#[derive(Debug, PartialEq, Eq)]
+/// READER-SIDE storage, and the only value a detail byte can be read from. Reaching one means the
+/// region named this document, this species, this skeleton, and exactly the slots the skeleton
+/// accounts for.
+///
+/// Nothing public reads a byte out of it. `sinv-sink-encoding` says every host- or author-shaped
+/// value passes through the centralized encoder for its destination, and the way to make that
+/// true by construction is to leave no other exit: the readers below are crate-private, and what
+/// a consumer outside this crate gets is the read-back document's own `recorded_details`, which
+/// seals every value under its slot's own class.
+///
+/// No `PartialEq`, no `Eq`, and a redacted `Debug`, for the reason
+/// [`crate::report::RecordedValue`] has none either: comparison against a caller-supplied probe
+/// leaks the contents a byte at a time, and a derived `Debug` leaks them all at once.
 pub struct ValidatedOpaqueOverlay {
     entries: Vec<OverlayEntry>,
 }
 
 impl ValidatedOpaqueOverlay {
     /// The bytes filling one slot, if the skeleton accounted for it.
-    #[must_use]
-    pub fn value(&self, record: u64, tag: OpaqueFieldTag) -> Option<&[u8]> {
+    pub(crate) fn value(&self, record: u64, tag: OpaqueFieldTag) -> Option<&[u8]> {
         self.entries
             .iter()
             .find(|entry| entry.record == record && entry.tag == tag)
             .map(OverlayEntry::bytes)
     }
 
-    /// Every entry, in canonical order.
+    /// Which slot each entry fills, in canonical order, without the bytes.
+    ///
+    /// What an enumeration needs and all it needs: the class-aware exit walks these and asks
+    /// [`Self::value`] for each, so no caller ever holds an entry. Public because a slot key is
+    /// structure — a record ordinal and a closed tag — and never content.
+    pub fn slots(&self) -> impl Iterator<Item = (u64, OpaqueFieldTag)> + '_ {
+        self.entries.iter().map(|entry| (entry.record, entry.tag))
+    }
+
+    /// Whether one slot's bytes are exactly `expected`, where the region carried that slot.
+    ///
+    /// The comparison happens INSIDE the crate, on the private field, and answers a verdict
+    /// rather than handing out a `bool` a caller could drive against probe bytes one at a time —
+    /// [`crate::report::RecordedValue`]'s reasoning, applied to the storage it seals.
     #[must_use]
-    pub fn entries(&self) -> &[OverlayEntry] {
-        &self.entries
+    pub fn agrees_with(
+        &self,
+        record: u64,
+        tag: OpaqueFieldTag,
+        expected: &[u8],
+    ) -> Option<crate::report::ByteAgreement> {
+        self.entries
+            .iter()
+            .find(|entry| entry.record == record && entry.tag == tag)
+            .map(|entry| entry.agrees_with(expected))
+    }
+}
+
+/// Says how many slots it holds, and nothing about what is in them.
+impl core::fmt::Debug for ValidatedOpaqueOverlay {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ValidatedOpaqueOverlay({} slots)", self.entries.len())
     }
 }

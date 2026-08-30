@@ -200,7 +200,11 @@ impl ApplyInvocation {
 
 /// One run's apply-intent document: the typed model, the exact records, the detail values, and
 /// which record each assignment occupies.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// No `PartialEq`/`Eq`: the details are plaintext-bearing, and a derived comparison is a probe a
+/// caller drives (`sinv-sink-encoding`). A battery comparing one detail asks
+/// `OverlayEntry::agrees_with`, which answers a verdict.
+#[derive(Debug, Clone)]
 pub struct ProjectedApplyIntent {
     model: RecordedApplyIntent,
     records: Vec<SkeletonRecord>,
@@ -446,7 +450,9 @@ impl ApplyOutcomeReport {
 }
 
 /// One run's apply-outcome document.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// No `PartialEq`/`Eq`, on `ProjectedApplyIntent`'s reasoning.
+#[derive(Debug, Clone)]
 pub struct ProjectedApplyOutcome {
     model: RecordedApplyOutcome,
     records: Vec<SkeletonRecord>,

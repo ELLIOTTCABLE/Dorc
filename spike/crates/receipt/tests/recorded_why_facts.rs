@@ -302,6 +302,63 @@ fn recorded_bytes_exit_only_through_a_caller_supplied_encoder() {
     );
 }
 
+/// THE SENTINEL: the encoder is the ONLY thing that emits recorded bytes.
+///
+/// A sealed value with no accessor is only half the property. The other half is that nothing
+/// ELSE renders one by accident — a derived `Debug` on the document, on the model, on the input
+/// struct, or on the current-source reading would put a book's own shell text into a panic
+/// message, a log line or a test failure, none of which is a destination encoder
+/// (`sinv-sink-encoding`). Every surface below is asked directly, and the positive control at the
+/// end is what says the bytes were there to leak.
+#[test]
+fn no_debug_or_report_surface_carries_the_recorded_bytes() {
+    // A run of the fixture book that appears nowhere in a type name, a token, or a state word,
+    // so a hit is the CONTENT and never the frame around it.
+    const SENTINEL: &str = "hork tune --profile web";
+    assert!(
+        book().contains(SENTINEL),
+        "the sentinel must really be in the bytes under test"
+    );
+
+    let document = published();
+    let observations = matching(book());
+    let input = input(&document, observations.clone(), None);
+    let facts = derive(&input);
+
+    let surfaces = [
+        ("the read-back document", format!("{:?}", document.receipt)),
+        ("its sealed model", format!("{:?}", document.model)),
+        ("the model input", format!("{input:?}")),
+        ("the derived facts", format!("{facts:?}")),
+        (
+            "a current-source reading",
+            format!("{:?}", observations[0].reading),
+        ),
+    ];
+    for (what, shown) in &surfaces {
+        assert!(
+            !shown.contains(SENTINEL),
+            "{what} rendered the recorded bytes: {shown}"
+        );
+        assert!(
+            !shown.is_empty(),
+            "{what} rendered nothing at all, so this proves nothing"
+        );
+    }
+
+    // The positive control. The same bytes DO come out, through the one exit, so the silence
+    // above is a seal rather than a document that turned out to be empty.
+    let mut spy = Spy::new();
+    let rendered = facts.sources()[0]
+        .text()
+        .expect("the general-sh source carries its bytes")
+        .render(&mut spy);
+    assert!(
+        rendered.contains(SENTINEL),
+        "the encoder is the exit, and it must still work"
+    );
+}
+
 /// A locator round-trips through the document into the model's chain.
 #[test]
 fn a_site_carries_the_provenance_chain_its_document_recorded() {

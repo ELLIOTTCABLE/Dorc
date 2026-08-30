@@ -265,7 +265,10 @@ pub fn project(
 /// The records travel WITH the details because the details are keyed by record position. Handing
 /// back the model alone would leave a caller to re-derive that order, which is the drift this type
 /// exists to make unspellable.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// No `PartialEq`/`Eq`: the details are plaintext-bearing, and a derived comparison is a probe a
+/// caller drives (`sinv-sink-encoding`).
+#[derive(Debug, Clone)]
 pub struct ProjectedPlan {
     model: RecordedPlanReceipt,
     records: Vec<SkeletonRecord>,

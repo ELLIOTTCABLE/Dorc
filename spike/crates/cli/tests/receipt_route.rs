@@ -49,6 +49,7 @@ use dorc_receipt::model::PlanReceipt;
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::{read_plain, read_rich};
+use dorc_receipt::report::ByteAgreement;
 use dorc_receipt::tokens::RecordedInvocationMode;
 use dorc_receipt_crypto::{AgeOpener, AgeSealer, Ed25519Signer, Ed25519Verifier};
 
@@ -519,12 +520,13 @@ fn a_rich_document_carries_its_held_values_in_the_region_and_never_in_the_skelet
         match read_rich::<PlanReceipt>(bytes, &ReceiptLimits::V1, &policy_for(&signer), &opener) {
             Ok(recorded) => recorded,
             Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
-            Ok(other) => panic!("expected a trusted read: {other:?}"),
         };
     assert_eq!(
-        recorded.detail(0, OpaqueFieldTag::TargetName),
-        Some(b"localhost".as_slice()),
-        "the region must hand back exactly the value the run held"
+        recorded
+            .recorded_detail(0, OpaqueFieldTag::TargetName)
+            .map(|detail| detail.value().agrees_with(b"localhost")),
+        Some(ByteAgreement::Identical),
+        "the region carries exactly the value the run held"
     );
 }
 
@@ -728,14 +730,21 @@ fn spent_permit(ids: &mut CountingIds) -> dorc_receipt::dispatch::MutationDispat
     }
 }
 
-/// Every value answering one tag anywhere in a document, so an assertion names the value rather
-/// than a record position it would have to hard-code.
-fn details_for<D: dorc_receipt::Species>(
+/// How every value answering one tag stands against `expected`.
+///
+/// A VERDICT per detail rather than the bytes: a reingested document hands out no plaintext, so
+/// a battery proves exactness by comparing against what it expects. The vector's LENGTH is the
+/// other half of the assertion — how many details answered that tag at all.
+fn agreements_for<D: dorc_receipt::Species>(
     recorded: &dorc_receipt::Reingested<dorc_receipt::Receipt<D, dorc_receipt::model::Rich>>,
     tag: OpaqueFieldTag,
-) -> Vec<Vec<u8>> {
-    (0..u64::try_from(recorded.record_count()).unwrap_or(0))
-        .filter_map(|record| recorded.detail(record, tag).map(<[u8]>::to_vec))
+    expected: &[u8],
+) -> Vec<ByteAgreement> {
+    recorded
+        .recorded_details()
+        .iter()
+        .filter(|detail| detail.tag() == tag)
+        .map(|detail| detail.value().agrees_with(expected))
         .collect()
 }
 
@@ -792,7 +801,6 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
     ) {
         Ok(recorded) => recorded,
         Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
-        Ok(other) => panic!("expected a trusted read: {other:?}"),
     };
     assert_eq!(
         recorded.receipt_id(),
@@ -800,12 +808,25 @@ fn a_published_intent_carries_its_exact_image_in_the_region_and_never_beside_it(
         "the identity the seat handed back is the document's own"
     );
     assert_eq!(
-        details_for(&recorded, OpaqueFieldTag::ApplyArtifactImage),
-        vec![image.encode().to_vec()],
+        agreements_for(
+            &recorded,
+            OpaqueFieldTag::ApplyArtifactImage,
+            &image.encode()
+        ),
+        vec![ByteAgreement::Identical],
         "exactly one record carries the image, and it is this assignment's canonical bytes"
     );
     assert_eq!(
-        details_for(&recorded, OpaqueFieldTag::ApplyContext).len(),
+        agreements_for(
+            &recorded,
+            OpaqueFieldTag::ApplyArtifactImage,
+            b"some other image"
+        ),
+        vec![ByteAgreement::Differing],
+        "and the comparison would notice a cousin"
+    );
+    assert_eq!(
+        agreements_for(&recorded, OpaqueFieldTag::ApplyContext, b"").len(),
         1,
         "the assignment's remaining resolved axes ride their own slot"
     );
@@ -944,9 +965,11 @@ fn an_outcome_published_past_the_permit_names_the_intent_that_authorized_it() {
     ) {
         Ok(recorded) => recorded,
         Err(partial) => panic!("a document this controller sealed must read: {partial:?}"),
-        Ok(other) => panic!("expected a trusted read: {other:?}"),
     };
-    assert_eq!(details_for(&recorded, OpaqueFieldTag::Stdout), vec![tail]);
+    assert_eq!(
+        agreements_for(&recorded, OpaqueFieldTag::Stdout, &tail),
+        vec![ByteAgreement::Identical]
+    );
     let model = recorded
         .model()
         .expect("the record stream closes over itself");
