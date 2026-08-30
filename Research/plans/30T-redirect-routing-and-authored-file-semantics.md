@@ -330,14 +330,14 @@ sentence covers the ordinary posture with no new trust class (the binder body is
 its author named), and the fstype gate is a measured decline discipline hand-written
 disturbs bodies do not even have.
 
-Recorded curiosity, explicitly not-to-be-solved-here and carrying no commitment: a future
-revisit may look for a correctness-maintaining, non-footgun expressivity where *kind* owners
-distribute danger onward on other authors' behalf ("you write that you touch a package; the
-package-kind knows how that reaches other kinds") — a very subtle design corner, prone to
-footguns and correctness holes. The existing seats nearest to it are
-`kind__disturbance_reaches_only` (stage-7 cross-kind widening, claim-side) and
-`an-store-topology` (`kind__state_stored_only_in`, backing-side); any revisit starts from
-those, not from a blank page.
+The expressivity this ground once treated as a distant curiosity — kind owners distributing
+danger onward on other authors' behalf — is designed at `plans/30U` (the finished-definition
+gate): `kind__disturbance_reaches` carries the entailment claim-side,
+`kind__state_stored_only_in` complements backing-side, and the `disturbs nothing-else`
+record is the completeness act that licenses cross-kind sparing at all. This section's
+ruling composes with it unchanged: binder claims are ordinary, and "ordinary" includes
+being gated by the File kind's own finished definition exactly as every kind is gated by
+its own — still no special case.
 
 ## §8 invariants-adopted — what this design locks in
 
@@ -418,8 +418,10 @@ substrate.
   surfaces. The authored fs stdlib file itself is stdlib-arc work, not engine work — but the
   *contract* it is written against is this unit.
 - **`comp-claim-consumption`** — the settle/wall seat accepts binder claims into footprint
-  unions; render reasons name the binder. Small delta on existing seats (`an-wall-topology`).
-  Requires `comp-fs-binder-member`. Until it exists, binder claims are inert and the
+  unions; render reasons name the binder. The union/render half is a small delta on existing
+  seats (`an-wall-topology`); the cross-kind gating of each footprint×backing pair on the
+  footprint kind's finished definition is `plans/30U`'s machinery, consumed here, not
+  re-derived. Requires `comp-fs-binder-member`. Until it exists, binder claims are inert and the
   authored surface cannot be meaningfully tested: any oracle-authorship exercised against
   the binder contract before this unit lands is authorship without feedback.
 - **`comp-backing-detector`** — the read-vs-marks falsification detector
