@@ -66,8 +66,10 @@ new entries to the matching section.
 - **relational-compare-chokepoint** — ALL whole-coordinate comparison sits behind
   one chokepoint that MAY answer relationally; per-axis pointwise decomposition is
   never baked into the API (`271:rul-seam-context-slot-and-relational-chokepoint`).
-  Verdicts are ternary {same | provably-disjoint | unknown}: same → transport only;
-  provably-disjoint → flag-gated sparing only; unknown → the safe bottom for both.
+  Verdicts are quaternary {same | provably-disjoint | unrelated | unknown} (`30U`):
+  same → transport only; provably-disjoint → flag-gated sparing only; unknown AND
+  unrelated → safe bottoms for both (*unrelated* = no generator ever spoke; distinct
+  label, identical behaviour — the weakest inference never wears the strongest label).
 - **pin-no-outcome-as-generator** — a compare-verdict feeds only its licensed
   consumer; it never re-enters the relation as evidence for a later verdict.
 - **pin-set-meet-order-independence** — a coordinate-SET with any unknown member
@@ -77,10 +79,12 @@ new entries to the matching section.
   `kind__resolve()` canonicalizes the ENTITY within its kind; selectors do NOT
   canonicalize at v1; `Resolution::MayAlias` ⇒ demote. A raw coordinate cannot
   reach the intersection in a resolver-bearing kind.
-- **kind-fence-movable** — cross-kind pairs short-circuit disjoint BEFORE
-  canonicalization at v1, but the fence must stay MOVABLE (the parked co-reference
-  mechanism lands against it; keep `CanonicalCoord` extensible toward a
-  kind-carrying canonical).
+- **kind-fence-movable** (re-cut `30U`) — cross-kind pairs short-circuit to
+  `unrelated` (⇒ collide for sparing) BEFORE canonicalization; only the claimed
+  kind's FINISHED DEFINITION (its reached `disturbs nothing-else` record) licenses
+  cross-kind provably-disjoint, through the widened at-most. The fence must stay
+  MOVABLE (the parked co-reference mechanism lands against it; keep
+  `CanonicalCoord` extensible toward a kind-carrying canonical).
 - **auto-cell-is-the-markless-floor** — `auto_fact` mints the typeless floor's
   per-provider singleton (`24L` §2/§3) and `is_auto_kind` recognizes it. Since `26H` §3 a
   verdict body that AUTHORS a coordinate keys that cell instead, so the auto-cell is the

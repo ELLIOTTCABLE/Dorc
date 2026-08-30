@@ -14,6 +14,19 @@
 
 ---
 
+## CURRENT STATE (2026-08-29 — the finished-definition gate + authored file semantics DESIGNED; corpus brought coherent; nothing committed)
+
+The `r30-design-duck-file-paths-and-redirects` sittings minted **`plans/30U`** (the
+`disturbance_reaches` re-cut: arm-incremental member; the `disturbs nothing-else`
+report-lane record as finished-definition act + completion witness; the cross-kind
+sparing gate; quaternary compare with `unrelated`) and **`plans/30T`** (redirect routing,
+the filesystem binder, the ask-the-world discipline; `30Ta` is the adjudicated adversarial
+input). Same-sitting coherence edits landed across USER_STORY (stage 7 + the receipt —
+human review pending), `spike/CLAUDE.md`, core/plan/analysis crate steering,
+ANALYZER-NEEDS, KNOBS, `271`, `28M`, `281`, `28K`, `28Q`, `30J`, `30P`. Implementation is
+entirely unscheduled (`30U` §10 is a pending-successor sketch). USER_STORY's stage-5/7
+re-cut and `30T` sit UNCOMMITTED pending human review; the rest landed on `ai/main`.
+
 ## CURRENT STATE (2026-08-25 — the durable receipt family is IN FLIGHT on `ai/r30-receipt`; a fresh conductor resumes from `quarantine/30Rc`)
 
 **Where to start:** `plans/30R` is the conductor-facing design. `quarantine/30Rc` is the live
