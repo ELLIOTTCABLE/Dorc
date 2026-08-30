@@ -301,8 +301,13 @@ and carries the license-contamination map.
   `notes/30Pb`, its prior art `.claude/research/emission-and-inclusion-prior-art/`); the
   second-half conduct ledger is `notes/30N`; the 2026-08-23 burndown sitting's typed rulings
   (influence lane · ship-nothing · the stdlib dialect-reach) are `notes/30Q` §5g; the close-out
-  conduct ledger is `notes/30Q`. What remains is the round-close ceremony (the human's gate,
-  `gate:arc`, the `CURRENT_ROUND` bump, the prose queue). Current state: `LIVING_STATUS.md`.
+  conduct ledger is `notes/30Q`. The subsequent durable-receipt family is designed in
+  **`plans/30R`** and built on `ai/r30-receipt`: immutable plan/intent/outcome receipts, local
+  key/store production routes, exact general-sh source, durable locators, rooted graph selection,
+  and sealed `dorc-receipt::report::RecordedWhyFacts` are built. The remaining secure close is the
+  curated receipt API/steering plus D5 old-implementation deletion/census; recorded-why
+  arrangement is rehomed to a later non-quarantined conductor, and report-only kernel
+  re-derivation remains a separate deferred round. Current state: `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the
