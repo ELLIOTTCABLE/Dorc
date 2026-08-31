@@ -212,6 +212,22 @@ loaded-source locator composition (named uncollected V1 residue).
   deletion word (`syntax-unsupported-source-of-dynamic-target` ·
   `why-drift-address-unanswerable` · `why-drift-analysis-suppressed` ·
   `why-receipt-plan-tally-unsplit` · `why-receipt-when-replayed`).
+- Conductor prose pass (2026-08-31, slop-tier per ack, on the lane): the six
+  receipt/machine-register help rows, both receipt-code messages
+  (`{{store}}`/`{{reason}}`-holed), three register-guide `why:` recasts (the
+  dead "whylog is a deterministic reproducer" guidance now points at the
+  published receipt), the dorc-loom usage example slug, and the two usage
+  transcripts refreshed via the dump-rescue loop. Steering sited on the lane:
+  `cli/CLAUDE.md source-comparison-is-one-cli-seat` ·
+  `why/CLAUDE.md file-line-addresses-come-from-the-visit`. NOT authored: the
+  37 `why-total-*` label rows — structural finding: their only rendering
+  surface carries per-run entropy (receipt ids), so no committed transcript
+  can be their fixpoint-authoring home and the loom words-mint cannot reach
+  them; they rest `[unwritten:]` legally, and the clean future fix is a
+  synthetic-world loom case rendering `why_total` over an entropy-free
+  reconstruction (a later sitting's machinery). Two lock `why:` rows keep
+  historical fence-names by their old spellings deliberately
+  (`nack-whylog-stores-book-bytes`, the 27V clock cite) — history, not drift.
 - Worktree-reap incident (2026-08-31, resolved; the `worktree-file-access-law`
   hazard fired as documented): the harness reaped the builder's managed
   worktree at its checkpoint turn-boundary; the orphaned skeleton's dead `.git`
