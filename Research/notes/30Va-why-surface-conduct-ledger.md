@@ -73,16 +73,28 @@ loaded-source locator composition (named uncollected V1 residue).
 - Standing rulings pending (human): the root-identity fold into closure and
   the ancestors-only closure walk (both stand as built); whether the now
   dead-ended `SpineInvocation::mode()` (zero callers) should die outright.
-- Conductor fold-time queue: steering edits (stale whylog-era blocks in
-  `spike/CLAUDE.md`, the receipt/receipt-local contract rows `30Rj` left
-  stale, `core/src/spine.rs`'s `ExcludedContent` doc-cite, re-homing the
-  account-export expectation at a future receipt-side seat) · xfail pin
-  `p-x-durable-account-export-is-enabled` disposition (parked `Reserved`) ·
-  prose massage (five unwritten receipt-flag help rows; two receipt
-  placeholders; six stale `why:` metadata citations in the generated locks) ·
-  an orphan-arrangement-rows census (rider for the render lane —
-  `30Rk:the-arrangement-mirror-is-its-own-lock`) · LIVING_STATUS refresh ·
-  `gate:arc` · end-of-work review per root `AGENTS.md` · worktree cleanup.
+- Steering/register recast: LANDED 2026-08-31 (`b3552abd`/`99ebe1b1`/`b44bd5e0`).
+  Verification first (the human's suspicion held): the `30Rj`-flagged
+  receipt/receipt-local rows and `plan/CLAUDE.md`'s durable-replay section were
+  ALREADY current — the genuinely-stale set was `spike/CLAUDE.md` (five spots),
+  `core/CLAUDE.md` (the DurableAccount flattening cite), `cli/CLAUDE.md` (five
+  spots), `core/src/spine.rs`'s module/`CensusArm`/`ExcludedContent` docs, and
+  `plan/src/spine.rs`'s untracked-inventory doc (a dead `plan/src/whylog.rs`
+  bullet + a stale "list is empty" sentence). All recast to receipt vocabulary;
+  renames carry née tags (`receipt-durable-write-only-report-back` ·
+  `receipts-not-a-cache` · `law-receipts-are-sensitive` · `aid-receipt-posthoc-why`
+  · `an-receipt-durable` · `inv-receipt-collection-never-expands-observation`).
+  The account-export expectation is re-homed in place: excluded-by-absence again,
+  pin `p-x-durable-account-export-is-enabled` parked `Reserved`, rebuild =
+  receipt-contents change, review-first.
+- Fold-time queue (remaining): cli/src doc-comment citers of the née'd slugs
+  (`cli/src/lib.rs:536` · `cli/src/results.rs:291`, plus the stale
+  `whylog_store`-as-reference comments in `cli/src/artifact_store.rs` and kin —
+  deferred while the render lane owns that tree) · prose massage (five unwritten
+  receipt-flag help rows; two receipt placeholders; six stale `why:` metadata
+  citations in the generated locks; slop-tier ACKED) · LIVING_STATUS final
+  refresh · `gate:arc` · end-of-work review per root `AGENTS.md` · worktree
+  cleanup (`r30-receipt`/`r30-conduct` now trail `ai/main`).
 - Why-surface design: exploration CLOSED and banked — `notes/30V` (the
   re-exploration record: model, doctrine, rulings, §5 build direction,
   §6 owed-list) + `notes/30Vc` (four adjudicated render generations, raw);
@@ -90,6 +102,12 @@ loaded-source locator composition (named uncollected V1 residue).
   plane + an INTENTIONALLY-TEMPORARY total surface (no drawn gutter, interim
   register, replaced without ceremony later); the graph library, settled
   register, and curated tiers deferred to proper process and attention.
+- Why-surface build lane: DISPATCHED 2026-08-31 — Opus builder, harness
+  worktree, branch `ai/r30-why-surface` off `a69f9ca7`; builds `30V` §5 + the
+  arrangement-orphan census rider + replacement receipt-rooted why cases; a
+  structure-proposal checkpoint precedes build; completion contract
+  `mise run both gate:full-quiet`; builder ledger sites at lowest-unused
+  30V-suffix.
 
 ## Ack-ledger (only what the human has TYPED counts)
 
@@ -107,3 +125,19 @@ loaded-source locator composition (named uncollected V1 residue).
   overtaken by the sitting's rulings, banked with `[TYPED]` tags in
   `notes/30V` §2 — that section is now the authoritative ack record for the
   why-surface direction.)
+- ack-slop-prose-authorized (2026-08-31): the conductor may author the owed
+  prose at Slop tier (the five receipt-flag help rows, the two receipt
+  placeholders, the six stale lock `why:` citations), full-loom reads owed.
+- ack-ancestors-only-walk-correct-as-built (2026-08-31): receipts are
+  never-append, so forward links cannot exist in the files; walking from the
+  explicitly-named root toward causes is correct. Selector conveniences like
+  `--receipt-last` may enumerate/search a bounded store; that is graph
+  discovery, not a union of histories.
+- ack-steering-suspicion-confirmed (2026-08-31): the human suspected the
+  receipt-crate steering rows were already written and the `30Rk` note stale —
+  verified true (see the recast bullet in State).
+- Root docs: the human committed their own USER_STORY re-cut (`1fc95c45`) and
+  TODO-ADDTL row (`f6317f43`) mid-arc; both root docs stay conductor-untouched.
+- Still pending (human, explainers delivered in-chat 2026-08-31): the
+  root-identity fold into closure (stands as built) and whether the dead-ended
+  `SpineInvocation::mode()` (zero callers) dies outright.

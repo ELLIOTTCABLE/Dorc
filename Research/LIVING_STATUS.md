@@ -21,98 +21,53 @@
 
 ---
 
-## CURRENT STATE (2026-08-29 — the finished-definition gate + authored file semantics DESIGNED; corpus brought coherent; nothing committed)
+## CURRENT STATE (2026-08-31 — the r30/30R close arc: residue FOLDED to `ai/main`; the why-surface build lane IN FLIGHT)
 
-The `r30-design-duck-file-paths-and-redirects` sittings minted **`plans/30U`** (the
-`disturbance_reaches` re-cut: arm-incremental member; the `disturbs nothing-else`
-report-lane record as finished-definition act + completion witness; the cross-kind
-sparing gate; quaternary compare with `unrelated`) and **`plans/30T`** (redirect routing,
-the filesystem binder, the ask-the-world discipline; `30Ta` is the adjudicated adversarial
-input). Same-sitting coherence edits landed across USER_STORY (stage 7 + the receipt —
-human review pending), `spike/CLAUDE.md`, core/plan/analysis crate steering,
-ANALYZER-NEEDS, KNOBS, `271`, `28M`, `281`, `28K`, `28Q`, `30J`, `30P`. Implementation is
-entirely unscheduled (`30U` §10 is a pending-successor sketch). USER_STORY's stage-5/7
-re-cut and `30T` sit UNCOMMITTED pending human review; the rest landed on `ai/main`.
+Arc ledger: **`notes/30Va`** (remit · ack-ledger · the banked-branch triage). `ai/main` now
+carries, linearly: the receipt residue lane (`notes/30Rk` — the old whylog durable fully
+deleted, the receipt CLI vocabulary, the report-API tidy), the loom-production-path
+replacement (closed errorloom command grammar over the shared production path; folded), the
+human's USER_STORY stage-5/7 re-cut and `plans/30T` (both committed), and the
+whylog→receipt steering/register recast (née-tagged renames:
+`receipt-durable-write-only-report-back` · `receipts-not-a-cache` ·
+`law-receipts-are-sensitive` · `aid-receipt-posthoc-why` · `an-receipt-durable` ·
+`inv-receipt-collection-never-expands-observation`). `ai/r30-receipt`/`ai/r30-conduct` and
+their worktrees now trail `ai/main` and await cleanup at arc close.
 
-## CURRENT STATE (2026-08-29 — secure durables unified for human review on `ai/r30-receipt`)
+**The durable-receipt family is CLOSED as an arc:** design `plans/30R` (quarantine `30Ra`
+its superset — do not follow unauthorized); security review closed (intent→publication→
+permit one ownership chain; class-aware encoder exit; handle-relative object opens);
+sealed `dorc-receipt::report::RecordedWhyFacts` reaches the real reading route. Report-only
+kernel re-derivation remains a separate authorized round; the kernel stays frozen.
 
-**Where to start:** `plans/30R` is the complete conductor-facing design; quarantine `30Ra` is its
-extended superset. The unified branch-local conduct account and compact current builder ledger carry
-the review handoff; prior builder ledgers are not onboarding reads unless a concrete code question
-points there.
+**IN FLIGHT:** the why-surface build lane (`ai/r30-why-surface`, Opus builder) building
+`30V` §5 — the reconstruction plane (the §3 model as real types) + the
+intentionally-temporary total surface + the `--json` sibling, over the sealed model;
+riders: the orphan-arrangement-rows census (`30Rk:the-arrangement-mirror-is-its-own-lock`)
+and replacement receipt-rooted why cases. A structure-proposal checkpoint precedes build.
 
-**Unified tip:** `ai/r30-receipt` and `ai/r30-conduct` point together, parallel to `ai/main`, and
-include the current `ai/main` line by merge. Nothing has been upstreamed and no worktrees were
-cleaned. The production binary initializes/reopens the local keyset, publishes/reads the immutable
-store, gates apply intent before dispatch, records outcomes, and reads receipts across process
-restart. The coherent surface is `--receipts <folder>`, `--receipt <file>`, `--receipt-id <id>`,
-`--receipt-last`, and `--no-receipt`; `--all` is explanation depth only.
+**Remaining at arc close** (`30Va` fold-time queue): the cli/src doc-comment citers of the
+née'd slugs · the prose queue (five receipt-flag help rows, two receipt placeholders, six
+stale lock `why:` citations — conductor slop-tier authoring ACKED 2026-08-31) ·
+`gate:arc` from the populated branch · worktree/branch cleanup · this file's final refresh.
 
-**Built secure boundary:** rich plan receipts retain exact acquired general-sh bytes while valid
-`dorc-lang` source remains identity/digest-only; recorded sites carry the bounded receipt-owned
-locator DAG projection in the exact input-byte domain. The pure public
-`dorc-receipt::report::RecordedWhyFacts` model is integrated from the real reading route with rooted
-closure, source comparison, authentication/completeness/influence state, explicit pending
-re-derivation, and encoder-mediated arbitrary-value exit. CLI remains the I/O and future aid/weft
-composition root; `dorc-aid` stays receipt-unaware and the correctness kernel is unchanged.
+## CURRENT STATE (2026-08-23 — r30 kernel CLOSE-OUT: every lane BUILT and folded; the round ceremony is owed and is the human's)
 
-**Security review closed:** prepared intent→publication→permit is one ownership chain with no bypass;
-receipt-core signature validity cannot mint local trust; opaque read-back has one class-aware encoder
-exit; Unix object opens are handle-relative/non-following and store ownership is checked. Production
-cleanup declines on both platforms when removal cannot be conditioned on object identity, leaving an
-explicit bounded partial file rather than unlinking an uncertain name.
-
-**Transition residue:** three report-API tidy items (site newtype, parsed order token, graph-derived
-closure membership), inert D5 whylog/replayed-record deletion, CLI vocabulary/help failures, final
-singular-implementation census, and full gates remain. Loaded-source locator composition remains
-explicit uncollected V1 residue. These are governed by the new receipt-family crate contracts and no
-longer require quarantined reasoning.
-
-**Out-quarantine handoff:** a new conductor owns the remaining crate/D5 cleanup plus recorded-why
-arrangement/render and replacement user-facing cases over the sealed model. Report-only kernel
-re-derivation remains a separate authorized round. The security conductor has closed its ledger and
-dispatches no further work.
-
-## CURRENT STATE (2026-08-23 — r30 CLOSE-OUT: every lane BUILT and folded; the ceremony is owed; resume from the close entry at the end of `notes/30Q` §5e)
-
-**In-flight loom replay replacement (2026-08-27):** `ai/loom-production-path` replaces
-world-as-payload replay with a closed errorloom command grammar and the shared production
-parser/engine/event path. The defining corpus now spells worlds as source and record fixtures;
-nonportable edge outcomes use a closed typed controller, and only the three human-authorized
-internal defects use `$ dorc-loom --this defect`. The 317-case render fixpoint and generated
-catalog lock are green on Windows; fold only after cross-platform acceptance.
-
-**Where to start:** `notes/30O` (THE schedule: every owed r30 kernel stage, the lanes, the
-fold order, the brief riders) and `plans/30P` (THE design for the emission planner, the
-stream forms, and book-load principles — including its review stance on `notes/30Pb` and
-the rulings of the 2026-08-22 sitting). Read both in full before dispatching anything.
-
-**Branch state:** `ai/r30-conduct` (worktree `.claude/worktrees/r30-conduct`) carries, linearly:
-the four kernel lanes, the fold repair, the loop-residue lane, the influence MAP (red cells
-only), the fruit lane, the human's blind-act law (`30P:law-no-unsoundness-below-a-blind-act`),
-the blind-act retrofit and the third blind act (the load plane under that law: rewrite gate
-EXACT ∧ explicit, nothing shipped below a clobber, the `[ -f ]` cwd gate, the CFG refusal set
-as a clobber seed), the tooling lane, the influence EXECUTE (`30Qd`), the sibling sitting's
-rulings, and this session's steering/ledger commits. NO lane is open. Every end-of-r30 pin is
-green (census: all `r31:*`). `ai/main` is the human's to fast-forward; the primary checkout
-carries the human's uncommitted ruling work — radioactive. Lane table and the fold order:
-`notes/30Q` §2/§5c–§5e. Swept 2026-08-23 (contained-and-clean only): 14 finished worktrees and
-43 branches reaped, ~26 GB of WSL caches returned. Left for the human: six CONTAINED lane
-branches that `-d` refuses because of their configured upstream
-(`ai/r30-lane-{influence-map,load-b,loop-2,load-a,fruit-3,planner-exec}`); five early-stage
-lane worktrees whose history was folded as REBASED copies, so the containment proof fails
-(`ai/r30-lane-{loop,planner,load,fruit,fruit-2}`); the dirty `r30-loading`
-(`ai/r30-static-loading`); and the uncontained review branches (`review-verify-adv`,
-`review-verify-neutral`, `ai/r30-loom-surface-build2`, `worktree-sol-adversarial-30M` — the
-last sits on `review-verify-adv`'s tip).
+**Where to start:** `notes/30O` (THE schedule) and `plans/30P` (THE design for the emission
+planner, stream forms, book-load principles). The lane table and fold order: `notes/30Q`
+§2/§5c–§5e. NO lane is open; every end-of-r30 pin is green (census: all `r31:*`). The
+2026-08-30 sweep (`30Va`) reaped the residual lane branches/worktrees the 2026-08-23 sweep
+left; nothing of that inventory remains.
 
 **Dispatch state, per `30O:the-schedule`:** `sched-parallel-disjoint-lanes` and
 `sched-serial-constructor-reshape` are BUILT and folded (`30Q` §5c–§5e; influence in `30Qd`) →
 `sched-round-close-ceremony` is NEXT and is the human's/successor's: the human runs the gate
 themselves; no crosscheck in the closing window (human-typed 2026-08-23); then the `307` §6
 veto register · `gate:arc` · `CURRENT_ROUND` bump · the prose queue · the ff of `ai/main`.
-Open before the durable account export is ENABLED: its review (`rul-durable-contents-reviewed-before-design`;
-the switch is `plan::whylog::ACCOUNT_EXPORT`). Every brief: the Safety block, step-zero worktree verify,
+The durable account export DIED with the old durable (`30Rk:the-account-export-died-with-its-lane`;
+xfail pin `p-x-durable-account-export-is-enabled` parked `Reserved`) — rebuilding it against the
+receipt durable clears `rul-durable-contents-reviewed-before-design` first.
+Every brief: the Safety block, step-zero worktree verify,
 `AGENTS.for-builders-only.md` first, and `notes/30Pc` (the opaque review's builder-lane
 half — unread by Fable-class conductors by law) where it names the lane.
 
@@ -120,7 +75,7 @@ half — unread by Fable-class conductors by law) where it names the lane.
 burndown's remaining headers (the committee fence · world-scope surface · incarnation
 continuity; all stage-iii) · `tc-dollar-zero-is-script-anchored` · the hoist ACTION's two calls
 (`tc-hoisted-dot-line-spelling`, `tc-t2-is-narrower-than-the-ladder-says`) · the review before
-`plan::whylog::ACCOUNT_EXPORT` flips · the prose queue (`mise run prose:census`) · the parked
+any rebuilt account export is enabled · the prose queue (`mise run prose:census`) · the parked
 `tc-plan-owns-its-source` and `tc-book-level-dot-locals-domain` sittings.
 
 **Standing truths a successor must not re-derive:** xfail horizons are ATTENTION-CALLS, not

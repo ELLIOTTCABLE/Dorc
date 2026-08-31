@@ -302,14 +302,15 @@ and carries the license-contamination map.
   second-half conduct ledger is `notes/30N`; the 2026-08-23 burndown sitting's typed rulings
   (influence lane · ship-nothing · the stdlib dialect-reach) are `notes/30Q` §5g; the close-out
   conduct ledger is `notes/30Q`. The subsequent durable-receipt family is designed in
-  **`plans/30R`** and built on `ai/r30-receipt`: immutable plan/intent/outcome receipts, local
-  key/store production routes, exact general-sh source, durable locators, rooted graph selection,
-  and sealed `dorc-receipt::report::RecordedWhyFacts` are built. The in-flight security review's
+  **`plans/30R`** and BUILT (folded to `ai/main` 2026-08-31): immutable plan/intent/outcome
+  receipts, local key/store production routes, exact general-sh source, durable locators, rooted
+  graph selection, and sealed `dorc-receipt::report::RecordedWhyFacts`. The security review's
   four boundaries (intent/publication ownership, local authentication, opaque-value exit, and local
-  object handling) are repaired; the receipt-family crate contracts now govern ordinary callers.
-  Remaining D5/API/help cleanup and recorded-why arrangement are rehomed to a non-quarantined
-  conductor, while report-only kernel re-derivation remains a separate deferred round. Current
-  state: `LIVING_STATUS.md`.
+  object handling) are repaired; the receipt-family crate contracts govern ordinary callers. The
+  D5 deletion + receipt CLI vocabulary landed as `notes/30Rk`; the receipt-backed why-surface
+  build (the `notes/30V` §5 reconstruction plane + temporary total surface) is the close arc's
+  render lane (conduct `notes/30Va`), while report-only kernel re-derivation remains a separate
+  deferred round. Current state: `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the
