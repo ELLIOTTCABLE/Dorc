@@ -19,14 +19,17 @@ On `ai/r30-why-surface`, based `ai/main` `996b1519`:
 - **the `--json` register** — `dorc_cli::why_json::why_json`, the same reconstruction serialized,
   reached by a real `--json` flag.
 - **the production route** — `dorc why` is ROOTED at one receipt and renders that surface. The four
-  recorded LISTINGS are deleted; `--receipt <file>` answers; an address is digest-matched or
-  refused in the answer.
+  recorded LISTINGS are deleted; `--receipt <file>` answers; an address is placed or refused in the
+  answer.
+- **the source-comparison seat** — `dorc_receipt::report`'s one visit, and `cli/source_comparison`'s
+  one consumer. It closes `file.sh:N`.
+- **the orphan-arrangement instrument** — `mise run prose:orphans`, report-only.
 - **the gates** — the `why` crate's reconstruction cases over REAL published documents; the receipt
   crate's fifteen report cases; the cli's `recorded_facts_route` and `durable_route` batteries over
   the SHIPPED BINARY; and one whole-product e2e case driving publish → why.
 
-`mise run both gate:full-quiet` is green on both legs at `28b98c8f`; `mise run test` is
-3161 passed / 0 failed on the Windows leg.
+`mise run both gate:full-quiet` is green on both legs at `8cca8edf`; `mise run test` is
+3165 passed / 0 failed on the Windows leg.
 
 ## the-model-as-built
 
