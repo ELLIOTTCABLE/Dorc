@@ -158,6 +158,35 @@ loaded-source locator composition (named uncollected V1 residue).
   intent/outcome family projection deferred with a `NotRelevant`-tier
   classification and a flag — it would need new sealed accessors, a fresh act
   under the same law, not this arc's).
+- rul-source-comparison-is-one-cli-seat (OPAQUE-RULED, relayed by the human
+  2026-08-31; resolves the file-line address question — the
+  `_tmp-recorded-source-path-handoff.md` carrier is ephemeral). Packet,
+  verbatim: "dorc-receipt validates/classifies recorded source material, then
+  releases one narrowly typed source-comparison packet to a single CLI seat.
+  Comparison and filesystem behavior live outside receipt. Receipt API:
+  RecordedSourceMaterial::visit_for_comparison(SourceComparisonConsumer). The
+  visit carries exact recorded path bytes, source identity/digest, exact
+  recorded general-sh content where held, locator spans, and
+  authentication/material state. This is source-specific — not a generic raw
+  RecordedValue accessor — and none of these values gain Display, revealing
+  Debug, serde, or ambient formatting. One production consumer in CLI owns:
+  platform-aware path rehydration; bounded, non-following regular-file reads;
+  exact current/recorded path and content comparison; current
+  same-physical-line policy; future diff/content-aware correspondence
+  policies; destination encoding for anything displayed. The consumer must
+  distinguish locally authenticated receipts from imported/self-asserted
+  material. Receipt-provided paths never trigger implicit reads from the
+  latter; an explicit user-named file may still be compared. Mechanically
+  enumerate the one implementation and callsite as hygiene. Do not move
+  filesystem I/O or matching policy into receipt, and do not widen arbitrary
+  opaque-detail access. Future comparison features extend this one CLI seat
+  rather than adding receipt APIs or scattered raw path exits." Relayed
+  mid-lane to the wiring builder with: `file.sh:N` now BUILDS (path bytes +
+  line computed from spans over exact recorded content, at the seat,
+  display through destination encoding; ordinal-and-span stays the fallback
+  where the visit holds no content); the authentication asymmetry as stated;
+  the hygiene enumeration structural-first, lexical only as the
+  packet-requested (hence human-ack'd) exception.
 - Worktree-reap incident (2026-08-31, resolved; the `worktree-file-access-law`
   hazard fired as documented): the harness reaped the builder's managed
   worktree at its checkpoint turn-boundary; the orphaned skeleton's dead `.git`
