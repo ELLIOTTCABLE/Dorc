@@ -94,6 +94,7 @@ options:
 --all                   for `why`, print everything the engine holds: every
                         link, unselected, plus collapse classes with no
                         narration yet
+--json                  [unwritten: cli-help-option-json]
 --debug-argv            echo the engine's per-site resolved argv to stderr
 --help                  print this help to stdout and exit 0
 --version               print the version to stdout and exit 0

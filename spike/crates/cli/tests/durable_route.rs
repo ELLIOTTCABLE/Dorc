@@ -417,9 +417,12 @@ fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_re
         rendered.contains(&intent_id),
         "the outcome must name the intent that authorized it; got:\n{rendered}"
     );
+    // The CORRELATION is asked of the machine register: a terminal render wraps a 129-character
+    // pair across lines, so a text needle for it would be asserting a layout rather than a fact.
+    let machine = why(&sandbox, &scratch, &["--receipt-last", "--json"]);
     assert!(
-        rendered.contains(&format!("{intent_id} {outcome_id}")),
-        "a second process must correlate the two species it read; got:\n{rendered}"
+        machine.contains(&format!("{intent_id} {outcome_id}")),
+        "a second process must correlate the two species it read; got:\n{machine}"
     );
 }
 
