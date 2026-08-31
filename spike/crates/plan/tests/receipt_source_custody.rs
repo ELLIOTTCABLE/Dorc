@@ -14,9 +14,7 @@ use std::collections::BTreeMap;
 use dorc_core::Interner;
 use dorc_core::SourceRole;
 use dorc_core::influence::InfluenceAccount;
-use dorc_core::spine::{
-    InvocationMode, RunIdentity, SourceClaim, SpineInvocation, SpinePresentedPlan,
-};
+use dorc_core::spine::{RunIdentity, SourceClaim, SpineInvocation, SpinePresentedPlan};
 use dorc_plan::planning_input::{PlanningInputs, PlanningMode, PlanningPolicy};
 use dorc_plan::presentation::FinalPresentation;
 use dorc_plan::receipt::{ProjectedPlan, RecordedInputs, SourceCustody, project};
@@ -38,7 +36,6 @@ const BOOK: &str = "";
 /// Two acquired sources, so the partition has both sides to land on.
 fn invocation_over(paths: [&str; 2]) -> SpineInvocation {
     SpineInvocation::minted(
-        InvocationMode::Unstated,
         vec![String::from("dorc"), String::from("plan")],
         paths
             .iter()

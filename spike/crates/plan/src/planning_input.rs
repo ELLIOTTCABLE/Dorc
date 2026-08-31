@@ -336,7 +336,7 @@ mod tests {
     use super::*;
     use dorc_core::SourceRole;
     use dorc_core::influence::InfluenceAccount;
-    use dorc_core::spine::{InvocationMode, RunIdentity, SourceClaim};
+    use dorc_core::spine::{RunIdentity, SourceClaim};
 
     use crate::records::{
         Admission, Framing, HostEvidenceLimits, admit_unscoped_host_records, read_host_evidence,
@@ -427,7 +427,6 @@ mod tests {
 
     fn identity_of(fixture: &Fixture) -> PlanningInputId {
         let invocation = SpineInvocation::minted(
-            InvocationMode::Unstated,
             vec![String::from("dorc"), String::from("plan")],
             fixture.sources.clone(),
             fixture.identity.clone(),
@@ -528,7 +527,6 @@ mod tests {
         // whose tag nothing writes, fails here rather than being caught by nobody.
         let fixture = baseline();
         let invocation = SpineInvocation::minted(
-            InvocationMode::Unstated,
             vec![String::from("dorc")],
             fixture.sources.clone(),
             fixture.identity.clone(),

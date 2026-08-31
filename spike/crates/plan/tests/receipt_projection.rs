@@ -10,8 +10,8 @@
 use dorc_core::influence::InfluenceAccount;
 use dorc_core::region::{ElisionRegion, RegionUniverse};
 use dorc_core::spine::{
-    InvocationMode, RegionRoutes, RenderDecision, RunIdentity, SourceClaim, SpineInvocation,
-    SpinePresentedPlan, SpineRegionDecision, SpineRenderDecision, SpineSpecies,
+    RegionRoutes, RenderDecision, RunIdentity, SourceClaim, SpineInvocation, SpinePresentedPlan,
+    SpineRegionDecision, SpineRenderDecision, SpineSpecies,
 };
 use dorc_core::{AstId, BytePos, DefinitionId, Interner, SourceFileId, SourceRole, Span};
 use dorc_plan::planning_input::{PlanningInputs, PlanningMode, PlanningPolicy};
@@ -35,7 +35,6 @@ const BASELINE_BOOK: &str = "";
 
 fn invocation() -> SpineInvocation {
     SpineInvocation::minted(
-        InvocationMode::Unstated,
         vec![String::from("dorc"), String::from("plan")],
         vec![SourceClaim {
             path: String::from("book.sh"),

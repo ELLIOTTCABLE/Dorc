@@ -403,35 +403,6 @@ pub struct SourceClaim {
     pub bytes: u64,
 }
 
-/// Deliberately NOT a claim about the invocation that produced this record
-/// (`30N` §4's `stop-spine-mode-is-durable`, ruled human-typed).
-///
-/// The field this replaces was a `String` whose sole writer hard-coded one word on the LIVE
-/// plan/apply path, so it described neither producing invocation (`30Mc` F3) — and its own doc had
-/// to say so, because the type let it look like a mode report. Narrowing to a closed enum with ONE
-/// inhabitant makes the false claim unspellable instead: there is no `Plan` or `Apply` arm to
-/// mis-write, so nothing can assert a producing mode it does not know. Writing the truthful
-/// producing mode is a later, reviewed, one-arm widening.
-///
-/// The receipt durable's OWN mode vocabulary is `dorc_receipt::tokens::RecordedInvocationMode`
-/// (plan / apply / round-trip), minted at the publication seat from the CLI's mode and passed to
-/// the projection beside this record. Nothing reads this value, and no arm of it is persisted.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum InvocationMode {
-    /// The producing mode is not stated.
-    Unstated,
-}
-
-impl InvocationMode {
-    /// The word for this mode. Referent-agnostic: for display, never branched on.
-    #[must_use]
-    pub const fn token(self) -> &'static str {
-        match self {
-            Self::Unstated => "unstated",
-        }
-    }
-}
-
 /// The controller-minted per-attempt identity of one run.
 ///
 /// Grouped rather than spread across [`SpineInvocation::minted`]'s parameters because it is one
@@ -453,7 +424,6 @@ pub struct RunIdentity {
 /// The invocation: controller-minted run identity plus what it was pointed at (`30E` §2).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpineInvocation {
-    mode: InvocationMode,
     argv: Vec<String>,
     sources: Vec<SourceClaim>,
     identity: RunIdentity,
@@ -470,26 +440,17 @@ impl SpineInvocation {
     /// acquired for. Exactly one row wears `SourceRole::Book`.
     #[must_use]
     pub fn minted(
-        mode: InvocationMode,
         argv: Vec<String>,
         sources: Vec<SourceClaim>,
         identity: RunIdentity,
         account: InfluenceAccount,
     ) -> Self {
         Self {
-            mode,
             argv,
             sources,
             identity,
             account,
         }
-    }
-
-    /// What mode a reader should REPLAY this record under — never a claim about the invocation
-    /// that produced it. The type is the whole of that guarantee; see [`InvocationMode`].
-    #[must_use]
-    pub const fn mode(&self) -> InvocationMode {
-        self.mode
     }
 
     /// The full argv, one word per element.
@@ -732,8 +693,10 @@ pub enum WithheldCause {
 /// referent-agnostic by construction (nothing branched on it), which is exactly what made it the
 /// wrong carrier once a projection had to: a projection is OBLIGED to branch on it, and a string
 /// nothing may read cannot be the thing it reads. Narrowing follows the same reasoning that
-/// narrowed [`InvocationMode`] from a `String` in this file — make the false spellings unspellable
-/// rather than documenting that they must not occur.
+/// retired the invocation record's mode field (a `String` narrowed to one uninformative
+/// inhabitant, then deleted outright once nothing read it — `30N` §4 `stop-spine-mode-is-durable`;
+/// the receipt's own `RecordedInvocationMode` is the one live mode vocabulary) — make the false
+/// spellings unspellable rather than documenting that they must not occur.
 ///
 /// The two boolean-bearing source arms SPLIT here, and that is the point of the widening: a query
 /// whose resolved value is stale licenses nothing a valid one licenses, and a member population
