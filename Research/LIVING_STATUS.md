@@ -44,7 +44,10 @@ kernel re-derivation remains a separate authorized round; the kernel stays froze
 `30V` §5 — the reconstruction plane (the §3 model as real types) + the
 intentionally-temporary total surface + the `--json` sibling, over the sealed model;
 riders: the orphan-arrangement-rows census (`30Rk:the-arrangement-mirror-is-its-own-lock`)
-and replacement receipt-rooted why cases. A structure-proposal checkpoint precedes build.
+and replacement receipt-rooted why cases. The structure checkpoint is adjudicated
+(`30Va`), and the sealed report surface is OPAQUE-RULED to widen toward exhaustive
+family coverage (`30Va:rul-report-projection-becomes-exhaustive`) — read-surface
+projection work only, no receipt internals reopened.
 
 **Remaining at arc close** (`30Va` fold-time queue): the cli/src doc-comment citers of the
 née'd slugs · the prose queue (five receipt-flag help rows, two receipt placeholders, six

@@ -117,12 +117,26 @@ loaded-source locator composition (named uncollected V1 residue).
   Builder finding of record: the receipt durable RECORDS fifteen row families
   but sealed `report::RecordedWhyFacts` PROJECTS seven — most of the
   durable-gap audit is a report-API gap, not a carrier gap
-  (`fnd-report-api-carries-seven-of-fifteen`, its ledger). HELD for the human:
-  `tc-model-families-reach-the-reconstruction` (conductor recommendation:
-  widen `receipt::report`'s family coverage under the same sealed discipline,
-  zero new value exits; the cli-side decomposition route is forbidden as a
-  second read path; the thin-model route is a product regression). Meanwhile
-  unprojected families render as typed report-api-lacks absences.
+  (`fnd-report-api-carries-seven-of-fifteen`, its ledger).
+- rul-report-projection-becomes-exhaustive (OPAQUE-RULED, relayed by the human
+  2026-08-31; resolves `tc-model-families-reach-the-reconstruction`). The
+  packet, verbatim (its `_tmp-extension-remit.md` carrier is ephemeral):
+  "The correct repair is not more persistence, format work, or kernel work.
+  Extend RecordedWhyFacts with typed report projections for the existing row
+  families: closed recorded tokens remain typed; influence/material
+  availability stays independent; opaque operands, shell, locators, and
+  details use the existing RecordedValue encoder exit; no raw
+  RecordedPlanReceipt or overlay accessor is exposed. Ideally the report
+  projection becomes exhaustive over the durable model: every persisted family
+  is either represented by a typed facts collection or explicitly classified
+  as unavailable/not relevant. That gives 30V and later aid work one complete
+  public read surface without reopening receipt internals." Relayed to the
+  render lane with scope interpretation: read-surface projection work only
+  (no grammar/writer/wire/projection-state/provider change); the fifteen plan
+  families are the core mandate, intent/outcome rows in-scope where the
+  `Rooted` face needs them; a closed no-wildcard family classification so an
+  unclassified sixteenth cannot land; any need to reopen internals is a STOP.
+  The cli-side decomposition route stays forbidden.
 - Worktree-reap incident (2026-08-31, resolved; the `worktree-file-access-law`
   hazard fired as documented): the harness reaped the builder's managed
   worktree at its checkpoint turn-boundary; the orphaned skeleton's dead `.git`
@@ -167,6 +181,25 @@ loaded-source locator composition (named uncollected V1 residue).
   verified true (see the recast bullet in State).
 - Root docs: the human committed their own USER_STORY re-cut (`1fc95c45`) and
   TODO-ADDTL row (`f6317f43`) mid-arc; both root docs stay conductor-untouched.
-- Still pending (human, explainers delivered in-chat 2026-08-31): the
-  root-identity fold into closure (stands as built) and whether the dead-ended
-  `SpineInvocation::mode()` (zero callers) dies outright.
+- ack-root-identity-fold-soft (2026-08-31): stands as built; SOFT ack only —
+  the human has not investigated deeply. Not settled law; revisitable.
+- ack-mode-deletion (2026-08-31): `SpineInvocation::mode()` dies outright —
+  landed conductor-side: `core::spine::InvocationMode` deleted, `minted()`
+  lost its mode parameter, five callers fixed (incl. `cli/src/receipt_edge.rs`
+  — a known trivial fold-conflict candidate with the render lane).
+- rul-no-reflexive-lexical-fences (human-typed 2026-08-31): agents must stop
+  reflexively minting lexical/grep-shaped gates (allow-lists, two-way rosters,
+  source-text censuses) — agent-maintainable ones are ~valueless (the agent
+  edits both sides); the valuable ones are exactly the human-requested,
+  human-ack-only ones. Prefer types/structure; flag up where only lexical
+  would serve. NOT a removal directive — existing fences stand. Durable:
+  `spike/CLAUDE.md lexical-fences-are-human-ack-instruments`; relayed to the
+  render lane (its planned NYI allow-list and lexical iteration check are
+  replaced with structural mechanisms).
+- rul-whole-product-proof-rides-the-e2e-corpus (human-typed 2026-08-31): no
+  new test TYPE — the publish-then-why whole-product proof lives as e2e-corpus
+  cases, with a minimal e2e runner/case-shape extension authorized if the
+  grammar cannot yet express a two-invocation sequence; the standalone
+  `why_surface_route.rs` battery is dropped. The loom `run:` widening stays
+  deferred. The `crates/why` unit/integration gates remain ordinary Rust
+  tests.
