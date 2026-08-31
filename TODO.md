@@ -26,6 +26,7 @@
 - [ ] better/friendlier handling/surfacing of *SSH errors*. a whole bundle of unrelated errors during my own attempts just surfaced as "transport-session-lost"
 - [ ] fix "doc-tests" dumping a ton of noise into agent-context even when running a single test
 - [ ] merge all the internal tooling into one Cargo binary? (dorc-loom, dorc-verify, dorc-loom, internal-tooling, dorc-coverage ...)
+- [ ] kill `reserved-namespace-squat` and ensure `__is_converged` is resolved and handled properly inline in runbooks <https://github.com/ELLIOTTCABLE/Dorc/issues/2>
 
 ### Looms / aid
 
@@ -42,10 +43,12 @@
     re-run `dorc plan` to measure what actually happened.
     ```
 
-    - why, it's unclear, what went wrong, what was the error??
-    - "re-run dorc plan to measure" seems very incorrect
+    - [ ] why, it's unclear, what went wrong, what was the error??
+    - [ ] "re-run dorc plan to measure" seems very incorrect
+    - [ ] need richer ssh errors in general (`StrictHostKeyChecking` causes it to fail, but there's no way to know that from Dorc's output)
 - [ ] why does `site-unresolvable` show `make install`&`ldconfig`, lol
 - [ ] generated plan currently has a worthless comment at the top. replace this with a `dorc why <path to whylog>` aid; and only emit it when emitting to a file/redirected/multiple-files. <https://github.com/ELLIOTTCABLE/Dorc/issues/1>
+- [ ] just, in general, cli-parsing refresh: `host` should be a per-plan prefix, not a flag (`hostname:planfile.sh`), omitted for localhost/pivot-books; drop the `--book` flag (pointless), there's a whole bunch
 
 # Preparation-for-agentic-implementation 🤢 phase
 
