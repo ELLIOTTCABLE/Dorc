@@ -503,7 +503,7 @@ fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
 /// the tier SET is the law, the words ride `27V:rul-output-form-unwelded`. `28E` §8 fixes the
 /// grammar they must obey — the tier word is the sentence's VERB, past tense for run events
 /// (`reported`, `ran`) and present for standing text (`vouches`, `claims`, `derives`).
-fn verb_said(tier: SpeechAct) -> Said {
+pub(crate) fn verb_said(tier: SpeechAct) -> Said {
     let occurrence = match tier {
         SpeechAct::Measured => 0,
         SpeechAct::Vouched => 1,

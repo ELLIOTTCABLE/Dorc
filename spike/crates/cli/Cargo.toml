@@ -44,6 +44,10 @@ dorc-lint = { path = "../lint", version = "0.0.0" }
 # implementation crate carrying the randomness is a separate dependency under its own allow-list.
 dorc-receipt = { path = "../receipt", version = "0.0.0" }
 
+# The RECONSTRUCTION plane (`30V` section 3) the receipt-rooted why surface renders. Pure data with
+# two pure dependencies; this edge is its composition root.
+dorc-why = { path = "../why", version = "0.0.0" }
+
 # The capability IMPLEMENTATIONS, and the local durable edge that persists what they produce.
 # PRODUCTION dependencies since the shipped binary writes and reads its own receipts: the crypto
 # crate is what signs and seals a document, and the local edge is where the keyset and the store

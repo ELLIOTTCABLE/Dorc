@@ -17,8 +17,10 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use dorc_aid::RenderCtx;
 use dorc_cli::durable::{LocalReceiptEdgeV1, NamedSpecies, NativeIo, ReadEdge};
 use dorc_cli::recorded_facts::{ObservedSource, SelectedRoot, facts_for};
+use dorc_cli::why_total::{TerminalValues, why_total};
 use dorc_receipt::graph::ReceiptGraph;
 use dorc_receipt::ids::PlanReceiptId;
 use dorc_receipt::report::{
@@ -26,6 +28,7 @@ use dorc_receipt::report::{
     DetailState, MaterialState, ReDerivationState, RecordedDocumentId, RecordedSpecies,
     RequestedAddress,
 };
+use dorc_why::recorded::{Rooted, reconstruct};
 
 mod sandbox;
 
@@ -296,4 +299,87 @@ impl RootForEnv for ProfileSandbox {
             .map(Path::to_path_buf)
             .expect("the sandbox config root sits under the sandbox")
     }
+}
+
+/// THE TOTAL SURFACE over a document the binary published: every datum reaches the render exactly
+/// once, and nothing is excluded.
+///
+/// A permutation over the population rather than a count (`count-drifts`): what must hold is that no
+/// datum is dropped and none is doubled. The ledger is appended at the EMIT SITE, so a datum an
+/// early return skipped would be missing here rather than merely uncounted.
+#[test]
+fn the_total_surface_reaches_every_datum_exactly_once() {
+    let sandbox = ProfileSandbox::new("total-surface");
+    let scratch = Scratch::new("total-surface");
+    publish(&sandbox, &scratch);
+
+    let (edge, mut io) = reopen(&sandbox);
+    let open = edge.open_for_read(&mut io).expect("the store reopens");
+    let roots = selected_roots(&open, &mut io);
+    let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+
+    let ctx = RenderCtx::production();
+    let mut encoder = TerminalValues::default();
+    let (parts, coverage) = why_total(&reconstruction, &ctx, &mut encoder);
+
+    assert!(
+        !reconstruction.data().is_empty(),
+        "a reconstruction over a real document is non-empty; an empty one satisfies the \
+         permutation below vacuously"
+    );
+    let mut reached: Vec<usize> = coverage.reached().iter().map(|id| id.get()).collect();
+    reached.sort_unstable();
+    assert_eq!(
+        reached,
+        (0..reconstruction.data().len()).collect::<Vec<usize>>(),
+        "every datum reaches the render exactly once, and no position is rendered twice"
+    );
+    assert!(
+        coverage.excluded().is_empty(),
+        "the total surface excludes nothing; its reason type is uninhabited"
+    );
+
+    let text = parts.text();
+    assert!(text.is_ascii(), "weft-ascii-forever binds this surface too");
+    for section in [
+        "why-total-section-carriers",
+        "why-total-section-data",
+        "why-total-section-correlations",
+        "why-total-section-loci",
+    ] {
+        assert!(
+            text.contains(&format!("[unwritten: {section}]")),
+            "the section renders its own registry row, unwritten until a conductor mints words: \
+             {text}"
+        );
+    }
+}
+
+/// The render is a pure function of the reconstruction: two renders of one model are byte-equal.
+///
+/// `30V` §2 rul-stateful-narrowing-hard-gated turns on this — a user's multi-step dig re-enters by
+/// ADDRESS rather than by session state, which is only true while an identical reinvocation
+/// reproduces identical bytes.
+#[test]
+fn one_reconstruction_renders_identically_every_time() {
+    let sandbox = ProfileSandbox::new("total-stable");
+    let scratch = Scratch::new("total-stable");
+    publish(&sandbox, &scratch);
+
+    let (edge, mut io) = reopen(&sandbox);
+    let open = edge.open_for_read(&mut io).expect("the store reopens");
+    let roots = selected_roots(&open, &mut io);
+    let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+    let ctx = RenderCtx::production();
+
+    let first = why_total(&reconstruction, &ctx, &mut TerminalValues::default())
+        .0
+        .text();
+    let second = why_total(&reconstruction, &ctx, &mut TerminalValues::default())
+        .0
+        .text();
+    assert_eq!(first, second);
+    assert!(!first.is_empty());
 }

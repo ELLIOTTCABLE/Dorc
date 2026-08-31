@@ -28,14 +28,7 @@ use dorc_receipt::graph::{GraphFinding, ReceiptEdge, ReceiptGraph};
 use dorc_receipt::model::{ApplyIntent, ApplyOutcome, PlanReceipt, Rich};
 use dorc_receipt::reader::Receipt;
 use dorc_receipt::reingested::Reingested;
-use dorc_receipt::report::{ValueClass, ValueEncoder};
 use dorc_receipt::tokens::ClosedToken;
-
-/// How many bytes of one opaque field a listing shows.
-///
-/// A display cap, not a bound on what was read: the reader already bounded the whole region, and
-/// this is the width past which a terminal line stops being one.
-const FIELD_DISPLAY_CAP: usize = 240;
 
 /// The recorded plan document, as lines.
 ///
@@ -99,39 +92,6 @@ pub fn recorded_plan_listing(
     out
 }
 
-/// The terminal's destination encoder for recorded values.
-///
-/// THE seat where a recorded byte run becomes characters a terminal is shown, and the only one
-/// this listing has: the document hands over sealed values, and a sealed value renders through an
-/// encoder or not at all (`sinv-sink-encoding`).
-///
-/// The match is exhaustive by NAME rather than by a wildcard, and that is the whole of what it
-/// buys: today every class answers the same question — foreign bytes bound for a terminal, capped
-/// — and a new class landing tomorrow reddens this seat instead of quietly taking a neighbour's
-/// encoding.
-struct TerminalEncoder;
-
-impl ValueEncoder for TerminalEncoder {
-    fn encode(&mut self, class: ValueClass, bytes: &[u8]) -> String {
-        match class {
-            ValueClass::ShellText
-            | ValueClass::SourceText
-            | ValueClass::SourcePath
-            | ValueClass::ArtifactLabel
-            | ValueClass::OriginClaim
-            | ValueClass::Argv
-            | ValueClass::TargetName
-            | ValueClass::HostOutput
-            | ValueClass::Coordinate
-            | ValueClass::EncodedStructure
-            | ValueClass::DiagnosticDetail => dorc_aid::display::encode_foreign(
-                &String::from_utf8_lossy(bytes),
-                FIELD_DISPLAY_CAP,
-            ),
-        }
-    }
-}
-
 /// Every opaque field the validated region carried, in record then tag order.
 ///
 /// Walked by RECORD ORDINAL rather than paired with the skeleton rows above: a position is
@@ -139,7 +99,7 @@ impl ValueEncoder for TerminalEncoder {
 /// whichever row shared its integer while the listing still read cleanly. These lines say which
 /// record they came from and let a reader do the joining.
 fn opaque_lines(document: &Reingested<Receipt<PlanReceipt, Rich>>) -> Vec<String> {
-    let mut encoder = TerminalEncoder;
+    let mut encoder = crate::why_total::TerminalValues::default();
     document
         .recorded_details()
         .iter()

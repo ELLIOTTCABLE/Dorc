@@ -47,6 +47,7 @@ pub mod snapshot;
 pub mod sourcing;
 pub mod survival;
 pub mod why;
+pub mod why_total;
 pub mod world;
 
 use dorc_aid::RenderCtx;
