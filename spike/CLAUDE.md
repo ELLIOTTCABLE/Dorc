@@ -448,9 +448,9 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
 - **inv-debugging-detail-has-no-sensitivity-guarantee** — Dorc cannot classify arbitrary
   argv, paths, entity values, report tails, errors, or source as sensitive or not. Encryption,
   omission, and sink encoding narrow exposure but never license "scrubbed", "secret-free", or
-  safe-to-share claims; a whylog projection promises only which field classes it contains
+  safe-to-share claims; a receipt projection promises only which field classes it contains
   (`30R:standing-invariants`).
-- **rul-durable-contents-reviewed-before-design** — Surface: what the whylog durable
+- **rul-durable-contents-reviewed-before-design** — Surface: what the receipt durable
   persists, and what re-ingestion consumes. Changing either — new fields, new record
   species, timings, decision detail, anything read back — STOPS for `/opaque-review`
   BEFORE the design settles, not after the build. The durable is one lossy projection of
@@ -473,11 +473,14 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   sole-mint-witnesses`) — host influence is causal ACCOUNTING, orthogonal to AUTHORITY: every
   stable semantic object carries its own immutable `InfluenceAccount`; nothing stamps, fills,
   or lowers one; no consumer reads it for a decision at v0 (a future one is a typed human
-  act). The account has a durable EXPORT, built whole and switched OFF at
-  `plan::whylog::ACCOUNT_EXPORT` (`ExcludedContent::InfluenceGrade` is held by that switch,
-  not by absence; the round-trip is pinned `p-x-durable-account-export-is-enabled`); flipping
-  it is a durable-content change and clears `rul-durable-contents-reviewed-before-design`
-  FIRST — the human enables it post-review. Read back, an account is report/why-plane only.
+  act). The account's durable EXPORT died with the old durable
+  (`30Rk:the-account-export-died-with-its-lane`): the receipt durable carries only the
+  per-site influence GRADE (`dorc_receipt`'s `RecordedInfluence`), the richer per-row
+  account export is deliberately unbuilt — the xfail pin
+  `p-x-durable-account-export-is-enabled` holds the seat (`Reserved`) — and rebuilding it
+  against the receipt durable is a receipt-contents change that clears
+  `rul-durable-contents-reviewed-before-design` FIRST. Read back, recorded influence is
+  report/why-plane only (`inv-recorded-values-stay-recorded`).
 
 ## Invariants — analysis boundaries
 
@@ -568,9 +571,11 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   PLAN-RENDER surface (TUI/CLI, `why`-lens) is the sanctioned home for per-line
   claimed-vs-proven disclosure — overlaid on the artifact bytes, never embedded in
   them.
-- **probe-tape-not-a-cache** (rec-5) — the probe-TAPE is a write-only postmortem
-  durable; NOTHING re-ingests receipts across runs. The kSTATE reuse-cache stays
-  parked; unparking it is a human act hard-coupled to hostile-host security work.
+- **receipts-not-a-cache** (rec-5; née probe-tape-not-a-cache) — receipts are
+  write-only postmortem durables; NOTHING re-ingests them across runs into a
+  decision (report-only read-back is the one sanctioned consumer). The kSTATE
+  reuse-cache stays parked; unparking it is a human act hard-coupled to
+  hostile-host security work.
 
 ## The authored surface (semantics digest; specs outrank: `plans/281` (mark grammar v0.2) · `277` · `273` · `274` · `275` · `plans/27C`; one-page dialect reference: `278`)
 
@@ -662,7 +667,7 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   plan-shape stability; anything like `--exit-code` gates on divergence-of-world,
   never plan shape.
 - **rul-strawman-formats-no-compat** — pre-user, EVERY versioned wire/format/env
-  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-whylog/1`, `dorc-records/1`, …) is
+  name (`dorc-lint-format/1`, `DREP_V1`, `dorc-receipt/1`, `dorc-records/1`, …) is
   strawman: rename/reshape in place, all sites in one commit; never an adapter, alias, or
   mapping from a historical spelling. "Permanent once published" clauses activate at
   publication, not before. Applies generally; *ask* the human if you suspect
@@ -834,11 +839,17 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
   report. Never ship builder-authored error prose.
-- **whylog-write-only-replay** — the whylog thin durable (invocation record · records
-  stream incl. the report lane · decision digest · apply report · seed) is write-only
-  and replay-driven (`dorc why --last` re-derives through the same kernel); never a
-  cache (rec-5); contents are host-metadata-sensitive — the secrets round owns that
-  work; do not widen contents casually.
+- **receipt-durable-write-only-report-back** (née whylog-write-only-replay) — the
+  durable is the receipt family (`plans/30R`): an immutable graph of
+  PlanReceipt / ApplyIntent / ApplyOutcome documents in one exact-byte validated
+  envelope, published write-only through the local keyset/store edge
+  (`dorc-receipt-local`). Read-back is REPORT-ONLY, through the sealed
+  `dorc-receipt::report` boundary: recorded values never convert to live claims,
+  licenses, plan authority, or cache input (`inv-recorded-values-stay-recorded`);
+  recorded and re-derived conclusions stay distinct, disagreement included. Never a
+  cache (rec-5); contents are host-metadata-sensitive without secret-recognition
+  promises; widening contents clears `rul-durable-contents-reviewed-before-design`
+  first.
 - **decline-class-emission** (`27W`) — an oracle classes a deliberate decline by a
   plain-sh emission ON the declining path: `printf '<verb> <class> <tail>\n'
   >>"${DREP_V1:-/dev/null}"` (sink name STRAWMAN; the `:-/dev/null` default makes the

@@ -179,10 +179,11 @@ new entries to the matching section.
   comparison never gains an account (`inv-determinism`'s semantic-`Eq` precondition; the
   `CollapseNarrative` Eq-exclusion is the failure this positioning AVOIDS, not a technique to
   copy). Post-reingest, influence is REPORT/WHY-plane only: the durable transition is a
-  FLATTENING (`plan::whylog::DurableAccount`, no accessor back to a live account; absent or
-  unrecognised reads HIGHEST), no durable ingestion rehydrates an account into a decision, and
-  the why-world driver's widen-to-influenced is the DEFINITION, not an approximation
-  (human-typed 2026-08-23).
+  FLATTENING (the Spine→receipt projection carries `dorc_receipt`'s per-site
+  `RecordedInfluence` grade, with no accessor back to a live account; an absent or
+  unrecognised grade reads HIGHEST — `306b:rul-missing-influence-grade-reads-highest`), no
+  durable ingestion rehydrates an account into a decision, and a reader's
+  widen-to-influenced is the DEFINITION, not an approximation (human-typed 2026-08-23).
 
 ## Law — the verified-core substrate (r30; `notes/300` §2/§2a, `28T` heritage)
 

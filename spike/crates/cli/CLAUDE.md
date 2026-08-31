@@ -48,7 +48,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   speculative branches are included, and copied bytes plus line maps come only from
   `strip_file_with_map`. Generated `storage_path`s name inert archive entries, never runtime
   `.` targets or a materialization recipe. `dorc bundle` returns before records intake,
-  planning, settlement, whylog writing, or host contact; executable placement and source-line
+  planning, settlement, receipt publication, or host contact; executable placement and source-line
   replacement remain the post-`30L` artifact stage. Rider (r30): a `PlainInclusion` source
   (book-sourced, no dorc-lang marker) is mirrored BYTE-VERBATIM at its authored relative path
   — never stripped, never bundled, never renamed, never inlined into a single stream (the
@@ -151,7 +151,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   intake, whose outcome is three-way: `Admitted` proceeds; `NoObservation`
   (well-owned attempt, no usable fact) takes the fold above; `Refused` (framing,
   bounds, attribution, or integrity failure) returns BEFORE plan construction,
-  artifact rendering, or whylog writing, and emits no plan carrying mutation
+  artifact rendering, or receipt publication, and emits no plan carrying mutation
   authority. Never collapse `Refused` into `Unknown` and continue — "run
   everything" is the safe answer to not knowing the WORLD, and the wrong answer
   to not knowing whether we are still talking to the world we think we are
@@ -163,7 +163,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   real transport, concurrency, retry, cross-host reuse, saved approval — carrying
   the scope has to become checking it, and this is the choke point where that
   lands.
-- **inv-whylog-collection-never-expands-observation** — receipt writing persists only data the
+- **inv-receipt-collection-never-expands-observation** (née inv-whylog-collection-never-expands-observation) — receipt writing persists only data the
   invocation already holds; it performs no additional host call, environment sweep, unrelated
   controller read, or debug probe. Later pull is a separate invocation about the later world
   (`30R:standing-invariants`).
@@ -182,7 +182,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   measurement, because the deadness of the line that measured the world does not un-measure the
   world. NEVER-SURVIVES: intermediate rounds are unobservable not because they are discarded but
   because they are never built — the loop body constructs a classification and a fold, and every
-  plan, narrative, render, whylog write, and `report_at` sits outside it. The sole deliberate
+  plan, narrative, render, receipt write, and `report_at` sits outside it. The sole deliberate
   exception is the round-tagged derivation link (`attribute_cascades`), durable so `dorc why` can
   answer a cascaded elision; that is a HARD requirement, not polish. Cap-hit is unreachable
   (erasure is monotone, bound = site count) and DISCARDS the ledger to re-derive from origin
@@ -203,7 +203,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   oracle recognized by name alone (USER_STORY stage 3), and those lanes zip per-file lifted sets
   POSITIONALLY — handing them a shorter `oracle_srcs` truncates the book's definitions away
   SILENTLY rather than failing, which is how the first cut of this shipped the wrong body.
-  Oracle-only is still right for the whylog/attempt-scope record of what was LOADED; the
+  Oracle-only is still right for the receipt/attempt-scope record of what was LOADED; the
   survival lanes (`touches`, kind resolvers/reaches) stay oracle-only coherently among
   themselves in BOTH drivers, and widening them is its own dispatch — a separate question from
   whether the contested withdrawal reaches them, which it does
