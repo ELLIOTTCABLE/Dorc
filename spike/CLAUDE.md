@@ -1304,6 +1304,14 @@ no task covers, and consider adding the task instead.
 ## Code style
 
 - Newtypes over bare integers/strings; make illegal states unrepresentable.
+- **lexical-fences-are-human-ack-instruments** (human-typed 2026-08-31) — do NOT
+  reflexively mint lexical/grep-shaped gates (allow-lists, two-way rosters,
+  source-text censuses). An agent that edits the fenced code just edits the list
+  beside it, so an agent-maintainable lexical fence is ~valueless; the valuable
+  ones are exactly those the human explicitly asked for, valuable BECAUSE their
+  lists are human-ack-only surfaces. Prefer type/structural enforcement; where
+  only a lexical check would serve, flag up instead of minting. Existing fences
+  stand — do not remove them in passing.
 - Doc-comment every public type/fn with *why*, citing the research slug it
   implements. Avoid what/how comments on self-evident code (~10% comment budget,
   brutally brief).
