@@ -12,7 +12,8 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 - 30R receipt arc, finishing (stage 4+)
 - r30 round-close ceremony (human's gate)
-- 30D, dropping return-2 (charter owes the §4.3 typed-consequence ruling)
+- 30D, dropping return-2 (charter owes the §4.3 typed-consequence ruling; its record
+  species born under `30R`'s recorded/live typestates — replayed records stay inert)
 - 30J, the family-dialect repair
 
 ## Stands between Dorc and *useful* live use
@@ -55,6 +56,16 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
   (rul-ternary-verdict) nor elide a bare `> file` on byte-equality. Unlocks sh's most
   common mutation idiom (write-if-changed); channel-adjacent, so the predict arc must
   either sit it or explicitly reserve its seat.
+
+* [ ] **the `30L` elision-regions build is unbuilt beyond stage 0** — the design is current
+  (`plans/30L`, rewritten 2026-08-20+; only `stage-member-lane-ruling` satisfied), but
+  as-built remains the all-or-nothing CALL disposition: the disciplined
+  `main() { …; }; main "$@"` shape forfeits the whole attention product to one live body
+  line. Its §14 sequencing (land BEFORE artifact-form reification + corpus-wide golden
+  promotion, the surfaces that harden leaf-only edit identity) may be partially overtaken
+  by the landed r30 artifact lanes — re-verify at pickup. Stage 1 (census/budget sizing +
+  red-first battery) is measurement-not-machinery and runnable early. Kernel-tier: queues
+  behind `30R` by standing rule.
 
 * [ ] **the `command -v` load model (`30I:pin-command-v-load-model`)** — `command -v` stays a meaningful, idiomatic, supported dorc-lang route for asking what a shell resolves under a name, and is explicitly NOT forfeited; it is simply not the basis for exact-package guard recognition, which now rides the variable sentinel. Owed: which shell categories and floor/run-target variations the load model represents, and when that wider question may participate in exact guarded-source recognition. Evidence and floor measurements: `notes/30Ic` (output-slash classification measured-refuted — `PATH=:` makes both pinned floors print a bare name for an external; aliases can carry slashes; posh exposes neither aliases nor reserved words).
 
