@@ -237,15 +237,21 @@ loaded-source locator composition (named uncollected V1 residue).
   landed conductor-side: `core::spine::InvocationMode` deleted, `minted()`
   lost its mode parameter, five callers fixed (incl. `cli/src/receipt_edge.rs`
   — a known trivial fold-conflict candidate with the render lane).
-- rul-no-reflexive-lexical-fences (human-typed 2026-08-31): agents must stop
-  reflexively minting lexical/grep-shaped gates (allow-lists, two-way rosters,
-  source-text censuses) — agent-maintainable ones are ~valueless (the agent
-  edits both sides); the valuable ones are exactly the human-requested,
-  human-ack-only ones. Prefer types/structure; flag up where only lexical
+- rul-no-reflexive-lexical-fences (human-typed 2026-08-31; SCOPE SHARPENED
+  same day): the target is grep-gates as BACKSTOPS TO TYPECHECKING —
+  agent-maintainable ones are ~valueless (the agent edits both sides) and
+  disincentivize proper typing discipline; the valuable ones are exactly the
+  human-requested, human-ack-only ones. Scans over inherently-textual
+  material (declared-source rosters, frontmatter, literals) are legitimate
+  INSTRUMENTS — but instruments report; deleting a user-facing string on
+  their say-so stays a conductor-at-least, human-maybe decision (human lean,
+  typed). Prefer types/structure; flag up where only a lexical backstop
   would serve. NOT a removal directive — existing fences stand. Durable:
   `spike/CLAUDE.md lexical-fences-are-human-ack-instruments`; relayed to the
-  render lane (its planned NYI allow-list and lexical iteration check are
-  replaced with structural mechanisms).
+  render lane (structural mechanisms built). Consequence: the
+  orphan-arrangement census is UN-WITHHELD, redirected to a report-only
+  doctor-family instrument (never a gate, never a deleter), last in the
+  wiring lane's priority order.
 - rul-whole-product-proof-rides-the-e2e-corpus (human-typed 2026-08-31): no
   new test TYPE — the publish-then-why whole-product proof lives as e2e-corpus
   cases, with a minimal e2e runner/case-shape extension authorized if the
