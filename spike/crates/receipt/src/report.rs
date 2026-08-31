@@ -32,10 +32,12 @@
 //! infer a fact from a value that never stated it.
 
 mod address;
+mod families;
 mod states;
 mod value;
 
 pub use address::{AddressFacts, AddressResolution, RequestedAddress, UnresolvedReason};
+pub use families::{FamilyCoverage, InvocationFacts, NarrativeFacts, PlanFamily};
 pub use states::{
     AuthenticationState, ClosureCompleteness, CurrentSourceState, DetailState, MaterialState,
     ProjectionState, ReDerivationState, RecordedDocumentId, RecordedSpecies, SiblingState,
@@ -377,8 +379,10 @@ pub struct RecordedWhyFacts {
     root: RootFacts,
     closure: ClosureFacts,
     address: Option<AddressFacts>,
+    invocation: InvocationFacts,
     sites: Vec<SiteFacts>,
     sources: Vec<SourceFacts>,
+    narratives: Vec<NarrativeFacts>,
     omissions: Vec<OmissionFacts>,
     rederivation: ReDerivationState,
 }
@@ -412,6 +416,52 @@ impl RecordedWhyFacts {
     #[must_use]
     pub fn sources(&self) -> &[SourceFacts] {
         &self.sources
+    }
+
+    /// What the run was, as the document recorded it.
+    #[must_use]
+    pub const fn invocation(&self) -> &InvocationFacts {
+        &self.invocation
+    }
+
+    /// Every decision-inert narrative the run minted — the family carrying the recorded speech
+    /// acts. Identifies no site, by the durable's own design.
+    #[must_use]
+    pub fn narratives(&self) -> &[NarrativeFacts] {
+        &self.narratives
+    }
+
+    /// What this model can say about EVERY family a plan document persists.
+    ///
+    /// Exhaustive and no-wildcard, so a family added to the recorded model cannot land here
+    /// unclassified — which is the whole point: a consumer must be able to tell a family the
+    /// document does not carry from one this read surface has not projected yet, because the two
+    /// are repaired in different places and only one of them is a durable question.
+    #[must_use]
+    pub fn coverage(&self) -> Vec<(PlanFamily, FamilyCoverage)> {
+        PlanFamily::ALL
+            .iter()
+            .map(|family| {
+                let coverage = match family {
+                    PlanFamily::Invocation => FamilyCoverage::of(1),
+                    PlanFamily::Sources => FamilyCoverage::of(self.sources.len()),
+                    PlanFamily::Sites => FamilyCoverage::of(self.sites.len()),
+                    PlanFamily::Narratives => FamilyCoverage::of(self.narratives.len()),
+                    PlanFamily::Omissions => FamilyCoverage::of(self.omissions.len()),
+                    PlanFamily::Admission
+                    | PlanFamily::PresentedPlan
+                    | PlanFamily::Regions
+                    | PlanFamily::Loads
+                    | PlanFamily::Classifications
+                    | PlanFamily::Certifications
+                    | PlanFamily::Ships
+                    | PlanFamily::Survivals
+                    | PlanFamily::Renders
+                    | PlanFamily::Licensors => FamilyCoverage::RecordedButUnprojected,
+                };
+                (*family, coverage)
+            })
+            .collect()
     }
 
     /// Every population the projection declined to carry.

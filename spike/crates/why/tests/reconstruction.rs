@@ -7,24 +7,19 @@
 //! totality is a no-wildcard match plus a permutation check over the model's own flat population,
 //! and determinism is measured by re-deriving and comparing, not by grepping for a collection type.
 
-#![expect(
-    clippy::expect_used,
-    clippy::panic,
-    reason = "assertions beside the cases, where the in-tests allowance does not reach them"
-)]
-
 mod support;
 
 use std::collections::BTreeSet;
 
 use dorc_receipt::report::{
-    CurrentSourceReading, RequestedAddress, SiblingState, SourceObservation,
+    CurrentSourceReading, FamilyCoverage, PlanFamily, RequestedAddress, SiblingState,
+    SourceObservation,
 };
 use dorc_why::known::{CantTell, CarrierAbsence, Held, Known, WithholdReason};
 use dorc_why::recorded::{Rooted, reconstruct};
 use dorc_why::{
-    CorrelationFact, Datum, Delivery, FamilyName, IdentityFact, Moment, NegativeSpace, Payload,
-    Reconstruction, Separability, Speaker, StateFact, Subject, VoiceSet,
+    CorrelationFact, Datum, Delivery, IdentityFact, Moment, NegativeSpace, Payload, Reconstruction,
+    Separability, Speaker, StateFact, Subject, VoiceSet,
 };
 
 use support::{BOOK, Shape, facts, published, shaped};
@@ -53,18 +48,21 @@ fn speaker_of(datum: &Datum) -> String {
     }
 }
 
-fn voices_of(speaker: &Speaker) -> &'static str {
-    match speaker.voices() {
-        VoiceSet::Mine => "mine",
-        VoiceSet::One(_) => "one",
+fn voices_of(speaker: &Speaker) -> String {
+    let Known::Knowable(Held::Present(voices)) = speaker.voices() else {
+        return absence_of(speaker.voices());
+    };
+    match voices {
+        VoiceSet::Mine => "mine".to_owned(),
+        VoiceSet::One(_) => "one".to_owned(),
         VoiceSet::Committee {
             separability: Separability::Separable,
             ..
-        } => "committee-separable",
+        } => "committee-separable".to_owned(),
         VoiceSet::Committee {
             separability: Separability::Inseparable,
             ..
-        } => "committee-inseparable",
+        } => "committee-inseparable".to_owned(),
     }
 }
 
@@ -86,7 +84,8 @@ fn subject_of(datum: &Datum) -> String {
         Subject::Stage { site, index } => format!("stage:{}:{index}", site.leaf().get()),
         Subject::Document(document) => format!("document:{}", document.hex()),
         Subject::Address(address) => format!("address:{}:{}", address.source.get(), address.line),
-        Subject::Family(family) => format!("family:{}", family.key()),
+        Subject::Family(family) => format!("family:{}", family.token()),
+        Subject::Narrative(ordinal) => format!("narrative:{ordinal}"),
     })
 }
 
@@ -101,6 +100,7 @@ fn payload_of(datum: &Datum) -> String {
         // Class and LENGTH, never bytes.
         Payload::Text(value) => format!("text:{:?}:{}", value.class(), value.len()),
         Payload::Correlation(correlation) => format!("correlation:{}", correlation_of(correlation)),
+        Payload::Collapse(kind) => format!("collapse:{kind:?}"),
         Payload::NegativeSpace(space) => format!("negative:{}", negative_of(*space)),
     })
 }
@@ -115,6 +115,7 @@ fn identity_of(identity: &IdentityFact) -> String {
         IdentityFact::UncarriedSpecies(species) => format!("uncarried:{species:?}"),
         IdentityFact::SourceClass(class) => format!("class:{class:?}"),
         IdentityFact::Ast(ast) => format!("ast:{ast}"),
+        IdentityFact::InvocationMode(mode) => format!("invocation-mode:{mode:?}"),
     }
 }
 
@@ -138,7 +139,7 @@ fn correlation_of(correlation: &CorrelationFact) -> String {
 }
 
 fn negative_of(space: NegativeSpace) -> String {
-    format!("{:?}:{}", space.kind, space.family.key())
+    format!("{:?}:{}", space.kind, space.family.token())
 }
 
 /// The wrapper's own states, matched without a wildcard: every absence a slot can carry has a
@@ -207,18 +208,63 @@ fn every_named_family_reaches_the_population_exactly_once() {
          assertion below vacuously"
     );
 
-    let mut seen: Vec<FamilyName> = reconstruction
+    let facts = facts(&document, Vec::new(), Vec::new(), None);
+    let mut seen: Vec<PlanFamily> = reconstruction
         .audit()
         .into_iter()
         .map(|hole| hole.family)
         .collect();
     seen.sort_unstable();
-    let mut expected = FamilyName::ALL.to_vec();
+    // The expectation comes from the REPORT's own coverage answer, never from a list kept here: a
+    // second list would disagree the moment a family is projected, and the disagreement would read
+    // as a hole that no longer exists.
+    let mut expected: Vec<PlanFamily> = facts
+        .coverage()
+        .into_iter()
+        .filter(|(_, coverage)| !coverage.is_projected())
+        .map(|(family, _)| family)
+        .collect();
     expected.sort_unstable();
+    assert!(
+        !expected.is_empty(),
+        "the read surface is not yet exhaustive, so the audit must have something to say; an empty \
+         expectation would make this case vacuous"
+    );
     assert_eq!(
         seen, expected,
-        "every family the model names is audited exactly once; a family missing here is a hole \
-         nobody would see, and a doubled one is two rows about one gap"
+        "every unprojected family is audited exactly once, and every projected one is audited not \
+         at all; a doubled row is two rows about one gap, and a row for a projected family sends a \
+         reader to widen something already there"
+    );
+}
+
+/// A family with typed facts is NOT a hole, and the coverage answer says which is which.
+///
+/// The half that keeps the widening honest: projecting a family must actually retire its absence,
+/// or the surface would carry both the facts and a row saying the facts are missing.
+#[test]
+fn a_projected_family_carries_facts_and_no_absence() {
+    let document = published();
+    let facts = facts(&document, Vec::new(), Vec::new(), None);
+    let coverage = facts.coverage();
+    assert_eq!(
+        coverage.len(),
+        PlanFamily::ALL.len(),
+        "coverage answers for every persisted family; an unanswered one is the silence the \
+         classification exists to make impossible"
+    );
+    assert!(
+        coverage
+            .iter()
+            .any(|(family, cover)| *family == PlanFamily::Narratives && cover.is_projected()),
+        "the narrative family is projected — it is what carries the recorded speech acts"
+    );
+    assert!(
+        coverage
+            .iter()
+            .any(|(_, cover)| *cover == FamilyCoverage::RecordedButUnprojected),
+        "and the families still unprojected say so in their own word, distinct from a family the \
+         document does not carry"
     );
 }
 
@@ -240,7 +286,7 @@ fn every_hole_names_its_cause_and_v1_holes_are_the_report_apis() {
             "family {} is recorded by the durable and unprojected by the report API, so its hole \
              is the report API's; a carrier cause here would send a reader to widen the durable \
              for a gap that needs no durable change",
-            hole.family.key()
+            hole.family.token()
         );
     }
 }

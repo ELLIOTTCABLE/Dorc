@@ -36,9 +36,9 @@ pub mod recorded;
 pub mod structure;
 
 pub use datum::{
-    AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, FamilyName,
-    FindingKind, HostName, IdentityFact, Moment, NegativeKind, NegativeSpace, Payload,
-    Separability, Speaker, StateFact, Subject, Voice, VoiceSet, WorldCoordinate,
+    AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, FindingKind,
+    HostName, IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, Separability, Speaker,
+    StateFact, Subject, Voice, VoiceSet, WorldCoordinate,
 };
 pub use known::{CantTell, CarrierAbsence, Held, Known, UnknowableReason, WithholdReason};
 pub use structure::{
@@ -46,8 +46,8 @@ pub use structure::{
 };
 
 use dorc_receipt::report::{
-    AuthenticationState, DetailState, ProjectionState, RecordedDocumentId, RecordedSpecies,
-    SiblingState,
+    AuthenticationState, DetailState, PlanFamily, ProjectionState, RecordedDocumentId,
+    RecordedSpecies, SiblingState,
 };
 
 /// Everything one rooted question was reconstructed into.
@@ -165,7 +165,7 @@ pub struct Hole {
     /// The datum that carries the absence.
     pub datum: DatumId,
     /// Which recorded family it is about.
-    pub family: FamilyName,
+    pub family: PlanFamily,
     /// Whether the carrier lacks it or the report API does.
     pub cause: CarrierAbsence,
 }

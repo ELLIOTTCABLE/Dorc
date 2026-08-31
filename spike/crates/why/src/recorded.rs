@@ -15,12 +15,13 @@
 use dorc_aid::narrative::SpeechAct;
 use dorc_receipt::report::{
     AddressResolution, AuthenticationState, ClosureCompleteness, CurrentSourceState, DetailState,
-    ProjectionState, RecordedDocumentId, RecordedSpecies, RecordedWhyFacts, SiblingState,
-    SiteFacts, StageFacts,
+    FamilyCoverage, PlanFamily, ProjectionState, RecordedDocumentId, RecordedSpecies,
+    RecordedWhyFacts, SiblingState, SiteFacts, StageFacts,
 };
+use dorc_receipt::tokens::RecordedSpeechAct;
 
 use crate::datum::{
-    AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, FamilyName,
+    AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, HostName,
     IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, Speaker, StateFact, Subject, Voice,
     VoiceSet, WorldCoordinate,
 };
@@ -74,26 +75,66 @@ pub fn reconstruct(rooted: &Rooted<'_>) -> Reconstruction {
 /// The engine speaking in its own voice — the terminal attribution link
 /// (`30V` §2 rul-first-person-register): a claim grounded in nobody else's speech is ours.
 fn ours(act: SpeechAct) -> Known<Speaker> {
-    Known::present(Speaker::of(act, VoiceSet::Mine))
+    Known::present(Speaker::of(act, Known::present(VoiceSet::Mine)))
 }
 
 /// An author, named by the source their bytes sit in.
 fn authored(source: crate::datum::SourceRef) -> Known<Speaker> {
     Known::present(Speaker::of(
         SpeechAct::Claimed,
-        VoiceSet::One(Voice::AuthoredIn(source)),
+        Known::present(VoiceSet::One(Voice::AuthoredIn(source))),
     ))
+}
+
+/// A recorded speech act whose SPEAKER-SET the document does not name.
+///
+/// The act is real — it is on the narrative row — and the voices are not: narrative operands are
+/// not durable, so nobody can be named. Two leaves, two answers, which is exactly why the voice-set
+/// carries its own wrapper rather than riding the act.
+fn spoke(act: SpeechAct) -> Known<Speaker> {
+    Known::present(Speaker::of(act, Known::report_api_lacks()))
+}
+
+/// The engine's own speech-act vocabulary, for one recorded act.
+///
+/// One-to-one and no-wildcard: the two vocabularies are the same seven kinds by construction, and a
+/// widening on either side must visit this seat rather than silently mapping to a neighbour — which
+/// would dress one act as another, the worst aid failure (`271:rul-sin-ordering`).
+const fn speech_of(recorded: RecordedSpeechAct) -> SpeechAct {
+    match recorded {
+        RecordedSpeechAct::Measured => SpeechAct::Measured,
+        RecordedSpeechAct::Vouched => SpeechAct::Vouched,
+        RecordedSpeechAct::Ran => SpeechAct::Ran,
+        RecordedSpeechAct::Claimed => SpeechAct::Claimed,
+        RecordedSpeechAct::Derived => SpeechAct::Derived,
+        RecordedSpeechAct::Consented => SpeechAct::Consented,
+        RecordedSpeechAct::Declined => SpeechAct::Declined,
+    }
 }
 
 /// The world-coordinate every datum of one document shares.
 ///
-/// Host is `ReportApiLacks` rather than absent: the run identity DOES reach the durable, and
-/// `dorc_receipt::report` projects no host slot — which is a report-API hole, not a carrier one.
-fn coordinate(moment: Known<Moment>, document: &RecordedDocumentId) -> WorldCoordinate {
+/// The host leaf comes off the invocation projection: the destination is recorded in the region and
+/// the projection now carries it, so a run against a named host says so instead of reading as a
+/// hole. A document that withheld or never collected it keeps its own absence word.
+fn coordinate(
+    moment: Known<Moment>,
+    document: &RecordedDocumentId,
+    host: Known<HostName>,
+) -> WorldCoordinate {
     WorldCoordinate::of(
         moment,
-        Known::report_api_lacks(),
+        host,
         Known::present(AttemptLineage::Document(document.clone())),
+    )
+}
+
+/// The recorded destination, where the document released it.
+fn host_of(facts: &RecordedWhyFacts) -> Known<HostName> {
+    let invocation = facts.invocation();
+    invocation.target_text().map_or_else(
+        || from_material(invocation.target()),
+        |value| Known::present(HostName::of(value.clone())),
     )
 }
 
@@ -129,15 +170,17 @@ fn from_plan(facts: &RecordedWhyFacts) -> Reconstruction {
     }
 
     let here = Delivery::Recorded(CarrierRef::of(0));
-    let world = coordinate(moment, &document);
+    let world = coordinate(moment, &document, host_of(facts));
     let mut data = Vec::new();
     push_root_data(&mut data, facts, &world, here);
+    push_invocation_data(&mut data, facts, &world, here);
     push_source_data(&mut data, facts, &world, here);
     push_site_data(&mut data, facts, &world, here);
+    push_narrative_data(&mut data, facts, &world, here);
     push_omission_data(&mut data, facts, &world, here);
     push_address_data(&mut data, facts, &world, here);
     push_correlation_data(&mut data, &carriers, &world, here);
-    push_unprojected_families(&mut data, &world, here);
+    push_uncovered_families(&mut data, facts, &world, here);
 
     // A PLAN root reaches nothing later (`30R:receipt-rooted-attention-and-cli` walks toward
     // causes), so its correlation family is empty by the walk's own direction, not by omission.
@@ -425,18 +468,89 @@ fn push_correlation_data(
     }
 }
 
-/// One datum per recorded family this model does not reach, so a hole is a NAMED row of the total
-/// surface rather than a silence somebody has to notice.
-fn push_unprojected_families(data: &mut Vec<Datum>, world: &WorldCoordinate, here: Delivery) {
-    for family in FamilyName::ALL {
+/// The invocation singleton: what the run was, and how much of itself it recorded.
+fn push_invocation_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    let invocation = facts.invocation();
+    let subject = Known::present(Subject::Document(facts.root().document().clone()));
+    for identity in [
+        IdentityFact::InvocationMode(invocation.mode()),
+        IdentityFact::Count(invocation.attempt()),
+    ] {
         data.push(Datum::minted(
             ours(SpeechAct::Derived),
             world.clone(),
-            Known::present(Subject::Family(*family)),
-            Known::present(Payload::NegativeSpace(NegativeSpace {
-                kind: NegativeKind::ReportApiGap,
-                family: *family,
-            })),
+            subject.clone(),
+            Known::present(Payload::Identity(identity)),
+            here,
+        ));
+    }
+    data.push(Datum::minted(
+        ours(SpeechAct::Derived),
+        world.clone(),
+        subject,
+        Known::present(Payload::Influence(invocation.influence())),
+        here,
+    ));
+}
+
+/// Every decision-inert narrative, wearing the act the document recorded.
+///
+/// This family is why the speaker axis is real rather than uniformly first-person: the engine's own
+/// derivations still speak as us, and a vouch, a decline or a measurement recorded here speaks in
+/// its own act, with its voices honestly unnamed.
+fn push_narrative_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for narrative in facts.narratives() {
+        let subject = Known::present(Subject::Narrative(narrative.ordinal()));
+        data.push(Datum::minted(
+            spoke(speech_of(narrative.speech())),
+            world.clone(),
+            subject.clone(),
+            Known::present(Payload::Collapse(narrative.kind())),
+            here,
+        ));
+        data.push(Datum::minted(
+            spoke(speech_of(narrative.speech())),
+            world.clone(),
+            subject,
+            Known::present(Payload::Influence(narrative.influence())),
+            here,
+        ));
+    }
+}
+
+/// One datum per family this read surface does not carry typed facts for, so a hole is a NAMED row
+/// of the total surface rather than a silence somebody has to notice.
+///
+/// Driven by the report's OWN coverage answer rather than a list kept here: two lists of the same
+/// families would disagree the moment one is projected, and the disagreement would read as a hole
+/// that no longer exists.
+fn push_uncovered_families(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for (family, coverage) in facts.coverage() {
+        let kind = match coverage {
+            FamilyCoverage::Projected(_) => continue,
+            FamilyCoverage::RecordedButUnprojected => NegativeKind::ReportApiGap,
+            FamilyCoverage::NotCarried | FamilyCoverage::NotRelevant => NegativeKind::CarrierGap,
+        };
+        data.push(Datum::minted(
+            ours(SpeechAct::Derived),
+            world.clone(),
+            Known::present(Subject::Family(family)),
+            Known::present(Payload::NegativeSpace(NegativeSpace { kind, family })),
             here,
         ));
     }
@@ -520,7 +634,7 @@ fn from_non_plan(root: &NonPlanRoot) -> Reconstruction {
         || Known::present(Moment::Undated),
         |spelled| Known::present(Moment::Filed(spelled)),
     );
-    let world = coordinate(moment, &root.document);
+    let world = coordinate(moment, &root.document, Known::report_api_lacks());
     let subject = Known::present(Subject::Document(root.document.clone()));
 
     let mut data = vec![
@@ -572,7 +686,18 @@ fn from_non_plan(root: &NonPlanRoot) -> Reconstruction {
     }
     // EVERY plan-shaped family is absent here, and for a different reason than on a plan root: the
     // report model does not cover this species at all. Same vocabulary, honestly caused.
-    push_unprojected_families(&mut data, &world, here);
+    for family in PlanFamily::ALL {
+        data.push(Datum::minted(
+            ours(SpeechAct::Derived),
+            world.clone(),
+            Known::present(Subject::Family(*family)),
+            Known::present(Payload::NegativeSpace(NegativeSpace {
+                kind: NegativeKind::CarrierGap,
+                family: *family,
+            })),
+            here,
+        ));
+    }
 
     Reconstruction::of(
         carriers,

@@ -7,12 +7,16 @@
 
 use dorc_aid::narrative::{Knowability, SpeechAct};
 use dorc_receipt::reingested::RecordedInfluence;
+use dorc_receipt::report::PlanFamily;
 use dorc_receipt::report::{
     AuthenticationState, ClosureCompleteness, CurrentSourceState, DetailState, ProjectionState,
     ReDerivationState, RecordedDocumentId, RecordedSpecies, RecordedValue,
 };
 use dorc_receipt::rows::RecordedSite;
-use dorc_receipt::tokens::{RecordedDisposition, RecordedSourceClass, RecordedSpineSpecies};
+use dorc_receipt::tokens::{
+    RecordedDisposition, RecordedInvocationMode, RecordedNarrativeKind, RecordedSourceClass,
+    RecordedSpineSpecies,
+};
 
 use crate::known::Known;
 
@@ -92,13 +96,13 @@ impl Datum {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Speaker {
     act: SpeechAct,
-    voices: VoiceSet,
+    voices: Known<VoiceSet>,
 }
 
 impl Speaker {
     /// Bind an act to the set that performed it.
     #[must_use]
-    pub const fn of(act: SpeechAct, voices: VoiceSet) -> Self {
+    pub const fn of(act: SpeechAct, voices: Known<VoiceSet>) -> Self {
         Self { act, voices }
     }
 
@@ -110,7 +114,7 @@ impl Speaker {
 
     /// Who performed it.
     #[must_use]
-    pub const fn voices(&self) -> &VoiceSet {
+    pub const fn voices(&self) -> &Known<VoiceSet> {
         &self.voices
     }
 }
@@ -121,14 +125,12 @@ pub enum VoiceSet {
     /// The tool's own voice: the terminal attribution link (`30V` §2 rul-first-person-register).
     /// A claim grounded in nobody else's speech is ours.
     Mine,
-    /// One named other.
-    ///
-    /// NOT MINTED at v1: naming an author needs the recorded narrative and licensor families, which
-    /// `dorc_receipt::report` does not project (`CarrierAbsence::ReportApiLacks`).
+    /// One named other, where the document places their bytes.
     One(Voice),
     /// Several, whose contributions may or may not be separable.
     ///
-    /// NOT MINTED at v1, for [`VoiceSet::One`]'s reason.
+    /// NOT MINTED at v1: telling one contributor from several needs the licensor family, which
+    /// this read surface does not yet project.
     Committee {
         /// The members.
         voices: Vec<Voice>,
@@ -208,14 +210,17 @@ pub enum Moment {
     Undated,
 }
 
-/// A host destination, as somebody spelled it.
-///
-/// NOT MINTED at v1: the run identity reaches the durable and `dorc_receipt::report` projects no
-/// host slot (`CarrierAbsence::ReportApiLacks`).
+/// A host destination, as somebody spelled it — sealed, and encoder-mediated on the way out.
 #[derive(Debug, Clone)]
 pub struct HostName(RecordedValue);
 
 impl HostName {
+    /// Seal one recorded destination as a host name.
+    #[must_use]
+    pub const fn of(value: RecordedValue) -> Self {
+        Self(value)
+    }
+
     /// The name, encoder-mediated like every other recorded value.
     #[must_use]
     pub const fn value(&self) -> &RecordedValue {
@@ -251,9 +256,12 @@ pub enum Subject {
     Document(RecordedDocumentId),
     /// The address the question asked about.
     Address(AddressSubject),
+    /// One decision-inert narrative, by its mint ordinal. It identifies no site, by the durable.s
+    /// own design, and this subject must not suggest it does.
+    Narrative(u32),
     /// A whole recorded FAMILY the projection declined, or the report API does not carry — the
     /// subject an audit row is about.
-    Family(FamilyName),
+    Family(PlanFamily),
 }
 
 /// The address a question asked about, as this model can state it.
@@ -283,84 +291,6 @@ impl SourceRef {
     }
 }
 
-/// A recorded row family, named for the audit.
-///
-/// Closed and exhaustive over what a plan document records, so a family this model does not reach
-/// is a NAMED hole rather than a silence (`30V` §5's durable-gap audit).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum FamilyName {
-    /// The invocation row.
-    Invocation,
-    /// The records-admission row.
-    Admission,
-    /// The presented-plan row.
-    PresentedPlan,
-    /// Per-region decisions.
-    Regions,
-    /// Per-load decisions.
-    Loads,
-    /// Per-site classifications.
-    Classifications,
-    /// Solve certifications.
-    Certifications,
-    /// Probe ships.
-    Ships,
-    /// Survivals.
-    Survivals,
-    /// Render decisions.
-    Renders,
-    /// Decision-inert narratives — the family carrying the recorded speech acts.
-    Narratives,
-    /// Licensors.
-    Licensors,
-    /// Derivation operands: conclusion to inputs.
-    DerivationOperands,
-    /// Program topology: CFG, dataflow, loop membership, region-to-instance.
-    ProgramTopology,
-}
-
-impl FamilyName {
-    /// Every family, in one order, so a census cannot miss one.
-    pub const ALL: &'static [Self] = &[
-        Self::Invocation,
-        Self::Admission,
-        Self::PresentedPlan,
-        Self::Regions,
-        Self::Loads,
-        Self::Classifications,
-        Self::Certifications,
-        Self::Ships,
-        Self::Survivals,
-        Self::Renders,
-        Self::Narratives,
-        Self::Licensors,
-        Self::DerivationOperands,
-        Self::ProgramTopology,
-    ];
-
-    /// The machine key a `--json` sibling names it by. Hardcoded: a machine format is out of the
-    /// arrangement registry by the same rule the lint envelope is.
-    #[must_use]
-    pub const fn key(self) -> &'static str {
-        match self {
-            Self::Invocation => "invocation",
-            Self::Admission => "admission",
-            Self::PresentedPlan => "presented-plan",
-            Self::Regions => "regions",
-            Self::Loads => "loads",
-            Self::Classifications => "classifications",
-            Self::Certifications => "certifications",
-            Self::Ships => "ships",
-            Self::Survivals => "survivals",
-            Self::Renders => "renders",
-            Self::Narratives => "narratives",
-            Self::Licensors => "licensors",
-            Self::DerivationOperands => "derivation-operands",
-            Self::ProgramTopology => "program-topology",
-        }
-    }
-}
-
 /// What was said (`30V` §3 field 4) — a type-FAMILY rather than an axis, and the least-settled of
 /// the five. Closed, and census-gated: every constructible kind must reach output.
 #[derive(Debug, Clone)]
@@ -378,6 +308,8 @@ pub enum Payload {
     Text(RecordedValue),
     /// A typed edge or finding of the receipt graph.
     Correlation(CorrelationFact),
+    /// Which safety-narrowing a narrative recorded.
+    Collapse(RecordedNarrativeKind),
     /// An affirmatively-known fact about not-knowing, carrying its own remedy.
     NegativeSpace(NegativeSpace),
 }
@@ -401,6 +333,8 @@ pub enum IdentityFact {
     SourceClass(RecordedSourceClass),
     /// A syntax-node ordinal, as the document numbered them.
     Ast(u32),
+    /// What the run was doing, in the recorded vocabulary.
+    InvocationMode(RecordedInvocationMode),
 }
 
 /// One of the report's closed state words, carried as a payload so it reaches the total surface
@@ -468,7 +402,7 @@ pub struct NegativeSpace {
     /// What kind of not-knowing this is.
     pub kind: NegativeKind,
     /// Which family a remedy would have to reach.
-    pub family: FamilyName,
+    pub family: PlanFamily,
 }
 
 /// Which species of not-knowing.

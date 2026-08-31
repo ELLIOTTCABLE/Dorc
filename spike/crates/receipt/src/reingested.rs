@@ -110,6 +110,8 @@ impl sealed::RecordedType for RecordedSiteDecision {}
 impl RecordedType for RecordedSiteDecision {}
 impl sealed::RecordedType for RecordedProjectionOmission {}
 impl RecordedType for RecordedProjectionOmission {}
+impl sealed::RecordedType for crate::plan::RecordedNarrative {}
+impl RecordedType for crate::plan::RecordedNarrative {}
 
 /// A value recovered from a published document.
 #[derive(Debug)]
@@ -222,6 +224,44 @@ impl Reingested<RecordedPlanReceipt> {
     #[must_use]
     pub const fn invocation_account(&self) -> RecordedInfluence {
         self.0.invocation().account()
+    }
+
+    /// The controller's own start reading, where the run took one.
+    ///
+    /// Controller-minted: a managed host never contributes an instant, so this is a fact about
+    /// where the controller stood and never one the document was told.
+    #[must_use]
+    pub const fn invocation_started(&self) -> Option<u64> {
+        self.0.invocation().started()
+    }
+
+    /// Which attempt of its target the run was.
+    #[must_use]
+    pub const fn invocation_attempt(&self) -> u32 {
+        self.0.invocation().attempt()
+    }
+
+    /// Whether the argument vector is in the document.
+    #[must_use]
+    pub const fn invocation_argv(&self) -> crate::tokens::OpaqueState {
+        self.0.invocation().argv()
+    }
+
+    /// Whether the host destination is in the document.
+    #[must_use]
+    pub const fn invocation_target(&self) -> crate::tokens::OpaqueState {
+        self.0.invocation().target()
+    }
+
+    /// Every decision-inert narrative, each still sealed.
+    #[must_use]
+    pub fn narratives(&self) -> Vec<Reingested<crate::plan::RecordedNarrative>> {
+        self.0
+            .narratives()
+            .iter()
+            .cloned()
+            .map(Reingested::seal)
+            .collect()
     }
 
     /// Every acquired source, each still sealed.
@@ -451,6 +491,43 @@ impl Reingested<RecordedSiteDecision> {
     }
 
     /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+/// One sealed narrative row.
+///
+/// It identifies no site, and this seal must not be widened until it can: narrative operands are
+/// not durable, so a reader learns that N collapses of a class occurred and never which line each
+/// was about.
+impl Reingested<crate::plan::RecordedNarrative> {
+    /// Where this narrative sat in mint order.
+    #[must_use]
+    pub const fn ordinal(&self) -> u32 {
+        self.0.ordinal().get()
+    }
+
+    /// The typed speech act.
+    #[must_use]
+    pub const fn speech(&self) -> crate::tokens::RecordedSpeechAct {
+        self.0.speech()
+    }
+
+    /// Which collapse class narrowed.
+    #[must_use]
+    pub const fn kind(&self) -> crate::tokens::RecordedNarrativeKind {
+        self.0.kind()
+    }
+
+    /// How many operands were kept, and how many the cap dropped.
+    #[must_use]
+    pub const fn operands(&self) -> crate::rows::RecordedOperands {
+        self.0.operands()
+    }
+
+    /// Where the collapse stood relative to host contact.
     #[must_use]
     pub const fn account(&self) -> RecordedInfluence {
         self.0.account()

@@ -18,7 +18,6 @@
 #![expect(
     clippy::expect_used,
     clippy::arithmetic_side_effects,
-    clippy::indexing_slicing,
     reason = "a fixture module is an ordinary module to clippy, so the central allow-in-tests keys do not reach it"
 )]
 
@@ -163,6 +162,10 @@ pub(crate) struct DocumentUnderTest {
 /// Each knob names a real degraded shape a store can hand back, and they compose: what the
 /// adversarial battery varies is the WORLD, never the assertions.
 #[derive(Debug, Clone, Copy, Default)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "this struct IS the axis set: one field per degraded shape a store can hand back, and each is a yes-or-no. Bundling them behind an enum would re-spell the axes one layer down without making any world less representable"
+)]
 pub(crate) struct Shape {
     /// Plant a locator payload that will not parse.
     pub(crate) damaged_locator: bool,
@@ -185,6 +188,10 @@ pub(crate) fn published() -> DocumentUnderTest {
 }
 
 /// One document built to `shape`, minted under `seed`.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one document, built in the production seat.s own order: splitting the row assembly from the seal-and-sign sequence is what lets the two drift"
+)]
 pub(crate) fn shaped(shape: Shape, seed: u8) -> DocumentUnderTest {
     let locator = DurableLocator::of(
         vec![

@@ -7,6 +7,7 @@
 //! the decomposition.
 
 use super::address::{self, AuthoredPlacement};
+use super::families::{InvocationFacts, NarrativeFacts};
 use super::states::{
     AuthenticationState, CurrentSourceState, DetailState, MaterialState, ProjectionState,
     SiblingState,
@@ -164,6 +165,8 @@ pub fn derive(input: &WhyFactsInput<'_>) -> RecordedWhyFacts {
     });
 
     RecordedWhyFacts {
+        invocation: invocation_facts(input, detail),
+        narratives: narrative_facts(input.model),
         root: RootFacts::of(
             input.reached.root().clone(),
             input.order,
@@ -349,6 +352,53 @@ fn detail_value(
 ) -> Option<RecordedValue> {
     root.detail(record, tag)
         .map(|bytes| RecordedValue::sealed(class, bytes.to_vec()))
+}
+
+/// The invocation singleton, with its host destination taken from the region under its own record
+/// ordinal.
+///
+/// The ordinal comes off the document's OWN record stream for `ordinals_of`'s reason: a consumer
+/// that re-derived which record the invocation is would be a second copy of the projection's
+/// ordering, and the two disagreeing enriches whichever row shares the integer.
+fn invocation_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> InvocationFacts {
+    let record = ordinals_of(input.root, crate::grammar::RecordKind::Invocation)
+        .first()
+        .copied();
+    let target = MaterialState::of(input.model.invocation_target(), detail);
+    InvocationFacts {
+        mode: input.model.mode(),
+        started: input.model.invocation_started(),
+        attempt: input.model.invocation_attempt(),
+        argv: MaterialState::of(input.model.invocation_argv(), detail),
+        target,
+        target_text: target
+            .is_held()
+            .then_some(record)
+            .flatten()
+            .and_then(|record| {
+                detail_value(
+                    input.root,
+                    record,
+                    OpaqueFieldTag::TargetName,
+                    ValueClass::TargetName,
+                )
+            }),
+        influence: input.model.invocation_account(),
+    }
+}
+
+fn narrative_facts(model: &Reingested<RecordedPlanReceipt>) -> Vec<NarrativeFacts> {
+    model
+        .narratives()
+        .iter()
+        .map(|narrative| NarrativeFacts {
+            ordinal: narrative.ordinal(),
+            speech: narrative.speech(),
+            kind: narrative.kind(),
+            operands: narrative.operands(),
+            influence: narrative.account(),
+        })
+        .collect()
 }
 
 fn omission_facts(model: &Reingested<RecordedPlanReceipt>) -> Vec<OmissionFacts> {
