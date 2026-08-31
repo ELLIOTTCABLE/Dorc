@@ -27,6 +27,14 @@ and the public report API. No filesystem, environment, provider implementation, 
   stronger state.
 - **`inv-format-changes-are-one-cutover`** — this is unpublished: reshape writer, reader, vectors,
   limits, and all callers together; add no compatibility parser or alias.
+- **`inv-report-projection-exhaustive-or-classified`** (opaque-ruled 2026-08-31;
+  `30Va:rul-report-projection-becomes-exhaustive`) — every family the recorded model persists is
+  either a typed facts collection on `report::RecordedWhyFacts` or carries an explicit closed
+  `FamilyCoverage` classification, no-wildcard, so a new family cannot land unclassified.
+  `RecordedButUnprojected` and `NotCarried` never merge — one is repaired by projection work, the
+  other by nothing. Widening coverage is read-surface projection ONLY: closed typed states, values
+  exiting through the encoder interface, never a raw-model or overlay accessor, and no grammar,
+  writer, wire, or provider change rides along.
 
 Changes to grammar/content, verification or projection states, authority-capable mints, graph semantics,
 or arbitrary-value exits require explicit human direction and quarantined review. Stop rather than
