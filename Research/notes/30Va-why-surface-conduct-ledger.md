@@ -137,6 +137,27 @@ loaded-source locator composition (named uncollected V1 residue).
   `Rooted` face needs them; a closed no-wildcard family classification so an
   unclassified sixteenth cannot land; any need to reopen internals is a STOP.
   The cli-side decomposition route stays forbidden.
+- Render lane, second builder (2026-08-31, wound down at budget, endorsed):
+  `712ab177..8646a4f6` — ALL fifteen plan families projected
+  (`FamilyCoverage::RecordedButUnprojected` unreachable except by removing a
+  projection); `cli::why_total` (Coverage at the emit site; exclusion ledger
+  empty by uninhabited type; weft-woven); `why_json`
+  (`dorc-why-json/unstable`; state+value keys, never absent); 37 arrangement
+  rows seeded unwritten; both legs green at tip. UNBUILT, spec sharpened in
+  the lane ledger's what-remains section (the 30-V-d note, lane-branch-local
+  until fold — the docID cite lands then): item 4 (cli wiring: facts_for production caller,
+  listing-seat deletion, `ReceiptRoot::File` repair, whole-store-listing drop,
+  digest-matched address resolution) + item 5 (publish→why e2e cases + the
+  minimal runner extension). New flags: `tc-licensor-custody-speaks-its-own-act`
+  (lane-ledger-minted; CONDUCTOR-RULED: custody→act mapping stands — engine-voice `Derived` would
+  dress an authored judgment as derivation; refinement owed in the wiring lane:
+  `vouched-severally` populates the voice-set as an inseparable committee of
+  unnamed voices, not a single unnamed voice) ·
+  `tc-nonplan-root-depth` re-sharpened (CONDUCTOR-RULED: shallow fill of
+  `NonPlanRoot` from the already-public intent/outcome accessors now; deeper
+  intent/outcome family projection deferred with a `NotRelevant`-tier
+  classification and a flag — it would need new sealed accessors, a fresh act
+  under the same law, not this arc's).
 - Worktree-reap incident (2026-08-31, resolved; the `worktree-file-access-law`
   hazard fired as documented): the harness reaped the builder's managed
   worktree at its checkpoint turn-boundary; the orphaned skeleton's dead `.git`
