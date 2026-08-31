@@ -469,7 +469,10 @@ probe reads (`dpkg -s` reads the dpkg database; `systemctl is-enabled` reads uni
 cannot claim more than that by construction). A running wall's footprint gets intersected
 against each downstream fact's backing. Empty intersection ⇒ the fact provably survives the
 wall ⇒ its elision stands *even though the wall runs*. Non-empty, or no footprint ⇒ exactly
-the stage-2 world: guard or run. (This is the separation-logic frame rule wearing work
+the stage-2 world: guard or run. (One act rides ahead of its own story: an empty
+intersection *across* vocabularies counts only where the wall's kind carries a *finished
+definition* — stage 7's sentence; the base library's kinds ship theirs, which is why this
+morning's renders work.) (This is the separation-logic frame rule wearing work
 clothes; the emitted-at-probe-time variant — stage-4 tools like `apt-get install`, whose
 real file-payload only the host knows, answer by *asking the tool* inside `disturbs()` — is
 what the literature calls a dynamic frame.)
@@ -525,7 +528,9 @@ The book keeps its steady-state shape on a drifted day. `update`'s footprint is 
 index; the install's guard reads the dpkg database, the `cp`'s fact lives in a config file's
 content, foobar's in its certs, the service's in unit state — all disjoint, all survive. And
 the honest cells stay honest: on a *foobar*-drifted day, `systemctl` now stays elided too
-(`org.foob.Certs` doesn't intersect service state) — but a hypothetical line below foobar whose
+(`org.foob.Certs` doesn't intersect service state, under the certs kind's finished
+definition — stage 7's sentence, which for a kind that entails nothing is nearly the whole
+body) — but a hypothetical line below foobar whose
 fact *lives in those same certs* would correctly stay guarded, footprint or no. `hork` has
 no author, so it has no footprint, and no amount of machinery changes line 10 or 11 —
 silence is a wall, forever.
@@ -601,11 +606,10 @@ sm_dorc_Package__resolve() {                 # the package kind's owner (STRAWMA
   aliases — including ones written by people who never heard of the resolver.
 
 
-### Stage 7 — reach: what touching an entity drags with it
+### Stage 7 — the kind-owner's definition: what touching an entity entails
 
-> (FIXME, updated 2026-07-16: mechanism LANDED in the round-24 build; the member name and
-> mark grammar are RULED (`271:rul-at-most-family-names` — `only` in a role name =
-> complete-by-contract, totalistic-survey-before-authoring; `277` §4d); the body below
+> (FIXME, updated 2026-08-29: the licensing below is DESIGNED at `plans/30U` (the
+> finished-definition gate) and unbuilt; the round-24 as-built predates it; the body below
 > stays strawman-tier in fine detail.)
 
 One gap is left, and it is not the owner's — it is everyone else's. A colleague's oracle
@@ -615,24 +619,41 @@ for some package-fiddling tool honestly declares:
 hork__disturbs() { ... tune) printf '%s\n' "$1" : disturbs sm.dorc.Package ;; ... }
 ```
 
-They mean "I touch the nginx package" — the whole thing, files included. But coordinates
-compare within kinds: `sm.dorc.Package:nginx` does not cover `sm.dorc.File:/etc/nginx/nginx.conf`, so a
-downstream file-fact happily survives hork's wall. And the colleague *cannot* fix it —
-which files a package owns is apt's knowledge, not theirs. So the owner says it once, for
-everyone:
+They mean "I touch the nginx package" — the whole thing, files included. Dorc, though, can
+consume only the word they typed: a claim spelled in package-vocabulary relates, by itself,
+to nothing in anyone else's vocabulary — the two have never been connected. So below a
+running `hork tune`, a file-fact or a service-fact sits behind an wall and gets a guard
+rather than skipping. Safe — and blunter than the world, because *someone* holds the missing
+knowledge. Not the colleague: which files a package owns is apt's knowledge, not theirs.
+The kind's owner says it once, for everyone:
 
 ```sh
-sm_dorc_Package__disturbance_reaches_only() {     # the package kind's owner (STRAWMAN body)
+sm_dorc_Package__disturbance_reaches() {          # the package kind's owner (STRAWMAN body)
    printf '%s\n' "$1" : disturbs sm.dorc.Service  # a package may enable its same-named unit
-   dpkg -L "$1" : disturbs sm.dorc.File           # and reaches exactly the files it installed
+   dpkg -L "$1" : disturbs sm.dorc.File           # and the files it installed
+   printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"
 }
 ```
 
+Two acts, on two rungs. The emission lines are the *entailment* — part of what the word
+"Package" means is that touching one touches its files and its unit. They only ever *widen*
+footprints (add collisions, the safe direction), so any owner may write them from partial
+knowledge, any time. The last line is the other rung, and it is the one dangerous sentence
+in the file: `disturbs nothing-else` says *the definition is finished* — "disturbing a
+package entails these cells and nothing else, in any vocabulary, including ones I have
+never heard of." Only past that sentence will Dorc find a package-claim disjoint from
+another kind's fact and let an elision survive the wall. The spelling is load-bearing:
+a runtime emission in tail position means its *arrival* proves the body ran to completion
+(a dying `dpkg -L` means no sentence, no license, total wall), and its absence is simply
+rung one — informative, safer, never wrong.
+
 - Declared once by the owner; applied by the engine to EVERY footprint coordinate of that
   kind, whoever emitted it. The colleague's `sm.dorc.Package:nginx` now covers nginx's files
-  without the colleague learning anything.
-- Footprints only. A fact's backing stays the one cell its probe checks; reach only ever
-  *widens* a claim — the safe direction. Claiming too much walls too much; it never skips.
+  — and licenses survival past them — without the colleague learning anything.
+- Footprints only. A fact's backing stays the one cell its probe checks; the emissions only
+  ever *widen* a claim — the safe direction; claiming too much walls too much and never
+  skips. The `nothing-else` sentence is where this family's knife lives: written before the
+  definition is truly finished, it under-executes someone else's line.
 - One body serves both maturities: the `service` line is static (read at plan time, ships
   nothing); the `dpkg -L` line is a host question (runs read-only at probe time). The day
   a static line needs to become a question, it changes in place — same function, same file.
@@ -643,9 +664,12 @@ sm_dorc_Package__disturbance_reaches_only() {     # the package kind's owner (ST
   never an error. The hard failures in this whole family remain what they have always
   been: syntax, and declarations that genuinely contradict each other.
 
-- Spent: a line or two per kind, once, by its owner.
+- Spent: a few lines per kind, once, by its owner — and the finished-definition sentence
+  only where the owner has genuinely finished investigating (per case-arm, so coverage spreads
+  shape by shape).
 - Gained: composition — the moment two authors' work meets in one book, their claims cover
-  what they *meant*, not just what they typed.
+  what they *meant*, not just what they typed; and survival across vocabularies exists at
+  all.
 
 
 ### The residue, and the honest product statement
@@ -679,16 +703,19 @@ Count what must all be true, together, before it can bite:
    can't-tell, the line runs.
 4. Something mutative really ran upstream, between that measurement and this line. (No
    running wall ⇒ an ordinary stage-3 elision; nothing here is being trusted at all.)
-5. The running wall was *described* — its author made a clean at-most claim. An opaque wall,
-   a confused trace, a half-resolvable argparse: all collapse to a total wall, and everything
-   behind it runs or guards. Structural partiality cannot reach this corner; only a *clean*
-   claim can be wrong here. (This is the oracle's side of
-   `--risk-faultless-skips` - *both* players must *explicitly* buy-in to
-   unsoundness.)
-6. That clean claim was wrong in the one way no machine can see: complete-looking but
+5. The running wall was *described* — its author made a clean at-most claim — and, for a
+   fact in another vocabulary, the claimed kind's owner had *finished the definition*
+   (stage 7's `disturbs nothing-else`, reached). An opaque wall, a confused trace, a
+   half-resolvable argparse, an unfinished definition: all collapse to a total wall, and
+   everything behind it runs or guards. Structural partiality cannot reach this corner;
+   only *clean, finished* speech can be wrong here. (This is the oracle side of
+   `--risk-faultless-skips` — *every* player explicitly buys in.)
+6. That clean speech was wrong in the one way no machine can see: complete-looking but
    semantically incomplete. A `disturbs()` omitting a cell the tool really disturbs; a
-   `disturbance_reaches_only()` missing an edge; a `resolve()` splitting one referent into
-   two names. (The frame problem — permanent, not an implementation gap.)
+   `disturbs nothing-else` sentence written before its definition was truly finished; a
+   `resolve()` splitting one referent into two names. (A missing reach *edge* alone is
+   safe — unfinished merely walls; the danger requires the finished sentence. The frame
+   problem — permanent, not an implementation gap.)
 7. The canaries missed it. The coherence cross-check catches claims that contradict their own
    oracle's other statements, and the engine supplies the site's own coordinate outright —
    what remains is precisely the undetectable class.
@@ -734,7 +761,7 @@ stage    ran   verified   elided   attention-lines   spent
 4        1     1          5        4                 an hour, for everyone else's benefit
 5        1     1          5        4                 a disturbs() arm per verb (pays out on drifted days, not here)
 6        1     1          5        4                 a resolve() per owned kind (pays out where names collide)
-7        1     1          5        4                 a disturbance_reaches_only() per owned kind (pays out in other people's books)
+7        1     1          5        4                 a disturbance_reaches() + its finished-definition sentence per owned kind (pays out in other people's books)
 ```
 
 (Stages 6–7 deliberately do not move this book's numbers: their value shows where names
@@ -836,19 +863,6 @@ What recovery is *not*: there is no drift daemon, no fleet history, no stored su
 The receipt is not a cache and never feeds a decision; it exists so that one question —
 "why?" — always has an answer, at the moment you are angriest, with names on it. The plan
 is the promise; the why is the receipt.
-
-----
-
-STATUS (refreshed 2026-07-16): stages 5–7's mechanisms LANDED in the round-24 build
-(evidence ledger `Research/notes/24C`); the spellings above now show the block-settle RULED
-layer — bare munged `__role` names (`24M`), the `disturbs` family
-(`271:rul-at-most-family-names`), the `#selector` mark grammar (`277` §4), the flag's ruled
-name (`271:rul-flag-named-risk-faultless-skips`) — with fine detail still strawman-tier;
-the corpus-wide respell lands at `270:block-rebuild`. Nothing in stages 0–4 depends on
-5–7's outcome. Design-round records: `Research/notes/24G` (the kind-owner family);
-`plans/271` + `notes/277` (the ruled layer). Wrapped/contexted sites (sudo, chroot, netns)
-are deliberately absent from this walkthrough — their settled design is context-entry
-probing, `plans/27C`.
 
 
 Other usage-patterns
