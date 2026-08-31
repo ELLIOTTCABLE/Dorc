@@ -1139,6 +1139,7 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
         ("expect-why", "expected-why"),
         ("expect-hint", "expected-hint"),
         ("expect-why-chain", "expected-why-chain"),
+        ("expect-why-receipt", "expected-why-receipt"),
     ] {
         let items = loom_items(&spec.case, key);
         if !items.is_empty() {
@@ -1961,6 +1962,7 @@ fn run_round_trip(
     scan_why(name, &out.stderr, dir, &mut run.failures);
     scan_hint(name, &out.stderr, dir, &mut run.failures);
     scan_why_chain(harness, name, dir, &args, &framed_path, &mut run.failures);
+    scan_why_receipt(harness, name, dir, &args, &framed_path, &mut run.failures);
 
     let guard_violations = guard_shape_violations(&apply_art, &read_or_empty(&book));
     if !guard_violations.is_empty() {
@@ -2797,6 +2799,164 @@ fn scan_why_chain(
         "FAIL  {name}  [gate-8: why-chain needle(s) missing — fix the walker, or update expected-why-chain]\n{}",
         detail.trim_end()
     ));
+}
+
+/// gate-receipt: publish, then answer `dorc why` from what was published.
+///
+/// TWO INVOCATIONS over one store, which is the whole shape a receipt-rooted question needs and the
+/// one no single drive can make. It is not the round-trip drive's own profile: that one is
+/// suite-wide, so `--receipt-last` there would answer about whichever case published most recently.
+/// This gate owns a throwaway profile and does both drives into it, which makes the answer a fact
+/// about THIS case and nothing else.
+///
+/// The case declares only NEEDLES. Every cross-invocation law rides the declaration rather than
+/// being restated per case, because a law a case can forget to assert is a law nothing holds:
+/// `--all` is byte-identical to the default (it is DEPTH on a surface that already shows
+/// everything), `--json` is the same reconstruction and parses, an explicit `--receipt <file>` roots
+/// at the same document the store derived, an address whose file matches a recorded source resolves,
+/// and one whose file does not is refused INSIDE the answer.
+fn scan_why_receipt(
+    harness: &Harness,
+    name: &str,
+    dir: &Path,
+    args: &[String],
+    framed: &Path,
+    failures: &mut Vec<String>,
+) {
+    let decl = dir.join("expected-why-receipt");
+    if !nonempty_file(&decl) {
+        return;
+    }
+    let scratch = Scratch::new("receipt-why");
+    let profile = scratch.path.join("profile");
+    // The three role bases, as a real per-user profile has them: the write path creates the store
+    // beneath a base, never the base itself, so a profile whose roots do not exist publishes nothing
+    // and the gate below would read an empty store as a broken surface.
+    for role in ["config", "state", "home"] {
+        std::fs::create_dir_all(profile.join(role)).expect("create the gate's own profile");
+    }
+    let publish = capture(
+        why_receipt_command(harness, dir, &profile)
+            .arg(format!("--book={}", dir.join("book.sh").display()))
+            .args(args_reading_stdin_records(args))
+            .stdin(Stdio::from(std::fs::File::open(framed).expect("framed")))
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped()),
+    );
+    if publish.code != 0 {
+        failures.push(format!(
+            "FAIL  {name}  [gate-receipt: the publishing drive exited rc={} — a receipt-rooted question needs a receipt]\n{}",
+            publish.code, publish.stderr
+        ));
+        return;
+    }
+
+    let ask = |flags: &[&str]| -> Output {
+        capture(
+            why_receipt_command(harness, dir, &profile)
+                .arg("why")
+                .args(flags)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped()),
+        )
+    };
+    let rooted = ask(&[]);
+    if rooted.code != 0 || strip_trailing_newlines(&rooted.stdout).is_empty() {
+        failures.push(format!(
+            "FAIL  {name}  [gate-receipt: a bare `dorc why` over the store this case just published into answered nothing (rc={})]\n{}",
+            rooted.code, rooted.stderr
+        ));
+        return;
+    }
+    let rendered = strip_trailing_newlines(&strip_cr(&rooted.stdout));
+    let missing = needles_missing(&rendered, &decl);
+    if !missing.is_empty() {
+        let mut detail = String::new();
+        for pattern in &missing {
+            let _ = writeln!(detail, "      missing: {pattern}");
+        }
+        failures.push(format!(
+            "FAIL  {name}  [gate-receipt: needle(s) missing from the receipt-rooted why — fix the surface, or update expected-why-receipt]\n{}\n{}",
+            detail.trim_end(),
+            indent(&lines_of(&rendered).iter().map(|l| (*l).to_owned()).collect::<Vec<_>>())
+        ));
+    }
+
+    let deepest = strip_trailing_newlines(&strip_cr(&ask(&["--all"]).stdout));
+    if deepest != rendered {
+        failures.push(format!(
+            "FAIL  {name}  [gate-receipt: `--all` moved a byte — on this route it is a labelled synonym for the default, because the total surface has no shallower register to deepen from]\n{}",
+            divergence(&rendered, &deepest)
+        ));
+    }
+
+    let machine = ask(&["--json"]).stdout;
+    match dorc_lint::json::parse(machine.trim()) {
+        None => failures.push(format!(
+            "FAIL  {name}  [gate-receipt: `--json` did not parse as JSON]\n{machine}"
+        )),
+        Some(_) => {
+            if !machine.contains("\"state\":\"present\"") || !machine.contains("\"value\":null") {
+                failures.push(format!(
+                    "FAIL  {name}  [gate-receipt: `--json` carries only one of the two slot spellings — a withhold is an explicit marker, never an absent key]\n{machine}"
+                ));
+            }
+        }
+    }
+
+    match published_plan(&profile) {
+        None => failures.push(format!(
+            "FAIL  {name}  [gate-receipt: the publishing drive left no plan document in its own store]"
+        )),
+        Some(file) => {
+            let named = strip_trailing_newlines(&strip_cr(
+                &ask(&["--receipt", &file.display().to_string()]).stdout,
+            ));
+            if named != rendered {
+                failures.push(format!(
+                    "FAIL  {name}  [gate-receipt: `--receipt <file>` answered differently from the store's own derivation of the same document]\n{}",
+                    divergence(&rendered, &named)
+                ));
+            }
+        }
+    }
+
+    // THE ADDRESS, both directions. The case's own `book.sh` is the file the publish read, so its
+    // bytes match a recorded source by digest and the address places; a file the document never saw
+    // cannot, and the refusal is a row of the answer rather than a missing answer.
+    let placed = strip_trailing_newlines(&strip_cr(&ask(&["book.sh:2"]).stdout));
+    if !placed.contains("address ") {
+        failures.push(format!(
+            "FAIL  {name}  [gate-receipt: an address over the case's own book did not place — the digest match is what turns a named FILE into a recorded ordinal]\n{placed}"
+        ));
+    }
+    let refused = strip_trailing_newlines(&strip_cr(&ask(&["no-such-book.sh:2"]).stdout));
+    if !refused.contains("address-unplaceable") {
+        failures.push(format!(
+            "FAIL  {name}  [gate-receipt: an unplaceable address answered without saying so — a refusal that renders nothing is indistinguishable from one nobody asked]\n{refused}"
+        ));
+    }
+}
+
+/// One `dorc` invocation for the receipt gate, in a profile that gate alone writes into.
+fn why_receipt_command(harness: &Harness, dir: &Path, profile: &Path) -> Command {
+    let mut command = harness.dorc(dir);
+    sandbox::apply_roots_under(&mut command, profile);
+    command
+}
+
+/// The one plan document a gate-owned profile holds, if it holds one.
+fn published_plan(profile: &Path) -> Option<PathBuf> {
+    std::fs::read_dir(profile.join("state").join("dorc").join("receipts-v1"))
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("plan-v1-"))
+        })
 }
 
 /// The two-sided XFAIL pin: has an XFAIL case's current apply run-set drifted from the
@@ -3876,6 +4036,10 @@ fn main() {
             run_kept_stream_refusal(&harness)
         }));
     }
+    // The receipt-gate's own DISCOVERY FLOOR (`count-drifts`: non-empty, never a count). A gate
+    // nothing declares never fires, and a suite where the publish-then-why proof silently stopped
+    // running would exit green.
+    let mut declares_receipt_why = 0_usize;
     for loom in looms {
         match loom_spec(&loom) {
             Ok(None) => {}
@@ -3885,6 +4049,8 @@ fn main() {
                     "`{}` exists in both dir and loom form — a half-finished conversion runs the case twice under one filter name",
                     spec.name
                 );
+                declares_receipt_why +=
+                    usize::from(!loom_items(&spec.case, "expect-why-receipt").is_empty());
                 let harness = Arc::clone(&harness);
                 let spec = Arc::new(spec);
                 trials.push(Trial::test(spec.name.clone(), move || {
@@ -3901,6 +4067,7 @@ fn main() {
     }
     let mut real_fixtures: BTreeMap<String, PathBuf> = BTreeMap::new();
     for case in discovered {
+        declares_receipt_why += usize::from(nonempty_file(&case.dir.join("expected-why-receipt")));
         let harness = Arc::clone(&harness);
         match case.kind {
             E2eKind::RoundTrip => trials.push(Trial::test(case.name.clone(), move || {
@@ -3926,6 +4093,12 @@ fn main() {
                 }));
             }
         }
+    }
+    if declares_receipt_why == 0 {
+        eprintln!(
+            "FATAL  receipt-why floor: no case declares `expect-why-receipt` / `expected-why-receipt`, so the publish-then-why gate never fires and an empty proof would pass."
+        );
+        std::process::exit(3);
     }
     if let Ok(list) = std::env::var("DORC_E2E_REAL_TOOLS")
         && !list.is_empty()

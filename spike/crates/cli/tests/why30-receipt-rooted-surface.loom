@@ -1,0 +1,54 @@
+---
+run: round-trip
+fixpoint: executed
+expect-why-receipt:
+  - site 0
+  - Trusted
+  - foobar sync-certs
+why: 30V section 5 - the whole-product proof of the receipt-rooted why. One run publishes; a SECOND invocation reads that store back and renders the total surface over it, which is the one shape no single drive can demonstrate. The needles are recorded CONTENT (a site subject, what verification said, the site's own recorded shell) rather than registry words, because the words are unwritten by design and re-blessing them must never redden a case (prose-pins-live-where-the-prose-does). Every cross-invocation law - --all byte-identity, --json well-formedness, the explicit file root, both address directions - rides the declaration in the gate itself, so a case cannot forget to assert one.
+---
+-- book.sh --
+#!/bin/sh
+# One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
+# its intake ADMITTED records, and a framed stream with none is NoObservation.
+foobar sync-certs /etc/nginx/certs
+
+-- foobar.oracle.sh --
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+site 0 effect=holds rc=0
+
+-- replay --
+$ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=738f29c55418c875e1dd1d334eaf151764153d8fbeabd9187f3c85552d2a5106 sites=1 @@dorc@@\n'
+# site 0: dorc-auto:foobar@converged
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs) foobar status --certs-current -- "$1" ;;
+   *) return 2 ;;
+   esac
+}
+foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
+# its intake ADMITTED records, and a framed stream with none is NoObservation.
+# foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)

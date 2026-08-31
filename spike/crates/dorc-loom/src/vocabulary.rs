@@ -33,7 +33,7 @@ pub const DEFINING_KEYS_NOTE: &str = "a case declares exactly ONE of `code:` or 
 ///
 /// `todo` is the one deliberate exception and is why it is safe unread: it asserts nothing about
 /// the case, being an author's note about the case's own future.
-pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
+pub const FRONTMATTER_KEYS: [FrontmatterKey; 24] = [
     FrontmatterKey {
         name: "code",
         read_by: "the diagnostic code this case defines; keys its catalog row. On a whole-product \
@@ -143,6 +143,14 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 23] = [
     FrontmatterKey {
         name: "expect-why-chain",
         read_by: "e2e: free-text needles the numbered why-chain must carry",
+        run_lane: true,
+    },
+    FrontmatterKey {
+        name: "expect-why-receipt",
+        read_by: "e2e: free-text needles the RECEIPT-ROOTED `dorc why` must carry. Declaring it \
+                  arms a publish-then-why drive over a profile that gate alone writes, and the \
+                  register laws (--all byte-identity, --json well-formedness, the file root, the \
+                  address paths) ride it",
         run_lane: true,
     },
     FrontmatterKey {
