@@ -213,8 +213,8 @@ fn push_datum(
     encoder: &mut dyn ValueEncoder,
 ) {
     out.push_str("{\"subject\":");
-    // Rendered BEFORE the borrow the payload arm needs, because a subject may carry an address
-    // whose file leaves through the same encoder.
+    // Rendered before the payload arm.s borrow: a subject may carry an address whose file leaves
+    // through the same encoder.
     let subject = datum
         .subject()
         .value()

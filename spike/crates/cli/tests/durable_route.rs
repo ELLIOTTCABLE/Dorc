@@ -136,7 +136,7 @@ fn why(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> String {
 
 /// As [`why`], keeping BOTH streams.
 ///
-/// They carry different species: stdout is the recorded listing, and every report ABOUT the store
+/// They carry different species: stdout is the rendered surface, and every report ABOUT the store
 /// — unreadable, or a greatest order naming a cohort — is a typed diagnostic on stderr. A case
 /// asserting one cannot see the other, which is how the ambiguity seat went untested while its
 /// store primitive did not.
@@ -298,9 +298,8 @@ fn two_clean_profiles_mint_different_identities_and_reopening_one_preserves_them
     );
 
     plan(&first, &scratch);
-    // Both documents in this profile still verify under one keyset, which is what a REOPEN means:
-    // a run that replaced the material would leave the earlier document unreadable, and `why`
-    // would answer nothing rather than a surface.
+    // A REOPEN means both documents still verify under one keyset: replaced material would leave
+    // the earlier one unreadable, and `why` would answer nothing rather than a surface.
     assert!(
         !why(&first, &scratch, &["--receipt-last"]).is_empty(),
         "a second run in one profile must reopen the keyset it found, never replace it"
@@ -421,11 +420,9 @@ fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_re
         "and the outcome's own terminal state reaches the surface; got:\n{machine}"
     );
 
-    // THE FILE ROOT over a non-plan document, with `--receipts` doing its orthogonal job: the
-    // store the file was copied out of is still walked, so the outcome named by PATH reaches the
-    // intent it answers. A file root that could not see its siblings would answer about one
-    // document in isolation, which is the bounded-discovery half of
-    // `30R:receipt-rooted-attention-and-cli`.
+    // THE FILE ROOT over a non-plan document, with `--receipts` doing its orthogonal job: the store
+    // is still walked, so an outcome named by PATH reaches the intent it answers — the
+    // bounded-discovery half of `30R:receipt-rooted-attention-and-cli`.
     let outcome_file = store_root(&sandbox).join(outcomes.first().expect("one outcome"));
     let named = why(
         &sandbox,
@@ -650,10 +647,9 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
     // THE AMBIGUITY SEAT, through the shipped binary. The store's ONE selection is its
     // maximum-order cohort, and its order is when the run was recorded — so two runs recorded at
     // one moment are a store that genuinely cannot say which of them is last. What must happen is
-    // that it SAYS so and explains NOTHING: a tie-break on receipt identity would choose a document
-    // by the value least related to when it was written, and answering about both would be the
-    // whole-store union `30R:receipt-rooted-attention-and-cli` refuses — the surface is ROOTED at
-    // one document, so a cohort is not something it can be rooted at.
+    // that it SAYS so and explains NOTHING: a tie-break would pick by the value least related to
+    // when a document was written, and answering about both would be the whole-store union
+    // `30R:receipt-rooted-attention-and-cli` refuses. A cohort is not something a surface roots at.
     let sandbox = ProfileSandbox::new("ambiguous-last");
     let scratch = Scratch::new("ambiguous-last");
     plan_at(&sandbox, &scratch, Some(ONE_MOMENT_MS));

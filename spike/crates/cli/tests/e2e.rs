@@ -2829,9 +2829,8 @@ fn scan_why_receipt(
     }
     let scratch = Scratch::new("receipt-why");
     let profile = scratch.path.join("profile");
-    // The three role bases, as a real per-user profile has them: the write path creates the store
-    // beneath a base, never the base itself, so a profile whose roots do not exist publishes nothing
-    // and the gate below would read an empty store as a broken surface.
+    // The three role bases: the write path creates the store beneath a base and never the base
+    // itself, so a profile whose roots do not exist publishes nothing.
     for role in ["config", "state", "home"] {
         std::fs::create_dir_all(profile.join(role)).expect("create the gate's own profile");
     }
@@ -2922,9 +2921,8 @@ fn scan_why_receipt(
         }
     }
 
-    // THE ADDRESS, both directions. The case's own `book.sh` is the file the publish read, so its
-    // bytes match a recorded source by digest and the address places; a file the document never saw
-    // cannot, and the refusal is a row of the answer rather than a missing answer.
+    // THE ADDRESS, both directions: the case.s own book places (the publish read it), and a file the
+    // document never saw cannot — a row of the answer rather than a missing answer.
     let placed = strip_trailing_newlines(&strip_cr(&ask(&["book.sh:4"]).stdout));
     if !placed.contains("book.sh:4") || placed.contains("address-unplaceable") {
         failures.push(format!(
@@ -4036,9 +4034,8 @@ fn main() {
             run_kept_stream_refusal(&harness)
         }));
     }
-    // The receipt-gate's own DISCOVERY FLOOR (`count-drifts`: non-empty, never a count). A gate
-    // nothing declares never fires, and a suite where the publish-then-why proof silently stopped
-    // running would exit green.
+    // The receipt gate.s DISCOVERY FLOOR (`count-drifts`: non-empty, never a count). A gate nothing
+    // declares never fires, and a suite whose proof stopped running would exit green.
     let mut declares_receipt_why = 0_usize;
     for loom in looms {
         match loom_spec(&loom) {

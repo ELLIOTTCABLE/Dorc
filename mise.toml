@@ -541,6 +541,12 @@ raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- prose-census"
 
+[tasks."prose:orphans"]
+description = "INSTRUMENT, never a gate: arrangement-lock rows no living source declares — no case's frontmatter edits them and no seat's literal renders them. Report-only, sorted and comparable, and it REAPS NOTHING (`doctor-inventories-never-reaps`): removing a user-facing string is a conductor decision, and a red gate would make deleting one the shortest path."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- arrangement-census"
+
 [tasks."spine:baseline"]
 description = "MIGRATION SCAFFOLDING, BUILD-TO-KILL (309 §4): freeze the decision-state smoke-diff baseline over the committed corpus — site-keyed dispositions, guard bindings, custody, survival witnesses, digest. Frozen ONCE at the base commit and re-taken after the Spine lands; the DIFF is a review tool for the fold sitting, never an acceptance gate. The destination is `DORC_SPINE_DUMP=<path>` in the environment — NOT a trailing arg, which libtest would read as a case filter and silently run nothing. Unset, the walk still runs and asserts its floor."
 raw = true

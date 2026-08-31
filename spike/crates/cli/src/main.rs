@@ -701,8 +701,7 @@ fn rooted_reading(
     let siblings = dorc_cli::recorded::siblings_of(graph, &document);
     let closure = graph.closure_from(&document);
     let correlations = dorc_cli::recorded::correlations_of(graph, closure.documents());
-    // Both established by the READ rather than assumed: the document came back inside the
-    // local-authentication envelope, and it came back at all only because its region validated.
+    // Both established by the READ: the local-authentication envelope, and a region that validated.
     let authentication = AuthenticationState::Trusted;
     let detail = DetailState::Available;
     let order_spelled = (chosen.order != dorc_receipt::order::ReceiptOrderToken::UNDATED)

@@ -109,19 +109,19 @@ outcome's `terminal` · `site_count` · the intent it answers. All seven come fr
 were opened. Every plan-shaped family still answers `CarrierGap` there — honestly, and for a
 different reason than on a plan root: the report model does not cover the species at all.
 
-Genuine NON-family holes, which no projection closes:
+Genuine NON-family holes:
 
-- **`30Vd:fnd-addresses-cannot-be-spelled-file-line`** — `30V` §2's minimum address is `file.sh:N`
-  and NEITHER half is derivable. A source's PATH has no exit (the raw-detail accessor is
-  crate-private by design, and the encoder exit is display-lossy and capped); the byte-offset-to-line
-  map is crate-private too. `LocusAddress` therefore carries ordinal-and-span, which is what is
-  true. Closing this is a report-API question about a path-class projection, not a durable one.
-- **`30Vd:fnd-nee-state-is-not-derivable`** — `30V` §3's `né <oldline>` moved-line state cannot be
-  minted: the address rule refuses moved-line matching outright, so nothing could produce it.
-  `SourceAgreement` carries three honest states and no fourth.
-- **`30Vd:fnd-current-source-is-user-named-only`** — with no path exit, the edge cannot open a
-  recorded source to compare it. The production route must resolve the ordinal by DIGEST over a file
-  the user named, with a typed refusal when no recorded source matches. STILL OWED (item 1 below).
+- **`30Vd:fnd-addresses-cannot-be-spelled-file-line`** — CLOSED by the source-comparison packet. Both
+  halves of `30V` §2's minimum address now arrive at the one seat: the recorded PATH through
+  `visit_for_comparison`, the LINE by counting the seat's offset map to the span's start.
+  Ordinal-and-span survives as the fallback where a source's content is not held.
+- **`30Vd:fnd-nee-state-is-not-derivable`** — STANDS. `30V` §3's `né <oldline>` moved-line state
+  cannot be minted: the correspondence rule refuses moved-line matching outright, so nothing could
+  produce it. `SourceAgreement` carries three honest states and no fourth.
+- **`30Vd:fnd-current-source-is-user-named-only`** — CLOSED, and the closure inverted it: an
+  authenticated receipt's own paths are read without the user naming anything. A user-named file
+  stays the route for imported or self-asserted material, which is the packet's asymmetry rather
+  than a workaround for a missing exit.
 
 ## label-vocabulary-as-minted
 
@@ -194,6 +194,11 @@ are unminted because those are `StateFact` PAYLOADS (values), not labels.
   (`absent-run-held-no-value`, …) are their own no-wildcard match (`why_total::absence_word`) beside
   the registry-slug one (`absence_slug`). Deriving one from the other would couple a wire word to a
   render slug's spelling; both being no-wildcard is what stops them drifting.
+- **`30Vd:res-addresses-echo-the-recorded-path`** — an address now renders the path the RUN recorded,
+  which on an ordinary invocation is absolute. That is the honest namespace (it is where the run
+  found the file) and it is why no committed transcript may carry one: the e2e receipt gate asserts
+  over live output and commits nothing (`282` §7 refuses a machine-specific path in a transcript).
+  Rendering it relative to anything would be a second correspondence rule at a render seat.
 
 ## the-production-route-as-built
 
@@ -218,12 +223,11 @@ are unminted because those are `StateFact` PAYLOADS (values), not labels.
   the header's own `species` line refuses the wrong one, so this ASKS the document rather than
   trusting a filename. `--receipts` stays orthogonal: where a store opens, its walk goes into the
   same graph, so a named outcome still reaches the intent it answers.
-- **The address is DIGEST-matched.** `named_address` parses `<file>:<line>` (splitting at the LAST
-  colon, so a Windows drive letter survives), reads the named file under `source_content_bytes`, and
-  the pure seat matches its `book_digest` against the recorded source table to get an ordinal. Three
-  refusals, each its own word, each rendered as a datum: `NotAFileAndLine`,
-  `CurrentSourceUnreadable`, `NoRecordedSourceMatches`. `LocusAddress` still carries
-  ordinal-and-span; the `file.sh:N` question is untouched.
+- **The address is placed by the ONE comparison seat** (below). `named_address` parses
+  `<file>:<line>` (splitting at the LAST colon, so a Windows drive letter survives) and reads the
+  named file under `source_content_bytes`; everything after that is the seat's. Three refusals, each
+  its own word, each rendered as a datum: `NotAFileAndLine`, `CurrentSourceUnreadable`,
+  `NoRecordedSourceMatches`.
 - **`--json` is parsed** and refused where nothing would emit it: outside `dorc why`
   (`cli-flag-requires-mode`) and beside `--results`, which selects the live route
   (`cli-flags-mutually-exclusive`). `--all` on this route is a labelled synonym for the default,
@@ -231,6 +235,44 @@ are unminted because those are `StateFact` PAYLOADS (values), not labels.
 - **`cli/src/recorded.rs` still names `Reingested`** — the shallow non-plan fill takes the sealed
   wrapper by reference — so entry 2 of `MAY_NAME_THE_READ_BACK_WRAPPER` stays true and no entry was
   added or removed. `why_total.rs` and `why_json.rs` name it nowhere.
+
+### the-source-comparison-seat
+
+Landed on an opaque packet delivered mid-lane, which resolved the `file.sh:N` question and
+authorized the one receipt-crate addition it names. The split it rules:
+
+- **`dorc-receipt` releases, and compares nothing.** `RecordedWhyFacts::source_material()` answers a
+  `RecordedSourceMaterial`, whose `visit_for_comparison(&mut dyn SourceComparisonConsumer)` hands one
+  `SourceComparison` per recorded source: exact recorded PATH bytes, identity/digest/length, exact
+  recorded content where held, the authored PLACEMENTS naming it, the document's authentication
+  state, and a `line_starts` OFFSET map. Source-specific, never a generic raw-detail accessor; every
+  byte-carrying member is a sealed `RecordedValue` whose one exit is a `ValueEncoder`, and nothing
+  gains `Display`, a revealing `Debug`, or serde. `SourceFacts::path_text` is crate-private and the
+  visit is its only exit.
+- **`cli/src/source_comparison.rs` is the seat, and the only one.** It owns platform-aware path
+  rehydration, the bounded non-following regular-file read, exact current-vs-recorded path and
+  content comparison, the correspondence rule, and the line map's use. Its
+  `FilesystemBytes` encoder is a SECOND destination, not a second display seat: a path about to be
+  opened and a path about to be shown are different sinks, and it refuses every class but a path and
+  every non-UTF-8 spelling.
+- **The authentication asymmetry.** For `AuthenticationState::Trusted` material the seat rehydrates
+  the recorded path and reads it UNASKED, so `dorc why` now compares a run's own sources with no
+  file named. For anything else it opens nothing a receipt named; a user-named file is still
+  compared, because that path was typed rather than supplied by somebody's document.
+- **Correspondence: exact path, then exact content.** The path rule is `30R`'s own (the same physical
+  path in the current and recorded book); the content rule identifies the same file under a
+  different spelling. Both exact. There is no nearest-match and no moved-file search.
+- **`file.sh:N` LANDED.** `LocusAddress` gains `line: Known<u32>`, counted over the seat's line map
+  to the span's start, and the recorded path travels beside the population in
+  `dorc_why::ComparedSources` (a sealed value has no equality, and an address stays `Eq`). Both
+  surfaces spell `<path>:<line>` where the seat supplied both halves and fall back to
+  ordinal-and-span where it did not — a `dorc-lang` source holds no content, so it has no lines to
+  count and the address says so rather than inventing one.
+- **The enumeration hygiene the packet asked for** is `crate_boundary.rs`'s
+  `the_source_comparison_seat_is_the_only_one`: a two-way lexical roster over implementors and call
+  sites, because Rust cannot say "one implementation" about a public trait. Minted at explicit human
+  direction rather than by reflex, which is the whole of what
+  `lexical-fences-are-human-ack-instruments` asks.
 
 ### the e2e proof
 
@@ -255,8 +297,21 @@ is needle-shaped rather than golden-shaped.
 
 ### the orphan-arrangement census
 
-`30Rk:the-arrangement-mirror-is-its-own-lock` — WITHHELD pending a human ruling on
-`lexical-fences-are-human-ack-instruments` grounds. Do not build it.
+`30Rk:the-arrangement-mirror-is-its-own-lock` — BUILT, as `mise run prose:orphans`
+(`internal-tooling`'s `arrangement-census`), after the human sharpened the lexical ruling: the rule
+targets grep-gates standing in for TYPECHECKING, and an arrangement slug is declared in inherently
+textual material — a case's frontmatter, or a literal at the seat that renders it — so scanning text
+is what asking the question looks like.
+
+An INSTRUMENT, never a gate, on `doctor-inventories-never-reaps`'s footing and for a sharper reason:
+a red gate would make "delete the row" the shortest agent path, and removing a user-facing string is
+a conductor-at-least decision. It prints, sorted, and stops.
+
+What it finds today — five rows nobody declares, every one a render that went out with the retired
+durable, all awaiting a conductor's word rather than a builder's delete:
+
+`syntax-unsupported-source-of-dynamic-target` · `why-drift-address-unanswerable` ·
+`why-drift-analysis-suppressed` · `why-receipt-plan-tally-unsplit` · `why-receipt-when-replayed`
 
 ## golden-churn, as inspected
 
@@ -303,18 +358,31 @@ ever drove the receipt route — the corpus's only `dorc why` drive is gate-8's 
 - **`tc-file-root-order-comes-from-the-name`** — a receipt named by `--receipt <file>` takes its store
   ORDER from the filename, and a file renamed out of the store's grammar is refused
   (`receipt-file-unnamed`) rather than dated UNDATED. The document carries its own order and the read
-  surface has no exit for it; adding one is a receipt-crate accessor, which is past the shallow-fill
-  boundary this lane was fenced to. Conductor call: widen the read surface, or keep the refusal.
+  surface has no exit for it; adding one is a receipt-crate accessor, which is past the boundary this
+  lane was fenced to. Conductor call: widen the read surface, or keep the refusal.
+- **`tc-correspondence-falls-back-to-content`** — the seat matches a user-named file by exact
+  recorded PATH first and exact recorded CONTENT second. The path rule is `30R`'s own; the content
+  rule is a correspondence POLICY this seat now owns, and it is what lets a user who is standing in
+  a different directory name the same file. Both are exact and neither guesses about movement, but
+  the second is a choice rather than a ruling, and the packet puts future correspondence policy at
+  this seat — so it is flagged rather than assumed.
 
 ## still-owed, named
 
-- **`30Vd:fnd-addresses-cannot-be-spelled-file-line`**, **`-nee-state-is-not-derivable`** — unchanged;
-  both are report-API questions and neither was touched.
-- **`30Vd:fnd-current-source-is-user-named-only`** — DISCHARGED as far as this route can take it: the
-  ordinal resolves by digest over the file the user named. Its consequence is now visible, and it is
-  sharper than the finding predicted: a book whose bytes have DRIFTED matches no recorded digest, so
-  `AddressResolution::ChangedLine` and `ComparisonUnavailable` are unreachable from production even
-  though the report API models them (`recorded_facts_route.rs` drives them directly). Closing that
-  needs a path-class projection, which is the first finding above.
 - **`dorc-loom`'s usage text** still offers `whylog-unwritten` as its example case slug, which names
   no case any more. It is user-facing prose, so a builder may not rewrite it — conductor's.
+- **The authentication ASYMMETRY is unwitnessed end-to-end.** The production edge answers
+  `AuthenticationState::Trusted` for every read it can make — the local-authentication envelope is
+  what a successful read produces — so `SelfAsserted` and `Failed` material cannot be manufactured
+  from outside `dorc-receipt` and the no-implicit-read half of the rule has no case driving it. The
+  rule is implemented and its two branches are one `match` apart; what is missing is a world that
+  reaches the second. Closing it needs an imported-receipt route, which nothing has yet.
+- **The non-following read is unwitnessed too**, for the same reason: arranging a symlink AT a
+  recorded path needs a run whose book was one.
+- **The seat's stat-then-open window** is disclosed at its own module header
+  (`churn-avoidance-disclosure`): a path replaced between the two syscalls is read as whatever
+  replaced it. Bounded — a wrong comparison answer, never an action — and closing it wants an
+  open-then-fstat handle this edge does not have.
+- **`crates/cli/CLAUDE.md` and `crates/why/CLAUDE.md` have no rule for the comparison seat yet.** The
+  invariants worth siting there: the one-seat split, the two-destination encoder rule, and the
+  authentication asymmetry. Conductor-managed files, so this ledger holds them until then.

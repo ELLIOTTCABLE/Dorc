@@ -1130,9 +1130,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         (receipt_last, "--receipt-last"),
         (receipt_id.is_some(), "--receipt-id"),
         (receipt_file.is_some(), "--receipt"),
-        // `--json` joins them because it names a REGISTER of the receipt-rooted surface; a plan or
-        // apply run has no such register, and accepting the flag there would be an assertion the
-        // admin only believes they made.
+        // A REGISTER of the receipt-rooted surface: a plan or apply run has none, so accepting the
+        // flag there would be an assertion the admin only believes they made.
         (json, "--json"),
     ] {
         if present && mode != Mode::Why {
@@ -1167,10 +1166,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             "--receipt-last",
             receipt_last,
         ),
-        // `--json` is a register of the RECEIPT-rooted surface, and naming records selects the live
-        // route instead — so the two together are a machine format nothing would emit. Refused
-        // rather than ignored: a flag that quietly does nothing is an assertion its author only
-        // believes they made.
+        // Naming records selects the LIVE route, which emits no machine register — so the pair is a
+        // format nothing would print. Refused rather than quietly ignored.
         ("--json", json, "--results", results.is_some()),
     ] {
         if first_present && second_present {

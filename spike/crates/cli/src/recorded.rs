@@ -13,11 +13,12 @@
 //!
 //! # The two-pass address
 //!
-//! An address names a FILE and the model names an ORDINAL, and the only bridge is the recorded
-//! content digest (`30Vd:fnd-current-source-is-user-named-only`: a recorded source has no path
-//! exit). So the reading derives the model once to see the source table, matches the bytes the edge
-//! read, and derives it again with the address bound. Pure both times — the edge's only act was
-//! opening the file the user named.
+//! An address names a FILE and the model names an ORDINAL, and joining them is the ONE comparison
+//! seat's (`source_comparison`): it walks the document's recorded sources through
+//! `RecordedSourceMaterial`'s visit and answers by exact recorded PATH, then by exact recorded
+//! CONTENT. So the reading derives the model once to hand the seat a source table, and derives it
+//! again with what the seat established bound in. Pure both times — every filesystem act is the
+//! seat's, and every policy decision with it.
 
 use dorc_receipt::apply::RecordedApplyIntent;
 use dorc_receipt::graph::{GraphFinding, ReceiptEdge, ReceiptGraph};
@@ -119,10 +120,8 @@ impl RootedReading {
     pub fn reconstruct(self) -> Reconstruction {
         match self.root {
             ReadRoot::Plan(root) => {
-                // The FIRST derivation exists to hand the comparison seat a source table to walk;
-                // the second binds what the seat established. Two passes rather than one because
-                // the model names ordinals and a question names a FILE, and only the seat can join
-                // them (`the-two-pass-address` above).
+                // Two passes, for the reason `the-two-pass-address` above gives: the first hands
+                // the seat a source table, the second binds what it established.
                 let survey = facts_for(&root, self.siblings.clone(), Vec::new(), None);
                 let outcome = compare_sources(&survey.source_material(), self.address.named_file());
                 let compared = match self.address.standing() {
@@ -137,9 +136,8 @@ impl RootedReading {
                 let facts = facts_for(&root, self.siblings, outcome.observations, outcome.address);
                 reconstruct(&Rooted::Plan(&facts), &compared)
             }
-            // A non-plan root carries no recorded source table, so an address that named a file has
-            // nothing to match against — the same word as a plan root whose sources it missed,
-            // because the reader's position is the same: nothing places it.
+            // A non-plan root carries no recorded source table, so a named file has nothing to
+            // match against — the same word a plan root uses when its sources missed.
             ReadRoot::OtherSpecies(root) => {
                 let standing = match self.address {
                     AddressAsk::Unasked => AddressStanding::AsRecorded,

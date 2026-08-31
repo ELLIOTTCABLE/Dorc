@@ -87,9 +87,8 @@ pub fn compare_sources(
     let address = seat
         .placed
         .and_then(|ordinal| named.map(|named| RequestedAddress::of(ordinal, named.line)));
-    // An address the walk could not place is a fact about the QUESTION, and it is the only thing
-    // this seat can say about one: no nearest-match, no moved-file search, because either would
-    // answer confidently about a file the author moved.
+    // An address nothing placed is a fact about the QUESTION. No nearest-match and no moved-file
+    // search: either would answer confidently about a file the author moved.
     let standing = match (named, address) {
         (Some(_), None) => {
             AddressStanding::Unplaceable(UnplaceableAddress::NoRecordedSourceMatches)
@@ -116,9 +115,8 @@ impl SourceComparisonConsumer for SourceComparisonSeat<'_> {
         let ordinal = source.ordinal();
         let recorded_path = source.path().and_then(exact_path);
 
-        // The NAMING, for `file.sh:N`. It rides the recorded path and the recorded line map, so a
-        // source whose content the document does not carry contributes no line map and its
-        // addresses keep the honest ordinal-and-span fallback.
+        // The NAMING, for `file.sh:N`. A source whose content the document does not carry
+        // contributes no line map, and its addresses keep the ordinal-and-span fallback.
         if let Some(file) = source.path().cloned() {
             self.naming.push(NamedSource {
                 source: SourceRef::of(ordinal),
@@ -127,10 +125,9 @@ impl SourceComparisonConsumer for SourceComparisonSeat<'_> {
             });
         }
 
-        // WHICH source the question named. Exact recorded PATH first — that is
-        // `30R:receipt-rooted-attention-and-cli`'s own rule, the same physical path in the current
-        // and recorded book — and exact recorded CONTENT second, which identifies the same file
-        // under a different spelling without guessing that anything moved.
+        // WHICH source the question named: exact recorded PATH first (`30R`.s own rule, the same
+        // physical path in both books), exact recorded CONTENT second, which finds the same file
+        // under a different spelling without guessing anything moved.
         let named = self.named.filter(|named| {
             recorded_path.as_deref() == Some(named.path.as_str())
                 || source.digest() == dorc_plan::invocation::book_digest(&lossy(&named.bytes))
@@ -142,8 +139,7 @@ impl SourceComparisonConsumer for SourceComparisonSeat<'_> {
         let reading = match named {
             Some(named) => CurrentSourceReading::Read(named.bytes.clone()),
             // The asymmetry: a receipt-provided path is followed only for material this controller
-            // authenticated. Anything else is a path somebody else's document supplied, and this
-            // process does not open one of those unprompted.
+            // authenticated. This process opens nobody else.s document.s path unprompted.
             None if source.authentication() == AuthenticationState::Trusted => recorded_path
                 .as_deref()
                 .map_or(CurrentSourceReading::NotLookedFor, read_regular_file),
@@ -195,8 +191,7 @@ fn read_regular_file(path: &str) -> CurrentSourceReading {
     let path = PathBuf::from(path);
     match std::fs::symlink_metadata(&path) {
         Err(_) => return CurrentSourceReading::Absent,
-        // A symlink, a directory, or a device is not a source this seat reads. `symlink_metadata`
-        // does not follow, so `is_file` here means the NAME itself is a regular file.
+        // `symlink_metadata` does not follow, so `is_file` here means the NAME is a regular file.
         Ok(meta) if !meta.is_file() => return CurrentSourceReading::Unreadable,
         Ok(_) => {}
     }
@@ -212,8 +207,7 @@ fn read_regular_file(path: &str) -> CurrentSourceReading {
     {
         return CurrentSourceReading::Unreadable;
     }
-    // Refused rather than truncated: the comparison is byte-exact, and a prefix compared against a
-    // whole would read as drift.
+    // Refused rather than truncated: a prefix compared against a whole would read as drift.
     if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > cap {
         return CurrentSourceReading::Unreadable;
     }

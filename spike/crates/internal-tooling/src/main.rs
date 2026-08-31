@@ -7,6 +7,7 @@
 
 use std::process::ExitCode;
 
+mod arrangement_census;
 mod bless;
 mod coverage;
 mod docids;
@@ -33,6 +34,7 @@ fn main() -> ExitCode {
         ),
         Some("coverage") => coverage::run(args.get(1..).unwrap_or_default()),
         Some("prose-census") => prose_census::run(),
+        Some("arrangement-census") => arrangement_census::run(),
         Some("bless") => bless::run(args.get(1..).unwrap_or_default()),
         Some("livetest") => livetest::run(args.get(1..).unwrap_or_default()),
         Some("baselines") => livetest::baselines(args.get(1..).unwrap_or_default()),
