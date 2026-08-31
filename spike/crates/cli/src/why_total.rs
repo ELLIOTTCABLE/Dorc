@@ -103,7 +103,7 @@ impl Coverage {
         &self.excluded
     }
 
-    fn saw(&mut self, datum: DatumId) {
+    pub(crate) fn saw(&mut self, datum: DatumId) {
         self.reached.push(datum);
     }
 }
@@ -333,12 +333,21 @@ fn datum_row(ctx: &RenderCtx<'_>, datum: &Datum, encoder: &mut dyn ValueEncoder)
 }
 
 /// One wrapped slot: the value, or the registry word for the absence it came back as.
+fn known_said<T>(known: &Known<T>, present: impl FnOnce(&T) -> Said) -> Said {
+    match known.value() {
+        Some(value) => present(value),
+        None => Said::words(absence_slug(known), &[]),
+    }
+}
+
+/// Which absence a wrapped slot came back as, as the registry row naming it.
 ///
 /// Total over BOTH wrappers and no-wildcard, so every state `30V` §3 separates has its own word
-/// here. Collapsing any pair would let a bound that fired read as a run that held no value.
-fn known_said<T>(known: &Known<T>, present: impl FnOnce(&T) -> Said) -> Said {
-    let slug = match known {
-        Known::Knowable(Held::Present(value)) => return present(value),
+/// here. Collapsing any pair would let a bound that fired read as a run that held no value. Its
+/// machine twin is [`absence_word`], and both being no-wildcard is what stops them drifting.
+fn absence_slug<T>(known: &Known<T>) -> &'static str {
+    match known {
+        Known::Knowable(Held::Present(_)) => "why-total-present",
         Known::Knowable(Held::AbsentFromCarrier(absence)) => match absence {
             CarrierAbsence::RunHeldNoValue => "why-total-absent-run-held-no-value",
             CarrierAbsence::ProjectionUncollected => "why-total-absent-projection-uncollected",
@@ -356,8 +365,35 @@ fn known_said<T>(known: &Known<T>, present: impl FnOnce(&T) -> Said) -> Said {
         },
         Known::KnowableNYI => "why-total-not-yet-piped",
         Known::Unknowable => "why-total-unknowable",
-    };
-    Said::words(slug, &[])
+    }
+}
+
+/// The same answer as one MACHINE word, or `None` where the slot holds a value.
+///
+/// Its own no-wildcard match rather than a transformation of [`absence_slug`]: the machine surface's
+/// vocabulary is hardcoded and out of the registry (`30V` §5), so deriving one from the other would
+/// couple a wire word to a render slug's spelling.
+pub(crate) const fn absence_word<T>(known: &Known<T>) -> Option<&'static str> {
+    Some(match known {
+        Known::Knowable(Held::Present(_)) => return None,
+        Known::Knowable(Held::AbsentFromCarrier(absence)) => match absence {
+            CarrierAbsence::RunHeldNoValue => "absent-run-held-no-value",
+            CarrierAbsence::ProjectionUncollected => "absent-projection-uncollected",
+            CarrierAbsence::ReportApiLacks => "absent-report-api-lacks",
+        },
+        Known::Knowable(Held::Withheld(reason)) => match reason {
+            WithholdReason::PlainProjection => "withheld-plain",
+            WithholdReason::BoundRefused => "withheld-bound",
+            WithholdReason::RegionUnavailable => "withheld-region",
+            WithholdReason::EncoderGated => "withheld-encoder",
+        },
+        Known::Knowable(Held::CouldNotTell(cause)) => match cause {
+            CantTell::ComparisonNotMade => "cant-tell-no-comparison",
+            CantTell::Truncated => "cant-tell-truncated",
+        },
+        Known::KnowableNYI => "not-yet-piped",
+        Known::Unknowable => "unknowable",
+    })
 }
 
 /// Who spoke, in what act. The verb comes from the ONE seat that renders a [`SpeechAct`]
@@ -411,7 +447,7 @@ fn role_said(role: &CarrierRole) -> Said {
 }
 
 /// What a datum is about, in the identities the document itself numbers.
-fn subject_text(subject: &Subject) -> String {
+pub(crate) fn subject_text(subject: &Subject) -> String {
     match subject {
         Subject::Site(site) => format!("site {}", site_text(*site)),
         Subject::Source(source) => format!("source {}", source.get()),
@@ -427,7 +463,7 @@ fn subject_text(subject: &Subject) -> String {
 
 /// A site, with the in-loop member index where it has one — two same-command sites never collapse
 /// (`inv-site-keyed-results`).
-fn site_text(site: RecordedSite) -> String {
+pub(crate) fn site_text(site: RecordedSite) -> String {
     match site.member() {
         Some(member) => format!("{}.{}", site.leaf().get(), member.get()),
         None => site.leaf().get().to_string(),
@@ -465,7 +501,7 @@ fn text_of(value: &RecordedValue, encoder: &mut dyn ValueEncoder) -> String {
     value.render(encoder)
 }
 
-fn identity_text(identity: &IdentityFact) -> String {
+pub(crate) fn identity_text(identity: &IdentityFact) -> String {
     match identity {
         IdentityFact::Document(document) => document.hex(),
         IdentityFact::Species(species) => species.token().to_owned(),
@@ -488,7 +524,7 @@ fn identity_text(identity: &IdentityFact) -> String {
 /// token, and a token minted here would be user-facing prose a builder authored
 /// (`error-authorship-tier`). The interim spelling is machine-shaped and greppable, and the settled
 /// register replaces it (`30V` §7).
-fn state_text(state: StateFact) -> String {
+pub(crate) fn state_text(state: StateFact) -> String {
     match state {
         StateFact::Authentication(value) => format!("{value:?}"),
         StateFact::Projection(value) => format!("{value:?}"),
@@ -499,7 +535,7 @@ fn state_text(state: StateFact) -> String {
     }
 }
 
-fn correlation_text(correlation: &CorrelationFact) -> String {
+pub(crate) fn correlation_text(correlation: &CorrelationFact) -> String {
     match correlation {
         CorrelationFact::PlanToIntent { plan, intent } => {
             format!("{} {}", plan.hex(), intent.hex())
@@ -512,7 +548,7 @@ fn correlation_text(correlation: &CorrelationFact) -> String {
 }
 
 /// One word of a recorded closed vocabulary, in the document's own spelling.
-fn token_text(token: RecordedToken) -> String {
+pub(crate) fn token_text(token: RecordedToken) -> String {
     match token {
         RecordedToken::AdmissionOutcome(value) => value.token().to_owned(),
         RecordedToken::LoadOutcome(value) => value.token().to_owned(),
@@ -527,7 +563,7 @@ fn token_text(token: RecordedToken) -> String {
 }
 
 /// One named predicate and its answer, keyed by the grammar's own field name.
-fn flag_text(flag: RecordedFlag) -> String {
+pub(crate) fn flag_text(flag: RecordedFlag) -> String {
     let (name, value) = match flag {
         RecordedFlag::VerdictLane(value) => ("verdict-lane", value),
         RecordedFlag::Invalidator(value) => ("invalidator", value),
@@ -538,7 +574,7 @@ fn flag_text(flag: RecordedFlag) -> String {
 }
 
 /// One locus of the provenance DAG.
-fn locus_text(locus: &dorc_why::Locus) -> String {
+pub(crate) fn locus_text(locus: &dorc_why::Locus) -> String {
     format!(
         "{} {} {:?} {:?} {:?}",
         site_text(locus.site),

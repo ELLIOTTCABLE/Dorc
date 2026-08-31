@@ -20,6 +20,7 @@ use std::process::Command;
 use dorc_aid::RenderCtx;
 use dorc_cli::durable::{LocalReceiptEdgeV1, NamedSpecies, NativeIo, ReadEdge};
 use dorc_cli::recorded_facts::{ObservedSource, SelectedRoot, facts_for};
+use dorc_cli::why_json::{JsonValues, why_json};
 use dorc_cli::why_total::{TerminalValues, why_total};
 use dorc_receipt::graph::ReceiptGraph;
 use dorc_receipt::ids::PlanReceiptId;
@@ -382,4 +383,54 @@ fn one_reconstruction_renders_identically_every_time() {
         .text();
     assert_eq!(first, second);
     assert!(!first.is_empty());
+}
+
+/// The `--json` sibling: the SAME reconstruction, well-formed, and total over the same population.
+///
+/// Parsed back through the workspace's own JSON reader rather than string-matched, because "the
+/// bytes contain a brace" is not well-formedness. Version-unstable by open contract, which is why
+/// the envelope names itself and nothing here pins a schema.
+#[test]
+fn the_json_sibling_is_well_formed_and_reaches_every_datum() {
+    let sandbox = ProfileSandbox::new("total-json");
+    let scratch = Scratch::new("total-json");
+    publish(&sandbox, &scratch);
+
+    let (edge, mut io) = reopen(&sandbox);
+    let open = edge.open_for_read(&mut io).expect("the store reopens");
+    let roots = selected_roots(&open, &mut io);
+    let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+
+    let (text, coverage) = why_json(&reconstruction, &mut JsonValues::default());
+
+    let parsed = dorc_lint::json::parse(&text).expect("the envelope parses as JSON");
+    let dorc_lint::json::Json::Obj(fields) = parsed else {
+        panic!("the envelope is an object");
+    };
+    let format = fields
+        .iter()
+        .find(|(key, _)| key == "format")
+        .map(|(_, value)| value);
+    assert!(
+        matches!(format, Some(dorc_lint::json::Json::Str(name)) if name.contains("unstable")),
+        "the envelope names its own instability in its first field"
+    );
+
+    let mut reached: Vec<usize> = coverage.reached().iter().map(|id| id.get()).collect();
+    reached.sort_unstable();
+    assert_eq!(
+        reached,
+        (0..reconstruction.data().len()).collect::<Vec<usize>>(),
+        "the machine surface makes the same totality claim the text one does"
+    );
+
+    assert!(
+        text.contains("\"state\":\"present\""),
+        "a present slot says so rather than merely carrying a value"
+    );
+    assert!(
+        text.contains("\"value\":null"),
+        "a withheld slot keeps BOTH keys; a consumer must never infer an absence from a missing key"
+    );
 }
