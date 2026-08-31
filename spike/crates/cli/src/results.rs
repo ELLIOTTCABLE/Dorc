@@ -288,7 +288,7 @@ pub struct ReportRecord {
     pub class: Option<dorc_aid::narrative::DeclineClass>,
     /// The full raw `<verb> <class> <tail>` emission, sanitized + size-capped at ingestion (the
     /// BASIC cap only — full why-surface sanitization is the security round's, `an-output-sanitization`
-    /// fence named; `law-whylog-is-sensitive`). Retained for max-verbosity display (d4).
+    /// fence named; `law-receipts-are-sensitive`). Retained for max-verbosity display (d4).
     pub raw: String,
     /// Whether the verb + class were BOTH recognized (else retained as a generic author-note).
     pub recognized: bool,
@@ -398,7 +398,7 @@ pub struct SiteRecord {
     /// This record's identity as a probe EVENT (C6, `27V` §2): its arrival ordinal in the deframed
     /// stream (deterministic, no clock) plus the instant the controller observed it, when the edge
     /// injected a clock. Minted straight into the [`dorc_core::OriginKind::ProbeResult`] origin so
-    /// the whylog can order/attribute probe events. A meet keeps the first-seen stamp.
+    /// the receipt can order/attribute probe events. A meet keeps the first-seen stamp.
     pub stamp: dorc_core::ProbeStamp,
     /// A DUPLICATE-MEET marker (`262` §2 / `26A` stop-1): set when two records for one
     /// (site, member) key DISAGREED and were met toward ⊤. The §1 tie-break law forbids

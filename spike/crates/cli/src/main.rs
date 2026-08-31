@@ -3003,7 +3003,7 @@ mod tests {
         parse_results(&d.records, d.framed, &mut RunClock::Absent, interner)
     }
 
-    /// The two destination answers that do not depend on the environment. `--no-whylog` must win
+    /// The two destination answers that do not depend on the environment. `--no-receipt` must win
     /// over an explicitly named directory: a refusal the admin typed is the one instruction in this
     /// family that nothing may override (`28D:pay-levers-are-subtractive` — the levers only ever
     /// REMOVE, and a subtractive control that a sibling flag can defeat is not one).

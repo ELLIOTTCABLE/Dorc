@@ -32,7 +32,7 @@ fn message_of(consumer: &DorcConsumer, slug: &str) -> String {
         .expect("mirror has the code's message")
 }
 
-/// A whylog-free code case, so the pipeline tests below exercise publish/bless rather than any
+/// A receipt-free code case, so the pipeline tests below exercise publish/bless rather than any
 /// one code family.
 fn pipeline_case() -> Case {
     Case::parse(include_str!("../../aid/tests/dangling-reference.loom")).expect("case parses")

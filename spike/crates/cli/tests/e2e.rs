@@ -2749,9 +2749,9 @@ fn scan_hint(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<String>) {
 
 /// gate-8: `dorc why <n>` must land the declared needles.
 ///
-/// The REPLAY half is gone with the durable it replayed: it drove `--last`/`--whylog-dir` through
-/// the retired reader, and a receipt-rooted `why` does not yet explain (`30Rh` names the recorded-why
-/// presentation as the next round). What survives is the live assertion, unchanged.
+/// The REPLAY half is gone with the durable it replayed: it drove the retired durable's own reader,
+/// and a receipt-rooted `why` is a separate gate. What survives here is the live assertion,
+/// unchanged.
 fn scan_why_chain(
     harness: &Harness,
     name: &str,

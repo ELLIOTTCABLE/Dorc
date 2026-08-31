@@ -74,7 +74,7 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
         // The stage prefix occupies columns, so a staged render is laid out AROUND it rather than
         // being the unstaged bytes with a prefix glued on.
         let staged = render_staged_cli_parts(
-            "whylog",
+            "receipt",
             &RenderCtx::production(),
             diag,
             src,
@@ -82,7 +82,7 @@ fn production_render_parts_match_bytes_and_preserve_parameter_identity() {
             &interner,
         )
         .text();
-        assert!(staged.starts_with("whylog: "), "{staged}");
+        assert!(staged.starts_with("receipt: "), "{staged}");
         assert!(
             staged.contains(&format!("[{}]: ", diag.code.slug())),
             "{staged}"

@@ -323,7 +323,7 @@ pub fn classify_round(
 /// Everything the rounds produce beyond the settled answer is stashed here and OVERWRITTEN each
 /// round, which is what keeps `the-fixpoint-owns-the-rounds-and-builds-nothing-else` true in the
 /// new shape: an intermediate round's classification and fold exist only until the next one
-/// replaces them, and no plan, narrative surface, render, or whylog write ever sees one.
+/// replaces them, and no plan, narrative surface, render, or receipt write ever sees one.
 #[derive(Debug)]
 pub struct WorldRoundModel<'a> {
     frozen: &'a FrozenModel<'a>,

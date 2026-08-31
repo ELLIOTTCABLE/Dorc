@@ -9,7 +9,7 @@
 //!
 //! ANNOTATION TIER ONLY. This module answers one question -- is the book at HEAD, and under what
 //! commit -- and hands back a name. It never reads book bytes OUT of git and never puts them into a
-//! render. The whylog stays thin; git is asked about identity, never for content.
+//! render. The receipt durable stays thin; git is asked about identity, never for content.
 //!
 //! # Exact-or-absent, and why there is no "HEAD has drifted" answer here
 //!

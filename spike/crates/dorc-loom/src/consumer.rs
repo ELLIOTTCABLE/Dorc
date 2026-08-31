@@ -454,7 +454,7 @@ impl DorcConsumer {
     ///
     /// It drives the case exactly as `publish` does rather than re-deriving a world of its own
     /// (`_loom-final-map` §2c): a second derivation answered only for the plain diagnostic shape, so
-    /// a whylog, lint, or invocation-error case got a different render — or none — from the one an
+    /// a receipt, lint, or invocation-error case got a different render — or none — from the one an
     /// edit actually compiles against, and an inventory that disagrees with the compiler is worse
     /// than no inventory.
     ///

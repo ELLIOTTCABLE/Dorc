@@ -535,7 +535,7 @@ pub struct Args {
     /// `--no-receipt`: write no receipt for this run.
     ///
     /// The escape hatch default-on owes: a receipt is host metadata written unprompted
-    /// (`AID-NEEDS:law-whylog-is-sensitive`), so refusing one must be typeable. Per-invocation and
+    /// (`AID-NEEDS:law-receipts-are-sensitive`), so refusing one must be typeable. Per-invocation and
     /// subtractive-only, which is the shape `28D:pay-levers-are-subtractive` demands of anything in
     /// this family — there is no widening sibling and never will be.
     pub no_receipt: bool,
@@ -1287,7 +1287,7 @@ fn seconds_value(flag: &str, v: &str) -> Result<u64, InvocationError> {
 /// wholly different word), or `None`. Case-sensitive; ASCII. Used for mode + flag suggestions.
 ///
 /// A candidate EQUAL to the word is refused: reaching here means the tables and the parse arms
-/// disagree, and "did you mean `--whylog`?" for `--whylog` teaches nothing while hiding the gap.
+/// disagree, and "did you mean `--receipts`?" for `--receipts` teaches nothing while hiding the gap.
 fn nearest<'a>(word: &str, candidates: &[&'a str]) -> Option<&'a str> {
     // A word the table holds is spelled correctly. Skipping only distance-0 left the NEIGHBOUR
     // one edit away as best-remaining, which is how `--receipt` suggested `--receipts`.

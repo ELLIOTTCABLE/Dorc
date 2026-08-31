@@ -76,5 +76,5 @@
 //!   the wrong bytes.
 //! - **Genuinely siteless** (whole-stream / whole-file / whole-run verdicts): `cfg-errexit-unknown`,
 //!   `effect-kind-disagreement`, every `records-*` framing fault, `escalation-policy`, every
-//!   `whylog-*` durable-file refusal, `aid-unloaded-sibling-oracle`. These stay on
+//!   `durable-receipt-*` durable-file refusal, `aid-unloaded-sibling-oracle`. These stay on
 //!   `SPANLESS_SITE_PAYLOADS` permanently.

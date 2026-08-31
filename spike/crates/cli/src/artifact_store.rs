@@ -11,8 +11,8 @@
 //!
 //! # Its sibling, and the duplication that is deliberate
 //!
-//! `whylog_store` solves the same shapes for the receipt durable and is the reference here — read
-//! it first (`churn-avoidance-disclosure`: a THIRD consumer of exclusive-create + trusted-directory
+//! `dorc_receipt_local::store` solves the same shapes for the receipt durable and is the reference
+//! here — read it first (`churn-avoidance-disclosure`: a THIRD consumer of exclusive-create + trusted-directory
 //! is the trigger to extract one module, and this is the second). The differences are real rather
 //! than accidental: a receipt is one file whose creation IS its atomicity, while an artifact set is
 //! a TREE whose files are only meaningful together.
@@ -171,7 +171,8 @@ fn generation_index(name: &str) -> Option<u64> {
 
 /// Ensure `dir` exists and is a directory we are willing to write into.
 ///
-/// The honest limit is `whylog_store::trusted_directory`'s and is stated there: ancestors are not
+/// The honest limit is `dorc_receipt_local::store`'s directory validation's and is stated there:
+/// ancestors are not
 /// walked, because the admin's own path is not one we can refuse for resolving through a platform
 /// symlink without refusing ordinary systems.
 fn trusted_directory(dir: &str) -> Result<PathBuf, PublishRefusal> {
@@ -218,7 +219,7 @@ fn create_exclusive(path: &Path) -> std::io::Result<std::fs::File> {
 }
 
 /// Create `path`, failing if anything already occupies the name (Windows has no mode — the siting
-/// argument is `whylog_store::create_exclusive`'s and is unchanged here).
+/// argument is `dorc_receipt_local::io::create_file_exclusive`'s and is unchanged here).
 #[cfg(not(unix))]
 fn create_exclusive(path: &Path) -> std::io::Result<std::fs::File> {
     std::fs::OpenOptions::new()

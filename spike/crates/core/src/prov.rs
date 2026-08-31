@@ -90,7 +90,7 @@ pub enum OriginKind {
     /// NO stamp (the lift runs in the pure analysis kernel — `inv-determinism`, no clock).
     OracleClaim,
     /// A host probe-result's origin (the `loc-probe` tier): a probed observable binding to its
-    /// site (C6, `27V` Lane A). Carries a [`ProbeStamp`] — the record-stream ordinal the whylog
+    /// site (C6, `27V` Lane A). Carries a [`ProbeStamp`] — the record-stream ordinal the receipt
     /// orders replays by (`27V` §2). Minted at the cli edge from a received probe record
     /// (`facts_from_sites`/`probe_origins`), then attached to the licensing fact's `Witness` so the
     /// why-chain can tie a disposition to the exact record that measured it. The stamp is INJECTED
@@ -618,7 +618,7 @@ mod tests {
     fn distinct_probe_events_mint_distinct_nodes() {
         // 27V tc-probestamp: two probe bindings at the SAME site are two EVENTS — the injected
         // iteration-nonce makes their origins structurally distinct, so hash-consing does NOT
-        // collapse them (correct: the whylog must be able to order/replay each event). Contrast a
+        // collapse them (correct: the receipt must be able to order/attribute each event). Contrast a
         // TopCause at one site, which SHOULD dedup (a give-up is re-derived, not re-eventful).
         let mut a = ProvArena::new();
         let first = a.leaf(

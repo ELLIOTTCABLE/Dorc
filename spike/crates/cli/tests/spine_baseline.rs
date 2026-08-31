@@ -15,7 +15,7 @@
 //!
 //! Three fences, each load-bearing:
 //!
-//! 1. it is never the whylog — no durable-tripwire contact, and it writes only where told;
+//! 1. it is never the receipt durable — no durable-tripwire contact, and it writes only where told;
 //! 2. it is never the census `new`-arm debug dump (`309` §3) — different mechanism, different
 //!    lifetime, and its schema INFORMS the owed `SiteId` decision-dump product feature without ever
 //!    becoming it;

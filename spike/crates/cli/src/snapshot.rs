@@ -237,7 +237,7 @@ impl StaticLoadSnapshot {
         refs
     }
 
-    /// The LOADED sources alone — everything that is not a book. The whylog's record of what was
+    /// The LOADED sources alone — everything that is not a book. The receipt's record of what was
     /// loaded is load-only coherently, and so is `validate`.
     ///
     /// A contiguous slice because the constructor appends the book last, which is what the

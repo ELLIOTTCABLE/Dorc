@@ -117,7 +117,7 @@ pub struct ArtifactOptions {
     pub destination: ArtifactDestinationShape,
 }
 
-/// Whether a completed live run should generate a whylog durable.
+/// Whether a completed live run should generate a receipt durable.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DurableOutput {
     /// Generate no durable.
