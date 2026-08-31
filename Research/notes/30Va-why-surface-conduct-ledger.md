@@ -102,12 +102,41 @@ loaded-source locator composition (named uncollected V1 residue).
   plane + an INTENTIONALLY-TEMPORARY total surface (no drawn gutter, interim
   register, replaced without ceremony later); the graph library, settled
   register, and curated tiers deferred to proper process and attention.
-- Why-surface build lane: DISPATCHED 2026-08-31 — Opus builder, harness
-  worktree, branch `ai/r30-why-surface` off `a69f9ca7`; builds `30V` §5 + the
-  arrangement-orphan census rider + replacement receipt-rooted why cases; a
-  structure-proposal checkpoint precedes build; completion contract
+- Why-surface build lane: DISPATCHED 2026-08-31 — Opus builder, branch
+  `ai/r30-why-surface` (base `f6317f43`, deliberately behind `ai/main`; fold is
+  conductor-side); builds `30V` §5 + the arrangement-orphan census rider +
+  replacement receipt-rooted why cases; completion contract
   `mise run both gate:full-quiet`; builder ledger sites at lowest-unused
-  30V-suffix.
+  30V-suffix. The structure checkpoint was adjudicated same-day: new pure crate
+  `dorc-why` (edges → receipt + aid only; render/`--json` at the cli edge);
+  the `Known`/`Held` wrapper pair; listing-surface retirement RULED (all four
+  listing seats die); `Rooted::{Plan, OtherSpecies}` one-face RULED;
+  `--receipt <file>` roots-a-question repair in scope; the `.rs` whole-product
+  battery substitutes for a loom case (the loom `run:` vocabulary cannot drive
+  a store-side route — a widening is a queued TODO row, not this lane).
+  Builder finding of record: the receipt durable RECORDS fifteen row families
+  but sealed `report::RecordedWhyFacts` PROJECTS seven — most of the
+  durable-gap audit is a report-API gap, not a carrier gap
+  (`fnd-report-api-carries-seven-of-fifteen`, its ledger). HELD for the human:
+  `tc-model-families-reach-the-reconstruction` (conductor recommendation:
+  widen `receipt::report`'s family coverage under the same sealed discipline,
+  zero new value exits; the cli-side decomposition route is forbidden as a
+  second read path; the thin-model route is a product regression). Meanwhile
+  unprojected families render as typed report-api-lacks absences.
+- Worktree-reap incident (2026-08-31, resolved; the `worktree-file-access-law`
+  hazard fired as documented): the harness reaped the builder's managed
+  worktree at its checkpoint turn-boundary; the orphaned skeleton's dead `.git`
+  pointer made bare git answer FROM THE PRIMARY. The builder's step-zero
+  discipline held — read-only commands only, stopped and reported; primary
+  verified clean; zero lane commits existed so nothing was lost. Resolution:
+  conductor-minted persistent worktree `.claude/worktrees/why-surface` (not
+  harness-managed ⇒ immune to return-triggered reaping), residue verified
+  zero-file and deleted. Lesson already durable in steering; no new law.
+- Cleanup queue addendum: `.claude/worktrees/` still holds ~36 `agent-*` husks
+  and ~14 named directories that are NOT registered worktrees (`git worktree
+  list` knows only play/r30-conduct/r30-receipt/why-surface) — presumably the
+  same empty-husk class the 2026-08-30 sweep dumped. Verify zero-file, then
+  dump at arc close.
 
 ## Ack-ledger (only what the human has TYPED counts)
 
