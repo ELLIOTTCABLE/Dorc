@@ -5,8 +5,9 @@
 //! and derives `RecordedWhyFacts` for each of the three root selectors.
 //!
 //! What it establishes is that the model is produced from material a real run wrote, rather than
-//! from a fixture that agrees with itself. What it deliberately does NOT touch is user output: the
-//! listing is unchanged, and joining these facts to a rendered surface is the next conductor's.
+//! from a fixture that agrees with itself — and, in the cases at the tail, that the SHIPPED BINARY
+//! renders that model: the total surface, its `--json` register, the explicit file root, and both
+//! directions of an address.
 
 #![expect(
     clippy::expect_used,

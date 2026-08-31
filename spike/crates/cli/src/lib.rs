@@ -1166,6 +1166,11 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             "--receipt-last",
             receipt_last,
         ),
+        // `--json` is a register of the RECEIPT-rooted surface, and naming records selects the live
+        // route instead — so the two together are a machine format nothing would emit. Refused
+        // rather than ignored: a flag that quietly does nothing is an assertion its author only
+        // believes they made.
+        ("--json", json, "--results", results.is_some()),
     ] {
         if first_present && second_present {
             return Err(Diag::new_spanless_site(
@@ -2034,6 +2039,34 @@ mod tests {
         assert!(
             parse_args_from(vec!["why".to_owned(), "--receipt-last".to_owned()]).is_ok(),
             "the explain surface still takes it"
+        );
+    }
+
+    /// `--json` names the receipt-rooted surface's machine REGISTER, so it belongs to `why` and
+    /// nowhere else — and never beside the flag that selects the other route.
+    ///
+    /// Both directions, because a flag accepted where nothing emits it is exactly the silently
+    /// ineffective assertion the closed-vocabulary discipline exists to refuse.
+    #[test]
+    fn the_machine_register_belongs_to_the_receipt_rooted_surface_alone() {
+        let slug = |argv: &[&str]| -> Option<String> {
+            parse_args_from(argv.iter().map(|word| (*word).to_owned()).collect())
+                .err()
+                .map(|diag| diag.code.slug().to_owned())
+        };
+        assert_eq!(
+            slug(&["plan", "--json", "book.sh"]).as_deref(),
+            Some("cli-flag-requires-mode"),
+            "a plan has no register to spell"
+        );
+        assert_eq!(
+            slug(&["why", "--json", "--results", "r.txt"]).as_deref(),
+            Some("cli-flags-mutually-exclusive"),
+            "naming records selects the live route, which emits no machine register"
+        );
+        assert!(
+            parse_args_from(vec!["why".to_owned(), "--json".to_owned()]).is_ok(),
+            "the receipt-rooted surface takes it"
         );
     }
 

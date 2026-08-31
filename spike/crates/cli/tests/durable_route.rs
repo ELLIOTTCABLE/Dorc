@@ -15,10 +15,10 @@
 //!
 //! # The sentinel
 //!
-//! A plan document's readable skeleton carries a source's ORDINAL, ROLE, DIGEST and LENGTH; its
-//! PATH lives in the encrypted region. So a second process printing the book's own path has
-//! verified a signature and opened a region with the keyset the first process created — which
-//! skeleton-only output could not fake.
+//! A plan document's readable skeleton carries a site's ORDINAL, DISPOSITION and GRADE; the site's
+//! own shell TEXT lives in the encrypted region. So a second process rendering the book's own
+//! command has verified a signature and opened a region with the keyset the first process created —
+//! which skeleton-only output could not fake.
 
 #![expect(
     clippy::expect_used,
@@ -176,14 +176,6 @@ fn keyset_dir(sandbox: &ProfileSandbox) -> PathBuf {
         .join("dorc")
         .join("receipt-keys-v1")
         .join("keyset-v1")
-}
-
-/// The one line of `listing` whose first word is `word`, if there is one.
-fn line_starting(listing: &str, word: &str) -> Option<String> {
-    listing
-        .lines()
-        .find(|line| line.split(' ').next() == Some(word))
-        .map(str::to_owned)
 }
 
 #[test]
