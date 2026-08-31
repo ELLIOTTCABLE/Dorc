@@ -83,10 +83,13 @@ loaded-source locator composition (named uncollected V1 residue).
   an orphan-arrangement-rows census (rider for the render lane —
   `30Rk:the-arrangement-mirror-is-its-own-lock`) · LIVING_STATUS refresh ·
   `gate:arc` · end-of-work review per root `AGENTS.md` · worktree cleanup.
-- Why-surface design: state-space axes + flagship-moment exploration
-  delivered in-chat (2026-08-30) — HELD for human adjudication; `notes/30Vb`
-  demoted to acceptance-probe material by human direction (strawmen will be
-  standalone files; first-person register; denser CFGs; width-responsive).
+- Why-surface design: exploration CLOSED and banked — `notes/30V` (the
+  re-exploration record: model, doctrine, rulings, §5 build direction,
+  §6 owed-list) + `notes/30Vc` (four adjudicated render generations, raw);
+  `30Vb` is gen-1, historical. Build-now per `30V` §5: the reconstruction
+  plane + an INTENTIONALLY-TEMPORARY total surface (no drawn gutter, interim
+  register, replaced without ceremony later); the graph library, settled
+  register, and curated tiers deferred to proper process and attention.
 
 ## Ack-ledger (only what the human has TYPED counts)
 
@@ -100,4 +103,7 @@ loaded-source locator composition (named uncollected V1 residue).
   prospective `dorc why` surfaces as TUI-as-spec plaintext; builders build
   toward it.
 - Everything in `30Vb` is UNACKED strawman until adjudicated; its ask-list is
-  the adjudication queue.
+  the adjudication queue. (Superseded 2026-08-30: the whole ask-list was
+  overtaken by the sitting's rulings, banked with `[TYPED]` tags in
+  `notes/30V` §2 — that section is now the authoritative ack record for the
+  why-surface direction.)
