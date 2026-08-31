@@ -2,7 +2,7 @@
 //!
 //! Every decision the engine reaches, the account of what it read, its influence grade, and its
 //! narration hang off one structure. Everything a run appears to *produce* — the apply artifact,
-//! the plan render, the orchestrator's connections, the `.whylog` durable — is a **projection** of
+//! the plan render, the orchestrator's connections, the receipt durable — is a **projection** of
 //! Spine × the input files, never an independently-assembled product.
 //!
 //! # Position, not a guard (`309:law-spine-outside-the-kernel`)
@@ -21,21 +21,20 @@
 //!
 //! # The durable is defined by EXCLUSION (`309:rul-durable-by-exclusion`)
 //!
-//! We do not choose what new things to make durable. Spine tracks totalistically and the `.whylog`
-//! projection is what survives an exclusion set. [`SpineSpecies::census_arm`] is the no-wildcard
-//! classification that makes that mechanical: a new species cannot land unclassified, silent
-//! inclusion and silent omission are both unrepresentable, and ENTERING [`CensusArm::Durable`] is
-//! the durable tripwire firing (`rul-durable-contents-reviewed-before-design`).
+//! We do not choose what new things to make durable. Spine tracks totalistically and the receipt
+//! durable's projection is what survives an exclusion set. [`SpineSpecies::census_arm`] is the
+//! no-wildcard classification that makes that mechanical: a new species cannot land unclassified,
+//! silent inclusion and silent omission are both unrepresentable, and ENTERING
+//! [`CensusArm::Durable`] is the durable tripwire firing
+//! (`rul-durable-contents-reviewed-before-design`).
 //!
 //! Field-level exclusion is structural rather than classified: durable species reach the durable
-//! ONLY through a per-species `DurableView` in `plan::whylog`, whose fields ARE the durable subset.
-//! Records themselves never implement serialization, so a field that no View names cannot reach
-//! disk, and lifting one exclusion is one field added to one View — a diff that IS the tripwire's
-//! mechanical form. [`ExcludedContent`] enumerates what is ruled non-durable at the CONTENT tier.
-//!
-//! ONE exclusion is now held by a SWITCH rather than by absence, and it says so at its own arm:
-//! the influence account's View field exists and its export const is `false`. Every other content
-//! exclusion is still enforced by no View naming it.
+//! ONLY through the one lossy Spine → `RecordedPlanReceipt` projection seat (`plan::receipt`),
+//! whose recorded-row fields ARE the durable subset. Spine records themselves never implement
+//! serialization, so a field no recorded row names cannot reach disk, and lifting one exclusion is
+//! one field added to one row — a diff that IS the tripwire's mechanical form, and a
+//! receipt-contents change reviewed FIRST. [`ExcludedContent`] enumerates what is ruled
+//! non-durable at the CONTENT tier.
 //!
 //! # Generic over the decide plane, so `core` stays dependency-clean
 //!
@@ -211,13 +210,14 @@ pub enum SpineSpecies {
 /// Which arm of the durable census a species sits in (`309:mech-census-three-states`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CensusArm {
-    /// Written to `.whylog`, exclusively through a per-species `DurableView` whose fields ARE the
-    /// durable subset. **Entering this arm is the durable tripwire firing** — human and/or opaque
-    /// review, always (`rul-durable-contents-reviewed-before-design`).
+    /// Written to the receipt durable, exclusively through the Spine → `RecordedPlanReceipt`
+    /// projection whose recorded-row fields ARE the durable subset. **Entering this arm is the
+    /// durable tripwire firing** — human and/or opaque review, always
+    /// (`rul-durable-contents-reviewed-before-design`).
     Durable,
     /// RULED non-durable: not a resting state but a decision. Empty of species today because
-    /// `30E` §2's exclusions are all CONTENT-tier ([`ExcludedContent`]) and the `DurableView`
-    /// mechanism excludes them structurally; the arm exists so a species-tier ruling has a home
+    /// `30E` §2's exclusions are all CONTENT-tier ([`ExcludedContent`]) and the projection seat
+    /// excludes them structurally; the arm exists so a species-tier ruling has a home
     /// that reads differently from "not yet".
     Excluded,
     /// Transitory: non-durable in production but not ruled non-durable — the legal resting state
@@ -354,15 +354,15 @@ impl SpineSpecies {
 /// lift into a visible deletion from this list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ExcludedContent {
-    /// The influence account. STILL EXCLUDED from every production durable — but by a SWITCH now,
-    /// not by absence: `plan::whylog`'s `ApplyLine` names the account, its writer and reader are
-    /// built whole, and `plan::whylog::ACCOUNT_EXPORT` is `false`, so no byte moves.
+    /// The influence account. STILL EXCLUDED from every production durable — by absence again:
+    /// the old durable's built-whole, switched-off export died with that durable
+    /// (`30Rk:the-account-export-died-with-its-lane`), and the receipt durable carries only the
+    /// per-site influence GRADE (`dorc_receipt`'s `RecordedInfluence`), never the per-row account.
     ///
-    /// That substitution is the reviewable act and is stated rather than hidden: field-level
-    /// exclusion used to be structural because no View named this, and it is now a const a human
-    /// flips after the review a durable's growth owes
-    /// (`rul-durable-contents-reviewed-before-design`). This row is deleted in the same commit that
-    /// flips it.
+    /// Rebuilding the export against the receipt durable is a receipt-contents change and clears
+    /// `rul-durable-contents-reviewed-before-design` FIRST; the xfail pin
+    /// `p-x-durable-account-export-is-enabled` holds the seat (`Reserved`). This row is deleted in
+    /// the same commit that builds it.
     InfluenceGrade,
     /// Narrative operands, `ProvId`s, and arena handles (`operands-are-pure-and-capped`).
     NarrativeOperands,

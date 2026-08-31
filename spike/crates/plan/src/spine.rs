@@ -759,7 +759,6 @@ mod tests {
     /// joins the list below in the same commit, which is what turns "we are staged here" into
     /// something a reader can count rather than something they must go looking for.
     ///
-    /// The list is empty only because nothing has needed an adapter yet.
     #[test]
     fn every_untracked_adapter_is_enumerated() {
         /// Every seat that deliberately carries an explicit `untracked`, and what it stages.
@@ -768,10 +767,6 @@ mod tests {
         ///   whose proofs do not correspond to it: the routes nobody enumerated may have been
         ///   decided from host-reported material (`30L:pin-open-route-runs`).
         /// * `plan/tests/region.rs` — that arm's own assertion.
-        /// * `plan/src/whylog.rs` — a durable's account read back ABSENT, unrecognised, or
-        ///   malformed (`306b:rul-missing-influence-grade-reads-highest`). Not a staged hole in the
-        ///   same sense: it is the ruled REHYDRATION floor, and it stays after the export is
-        ///   enabled.
         /// * `cli/src/apply.rs` — an apply OUTCOME's account. Its terminal state is what a host's
         ///   own marker and streams said, so the value is genuinely influenced; what is missing is
         ///   the threading, because the transport lane carries no `Influenced` and there is no
