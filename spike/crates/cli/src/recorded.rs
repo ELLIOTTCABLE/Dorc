@@ -25,17 +25,16 @@ use dorc_receipt::model::{ApplyIntent, ApplyOutcome, Rich};
 use dorc_receipt::outcome::RecordedApplyOutcome;
 use dorc_receipt::reader::Receipt;
 use dorc_receipt::reingested::Reingested;
-use dorc_receipt::report::{
-    CurrentSourceReading, RecordedDocumentId, RequestedAddress, SiblingState,
+use dorc_receipt::report::{RecordedDocumentId, SiblingState};
+use dorc_why::recorded::{NonPlanRoot, Rooted, ShallowIntent, ShallowOutcome, reconstruct};
+use dorc_why::{
+    AddressStanding, ComparedSources, CorrelationFact, FindingKind, Reconstruction,
+    UnplaceableAddress,
 };
-use dorc_why::Reconstruction;
-use dorc_why::recorded::{
-    AddressStanding, NonPlanRoot, Rooted, ShallowIntent, ShallowOutcome, reconstruct,
-};
-use dorc_why::{CorrelationFact, FindingKind, UnplaceableAddress};
 
 use crate::durable::LocallyAuthenticated;
-use crate::recorded_facts::{ObservedSource, SelectedRoot, facts_for};
+use crate::recorded_facts::{SelectedRoot, facts_for};
+use crate::source_comparison::{NamedFile, compare_sources};
 
 /// What the receipt read answered with. Three outcomes, and none is interchangeable.
 #[derive(Debug)]
@@ -74,15 +73,31 @@ pub enum ReadRoot {
 pub enum AddressAsk {
     /// The question named no address.
     Unasked,
-    /// The named file read; these are its exact bytes and the physical line asked about.
-    Read {
-        /// Which physical line, 1-indexed, as the user spelled it.
-        line: u32,
-        /// The named file's exact bytes.
-        bytes: Vec<u8>,
-    },
+    /// The named file read; the comparison seat decides which recorded source it is.
+    Read(NamedFile),
     /// The address never became a file and a line at all.
     Unplaceable(UnplaceableAddress),
+}
+
+impl AddressAsk {
+    /// The file the question named, where one was named and read.
+    fn named_file(&self) -> Option<&NamedFile> {
+        match self {
+            Self::Read(named) => Some(named),
+            Self::Unasked | Self::Unplaceable(_) => None,
+        }
+    }
+
+    /// The standing an address has BEFORE any source was walked.
+    ///
+    /// Only the edge's own refusals: whether a named file corresponds to a recorded source is the
+    /// comparison seat's answer, and pre-empting it here would be a second correspondence rule.
+    const fn standing(&self) -> AddressStanding {
+        match self {
+            Self::Unasked | Self::Read(_) => AddressStanding::AsRecorded,
+            Self::Unplaceable(why) => AddressStanding::Unplaceable(*why),
+        }
+    }
 }
 
 impl RootedReading {
@@ -104,9 +119,23 @@ impl RootedReading {
     pub fn reconstruct(self) -> Reconstruction {
         match self.root {
             ReadRoot::Plan(root) => {
-                let (address, observations, standing) = self.address.against(&root, &self.siblings);
-                let facts = facts_for(&root, self.siblings, observations, address);
-                reconstruct(&Rooted::Plan(&facts), standing)
+                // The FIRST derivation exists to hand the comparison seat a source table to walk;
+                // the second binds what the seat established. Two passes rather than one because
+                // the model names ordinals and a question names a FILE, and only the seat can join
+                // them (`the-two-pass-address` above).
+                let survey = facts_for(&root, self.siblings.clone(), Vec::new(), None);
+                let outcome = compare_sources(&survey.source_material(), self.address.named_file());
+                let compared = match self.address.standing() {
+                    // An edge refusal outranks the seat's: a question that never became a file and
+                    // a line was never a question about a source at all.
+                    AddressStanding::Unplaceable(why) => ComparedSources::of(
+                        AddressStanding::Unplaceable(why),
+                        outcome.compared.into_named(),
+                    ),
+                    AddressStanding::AsRecorded => outcome.compared,
+                };
+                let facts = facts_for(&root, self.siblings, outcome.observations, outcome.address);
+                reconstruct(&Rooted::Plan(&facts), &compared)
             }
             // A non-plan root carries no recorded source table, so an address that named a file has
             // nothing to match against — the same word as a plan root whose sources it missed,
@@ -115,62 +144,16 @@ impl RootedReading {
                 let standing = match self.address {
                     AddressAsk::Unasked => AddressStanding::AsRecorded,
                     AddressAsk::Unplaceable(why) => AddressStanding::Unplaceable(why),
-                    AddressAsk::Read { .. } => {
+                    AddressAsk::Read(_) => {
                         AddressStanding::Unplaceable(UnplaceableAddress::NoRecordedSourceMatches)
                     }
                 };
-                reconstruct(&Rooted::OtherSpecies(&root), standing)
+                reconstruct(
+                    &Rooted::OtherSpecies(&root),
+                    &ComparedSources::of(standing, Vec::new()),
+                )
             }
         }
-    }
-}
-
-impl AddressAsk {
-    /// Match the named file against the root's recorded sources, by CONTENT DIGEST.
-    ///
-    /// Digest and nothing else: there is no nearest-match, no path comparison, and no moved-line
-    /// search, because each would answer confidently about a line the author moved
-    /// (`271:rul-sin-ordering`'s worst rung). A file whose bytes no recorded source reproduces is
-    /// unplaceable, and saying so is the whole answer this route can give.
-    fn against(
-        self,
-        root: &SelectedRoot,
-        siblings: &[SiblingState],
-    ) -> (
-        Option<RequestedAddress>,
-        Vec<ObservedSource>,
-        AddressStanding,
-    ) {
-        let (line, bytes) = match self {
-            Self::Unasked => return (None, Vec::new(), AddressStanding::AsRecorded),
-            Self::Unplaceable(why) => {
-                return (None, Vec::new(), AddressStanding::Unplaceable(why));
-            }
-            Self::Read { line, bytes } => (line, bytes),
-        };
-        let digest = dorc_plan::invocation::book_digest(&String::from_utf8_lossy(&bytes));
-        let survey = facts_for(root, siblings.to_vec(), Vec::new(), None);
-        let Some(ordinal) = survey
-            .sources()
-            .iter()
-            .find(|source| source.digest() == digest)
-            .map(dorc_receipt::report::SourceFacts::ordinal)
-        else {
-            return (
-                None,
-                Vec::new(),
-                AddressStanding::Unplaceable(UnplaceableAddress::NoRecordedSourceMatches),
-            );
-        };
-        (
-            Some(RequestedAddress::of(ordinal, line)),
-            vec![ObservedSource {
-                ordinal,
-                reading: CurrentSourceReading::Read(bytes),
-                matches_digest: true,
-            }],
-            AddressStanding::AsRecorded,
-        )
     }
 }
 

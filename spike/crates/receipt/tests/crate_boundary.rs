@@ -670,6 +670,37 @@ const MAY_NAME_THE_READ_BACK_WRAPPER: [&str; 11] = [
     "receipt/src/report/build.rs",
 ];
 
+/// The ONE implementation of the source-comparison consumer, and the ONE call site of its visit.
+///
+/// Rust cannot say "this public trait has one implementation": any crate may write another, and no
+/// type expresses the restriction. So the enumeration is lexical, and it is here at explicit human
+/// direction (`lexical-fences-are-human-ack-instruments` — this list is a human-ack instrument, not
+/// a reflex) because what it guards is a policy split rather than a type: path rehydration, bounded
+/// reads, correspondence rules and the same-physical-line policy live at ONE seat, and a second
+/// implementation would be a second policy nobody could see from the first.
+///
+/// Two-way, like its neighbours: a new implementor fails, and a stale entry fails.
+const THE_SOURCE_COMPARISON_SEAT: &str = "cli/src/source_comparison.rs";
+
+#[test]
+fn the_source_comparison_seat_is_the_only_one() {
+    let implementors: Vec<String> = production_sources()
+        .into_iter()
+        .filter(|(_, text)| {
+            text.contains("impl SourceComparisonConsumer for")
+                || text.contains("visit_for_comparison(")
+        })
+        .map(|(path, _)| path)
+        .filter(|path| !path.starts_with("receipt/src/"))
+        .collect();
+    assert_eq!(
+        implementors,
+        vec![THE_SOURCE_COMPARISON_SEAT.to_owned()],
+        "the comparison consumer has exactly one implementation and one call site outside this \
+         crate; found {implementors:?}"
+    );
+}
+
 #[test]
 fn every_consumer_of_the_read_back_wrapper_is_enumerated() {
     // Answered by NAME rather than by call, for the reason the image-identity fence gives: a file

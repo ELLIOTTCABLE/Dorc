@@ -11,8 +11,8 @@
 //!
 //! `30V` §3 names laundering NYI upward into `Unknowable` as the failure this wrapper exists to
 //! prevent, so the two are separated by construction: there is no `From`, no `Into`, and no method
-//! on either that yields the other. [`Known::nyi`] is the sole NYI mint and its call sites are a
-//! two-way lexical allow-list (`tests/nyi_census.rs`), so laundering is a diff somebody reads.
+//! on either that yields the other. [`Known::nyi`] is the sole NYI mint, and the census over a real
+//! reconstruction (`tests/reconstruction.rs`) is what says no slot ships as one.
 //!
 //! [`Known::Unknowable`]'s reason is taken by the constructor and DROPPED: `30V` §3 rules it
 //! compile-time material for reviewers, not a runtime value, so it cannot reach a render and be

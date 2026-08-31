@@ -24,11 +24,11 @@ use dorc_receipt::tokens::{
     RecordedTerminalState,
 };
 
+use crate::compared::{AddressStanding, ComparedSources};
 use crate::datum::{
     AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, HostName,
     IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, RecordedFlag, RecordedToken,
-    Separability, Speaker, StateFact, Subject, UnplaceableAddress, Voice, VoiceSet,
-    WorldCoordinate,
+    Separability, Speaker, StateFact, Subject, Voice, VoiceSet, WorldCoordinate,
 };
 use crate::known::{CantTell, CarrierAbsence, Held, Known};
 use crate::structure::{
@@ -100,27 +100,12 @@ pub struct ShallowOutcome {
     pub intent: Option<RecordedDocumentId>,
 }
 
-/// What the EDGE could do with the address the question named.
-///
-/// A plan root's placed address travels inside `RecordedWhyFacts`, so the only thing this adds is
-/// the case the report model cannot represent: a request the edge could not turn into an ordinal at
-/// all. That is a fact about the QUESTION rather than about any document, which is why it arrives
-/// beside the root rather than inside it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum AddressStanding {
-    /// No address was named, or the root's own facts already answer the one that was.
-    #[default]
-    AsRecorded,
-    /// The question named an address this route could not place at all.
-    Unplaceable(UnplaceableAddress),
-}
-
-/// Reconstruct one rooted question.
+/// Reconstruct one rooted question, over what the ONE comparison seat established.
 #[must_use]
-pub fn reconstruct(rooted: &Rooted<'_>, address: AddressStanding) -> Reconstruction {
+pub fn reconstruct(rooted: &Rooted<'_>, compared: &ComparedSources) -> Reconstruction {
     match rooted {
-        Rooted::Plan(facts) => from_plan(facts, address),
-        Rooted::OtherSpecies(root) => from_non_plan(root, address),
+        Rooted::Plan(facts) => from_plan(facts, compared),
+        Rooted::OtherSpecies(root) => from_non_plan(root, compared),
     }
 }
 
@@ -213,7 +198,7 @@ fn host_of(facts: &RecordedWhyFacts) -> Known<HostName> {
     )
 }
 
-fn from_plan(facts: &RecordedWhyFacts, address: AddressStanding) -> Reconstruction {
+fn from_plan(facts: &RecordedWhyFacts, compared: &ComparedSources) -> Reconstruction {
     let root = facts.root();
     let document = root.document().clone();
     let order = root.order().spelled();
@@ -264,13 +249,18 @@ fn from_plan(facts: &RecordedWhyFacts, address: AddressStanding) -> Reconstructi
     push_licensor_data(&mut data, facts, &world, here);
     push_omission_data(&mut data, facts, &world, here);
     push_address_data(&mut data, facts, &world, here);
-    push_unplaceable_address(&mut data, address, &world, here);
+    push_unplaceable_address(&mut data, compared.address(), &world, here);
     push_correlation_data(&mut data, &carriers, &world, here);
     push_uncovered_families(&mut data, facts, &world, here);
 
     // A PLAN root reaches nothing later (`30R:receipt-rooted-attention-and-cli` walks toward
     // causes), so its correlation family is empty by the walk's own direction, not by omission.
-    Reconstruction::of(carriers, data, Structure::of(Vec::new(), loci_of(facts)))
+    Reconstruction::of(
+        carriers,
+        data,
+        Structure::of(Vec::new(), loci_of(facts, compared)),
+        compared.clone(),
+    )
 }
 
 fn reached_carrier(document: &RecordedDocumentId, role: CarrierRole) -> Carrier {
@@ -1153,7 +1143,7 @@ fn push_uncovered_families(
 }
 
 /// Every recorded site's provenance chain, flattened into one walkable DAG.
-fn loci_of(facts: &RecordedWhyFacts) -> LocusDag {
+fn loci_of(facts: &RecordedWhyFacts, compared: &ComparedSources) -> LocusDag {
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
     for site in facts.sites() {
@@ -1171,7 +1161,7 @@ fn loci_of(facts: &RecordedWhyFacts) -> LocusDag {
                 stage: stage.kind(),
                 index: u32::try_from(index).unwrap_or(u32::MAX),
                 namespace: Namespace::Recorded,
-                address: address_of(facts, stage),
+                address: address_of(compared, stage),
                 agreement: agreement_of(facts, stage),
             });
         }
@@ -1179,12 +1169,24 @@ fn loci_of(facts: &RecordedWhyFacts) -> LocusDag {
     LocusDag::of(nodes, edges)
 }
 
-fn address_of(_facts: &RecordedWhyFacts, stage: &StageFacts) -> Known<LocusAddress> {
+/// One stage's address, in the namespace `30V` §2 rul-line-addresses-are-namespaced sets.
+///
+/// The LINE comes from the comparison seat's own line map, counted to the span's start; where the
+/// seat supplied none — a source whose exact content the document does not carry — the address
+/// keeps its ordinal-and-span and says the line is absent from the carrier rather than guessing 1.
+fn address_of(compared: &ComparedSources, stage: &StageFacts) -> Known<LocusAddress> {
     match (stage.source(), stage.span()) {
-        (Some(source), Some(span)) => Known::present(LocusAddress {
-            source: crate::datum::SourceRef::of(source),
-            span,
-        }),
+        (Some(source), Some(span)) => {
+            let source = crate::datum::SourceRef::of(source);
+            Known::present(LocusAddress {
+                source,
+                span,
+                line: compared.line_of(source, span.0).map_or_else(
+                    || Known::absent(CarrierAbsence::RunHeldNoValue),
+                    Known::present,
+                ),
+            })
+        }
         _ => Known::absent(CarrierAbsence::RunHeldNoValue),
     }
 }
@@ -1209,7 +1211,7 @@ fn agreement_of(facts: &RecordedWhyFacts, stage: &StageFacts) -> SourceAgreement
         })
 }
 
-fn from_non_plan(root: &NonPlanRoot, address: AddressStanding) -> Reconstruction {
+fn from_non_plan(root: &NonPlanRoot, compared: &ComparedSources) -> Reconstruction {
     let mut carriers = vec![Carrier {
         document: root.document.clone(),
         species: root.document.species(),
@@ -1289,7 +1291,7 @@ fn from_non_plan(root: &NonPlanRoot, address: AddressStanding) -> Reconstruction
             here,
         ));
     }
-    push_unplaceable_address(&mut data, address, &world, here);
+    push_unplaceable_address(&mut data, compared.address(), &world, here);
     // EVERY plan-shaped family is absent here, and for a different reason than on a plan root: the
     // report model does not cover this species at all. Same vocabulary, honestly caused.
     for family in PlanFamily::ALL {
@@ -1309,6 +1311,7 @@ fn from_non_plan(root: &NonPlanRoot, address: AddressStanding) -> Reconstruction
         carriers,
         data,
         Structure::of(root.correlations.clone(), LocusDag::default()),
+        compared.clone(),
     )
 }
 

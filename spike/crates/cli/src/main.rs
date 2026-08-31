@@ -790,7 +790,13 @@ fn named_address(spec: Option<&str>) -> dorc_cli::recorded::AddressAsk {
     }
     read_current_source(path).map_or(
         AddressAsk::Unplaceable(UnplaceableAddress::CurrentSourceUnreadable),
-        |bytes| AddressAsk::Read { line, bytes },
+        |bytes| {
+            AddressAsk::Read(dorc_cli::source_comparison::NamedFile {
+                path: path.to_owned(),
+                line,
+                bytes,
+            })
+        },
     )
 }
 

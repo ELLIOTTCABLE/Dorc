@@ -24,11 +24,13 @@ use std::fmt::Write as _;
 use dorc_lint::json::escape_into;
 use dorc_receipt::report::{ValueClass, ValueEncoder};
 use dorc_why::known::Known;
-use dorc_why::{Carrier, CarrierRole, Datum, DatumId, Delivery, Reconstruction, VoiceSet};
+use dorc_why::{
+    Carrier, CarrierRole, ComparedSources, Datum, DatumId, Delivery, Reconstruction, VoiceSet,
+};
 
 use crate::why_total::{
-    Coverage, absence_word, committee_text, correlation_text, flag_text, identity_text, locus_text,
-    state_text, subject_text, token_text, unplaceable_text,
+    Coverage, absence_word, address_text, committee_text, correlation_text, flag_text,
+    identity_text, locus_text, state_text, subject_text, token_text, unplaceable_text,
 };
 
 /// The envelope's own name, and the whole of its stability promise.
@@ -100,7 +102,7 @@ pub fn why_json(
     for (index, datum) in reconstruction.data().iter().enumerate() {
         push_separator(&mut out, index);
         coverage.saw(DatumId::of(index));
-        push_datum(&mut out, datum, encoder);
+        push_datum(&mut out, datum, reconstruction.compared(), encoder);
     }
 
     out.push_str("],\"correlations\":[");
@@ -116,13 +118,9 @@ pub fn why_json(
         out.push_str("{\"locus\":");
         push_quoted(&mut out, &locus_text(locus));
         out.push_str(",\"address\":");
+        let compared = reconstruction.compared();
         push_slot(&mut out, &locus.address, |address| {
-            format!(
-                "{} {}..{}",
-                address.source.get(),
-                address.span.0,
-                address.span.1
-            )
+            address_text(address, compared, encoder)
         });
         out.push('}');
     }
@@ -208,9 +206,27 @@ fn push_carrier(out: &mut String, carrier: &Carrier) {
     out.push('}');
 }
 
-fn push_datum(out: &mut String, datum: &Datum, encoder: &mut dyn ValueEncoder) {
+fn push_datum(
+    out: &mut String,
+    datum: &Datum,
+    compared: &ComparedSources,
+    encoder: &mut dyn ValueEncoder,
+) {
     out.push_str("{\"subject\":");
-    push_slot(out, datum.subject(), subject_text);
+    // Rendered BEFORE the borrow the payload arm needs, because a subject may carry an address
+    // whose file leaves through the same encoder.
+    let subject = datum
+        .subject()
+        .value()
+        .map(|subject| subject_text(subject, compared, encoder));
+    match subject {
+        Some(text) => {
+            out.push_str("{\"state\":\"present\",\"value\":");
+            push_quoted(out, &text);
+            out.push('}');
+        }
+        None => push_slot(out, datum.subject(), |_| String::new()),
+    }
     out.push_str(",\"speaker\":");
     push_slot(out, datum.speaker(), |speaker| {
         format!(

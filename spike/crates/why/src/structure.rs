@@ -103,17 +103,21 @@ pub enum Namespace {
 
 /// An address, as far as the carrier can spell one.
 ///
-/// DELIBERATELY NOT `file.sh:N`, which `30V` §2 rul-line-addresses-are-namespaced sets as the
-/// minimum: a source's PATH has no exit from `dorc_receipt::report` (the raw-detail accessor is
-/// crate-private by design), and the byte-offset-to-line map is crate-private too, so neither half
-/// of `file.sh:N` is derivable here. The ordinal-and-span pair is what IS true, and the missing
-/// halves are audited as report-API holes rather than guessed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// `file.sh:N` is `30V` §2 rul-line-addresses-are-namespaced's minimum, and both halves now arrive
+/// from the ONE source-comparison seat: the recorded PATH through
+/// `dorc_receipt::report::RecordedSourceMaterial`'s visit, and the LINE by counting the seat's line
+/// map to this span's start. The path is not stored here — it is a sealed value with no equality,
+/// and the naming lives beside the population (`compared::ComparedSources`) so an address stays
+/// cheap and comparable. Ordinal-and-span survives as the honest FALLBACK: a source whose content
+/// the document does not carry has no lines to count, and `line` says so rather than guessing one.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocusAddress {
     /// Which acquired source, by ordinal.
     pub source: SourceRef,
     /// The byte range it names, in the acquired byte domain.
     pub span: (u64, u64),
+    /// Which physical line of the recorded source the span STARTS on, 1-indexed.
+    pub line: Known<u32>,
 }
 
 /// How the current tree stands against a recorded source.

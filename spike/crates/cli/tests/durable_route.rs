@@ -416,6 +416,26 @@ fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_re
         machine.contains(&format!("{intent_id} {outcome_id}")),
         "a second process must correlate the two species it read; got:\n{machine}"
     );
+    assert!(
+        machine.contains("complete"),
+        "and the outcome's own terminal state reaches the surface; got:\n{machine}"
+    );
+
+    // THE FILE ROOT over a non-plan document, with `--receipts` doing its orthogonal job: the
+    // store the file was copied out of is still walked, so the outcome named by PATH reaches the
+    // intent it answers. A file root that could not see its siblings would answer about one
+    // document in isolation, which is the bounded-discovery half of
+    // `30R:receipt-rooted-attention-and-cli`.
+    let outcome_file = store_root(&sandbox).join(outcomes.first().expect("one outcome"));
+    let named = why(
+        &sandbox,
+        &scratch,
+        &["--receipt", &outcome_file.display().to_string(), "--json"],
+    );
+    assert!(
+        named.contains(&format!("{intent_id} {outcome_id}")),
+        "an explicitly-named outcome still reaches the intent it answers; got:\n{named}"
+    );
 }
 
 #[test]

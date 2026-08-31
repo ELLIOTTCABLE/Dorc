@@ -32,11 +32,15 @@
 //! infer a fact from a value that never stated it.
 
 mod address;
+mod comparison;
 mod families;
 mod states;
 mod value;
 
 pub use address::{AddressFacts, AddressResolution, RequestedAddress, UnresolvedReason};
+pub use comparison::{
+    RecordedSourceMaterial, SourceComparison, SourceComparisonConsumer, SourcePlacement,
+};
 pub use families::{
     AdmissionFacts, CertificationFacts, ClassificationFacts, FamilyCoverage, InvocationFacts,
     LicensorFacts, LoadFacts, NarrativeFacts, PlanFamily, PresentedPlanFacts, RegionFacts,
@@ -189,6 +193,12 @@ pub struct SourceFacts {
     path: MaterialState,
     current: CurrentSourceState,
     text: Option<RecordedValue>,
+    /// The exact recorded path, released ONLY through the comparison packet.
+    ///
+    /// No public accessor beside `text`'s: a path is what a filesystem seat acts on, and the one
+    /// seat entitled to act on it receives it through `visit_for_comparison` rather than reading it
+    /// off a facts row anybody holds.
+    path_text: Option<RecordedValue>,
 }
 
 impl SourceFacts {
@@ -238,6 +248,11 @@ impl SourceFacts {
     #[must_use]
     pub const fn text(&self) -> Option<&RecordedValue> {
         self.text.as_ref()
+    }
+
+    /// Its exact recorded path. Crate-private: the comparison packet is its one exit.
+    pub(crate) const fn path_text(&self) -> Option<&RecordedValue> {
+        self.path_text.as_ref()
     }
 }
 
@@ -558,6 +573,20 @@ impl RecordedWhyFacts {
     #[must_use]
     pub const fn rederivation(&self) -> ReDerivationState {
         self.rederivation
+    }
+
+    /// This document's recorded sources, as the ONE comparison seat may see them.
+    ///
+    /// The whole of what this crate releases for comparison, and it releases it by VISIT: path
+    /// rehydration, filesystem reads, correspondence policy and the same-physical-line rule are the
+    /// seat's, and none of them may be re-implemented here or reached from anywhere else.
+    #[must_use]
+    pub const fn source_material(&self) -> RecordedSourceMaterial<'_> {
+        RecordedSourceMaterial {
+            sources: self.sources.as_slice(),
+            sites: self.sites.as_slice(),
+            authentication: self.root.authentication,
+        }
     }
 
     /// The site the address resolved to, where one did.

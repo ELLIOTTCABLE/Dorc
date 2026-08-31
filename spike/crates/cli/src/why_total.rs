@@ -32,9 +32,9 @@ use dorc_receipt::rows::RecordedSite;
 use dorc_receipt::tokens::ClosedToken;
 use dorc_why::known::{CantTell, CarrierAbsence, Held, Known, WithholdReason};
 use dorc_why::{
-    Carrier, CarrierRole, CorrelationFact, Datum, DatumId, Delivery, IdentityFact, Moment,
-    NegativeKind, Payload, Reconstruction, RecordedFlag, RecordedToken, Separability, Speaker,
-    StateFact, Subject, Voice, VoiceSet,
+    Carrier, CarrierRole, ComparedSources, CorrelationFact, Datum, DatumId, Delivery, IdentityFact,
+    Moment, NegativeKind, Payload, Reconstruction, RecordedFlag, RecordedToken, Separability,
+    Speaker, StateFact, Subject, Voice, VoiceSet,
 };
 use weft::{LabeledRow, Node, NodeKind, Section};
 
@@ -157,7 +157,7 @@ pub fn why_total(
             .enumerate()
             .map(|(index, datum)| {
                 coverage.saw(DatumId::of(index));
-                datum_row(ctx, datum, encoder)
+                datum_row(ctx, datum, reconstruction.compared(), encoder)
             })
             .collect(),
     ));
@@ -190,7 +190,7 @@ pub fn why_total(
                 &Said::Parts(vec![
                     Said::Value(locus_text(locus)),
                     Said::Mark("why-total-gap", " ".to_owned()),
-                    address_said(&locus.address),
+                    address_said(&locus.address, reconstruction.compared(), encoder),
                 ]),
             )
         })
@@ -278,13 +278,18 @@ fn carrier_row(ctx: &RenderCtx<'_>, carrier: &Carrier) -> Node<Face> {
 }
 
 /// One datum: its subject heads the row, and the other four axes hang under it, each labelled.
-fn datum_row(ctx: &RenderCtx<'_>, datum: &Datum, encoder: &mut dyn ValueEncoder) -> Node<Face> {
+fn datum_row(
+    ctx: &RenderCtx<'_>,
+    datum: &Datum,
+    compared: &ComparedSources,
+    encoder: &mut dyn ValueEncoder,
+) -> Node<Face> {
     let world = datum.world();
     labeled_with(
         ctx,
         "why-total-label-subject",
         &known_said(datum.subject(), |subject| {
-            Said::Value(subject_text(subject))
+            Said::Value(subject_text(subject, compared, encoder))
         }),
         vec![
             labeled(
@@ -457,13 +462,17 @@ fn role_said(role: &CarrierRole) -> Said {
 }
 
 /// What a datum is about, in the identities the document itself numbers.
-pub(crate) fn subject_text(subject: &Subject) -> String {
+pub(crate) fn subject_text(
+    subject: &Subject,
+    compared: &ComparedSources,
+    encoder: &mut dyn ValueEncoder,
+) -> String {
     match subject {
         Subject::Site(site) => format!("site {}", site_text(*site)),
         Subject::Source(source) => format!("source {}", source.get()),
         Subject::Stage { site, index } => format!("stage {} {index}", site_text(*site)),
         Subject::Document(document) => format!("document {}", document.hex()),
-        Subject::Address(address) => format!("address {} {}", address.source.get(), address.line),
+        Subject::Address(address) => requested_address_text(*address, compared, encoder),
         Subject::Narrative(ordinal) => format!("narrative {ordinal}"),
         Subject::Region(ordinal) => format!("region {ordinal}"),
         Subject::Load(ordinal) => format!("load {ordinal}"),
@@ -608,16 +617,45 @@ pub(crate) fn locus_text(locus: &dorc_why::Locus) -> String {
 
 /// A locus address, or the absence the carrier left in its place.
 ///
-/// Ordinal-and-span rather than `file.sh:N` (`30Vd:fnd-addresses-cannot-be-spelled-file-line`):
-/// neither half of the path-and-line form is derivable from this read surface, and guessing one
-/// would be the mis-attribution `271:rul-sin-ordering` ranks worst.
-fn address_said(address: &Known<dorc_why::LocusAddress>) -> Said {
+/// `file.sh:N` where the comparison seat supplied both halves — the recorded PATH through its own
+/// visit, the LINE by counting its line map to the span's start. Ordinal-and-span is the FALLBACK
+/// and stays honest: a source whose content the document does not carry has no lines to count, and
+/// a number invented for it would be the mis-attribution `271:rul-sin-ordering` ranks worst.
+fn address_said(
+    address: &Known<dorc_why::LocusAddress>,
+    compared: &ComparedSources,
+    encoder: &mut dyn ValueEncoder,
+) -> Said {
     known_said(address, |value| {
-        Said::Value(format!(
-            "{} {}..{}",
-            value.source.get(),
-            value.span.0,
-            value.span.1
-        ))
+        Said::Value(address_text(value, compared, encoder))
     })
+}
+
+/// One locus address, in the namespace the seat could reach.
+pub(crate) fn address_text(
+    address: &dorc_why::LocusAddress,
+    compared: &ComparedSources,
+    encoder: &mut dyn ValueEncoder,
+) -> String {
+    match (compared.name_of(address.source), address.line.value()) {
+        (Some(named), Some(line)) => format!("{}:{line}", named.file.render(encoder)),
+        _ => format!(
+            "{} {}..{}",
+            address.source.get(),
+            address.span.0,
+            address.span.1
+        ),
+    }
+}
+
+/// The address the QUESTION named, spoken in the user's own namespace where the seat could name it.
+pub(crate) fn requested_address_text(
+    address: dorc_why::AddressSubject,
+    compared: &ComparedSources,
+    encoder: &mut dyn ValueEncoder,
+) -> String {
+    compared.name_of(address.source).map_or_else(
+        || format!("address {} {}", address.source.get(), address.line),
+        |named| format!("address {}:{}", named.file.render(encoder), address.line),
+    )
 }

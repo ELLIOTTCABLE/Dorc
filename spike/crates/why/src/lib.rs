@@ -30,11 +30,13 @@
 //! dependencies are pure data. Every collection is an ordered `Vec` built in one canonical walk, so
 //! a reconstruction is byte-stable across input permutations that carry the same facts.
 
+pub mod compared;
 pub mod datum;
 pub mod known;
 pub mod recorded;
 pub mod structure;
 
+pub use compared::{AddressStanding, ComparedSources, NamedSource};
 pub use datum::{
     AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, FindingKind,
     HostName, IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, RecordedFlag,
@@ -61,17 +63,33 @@ pub struct Reconstruction {
     carriers: Vec<Carrier>,
     data: Vec<Datum>,
     structure: Structure,
+    compared: ComparedSources,
 }
 
 impl Reconstruction {
-    /// Bind one question's carriers, data and structure.
+    /// Bind one question's carriers, data, structure, and what the comparison seat established.
     #[must_use]
-    pub const fn of(carriers: Vec<Carrier>, data: Vec<Datum>, structure: Structure) -> Self {
+    pub const fn of(
+        carriers: Vec<Carrier>,
+        data: Vec<Datum>,
+        structure: Structure,
+        compared: ComparedSources,
+    ) -> Self {
         Self {
             carriers,
             data,
             structure,
+            compared,
         }
+    }
+
+    /// Where each acquired source lives, as the ONE comparison seat established it.
+    ///
+    /// Beside the population rather than inside every address, so a render can spell `file.sh:N`
+    /// while an address stays a cheap comparable pair (`compared` says why).
+    #[must_use]
+    pub const fn compared(&self) -> &ComparedSources {
+        &self.compared
     }
 
     /// Every carrier the rooted question reached, root first.

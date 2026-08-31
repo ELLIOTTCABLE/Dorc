@@ -30,7 +30,8 @@ use dorc_receipt::report::{
     DetailState, MaterialState, ReDerivationState, RecordedDocumentId, RecordedSpecies,
     RequestedAddress,
 };
-use dorc_why::recorded::{AddressStanding, Rooted, reconstruct};
+use dorc_why::ComparedSources;
+use dorc_why::recorded::{Rooted, reconstruct};
 
 mod sandbox;
 
@@ -395,6 +396,54 @@ fn an_explicit_receipt_file_roots_the_question() {
     );
 }
 
+/// An AUTHENTICATED receipt's sources are compared without the user naming a file.
+///
+/// The asymmetry the comparison packet rules: for material this controller authenticated, the one
+/// seat rehydrates the recorded path and reads it. Both directions, because a comparison that
+/// always said one thing would be worth nothing — the second half rewrites the book under the
+/// receipt and the same question comes back with the other answer.
+#[test]
+fn an_authenticated_receipt_compares_its_own_sources_unasked() {
+    let sandbox = ProfileSandbox::new("facts-implicit");
+    let scratch = Scratch::new("facts-implicit");
+    publish(&sandbox, &scratch);
+
+    let unchanged = why(&sandbox, &scratch, &["--receipt-last"]);
+    assert!(
+        unchanged.contains("Matching"),
+        "the recorded book is still on disk and the seat read it; got:\n{unchanged}"
+    );
+
+    std::fs::write(
+        scratch.path.join("book.sh"),
+        "#!/bin/sh\nhork tune --profile web\necho drifted\n",
+    )
+    .expect("rewrite the book");
+    let drifted = why(&sandbox, &scratch, &["--receipt-last"]);
+    assert!(
+        drifted.contains("Drifted"),
+        "and a book that moved under the receipt says so; got:\n{drifted}"
+    );
+}
+
+/// A locus address comes back in the `file.sh:N` namespace the question is asked in.
+///
+/// The finding this discharges by name: `LocusAddress` used to carry ordinal-and-span because
+/// neither half of `file.sh:N` had an exit. Both now arrive from the comparison packet — the path
+/// through its visit, the line by counting its line map to the span's start.
+#[test]
+fn a_locus_address_is_spoken_as_a_file_and_a_line() {
+    let sandbox = ProfileSandbox::new("facts-namespace");
+    let scratch = Scratch::new("facts-namespace");
+    publish(&sandbox, &scratch);
+
+    let rendered = why(&sandbox, &scratch, &["--receipt-last"]);
+    assert!(
+        rendered.contains("book.sh:2"),
+        "the run's one site sits on line 2 of its book, and the surface says so; got:\n{rendered}"
+    );
+}
+
 /// One invocation of the shipped binary's `why`, in this sandbox's profile.
 fn why(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> String {
     let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
@@ -445,7 +494,7 @@ fn the_total_surface_reaches_every_datum_exactly_once() {
     let open = edge.open_for_read(&mut io).expect("the store reopens");
     let roots = selected_roots(&open, &mut io);
     let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), &ComparedSources::default());
 
     let ctx = RenderCtx::production();
     let mut encoder = TerminalValues::default();
@@ -499,7 +548,7 @@ fn one_reconstruction_renders_identically_every_time() {
     let open = edge.open_for_read(&mut io).expect("the store reopens");
     let roots = selected_roots(&open, &mut io);
     let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), &ComparedSources::default());
     let ctx = RenderCtx::production();
 
     let first = why_total(&reconstruction, &ctx, &mut TerminalValues::default())
@@ -527,7 +576,7 @@ fn the_json_sibling_is_well_formed_and_reaches_every_datum() {
     let open = edge.open_for_read(&mut io).expect("the store reopens");
     let roots = selected_roots(&open, &mut io);
     let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), &ComparedSources::default());
 
     let (text, coverage) = why_json(&reconstruction, &mut JsonValues::default());
 

@@ -44,6 +44,7 @@ pub mod recorded;
 pub mod recorded_facts;
 pub mod results;
 pub mod snapshot;
+pub mod source_comparison;
 pub mod sourcing;
 pub mod survival;
 pub mod why;

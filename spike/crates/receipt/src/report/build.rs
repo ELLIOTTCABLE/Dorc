@@ -252,6 +252,13 @@ fn source_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<SourceFac
                             ValueClass::SourceText,
                         )
                     }),
+                path_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    MaterialState::of(source.path(), detail),
+                    OpaqueFieldTag::SourcePath,
+                ),
             }
         })
         .collect()

@@ -2925,10 +2925,10 @@ fn scan_why_receipt(
     // THE ADDRESS, both directions. The case's own `book.sh` is the file the publish read, so its
     // bytes match a recorded source by digest and the address places; a file the document never saw
     // cannot, and the refusal is a row of the answer rather than a missing answer.
-    let placed = strip_trailing_newlines(&strip_cr(&ask(&["book.sh:2"]).stdout));
-    if !placed.contains("address ") {
+    let placed = strip_trailing_newlines(&strip_cr(&ask(&["book.sh:4"]).stdout));
+    if !placed.contains("book.sh:4") || placed.contains("address-unplaceable") {
         failures.push(format!(
-            "FAIL  {name}  [gate-receipt: an address over the case's own book did not place — the digest match is what turns a named FILE into a recorded ordinal]\n{placed}"
+            "FAIL  {name}  [gate-receipt: an address over the case's own book did not place, or did not come back in the `file.sh:N` namespace the question asked in]\n{placed}"
         ));
     }
     let refused = strip_trailing_newlines(&strip_cr(&ask(&["no-such-book.sh:2"]).stdout));

@@ -16,10 +16,11 @@ use dorc_receipt::report::{
     SourceObservation,
 };
 use dorc_why::known::{CantTell, CarrierAbsence, Held, Known, WithholdReason};
-use dorc_why::recorded::{AddressStanding, Rooted, reconstruct};
+use dorc_why::recorded::{Rooted, reconstruct};
 use dorc_why::{
-    CorrelationFact, Datum, Delivery, IdentityFact, Moment, NegativeSpace, Payload, Reconstruction,
-    RecordedFlag, RecordedToken, Separability, Speaker, StateFact, Subject, VoiceSet,
+    ComparedSources, CorrelationFact, Datum, Delivery, IdentityFact, Moment, NegativeSpace,
+    Payload, Reconstruction, RecordedFlag, RecordedToken, Separability, Speaker, StateFact,
+    Subject, VoiceSet,
 };
 
 use support::{BOOK, Shape, facts, published, shaped};
@@ -227,7 +228,7 @@ fn transcript(reconstruction: &Reconstruction) -> Vec<String> {
 
 fn plan_reconstruction(document: &support::DocumentUnderTest) -> Reconstruction {
     let facts = facts(document, Vec::new(), Vec::new(), None);
-    reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded)
+    reconstruct(&Rooted::Plan(&facts), &ComparedSources::default())
 }
 
 /// THE TOTALITY FLOOR: every recorded family the model names reaches the population exactly once.
@@ -322,7 +323,7 @@ fn every_hole_names_its_cause_and_the_v1_holes_are_the_carriers() {
         11,
     );
     let facts = facts(&document, Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), &ComparedSources::default());
     let holes = reconstruction.audit();
     assert!(
         !holes.is_empty(),
@@ -422,11 +423,11 @@ fn permuting_what_the_edge_supplies_does_not_move_the_reconstruction() {
     let backward = facts(&document, siblings(true), observations(), None);
     let forward = transcript(&reconstruct(
         &Rooted::Plan(&forward),
-        AddressStanding::AsRecorded,
+        &ComparedSources::default(),
     ));
     let backward = transcript(&reconstruct(
         &Rooted::Plan(&backward),
-        AddressStanding::AsRecorded,
+        &ComparedSources::default(),
     ));
 
     // The sibling ROWS may legitimately follow the edge's order — what must not move is the set of
@@ -462,11 +463,11 @@ fn a_compared_source_and_an_uncompared_one_are_distinguishable() {
     assert_ne!(
         transcript(&reconstruct(
             &Rooted::Plan(&compared),
-            AddressStanding::AsRecorded
+            &ComparedSources::default()
         )),
         transcript(&reconstruct(
             &Rooted::Plan(&uncompared),
-            AddressStanding::AsRecorded
+            &ComparedSources::default()
         )),
         "a comparison that happened and one that did not are different facts; a model that read \
          the same either way would let a stale answer wear a fresh one's clothes"
@@ -487,7 +488,7 @@ fn an_asked_address_reaches_the_population() {
         }],
         Some(RequestedAddress::of(0, 2)),
     );
-    let reconstruction = reconstruct(&Rooted::Plan(&asked), AddressStanding::AsRecorded);
+    let reconstruction = reconstruct(&Rooted::Plan(&asked), &ComparedSources::default());
     assert!(
         transcript(&reconstruction)
             .iter()

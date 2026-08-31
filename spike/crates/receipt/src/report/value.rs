@@ -210,6 +210,24 @@ impl RecordedValue {
         None
     }
 
+    /// The byte offset each physical line starts at, first line first.
+    ///
+    /// Offsets rather than bytes, which is what makes it releasable through the comparison packet:
+    /// a seat can turn a locator span into a line NUMBER without the content ever leaving except
+    /// through an encoder. Indexed the way every other line question here is — LF terminates, a CR
+    /// in CRLF stays inside its line, and a final line with no terminator counts.
+    pub(crate) fn line_starts(&self) -> Vec<u64> {
+        let mut out = Vec::new();
+        let mut start = 0_usize;
+        for run in self.bytes.split_inclusive(|byte| *byte == b'\n') {
+            if let Ok(offset) = u64::try_from(start) {
+                out.push(offset);
+            }
+            start = start.saturating_add(run.len());
+        }
+        out
+    }
+
     /// The byte range physical line `line` (1-indexed) occupies, terminator included.
     pub(crate) fn line_span(&self, line: u32) -> Option<(u64, u64)> {
         let wanted = usize::try_from(line).ok()?.checked_sub(1)?;
