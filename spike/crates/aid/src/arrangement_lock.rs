@@ -2238,4 +2238,11 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "30V section 5: the total surface's stable label vocabulary; structure and labels are its only readability affordances.",
         words: None,
     },
+    ArrangementEntry {
+        slug: "cli-help-option-json",
+        occurrence: None,
+        when_used: "`dorc --help` / `dorc -h` prints this whole page to stdout and exits 0.",
+        why: "288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.",
+        words: None,
+    },
 ];

@@ -189,13 +189,13 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         let label = edge
             .as_ref()
             .map_or(dorc_cli::engine::NO_STATE_ROOT, |edge| edge.state_base());
-        let reading = match &edge {
-            Ok(edge) => read_receipt_store(edge),
-            Err(refusal) => Err(refusal.token().to_owned()),
+        let answer = match &edge {
+            Ok(edge) => read_rooted_receipt(edge, args),
+            Err(refusal) => dorc_cli::recorded::StoreAnswer::Unreadable(refusal.token().to_owned()),
         };
         return Ok(dorc_cli::engine::report_recorded_store(
-            reading,
-            args.receipt_root(),
+            answer,
+            args.why_register(),
             label,
             sink,
         ));
@@ -460,47 +460,157 @@ impl EngineEdges for ProductionEdges<'_> {
     }
 }
 
-/// Read the local receipt store, so the shared seat can decide what this invocation says.
+/// Read ONE rooted receipt question, so the shared seat can render it.
 ///
 /// Every act here needs a filesystem or a key, which is why it is the only part of this route that
-/// stays at the process edge (`io-at-edges-only`): the SELECTION and the two report states it can
-/// land in are `engine::report_recorded_store`'s, so the binary and the loom driver decide them
-/// once between them.
+/// stays at the process edge (`io-at-edges-only`): the RECONSTRUCTION and the render are
+/// `engine::report_recorded_store`'s, so the binary and the loom driver share one.
 ///
 /// Read-only in every respect that matters: the keyset is opened through the entry point that
 /// cannot generate, the store through the one that cannot create, and no host is contacted. A
 /// missing keyset, a missing store, or a damaged document is a REPORT state — asking why must
 /// never mint an identity that cannot open the receipt being asked about.
-fn read_receipt_store(
+fn read_rooted_receipt(
     edge: &dorc_cli::durable::LocalReceiptEdgeV1,
-) -> Result<dorc_cli::recorded::StoreReading, String> {
+    args: &Args,
+) -> dorc_cli::recorded::StoreAnswer {
     let mut io = dorc_cli::durable::NativeIo::new();
-    let open = edge
-        .open_for_read(&mut io)
-        .map_err(|refusal| refusal.token().to_owned())?;
-    let store = open.store();
-    let entries = store
-        .enumerate(&mut io)
-        .map_err(|_| "walk-failed".to_owned())?;
+    let address = named_address(args.why_address.as_deref());
+    match args.receipt_root() {
+        dorc_cli::engine::ReceiptRoot::File(path) => root_from_file(edge, &mut io, path, address),
+        selection => root_from_store(edge, &mut io, selection, address),
+    }
+}
 
-    // The graph is built over the WHOLE store under its aggregate budget, whatever the selection
-    // above it takes: a correlation is a fact about the record set, and answering "which intent
-    // does this outcome answer" from a one-document read would be answering a different question.
+/// One decoded document, with the identity and order the store filed it under.
+struct HeldDocument {
+    receipt_id: String,
+    order: dorc_receipt::order::ReceiptOrderToken,
+    receipt: HeldReceipt,
+}
+
+/// A decoded document, by species. Each arm is a locally-authenticated read and nothing else can
+/// mint one.
+enum HeldReceipt {
+    Plan(dorc_cli::durable::LocallyAuthenticatedRead<dorc_receipt::model::PlanReceipt>),
+    Intent(dorc_cli::durable::LocallyAuthenticatedRead<dorc_receipt::model::ApplyIntent>),
+    Outcome(dorc_cli::durable::LocallyAuthenticatedRead<dorc_receipt::model::ApplyOutcome>),
+}
+
+impl HeldReceipt {
+    /// The identity the DOCUMENT carries, rather than the one its filename claims.
+    fn receipt_id(&self) -> String {
+        match self {
+            Self::Plan(document) => document.document().receipt_id_hex(),
+            Self::Intent(document) => document.document().receipt_id_hex(),
+            Self::Outcome(document) => document.document().receipt_id_hex(),
+        }
+    }
+}
+
+/// Root the question at a document the store holds.
+fn root_from_store(
+    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
+    io: &mut dorc_cli::durable::NativeIo,
+    selection: dorc_cli::engine::ReceiptRoot<'_>,
+    address: dorc_cli::recorded::AddressAsk,
+) -> dorc_cli::recorded::StoreAnswer {
+    use dorc_cli::recorded::StoreAnswer;
+    let open = match edge.open_for_read(io) {
+        Ok(open) => open,
+        Err(refusal) => return StoreAnswer::Unreadable(refusal.token().to_owned()),
+    };
     let mut graph = dorc_receipt::graph::ReceiptGraph::new();
+    let Some((held, cohort)) = walk_store(&open, io, &mut graph) else {
+        return StoreAnswer::Unreadable("walk-failed".to_owned());
+    };
+    let terminal = dorc_cli::recorded::collapse_predecessors(cohort, &graph.edges());
+    if matches!(selection, dorc_cli::engine::ReceiptRoot::Last) && terminal.len() > 1 {
+        return StoreAnswer::Ambiguous(terminal.len());
+    }
+    let Some(chosen) = held
+        .into_iter()
+        .find(|document| selection.takes(&document.receipt_id, &terminal))
+    else {
+        return StoreAnswer::Unreadable("no-receipt".to_owned());
+    };
+    rooted_reading(&graph, chosen, address)
+}
+
+/// Root the question at an explicit file OUTSIDE any store (`30R:receipt-rooted-attention-and-cli`).
+///
+/// It never publishes and never authorizes, and it does not need a store: a keyset is what a read
+/// requires, and the store — when one opens — is only the bounded place this root's typed siblings
+/// are resolved in, which is exactly the orthogonality `--receipts` has beside it.
+///
+/// The document's ORDER is the one fact a loose file cannot state for itself: the receipt carries it
+/// and the read surface has no exit for it, so the store's own filename grammar answers. A file
+/// renamed out of that grammar is refused rather than dated UNDATED, which would be a false claim
+/// about the document (`30Ve:fnd-file-root-order-comes-from-the-name`).
+fn root_from_file(
+    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
+    io: &mut dorc_cli::durable::NativeIo,
+    path: &str,
+    address: dorc_cli::recorded::AddressAsk,
+) -> dorc_cli::recorded::StoreAnswer {
+    use dorc_cli::recorded::StoreAnswer;
+    let reader = match edge.open_documents_for_read(io) {
+        Ok(reader) => reader,
+        Err(refusal) => return StoreAnswer::Unreadable(refusal.token().to_owned()),
+    };
+    let Some(order) = dorc_cli::durable::order_of_receipt_file(path) else {
+        return StoreAnswer::Unreadable("receipt-file-unnamed".to_owned());
+    };
+    let Some(bytes) = read_receipt_file(path) else {
+        return StoreAnswer::Unreadable("receipt-file-unreadable".to_owned());
+    };
+    let mut graph = dorc_receipt::graph::ReceiptGraph::new();
+    if let Ok(open) = edge.open_for_read(io) {
+        walk_store(&open, io, &mut graph);
+    }
+    let Some(receipt) = read_any_species(&reader, &mut graph, bytes) else {
+        return StoreAnswer::Unreadable("receipt-file-unreadable".to_owned());
+    };
+    let receipt_id = receipt.receipt_id();
+    rooted_reading(
+        &graph,
+        HeldDocument {
+            receipt_id,
+            order,
+            receipt,
+        },
+        address,
+    )
+}
+
+/// Walk the store once: every recognized document into the graph, and the greatest-order cohort.
+///
+/// The graph is built over the WHOLE store under its aggregate budget, whatever the selection above
+/// it takes: a correlation is a fact about the record set, and answering "which intent does this
+/// outcome answer" from a one-document read would be answering a different question. That is
+/// bounded DISCOVERY of typed reverse edges, never a user-visible union of histories.
+fn walk_store(
+    open: &dorc_cli::durable::ReadEdge,
+    io: &mut dorc_cli::durable::NativeIo,
+    graph: &mut dorc_receipt::graph::ReceiptGraph,
+) -> Option<(Vec<HeldDocument>, Vec<String>)> {
+    let store = open.store();
+    let entries = store.enumerate(io).ok()?;
     let mut budget = store.graph_budget();
-    let mut documents = Vec::new();
+    let mut held = Vec::new();
     for entry in entries.recognized() {
-        let id = entry.name().receipt_id().to_owned();
-        let Ok(bytes) = store.read_into_budget(&mut io, entry, &mut budget) else {
-            documents.push(dorc_cli::recorded::RecordedDocument::unread(id));
+        let Ok(bytes) = store.read_into_budget(io, entry, &mut budget) else {
             continue;
         };
-        documents.push(
-            match ingest_recognized(&open, &mut graph, entry, bytes.into_bytes().into_vec()) {
-                Some(listing) => dorc_cli::recorded::RecordedDocument::read(id, listing),
-                None => dorc_cli::recorded::RecordedDocument::unread(id),
-            },
-        );
+        if let Some(receipt) =
+            read_recognized(open, graph, entry.species(), bytes.into_bytes().into_vec())
+        {
+            held.push(HeldDocument {
+                receipt_id: entry.name().receipt_id().to_owned(),
+                order: entry.name().order(),
+                receipt,
+            });
+        }
     }
     let cohort = entries
         .maximum_order_cohort()
@@ -512,21 +622,12 @@ fn read_receipt_store(
                 .collect()
         })
         .unwrap_or_default();
-    // The edges go in BESIDE the cohort rather than being re-derived from the listing: the
-    // collapse that turns a cohort into terminals is a fact about the typed graph, and a second
-    // derivation of it from rendered text would be a parser over our own output.
-    let edges = graph.edges();
-    Ok(dorc_cli::recorded::StoreReading::of(
-        documents,
-        cohort,
-        &edges,
-        dorc_cli::recorded::recorded_graph_listing(&graph),
-    ))
+    Some((held, cohort))
 }
 
-/// Read one recognized entry into the graph, and answer the listing for it.
+/// Read one recognized store entry into the graph.
 ///
-/// The species comes from the FILENAME, and the read is species-typed accordingly; a document
+/// The species comes from the FILENAME here, and the read is species-typed accordingly; a document
 /// whose own header disagrees with its name fails to parse under the species asked for, which is
 /// the disagreement staying a finding rather than being smoothed over.
 ///
@@ -534,39 +635,197 @@ fn read_receipt_store(
 /// claiming one identity is a finding only if the graph can compare what they were read from.
 /// Handing it an empty slice made every pair compare equal, which silenced
 /// `GraphFinding::IdentityCollision` for every real store walk.
-fn ingest_recognized(
+fn read_recognized(
     open: &dorc_cli::durable::ReadEdge,
     graph: &mut dorc_receipt::graph::ReceiptGraph,
-    entry: &dorc_cli::durable::OwnedReceiptEntry,
+    species: dorc_cli::durable::NamedSpecies,
     bytes: Vec<u8>,
-) -> Option<String> {
+) -> Option<HeldReceipt> {
     use dorc_cli::durable::NamedSpecies;
     let image = bytes.clone();
     // no self-asserted arm: this edge holds one keyset, so another provider is a read that did
     // not happen
-    match entry.species() {
-        NamedSpecies::Plan => match open.read_plan(bytes) {
-            Ok(document) => {
-                graph.ingest_plan(document.document(), document.signer_trust(), &image);
-                Some(dorc_cli::recorded::recorded_plan_listing(&document))
-            }
-            Err(_) => None,
-        },
-        NamedSpecies::ApplyIntent => match open.read_intent(bytes) {
-            Ok(document) => {
-                graph.ingest_intent(document.document(), document.signer_trust(), &image);
-                Some(dorc_cli::recorded::recorded_intent_listing(&document))
-            }
-            Err(_) => None,
-        },
-        NamedSpecies::ApplyOutcome => match open.read_outcome(bytes) {
-            Ok(document) => {
-                graph.ingest_outcome(document.document(), document.signer_trust(), &image);
-                Some(dorc_cli::recorded::recorded_outcome_listing(&document))
-            }
-            Err(_) => None,
-        },
+    match species {
+        NamedSpecies::Plan => open.read_plan(bytes).ok().map(|document| {
+            dorc_cli::recorded::ingest_plan(graph, &document, &image);
+            HeldReceipt::Plan(document)
+        }),
+        NamedSpecies::ApplyIntent => open.read_intent(bytes).ok().map(|document| {
+            dorc_cli::recorded::ingest_intent(graph, &document, &image);
+            HeldReceipt::Intent(document)
+        }),
+        NamedSpecies::ApplyOutcome => open.read_outcome(bytes).ok().map(|document| {
+            dorc_cli::recorded::ingest_outcome(graph, &document, &image);
+            HeldReceipt::Outcome(document)
+        }),
     }
+}
+
+/// Read one document whose species is the DOCUMENT'S OWN to state.
+///
+/// A file named by an admin may carry any name at all, so the header decides: a read under the
+/// wrong species fails at the skeleton's own `species` line, which makes trying each in turn a way
+/// of ASKING the document rather than of guessing.
+fn read_any_species(
+    reader: &dorc_cli::durable::DocumentReader,
+    graph: &mut dorc_receipt::graph::ReceiptGraph,
+    bytes: Vec<u8>,
+) -> Option<HeldReceipt> {
+    let image = bytes.clone();
+    if let Ok(document) = reader.read_plan(bytes.clone()) {
+        dorc_cli::recorded::ingest_plan(graph, &document, &image);
+        return Some(HeldReceipt::Plan(document));
+    }
+    if let Ok(document) = reader.read_intent(bytes.clone()) {
+        dorc_cli::recorded::ingest_intent(graph, &document, &image);
+        return Some(HeldReceipt::Intent(document));
+    }
+    if let Ok(document) = reader.read_outcome(bytes) {
+        dorc_cli::recorded::ingest_outcome(graph, &document, &image);
+        return Some(HeldReceipt::Outcome(document));
+    }
+    None
+}
+
+/// Bind one selected root into the reading the render seat consumes.
+fn rooted_reading(
+    graph: &dorc_receipt::graph::ReceiptGraph,
+    chosen: HeldDocument,
+    address: dorc_cli::recorded::AddressAsk,
+) -> dorc_cli::recorded::StoreAnswer {
+    use dorc_cli::recorded::{ReadRoot, RootedReading, StoreAnswer};
+    use dorc_receipt::report::{AuthenticationState, DetailState, ProjectionState};
+    let Some(document) = document_identity(&chosen.receipt, &chosen.receipt_id) else {
+        return StoreAnswer::Unreadable("receipt-identity-unreadable".to_owned());
+    };
+    let siblings = dorc_cli::recorded::siblings_of(graph, &document);
+    let closure = graph.closure_from(&document);
+    let correlations = dorc_cli::recorded::correlations_of(graph, closure.documents());
+    // Both established by the READ rather than assumed: the document came back inside the
+    // local-authentication envelope, and it came back at all only because its region validated.
+    let authentication = AuthenticationState::Trusted;
+    let detail = DetailState::Available;
+    let order_spelled = (chosen.order != dorc_receipt::order::ReceiptOrderToken::UNDATED)
+        .then(|| chosen.order.spelled());
+    let root = match chosen.receipt {
+        HeldReceipt::Plan(receipt) => {
+            let Ok(model) = receipt.document().model() else {
+                return StoreAnswer::Unreadable("receipt-model-unavailable".to_owned());
+            };
+            ReadRoot::Plan(Box::new(dorc_cli::recorded_facts::SelectedRoot {
+                receipt,
+                model,
+                closure,
+                order: chosen.order,
+                authentication,
+                detail,
+            }))
+        }
+        HeldReceipt::Intent(receipt) => ReadRoot::OtherSpecies(dorc_why::recorded::NonPlanRoot {
+            document,
+            authentication,
+            projection: ProjectionState::Rich,
+            detail,
+            order: order_spelled,
+            correlations,
+            siblings: siblings.clone(),
+            intent: dorc_cli::recorded::shallow_intent(receipt.document()),
+            outcome: None,
+        }),
+        HeldReceipt::Outcome(receipt) => ReadRoot::OtherSpecies(dorc_why::recorded::NonPlanRoot {
+            document,
+            authentication,
+            projection: ProjectionState::Rich,
+            detail,
+            order: order_spelled,
+            correlations,
+            siblings: siblings.clone(),
+            intent: None,
+            outcome: dorc_cli::recorded::shallow_outcome(receipt.document()),
+        }),
+    };
+    StoreAnswer::Rooted(Box::new(RootedReading::of(root, siblings, address)))
+}
+
+/// The typed identity one held document carries.
+fn document_identity(
+    receipt: &HeldReceipt,
+    receipt_id: &str,
+) -> Option<dorc_receipt::report::RecordedDocumentId> {
+    use dorc_receipt::report::RecordedDocumentId;
+    Some(match receipt {
+        HeldReceipt::Plan(_) => {
+            RecordedDocumentId::Plan(dorc_receipt::ids::PlanReceiptId::of_hex(receipt_id)?)
+        }
+        HeldReceipt::Intent(_) => {
+            RecordedDocumentId::ApplyIntent(dorc_receipt::ids::ApplyIntentId::of_hex(receipt_id)?)
+        }
+        HeldReceipt::Outcome(_) => {
+            RecordedDocumentId::ApplyOutcome(dorc_receipt::ids::ApplyOutcomeId::of_hex(receipt_id)?)
+        }
+    })
+}
+
+/// The address the question named, as far as a filesystem can take it.
+///
+/// `<file>:<line>` is the whole grammar this surface accepts (`30V` §2
+/// rul-line-addresses-are-namespaced): the recorded model names an ORDINAL and the only bridge to
+/// it is the exact bytes of the file the user named, so a content query or a bare line number has
+/// nothing here to resolve against and says so rather than answering about something else.
+fn named_address(spec: Option<&str>) -> dorc_cli::recorded::AddressAsk {
+    use dorc_cli::recorded::AddressAsk;
+    use dorc_why::UnplaceableAddress;
+    let Some(spec) = spec else {
+        return AddressAsk::Unasked;
+    };
+    // Split at the LAST colon, so a Windows drive letter stays part of the path.
+    let Some((path, line)) = spec.rsplit_once(':') else {
+        return AddressAsk::Unplaceable(UnplaceableAddress::NotAFileAndLine);
+    };
+    let Ok(line) = line.parse::<u32>() else {
+        return AddressAsk::Unplaceable(UnplaceableAddress::NotAFileAndLine);
+    };
+    if line == 0 || path.is_empty() {
+        return AddressAsk::Unplaceable(UnplaceableAddress::NotAFileAndLine);
+    }
+    read_current_source(path).map_or(
+        AddressAsk::Unplaceable(UnplaceableAddress::CurrentSourceUnreadable),
+        |bytes| AddressAsk::Read { line, bytes },
+    )
+}
+
+/// One receipt file, bounded before anything is parsed from it.
+fn read_receipt_file(path: &str) -> Option<Vec<u8>> {
+    read_bounded(
+        path,
+        dorc_receipt::limits::ReceiptLimits::V1.outer_bytes.get(),
+    )
+}
+
+/// One current source the question named, bounded by what a BOOK is rather than by what a
+/// filesystem will hand over.
+fn read_current_source(path: &str) -> Option<Vec<u8>> {
+    read_bounded(
+        path,
+        dorc_receipt::limits::ReceiptLimits::V1
+            .source_content_bytes
+            .get(),
+    )
+}
+
+/// Read at most `cap` bytes, refusing anything longer rather than truncating it.
+///
+/// Truncation is refused rather than reported because both consumers compare EXACT bytes — a
+/// signature over a document, a digest over a source — and a short read would compare a prefix
+/// against a whole and call the difference drift.
+fn read_bounded(path: &str, cap: u64) -> Option<Vec<u8>> {
+    use std::io::Read as _;
+    let file = std::fs::File::open(path).ok()?;
+    let mut bytes = Vec::new();
+    file.take(cap.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .ok()?;
+    (u64::try_from(bytes.len()).unwrap_or(u64::MAX) <= cap).then_some(bytes)
 }
 
 /// The process's own environment, as the root-resolution rule's one query.

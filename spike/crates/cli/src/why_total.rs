@@ -421,16 +421,26 @@ fn voice_said(voices: &VoiceSet) -> Said {
         } => Said::Parts(vec![
             Said::words("why-total-voice-committee", &[]),
             Said::Mark("why-total-gap", " ".to_owned()),
-            Said::Value(format!(
-                "{} {}",
-                voices.len(),
-                match separability {
-                    Separability::Separable => "separable",
-                    Separability::Inseparable => "inseparable",
-                }
-            )),
+            Said::Value(committee_text(voices, *separability)),
         ]),
     }
+}
+
+/// A committee, as its separability plus the sources its NAMED members authored in.
+///
+/// Deliberately no member COUNT: a recorded `vouched-severally` names nobody, and a bare `0` beside
+/// the committee word would read as a committee of nobody rather than as one whose members this
+/// read surface cannot name.
+pub(crate) fn committee_text(voices: &[Voice], separability: Separability) -> String {
+    let mut out = match separability {
+        Separability::Separable => String::from("separable"),
+        Separability::Inseparable => String::from("inseparable"),
+    };
+    for Voice::AuthoredIn(source) in voices {
+        out.push(' ');
+        out.push_str(&source.get().to_string());
+    }
+    out
 }
 
 /// Why a document is in the closure.
@@ -458,6 +468,7 @@ pub(crate) fn subject_text(subject: &Subject) -> String {
         Subject::Region(ordinal) => format!("region {ordinal}"),
         Subject::Load(ordinal) => format!("load {ordinal}"),
         Subject::Family(family) => format!("family {}", family.token()),
+        Subject::Question => String::from("question"),
     }
 }
 
@@ -493,7 +504,14 @@ fn payload_said(payload: &Payload, encoder: &mut dyn ValueEncoder) -> Said {
             Said::Mark("why-total-gap", " ".to_owned()),
             Said::Value(space.family.token().to_owned()),
         ]),
+        Payload::Unplaceable(why) => Said::Value(unplaceable_text(*why)),
     }
+}
+
+/// Why the question's address could not be placed, machine-shaped like the other report-plane
+/// states (`30Vd:res-report-states-spell-through-debug`).
+pub(crate) fn unplaceable_text(why: dorc_why::UnplaceableAddress) -> String {
+    format!("address-unplaceable {why:?}")
 }
 
 /// THE exit for recorded bytes: the caller's destination encoder, and nothing else.
@@ -559,6 +577,9 @@ pub(crate) fn token_text(token: RecordedToken) -> String {
         RecordedToken::RenderKind(value) => value.token().to_owned(),
         RecordedToken::LicenseVerb(value) => value.token().to_owned(),
         RecordedToken::LicenseCustody(value) => value.token().to_owned(),
+        RecordedToken::ApplyPolicy(value) => value.token().to_owned(),
+        RecordedToken::OriginState(value) => value.token().to_owned(),
+        RecordedToken::TerminalState(value) => value.token().to_owned(),
     }
 }
 

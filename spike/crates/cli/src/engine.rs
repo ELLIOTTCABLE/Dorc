@@ -2151,7 +2151,8 @@ impl ReceiptRoot<'_> {
     /// The `File` arm answers `false` for every stored entry on purpose: an explicit file is
     /// admitted by PATH at the edge and is never matched against store contents, so a store
     /// entry that happens to carry the same identity is still not the document the admin named.
-    fn takes(self, receipt_id: &str, terminal: &[String]) -> bool {
+    #[must_use]
+    pub fn takes(self, receipt_id: &str, terminal: &[String]) -> bool {
         match self {
             Self::File(_) => false,
             Self::Id(wanted) => wanted == receipt_id,
@@ -2160,55 +2161,77 @@ impl ReceiptRoot<'_> {
     }
 }
 
-/// Answer `dorc why` from the recorded receipt store.
+/// Which spelling of the total surface an invocation asked for.
 ///
-/// The store READ — roots, a keyset, a bounded walk, a bounded read per entry — is an edge act and
-/// is already spent when this is called; what is left is the DECISION, and it sits here so that
-/// the binary and the loom driver make it once between them
-/// (`cli/CLAUDE.md one-definition-table-two-drivers`). Both conditions it reports travel the
-/// ordinary typed diagnostic route, because a report about the operator's own profile is aid, not
-/// a line of the listing that the operator is meant to read as recorded content.
+/// `--json` is a REGISTER, never a different question (`30V` §5): both spellings serialize one
+/// reconstruction and make the same totality claim, so a caller cannot get more or less by
+/// choosing one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WhyRegister {
+    /// The terminal's own total surface: registry labels, weft structure, printable ASCII.
+    Terminal,
+    /// The mechanically-serialized sibling.
+    Json,
+}
+
+/// Answer `dorc why` from a receipt the edge already read.
+///
+/// The READ — roots, a keyset, a bounded walk, a bounded read per entry, the file the address
+/// named — is an edge act and is already spent when this is called; what is left is the
+/// RECONSTRUCTION and the render, and they sit here so the binary and the loom driver share one
+/// (`cli/CLAUDE.md one-definition-table-two-drivers`). Both report states travel the ordinary typed
+/// diagnostic route, because a report about the operator's own profile is aid rather than a line of
+/// the answer.
 ///
 /// Complete either way: a store with nothing to say is a report state, not a failed run.
 pub fn report_recorded_store(
-    reading: Result<crate::recorded::StoreReading, String>,
-    selection: ReceiptRoot<'_>,
+    answer: crate::recorded::StoreAnswer,
+    register: WhyRegister,
     store: &str,
     sink: &mut dyn OutputSink,
 ) -> EngineStatus {
-    let reading = match reading {
-        Ok(reading) => reading,
-        Err(reason) => return report_store_unreadable(sink, store, &reason),
-    };
-    // REPORTED, never resolved: several incomparable terminal roots leave the store with no
-    // tie-break, and inventing one would pick a document by the value least related to when it was
-    // written. It is not a refusal either — the survivors are listed below, and what the run cannot
-    // say is which one is last.
-    if matches!(selection, ReceiptRoot::Last) && reading.terminal().len() > 1 {
-        report(
-            sink,
-            RECEIPT_STAGE,
-            None,
-            &[Diag::new_spanless_site(DiagCode::DurableReceiptAmbiguous(
-                dorc_aid::diag::DurableReceiptAmbiguous {
-                    count: reading.terminal().len().to_string(),
-                },
-            ))],
-        );
-    }
-    let mut out = String::new();
-    for document in reading.documents() {
-        if selection.takes(document.receipt_id(), reading.terminal())
-            && let Some(listing) = document.listing()
-        {
-            out.push_str(listing);
+    let reading = match answer {
+        crate::recorded::StoreAnswer::Unreadable(reason) => {
+            return report_store_unreadable(sink, store, &reason);
         }
-    }
-    out.push_str(reading.graph());
-    if out.is_empty() {
-        return report_store_unreadable(sink, store, "no-receipt");
-    }
-    sink.emit(OutputEvent::plain_text(OutputChannel::Stdout, out));
+        // REPORTED, never resolved: several incomparable terminal roots leave the store with no
+        // tie-break, and inventing one would pick a document by the value least related to when it
+        // was written. Answering with all of them instead would be the whole-store union
+        // `30R:receipt-rooted-attention-and-cli` refuses, so this invocation explains nothing.
+        crate::recorded::StoreAnswer::Ambiguous(count) => {
+            report(
+                sink,
+                RECEIPT_STAGE,
+                None,
+                &[Diag::new_spanless_site(DiagCode::DurableReceiptAmbiguous(
+                    dorc_aid::diag::DurableReceiptAmbiguous {
+                        count: count.to_string(),
+                    },
+                ))],
+            );
+            return EngineStatus::Complete;
+        }
+        crate::recorded::StoreAnswer::Rooted(reading) => *reading,
+    };
+
+    let reconstruction = reading.reconstruct();
+    let event = match register {
+        WhyRegister::Json => OutputEvent::plain_text(
+            OutputChannel::Stdout,
+            crate::why_json::why_json(&reconstruction, &mut crate::why_json::JsonValues::default())
+                .0,
+        ),
+        WhyRegister::Terminal => {
+            let ctx = sink.render_ctx();
+            let (parts, _) = crate::why_total::why_total(
+                &reconstruction,
+                &ctx,
+                &mut crate::why_total::TerminalValues::default(),
+            );
+            OutputEvent::plain_tagged(OutputChannel::Stdout, parts)
+        }
+    };
+    sink.emit(event);
     sink.flush(OutputChannel::Stdout);
     EngineStatus::Complete
 }

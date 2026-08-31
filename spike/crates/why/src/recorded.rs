@@ -19,12 +19,16 @@ use dorc_receipt::report::{
     FamilyCoverage, PlanFamily, ProjectionState, RecordedDocumentId, RecordedSpecies,
     RecordedWhyFacts, SiblingState, SiteFacts, StageFacts,
 };
-use dorc_receipt::tokens::{RecordedLicenseCustody, RecordedSpeechAct};
+use dorc_receipt::tokens::{
+    RecordedApplyPolicy, RecordedLicenseCustody, RecordedOriginState, RecordedSpeechAct,
+    RecordedTerminalState,
+};
 
 use crate::datum::{
     AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, HostName,
     IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, RecordedFlag, RecordedToken,
-    Speaker, StateFact, Subject, Voice, VoiceSet, WorldCoordinate,
+    Separability, Speaker, StateFact, Subject, UnplaceableAddress, Voice, VoiceSet,
+    WorldCoordinate,
 };
 use crate::known::{CantTell, CarrierAbsence, Held, Known};
 use crate::structure::{
@@ -62,15 +66,85 @@ pub struct NonPlanRoot {
     pub correlations: Vec<CorrelationFact>,
     /// What is wrong with each required sibling not in hand.
     pub siblings: Vec<SiblingState>,
+    /// An intent root's own shallow facts, where the root is one.
+    pub intent: Option<ShallowIntent>,
+    /// An outcome root's own shallow facts, where the root is one.
+    pub outcome: Option<ShallowOutcome>,
+}
+
+/// An apply intent's own facts, at the depth the already-public read-back accessors answer.
+///
+/// SHALLOW by disclosure (`30Vd:tc-nonplan-root-depth`): per-assignment rows would need sealed
+/// accessors nobody has written, so what is here is what a reader can have today and the deeper
+/// projection stays a named, standing flag rather than an implied promise.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShallowIntent {
+    /// Which publication route authorized the apply.
+    pub policy: RecordedApplyPolicy,
+    /// Whether any assignment names an originating plan.
+    pub origin_state: RecordedOriginState,
+    /// How many assignments the intent carries.
+    pub assignment_count: u64,
+    /// Every originating plan this intent names, duplicates retained as the document spells them.
+    pub origin_receipts: Vec<RecordedDocumentId>,
+}
+
+/// An apply outcome's own facts, at the same shallow depth.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShallowOutcome {
+    /// The graceful terminal state the apply reached.
+    pub terminal: RecordedTerminalState,
+    /// How many site rows the outcome carries.
+    pub site_count: u64,
+    /// The intent this outcome answers, where it names a readable one.
+    pub intent: Option<RecordedDocumentId>,
+}
+
+/// What the EDGE could do with the address the question named.
+///
+/// A plan root's placed address travels inside `RecordedWhyFacts`, so the only thing this adds is
+/// the case the report model cannot represent: a request the edge could not turn into an ordinal at
+/// all. That is a fact about the QUESTION rather than about any document, which is why it arrives
+/// beside the root rather than inside it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AddressStanding {
+    /// No address was named, or the root's own facts already answer the one that was.
+    #[default]
+    AsRecorded,
+    /// The question named an address this route could not place at all.
+    Unplaceable(UnplaceableAddress),
 }
 
 /// Reconstruct one rooted question.
 #[must_use]
-pub fn reconstruct(rooted: &Rooted<'_>) -> Reconstruction {
+pub fn reconstruct(rooted: &Rooted<'_>, address: AddressStanding) -> Reconstruction {
     match rooted {
-        Rooted::Plan(facts) => from_plan(facts),
-        Rooted::OtherSpecies(root) => from_non_plan(root),
+        Rooted::Plan(facts) => from_plan(facts, address),
+        Rooted::OtherSpecies(root) => from_non_plan(root, address),
     }
+}
+
+/// The question's own unplaceable address, as one datum.
+///
+/// Its delivery names the ROOT carrier because the root is the document the address was matched
+/// against — the recorded source table it failed to find a digest in — while its subject is the
+/// question, because nothing the document says is what went wrong.
+fn push_unplaceable_address(
+    data: &mut Vec<Datum>,
+    address: AddressStanding,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    let AddressStanding::Unplaceable(why) = address else {
+        return;
+    };
+    data.push(Datum::minted(
+        ours(SpeechAct::Derived),
+        world.clone(),
+        Known::present(Subject::Question),
+        Known::present(Payload::Unplaceable(why)),
+        here,
+    ));
 }
 
 /// The engine speaking in its own voice — the terminal attribution link
@@ -139,7 +213,7 @@ fn host_of(facts: &RecordedWhyFacts) -> Known<HostName> {
     )
 }
 
-fn from_plan(facts: &RecordedWhyFacts) -> Reconstruction {
+fn from_plan(facts: &RecordedWhyFacts, address: AddressStanding) -> Reconstruction {
     let root = facts.root();
     let document = root.document().clone();
     let order = root.order().spelled();
@@ -190,6 +264,7 @@ fn from_plan(facts: &RecordedWhyFacts) -> Reconstruction {
     push_licensor_data(&mut data, facts, &world, here);
     push_omission_data(&mut data, facts, &world, here);
     push_address_data(&mut data, facts, &world, here);
+    push_unplaceable_address(&mut data, address, &world, here);
     push_correlation_data(&mut data, &carriers, &world, here);
     push_uncovered_families(&mut data, facts, &world, here);
 
@@ -988,7 +1063,7 @@ fn push_licensor_data(
 ) {
     for licensor in facts.licensors() {
         let subject = Known::present(Subject::Site(licensor.site()));
-        let speaker = spoke(custody_act(licensor.custody()));
+        let speaker = custody_speaker(licensor.custody());
         for payload in [
             Payload::Token(RecordedToken::LicenseVerb(licensor.license())),
             Payload::Token(RecordedToken::LicenseCustody(licensor.custody())),
@@ -1024,6 +1099,28 @@ const fn custody_act(custody: RecordedLicenseCustody) -> SpeechAct {
             SpeechAct::Vouched
         }
         RecordedLicenseCustody::MeasuredSelf => SpeechAct::Measured,
+    }
+}
+
+/// Who performed a recorded custody's act, at the cardinality the custody word states.
+///
+/// `vouched-severally` populates an INSEPARABLE committee whose members are unnamed, rather than
+/// the absent voice-set its siblings get: the document says several authors each vouched, and a
+/// remedy against that license has to reach every one of them (`30V` §2 rul-remedies-may-fork).
+/// Spelling it as one unnamed voice would understate the fork by exactly the thing the custody word
+/// exists to say. The members stay EMPTY because narrative operands are not durable — the act and
+/// its cardinality are knowable and the names are not (`a-voice-set-is-its-own-leaf`).
+fn custody_speaker(custody: RecordedLicenseCustody) -> Known<Speaker> {
+    let act = custody_act(custody);
+    match custody {
+        RecordedLicenseCustody::VouchedSeverally => Known::present(Speaker::of(
+            act,
+            Known::present(VoiceSet::Committee {
+                voices: Vec::new(),
+                separability: Separability::Inseparable,
+            }),
+        )),
+        RecordedLicenseCustody::Vouched | RecordedLicenseCustody::MeasuredSelf => spoke(act),
     }
 }
 
@@ -1112,7 +1209,7 @@ fn agreement_of(facts: &RecordedWhyFacts, stage: &StageFacts) -> SourceAgreement
         })
 }
 
-fn from_non_plan(root: &NonPlanRoot) -> Reconstruction {
+fn from_non_plan(root: &NonPlanRoot, address: AddressStanding) -> Reconstruction {
     let mut carriers = vec![Carrier {
         document: root.document.clone(),
         species: root.document.species(),
@@ -1183,6 +1280,16 @@ fn from_non_plan(root: &NonPlanRoot) -> Reconstruction {
             here,
         ));
     }
+    for payload in shallow_payloads(root) {
+        data.push(Datum::minted(
+            ours(SpeechAct::Derived),
+            world.clone(),
+            subject.clone(),
+            Known::present(payload),
+            here,
+        ));
+    }
+    push_unplaceable_address(&mut data, address, &world, here);
     // EVERY plan-shaped family is absent here, and for a different reason than on a plan root: the
     // report model does not cover this species at all. Same vocabulary, honestly caused.
     for family in PlanFamily::ALL {
@@ -1203,6 +1310,37 @@ fn from_non_plan(root: &NonPlanRoot) -> Reconstruction {
         data,
         Structure::of(root.correlations.clone(), LocusDag::default()),
     )
+}
+
+/// A non-plan root's own recorded facts, at the depth its public read-back accessors answer.
+///
+/// One flat vector rather than a nested projection: the depth here is deliberately shallow
+/// (`30Vd:tc-nonplan-root-depth` stands), and a shape that looked like a family projection would
+/// suggest per-assignment and per-site rows this read surface does not have.
+fn shallow_payloads(root: &NonPlanRoot) -> Vec<Payload> {
+    let mut out = Vec::new();
+    if let Some(intent) = &root.intent {
+        out.push(Payload::Token(RecordedToken::ApplyPolicy(intent.policy)));
+        out.push(Payload::Token(RecordedToken::OriginState(
+            intent.origin_state,
+        )));
+        out.push(Payload::Identity(IdentityFact::Count(
+            intent.assignment_count,
+        )));
+        for plan in &intent.origin_receipts {
+            out.push(Payload::Identity(IdentityFact::Document(plan.clone())));
+        }
+    }
+    if let Some(outcome) = &root.outcome {
+        out.push(Payload::Token(RecordedToken::TerminalState(
+            outcome.terminal,
+        )));
+        out.push(Payload::Identity(IdentityFact::Count(outcome.site_count)));
+        if let Some(intent) = &outcome.intent {
+            out.push(Payload::Identity(IdentityFact::Document(intent.clone())));
+        }
+    }
+    out
 }
 
 /// Whether a species is the one the sealed report model covers.

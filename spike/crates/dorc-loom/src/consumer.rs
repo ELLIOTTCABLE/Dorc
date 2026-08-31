@@ -987,8 +987,8 @@ impl DorcConsumer {
             actions: Vec::new(),
         };
         let status = dorc_cli::engine::report_recorded_store(
-            Err(ROOTLESS_WORLD.to_owned()),
-            args.receipt_root(),
+            dorc_cli::recorded::StoreAnswer::Unreadable(ROOTLESS_WORLD.to_owned()),
+            args.why_register(),
             dorc_cli::engine::NO_STATE_ROOT,
             &mut sink,
         );

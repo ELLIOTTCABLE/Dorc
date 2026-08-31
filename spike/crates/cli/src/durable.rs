@@ -103,6 +103,20 @@ pub fn standard_roots(
     RootInputs::of(platform, &configuration, &state)
 }
 
+/// The store order a receipt FILE's own name states, where its name follows the store's grammar.
+///
+/// The order is a filename fact by construction (`30Rd:store-enumeration-and-last-selection`), and
+/// a file named by an admin is not obliged to carry one — so this answers `None` rather than
+/// substituting the undated token, which would be a false claim about a document that is dated.
+/// The seat is here because this module is the ONE production naming of the local edge.
+#[must_use]
+pub fn order_of_receipt_file(path: &str) -> Option<ReceiptOrderToken> {
+    let name = std::path::Path::new(path).file_name()?.to_str()?;
+    dorc_receipt_local::names::ReceiptFileName::of_entry(name, &LocalLimits::V1)
+        .ok()
+        .map(|name| name.order())
+}
+
 /// Which platform's standard locations this build resolves against.
 #[must_use]
 pub const fn host_platform() -> RootPlatform {
@@ -192,8 +206,25 @@ impl LocalReceiptEdgeV1 {
     pub fn open_for_read(&self, io: &mut dyn LocalIo) -> Result<ReadEdge, EdgeRefusal> {
         let store = LocalReceiptStoreV1::open_for_read(&self.roots, io, self.store_limits())
             .map_err(EdgeRefusal::Store)?;
+        let reader = self.open_documents_for_read(io)?;
+        Ok(ReadEdge { reader, store })
+    }
+
+    /// Open the keyset ALONE, for a root named as an explicit file outside any store.
+    ///
+    /// `--receipt <file>` roots the question at a path rather than at a store entry
+    /// (`30R:receipt-rooted-attention-and-cli`), so a missing or unusable store must not take the
+    /// answer down with it — while the keyset stays required, because a document nothing verified
+    /// is not an authenticated explanation.
+    ///
+    /// # Errors
+    /// Refuses unresolvable roots and a keyset that cannot be validated for reading.
+    pub fn open_documents_for_read(
+        &self,
+        io: &mut dyn LocalIo,
+    ) -> Result<DocumentReader, EdgeRefusal> {
         match open_for_read(&self.roots, io, &self.limits) {
-            LocalReadOpenV1::Ready(keys) => Ok(ReadEdge { keys, store }),
+            LocalReadOpenV1::Ready(keys) => Ok(DocumentReader { keys }),
             LocalReadOpenV1::Unavailable(state) => Err(EdgeRefusal::Keys(state)),
         }
     }
@@ -236,7 +267,7 @@ impl LocalReceiptEdgeV1 {
 /// A validated keyset and store, open for reading.
 #[derive(Debug)]
 pub struct ReadEdge {
-    keys: LocalReadKeysV1,
+    reader: DocumentReader,
     store: LocalReceiptStoreV1,
 }
 
@@ -244,13 +275,69 @@ impl ReadEdge {
     /// The verification and opening material this controller's policy selected.
     #[must_use]
     pub const fn keys(&self) -> &LocalReadKeysV1 {
-        &self.keys
+        self.reader.keys()
     }
 
     /// The store, for a bounded walk and bounded reads.
     #[must_use]
     pub const fn store(&self) -> &LocalReceiptStoreV1 {
         &self.store
+    }
+
+    /// The keyset alone, for bytes that did not come from this store.
+    #[must_use]
+    pub const fn reader(&self) -> &DocumentReader {
+        &self.reader
+    }
+
+    /// Read one plan document back. See [`DocumentReader::read_plan`].
+    ///
+    /// # Errors
+    /// As [`DocumentReader::read_plan`].
+    pub fn read_plan(
+        &self,
+        bytes: Vec<u8>,
+    ) -> Result<LocallyAuthenticatedRead<PlanReceipt>, dorc_receipt::reader::PartialReceipt> {
+        self.reader.read_plan(bytes)
+    }
+
+    /// Read one apply intent back.
+    ///
+    /// # Errors
+    /// As [`DocumentReader::read_plan`].
+    pub fn read_intent(
+        &self,
+        bytes: Vec<u8>,
+    ) -> Result<LocallyAuthenticatedRead<ApplyIntent>, dorc_receipt::reader::PartialReceipt> {
+        self.reader.read_intent(bytes)
+    }
+
+    /// Read one apply outcome back.
+    ///
+    /// # Errors
+    /// As [`DocumentReader::read_plan`].
+    pub fn read_outcome(
+        &self,
+        bytes: Vec<u8>,
+    ) -> Result<LocallyAuthenticatedRead<ApplyOutcome>, dorc_receipt::reader::PartialReceipt> {
+        self.reader.read_outcome(bytes)
+    }
+}
+
+/// The validated keyset alone: everything a read needs that a STORE does not supply.
+///
+/// Its own value because the two are independently available — a run may hold a keyset and no
+/// usable store, which is exactly the world `--receipt <file>` answers in.
+#[derive(Debug)]
+pub struct DocumentReader {
+    keys: LocalReadKeysV1,
+}
+
+impl DocumentReader {
+    /// The verification and opening material this controller's policy selected.
+    #[must_use]
+    pub const fn keys(&self) -> &LocalReadKeysV1 {
+        &self.keys
     }
 
     /// Read one plan document back: verify under this controller's own material, then open its

@@ -16,7 +16,7 @@ use dorc_receipt::report::{
     SourceObservation,
 };
 use dorc_why::known::{CantTell, CarrierAbsence, Held, Known, WithholdReason};
-use dorc_why::recorded::{Rooted, reconstruct};
+use dorc_why::recorded::{AddressStanding, Rooted, reconstruct};
 use dorc_why::{
     CorrelationFact, Datum, Delivery, IdentityFact, Moment, NegativeSpace, Payload, Reconstruction,
     RecordedFlag, RecordedToken, Separability, Speaker, StateFact, Subject, VoiceSet,
@@ -88,6 +88,7 @@ fn subject_of(datum: &Datum) -> String {
         Subject::Narrative(ordinal) => format!("narrative:{ordinal}"),
         Subject::Region(ordinal) => format!("region:{ordinal}"),
         Subject::Load(ordinal) => format!("load:{ordinal}"),
+        Subject::Question => "question".to_owned(),
     })
 }
 
@@ -106,6 +107,7 @@ fn payload_of(datum: &Datum) -> String {
         Payload::Token(token) => format!("token:{}", token_of(*token)),
         Payload::Flag(flag) => format!("flag:{}", flag_of(*flag)),
         Payload::NegativeSpace(space) => format!("negative:{}", negative_of(*space)),
+        Payload::Unplaceable(why) => format!("unplaceable:{why:?}"),
     })
 }
 
@@ -121,6 +123,9 @@ fn token_of(token: RecordedToken) -> String {
         RecordedToken::RenderKind(value) => format!("render:{value:?}"),
         RecordedToken::LicenseVerb(value) => format!("license:{value:?}"),
         RecordedToken::LicenseCustody(value) => format!("custody:{value:?}"),
+        RecordedToken::ApplyPolicy(value) => format!("policy:{value:?}"),
+        RecordedToken::OriginState(value) => format!("origin:{value:?}"),
+        RecordedToken::TerminalState(value) => format!("terminal:{value:?}"),
     }
 }
 
@@ -222,7 +227,7 @@ fn transcript(reconstruction: &Reconstruction) -> Vec<String> {
 
 fn plan_reconstruction(document: &support::DocumentUnderTest) -> Reconstruction {
     let facts = facts(document, Vec::new(), Vec::new(), None);
-    reconstruct(&Rooted::Plan(&facts))
+    reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded)
 }
 
 /// THE TOTALITY FLOOR: every recorded family the model names reaches the population exactly once.
@@ -317,7 +322,7 @@ fn every_hole_names_its_cause_and_the_v1_holes_are_the_carriers() {
         11,
     );
     let facts = facts(&document, Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
     let holes = reconstruction.audit();
     assert!(
         !holes.is_empty(),
@@ -415,8 +420,14 @@ fn permuting_what_the_edge_supplies_does_not_move_the_reconstruction() {
 
     let forward = facts(&document, siblings(false), observations(), None);
     let backward = facts(&document, siblings(true), observations(), None);
-    let forward = transcript(&reconstruct(&Rooted::Plan(&forward)));
-    let backward = transcript(&reconstruct(&Rooted::Plan(&backward)));
+    let forward = transcript(&reconstruct(
+        &Rooted::Plan(&forward),
+        AddressStanding::AsRecorded,
+    ));
+    let backward = transcript(&reconstruct(
+        &Rooted::Plan(&backward),
+        AddressStanding::AsRecorded,
+    ));
 
     // The sibling ROWS may legitimately follow the edge's order — what must not move is the set of
     // facts and the shape of every other row, so the comparison is over the sorted population.
@@ -449,8 +460,14 @@ fn a_compared_source_and_an_uncompared_one_are_distinguishable() {
     );
     let uncompared = facts(&document, Vec::new(), Vec::new(), None);
     assert_ne!(
-        transcript(&reconstruct(&Rooted::Plan(&compared))),
-        transcript(&reconstruct(&Rooted::Plan(&uncompared))),
+        transcript(&reconstruct(
+            &Rooted::Plan(&compared),
+            AddressStanding::AsRecorded
+        )),
+        transcript(&reconstruct(
+            &Rooted::Plan(&uncompared),
+            AddressStanding::AsRecorded
+        )),
         "a comparison that happened and one that did not are different facts; a model that read \
          the same either way would let a stale answer wear a fresh one's clothes"
     );
@@ -470,7 +487,7 @@ fn an_asked_address_reaches_the_population() {
         }],
         Some(RequestedAddress::of(0, 2)),
     );
-    let reconstruction = reconstruct(&Rooted::Plan(&asked));
+    let reconstruction = reconstruct(&Rooted::Plan(&asked), AddressStanding::AsRecorded);
     assert!(
         transcript(&reconstruction)
             .iter()

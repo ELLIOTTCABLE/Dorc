@@ -214,31 +214,48 @@ fn a_clean_profile_publishes_a_receipt_a_second_process_verifies_and_opens() {
     // Everything the run wrote is INSIDE the sandbox — the assertion that makes this case a
     // statement about where a real invocation puts things rather than about a directory a test
     // happened to look in.
-    let listing = why(&sandbox, &scratch, &["--receipt-last"]);
-    let signing = line_starting(&listing, "signing-key").expect("the listing names its key");
+    let rendered = why(&sandbox, &scratch, &["--receipt-last"]);
     assert!(
-        signing.len() > "signing-key ".len(),
-        "a signing identity is spelled, not merely announced: {signing}"
+        rendered.contains(&receipt_id_of(name)),
+        "the surface names the document a second process read; got:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("Trusted"),
+        "and says the signature checked under material this controller's policy named; got:\n{rendered}"
     );
 
-    // THE SENTINEL. A source's path lives in the encrypted region and nowhere in the readable
-    // skeleton, so a second process printing it has verified the signature and opened the region
-    // with the keyset the FIRST process created. Skeleton-only output cannot reach this line.
-    let opaque: Vec<&str> = listing
-        .lines()
-        .filter(|line| line.starts_with("opaque "))
-        .collect();
+    // THE SENTINEL. A site's own shell text lives in the encrypted region and nowhere in the
+    // readable skeleton, so a second process rendering it has verified the signature and opened the
+    // region with the keyset the FIRST process created. Skeleton-only output cannot reach this line.
     assert!(
-        opaque
-            .iter()
-            .any(|line| line.ends_with("source-path book.sh")),
-        "the region must yield the book's own path; got {opaque:?}"
+        rendered.contains("hork tune"),
+        "the region must yield the book's own recorded shell; got:\n{rendered}"
     );
 
     // Non-vacuity: a document recording no decision would satisfy the sentinel while proving the
     // route carried nothing.
-    let sites = line_starting(&listing, "sites").expect("the listing counts its sites");
-    assert_eq!(sites, "sites 1", "the run decided one site and recorded it");
+    assert!(
+        rendered.contains("site 0"),
+        "the run decided one site and the surface is about it; got:\n{rendered}"
+    );
+}
+
+/// The signing identity one published document names, read from the document's own skeleton.
+///
+/// Read from the FILE rather than from a render: the readable skeleton is a product goal
+/// (`30R:ruled-product-shape`), and the receipt-rooted surface reports what verification SAID
+/// rather than which key said it — so the question "did two profiles mint two identities" is asked
+/// where the answer lives.
+fn signing_identity(sandbox: &ProfileSandbox) -> String {
+    let published = entries(&store_root(sandbox));
+    let name = published.first().expect("at least one document");
+    let bytes =
+        std::fs::read_to_string(store_root(sandbox).join(name)).expect("the document reads");
+    bytes
+        .lines()
+        .find_map(|line| line.strip_prefix("signing-key-id "))
+        .expect("the skeleton names its signing identity")
+        .to_owned()
 }
 
 #[test]
@@ -281,21 +298,25 @@ fn two_clean_profiles_mint_different_identities_and_reopening_one_preserves_them
 
     plan(&first, &scratch);
     plan(&second, &scratch);
-    let one = line_starting(&why(&first, &scratch, &["--receipt-last"]), "signing-key")
-        .expect("the first profile names its key");
-    let two = line_starting(&why(&second, &scratch, &["--receipt-last"]), "signing-key")
-        .expect("the second profile names its key");
+    let one = signing_identity(&first);
+    let two = signing_identity(&second);
     assert_ne!(
         one, two,
         "two clean profiles minted the same signing identity, so it is not being generated"
     );
 
     plan(&first, &scratch);
-    let reopened = line_starting(&why(&first, &scratch, &["--receipt-last"]), "signing-key")
-        .expect("the reopened profile names its key");
-    assert_eq!(
-        one, reopened,
+    // Both documents in this profile still verify under one keyset, which is what a REOPEN means:
+    // a run that replaced the material would leave the earlier document unreadable, and `why`
+    // would answer nothing rather than a surface.
+    assert!(
+        !why(&first, &scratch, &["--receipt-last"]).is_empty(),
         "a second run in one profile must reopen the keyset it found, never replace it"
+    );
+    assert_eq!(
+        signing_identity(&first),
+        one,
+        "and the identity the documents name is the one the first run minted"
     );
     assert_eq!(
         entries(&store_root(&first)).len(),
@@ -390,16 +411,15 @@ fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_re
     // last-selection derived plus the typed edges the graph correlated. That is the stronger
     // statement — a union of every history would have shown the same lines without proving the
     // outcome was reachable FROM anything.
-    let listing = why(&sandbox, &scratch, &["--receipt-last"]);
+    let outcome_id = receipt_id_of(outcomes.first().expect("one outcome"));
+    let rendered = why(&sandbox, &scratch, &["--receipt-last"]);
     assert!(
-        listing.contains(&format!("answers-intent {intent_id}")),
-        "the outcome must name the intent that authorized it; got:\n{listing}"
+        rendered.contains(&intent_id),
+        "the outcome must name the intent that authorized it; got:\n{rendered}"
     );
     assert!(
-        listing
-            .lines()
-            .any(|line| line.starts_with("edge apply-intent ") && line.contains(&intent_id)),
-        "a second process must correlate the two species it read; got:\n{listing}"
+        rendered.contains(&format!("{intent_id} {outcome_id}")),
+        "a second process must correlate the two species it read; got:\n{rendered}"
     );
 }
 
@@ -504,21 +524,21 @@ fn a_receipt_identity_retrieves_its_own_document_and_prefers_nothing() {
     let second = receipt_id_of(published.get(1).expect("two documents"));
     assert_ne!(first, second, "two documents never share one identity");
 
-    let listing = why(&sandbox, &scratch, &["--receipt-id", &first]);
+    let rendered = why(&sandbox, &scratch, &["--receipt-id", &first]);
     assert!(
-        listing.contains(&format!("receipt {first}")),
-        "the named document must be the one answered; got:\n{listing}"
+        rendered.contains(&first),
+        "the named document must be the one answered; got:\n{rendered}"
     );
     assert!(
-        !listing.contains(&format!("receipt {second}")),
-        "and no other document may ride along; got:\n{listing}"
+        !rendered.contains(&second),
+        "and no other document may ride along; got:\n{rendered}"
     );
 
     // An identity nothing carries answers about nothing rather than falling back to whatever was
     // nearest — the property the one-selection rule exists to keep.
     let absent = why(&sandbox, &scratch, &["--receipt-id", &"0".repeat(64)]);
     assert!(
-        !absent.contains("receipt "),
+        absent.trim().is_empty(),
         "an identity nothing carries must answer about no document; got:\n{absent}"
     );
 }
@@ -615,8 +635,10 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
     // THE AMBIGUITY SEAT, through the shipped binary. The store's ONE selection is its
     // maximum-order cohort, and its order is when the run was recorded — so two runs recorded at
     // one moment are a store that genuinely cannot say which of them is last. What must happen is
-    // that it SAYS so and lists both: a tie-break on receipt identity would choose a document by
-    // the value least related to when it was written, and choosing quietly is worse still.
+    // that it SAYS so and explains NOTHING: a tie-break on receipt identity would choose a document
+    // by the value least related to when it was written, and answering about both would be the
+    // whole-store union `30R:receipt-rooted-attention-and-cli` refuses — the surface is ROOTED at
+    // one document, so a cohort is not something it can be rooted at.
     let sandbox = ProfileSandbox::new("ambiguous-last");
     let scratch = Scratch::new("ambiguous-last");
     plan_at(&sandbox, &scratch, Some(ONE_MOMENT_MS));
@@ -633,12 +655,11 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
         stderr.contains("warning[durable-receipt-ambiguous]"),
         "an unnameable last must be reported by code; got: {stderr}"
     );
-    // REPORTED, never resolved: both members are still answered about, so the reader has the
-    // cohort rather than one document the tool picked for them.
+    // REPORTED, never resolved — and never half-resolved either: neither member is explained,
+    // because an explanation is rooted at a document and no document was selected.
     assert!(
-        listing.contains(&format!("receipt {first}"))
-            && listing.contains(&format!("receipt {second}")),
-        "every member of the cohort must still be listed; got:\n{listing}"
+        listing.trim().is_empty(),
+        "a cohort is not a root, so nothing is explained; got:\n{listing}"
     );
 
     // THE FAILING DIRECTION. Naming one identity is retrieval, not a ranking, so there is no
@@ -650,8 +671,7 @@ fn two_runs_at_one_recorded_moment_leave_a_last_the_store_cannot_name() {
         "retrieval by identity asks no ordering question; got: {quiet}"
     );
     assert!(
-        named.contains(&format!("receipt {first}"))
-            && !named.contains(&format!("receipt {second}")),
+        named.contains(&first) && !named.contains(&second),
         "and answers about the named document alone; got:\n{named}"
     );
 }
@@ -721,13 +741,19 @@ fn a_second_process_reads_the_explicit_store_and_neither_store_sees_the_other() 
     let explicit = why(&sandbox, &scratch, &["--receipt-last", &flag]);
     let default = why(&sandbox, &scratch, &["--receipt-last"]);
 
-    let identity = |listing: &str| {
-        line_starting(listing, "receipt").expect("a listing names the document it read")
-    };
-    assert_ne!(
-        identity(&explicit),
-        identity(&default),
-        "each selection answered from its own store; one reading both would agree here"
+    let elsewhere = receipt_id_of(entries(&named).first().expect("the explicit store has one"));
+    let here = receipt_id_of(
+        entries(&store_root(&sandbox))
+            .first()
+            .expect("the default store has one"),
+    );
+    assert!(
+        explicit.contains(&elsewhere) && !explicit.contains(&here),
+        "the explicit store answered about its own document alone; got:\n{explicit}"
+    );
+    assert!(
+        default.contains(&here) && !default.contains(&elsewhere),
+        "and the default store about its own; got:\n{default}"
     );
 }
 

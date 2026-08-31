@@ -332,6 +332,10 @@ const HELP_OPTION_ROWS: &[HelpRow] = &[
         slug: "cli-help-option-all",
     },
     HelpRow {
+        label: "--json",
+        slug: "cli-help-option-json",
+    },
+    HelpRow {
         label: "--debug-argv",
         slug: "cli-help-option-debug-argv",
     },
@@ -580,6 +584,16 @@ pub struct Args {
     /// footer's fuller promise — every link, unselected, exhaustive — is not yet built, since the
     /// render does no link SELECTION to undo.
     pub all: bool,
+    /// `--json`: the machine sibling of the receipt-rooted total surface (`30V` §5).
+    ///
+    /// A REGISTER rather than a different question: it serializes the same reconstruction and makes
+    /// the same totality claim, with every withhold an explicit typed marker instead of an absent
+    /// key. Version-unstable by open contract, which the envelope says in its own first field.
+    ///
+    /// Spelled `--json` rather than `--format=json` (`30Vd:tc-machine-format-flag-spelling`): the
+    /// `dorc lint --format=jsonl` precedent is a lane with several machine formats, and this one has
+    /// exactly two registers.
+    pub json: bool,
     /// `--host DEST`: the ssh destination this run really contacts (`260` §6, at N=1).
     ///
     /// Absent, nothing is shipped anywhere and behaviour is exactly what it was before a
@@ -659,6 +673,16 @@ impl Args {
     #[must_use]
     pub const fn names_a_receipt_root(&self) -> bool {
         self.receipt_last || self.receipt_id.is_some() || self.receipt_file.is_some()
+    }
+
+    /// Which register the receipt-rooted answer is spelled in.
+    #[must_use]
+    pub const fn why_register(&self) -> engine::WhyRegister {
+        if self.json {
+            engine::WhyRegister::Json
+        } else {
+            engine::WhyRegister::Terminal
+        }
     }
 
     /// Which root receipt this invocation's flags select.
@@ -824,6 +848,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
     let mut receipt_file: Option<String> = None;
     let mut no_receipt = false;
     let mut all = false;
+    let mut json = false;
     let mut shim_dir: Option<String> = None;
     let mut artifact_dir: Option<String> = None;
     let mut form: Option<ArtifactForm> = None;
@@ -943,6 +968,8 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
             );
         } else if arg == "--all" {
             all = true;
+        } else if arg == "--json" {
+            json = true;
         } else if arg == "--receipt-last" {
             receipt_last = true;
         } else if let Some(id) = arg.strip_prefix("--receipt-id=") {
@@ -1059,6 +1086,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 "--receipt-id",
                 "--receipt",
                 "--all",
+                "--json",
                 "--shim-dir",
                 "--host",
                 "--plan",
@@ -1101,6 +1129,10 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         (receipt_last, "--receipt-last"),
         (receipt_id.is_some(), "--receipt-id"),
         (receipt_file.is_some(), "--receipt"),
+        // `--json` joins them because it names a REGISTER of the receipt-rooted surface; a plan or
+        // apply run has no such register, and accepting the flag there would be an assertion the
+        // admin only believes they made.
+        (json, "--json"),
     ] {
         if present && mode != Mode::Why {
             return Err(Diag::new_spanless_site(DiagCode::CliFlagRequiresMode(
@@ -1255,6 +1287,7 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         receipt_id,
         receipt_file,
         all,
+        json,
         host,
         plan,
         accept_new,

@@ -14,10 +14,11 @@ use dorc_receipt::report::{
 };
 use dorc_receipt::rows::{RecordedOperands, RecordedSite};
 use dorc_receipt::tokens::{
-    RecordedAdmissionOutcome, RecordedDisposition, RecordedInvocationMode, RecordedLicenseCustody,
-    RecordedLicenseVerb, RecordedLoadOutcome, RecordedNarrativeKind, RecordedRenderKind,
-    RecordedShipLane, RecordedSiteClass, RecordedSolvePass, RecordedSourceClass,
-    RecordedSpineSpecies, RecordedSurvivalOutcome,
+    RecordedAdmissionOutcome, RecordedApplyPolicy, RecordedDisposition, RecordedInvocationMode,
+    RecordedLicenseCustody, RecordedLicenseVerb, RecordedLoadOutcome, RecordedNarrativeKind,
+    RecordedOriginState, RecordedRenderKind, RecordedShipLane, RecordedSiteClass,
+    RecordedSolvePass, RecordedSourceClass, RecordedSpineSpecies, RecordedSurvivalOutcome,
+    RecordedTerminalState,
 };
 
 use crate::known::Known;
@@ -131,8 +132,9 @@ pub enum VoiceSet {
     One(Voice),
     /// Several, whose contributions may or may not be separable.
     ///
-    /// NOT MINTED at v1: telling one contributor from several needs the licensor family, which
-    /// this read surface does not yet project.
+    /// A committee's MEMBERS may be empty while the committee itself is known: a recorded
+    /// `vouched-severally` custody says several authors each vouched and names none of them, and
+    /// spelling that as one unnamed voice would understate how many claims a remedy has to reach.
     Committee {
         /// The members.
         voices: Vec<Voice>,
@@ -272,6 +274,11 @@ pub enum Subject {
     /// A whole recorded FAMILY the projection declined, or the report API does not carry — the
     /// subject an audit row is about.
     Family(PlanFamily),
+    /// The QUESTION this invocation asked, rather than anything the documents hold.
+    ///
+    /// Its own arm because the alternative is to hang a fact about the request off the root
+    /// document, which would read as something the document said.
+    Question,
 }
 
 /// The address a question asked about, as this model can state it.
@@ -326,6 +333,32 @@ pub enum Payload {
     Flag(RecordedFlag),
     /// An affirmatively-known fact about not-knowing, carrying its own remedy.
     NegativeSpace(NegativeSpace),
+    /// The question named an address and the edge could not place it in the recorded source table.
+    ///
+    /// A payload rather than a silence: an address nobody could place is a fact about the QUESTION,
+    /// and dropping it would leave a reader unable to tell "your address answered nothing" from
+    /// "you asked about the whole run".
+    Unplaceable(UnplaceableAddress),
+}
+
+/// Why an address the question named could not be placed against the recorded sources.
+///
+/// Closed, and spelled through `Debug` at every render for the reason
+/// `30Vd:res-report-states-spell-through-debug` gives: these are report-plane states of ours with
+/// no wire token, and minting words for them here would be a builder authoring user-facing
+/// vocabulary (`error-authorship-tier`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnplaceableAddress {
+    /// Not spelled `<file>:<line>` — the one address form a receipt-rooted question can place
+    /// (`30V` §2 rul-line-addresses-are-namespaced).
+    NotAFileAndLine,
+    /// The named current file could not be read, so its bytes could not be matched to a recorded
+    /// source. A recorded source has no PATH exit (`30Vd:fnd-addresses-cannot-be-spelled-file-line`),
+    /// so the file the user names is the only way in.
+    CurrentSourceUnreadable,
+    /// The named file read, and its exact bytes match no source this document recorded. Never a
+    /// nearest-match: a confident wrong attribution is `271:rul-sin-ordering`'s worst rung.
+    NoRecordedSourceMatches,
 }
 
 /// One word of a recorded closed vocabulary.
@@ -355,6 +388,12 @@ pub enum RecordedToken {
     LicenseVerb(RecordedLicenseVerb),
     /// Whose utterance the license rests on.
     LicenseCustody(RecordedLicenseCustody),
+    /// Which publication route authorized an apply.
+    ApplyPolicy(RecordedApplyPolicy),
+    /// Whether an intent's assignments name an originating plan.
+    OriginState(RecordedOriginState),
+    /// The graceful terminal state an apply reached.
+    TerminalState(RecordedTerminalState),
 }
 
 /// One named predicate a recorded row carries.

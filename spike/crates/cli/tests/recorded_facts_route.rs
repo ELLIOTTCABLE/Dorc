@@ -29,7 +29,7 @@ use dorc_receipt::report::{
     DetailState, MaterialState, ReDerivationState, RecordedDocumentId, RecordedSpecies,
     RequestedAddress,
 };
-use dorc_why::recorded::{Rooted, reconstruct};
+use dorc_why::recorded::{AddressStanding, Rooted, reconstruct};
 
 mod sandbox;
 
@@ -258,34 +258,160 @@ fn an_address_resolves_or_refuses_against_the_real_recorded_source() {
     );
 }
 
-/// `dorc why`'s own output is unchanged by any of this.
+/// THE PRODUCTION ROUTE: the shipped binary answers `dorc why` with the TOTAL SURFACE.
 ///
-/// The seat exists and is fed by the real path; joining it to a rendered surface is the next
-/// conductor's work, and this case is what says the current surface has not moved under them.
+/// Driven through the real binary in a second process, over a store the first one published into,
+/// because that is the whole claim — the listing seats are gone, and what a reader gets is the
+/// reconstruction the in-process cases above pin. The needles are structural (registry slugs and
+/// the document's own identity), never prose: the words are `[unwritten:]` by design and re-blessing
+/// them must not redden this file (`prose-pins-live-where-the-prose-does`).
 #[test]
-fn the_listing_surface_is_untouched_by_the_facts_seat() {
-    let sandbox = ProfileSandbox::new("facts-listing");
-    let scratch = Scratch::new("facts-listing");
+fn the_shipped_binary_answers_with_the_total_surface() {
+    let sandbox = ProfileSandbox::new("facts-surface");
+    let scratch = Scratch::new("facts-surface");
     publish(&sandbox, &scratch);
 
+    let rendered = why(&sandbox, &scratch, &["--receipt-last"]);
+    for section in [
+        "why-total-section-carriers",
+        "why-total-section-data",
+        "why-total-section-loci",
+    ] {
+        assert!(
+            rendered.contains(&format!("[unwritten: {section}]")),
+            "the receipt-rooted surface renders its own sections; got:\n{rendered}"
+        );
+    }
+    assert!(
+        !rendered
+            .lines()
+            .any(|line| line.starts_with("signing-key ")),
+        "the recorded LISTING is gone, not coexisting with the surface; got:\n{rendered}"
+    );
+    assert!(
+        rendered.is_ascii(),
+        "weft-ascii-forever binds the production route too"
+    );
+}
+
+/// `--all` is a labelled synonym for the default on this route, byte for byte.
+///
+/// DEPTH ONLY (`30R:receipt-rooted-attention-and-cli`): the total surface already renders everything
+/// the reconstruction holds, so there is nothing deeper for the flag to reach. Byte-identity is what
+/// says so — a flag that changed one byte would be selecting.
+#[test]
+fn all_is_byte_identical_to_the_default_on_the_receipt_route() {
+    let sandbox = ProfileSandbox::new("facts-all");
+    let scratch = Scratch::new("facts-all");
+    publish(&sandbox, &scratch);
+
+    assert_eq!(
+        why(&sandbox, &scratch, &["--receipt-last", "--all"]),
+        why(&sandbox, &scratch, &["--receipt-last"]),
+    );
+}
+
+/// `--json` is the same reconstruction, well-formed, with explicit withhold markers.
+#[test]
+fn the_json_register_parses_and_marks_its_withholds() {
+    let sandbox = ProfileSandbox::new("facts-json");
+    let scratch = Scratch::new("facts-json");
+    publish(&sandbox, &scratch);
+
+    let rendered = why(&sandbox, &scratch, &["--receipt-last", "--json"]);
+    dorc_lint::json::parse(&rendered).expect("the envelope parses as JSON");
+    assert!(
+        rendered.contains("\"state\":\"present\"") && rendered.contains("\"value\":null"),
+        "both slot spellings reach a real render; got:\n{rendered}"
+    );
+}
+
+/// An address naming a file no recorded source reproduces REFUSES, and says so as a datum.
+///
+/// The refusal is in the answer rather than instead of it (`30R`: one unanswerable address is not a
+/// reason to stop explaining the rest), so the surface still renders and carries the typed reason.
+#[test]
+fn an_unmatched_address_refuses_inside_the_answer() {
+    let sandbox = ProfileSandbox::new("facts-address-refusal");
+    let scratch = Scratch::new("facts-address-refusal");
+    publish(&sandbox, &scratch);
+    std::fs::write(scratch.path.join("other.sh"), "#!/bin/sh\ntrue\n").expect("write a stranger");
+
+    let rendered = why(&sandbox, &scratch, &["--receipt-last", "other.sh:2"]);
+    assert!(
+        rendered.contains("address-unplaceable NoRecordedSourceMatches"),
+        "a file the document never recorded is unplaceable, by name; got:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("[unwritten: why-total-section-data]"),
+        "and every unrelated fact still renders; got:\n{rendered}"
+    );
+
+    let missing = why(&sandbox, &scratch, &["--receipt-last", "nowhere.sh:2"]);
+    assert!(
+        missing.contains("address-unplaceable CurrentSourceUnreadable"),
+        "a file that is not there is a different refusal; got:\n{missing}"
+    );
+    let shapeless = why(&sandbox, &scratch, &["--receipt-last", "book.sh"]);
+    assert!(
+        shapeless.contains("address-unplaceable NotAFileAndLine"),
+        "and an address that is not `<file>:<line>` is a third; got:\n{shapeless}"
+    );
+}
+
+/// `--receipt <file>` roots at the named document rather than answering nothing.
+///
+/// The regression this closes by name: the `File` arm matched no store entry, so an explicit file
+/// selected nothing at all and the route emitted a store-unreadable report over a store that had
+/// just been written into.
+#[test]
+fn an_explicit_receipt_file_roots_the_question() {
+    let sandbox = ProfileSandbox::new("facts-file-root");
+    let scratch = Scratch::new("facts-file-root");
+    publish(&sandbox, &scratch);
+
+    let store = sandbox.state_root().join("dorc").join("receipts-v1");
+    let file = std::fs::read_dir(&store)
+        .expect("the store directory exists")
+        .flatten()
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("plan-v1-"))
+        })
+        .expect("the run published a plan document");
+
+    let rooted = why(
+        &sandbox,
+        &scratch,
+        &["--receipt", &file.display().to_string()],
+    );
+    assert_eq!(
+        rooted,
+        why(&sandbox, &scratch, &["--receipt-last"]),
+        "the one document in this store answers the same whether it is named by path or derived"
+    );
+}
+
+/// One invocation of the shipped binary's `why`, in this sandbox's profile.
+fn why(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> String {
     let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
     command.current_dir(&scratch.path);
     sandbox.apply(&mut command);
     command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
     let out = command
-        .args(["why", "--receipt-last"])
+        .arg("why")
+        .args(args)
         .output()
         .expect("the built binary runs");
-
-    let listing = String::from_utf8_lossy(&out.stdout);
     assert!(
-        listing.lines().any(|line| line.starts_with("receipt ")),
-        "the recorded listing still names its document; got:\n{listing}"
+        out.status.success(),
+        "`dorc why {args:?}` exited {:?}; stderr: {}",
+        out.status.code(),
+        String::from_utf8_lossy(&out.stderr)
     );
-    assert!(
-        listing.lines().any(|line| line.starts_with("sites ")),
-        "and still counts its sites; got:\n{listing}"
-    );
+    String::from_utf8_lossy(&out.stdout).into_owned()
 }
 
 /// The sandbox's root, for the environment shim above.
@@ -318,7 +444,7 @@ fn the_total_surface_reaches_every_datum_exactly_once() {
     let open = edge.open_for_read(&mut io).expect("the store reopens");
     let roots = selected_roots(&open, &mut io);
     let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
 
     let ctx = RenderCtx::production();
     let mut encoder = TerminalValues::default();
@@ -372,7 +498,7 @@ fn one_reconstruction_renders_identically_every_time() {
     let open = edge.open_for_read(&mut io).expect("the store reopens");
     let roots = selected_roots(&open, &mut io);
     let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
     let ctx = RenderCtx::production();
 
     let first = why_total(&reconstruction, &ctx, &mut TerminalValues::default())
@@ -400,7 +526,7 @@ fn the_json_sibling_is_well_formed_and_reaches_every_datum() {
     let open = edge.open_for_read(&mut io).expect("the store reopens");
     let roots = selected_roots(&open, &mut io);
     let facts = facts_for(&roots[0], Vec::new(), Vec::new(), None);
-    let reconstruction = reconstruct(&Rooted::Plan(&facts));
+    let reconstruction = reconstruct(&Rooted::Plan(&facts), AddressStanding::AsRecorded);
 
     let (text, coverage) = why_json(&reconstruction, &mut JsonValues::default());
 

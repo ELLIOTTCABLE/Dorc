@@ -27,8 +27,8 @@ use dorc_why::known::Known;
 use dorc_why::{Carrier, CarrierRole, Datum, DatumId, Delivery, Reconstruction, VoiceSet};
 
 use crate::why_total::{
-    Coverage, absence_word, correlation_text, flag_text, identity_text, locus_text, state_text,
-    subject_text, token_text,
+    Coverage, absence_word, committee_text, correlation_text, flag_text, identity_text, locus_text,
+    state_text, subject_text, token_text, unplaceable_text,
 };
 
 /// The envelope's own name, and the whole of its stability promise.
@@ -219,7 +219,10 @@ fn push_datum(out: &mut String, datum: &Datum, encoder: &mut dyn ValueEncoder) {
             match speaker.voices().value() {
                 Some(VoiceSet::Mine) => "mine".to_owned(),
                 Some(VoiceSet::One(_)) => "one".to_owned(),
-                Some(VoiceSet::Committee { voices, .. }) => format!("committee {}", voices.len()),
+                Some(VoiceSet::Committee {
+                    voices,
+                    separability,
+                }) => format!("committee {}", committee_text(voices, *separability)),
                 None => absence_word(speaker.voices())
                     .unwrap_or("unspellable")
                     .to_owned(),
@@ -299,6 +302,7 @@ fn payload_text(payload: &dorc_why::Payload) -> String {
             },
             space.family.token()
         ),
+        P::Unplaceable(why) => unplaceable_text(*why),
         // Bytes leave through the encoder at the call site above and never through a spelling here.
         P::Text(_) => String::new(),
     }
