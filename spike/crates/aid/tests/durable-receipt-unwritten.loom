@@ -27,8 +27,9 @@ be shipped): `hork tune --profile web` -- run `dorc why` for the per-site detail
    = help:  sm site runs `hork tune --profile web`
 hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
-receipt: error[durable-receipt-unwritten]: [unwritten:
-durable-receipt-unwritten]
+receipt: error[durable-receipt-unwritten]: this run finished and its artifact is
+unaffected, but no signed receipt reached <no state root> (store-unusable) --
+there is no durable for a later `dorc why` to read
 dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
 dorc: decision-digest 06df1751266e3439355f82ea0d81d009679999ffc67b89854dbf6609ebec3eb0
 
@@ -37,6 +38,8 @@ case: durable-receipt-unwritten
 {{count}} = "1"
 {{site_word}} = "site"
 {{v0}} = "book.sh"
+{{store}} = "<no state root>"
+{{reason}} = "store-unusable"
 {{v1}} = "0"
 {{v2}} = "0"
 {{v3}} = "0"

@@ -86,15 +86,23 @@ options:
 --results <file>        read the probe results from <file>; for `why`, answer
                         from those records rather than the saved receipt
 --risk-faultless-skips  opt into the survival tier (default off)
---receipts <folder>     [unwritten: cli-help-option-receipts]
---no-receipt            [unwritten: cli-help-option-no-receipt]
---receipt-last          [unwritten: cli-help-option-receipt-last]
---receipt-id <id>       [unwritten: cli-help-option-receipt-id]
---receipt <file>        [unwritten: cli-help-option-receipt]
+--receipts <folder>     use <folder> as the receipt store, for publication and
+                        for `why`'s reading, in place of the per-user store
+--no-receipt            publish no receipt for this run; a later `dorc why` will
+                        have nothing of it to answer from
+--receipt-last          for `why`: answer from the store's most recent receipt;
+                        incomparable candidates report ambiguity
+--receipt-id <id>       for `why`: answer from the one store document named <id>
+--receipt <file>        for `why`: answer from an explicit receipt file outside
+                        any store; never publishes (--receipts beside it bounds
+                        where graph siblings resolve)
 --all                   for `why`, print everything the engine holds: every
                         link, unselected, plus collapse classes with no
                         narration yet
---json                  [unwritten: cli-help-option-json]
+--json                  for `why`: the same answer as one machine-readable JSON
+                        document on stdout -- version-unstable, and a value the
+                        engine withholds appears as an explicit marker, never a
+                        missing key
 --debug-argv            echo the engine's per-site resolved argv to stderr
 --help                  print this help to stdout and exit 0
 --version               print the version to stdout and exit 0

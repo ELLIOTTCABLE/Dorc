@@ -5,5 +5,6 @@ why: Asking why is a READ, and it creates nothing to make itself answerable: a r
 ---
 -- replay --
 $ dorc why --receipt-last
-receipt: warning[durable-receipt-unreadable]: [unwritten:
-durable-receipt-unreadable]
+receipt: warning[durable-receipt-unreadable]: no receipt could be read at <no
+state root> (no-controller-root) -- either none has ever been written here, or
+the store would not open; nothing is removed or repaired on this path
