@@ -17,7 +17,13 @@ owns:
   - cli-help-option-oracle-dir
   - cli-help-option-results
   - cli-help-option-risk-faultless-skips
+  - cli-help-option-receipts
+  - cli-help-option-no-receipt
+  - cli-help-option-receipt-last
+  - cli-help-option-receipt-id
+  - cli-help-option-receipt
   - cli-help-option-all
+  - cli-help-option-json
   - cli-help-option-debug-argv
   - cli-help-option-help
   - cli-help-option-version
