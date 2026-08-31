@@ -143,9 +143,8 @@ loaded-source locator composition (named uncollected V1 residue).
   projection); `cli::why_total` (Coverage at the emit site; exclusion ledger
   empty by uninhabited type; weft-woven); `why_json`
   (`dorc-why-json/unstable`; state+value keys, never absent); 37 arrangement
-  rows seeded unwritten; both legs green at tip. UNBUILT, spec sharpened in
-  the lane ledger's what-remains section (the 30-V-d note, lane-branch-local
-  until fold — the docID cite lands then): item 4 (cli wiring: facts_for production caller,
+  rows seeded unwritten; both legs green at tip. UNBUILT then, spec sharpened
+  in `30Vd:what-remains`, since BUILT by the third builder: item 4 (cli wiring: facts_for production caller,
   listing-seat deletion, `ReceiptRoot::File` repair, whole-store-listing drop,
   digest-matched address resolution) + item 5 (publish→why e2e cases + the
   minimal runner extension). New flags: `tc-licensor-custody-speaks-its-own-act`
@@ -242,6 +241,17 @@ loaded-source locator composition (named uncollected V1 residue).
   list` knows only play/r30-conduct/r30-receipt/why-surface) — presumably the
   same empty-husk class the 2026-08-30 sweep dumped. Verify zero-file, then
   dump at arc close.
+
+## Close (2026-08-31)
+
+The arc is CLOSED: `gate:arc` green (rc=0; both-platform completion + arc-tier
+verifiers + advisories) from the populated lane, then `ai/main` fast-forwarded
+to the lane tip (`ea295267`). One post-gate red was caught and fixed in-lane
+(the six worded help rows joined `cli-help-page.loom`'s `owns:`). The
+opaque-review gate stayed builder-initiated: all three builders read
+`AGENTS.for-builders-only.md` first and none instructed loading it. Remaining
+human items ride `TODO-ADDTL:why-surface-close-residue` + the round-close
+ceremony; worktrees/branches cleaned at close.
 
 ## Ack-ledger (only what the human has TYPED counts)
 

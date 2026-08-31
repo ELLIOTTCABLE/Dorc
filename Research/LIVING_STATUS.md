@@ -21,38 +21,30 @@
 
 ---
 
-## CURRENT STATE (2026-08-31 — the r30/30R close arc: residue FOLDED to `ai/main`; the why-surface build lane IN FLIGHT)
+## CURRENT STATE (2026-08-31 — the r30/30R close arc is COMPLETE and folded; the round ceremony is the human's)
 
-Arc ledger: **`notes/30Va`** (remit · ack-ledger · the banked-branch triage). `ai/main` now
-carries, linearly: the receipt residue lane (`notes/30Rk` — the old whylog durable fully
-deleted, the receipt CLI vocabulary, the report-API tidy), the loom-production-path
-replacement (closed errorloom command grammar over the shared production path; folded), the
-human's USER_STORY stage-5/7 re-cut and `plans/30T` (both committed), and the
-whylog→receipt steering/register recast (née-tagged renames:
-`receipt-durable-write-only-report-back` · `receipts-not-a-cache` ·
-`law-receipts-are-sensitive` · `aid-receipt-posthoc-why` · `an-receipt-durable` ·
-`inv-receipt-collection-never-expands-observation`). `ai/r30-receipt`/`ai/r30-conduct` and
-their worktrees now trail `ai/main` and await cleanup at arc close.
+Arc conduct: **`notes/30Va`** (remit · rulings · acks · close). `ai/main` (`ea295267`)
+carries the whole arc, linearly: the receipt residue lane (`notes/30Rk`), the
+whylog→receipt steering/register recast (née-tagged renames), and the receipt-backed
+why surface BUILT COMPLETE across three builder slices (`notes/30Vd` is the lane
+ledger): the `dorc-why` reconstruction plane (`30V` §3 as types; `Known`/`Held`
+wrappers), `dorc_receipt::report` widened EXHAUSTIVE over all fifteen persisted plan
+families (opaque-ruled, `30Va:rul-report-projection-becomes-exhaustive`), the
+intentionally-temporary total surface (`cli::why_total`) + `--json`, the receipt-rooted
+`dorc why` wiring (listing seats deleted; `--receipt <file>` repaired; digest-matched
+addresses), the one-CLI-seat source-comparison packet
+(`30Va:rul-source-comparison-is-one-cli-seat`; `file.sh:N` renders where the visit
+holds content), the publish→why e2e proof (`expect-why-receipt` run-lane key), the
+report-only orphan-arrangement instrument (`mise run prose:orphans`), and the
+conductor prose pass (help rows, receipt messages, register-guide recasts; the 37
+total-surface labels rest `[unwritten:]` — the label-mint gap is banked in `30Va`).
+`gate:arc` green from the populated lane before the fold.
 
-**The durable-receipt family is CLOSED as an arc:** design `plans/30R` (quarantine `30Ra`
-its superset — do not follow unauthorized); security review closed (intent→publication→
-permit one ownership chain; class-aware encoder exit; handle-relative object opens);
-sealed `dorc-receipt::report::RecordedWhyFacts` reaches the real reading route. Report-only
-kernel re-derivation remains a separate authorized round; the kernel stays frozen.
-
-**IN FLIGHT:** the why-surface build lane (`ai/r30-why-surface`, Opus builder) building
-`30V` §5 — the reconstruction plane (the §3 model as real types) + the
-intentionally-temporary total surface + the `--json` sibling, over the sealed model;
-riders: the orphan-arrangement-rows census (`30Rk:the-arrangement-mirror-is-its-own-lock`)
-and replacement receipt-rooted why cases. The structure checkpoint is adjudicated
-(`30Va`), and the sealed report surface is OPAQUE-RULED to widen toward exhaustive
-family coverage (`30Va:rul-report-projection-becomes-exhaustive`) — read-surface
-projection work only, no receipt internals reopened.
-
-**Remaining at arc close** (`30Va` fold-time queue): the cli/src doc-comment citers of the
-née'd slugs · the prose queue (five receipt-flag help rows, two receipt placeholders, six
-stale lock `why:` citations — conductor slop-tier authoring ACKED 2026-08-31) ·
-`gate:arc` from the populated branch · worktree/branch cleanup · this file's final refresh.
+**What remains is the human's:** the r30 round-close ceremony (below) · the
+`why-surface-close-residue` row in TODO-ADDTL (unwitnessed branches, the held
+`tc-address-refusal-is-a-datum-not-a-diagnostic`, five orphan rows awaiting a deletion
+word) · the standing soft-acked root-identity fold. Report-only kernel re-derivation
+remains a separate authorized round; the kernel stayed frozen throughout.
 
 ## CURRENT STATE (2026-08-23 — r30 kernel CLOSE-OUT: every lane BUILT and folded; the round ceremony is owed and is the human's)
 

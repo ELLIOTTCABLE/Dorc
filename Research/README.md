@@ -307,10 +307,12 @@ and carries the license-contamination map.
   graph selection, and sealed `dorc-receipt::report::RecordedWhyFacts`. The security review's
   four boundaries (intent/publication ownership, local authentication, opaque-value exit, and local
   object handling) are repaired; the receipt-family crate contracts govern ordinary callers. The
-  D5 deletion + receipt CLI vocabulary landed as `notes/30Rk`; the receipt-backed why-surface
-  build (the `notes/30V` §5 reconstruction plane + temporary total surface) is the close arc's
-  render lane (conduct `notes/30Va`), while report-only kernel re-derivation remains a separate
-  deferred round. Current state: `LIVING_STATUS.md`.
+  D5 deletion + receipt CLI vocabulary landed as `notes/30Rk`; the receipt-backed why surface
+  landed COMPLETE in the close arc (conduct `notes/30Va` · lane ledger `notes/30Vd` · design
+  `notes/30V`): the `dorc-why` reconstruction plane, the report surface exhaustive over every
+  persisted plan family, the temporary total surface + `--json`, the receipt-rooted `dorc why`
+  wiring, and the one-seat source comparison. Report-only kernel re-derivation remains a
+  separate deferred round. Current state: `LIVING_STATUS.md`.
 
 - **r26-revival — live execution (MINTED 2026-07-27; executed arcs landed 2026-07-31;
   the ROUND stays open)** — Dorc ran against a real machine and the numbers held: the
