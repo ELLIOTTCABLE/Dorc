@@ -187,6 +187,31 @@ loaded-source locator composition (named uncollected V1 residue).
   where the visit holds no content); the authentication asymmetry as stated;
   the hygiene enumeration structural-first, lexical only as the
   packet-requested (hence human-ack'd) exception.
+- Render lane, third builder (2026-08-31): COMPLETE — items 4+5 + both
+  packets + the orphan instrument, eight commits, both legs green at tip. The
+  lane is BUILT in full; rebased onto `ai/main` for the fold. Conductor
+  adjudications of its disclosures: `--json`-beside-`--results` refusal
+  ENDORSED (a silently-ineffective flag is exactly what the human would flag)
+  · ambiguity-explains-nothing ENDORSED (30R's no-arbitrary-tie-break, a
+  disclosed narrowing) · signing-key-off-the-surface ENDORSED (skeleton
+  material, not report material) · `tc-correspondence-falls-back-to-content`
+  ENDORSED (seat-owned policy per the comparison packet) ·
+  `tc-file-root-order-comes-from-the-name` STANDS-AS-BUILT with a banked
+  lean: the honest end-state is probably a typed order accessor on the read
+  surface (projection of a persisted closed token, within the
+  exhaustive-or-classified law) — a later small act, not this arc's ·
+  `tc-address-refusal-is-a-datum-not-a-diagnostic` HELD FOR THE HUMAN
+  (conductor recommendation: a NO-MATCH address is an answer, not ambiguity —
+  the datum-row satisfies 30R's render-the-rest; the `[TYPED]`
+  fails-fast-on-ambiguity rule should bind the MULTI-match case, which should
+  stop-and-ask; split accordingly if the human agrees). Residue rows for
+  TODO-ADDTL at close: the unwitnessed authentication-asymmetry and
+  non-following-read branches (no fixture world reaches them) · the
+  unwitnessed `vouched-severally` committee arm · the loom `run:` vocabulary
+  widening (deferred) · the five orphan arrangement rows awaiting the human's
+  deletion word (`syntax-unsupported-source-of-dynamic-target` ·
+  `why-drift-address-unanswerable` · `why-drift-analysis-suppressed` ·
+  `why-receipt-plan-tally-unsplit` · `why-receipt-when-replayed`).
 - Worktree-reap incident (2026-08-31, resolved; the `worktree-file-access-law`
   hazard fired as documented): the harness reaped the builder's managed
   worktree at its checkpoint turn-boundary; the orphaned skeleton's dead `.git`
