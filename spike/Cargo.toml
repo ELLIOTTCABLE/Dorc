@@ -9,7 +9,7 @@
 # `dorc` binary the e2e runner drives comes from `crates/cli`.
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/aid", "crates/syntax", "crates/analysis", "crates/oracle", "crates/plan", "crates/hostsim", "crates/sweep", "crates/cli", "crates/coverage", "crates/lint", "crates/errorloom", "crates/dorc-loom", "crates/weft", "crates/internal-tooling", "crates/transport", "verify", "crates/sparing-reference", "crates/receipt", "crates/receipt-crypto", "crates/receipt-local"]
+members = ["crates/core", "crates/aid", "crates/syntax", "crates/analysis", "crates/oracle", "crates/plan", "crates/hostsim", "crates/sweep", "crates/cli", "crates/coverage", "crates/lint", "crates/errorloom", "crates/dorc-loom", "crates/weft", "crates/internal-tooling", "crates/transport", "verify", "crates/sparing-reference", "crates/receipt", "crates/receipt-crypto", "crates/receipt-local", "crates/why"]
 
 [workspace.package]
 edition = "2024"

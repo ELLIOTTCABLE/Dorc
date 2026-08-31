@@ -1,0 +1,32 @@
+[package]
+name = "dorc-why"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The RECONSTRUCTION plane (`30V` §3): the report-plane model a receipt-rooted `why` question is
+# reconstructed onto, before anything decides what to show. Pure data and pure projection — it
+# renders nothing, and it is deliberately NOT kernel-resident.
+#
+# DST-clean by construction (no clock, RNG, filesystem, or network, directly or transitively), which
+# is why it is its own crate rather than a corner of `dorc-cli`: the composition root deps transport,
+# the local store and the crypto sibling, so a purity claim made there is unfalsifiable.
+#
+# Exactly two edges, both forced rather than chosen:
+#   - `dorc-receipt` — the only byte carrier this model may hold is `report::RecordedValue`, whose
+#     mint is crate-private and whose one exit is a `ValueEncoder`. Re-declaring it would mint a
+#     second exit (`inv-report-is-the-public-read-boundary`). The closed recorded tokens come from
+#     the same place, per `inv-identities-never-cross-domains`.
+#   - `dorc-aid` — `AID-NEEDS:law-trust-tier-is-syntax` names `SpeechAct::knowability` as THE one
+#     trust-ordering seat; a local re-declaration would be a second one.
+#
+# What must never appear here: `weft` (this crate does not lay out), `dorc-core`, `dorc-plan`,
+# `dorc-analysis` (the kernel), and the reader wrapper `Reingested` (the two-way lexical fence in
+# `receipt/tests/crate_boundary.rs` — the edge decomposes and hands values across instead).
+[dependencies]
+dorc-receipt = { path = "../receipt", version = "0.0.0" }
+dorc-aid = { path = "../aid", version = "0.0.0" }
+
+[lints]
+workspace = true
