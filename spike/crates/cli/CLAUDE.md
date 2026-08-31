@@ -163,6 +163,17 @@ discipline: one rule per bullet, slugged; append to the matching section.
   real transport, concurrency, retry, cross-host reuse, saved approval — carrying
   the scope has to become checking it, and this is the choke point where that
   lands.
+- **source-comparison-is-one-cli-seat** (opaque-ruled 2026-08-31;
+  `30Va:rul-source-comparison-is-one-cli-seat`) — recorded-source comparison and every
+  filesystem behavior it needs live at ONE seat (`cli/src/source_comparison.rs`), fed only by
+  `receipt`'s `visit_for_comparison` packet. The seat owns platform path rehydration, the
+  bounded non-following regular-file read, current/recorded correspondence policy (exact
+  path first, exact content second), and destination encoding — its `FilesystemBytes`
+  encoder is a second DESTINATION, never a display seat. Authentication asymmetry: a
+  receipt-provided path triggers an implicit read only for a LOCALLY-AUTHENTICATED receipt;
+  imported/self-asserted material compares only against a file the user named. Future
+  comparison features extend THIS seat — never a new receipt exit, never a scattered raw
+  path read.
 - **inv-receipt-collection-never-expands-observation** (née inv-whylog-collection-never-expands-observation) — receipt writing persists only data the
   invocation already holds; it performs no additional host call, environment sweep, unrelated
   controller read, or debug probe. Later pull is a separate invocation about the later world

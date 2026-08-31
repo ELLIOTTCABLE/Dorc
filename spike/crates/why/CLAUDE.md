@@ -29,3 +29,7 @@ one rule per bullet, slugged, append.
 - **inv-why-is-dst-clean** — pure data: no clock, RNG, filesystem, or network, directly
   or transitively; deterministic iteration everywhere order is observable; a dependency
   added here must prove it carries no nondeterminism.
+- **file-line-addresses-come-from-the-visit** — a `<path>:<line>` rendering exists only
+  where the comparison visit supplied recorded path bytes and exact recorded content
+  (`line_starts` over those bytes); ordinal-and-span is the honest fallback everywhere
+  else, never faked and never derived from a current file's own line table.
