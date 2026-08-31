@@ -19,7 +19,7 @@ landings ledger `notes/27D`); new section **P** carries the round-27 machinery; 
 renames (`touches()`→`disturbs()`, `reaches()`→`disturbance_reaches_only()`, `is_diverged` ditched,
 `.prop`→`#`→`@` selector) applied to rows in place. **Refreshed
 2026-07-18:** §F gains the user-aid machinery rows (collapse-evidence ·
-authored-decline-class · whylog-durable; build phase `notes/27V`/`27W`); the aid-side
+authored-decline-class · receipt-durable; build phase `notes/27V`/`27W`); the aid-side
 sibling registry is root `AID-NEEDS.md`.
 
 **Columns** — `need` (slug, `an-*`) · `information` (the datum) · `needed-by` (consumer/phase/feature) ·
@@ -184,9 +184,9 @@ Inside cells, `/` replaces `|`; `↔` marks a dual.
 | an-graph-type-agreement | analyzer and error/provenance layer must agree the graph types *first* (depends-on edges ARE the dataflow output) or build two incompatible graphs | architecture precondition | — | 111 dac-B (highest-leverage) | O |
 | an-diag-vs-verdict | transient chronological diagnostic *stream* kept distinct from the durable structured *verdict* | reporting model | — | 111§0, 112-f50 (K8s) | S |
 | an-diag-secret-taint | runtime stderr leaks secrets/paths; the controller aggregating every host's stderr *is* the whole-fleet target | provenance transport security | an-output-sanitization | 111§0, 102-E1 | S |
-| an-collapse-evidence | every safety-narrowing (meet-to-⊤ / refuse / decline / wall / demote / cancel) mints a decision-inert NARRATIVE record carrying the collapse's OPERANDS, at the collapse; value-level (constructor-demanded), Eq-excluded (termination), k-capped; aid-plane-sealed (no path into license inputs) | why-lens depth; whylog; AID-NEEDS law-collapse-mints-narrative | an-why-elided | 27V§1, 26C§5b, 22W§2 | S |
+| an-collapse-evidence | every safety-narrowing (meet-to-⊤ / refuse / decline / wall / demote / cancel) mints a decision-inert NARRATIVE record carrying the collapse's OPERANDS, at the collapse; value-level (constructor-demanded), Eq-excluded (termination), k-capped; aid-plane-sealed (no path into license inputs) | why-lens depth; the receipt durable; AID-NEEDS law-collapse-mints-narrative | an-why-elided | 27V§1, 26C§5b, 22W§2 | S |
 | an-authored-decline-class | an oracle's typed decline-reason (closed set; v1 {unsound/unmodeled/interactive/hazard}) via the versioned report-lane emission (sink-name-versioned, `DREP_V1`-strawman); static-first (per-arm inventory / per-site thread / runtime-only-opportunity fallback, deduped); routes hint machinery (anti-nag honesty), NEVER the license plane; noise-tolerant ingestion | enhancement-nag honesty; lint coverage; decline narration | an-enrichment-nudge | 27W | S |
-| an-whylog-durable | immutable receipt graph: PlanReceipt + pre-dispatch ApplyIntent + terminal ApplyOutcome; exact-byte signed plain/rich format, local key/store provider, exact general-sh source, durable locators, rooted graph selection, and sealed `dorc-receipt::report::RecordedWhyFacts`. Read-back is report-only and NEVER a reuse cache. Final recorded-why arrangement is rehomed; report-only kernel re-derivation remains deferred behind a frozen correctness kernel | posthoc why; zero-setup recovery; version comparison later | an-replay-seed | 27V§2, 22A concl-10, 30R/30Ra | B (secure facts; presentation/re-derivation deferred) |
+| an-receipt-durable (née an-whylog-durable) | immutable receipt graph: PlanReceipt + pre-dispatch ApplyIntent + terminal ApplyOutcome; exact-byte signed plain/rich format, local key/store provider, exact general-sh source, durable locators, rooted graph selection, and sealed `dorc-receipt::report::RecordedWhyFacts`. Read-back is report-only and NEVER a reuse cache. Final recorded-why arrangement is rehomed; report-only kernel re-derivation remains deferred behind a frozen correctness kernel | posthoc why; zero-setup recovery; version comparison later | an-replay-seed | 27V§2, 22A concl-10, 30R/30Ra | B (secure facts; presentation/re-derivation deferred) |
 
 ## G · Verdict, memo & freshness
 

@@ -137,7 +137,7 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   everywhere, round-trippable into `dorc why` addresses.
 - **law-plain-language-surfaces** (`24H` ack-4) — no jargon on user-facing surfaces (no
   "⊤", no corpus vocabulary); quality, unambiguous English.
-- **law-whylog-is-sensitive** — receipt contents are sensitive without promising secret
+- **law-receipts-are-sensitive** (née law-whylog-is-sensitive) — receipt contents are sensitive without promising secret
   recognition. Rich receipts protect opaque detail; plain projection and structural metadata
   remain bounded shape claims, never “safe to share.” Fences: `an-diag-secret-taint`,
   `an-output-sanitization`, `26B:need-scrub-before-freeze`, `24R:repurp-finding12`. Receipt
@@ -191,7 +191,7 @@ Registry
 | aid-why-decline-narration | which oracle arm declined this shape and why — the arm itself inlined (show-the-code, massaged per law) | orcl+facts | olo◀ blo◀ post◀ | c+d | collapse evidence (declines) + `27W` classes + arm-inlining | B |
 | aid-why-disagreement-narration | two establishers disagreed on one cell: who, where, which values | facts | rev◀ post◀ | m | collapse evidence (merge operands; `22H` §1) | S |
 | aid-why-value-chain-narration | a captured value narrated through iteration hops and host transformations, best-effort, feeder-attributed | facts±+history | post◀ | m+c+g | `26C:need-why-explanation-lane` + feeders; r26 | D |
-| aid-whylog-posthoc-why | receipt-rooted posthoc why after everything is apparently complete: selected root + causal graph closure, exact historical general-sh source, durable locators, current-source comparison, and explicit partial/authentication states | receipt graph | post◀ | m+c+d | `dorc-receipt::report::RecordedWhyFacts` is BUILT and sealed; CLI aid/weft arrangement is rehomed; report-only kernel re-derivation deferred | S (facts B; presentation/re-derivation pending) |
+| aid-receipt-posthoc-why (née aid-whylog-posthoc-why) | receipt-rooted posthoc why after everything is apparently complete: selected root + causal graph closure, exact historical general-sh source, durable locators, current-source comparison, and explicit partial/authentication states | receipt graph | post◀ | m+c+d | `dorc-receipt::report::RecordedWhyFacts` is BUILT and sealed; CLI aid/weft arrangement is rehomed; report-only kernel re-derivation deferred | S (facts B; presentation/re-derivation pending) |
 
 ### Authoring-time classes (`dorc lint`; ▶ push, hot-loop-safe, never probes)
 
