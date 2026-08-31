@@ -12,10 +12,12 @@ use dorc_receipt::report::{
     AuthenticationState, ClosureCompleteness, CurrentSourceState, DetailState, ProjectionState,
     ReDerivationState, RecordedDocumentId, RecordedSpecies, RecordedValue,
 };
-use dorc_receipt::rows::RecordedSite;
+use dorc_receipt::rows::{RecordedOperands, RecordedSite};
 use dorc_receipt::tokens::{
-    RecordedDisposition, RecordedInvocationMode, RecordedNarrativeKind, RecordedSourceClass,
-    RecordedSpineSpecies,
+    RecordedAdmissionOutcome, RecordedDisposition, RecordedInvocationMode, RecordedLicenseCustody,
+    RecordedLicenseVerb, RecordedLoadOutcome, RecordedNarrativeKind, RecordedRenderKind,
+    RecordedShipLane, RecordedSiteClass, RecordedSolvePass, RecordedSourceClass,
+    RecordedSpineSpecies, RecordedSurvivalOutcome,
 };
 
 use crate::known::Known;
@@ -259,6 +261,14 @@ pub enum Subject {
     /// One decision-inert narrative, by its mint ordinal. It identifies no site, by the durable.s
     /// own design, and this subject must not suggest it does.
     Narrative(u32),
+    /// One authored REGION, by its recorded ordinal.
+    ///
+    /// Its own arm rather than a site: a region is one authored edit many executions share
+    /// (`30L:rul-two-identities-never-conflated`), so keying it by a leaf would let one instance
+    /// stand for every other invocation of the same body.
+    Region(u32),
+    /// One definition-plane decision, by its recorded ordinal.
+    Load(u32),
     /// A whole recorded FAMILY the projection declined, or the report API does not carry — the
     /// subject an audit row is about.
     Family(PlanFamily),
@@ -310,8 +320,57 @@ pub enum Payload {
     Correlation(CorrelationFact),
     /// Which safety-narrowing a narrative recorded.
     Collapse(RecordedNarrativeKind),
+    /// One word of a recorded closed vocabulary — what a family's own row SAYS.
+    Token(RecordedToken),
+    /// One named yes-or-no a recorded row carries.
+    Flag(RecordedFlag),
     /// An affirmatively-known fact about not-knowing, carrying its own remedy.
     NegativeSpace(NegativeSpace),
+}
+
+/// One word of a recorded closed vocabulary.
+///
+/// Wrapped rather than flattened into [`IdentityFact`] because these are not identities: they are
+/// what a row SAID, in the document's own closed words. Closed and no-wildcard at every consumer,
+/// so a widened recorded vocabulary reddens the seats that render it rather than falling into a
+/// neighbour's spelling (`inv-referent-agnostic`: the token is resolved for display, never branched
+/// on for meaning).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordedToken {
+    /// What intake answered.
+    AdmissionOutcome(RecordedAdmissionOutcome),
+    /// What the definition plane decided about one load.
+    LoadOutcome(RecordedLoadOutcome),
+    /// What the analysis took a site to be.
+    SiteClass(RecordedSiteClass),
+    /// Which dataflow answer a certification is about.
+    SolvePass(RecordedSolvePass),
+    /// Which body a probe site shipped.
+    ShipLane(RecordedShipLane),
+    /// What a survival walk decided.
+    SurvivalOutcome(RecordedSurvivalOutcome),
+    /// Which render-time edit was made.
+    RenderKind(RecordedRenderKind),
+    /// Which irreversible verb was licensed.
+    LicenseVerb(RecordedLicenseVerb),
+    /// Whose utterance the license rests on.
+    LicenseCustody(RecordedLicenseCustody),
+}
+
+/// One named predicate a recorded row carries.
+///
+/// The predicate travels WITH its answer: a bare `bool` payload would be substitutable with any
+/// other bool, so a reader could not tell a tripped certifier from an invalidating site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordedFlag {
+    /// Whether a classified site is on the verdict lane.
+    VerdictLane(bool),
+    /// Whether a classified site invalidates anything.
+    Invalidator(bool),
+    /// Whether the certifier agreed with the solver.
+    SolveConsistent(bool),
+    /// Whether the certifier's latch tripped.
+    SolveTripped(bool),
 }
 
 /// Machine-shaped identity material.
@@ -325,8 +384,12 @@ pub enum IdentityFact {
     Digest(String),
     /// A byte length.
     Bytes(u64),
-    /// A count of members.
-    Count(u32),
+    /// A count of members. Wide because the recorded counts are: a region's route tally and an
+    /// admission's record tally are both `u64` on the wire, and narrowing one here would saturate
+    /// a number the document spelled exactly.
+    Count(u64),
+    /// How many operands a capped account shows, and how many it dropped.
+    Operands(RecordedOperands),
     /// An in-memory decision species the projection declined to carry.
     UncarriedSpecies(RecordedSpineSpecies),
     /// Which dialect a source was accepted as.

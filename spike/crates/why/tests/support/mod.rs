@@ -32,7 +32,12 @@ use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{PlanReceipt, Rich};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::overlay::DocumentRows;
-use dorc_receipt::plan::{RecordedPlanReceipt, RecordedSiteDecision, RecordedSource, SourceSlots};
+use dorc_receipt::plan::{
+    RecordedAdmission, RecordedLicensor, RecordedLoadDecision, RecordedNarrative,
+    RecordedPlanReceipt, RecordedPresentedPlan, RecordedProbeShip, RecordedRegionDecision,
+    RecordedRenderDecision, RecordedSiteClassification, RecordedSiteDecision,
+    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject, SourceSlots,
+};
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::{Receipt, read_rich};
 use dorc_receipt::reingested::{RecordedInfluence, Reingested};
@@ -41,11 +46,14 @@ use dorc_receipt::report::{
     WhyFactsInput, derive,
 };
 use dorc_receipt::rows::{
-    RecordedAst, RecordedInvocation, RecordedLeaf, RecordedSite, SourceOrdinal,
+    LoadOrdinal, NarrativeOrdinal, RecordedAst, RecordedInvocation, RecordedLeaf, RecordedOperands,
+    RecordedSite, RegionOrdinal, SourceOrdinal,
 };
 use dorc_receipt::tokens::{
-    OpaqueState, RecordedDisposition, RecordedInvocationMode, RecordedSourceClass,
-    RecordedSourceRole,
+    OpaqueState, RecordedAdmissionOutcome, RecordedDisposition, RecordedInvocationMode,
+    RecordedLicenseCustody, RecordedLicenseVerb, RecordedLoadOutcome, RecordedNarrativeKind,
+    RecordedRenderKind, RecordedShipLane, RecordedSiteClass, RecordedSolvePass,
+    RecordedSourceClass, RecordedSourceRole, RecordedSpeechAct, RecordedSurvivalOutcome,
 };
 use dorc_receipt::writer::{DraftReceipt, OverlayPlaintext};
 
@@ -179,6 +187,8 @@ pub(crate) struct Shape {
     pub(crate) authored_before_contact: bool,
     /// File the document under the undated order token.
     pub(crate) undated: bool,
+    /// Publish NEITHER optional singleton, so those two families read as carrier holes.
+    pub(crate) without_singletons: bool,
 }
 
 /// The ordinary document: one general-sh source carrying its exact bytes, one site carrying its
@@ -254,6 +264,10 @@ pub(crate) fn shaped(shape: Shape, seed: u8) -> DocumentUnderTest {
     rows.push(&source, &source_details)
         .expect("the source row is well formed");
 
+    if !shape.without_singletons {
+        push_singletons(&mut rows);
+    }
+
     let shell = if shape.shell_withheld {
         OpaqueState::WithheldPlain
     } else {
@@ -285,6 +299,8 @@ pub(crate) fn shaped(shape: Shape, seed: u8) -> DocumentUnderTest {
     site_details.push((OpaqueFieldTag::SiteLocator, Some(payload)));
     rows.push(&site, &site_details)
         .expect("the site row is well formed");
+
+    push_analysis_families(&mut rows);
 
     let id = PlanReceiptId::mint(&mut Counting(seed));
     let order = if shape.undated {
@@ -332,6 +348,168 @@ pub(crate) fn shaped(shape: Shape, seed: u8) -> DocumentUnderTest {
         id,
         order,
     }
+}
+
+/// The two OPTIONAL singletons, in the species' own kind order (before the site rows).
+///
+/// A document carrying neither is a real store shape, which is why `Shape` can suppress them: the
+/// audit's carrier cause is only reachable from a family the document genuinely does not hold.
+fn push_singletons(rows: &mut DocumentRows) {
+    let admission = RecordedAdmission::of(
+        RecordedAdmissionOutcome::Admitted,
+        2,
+        96,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &admission,
+        &[(
+            OpaqueFieldTag::RecordStream,
+            Some(b"fact hork 0\nfact ufw 1\n".to_vec()),
+        )],
+    )
+    .expect("the admission row is well formed");
+
+    let presented = RecordedPresentedPlan::of(
+        "b".repeat(64),
+        "c".repeat(64),
+        Some("d".repeat(64)),
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&presented, &[])
+        .expect("the presented-plan row is well formed");
+}
+
+/// One row of every remaining analysis family, so each projection is walked over real material.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one row per persisted family, in the species' own kind order: splitting it hides which families the fixture does and does not cover"
+)]
+fn push_analysis_families(rows: &mut DocumentRows) {
+    let site = RecordedSite::of(RecordedLeaf::of(0), None);
+
+    let region = RecordedRegionDecision::of(
+        RegionOrdinal::of(0),
+        RecordedAst::of(4),
+        RecordedDisposition::Guard,
+        3,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &region,
+        &[(OpaqueFieldTag::Shell, Some(b"ufw allow 443/tcp".to_vec()))],
+    )
+    .expect("the region row is well formed");
+
+    let load = RecordedLoadDecision::of(
+        LoadOrdinal::of(0),
+        RecordedLoadOutcome::Bound,
+        OpaqueState::Captured,
+        OpaqueState::Captured,
+        RecordedInfluence::AuthoredBeforeContact,
+    );
+    rows.push(
+        &load,
+        &[
+            (
+                OpaqueFieldTag::ImportPath,
+                Some(b"./ufw.oracle.sh".to_vec()),
+            ),
+            (OpaqueFieldTag::Custody, Some(b"sourced-exact".to_vec())),
+        ],
+    )
+    .expect("the load row is well formed");
+
+    let classification = RecordedSiteClassification::of(
+        site,
+        RecordedAst::of(3),
+        RecordedSiteClass::EstablishProbeWritten,
+        true,
+        false,
+        RecordedOperands::of(2, 1),
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&classification, &[])
+        .expect("the classification row is well formed");
+
+    let certification = RecordedSolveCertification::of(
+        RecordedSolvePass::EffectiveReach,
+        true,
+        false,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&certification, &[])
+        .expect("the certification row is well formed");
+
+    let ship = RecordedProbeShip::of(
+        site,
+        RecordedShipLane::Predict,
+        OpaqueState::Captured,
+        RecordedInfluence::AuthoredBeforeContact,
+    );
+    rows.push(
+        &ship,
+        &[(
+            OpaqueFieldTag::Shell,
+            Some(b"ufw__predict allow 443/tcp".to_vec()),
+        )],
+    )
+    .expect("the ship row is well formed");
+
+    let survival = RecordedSurvival::of(
+        site,
+        RecordedSurvivalOutcome::DemotedPoisoned,
+        Some(RecordedLeaf::of(0)),
+        Some(2),
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &survival,
+        &[(OpaqueFieldTag::Locator, Some(b"sm.dorc.Service".to_vec()))],
+    )
+    .expect("the survival row is well formed");
+
+    let render = RecordedRenderDecision::of(
+        RenderSubject::Leaf(site),
+        RecordedRenderKind::PinnedBinding,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    )
+    .expect("a leaf-keyed kind takes a leaf subject");
+    rows.push(
+        &render,
+        &[(
+            OpaqueFieldTag::DiagnosticOperand,
+            Some(b"ufw__is_converged".to_vec()),
+        )],
+    )
+    .expect("the render row is well formed");
+
+    let narrative = RecordedNarrative::of(
+        NarrativeOrdinal::of(0),
+        RecordedSpeechAct::Declined,
+        RecordedNarrativeKind::VerdictDecline,
+        RecordedOperands::of(1, 0),
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&narrative, &[])
+        .expect("the narrative row is well formed");
+
+    let licensor = RecordedLicensor::of(
+        site,
+        RecordedLicenseVerb::Guard,
+        RecordedLicenseCustody::Vouched,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &licensor,
+        &[(OpaqueFieldTag::Locator, Some(b"ufw.oracle.sh:12".to_vec()))],
+    )
+    .expect("the licensor row is well formed");
 }
 
 /// The sealed report model for one document, with whatever the edge is pretending it saw.

@@ -13,17 +13,18 @@
 //! for everything a plan root would have carried. The DEPTH differs; the shape does not.
 
 use dorc_aid::narrative::SpeechAct;
+use dorc_receipt::plan::RenderSubject;
 use dorc_receipt::report::{
     AddressResolution, AuthenticationState, ClosureCompleteness, CurrentSourceState, DetailState,
     FamilyCoverage, PlanFamily, ProjectionState, RecordedDocumentId, RecordedSpecies,
     RecordedWhyFacts, SiblingState, SiteFacts, StageFacts,
 };
-use dorc_receipt::tokens::RecordedSpeechAct;
+use dorc_receipt::tokens::{RecordedLicenseCustody, RecordedSpeechAct};
 
 use crate::datum::{
     AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, HostName,
-    IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, Speaker, StateFact, Subject, Voice,
-    VoiceSet, WorldCoordinate,
+    IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, RecordedFlag, RecordedToken,
+    Speaker, StateFact, Subject, Voice, VoiceSet, WorldCoordinate,
 };
 use crate::known::{CantTell, CarrierAbsence, Held, Known};
 use crate::structure::{
@@ -177,6 +178,16 @@ fn from_plan(facts: &RecordedWhyFacts) -> Reconstruction {
     push_source_data(&mut data, facts, &world, here);
     push_site_data(&mut data, facts, &world, here);
     push_narrative_data(&mut data, facts, &world, here);
+    push_admission_data(&mut data, facts, &world, here);
+    push_presented_data(&mut data, facts, &world, here);
+    push_region_data(&mut data, facts, &world, here);
+    push_load_data(&mut data, facts, &world, here);
+    push_classification_data(&mut data, facts, &world, here);
+    push_certification_data(&mut data, facts, &world, here);
+    push_ship_data(&mut data, facts, &world, here);
+    push_survival_data(&mut data, facts, &world, here);
+    push_render_data(&mut data, facts, &world, here);
+    push_licensor_data(&mut data, facts, &world, here);
     push_omission_data(&mut data, facts, &world, here);
     push_address_data(&mut data, facts, &world, here);
     push_correlation_data(&mut data, &carriers, &world, here);
@@ -403,7 +414,9 @@ fn push_omission_data(
             ours(SpeechAct::Derived),
             world.clone(),
             Known::present(Subject::Document(facts.root().document().clone())),
-            Known::present(Payload::Identity(IdentityFact::Count(omission.count()))),
+            Known::present(Payload::Identity(IdentityFact::Count(u64::from(
+                omission.count(),
+            )))),
             here,
         ));
     }
@@ -479,7 +492,7 @@ fn push_invocation_data(
     let subject = Known::present(Subject::Document(facts.root().document().clone()));
     for identity in [
         IdentityFact::InvocationMode(invocation.mode()),
-        IdentityFact::Count(invocation.attempt()),
+        IdentityFact::Count(u64::from(invocation.attempt())),
     ] {
         data.push(Datum::minted(
             ours(SpeechAct::Derived),
@@ -525,6 +538,492 @@ fn push_narrative_data(
             Known::present(Payload::Influence(narrative.influence())),
             here,
         ));
+    }
+}
+
+/// One datum the engine speaks in its own derived voice, at the document's shared coordinate.
+fn derived(
+    data: &mut Vec<Datum>,
+    world: &WorldCoordinate,
+    subject: &Known<Subject>,
+    payload: Known<Payload>,
+    here: Delivery,
+) {
+    data.push(Datum::minted(
+        ours(SpeechAct::Derived),
+        world.clone(),
+        subject.clone(),
+        payload,
+        here,
+    ));
+}
+
+/// A recorded value where the document released it, and the absence its state names where it did
+/// not — never an empty payload standing in for either.
+fn text_or_absence(
+    text: Option<&dorc_receipt::report::RecordedValue>,
+    state: dorc_receipt::report::MaterialState,
+) -> Known<Payload> {
+    text.map_or_else(
+        || from_material(state),
+        |value| Known::present(Payload::Text(value.clone())),
+    )
+}
+
+/// A recorded count, or the affirmative absence of one an optional slot leaves.
+fn count_or_absence(count: Option<u32>) -> Known<Payload> {
+    count.map_or_else(
+        || Known::absent(CarrierAbsence::RunHeldNoValue),
+        |value| Known::present(Payload::Identity(IdentityFact::Count(u64::from(value)))),
+    )
+}
+
+/// The records-admission singleton: what the intake edge answered, and how much it accounted for.
+fn push_admission_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    let Some(admission) = facts.admission() else {
+        return;
+    };
+    let subject = Known::present(Subject::Document(facts.root().document().clone()));
+    derived(
+        data,
+        world,
+        &subject,
+        Known::present(Payload::Token(RecordedToken::AdmissionOutcome(
+            admission.outcome(),
+        ))),
+        here,
+    );
+    derived(
+        data,
+        world,
+        &subject,
+        Known::present(Payload::Identity(IdentityFact::Count(admission.records()))),
+        here,
+    );
+    derived(
+        data,
+        world,
+        &subject,
+        Known::present(Payload::Identity(IdentityFact::Bytes(admission.bytes()))),
+        here,
+    );
+    derived(
+        data,
+        world,
+        &subject,
+        text_or_absence(admission.stream_text(), admission.stream()),
+        here,
+    );
+    derived(
+        data,
+        world,
+        &subject,
+        Known::present(Payload::Influence(admission.influence())),
+        here,
+    );
+}
+
+/// The presented-plan singleton: the three identities of one approval surface.
+fn push_presented_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    let Some(presented) = facts.presented() else {
+        return;
+    };
+    let subject = Known::present(Subject::Document(facts.root().document().clone()));
+    for digest in [presented.planning_input(), presented.presented_plan()] {
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Identity(IdentityFact::Digest(digest.to_owned()))),
+            here,
+        );
+    }
+    derived(
+        data,
+        world,
+        &subject,
+        presented.planned_image().map_or_else(
+            || Known::absent(CarrierAbsence::RunHeldNoValue),
+            |digest| Known::present(Payload::Identity(IdentityFact::Digest(digest.to_owned()))),
+        ),
+        here,
+    );
+    derived(
+        data,
+        world,
+        &subject,
+        Known::present(Payload::Influence(presented.influence())),
+        here,
+    );
+}
+
+/// Every authored region's shared outcome, keyed by REGION and never by one of its executions.
+fn push_region_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for region in facts.regions() {
+        let subject = Known::present(Subject::Region(region.region()));
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Decision(region.disposition())),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Identity(IdentityFact::Ast(region.ast().get()))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Identity(IdentityFact::Count(region.routes()))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            text_or_absence(region.shell_text(), region.shell()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(region.influence())),
+            here,
+        );
+    }
+}
+
+/// Every definition-plane decision — what a load did to the function environment.
+fn push_load_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for load in facts.loads() {
+        let subject = Known::present(Subject::Load(load.ordinal()));
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Token(RecordedToken::LoadOutcome(load.outcome()))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            text_or_absence(load.name_text(), load.name()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            text_or_absence(load.custody_text(), load.custody()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(load.influence())),
+            here,
+        );
+    }
+}
+
+/// Every site classification — what the analysis took each site to BE.
+fn push_classification_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for classification in facts.classifications() {
+        let subject = Known::present(Subject::Site(classification.site()));
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Token(RecordedToken::SiteClass(
+                classification.class(),
+            ))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Identity(IdentityFact::Ast(
+                classification.ast().get(),
+            ))),
+            here,
+        );
+        for flag in [
+            RecordedFlag::VerdictLane(classification.verdict_lane()),
+            RecordedFlag::Invalidator(classification.invalidator()),
+        ] {
+            derived(
+                data,
+                world,
+                &subject,
+                Known::present(Payload::Flag(flag)),
+                here,
+            );
+        }
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Identity(IdentityFact::Operands(
+                classification.cells(),
+            ))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(classification.influence())),
+            here,
+        );
+    }
+}
+
+/// Every dataflow certification — the solver's second opinion about itself, per pass.
+fn push_certification_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    let subject = Known::present(Subject::Document(facts.root().document().clone()));
+    for certification in facts.certifications() {
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Token(RecordedToken::SolvePass(
+                certification.pass(),
+            ))),
+            here,
+        );
+        for flag in [
+            RecordedFlag::SolveConsistent(certification.consistent()),
+            RecordedFlag::SolveTripped(certification.tripped()),
+        ] {
+            derived(
+                data,
+                world,
+                &subject,
+                Known::present(Payload::Flag(flag)),
+                here,
+            );
+        }
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(certification.influence())),
+            here,
+        );
+    }
+}
+
+/// Every probe shipment — which authored body each site sent to the host.
+fn push_ship_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for ship in facts.ships() {
+        let subject = Known::present(Subject::Site(ship.site()));
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Token(RecordedToken::ShipLane(ship.lane()))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            text_or_absence(ship.source_text(), ship.source()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(ship.influence())),
+            here,
+        );
+    }
+}
+
+/// Every survival-tier outcome — whether a fact reached its site, and what stopped it.
+fn push_survival_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for survival in facts.survivals() {
+        let subject = Known::present(Subject::Site(survival.site()));
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Token(RecordedToken::SurvivalOutcome(
+                survival.outcome(),
+            ))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            count_or_absence(survival.wall()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            count_or_absence(survival.aggregate()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            text_or_absence(survival.poison_text(), survival.poison()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(survival.influence())),
+            here,
+        );
+    }
+}
+
+/// Every render-time decision — the edits Dorc made to the artifact it generated.
+///
+/// The subject follows the row's own axis rather than a chosen one: a leaf-keyed edit is about a
+/// site, a region-keyed edit about the authored region, and an unkeyed one about the document.
+fn push_render_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for render in facts.renders() {
+        let subject = Known::present(match render.subject() {
+            RenderSubject::Leaf(site) => Subject::Site(site),
+            RenderSubject::Region(ordinal) => Subject::Region(ordinal.get()),
+            RenderSubject::None => Subject::Document(facts.root().document().clone()),
+        });
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Token(RecordedToken::RenderKind(render.kind()))),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            text_or_absence(render.detail_text(), render.detail()),
+            here,
+        );
+        derived(
+            data,
+            world,
+            &subject,
+            Known::present(Payload::Influence(render.influence())),
+            here,
+        );
+    }
+}
+
+/// Every licensor of an irreversible verb.
+///
+/// The ONE family whose rows do not speak in the engine's own voice: recorded custody says WHOSE
+/// utterance a license rested on, and `30V` §2 rul-first-person-register puts the tool's "I" only
+/// where no more-correct register exists. The voices stay unnamed — the authoring locus is an
+/// opaque slot, so the act is knowable and the speaker-set is not (`a-voice-set-is-its-own-leaf`).
+fn push_licensor_data(
+    data: &mut Vec<Datum>,
+    facts: &RecordedWhyFacts,
+    world: &WorldCoordinate,
+    here: Delivery,
+) {
+    for licensor in facts.licensors() {
+        let subject = Known::present(Subject::Site(licensor.site()));
+        let speaker = spoke(custody_act(licensor.custody()));
+        for payload in [
+            Payload::Token(RecordedToken::LicenseVerb(licensor.license())),
+            Payload::Token(RecordedToken::LicenseCustody(licensor.custody())),
+            Payload::Influence(licensor.influence()),
+        ] {
+            data.push(Datum::minted(
+                speaker.clone(),
+                world.clone(),
+                subject.clone(),
+                Known::present(payload),
+                here,
+            ));
+        }
+        data.push(Datum::minted(
+            speaker.clone(),
+            world.clone(),
+            subject,
+            text_or_absence(licensor.locus_text(), licensor.locus()),
+            here,
+        ));
+    }
+}
+
+/// The act a recorded custody was performed in.
+///
+/// No-wildcard, so a widened custody vocabulary visits this seat. `VouchedSeverally` answers the
+/// same ACT as a single vouch — several authors each vouching is still vouching — and the
+/// severally-ness rides its own payload token rather than being folded into the act, which is what
+/// keeps `speech_of`'s one-to-one discipline from being quietly widened here.
+const fn custody_act(custody: RecordedLicenseCustody) -> SpeechAct {
+    match custody {
+        RecordedLicenseCustody::Vouched | RecordedLicenseCustody::VouchedSeverally => {
+            SpeechAct::Vouched
+        }
+        RecordedLicenseCustody::MeasuredSelf => SpeechAct::Measured,
     }
 }
 

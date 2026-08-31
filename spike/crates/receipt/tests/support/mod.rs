@@ -31,16 +31,24 @@ use dorc_receipt::limits::ReceiptLimits;
 use dorc_receipt::model::{PlanReceipt, Rich};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::overlay::DocumentRows;
-use dorc_receipt::plan::{RecordedPlanReceipt, RecordedSiteDecision, RecordedSource, SourceSlots};
+use dorc_receipt::plan::{
+    RecordedAdmission, RecordedLicensor, RecordedLoadDecision, RecordedNarrative,
+    RecordedPlanReceipt, RecordedPresentedPlan, RecordedProbeShip, RecordedRegionDecision,
+    RecordedRenderDecision, RecordedSiteClassification, RecordedSiteDecision,
+    RecordedSolveCertification, RecordedSource, RecordedSurvival, RenderSubject, SourceSlots,
+};
 use dorc_receipt::projection::OpaqueFieldTag;
 use dorc_receipt::reader::{Receipt, read_rich};
 use dorc_receipt::reingested::{RecordedInfluence, Reingested};
 use dorc_receipt::rows::{
-    RecordedAst, RecordedInvocation, RecordedLeaf, RecordedSite, SourceOrdinal,
+    LoadOrdinal, NarrativeOrdinal, RecordedAst, RecordedInvocation, RecordedLeaf, RecordedOperands,
+    RecordedSite, RegionOrdinal, SourceOrdinal,
 };
 use dorc_receipt::tokens::{
-    OpaqueState, RecordedDisposition, RecordedInvocationMode, RecordedSourceClass,
-    RecordedSourceRole,
+    OpaqueState, RecordedAdmissionOutcome, RecordedDisposition, RecordedInvocationMode,
+    RecordedLicenseCustody, RecordedLicenseVerb, RecordedLoadOutcome, RecordedNarrativeKind,
+    RecordedRenderKind, RecordedShipLane, RecordedSiteClass, RecordedSolvePass,
+    RecordedSourceClass, RecordedSourceRole, RecordedSpeechAct, RecordedSurvivalOutcome,
 };
 use dorc_receipt::writer::DraftReceipt;
 
@@ -236,6 +244,8 @@ pub(crate) fn publish_with_locator(
     )
     .expect("the source row is well formed");
 
+    push_singletons(&mut rows);
+
     let site = RecordedSiteDecision::of(
         RecordedSite::of(RecordedLeaf::of(0), None),
         RecordedAst::of(3),
@@ -255,6 +265,8 @@ pub(crate) fn publish_with_locator(
         ],
     )
     .expect("the site row is well formed");
+
+    push_analysis_families(&mut rows);
 
     let (records, details) = rows.into_parts();
     let skeleton = Skeleton {
@@ -298,6 +310,169 @@ pub(crate) fn publish_with_locator(
         id,
         order,
     }
+}
+
+/// The two OPTIONAL singletons, pushed in the species' own kind order (before the site rows).
+///
+/// The fixture carries one of each, because a projection nothing exercises is a projection nobody
+/// has checked: the coverage answer would say `Projected(1)` whether or not the decomposition
+/// worked.
+fn push_singletons(rows: &mut DocumentRows) {
+    let admission = RecordedAdmission::of(
+        RecordedAdmissionOutcome::Admitted,
+        2,
+        96,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &admission,
+        &[(
+            OpaqueFieldTag::RecordStream,
+            Some(b"fact hork 0\nfact ufw 1\n".to_vec()),
+        )],
+    )
+    .expect("the admission row is well formed");
+
+    let presented = RecordedPresentedPlan::of(
+        "b".repeat(64),
+        "c".repeat(64),
+        Some("d".repeat(64)),
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&presented, &[])
+        .expect("the presented-plan row is well formed");
+}
+
+/// One row of every remaining analysis family, so each projection is exercised over real material.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one row per persisted family, in the species' own kind order: splitting it hides which families the fixture does and does not cover"
+)]
+fn push_analysis_families(rows: &mut DocumentRows) {
+    let site = RecordedSite::of(RecordedLeaf::of(0), None);
+
+    let region = RecordedRegionDecision::of(
+        RegionOrdinal::of(0),
+        RecordedAst::of(4),
+        RecordedDisposition::Guard,
+        3,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &region,
+        &[(OpaqueFieldTag::Shell, Some(b"ufw allow 443/tcp".to_vec()))],
+    )
+    .expect("the region row is well formed");
+
+    let load = RecordedLoadDecision::of(
+        LoadOrdinal::of(0),
+        RecordedLoadOutcome::Bound,
+        OpaqueState::Captured,
+        OpaqueState::Captured,
+        RecordedInfluence::AuthoredBeforeContact,
+    );
+    rows.push(
+        &load,
+        &[
+            (
+                OpaqueFieldTag::ImportPath,
+                Some(b"./ufw.oracle.sh".to_vec()),
+            ),
+            (OpaqueFieldTag::Custody, Some(b"sourced-exact".to_vec())),
+        ],
+    )
+    .expect("the load row is well formed");
+
+    let classification = RecordedSiteClassification::of(
+        site,
+        RecordedAst::of(3),
+        RecordedSiteClass::EstablishProbeWritten,
+        true,
+        false,
+        RecordedOperands::of(2, 1),
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&classification, &[])
+        .expect("the classification row is well formed");
+
+    let certification = RecordedSolveCertification::of(
+        RecordedSolvePass::EffectiveReach,
+        true,
+        false,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&certification, &[])
+        .expect("the certification row is well formed");
+
+    let ship = RecordedProbeShip::of(
+        site,
+        RecordedShipLane::Predict,
+        OpaqueState::Captured,
+        RecordedInfluence::AuthoredBeforeContact,
+    );
+    rows.push(
+        &ship,
+        &[(
+            OpaqueFieldTag::Shell,
+            Some(b"ufw__predict allow 443/tcp".to_vec()),
+        )],
+    )
+    .expect("the ship row is well formed");
+
+    let survival = RecordedSurvival::of(
+        site,
+        RecordedSurvivalOutcome::DemotedPoisoned,
+        Some(RecordedLeaf::of(0)),
+        Some(2),
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &survival,
+        &[(OpaqueFieldTag::Locator, Some(b"sm.dorc.Service".to_vec()))],
+    )
+    .expect("the survival row is well formed");
+
+    let render = RecordedRenderDecision::of(
+        RenderSubject::Leaf(site),
+        RecordedRenderKind::PinnedBinding,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    )
+    .expect("a leaf-keyed kind takes a leaf subject");
+    rows.push(
+        &render,
+        &[(
+            OpaqueFieldTag::DiagnosticOperand,
+            Some(b"ufw__is_converged".to_vec()),
+        )],
+    )
+    .expect("the render row is well formed");
+
+    let narrative = RecordedNarrative::of(
+        NarrativeOrdinal::of(0),
+        RecordedSpeechAct::Declined,
+        RecordedNarrativeKind::VerdictDecline,
+        RecordedOperands::of(1, 0),
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(&narrative, &[])
+        .expect("the narrative row is well formed");
+
+    let licensor = RecordedLicensor::of(
+        site,
+        RecordedLicenseVerb::Guard,
+        RecordedLicenseCustody::Vouched,
+        OpaqueState::Captured,
+        RecordedInfluence::HostInfluenced,
+    );
+    rows.push(
+        &licensor,
+        &[(OpaqueFieldTag::Locator, Some(b"ufw.oracle.sh:12".to_vec()))],
+    )
+    .expect("the licensor row is well formed");
 }
 
 /// The one row helper the fixture needs that `DocumentRows` does not expose by name.

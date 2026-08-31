@@ -112,6 +112,26 @@ impl sealed::RecordedType for RecordedProjectionOmission {}
 impl RecordedType for RecordedProjectionOmission {}
 impl sealed::RecordedType for crate::plan::RecordedNarrative {}
 impl RecordedType for crate::plan::RecordedNarrative {}
+impl sealed::RecordedType for crate::plan::RecordedAdmission {}
+impl RecordedType for crate::plan::RecordedAdmission {}
+impl sealed::RecordedType for crate::plan::RecordedPresentedPlan {}
+impl RecordedType for crate::plan::RecordedPresentedPlan {}
+impl sealed::RecordedType for crate::plan::RecordedRegionDecision {}
+impl RecordedType for crate::plan::RecordedRegionDecision {}
+impl sealed::RecordedType for crate::plan::RecordedLoadDecision {}
+impl RecordedType for crate::plan::RecordedLoadDecision {}
+impl sealed::RecordedType for crate::plan::RecordedSiteClassification {}
+impl RecordedType for crate::plan::RecordedSiteClassification {}
+impl sealed::RecordedType for crate::plan::RecordedSolveCertification {}
+impl RecordedType for crate::plan::RecordedSolveCertification {}
+impl sealed::RecordedType for crate::plan::RecordedProbeShip {}
+impl RecordedType for crate::plan::RecordedProbeShip {}
+impl sealed::RecordedType for crate::plan::RecordedSurvival {}
+impl RecordedType for crate::plan::RecordedSurvival {}
+impl sealed::RecordedType for crate::plan::RecordedRenderDecision {}
+impl RecordedType for crate::plan::RecordedRenderDecision {}
+impl sealed::RecordedType for crate::plan::RecordedLicensor {}
+impl RecordedType for crate::plan::RecordedLicensor {}
 
 /// A value recovered from a published document.
 #[derive(Debug)]
@@ -313,6 +333,391 @@ impl Reingested<RecordedPlanReceipt> {
     #[must_use]
     pub fn presented_plan(&self) -> Option<PresentedPlanId> {
         PresentedPlanId::of_hex(self.0.presented()?.presented_plan())
+    }
+
+    /// The intake outcome, still sealed, where the run recorded one.
+    #[must_use]
+    pub fn admission(&self) -> Option<Reingested<crate::plan::RecordedAdmission>> {
+        self.0.admission().cloned().map(Reingested::seal)
+    }
+
+    /// The approval-surface identities, still sealed, where the run recorded them.
+    #[must_use]
+    pub fn presented(&self) -> Option<Reingested<crate::plan::RecordedPresentedPlan>> {
+        self.0.presented().cloned().map(Reingested::seal)
+    }
+
+    /// Every region decision, each still sealed.
+    #[must_use]
+    pub fn regions(&self) -> Vec<Reingested<crate::plan::RecordedRegionDecision>> {
+        seal_all(self.0.regions())
+    }
+
+    /// Every definition-plane decision, each still sealed.
+    #[must_use]
+    pub fn loads(&self) -> Vec<Reingested<crate::plan::RecordedLoadDecision>> {
+        seal_all(self.0.loads())
+    }
+
+    /// Every site classification, each still sealed.
+    #[must_use]
+    pub fn classifications(&self) -> Vec<Reingested<crate::plan::RecordedSiteClassification>> {
+        seal_all(self.0.classifications())
+    }
+
+    /// Every dataflow certification, each still sealed.
+    #[must_use]
+    pub fn certifications(&self) -> Vec<Reingested<crate::plan::RecordedSolveCertification>> {
+        seal_all(self.0.certifications())
+    }
+
+    /// Every probe shipment, each still sealed.
+    #[must_use]
+    pub fn ships(&self) -> Vec<Reingested<crate::plan::RecordedProbeShip>> {
+        seal_all(self.0.ships())
+    }
+
+    /// Every survival outcome, each still sealed.
+    #[must_use]
+    pub fn survivals(&self) -> Vec<Reingested<crate::plan::RecordedSurvival>> {
+        seal_all(self.0.survivals())
+    }
+
+    /// Every render decision, each still sealed.
+    #[must_use]
+    pub fn renders(&self) -> Vec<Reingested<crate::plan::RecordedRenderDecision>> {
+        seal_all(self.0.renders())
+    }
+
+    /// Every licensor, each still sealed.
+    #[must_use]
+    pub fn licensors(&self) -> Vec<Reingested<crate::plan::RecordedLicensor>> {
+        seal_all(self.0.licensors())
+    }
+}
+
+/// One family's rows, cloned out of the model and resealed one by one.
+fn seal_all<T: RecordedType + Clone>(rows: &[T]) -> Vec<Reingested<T>> {
+    rows.iter().cloned().map(Reingested::seal).collect()
+}
+
+impl Reingested<crate::plan::RecordedAdmission> {
+    /// What intake answered.
+    #[must_use]
+    pub const fn outcome(&self) -> crate::tokens::RecordedAdmissionOutcome {
+        self.0.outcome()
+    }
+
+    /// How many records were admitted.
+    #[must_use]
+    pub const fn records(&self) -> u64 {
+        self.0.records()
+    }
+
+    /// How many bytes they accounted for.
+    #[must_use]
+    pub const fn bytes(&self) -> u64 {
+        self.0.bytes()
+    }
+
+    /// Whether the admitted record stream is in the document.
+    #[must_use]
+    pub const fn stream(&self) -> crate::tokens::OpaqueState {
+        self.0.stream()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedPresentedPlan> {
+    /// The identity of the complete planner input tuple, as spelled.
+    #[must_use]
+    pub fn planning_input(&self) -> String {
+        self.0.planning_input().to_owned()
+    }
+
+    /// The identity of the approval surface, as spelled.
+    #[must_use]
+    pub fn presented_plan(&self) -> String {
+        self.0.presented_plan().to_owned()
+    }
+
+    /// The identity of the planned apply image, where the run had one.
+    #[must_use]
+    pub fn planned_image(&self) -> Option<String> {
+        self.0.planned_image().map(str::to_owned)
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedRegionDecision> {
+    /// Which region this decided.
+    #[must_use]
+    pub fn region(&self) -> u32 {
+        self.0.region().get()
+    }
+
+    /// Which syntax node the region body came from.
+    #[must_use]
+    pub const fn ast(&self) -> crate::rows::RecordedAst {
+        self.0.ast()
+    }
+
+    /// What the plan does with every invocation of the region.
+    #[must_use]
+    pub const fn disposition(&self) -> RecordedDisposition {
+        self.0.disposition()
+    }
+
+    /// How many routes reach the region.
+    #[must_use]
+    pub const fn routes(&self) -> u64 {
+        self.0.routes()
+    }
+
+    /// Whether the region's own shell text is in the document.
+    #[must_use]
+    pub const fn shell(&self) -> crate::tokens::OpaqueState {
+        self.0.shell()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedLoadDecision> {
+    /// Where this decision sat in decision order.
+    #[must_use]
+    pub fn ordinal(&self) -> u32 {
+        self.0.ordinal().get()
+    }
+
+    /// What the definition plane decided.
+    #[must_use]
+    pub const fn outcome(&self) -> crate::tokens::RecordedLoadOutcome {
+        self.0.outcome()
+    }
+
+    /// Whether the loaded name is in the document.
+    #[must_use]
+    pub const fn name(&self) -> crate::tokens::OpaqueState {
+        self.0.name()
+    }
+
+    /// Whether the custody description is in the document.
+    #[must_use]
+    pub const fn custody(&self) -> crate::tokens::OpaqueState {
+        self.0.custody()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedSiteClassification> {
+    /// Which site this classified.
+    #[must_use]
+    pub const fn site(&self) -> crate::rows::RecordedSite {
+        self.0.site()
+    }
+
+    /// Which syntax node the site came from.
+    #[must_use]
+    pub const fn ast(&self) -> crate::rows::RecordedAst {
+        self.0.ast()
+    }
+
+    /// The classification.
+    #[must_use]
+    pub const fn class(&self) -> crate::tokens::RecordedSiteClass {
+        self.0.class()
+    }
+
+    /// Whether the site is on the verdict lane.
+    #[must_use]
+    pub const fn verdict_lane(&self) -> bool {
+        self.0.verdict_lane()
+    }
+
+    /// Whether the site invalidates anything.
+    #[must_use]
+    pub const fn invalidator(&self) -> bool {
+        self.0.invalidator()
+    }
+
+    /// The capped account of cells the classification keys on.
+    #[must_use]
+    pub const fn cells(&self) -> crate::rows::RecordedOperands {
+        self.0.cells()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedSolveCertification> {
+    /// Which dataflow answer this certified.
+    #[must_use]
+    pub const fn pass(&self) -> crate::tokens::RecordedSolvePass {
+        self.0.pass()
+    }
+
+    /// Whether the certifier agreed with the solver.
+    #[must_use]
+    pub const fn consistent(&self) -> bool {
+        self.0.consistent()
+    }
+
+    /// Whether the latch tripped.
+    #[must_use]
+    pub const fn tripped(&self) -> bool {
+        self.0.tripped()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedProbeShip> {
+    /// Which site shipped.
+    #[must_use]
+    pub const fn site(&self) -> crate::rows::RecordedSite {
+        self.0.site()
+    }
+
+    /// Which body it shipped.
+    #[must_use]
+    pub const fn lane(&self) -> crate::tokens::RecordedShipLane {
+        self.0.lane()
+    }
+
+    /// Whether the defining source text is in the document.
+    #[must_use]
+    pub const fn source(&self) -> crate::tokens::OpaqueState {
+        self.0.source()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedSurvival> {
+    /// Which site the walk decided.
+    #[must_use]
+    pub const fn site(&self) -> crate::rows::RecordedSite {
+        self.0.site()
+    }
+
+    /// What it decided.
+    #[must_use]
+    pub const fn outcome(&self) -> crate::tokens::RecordedSurvivalOutcome {
+        self.0.outcome()
+    }
+
+    /// The leaf of the wall that stood, where one did.
+    #[must_use]
+    pub fn wall(&self) -> Option<u32> {
+        self.0.wall().map(crate::rows::RecordedLeaf::get)
+    }
+
+    /// How many establishes an aggregate carried, where the outcome names one.
+    #[must_use]
+    pub const fn aggregate(&self) -> Option<u32> {
+        self.0.aggregate()
+    }
+
+    /// Whether the poisoning kind is in the document.
+    #[must_use]
+    pub const fn poison(&self) -> crate::tokens::OpaqueState {
+        self.0.poison()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedRenderDecision> {
+    /// Which identity the row is keyed by.
+    #[must_use]
+    pub const fn subject(&self) -> crate::plan::RenderSubject {
+        self.0.subject()
+    }
+
+    /// Which decision the row records.
+    #[must_use]
+    pub const fn kind(&self) -> crate::tokens::RecordedRenderKind {
+        self.0.kind()
+    }
+
+    /// Whether the decision's own detail is in the document.
+    #[must_use]
+    pub const fn detail(&self) -> crate::tokens::OpaqueState {
+        self.0.detail()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
+    }
+}
+
+impl Reingested<crate::plan::RecordedLicensor> {
+    /// Which site the verb applied to.
+    #[must_use]
+    pub const fn site(&self) -> crate::rows::RecordedSite {
+        self.0.site()
+    }
+
+    /// Which verb was licensed.
+    #[must_use]
+    pub const fn license(&self) -> crate::tokens::RecordedLicenseVerb {
+        self.0.license()
+    }
+
+    /// Whose utterance it rests on.
+    #[must_use]
+    pub const fn custody(&self) -> crate::tokens::RecordedLicenseCustody {
+        self.0.custody()
+    }
+
+    /// Whether the authoring locus is in the document.
+    #[must_use]
+    pub const fn locus(&self) -> crate::tokens::OpaqueState {
+        self.0.locus()
+    }
+
+    /// Where this record stood relative to host contact.
+    #[must_use]
+    pub const fn account(&self) -> RecordedInfluence {
+        self.0.account()
     }
 }
 

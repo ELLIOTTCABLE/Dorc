@@ -37,8 +37,9 @@ pub mod structure;
 
 pub use datum::{
     AddressSubject, AttemptLineage, CarrierRef, CorrelationFact, Datum, Delivery, FindingKind,
-    HostName, IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, Separability, Speaker,
-    StateFact, Subject, Voice, VoiceSet, WorldCoordinate,
+    HostName, IdentityFact, Moment, NegativeKind, NegativeSpace, Payload, RecordedFlag,
+    RecordedToken, Separability, SourceRef, Speaker, StateFact, Subject, Voice, VoiceSet,
+    WorldCoordinate,
 };
 pub use known::{CantTell, CarrierAbsence, Held, Known, UnknowableReason, WithholdReason};
 pub use structure::{

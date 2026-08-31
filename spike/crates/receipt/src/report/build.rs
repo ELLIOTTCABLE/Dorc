@@ -7,7 +7,11 @@
 //! the decomposition.
 
 use super::address::{self, AuthoredPlacement};
-use super::families::{InvocationFacts, NarrativeFacts};
+use super::families::{
+    AdmissionFacts, CertificationFacts, ClassificationFacts, InvocationFacts, LicensorFacts,
+    LoadFacts, NarrativeFacts, PresentedPlanFacts, RegionFacts, RenderFacts, ShipFacts,
+    SurvivalFacts,
+};
 use super::states::{
     AuthenticationState, CurrentSourceState, DetailState, MaterialState, ProjectionState,
     SiblingState,
@@ -167,6 +171,16 @@ pub fn derive(input: &WhyFactsInput<'_>) -> RecordedWhyFacts {
     RecordedWhyFacts {
         invocation: invocation_facts(input, detail),
         narratives: narrative_facts(input.model),
+        admission: admission_facts(input, detail),
+        presented: presented_facts(input.model),
+        regions: region_facts(input, detail),
+        loads: load_facts(input, detail),
+        classifications: classification_facts(input.model),
+        certifications: certification_facts(input.model),
+        ships: ship_facts(input, detail),
+        survivals: survival_facts(input, detail),
+        renders: render_facts(input, detail),
+        licensors: licensor_facts(input, detail),
         root: RootFacts::of(
             input.reached.root().clone(),
             input.order,
@@ -397,6 +411,254 @@ fn narrative_facts(model: &Reingested<RecordedPlanReceipt>) -> Vec<NarrativeFact
             kind: narrative.kind(),
             operands: narrative.operands(),
             influence: narrative.account(),
+        })
+        .collect()
+}
+
+/// The detail value one row of `kind` carries in `tag`, where its slot is held.
+///
+/// The record ordinal comes off the document's OWN record stream, exactly as `ordinals_of`'s doc
+/// requires: a projection that re-derived which record a row is would be a second copy of the
+/// emission order, and the two disagreeing enriches whichever row shares the integer.
+fn row_detail(
+    root: &Reingested<Receipt<PlanReceipt, Rich>>,
+    ordinals: &[u64],
+    position: usize,
+    state: MaterialState,
+    tag: OpaqueFieldTag,
+) -> Option<RecordedValue> {
+    state
+        .is_held()
+        .then(|| ordinals.get(position).copied())
+        .flatten()
+        .and_then(|record| detail_value(root, record, tag, ValueClass::of_tag(tag)))
+}
+
+fn admission_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Option<AdmissionFacts> {
+    let admission = input.model.admission()?;
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::Admission);
+    let stream = MaterialState::of(admission.stream(), detail);
+    Some(AdmissionFacts {
+        outcome: admission.outcome(),
+        records: admission.records(),
+        bytes: admission.bytes(),
+        stream,
+        stream_text: row_detail(
+            input.root,
+            &ordinals,
+            0,
+            stream,
+            OpaqueFieldTag::RecordStream,
+        ),
+        influence: admission.account(),
+    })
+}
+
+fn presented_facts(model: &Reingested<RecordedPlanReceipt>) -> Option<PresentedPlanFacts> {
+    let presented = model.presented()?;
+    Some(PresentedPlanFacts {
+        planning_input: presented.planning_input(),
+        presented_plan: presented.presented_plan(),
+        planned_image: presented.planned_image(),
+        influence: presented.account(),
+    })
+}
+
+fn region_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<RegionFacts> {
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::RegionDecision);
+    input
+        .model
+        .regions()
+        .iter()
+        .enumerate()
+        .map(|(position, region)| {
+            let shell = MaterialState::of(region.shell(), detail);
+            RegionFacts {
+                region: region.region(),
+                ast: region.ast(),
+                disposition: region.disposition(),
+                routes: region.routes(),
+                shell,
+                shell_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    shell,
+                    OpaqueFieldTag::Shell,
+                ),
+                influence: region.account(),
+            }
+        })
+        .collect()
+}
+
+fn load_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<LoadFacts> {
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::LoadDecision);
+    input
+        .model
+        .loads()
+        .iter()
+        .enumerate()
+        .map(|(position, load)| {
+            let name = MaterialState::of(load.name(), detail);
+            let custody = MaterialState::of(load.custody(), detail);
+            LoadFacts {
+                ordinal: load.ordinal(),
+                outcome: load.outcome(),
+                name,
+                name_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    name,
+                    OpaqueFieldTag::ImportPath,
+                ),
+                custody,
+                custody_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    custody,
+                    OpaqueFieldTag::Custody,
+                ),
+                influence: load.account(),
+            }
+        })
+        .collect()
+}
+
+fn classification_facts(model: &Reingested<RecordedPlanReceipt>) -> Vec<ClassificationFacts> {
+    model
+        .classifications()
+        .iter()
+        .map(|classification| ClassificationFacts {
+            site: classification.site(),
+            ast: classification.ast(),
+            class: classification.class(),
+            verdict_lane: classification.verdict_lane(),
+            invalidator: classification.invalidator(),
+            cells: classification.cells(),
+            influence: classification.account(),
+        })
+        .collect()
+}
+
+fn certification_facts(model: &Reingested<RecordedPlanReceipt>) -> Vec<CertificationFacts> {
+    model
+        .certifications()
+        .iter()
+        .map(|certification| CertificationFacts {
+            pass: certification.pass(),
+            consistent: certification.consistent(),
+            tripped: certification.tripped(),
+            influence: certification.account(),
+        })
+        .collect()
+}
+
+fn ship_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<ShipFacts> {
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::ProbeShip);
+    input
+        .model
+        .ships()
+        .iter()
+        .enumerate()
+        .map(|(position, ship)| {
+            let source = MaterialState::of(ship.source(), detail);
+            ShipFacts {
+                site: ship.site(),
+                lane: ship.lane(),
+                source,
+                source_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    source,
+                    OpaqueFieldTag::Shell,
+                ),
+                influence: ship.account(),
+            }
+        })
+        .collect()
+}
+
+fn survival_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<SurvivalFacts> {
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::Survival);
+    input
+        .model
+        .survivals()
+        .iter()
+        .enumerate()
+        .map(|(position, survival)| {
+            let poison = MaterialState::of(survival.poison(), detail);
+            SurvivalFacts {
+                site: survival.site(),
+                outcome: survival.outcome(),
+                wall: survival.wall(),
+                aggregate: survival.aggregate(),
+                poison,
+                poison_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    poison,
+                    OpaqueFieldTag::Locator,
+                ),
+                influence: survival.account(),
+            }
+        })
+        .collect()
+}
+
+fn render_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<RenderFacts> {
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::RenderDecision);
+    input
+        .model
+        .renders()
+        .iter()
+        .enumerate()
+        .map(|(position, render)| {
+            let carried = MaterialState::of(render.detail(), detail);
+            RenderFacts {
+                subject: render.subject(),
+                kind: render.kind(),
+                detail: carried,
+                detail_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    carried,
+                    OpaqueFieldTag::DiagnosticOperand,
+                ),
+                influence: render.account(),
+            }
+        })
+        .collect()
+}
+
+fn licensor_facts(input: &WhyFactsInput<'_>, detail: DetailState) -> Vec<LicensorFacts> {
+    let ordinals = ordinals_of(input.root, crate::grammar::RecordKind::Licensor);
+    input
+        .model
+        .licensors()
+        .iter()
+        .enumerate()
+        .map(|(position, licensor)| {
+            let locus = MaterialState::of(licensor.locus(), detail);
+            LicensorFacts {
+                site: licensor.site(),
+                license: licensor.license(),
+                custody: licensor.custody(),
+                locus,
+                locus_text: row_detail(
+                    input.root,
+                    &ordinals,
+                    position,
+                    locus,
+                    OpaqueFieldTag::Locator,
+                ),
+                influence: licensor.account(),
+            }
         })
         .collect()
 }

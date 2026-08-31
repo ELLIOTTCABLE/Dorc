@@ -37,7 +37,11 @@ mod states;
 mod value;
 
 pub use address::{AddressFacts, AddressResolution, RequestedAddress, UnresolvedReason};
-pub use families::{FamilyCoverage, InvocationFacts, NarrativeFacts, PlanFamily};
+pub use families::{
+    AdmissionFacts, CertificationFacts, ClassificationFacts, FamilyCoverage, InvocationFacts,
+    LicensorFacts, LoadFacts, NarrativeFacts, PlanFamily, PresentedPlanFacts, RegionFacts,
+    RenderFacts, ShipFacts, SurvivalFacts,
+};
 pub use states::{
     AuthenticationState, ClosureCompleteness, CurrentSourceState, DetailState, MaterialState,
     ProjectionState, ReDerivationState, RecordedDocumentId, RecordedSpecies, SiblingState,
@@ -384,6 +388,16 @@ pub struct RecordedWhyFacts {
     sources: Vec<SourceFacts>,
     narratives: Vec<NarrativeFacts>,
     omissions: Vec<OmissionFacts>,
+    admission: Option<AdmissionFacts>,
+    presented: Option<PresentedPlanFacts>,
+    regions: Vec<RegionFacts>,
+    loads: Vec<LoadFacts>,
+    classifications: Vec<ClassificationFacts>,
+    certifications: Vec<CertificationFacts>,
+    ships: Vec<ShipFacts>,
+    survivals: Vec<SurvivalFacts>,
+    renders: Vec<RenderFacts>,
+    licensors: Vec<LicensorFacts>,
     rederivation: ReDerivationState,
 }
 
@@ -431,12 +445,77 @@ impl RecordedWhyFacts {
         &self.narratives
     }
 
+    /// The intake outcome, where the document recorded one.
+    #[must_use]
+    pub const fn admission(&self) -> Option<&AdmissionFacts> {
+        self.admission.as_ref()
+    }
+
+    /// The approval-surface identities, where the document recorded them.
+    #[must_use]
+    pub const fn presented(&self) -> Option<&PresentedPlanFacts> {
+        self.presented.as_ref()
+    }
+
+    /// Every authored region's shared outcome.
+    #[must_use]
+    pub fn regions(&self) -> &[RegionFacts] {
+        &self.regions
+    }
+
+    /// Every definition-plane decision.
+    #[must_use]
+    pub fn loads(&self) -> &[LoadFacts] {
+        &self.loads
+    }
+
+    /// Every site classification.
+    #[must_use]
+    pub fn classifications(&self) -> &[ClassificationFacts] {
+        &self.classifications
+    }
+
+    /// Every dataflow certification.
+    #[must_use]
+    pub fn certifications(&self) -> &[CertificationFacts] {
+        &self.certifications
+    }
+
+    /// Every probe shipment.
+    #[must_use]
+    pub fn ships(&self) -> &[ShipFacts] {
+        &self.ships
+    }
+
+    /// Every survival-tier outcome.
+    #[must_use]
+    pub fn survivals(&self) -> &[SurvivalFacts] {
+        &self.survivals
+    }
+
+    /// Every render-time decision.
+    #[must_use]
+    pub fn renders(&self) -> &[RenderFacts] {
+        &self.renders
+    }
+
+    /// Every licensor of an irreversible verb.
+    #[must_use]
+    pub fn licensors(&self) -> &[LicensorFacts] {
+        &self.licensors
+    }
+
     /// What this model can say about EVERY family a plan document persists.
     ///
     /// Exhaustive and no-wildcard, so a family added to the recorded model cannot land here
     /// unclassified — which is the whole point: a consumer must be able to tell a family the
     /// document does not carry from one this read surface has not projected yet, because the two
     /// are repaired in different places and only one of them is a durable question.
+    ///
+    /// The two OPTIONAL singletons answer `NotCarried` when the document holds no such row, which
+    /// is a different fact from an empty collection: a plan that admitted no records did not record
+    /// an admission at all, and reporting that as `Projected(0)` would say the projection found an
+    /// intake that answered nothing.
     #[must_use]
     pub fn coverage(&self) -> Vec<(PlanFamily, FamilyCoverage)> {
         PlanFamily::ALL
@@ -448,16 +527,18 @@ impl RecordedWhyFacts {
                     PlanFamily::Sites => FamilyCoverage::of(self.sites.len()),
                     PlanFamily::Narratives => FamilyCoverage::of(self.narratives.len()),
                     PlanFamily::Omissions => FamilyCoverage::of(self.omissions.len()),
-                    PlanFamily::Admission
-                    | PlanFamily::PresentedPlan
-                    | PlanFamily::Regions
-                    | PlanFamily::Loads
-                    | PlanFamily::Classifications
-                    | PlanFamily::Certifications
-                    | PlanFamily::Ships
-                    | PlanFamily::Survivals
-                    | PlanFamily::Renders
-                    | PlanFamily::Licensors => FamilyCoverage::RecordedButUnprojected,
+                    PlanFamily::Admission => FamilyCoverage::of_singleton(self.admission.is_some()),
+                    PlanFamily::PresentedPlan => {
+                        FamilyCoverage::of_singleton(self.presented.is_some())
+                    }
+                    PlanFamily::Regions => FamilyCoverage::of(self.regions.len()),
+                    PlanFamily::Loads => FamilyCoverage::of(self.loads.len()),
+                    PlanFamily::Classifications => FamilyCoverage::of(self.classifications.len()),
+                    PlanFamily::Certifications => FamilyCoverage::of(self.certifications.len()),
+                    PlanFamily::Ships => FamilyCoverage::of(self.ships.len()),
+                    PlanFamily::Survivals => FamilyCoverage::of(self.survivals.len()),
+                    PlanFamily::Renders => FamilyCoverage::of(self.renders.len()),
+                    PlanFamily::Licensors => FamilyCoverage::of(self.licensors.len()),
                 };
                 (*family, coverage)
             })

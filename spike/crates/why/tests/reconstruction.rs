@@ -19,7 +19,7 @@ use dorc_why::known::{CantTell, CarrierAbsence, Held, Known, WithholdReason};
 use dorc_why::recorded::{Rooted, reconstruct};
 use dorc_why::{
     CorrelationFact, Datum, Delivery, IdentityFact, Moment, NegativeSpace, Payload, Reconstruction,
-    Separability, Speaker, StateFact, Subject, VoiceSet,
+    RecordedFlag, RecordedToken, Separability, Speaker, StateFact, Subject, VoiceSet,
 };
 
 use support::{BOOK, Shape, facts, published, shaped};
@@ -86,6 +86,8 @@ fn subject_of(datum: &Datum) -> String {
         Subject::Address(address) => format!("address:{}:{}", address.source.get(), address.line),
         Subject::Family(family) => format!("family:{}", family.token()),
         Subject::Narrative(ordinal) => format!("narrative:{ordinal}"),
+        Subject::Region(ordinal) => format!("region:{ordinal}"),
+        Subject::Load(ordinal) => format!("load:{ordinal}"),
     })
 }
 
@@ -101,8 +103,35 @@ fn payload_of(datum: &Datum) -> String {
         Payload::Text(value) => format!("text:{:?}:{}", value.class(), value.len()),
         Payload::Correlation(correlation) => format!("correlation:{}", correlation_of(correlation)),
         Payload::Collapse(kind) => format!("collapse:{kind:?}"),
+        Payload::Token(token) => format!("token:{}", token_of(*token)),
+        Payload::Flag(flag) => format!("flag:{}", flag_of(*flag)),
         Payload::NegativeSpace(space) => format!("negative:{}", negative_of(*space)),
     })
+}
+
+/// Every recorded closed vocabulary a payload can carry, matched without a wildcard.
+fn token_of(token: RecordedToken) -> String {
+    match token {
+        RecordedToken::AdmissionOutcome(value) => format!("admission:{value:?}"),
+        RecordedToken::LoadOutcome(value) => format!("load:{value:?}"),
+        RecordedToken::SiteClass(value) => format!("class:{value:?}"),
+        RecordedToken::SolvePass(value) => format!("pass:{value:?}"),
+        RecordedToken::ShipLane(value) => format!("lane:{value:?}"),
+        RecordedToken::SurvivalOutcome(value) => format!("survival:{value:?}"),
+        RecordedToken::RenderKind(value) => format!("render:{value:?}"),
+        RecordedToken::LicenseVerb(value) => format!("license:{value:?}"),
+        RecordedToken::LicenseCustody(value) => format!("custody:{value:?}"),
+    }
+}
+
+/// Each named predicate travels with its answer, so the two are never separable in a fingerprint.
+fn flag_of(flag: RecordedFlag) -> String {
+    match flag {
+        RecordedFlag::VerdictLane(value) => format!("verdict-lane:{value}"),
+        RecordedFlag::Invalidator(value) => format!("invalidator:{value}"),
+        RecordedFlag::SolveConsistent(value) => format!("solve-consistent:{value}"),
+        RecordedFlag::SolveTripped(value) => format!("solve-tripped:{value}"),
+    }
 }
 
 fn identity_of(identity: &IdentityFact) -> String {
@@ -116,6 +145,9 @@ fn identity_of(identity: &IdentityFact) -> String {
         IdentityFact::SourceClass(class) => format!("class:{class:?}"),
         IdentityFact::Ast(ast) => format!("ast:{ast}"),
         IdentityFact::InvocationMode(mode) => format!("invocation-mode:{mode:?}"),
+        IdentityFact::Operands(operands) => {
+            format!("operands:{}+{}", operands.shown(), operands.dropped())
+        }
     }
 }
 
@@ -225,11 +257,6 @@ fn every_named_family_reaches_the_population_exactly_once() {
         .map(|(family, _)| family)
         .collect();
     expected.sort_unstable();
-    assert!(
-        !expected.is_empty(),
-        "the read surface is not yet exhaustive, so the audit must have something to say; an empty \
-         expectation would make this case vacuous"
-    );
     assert_eq!(
         seen, expected,
         "every unprojected family is audited exactly once, and every projected one is audited not \
@@ -238,12 +265,14 @@ fn every_named_family_reaches_the_population_exactly_once() {
     );
 }
 
-/// A family with typed facts is NOT a hole, and the coverage answer says which is which.
+/// The read surface is EXHAUSTIVE: no family answers `RecordedButUnprojected` any more.
 ///
-/// The half that keeps the widening honest: projecting a family must actually retire its absence,
-/// or the surface would carry both the facts and a row saying the facts are missing.
+/// The lane's central claim, and the only case that would notice it regressing. A family sliding
+/// back to that word is a projection that was removed, which is different from a document that
+/// carries no such row — and only the first is repaired by projection work
+/// (`inv-report-projection-exhaustive-or-classified`).
 #[test]
-fn a_projected_family_carries_facts_and_no_absence() {
+fn no_persisted_family_is_left_unprojected() {
     let document = published();
     let facts = facts(&document, Vec::new(), Vec::new(), None);
     let coverage = facts.coverage();
@@ -253,39 +282,66 @@ fn a_projected_family_carries_facts_and_no_absence() {
         "coverage answers for every persisted family; an unanswered one is the silence the \
          classification exists to make impossible"
     );
+    for (family, cover) in &coverage {
+        assert_ne!(
+            *cover,
+            FamilyCoverage::RecordedButUnprojected,
+            "family {} is persisted by the durable and the report API projects it; that word is \
+             now reachable only by a projection somebody removed",
+            family.token()
+        );
+    }
     assert!(
         coverage
             .iter()
             .any(|(family, cover)| *family == PlanFamily::Narratives && cover.is_projected()),
         "the narrative family is projected — it is what carries the recorded speech acts"
     );
-    assert!(
-        coverage
-            .iter()
-            .any(|(_, cover)| *cover == FamilyCoverage::RecordedButUnprojected),
-        "and the families still unprojected say so in their own word, distinct from a family the \
-         document does not carry"
-    );
 }
 
-/// Every audited hole says WHOSE it is, and at v1 every one of them is the report API's.
+/// A document holding no rows of a SINGLETON family says so in the carrier's word, not the report
+/// API's.
 ///
-/// The distinction is the whole point of the audit (`30V` §5): a carrier hole is a durable
-/// question and a report-API hole is not, and a surface that merged them would send the reader to
-/// the wrong place.
+/// The distinction is the whole point of the audit (`30V` §5): a carrier hole is a durable question
+/// and a report-API hole is not, and a surface that merged them would send the reader to the wrong
+/// place. Driven over a document published WITHOUT its two optional singletons, which is an ordinary
+/// store shape — the full fixture audits nothing at all, which is the other half of the claim and is
+/// pinned by its neighbour above.
 #[test]
-fn every_hole_names_its_cause_and_v1_holes_are_the_report_apis() {
-    let document = published();
-    let reconstruction = plan_reconstruction(&document);
+fn every_hole_names_its_cause_and_the_v1_holes_are_the_carriers() {
+    let document = shaped(
+        Shape {
+            without_singletons: true,
+            ..Shape::default()
+        },
+        11,
+    );
+    let facts = facts(&document, Vec::new(), Vec::new(), None);
+    let reconstruction = reconstruct(&Rooted::Plan(&facts));
     let holes = reconstruction.audit();
-    assert!(!holes.is_empty(), "v1 has holes; an empty audit is a bug");
+    assert!(
+        !holes.is_empty(),
+        "the fixture document carries neither singleton, so the audit has something to say; an \
+         empty audit here would make the causes below vacuous"
+    );
     for hole in holes {
+        let coverage = facts
+            .coverage()
+            .into_iter()
+            .find(|(family, _)| *family == hole.family)
+            .map(|(_, cover)| cover)
+            .expect("an audited family is one the coverage answer names");
+        assert_eq!(
+            coverage,
+            FamilyCoverage::NotCarried,
+            "family {} is audited, so the report answered something other than typed facts for it",
+            hole.family.token()
+        );
         assert_eq!(
             hole.cause,
-            CarrierAbsence::ReportApiLacks,
-            "family {} is recorded by the durable and unprojected by the report API, so its hole \
-             is the report API's; a carrier cause here would send a reader to widen the durable \
-             for a gap that needs no durable change",
+            CarrierAbsence::RunHeldNoValue,
+            "family {} is one this document does not carry, so its hole is the carrier's; a \
+             report-API cause here would send a reader to widen a projection that is already there",
             hole.family.token()
         );
     }
@@ -466,4 +522,95 @@ fn a_withheld_shell_and_a_bounded_source_read_as_their_own_absences() {
         rows.iter().any(|row| row.contains("withheld:bound")),
         "a bound-refused source says so in its own word, distinct from the withheld one; got {rows:?}"
     );
+}
+
+/// Every widened family actually reaches the population — the projections are WALKED, not merely
+/// available.
+///
+/// Structural rather than lexical: the discriminant names come from the same no-wildcard matches the
+/// fingerprints use, so a new recorded vocabulary reddens `token_of` at compile time and this
+/// expectation in the diff beside it. A family whose rows exist and whose reconstruction dropped
+/// them would otherwise look exactly like a document that carried nothing.
+#[test]
+fn every_widened_family_reaches_the_population() {
+    let reconstruction = plan_reconstruction(&published());
+
+    let mut tokens: BTreeSet<String> = BTreeSet::new();
+    let mut flags: BTreeSet<String> = BTreeSet::new();
+    let mut subjects: BTreeSet<String> = BTreeSet::new();
+    for datum in reconstruction.data() {
+        match datum.payload() {
+            Known::Knowable(Held::Present(Payload::Token(token))) => {
+                tokens.insert(token_of(*token));
+            }
+            Known::Knowable(Held::Present(Payload::Flag(flag))) => {
+                flags.insert(flag_of(*flag));
+            }
+            _ => {}
+        }
+        subjects.insert(subject_of(datum));
+    }
+
+    let named: Vec<&str> = tokens
+        .iter()
+        .map(|token| token.split(':').next().unwrap_or(""))
+        .collect();
+    for family in [
+        "admission",
+        "load",
+        "class",
+        "pass",
+        "lane",
+        "survival",
+        "render",
+        "license",
+        "custody",
+    ] {
+        assert!(
+            named.contains(&family),
+            "no datum carries a `{family}` token; its family's rows exist in the document, so the \
+             reconstruction dropped them: {tokens:?}"
+        );
+    }
+    assert_eq!(
+        flags.len(),
+        4,
+        "all four named predicates reach the population, each with its own answer: {flags:?}"
+    );
+    for subject in ["region:0", "load:0"] {
+        assert!(
+            subjects.contains(subject),
+            "no datum is about `{subject}`; a region keyed by one of its executions would be the \
+             two-identities conflation `30L:rul-two-identities-never-conflated` refuses"
+        );
+    }
+}
+
+/// A licensor row speaks in the act its recorded CUSTODY names, with its voices honestly unnamed.
+///
+/// `30V` §2 rul-first-person-register puts the tool's "I" only where no more-correct register
+/// exists, and a recorded custody is one: the license rested on somebody's vouch. The voice-set
+/// stays a separate answer because the authoring locus is an opaque slot — the act is knowable and
+/// the speaker is not (`a-voice-set-is-its-own-leaf`).
+#[test]
+fn a_licensed_verb_speaks_in_the_act_its_custody_names() {
+    let reconstruction = plan_reconstruction(&published());
+    let licensed: Vec<&Datum> = reconstruction
+        .data()
+        .iter()
+        .filter(|datum| {
+            matches!(
+                datum.payload(),
+                Known::Knowable(Held::Present(Payload::Token(RecordedToken::LicenseVerb(_))))
+            )
+        })
+        .collect();
+    assert!(!licensed.is_empty(), "the fixture publishes a licensor row");
+    for datum in licensed {
+        assert_eq!(
+            speaker_of(datum),
+            "Vouched/absent:report-api-lacks",
+            "a vouched custody speaks as a vouch, and names nobody"
+        );
+    }
 }

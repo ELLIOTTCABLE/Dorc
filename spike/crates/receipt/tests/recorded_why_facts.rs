@@ -10,9 +10,9 @@ use dorc_receipt::ids::{PlanReceiptId, ReceiptId, ReceiptIdSource};
 use dorc_receipt::order::ReceiptOrderToken;
 use dorc_receipt::report::{
     AddressResolution, AuthenticationState, ClosureCompleteness, CurrentSourceReading,
-    CurrentSourceState, DetailState, MaterialState, ReDerivationState, RecordedDocumentId,
-    RecordedSpecies, RequestedAddress, SiblingState, SourceObservation, UnresolvedReason,
-    ValueClass, ValueEncoder, WhyFactsInput, derive,
+    CurrentSourceState, DetailState, MaterialState, PlanFamily, ReDerivationState,
+    RecordedDocumentId, RecordedSpecies, RequestedAddress, SiblingState, SourceObservation,
+    UnresolvedReason, ValueClass, ValueEncoder, WhyFactsInput, derive,
 };
 use dorc_receipt::rows::{RecordedLeaf, RecordedSite};
 
@@ -502,4 +502,93 @@ fn a_locator_payload_that_does_not_parse_reads_undecodable() {
         "an unparseable payload is not a site whose provenance was one stage long"
     );
     assert!(facts.sites()[0].chain().is_empty());
+}
+
+/// EVERY persisted family answers with typed facts, and the two singletons the fixture carries
+/// prove the projection actually decomposed something.
+///
+/// The exhaustiveness half of `inv-report-projection-exhaustive-or-classified`. A count would drift;
+/// what must hold is that no family answers `RecordedButUnprojected`, because that word now means a
+/// projection somebody removed rather than one nobody has written.
+#[test]
+fn every_persisted_family_answers_with_typed_facts() {
+    let document = published();
+    let facts = derive(&input(&document, Vec::new(), None));
+
+    let coverage = facts.coverage();
+    assert_eq!(coverage.len(), PlanFamily::ALL.len());
+    for (family, cover) in &coverage {
+        assert!(
+            cover.is_projected(),
+            "family {} answers {cover:?}; the fixture carries one row of every family, so anything \
+             but a projection is a decomposition that stopped working",
+            family.token()
+        );
+    }
+
+    assert_eq!(
+        facts
+            .admission()
+            .expect("the fixture publishes an admission row")
+            .records(),
+        2
+    );
+    assert_eq!(facts.regions()[0].routes(), 3);
+    assert_eq!(facts.loads()[0].ordinal(), 0);
+    assert!(facts.classifications()[0].verdict_lane());
+    assert!(facts.certifications()[0].consistent());
+    assert_eq!(facts.survivals()[0].aggregate(), Some(2));
+    assert_eq!(facts.licensors()[0].site(), recorded_site());
+    assert!(
+        facts
+            .presented()
+            .expect("the fixture publishes a presented-plan row")
+            .planned_image()
+            .is_some()
+    );
+}
+
+/// Every family's OPAQUE slot leaves through the encoder, and never any other way.
+///
+/// One case over the whole widened surface rather than one per family: what `sinv-sink-encoding`
+/// binds is that a recorded byte run reaches a destination only by being handed to an encoder, and a
+/// family whose text slot bypassed that would show up here as a class the spy never saw.
+#[test]
+fn every_widened_family_releases_its_bytes_only_through_the_encoder() {
+    let document = published();
+    let facts = derive(&input(&document, Vec::new(), None));
+    let mut spy = Spy::new();
+
+    let rendered: Vec<String> = [
+        facts.admission().and_then(|row| row.stream_text()),
+        facts.regions().first().and_then(|row| row.shell_text()),
+        facts.loads().first().and_then(|row| row.name_text()),
+        facts.loads().first().and_then(|row| row.custody_text()),
+        facts.ships().first().and_then(|row| row.source_text()),
+        facts.survivals().first().and_then(|row| row.poison_text()),
+        facts.renders().first().and_then(|row| row.detail_text()),
+        facts.licensors().first().and_then(|row| row.locus_text()),
+    ]
+    .into_iter()
+    .map(|value| {
+        value
+            .expect("the fixture captures every widened slot")
+            .render(&mut spy)
+    })
+    .collect();
+
+    assert_eq!(
+        spy.seen.len(),
+        rendered.len(),
+        "every value that produced bytes went through the encoder exactly once"
+    );
+    assert!(
+        spy.seen.contains(&ValueClass::EncodedStructure)
+            && spy.seen.contains(&ValueClass::SourcePath)
+            && spy.seen.contains(&ValueClass::Coordinate)
+            && spy.seen.contains(&ValueClass::DiagnosticDetail),
+        "the widened slots pose several DIFFERENT sink questions, and each arrives under its own \
+         class: {:?}",
+        spy.seen
+    );
 }
