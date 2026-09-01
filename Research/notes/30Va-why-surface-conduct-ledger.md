@@ -253,6 +253,76 @@ opaque-review gate stayed builder-initiated: all three builders read
 human items ride `TODO-ADDTL:why-surface-close-residue` + the round-close
 ceremony; worktrees/branches cleaned at close.
 
+## HANDOFF — the test-architecture rip (OWED; human-typed 2026-09-01: "absolutely owed … a lot of cruft-rip")
+
+Successor: start here. The arc's PRODUCT is sound and folded; its TEST ARCHITECTURE for the
+receipt-rooted surface is cruft that must be ripped and rebuilt, not patched.
+
+**Ground truth, verified in code (not builder reports):**
+- The only nondeterminism in the receipt route enters at TWO seats in the CLI composition
+  root — `cli/src/durable.rs:656` and `cli/src/receipt_edge.rs:172`, both `getrandom::getrandom`.
+  `receipt-crypto`'s generation is ALREADY injection-shaped (`over(entropy)`, a `fill` trait);
+  the crates carry the determinism seam and the binary pins it to OS entropy with no harness
+  route. Everything crufty below is downstream of that one decision.
+- The loom REPLAY FORMAT already holds multiple commands per case (e.g.
+  `durable-receipt-unwritten.loom` drives `dorc plan …` then `dorc-loom --this vars`). Only
+  the RUN-LANE materialization (`crates/cli/tests/e2e.rs`) is single-invocation. "The loom
+  cannot express two invocations" was a builder claim absorbed and relayed uncritically.
+- Three bespoke spawn-the-binary process-restart tests pre-existed the arc
+  (`cli/tests/receipt_route.rs` · `spine_baseline.rs` · `durable_route.rs`, the last re-keyed
+  this arc) — the extract-the-abstraction signal was already there; the arc added a fourth
+  SHAPE instead of the abstraction.
+
+**What was built and must go (the rip list):**
+- `expect-why-receipt` — a 24th `FRONTMATTER_KEYS` row + its `materialize_loom` mapping;
+  `e2e.rs::scan_why_receipt` (~100 lines of hardcoded choreography: own three-root profile,
+  a publish drive, an `ask` closure over `--all`/`--json`/`--receipt`, six properties) and
+  its key-specific discovery floor. The "case" `cli/tests/why30-receipt-rooted-surface.loom`
+  contributes three substring needles. Assertions in the runner, case as costume, needle-grade
+  assurance, product-flag knowledge baked into the runner: the human's refused "additional
+  type of test" readmitted through a frontmatter key. Rip whole.
+- Re-examine `the_source_comparison_seat_is_the_only_one` (a two-way lexical roster minted
+  under a "packet-requested" reading): the packet said "mechanically enumerate", not grep; a
+  sealed consumer trait expresses one-implementation structurally, and the callsite half
+  adds little. Prefer the structural form under `lexical-fences-are-human-ack-instruments`.
+
+**What to build instead (the five shapes; effort deliberately not over-weighted):**
+1. `shape-determinism-at-the-source` — one HARNESS-ONLY identity/entropy seam at the CLI
+   composition root feeding the crates' existing injection points. The fence is real: it must
+   be structurally unshippable (a cargo feature only the test profile enables — NOT an env var;
+   `rul-fixture-identity-never-production`: "environment presence alone never grants
+   authority"). This is the keystone; it OWES A SITTING before build (human, possibly the
+   opaque sibling — deterministic receipt identity brushes the receipt family's identity
+   semantics; `rul-durable-contents-reviewed-before-design` is adjacent, though ids' VALUES
+   are not contents-schema).
+2. `shape-sequences-are-case-data` — the run lane learns "a case is an ordered sequence of
+   invocations against one persistent sandbox world" (the loom replay block already lists
+   them; materialization executes them in order against one world). General: every
+   drifted-day USER_STORY narrative is a two-invocation test; every future re-plan/drift/
+   receipt proof needs it.
+3. `shape-goldens-not-needles` — with 1+2, publish→why is an ORDINARY byte-exact golden
+   case (reviewable diffs, ordinary bless, re-blesses freely with prose per
+   `render-form-unwelded`). No needles, no bespoke gate, no key-specific floor.
+4. `shape-one-proof-home` — the three bespoke process-restart `.rs` batteries migrate into
+   the corpus as sequence cases; the two-homed proof surface dissolves.
+5. `shape-labels-become-authorable` — a deterministic total-surface transcript is a
+   fixpoint home for the 37 `why-total-*` rows through the EXISTING pipeline (the
+   "label-mint gap" banked above was a symptom of the entropy decision, not a prose-pipeline
+   gap).
+
+**Conductor failure analysis (so it is not repeated):** the second builder was told by this
+conductor "the loom `run:` widening is deferred, do not build it," which fenced the third
+builder into minimal compliance under budget pressure; the completion review then endorsed
+the needle gate as satisfying the human's e2e-corpus ruling without re-deriving whether its
+SHAPE honored the ruling's spirit (cases-as-data under one generic runner). A
+test-architecture decision was made at builder altitude that owed conductor/human altitude.
+Two Plausible Opus Claims (no-two-invocations; entropy-forbids-fixpoint) were relayed as fact.
+
+**Resumption pointers:** lane ledger `notes/30Vd` (what the three builders built, in order);
+the runner seams named above in `crates/cli/tests/e2e.rs`; `TODO-ADDTL:why-surface-close-residue`
+is SUPERSEDED in part by this handoff (its loom-widening and bespoke-migration bullets fold
+into shapes 2 and 4); the round-close ceremony remains the human's and is independent.
+
 ## Ack-ledger (only what the human has TYPED counts)
 
 - ack-cleanup-authorized (2026-08-30): dead branches/worktrees deleted, husks
@@ -309,4 +379,10 @@ ceremony; worktrees/branches cleaned at close.
   grammar cannot yet express a two-invocation sequence; the standalone
   `why_surface_route.rs` battery is dropped. The loom `run:` widening stays
   deferred. The `crates/why` unit/integration gates remain ordinary Rust
-  tests.
+  tests. (SUPERSEDED IN PART 2026-09-01 by the HANDOFF section: the builder
+  satisfied this ruling's letter with a runner-hardcoded needle gate, which the
+  human ruled cruft to rip.)
+- ack-test-architecture-rip-owed (human-typed 2026-09-01): "I'm shocked sequences
+  are not modeled. Yes, this is absolutely owed … a lot of cruft-rip is needed
+  here." The HANDOFF section is the directive's record; the human clears context
+  before the fix proceeds.

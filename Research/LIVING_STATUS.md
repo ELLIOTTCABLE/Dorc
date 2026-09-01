@@ -21,6 +21,18 @@
 
 ---
 
+## NEXT (2026-09-01 — the test-architecture rip; human-typed "absolutely owed")
+
+The why-surface arc's PRODUCT is sound; its receipt-route TEST ARCHITECTURE is cruft to
+rip and rebuild: the `expect-why-receipt` needle gate (assertions hardcoded in the e2e
+runner, case as costume) goes; in its place, harness-only determinism at the CLI's two
+`getrandom` seats (the crates already carry the injection seam), sequence-shaped cases
+(ordered invocations against one persistent world) as ordinary corpus data, byte-exact
+goldens, the three bespoke process-restart `.rs` batteries migrated in, and the 37
+total-surface labels thereby authorable. Full handoff, rip list, and the one owed design
+sitting (the fence around a deterministic identity mode — cargo-feature, never env;
+opaque-adjacent): **`notes/30Va` §HANDOFF**. Start there.
+
 ## CURRENT STATE (2026-08-31 — the r30/30R close arc is COMPLETE and folded; the round ceremony is the human's)
 
 Arc conduct: **`notes/30Va`** (remit · rulings · acks · close). `ai/main` (`ea295267`)
