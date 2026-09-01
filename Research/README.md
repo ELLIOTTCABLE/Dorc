@@ -48,7 +48,8 @@ and carries the license-contamination map.
   carriage, Spine preservation, continued projection/output propagation, and explicit
   conservative staging) + `plans/309` (the Spine transfer/projection consumer).
 - **How do we test a network appliance without a network?** — `plans/128` (DST; the one
-  all-nondeterminism seam is the controller↔host transport).
+  all-nondeterminism seam is the controller↔host transport); the suite's own architecture —
+  seams as one bundle, looms as shell sessions, seeds varied-by-default — is **`notes/30X`**.
 - **Does it run on Windows / odd targets?** — `plans/139` (`kLANG` weld; sh-precondition
   tier-A/B targets; CRLF policy).
 - **How does the controller talk to hosts?** — `plans/142` (executorless-OOB transport;

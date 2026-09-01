@@ -34,7 +34,7 @@ varied seed by default, declared seed as per-case regression opt-in in every tie
 with the driver derived; frontmatter 24→9; the needle gate ripped; the batteries split into
 loom goldens vs state-only Rust e2e. Four serial lanes, all in scope, no deferrals except
 kernel-mutating improvements; the human decides on `/opaque-review` before any building step.
-The brief: **`notes/30Va` §HANDOFF**. Start there.
+The design statement and its build-planning tail: **`notes/30X`**. Start there.
 
 ## CURRENT STATE (2026-08-31 — the r30/30R close arc is COMPLETE and folded; the round ceremony is the human's)
 
