@@ -21,17 +21,20 @@
 
 ---
 
-## NEXT (2026-09-01 — the test-architecture rip; human-typed "absolutely owed")
+## NEXT (2026-09-01 — the test-architecture REBUILD; design converged, NOT dispatched)
 
-The why-surface arc's PRODUCT is sound; its receipt-route TEST ARCHITECTURE is cruft to
-rip and rebuild: the `expect-why-receipt` needle gate (assertions hardcoded in the e2e
-runner, case as costume) goes; in its place, harness-only determinism at the CLI's two
-`getrandom` seats (the crates already carry the injection seam), sequence-shaped cases
-(ordered invocations against one persistent world) as ordinary corpus data, byte-exact
-goldens, the three bespoke process-restart `.rs` batteries migrated in, and the 37
-total-surface labels thereby authorable. Full handoff, rip list, and the one owed design
-sitting (the fence around a deterministic identity mode — cargo-feature, never env;
-opaque-adjacent): **`notes/30Va` §HANDOFF**. Start there.
+The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
+non-concurrent suite-only arc (product work stays separate). Design converged in a
+Fable⇄human sitting 2026-09-01: one `Seams` bundle with per-seam selection (a tier is a row
+of the seam×implementation matrix, never a separate harness); a sibling `dorc-harness`
+binary carrying runtime seam injection while the shipped `dorc` loses even its env pins
+(`inv-division-at-the-narrowest-edge`); looms as unrestricted shell sessions with gates
+attached by block KIND, seams spelled as `$ export` lines, transcripts carrying both streams;
+varied seed by default, declared seed as per-case regression opt-in in every tier; one runner
+with the driver derived; frontmatter 24→9; the needle gate ripped; the batteries split into
+loom goldens vs state-only Rust e2e. Four serial lanes, all in scope, no deferrals except
+kernel-mutating improvements; the human decides on `/opaque-review` before any building step.
+The brief: **`notes/30Va` §HANDOFF**. Start there.
 
 ## CURRENT STATE (2026-08-31 — the r30/30R close arc is COMPLETE and folded; the round ceremony is the human's)
 

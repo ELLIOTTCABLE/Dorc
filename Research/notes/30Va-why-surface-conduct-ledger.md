@@ -253,75 +253,228 @@ opaque-review gate stayed builder-initiated: all three builders read
 human items ride `TODO-ADDTL:why-surface-close-residue` + the round-close
 ceremony; worktrees/branches cleaned at close.
 
-## HANDOFF — the test-architecture rip (OWED; human-typed 2026-09-01: "absolutely owed … a lot of cruft-rip")
+## HANDOFF — the test-architecture rebuild (design CONVERGED 2026-09-01 in a Fable⇄human sitting; NOT dispatched — the human rewinds/restarts before pursuing; the next conductor starts HERE)
 
-Successor: start here. The arc's PRODUCT is sound and folded; its TEST ARCHITECTURE for the
-receipt-rooted surface is cruft that must be ripped and rebuilt, not patched.
+The arc's PRODUCT is sound and folded; its TEST ARCHITECTURE is to be rebuilt, not patched. This
+section is the brief. It supersedes the earlier handoff in full (that text's ground-truth errors are
+corrected under `handoff-ground-truth`). Nothing was built under either.
 
-**Ground truth, verified in code (not builder reports):**
-- The only nondeterminism in the receipt route enters at TWO seats in the CLI composition
-  root — `cli/src/durable.rs:656` and `cli/src/receipt_edge.rs:172`, both `getrandom::getrandom`.
-  `receipt-crypto`'s generation is ALREADY injection-shaped (`over(entropy)`, a `fill` trait);
-  the crates carry the determinism seam and the binary pins it to OS entropy with no harness
-  route. Everything crufty below is downstream of that one decision.
-- The loom REPLAY FORMAT already holds multiple commands per case (e.g.
-  `durable-receipt-unwritten.loom` drives `dorc plan …` then `dorc-loom --this vars`). Only
-  the RUN-LANE materialization (`crates/cli/tests/e2e.rs`) is single-invocation. "The loom
-  cannot express two invocations" was a builder claim absorbed and relayed uncritically.
-- Three bespoke spawn-the-binary process-restart tests pre-existed the arc
-  (`cli/tests/receipt_route.rs` · `spine_baseline.rs` · `durable_route.rs`, the last re-keyed
-  this arc) — the extract-the-abstraction signal was already there; the arc added a fourth
-  SHAPE instead of the abstraction.
+### handoff-ground-truth (verified in code 2026-09-01, not from builder reports)
 
-**What was built and must go (the rip list):**
-- `expect-why-receipt` — a 24th `FRONTMATTER_KEYS` row + its `materialize_loom` mapping;
-  `e2e.rs::scan_why_receipt` (~100 lines of hardcoded choreography: own three-root profile,
-  a publish drive, an `ask` closure over `--all`/`--json`/`--receipt`, six properties) and
-  its key-specific discovery floor. The "case" `cli/tests/why30-receipt-rooted-surface.loom`
-  contributes three substring needles. Assertions in the runner, case as costume, needle-grade
-  assurance, product-flag knowledge baked into the runner: the human's refused "additional
-  type of test" readmitted through a frontmatter key. Rip whole.
-- Re-examine `the_source_comparison_seat_is_the_only_one` (a two-way lexical roster minted
-  under a "packet-requested" reading): the packet said "mechanically enumerate", not grep; a
-  sealed consumer trait expresses one-implementation structurally, and the callsite half
-  adds little. Prefer the structural form under `lexical-fences-are-human-ack-instruments`.
+- **Sequences already half-exist.** `crates/cli/tests/e2e.rs::drive_extra_replays` drives replay
+  blocks 1..N sequentially in the one materialized dir ("a run that publishes, and the later
+  invocation that reads what it published"). What is narrow: (a) a case gets its OWN roots only
+  when it carries `code:`; every other drive publishes into one suite-wide sandbox
+  (`Harness::dorc`, `OWN_PROFILE_DIR`); (b) the clock pin `DORC_FIXTURE_CLOCK_MS` is one constant
+  for every drive, so two publishes in one case share an order token and `--receipt-last` is
+  ambiguous by design; (c) blocks ≥1 accept only `dorc …` + `< probe-results.txt` / `> /dev/null`,
+  rc 0 required, stdout-only transcript (`run_replay_block`); (d) block 0 MUST equal the invocation
+  the gate battery drives (`run_loom`) — an artifact of the battery being a fixed choreography.
+- **"Profile"** is harness vocabulary only: a throwaway pair of per-user roots (config root → the
+  receipt keyset; state root → the receipt store), pointed at by the PLATFORM's own variables
+  (`XDG_*`/`APPDATA`/`LOCALAPPDATA`/`HOME`; `tests/sandbox.rs`). It exists because receipts are
+  default-on (`28F:rul-w3-default-on-aim-high`) and a suite run once minted a real keyset into a
+  developer's real `~/.config/dorc`.
+- **The subprocess tier was never DST.** DST lives in-process (pure kernel, seeded hostsim, the
+  loom driver's injected values). The e2e corpus spawns the real binary, whose `main.rs` re-pins
+  every seam to the OS, and the harness reaches in only through env pins that accreted one leak at
+  a time: clock (`DORC_FIXTURE_CLOCK_MS`, a FROZEN wallclock — `RunClock::Ticking{step_millis:0}`),
+  terminal posture (`DORC_STDOUT_POSTURE`), git source-match (`DORC_FIXTURE_SOURCE_MATCH`); entropy
+  never. Two `getrandom` seats: `cli/src/receipt_edge.rs` `OsEntropy` (receipt ids) and
+  `cli/src/durable.rs` `OsKeyEntropy` (keyset generation), constructed in `cli/src/main.rs` at the
+  plan/round-trip publish seat and the apply route; both feed trait injection points the crates
+  already carry (`ReceiptIdEntropy` / `KeySecretEntropy`, `over(entropy)`).
+- **The batteries were miscounted.** `receipt_route.rs` is in-process with injected capabilities
+  (one spawn test; its header "the binary cannot sign" is STALE — `durable_route` proves it can);
+  `spine_baseline.rs` is an `#[ignore]`d build-to-kill smoke instrument whose Cargo stanza says
+  delete at the fold review; the genuine spawn-the-binary batteries are `durable_route.rs` and
+  `recorded_facts_route.rs` — and the latter ALREADY asserts every property `scan_why_receipt`
+  hardcodes (total surface · `--all` byte-identity · `--json` withhold markers · unmatched address
+  refuses inside the answer · explicit file root · `file:line`). The needle gate was a third home.
+- **Labels need more than determinism.** `dorc-loom publish` attributes prose edits through the
+  IN-PROCESS driver's stamped provenance, and that driver answers every store-reading `dorc why`
+  with a hard-coded `Unreadable(ROOTLESS_WORLD)` (`dorc-loom/src/consumer.rs::run_receipt_store_why`;
+  `RunClock::Absent`; nothing is ever published in-process). Deterministic ids alone do not make
+  the 37 `why-total-*` rows authorable; an in-process receipt WORLD does (lane C).
+- **Six test shapes exist today**, two of them unnamed: unit · in-process looms · `run:` looms
+  and dir-cases (e2e) · Rust-authored batteries · corpus-wide CENSUS tests (`definition_frames.rs`,
+  `region_artifacts.rs`: universally-quantified properties over the case population — the
+  executable form of `30A` quality-is-a-ratchet; legitimate, keep) · PIPELINE-TIER authored-world
+  tests (`sh_parity.rs`, much of `receipt_route.rs`: an inline Rust world driven through the real
+  pipeline, asserting a typed internal decision — legitimate today, with a standing pull toward
+  looms as the `why`/`--json` surface becomes total over decisions).
 
-**What to build instead (the five shapes; effort deliberately not over-weighted):**
-1. `shape-determinism-at-the-source` — one HARNESS-ONLY identity/entropy seam at the CLI
-   composition root feeding the crates' existing injection points. The fence is real: it must
-   be structurally unshippable (a cargo feature only the test profile enables — NOT an env var;
-   `rul-fixture-identity-never-production`: "environment presence alone never grants
-   authority"). This is the keystone; it OWES A SITTING before build (human, possibly the
-   opaque sibling — deterministic receipt identity brushes the receipt family's identity
-   semantics; `rul-durable-contents-reviewed-before-design` is adjacent, though ids' VALUES
-   are not contents-schema).
-2. `shape-sequences-are-case-data` — the run lane learns "a case is an ordered sequence of
-   invocations against one persistent sandbox world" (the loom replay block already lists
-   them; materialization executes them in order against one world). General: every
-   drifted-day USER_STORY narrative is a two-invocation test; every future re-plan/drift/
-   receipt proof needs it.
-3. `shape-goldens-not-needles` — with 1+2, publish→why is an ORDINARY byte-exact golden
-   case (reviewable diffs, ordinary bless, re-blesses freely with prose per
-   `render-form-unwelded`). No needles, no bespoke gate, no key-specific floor.
-4. `shape-one-proof-home` — the three bespoke process-restart `.rs` batteries migrate into
-   the corpus as sequence cases; the two-homed proof surface dissolves.
-5. `shape-labels-become-authorable` — a deterministic total-surface transcript is a
-   fixpoint home for the 37 `why-total-*` rows through the EXISTING pipeline (the
-   "label-mint gap" banked above was a symptom of the entropy decision, not a prose-pipeline
-   gap).
+### handoff-target-architecture (the human's typed rulings are in the ack-ledger)
 
-**Conductor failure analysis (so it is not repeated):** the second builder was told by this
-conductor "the loom `run:` widening is deferred, do not build it," which fenced the third
-builder into minimal compliance under budget pressure; the completion review then endorsed
-the needle gate as satisfying the human's e2e-corpus ruling without re-deriving whether its
-SHAPE honored the ruling's spirit (cases-as-data under one generic runner). A
-test-architecture decision was made at builder altitude that owed conductor/human altitude.
-Two Plausible Opus Claims (no-two-invocations; entropy-forbids-fixpoint) were relayed as fact.
+- **`arch-one-world-many-drivers`** — a case IS a world (sources, declared facts, seams) plus an
+  ordered shell session and its exact output. Every nondeterministic edge the engine consumes is a
+  typed value in ONE bundle (strawman `Seams`: clock · id entropy · key entropy · stdout posture ·
+  roots/env · transport · future columns — process supervisor, netns, sudo prompt …), and every
+  seam independently selects an implementation — `Seeded(seed)` / `Pinned(value)` / `Os` /
+  (transport) `Scripted(hosts/…)` / `Hostsim` / `RealSsh`. A tier is a ROW of that matrix, never a
+  separate harness: unit = models everywhere; in-process loom = models + seeded; harness binary =
+  real filesystem + seeded everything else; livetest = real ssh. A new seam is one column added
+  once; every driver inherits it — the anti-accretion property the human asked for ("more abstract,
+  more powerful; the general structure must COVER the multi-process/multi-host universe, not be
+  built by accretion"). Build only the columns with implementations in hand; the STRUCTURE is the
+  deliverable. Per-seam UNPEG is native: any seam may be set to `Os` by a case that owns the
+  consequence (that value can no longer golden).
+- **`arch-harness-binary-not-produced-cli`** — runtime injection into the binary-under-test is
+  required (process exit is part of the property), but it lives in a SIBLING BUILD, never the
+  shipped `dorc`: `cli/src/bin/dorc.rs` = `exit(compose::run(Seams::os()))`;
+  `cli/src/bin/dorc-harness.rs` = `exit(compose::run(Seams::from_env(&real_env)))`, refusing loudly
+  when no seam env is set. Same crate, same lib; all arg parsing, source acquisition, root
+  resolution and the receipt edge live BELOW the seam. The e2e runner spawns `dorc-harness` (as a
+  `dorc` PATH shim, so a transcript still reads `$ dorc …`). The shipped `dorc` LOSES its three env
+  pins. Under the human's sharpened reading of `rul-fixture-identity-never-production` ("anything
+  published" = PUBLIC INTERFACES: no fixture durable-state may be producible by any code path
+  typeable into `cli/main.rs`), a second bin is the exact structural expression; a cargo feature
+  also satisfies it but drags `--features` through six repo-owned call sites, and a forgotten flag
+  either reddens id-bearing goldens or, under `required-features`, silently skips the corpus.
+- **`inv-division-at-the-narrowest-edge`** (human-typed; becomes steering at close) — the shipped
+  `main.rs` is edge VALUES plus one call; anything with a branch, a parse, or a decision belongs
+  below the seam. Everything above the seam is testable only by the Rust-authored e2e over the
+  shipped binary, so that remit is bounded (the ~ten lines + "the OS impls are live") and must
+  never grow. Binds `dorc-sh` too. Site in `cli/CLAUDE.md`; a mechanical no-control-flow check
+  only as a human-ack fence.
+- **`arch-looms-are-shell-sessions`** — a loom's replay is a POSIX shell session and NOTHING about
+  block position, ordering, or content is restricted; gates attach to blocks BY WHAT THE BLOCK IS
+  (the product's own arg parser classifies each `$ dorc …` line; artifact-producing blocks get the
+  artifact gates — dash `-n`, exec-under-mocks with a per-artifact run-set, guard-shape, redirects,
+  argv-echo, dual-rail; every block gets the diagnostic gates), never by position. The PROCESS
+  driver is literally a shell: materialize the case, start `sh` (via `internal_tooling::Posix`) in
+  the temp dir with the harness env and `dorc`→`dorc-harness` on a shim PATH, feed the `$` lines
+  through a sentinel-delimited persistent session (the records lane's own trick), capture per line.
+  `export`, `cd`, pipes, `cat`, `echo $?`, `chroot` — all native. The IN-PROCESS driver is a perf
+  OPTIMIZATION over a closed grammar it can run in memory (parse those lines with `dorc_syntax`,
+  not a hand grammar — dogfood); a typed decline anywhere routes the WHOLE session to the shell.
+  "Not supported" is a closed-and-shrinking set at the in-memory tier and empty at the loom tier
+  (no meta-test for that; aim high, cede ground only as economically necessary).
+- **`arch-seams-are-sh-lines`** — seam selection is spelled as sh IN the session:
+  `$ export DORC_SEAM_CLOCK=seeded:7` (one var per seam; a `DORC_SEED` umbrella is fine). The
+  harness binary reads the real environment; the in-process driver reads a MODELLED session
+  environment; ONE parser (`Seams::from_env(&dyn EnvReader)` — the `RootEnvironment` DI reader is
+  the precedent) serves both. This deliberately REVERSES `282` §2's "harness-only environment must
+  not appear" for seam selection: seams are a documented typed surface, not fixture authority.
+  Defaults for every loom: cwd = the materialized dir, stdin = the block's redirect or null,
+  every seam seeded-varied unless exported otherwise.
+- **`arch-transcript-is-what-the-user-saw`** — both streams, in order (`2>&1` at the session; the
+  in-process driver already emits ordered events for both). `run:` looms commit stdout-only today,
+  so all 27 re-bless (AUTHORIZED). The artifact gates re-drive their subject block with split
+  streams for parsing — legitimate because a seeded invocation driven twice is byte-identical.
+- **`arch-varied-seed-default-declared-seed-opt-in`** — the runner varies every seeded seam on
+  every run (a fresh render is a free invariance test); a case that commits a transcript depending
+  on any seeded value PINS it (`$ export DORC_SEED=7`) — regression is an opt-in, per case, in
+  every tier (looms, e2e, unit: one seat, one spelling). World FACTS are declared case data and
+  are never varied (a loom over hostsim-GENERATED facts has, by committing its transcript, already
+  pinned). Two affordances so intermittent reds never become agent-retry fodder: the run-wide seed
+  prints at the start and is named in every failure with the one-line pin/replay spelling
+  (hostsim `replay-seed`), and bless REFUSES to write a transcript that did not reproduce under a
+  second seed.
+- **`arch-one-runner-driver-derived`** — `looms.rs` + `e2e.rs` merge into one runner over one walk;
+  which driver proves a session is DERIVED (in-process when the closed grammar and the world allow,
+  shell otherwise) and REPORTED, never declared. Where both can run a session, both do and must
+  agree byte-for-byte (`gate-two-drivers-agree` — today nothing checks that the in-process render
+  `publish` attributes against matches the bytes the binary proved). `one-fixpoint-authority-per-case`
+  is superseded by "the shell proof is authoritative where it runs; the in-process render is a
+  second witness."
+- **`arch-frontmatter-collapses`** (only where CLEARLY better; stay on-target, no rip-and-tear) —
+  `flags` → the `$ dorc` line · `exit`/`apply-exit` → `$ echo $?` · `probe-results` → the `<`
+  redirect · `why-addr` → `$ dorc why book.sh:4` · `artifact-set` → `--artifact-dir` on the line ·
+  `tolerate` → an export · `expect-diagnostic`/`expect-why`/`expect-hint`/`expect-why-chain` → the
+  transcript (the catalog-validation of `[slug]` headers stays as a runner check over transcript
+  bytes) · `run:`/`fixpoint:` → derived. Survivors are registry metadata: `code` · `arrangement` ·
+  `owns` · `when-fires` · `when-used` · `why` · `envelope` · `tests-critical-law` · `todo`. 24 → 9.
+- **`arch-e2e-is-the-tier`** — e2e = the product mechanized above unit level, with three shapes:
+  looms (default — tests AND prose from one durable), dir-cases (legacy, converting), Rust-authored
+  batteries (arbitrarily complex setup; STATE AND EXITS ONLY, never render bytes; may spawn the
+  shipped `dorc` with OS seams for "the shipped binary did X" claims, or `dorc-harness` seeded).
+  `durable_route.rs`/`recorded_facts_route.rs` split by assertion kind: render needles become loom
+  goldens, filesystem/negative cells stay Rust e2e in one named home.
+- **`arch-dogfood-the-sh-engine`** (human hard-ack, with two hard conditions) — use our own
+  parser / env model / rho / const-prop for the session model where it does not chafe. HARD NACK if
+  it softens any correctness invariant; HARD DEFER if it needs invasive kernel changes — in which
+  case record the ideal picture for the next kernel arc rather than approximating it.
 
-**Resumption pointers:** lane ledger `notes/30Vd` (what the three builders built, in order);
-the runner seams named above in `crates/cli/tests/e2e.rs`; `TODO-ADDTL:why-surface-close-residue`
-is SUPERSEDED in part by this handoff (its loom-widening and bespoke-migration bullets fold
-into shapes 2 and 4); the round-close ceremony remains the human's and is independent.
+### handoff-lanes (serial; one Opus builder per lane; stop-and-report between lanes; every lane completes with `mise run both gate:full-quiet`; comment budget + rip-don't-update on every brief)
+
+1. **`lane-a-seams-and-harness-binary`** (medium) — the `Seams` bundle with per-seam selection;
+   `compose::run(Seams)` extracted from `main.rs`; `dorc-harness` bin; seeded id/key entropy (a
+   dependency-free splitmix/LCG over the seed — hostsim's `lcg-only-entropy` posture) feeding the
+   existing trait points; a TICKING harness clock (`step_millis` finally non-zero; per-block base
+   offset derived from the block ordinal); `Seams::from_env` parser; the shipped `dorc` loses its
+   three env pins; the e2e runner spawns the harness via a `dorc` shim. Goldens must stay
+   byte-identical (`bless:dry` clean) — nothing in the current corpus renders an id.
+   CHECKPOINT after A (the extraction is the risky refactor).
+2. **`lane-b-session-driver-and-rip`** (large) — the shell-session process driver;
+   gates-by-kind with NO position rules; own roots per session; the needle gate ripped whole
+   (`expect-why-receipt` row + `materialize_loom` mapping + `scan_why_receipt` + its discovery
+   floor); `why30-receipt-rooted-surface.loom` rewritten as an ordinary multi-block golden session;
+   both-streams transcripts (27-loom re-bless); the batteries split by assertion kind;
+   `spine_baseline.rs` + `mise run spine:baseline` DELETED; `receipt_route.rs` header corrected.
+3. **`lane-c-in-process-receipt-world`** (medium; the opaque-ADJACENT lane) — the loom driver
+   composes the REAL `LocalReceiptEdgeV1` over `receipt-local`'s deterministic `LocalIo` model
+   (`inv-every-io-act-is-injected`; verify the model is exposable — if it is test-only, exposing it
+   to `dorc-loom` is the boundary question) with seeded entropy and the ticking case clock, so
+   receipt-rooted `why` is a fast editable loom and the 37 `why-total-*` rows become authorable
+   through the existing publish loop; the varied-seed default with its two affordances;
+   `gate-two-drivers-agree`.
+4. **`lane-d-one-runner-and-frontmatter-collapse`** (medium-large, mostly mechanical once B's
+   session driver exists) — merge the runners; derive the driver; collapse frontmatter per the
+   list above; retire `run:`/`fixpoint:`; hk/mise routing follows (`hk.pkl` `e2e`/`loom-hygiene`
+   steps; `internal-tooling` `bless.rs` spawns `cargo test -p dorc-cli --test e2e`).
+
+**Lane law (human-typed):** D is IN SCOPE. Leave no cruft and no half-completed work. The ONLY
+legal deferral is "clear improvement, deeply wanted, but needs kernel mutation" — recorded as the
+ideal picture for the next kernel arc. Nothing else from this arc becomes a TODO row. Product work
+and suite work stay fully separate (non-concurrent), which is what licenses the re-bless.
+
+**Before any building step:** the human decides whether this design goes through
+`/opaque-review` (it may be owed — the receipt family's identity/key semantics are brushed by
+lane A, and lane C touches `receipt-local`'s boundary); the conductor does not concern itself
+with anything opaque mid-design and may break invariants to reach excellent testing praxis; the
+review, if owed, precedes building.
+
+### handoff-open-fronts
+
+- **`front-age-nondeterminism`** — the `age` crate draws its ephemeral key and nonce from its own
+  RNG inside the adapter (`receipt-crypto` `inv-adapters-do-not-own-policy-or-io`); seeded seams
+  make KEYS and IDS deterministic but rich receipt FILE BYTES stay nondeterministic. Renders print
+  ids/key-ids/decrypted content, never ciphertext, so goldens should hold UNLESS a surface prints a
+  digest over whole document bytes (the required-placement landing digest is one candidate) —
+  the builder measures first. Every route is unattractive (stub the encryption · a production
+  bypass · leave it untestable); the human carries it into review. An open front, not a TODO row.
+- **`front-dogfood-ceiling`** — where using the kernel's env model / const-prop for the session
+  model would need invasive kernel changes, record the ideal here for the next kernel arc.
+- **`front-lexical-roster-stands`** — `the_source_comparison_seat_is_the_only_one`
+  (`receipt/tests/crate_boundary.rs`) stands: "one implementation across two crates" is not
+  type-expressible (sealing the trait in `receipt` would forbid `cli`'s own impl), and it was
+  minted at explicit direction. Existing fences stand.
+
+### handoff-rip-list (updated)
+
+`expect-why-receipt` (the 24th `FRONTMATTER_KEYS` row · `materialize_loom`'s mapping ·
+`e2e.rs::scan_why_receipt` · its key-specific discovery floor · the three needles in
+`why30-receipt-rooted-surface.loom`) · the block-0-must-match rule in `run_loom` · the
+`split_whitespace` mini-grammar in `run_replay_block` · the constant clock in `Harness::dorc` · the
+shipped binary's three env pins · `spine_baseline.rs` + its task + its Cargo stanza · every
+frontmatter key in the collapse list · the `looms.rs`/`e2e.rs` split.
+
+### handoff-resumption-pointers
+
+Seats by path (line numbers drift; names do not): `cli/src/main.rs` `clock_for_invocation` ·
+`stdout_posture` · the two `Os*Entropy` construction sites; `cli/src/receipt_edge.rs` `OsEntropy`;
+`cli/src/durable.rs` `OsKeyEntropy` + `standard_roots`/`RootEnvironment`; `cli/src/results.rs`
+`RunClock` + `admit_fixture_records` (the `Framing::spike` substitution-point precedent);
+`cli/tests/e2e.rs` `Harness::dorc` · `run_loom` · `drive_extra_replays` · `run_replay_block` ·
+`scan_why_receipt` · `materialize_loom` · `bless_loom`; `cli/tests/sandbox.rs`; `cli/tests/looms.rs`;
+`dorc-loom/src/consumer.rs` `run_receipt_store_why` · `run_engine` · `LoomEngineEdges`;
+`dorc-loom/src/vocabulary.rs` `FRONTMATTER_KEYS`; `cli/Cargo.toml` `[[test]]` stanzas; `hk.pkl`
+corpora steps; `internal-tooling/src/bless.rs`. Prior design authority the lanes must honor:
+`plans/282` (the loom pipeline; §7 is the execution harness), `plans/128` (DST: Seam-1 is the
+controller↔host session), `crates/cli/CLAUDE.md`'s harness contract, `crates/aid/CLAUDE.md`'s
+catalog/ownership law, `spike/CLAUDE.md` `rul-fixture-identity-never-production` (to be re-cut with
+the "public interfaces" reading at close). Lane ledger of what the arc built: `notes/30Vd`.
 
 ## Ack-ledger (only what the human has TYPED counts)
 
@@ -386,3 +539,52 @@ into shapes 2 and 4); the round-close ceremony remains the human's and is indepe
   are not modeled. Yes, this is absolutely owed … a lot of cruft-rip is needed
   here." The HANDOFF section is the directive's record; the human clears context
   before the fix proceeds.
+- The 2026-09-01 design sitting (Fable conductor; every item below TYPED by the human):
+  - ack-published-means-public-interfaces: "anything published" in
+    `rul-fixture-identity-never-production` = PUBLIC INTERFACES; the narrow reading is
+    "a durable-file feature/state we never want for production users shouldn't be
+    producible by any code-path typeable into `cli/main.rs`" — NOT that such state may
+    not exist (that would rule out deterministic testing).
+  - ack-separate-harness-binary: "ack on separate binary-name, I see no downsides; but
+    the division must be right out at the furthest, narrowest edge, because everything
+    before the division is effectively untestable without inventing a sixth kind of
+    test. that needs to become an invariant."
+  - ack-e2e-is-the-tier: the state-only Rust batteries are e2e (the catch-all for
+    testing the product above unit level that isn't a loom); looms are the editable
+    subset; dir-cases should slowly become rare.
+  - ack-tooling-never-deferred: good tooling work is always owed and never deferred
+    unless catastrophically huge; it just cannot be done in flight or in parallel — so
+    finding cruft OUTSIDE an arc is the moment to do it. Lane D is in scope; the only
+    legal cruft is "clear improvement, deeply wanted, needs kernel mutation"; nothing
+    from a cleanup arc becomes a TODO row.
+  - ack-breadth-more-abstract: the testing-target universe is every seam of multiple
+    unix processes on machines Doing Things; the general structure must COVER it, not be
+    built by accretion — "more abstract, not less; more powerful, not smaller."
+  - ack-unpeg-per-seam: separate flags/env per determinism seam, so determinism can be
+    selectively un-pegged.
+  - ack-looms-are-shell-sessions: no artificial restrictions on structure, ordering, or
+    content; in-memory execution is a suite-perf optimization that must not lead design;
+    "not supporting" is a closed-and-shrinking set (no meta-test for it).
+  - ack-seams-as-sh-lines: seam/env mapping set IN the loom as `export` lines, with
+    defaults for all looms; "we express things as sh in this house."
+  - ack-facts-are-data: world-facts have no seam because they are facts (declared case
+    data); the conductor's seed "partition" was withdrawn as a muddle.
+  - ack-varied-seed-default: declared seed = regression + output-stabilization, an
+    opt-in per case across the ENTIRE testing infra (regression e2es, unit tests, looms
+    alike); looms DEFAULT to varied seed; pinning is the one-line fix when a surface
+    contains ND.
+  - ack-dogfood-the-engine (hard): use our own parser/env-model/rho/const-prop for looms
+    if it doesn't chafe; HARD NACK if it softens a correctness invariant; HARD DEFER if
+    it needs invasive kernel changes (hold the ideal picture for the next kernel arc).
+  - ack-rebless-authorized: the whole point of non-concurrent suite work; fully separate
+    product work from suite work.
+  - ack-frontmatter-reduction-on-target: rip frontmatter only where a CLEARLY better
+    option exists; stay on the specific goals; no rip-and-tear of merely-messy things.
+  - ack-age-is-an-open-front: no plan or lean; carried into opaque review; not a TODO.
+  - ack-opaque-review-may-be-owed: the conductor ignores opaque concerns mid-design and
+    may break invariants for excellent praxis; the human routes the plan through review
+    if owed, BEFORE any building step.
+  - call-spine-baseline-dies (conductor's call, delegated): delete it.
+  - ack-husks-cleaned: the human removed the six husk dirs themselves.
+  - ack-no-dispatch-rewind: no builder dispatched; the human rewinds/restarts before
+    pursuing; this ledger's HANDOFF is the brief.
