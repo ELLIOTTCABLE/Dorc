@@ -84,6 +84,90 @@
   target-resident payloads (`ssh h sh /remote/path`) are world-state, reachable
   only as facts (the `FORFEITS` content-facts rows), never as source.
 
+## The payload-declaration speech-act (banked pre-rewind; the standing focus)
+
+The human's concrete target, the sitting's yardstick: one idempotent book that stands
+up a Vultr VPS if absent, does first-time config (users, ssh port, packages), then
+checks/applies the configuration of every running tool, app, and container — Dorc used
+the way it is designed toward, validating the spike before the eventual hand-authored
+codebase around a verified kernel.
+
+The one engine core under both authoring forms (adjacent-book dispatch and inline
+payload) is a refag tool-oracle's ability to say "this input of mine is also sh,
+running <somewhere>, with <properties>". Decomposition (conductor, unobjected):
+
+- **axis-carrier-geometry** — where the code is: (a) an argv operand, nameable only
+  through the oracle's own argparse/peel; (b) stdin — split across two parties: the
+  redirect/heredoc is sh syntax the ENGINE parses natively, the author teaches only
+  "my fd0 is executed as sh"; (c) a file named by an operand; (d) silence = opaque
+  wall. -GUESS the enumeration is complete (env-carried code, `eval "$(…)"`, argv
+  splicers, `--file=-` lurk) — a corpus survey is owed before any spelling.
+- **axis-dialect-and-fidelity** — the dialect claim (sh vs jsonpath/jq/SQL, which stay
+  delegation-only) licenses descent; the FIDELITY function (what the tool does to
+  the bytes — `sh -c` verbatim vs ssh's argv-join-with-spaces) is spelled as an
+  authored normalizer function pre-applied to the argument, in the closed
+  analyzable dialect (human-directed; a closed token class REJECTED as
+  flavour-mismatched). False fidelity claims are mechanically detectable (`24T`'s
+  reconstruction differential).
+- **axis-execution-world** — here / an entered context here (`27C`) / a world keyed
+  by an operand (the Host index, `30W` §5).
+- **axis-analysis-license** — the least specified: custody (which oracle-set governs
+  the inner lines — adjacent books carry their own `.` lines, custody-follows-the-book;
+  inline payloads inherit their enclosing definition's closure), the consent surface
+  (inner lines belong in THE one plan), and probe-routing (compiled probes ship
+  through the entry by the oracle's authored recipe).
+- **Who holds the bytes** — descent only into CONTROLLER-HELD authored bytes; a
+  target-resident payload (`ssh h sh /remote/path`) is world-state, never source; a
+  host-influenced hole in a payload is a ⊤-hole in the sub-parse (partial-parse-with-
+  holes — the "loader-universe into argv" nastiness the human named).
+- **The argv law survives restated** — the engine descends only where authored speech
+  names an input as code, and only into bytes it already holds as authored source;
+  it never self-interprets tool argv.
+- **Quiet assumptions the descent breaks** (each a subsystem owner): one-file-one-book
+  · statement-anchored-to-a-line (`law-lineno-identity`; inner addresses are
+  span-within-span — the locator DAG anticipated it, the addressing surfaces did
+  not) · `30L`'s region identity assumed book custody · strip/render byte-floor:
+  commenting-out inside a quoted payload is a line rewrite under `kBACKFLIPS`, so the
+  ~SUSPECT v1 posture is inline payloads render WHOLE-OR-NOTHING (interior
+  dispositions as annotation/why only), while adjacent books render fully. The two
+  forms stress DISJOINT subsystems (loader/custody/bundle vs parser/span/identity/
+  render) — which is why equal priority is load-bearing, not merely fair.
+- **Language-surface holes found, un-discharged:** `hole-payload-in-question-identity`
+  — a dispatch site's `26C` Question identity must include the PAYLOAD's identity
+  (digest/span) or `ssh h <a.sh` and `ssh h <b.sh` share verdicts (cardinal-direction
+  if missed; engine keying, no author surface) · `hole-expansion-siting-across-the-
+  boundary` — the sub-parse must honor sh's own rule for WHICH WORLD evaluates each
+  expansion (unquoted heredoc expands on the controller; a single-quoted payload's
+  `$X` is the remote shell's variable, defined by the payload's own flow) — mis-siting
+  analyzes the wrong world's dataflow, cardinal-capable · `hole-probe-path-transport-
+  divergence` — an entry recipe that peels and discards the author's transport flags
+  (`-J`, `-p`, `-i`, `-F`) may measure a different world than the apply line reaches;
+  entry bodies carry site flags or decline; oracle-quality-bar + lint.
+
+## Sitting-tier triage residue (banked pre-rewind)
+
+- **The seam map** (five sittings-shaped clusters): pivot semantics (this sitting;
+  `26K` §0b's design half) · delivery mechanics (stdin copy-exec, identity-at-creation
+  practice, DREP remote home, channel caps) · the reactive/multihost revival (entry
+  gates in `TODO-ADDTL`) · delegation-oracle economics and the authoring path
+  (slow-planner cost model, transit-verb stdlib priority, the taught-decline bug as
+  the pre-authoring gate) · native-orchestration features proper (gate-plane
+  cross-host facts; punted; the owed security review parks here).
+- **Anti-focus carve-outs for this tier** (cool, adjacent, refused): survival-tier
+  machinery for the metaorc cohort (straight-line elision + omit + guards is the
+  product; the human's lean) · foreign-interior understanding (rejected; someday-lean
+  only toward GENERIC abstractions engineers could author, never Dorc-authored
+  Ansible/Terraform analysis) · wait-machinery as a feature (`rul-wait-scope-is-just-
+  shell-modeling`) · native control surfaces (the sh-spelled-or-nothing ack) · the
+  DR/fire-drill costume (`26Lb` bank) · elision-count as the metric (the strawman
+  ledgers' honesty: day zero buys nothing measurable) · identity-at-creation now
+  (parked with the security review). The perf instinct's legitimate landing zone is
+  the slow-planner/check-tax economics, not analyzer big-O.
+- **The personal-target path**: this sitting's rulings → local-exec build +
+  taught-decline adjudication → scrappy hand-oracles (doctl/vultr/ssh) → the book runs
+  under the single-shot engine (day zero honest floor; day N omit-collapse); delivery
+  mechanics bite the first time the book pushes a secret.
+
 ## Explored & TABLED (2026-08-31): apply-side transport participation
 
 Explored in-chat at the human's direction ("prove me wrong"), then gently tabled.
