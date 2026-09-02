@@ -179,7 +179,10 @@ AskUserQuestion (ask in prose); dump the numbered task list on changes · Fable 
 codes · the verify entrypoint is `mise run both gate:full-quiet`; `gate:arc` at arc close,
 from the populated branch before folding · naming discipline (`270` §1, HIGH): hyphenated
 full-word slugs, `docID:slug` cross-refs, subscript old labels once ("née P5") · note-ID
-discipline: r28+ notes are LETTER-suffixed; never mint another `29x` ID (the quarantined r29).
+discipline: r28+ notes are LETTER-suffixed; never mint another `29x` ID (the quarantined r29) ·
+every `/opaque-review` DISPATCH — design-time or end-of-arc, initial or follow-up — needs the
+human's TYPED ack first (human-typed 2026-09-02): loading the skill on a builder's instruction
+licenses no dispatch by itself.
 
 ## History
 
