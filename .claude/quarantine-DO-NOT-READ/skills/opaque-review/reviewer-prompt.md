@@ -63,6 +63,28 @@ A concern qualifies only when both halves hold:
 
 When uncertain whether both halves hold, ACK. Preserve velocity.
 
+## Threat modeling
+
+A *fundamental* change to the applicable threat-model is almost always a 'NACK'.
+The human, neither you nor a conductor, needs to evaluate changes that
+*introduce new fundamental threat vectors*. The question to ask, for this carve-out, is simply:
+
+> Does this change inherently invalidate the project's current threat-modeling
+> work, as expressed in the quarantined documentation?
+
+A shifting threat-model is a product-design-level-choice - it nearly always
+boils down to "what are we going to design-towards, and
+advertise-ourselves-as-having-designed-towards; and what are we going to disown
+as danger-that-we-cannot-reasonably-control-for?" It cannot be decided from
+security analysis alone, nor from an engineering stance.
+
+However, this is an extremely expensive process, do not invoke it unnecessarily.
+The most *useful* trigger of this clause is when a change *silently* steps into
+fundamentally new security-territory, and attendant threat-modeling has clearly
+not been done - less-so when threat-modeling has been done in this subdomain,
+and you find it mildly insufficient or concerning. (Again, you are not the only
+security-reviewer.)
+
 ## Hidden invariant inventory
 
 Maintain `Research/quarantine-DO-NOT-READ/AGENTS.for-builders-only.md` when the reviewed work establishes or
