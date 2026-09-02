@@ -45,7 +45,8 @@ loom-escape impulse stops at a conductor; one handbuilt test mechanism per arc) 
 `NACK Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md` (the report is committed on
 the arc branch, unopened by the conductor). The arc is HELD: no lane dispatched, nothing accrues
 on the branch, the path is the human's. Resumption is a human act and re-reviews under a fresh
-identity.
+identity. A rewound conductor resumes from the ledger's §0 on that branch, where the lane A brief
+draft, the scout inventory, and the review dispatch kit are banked beside it.
 
 ## DESIGN SITTING (2026-08-31 → 09-02 — pivot-book language surface; OPEN, banked for a rewind)
 
