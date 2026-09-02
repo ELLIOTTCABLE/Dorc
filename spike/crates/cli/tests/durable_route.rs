@@ -82,12 +82,19 @@ fn records() -> String {
 
 /// One invocation of the shipped binary, in `sandbox`'s profile and `at`'s directory.
 fn dorc(sandbox: &ProfileSandbox, at: &Path) -> Command {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
+    // The seam-driven twin (`30X:bin-harness-sibling-not-produced-cli`), so this battery's
+    // determinism comes from the seams, not from harness-shaped environment the shipped binary no
+    // longer reads. A seeded run over the sandbox profile; source-match pinned off (no `git`, whose
+    // answer would flip with where a developer's temp directory sits); roots pinned to the sandbox.
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc-harness"));
     command.current_dir(at);
     sandbox.apply(&mut command);
-    // No transcript here depends on a repository, and resolving one would make the case flip with
-    // where a developer's temp directory sits.
-    command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
+    // A DISTINCT entropy seed per invocation, so two runs mint DIFFERENT identities exactly as the
+    // OS source used to — the store-selection cases turn on that. The clock is a separate seam a
+    // case pins independently ([`plan_at`]), so two runs can still share one recorded moment.
+    command.env("DORC_SEED", u64::from(next_ordinal()).to_string());
+    command.env("DORC_SEAM_SOURCE_MATCH", "pinned:off");
+    command.env("DORC_SEAM_ROOTS", "pinned");
     command
 }
 
@@ -113,7 +120,7 @@ fn plan_with(
     let input = std::fs::File::open(&stdin).expect("re-open the records");
     let mut command = dorc(sandbox, &scratch.path);
     if let Some(millis) = clock {
-        command.env("DORC_FIXTURE_CLOCK_MS", millis);
+        command.env("DORC_SEAM_CLOCK", format!("pinned:{millis}"));
     }
     let out = command
         .args(["plan", "--book=book.sh", "--results", "-"])
@@ -333,14 +340,14 @@ const DESTINATION: &str = "web9.example.net";
 /// "host" and mean "here" (`271:rul-sin-ordering` puts mis-attribution at the top).
 fn through_a_local_shell(command: &mut Command, scratch: &Scratch) {
     let posix = internal_tooling::Posix::find().expect("this corpus needs a POSIX shell");
-    command.env("DORC_TRANSPORT", format!("local:{}", posix.shell.display()));
+    let interpreter = if cfg!(windows) {
+        format!("/usr/bin/{}", posix.name)
+    } else {
+        posix.shell.display().to_string()
+    };
     command.env(
-        "DORC_TRANSPORT_INTERPRETER",
-        if cfg!(windows) {
-            format!("/usr/bin/{}", posix.name)
-        } else {
-            posix.shell.display().to_string()
-        },
+        "DORC_SEAM_TRANSPORT",
+        format!("local:{};{interpreter}", posix.shell.display()),
     );
     // Nothing ambient is reachable from the shipped bytes. The marker protocol uses `printf`
     // alone, which every shell in the floor carries as a builtin.
@@ -453,7 +460,7 @@ fn an_apply_that_cannot_publish_its_intent_never_reaches_the_transport() {
 
     let mut command = dorc(&sandbox, &scratch.path);
     command.env(
-        "DORC_TRANSPORT",
+        "DORC_SEAM_TRANSPORT",
         format!("local:{}", scratch.path.join("no-such-shell").display()),
     );
     let out = command
@@ -471,7 +478,7 @@ fn an_apply_that_cannot_publish_its_intent_never_reaches_the_transport() {
     // on the strength of a refusal that fired somewhere else entirely, which is the vacuous shape
     // an exit-status assertion has on every refusal.
     assert!(
-        !stderr.contains("DORC_TRANSPORT") && !stderr.contains("transport"),
+        !stderr.contains("DORC_SEAM_TRANSPORT") && !stderr.contains("transport"),
         "nothing transport-shaped may precede a refused publication; got: {stderr}"
     );
     assert!(
@@ -495,7 +502,7 @@ fn a_remote_apply_declining_its_receipt_touches_nothing_at_all() {
     // Pointed at a shell that does not exist, so a run that got as far as the transport would say
     // so — the same discriminator the publication-refusal case above uses.
     command.env(
-        "DORC_TRANSPORT",
+        "DORC_SEAM_TRANSPORT",
         format!("local:{}", scratch.path.join("no-such-shell").display()),
     );
     let out = command
@@ -516,7 +523,7 @@ fn a_remote_apply_declining_its_receipt_touches_nothing_at_all() {
         "the refusal names the incompatibility; got: {stderr}"
     );
     assert!(
-        !stderr.contains("DORC_TRANSPORT") && !stderr.contains("transport"),
+        !stderr.contains("DORC_SEAM_TRANSPORT") && !stderr.contains("transport"),
         "nothing transport-shaped may precede it; got: {stderr}"
     );
     assert!(
@@ -542,7 +549,7 @@ fn a_run_with_no_clock_publishes_nothing_and_says_so() {
     std::fs::write(&stdin, records()).expect("write the records");
     let input = std::fs::File::open(&stdin).expect("re-open the records");
     let out = dorc(&sandbox, &scratch.path)
-        .env("DORC_FIXTURE_CLOCK_MS", "not-a-reading")
+        .env("DORC_SEAM_CLOCK", "absent")
         .args(["plan", "--book=book.sh", "--results", "-"])
         .stdin(std::process::Stdio::from(input))
         .output()

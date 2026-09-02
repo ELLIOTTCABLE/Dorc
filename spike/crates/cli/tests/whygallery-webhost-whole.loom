@@ -339,7 +339,7 @@ sysctl vm.drop_caches
 echo "web1 up"
 
 $ dorc why --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
-receipt: plan 2026-01-25 02:00:37, host localhost
+receipt: plan 2026-01-25 02:00:45, host localhost
    book book.sh (digest a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
    oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
    sysctl.oracle.sh
@@ -389,7 +389,7 @@ $ dorc why 15 --all --book=book.sh --pre-source firewall.oracle.sh --pre-source 
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (received 02:00:37, rc
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (received 02:00:43, rc
                                      0)
    * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@active holds"

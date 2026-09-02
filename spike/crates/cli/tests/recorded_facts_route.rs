@@ -69,15 +69,29 @@ fn records() -> String {
     )
 }
 
+/// Drive the seam-driven twin (`30X:bin-harness-sibling-not-produced-cli`) deterministically: a
+/// DISTINCT entropy seed per invocation (so two runs mint different identities, as the OS source
+/// did), source-match pinned off (no `git`), roots pinned to the sandbox.
+fn seam_env(command: &mut Command) {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SEED: AtomicU64 = AtomicU64::new(0);
+    command.env(
+        "DORC_SEED",
+        SEED.fetch_add(1, Ordering::Relaxed).to_string(),
+    );
+    command.env("DORC_SEAM_SOURCE_MATCH", "pinned:off");
+    command.env("DORC_SEAM_ROOTS", "pinned");
+}
+
 /// Publish one plan receipt through the shipped binary, into `sandbox`'s own profile.
 fn publish(sandbox: &ProfileSandbox, scratch: &Scratch) {
     let stdin = scratch.path.join("records.txt");
     std::fs::write(&stdin, records()).expect("write the records");
     let input = std::fs::File::open(&stdin).expect("re-open the records");
-    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc-harness"));
     command.current_dir(&scratch.path);
     sandbox.apply(&mut command);
-    command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
+    seam_env(&mut command);
     let out = command
         .args(["plan", "--book=book.sh", "--results", "-"])
         .stdin(std::process::Stdio::from(input))
@@ -446,10 +460,10 @@ fn a_locus_address_is_spoken_as_a_file_and_a_line() {
 
 /// One invocation of the shipped binary's `why`, in this sandbox's profile.
 fn why(sandbox: &ProfileSandbox, scratch: &Scratch, args: &[&str]) -> String {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc-harness"));
     command.current_dir(&scratch.path);
     sandbox.apply(&mut command);
-    command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
+    seam_env(&mut command);
     let out = command
         .arg("why")
         .args(args)

@@ -201,7 +201,7 @@ $ dorc why 9 --book=book.sh --pre-source firewall.oracle.sh --pre-source service
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (received 02:00:37, rc
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (received 02:00:38, rc
                                      0)
    * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@active holds"

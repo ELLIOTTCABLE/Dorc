@@ -140,7 +140,7 @@ const fn seeded_clock_base(seed: u64) -> u64 {
 // -------------------------------------------------------------------------------------------------
 // the value seams (clock, the entropies, nonce, posture, source-match)
 
-/// The clock member: a seeded ticking clock, a pinned instant, or the real wall clock.
+/// The clock member: a seeded ticking clock, a pinned instant, the real wall clock, or none.
 #[derive(Debug, Clone)]
 pub enum ClockSeam {
     /// A ticking clock from a seed-derived base with a non-zero step.
@@ -149,6 +149,9 @@ pub enum ClockSeam {
     Pinned(u64),
     /// The real wall clock (`Os`).
     Os,
+    /// No clock at all — the shape that drives the undated-run path (a run whose receipt cannot
+    /// take an order token), which a platform whose clock cannot be placed also reaches at `Os`.
+    Absent,
 }
 
 impl ClockSeam {
@@ -164,6 +167,7 @@ impl ClockSeam {
                 step_millis: 0,
             },
             Self::Os => system_clock(),
+            Self::Absent => RunClock::Absent,
         }
     }
 }
@@ -649,10 +653,11 @@ fn parse_clock(environment: &dyn SeamEnv, umbrella: u64) -> Result<ClockSeam, Di
             .map(ClockSeam::Pinned)
             .ok_or_else(|| seam_value_error(CLOCK_ENV, &raw, "pinned:<unix-millis>")),
         "os" => Ok(ClockSeam::Os),
+        "absent" => Ok(ClockSeam::Absent),
         _ => Err(seam_value_error(
             CLOCK_ENV,
             &raw,
-            "seeded[:<u64>] | pinned:<ms> | os",
+            "seeded[:<u64>] | pinned:<ms> | os | absent",
         )),
     }
 }
@@ -747,9 +752,12 @@ fn parse_transport(environment: &dyn SeamEnv) -> Result<HarnessTransportSeam, Di
     let Some(raw) = environment.var(TRANSPORT_ENV) else {
         return Ok(HarnessTransportSeam::Unset);
     };
-    match raw.split_once(':') {
-        Some(("local", rest)) => {
-            let (shell, interpreter) = match rest.split_once(':') {
+    // `;` splits the optional interpreter off the END, never `:` — a Windows shell PATH carries a
+    // drive-letter colon, so a colon here would split the path itself; neither a shell path nor an
+    // interpreter name ever contains `;`.
+    match raw.strip_prefix("local:") {
+        Some(rest) => {
+            let (shell, interpreter) = match rest.rsplit_once(';') {
                 Some((shell, interpreter)) => (shell, Some(interpreter.to_owned())),
                 None => (rest, None),
             };
@@ -758,10 +766,10 @@ fn parse_transport(environment: &dyn SeamEnv) -> Result<HarnessTransportSeam, Di
                 interpreter,
             }))
         }
-        _ => Err(seam_value_error(
+        None => Err(seam_value_error(
             TRANSPORT_ENV,
             &raw,
-            "local:<shell>[:<interpreter>]",
+            "local:<shell>[;<interpreter>]",
         )),
     }
 }
@@ -906,15 +914,19 @@ mod tests {
                 ..
             })
         ));
-        let with_interp =
-            HarnessSeams::from_env(&env(&[(TRANSPORT_ENV, "local:/bin/dash:sh")])).expect("parses");
-        assert!(matches!(
-            with_interp.transport,
-            HarnessTransportSeam::Local(LocalTransport {
-                interpreter: Some(_),
-                ..
-            })
-        ));
+        // A Windows-shaped shell PATH keeps its drive-letter colon; the interpreter splits off `;`.
+        let with_interp = HarnessSeams::from_env(&env(&[(
+            TRANSPORT_ENV,
+            r"local:C:\git\dash.exe;/usr/bin/dash",
+        )]))
+        .expect("parses");
+        let HarnessTransportSeam::Local(LocalTransport { shell, interpreter }) =
+            with_interp.transport
+        else {
+            panic!("a local transport");
+        };
+        assert_eq!(shell, PathBuf::from(r"C:\git\dash.exe"));
+        assert_eq!(interpreter.as_deref(), Some("/usr/bin/dash"));
     }
 
     #[test]

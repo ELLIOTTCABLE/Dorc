@@ -42,7 +42,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libtest_mimic::{Arguments, Failed, Trial};
 
-use sandbox::ProfileSandbox;
 use support::{
     E2eCase, E2eKind, LoomCase, RECORDS_NONCE, RECORDS_TOKEN, Selection, case_from_path,
     case_roots, discover_e2e, discover_looms, report_path_selection, resolve_selection, spike_root,
@@ -149,16 +148,22 @@ use internal_tooling::{Posix, which};
 // ---------------------------------------------------------------------------
 // the harness's shared, immutable context
 
-/// Binaries, the syntax checker, and the run mode — resolved once, shared by every trial.
-/// The engine's harness clock pin, and the instant every case's transcript is dated by
-/// (`rul-fixture-identity-never-production`). A round number in 2026 so a reader of a committed
-/// transcript can tell at a glance that the date is fixture, not a real morning.
-const FIXTURE_CLOCK_ENV: &str = "DORC_FIXTURE_CLOCK_MS";
-const FIXTURE_CLOCK_MS: u64 = 1_769_306_437_000;
+/// The run-wide seed the seeded entropy members (receipt ids, key material, nonce) derive from —
+/// constant for now, varied per run by lane C (`30X:seed-varied-by-default`). Nothing in the corpus
+/// renders an id, so the value is free; a stable one keeps the store names it drives reproducible.
+const RUN_SEED: u64 = 0x0030_A15E_EDED;
 
-/// The engine's stdout-posture pin (`30Ng:rul-piped-stdout-carries-a-full-plan`), on the clock
-/// pin's own footing: a real, non-hermetic edge fact a subprocess battery has to be able to state.
-const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
+/// The seam bundle the runner spells in the environment (`30X:loom-seams-are-sh-lines`): one
+/// variable per seam. The clock is seeded PER BLOCK (`seeded:<ordinal>`), so two publishes in one
+/// case take distinct order tokens; posture is pinned interactive (the terminal render cell the
+/// round-trip battery reads while driving an artifact set to a directory); source-match is pinned
+/// off (zero external `git`); roots are the runner-owned throwaway pair.
+const SEAM_SEED_ENV: &str = "DORC_SEED";
+const SEAM_CLOCK_ENV: &str = "DORC_SEAM_CLOCK";
+const SEAM_POSTURE_ENV: &str = "DORC_SEAM_STDOUT_POSTURE";
+const SEAM_SOURCE_MATCH_ENV: &str = "DORC_SEAM_SOURCE_MATCH";
+const SEAM_ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
+const SEAM_TRANSPORT_ENV: &str = "DORC_SEAM_TRANSPORT";
 
 /// Where a case that owns its own per-user profile keeps it, inside its materialization.
 ///
@@ -166,9 +171,41 @@ const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
 /// resolves is a property of the world the case was materialized into.
 const OWN_PROFILE_DIR: &str = ".dorc-own-profile";
 
+/// A suite-owned scratch root holding one throwaway profile PER CASE (keyed by case name), removed
+/// wholesale on `Harness` drop. It lives OUTSIDE any case dir so a dir-form case's SOURCE tree is
+/// never touched; a per-case store is what keeps the deterministic ids the seeded entropy mints from
+/// colliding across cases in one suite-wide store.
+fn fresh_profile_parent(tag: &str) -> PathBuf {
+    let root = std::env::temp_dir().join(format!("dorc-e2e-profiles-{}-{tag}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).expect("create the per-case profile parent");
+    root
+}
+
+/// Spell the seam bundle into a `dorc-harness` invocation's environment
+/// (`30X:loom-seams-are-sh-lines`). `ordinal` is the replay block's index: the ENTROPY seed is
+/// offset per block so a case's block 0 and its later publishing replays mint DISTINCT receipt ids
+/// (a constant seed would make two publishes into the case's shared store collide on the name), on
+/// a SHARED clock base so two runs recorded "at one moment" still share an order token — the shape
+/// `durable-receipt-ambiguous` needs, and the only case that reads `--receipt-last` across two
+/// publishes. (This is a per-block SEED offset rather than the per-block CLOCK offset `30X` §6
+/// spelled; the roots come through the platform variables `apply_roots_under` already set.)
+fn seam_env(command: &mut Command, ordinal: u64) {
+    command.env(SEAM_SEED_ENV, RUN_SEED.wrapping_add(ordinal).to_string());
+    command.env(SEAM_CLOCK_ENV, "seeded:0");
+    command.env(SEAM_POSTURE_ENV, "pinned:interactive");
+    command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
+    command.env(SEAM_ROOTS_ENV, "pinned");
+}
+
 struct Harness {
-    /// The `dorc` binary cargo just built for this test target.
+    /// The shipped `dorc` binary cargo just built for this test target — the all-production seam
+    /// row, driven only by the batteries that assert `Os`-seam behaviour (the real-tools lint lane).
     dorc: PathBuf,
+    /// The `dorc-harness` sibling (`30X:bin-harness-sibling-not-produced-cli`): the SAME engine
+    /// driven with a seam bundle from the environment. The round-trip corpus drives THIS, so its
+    /// clock, entropy and roots are deterministic; the transcript still displays the `dorc` command.
+    dorc_harness: PathBuf,
     /// The `dorc-sh` sibling (the strip-and-exec off-ramp runner).
     dorc_sh: PathBuf,
     /// Absolute path of the strict-POSIX syntax checker (`dash`, else `sh`).
@@ -182,13 +219,15 @@ struct Harness {
     /// The floor binaries gate-9 measures under, in the order named
     /// (`DORC_E2E_FLOOR_SHELLS`); empty ⇒ the lane does not fire.
     floor_shells: Vec<String>,
-    /// The throwaway per-user profile every invocation is pointed at, so default-on keys and
-    /// receipts land here instead of in the developer's real profile directory.
-    ///
-    /// BOTH roles, and that is the fix rather than a tidy-up: pointing only the state root at a
-    /// sandbox left the CONFIGURATION root inherited, so a suite run minted a real keyset in
-    /// whoever's profile ran it (measured r30, on the run that first made the binary publish).
-    profile: ProfileSandbox,
+    /// The scratch root under which each case gets its own throwaway per-user profile
+    /// ([`fresh_profile_parent`]); removed wholesale on drop.
+    profile_parent: PathBuf,
+}
+
+impl Drop for Harness {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.profile_parent);
+    }
 }
 
 impl Harness {
@@ -243,13 +282,14 @@ impl Harness {
         }
         Self {
             dorc: PathBuf::from(env!("CARGO_BIN_EXE_dorc")),
+            dorc_harness: PathBuf::from(env!("CARGO_BIN_EXE_dorc-harness")),
             dorc_sh: PathBuf::from(env!("CARGO_BIN_EXE_dorc-sh")),
             checker,
             checker_name,
             bless,
             bless_floor,
             floor_shells,
-            profile: ProfileSandbox::new("e2e"),
+            profile_parent: fresh_profile_parent("main"),
         }
     }
 
@@ -267,17 +307,44 @@ impl Harness {
     /// since `28F:rul-w3-default-on-aim-high` every plan/apply/round-trip writes a receipt, and
     /// inheriting the developer's environment would have the suite depositing them in a real
     /// profile directory — outside the worktree, which no test may touch.
+    /// An INSPECTION drive: it lands its default-on receipt in a FRESH throwaway store, never the
+    /// case's own. Seeded entropy and the per-block clock make a receipt deterministic, so a gate
+    /// that re-drives a run byte-identically (`loom-gates-attach-by-kind`) would otherwise publish
+    /// the SAME name into the case's store and refuse (`name-taken`). A gate's re-drive is for
+    /// PARSING, not the record — so its receipt is disposable, and this is where every gate drive
+    /// goes unless it is one of the few REAL runs ([`Self::dorc_shared`]).
     fn dorc(&self, at: &Path) -> Command {
-        let mut command = Command::new(&self.dorc);
-        // The shared profile is a suite-wide durable: every drive publishes a receipt into it, so
-        // a case reading one back would be reading every other case. One that DEFINES a code takes
-        // the profile its own materialization laid down.
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let seq = SEQ.fetch_add(1, Ordering::Relaxed);
+        let throwaway = self.profile_parent.join(format!("throwaway-{seq}"));
+        self.harness_command(at, &throwaway)
+    }
+
+    /// A REAL run: it shares the case's OWN store across every drive of that case, so a later
+    /// replay reads what an earlier one published. Keyed by the case's dir name (unique across the
+    /// corpus) and rooted in the suite's scratch — never in the case's own dir, which for a dir-form
+    /// case is its SOURCE tree. A `code:`-defining case takes the profile its own materialization
+    /// laid down. Delivered through the platform variables (`30X` §11: keep the platform-variable
+    /// route); the harness roots seam is pinned to them.
+    fn dorc_shared(&self, at: &Path) -> Command {
         let own = at.join(OWN_PROFILE_DIR);
-        if own.is_dir() {
-            sandbox::apply_roots_under(&mut command, &own);
+        let root = if own.is_dir() {
+            own
         } else {
-            self.profile.apply(&mut command);
+            self.profile_parent.join(at.file_name().unwrap_or_default())
+        };
+        self.harness_command(at, &root)
+    }
+
+    /// The shared body of [`Self::dorc`] and [`Self::dorc_shared`]: the harness binary, a
+    /// profile-rooted store, the analysis cwd, and the seam bundle spelled in the environment.
+    fn harness_command(&self, at: &Path, profile_root: &Path) -> Command {
+        let mut command = Command::new(&self.dorc_harness);
+        for role in ["config", "state"] {
+            std::fs::create_dir_all(profile_root.join(role)).expect("create the case profile");
         }
+        sandbox::apply_roots_under(&mut command, profile_root);
         // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
         // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
         // inherited: cargo sets a test process.s cwd to the PACKAGE root, under which no case.s
@@ -285,14 +352,7 @@ impl Harness {
         // would resolve differently again. It is a separate question from the EXECUTION cwd, which
         // stays the throwaway sandbox `rail` supplies.
         command.current_dir(at);
-        command.env(FIXTURE_CLOCK_ENV, FIXTURE_CLOCK_MS.to_string());
-        // The battery reads a RENDER while the artifact SET goes to `--artifact-dir`, which is the
-        // TERMINAL cell; left to the true answer it would be the kept-stream one, where naming a
-        // directory claims the artifact twice and the run refuses before rendering anything.
-        command.env(STDOUT_POSTURE_ENV, "interactive");
-        // `real-tools-lane-opt-in`: zero external invocations; and no transcript may flip with
-        // whether the developer.s TMPDIR sits inside a repository.
-        command.env("DORC_FIXTURE_SOURCE_MATCH", "off");
+        seam_env(&mut command, 0);
         command
     }
 
@@ -1227,20 +1287,17 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
     std::fs::create_dir_all(&shim_dir).expect("create shim dir");
     let probe_path = std::env::join_paths([mocks, shim_dir.as_path()]).expect("join probe PATH");
 
+    let interpreter = if cfg!(windows) {
+        format!("/usr/bin/{}", harness.checker_name)
+    } else {
+        harness.checker.display().to_string()
+    };
     let mut shipped = harness.dorc(dir);
     shipped
         .current_dir(&sandbox)
         .env(
-            "DORC_TRANSPORT",
-            format!("local:{}", harness.checker.display()),
-        )
-        .env(
-            "DORC_TRANSPORT_INTERPRETER",
-            if cfg!(windows) {
-                format!("/usr/bin/{}", harness.checker_name)
-            } else {
-                harness.checker.display().to_string()
-            },
+            SEAM_TRANSPORT_ENV,
+            format!("local:{};{interpreter}", harness.checker.display()),
         )
         .env("PATH", &probe_path)
         .arg("plan")
@@ -1468,7 +1525,8 @@ fn drive_extra_replays(
     let mut outputs: Vec<String> = Vec::new();
     let mut stderr = String::new();
     for (index, block) in blocks.iter().enumerate().skip(1) {
-        match run_replay_block(harness, dir, &framed_path, block.command()) {
+        let ordinal = u64::try_from(index).unwrap_or(0);
+        match run_replay_block(harness, dir, &framed_path, block.command(), ordinal) {
             Ok(got) if scratch_path_leaked(&got.transcript, dir) => failures.push(format!(
                 "FAIL  {name}  [replay {index}: `{}` echoed the throwaway materialization path — a transcript carrying a machine-specific absolute path is not committable (`282` §7); spell the invocation with case-relative paths]",
                 block.command()
@@ -1603,6 +1661,7 @@ fn run_replay_block(
     dir: &Path,
     framed: &Path,
     command: &str,
+    ordinal: u64,
 ) -> Result<ReplayCapture, String> {
     let mut words: Vec<&str> = command.split_whitespace().collect();
     let mut stdin_framed = false;
@@ -1637,7 +1696,11 @@ fn run_replay_block(
         .collect();
     match words.split_first() {
         Some((&"dorc", rest)) if !rest.is_empty() => {
-            let mut child = harness.dorc(dir);
+            // A real run into the case's SHARED store: a later replay must read what an earlier one
+            // published. Each block offsets the ENTROPY seed by its ordinal so the publishes mint
+            // distinct receipt ids (a shared store, a shared clock — the name is the id).
+            let mut child = harness.dorc_shared(dir);
+            child.env(SEAM_SEED_ENV, RUN_SEED.wrapping_add(ordinal).to_string());
             child
                 .current_dir(dir)
                 .args(rest)
@@ -1821,7 +1884,9 @@ fn run_round_trip(
     });
 
     let book = dir.join("book.sh");
-    let mut command = harness.dorc(dir);
+    // THE run: it publishes into the case's shared store, where a receipt-reading replay or gate
+    // can find it. Inspection re-drives go to throwaway stores instead ([`Harness::dorc`]).
+    let mut command = harness.dorc_shared(dir);
     command
         .arg(format!("--shim-dir={}", shim_dir.display()))
         .arg(format!("--book={}", book.display()));
@@ -3548,15 +3613,14 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
     // the live harness's receipts down with this specimen.
     let bless = Harness {
         dorc: harness.dorc.clone(),
+        dorc_harness: harness.dorc_harness.clone(),
         dorc_sh: harness.dorc_sh.clone(),
         checker: harness.checker.clone(),
         checker_name: harness.checker_name.clone(),
         bless: true,
         bless_floor: false,
         floor_shells: Vec::new(),
-        // Its OWN profile: each sandbox removes itself on drop, and sharing the live harness's
-        // would take its receipts down with this specimen.
-        profile: ProfileSandbox::new("foldpass"),
+        profile_parent: fresh_profile_parent("foldpass"),
     };
 
     // `if true` with no `fi` is a parse error, so dorc exits non-zero and the crash/empty guard
@@ -3977,7 +4041,7 @@ fn run_kept_stream_refusal(harness: &Harness) -> Result<(), Failed> {
         harness
             .dorc(&kept.path)
             .args(["plan", "book.sh"])
-            .env(STDOUT_POSTURE_ENV, "non-interactive")
+            .env(SEAM_POSTURE_ENV, "pinned:kept")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()),
     );
