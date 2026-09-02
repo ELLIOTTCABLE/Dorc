@@ -154,6 +154,7 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CliFlagRequiresMode",
     "CliModeNeedsFlag",
     "ApplyReceiptNotOptional",
+    "ApplyOutcomeUnrecorded",
     "CliFileNotFound",
     "CliFilePermissionDenied",
     "CliFileUnreadable",
@@ -273,6 +274,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cli-flag-requires-mode",
     "apply-receipt-not-optional",
     "apply-plan-not-dispatchable",
+    "apply-outcome-unrecorded",
     "cli-file-not-found",
     "cli-file-permission-denied",
     "cli-file-unreadable",
@@ -391,6 +393,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     // before any book is read, and an apply reads none at all, so there is no AST to point at.
     "ApplyReceiptNotOptional",
     "ApplyPlanNotDispatchable",
+    // apply — a durable that did not land is about a WRITE, not about a line of anyone's book.
+    "ApplyOutcomeUnrecorded",
     // transport — about a SESSION, not about bytes we parsed. The CRLF refusal can fire on a
     // rendered plan no parser of ours saw, so its line is a payload value, not an AST span.
     "TransportCrlfRefused",

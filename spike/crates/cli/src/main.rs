@@ -958,7 +958,6 @@ fn render_ctx() -> dorc_aid::RenderCtx<'static> {
 /// (`289:rul-arrangement-home-is-registry-plus-transcripts`). These stderr lines have a registry
 /// HOME but not yet an editable face: no case drives them, so their words are edited in the lock
 /// until a page case exists for them.
-#[cfg(test)]
 fn chrome_parts(slug: &'static str, values: &[&str]) -> dorc_aid::tagged::RenderParts {
     let mut parts = dorc_cli::chrome_line_parts(&render_ctx(), slug, values);
     parts.push(dorc_aid::tagged::RenderPart::Arrangement {
@@ -2689,6 +2688,14 @@ mod snapshot_id_space_tests {
 /// site is deliberately not in the apply run-set, and a guarded omit may be absent from the
 /// BARE book too (a preceding guard short-circuits it), so it must not be asserted ⊆ the
 /// log (task-O / strain-D3b-fold-vs-gate5).
+/// The chrome line naming what a completed apply wrote, so the operator can ask about it.
+///
+/// A SUMMARY, sited with `cli-plan-summary-line` rather than in the diagnostic catalog: nothing
+/// went wrong, and the two identities are exactly what `dorc why --receipt-id` takes. Its words are
+/// unwritten (`error-authorship-tier`), so today it renders the greppable placeholder and the
+/// values wait for prose; the mechanism is what a register cannot supply for itself.
+const APPLY_RECEIPTS_LINE: &str = "cli-apply-receipts-line";
+
 /// Ship an already-rendered plan to a host and report how it ended.
 ///
 /// The one path in this binary that runs a mutating artifact somewhere. Three properties are
@@ -2753,12 +2760,14 @@ fn ship_consented_apply(
     // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
     // nothing here constructs: an apply that cannot publish its intent refuses before the host is
     // contacted, which is what the pre-dispatch boundary is for.
-    let edge = production_receipt_edge(args).map_err(|_| intent_not_published())?;
+    let edge = production_receipt_edge(args)
+        .map_err(|refusal| apply_edge_refused(&refusal, dorc_cli::engine::NO_STATE_ROOT))?;
+    let store = edge.state_base().to_owned();
     let mut io = dorc_cli::durable::NativeIo::new();
     let mut generator = dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
     let open = edge
         .open_for_write(&mut io, &mut generator)
-        .map_err(|_| intent_not_published())?;
+        .map_err(|refusal| apply_edge_refused(&refusal, &store))?;
     let mut order = dorc_cli::receipt_edge::RunClockOrder::of(&mut clock);
     let signer = open.keys().signer();
     let sealer = open.keys().encryption().sealer();
@@ -2784,7 +2793,25 @@ fn ship_consented_apply(
         ),
         driver.as_mut(),
     )
-    .map_err(|refusal| apply_refused(&refusal))?;
+    .map_err(|refusal| apply_refused(&refusal, &store))?;
+
+    // Past the permit, and BEFORE the shipment is classified: what the durable did is a fact about
+    // this run whatever the host answered, and reading it after the classification consumed the
+    // outcome would be the same drop this repair is about.
+    let durable = dorc_cli::apply::durable_report(&reached, &store);
+    report_at(
+        sink,
+        true,
+        dorc_cli::engine::RECEIPT_STAGE,
+        None,
+        &durable.items,
+    );
+    if let Some((intent, outcome)) = durable.recorded {
+        sink.emit(OutputEvent::plain_tagged(
+            OutputChannel::Stderr,
+            chrome_parts(APPLY_RECEIPTS_LINE, &[&intent, &outcome]),
+        ));
+    }
 
     match transport_edge::classify_shipment(reached.shipped) {
         transport_edge::AppliedOutcome::Ran { status } => {
@@ -2824,31 +2851,40 @@ fn ship_consented_apply(
     }
 }
 
-/// An apply whose intent was not placed, in the one word that says which step did not close.
+/// An apply whose local durable edge would not open, in the word for what was unavailable.
 ///
-/// Every route to it is the same world — the durable edge would not open, or the store would not
-/// take the document — so it is one word rather than three sibling codes.
-fn intent_not_published() -> Diag {
+/// The word is the EDGE's own (`no-controller-root`, `store-not-a-directory`, a keyset state, …)
+/// rather than the step everyone can already see. Rounding every route to `intent-not-published`
+/// named the step and dropped the only thing a reader acts on: those repairs are in different
+/// places, and one of them is not even in the operator's profile
+/// (`30Rs:fix-apply-durable-reporting`).
+fn apply_edge_refused(refusal: &dorc_cli::durable::EdgeRefusal, store: &str) -> Diag {
     Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
         dorc_aid::diag::ApplyPlanNotDispatchable {
-            reason: "intent-not-published",
+            reason: refusal.token(),
+            store: store.to_owned(),
         },
     ))
 }
 
 /// The diagnostic for an apply that reached no dispatch, in the words of what did not close.
 ///
-/// One code and a closed reason word rather than three sibling codes: the world is one — an apply
-/// that bound nothing and shipped nothing — and only the step that did not close differs.
-fn apply_refused(refusal: &dorc_cli::apply::ConsentedApplyRefusal) -> Diag {
+/// One code and a closed reason word rather than sibling codes: the world is one — an apply that
+/// bound nothing and shipped nothing — and only the step that did not close differs.
+fn apply_refused(refusal: &dorc_cli::apply::ConsentedApplyRefusal, store: &str) -> Diag {
     use dorc_cli::apply::ConsentedApplyRefusal;
     let reason = match refusal {
         ConsentedApplyRefusal::Image(_) => "image-not-recordable",
         ConsentedApplyRefusal::Preparation(_) => "session-not-preparable",
-        ConsentedApplyRefusal::Publication(_) => "intent-not-published",
+        ConsentedApplyRefusal::Publication(publication) => {
+            dorc_cli::apply::publication_refusal_word(publication)
+        }
     };
     Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
-        dorc_aid::diag::ApplyPlanNotDispatchable { reason },
+        dorc_aid::diag::ApplyPlanNotDispatchable {
+            reason,
+            store: store.to_owned(),
+        },
     ))
 }
 

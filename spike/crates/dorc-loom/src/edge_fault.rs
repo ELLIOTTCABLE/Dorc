@@ -20,6 +20,12 @@ pub(crate) enum EdgeFault {
     ShimExec(IoFailure),
     ArtifactPublish(&'static str),
     ReceiptPublish(String),
+    /// A remote apply's OUTCOME publication, past the permit its intent already minted.
+    ///
+    /// Its own operation rather than a `ReceiptPublish` reason word: an apply publishes twice, and
+    /// which of the two failed is the difference between a run that dispatched nothing and one
+    /// that dispatched and lost the record of what it reached.
+    ApplyOutcomePublish(dorc_receipt::dispatch::DurableFailure),
     HostEvidence(dorc_plan::records::AdmissionRefusal),
     ToolRun {
         tool: String,
@@ -84,6 +90,7 @@ impl EdgeFault {
             ["shim-exec", outcome] => Self::ShimExec(io_failure(outcome, body)?),
             ["artifact-publish", "directory"] => Self::ArtifactPublish("directory"),
             ["artifact-publish", "write"] => Self::ArtifactPublish("write"),
+            ["receipt-publish", "outcome", step] => Self::ApplyOutcomePublish(durable_step(step)?),
             ["receipt-publish", reason] => Self::ReceiptPublish((*reason).to_owned()),
             ["host-evidence", "invalid-utf8"] => {
                 Self::HostEvidence(dorc_plan::records::AdmissionRefusal::InvalidUtf8)
@@ -128,6 +135,22 @@ impl EdgeFault {
             } if fault_path == path => Some(failure),
             _ => None,
         }
+    }
+}
+
+/// Which step of writing a document a declaration says did not close.
+///
+/// Names the OPERATION's outcome, not a diagnostic: the same closed set the receipt library
+/// answers a publication with, so an injected failure is one production already knows how to map.
+fn durable_step(step: &str) -> Result<dorc_receipt::dispatch::DurableFailure, String> {
+    use dorc_receipt::dispatch::DurableFailure;
+    match step {
+        "projection" => Ok(DurableFailure::Projection),
+        "grammar" => Ok(DurableFailure::Grammar),
+        "seal" => Ok(DurableFailure::Seal),
+        "signature" => Ok(DurableFailure::Signature),
+        "sink" => Ok(DurableFailure::Sink),
+        _ => Err(format!("unsupported durable write step `{step}`")),
     }
 }
 

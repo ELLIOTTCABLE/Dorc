@@ -410,6 +410,9 @@ pub enum DiagCode {
     /// A `dorc apply --host` invocation could not turn the bytes it was handed into something a
     /// dispatch permit may be minted over, so it dispatched nothing.
     ApplyPlanNotDispatchable(ApplyPlanNotDispatchable),
+    /// A `dorc apply --host` dispatched, and then its OUTCOME did not reach the store — so the
+    /// durable trail stops at the intent that authorized the dispatch.
+    ApplyOutcomeUnrecorded(ApplyOutcomeUnrecorded),
     /// An input file does not exist.
     CliFileNotFound(CliFileNotFound),
     /// An input file exists but is not readable by this process.
@@ -562,6 +565,7 @@ impl DiagCode {
             DiagCode::CliModeNeedsFlag(_) => "cli-mode-needs-flag",
             DiagCode::ApplyReceiptNotOptional(_) => "apply-receipt-not-optional",
             DiagCode::ApplyPlanNotDispatchable(_) => "apply-plan-not-dispatchable",
+            DiagCode::ApplyOutcomeUnrecorded(_) => "apply-outcome-unrecorded",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
             DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
             DiagCode::CliFileUnreadable(_) => "cli-file-unreadable",
@@ -2164,13 +2168,37 @@ pub struct ApplyReceiptNotOptional;
 
 /// Payload of [`DiagCode::ApplyPlanNotDispatchable`]: bytes that could not be bound to an intent.
 ///
-/// One code carrying a closed reason WORD rather than three sibling codes
+/// One code carrying a closed reason WORD rather than sibling codes
 /// (`28L:rul-reason-enums-not-sibling-codes`): the world is one — an apply that reached no
 /// dispatch — and the word says which step of binding the bytes did not close.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ApplyPlanNotDispatchable {
-    /// The closed word: `image-not-recordable`, `session-not-preparable`, or
-    /// `intent-not-published` (`{reason}`).
+    /// The closed word for the step that did not close (`{reason}`) — the bytes
+    /// (`image-not-recordable`), the session (`session-not-preparable`), the document the store
+    /// would not take (a `dorc-receipt` publication word), or the local edge that would not open
+    /// at all (a root/key/store word).
+    pub reason: &'static str,
+    /// The per-user state base this apply would have filed under (`{store}`).
+    ///
+    /// Beside the reason because a root/key/store word is about a PLACE, and the same word means
+    /// different repairs at a per-user root and at an explicitly named one. Its spelling matches
+    /// the one [`DiagCode::DurableReceiptUnwritten`] uses, so an operator reading both is reading
+    /// about one store rather than matching two labels.
+    pub store: String,
+}
+
+/// Payload of [`DiagCode::ApplyOutcomeUnrecorded`]: a dispatch whose outcome did not land.
+///
+/// The intent is carried, not omitted, and that is the whole point: past the permit the apply RAN,
+/// so the honest report is a partial trail with a name on it rather than a durable that reads
+/// absent (`30R:standing-invariants` — missing material never reads complete).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplyOutcomeUnrecorded {
+    /// The intent that authorized the dispatch and DID land (`{intent}`).
+    pub intent: String,
+    /// The per-user state base the pair files under (`{store}`).
+    pub store: String,
+    /// The closed word for the write step that did not close (`{reason}`).
     pub reason: &'static str,
 }
 
@@ -2961,6 +2989,16 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
+        // Its apply-side sibling, and Error for the same reason: the outcome is the only record of
+        // what a mutation actually reached, so losing it loses the run somebody comes back asking
+        // about. Severity is registry data and decides no exit code (`291` §5a step 3) — the
+        // apply's own result stays what the shipment reached, which is the ruled post-dispatch
+        // failure direction (`30R:publication-and-dispatch-boundary`).
+        DiagCode::ApplyOutcomeUnrecorded(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         // A READ that found nothing is not a failure of the run being asked about, so it warns:
         // there is no durable to explain, and the repair is the operator's own profile.
         DiagCode::DurableReceiptUnreadable(_) => CodeSpec {
@@ -3553,8 +3591,22 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         DiagCode::CliShimDirUnwritable(CliShimDirUnwritable { path, detail }) => {
             vec![ours("path", path.clone()), foreign("detail", detail)]
         }
-        DiagCode::ApplyPlanNotDispatchable(ApplyPlanNotDispatchable { reason }) => {
-            vec![ours("reason", (*reason).to_owned())]
+        DiagCode::ApplyPlanNotDispatchable(ApplyPlanNotDispatchable { reason, store }) => {
+            vec![
+                ours("reason", (*reason).to_owned()),
+                ours("store", store.clone()),
+            ]
+        }
+        DiagCode::ApplyOutcomeUnrecorded(ApplyOutcomeUnrecorded {
+            intent,
+            store,
+            reason,
+        }) => {
+            vec![
+                ours("intent", intent.clone()),
+                ours("store", store.clone()),
+                ours("reason", (*reason).to_owned()),
+            ]
         }
         DiagCode::TransportCrlfRefused(TransportCrlfRefused { which, line }) => {
             vec![ours("which", which.clone()), ours("line", line.clone())]

@@ -105,6 +105,7 @@ impl DefectScenario {
             Self::ApplyPlanImageNotRecordable => {
                 DiagCode::ApplyPlanNotDispatchable(ApplyPlanNotDispatchable {
                     reason: "image-not-recordable",
+                    store: dorc_cli::engine::NO_STATE_ROOT.to_owned(),
                 })
             }
         };

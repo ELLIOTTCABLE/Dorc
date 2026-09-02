@@ -32,6 +32,10 @@ dorc-transport = { path = "../transport", version = "0.0.0" }
 # parser so an invocation-error case is honest, not decorative. `cli` does not dep `dorc-loom`, so
 # there is no cycle.
 dorc-cli = { path = "../cli", version = "0.0.0" }
+# The typed durable-write outcomes an injected edge names (`edge_fault`). The PURE receipt crate:
+# no filesystem, no provider, no algorithms — those are its crypto/local siblings, and neither is
+# reachable from here.
+dorc-receipt = { path = "../receipt", version = "0.0.0" }
 # The ONE argv grammar, shared by the binary and by the in-loom driver (`30C:rul-this-is-a-global-flag`).
 # Two hand-written parsers over one surface is how a transcript and a terminal come to disagree about
 # where a flag may sit. Already in the workspace lock behind `libtest-mimic`, so this adds no package;

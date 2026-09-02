@@ -221,16 +221,17 @@ fn unwritten_renders_are_greppable_and_pinned() {
         .filter(|e| e.message.is_none())
         .map(|e| e.slug)
         .collect();
-    // Ceiling 25 = 21 (`28K`'s loading refusals, spending `289:rul-unwritten-ceiling-one-bump`,
+    // Ceiling 26 = 21 (`28K`'s loading refusals, spending `289:rul-unwritten-ceiling-one-bump`,
     // plus `28K` §2's two positional notices and §4's closure refusal, plus the apply lane's two
     // refusals: an invocation that cannot record its own intent, and bytes that cannot be bound
     // to one) + the receipt durable's three: a run whose receipt did not land, a `dorc why` with
-    // nothing readable, and a store whose greatest order names a cohort + a deliberate bump for
-    // `apply-receipt-not-optional`, the remote apply's refusal of `--no-receipt`. Unwritten
-    // because a builder authors ZERO prose (`27V:rul-error-authorship-tier`); each carries a
-    // `why` naming the remediation register its words are owed.
+    // nothing readable, and a store whose greatest order names a cohort + a deliberate two-line
+    // bump for the apply-contract repair: `apply-receipt-not-optional` (the remote apply's
+    // refusal of `--no-receipt`) and `apply-outcome-unrecorded` (a dispatch whose outcome did not
+    // land). Unwritten because a builder authors ZERO prose (`27V:rul-error-authorship-tier`);
+    // each carries a `why` naming the remediation register its words are owed.
     assert!(
-        unwritten.len() <= 25,
+        unwritten.len() <= 26,
         "more unwritten (`None`) messages ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands unwritten: {unwritten:?}",
         unwritten.len()

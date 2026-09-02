@@ -847,13 +847,14 @@ impl DorcConsumer {
             .ok()
             .flatten()?;
         let _artifact = context.read_file(plan)?;
-        let (diagnostic, status) = match fault {
+        let (stage, diagnostic, status) = match fault {
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::Crlf { line },
-            ) => (dorc_cli::transport_crlf_error(plan, line), 13),
+            ) => ("transport", dorc_cli::transport_crlf_error(plan, line), 13),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::SessionLost,
             ) => (
+                "transport",
                 dorc_cli::transport_session_lost(
                     host,
                     1,
@@ -863,16 +864,38 @@ impl DorcConsumer {
             ),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::SpawnRefused(detail),
-            ) => (dorc_cli::transport_spawn_refused(host, &detail), 13),
+            ) => (
+                "transport",
+                dorc_cli::transport_spawn_refused(host, &detail),
+                13,
+            ),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::MarkerUnusable,
-            ) => (dorc_cli::transport_marker_unusable(host), 13),
+            ) => ("transport", dorc_cli::transport_marker_unusable(host), 13),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::ApplyFailed { status },
-            ) => (dorc_cli::transport_apply_failed(host, status), 15),
+            ) => (
+                "transport",
+                dorc_cli::transport_apply_failed(host, status),
+                15,
+            ),
+            // Past the permit: the dispatch happened, so the run reports and carries on, and the
+            // status stays the shipment's own (`30R:publication-and-dispatch-boundary`). The
+            // intent identity is a HARNESS value — a loom world stands up no keyset and mints no
+            // receipt id, so the seat is handed one rather than inventing one where a real
+            // identity goes.
+            crate::edge_fault::EdgeFault::ApplyOutcomePublish(failure) => (
+                dorc_cli::engine::RECEIPT_STAGE,
+                dorc_cli::apply_outcome_unrecorded(
+                    LOOM_INTENT,
+                    dorc_cli::engine::NO_STATE_ROOT,
+                    failure,
+                ),
+                0,
+            ),
             _ => return None,
         };
-        self.staged_diagnostic(case, "transport", diagnostic, status)
+        self.staged_diagnostic(case, stage, diagnostic, status)
     }
 
     fn run_lint(
@@ -1282,6 +1305,13 @@ fn arrangement_index(
 /// builds one: what this crate can honestly state is that its world has no root, and this is that
 /// sentence in the edge's own closed vocabulary.
 const ROOTLESS_WORLD: &str = "no-controller-root";
+
+/// The intent identity a replayed apply names when its outcome publication is injected to fail.
+///
+/// A HARNESS value, and deliberately not a plausible one: a loom world stands up no keyset and
+/// mints no receipt id, so any identity here is fixture-tier and must be unable to read as
+/// something a store could hold (`rul-fixture-identity-never-production`).
+const LOOM_INTENT: &str = "<loom-intent>";
 
 /// Why this tool declines to answer for a whole-product case. One spelling: the decline reaches an
 /// author through `dorc-loom vars` and through the corpus gate.
