@@ -15,21 +15,21 @@ authority without narrowing sessions" — `RealSsh` and `Os` roots out of the or
 reach; `HarnessSeams` as the constructor-side subtype; `loom-syntax-grants-no-production-authority`;
 livetest as the explicit composition for ambient capability), then acked the conductor's five
 clarity repairs and the added `rul-seam-columns-are-conductor-ruled`. `30-reviewB` (pass `initial`, range
-`3b999e47^..914c49a8`, kit `30Xd`) returned `ACK` verbatim; its report is committed as `653bddb5`.
+`3b999e47^..914c49a8`, the same relay kit) returned `ACK` verbatim; its report is committed as `653bddb5`.
 Standing fence, human-typed the same day: NO sealed-review dispatch of any kind without the
-human's typed ack (`LIVING_STATUS` conduct fences). Lane A is dispatched from this branch's tip
-with the `30Xb` brief; the conductor touches nothing in this worktree while a lane is live.
+human's typed ack (`LIVING_STATUS` conduct fences). Lane A was dispatched from this branch's tip
+with its brief (uncommitted, by ruling); the conductor touches nothing in this worktree while a
+lane is live.
 
-Successor on-ramp (everything a rewound conductor needs is on this branch): this ledger · `30X` as
-amended at `633fd954` (§3a is the new non-loom law) · `30Xb` (the lane A brief, DRAFT, pre-NACK —
-re-cut against the human's ruling before dispatch) · `30Xc` (the scout inventory: seat table,
-corpus census, plumbing, xfail registry) · `30Xd` (the sealed-review dispatch kit; reuse verbatim
-for `30-reviewB` with the identity/pass/range/report lines changed, and forbid `Monitor` in the
-relay prompt). The review report itself is at
-`C:\Users\ec\Sync\Code\Dorc\.tmp\trees\r30-30X-test-infra-decruft-conductor\Research\quarantine-DO-NOT-READ\30-reviewA-opaque-report.md`
-(committed on this branch as `9b915238`); the conductor never opens it. `ai/main` carries two
-status-only commits from this sitting (`74da908d`, `17403acd`) that this branch must be rebased
-over before any fold.
+Successor on-ramp (everything a rewound conductor needs is on this branch): this ledger and `30X`
+as amended (§3a is the non-loom law; §2/§4/§5 carry the post-review tightening). Builder briefs,
+the scout inventory, and the sealed-review dispatch kit are NOT committed (human ruling
+2026-09-02: `Research/notes/` holds design work; briefs go to the conductor's scratchpad or the
+dispatch message; the rulings they produced live here). The two review reports are on this
+branch under `Research/quarantine-DO-NOT-READ/` (`30-reviewA` at `9b915238`, `30-reviewB` at
+`653bddb5`); the conductor never opens them. No further sealed review within the arc (human,
+2026-09-02); an end-of-arc review is the human's call. `ai/main` carries status-only commits from
+this sitting that this branch rebases over before any fold.
 
 ## §1 — remit and standing rulings
 
@@ -64,7 +64,7 @@ over before any fold.
 | the reviewer-driven tightening (`8ab53489`) + the conductor's five clarity repairs + `rul-seam-columns-are-conductor-ruled` | ACKED 2026-09-02 ("Ack; proceed with your cleaning. I believe we're ready to deploy") |
 | `ambiguity-persistence-means-what` — applied as "the production ROOT is excluded, never native I/O under a runner-owned root" (the only reading lane B survives) | applied under that ack; the human corrects in-chat if the other reading was meant |
 | the five fence re-targets (`main.rs` → `compose.rs`; §2a last row) | awaiting the human's re-ack |
-| sealed review over lane A's implementation (builder-flow relay, §2a) | awaiting the human's dispatch ack; recommended after `30Xe`, before lane B |
+| sealed review over lane A's implementation (builder-flow relay, §2a) | DECLINED by the human 2026-09-02: no opaque review within the arc; end-of-arc is their call |
 | `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
 | `exceed-port-or-delete-yardstick` | acked with the plan 2026-09-02 |
 | `note-stale-review-repair-worktree` (`.claude/worktrees/r30-review-repair1`, tip inside `ai/main`; not this arc's) | reported; untouched |
@@ -79,17 +79,24 @@ Lane A is BUILT to `4ee6aeca` (six commits; Windows `gate:full-quiet` green; the
 | `dev-per-block-SEED-not-per-block-CLOCK` — shared clock base, per-block seed offset, to keep `durable-receipt-ambiguous` demonstrable | ACCEPT as lane-A interim. Lane B re-authors that case as a session that PINS the clock across its two publishes (`$ export DORC_SEAM_CLOCK=pinned:…`) with per-block seeds, and the runner default becomes the ticking per-block clock `30X` §11 intends. | the brief never censused `--receipt-last` dependents; the scout was not asked. |
 | `dev-clock-absent-value` — `ClockSeam::Absent` | ACCEPT: a product clock state (`RunClock::Absent`), a variant of the existing column, not a column. | the brief copied the clock's implementation set from `30X` without checking the product's own variants. |
 | `dev-inspection-drives-use-throwaway-stores` + `dev-per-case-profile-not-suite-wide` | ACCEPT both. The general rule is `inspection-redrives-carry-no-durable` (→ `cli/CLAUDE.md` at close; `30X` §5 rider applied). | `30X` §5 claimed a seeded double-drive is side-effect-free; it is byte-identical in RENDER only. |
-| `dev-batteries-switched-and-seeded` — both batteries now spawn the harness | ACCEPT the direction. RIDER: the shape-(c) remit over the SHIPPED binary (`30X:inv-division-at-the-narrowest-edge`: the OS implementations are live) keeps ONE witness — `30Xe` deliverable 3. | the brief did not say which battery keeps the shipped-binary witness. |
-| `dev-roots-nominal-fence` — `Pinned` resolves through the platform variables | REJECT. `rul-roots-pinned-is-a-literal`: `Pinned` carries an absolute runner-owned path and never consults `APPDATA`/`HOME`/`XDG_*`; a nominal fence is no fence once the scrub is absent. `30Xe` deliverable 1. | the brief said "keep the platform-variable route" (from `30X` §11) without saying the pinned variant must itself be a literal. |
-| `dev-scrub-not-applied` | INCOMPLETE, not a deviation; `30Xe` deliverable 2. | the remit was sized to the builder's whole budget; the human's steer: size remits slightly smaller. |
+| `dev-batteries-switched-and-seeded` — both batteries now spawn the harness | ACCEPT the direction. RIDER: the shape-(c) remit over the SHIPPED binary (`30X:inv-division-at-the-narrowest-edge`: the OS implementations are live) keeps ONE witness — the completion pass added it. | the brief did not say which battery keeps the shipped-binary witness. |
+| `dev-roots-nominal-fence` — `Pinned` resolves through the platform variables | REJECT. `rul-roots-pinned-is-a-literal`: `Pinned` carries an absolute runner-owned path and never consults `APPDATA`/`HOME`/`XDG_*`; a nominal fence is no fence once the scrub is absent. Built in the completion pass. | the brief said "keep the platform-variable route" (from `30X` §11) without saying the pinned variant must itself be a literal. |
+| `dev-scrub-not-applied` | INCOMPLETE, not a deviation; built in the completion pass. | the remit was sized to the builder's whole budget; the human's steer: size remits slightly smaller. |
 | direct spawn of `dorc-harness`, no PATH shim | fine; lane B adds the shim with the shell session. | — |
 | `tc-durable-receipt-ambiguity-needs-session-seams` | ruled with the first row. | — |
 | five production-source fences re-pointed `main.rs` → `compose.rs` | maintenance under `lexical-fences-are-human-ack-instruments`; listed for the human's re-ack in §2. | — |
 
-Relayed from the builders-only file: the lane's implementation is a governed surface and the
-sealed review should run over it before it is considered landed. Dispatch waits on the human's
-typed ack (`LIVING_STATUS` conduct fences); the conductor's recommendation is after `30Xe`,
-before lane B accrues on it.
+The builders-only relay asked for a sealed review over the lane; the human ruled no review within
+the arc (2026-09-02).
+
+Completion pass (`413e2e49`; both gate legs green, the WSL leg's first run over lane A;
+`bless:dry` clean; the three whygallery transcripts byte-stable): four open items, all
+ACCEPTED — an absent `DORC_SEAM_ROOTS` refuses (the runner always supplies it; a silent default
+would contradict `30X:loom-seams-are-sh-lines`); the scrub forwards the runner's `PATH` until
+lane B1 substitutes the shim/mocks path; the receipt gate re-pins its own root; the seam unit
+tests track the parser. Measured: on Windows the harness needs none of `SystemRoot`/`ComSpec`/
+`PATHEXT` (seeded entropy, no `cmd`-hosted child, absolute-path launch). The shipped-binary
+witness is `durable_route::the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams`.
 
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
@@ -203,7 +210,7 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | lane | scope (`30X` §11 + §3 deltas) | state |
 |---|---|---|
 | A `lane-a-seams-and-harness-binary` | `Seams` + `HarnessSeams` (`30X` §4) + `HarnessSeams::from_env` on one env-reader footing; the session environment scrubbed; `compose::run(Seams)` extracted from `main.rs`; `bin/dorc-harness.rs` refusing with no seam set; seeded id/key entropy over a dependency-free generator; the ticking harness clock; ALL SIX pins retired from the shipped binary; the e2e runner spawns the harness through a `dorc` shim on PATH; `bless:dry` clean | BUILT to `4ee6aeca` (§2a); completion → A′ |
-| A′ `30Xe` lane A completion | roots `Pinned` carries a literal path; the session scrub; the shipped-binary liveness witness; the WSL leg; `bless:dry` | DISPATCHED 2026-09-02 |
+| A′ lane A completion | roots `Pinned` carries a literal path; the session scrub; the shipped-binary liveness witness; the WSL leg; `bless:dry` | BUILT to `413e2e49`; lane A COMPLETE |
 | — checkpoint A | `inv-division-at-the-narrowest-edge` judged on the extraction diff | — |
 | B1 `lane-b1-session-driver` (split from B after the human's sizing steer) | the shell-session process driver over the `dorc` PATH shim; gates by kind, no position rules; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); the runner default becomes the ticking per-block clock; `durable-receipt-ambiguous` re-authored as a clock-pinned session | not dispatched |
 | B2 `lane-b2-needle-rip-and-battery-split` | the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; batteries split by assertion kind (loom goldens vs the one state-only home, keeping the shipped-binary witness); `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | not dispatched |
